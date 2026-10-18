@@ -179,10 +179,6 @@ struct HarmonyDarkMask: View {
 
     var body: some View {
         ZStack {
-            Rectangle()
-                .fill(.ultraThinMaterial)
-                .opacity(max(0, min(1, 0.28 * strength)))
-
             LinearGradient(
                 stops: [
                     .init(color: Color(hex: 0x17191D).opacity(0.84 * strength), location: 0.00),

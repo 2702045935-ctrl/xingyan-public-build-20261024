@@ -31,6 +31,7 @@ struct TopGlassBar: View {
     /// **常显**：通讯录 / 视界互联这两页的顶栏要一直是那条遮罩（微信就是常显），
     /// 不像会话页那样"不滚就没有、滚起来才浮出来"。
     var always: Bool = false
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         let blur = UIConfig.num("chatsNavGlassAlpha", 1)
@@ -52,28 +53,30 @@ struct TopGlassBar: View {
                浅色下是透亮的乳白、深色下是磨砂黑，而且**跟着系统外观自动换**。
                我们以前是自己画的玻璃 / 一层半透明色，永远做不出这个味道。
                染色只压一点点（默认 0.25），想要更"实"就把遮罩浓度往上调。 */
-            ZStack {
-                Rectangle().fill(.bar)
-                    .opacity(max(0, min(1, blur)) * t)
-                (UIConfig.colorIfSet("chatsNavMaskColor") ?? fallback)
-                    .opacity(max(0, min(1, mask)) * t)
-                /* 2026-10-17 用户：「没有人家微信透的那种**不规则角光感**」——
-                   微信那层玻璃的"高级"就在这儿：边角有一团不规则的偏亮反光 +
-                   一条细亮边，不是均匀一块色。这里补两笔：
-                     · 左上角一团偏白的回光（往右下渐隐）
-                     · 底边一条很细的亮线（玻璃倒角的反光）
-                   后台 navRimLight 写 0 可以关掉。 */
-                if UIConfig.num("navRimLight", 1) > 0 {
-                    RadialGradient(colors: [Color.white.opacity(0.30 * t), Color.clear],
-                                   center: UnitPoint(x: 0.14, y: 0.18),
-                                   startRadius: 1, endRadius: 170)
-                    VStack { Spacer()
-                        Rectangle()
-                            .fill(LinearGradient(colors: [Color.clear,
-                                                          Color.white.opacity(0.22 * t),
-                                                          Color.clear],
-                                                 startPoint: .leading, endPoint: .trailing))
-                            .frame(height: 0.5)
+            Group {
+                if scheme == .dark {
+                    /* 深色顶栏彻底不碰系统材质和白色高光：只铺炭黑透光渐变。 */
+                    HarmonyDarkMask(strength: 0.98)
+                } else {
+                    ZStack {
+                        Rectangle().fill(.bar)
+                            .opacity(max(0, min(1, blur)) * t)
+                        (UIConfig.colorIfSet("chatsNavMaskColor") ?? fallback)
+                            .opacity(max(0, min(1, mask)) * t)
+                        /* 浅色模式保留不规则冷光；深色模式已在上面的纯渐变分支截断。 */
+                        if UIConfig.num("navRimLight", 1) > 0 {
+                            RadialGradient(colors: [Color.white.opacity(0.30 * t), Color.clear],
+                                           center: UnitPoint(x: 0.14, y: 0.18),
+                                           startRadius: 1, endRadius: 170)
+                            VStack { Spacer()
+                                Rectangle()
+                                    .fill(LinearGradient(colors: [Color.clear,
+                                                                  Color.white.opacity(0.22 * t),
+                                                                  Color.clear],
+                                                         startPoint: .leading, endPoint: .trailing))
+                                    .frame(height: 0.5)
+                            }
+                        }
                     }
                 }
             }
