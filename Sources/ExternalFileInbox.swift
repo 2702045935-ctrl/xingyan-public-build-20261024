@@ -1,6 +1,7 @@
 import SwiftUI
 import UIKit
 import Foundation
+import UniformTypeIdentifiers
 
 struct ExternalFileItem: Identifiable {
     let id = UUID()
@@ -36,8 +37,7 @@ final class ExternalFileInbox: ObservableObject {
                 let scoped = source.startAccessingSecurityScopedResource()
                 defer { if scoped { source.stopAccessingSecurityScopedResource() } }
 
-                let rawName = source.lastPathComponent.isEmpty ? "文件" : source.lastPathComponent
-                let name = Self.safeName(rawName)
+                let name = Self.sourceName(source)
                 var destination = base.appendingPathComponent(name)
                 if fm.fileExists(atPath: destination.path) {
                     let stem = destination.deletingPathExtension().lastPathComponent
@@ -83,12 +83,24 @@ final class ExternalFileInbox: ObservableObject {
     }
 
     private static func safeName(_ raw: String) -> String {
+        let decoded = raw.removingPercentEncoding ?? raw
         let bad = CharacterSet(charactersIn: "/\\:")
-        var name = raw.components(separatedBy: bad).joined(separator: "_")
+        var name = decoded.components(separatedBy: bad).joined(separator: "_")
             .trimmingCharacters(in: .whitespacesAndNewlines)
         if name.isEmpty { name = "文件" }
         if name.count > 180 { name = String(name.prefix(180)) }
         return name
+    }
+
+    private static func sourceName(_ source: URL) -> String {
+        let values = try? source.resourceValues(forKeys: [.nameKey, .typeIdentifierKey])
+        var name = values?.name ?? source.lastPathComponent
+        if name.isEmpty { name = "文件" }
+        if !name.contains("."), let type = values?.typeIdentifier,
+           let ext = UTType(type)?.preferredFilenameExtension, !ext.isEmpty {
+            name += "." + ext
+        }
+        return safeName(name)
     }
 }
 
@@ -99,11 +111,12 @@ struct ExternalFileSendView: View {
 
     @State private var query = ""
     @State private var selectedId = ""
-    @State private var choosingForward = false
+    @State private var forwardExpanded = true
     @State private var favoriteBusy = false
     @State private var sending = false
     @State private var progress = ""
     @State private var alert = ""
+    @State private var filePreview: FilePreviewData?
 
     private var chats: [Chat] {
         let q = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -121,46 +134,48 @@ struct ExternalFileSendView: View {
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
 
-                if !choosingForward {
-                    VStack(spacing: 10) {
-                        actionRow(title: Tr("转发给朋友"), icon: "paperplane.fill",
-                                  tint: Color(hex: 0x1AAD6A)) {
-                            choosingForward = true
-                        }
-                        actionRow(title: Tr("收藏"), icon: "star.fill",
-                                  tint: Color(hex: 0xE3A126)) {
-                            favorite()
-                        }
+                HStack(spacing: 10) {
+                    actionTile(title: Tr("转发给朋友"), icon: "paperplane.fill",
+                               tint: Color(hex: 0x1AAD6A)) {
+                        withAnimation(.easeOut(duration: 0.18)) { forwardExpanded = true }
                     }
-                    .padding(16)
+                    actionTile(title: Tr("收藏"), icon: "star.fill",
+                               tint: Color(hex: 0xE3A126)) {
+                        favorite()
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
 
-                    if favoriteBusy {
-                        HStack(spacing: 8) {
-                            ProgressView()
-                            Text(progress).font(.system(size: 12.5)).foregroundColor(C.subLabel)
+                HStack(spacing: 7) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(C.subLabel)
+                    TextField(Tr("搜索联系人"), text: $query)
+                        .font(.system(size: 14))
+                    if !query.isEmpty {
+                        Button { query = "" } label: {
+                            Image(systemName: "xmark.circle.fill").foregroundColor(C.subLabel)
                         }
-                        .padding(.top, 2)
+                        .buttonStyle(.plain)
                     }
-                    Spacer()
-                } else {
-                    HStack(spacing: 7) {
-                        Image(systemName: "magnifyingglass")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(C.subLabel)
-                        TextField(Tr("搜索联系人"), text: $query)
-                            .font(.system(size: 14))
-                        if !query.isEmpty {
-                            Button { query = "" } label: {
-                                Image(systemName: "xmark.circle.fill").foregroundColor(C.subLabel)
-                            }
-                            .buttonStyle(.plain)
-                        }
+                }
+                .padding(.horizontal, 12)
+                .frame(height: 38)
+                .background(C.fieldBg)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+
+                if forwardExpanded {
+                    HStack {
+                        Text(Tr("转发给朋友"))
+                            .font(pf(15, .semibold))
+                            .foregroundColor(C.label)
+                        Spacer(minLength: 0)
                     }
-                    .padding(.horizontal, 12)
-                    .frame(height: 38)
-                    .background(C.fieldBg)
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    .padding(12)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 6)
 
                     ScrollView(showsIndicators: false) {
                         LazyVStack(spacing: 0) {
@@ -171,7 +186,7 @@ struct ExternalFileSendView: View {
                         }
                     }
 
-                    if sending {
+                    if favoriteBusy || sending {
                         HStack(spacing: 8) {
                             ProgressView()
                             Text(progress).font(.system(size: 12.5)).foregroundColor(C.subLabel)
@@ -195,12 +210,12 @@ struct ExternalFileSendView: View {
                 }
             }
             .background(C.pageBg.ignoresSafeArea())
-            .navigationTitle(choosingForward ? Tr("发送给") : Tr("文件"))
+            .navigationTitle(Tr("文件"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(Tr("取消")) {
-                        if !sending { inbox.finish() }
+                        if !sending && !favoriteBusy { inbox.finish() }
                     }
                 }
             }
@@ -208,6 +223,9 @@ struct ExternalFileSendView: View {
             .alert(alert, isPresented: Binding(get: { !alert.isEmpty },
                                                set: { if !$0 { alert = "" } })) {
                 Button(Tr("知道了"), role: .cancel) {}
+            }
+            .sheet(item: $filePreview) { f in
+                FilePreviewSheet(name: f.name, local: f.local)
             }
         }
     }
@@ -237,6 +255,12 @@ struct ExternalFileSendView: View {
         .padding(12)
         .background(C.cardBg)
         .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if let first = inbox.files.first {
+                filePreview = FilePreviewData(name: first.name, local: first.local)
+            }
+        }
     }
 
     private var fileBytes: String {
@@ -246,26 +270,22 @@ struct ExternalFileSendView: View {
         return String(format: "%.1f MB", Double(total) / 1024.0 / 1024.0)
     }
 
-    private func actionRow(title: String, icon: String, tint: Color,
-                           action: @escaping () -> Void) -> some View {
+    private func actionTile(title: String, icon: String, tint: Color,
+                            action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 12) {
+            VStack(spacing: 7) {
                 Image(systemName: icon)
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(tint)
-                    .frame(width: 42, height: 42)
+                    .frame(width: 40, height: 40)
                     .background(tint.opacity(0.12))
                     .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
                 Text(title)
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.system(size: 12.5, weight: .medium))
                     .foregroundColor(C.label)
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(C.arrow)
             }
-            .padding(.horizontal, 13)
-            .frame(height: 62)
+            .frame(maxWidth: .infinity)
+            .frame(height: 78)
             .background(C.cardBg)
             .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
             .contentShape(Rectangle())
