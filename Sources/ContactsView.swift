@@ -1069,7 +1069,7 @@ struct ContactCardView: View {
                         .foregroundColor(C.label)
                         .frame(maxWidth: .infinity)
                         .frame(height: 52)
-                        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(C.cardBg))
+                        .background { CardGlassBox(radius: 14) }
                         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
                             .stroke(C.hairline, lineWidth: 0.6))
                 }
