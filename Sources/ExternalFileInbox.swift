@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import Foundation
 
 struct ExternalFileItem: Identifiable {
     let id = UUID()
@@ -46,7 +47,8 @@ final class ExternalFileInbox: ObservableObject {
                 }
                 do {
                     try fm.copyItem(at: source, to: destination)
-                    let size = (try? fm.attributesOfItem(atPath: destination.path)[.size] as? NSNumber)?.intValue ?? 0
+                    let attrs = try? fm.attributesOfItem(atPath: destination.path)
+                    let size = (attrs?[.size] as? NSNumber)?.intValue ?? 0
                     copied.append(ExternalFileItem(name: destination.lastPathComponent,
                                                    local: destination,
                                                    bytes: size))
