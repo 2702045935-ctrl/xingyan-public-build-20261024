@@ -931,20 +931,20 @@ struct DirectChatInfoView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
                     peerCard
-                    if chat.bot == "ai" {
-                        PanelSectionTitle(text: Tr("AI 助手"))
-                        aiHomeCard
-                    }
                     if chat.sysTeam == true {
-                        PanelSectionTitle(text: Tr("星言团队"))
-                        sysCard
+                        teamSimpleIntro
+                    } else {
+                        if chat.bot == "ai" {
+                            PanelSectionTitle(text: Tr("AI 助手"))
+                            aiHomeCard
+                        }
+                        PanelSectionTitle(text: Tr("聊天设置"))
+                        switchCard
+                        PanelSectionTitle(text: Tr("常用"))
+                        toolCard
+                        PanelSectionTitle(text: Tr("危险操作"))
+                        dangerCard
                     }
-                    PanelSectionTitle(text: Tr("聊天设置"))
-                    switchCard
-                    PanelSectionTitle(text: Tr("常用"))
-                    toolCard
-                    PanelSectionTitle(text: Tr("危险操作"))
-                    dangerCard
                 }
                 .padding(.horizontal, 14)
                 .padding(.top, 6)
@@ -1147,6 +1147,24 @@ struct DirectChatInfoView: View {
     }
 
     /// 「星言团队」专用：自助工具 / 联系客服（照微信「微信团队」那一栏）
+    private var teamSimpleIntro: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(Tr("星言团队"))
+                .font(pf(15, .semibold))
+                .foregroundColor(C.label)
+            Text(Tr("为你处理账号安全、登录设备、密码找回、投诉申诉和产品反馈。需要帮助时，直接使用上方的自助工具或联系客服。"))
+                .font(pf(13))
+                .foregroundColor(C.subLabel)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(C.cardBg)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .padding(.top, 14)
+    }
+
     private var sysQuickBar: some View {
         HStack(spacing: 10) {
             Button { sysPage = .tools } label: {
