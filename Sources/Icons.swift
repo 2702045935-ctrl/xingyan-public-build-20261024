@@ -192,19 +192,9 @@ struct HarmonyDarkMask: View {
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing)
 
-            /* 只留一点冷光表现材质，强度压低，避免抬高整体透明度。 */
-            RadialGradient(
-                colors: [
-                    Color.white.opacity(0.016 * strength),
-                    Color.clear
-                ],
-                center: UnitPoint(x: 0.12, y: 0.10),
-                startRadius: 0,
-                endRadius: 260)
-
             LinearGradient(
                 colors: [
-                    Color.white.opacity(0.010 * strength),
+                    Color.black.opacity(0.012 * strength),
                     Color.clear,
                     Color.black.opacity(0.050 * strength)
                 ],
