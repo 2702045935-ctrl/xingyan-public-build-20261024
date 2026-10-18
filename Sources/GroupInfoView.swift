@@ -1171,7 +1171,7 @@ struct DirectChatInfoView: View {
                 .padding(.horizontal, 10)
                 .frame(maxWidth: .infinity)
                 .frame(height: 58)
-                .background(C.cardGrad)
+                .background(C.cardBg)
                 .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
             }
             .buttonStyle(.plain)
@@ -1198,7 +1198,7 @@ struct DirectChatInfoView: View {
                 .padding(.horizontal, 10)
                 .frame(maxWidth: .infinity)
                 .frame(height: 58)
-                .background(C.cardGrad)
+                .background(C.cardBg)
                 .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
             }
             .buttonStyle(.plain)
