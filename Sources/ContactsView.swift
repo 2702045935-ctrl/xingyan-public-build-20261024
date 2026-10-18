@@ -237,9 +237,6 @@ private var funcs: [(String, String, Color, String)] {
                                                 .font(pf(L.ctHeadSize))
                                                 .foregroundColor(Color(hex: 0x737373))
                                             Spacer(minLength: 0)
-                                            Text("\(section.users.count)")
-                                                .font(pf(11.5)).foregroundColor(C.subLabel.opacity(0.8))
-                                                .padding(.trailing, 16)
                                         }
                                         .padding(.leading, 16)
                                         .frame(height: L.ctHeadH)
@@ -1020,7 +1017,7 @@ struct ContactCardView: View {
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 12)
-                .background { CardGlassBox(radius: 14) }
+                .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(C.cardBg))
                 .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .stroke(C.hairline, lineWidth: 0.6))
 
@@ -1072,7 +1069,7 @@ struct ContactCardView: View {
                         .foregroundColor(C.label)
                         .frame(maxWidth: .infinity)
                         .frame(height: 52)
-                        .background { CardGlassBox(radius: 14) }
+                        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(C.cardBg))
                         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
                             .stroke(C.hairline, lineWidth: 0.6))
                 }
