@@ -77,12 +77,6 @@ struct GroupInfoView: View {
     var body: some View {
         VStack(spacing: 0) {
             NavBar(title: Tr("聊天信息"), back: { dismiss() })
-            if chat.sysTeam == true {
-                sysQuickBar
-                    .padding(.horizontal, 14)
-                    .padding(.top, 8)
-                    .padding(.bottom, 2)
-            }
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
@@ -927,6 +921,12 @@ struct DirectChatInfoView: View {
     var body: some View {
         VStack(spacing: 0) {
             NavBar(title: Tr("聊天信息"), back: { dismiss() })
+            if chat.sysTeam == true {
+                sysQuickBar
+                    .padding(.horizontal, 14)
+                    .padding(.top, 8)
+                    .padding(.bottom, 2)
+            }
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
