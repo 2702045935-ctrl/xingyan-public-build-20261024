@@ -25,6 +25,7 @@ struct FavoritesView: View {
     /// 要转发的那条（选完人由 ForwardPickerView 发出去）
     @State private var forward: [ForwardItem] = []
     @State private var showForward = false
+    @State private var favoriteFilePreview: FilePreviewData?
 
     private var shown: [[String: Any]] {
         let key = q.trimmingCharacters(in: .whitespaces)
@@ -174,6 +175,36 @@ struct FavoritesView: View {
                                     .font(pf(12.5)).foregroundColor(C.subLabel)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
+                        } else if kind == "file", let f = fileInfo(item) {
+                            Button { openFavoriteFile(item) } label: {
+                                HStack(spacing: 10) {
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                            .fill(C.green.opacity(0.12))
+                                            .frame(width: 42, height: 42)
+                                        Image(systemName: "doc.fill")
+                                            .font(.system(size: 18, weight: .semibold))
+                                            .foregroundColor(C.green)
+                                    }
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(f.name)
+                                            .font(pf(15, .medium))
+                                            .foregroundColor(C.label)
+                                            .lineLimit(2)
+                                            .multilineTextAlignment(.leading)
+                                        Text(f.bytes > 0
+                                             ? ByteCountFormatter.string(fromByteCount: Int64(f.bytes),
+                                                                         countStyle: .file)
+                                             : Tr("文件"))
+                                            .font(pf(11.5))
+                                            .foregroundColor(C.subLabel)
+                                    }
+                                    Spacer(minLength: 0)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
                         }
                         Spacer(minLength: 0)
                     }
@@ -292,6 +323,9 @@ struct FavoritesView: View {
             ForwardPickerView(items: forward) { }
                 .environmentObject(app)
         }
+        .sheet(item: $favoriteFilePreview) { f in
+            FilePreviewSheet(name: f.name, local: f.local)
+        }
         .overlay {
             if let i = viewerIndex, !viewerPaths.isEmpty {
                 /* 收藏里的图：一样给「转发 / 保存」 */
@@ -328,6 +362,8 @@ struct FavoritesView: View {
             return [ForwardItem(kind: "livephoto", content: content)]
         case "transfer":
             return [ForwardItem(kind: "text", content: content)]
+        case "file":
+            return [ForwardItem(kind: "file", content: content)]
         default:
             /* 笔记：有图就当笔记卡片发，纯文字直接当文字发（对面不用再点开） */
             let hasPic = content.components(separatedBy: "\n").contains { $0.hasPrefix("[图]") }
@@ -359,6 +395,39 @@ struct FavoritesView: View {
               let o = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
               let paths = o["paths"] as? [String] else { return 0 }
         return paths.count
+    }
+
+    private func fileInfo(_ item: [String: Any]) -> (name: String, url: String, bytes: Int)? {
+        let content = (item["content"] as? String) ?? ""
+        guard let d = content.data(using: .utf8),
+              let o = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
+              let url = o["url"] as? String, !url.isEmpty else { return nil }
+        let title = (item["title"] as? String) ?? ""
+        let name = (o["name"] as? String) ?? (title.isEmpty ? "文件" : title)
+        let bytes = (o["bytes"] as? Int) ?? 0
+        return (name, url, bytes)
+    }
+
+    private func openFavoriteFile(_ item: [String: Any]) {
+        guard let f = fileInfo(item), let remote = API.shared.assetURL(f.url) else {
+            app.show(Tr("这个文件找不到了"))
+            return
+        }
+        let name = MyFilesPickerView.previewName(f.name, path: f.url)
+        app.show(Tr("正在打开…"))
+        Task {
+            guard let d = try? await API.shared.assetData(remote), !d.isEmpty else {
+                app.show(Tr("文件下载失败，检查一下网络"))
+                return
+            }
+            let finalName = MyFilesPickerView.previewName(name, path: f.url, data: d)
+            let tmp = FileManager.default.temporaryDirectory.appendingPathComponent(finalName)
+            do { try d.write(to: tmp) } catch {
+                app.show(Tr("存不进本机，看看手机空间够不够"))
+                return
+            }
+            favoriteFilePreview = FilePreviewData(name: finalName, local: tmp)
+        }
     }
 
     private func load() async {

@@ -3470,12 +3470,13 @@ struct ChatDetailView: View {
                 app.show(Tr("文件下载失败，检查一下网络"))
                 return
             }
-            let tmp = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+            let finalName = MyFilesPickerView.previewName(name, path: path, data: d)
+            let tmp = FileManager.default.temporaryDirectory.appendingPathComponent(finalName)
             do { try d.write(to: tmp) } catch {
                 app.show(Tr("存不进本机，看看手机空间够不够"))
                 return
             }
-            filePreview = FilePreviewData(name: name, local: tmp)
+            filePreview = FilePreviewData(name: finalName, local: tmp)
         }
     }
 

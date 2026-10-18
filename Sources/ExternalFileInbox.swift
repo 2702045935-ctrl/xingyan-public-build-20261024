@@ -93,12 +93,17 @@ final class ExternalFileInbox: ObservableObject {
     }
 
     private static func sourceName(_ source: URL) -> String {
-        let values = try? source.resourceValues(forKeys: [.nameKey, .typeIdentifierKey])
+        let values = try? source.resourceValues(forKeys: [.nameKey, .typeIdentifierKey, .contentTypeKey])
         var name = values?.name ?? source.lastPathComponent
         if name.isEmpty { name = "文件" }
         if !name.contains("."), let type = values?.typeIdentifier,
            let ext = UTType(type)?.preferredFilenameExtension, !ext.isEmpty {
             name += "." + ext
+        } else if !name.contains("."), let type = values?.contentType,
+                  let ext = type.preferredFilenameExtension, !ext.isEmpty {
+            name += "." + ext
+        } else if !name.contains("."), !source.pathExtension.isEmpty {
+            name += "." + source.pathExtension
         }
         return safeName(name)
     }
@@ -447,7 +452,7 @@ struct ExternalFileSendView: View {
         guard !inbox.files.isEmpty else { return }
         favoriteBusy = true
         Task {
-            var lines: [String] = []
+            var saved: [(name: String, content: String)] = []
             var done = 0
             for item in inbox.files {
                 progress = Tr("正在收藏") + " \(done + 1)/\(inbox.files.count)"
@@ -458,7 +463,13 @@ struct ExternalFileSendView: View {
                 }
                 do {
                     let up = try await uploadItem(item, data: data)
-                    lines.append(item.name + "\n" + up.url)
+                    let body = try JSONSerialization.data(withJSONObject: [
+                        "url": up.url,
+                        "name": item.name,
+                        "bytes": data.count
+                    ], options: [])
+                    saved.append((name: item.name,
+                                  content: String(data: body, encoding: .utf8) ?? "{\"url\":\"\(up.url)\"}"))
                     done += 1
                 } catch {
                     alert = (error as? APIError)?.errorDescription ?? Tr("收藏失败")
@@ -466,13 +477,15 @@ struct ExternalFileSendView: View {
                 }
             }
             if alert.isEmpty && done > 0 {
-                let title = inbox.files.count == 1 ? inbox.files[0].name
-                    : Tr("\(inbox.files.count) 个文件")
-                let ok = await API.shared.addFavorite(kind: "text",
-                                                      content: lines.joined(separator: "\n\n"),
-                                                      title: title,
-                                                      from: "外部文件")
-                if ok {
+                var allOK = true
+                for file in saved {
+                    let ok = await API.shared.addFavorite(kind: "file",
+                                                          content: file.content,
+                                                          title: file.name,
+                                                          from: "外部文件")
+                    allOK = allOK && ok
+                }
+                if allOK {
                     app.show(Tr("已收藏"))
                     inbox.finish()
                     dismiss()

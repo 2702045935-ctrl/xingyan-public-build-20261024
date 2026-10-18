@@ -1,4 +1,5 @@
 import SwiftUI
+import Foundation
 
 /* ============================================================
    发文件用**我们自己这一套**（用户要求：不要苹果那个文件 App 当主入口，
@@ -206,6 +207,51 @@ struct MyFilesPickerView: View {
             if !ext.isEmpty, ext.count <= 5 { n += "." + ext }
         }
         return n
+    }
+
+    /// 收端文件有时只有随机存储名，没有扩展名。下载后按文件头补回来，
+    /// QuickLook 才能识别 Word/Excel/PDF/音乐和视频。
+    static func previewName(_ name: String, path: String, data: Data) -> String {
+        var n = previewName(name, path: path)
+        if n.contains(".") { return n }
+        let ext = extensionFromData(data)
+        return ext.isEmpty ? n : n + "." + ext
+    }
+
+    private static func extensionFromData(_ d: Data) -> String {
+        let b = [UInt8](d.prefix(4096))
+        func has(_ bytes: [UInt8], at: Int = 0) -> Bool {
+            guard b.count >= at + bytes.count else { return false }
+            return Array(b[at..<(at + bytes.count)]) == bytes
+        }
+        if has([0x25, 0x50, 0x44, 0x46]) { return "pdf" }
+        if has([0x50, 0x4B, 0x03, 0x04]) {
+            let s = String(data: d.prefix(2 * 1024 * 1024), encoding: .isoLatin1) ?? ""
+            if s.contains("word/") { return "docx" }
+            if s.contains("xl/") { return "xlsx" }
+            if s.contains("ppt/") { return "pptx" }
+            return "zip"
+        }
+        if has([0xFF, 0xD8, 0xFF]) { return "jpg" }
+        if has([0x89, 0x50, 0x4E, 0x47]) { return "png" }
+        if has([0x47, 0x49, 0x46]) { return "gif" }
+        if has([0x52, 0x49, 0x46, 0x46]) && has([0x57, 0x41, 0x56, 0x45], at: 8) { return "wav" }
+        if has([0x66, 0x4C, 0x61, 0x43]) { return "flac" }
+        if has([0x4F, 0x67, 0x67, 0x53]) { return "ogg" }
+        if has([0x49, 0x44, 0x33]) || has([0xFF, 0xFB]) { return "mp3" }
+        if b.count >= 12 && String(bytes: b[4..<8], encoding: .ascii) == "ftyp" {
+            let brand = String(bytes: b[8..<12], encoding: .ascii) ?? ""
+            if brand.contains("M4A") { return "m4a" }
+            if brand.contains("qt") { return "mov" }
+            return "mp4"
+        }
+        if has([0x52, 0x61, 0x72, 0x21]) { return "rar" }
+        if has([0x37, 0x7A, 0xBC, 0xAF]) { return "7z" }
+        if let text = String(data: d.prefix(4096), encoding: .utf8),
+           !text.unicodeScalars.contains(where: { $0.value < 9 }) {
+            return "txt"
+        }
+        return ""
     }
 
     private func fileColor(_ ext: String) -> Color {
