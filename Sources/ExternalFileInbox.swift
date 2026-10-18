@@ -120,12 +120,21 @@ struct ExternalFileSendView: View {
 
     private var chats: [Chat] {
         let q = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        let rows = app.chats.filter { $0.oaId == nil && $0.oaDigest != true }
+        let rows = app.chats.filter {
+            ($0.oaId ?? "").isEmpty && $0.oaDigest != true
+        }
         guard !q.isEmpty else { return rows }
         return rows.filter { $0.name.lowercased().contains(q) }
     }
 
-    private var selected: Chat? { app.chats.first { $0.id == selectedId } }
+    private var contacts: [User] {
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let rows = app.contacts.filter {
+            $0.id != app.me?.id && $0.block != true && $0.bot != true
+        }
+        guard !q.isEmpty else { return rows }
+        return rows.filter { $0.name.lowercased().contains(q) }
+    }
 
     var body: some View {
         NavigationStack {
@@ -187,6 +196,20 @@ struct ExternalFileSendView: View {
                                 chatRow(chat)
                                 if chat.id != chats.last?.id { HairLine(inset: 64) }
                             }
+                            if chats.isEmpty {
+                                HStack {
+                                    Text(Tr("没有最近会话，可从通讯录选择"))
+                                        .font(.system(size: 12))
+                                        .foregroundColor(C.subLabel)
+                                    Spacer(minLength: 0)
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 10)
+                                ForEach(contacts.prefix(80)) { user in
+                                    contactRow(user)
+                                    if user.id != contacts.prefix(80).last?.id { HairLine(inset: 64) }
+                                }
+                            }
                         }
                     }
 
@@ -199,7 +222,7 @@ struct ExternalFileSendView: View {
                     }
 
                     Button { send() } label: {
-                        Text(sending ? Tr("发送中…") : (selectedId.isEmpty ? Tr("选择一个聊天") : Tr("发送")))
+                        Text(sending ? Tr("发送中…") : (selectedId.isEmpty ? Tr("选择一个朋友") : Tr("发送")))
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -301,7 +324,7 @@ struct ExternalFileSendView: View {
 
     private func chatRow(_ chat: Chat) -> some View {
         Button {
-            selectedId = chat.id
+            selectedId = "c:" + chat.id
         } label: {
             HStack(spacing: 11) {
                 Group {
@@ -323,9 +346,9 @@ struct ExternalFileSendView: View {
                     .foregroundColor(C.label)
                     .lineLimit(1)
                 Spacer(minLength: 0)
-                Image(systemName: selectedId == chat.id ? "checkmark.circle.fill" : "circle")
+                Image(systemName: isSelected(chat.id) ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 19))
-                    .foregroundColor(selectedId == chat.id ? C.green : C.subLabel.opacity(0.45))
+                    .foregroundColor(isSelected(chat.id) ? C.green : C.subLabel.opacity(0.45))
             }
             .padding(.horizontal, 16)
             .frame(height: 60)
@@ -334,10 +357,59 @@ struct ExternalFileSendView: View {
         .buttonStyle(.plain)
     }
 
+    private func contactRow(_ user: User) -> some View {
+        Button {
+            selectedId = "u:" + user.id
+        } label: {
+            HStack(spacing: 11) {
+                if !user.avatarPath.isEmpty {
+                    RemoteImage(path: user.avatarPath, icon: "person.fill", mode: .fill)
+                        .frame(width: 42, height: 42)
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                } else {
+                    Image(systemName: "person.fill")
+                        .font(.system(size: 18))
+                        .foregroundColor(C.subLabel)
+                        .frame(width: 42, height: 42)
+                        .background(C.fieldBg)
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                }
+                Text(user.name)
+                    .font(.system(size: 15))
+                    .foregroundColor(C.label)
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+                Image(systemName: isSelected(user.id) ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 19))
+                    .foregroundColor(isSelected(user.id) ? C.green : C.subLabel.opacity(0.45))
+            }
+            .padding(.horizontal, 16)
+            .frame(height: 60)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func isSelected(_ id: String) -> Bool {
+        selectedId == "c:" + id || selectedId == "u:" + id
+    }
+
     private func send() {
-        guard let chat = selected, !inbox.files.isEmpty else { return }
+        guard !selectedId.isEmpty, !inbox.files.isEmpty else { return }
         sending = true
         Task {
+            let chat: Chat?
+            if selectedId.hasPrefix("u:") {
+                chat = try? await API.shared.directChat(userId: String(selectedId.dropFirst(2)))
+            } else {
+                let id = selectedId.hasPrefix("c:") ? String(selectedId.dropFirst(2)) : selectedId
+                chat = app.chats.first { $0.id == id }
+            }
+            guard let chat else {
+                sending = false
+                alert = Tr("这个朋友暂时无法创建会话")
+                return
+            }
             var done = 0
             for item in inbox.files {
                 progress = Tr("正在上传") + " \(done + 1)/\(inbox.files.count)"
