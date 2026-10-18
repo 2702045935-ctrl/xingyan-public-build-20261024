@@ -2129,8 +2129,6 @@ struct DDHomeTab: View {
                         })
                     deliveryStrip
                     carousel(proxy)
-                    sectionTitle(Tr("限时秒杀"), subtitle: Tr("整点开抢"), right: Tr("抢完即止"))
-                    seckill(proxy)
                     sectionTitle(Tr("今日精选"), subtitle: Tr("真实商品 · 官方保障"), right: Tr("更多频道"))
                     promoBoard
                     /* 楼间小广告：**后台下发的**（后台没配就用内置那条百亿补贴） */
