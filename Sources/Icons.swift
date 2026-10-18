@@ -181,7 +181,7 @@ struct HarmonyDarkMask: View {
         ZStack {
             Rectangle()
                 .fill(.ultraThinMaterial)
-                .opacity(max(0, min(1, 0.18 * strength)))
+                .opacity(max(0, min(1, 0.28 * strength)))
 
             LinearGradient(
                 stops: [
