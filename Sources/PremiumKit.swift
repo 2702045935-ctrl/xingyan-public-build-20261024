@@ -29,15 +29,23 @@ struct PanelSectionTitle: View {
 /// 圆角 14 的卡片
 struct PanelCard<Content: View>: View {
     private let content: () -> Content
+    private let solid: Bool
 
-    init(@ViewBuilder content: @escaping () -> Content) {
+    init(solid: Bool = false, @ViewBuilder content: @escaping () -> Content) {
         self.content = content
+        self.solid = solid
     }
 
     var body: some View {
         VStack(spacing: 0) { content() }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background { CardGlassBox(radius: 14) }
+            .background {
+                if solid {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous).fill(C.cardBg)
+                } else {
+                    CardGlassBox(radius: 14)
+                }
+            }
             .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(C.hairline, lineWidth: 0.6))
             .shadow(color: Color.black.opacity(0.05), radius: 8, y: 2)

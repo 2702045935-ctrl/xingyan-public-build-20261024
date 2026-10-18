@@ -1021,7 +1021,7 @@ struct ContactCardView: View {
                 .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .stroke(C.hairline, lineWidth: 0.6))
 
-                PanelCard {
+                PanelCard(solid: true) {
                     if isBot {
                         PanelRow(symbol: "message.fill", colors: PanelTint.green,
                                  title: Tr("发消息")) { closeMore { openChat() } }
@@ -1213,7 +1213,7 @@ struct ContactCardView: View {
     /* ---------------------------------------------------------- 朋友资料 / 电话 */
 
     private var infoCard: some View {
-        PanelCard {
+        PanelCard(solid: true) {
             PanelRow(symbol: "person.text.rectangle.fill", colors: PanelTint.blue,
                      title: Tr("朋友资料")) { showInfo = true }
 
@@ -1245,7 +1245,7 @@ struct ContactCardView: View {
     /* ---------------------------------------------------------- 朋友圈那一行 */
 
     private var momentsCard: some View {
-        PanelCard {
+        PanelCard(solid: true) {
             Button { onOpenMoments(u.id) } label: {
                 HStack(spacing: 11) {
                     PanelIcon(symbol: "photo.on.rectangle.angled", colors: PanelTint.teal)
@@ -1299,7 +1299,7 @@ struct ContactCardView: View {
     }
 
     private var acts: some View {
-        PanelCard {
+        PanelCard(solid: true) {
             ForEach(actList.indices, id: \.self) { i in
                 if i > 0 { PanelDivider() }
                 actRow(actList[i])

@@ -301,7 +301,7 @@ struct GroupInfoView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 12) {
-                    PanelCard {
+                    PanelCard(solid: true) {
                         /* 卡头：图标 + 在改什么 + 已经写了几个字 */
                         HStack(spacing: 11) {
                             PanelIcon(symbol: icon, colors: colors)
@@ -587,7 +587,7 @@ struct GroupInfoView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background { CardGlassBox(radius: 14) }
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(C.cardBg))
         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
         .shadow(color: Color.black.opacity(0.05), radius: 8, y: 2)
     }
@@ -595,7 +595,7 @@ struct GroupInfoView: View {
     /* ---------------------------------------------------------- 群名 / 公告 / 群主 */
 
     private var infoCard: some View {
-        PanelCard {
+        PanelCard(solid: true) {
             PanelRow(symbol: "pencil", colors: PanelTint.blue,
                      title: Tr("群聊名称"), value: chat.name) {
                 nameDraft = chat.name
@@ -643,7 +643,7 @@ struct GroupInfoView: View {
     /* ---------------------------------------------------------- 置顶聊天 */
 
     private var switchCard: some View {
-        PanelCard {
+        PanelCard(solid: true) {
             PanelToggleRow(symbol: "pin.fill", colors: PanelTint.orange,
                            title: Tr("置顶聊天"),
                            subtitle: pinned ? Tr("已置顶，会排在会话列表最上面") : nil,
@@ -730,7 +730,7 @@ struct GroupInfoView: View {
     /* ---------------------------------------------------------- 删除该聊天 */
 
     private var dangerCard: some View {
-        PanelCard {
+        PanelCard(solid: true) {
             PanelDangerRow(symbol: "eraser.fill", title: Tr("清空聊天记录")) { confirmClear = true }
             PanelDivider()
             PanelDangerRow(symbol: "trash.fill", title: Tr("删除该聊天")) {
@@ -1065,7 +1065,7 @@ struct DirectChatInfoView: View {
     /* ---------------------------------------------------------- 开关 */
 
     private var switchCard: some View {
-        PanelCard {
+        PanelCard(solid: true) {
             PanelToggleRow(symbol: "bell.slash.fill", colors: PanelTint.gray,
                            title: Tr("消息免打扰"),
                            subtitle: muted ? Tr("这个人来消息不响也不弹") : nil,
@@ -1142,7 +1142,7 @@ struct DirectChatInfoView: View {
 
     /// 「星言团队」专用：自助工具 / 联系客服（照微信「微信团队」那一栏）
     private var sysCard: some View {
-        PanelCard {
+        PanelCard(solid: true) {
             PanelRow(symbol: "wrench.and.screwdriver.fill", colors: PanelTint.green,
                      title: Tr("自助工具"),
                      value: Tr("改密码 / 登录设备 / 找回密码")) { sysPage = .tools }
@@ -1156,7 +1156,7 @@ struct DirectChatInfoView: View {
     /* ---------------------------------------------------------- 功能行 */
 
     private var toolCard: some View {
-        PanelCard {
+        PanelCard(solid: true) {
             PanelRow(symbol: "magnifyingglass", colors: PanelTint.blue,
                      title: Tr("查找聊天记录")) { showSearch = true }
             PanelDivider()
@@ -1170,7 +1170,7 @@ struct DirectChatInfoView: View {
     /* ---------------------------------------------------------- 危险操作 */
 
     private var dangerCard: some View {
-        PanelCard {
+        PanelCard(solid: true) {
             PanelDangerRow(symbol: "eraser.fill", title: Tr("清空聊天记录")) { confirmClear = true }
             PanelDivider()
             PanelDangerRow(symbol: "trash.fill", title: Tr("删除该聊天")) { confirmDelete = true }
