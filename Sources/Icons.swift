@@ -29,10 +29,10 @@ struct GlassBackground<S: Shape>: View {
     var darkEdgeOff: Bool = false
     @Environment(\.colorScheme) private var scheme
 
-    /// 沿用现有 glassEdgeAlpha：默认没配时深色角光关闭；
-    /// 后台把它调成大于 0，就会恢复这三块的玻璃光泽和亮边，不新增后台配置。
+    /// 这三块在深色模式下永久关闭角光，不再受后台 glassEdgeAlpha 影响。
+    /// 否则后台任意一个玻璃参数都会把白色角光重新带回来。
     private var darkEdgeSuppressed: Bool {
-        darkEdgeOff && scheme == .dark && UIConfig.num("glassEdgeAlpha", 0) <= 0
+        darkEdgeOff && scheme == .dark
     }
 
     /// 实际用的染色：
@@ -99,12 +99,28 @@ struct GlassBackground<S: Shape>: View {
                 .allowsHitTesting(false)
                 .shadow(color: shadow ? Color.black.opacity(scheme == .dark ? 0.35 : 0.12) : .clear,
                         radius: shadow ? 10 : 0, y: shadow ? 5 : 0)
+        } else if darkEdgeSuppressed {
+            suppressedDarkGlass
         } else {
             fallbackGlass
         }
         #else
         fallbackGlass
         #endif
+    }
+
+    /// 深色模式的三块顶栏控件：只用平铺磨砂黑，不叠系统玻璃、亮边、
+    /// 内侧高光或七彩回光，从根上消掉四角的白色光斑。
+    private var suppressedDarkGlass: some View {
+        ZStack {
+            shape.fill(resolvedTint ?? Color(hex: 0x0A0A0C).opacity(0.44))
+            shape.fill(Color.black.opacity(0.16))
+        }
+        .clipShape(shape)
+        .opacity(max(0.62, min(1, opacity)))
+        .shadow(color: shadow ? Color.black.opacity(0.38) : .clear,
+                radius: shadow ? 10 : 0, y: shadow ? 5 : 0)
+        .allowsHitTesting(false)
     }
 
     /// 旧系统上用我们自己画的近似玻璃（多层毛玻璃 + 亮边 + 七彩回光 + 底部暗边）
