@@ -137,12 +137,14 @@ struct ChatRow: View {
 
     /// 名字在上、预览在下
     private var textColumn: some View {
-        VStack(alignment: .leading, spacing: L.rowTextGap) {
+        VStack(alignment: .leading, spacing: max(3, L.rowTextGap - 1)) {
             HStack(spacing: 5) {
                 Text(chat.name)
-                    .font(pf(L.rowNameSize))
+                    .font(pf(L.rowNameSize, .medium))
                     .foregroundColor(C.name)
+                    .kerning(-0.12)
                     .lineLimit(1)
+                    .minimumScaleFactor(0.9)
                     .layoutPriority(1)
                 /* 昵称旁边挂等级图标（QQ 那套）：后台「显示在聊天里」开着才显示 */
                 /* 1 级不画等级图标（2026-10-16 用户「每条线上多出来的那个 1 去掉」）——
@@ -161,8 +163,10 @@ struct ChatRow: View {
             }
             Text(chat.lastMessage?.preview ?? "")
                 .font(pf(L.rowPreviewSize))
-                .foregroundColor(C.preview)
+                .foregroundColor(C.subLabel.opacity(0.94))
+                .kerning(-0.05)
                 .lineLimit(1)
+                .truncationMode(.tail)
         }
     }
 
@@ -170,8 +174,9 @@ struct ChatRow: View {
     private var rightColumn: some View {
         VStack(alignment: .trailing, spacing: 5) {
             Text(TimeFmt.list(chat.lastMessage?.createdAt ?? chat.updatedAt))
-                .font(pf(L.rowTimeSize))
+                .font(pf(L.rowTimeSize, .regular))
                 .foregroundColor(C.time)
+                .kerning(-0.05)
                 .fixedSize()
         }
     }
