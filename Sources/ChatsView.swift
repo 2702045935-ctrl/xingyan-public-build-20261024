@@ -1447,8 +1447,7 @@ struct ChatsView: View {
                                      symbol: "plus")
                                 .frame(width: UIConfig.num("navPlusW", 44),
                                        height: UIConfig.num("navPlusH", 36))
-                                .background(Capsule(style: .continuous)
-                                    .fill(UIConfig.color("navPlusBg", 0x0F5A3C, 0x0F5A3C)))
+                                .background { NavPlusGlassBackground() }
                         }
                         /* 点下去**亮一下 + 轻微缩小**，有"点到了"的手感（用户要求） */
                         .buttonStyle(NavPlusPressStyle())

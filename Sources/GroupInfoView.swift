@@ -77,6 +77,12 @@ struct GroupInfoView: View {
     var body: some View {
         VStack(spacing: 0) {
             NavBar(title: Tr("聊天信息"), back: { dismiss() })
+            if chat.sysTeam == true {
+                sysQuickBar
+                    .padding(.horizontal, 14)
+                    .padding(.top, 8)
+                    .padding(.bottom, 2)
+            }
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
@@ -1141,6 +1147,64 @@ struct DirectChatInfoView: View {
     }
 
     /// 「星言团队」专用：自助工具 / 联系客服（照微信「微信团队」那一栏）
+    private var sysQuickBar: some View {
+        HStack(spacing: 10) {
+            Button { sysPage = .tools } label: {
+                HStack(spacing: 9) {
+                    Image(systemName: "wrench.and.screwdriver.fill")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(C.green)
+                        .frame(width: 38, height: 38)
+                        .background(C.green.opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(Tr("自助工具"))
+                            .font(pf(15, .semibold))
+                            .foregroundColor(C.label)
+                        Text(Tr("改密码 · 登录设备 · 找回"))
+                            .font(pf(10.5))
+                            .foregroundColor(C.subLabel)
+                            .lineLimit(1)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 10)
+                .frame(maxWidth: .infinity)
+                .frame(height: 58)
+                .background(C.cardGrad)
+                .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+            }
+            .buttonStyle(.plain)
+
+            Button { sysPage = .kefu } label: {
+                HStack(spacing: 9) {
+                    Image(systemName: "headphones")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(Color(hex: 0x2F73C9))
+                        .frame(width: 38, height: 38)
+                        .background(Color(hex: 0x2F73C9).opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(Tr("联系客服"))
+                            .font(pf(15, .semibold))
+                            .foregroundColor(C.label)
+                        Text(Tr("常见问题 · 转人工"))
+                            .font(pf(10.5))
+                            .foregroundColor(C.subLabel)
+                            .lineLimit(1)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 10)
+                .frame(maxWidth: .infinity)
+                .frame(height: 58)
+                .background(C.cardGrad)
+                .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
     private var sysCard: some View {
         PanelCard(solid: true) {
             PanelRow(symbol: "wrench.and.screwdriver.fill", colors: PanelTint.green,

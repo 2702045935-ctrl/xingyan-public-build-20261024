@@ -98,6 +98,29 @@ struct TopGlassLine: View {
     }
 }
 
+/// 会话页 / 通讯录右上角加号的浅色玻璃胶囊。
+/// 保留一点品牌绿作透色，不改成纯白实底。
+struct NavPlusGlassBackground: View {
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        ZStack {
+            GlassBackground(shape: Capsule(style: .continuous),
+                            opacity: scheme == .dark ? 0.78 : 0.88,
+                            edgeAlpha: scheme == .dark ? 0.26 : 0.42,
+                            shadow: true,
+                            seed: 0.57,
+                            native: true)
+            Capsule(style: .continuous)
+                .fill(UIConfig.color("navPlusBg", 0x0F5A3C, 0x0F5A3C))
+                .opacity(scheme == .dark ? 0.28 : 0.14)
+            Capsule(style: .continuous)
+                .stroke(Color.white.opacity(scheme == .dark ? 0.22 : 0.58),
+                        lineWidth: 0.7)
+        }
+    }
+}
+
 /// 探针：贴在列表整块内容上（ScrollView 里 + coordinateSpace(name:)）
 struct TopScrollProbe: View {
     var space: String

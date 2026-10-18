@@ -173,8 +173,7 @@ private var funcs: [(String, String, Color, String)] {
                             .foregroundColor(UIConfig.color("navPlusInk", 0xFFFFFF, 0xFFFFFF))
                             .frame(width: UIConfig.num("navPlusW", 44),
                                    height: UIConfig.num("navPlusH", 36))
-                            .background(Capsule(style: .continuous)
-                                .fill(UIConfig.color("navPlusBg", 0x0F5A3C, 0x0F5A3C)))
+                            .background { NavPlusGlassBackground() }
                     }
                     /* 和会话页那个 ＋ 一样：按下去亮一下（同一个 ButtonStyle） */
                     .buttonStyle(NavPlusPressStyle())
