@@ -81,7 +81,10 @@ struct MainTabView: View {
                         }
                         .padding(.horizontal, 26)
                         .padding(.vertical, 22)
-                        .background { CardGlassBox(radius: 14) }
+                        /* 同步提示只借用微信的居中浮层结构，本体保持实色卡片；
+                           不跟随全局 CardGlass，避免登录同步时突然变成玻璃。 */
+                        .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(C.cardBg))
                         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
                             .stroke(C.hairline, lineWidth: 0.5))
                         .shadow(color: .black.opacity(0.18), radius: 16, y: 4)
