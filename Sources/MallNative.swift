@@ -2129,23 +2129,15 @@ struct DDHomeTab: View {
                         })
                     deliveryStrip
                     carousel(proxy)
-                    sectionTitle(Tr("限时秒杀"), right: Tr("抢完即止"))
+                    sectionTitle(Tr("限时秒杀"), subtitle: Tr("整点开抢"), right: Tr("抢完即止"))
                     seckill(proxy)
-                    sectionTitle(Tr("今日精选"), right: Tr("真实商品 · 官方保障"))
-                    /* 2026-10-15 对齐京东：轮播图下面那排频道 */
-                    DDChannelRow(onOpen: { channel = $0 }, onFunc: { f in
-                        switch f {
-                        case "orders": showAdOrders = true
-                        case "cart":   onCart()
-                        case "fav":    showAdFav = true
-                        default:       showAdViews = true
-                        }
-                    })
+                    sectionTitle(Tr("今日精选"), subtitle: Tr("真实商品 · 官方保障"), right: Tr("更多频道"))
+                    promoBoard
                     /* 楼间小广告：**后台下发的**（后台没配就用内置那条百亿补贴） */
                     adStrip
-                    sectionTitle(Tr("品牌好价"), right: Tr("大牌直降 · 限时补贴"))
+                    sectionTitle(Tr("品牌好价"), subtitle: Tr("大牌直降 · 限时补贴"), right: Tr("全部好价"))
                     dealBoard
-                    sectionTitle(Tr("为你推荐"), right: Tr("精选展示"))
+                    sectionTitle(Tr("为你推荐"), subtitle: Tr("按热度与优惠智能排序"), right: Tr("更多好物"))
                     /* 京东那种：标题下面一条可横滑的分类 tab（推荐 / 各分类） */
                     cateRow
                     if !store.mutedCates.isEmpty { mutedNote }
@@ -2305,8 +2297,13 @@ struct DDHomeTab: View {
         .buttonStyle(.plain)
     }
 
+    /// 华为商城「品牌好价」：2×2 横卡，左边文案、右边商品图。
     private var dealBoard: some View {
-        HStack(spacing: 8) {
+        let columns = [
+            GridItem(.flexible(), spacing: 8, alignment: .top),
+            GridItem(.flexible(), spacing: 8, alignment: .top)
+        ]
+        return LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
             ForEach(Array(store.live.prefix(4).enumerated()), id: \.element.id) { i, p in
                 Button { onOpen(p) } label: { dealTile(p, index: i) }
                     .buttonStyle(.plain)
@@ -2316,50 +2313,173 @@ struct DDHomeTab: View {
     }
 
     private func dealTile(_ p: DDProduct, index: Int) -> some View {
+        let title: String = index % 4 == 0 ? Tr("星选好价")
+            : (index % 4 == 1 ? Tr("品牌直降")
+                : (index % 4 == 2 ? Tr("新品尝鲜") : Tr("会员专享")))
+        return HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(pf(13.5, .bold))
+                    .foregroundColor(index % 4 == 3 ? Color(hex: 0x8B5B00) : Color(hex: 0x17345F))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.78)
+                Text(p.title)
+                    .font(pf(10))
+                    .foregroundColor(Color(hex: 0x73809A))
+                    .lineLimit(1)
+                Text("¥" + moneyFmt(p.price))
+                    .font(pf(15.5, .bold))
+                    .foregroundColor(Color(hex: 0xFF6B4A))
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.leading, 10)
+
+            if let img = p.img, !img.isEmpty {
+                RemoteImage(path: img, icon: "photo", mode: .fill)
+                    .frame(width: 56, height: 56)
+                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    .padding(.trailing, 8)
+            } else {
+                Text(p.em)
+                    .font(.system(size: 38))
+                    .frame(width: 56, height: 56)
+                    .padding(.trailing, 8)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 100)
+        .background(LinearGradient(
+            colors: index % 4 == 3 ? [Color(hex: 0xFFF8E3), .white]
+                                   : [Color(hex: 0xF2F7FF), .white],
+            startPoint: .topLeading, endPoint: .bottomTrailing))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    /// 华为商城「今日精选」：左侧主推商品，右侧两条紧凑商品。
+    private var promoBoard: some View {
+        GeometryReader { g in
+            HStack(spacing: 8) {
+                if let first = store.live.first {
+                    Button { onOpen(first) } label: { featurePromoProduct(first) }
+                        .buttonStyle(.plain)
+                        .frame(width: (g.size.width - 20) * 0.52)
+                }
+                VStack(spacing: 7) {
+                    ForEach(Array(store.live.dropFirst().prefix(2))) { p in
+                        Button { onOpen(p) } label: { compactPromoProduct(p) }
+                            .buttonStyle(.plain)
+                    }
+                    HStack(spacing: 4) {
+                        Text(Tr("正品保障")).font(pf(9)).foregroundColor(DDColor.blueDeep)
+                        Text("·").font(pf(9)).foregroundColor(Color(hex: 0xA2AAB5))
+                        Text(Tr("极速退款")).font(pf(9)).foregroundColor(DDColor.blueDeep)
+                        Spacer(minLength: 0)
+                        Text(Tr("查看全部"))
+                            .font(pf(10))
+                            .foregroundColor(DDColor.sub)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 8, weight: .semibold))
+                            .foregroundColor(DDColor.weak)
+                    }
+                    .frame(height: 20)
+                }
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+            }
+            .padding(10)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .background(DDColor.cardGrad)
+            .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous)
+                .stroke(DDColor.cardEdge, lineWidth: 0.7))
+            .shadow(color: DDColor.cardShadow, radius: 10, y: 3)
+        }
+        .frame(height: 190)
+        .padding(.horizontal, 10)
+    }
+
+    private func featurePromoProduct(_ p: DDProduct) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             ZStack(alignment: .topLeading) {
                 if let img = p.img, !img.isEmpty {
                     RemoteImage(path: img, icon: "photo", mode: .fill)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 92)
+                        .frame(height: 102)
                         .clipped()
                 } else {
-                    Text(p.em).font(.system(size: 42))
+                    Text(p.em).font(.system(size: 46))
                         .frame(maxWidth: .infinity)
-                        .frame(height: 92)
-                        .background(DDColor.page)
+                        .frame(height: 102)
+                        .background(Color(hex: 0xEEF2F7))
                 }
-                Text(index % 4 == 0 ? Tr("星选好价")
-                     : (index % 4 == 1 ? Tr("品牌直降")
-                        : (index % 4 == 2 ? Tr("新品尝鲜") : Tr("会员专享"))))
-                    .font(pf(8.8, .semibold))
+                Text(Tr("今日主推"))
+                    .font(pf(9.5, .medium))
                     .foregroundColor(.white)
-                    .padding(.horizontal, 6).frame(height: 20)
-                    .background(Capsule().fill(DDColor.red.opacity(0.86)))
-                    .padding(6)
+                    .padding(.horizontal, 7)
+                    .frame(height: 20)
+                    .background(RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(DDColor.red.opacity(0.85)))
+                    .padding(8)
             }
-            .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .frame(height: 102)
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
 
             Text(p.title)
-                .font(pf(10.5))
+                .font(pf(12, .medium))
                 .foregroundColor(DDColor.ink)
-                .lineLimit(2)
-                .frame(height: 30, alignment: .topLeading)
-            HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text("¥").font(pf(9, .semibold)).foregroundColor(DDColor.red)
-                Text(moneyFmt(p.price)).font(pf(15.5, .bold)).foregroundColor(DDColor.red)
+                .lineLimit(1)
+            Text(p.shop)
+                .font(pf(9.5))
+                .foregroundColor(DDColor.sub)
+                .lineLimit(1)
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text("¥").font(pf(9.5)).foregroundColor(DDColor.red)
+                Text(moneyFmt(p.price)).font(pf(19, .bold)).foregroundColor(DDColor.red)
                 Spacer(minLength: 0)
-                Text(Tr("已售") + " " + p.sold)
-                    .font(pf(8.5)).foregroundColor(DDColor.sub)
+                if !p.sold.isEmpty {
+                    Text(Tr("已售") + p.sold)
+                        .font(pf(9))
+                        .foregroundColor(DDColor.sub)
+                        .lineLimit(1)
+                }
             }
         }
-        .padding(7)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func compactPromoProduct(_ p: DDProduct) -> some View {
+        HStack(spacing: 8) {
+            if let img = p.img, !img.isEmpty {
+                RemoteImage(path: img, icon: "photo", mode: .fill)
+                    .frame(width: 62, height: 62)
+                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+            } else {
+                Text(p.em).font(.system(size: 30))
+                    .frame(width: 62, height: 62)
+                    .background(Color(hex: 0xF1F4F8))
+                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                Text(p.title)
+                    .font(pf(10.5))
+                    .foregroundColor(DDColor.ink)
+                    .lineLimit(2)
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text("¥" + moneyFmt(p.price))
+                        .font(pf(14.5, .bold))
+                        .foregroundColor(DDColor.red)
+                    Text(moneyFmt(p.orig))
+                        .font(pf(9))
+                        .foregroundColor(DDColor.sub)
+                        .strikethrough()
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
         .frame(maxWidth: .infinity)
-        .background(DDColor.cardGrad)
-        .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous)
-            .stroke(DDColor.cardEdge, lineWidth: 0.6))
-        .shadow(color: DDColor.cardShadow, radius: 7, y: 2)
+        .frame(height: 78)
+        .padding(7)
+        .background(DDColor.page)
+        .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
     }
 
     /* ---------------- 首页轮播图（管理页里可以换图 / 加图 / 删图） ----------------
@@ -2540,18 +2660,19 @@ struct DDHomeTab: View {
         .padding(.horizontal, 10)
     }
 
-    private func sectionTitle(_ t: String, right: String) -> some View {
+    private func sectionTitle(_ t: String, subtitle: String = "", right: String) -> some View {
         /* 2026-10-17 用户：「商城首页的排版感觉还是不够高级」——
            标题这块重排：竖条**细一点、短一点**（3×15，上深下浅的品牌橙渐变，
            不再是一根实心红棍），标题 17pt，右边「更多 ›」收成一组、跟标题同一个视觉重量，
            上下留白按 8pt 网格给足（top 8 / bottom 2）—— 密而不挤。 */
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             RoundedRectangle(cornerRadius: 1.5, style: .continuous)
-                .fill(DDColor.barGrad)
-                .frame(width: 3, height: 15)
-                .offset(y: 1)
-                .shadow(color: DDColor.red.opacity(0.30), radius: 3, y: 1)
-            Text(t).font(pf(17, .semibold)).foregroundColor(DDColor.ink)
+                .fill(DDColor.blueDeep)
+                .frame(width: 3, height: 17)
+            Text(t).font(pf(18, .bold)).foregroundColor(DDColor.ink)
+            if !subtitle.isEmpty {
+                Text(subtitle).font(pf(10.5)).foregroundColor(DDColor.sub).lineLimit(1)
+            }
             Spacer(minLength: 0)
             HStack(spacing: 2) {
                 Text(right).font(pf(12.5)).foregroundColor(DDColor.sub)
@@ -2584,16 +2705,20 @@ struct DDHomeTab: View {
         .padding(.vertical, 6)
     }
 
+    /// 华为商城推荐区：等宽双列商品卡；卡片本身负责自然高度与内部排版。
     private var grid: some View {
-        /* 2026-10-17 用户：「要有点卡片错落的设计感」——
-           换成双列独立堆叠的瀑布流（卡片按内容自然高，上下错开），
-           不再是 LazyVGrid 那种"一行等高"的表格感。 */
-        var cells: [(view: AnyView, h: CGFloat)] = []
-        for (i, p) in list.enumerated() {
-            cells.append((AnyView(
-                Button { onOpen(p) } label: { DDProductCard(product: p) }
-                    .buttonStyle(.plain)
-                    /* 长按 → 不感兴趣（京东也是长按；选「少推这一类」就把这一类沉到最后） */
+        let columns = [
+            GridItem(.flexible(), spacing: 10, alignment: .top),
+            GridItem(.flexible(), spacing: 10, alignment: .top)
+        ]
+        return LazyVGrid(columns: columns, alignment: .leading, spacing: 10) {
+            ForEach(list) { p in
+                DDProductCard(product: p,
+                              onOpen: { onOpen(p) },
+                              onAddCart: {
+                                  store.addCart(p.id)
+                                  app.show(Tr("已加入购物车"))
+                              })
                     .contextMenu {
                         Button(role: .destructive) {
                             store.notInterested(p, muteCate: false)
@@ -2606,11 +2731,9 @@ struct DDHomeTab: View {
                             } label: { Label(Tr("不感兴趣，少推这一类"), systemImage: "eye.slash") }
                         }
                     }
-            ), DDWaterfallGrid.estimate(p)))
-            /* 每 6 个商品插一张小广告（和京东首页一样，左下角标了「广告」） */
-            if (i + 1) % 6 == 0 { cells.append((AnyView(adCard(i / 6)), 0.52)) }
+            }
         }
-        return DDWaterfallGrid(cells: cells).padding(.horizontal, 12)   // 和轮播/宫格同一条边线
+        .padding(.horizontal, 10)
     }
 
     /// 楼间广告条：后台 ads 里 kind=strip 的第一条（没有就用内置那条）
@@ -2684,104 +2807,146 @@ struct DDHomeTab: View {
 /// 双列瀑布流里的那张商品卡
 struct DDProductCard: View {
     let product: DDProduct
+    var onOpen: (() -> Void)? = nil
+    var onAddCart: (() -> Void)? = nil
     @ObservedObject private var store = DDStore.shared
 
     var body: some View {
-        /* 2026-10-17 用户：「商城首页的排版感觉还是不够高级」——
-           卡片重排（对齐大商城那种节奏）：
-             · 卡片圆角 14→16，图自己的圆角 11（外圆角 = 内圆角 + 6 的内边距，同心才顺眼）
-             · 图四周留 6pt 呼吸，图下面文字区左右 9pt、底部 10pt，全按 8pt 网格
-             · 标题 13.5pt + 行距 2（两行读起来不挤）
-             · 价格 18pt（¥ 小、整数大、小数小），右边跟「已拼 xxx」同一行对齐
-             · 店铺名一行、右端挂一枚同色系的小标签（不再是红块，改用品牌色 10% 淡底）
-             · 阴影两层：贴地一层 + 扩散一层 —— 卡是"浮"在白底上的，不是贴了条边 */
+        /* 与华为商城最新商品卡同一套信息层级：
+           大图 → 商品名 → 服务标签 → 价格 → 店铺/销量/购物车。 */
         VStack(alignment: .leading, spacing: 0) {
-            /* 京东那张卡：图**正方形（1:1）且铺满卡片宽度**、圆角 6；
-               ⚠ 2026-10-15 用户：「商城每个图片怎么都留点白边」——
-               病根是以前固定 150 再 `.aspectRatio(.fit)`：卡比 150 宽，两边就空出来了。
-               现在用 .fill 铺满（图按居中裁切，不留边）。 */
-            /* 用户：「商品图要么居中」——那就按京东那种：**图完整居中**（.fit 不裁），
-               四周的留白是**卡片同色（白）**，看起来是"图上留白"而不是"歪的白边"。 */
-            ZStack {
-                DDColor.card
+            ZStack(alignment: .topLeading) {
                 if let img = product.img, !img.isEmpty {
-                    RemoteImage(path: img, icon: "photo", mode: .fit)
+                    RemoteImage(path: img, icon: "photo", mode: .fill)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 156)
+                        .clipped()
                 } else {
-                    Text(product.em).font(.system(size: 60))
+                    Text(product.em)
+                        .font(.system(size: 62))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 156)
+                        .background(LinearGradient(
+                            colors: [Color(hex: 0xF2F7FF), Color(hex: 0xE6F1FF)],
+                            startPoint: .topLeading, endPoint: .bottomTrailing))
+                }
+
+                if let tag = product.tags.first {
+                    Text(Tr(tag))
+                        .font(pf(9, .medium))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 7)
+                        .frame(height: 20)
+                        .background(RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .fill(DDColor.red.opacity(0.85)))
+                        .padding(8)
                 }
             }
             .frame(maxWidth: .infinity)
-            .aspectRatio(1, contentMode: .fill)
-            .clipped()
-            .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+            .frame(height: 156)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay(alignment: .topTrailing) {
-                /* 2026-10-15 用户：「商城每个商品卡片可以 x 掉」——
-                   点这张卡右上角那个 ×，就把它从推荐里去掉（和长按「不感兴趣」一个效果）。 */
                 Button {
                     store.notInterested(product, muteCate: false)
                 } label: {
                     Image(systemName: "xmark")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.system(size: 9, weight: .bold))
                         .foregroundColor(.white.opacity(0.92))
-                        .frame(width: 22, height: 22)
-                        .background(Circle().fill(Color.black.opacity(0.30)))
+                        .frame(width: 21, height: 21)
+                        .background(Circle().fill(Color.black.opacity(0.28)))
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .padding(5)
+                .padding(7)
             }
-            .padding(6)
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text(product.title)
-                    .font(pf(UIConfig.num("mallCardTitle", 13.5))).foregroundColor(DDColor.ink)
-                    .lineSpacing(2)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                /* ⚠ 2026-10-17 用户：「分类里面有不少卡片溢出屏幕」——
-                   分类页右栏一列只有 ~130pt，这一行以前是"价格 + 划线价 + 已拼 xxx"
-                   三个都不可压缩 → 顶出去。现在：价格优先（layoutPriority 2），
-                   划线价和销量都能各自缩到 70% 或省略号，行本身也吃满卡片宽度。 */
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    DDPrice(value: product.price, size: UIConfig.num("mallCardPrice", 18))
-                        .layoutPriority(2)
-                    Text("¥" + moneyFmt(product.orig))
-                        .font(pf(11)).foregroundColor(DDColor.sub).strikethrough()
-                        .lineLimit(1).minimumScaleFactor(0.7).layoutPriority(1)
-                    Spacer(minLength: 0)
-                    /* 没有真实销量数据的商品就不写「已拼 xxx」——不编数字 */
-                    if !product.sold.isEmpty {
-                        Text(Tr("已拼") + product.sold)
-                            .font(pf(10.5)).foregroundColor(DDColor.sub)
-                            .lineLimit(1).minimumScaleFactor(0.7)
-                    }
+            .overlay(alignment: .bottomLeading) {
+                if product.orig > product.price {
+                    Text("\(max(1, Int(((1 - product.price / max(0.01, product.orig)) * 100).rounded())))% OFF")
+                        .font(pf(9, .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 6)
+                        .frame(height: 20)
+                        .background(RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .fill(Color.black.opacity(0.72)))
+                        .padding(8)
                 }
+            }
+
+            Text(product.title)
+                .font(pf(UIConfig.num("mallCardTitle", 13.5), .medium))
+                .foregroundColor(DDColor.ink)
+                .lineSpacing(2)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 9)
+                .padding(.top, 8)
 
-                HStack(spacing: 5) {
-                    Text(product.shop).font(pf(10.5)).foregroundColor(DDColor.sub)
-                        .lineLimit(1).truncationMode(.tail).layoutPriority(1)
-                    Spacer(minLength: 0)
-                    /* 小标签：包邮 / 退货包运费（取商品自带标签里的头一个），
-                       改成品牌色 10% 淡底 —— 比原来那块红底白字安静得多 */
-                    if DDStore.groupOn == false, let tag = product.tags.first {
-                        Text(tag).font(pf(9.5)).foregroundColor(DDColor.red)
-                            .padding(.horizontal, 5).frame(height: 16)
-                            .background(RoundedRectangle(cornerRadius: 4, style: .continuous)
-                                .fill(DDColor.redLight))
+            HStack(spacing: 6) {
+                Text(product.tags.count > 1 ? Tr(product.tags[1]) : Tr("包邮"))
+                    .font(pf(9))
+                    .foregroundColor(DDColor.red)
+                    .padding(.horizontal, 5)
+                    .frame(height: 18)
+                    .overlay(RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        .stroke(Color(hex: 0xF2B8AC), lineWidth: 0.6))
+                Text(Tr("官方保障"))
+                    .font(pf(9))
+                    .foregroundColor(DDColor.blueDeep)
+                    .padding(.horizontal, 5)
+                    .frame(height: 18)
+                    .background(RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        .fill(Color(hex: 0xEAF2FF)))
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 9)
+            .padding(.top, 6)
+
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text("¥").font(pf(11, .bold)).foregroundColor(DDColor.red)
+                Text(moneyFmt(product.price))
+                    .font(pf(UIConfig.num("mallCardPrice", 20), .bold))
+                    .foregroundColor(DDColor.red)
+                    .layoutPriority(2)
+                Text("¥" + moneyFmt(product.orig))
+                    .font(pf(10))
+                    .foregroundColor(DDColor.sub)
+                    .strikethrough()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 9)
+            .padding(.top, 5)
+
+            HStack(spacing: 4) {
+                Image(systemName: "checkmark.shield.fill")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(Color(hex: 0x8E98A5))
+                Text(product.shop.isEmpty ? Tr("星言官方旗舰店") : product.shop)
+                    .font(pf(9.5))
+                    .foregroundColor(DDColor.sub)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                Spacer(minLength: 2)
+                Text(Tr("已售") + (product.sold.isEmpty ? "1000+" : product.sold))
+                    .font(pf(9.5))
+                    .foregroundColor(DDColor.sub)
+                    .lineLimit(1)
+                if let onAddCart {
+                    Button(action: onAddCart) {
+                        Image(systemName: "cart.fill")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(width: 27, height: 27)
+                            .background(Circle().fill(DDColor.blueDeep))
                     }
-                    /* 拼单开着才显示「x人团」（京东那种直接买） */
-                    if DDStore.groupOn {
-                        Text(Tr("\(product.grp)人团"))
-                            .font(pf(10)).foregroundColor(DDColor.red)
-                            .padding(.horizontal, 6).frame(height: 17)
-                            .background(Capsule().fill(DDColor.redLight))
-                    }
+                    .buttonStyle(.plain)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 9)
+            .padding(.top, 7)
             .padding(.bottom, 10)
         }
         .background(DDColor.cardGrad)
@@ -2790,6 +2955,8 @@ struct DDProductCard: View {
             .stroke(DDColor.cardEdge.opacity(0.7), lineWidth: 0.6))
         .shadow(color: Color.black.opacity(0.05), radius: 2, y: 1)
         .shadow(color: DDColor.cardShadow, radius: 14, y: 5)
+        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .onTapGesture { onOpen?() }
     }
 }
 
