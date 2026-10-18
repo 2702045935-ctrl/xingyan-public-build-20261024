@@ -2,6 +2,26 @@ import SwiftUI
 
 var panelH: CGFloat { L.v(198, 53, 240) }
 
+/// 聊天页“＋”面板 / 表情面板共用的底部玻璃材质。
+struct ChatPanelGlassBackground: View {
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        ZStack {
+            GlassBackground(shape: Rectangle(),
+                            opacity: scheme == .dark ? 0.74 : 0.88,
+                            edgeAlpha: scheme == .dark ? 0.16 : 0.26,
+                            shadow: false,
+                            seed: 0.83,
+                            native: true)
+            C.tabBg.opacity(scheme == .dark ? 0.32 : 0.18)
+            LinearGradient(colors: [Color.white.opacity(scheme == .dark ? 0.015 : 0.12),
+                                    Color.clear],
+                           startPoint: .top, endPoint: .bottom)
+        }
+    }
+}
+
 /* ============================================================ 表情面板 */
 
 let emojiAll: [String] = [
@@ -475,7 +495,7 @@ struct EmojiPanel: View {
             .frame(height: L.v(38, 10.4, 46))
         }
         .frame(height: panelH)
-        .background(C.tabBg)
+        .background { ChatPanelGlassBackground() }
     }
 }
 
@@ -570,7 +590,7 @@ struct PlusPanel: View {
             }
         }
         .frame(height: max(panelH, neededH))
-        .background(C.tabBg)
+        .background { ChatPanelGlassBackground() }
         .overlay(alignment: .top) { Rectangle().fill(C.hairline).frame(height: 0.5) }
     }
 
