@@ -296,6 +296,7 @@ struct ChatDetailView: View {
 
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var scheme
 
     @State private var messages: [Message] = []
     /// 把聊天记录写本机的防抖任务（消息一变就排一次，1.2 秒内的多次变化合成一次写）
