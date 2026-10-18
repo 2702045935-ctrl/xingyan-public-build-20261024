@@ -753,6 +753,18 @@ struct QuickChip: Codable, Identifiable, Hashable {
     ]
 }
 
+/// 聊天入口只展示用户能看懂的中文。后台旧配置里有些 label 直接写成了
+/// `music` / `photo` / `video`，不能把这些内部 action 名原样露在会话页。
+func chatEntryLabel(_ raw: String?, action: String?) -> String {
+    let text = (raw ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+    let act = (action ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    let looksEnglish = text.range(of: #"^[A-Za-z0-9_\- ]+$"#, options: .regularExpression) != nil
+    if text.isEmpty || looksEnglish || text.lowercased() == act {
+        return QuickChip.actionNames[act] ?? Tr("更多")
+    }
+    return text
+}
+
 /// 输入框右边那个「＋」按钮的外观（管理里能换颜色 / 大小 / 图片）
 struct PlusButtonCfg: Codable, Hashable {
     var color: String = ""

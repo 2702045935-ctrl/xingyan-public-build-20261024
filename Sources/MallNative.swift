@@ -1294,25 +1294,30 @@ enum DDColor {
     static let redDeep  = Color(hex: 0xC81E14)
     static let redLight = Color(hex: 0xFFF1EF)
     static let orange   = Color(hex: 0xFF7A1A)
-    static let page     = Color(hex: 0xF5F5F7)
+    /// HarmonyOS 商城同色：导航与选择态用系统蓝，价格和促销仍保留红色。
+    static let blue     = Color(hex: 0x007DFF)
+    static let blueDeep = Color(hex: 0x2F6FED)
+    static let blueLight = Color(hex: 0xEAF4FF)
+    static let blueEdge = Color(hex: 0xD6E7FF)
+    static let page     = Color(hex: 0xF4F6F9)
     static let card     = Color(hex: 0xFFFFFF)
-    static let ink      = Color(hex: 0x141414)
-    static let sub      = Color(hex: 0x8A8A90)
-    static let weak     = Color(hex: 0xB4B4BA)
-    static let line     = Color(hex: 0xEDEBE9)
+    static let ink      = Color(hex: 0x182431)
+    static let sub      = Color(hex: 0x707A8A)
+    static let weak     = Color(hex: 0xA4ADBA)
+    static let line     = Color(hex: 0xE9EDF2)
     /* 2026-10-17 用户：「商城的各个地方有点设计感，不要每个都是平的卡片」——
        卡片底给一层**极淡的竖向渐变**（不是一块死白），配一条细边和一层柔和投影，
        卡片就有"厚度"了；全商城统一用这两个（原来是 .background(DDColor.card) 一片平色）。 */
-    static let cardGrad = LinearGradient(colors: [Color(hex: 0xFFFFFF), Color(hex: 0xFBFBFD)],
+    static let cardGrad = LinearGradient(colors: [Color(hex: 0xFFFFFF), Color(hex: 0xFBFCFE)],
                                          startPoint: .top, endPoint: .bottom)
-    static let cardEdge = Color(hex: 0xEFEDEF)
-    static let cardShadow = Color(hex: 0x8A6A5A).opacity(0.07)
-    /// 「我的」页那张资料卡：顶上带一点暖红，往下化成白 —— 和顶栏那条红白渐变接得上
-    static let mineCardGrad = LinearGradient(colors: [Color(hex: 0xFFF1EB), Color(hex: 0xFFFBF8),
+    static let cardEdge = Color(hex: 0xE9EDF2)
+    static let cardShadow = Color(hex: 0x26354A).opacity(0.07)
+    /// 「我的」资料卡与华为一致：白卡 + 极淡冷色底，不再使用红白渐变。
+    static let mineCardGrad = LinearGradient(colors: [Color(hex: 0xFFFFFF), Color(hex: 0xFBFCFE),
                                                       Color(hex: 0xFFFFFF)],
                                              startPoint: .top, endPoint: .bottom)
-    /// 分栏标题前面那根强调条（红→橙）
-    static let barGrad = LinearGradient(colors: [Color(hex: 0xFF5F3A), Color(hex: 0xFF9A3C)],
+    /// HarmonyOS 分栏标题强调条。
+    static let barGrad = LinearGradient(colors: [Color(hex: 0x2F6FED), Color(hex: 0x007DFF)],
                                         startPoint: .top, endPoint: .bottom)
     /// 顶栏那块红（H5 的 --grad-red）
     static let gradHeader = LinearGradient(
@@ -1464,6 +1469,8 @@ struct MallNativeView: View {
     @ObservedObject private var store = DDStore.shared
 
     @State private var tab = 0
+    /// 首页顶部频道：与华为一致（星选 / 好价 / 热门 / 上新）。
+    @State private var homeTopChannel = 0
     @State private var openProduct: DDProduct? = nil
     @State private var showSearch = false
     @State private var showOrders = false
@@ -1672,6 +1679,7 @@ struct MallNativeView: View {
 
     /* 2026-10-17 用户：「底栏推荐换成分类页」——第 2 格从「推荐（种草）」换成「分类」 */
     private var titles = ["商城", "分类", "消息", "购物车", "我的"]
+    private let homeChannels = ["星选", "好价", "热门", "上新"]
 
     /// 点开屏封面去哪：后台配的是 不跳 / 网址 / 某个商品
     private func openSplashTarget() {
@@ -1770,7 +1778,7 @@ struct MallNativeView: View {
         /* 2026-10-17 用户：「把我的顶栏遮罩红白渐变给首页用」——
            首页顶栏也走「我的」页那条红白渐变，所以顶上这些字/图标一律切白
            （以前只有「我的」页是红底 → 白字，首页是奶油白底 → 深字）。 */
-        let onRed = (tab == 0 || tab == 4)
+        let onRed = false
         /* ⚠ 上面那句 let 之后就不能再靠"最后一句自动返回"了（Swift 只在单表达式函数里
            隐式返回）—— 必须显式 return。B1646 那次编译就是栽在这儿（和当初 cell() 一个坑）。 */
         return VStack(spacing: 6) {
@@ -1778,53 +1786,54 @@ struct MallNativeView: View {
                 Button { dismiss() } label: {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 18, weight: .semibold))
-                        /* 红底的那些页（首页 / 我的）→ 返回箭头也跟着走白 */
-                        .foregroundColor(onRed ? .white : DDColor.ink)
+                        .foregroundColor(DDColor.ink)
                         .frame(width: 34, height: 40)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
 
                 if tab == 0 {
-                    /* 2026-10-16 用户：「顶部位置做个像美团一样的城市定位」——
-                       美团左上角就是「📍城市 ▾」，点一下进城市选择页。 */
-                    Button { showCity = true } label: {
-                        HStack(spacing: 3) {
-                            Image(systemName: "location.fill")
-                                .font(.system(size: 11, weight: .semibold))
-                            Text(city.display)
-                                .font(pf(13.5, .medium))
-                                .lineLimit(1)
-                            Image(systemName: "chevron.down")
-                                .font(.system(size: 9, weight: .bold))
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 4) {
+                            ForEach(homeChannels.indices, id: \.self) { i in
+                                Button {
+                                    withAnimation(.easeOut(duration: 0.16)) {
+                                        homeTopChannel = i
+                                    }
+                                } label: {
+                                    VStack(spacing: 3) {
+                                        Text(Tr(homeChannels[i]))
+                                            .font(pf(homeTopChannel == i ? 17.5 : 15.5,
+                                                    homeTopChannel == i ? .bold : .medium))
+                                            .foregroundColor(homeTopChannel == i
+                                                             ? DDColor.blueDeep : DDColor.sub)
+                                        Capsule()
+                                            .fill(homeTopChannel == i ? DDColor.blueDeep : Color.clear)
+                                            .frame(width: homeTopChannel == i ? 24 : 0, height: 3)
+                                    }
+                                    .frame(width: 72, height: 40)
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+                            }
                         }
-                        .foregroundColor(onRed ? .white : DDColor.ink)
-                        .frame(maxWidth: 84, alignment: .leading)
-                        .frame(height: 40)
+                    }
+                    Spacer(minLength: 0)
+                    Button { tab = 3 } label: {
+                        ZStack(alignment: .topTrailing) {
+                            Image(systemName: "cart.fill")
+                                .font(.system(size: 20, weight: .medium))
+                                .foregroundColor(DDColor.ink)
+                                .frame(width: 38, height: 40)
+                            if store.cartCount > 0 {
+                                Text(store.cartCount > 99 ? "99+" : String(store.cartCount))
+                                    .font(pf(9, .semibold)).foregroundColor(.white)
+                                    .padding(.horizontal, 4).frame(height: 14)
+                                    .background(Capsule().fill(Color(hex: 0xFF6B4A)))
+                                    .offset(x: 4, y: -2)
+                            }
+                        }
                         .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    /* 2026-10-15 用户：「顶部感觉和京东要一样」——
-                       京东顶上是「一条大搜索框 + 右边两个图标」，没有大标题。
-                       所以搜索框挪上来当主角，商城名/标语缩成下面一行小字（品牌还留着）。 */
-                    /* 2026-10-17 用户：「搜索框加入扫一扫」——
-                       以前整条搜索框是一个 Button，没法在里面再放一颗扫码按钮，
-                       现在改成"盒子自己点 = 搜索"，右边那颗相机是**独立的 Button**（像淘宝/京东）。 */
-                    searchBox
-                    Button { showVip = true } label: {
-                        Text("PLUS")
-                            .font(pf(11.5, .bold)).foregroundColor(Color(hex: 0x5A3E14))
-                            .padding(.horizontal, 8).frame(height: 24)
-                            .background(Capsule().fill(Color(hex: 0xFFE7B0)))
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    Button { showOrders = true } label: {
-                        Image(systemName: "doc.text")
-                            .font(.system(size: 17, weight: .medium))
-                            .foregroundColor(onRed ? .white : DDColor.ink)
-                            .frame(width: 34, height: 40)
-                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                 } else {
@@ -1848,11 +1857,12 @@ struct MallNativeView: View {
                 }
             }
             if tab == 0 {
+                searchBox
                 HStack(spacing: 4) {
                     Text(store.mallName).font(pf(12.5, .semibold))
-                        .foregroundColor(onRed ? .white : DDColor.ink)
+                        .foregroundColor(DDColor.ink)
                     Text(store.mallSlogan).font(pf(11))
-                        .foregroundColor(onRed ? Color.white.opacity(0.82) : DDColor.sub)
+                        .foregroundColor(DDColor.sub)
                     Spacer(minLength: 0)
                 }
             }
@@ -1872,18 +1882,10 @@ struct MallNativeView: View {
            颜色仍然保留（首页那条红渐变 / 其他页的浅底），只是上面多一层磨砂。
            想要更实/更透：ui.json 写 mallHeaderGlass / mallTabGlass（0~1）。 */
         ZStack {
-            if tab == 0 || tab == 4 {
-                /* 2026-10-17 用户：「我的页顶栏底栏红白渐变处理」→ 后来「把我的顶栏遮罩
-                   红白渐变给首页用」：首页和「我的」页共用**同一条**红白渐变
-                   （顶上压一串商城红、往下化成白/页面灰），想整套换色改后台 mallMineGrad。
-                   首页原来那条奶油白 ddTopGradient 就留给别的页/老配置了。 */
-                ddMineTopGradient()
-            } else {
-                DDColor.page
-            }
+            DDColor.card
             Rectangle()
                 .fill(.ultraThinMaterial)
-                .opacity(UIConfig.num("mallHeaderGlass", 0.92))
+                .opacity(UIConfig.num("mallHeaderGlass", 0.18))
         }
     }
 
@@ -1913,15 +1915,15 @@ struct MallNativeView: View {
         HStack(spacing: 6) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 14, weight: .medium))
-                .foregroundColor(Color(hex: 0xA79C97))
-            Text(Tr("搜索想要的商品")).font(pf(14)).foregroundColor(Color(hex: 0xA79C97))
+                .foregroundColor(DDColor.sub)
+            Text(Tr("搜索想要的商品")).font(pf(14)).foregroundColor(DDColor.sub)
             Spacer(minLength: 0)
             /* 扫一扫（2026-10-17 用户：「搜索框加入扫一扫」）——
                和淘宝/京东一样，搜索框最右边一颗相机，点了开扫码页 */
             Button { showScan = true } label: {
                 Image(systemName: "barcode.viewfinder")
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(DDColor.red)
+                    .foregroundColor(DDColor.blue)
                     .frame(width: 30, height: 30)
                     .contentShape(Rectangle())
             }
@@ -1931,9 +1933,8 @@ struct MallNativeView: View {
         .padding(.trailing, 4)
         .frame(height: 34)
         .background(Capsule().fill(Color.white))
-        /* 浅色顶部上，白搜索框要一条极细描边 + 一丁点投影才立得住（高级感的来源） */
-        .overlay(Capsule().stroke(Color(hex: 0xF0E4DE), lineWidth: 0.6))
-        .shadow(color: Color(hex: 0x8A6A5A).opacity(0.06), radius: 6, y: 2)
+        .overlay(Capsule().stroke(DDColor.blue, lineWidth: 1))
+        .shadow(color: DDColor.blue.opacity(0.06), radius: 6, y: 2)
         .contentShape(Rectangle())
         /* 点盒子本体（不是相机那一下）= 进搜索页 */
         .onTapGesture { showSearch = true }
@@ -1941,7 +1942,8 @@ struct MallNativeView: View {
 
     @ViewBuilder private var content: some View {
         switch tab {
-            case 0: DDHomeTab(onOpen: openProduct_tap, onCart: { tab = 3 },
+            case 0: DDHomeTab(topChannel: homeTopChannel,
+                              onOpen: openProduct_tap, onCart: { tab = 3 },
                               floorUp: $floorUp, floorPull: $floorPull)
             /* 2026-10-17：第 2 格从「推荐（种草）」换成**分类页**（大商城那种左栏+右栏） */
             case 1: DDCategoryTab(onOpen: openProduct_tap, onSearch: { showSearch = true })
@@ -1990,16 +1992,8 @@ struct MallNativeView: View {
         .background {
             ZStack {
                 Rectangle().fill(.ultraThinMaterial)
-                    .opacity(UIConfig.num("mallTabGlass", 0.92))
-                if tab == 4 {
-                    /* 2026-10-17 用户：「我的页顶栏底栏红白渐变处理」——
-                       底栏也走红白：上边一抹很淡的红，往下化成白，和顶栏那条接得上 */
-                    LinearGradient(colors: [Color(hex: 0xFFF0EA), Color(hex: 0xFFFFFF)],
-                                   startPoint: .top, endPoint: .bottom)
-                        .opacity(0.95)
-                } else {
-                    DDColor.card.opacity(0.78)
-                }
+                    .opacity(UIConfig.num("mallTabGlass", 0.18))
+                DDColor.card.opacity(0.96)
             }
             .ignoresSafeArea(edges: .bottom)
         }
@@ -2017,7 +2011,7 @@ struct MallNativeView: View {
                     Image(systemName: icon)
                         .font(.system(size: UIConfig.num("mallTabIcon", 23),
                                       weight: tab == i ? .semibold : .regular))
-                        .foregroundColor(tab == i ? DDColor.red : DDColor.sub)
+                        .foregroundColor(tab == i ? DDColor.blue : DDColor.sub)
                         .frame(width: 28, height: 24)
                     if badge > 0 {
                         Text(badge > 99 ? "99+" : String(badge))
@@ -2033,7 +2027,7 @@ struct MallNativeView: View {
                 }
                 Text(Tr(label))
                     .font(pf(UIConfig.num("mallTabLabel", 10), tab == i ? .medium : .regular))
-                    .foregroundColor(tab == i ? DDColor.red : DDColor.sub)
+                    .foregroundColor(tab == i ? DDColor.blue : DDColor.sub)
             }
             .frame(maxWidth: .infinity)
             .contentShape(Rectangle())
@@ -2049,6 +2043,7 @@ struct DDHomeTab: View {
     /// 后台广告可以配一个网址（action = none 时点开它）
     @Environment(\.openURL) private var openLink
     @ObservedObject private var store = DDStore.shared
+    var topChannel: Int = 0
     var onOpen: (DDProduct) -> Void
     /// 详情页里点「加购物车」→ 外面切到购物车那个 tab
     var onCart: () -> Void = { }
@@ -2088,7 +2083,21 @@ struct DDHomeTab: View {
     private var list: [DDProduct] {
         let base = cate == nil ? store.live : store.live.filter { $0.cate == cate }
         /* 「不感兴趣」的不再出现；「少推这一类」的沉到最后 */
-        return store.feed(base)
+        let rows = store.feed(base)
+        switch topChannel {
+        case 1:
+            return rows.sorted {
+                let d0 = ($0.orig - $0.price) / max(0.01, $0.orig)
+                let d1 = ($1.orig - $1.price) / max(0.01, $1.orig)
+                return d0 > d1
+            }
+        case 2:
+            return rows.sorted { ($0.sales ?? 0) > ($1.sales ?? 0) }
+        case 3:
+            return Array(rows.reversed())
+        default:
+            return rows
+        }
     }
 
     /// 商城二楼的下拉阀门 = **和会话页二楼完全同一套**（2026-10-17 用户：
@@ -2510,9 +2519,9 @@ struct DDHomeTab: View {
                         VStack(spacing: 5) {
                             Text(Tr(c))
                                 .font(pf(15, on ? .semibold : .regular))
-                                .foregroundColor(on ? DDColor.red : DDColor.ink)
+                                .foregroundColor(on ? DDColor.blueDeep : DDColor.ink)
                             RoundedRectangle(cornerRadius: 1.5)
-                                .fill(on ? DDColor.red : Color.clear)
+                                .fill(on ? DDColor.blueDeep : Color.clear)
                                 .frame(width: 18, height: 2.5)
                         }
                         .contentShape(Rectangle())
@@ -3114,7 +3123,7 @@ struct DDCartTab: View {
             Button { toggle(l.pid) } label: {
                 Image(systemName: checked.contains(l.pid) ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 20))
-                    .foregroundColor(checked.contains(l.pid) ? DDColor.red : DDColor.sub)
+                    .foregroundColor(checked.contains(l.pid) ? DDColor.blue : DDColor.sub)
             }
             .buttonStyle(.plain)
 
@@ -3165,9 +3174,11 @@ struct DDCartTab: View {
 
     private func step(_ t: String, _ act: @escaping () -> Void) -> some View {
         Button(action: act) {
-            Text(t).font(pf(15, .medium)).foregroundColor(DDColor.ink)
+            Text(t).font(pf(15, .medium))
+                .foregroundColor(t == "+" ? DDColor.blue : DDColor.ink)
                 .frame(width: 26, height: 26)
-                .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(DDColor.page))
+                .background(RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(t == "+" ? DDColor.blueLight : DDColor.page))
         }
         .buttonStyle(.plain)
     }
@@ -3181,7 +3192,7 @@ struct DDCartTab: View {
                         Image(systemName: checked.count == lines.count && !lines.isEmpty
                               ? "checkmark.circle.fill" : "circle")
                             .font(.system(size: 19))
-                            .foregroundColor(checked.count == lines.count ? DDColor.red : DDColor.sub)
+                            .foregroundColor(checked.count == lines.count ? DDColor.blue : DDColor.sub)
                         Text(Tr("全选")).font(pf(13.5)).foregroundColor(DDColor.ink)
                     }
                 }
@@ -3194,7 +3205,7 @@ struct DDCartTab: View {
                         .font(pf(15, .medium)).foregroundColor(.white)
                         .padding(.horizontal, 18).frame(height: 38)
                         .background(Capsule().fill(checked.isEmpty
-                                                   ? DDColor.sub : DDColor.red))
+                                                   ? DDColor.sub : DDColor.blue))
                 }
                 .buttonStyle(.plain)
                 .disabled(checked.isEmpty)
@@ -3489,7 +3500,7 @@ struct DDMineTab: View {
             HStack(alignment: .center, spacing: 14) {
                 Avatar(path: app.me?.avatar ?? "", size: 64, radius: 32)
                     .overlay(Circle().stroke(Color.white, lineWidth: 2.5))
-                    .shadow(color: DDColor.red.opacity(0.16), radius: 8, y: 3)
+                    .shadow(color: DDColor.blue.opacity(0.14), radius: 8, y: 3)
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 6) {
                         Text(app.me?.nickname ?? app.me?.username ?? Tr("我"))
@@ -3657,12 +3668,12 @@ struct DDMineTab: View {
                    和首页宫格、频道的观感统一 */
                 ZStack {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(LinearGradient(colors: [DDColor.red.opacity(0.16), DDColor.red.opacity(0.07)],
+                        .fill(LinearGradient(colors: [DDColor.blue.opacity(0.15), DDColor.blue.opacity(0.06)],
                                              startPoint: .topLeading, endPoint: .bottomTrailing))
                         .frame(width: 32, height: 32)
                     Image(systemName: icon)
                         .font(.system(size: 15))
-                        .foregroundColor(DDColor.red)
+                        .foregroundColor(DDColor.blue)
                 }
                 Text(Tr(title)).font(pf(15.5)).foregroundColor(DDColor.ink)
                 Spacer(minLength: 0)

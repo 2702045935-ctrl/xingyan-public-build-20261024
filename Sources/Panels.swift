@@ -595,7 +595,7 @@ struct PlusPanel: View {
                         size: L.v(25, 7.4, 28),
                         color: .white)
             }
-            Text(item.label ?? "")
+            Text(chatEntryLabel(item.label, action: item.action))
                 .font(pf(L.v(11.5, 3.2, 12.5)))
                 .foregroundColor(C.label)
                 .lineLimit(1)

@@ -2118,7 +2118,7 @@ struct ChatDetailView: View {
                                     action: c.action, enabled: true))
             }
         } label: {
-            Text(c.label)
+            Text(chatEntryLabel(c.label, action: c.action))
                 .font(pf(13.5))
                 .foregroundColor(C.label)
                 .padding(.horizontal, 12)
@@ -2703,7 +2703,7 @@ struct ChatDetailView: View {
             panel = .none
             showPickMusic = true
         default:
-            app.show("\(item.label ?? "")排在下一批")
+            app.show("\(chatEntryLabel(item.label, action: item.action))排在下一批")
         }
     }
 
