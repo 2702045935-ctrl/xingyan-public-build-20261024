@@ -998,62 +998,7 @@ struct Avatar: View {
                     .clipShape(shape)
             }
         }
-        .overlay(shape.stroke(Color.black.opacity(0.05), lineWidth: 0.5))
-        /* 圆形头像：外面套一圈**玻璃倒角**（上缘一道高光、往下渐淡，
-           边缘再压一条极淡暗边 + 一圈柔光）—— 不是"描一条白线"，
-           是像一块真的玻璃压在头像上，所以看着是有厚度、立起来的。
-           想整体关掉：后台 ui.json 写 avatarGlassRing = 0。 */
-        .overlay {
-            if UIConfig.num("avatarGlassRing", 1) > 0 {
-                let w = max(1.3, size * 0.045)
-                ZStack {
-                    if circle {
-                        /* ① 玻璃环本体：上亮、中透、下暗 */
-                        Circle()
-                            .stroke(LinearGradient(
-                                colors: [Color.white.opacity(0.92),
-                                         Color.white.opacity(0.42),
-                                         Color.white.opacity(0.16),
-                                         Color.black.opacity(0.12)],
-                                startPoint: .top, endPoint: .bottom), lineWidth: w)
-                        /* ② 里面再收一条极淡的暗边 —— 玻璃的"厚度"就出在这一笔 */
-                        Circle()
-                            .inset(by: w * 0.92)
-                            .stroke(Color.black.opacity(0.07), lineWidth: 0.6)
-                        /* ③ 上缘一小段更亮的镜面反光（苹果玻璃那一道） */
-                        Circle()
-                            .trim(from: 0.06, to: 0.30)
-                            .stroke(Color.white.opacity(0.75),
-                                    style: StrokeStyle(lineWidth: w * 0.72, lineCap: .round))
-                            .blur(radius: w * 0.35)
-                    } else {
-                        RoundedRectangle(cornerRadius: radius, style: .continuous)
-                            .stroke(LinearGradient(
-                                colors: [Color.white.opacity(0.88),
-                                         Color.white.opacity(0.34),
-                                         Color.white.opacity(0.12),
-                                         Color.black.opacity(0.13)],
-                                startPoint: .topLeading, endPoint: .bottomTrailing),
-                                lineWidth: w)
-                        RoundedRectangle(cornerRadius: max(0, radius - w * 0.8),
-                                         style: .continuous)
-                            .inset(by: w * 0.9)
-                            .stroke(Color.black.opacity(0.08), lineWidth: 0.6)
-                        RoundedRectangle(cornerRadius: radius, style: .continuous)
-                            .stroke(Color.white.opacity(0.62),
-                                    style: StrokeStyle(lineWidth: w * 0.66,
-                                                       lineCap: .round))
-                            .mask(LinearGradient(colors: [.white, .white.opacity(0.12), .clear],
-                                                 startPoint: .top, endPoint: .bottom))
-                            .blur(radius: w * 0.22)
-                    }
-                }
-                .allowsHitTesting(false)
-                /* 外面一圈柔光：头像像是"浮"在玻璃上 */
-                .shadow(color: Color.white.opacity(0.34), radius: w * 1.8, y: -w * 0.5)
-                .shadow(color: Color.black.opacity(0.10), radius: w * 1.2, y: w * 0.65)
-            }
-        }
+        /* 微信式头像：只保留图片圆角和系统抗锯齿，不加外描边、玻璃环或投影。 */
         .overlay {
             if level >= 4, GrowthFlags.avatarFrame != false {
                 QQAvatarFrame(level: level, size: size, circle: circle, radius: radius)
