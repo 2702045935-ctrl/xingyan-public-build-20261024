@@ -181,21 +181,21 @@ struct HarmonyDarkMask: View {
         ZStack {
             Rectangle()
                 .fill(.ultraThinMaterial)
-                .opacity(max(0, min(1, 0.30 * strength)))
+                .opacity(max(0, min(1, 0.18 * strength)))
 
             LinearGradient(
                 stops: [
-                    .init(color: Color(hex: 0x17191D).opacity(0.70 * strength), location: 0.00),
-                    .init(color: Color(hex: 0x111316).opacity(0.62 * strength), location: 0.48),
-                    .init(color: Color(hex: 0x0D0F12).opacity(0.68 * strength), location: 1.00)
+                    .init(color: Color(hex: 0x17191D).opacity(0.84 * strength), location: 0.00),
+                    .init(color: Color(hex: 0x111316).opacity(0.78 * strength), location: 0.48),
+                    .init(color: Color(hex: 0x0D0F12).opacity(0.86 * strength), location: 1.00)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing)
 
-            /* 左上那点冷光只负责“透”，亮度压得很低，不会变成白色角光 */
+            /* 只留一点冷光表现材质，强度压低，避免抬高整体透明度。 */
             RadialGradient(
                 colors: [
-                    Color.white.opacity(0.032 * strength),
+                    Color.white.opacity(0.016 * strength),
                     Color.clear
                 ],
                 center: UnitPoint(x: 0.12, y: 0.10),
@@ -204,9 +204,9 @@ struct HarmonyDarkMask: View {
 
             LinearGradient(
                 colors: [
-                    Color.white.opacity(0.020 * strength),
+                    Color.white.opacity(0.010 * strength),
                     Color.clear,
-                    Color.black.opacity(0.035 * strength)
+                    Color.black.opacity(0.050 * strength)
                 ],
                 startPoint: .top,
                 endPoint: .bottom)
