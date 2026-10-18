@@ -3,7 +3,7 @@ import UIKit
 
 /// A–Z 索引的粗细：后台「界面文字」里 ctIdxBold = 1（默认）就是加粗，
 /// 写 0 回到原来的细体。两处索引（通讯录整页 / 联系人列表右栏）都用它。
-func ctIdxWeight() -> Font.Weight { UIConfig.num("ctIdxBold", 1) > 0 ? .bold : .regular }
+func ctIdxWeight() -> Font.Weight { UIConfig.num("ctIdxBold", 1) > 0 ? .heavy : .regular }
 
 /// 通讯录右侧的 A–Z 索引：和网页版一样 27 个字母全都在，
 /// 点一下或**按着上下拖**都能跳分组，中间还会弹一个黑色大字气泡。
