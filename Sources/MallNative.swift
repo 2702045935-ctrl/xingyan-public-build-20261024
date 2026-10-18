@@ -2078,6 +2078,7 @@ struct DDHomeTab: View {
     @State private var showAdOrders = false
     @State private var showAdFav = false
     @State private var showAdViews = false
+    @State private var showAddressHome = false
     /* 2026-10-16 商城二楼（用户：「沿用二楼的方案，商城也做个二楼出来」） */
     @State private var topY: CGFloat = 0           // 首页是不是在最上面
     @State private var cate: String? = nil
@@ -2117,7 +2118,11 @@ struct DDHomeTab: View {
                             Color.clear.preference(key: DDFloorOffsetKey.self,
                                                    value: g.frame(in: .named("ddhome")).minY)
                         })
+                    deliveryStrip
                     carousel(proxy)
+                    sectionTitle(Tr("限时秒杀"), right: Tr("抢完即止"))
+                    seckill(proxy)
+                    sectionTitle(Tr("今日精选"), right: Tr("真实商品 · 官方保障"))
                     /* 2026-10-15 对齐京东：轮播图下面那排频道 */
                     DDChannelRow(onOpen: { channel = $0 }, onFunc: { f in
                         switch f {
@@ -2129,8 +2134,9 @@ struct DDHomeTab: View {
                     })
                     /* 楼间小广告：**后台下发的**（后台没配就用内置那条百亿补贴） */
                     adStrip
-                    seckill(proxy)
-                    sectionTitle(Tr("为你推荐"), right: Tr("边逛边拼"))
+                    sectionTitle(Tr("品牌好价"), right: Tr("大牌直降 · 限时补贴"))
+                    dealBoard
+                    sectionTitle(Tr("为你推荐"), right: Tr("精选展示"))
                     /* 京东那种：标题下面一条可横滑的分类 tab（推荐 / 各分类） */
                     cateRow
                     if !store.mutedCates.isEmpty { mutedNote }
@@ -2244,11 +2250,107 @@ struct DDHomeTab: View {
                     onOpen(p)
                 })
             }
+            .sheet(isPresented: $showAddressHome) {
+                DDAddressListView().environmentObject(app)
+            }
         }
     }
 
     private func toGrid(_ proxy: ScrollViewProxy) {
         withAnimation(.easeInOut(duration: 0.3)) { proxy.scrollTo("dd-grid", anchor: .top) }
+    }
+
+    /// 真实商城首页的第一屏信息：送到哪里、多久到、平台保障。
+    private var deliveryStrip: some View {
+        Button { showAddressHome = true } label: {
+            HStack(spacing: 7) {
+                Image(systemName: "mappin.and.ellipse")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(Color(hex: 0x2F6FED))
+                Text(store.addressLine.isEmpty ? Tr("选择收货地址") : store.addressLine)
+                    .font(pf(12, .medium))
+                    .foregroundColor(DDColor.ink)
+                    .lineLimit(1)
+                Spacer(minLength: 4)
+                Text(Tr("预计明日送达"))
+                    .font(pf(10.5, .medium))
+                    .foregroundColor(Color(hex: 0x2E9E5B))
+                Text(Tr("官方正品"))
+                    .font(pf(9.5, .semibold))
+                    .foregroundColor(DDColor.red)
+                    .padding(.horizontal, 7)
+                    .frame(height: 22)
+                    .background(Capsule().fill(DDColor.red.opacity(0.09)))
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundColor(DDColor.weak)
+            }
+            .padding(.horizontal, 12)
+            .frame(height: 38)
+            .background(DDColor.cardGrad)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(DDColor.cardEdge, lineWidth: 0.6))
+            .padding(.horizontal, 12)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var dealBoard: some View {
+        HStack(spacing: 8) {
+            ForEach(Array(store.live.prefix(4).enumerated()), id: \.element.id) { i, p in
+                Button { onOpen(p) } label: { dealTile(p, index: i) }
+                    .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 10)
+    }
+
+    private func dealTile(_ p: DDProduct, index: Int) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ZStack(alignment: .topLeading) {
+                if let img = p.img, !img.isEmpty {
+                    RemoteImage(path: img, icon: "photo", mode: .fill)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 92)
+                        .clipped()
+                } else {
+                    Text(p.em).font(.system(size: 42))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 92)
+                        .background(DDColor.page)
+                }
+                Text(index % 4 == 0 ? Tr("星选好价")
+                     : (index % 4 == 1 ? Tr("品牌直降")
+                        : (index % 4 == 2 ? Tr("新品尝鲜") : Tr("会员专享"))))
+                    .font(pf(8.8, .semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 6).frame(height: 20)
+                    .background(Capsule().fill(DDColor.red.opacity(0.86)))
+                    .padding(6)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+
+            Text(p.title)
+                .font(pf(10.5))
+                .foregroundColor(DDColor.ink)
+                .lineLimit(2)
+                .frame(height: 30, alignment: .topLeading)
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text("¥").font(pf(9, .semibold)).foregroundColor(DDColor.red)
+                Text(moneyFmt(p.price)).font(pf(15.5, .bold)).foregroundColor(DDColor.red)
+                Spacer(minLength: 0)
+                Text(Tr("已售") + " " + p.sold)
+                    .font(pf(8.5)).foregroundColor(DDColor.sub)
+            }
+        }
+        .padding(7)
+        .frame(maxWidth: .infinity)
+        .background(DDColor.cardGrad)
+        .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous)
+            .stroke(DDColor.cardEdge, lineWidth: 0.6))
+        .shadow(color: DDColor.cardShadow, radius: 7, y: 2)
     }
 
     /* ---------------- 首页轮播图（管理页里可以换图 / 加图 / 删图） ----------------
