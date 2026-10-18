@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /* ============================================================
    苹果那套「玻璃底」——所有需要玻璃质感的地方都走这一个
@@ -168,25 +169,34 @@ struct GlassBackground<S: Shape>: View {
 /* ============================================================
    深色模式专用遮罩：对齐鸿蒙端今早自绘的「薄糊 + 炭黑透光」
 
-   不再叠系统 .bar 的高光和角光，只保留：
-   ① 一层很薄的背景模糊，让后面的内容还能透出来；
-   ② 鸿蒙同款 #111111 压色；
-   ③ 左上极轻的冷白透光 + 底部极轻的暗边，拉开层次但不发亮。
+   对齐鸿蒙端：backdropBlur(18) + #111111 62% 压色。
+   模糊使用独立的 UIKit dark blur，不经过 SwiftUI Material / 系统玻璃，
+   因此保留“背后开灯”的透光感，但不会生成四角白色高光。
    ============================================================ */
+
+private struct HarmonyDarkBlur: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIVisualEffectView {
+        let view = UIVisualEffectView(effect: UIBlurEffect(style: .dark))
+        view.isUserInteractionEnabled = false
+        return view
+    }
+
+    func updateUIView(_ uiView: UIVisualEffectView, context: Context) {
+        uiView.effect = UIBlurEffect(style: .dark)
+    }
+}
+
 struct HarmonyDarkMask: View {
     /// 0.7～1 之间微调；1 是当前鸿蒙正式版的浓度
     var strength: Double = 1
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                stops: [
-                    .init(color: Color(hex: 0x17191D).opacity(0.84 * strength), location: 0.00),
-                    .init(color: Color(hex: 0x111316).opacity(0.78 * strength), location: 0.48),
-                    .init(color: Color(hex: 0x0D0F12).opacity(0.86 * strength), location: 1.00)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing)
+            HarmonyDarkBlur()
+                .opacity(max(0, min(1, 0.94 * strength)))
+
+            Color(hex: 0x111111)
+                .opacity(max(0, min(1, 0.62 * strength)))
 
             LinearGradient(
                 colors: [
