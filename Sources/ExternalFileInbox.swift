@@ -135,6 +135,10 @@ struct ExternalFileSendView: View {
                     .padding(.top, 8)
 
                 HStack(spacing: 10) {
+                    actionTile(title: Tr("打开文件"), icon: "doc.text.magnifyingglass",
+                               tint: Color(hex: 0x2F73C9)) {
+                        previewFirstFile()
+                    }
                     actionTile(title: Tr("转发给朋友"), icon: "paperplane.fill",
                                tint: Color(hex: 0x1AAD6A)) {
                         withAnimation(.easeOut(duration: 0.18)) { forwardExpanded = true }
@@ -256,11 +260,7 @@ struct ExternalFileSendView: View {
         .background(C.cardBg)
         .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
         .contentShape(Rectangle())
-        .onTapGesture {
-            if let first = inbox.files.first {
-                filePreview = FilePreviewData(name: first.name, local: first.local)
-            }
-        }
+        .onTapGesture { previewFirstFile() }
     }
 
     private var fileBytes: String {
@@ -292,6 +292,11 @@ struct ExternalFileSendView: View {
         }
         .buttonStyle(.plain)
         .disabled(favoriteBusy)
+    }
+
+    private func previewFirstFile() {
+        guard let first = inbox.files.first else { return }
+        filePreview = FilePreviewData(name: first.name, local: first.local)
     }
 
     private func chatRow(_ chat: Chat) -> some View {
