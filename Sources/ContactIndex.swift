@@ -21,6 +21,9 @@ struct ContactIndexBar: View {
 
     /// 手指正压在哪个字母上：那一个外面套一个蓝色实心圆（用户要求）
     @State private var active: String? = nil
+    /// 真正“正在触摸”的状态。手势被系统滚动打断时也会自动复位，
+    /// 不会再出现松手后圆圈停在 A 上的残影。
+    @GestureState private var touching = false
     /// 每滑过一个字母轻震一下（用户要求「按索引的时候有振动感」）
     private let haptic = UISelectionFeedbackGenerator()
 
@@ -55,11 +58,11 @@ struct ContactIndexBar: View {
                     Text(L)
                         .font(pf(fontSize, ctIdxWeight()))
                         /* 选中的那个字母：白字 + 蓝色实心圆（不选中就还是原来的灰字） */
-                        .foregroundColor(active == L ? .white : C.ctIdxColor)
+                        .foregroundColor(active == L && touching ? .white : C.ctIdxColor)
                         .frame(height: rowH)
                         .frame(width: 22)
                         .background {
-                            if active == L {
+                            if active == L && touching {
                                 Circle()
                                     .fill(activeBg)
                                     .frame(width: dotSide, height: dotSide)
@@ -70,13 +73,17 @@ struct ContactIndexBar: View {
             .contentShape(Rectangle())
             .gesture(
                 DragGesture(minimumDistance: 0)
+                    .updating($touching) { _, state, _ in state = true }
                     .onChanged { value in
                         let i = max(0, min(Self.letters.count - 1,
                                            Int(floor(value.location.y / pitch))))
                         pick(Self.letters[i])
                     }
-                    .onEnded { _ in active = nil }
+                    .onEnded { _ in
+                        active = nil
+                    }
             )
+            .onDisappear { active = nil }
         }
         .padding(.vertical, padV)
         .frame(width: 22)
