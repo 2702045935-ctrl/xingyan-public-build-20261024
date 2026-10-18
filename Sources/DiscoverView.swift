@@ -295,6 +295,7 @@ struct MomentsView: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var scheme
 
     var target: User? = nil
     /// 「我的朋友圈」（从「我」那一页进来的）：只显示我自己的动态，封面也是我的。
@@ -697,16 +698,39 @@ struct MomentsView: View {
                ⚠ 2026-10-12 用户要求「遮罩要透一点」：默认浓度 0.36 → 0.20
                （高度不变），封面本身能看清一些，白图标仍然够用。
                浓度和高度都能在后台改：momentTopMask（默认 0.20）/ momentTopMaskH（默认 150）。 */
-            LinearGradient(colors: [Color.black.opacity(max(0, UIConfig.num("momentTopMask", 0.20))),
-                                    Color.black.opacity(0)],
-                           startPoint: .top, endPoint: .bottom)
+            Group {
+                if scheme == .dark {
+                    HarmonyDarkMask(strength: 0.94)
+                        .mask(
+                            LinearGradient(
+                                colors: [Color.black, Color.black.opacity(0.70), Color.clear],
+                                startPoint: .top, endPoint: .bottom)
+                        )
+                } else {
+                    LinearGradient(colors: [Color.black.opacity(max(0, UIConfig.num("momentTopMask", 0.20))),
+                                            Color.black.opacity(0)],
+                                   startPoint: .top, endPoint: .bottom)
+                }
+            }
                 .frame(height: max(L.safeTop + 56, UIConfig.num("momentTopMaskH", 150)))
                 .frame(maxHeight: .infinity, alignment: .top)
                 .allowsHitTesting(false)
 
             /* 底下这条是给名字/签名当底衬的，同样按「透一点」调的（0.34/0.52 → 0.22/0.36） */
-            LinearGradient(colors: [Color.black.opacity(0), Color.black.opacity(0.22), Color.black.opacity(0.36)],
-                           startPoint: .top, endPoint: .bottom)
+            Group {
+                if scheme == .dark {
+                    HarmonyDarkMask(strength: 0.96)
+                        .mask(
+                            LinearGradient(
+                                colors: [Color.clear, Color.black.opacity(0.78), Color.black],
+                                startPoint: .top, endPoint: .bottom)
+                        )
+                } else {
+                    LinearGradient(colors: [Color.black.opacity(0), Color.black.opacity(0.22),
+                                            Color.black.opacity(0.36)],
+                                   startPoint: .top, endPoint: .bottom)
+                }
+            }
                 .frame(height: L.coverH * 0.62)
                 .frame(maxHeight: .infinity, alignment: .bottom)
                 .allowsHitTesting(false)

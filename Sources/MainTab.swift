@@ -396,6 +396,7 @@ struct TabBarTouchLayer: UIViewRepresentable {
 struct TabBar: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
+    @Environment(\.colorScheme) private var scheme
     @Binding var selection: Int
     var badge: Int
     /// 「通讯录」上那个小红点（有人加你为好友就亮，微信也是这样）
@@ -479,6 +480,11 @@ struct TabBar: View {
        上面再压一层很轻的糊（tabGlassAlpha，默认 0.2）——
        后面的内容划过去时会透一丢丢，但不是一块死色。 */
     private var tabMaskLayer: some View {
+        /* 深色模式统一走鸿蒙那套自绘透光遮罩。浅色仍保留现有系统栏材质，
+           这样只调整用户指定的深色范围，不改变白天的观感。 */
+        if scheme == .dark {
+            return AnyView(HarmonyDarkMask(strength: 0.98))
+        }
         let fill = UIConfig.colorIfSet("tabBarColor")
             ?? UIConfig.colorIfSet("tabBg")
             ?? C.tabBg

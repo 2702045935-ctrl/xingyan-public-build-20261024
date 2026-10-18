@@ -955,15 +955,20 @@ struct ChatDetailView: View {
                    其余地方全透明 —— 消息直接滚到状态栏下面（苹果 iOS 26 的样子）。
                    真要退回"整条毛玻璃"，后台 ui.json 里写 navGlassBar: 1 就行。 */
                 if UIConfig.num("navGlassBar", 0) > 0 {
-                    ZStack {
-                        let topLayers = max(1, min(3, Int(UIConfig.num("glassLayers", 2))))
-                        ForEach(0..<topLayers, id: \.self) { _ in
-                            Rectangle().fill(.ultraThinMaterial)
+                    if scheme == .dark {
+                        HarmonyDarkMask(strength: 1)
+                            .ignoresSafeArea(edges: .top)
+                    } else {
+                        ZStack {
+                            let topLayers = max(1, min(3, Int(UIConfig.num("glassLayers", 2))))
+                            ForEach(0..<topLayers, id: \.self) { _ in
+                                Rectangle().fill(.ultraThinMaterial)
+                            }
+                            Color.dyn(0xFFFFFF, 0x1C1C1E)
+                                .opacity(max(0, min(0.5, UIConfig.num("glassAlpha", 0.8) - 0.5)))
                         }
-                        Color.dyn(0xFFFFFF, 0x1C1C1E)
-                            .opacity(max(0, min(0.5, UIConfig.num("glassAlpha", 0.8) - 0.5)))
+                        .ignoresSafeArea(edges: .top)
                     }
-                    .ignoresSafeArea(edges: .top)
                 }
             }
 
@@ -2587,16 +2592,23 @@ struct ChatDetailView: View {
         .onDisappear { dictation.stop() }
         /* 输入栏：和顶栏同一套超薄毛玻璃 + 一层白；上面压一条 0.5px 细线做分隔（微信也有） */
         .background {
-            ZStack {
-                /* 输入栏毛玻璃叠层（和气泡同一开关） */
-                let barLayers = max(1, min(3, Int(UIConfig.num("glassLayers", 2))))
-                ForEach(0..<barLayers, id: \.self) { _ in
-                    Rectangle().fill(.ultraThinMaterial)
+            Group {
+                if scheme == .dark {
+                    HarmonyDarkMask(strength: 1)
+                        .ignoresSafeArea(edges: .bottom)
+                } else {
+                    ZStack {
+                        /* 输入栏毛玻璃叠层（和气泡同一开关） */
+                        let barLayers = max(1, min(3, Int(UIConfig.num("glassLayers", 2))))
+                        ForEach(0..<barLayers, id: \.self) { _ in
+                            Rectangle().fill(.ultraThinMaterial)
+                        }
+                        Color.dyn(0xFFFFFF, 0x1C1C1E)
+                            .opacity(max(0, min(0.5, UIConfig.num("glassAlpha", 0.8) - 0.5)))
+                    }
+                    .ignoresSafeArea(edges: .bottom)
                 }
-                Color.dyn(0xFFFFFF, 0x1C1C1E)
-                    .opacity(max(0, min(0.5, UIConfig.num("glassAlpha", 0.8) - 0.5)))
             }
-            .ignoresSafeArea(edges: .bottom)
         }
         .overlay(alignment: .top) {
             Rectangle().fill(C.navLine).frame(height: 0.5)

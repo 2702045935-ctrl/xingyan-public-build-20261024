@@ -1163,11 +1163,18 @@ struct ChatsView: View {
              · blur（chatsNavGlassAlpha）= 系统材质多实
              · mask（chatsNavMaskAlpha）= 上面那层染色压多浓
              · 染色 = 后台「会话页顶栏遮罩颜色」，不配就跟页面底色一致（#EDEDED） */
-        ZStack {
-            Rectangle().fill(.bar)
-                .opacity(max(0, min(1, blur)))
-            (UIConfig.colorIfSet("chatsNavMaskColor") ?? C.chatsPageBg)
-                .opacity(max(0, min(1, mask)))
+        Group {
+            if scheme == .dark {
+                /* 深色顶栏跟鸿蒙端统一：薄糊 + #111111 压色，关闭系统玻璃白光。 */
+                HarmonyDarkMask(strength: 0.98)
+            } else {
+                ZStack {
+                    Rectangle().fill(.bar)
+                        .opacity(max(0, min(1, blur)))
+                    (UIConfig.colorIfSet("chatsNavMaskColor") ?? C.chatsPageBg)
+                        .opacity(max(0, min(1, mask)))
+                }
+            }
         }
         .ignoresSafeArea(edges: .top)
         .allowsHitTesting(false)      // 只是背景：绝不吃手势

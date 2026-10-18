@@ -150,6 +150,56 @@ struct GlassBackground<S: Shape>: View {
 }
 
 /* ============================================================
+   深色模式专用遮罩：对齐鸿蒙端今早自绘的「薄糊 + 炭黑透光」
+
+   不再叠系统 .bar 的高光和角光，只保留：
+   ① 一层很薄的背景模糊，让后面的内容还能透出来；
+   ② 鸿蒙同款 #111111 压色；
+   ③ 左上极轻的冷白透光 + 底部极轻的暗边，拉开层次但不发亮。
+   ============================================================ */
+struct HarmonyDarkMask: View {
+    /// 0.7～1 之间微调；1 是当前鸿蒙正式版的浓度
+    var strength: Double = 1
+
+    var body: some View {
+        ZStack {
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .opacity(max(0, min(1, 0.30 * strength)))
+
+            LinearGradient(
+                stops: [
+                    .init(color: Color(hex: 0x17191D).opacity(0.70 * strength), location: 0.00),
+                    .init(color: Color(hex: 0x111316).opacity(0.62 * strength), location: 0.48),
+                    .init(color: Color(hex: 0x0D0F12).opacity(0.68 * strength), location: 1.00)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing)
+
+            /* 左上那点冷光只负责“透”，亮度压得很低，不会变成白色角光 */
+            RadialGradient(
+                colors: [
+                    Color.white.opacity(0.032 * strength),
+                    Color.clear
+                ],
+                center: UnitPoint(x: 0.12, y: 0.10),
+                startRadius: 0,
+                endRadius: 260)
+
+            LinearGradient(
+                colors: [
+                    Color.white.opacity(0.020 * strength),
+                    Color.clear,
+                    Color.black.opacity(0.035 * strength)
+                ],
+                startPoint: .top,
+                endPoint: .bottom)
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+/* ============================================================
    卡片玻璃：所有页面里的「圆角卡片 / 浮层 / 弹窗面板」统一走这一个。
 
    iOS 26 全套升级：淡玻璃 + 苹果那种内侧顶部高光 + 亮边 + 七彩回光，
