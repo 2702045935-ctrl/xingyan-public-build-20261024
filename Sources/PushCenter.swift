@@ -29,6 +29,15 @@ final class PushCenter: NSObject, ObservableObject, UIApplicationDelegate, UNUse
         return true
     }
 
+    /// WPS / 文件 App 点“用其他应用打开”时，iOS 会把文件 URL 送到这里。
+    func application(_ application: UIApplication,
+                     open url: URL,
+                     options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+        guard url.isFileURL else { return false }
+        ExternalFileInbox.shared.accept([url])
+        return true
+    }
+
     /// 登录后调用：要权限 + 向苹果注册
     func start() {
         UNUserNotificationCenter.current().getNotificationSettings { s in

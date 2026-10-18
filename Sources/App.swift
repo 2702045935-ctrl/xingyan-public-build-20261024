@@ -819,6 +819,7 @@ final class AppState: ObservableObject {
 @main
 struct CHRISApp: App {
     @StateObject private var app = AppState()
+    @StateObject private var externalFiles = ExternalFileInbox.shared
     /* 苹果推送：拿 device token、收通知、点通知进聊天 */
     @UIApplicationDelegateAdaptor(PushCenter.self) private var push
 
@@ -843,7 +844,16 @@ struct CHRISApp: App {
             ZStack {
                 RootView()
                     .environmentObject(app)
+                    .environmentObject(externalFiles)
                     .preferredColorScheme(app.preferredScheme)   // 跟随系统 / 强制浅色 / 强制深色
+                    .onOpenURL { url in
+                        if url.isFileURL { ExternalFileInbox.shared.accept([url]) }
+                    }
+                    .sheet(isPresented: $externalFiles.present) {
+                        ExternalFileSendView()
+                            .environmentObject(app)
+                            .environmentObject(externalFiles)
+                    }
                 /* 扫一扫扫到「登录码」：出微信那张「登录确认」卡片（写清设备名和时间） */
                 Color.clear
                     .frame(width: 0, height: 0)
