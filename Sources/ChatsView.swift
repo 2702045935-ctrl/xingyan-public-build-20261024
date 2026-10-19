@@ -705,7 +705,8 @@ struct ChatsView: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
                         .padding(.horizontal, count > 9 ? 4 : 3)
-                        .frame(minWidth: 15, height: 15)
+                        .frame(minWidth: 15)
+                        .frame(height: 15)
                         .background(Capsule().fill(C.red))
                 }
             }
