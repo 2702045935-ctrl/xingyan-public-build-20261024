@@ -768,11 +768,7 @@ struct ChatsView: View {
                                                     seed: 0.32)
                                         .overlay {
                                             Capsule(style: .continuous)
-                                                .fill(C.green.opacity(scheme == .dark ? 0.13 : 0.055))
-                                        }
-                                        .overlay {
-                                            Capsule(style: .continuous)
-                                                .stroke(C.green.opacity(0.32), lineWidth: 0.8)
+                                                .stroke(C.hairline.opacity(0.72), lineWidth: 0.65)
                                         }
                                         .shadow(color: Color.black.opacity(scheme == .dark ? 0.26 : 0.11),
                                                 radius: 6, x: 0, y: 2)
