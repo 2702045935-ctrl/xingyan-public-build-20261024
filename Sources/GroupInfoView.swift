@@ -58,7 +58,10 @@ struct GroupInfoView: View {
         members.first(where: { $0.id == app.me?.id })?.alias ?? ""
     }
 
-    private let gridColumns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 5)
+    private let gridColumns = Array(
+        repeating: GridItem(.flexible(minimum: 0), spacing: 4, alignment: .top),
+        count: 5
+    )
 
     private var ownerName: String {
         if let u = members.first(where: { $0.id == ownerId }) { return u.name }
@@ -533,8 +536,9 @@ struct GroupInfoView: View {
                                     QQLevelBadge(level: lv, size: 10, maxIcons: 2).fixedSize()
                                 }
                             }
-                            .frame(width: 56)
+                            .frame(maxWidth: .infinity)
                         }
+                        .frame(maxWidth: .infinity)
                         /* 点成员 = 看他的资料（微信就是这样）；长按 = 群主那套管理动作 */
                         .contentShape(Rectangle())
                         .onTapGesture { cardUser = u }
@@ -580,8 +584,9 @@ struct GroupInfoView: View {
                         .buttonStyle(.plain)
                         Text(Tr("加人")).font(pf(10.5)).foregroundColor(C.subLabel)
                     }
+                    .frame(maxWidth: .infinity)
                 }
-                .padding(.horizontal, 14)
+                .padding(.horizontal, 12)
                 .padding(.top, 16)
                 .padding(.bottom, 16)
             }
