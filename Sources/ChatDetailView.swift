@@ -432,18 +432,21 @@ struct ChatDetailView: View {
         hiddenMessageIds = Set(UserDefaults.standard.stringArray(forKey: deletedMessageKey) ?? [])
     }
 
-    private func persistDeletedMessageId(_ id: String) {
-        guard !id.isEmpty else { return }
-        hiddenMessageIds.insert(id)
-        var ids = Array(hiddenMessageIds)
-        if ids.count > 500 { ids = Array(ids.suffix(500)) }
-        hiddenMessageIds = Set(ids)
-        UserDefaults.standard.set(ids, forKey: deletedMessageKey)
+    private func persistDeletedMessageIds(_ newIds: [String]) {
+        let valid = newIds.filter { !$0.isEmpty }
+        guard !valid.isEmpty else { return }
+        hiddenMessageIds.formUnion(valid)
+        UserDefaults.standard.set(Array(hiddenMessageIds).sorted(), forKey: deletedMessageKey)
     }
 
     private func visibleMessages(_ rows: [Message]) -> [Message] {
         guard !hiddenMessageIds.isEmpty else { return rows }
         return rows.filter { !hiddenMessageIds.contains($0.id) }
+    }
+
+    private func appendVisibleMessage(_ message: Message) {
+        guard !hiddenMessageIds.contains(message.id) else { return }
+        messages.append(message)
     }
 
     private func actionTitle(_ m: Message) -> String {
@@ -523,7 +526,7 @@ struct ChatDetailView: View {
             selectMode = true
             selected = [m.id]
         case "del":
-            persistDeletedMessageId(m.id)
+            persistDeletedMessageIds([m.id])
             messages.removeAll { $0.id == m.id }
             rebuildIndex()
             app.show(Tr("已删除"))
@@ -604,8 +607,10 @@ struct ChatDetailView: View {
     }
 
     private func multiDelete() {
-        let ids = selected
+        let ids = Array(selected)
+        persistDeletedMessageIds(ids)
         messages.removeAll { ids.contains($0.id) }
+        rebuildIndex()
         app.show(Tr("已删除"))
         selectMode = false
         selected = []
@@ -3041,7 +3046,7 @@ struct ChatDetailView: View {
                 if let message = try await API.shared.send(chatId: chat.id, kind: p.kind, content: p.content,
                                                            mentions: p.mentions, clientId: p.id,
                                                            quote: Self.quoteDict(p.quoteJSON)) {
-                    messages.append(message)
+                    appendVisibleMessage(message)
                 }
                 outbox.removeAll { $0.id == p.id }
             } catch {
@@ -3095,7 +3100,7 @@ struct ChatDetailView: View {
                     let tUp = Date()
                     if let m = try await API.shared.send(chatId: chat.id, kind: "image", content: url,
                                                          imgW: px.w, imgH: px.h) {
-                        messages.append(m)
+                        appendVisibleMessage(m)
                     }
                     let tSend = Date()
                     Task { await API.shared.callDiag("发图(+) 压+传=\(Int(tUp.timeIntervalSince(t0) * 1000))ms"
@@ -3157,7 +3162,7 @@ struct ChatDetailView: View {
                         CrashCatcher.note("发图", "合成一条九宫格（\(urls.count) 张）")
                         let body = "{\"paths\":" + Self.jsonStringArray(urls) + "}"
                         if let m = try await API.shared.send(chatId: chat.id, kind: "images", content: body) {
-                            messages.append(m)
+                            appendVisibleMessage(m)
                         }
                     } else {
                         CrashCatcher.note("发图", "\(urls.count) 张，分开一条一条发")
@@ -3165,7 +3170,7 @@ struct ChatDetailView: View {
                             let d: (w: Int, h: Int) = i < dims.count ? dims[i] : (w: 0, h: 0)
                             if let m = try await API.shared.send(chatId: chat.id, kind: "image", content: u,
                                                                  imgW: d.w, imgH: d.h) {
-                                messages.append(m)
+                                appendVisibleMessage(m)
                             }
                         }
                     }
@@ -3232,7 +3237,7 @@ struct ChatDetailView: View {
                 }
                 let json = (try? JSONSerialization.data(withJSONObject: body)).flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
                 if let m = try? await API.shared.send(chatId: chat.id, kind: "video", content: json) {
-                    messages.append(m)
+                    appendVisibleMessage(m)
                 }
                 uploading = false
                 sendingMedia = ""
@@ -3273,7 +3278,7 @@ struct ChatDetailView: View {
                     let body: [String: Any] = ["image": iurl, "video": vurl]
                     let json = (try? JSONSerialization.data(withJSONObject: body)).flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
                     if let m = try await API.shared.send(chatId: chat.id, kind: "livephoto", content: json) {
-                        messages.append(m)
+                        appendVisibleMessage(m)
                     }
                 } catch { app.show((error as? APIError)?.errorDescription ?? "实况发送失败") }
                 uploading = false
@@ -3319,7 +3324,7 @@ struct ChatDetailView: View {
                 let tUp = Date()
                 if let message = try await API.shared.send(chatId: chat.id, kind: "image", content: url,
                                                            imgW: px.w, imgH: px.h) {
-                    messages.append(message)
+                    appendVisibleMessage(message)
                 }
                 let tSend = Date()
                 /* 诊断（写进服务器 call-trace.log）：图发得慢的时候，
@@ -3506,7 +3511,7 @@ struct ChatDetailView: View {
             let bytes = try await API.shared.rawUpload(payload)
             let content = "{\"url\":\"\(bytes.url)\",\"name\":\"\(name)\",\"bytes\":\(data.count)}"
             if let message = try await API.shared.send(chatId: chat.id, kind: "file", content: content) {
-                messages.append(message)
+                appendVisibleMessage(message)
             }
         } catch {
             app.show((error as? APIError)?.errorDescription ?? "文件发送失败")

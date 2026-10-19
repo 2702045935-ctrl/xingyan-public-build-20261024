@@ -93,6 +93,11 @@ enum LocalStore {
         return (try? JSONDecoder().decode([Message].self, from: d)) ?? []
     }
 
+    /// 删除某个会话时只清它在手机上的底稿；别的会话不受影响。
+    static func clearChat(_ chatId: String) {
+        try? FileManager.default.removeItem(at: chatFile(chatId))
+    }
+
     /* ---------------------------------------------------------- 朋友圈本机缓存
        照微信的逻辑：**朋友圈以服务端为准，本机只存"你看过的那几屏"当缓存**。
        进朋友圈先把缓存铺出来（秒开、断网也能看上次那几屏），然后再去刷最新的 ——

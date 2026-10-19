@@ -16436,6 +16436,18 @@ async function handleApi(req, res, pathname, query) {
     const chat = db.chats.find((c) => c.id === parts[1]);
     if (!chat) return fail(res, 404, '会话不存在');
     if (!chat.memberIds.includes(user.id)) return fail(res, 403, '你不在这个会话里');
+    /* 左滑删除 = 清空自己这边的历史再隐藏。以前客户端带了 clear=1，
+       服务端却完全没读这个参数，所以退出重进还能把旧记录重新拉回来。 */
+    let clearedSeq = 0;
+    if (String(query.get('clear') || '') === '1') {
+      const messages = loadMessages(chat.id);
+      clearedSeq = messages.length ? messages[messages.length - 1].seq : 0;
+      if (!db.cleared[user.id]) db.cleared[user.id] = {};
+      db.cleared[user.id][chat.id] = clearedSeq;
+      if (!db.reads[user.id]) db.reads[user.id] = {};
+      db.reads[user.id][chat.id] = clearedSeq;
+      saveReads();
+    }
     /* 贾维斯AI / AI 助手 / 星联世界：以前是「固定置顶、不允许删」。
        用户要求**这几个置顶的机器人也可以删掉** —— 现在删了就只对自己隐藏，
        同时把「自动置顶」也撤掉（不然它还会被顶回会话列表最上面）。 */
@@ -16445,12 +16457,12 @@ async function handleApi(req, res, pathname, query) {
       chat.hiddenFor = Array.from(new Set((chat.hiddenFor || []).concat([user.id])));
       chat.pinnedFor = (chat.pinnedFor || []).filter((id) => id !== user.id);
       saveChats();
-      ok(res, { hidden: true, chatId: chat.id, bot: true });
+      ok(res, { hidden: true, chatId: chat.id, bot: true, cleared: clearedSeq });
       return;
     }
     chat.hiddenFor = Array.from(new Set((chat.hiddenFor || []).concat([user.id])));
     saveChats();
-    ok(res, { hidden: true, chatId: chat.id });
+    ok(res, { hidden: true, chatId: chat.id, cleared: clearedSeq });
     return;
   }
 

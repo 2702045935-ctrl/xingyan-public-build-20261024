@@ -1892,6 +1892,9 @@ struct ChatsView: View {
     private func remove(_ chat: Chat) {
         Task {
             let err = await API.shared.deleteChat(chatId: chat.id)
+            if err == nil {
+                LocalStore.clearChat(chat.id)
+            }
             await app.loadChats()
             app.show(err ?? "已删除")
         }
