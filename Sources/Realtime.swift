@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import Network
 
 /// 服务器推送过来的一件事（收到新消息、转账、朋友圈、余额变动…）
 struct PushEvent: Equatable {
@@ -111,6 +112,10 @@ final class Realtime: ObservableObject {
         return false
     }
     private var failCount = 0
+    private let pathMonitor = NWPathMonitor()
+    private let pathQueue = DispatchQueue(label: "com.chris.chatnative.realtime.path")
+    private var pathMonitorStarted = false
+    private var pathSatisfied = true
     /// 这条长连接是什么时候建起来的（判"活够久就算连上过"，见 onSocketDown）
     private var socketUpAt = Date()
     /// 推送洪水的节流：消息一秒钟来几千条时，不能每条都去通知界面（会把手机刷死）。
@@ -148,6 +153,7 @@ final class Realtime: ObservableObject {
     }
 
     func start() {
+        ensurePathMonitor()
         /* 已经在连着就别再重建 —— 以前每调一次 start() 都会先 stop() 再新建，
            而「回到前台 / 刷新」这些地方会调它，于是长连接被反复掐断重建
            （日志里那个号 10 分钟断 300 多次就是这么来的，消息也就跟着卡）。 */
@@ -271,8 +277,10 @@ final class Realtime: ObservableObject {
         /* 连着断 3 次（差不多十几秒）：多半不是消息问题，是这条线路被掐了，
            自动换下一条备用入口再连（换通了以后所有请求都走新的那条）。 */
         if failCount % 3 == 0 { _ = API.shared.rotateEndpoint() }
-        /* 退避重连：1s → 2s → 3s → 最长 15s，避免疯狂重连刷屏、刷服务器 */
-        let wait = min(15.0, 1.0 + Double(failCount))
+        /* 退避重连：指数上限 + 随机抖动。服务端发版重启时几千台设备不会同一秒砸回来。 */
+        let ceiling = min(15.0, 1.0 + Double(failCount) * 1.8)
+        let wait = Double.random(in: 0.35...ceiling)
+        AppLog.info("实时重连 " + String(format: "%.2f", wait) + " 秒后开始", net: true)
         try? await Task.sleep(nanoseconds: UInt64(wait * 1_000_000_000))
         if Task.isCancelled { return }
         start()
@@ -294,6 +302,27 @@ final class Realtime: ObservableObject {
         socket?.cancel(with: .goingAway, reason: nil)
         socket = nil
         connected = false
+    }
+
+    private func ensurePathMonitor() {
+        guard !pathMonitorStarted else { return }
+        pathMonitorStarted = true
+        pathMonitor.pathUpdateHandler = { [weak self] path in
+            let ok = path.status == .satisfied
+            Task { @MainActor [weak self] in
+                guard let self = self else { return }
+                let recovered = ok && !self.pathSatisfied
+                self.pathSatisfied = ok
+                if recovered, !API.shared.token.isEmpty, !self.connected {
+                    AppLog.info("网络已恢复，立即重建实时连接", net: true)
+                    self.failCount = 0
+                    self.socket?.cancel(with: .goingAway, reason: nil)
+                    self.socket = nil
+                    self.start()
+                }
+            }
+        }
+        pathMonitor.start(queue: pathQueue)
     }
 
     private func handle(_ text: String) {

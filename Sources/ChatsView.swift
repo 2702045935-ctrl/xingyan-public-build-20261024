@@ -567,6 +567,11 @@ struct ChatsView: View {
         }
     }
 
+    private struct ChatFilterSnapshot {
+        let list: [Chat]
+        let unreadCounts: [ChatFilter: Int]
+    }
+
     @ObservedObject private var lang = LangStore.shared
     /// 小星档位（关了就不画那双眼睛，让放大镜顶到左边那个位置 —— 2026-10-15 用户要求）
     @ObservedObject private var eyes = EyesStore.shared
@@ -637,65 +642,46 @@ struct ChatsView: View {
         UIConfig.colorIfSet("eyesColor") ?? UIConfig.color("navPlusBg", 0x0F5A3C, 0x0F5A3C)
     }
 
-    private var filterBase: [Chat] {
-        /* 会话列表里点公众号那几条：**直接进公众号页面**，不是进聊天页
-           （微信里服务号/订阅号点进去也是它们自己的页面） */
-        /* 贾维斯从列表里拿掉（它改成左上角那只小脸，点脸进对话） */
-        app.chats.filter { c in
+    /* 以前每帧会为了列表和 5 个分类角标反复过滤同一份会话来。现在一次扫描
+       同时得到当前列表和全部角标，长会话列表下明显更稳。 */
+    private func chatSnapshot() -> ChatFilterSnapshot {
+        let base = app.chats.filter { c in
             guard c.botRank != 0,
                   !c.id.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             else { return false }
             let title = (c.title ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             let avatar = (c.avatar ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-            /* 完全空壳的会话：没有名字、没有最后一条、也没有头像 ——
-               以前照样按 L.rowH 画一整行，用户看到的就是“莫名其妙空出来一行”。
-               只滤掉这种三样全空的；正常新建群哪怕还没消息也会留着头像/标题。 */
             return !title.isEmpty || c.lastMessage != nil || !avatar.isEmpty
         }
-    }
 
-    private var list: [Chat] {
-        let base = filterBase
+        var counts: [ChatFilter: Int] = [:]
+        func add(_ filter: ChatFilter, _ chat: Chat) {
+            counts[filter, default: 0] += max(0, chat.unreadCount)
+        }
+        for chat in base {
+            add(.all, chat)
+            add(.unread, chat)
+            if chat.type == "group" || (chat.memberCount ?? 0) > 2 { add(.group, chat) }
+            if !(chat.oaId ?? "").isEmpty || chat.oaDigest == true { add(.official, chat) }
+            if chat.pinned == true { add(.pinned, chat) }
+        }
+
         let filtered: [Chat]
         switch chatFilter {
-        case .all:
-            filtered = base
-        case .unread:
-            filtered = base.filter { $0.unreadCount > 0 || $0.flagged == true }
-        case .group:
-            filtered = base.filter { $0.type == "group" || ($0.memberCount ?? 0) > 2 }
-        case .official:
-            filtered = base.filter { !($0.oaId ?? "").isEmpty || $0.oaDigest == true }
-        case .pinned:
-            filtered = base.filter { $0.pinned == true }
+        case .all: filtered = base
+        case .unread: filtered = base.filter { $0.unreadCount > 0 || $0.flagged == true }
+        case .group: filtered = base.filter { $0.type == "group" || ($0.memberCount ?? 0) > 2 }
+        case .official: filtered = base.filter { !($0.oaId ?? "").isEmpty || $0.oaDigest == true }
+        case .pinned: filtered = base.filter { $0.pinned == true }
         }
-        guard !keyword.isEmpty else { return filtered }
-        return filtered.filter {
+        let shown = keyword.isEmpty ? filtered : filtered.filter {
             $0.name.contains(keyword) || (($0.lastMessage?.preview ?? "").contains(keyword))
         }
-    }
-
-    private func unreadMessages(_ chats: [Chat]) -> Int {
-        chats.reduce(0) { $0 + max(0, $1.unreadCount) }
-    }
-
-    private func filterReminderCount(_ item: ChatFilter) -> Int {
-        let base = filterBase
-        switch item {
-        case .all, .unread:
-            return unreadMessages(base)
-        case .group:
-            return unreadMessages(base.filter { $0.type == "group" || ($0.memberCount ?? 0) > 2 })
-        case .official:
-            return unreadMessages(base.filter { !($0.oaId ?? "").isEmpty || $0.oaDigest == true })
-        case .pinned:
-            return unreadMessages(base.filter { $0.pinned == true })
-        }
+        return ChatFilterSnapshot(list: shown, unreadCounts: counts)
     }
 
     @ViewBuilder
-    private func filterReminder(_ item: ChatFilter) -> some View {
-        let count = filterReminderCount(item)
+    private func filterReminder(_ item: ChatFilter, count: Int) -> some View {
         if count > 0 {
             Group {
                 if item == .all {
@@ -740,7 +726,7 @@ struct ChatsView: View {
     }
 
     /// 导航栏下方的液态玻璃分类条。
-    private var chatFilterBar: some View {
+    private func chatFilterBar(unreadCounts: [ChatFilter: Int]) -> some View {
         HStack(spacing: 4) {
             ForEach(ChatFilter.allCases) { item in
                 Button {
@@ -801,7 +787,7 @@ struct ChatsView: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: 34)
                     .overlay(alignment: .topTrailing) {
-                        filterReminder(item)
+                        filterReminder(item, count: unreadCounts[item, default: 0])
                     }
                     .contentShape(Rectangle())
                 }
@@ -1392,7 +1378,8 @@ struct ChatsView: View {
     }
 
     var body: some View {
-        NavigationStack(path: $path) {
+        let snapshot = chatSnapshot()
+        return NavigationStack(path: $path) {
             /* 列表**整页铺满**（含顶栏底下）：滚动时会话会从顶栏那层薄玻璃后面滑过去 ——
                这就是用户要的那点「透」。顶栏最后画，永远压在最上面。
                （以前是 VStack：列表一定从顶栏下面开始，永远滚不到玻璃底下，所以看着像块实色板。） */
@@ -1414,14 +1401,14 @@ struct ChatsView: View {
                                「收起来的时候会话页会上下弹一下」就是它。
                                底下那条"两页叠一起"是二楼自己画的，不需要真的把列表推下去。 */
                             Color.clear.frame(height: L.safeTop + L.navH + chatFilterOffset)
-                            if list.isEmpty {
+                            if snapshot.list.isEmpty {
                                 Text(Tr("这个分类暂时没有会话"))
                                     .font(pf(14))
                                     .foregroundColor(C.subLabel)
                                     .frame(maxWidth: .infinity)
                                     .padding(.top, 54)
                             }
-                            ForEach(list) { chat in
+                            ForEach(snapshot.list) { chat in
                                 SwipeChatRow(
                                     chat: chat,
                                     onOpen: { openRow(chat) },
@@ -1711,7 +1698,7 @@ struct ChatsView: View {
                         .frame(height: L.safeTop + L.navH)
                         .allowsHitTesting(false)
                     if chatFilterVisible {
-                        chatFilterBar
+                        chatFilterBar(unreadCounts: snapshot.unreadCounts)
                     }
                     Spacer(minLength: 0)
                         .allowsHitTesting(false)

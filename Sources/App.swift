@@ -661,9 +661,41 @@ final class AppState: ObservableObject {
            出了「内容不动了」这类问题，先看启动时间点对不对得上。 */
         AppLog.info("启动 " + AppInfo.build + " · " + AppInfo.deviceKind + " · " + API.shared.server)
         await LocalNotify.refresh()
-        await loadChats()
-        await loadContacts()
-        await loadMoments()
+        await loadHomeDataParallel()
+    }
+
+    /// 启动/回前台时，会话、通讯录、生活圈三个独立接口并行拉取。
+    /// 以前串行执行，弱网下总耗时接近三次 RTT 相加。
+    private func loadHomeDataParallel() async {
+        loadingChats = true
+        async let chatsRequest = API.shared.chats()
+        async let contactsRequest = API.shared.contactsFull()
+        async let momentsRequest = API.shared.momentsFeed()
+
+        do {
+            let fresh = try await chatsRequest
+            if !AppState.sameChats(chats, fresh) { chats = fresh }
+            loadError = nil
+        } catch {
+            loadError = (error as? APIError)?.errorDescription ?? "加载失败"
+        }
+
+        if let r = try? await contactsRequest {
+            let sameOrder = contacts.map { $0.id } == r.friends.map { $0.id }
+            let sameLook = contacts.count == r.friends.count
+                && zip(contacts, r.friends).allSatisfy { $0.avatarPath == $1.avatarPath && $0.name == $1.name }
+            if !(sameOrder && sameLook) { contacts = r.friends }
+            friendRequests = r.incoming.count
+        }
+
+        if let feed = try? await momentsRequest {
+            moments = feed.moments
+            momentsUnread = feed.unread
+            momentNoticeUnread = feed.noticeUnread
+        }
+
+        loadingChats = false
+        syncIconBadge()
     }
 
     /* ----------------------------------------------------------
@@ -835,6 +867,7 @@ struct CHRISApp: App {
     init() {
         /* 一启动就装崩溃上报：连登录页崩都能抓到（以前放在登录之后，前面的崩抓不到） */
         CrashCatcher.install()
+        AppMetrics.shared.start()
         /* 启动分阶段打点：万一崩在启动路上，服务器日志里能看到卡在第几步
            （只看 "launch" 一条的话，不知道是崩在配置、会话还是主界面） */
         CrashCatcher.note("启动", "1 App init")
