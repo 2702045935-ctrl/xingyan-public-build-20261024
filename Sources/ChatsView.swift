@@ -719,58 +719,105 @@ struct ChatsView: View {
         }
     }
 
+    private func filterPillWidth(_ item: ChatFilter) -> CGFloat {
+        guard chatFilter == item else { return 38 }
+        let expanded: CGFloat
+        switch item {
+        case .all: expanded = 70
+        case .unread: expanded = 78
+        case .group: expanded = 74
+        case .official: expanded = 88
+        case .pinned: expanded = 74
+        }
+        return expanded
+    }
+
+    private func chooseFilter(_ item: ChatFilter) {
+        guard chatFilter != item else { return }
+        NotificationCenter.default.post(name: .chrisRowSwipe, object: nil)
+        scrolled = 0
+        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+        withAnimation(.spring(response: 0.34, dampingFraction: 0.78)) {
+            chatFilter = item
+        }
+    }
+
+    private func moveFilter(by delta: Int) {
+        let all = ChatFilter.allCases
+        guard let i = all.firstIndex(of: chatFilter) else { return }
+        let next = i + delta
+        guard next >= 0, next < all.count else { return }
+        chooseFilter(all[next])
+    }
+
     /// 导航栏下方的液态玻璃分类条。
     private var chatFilterBar: some View {
-        HStack(spacing: 4) {
-            ForEach(ChatFilter.allCases) { item in
-                Button {
-                    guard chatFilter != item else { return }
-                    NotificationCenter.default.post(name: .chrisRowSwipe, object: nil)
-                    scrolled = 0
-                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
-                    withAnimation(.spring(response: 0.30, dampingFraction: 0.80)) {
-                        chatFilter = item
-                    }
-                } label: {
-                    ZStack {
-                        if chatFilter == item {
-                            GlassBackground(shape: Capsule(style: .continuous),
-                                            opacity: 0.96,
-                                            edgeAlpha: 0.82,
-                                            shadow: false,
-                                            seed: 0.32)
-                                .overlay {
-                                    Capsule(style: .continuous)
-                                        .fill(C.green.opacity(scheme == .dark ? 0.12 : 0.055))
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 5) {
+                    ForEach(ChatFilter.allCases) { item in
+                        Button {
+                            chooseFilter(item)
+                        } label: {
+                            ZStack {
+                                if chatFilter == item {
+                                    GlassBackground(shape: Capsule(style: .continuous),
+                                                    opacity: 0.97,
+                                                    edgeAlpha: 0.86,
+                                                    shadow: false,
+                                                    seed: 0.32)
+                                        .overlay {
+                                            Capsule(style: .continuous)
+                                                .fill(C.green.opacity(scheme == .dark ? 0.13 : 0.055))
+                                        }
+                                        .overlay {
+                                            Capsule(style: .continuous)
+                                                .stroke(C.green.opacity(0.32), lineWidth: 0.8)
+                                        }
+                                        .shadow(color: Color.black.opacity(scheme == .dark ? 0.26 : 0.11),
+                                                radius: 6, x: 0, y: 2)
+                                        .matchedGeometryEffect(id: "chatFilterSelection",
+                                                               in: filterSelectionNS)
                                 }
-                                .overlay {
-                                    Capsule(style: .continuous)
-                                        .stroke(C.green.opacity(0.30), lineWidth: 0.8)
-                                }
-                                .shadow(color: Color.black.opacity(scheme == .dark ? 0.24 : 0.10),
-                                        radius: 5, x: 0, y: 2)
-                                .matchedGeometryEffect(id: "chatFilterSelection",
-                                                       in: filterSelectionNS)
-                        }
 
-                        HStack(spacing: 4) {
-                            Image(systemName: item.symbol)
-                                .font(.system(size: 11.5, weight: .medium))
-                                .frame(width: 13)
-                            Text(Tr(item.rawValue))
-                                .font(pf(13.5, chatFilter == item ? .semibold : .regular))
-                                .lineLimit(1)
+                                HStack(spacing: 4) {
+                                    Image(systemName: item.symbol)
+                                        .font(.system(size: 11.5, weight: .medium))
+                                        .frame(width: 13)
+                                    if chatFilter == item {
+                                        Text(Tr(item.rawValue))
+                                            .font(pf(13.5, .semibold))
+                                            .lineLimit(1)
+                                            .transition(.opacity.combined(with: .scale(scale: 0.88)))
+                                    }
+                                }
+                                .foregroundColor(chatFilter == item ? C.green : C.subLabel)
+                            }
+                            .frame(width: filterPillWidth(item), height: 34)
+                            .overlay(alignment: .topTrailing) {
+                                filterReminder(item)
+                            }
+                            .contentShape(Capsule())
                         }
-                        .foregroundColor(chatFilter == item ? C.green : C.subLabel)
+                        .buttonStyle(.plain)
+                        .id(item.id)
                     }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 34)
-                    .overlay(alignment: .topTrailing) {
-                        filterReminder(item)
-                    }
-                    .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .padding(.horizontal, 4)
+                .animation(.spring(response: 0.34, dampingFraction: 0.78), value: chatFilter)
+            }
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 18)
+                    .onEnded { g in
+                        let dx = g.translation.width
+                        guard abs(dx) > 36, abs(dx) > abs(g.translation.height) * 1.25 else { return }
+                        moveFilter(by: dx < 0 ? 1 : -1)
+                    }
+            )
+            .onChange(of: chatFilter) { item in
+                withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) {
+                    proxy.scrollTo(item.id, anchor: .center)
+                }
             }
         }
         .padding(4)
