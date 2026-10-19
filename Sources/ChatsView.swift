@@ -737,7 +737,7 @@ struct ChatsView: View {
         NotificationCenter.default.post(name: .chrisRowSwipe, object: nil)
         scrolled = 0
         UIImpactFeedbackGenerator(style: .soft).impactOccurred()
-        withAnimation(.spring(response: 0.34, dampingFraction: 0.78)) {
+        withAnimation(.spring(response: 0.30, dampingFraction: 0.92)) {
             chatFilter = item
         }
     }
@@ -768,10 +768,32 @@ struct ChatsView: View {
                                                     seed: 0.32)
                                         .overlay {
                                             Capsule(style: .continuous)
-                                                .stroke(C.hairline.opacity(0.72), lineWidth: 0.65)
+                                                .fill(
+                                                    LinearGradient(
+                                                        colors: [
+                                                            Color.white.opacity(scheme == .dark ? 0.20 : 0.44),
+                                                            Color.white.opacity(0.04),
+                                                            Color.white.opacity(scheme == .dark ? 0.10 : 0.20)
+                                                        ],
+                                                        startPoint: .topLeading,
+                                                        endPoint: .bottomTrailing
+                                                    )
+                                                )
                                         }
-                                        .shadow(color: Color.black.opacity(scheme == .dark ? 0.26 : 0.11),
-                                                radius: 6, x: 0, y: 2)
+                                        .overlay {
+                                            Capsule(style: .continuous)
+                                                .stroke(
+                                                    LinearGradient(
+                                                        colors: [
+                                                            Color.white.opacity(scheme == .dark ? 0.62 : 0.92),
+                                                            Color.white.opacity(0.08)
+                                                        ],
+                                                        startPoint: .topLeading,
+                                                        endPoint: .bottomTrailing
+                                                    ),
+                                                    lineWidth: 0.9
+                                                )
+                                        }
                                         .matchedGeometryEffect(id: "chatFilterSelection",
                                                                in: filterSelectionNS)
                                 }
@@ -787,7 +809,7 @@ struct ChatsView: View {
                                             .transition(.opacity.combined(with: .scale(scale: 0.88)))
                                     }
                                 }
-                                .foregroundColor(chatFilter == item ? C.green : C.subLabel)
+                                .foregroundColor(chatFilter == item ? C.label : C.subLabel)
                             }
                             .frame(width: filterPillWidth(item), height: 34)
                             .overlay(alignment: .topTrailing) {
@@ -800,7 +822,7 @@ struct ChatsView: View {
                     }
                 }
                 .padding(.horizontal, 4)
-                .animation(.spring(response: 0.34, dampingFraction: 0.78), value: chatFilter)
+                .animation(.spring(response: 0.30, dampingFraction: 0.92), value: chatFilter)
             }
             .simultaneousGesture(
                 DragGesture(minimumDistance: 18)
@@ -811,7 +833,7 @@ struct ChatsView: View {
                     }
             )
             .onChange(of: chatFilter) { item in
-                withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) {
+                withAnimation(.spring(response: 0.30, dampingFraction: 0.94)) {
                     proxy.scrollTo(item.id, anchor: .center)
                 }
             }
