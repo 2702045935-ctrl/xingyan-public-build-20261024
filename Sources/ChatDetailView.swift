@@ -3667,13 +3667,22 @@ struct ChatDetailView: View {
             /* 不能只看条数和最后一条的 id：对方收款以后转账卡片还是同一条消息，
                只是 body 里的 status 从 pending 变成 received —— 以前这种情况会被
                当成「没变化」跳过，气泡就一直停在「待对方确认收款」。 */
-            /* ⚠ 「有没有变化」只比最近这一页：用户往上翻过历史以后，本地条数本来就比
-               这一页多，拿总数比会永远判成"变了"（列表跟着反复重画、位置乱跳）。 */
-            let n = min(result.messages.count, messages.count)
-            let same = n > 0
-                && result.messages.last?.id == messages.last?.id
-                && zip(result.messages.suffix(n), messages.suffix(n))
-                    .allSatisfy { $0.id == $1.id && $0.body == $1.body }
+            /* 历史页和实时 WSS 会并发到达。不能再用服务端这一页直接覆盖本地：
+               先按消息 id 合并，服务端版本覆盖旧缓存（转账状态等字段会更新），
+               最后以 seq 为唯一顺序稳定排序。这样既不丢同时到达的新消息，也不会乱序。 */
+            var mergedById: [String: Message] = [:]
+            for m in messages { mergedById[m.id] = m }
+            for m in result.messages { mergedById[m.id] = m }
+            let merged = mergedById.values.sorted { a, b in
+                let sa = a.seq ?? 0, sb = b.seq ?? 0
+                if sa > 0 && sb > 0 && sa != sb { return sa < sb }
+                let ca = a.createdAt ?? "", cb = b.createdAt ?? ""
+                if ca != cb { return ca < cb }
+                return a.id < b.id
+            }
+            let nextMessages = Array(merged.suffix(2000))
+            let same = !initial && nextMessages.count == messages.count
+                && zip(nextMessages, messages).allSatisfy { $0.id == $1.id && $0.body == $1.body }
             if initial || !same {
                 /* 左上角未读数字：首次进来带上列表里的未读；之后只要多出别人的新消息就往上加 */
                 if initial {
@@ -3686,17 +3695,11 @@ struct ChatDetailView: View {
                     }.count
                     if incoming > 0 { unreadHere += incoming }
                 }
-                if messages.count > result.messages.count {
-                    /* 用户已经往上看过更早的记录：这一刷新只换「最近一页」，
-                       上面翻出来的历史原样留着（微信也是——看着老消息来了新消息，位置不动，
-                       更不会把看过的历史弄丢）。 */
-                    let oldestFresh = result.messages.first?.seq ?? 0
-                    let older = messages.filter { ($0.seq ?? 0) < oldestFresh }
-                    messages = older + result.messages
-                } else {
-                    messages = result.messages
+                messages = nextMessages
+                if initial {
+                    hasOlder = result.hasMore
+                        || (nextMessages.first?.seq ?? 0) < (result.messages.first?.seq ?? 0)
                 }
-                if initial { hasOlder = result.hasMore }
                 /* 回执：这些消息已经到我手机上了（后台投递日志按这个算"已送达"） */
                 if let last = result.messages.last, let sq = last.seq {
                     Realtime.shared.ackDelivery(chatId: chat.id, seq: sq)
