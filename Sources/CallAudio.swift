@@ -25,8 +25,8 @@ final class CallAudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegat
     private(set) var plcFilled = 0
     private(set) var outOfOrder = 0
     /// 抖动缓冲目标深度（帧数，40ms 一帧）：网络抖就自动加厚，稳了再慢慢放薄
-    /* 实时语音只保留两帧回压；旧实现的未来排播在弱网后会积成数秒延迟。 */
-    private var bufferTarget: Int = 2
+    /* 160ms 起步，持续丢帧时最多扩到 240ms；稳定后逐档收回。 */
+    private var bufferTarget: Int = 4
     private var lastPlcAt: Date = .distantPast
     /// 上一帧的音频（PLC 补帧用）
     private var lastPlayedFrame: Data? = nil
@@ -166,7 +166,7 @@ final class CallAudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegat
         plcFilled = 0
         outOfOrder = 0
         lastPlayedFrame = nil
-        bufferTarget = 2
+        bufferTarget = 4
         lastPlcAt = .distantPast
         lastCapturePeak = 0
         lastPlayPeak = 0
@@ -225,7 +225,7 @@ final class CallAudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegat
         plcFilled = 0
         outOfOrder = 0
         lastPlayedFrame = nil
-        bufferTarget = 2
+        bufferTarget = 4
         lastPlcAt = .distantPast
         lastCapturePeak = 0
         lastPlayPeak = 0
@@ -568,6 +568,8 @@ final class CallAudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegat
 
     /// 播放对方传来的一帧（16kHz 单声道 Int16）
     func play(_ data: Data) {
+        /* 媒体已经交给 TRTC：旧 PCM 下行只能丢弃，不能再把播放器拉起来叠音。 */
+        guard !handedOver else { return }
         guard !data.isEmpty else { return }
         framesIn += 1
         /* ⚠ 2026-10-13 音质对齐微信（抖动缓冲 + 丢包补偿）：
@@ -634,7 +636,10 @@ final class CallAudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegat
             return
         }
         pendingFrames.append(data)
-        /* 只保留最新两帧（80ms）；网络抖动恢复后立即追到实时，不再积成几秒延迟。 */
+        /* 先保实时；如果突发帧仍在持续丢弃，就把垫子扩到 6 帧，避免整段听不清。 */
+        if pendingFrames.count > bufferTarget, bufferTarget < 6 {
+            bufferTarget += 1
+        }
         while pendingFrames.count > bufferTarget {
             pendingFrames.removeFirst()
             framesDropped += 1

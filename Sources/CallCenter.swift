@@ -363,14 +363,9 @@ final class CallCenter: NSObject, ObservableObject {
         startRingTimeout()
         Ringtone.shared.startRingback()        // 等对方接的时候放回铃音（嘟——）
         Task { await beginMedia() }
-        /* ⚠ 语音**不再进 TRTC 房间**（2026-09-25 线上实测后改回来）：
-           TRTC 以 role=anchor 进房时会自己开一路本地音频采集，把我们的转发通道
-           挤成空壳（采集=ok 却一个 buffer 都不回调），我们抢麦失败 → 重试时
-           AVAudioSession.setActive(false) 顺手把播放引擎掐停 → 「两边都在发帧、
-           服务器也都在转发，但谁都听不见」（call-trace.log 里
-           「采集=失败 原因:（空）」紧跟「采集=ok」就是这一串）。
-           语音现在只走服务器转发这一条路（它本身不依赖 TURN/直连，运营商也挡不住），
-           视频照旧走腾讯云。 */
+        /* 视频保留原行为：立即进房等对端。
+           语音等对方接听后再进房，避免 callId 还没落到服务端时取票被 403，
+           也避免在响铃阶段抢占服务器 PCM 通道的麦克风。 */
         if video { Task { await startTRTCIfPossible() } }
     }
 
@@ -391,7 +386,7 @@ final class CallCenter: NSObject, ObservableObject {
         phase = .connecting
         tip = "正在接通…"
         Task { await beginMedia() }
-        if isVideo { Task { await startTRTCIfPossible() } }
+        Task { await startTRTCIfPossible() }
         startConnectWatch()
         /* 注意：这里**不能**直接开始采集。
            麦克风权限是在 beginMedia() 里现申请的（第一次会弹窗），
@@ -1040,10 +1035,12 @@ final class CallCenter: NSObject, ObservableObject {
                     startTimer()
                 }
                 reportMicState(prefix: "App 语音走服务器转发（对方已接）")
+                Task { await startTRTCIfPossible() }
             }
 
         case "audio":
             /* 服务器转发过来的语音帧：直接丢给播放器（这条路不依赖 TURN/直连，一定通） */
+            guard !usingTRTC else { return }
             guard let b64 = ev.callAudioData, let d = Data(base64Encoded: b64) else { return }
             CallAudioPipe.shared.play(d)
 
@@ -1149,11 +1146,8 @@ final class CallCenter: NSObject, ObservableObject {
                 self.note("网络切换（" + (path.status == .satisfied ? "已联网" : "断开") + "）→ 自动重连")
                 self.weakNet = true
                 if self.tip != "通话中" && self.tip != "视频通话中" { self.tip = "网络切换，正在重连…" }
-                if self.isVideo {
-                    if !self.usingTRTC { await self.startTRTCIfPossible() }
-                } else {
-                    CallAudioPipe.shared.resetHandOver()
-                }
+                if !self.usingTRTC { await self.startTRTCIfPossible() }
+                if !self.isVideo { CallAudioPipe.shared.resetHandOver() }
             }
         }
         pathMonitor.start(queue: DispatchQueue(label: "chris.call.path"))
@@ -1689,12 +1683,9 @@ extension CallCenter: RTCPeerConnectionDelegate {
            WebRTC（视频）+ 服务器转发语音，通话照样通，不会变哑巴。 */
 
     private func startTRTCIfPossible() async {
-        /* ⚠ 语音**不进 TRTC 房间**（线上实测后定的）：TRTC 用 role=anchor 一进房
-           就会自己开麦采集，把我们的 AVCaptureSession 挤成空壳，我们抢麦失败 →
-           重试时关掉音频会话 → 播放引擎被掐停 → 「两边都在发帧却没声音」。
-           只有视频走 TRTC（视频没有服务器转发这条退路）。 */
-        guard isVideo else { return }
-        /* 视频：进房不采集（TRTCBridge.start 只 enterRoom）。
+        /* 语音和视频都采用同一套兼容策略：先只进房，PCM/WebRTC 继续跑；
+           确认对端也在房间里后，再交出自己的麦克风并由 TRTC 接管。 */
+        /* 语音/视频都先进房不采集（TRTCBridge.start 只 enterRoom）。
            以前栽过的坑：TRTC 用 role=anchor 一进房就自己开麦采集，把我们的
            AVCaptureSession 挤成空壳（isRunning=true、采集=ok，却一个 buffer 都不回调），
            服务器一帧都收不到 —— 所以这里的顺序必须是：
@@ -1771,8 +1762,6 @@ extension CallCenter: RTCPeerConnectionDelegate {
     /// 确认对端也在 TRTC 房间里了：把媒体完全交给腾讯云
     private func switchMediaToTRTC() {
         guard !usingTRTC, phase != .idle, !callId.isEmpty else { return }
-        /* 语音永远不切 TRTC（切过去就得两个引擎抢麦克风，实测就是「都没声音」） */
-        guard isVideo else { return }
         usingTRTC = true
         note(isVideo ? "对端也在腾讯云房间里 → 媒体切到 TRTC ✓"
                      : "对端也在腾讯云房间里 → 语音切到 TRTC ✓")
