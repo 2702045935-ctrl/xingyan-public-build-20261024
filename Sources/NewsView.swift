@@ -182,7 +182,9 @@ struct NewsFeedView: View {
         if isBoard {
             boardCell(it, index: index)
         } else if !it.cover.isEmpty {
-            if index == 0 { heroCell(it) } else { thumbCell(it) }
+            /* 机器人里的紧凑新闻采用高密度标题流：图片只做辅助，
+               不再让第一张大图把后面几条标题挤出首屏。 */
+            if index == 0 && !compact { heroCell(it) } else { thumbCell(it) }
         } else {
             textCell(it)
         }
@@ -214,7 +216,7 @@ struct NewsFeedView: View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 0) {
                 Text(it.title)
-                    .font(pf(compact ? 16 : 17))
+                    .font(pf(compact ? 15.5 : 17))
                     .foregroundColor(C.label)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
@@ -224,18 +226,18 @@ struct NewsFeedView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             RemoteImage(path: it.cover, maxSide: 800)
-                .frame(width: compact ? 84 : 96, height: compact ? 63 : 72)
+                .frame(width: compact ? 76 : 96, height: compact ? 57 : 72)
                 .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .padding(.horizontal, compact ? 14 : 16)
+        .padding(.vertical, compact ? 11 : 14)
     }
 
     /// 没图的：标题 + 摘要（新浪有几条就是纯文字）
     private func textCell(_ it: NewsItem) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(it.title)
-                .font(pf(compact ? 16 : 17))
+                .font(pf(compact ? 15.5 : 17))
                 .foregroundColor(C.label)
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
@@ -250,8 +252,8 @@ struct NewsFeedView: View {
             meta(it)
                 .padding(.top, 2)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .padding(.horizontal, compact ? 14 : 16)
+        .padding(.vertical, compact ? 11 : 14)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
