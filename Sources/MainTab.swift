@@ -633,10 +633,6 @@ struct TabBar: View {
                             .frame(height: max(12, L.tabLabel + 2))
                     }
                     .foregroundColor(selection == i ? selColor : unselColor)
-                    .shadow(color: selection == i
-                            ? Color.black.opacity(scheme == .dark ? 0.34 : 0.16)
-                            : Color.clear,
-                            radius: 0.8, x: 0, y: 0.6)
                     .frame(maxWidth: .infinity)
                     .padding(.top, 2)
                     .contentShape(Rectangle())
@@ -658,57 +654,24 @@ struct TabBar: View {
                 let seg = barWidth / CGFloat(items.count)
                 let w = max(0, seg - UIConfig.num("tabSliderInset", 10))
                 let cx = slideX ?? dragX ?? (seg * (CGFloat(selection) + 0.5))
-                GlassBackground(shape: Capsule(style: .continuous),
-                                opacity: min(1, UIConfig.num("tabSliderAlpha", 0.55) + 0.28),
-                                edgeAlpha: 0.88,
-                                shadow: false,
-                                seed: 0.72,
-                                native: true)
-                    .allowsHitTesting(false)
+                Capsule(style: .continuous)
+                    .fill(.ultraThinMaterial)
                     /* ⚠ 这颗「超透玻璃胶囊」**不要动**（用户明确要求保留）：
                        选中哪一格它滑到哪一格，浓度还是后台 tabSliderAlpha。 */
+                    .opacity(UIConfig.num("tabSliderAlpha", 0.55))
                     .overlay(
+                        /* 苹果那种一道上亮下淡的玻璃边 */
                         Capsule(style: .continuous)
-                            .fill(
-                                LinearGradient(
-                                    colors: [
-                                        Color.white.opacity(scheme == .dark ? 0.20 : 0.42),
-                                        Color.white.opacity(0.025),
-                                        Color.white.opacity(scheme == .dark ? 0.09 : 0.18)
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
+                            .stroke(LinearGradient(colors: [Color.white.opacity(0.70),
+                                                            Color.white.opacity(0.16)],
+                                                   startPoint: .top, endPoint: .bottom),
+                                    lineWidth: 0.9)
                     )
-                    .overlay(
-                        /* WhatsApp 式透镜边：顶部亮白，底部黑灰收边。 */
-                        Capsule(style: .continuous)
-                            .stroke(
-                                LinearGradient(
-                                    colors: [
-                                        Color.white.opacity(scheme == .dark ? 0.68 : 0.94),
-                                        Color.white.opacity(0.06),
-                                        Color.black.opacity(scheme == .dark ? 0.42 : 0.20)
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 1.15
-                            )
-                    )
-                    .overlay(
-                        Capsule(style: .continuous)
-                            .stroke(Color.black.opacity(scheme == .dark ? 0.20 : 0.08),
-                                    lineWidth: 2.2)
-                            .blur(radius: 1.1)
-                    )
-                    .shadow(color: .black.opacity(scheme == .dark ? 0.22 : 0.08),
-                            radius: 5, y: 2)
+                    .shadow(color: .black.opacity(0.10), radius: 6, y: 3)
                     .frame(width: w, height: max(0, L.tabH - UIConfig.num("tabSliderVInset", 14)))
                     .offset(x: cx - w / 2)
                     /* 换页时滑过去是弹的；手指拖动时（dragX 在变）要跟手、不能有动画 */
-                    .animation(.spring(response: 0.30, dampingFraction: 0.92), value: selection)
+                    .animation(.spring(response: 0.28, dampingFraction: 0.84), value: selection)
                     .animation(nil, value: dragX)
             }
         }
@@ -777,7 +740,7 @@ struct TabBar: View {
                     if seg > 0 {
                         selection = min(items.count - 1, max(0, Int(x / seg)))
                     }
-                    withAnimation(.spring(response: 0.30, dampingFraction: 0.94)) {
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
                         slideX = nil
                     }
                 }

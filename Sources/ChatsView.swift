@@ -719,18 +719,30 @@ struct ChatsView: View {
         }
     }
 
+    private func chooseFilter(_ item: ChatFilter) {
+        guard chatFilter != item else { return }
+        NotificationCenter.default.post(name: .chrisRowSwipe, object: nil)
+        scrolled = 0
+        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+        withAnimation(.spring(response: 0.30, dampingFraction: 0.92)) {
+            chatFilter = item
+        }
+    }
+
+    private func moveFilter(_ delta: Int) {
+        let all = ChatFilter.allCases
+        guard let index = all.firstIndex(of: chatFilter) else { return }
+        let next = index + delta
+        guard next >= 0, next < all.count else { return }
+        chooseFilter(all[next])
+    }
+
     /// 导航栏下方的液态玻璃分类条。
     private var chatFilterBar: some View {
         HStack(spacing: 4) {
             ForEach(ChatFilter.allCases) { item in
                 Button {
-                    guard chatFilter != item else { return }
-                    NotificationCenter.default.post(name: .chrisRowSwipe, object: nil)
-                    scrolled = 0
-                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
-                    withAnimation(.spring(response: 0.30, dampingFraction: 0.80)) {
-                        chatFilter = item
-                    }
+                    chooseFilter(item)
                 } label: {
                     ZStack {
                         if chatFilter == item {
@@ -741,13 +753,34 @@ struct ChatsView: View {
                                             seed: 0.32)
                                 .overlay {
                                     Capsule(style: .continuous)
-                                        .fill(C.green.opacity(scheme == .dark ? 0.12 : 0.055))
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [
+                                                    Color.white.opacity(scheme == .dark ? 0.20 : 0.42),
+                                                    Color.white.opacity(0.025),
+                                                    Color.white.opacity(scheme == .dark ? 0.09 : 0.18)
+                                                ],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            )
+                                        )
                                 }
                                 .overlay {
                                     Capsule(style: .continuous)
-                                        .stroke(C.green.opacity(0.30), lineWidth: 0.8)
+                                        .stroke(
+                                            LinearGradient(
+                                                colors: [
+                                                    Color.white.opacity(scheme == .dark ? 0.68 : 0.94),
+                                                    Color.white.opacity(0.06),
+                                                    Color.black.opacity(scheme == .dark ? 0.42 : 0.20)
+                                                ],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            ),
+                                            lineWidth: 1.1
+                                        )
                                 }
-                                .shadow(color: Color.black.opacity(scheme == .dark ? 0.24 : 0.10),
+                                .shadow(color: Color.black.opacity(scheme == .dark ? 0.22 : 0.08),
                                         radius: 5, x: 0, y: 2)
                                 .matchedGeometryEffect(id: "chatFilterSelection",
                                                        in: filterSelectionNS)
@@ -761,7 +794,7 @@ struct ChatsView: View {
                                 .font(pf(13.5, chatFilter == item ? .semibold : .regular))
                                 .lineLimit(1)
                         }
-                        .foregroundColor(chatFilter == item ? C.green : C.subLabel)
+                        .foregroundColor(chatFilter == item ? C.label : C.subLabel)
                     }
                     .frame(maxWidth: .infinity)
                     .frame(height: 34)
@@ -773,6 +806,15 @@ struct ChatsView: View {
                 .buttonStyle(.plain)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .center)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 18)
+                .onEnded { g in
+                    let dx = g.translation.width
+                    guard abs(dx) > 36, abs(dx) > abs(g.translation.height) * 1.25 else { return }
+                    moveFilter(dx < 0 ? 1 : -1)
+                }
+        )
         .padding(4)
         .background {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -1355,7 +1397,7 @@ struct ChatsView: View {
             ZStack(alignment: .top) {
                 if app.chats.isEmpty {
                     VStack(spacing: 0) {
-                        Color.clear.frame(height: L.safeTop + L.navH)
+                        Color.clear.frame(height: L.safeTop + L.navH + chatFilterH)
                         emptyView
                         Spacer(minLength: 0)
                     }
@@ -1369,7 +1411,14 @@ struct ChatsView: View {
                                滚动视图自己会带一点回弹 —— 用户看到的
                                「收起来的时候会话页会上下弹一下」就是它。
                                底下那条"两页叠一起"是二楼自己画的，不需要真的把列表推下去。 */
-                            Color.clear.frame(height: L.safeTop + L.navH)
+                            Color.clear.frame(height: L.safeTop + L.navH + chatFilterH)
+                            if list.isEmpty {
+                                Text(Tr("这个分类暂时没有会话"))
+                                    .font(pf(14))
+                                    .foregroundColor(C.subLabel)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.top, 54)
+                            }
                             ForEach(list) { chat in
                                 SwipeChatRow(
                                     chat: chat,
@@ -1399,6 +1448,7 @@ struct ChatsView: View {
                             }
                         )
                     }
+                    .id(chatFilter)
                     .coordinateSpace(name: "chatsScroll")
                     /* 二楼：直接用**拖动手势**驱动（simultaneous = 只观察、不抢滚动），
                        不再只依赖滚动探针 —— 手指在列表最上面往下拖就一定露出来，
@@ -1654,6 +1704,18 @@ struct ChatsView: View {
                     Spacer(minLength: 0)
                 }
 
+                VStack(spacing: 0) {
+                    Color.clear
+                        .frame(height: L.safeTop + L.navH)
+                        .allowsHitTesting(false)
+                    chatFilterBar
+                    Spacer(minLength: 0)
+                        .allowsHitTesting(false)
+                }
+                .ignoresSafeArea(edges: .top)
+                .opacity(navFadeForFloor)
+                .allowsHitTesting(!floorUp)
+                .zIndex(3)
             }
             /* 第一页面（会话列表）的底色跟通讯录统一：都用后台的「页面底色」pageBg，
                以前这里用的是 navBg，深色下比通讯录浅一档（#18181A vs #0B0B0D）。 */
