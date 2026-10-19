@@ -547,6 +547,26 @@ struct SwipeChatRow: View {
 /* ============================================================ 微信（会话列表） */
 
 struct ChatsView: View {
+    private enum ChatFilter: String, CaseIterable, Identifiable, Hashable {
+        case all = "全部"
+        case unread = "未读"
+        case group = "群聊"
+        case official = "公众号"
+        case pinned = "置顶"
+
+        var id: String { rawValue }
+
+        var symbol: String {
+            switch self {
+            case .all: return "rectangle.stack"
+            case .unread: return "circle.fill"
+            case .group: return "person.2"
+            case .official: return "megaphone"
+            case .pinned: return "pin"
+            }
+        }
+    }
+
     @ObservedObject private var lang = LangStore.shared
     /// 小星档位（关了就不画那双眼睛，让放大镜顶到左边那个位置 —— 2026-10-15 用户要求）
     @ObservedObject private var eyes = EyesStore.shared
@@ -555,6 +575,9 @@ struct ChatsView: View {
     @Environment(\.colorScheme) private var scheme
 
     @State private var keyword = ""
+    @State private var chatFilter: ChatFilter = .all
+    @Namespace private var filterSelectionNS
+    private let chatFilterH: CGFloat = 52
     /// 会话列表滚了多少（顶栏那层磨砂按它淡入淡出）
     @State private var scrolled: CGFloat = 0
     /// 下拉露出来的「二楼」露了多少（微信那个小程序层；由列表自己的下拉量驱动，不挂手势）
@@ -612,11 +635,11 @@ struct ChatsView: View {
         UIConfig.colorIfSet("eyesColor") ?? UIConfig.color("navPlusBg", 0x0F5A3C, 0x0F5A3C)
     }
 
-    private var list: [Chat] {
+    private var filterBase: [Chat] {
         /* 会话列表里点公众号那几条：**直接进公众号页面**，不是进聊天页
            （微信里服务号/订阅号点进去也是它们自己的页面） */
         /* 贾维斯从列表里拿掉（它改成左上角那只小脸，点脸进对话） */
-        let base = app.chats.filter { c in
+        app.chats.filter { c in
             guard c.botRank != 0,
                   !c.id.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             else { return false }
@@ -627,10 +650,148 @@ struct ChatsView: View {
                只滤掉这种三样全空的；正常新建群哪怕还没消息也会留着头像/标题。 */
             return !title.isEmpty || c.lastMessage != nil || !avatar.isEmpty
         }
-        guard !keyword.isEmpty else { return base }
-        return base.filter {
+    }
+
+    private var list: [Chat] {
+        let base = filterBase
+        let filtered: [Chat]
+        switch chatFilter {
+        case .all:
+            filtered = base
+        case .unread:
+            filtered = base.filter { $0.unreadCount > 0 || $0.flagged == true }
+        case .group:
+            filtered = base.filter { $0.type == "group" || ($0.memberCount ?? 0) > 2 }
+        case .official:
+            filtered = base.filter { !($0.oaId ?? "").isEmpty || $0.oaDigest == true }
+        case .pinned:
+            filtered = base.filter { $0.pinned == true }
+        }
+        guard !keyword.isEmpty else { return filtered }
+        return filtered.filter {
             $0.name.contains(keyword) || (($0.lastMessage?.preview ?? "").contains(keyword))
         }
+    }
+
+    private func unreadMessages(_ chats: [Chat]) -> Int {
+        chats.reduce(0) { $0 + max(0, $1.unreadCount) }
+    }
+
+    private func filterReminderCount(_ item: ChatFilter) -> Int {
+        let base = filterBase
+        switch item {
+        case .all, .unread:
+            return unreadMessages(base)
+        case .group:
+            return unreadMessages(base.filter { $0.type == "group" || ($0.memberCount ?? 0) > 2 })
+        case .official:
+            return unreadMessages(base.filter { !($0.oaId ?? "").isEmpty || $0.oaDigest == true })
+        case .pinned:
+            return unreadMessages(base.filter { $0.pinned == true })
+        }
+    }
+
+    @ViewBuilder
+    private func filterReminder(_ item: ChatFilter) -> some View {
+        let count = filterReminderCount(item)
+        if count > 0 {
+            Group {
+                if item == .all {
+                    Circle().fill(C.red).frame(width: 8, height: 8)
+                } else {
+                    Text(count > 99 ? "99+" : "\(count)")
+                        .font(pfExact(9, .semibold))
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                        .padding(.horizontal, count > 9 ? 4 : 3)
+                        .frame(minWidth: 15, height: 15)
+                        .background(Capsule().fill(C.red))
+                }
+            }
+            .overlay {
+                if item != .all {
+                    Capsule().stroke(C.chatsPageBg, lineWidth: 1)
+                }
+            }
+            .offset(x: -3, y: -3)
+        }
+    }
+
+    /// 导航栏下方的液态玻璃分类条。
+    private var chatFilterBar: some View {
+        HStack(spacing: 4) {
+            ForEach(ChatFilter.allCases) { item in
+                Button {
+                    guard chatFilter != item else { return }
+                    NotificationCenter.default.post(name: .chrisRowSwipe, object: nil)
+                    scrolled = 0
+                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                    withAnimation(.spring(response: 0.30, dampingFraction: 0.80)) {
+                        chatFilter = item
+                    }
+                } label: {
+                    ZStack {
+                        if chatFilter == item {
+                            GlassBackground(shape: Capsule(style: .continuous),
+                                            opacity: 0.96,
+                                            edgeAlpha: 0.82,
+                                            shadow: false,
+                                            seed: 0.32)
+                                .overlay {
+                                    Capsule(style: .continuous)
+                                        .fill(C.green.opacity(scheme == .dark ? 0.12 : 0.055))
+                                }
+                                .overlay {
+                                    Capsule(style: .continuous)
+                                        .stroke(C.green.opacity(0.30), lineWidth: 0.8)
+                                }
+                                .shadow(color: Color.black.opacity(scheme == .dark ? 0.24 : 0.10),
+                                        radius: 5, x: 0, y: 2)
+                                .matchedGeometryEffect(id: "chatFilterSelection",
+                                                       in: filterSelectionNS)
+                        }
+
+                        HStack(spacing: 4) {
+                            Image(systemName: item.symbol)
+                                .font(.system(size: 11.5, weight: .medium))
+                                .frame(width: 13)
+                            Text(Tr(item.rawValue))
+                                .font(pf(13.5, chatFilter == item ? .semibold : .regular))
+                                .lineLimit(1)
+                        }
+                        .foregroundColor(chatFilter == item ? C.green : C.subLabel)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 34)
+                    .overlay(alignment: .topTrailing) {
+                        filterReminder(item)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(4)
+        .background {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(C.chatsPageBg)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(C.hairline.opacity(0.72), lineWidth: 0.6)
+        }
+        .shadow(color: Color.black.opacity(scheme == .dark ? 0.20 : 0.06),
+                radius: 7, x: 0, y: 3)
+        .padding(.horizontal, 12)
+        .padding(.top, 4)
+        .padding(.bottom, 6)
+        .frame(height: chatFilterH)
+        .background(C.chatsPageBg)
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(C.hairline.opacity(0.72)).frame(height: 0.5)
+        }
+        .zIndex(2)
     }
 
     /// 点一行会话：公众号的服务号 → 那一页；订阅号消息 → 公众号列表；其它 → 聊天页
@@ -1193,7 +1354,7 @@ struct ChatsView: View {
             ZStack(alignment: .top) {
                 if app.chats.isEmpty {
                     VStack(spacing: 0) {
-                        Color.clear.frame(height: L.safeTop + L.navH)
+                        Color.clear.frame(height: L.safeTop + L.navH + chatFilterH)
                         emptyView
                         Spacer(minLength: 0)
                     }
@@ -1207,7 +1368,14 @@ struct ChatsView: View {
                                滚动视图自己会带一点回弹 —— 用户看到的
                                「收起来的时候会话页会上下弹一下」就是它。
                                底下那条"两页叠一起"是二楼自己画的，不需要真的把列表推下去。 */
-                            Color.clear.frame(height: L.safeTop + L.navH)
+                            Color.clear.frame(height: L.safeTop + L.navH + chatFilterH)
+                            if list.isEmpty {
+                                Text(Tr("这个分类暂时没有会话"))
+                                    .font(pf(14))
+                                    .foregroundColor(C.subLabel)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.top, 54)
+                            }
                             ForEach(list) { chat in
                                 SwipeChatRow(
                                     chat: chat,
@@ -1237,6 +1405,7 @@ struct ChatsView: View {
                             }
                         )
                     }
+                    .id(chatFilter)
                     .coordinateSpace(name: "chatsScroll")
                     /* 二楼：直接用**拖动手势**驱动（simultaneous = 只观察、不抢滚动），
                        不再只依赖滚动探针 —— 手指在列表最上面往下拖就一定露出来，
@@ -1491,6 +1660,19 @@ struct ChatsView: View {
                     .allowsHitTesting(!floorUp)
                     Spacer(minLength: 0)
                 }
+
+                VStack(spacing: 0) {
+                    Color.clear
+                        .frame(height: L.safeTop + L.navH)
+                        .allowsHitTesting(false)
+                    chatFilterBar
+                    Spacer(minLength: 0)
+                        .allowsHitTesting(false)
+                }
+                .ignoresSafeArea(edges: .top)
+                .opacity(navFadeForFloor)
+                .allowsHitTesting(!floorUp)
+                .zIndex(3)
             }
             /* 第一页面（会话列表）的底色跟通讯录统一：都用后台的「页面底色」pageBg，
                以前这里用的是 navBg，深色下比通讯录浅一档（#18181A vs #0B0B0D）。 */

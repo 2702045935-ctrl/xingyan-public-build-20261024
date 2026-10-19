@@ -124,7 +124,7 @@ struct SearchAllView: View {
                                 Button { q = h; runSearch() } label: {
                                     HStack(spacing: 8) {
                                         SVGIcon(markup: I.searchSmall, size: 15, color: C.subLabel)
-                                        Text(h).font(pf(15)).foregroundColor(C.label)
+                                        Text(Tr(h)).font(pf(15)).foregroundColor(C.label)
                                         Spacer(minLength: 0)
                                     }
                                     .padding(.horizontal, 16).frame(height: 46)

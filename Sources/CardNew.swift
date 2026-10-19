@@ -52,7 +52,7 @@ struct ContactCardNew: View {
                             }
                         }
                         /* 朋友圈这一块一直在（朋友没发动态就写「暂无动态」），跟原来那版一致 */
-                        sectionTitle("朋友圈", trailing: momentCount > 0 ? "\(momentCount) 条" : "")
+                        sectionTitle("生活圈", trailing: momentCount > 0 ? "\(momentCount) 条" : "")
                             card {
                                 Button {
                                     onMoments?()
@@ -63,7 +63,7 @@ struct ContactCardNew: View {
                                             .frame(width: 44, height: 44)
                                             .overlay(Image(systemName: "photo.on.rectangle.angled")
                                                 .font(.system(size: 18)).foregroundColor(hBlue))
-                        Text(momentCount > 0 ? "看 TA 的朋友圈" : momentEmptyText)
+                        Text(momentCount > 0 ? "看 TA 的生活圈" : momentEmptyText)
                             .font(pf(16)).foregroundColor(momentCount > 0 ? hInk : hInk3)
                                         Spacer()
                                         Image(systemName: "chevron.right")
@@ -92,9 +92,9 @@ struct ContactCardNew: View {
     /// 没设范围（all）才是「暂无朋友圈动态」。
     private var momentEmptyText: String {
         switch momentsRange {
-        case "3d": return "朋友仅展示最近三天的朋友圈"
-        case "6m": return "朋友仅展示最近半年的朋友圈"
-        default:   return "暂无朋友圈动态"
+        case "3d": return "朋友仅展示最近三天的生活圈"
+        case "6m": return "朋友仅展示最近半年的生活圈"
+        default:   return "暂无生活圈动态"
         }
     }
 

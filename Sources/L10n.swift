@@ -3,13 +3,15 @@ import SwiftUI
 /* 英文版：所有界面文案的中英对照表。
    Lang.code == "en" 时 Tr("中文") 返回英文；没收录的串原样返回中文。 */
 func Tr(_ zh: String) -> String {
-    guard Lang.isEnglish else { return zh }
-    return L10n.dict[zh] ?? zh
+    let display = zh.replacingOccurrences(of: "朋友圈", with: "生活圈")
+    guard Lang.isEnglish else { return display }
+    return L10n.dict[zh] ?? L10n.dict[display] ?? display
 }
 
 enum L10n {
     static let dict: [String: String] = [
         "安全锁": "Security lock",
+        "生活圈": "Life Circle",
         "安全锁（手势密码）": "Security lock (pattern)",
         "已开启": "On",
         "未开启": "Off",

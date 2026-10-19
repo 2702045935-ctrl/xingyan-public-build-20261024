@@ -275,7 +275,7 @@ struct SearchPage: View {
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(C.subLabel)
                 }
-                Text(text).font(pf(14)).foregroundColor(C.label).lineLimit(1)
+                Text(Tr(text)).font(pf(14)).foregroundColor(C.label).lineLimit(1)
             }
             .padding(.horizontal, 13)
             .frame(height: 34)

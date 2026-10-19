@@ -47,7 +47,7 @@ enum SearchHistory {
    ============================================================ */
 enum SearchSuggest {
     /// 内置兜底（后台配了就用后台的）
-    static let fallback = ["朋友圈", "聊天记录", "公众号", "视频号", "附近的人", "群聊"]
+    static let fallback = ["生活圈", "聊天记录", "公众号", "视频号", "附近的人", "群聊"]
 
     /// 后台配置（App 启动/进搜索页时拉下来存这里）
     static var remote: [String] = []

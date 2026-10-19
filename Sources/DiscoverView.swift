@@ -202,7 +202,7 @@ struct DiscoverView: View {
 extension DiscoverItem {
     static var builtin: [DiscoverItem] {
         [
-            DiscoverItem(id: "d01", label: "朋友圈", icon: "i.moments", svg: I.moments,
+            DiscoverItem(id: "d01", label: "生活圈", icon: "i.moments", svg: I.moments,
                          color: "#4A90D9", action: "moments", group: 1, enabled: true),
             DiscoverItem(id: "d02", label: "视频号", icon: "i.channels", svg: I.channels,
                          color: "#F2943B", action: "soon", group: 2, enabled: true),
@@ -238,7 +238,7 @@ extension DiscoverItem {
                免得断网走兜底时又冒出一个「卡包」。 */
             DiscoverItem(id: "m07", label: "小店与卡包", icon: "i.wallet", svg: I.wallet,
                          color: "#E08A22", action: "shop", group: 2, enabled: true),
-            DiscoverItem(id: "m03", label: "朋友圈", icon: "i.album", svg: I.album,
+            DiscoverItem(id: "m03", label: "生活圈", icon: "i.album", svg: I.album,
                          color: "#7275E9", action: "moments", group: 2, enabled: true),
             DiscoverItem(id: "m04", label: "作品", icon: "i.works", svg: I.works,
                          color: "#3D83E7", action: "works", group: 2, enabled: true),

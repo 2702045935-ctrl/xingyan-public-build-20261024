@@ -29,6 +29,16 @@ final class PushCenter: NSObject, ObservableObject, UIApplicationDelegate, UNUse
         return true
     }
 
+    /// WPS / 文件 App 的“用其他应用打开”在某些系统路径下不会走 SwiftUI 的
+    /// onOpenURL，只能落到 UIApplicationDelegate。两条都接，ExternalFileInbox
+    /// 内部会去重，不会导入两份。
+    func application(_ app: UIApplication, open url: URL,
+                     options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+        guard url.isFileURL else { return false }
+        ExternalFileInbox.shared.accept([url])
+        return true
+    }
+
     /// WPS / 文件 App 点“用其他应用打开”时，iOS 会把文件 URL 送到这里。
     func application(_ application: UIApplication,
                      open url: URL,

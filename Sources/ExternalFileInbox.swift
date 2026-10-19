@@ -18,12 +18,20 @@ final class ExternalFileInbox: ObservableObject {
     @Published var files: [ExternalFileItem] = []
     @Published var present = false
     @Published var importing = false
+    private var lastAcceptKey = ""
+    private var lastAcceptAt = Date.distantPast
 
     private init() {}
 
     func accept(_ urls: [URL]) {
         let valid = urls.filter { $0.isFileURL }
         guard !valid.isEmpty else { return }
+        /* SwiftUI 的 onOpenURL 和 AppDelegate 的 open 回调可能同时到达；
+           1.5 秒内同一批文件只导入一次。 */
+        let key = valid.map(\.path).joined(separator: "|")
+        if key == lastAcceptKey && Date().timeIntervalSince(lastAcceptAt) < 1.5 { return }
+        lastAcceptKey = key
+        lastAcceptAt = Date()
         DispatchQueue.main.async { self.importing = true }
 
         DispatchQueue.global(qos: .userInitiated).async {
@@ -122,6 +130,8 @@ struct ExternalFileSendView: View {
     @State private var progress = ""
     @State private var alert = ""
     @State private var filePreview: FilePreviewData?
+    @State private var showShare = false
+    @State private var showDrop = false
 
     private var chats: [Chat] {
         let q = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -148,7 +158,8 @@ struct ExternalFileSendView: View {
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
 
-                HStack(spacing: 10) {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3),
+                          spacing: 10) {
                     actionTile(title: Tr("打开文件"), icon: "doc.text.magnifyingglass",
                                tint: Color(hex: 0x2F73C9)) {
                         previewFirstFile()
@@ -160,6 +171,14 @@ struct ExternalFileSendView: View {
                     actionTile(title: Tr("收藏"), icon: "star.fill",
                                tint: Color(hex: 0xE3A126)) {
                         favorite()
+                    }
+                    actionTile(title: Tr("分享"), icon: "square.and.arrow.up",
+                               tint: Color(hex: 0x5B6B7C)) {
+                        showShare = true
+                    }
+                    actionTile(title: Tr("快传"), icon: "dot.radiowaves.left.and.right",
+                               tint: Color(hex: 0x7B61D1)) {
+                        showDrop = true
                     }
                 }
                 .padding(.horizontal, 16)
@@ -258,6 +277,15 @@ struct ExternalFileSendView: View {
             }
             .sheet(item: $filePreview) { f in
                 FilePreviewSheet(name: f.name, local: f.local)
+            }
+            .sheet(isPresented: $showShare) {
+                ShareSheet(items: inbox.files.map(\.local))
+            }
+            .fullScreenCover(isPresented: $showDrop) {
+                FaceToFaceFileSheet(rows: [], avatar: app.me?.avatarPath ?? "",
+                                    name: app.me?.name ?? "我", ink: C.label,
+                                    mode: .host, initialFiles: inbox.files.map(\.local))
+                    .environmentObject(app)
             }
         }
     }

@@ -24,8 +24,8 @@ struct ContactIndexBar: View {
     /// 真正“正在触摸”的状态。手势被系统滚动打断时也会自动复位，
     /// 不会再出现松手后圆圈停在 A 上的残影。
     @GestureState private var touching = false
-    /// 每滑过一个字母轻震一下（用户要求「按索引的时候有振动感」）
-    private let haptic = UISelectionFeedbackGenerator()
+    /// 每滑过一个字母给一下明确强触感。
+    private let haptic = UIImpactFeedbackGenerator(style: .heavy)
 
     /* 字号 / 行距 / 颜色都从后台「界面文字」读（ctIdxSize / ctIdxItemH / ctIdxColor），
        以前这里写死 12.5 和 #B2B2B2，所以后台改了手机上没反应 */
@@ -34,6 +34,11 @@ struct ContactIndexBar: View {
     private var pitch: CGFloat { rowH }
     /// 选中那个圆点：颜色后台 ctIdxActiveBg 可调，直径按行高走（保证是正圆）
     private var dotSide: CGFloat { max(15, rowH + 1.5) }
+    /// 初始圆点固定落在 A；列表没有 A 时落到第一个实际分组。
+    private var initialLetter: String {
+        Self.letters.first(where: { available.contains($0) }) ?? "A"
+    }
+    private var shownLetter: String { touching ? (active ?? initialLetter) : initialLetter }
     /// 选中那颗圆的颜色（2026-10-17 用户：「索引选中的圈也拿我们自己的按钮颜色」）——
     /// 默认就用**全 App 的主色** C.green（后台 greenColor 一改它跟着变，现在是橙色），
     /// 不再是灰的/蓝的；想单独换色：后台 ui.json 写 ctIdxActiveBg。
@@ -58,11 +63,11 @@ struct ContactIndexBar: View {
                     Text(L)
                         .font(pf(fontSize, ctIdxWeight()))
                         /* 选中的那个字母：白字 + 蓝色实心圆（不选中就还是原来的灰字） */
-                        .foregroundColor(active == L && touching ? .white : C.ctIdxColor)
+                        .foregroundColor(shownLetter == L ? .white : C.ctIdxColor)
                         .frame(height: rowH)
                         .frame(width: 22)
                         .background {
-                            if active == L && touching {
+                            if shownLetter == L {
                                 Circle()
                                     .fill(activeBg)
                                     .frame(width: dotSide, height: dotSide)
@@ -87,13 +92,16 @@ struct ContactIndexBar: View {
         }
         .padding(.vertical, padV)
         .frame(width: 22)
+        .onAppear { haptic.prepare() }
+        .onChange(of: available) { _ in haptic.prepare() }
     }
 
     /// 手指移到新字母：轻震一下 + 蓝圈跟过去（同一个字母不重复震）
     private func pick(_ letter: String) {
         if active != letter {
             active = letter
-            haptic.selectionChanged()
+            haptic.impactOccurred(intensity: 1.0)
+            haptic.prepare()
         }
         onPick(letter)
     }

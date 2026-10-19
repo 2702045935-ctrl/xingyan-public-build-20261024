@@ -378,7 +378,7 @@ final class AppState: ObservableObject {
                 case "reply": what = "回复了你"
                 default: what = "评论了你的朋友圈"
                 }
-                LocalNotify.incoming(title: "朋友圈", body: who + what, badge: unreadForIcon)
+                LocalNotify.incoming(title: Tr("生活圈"), body: who + what, badge: unreadForIcon)
             }
         case "friend", "presence", "profile":
             coalesce { [weak self] in await self?.loadContacts() }

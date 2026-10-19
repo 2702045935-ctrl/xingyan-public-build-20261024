@@ -81,7 +81,7 @@ struct ContactsView: View {
     /// 右侧 A-Z 索引条：手指正停在哪个字母（只在换字母时跳一次，别重复滚）
     @State private var idxLetter = ""
     /// 每换一个字母轻震一下（微信那种手感）
-    private let idxHaptic = UISelectionFeedbackGenerator()
+    private let idxHaptic = UIImpactFeedbackGenerator(style: .heavy)
     /// ★ 星标朋友的 id（服务端上「星标」的那几个），通讯录顶上单独一组
     @State private var starIds: [String] = []
 
@@ -675,7 +675,7 @@ private var funcs: [(String, String, Color, String)] {
                 let letter = sections[i].letter
                 guard letter != idxLetter else { return }      // 只在换字母时跳一次
                 idxLetter = letter
-                idxHaptic.selectionChanged()
+                idxHaptic.impactOccurred(intensity: 1.0)
                 proxy.scrollTo("letter-\(letter)", anchor: .top)
             }, onEnd: {
                 idxLetter = ""

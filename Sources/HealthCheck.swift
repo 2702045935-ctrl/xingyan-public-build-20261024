@@ -38,7 +38,7 @@ struct HealthCheckView: View {
         Row(id: "push", title: "消息推送", sub: "息屏时能不能收到通知", fixTitle: "重新登记"),
         Row(id: "chats", title: "会话与通讯录", sub: "本机列表和服务器对不对得上", fixTitle: "重新同步"),
         Row(id: "msgs", title: "本机聊天记录", sub: "本机留底的聊天记录 / 媒体占用"),
-        Row(id: "moments", title: "朋友圈", sub: "缓存能铺出来、服务器能拉回来", fixTitle: "重拉"),
+        Row(id: "moments", title: "生活圈", sub: "缓存能铺出来、服务器能拉回来", fixTitle: "重拉"),
         Row(id: "cards", title: "卡包与小店", sub: "卡券和商品拉得到吗", fixTitle: "清缓存重拉"),
         Row(id: "eyes", title: "小星档位", sub: "顶栏那颗眼睛现在的档位", fixTitle: ""),
         Row(id: "account", title: "账号与登录", sub: "登录令牌 / 设备标识 / 端类型"),

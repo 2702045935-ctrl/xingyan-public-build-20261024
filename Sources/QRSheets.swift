@@ -79,11 +79,13 @@ struct FaceToFaceFileSheet: View {
     let name: String
     var ink: Color = .black
     var mode: NearbyDropMode = .host
+    var initialFiles: [URL] = []
 
     @StateObject private var drop = NearbyDropCenter()
     @State private var showScan = false
     @State private var showMedia = false
     @State private var showFiles = false
+    @State private var sentInitial = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -160,6 +162,12 @@ struct FaceToFaceFileSheet: View {
             }
         }
         .onDisappear { drop.stop() }
+        .onChange(of: drop.isConnected) { connected in
+            if connected && !sentInitial && !initialFiles.isEmpty {
+                sentInitial = true
+                drop.send(files: initialFiles)
+            }
+        }
         .fullScreenCover(isPresented: $showScan) {
             ScannerView { text in
                 if let invite = NearbyDropInvite.parse(text) {

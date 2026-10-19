@@ -397,6 +397,8 @@ struct ChatDetailView: View {
     @State private var flushing = false
     /// 点开文件后的预览（下到本机再给系统 QuickLook）
     @State private var filePreview: FilePreviewData?
+    /// 长按文件 → 分享时准备的本地原文件
+    @State private var shareFile: FilePreviewData?
     /// 点公众号文章卡片 → 打开文章页（整页 sheet，不依赖外层导航栈）
     @State private var oaArticleId = ""
     @State private var showOaArticle = false
@@ -432,6 +434,9 @@ struct ChatDetailView: View {
             MsgAction(key: "copy", label: "复制", icon: "doc.on.doc"),
             MsgAction(key: "forward", label: "转发", icon: "arrowshape.turn.up.right")
         ]
+        if m.kindName == "file", !m.isRecalled {
+            list.append(MsgAction(key: "share", label: "分享", icon: "square.and.arrow.up"))
+        }
         /* 朗读：文字消息、通话记录、AI 回复都能念（微信里长按也有这一项） */
         if readableText(m).isEmpty == false {
             list.append(MsgAction(key: "speak", label: "朗读", icon: "speaker.wave.2"))
@@ -477,6 +482,8 @@ struct ChatDetailView: View {
         case "forward":
             forwardItems = [ForwardItem(kind: forwardedKind(m), content: m.body)]
             showForward = true
+        case "share":
+            prepareFileShare(m)
         case "fav":
             Task {
                 let fav = favoritePayload(m)
@@ -1288,7 +1295,13 @@ struct ChatDetailView: View {
         }
         /* 点文件气泡 → 系统预览（QuickLook：pdf/word/excel/图片/文本都能看，还能分享） */
         .sheet(item: $filePreview) { f in
-            FilePreviewSheet(name: f.name, local: f.local)
+            FilePreviewSheet(name: f.name, local: f.local,
+                             favoriteTitle: f.favoriteTitle,
+                             favoriteFrom: f.favoriteFrom)
+                .environmentObject(app)
+        }
+        .sheet(item: $shareFile) { f in
+            ShareSheet(items: [f.local])
         }
         /* 点公众号文章卡片 → 文章页 */
         .sheet(isPresented: $showOaArticle) {
@@ -1317,7 +1330,10 @@ struct ChatDetailView: View {
             /* 进这个会话：把它挂在通知中心/锁屏上的通知撤掉（微信也是这样，看完就没了） */
             LocalNotify.clearChat(chat.id)
             await app.loadChats()
-            if plusItems.isEmpty { plusItems = (try? await API.shared.plusPanel()) ?? [] }
+            if plusItems.isEmpty {
+                let items = (try? await API.shared.plusPanel()) ?? []
+                plusItems = normalizedPlusItems(items)
+            }
             await loadMyStickers()
             /* 表情图库（服务器上那套图片表情包）：拉一次缓在本机，面板底下那排要用 */
             await StickerCatalog.shared.loadIfNeeded()
@@ -2523,7 +2539,10 @@ struct ChatDetailView: View {
                             focused = false
                             panel = (panel == .plus) ? .none : .plus
                             if panel == .plus && plusItems.isEmpty {
-                                Task { plusItems = (try? await API.shared.plusPanel()) ?? [] }
+                                Task {
+                                    let items = (try? await API.shared.plusPanel()) ?? []
+                                    plusItems = normalizedPlusItems(items)
+                                }
                             }
                         } label: {
                             plusIcon
@@ -2564,16 +2583,19 @@ struct ChatDetailView: View {
                    ＋ 面板改成**磨砂玻璃**（.bar 材质 + 一点点底色，后面聊天的内容会模糊透上来），
                    表情 / 礼物那两个保持不变（实心底，和微信一致）。 */
                 .background {
-                    if panel == .none {
-                        Color.clear
-                    } else if panel == .plus {
-                        ZStack {
-                            Rectangle().fill(.bar)
-                            C.tabBg.opacity(0.35)
+                    Group {
+                        if panel == .none {
+                            Color.clear
+                        } else if panel == .plus {
+                            ZStack {
+                                Rectangle().fill(.bar)
+                                C.tabBg.opacity(0.35)
+                            }
+                        } else {
+                            C.tabBg
                         }
-                    } else {
-                        C.tabBg
                     }
+                    .ignoresSafeArea(edges: .bottom)
                 }
         }
         .overlay(alignment: .top) {
@@ -3407,6 +3429,22 @@ struct ChatDetailView: View {
         }
     }
 
+    /// 文件固定放在加号面板第一页；后台漏配时客户端自动补回。
+    private func normalizedPlusItems(_ raw: [PlusItem]) -> [PlusItem] {
+        var items = raw.filter { $0.enabled != false }
+        if let i = items.firstIndex(where: { $0.action == "file" }) {
+            if i >= 8 {
+                let file = items.remove(at: i)
+                items.insert(file, at: min(7, items.count))
+            }
+        } else {
+            let file = PlusItem(id: "file-fallback", label: Tr("文件"),
+                                icon: "file", action: "file", enabled: true)
+            items.insert(file, at: min(7, items.count))
+        }
+        return items
+    }
+
     /// 在自己的文件页点了一个文件：它已经在服务器上了，直接把这条 file 消息发出去
     /// （不用再上传一遍，也就不用等进度条）
     private func sendExistingFile(_ f: API.MyFileItem) {
@@ -3476,7 +3514,37 @@ struct ChatDetailView: View {
                 app.show(Tr("存不进本机，看看手机空间够不够"))
                 return
             }
-            filePreview = FilePreviewData(name: finalName, local: tmp)
+            filePreview = FilePreviewData(name: finalName, local: tmp,
+                                          favoriteTitle: chat.name,
+                                          favoriteFrom: "聊天文件")
+        }
+    }
+
+    /// 长按文件 →「分享」：先下载成本地原文件，再交给系统分享面板。
+    private func prepareFileShare(_ m: Message) {
+        guard let data = m.body.data(using: .utf8),
+              let o = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let path = o["url"] as? String,
+              let remote = API.shared.assetURL(path) else {
+            app.show(Tr("这个文件找不到了"))
+            return
+        }
+        let raw = (o["name"] as? String) ?? "文件"
+        let name = MyFilesPickerView.previewName(raw, path: path)
+        app.show(Tr("正在准备分享…"))
+        Task {
+            guard let d = try? await API.shared.assetData(remote), !d.isEmpty else {
+                app.show(Tr("文件下载失败，检查一下网络"))
+                return
+            }
+            let finalName = MyFilesPickerView.previewName(name, path: path, data: d)
+            let tmp = FileManager.default.temporaryDirectory.appendingPathComponent(finalName)
+            do {
+                try d.write(to: tmp)
+                shareFile = FilePreviewData(name: finalName, local: tmp)
+            } catch {
+                app.show(Tr("存不进本机，看看手机空间够不够"))
+            }
         }
     }
 
@@ -4799,26 +4867,55 @@ struct MessageRow: View {
         let bytes = (o["bytes"] as? Int) ?? 0
         let look = FileKind.look(name)                       // 按后缀出图标和颜色（微信那样）
         return HStack(spacing: 10) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .fill(look.color.opacity(0.16))
-                    .frame(width: 38, height: 38)
+            VStack(spacing: 1) {
                 Image(systemName: look.symbol)
-                    .font(.system(size: 19, weight: .medium))
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(look.color)
+                Text(look.badge)
+                    .font(pfExact(7.5, .bold))
+                    .foregroundColor(look.color)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.65)
             }
+            .frame(width: 40, height: 40)
+            .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(look.color.opacity(0.13)))
+            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(look.color.opacity(0.18), lineWidth: 0.6))
             VStack(alignment: .leading, spacing: 2) {
-                Text(name).font(pf(14)).foregroundColor(C.bubbleText).lineLimit(2)
-                Text(byteText(bytes)).font(pf(11)).foregroundColor(C.subLabel)
+                Text(name)
+                    .font(pf(14))
+                    .foregroundColor(C.label)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                HStack(spacing: 6) {
+                    Text(look.badge)
+                        .font(pfExact(9.5, .semibold))
+                        .foregroundColor(look.color)
+                        .lineLimit(1)
+                        .padding(.horizontal, 5)
+                        .frame(height: 16)
+                        .background(Capsule().fill(look.color.opacity(0.12)))
+                    Text(byteText(bytes)).font(pf(11)).foregroundColor(C.subLabel)
+                }
             }
             Spacer(minLength: 0)
+            Image(systemName: "chevron.right")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(C.subLabel.opacity(0.7))
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 11)
-        .frame(width: 216, alignment: .leading)
-        .background(
-            BubbleFill(mine: mine, tail: showTail)
-        )
+        .frame(width: 210, height: 64, alignment: .leading)
+        .background {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.dyn(0xFFFFFF, 0x1C1C1E))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(C.hairline.opacity(0.75), lineWidth: 0.6)
+                }
+                .shadow(color: Color.black.opacity(mine ? 0.05 : 0.10),
+                        radius: 6, x: 0, y: 3)
+        }
         .contentShape(Rectangle())
         .onTapGesture { onOpenFile?(message.body) }
     }
@@ -5022,29 +5119,30 @@ enum Tiles {
 
 enum FileKind {
     /// 按文件名猜图标和颜色
-    static func look(_ name: String) -> (symbol: String, color: Color) {
+    static func look(_ name: String) -> (symbol: String, color: Color, badge: String) {
         let ext = (name as NSString).pathExtension.lowercased()
         switch ext {
         case "pdf":
-            return ("doc.richtext", Color(hex: 0xE5433B))
+            return ("doc.richtext", Color(hex: 0xE5433B), "PDF")
         case "doc", "docx", "rtf", "pages":
-            return ("doc.text", Color(hex: 0x2A6BC4))
+            return ("doc.text", Color(hex: 0x2A6BC4), "WORD")
         case "xls", "xlsx", "csv", "numbers":
-            return ("tablecells", Color(hex: 0x1E9E5A))
+            return ("tablecells", Color(hex: 0x1E9E5A), "EXCEL")
         case "ppt", "pptx", "key":
-            return ("chart.bar.doc.horizontal", Color(hex: 0xE07B1F))
+            return ("chart.bar.doc.horizontal", Color(hex: 0xE07B1F), "PPT")
         case "zip", "rar", "7z", "tar", "gz":
-            return ("doc.zipper", Color(hex: 0xC79A2A))
+            return ("doc.zipper", Color(hex: 0xC79A2A), "压缩包")
         case "txt", "md", "log", "json", "xml":
-            return ("doc.plaintext", Color(hex: 0x8A8A8E))
+            return ("doc.plaintext", Color(hex: 0x8A8A8E), "文本")
         case "mp3", "m4a", "wav", "aac", "flac":
-            return ("music.note", Color(hex: 0x8A6FE8))
+            return ("music.note", Color(hex: 0x8A6FE8), "音频")
         case "mp4", "mov", "m4v", "avi", "mkv", "webm":
-            return ("film", Color(hex: 0x5B6B7C))
+            return ("film", Color(hex: 0x5B6B7C), "视频")
         case "jpg", "jpeg", "png", "gif", "heic", "webp":
-            return ("photo", Color(hex: 0x1180E0))
+            return ("photo", Color(hex: 0x1180E0), "图片")
         default:
-            return ("doc", Color(hex: 0x8A93FF))
+            let label = ext.isEmpty ? "文件" : ext.uppercased()
+            return ("doc", Color(hex: 0x8A93FF), label)
         }
     }
 }
@@ -5054,15 +5152,22 @@ struct FilePreviewData: Identifiable {
     let id = UUID()
     var name: String
     var local: URL
+    var favoriteTitle: String = ""
+    var favoriteFrom: String = ""
 }
 
 /// 文件预览页：系统 QuickLook + 右上角「分享」（分享里就有「用其他应用打开」）
 struct FilePreviewSheet: View {
     let name: String
     let local: URL
+    var favoriteTitle: String = ""
+    var favoriteFrom: String = ""
 
+    @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
     @State private var showShare = false
+    @State private var favoriting = false
+    @State private var showDrop = false
 
     var body: some View {
         NavigationStack {
@@ -5080,7 +5185,77 @@ struct FilePreviewSheet: View {
                         }
                     }
                 }
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    HStack(spacing: 10) {
+                        Button {
+                            favorite()
+                        } label: {
+                            HStack(spacing: 6) {
+                                if favoriting {
+                                    ProgressView().scaleEffect(0.72)
+                                } else {
+                                    Image(systemName: "star")
+                                }
+                                Text(Tr("收藏")).font(pf(14, .medium))
+                            }
+                            .foregroundColor(C.green)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .background(RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                .fill(C.cardBg))
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(favoriting)
+
+                        Button { showDrop = true } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "dot.radiowaves.left.and.right")
+                                Text(Tr("快传")).font(pf(14, .medium))
+                            }
+                            .foregroundColor(C.label)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .background(RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                .fill(C.cardBg))
+                        }
+                        .buttonStyle(.plain)
+
+                        Button { showShare = true } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "square.and.arrow.up")
+                                Text(Tr("分享")).font(pf(14, .medium))
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .background(RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                .fill(C.green))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(.bar)
+                }
                 .sheet(isPresented: $showShare) { ShareSheet(items: [local]) }
+                .fullScreenCover(isPresented: $showDrop) {
+                    FaceToFaceFileSheet(rows: [], avatar: app.me?.avatarPath ?? "",
+                                        name: app.me?.name ?? "我", ink: C.label,
+                                        mode: .host, initialFiles: [local])
+                        .environmentObject(app)
+                }
+        }
+    }
+
+    private func favorite() {
+        favoriting = true
+        Task {
+            let ok = await API.shared.addFavorite(kind: "text",
+                                                  content: "[文件] " + name,
+                                                  title: favoriteTitle,
+                                                  from: favoriteFrom)
+            favoriting = false
+            app.show(ok ? Tr("已收藏") : Tr("收藏失败"))
         }
     }
 }
