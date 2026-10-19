@@ -299,6 +299,8 @@ struct ChatDetailView: View {
     @Environment(\.colorScheme) private var scheme
 
     @State private var messages: [Message] = []
+    /// 本机删除过的消息 id。删除只影响自己，后续刷新不能把它重新拉回来。
+    @State private var hiddenMessageIds: Set<String> = []
     /// 把聊天记录写本机的防抖任务（消息一变就排一次，1.2 秒内的多次变化合成一次写）
     @State private var persistTask: Task<Void, Never>?
     @State private var input = ""
@@ -424,6 +426,26 @@ struct ChatDetailView: View {
         actionMessage = m
     }
 
+    private var deletedMessageKey: String { "chris.deleted." + chat.id }
+
+    private func loadDeletedMessageIds() {
+        hiddenMessageIds = Set(UserDefaults.standard.stringArray(forKey: deletedMessageKey) ?? [])
+    }
+
+    private func persistDeletedMessageId(_ id: String) {
+        guard !id.isEmpty else { return }
+        hiddenMessageIds.insert(id)
+        var ids = Array(hiddenMessageIds)
+        if ids.count > 500 { ids = Array(ids.suffix(500)) }
+        hiddenMessageIds = Set(ids)
+        UserDefaults.standard.set(ids, forKey: deletedMessageKey)
+    }
+
+    private func visibleMessages(_ rows: [Message]) -> [Message] {
+        guard !hiddenMessageIds.isEmpty else { return rows }
+        return rows.filter { !hiddenMessageIds.contains($0.id) }
+    }
+
     private func actionTitle(_ m: Message) -> String {
         let t = m.kindName == "text" ? m.body : "[" + ((m.kindName == "image" || m.kindName == "images") ? "图片" : m.kindName) + "]"
         return String(t.prefix(40))
@@ -501,7 +523,9 @@ struct ChatDetailView: View {
             selectMode = true
             selected = [m.id]
         case "del":
+            persistDeletedMessageId(m.id)
             messages.removeAll { $0.id == m.id }
+            rebuildIndex()
             app.show(Tr("已删除"))
         case "report":
             report(m)
@@ -1323,6 +1347,7 @@ struct ChatDetailView: View {
         }
         .task(id: chat.id) {
             HitchWatch.shared.start("聊天页")
+            loadDeletedMessageIds()
             loadOutbox()                       // 上次没发出去的还挂着
             await load(initial: true)
             await flushOutbox()                // 进页面先试着把欠的发出去
@@ -3651,14 +3676,14 @@ struct ChatDetailView: View {
         /* 登录后同步下来的最近记录：先铺在界面上（微信也是先出内容再刷），
            然后再向服务器要最新的 —— 这样点开会话是"立刻有内容"，不是白屏等网络。 */
         if initial, messages.isEmpty, let cached = app.prefetched[chat.id], !cached.isEmpty {
-            messages = cached
+            messages = visibleMessages(cached)
             hasOlder = true
         } else if initial, messages.isEmpty {
             /* 登录时没预取到（或者断网进会话）：用**本机留底的聊天记录**先铺上 ——
                用户要求「聊天信息也全部本地保存」，点开会话永远先有内容。 */
             let local = LocalStore.cachedChat(chat.id)
             if !local.isEmpty {
-                messages = local
+                messages = visibleMessages(local)
                 hasOlder = true
             }
         }
@@ -3725,7 +3750,7 @@ struct ChatDetailView: View {
                 if ca != cb { return ca < cb }
                 return a.id < b.id
             }
-            let nextMessages = Array(merged.suffix(2000))
+            let nextMessages = Array(visibleMessages(merged).suffix(2000))
             let same = !initial && nextMessages.count == messages.count
                 && zip(nextMessages, messages).allSatisfy { $0.id == $1.id && $0.body == $1.body }
             if initial || !same {
@@ -3808,7 +3833,7 @@ struct ChatDetailView: View {
             guard !r.messages.isEmpty else { hasOlder = false; return }
             let keep = first.id
             holdScroll = true
-            messages = r.messages + messages
+            messages = visibleMessages(r.messages + messages)
             rebuildIndex()
             /* 把「原来第一条」钉回原来的位置：往上看的时候内容不会跳，
                也不会把用户手上正在拖的列表拽走（之前「划不动」就是这个坑）。 */
