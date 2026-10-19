@@ -578,6 +578,8 @@ struct ChatsView: View {
     @State private var chatFilter: ChatFilter = .all
     @Namespace private var filterSelectionNS
     private let chatFilterH: CGFloat = 52
+    private var chatFilterVisible: Bool { UIConfig.num("chatFilterBar", 1) > 0 }
+    private var chatFilterOffset: CGFloat { chatFilterVisible ? chatFilterH : 0 }
     /// 会话列表滚了多少（顶栏那层磨砂按它淡入淡出）
     @State private var scrolled: CGFloat = 0
     /// 下拉露出来的「二楼」露了多少（微信那个小程序层；由列表自己的下拉量驱动，不挂手势）
@@ -1397,7 +1399,7 @@ struct ChatsView: View {
             ZStack(alignment: .top) {
                 if app.chats.isEmpty {
                     VStack(spacing: 0) {
-                        Color.clear.frame(height: L.safeTop + L.navH + chatFilterH)
+                        Color.clear.frame(height: L.safeTop + L.navH + chatFilterOffset)
                         emptyView
                         Spacer(minLength: 0)
                     }
@@ -1411,7 +1413,7 @@ struct ChatsView: View {
                                滚动视图自己会带一点回弹 —— 用户看到的
                                「收起来的时候会话页会上下弹一下」就是它。
                                底下那条"两页叠一起"是二楼自己画的，不需要真的把列表推下去。 */
-                            Color.clear.frame(height: L.safeTop + L.navH + chatFilterH)
+                            Color.clear.frame(height: L.safeTop + L.navH + chatFilterOffset)
                             if list.isEmpty {
                                 Text(Tr("这个分类暂时没有会话"))
                                     .font(pf(14))
@@ -1708,7 +1710,9 @@ struct ChatsView: View {
                     Color.clear
                         .frame(height: L.safeTop + L.navH)
                         .allowsHitTesting(false)
-                    chatFilterBar
+                    if chatFilterVisible {
+                        chatFilterBar
+                    }
                     Spacer(minLength: 0)
                         .allowsHitTesting(false)
                 }

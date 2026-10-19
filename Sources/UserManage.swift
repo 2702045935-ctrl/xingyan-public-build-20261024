@@ -80,6 +80,7 @@ struct UserManageView: View {
     @State private var rpNew = false
     /* ---- 开关（写 ui.json 的键）---- */
     @State private var faceForRealName = UIConfig.num("realnameFace", 1) > 0
+    @State private var chatFilterBar = UIConfig.num("chatFilterBar", 1) > 0
     /// 「我」页排版：0 = 卡片版（头像压在卡片上沿那版）/ 1 = 微信版（一行放下头像/名字/星言号）
     @State private var meLayout = Int(UIConfig.num("meLayout", 0))
     /// 多设备同时在线（ui.json 的 multiDevice）：开了以后同一个账号几台手机都在线、消息互相同步
@@ -606,6 +607,34 @@ struct UserManageView: View {
                     .labelsHidden().tint(C.green)
             }
             .padding(.horizontal, 16).frame(height: 62)
+
+            HairLine(inset: 16)
+
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(Tr("会话页分类横条")).font(pf(16)).foregroundColor(C.label)
+                    Text(Tr("关闭后「全部 / 未读 / 群聊 / 公众号 / 置顶」整条隐藏，不再占高度"))
+                        .font(pf(12)).foregroundColor(C.subLabel)
+                        .lineLimit(2)
+                }
+                Spacer(minLength: 6)
+                Toggle("", isOn: Binding(
+                    get: { chatFilterBar },
+                    set: { v in
+                        chatFilterBar = v
+                        Task {
+                            let ok = await API.shared.opsSetUIKey("chatFilterBar", v ? 1 : 0)
+                            if ok {
+                                let cfg = await API.shared.uiConfig()
+                                UIConfig.apply(cfg.ui)
+                            }
+                            msg = ok ? (v ? Tr("已开启会话页分类横条") : Tr("已关闭会话页分类横条"))
+                                     : Tr("保存失败")
+                        }
+                    }))
+                    .labelsHidden().tint(C.green)
+            }
+            .padding(.horizontal, 16).frame(height: 66)
 
             HairLine(inset: 16)
 
