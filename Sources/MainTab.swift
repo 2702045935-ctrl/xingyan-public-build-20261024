@@ -627,14 +627,10 @@ struct TabBar: View {
                         Text(items[i].2)
                             .font(pf(UIConfig.num("tabLabel", L.tabLabel),
                                      selection == i ? .medium : .regular))
-                            .opacity(selection == i ? 1 : 0)
-                            .scaleEffect(selection == i ? 1 : 0.82, anchor: .top)
                     }
                     .foregroundColor(selection == i ? selColor : unselColor)
                     .frame(maxWidth: .infinity)
                     .padding(.top, 2)
-                    .scaleEffect(selection == i ? 1.04 : 0.96)
-                    .animation(.spring(response: 0.28, dampingFraction: 0.92), value: selection)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -660,32 +656,18 @@ struct TabBar: View {
                        选中哪一格它滑到哪一格，浓度还是后台 tabSliderAlpha。 */
                     .opacity(UIConfig.num("tabSliderAlpha", 0.55))
                     .overlay(
-                        Capsule(style: .continuous)
-                            .fill(
-                                LinearGradient(
-                                    colors: [
-                                        Color.white.opacity(scheme == .dark ? 0.20 : 0.42),
-                                        Color.white.opacity(0.025),
-                                        Color.white.opacity(scheme == .dark ? 0.09 : 0.18)
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                    )
-                    .overlay(
                         /* 苹果那种一道上亮下淡的玻璃边 */
                         Capsule(style: .continuous)
-                            .stroke(LinearGradient(colors: [Color.white.opacity(scheme == .dark ? 0.64 : 0.92),
-                                                            Color.white.opacity(0.08)],
-                                                   startPoint: .topLeading, endPoint: .bottomTrailing),
+                            .stroke(LinearGradient(colors: [Color.white.opacity(0.70),
+                                                            Color.white.opacity(0.16)],
+                                                   startPoint: .top, endPoint: .bottom),
                                     lineWidth: 0.9)
                     )
-                    .shadow(color: .black.opacity(scheme == .dark ? 0.22 : 0.08), radius: 5, y: 2)
+                    .shadow(color: .black.opacity(0.10), radius: 6, y: 3)
                     .frame(width: w, height: max(0, L.tabH - UIConfig.num("tabSliderVInset", 14)))
                     .offset(x: cx - w / 2)
                     /* 换页时滑过去是弹的；手指拖动时（dragX 在变）要跟手、不能有动画 */
-                    .animation(.spring(response: 0.30, dampingFraction: 0.92), value: selection)
+                    .animation(.spring(response: 0.28, dampingFraction: 0.84), value: selection)
                     .animation(nil, value: dragX)
             }
         }
@@ -754,7 +736,7 @@ struct TabBar: View {
                     if seg > 0 {
                         selection = min(items.count - 1, max(0, Int(x / seg)))
                     }
-                    withAnimation(.spring(response: 0.30, dampingFraction: 0.94)) {
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
                         slideX = nil
                     }
                 }
