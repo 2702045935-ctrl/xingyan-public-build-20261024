@@ -835,6 +835,9 @@ final class CallCenter: NSObject, ObservableObject {
     }
 
     private func micReported(_ ok: Bool, prefix: String) {
+        /* PCM 已经主动交给 TRTC：stop 后出现的“采集停止”是预期行为，
+           不能再当成麦克风故障写进线上诊断。 */
+        if usingTRTC || CallAudioPipe.shared.hasHandedOver { return }
         let reason = CallAudioPipe.shared.lastError
         Task { await API.shared.callDiag(prefix + " 采集=" + (ok ? "ok" : "失败")
             + (ok ? "" : " 原因: " + reason)) }

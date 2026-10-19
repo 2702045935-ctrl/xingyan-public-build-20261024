@@ -125,6 +125,7 @@ final class CallAudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegat
     /// 少了这个标志，切给腾讯之后这边还在抢麦克风，腾讯开了麦却采不到音，
     /// 表现就是「切到 TRTC 了、两边反而都没声音」（线上真出过）。
     private var handedOver = false
+    var hasHandedOver: Bool { handedOver }
     /// 采集有没有真的跑起来（起不来时页面/日志能看到原因）
     var isRunning: Bool { started && capture.isRunning }
     /// 起不来时的原因（上报日志用）
@@ -269,7 +270,37 @@ final class CallAudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegat
     func handOverToTRTC() {
         handedOver = true
         onFrame = nil
-        stop()
+        onStateChange = nil
+        started = false
+        startTask?.cancel()
+        startTask = nil
+        for o in observers { NotificationCenter.default.removeObserver(o) }
+        observers.removeAll()
+        watchdog?.cancel()
+        watchdog = nil
+        /* 这里必须同步停到 AVCaptureSession 真正释放：异步 stop 还没完成就打开
+           TRTC 麦克风，会把旧采集留在后台占着设备，5G 通话里表现为远端码率
+           持续掉到 0。captureQueue.sync 只用于一次交接，不允许后台重试绕过。 */
+        captureQueue.sync {
+            if capture.isRunning { capture.stopRunning() }
+            capture.stopRunning()
+        }
+        playQueue.sync {
+            playerNode.stop()
+            player.stop()
+            player.reset()
+            playerNode.reset()
+            if wired {
+                player.disconnectNodeOutput(playerNode)
+                player.detach(playerNode)
+                wired = false
+            }
+            playerReady = false
+            queuedUntil = Date.distantPast
+            pendingFrames.removeAll()
+            framesInFlight = 0
+        }
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
 
     /// 新的一通电话：复位「已交出」状态，让本通道可以再用
