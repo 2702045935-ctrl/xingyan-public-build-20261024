@@ -3758,6 +3758,14 @@ private struct StarredPayload: Decodable {
         return (payload.chat, payload.messages, payload.hasMore ?? false)
     }
 
+    /// 断线恢复：从本地最后 seq 继续向后补，直到服务端确认没有更多。
+    func messagesSince(chatId: String, since: Int, limit: Int = 200)
+        async throws -> (chat: Chat?, messages: [Message], hasMore: Bool) {
+        let path = "/api/chats/\(chatId)/messages?limit=\(limit)&since=\(max(0, since))"
+        let payload: MessagesPayload = try await get(path, as: MessagesPayload.self)
+        return (payload.chat, payload.messages, payload.hasMore ?? false)
+    }
+
     func send(chatId: String, text: String) async throws -> Message? {
         let payload: MessagePayload = try await post("/api/chats/\(chatId)/messages",
                                                      ["kind": "text", "content": text],

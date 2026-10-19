@@ -3663,7 +3663,29 @@ struct ChatDetailView: View {
             }
         }
         do {
-            let result = try await API.shared.messages(chatId: chat.id, limit: 40)
+            /* 断线恢复不能只拿“最近一页”。本地如果停在 seq=341、服务端已经到 820，
+               只拉最近 60 条会直接丢掉 342…760。这里从本地最后 seq 连续向后补，
+               直到服务端返回 hasMore=false，再统一按 id 去重、按 seq 排序。 */
+            let cachedLastSeq = messages.compactMap { $0.seq }.max() ?? 0
+            let result: (chat: Chat?, messages: [Message], hasMore: Bool)
+            if cachedLastSeq > 0 {
+                var incoming: [Message] = []
+                var latestChat: Chat? = nil
+                var more = false
+                var since = cachedLastSeq
+                for _ in 0..<50 {
+                    let page = try await API.shared.messagesSince(chatId: chat.id, since: since, limit: 200)
+                    if let c = page.chat { latestChat = c }
+                    incoming.append(contentsOf: page.messages)
+                    more = page.hasMore
+                    let next = page.messages.compactMap { $0.seq }.max() ?? since
+                    if !more || page.messages.isEmpty || next <= since { break }
+                    since = next
+                }
+                result = (latestChat, incoming, more)
+            } else {
+                result = try await API.shared.messages(chatId: chat.id, limit: 40)
+            }
             /* 不能只看条数和最后一条的 id：对方收款以后转账卡片还是同一条消息，
                只是 body 里的 status 从 pending 变成 received —— 以前这种情况会被
                当成「没变化」跳过，气泡就一直停在「待对方确认收款」。 */
@@ -3698,6 +3720,7 @@ struct ChatDetailView: View {
                 messages = nextMessages
                 if initial {
                     hasOlder = result.hasMore
+                        || nextMessages.count > result.messages.count
                         || (nextMessages.first?.seq ?? 0) < (result.messages.first?.seq ?? 0)
                 }
                 /* 回执：这些消息已经到我手机上了（后台投递日志按这个算"已送达"） */
