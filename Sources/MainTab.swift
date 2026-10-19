@@ -567,7 +567,7 @@ struct TabBar: View {
                 Button {
                     selection = i
                 } label: {
-                    VStack(spacing: 4) {
+                    VStack(spacing: 3) {
                         ZStack(alignment: .topTrailing) {
                             if let custom = IconOverrides.custom(customKeys[i]) {
                                 /* 自己上传的图片图标：当模板图渲染，这样选中变绿、未选中变灰，
@@ -597,7 +597,7 @@ struct TabBar: View {
                                     .padding(.horizontal, 3)
                                     .frame(minWidth: 15, minHeight: 15)
                                     .background(Capsule().fill(C.red))
-                                    .offset(x: 9, y: -6)
+                                    .offset(x: 5, y: -3)
                             }
                             // 发现：有人发朋友圈就一个红点（微信就是这样，不带数字）
                             if i == 2 && momentsDot {
@@ -605,7 +605,7 @@ struct TabBar: View {
                                     .fill(C.red)
                                     .frame(width: 9, height: 9)
                                     .overlay(Circle().stroke(C.tabBg, lineWidth: 1.5))
-                                    .offset(x: 5, y: -3)
+                                    .offset(x: 4, y: -2)
                             }
                             // 通讯录：有人加你好友就一个红点
                             if i == 1 && contactsDot {
@@ -613,7 +613,7 @@ struct TabBar: View {
                                     .fill(C.red)
                                     .frame(width: 9, height: 9)
                                     .overlay(Circle().stroke(C.tabBg, lineWidth: 1.5))
-                                    .offset(x: 5, y: -3)
+                                    .offset(x: 4, y: -2)
                             }
                             // 我：后台设成「一直亮」时显示
                             if i == 3 && meDot {
@@ -621,12 +621,16 @@ struct TabBar: View {
                                     .fill(C.red)
                                     .frame(width: 9, height: 9)
                                     .overlay(Circle().stroke(C.tabBg, lineWidth: 1.5))
-                                    .offset(x: 5, y: -3)
+                                    .offset(x: 4, y: -2)
                             }
                         }
+                        .frame(width: L.tabIconBox + 10, height: L.tabIconBox + 3)
                         Text(items[i].2)
                             .font(pf(UIConfig.num("tabLabel", L.tabLabel),
                                      selection == i ? .medium : .regular))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.82)
+                            .frame(height: max(12, L.tabLabel + 2))
                     }
                     .foregroundColor(selection == i ? selColor : unselColor)
                     .shadow(color: selection == i
