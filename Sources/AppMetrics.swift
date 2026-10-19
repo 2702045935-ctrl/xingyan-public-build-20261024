@@ -9,7 +9,7 @@ final class AppMetrics: NSObject, MXMetricManagerSubscriber {
     private let lock = NSLock()
     private var started = false
 
-    private init() { super.init() }
+    private override init() { super.init() }
 
     func start() {
         lock.lock()
