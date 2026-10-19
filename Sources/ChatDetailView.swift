@@ -3668,7 +3668,30 @@ struct ChatDetailView: View {
                直到服务端返回 hasMore=false，再统一按 id 去重、按 seq 排序。 */
             let cachedLastSeq = messages.compactMap { $0.seq }.max() ?? 0
             let result: (chat: Chat?, messages: [Message], hasMore: Bool)
-            if cachedLastSeq > 0 {
+            if initial && !messages.isEmpty {
+                /* 旧版本可能已经写进了“前一段 + 最近一页、中间断开”的缓存。
+                   首次打开回扫最近 1000 条，把历史缺口补实。 */
+                var incoming: [Message] = []
+                var latestChat: Chat? = nil
+                var more = false
+                var before = 0
+                for _ in 0..<10 {
+                    let page = try await API.shared.messages(chatId: chat.id, limit: 100,
+                                                             before: before > 0 ? before : nil)
+                    if let c = page.chat { latestChat = c }
+                    let rows = page.messages
+                    if rows.isEmpty { break }
+                    for m in rows where !incoming.contains(where: { $0.id == m.id }) {
+                        incoming.append(m)
+                    }
+                    more = page.hasMore
+                    let next = rows.compactMap { $0.seq }.min() ?? 0
+                    if !more || next <= 0 || (before > 0 && next >= before) { break }
+                    before = next
+                    if incoming.count >= 1000 { break }
+                }
+                result = (latestChat, incoming, more)
+            } else if cachedLastSeq > 0 {
                 var incoming: [Message] = []
                 var latestChat: Chat? = nil
                 var more = false
