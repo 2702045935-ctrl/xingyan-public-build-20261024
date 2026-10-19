@@ -1427,6 +1427,7 @@ final class CallCenter: NSObject, ObservableObject {
         if blurBackground { setBlurBackground(false) }
         /* 腾讯云那路也退房 */
         if usingTRTC || TRTCBridge.shared.joined {
+            diag.append(TRTCBridge.shared.diagSummary)
             TRTCBridge.shared.stop()
         }
         /* 把回调也摘掉：通话结束以后 TRTC 还可能补一个回调回来 */

@@ -56,6 +56,10 @@ final class TRTCBridge: NSObject, ObservableObject {
     @Published private(set) var lastError = ""
     /// 我方在 TRTC 里的 userId（就是我们的用户 id，排查用）
     @Published private(set) var userId = ""
+    /// 当前实际使用的语音档位（50kbps 默认 / 18kbps 弱网）
+    @Published private(set) var audioQualityLabel = "50kbps"
+    /// TRTC 的综合网络等级：1 最好，6 不可用
+    @Published private(set) var networkQuality = 0
 
     /// 进房 / 退房回调（CallCenter 用它切状态）
     var onJoined: ((Bool) -> Void)?
@@ -69,10 +73,38 @@ final class TRTCBridge: NSObject, ObservableObject {
     private var peerUserId = ""
     /// 是否已经开始真正采集（麦克风 / 摄像头）
     private var active = false
+    private var muted = false
+    /// TRTC 是否明确回调麦克风已经启动
+    private var micReady = false
+    /// 最近一次本地/远端音频指标
+    private var lastLocalAudioBitrate: UInt32 = 0
+    private var lastRemoteAudioBitrate: UInt32 = 0
+    private var lastAudioPacketLoss: UInt32 = 0
+    private var lastJitterBuffer: UInt32 = 0
+    private var lastPointToPointDelay: UInt32 = 0
+    private var lastAudioBlockRate: UInt32 = 0
+    private var lastRTT: UInt32 = 0
+    private var lastUpLoss: UInt32 = 0
+    private var lastDownLoss: UInt32 = 0
+    private var micRecoveryCount = 0
+    private var audioQuality: TRTCAudioQuality = .default
+    private var pendingQuality: TRTCAudioQuality?
+    private var qualityTask: Task<Void, Never>?
+    private var micWatchTask: Task<Void, Never>?
     /// 「音视频通话」设置改了（清晰度 / 镜像 / 美颜）：通话中立刻套上
     private var prefsObserver: NSObjectProtocol? = nil
 
     private override init() { super.init() }
+
+    /// 通话结束时直接写进服务端 call-trace.log，弱网验收不再只能依赖手机日志。
+    var diagSummary: String {
+        "TRTC 档位=\(audioQualityLabel) 网络=\(networkQuality) "
+            + "RTT=\(lastRTT)ms 上行丢包=\(lastUpLoss)% 下行丢包=\(lastDownLoss)% "
+            + "本地音频=\(lastLocalAudioBitrate)kbps 远端音频=\(lastRemoteAudioBitrate)kbps "
+            + "音频丢包=\(lastAudioPacketLoss)% 抖动缓存=\(lastJitterBuffer)ms "
+            + "路径延迟=\(lastPointToPointDelay)ms 卡顿率=\(lastAudioBlockRate)% "
+            + "麦克风就绪=\(micReady ? "是" : "否") 重试=\(micRecoveryCount)次"
+    }
 
     /// 进房。返回 false 表示「TRTC 用不了」，调用方继续用老路。
     @discardableResult
@@ -83,6 +115,7 @@ final class TRTCBridge: NSObject, ObservableObject {
         self.roomSeed = roomSeed
         isVideo = video
         lastError = ""
+        resetWeakNetworkState()
 
         let cfg: API.TRTCSig
         do {
@@ -134,8 +167,10 @@ final class TRTCBridge: NSObject, ObservableObject {
     func activate() {
         guard let c = cloud, joined, !active else { return }
         active = true
-        c.startLocalAudio(.default)
+        micReady = false
+        c.startLocalAudio(audioQuality)
         c.muteLocalAudio(false)
+        scheduleMicRecoveryWatch()
         if isVideo {
             /* 采集之前先把清晰度 / 镜像 / 美颜套上（改完不用挂断重打） */
             applyVideoPrefs()
@@ -220,12 +255,18 @@ final class TRTCBridge: NSObject, ObservableObject {
         /* 没开始采集过就别去 stop：TRTC SDK 对「没 start 就 stop」比较敏感，
            少调一次少一分崩的风险（我们这会儿本来也没在采集）。 */
         guard active else { return }
+        micWatchTask?.cancel()
+        micWatchTask = nil
         c.stopLocalAudio()
         if isVideo { c.stopLocalPreview() }
         active = false
     }
 
     func stop() {
+        qualityTask?.cancel()
+        qualityTask = nil
+        micWatchTask?.cancel()
+        micWatchTask = nil
         if let ob = prefsObserver {
             NotificationCenter.default.removeObserver(ob)
             prefsObserver = nil
@@ -241,6 +282,7 @@ final class TRTCBridge: NSObject, ObservableObject {
         peerInRoom = false
         peerUserId = ""
         active = false
+        resetWeakNetworkState()
         remoteView = nil
         localView = nil
     }
@@ -248,6 +290,7 @@ final class TRTCBridge: NSObject, ObservableObject {
     /* ---------------- 通话中那几个开关 ---------------- */
 
     func setMuted(_ mute: Bool) {
+        muted = mute
         cloud?.muteLocalAudio(mute)
     }
 
@@ -265,6 +308,83 @@ final class TRTCBridge: NSObject, ObservableObject {
            这里按原始值构造，省得被 Swift 把枚举名改来改去。 */
         if let route = TRTCAudioRoute(rawValue: on ? 0 : 1) {
             cloud?.setAudioRoute(route)
+        }
+    }
+
+    private func resetWeakNetworkState() {
+        qualityTask?.cancel()
+        qualityTask = nil
+        micWatchTask?.cancel()
+        micWatchTask = nil
+        pendingQuality = nil
+        audioQuality = .default
+        audioQualityLabel = "50kbps"
+        networkQuality = 0
+        muted = false
+        micReady = false
+        micRecoveryCount = 0
+        lastLocalAudioBitrate = 0
+        lastRemoteAudioBitrate = 0
+        lastAudioPacketLoss = 0
+        lastJitterBuffer = 0
+        lastPointToPointDelay = 0
+        lastAudioBlockRate = 0
+        lastRTT = 0
+        lastUpLoss = 0
+        lastDownLoss = 0
+    }
+
+    /// 弱网降档和恢复都要防抖：降快、升慢，避免 5G 抖动时来回切档。
+    private func scheduleAudioQuality(_ target: TRTCAudioQuality) {
+        guard active else { return }
+        if pendingQuality == target { return }
+        /* 已经排队降档时，单次“恢复良好”的采样不能把它取消；
+           反过来，真正再次变差时必须立刻取消排队中的恢复。 */
+        if target == .default,
+           audioQuality == .speech,
+           pendingQuality == .speech {
+            return
+        }
+        if target == .speech,
+           audioQuality == .speech,
+           pendingQuality == nil {
+            return
+        }
+        if target == .default,
+           audioQuality == .default,
+           pendingQuality == nil {
+            return
+        }
+        qualityTask?.cancel()
+        pendingQuality = target
+        let delay: UInt64 = target == .speech ? 1_200_000_000 : 8_000_000_000
+        qualityTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: delay)
+            guard let self = self, !Task.isCancelled, self.active else { return }
+            self.pendingQuality = nil
+            guard self.audioQuality != target else { return }
+            self.audioQuality = target
+            self.audioQualityLabel = target == .speech ? "18kbps" : "50kbps"
+            self.cloud?.startLocalAudio(target)
+            self.cloud?.muteLocalAudio(self.muted)
+        }
+    }
+
+    /// 麦克风没确认启动时只重试一次，并重新套用当前弱网档位。
+    private func scheduleMicRecoveryWatch() {
+        micWatchTask?.cancel()
+        micWatchTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 3_500_000_000)
+            guard let self = self, !Task.isCancelled, self.active,
+                  !self.micReady, self.lastLocalAudioBitrate == 0 else { return }
+            guard self.micRecoveryCount < 1 else { return }
+            self.micRecoveryCount += 1
+            self.lastError = "TRTC 麦克风未确认，已自动重试"
+            self.cloud?.stopLocalAudio()
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            guard let c = self.cloud, self.active, !Task.isCancelled else { return }
+            c.startLocalAudio(self.audioQuality)
+            c.muteLocalAudio(self.muted)
         }
     }
 }
@@ -334,6 +454,90 @@ extension TRTCBridge: TRTCCloudDelegate {
             self.peerUserId = userId
             self.peerInRoom = true
             self.onPeerChanged?(true)
+        }
+    }
+
+    /// 网络质量是 1…6，数值越大越差。任一端进入 Bad/Vbad/Down 就降到 18kbps，
+    /// 两端恢复到 Excellent/Good 并稳定 8 秒后升回 50kbps。
+    nonisolated func onNetworkQuality(_ localQuality: TRTCQualityInfo,
+                                      remoteQuality: [TRTCQualityInfo]) {
+        Task { @MainActor in
+            guard self.active else { return }
+            let worst = max(localQuality.quality.rawValue,
+                            remoteQuality.map { $0.quality.rawValue }.max() ?? 0)
+            self.networkQuality = worst
+            if worst >= 4 {
+                self.scheduleAudioQuality(.speech)
+            } else if worst > 0 && worst <= 2 {
+                self.scheduleAudioQuality(.default)
+            }
+        }
+    }
+
+    /// 除了综合网络等级，再用 TRTC 的真实媒体指标补充判断，避免只看信号格。
+    nonisolated func onStatistics(_ statistics: TRTCStatistics) {
+        Task { @MainActor in
+            guard self.active else { return }
+            self.lastRTT = statistics.rtt
+            self.lastUpLoss = statistics.upLoss
+            self.lastDownLoss = statistics.downLoss
+            self.lastLocalAudioBitrate = statistics.localStatistics
+                .map { $0.audioBitrate }.max() ?? 0
+            if self.lastLocalAudioBitrate > 0 {
+                self.micReady = true
+                self.micWatchTask?.cancel()
+                self.micWatchTask = nil
+            }
+            guard let remote = statistics.remoteStatistics.first else { return }
+            self.lastRemoteAudioBitrate = remote.audioBitrate
+            self.lastAudioPacketLoss = remote.audioPacketLoss
+            self.lastJitterBuffer = remote.jitterBufferDelay
+            self.lastPointToPointDelay = remote.point2PointDelay
+            self.lastAudioBlockRate = remote.audioBlockRate
+            let weakAudio = remote.audioPacketLoss >= 4
+                || remote.jitterBufferDelay >= 500
+                || remote.point2PointDelay >= 700
+                || remote.audioBlockRate >= 1
+                || statistics.upLoss >= 8
+                || statistics.downLoss >= 8
+                || statistics.rtt >= 300
+            let stableAudio = remote.audioPacketLoss < 1
+                && remote.jitterBufferDelay < 120
+                && remote.point2PointDelay < 250
+                && remote.audioBlockRate == 0
+                && statistics.upLoss < 2
+                && statistics.downLoss < 2
+                && statistics.rtt < 150
+            if weakAudio {
+                self.scheduleAudioQuality(.speech)
+            } else if stableAudio {
+                self.scheduleAudioQuality(.default)
+            }
+        }
+    }
+
+    nonisolated func onMicDidReady() {
+        Task { @MainActor in
+            self.micReady = true
+            self.micWatchTask?.cancel()
+            self.micWatchTask = nil
+            if self.lastError.contains("麦克风未确认") {
+                self.lastError = ""
+            }
+        }
+    }
+
+    nonisolated func onConnectionLost() {
+        Task { @MainActor in
+            self.networkQuality = 6
+            self.scheduleAudioQuality(.speech)
+        }
+    }
+
+    nonisolated func onConnectionRecovery() {
+        Task { @MainActor in
+            self.networkQuality = 2
+            self.scheduleAudioQuality(.default)
         }
     }
 
