@@ -567,6 +567,15 @@ final class AppState: ObservableObject {
         Task { await syncRecentMessages() }
     }
 
+    /// 新用户引导完成：服务端保存头像和分类后，根视图自动切到首页。
+    func finishNewUserOnboarding(avatar: String, interests: [String]) async throws {
+        let updated = try await API.shared.completeOnboarding(avatar: avatar, interests: interests)
+        me = updated
+        rememberLastUser()
+        await loadContacts()
+        await loadChats()
+    }
+
     func login(phone: String, code: String) async throws {
         me = try await API.shared.loginPhone(phone: phone, code: code)
         rememberLastUser()
@@ -1036,6 +1045,9 @@ struct RootView: View {
                        先把上一个弹窗关掉、等它收完再开目标页。
                        微信风那版 LoginViewOld 一行没删，随时能切回来。 */
                     LoginView()
+                } else if app.me?.needsOnboarding == true {
+                    NewUserOnboardingView()
+                        .environmentObject(app)
                 } else {
                     MainTabView()
                 }

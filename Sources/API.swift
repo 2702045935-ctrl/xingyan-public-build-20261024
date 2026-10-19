@@ -26,6 +26,10 @@ struct User: Codable, Identifiable, Hashable {
     var username: String?
     /// 上一次改「星言号」的时间（服务端存；用来算"一年只能改一次"的剩余时间）
     var usernameUpdatedAt: String?
+    /// 兴趣分类：新用户强引导里选择，最多 5 个
+    var interests: [String]?
+    /// 只有注册时明确标记的新用户才为 true；老账号没有这个字段
+    var needsOnboarding: Bool?
     var nickname: String?
     var avatar: String?
     var bio: String?
@@ -5526,6 +5530,18 @@ private struct StarredPayload: Decodable {
     /// 「设置了地区/生日都没生效」十有八九就是它。
     func updateMeChecked(_ fields: [String: Any]) async throws {
         _ = try await request("PATCH", "/api/me", body: fields)
+    }
+
+    /// 新用户首次资料引导：头像 + 兴趣分类一次性保存，返回更新后的完整资料。
+    func completeOnboarding(avatar: String, interests: [String]) async throws -> User {
+        let any = try await request("PATCH", "/api/me", body: [
+            "avatar": avatar,
+            "interests": interests,
+            "onboardingComplete": true
+        ])
+        let payload = try decode(any, as: LoginPayload.self)
+        guard let user = payload.user else { throw APIError.message("保存资料失败") }
+        return user
     }
 
     func addFriend(username: String, from: String = "") async throws {
