@@ -1355,7 +1355,7 @@ struct ChatsView: View {
             ZStack(alignment: .top) {
                 if app.chats.isEmpty {
                     VStack(spacing: 0) {
-                        Color.clear.frame(height: L.safeTop + L.navH + chatFilterH)
+                        Color.clear.frame(height: L.safeTop + L.navH)
                         emptyView
                         Spacer(minLength: 0)
                     }
@@ -1369,14 +1369,7 @@ struct ChatsView: View {
                                滚动视图自己会带一点回弹 —— 用户看到的
                                「收起来的时候会话页会上下弹一下」就是它。
                                底下那条"两页叠一起"是二楼自己画的，不需要真的把列表推下去。 */
-                            Color.clear.frame(height: L.safeTop + L.navH + chatFilterH)
-                            if list.isEmpty {
-                                Text(Tr("这个分类暂时没有会话"))
-                                    .font(pf(14))
-                                    .foregroundColor(C.subLabel)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.top, 54)
-                            }
+                            Color.clear.frame(height: L.safeTop + L.navH)
                             ForEach(list) { chat in
                                 SwipeChatRow(
                                     chat: chat,
@@ -1406,7 +1399,6 @@ struct ChatsView: View {
                             }
                         )
                     }
-                    .id(chatFilter)
                     .coordinateSpace(name: "chatsScroll")
                     /* 二楼：直接用**拖动手势**驱动（simultaneous = 只观察、不抢滚动），
                        不再只依赖滚动探针 —— 手指在列表最上面往下拖就一定露出来，
@@ -1662,18 +1654,6 @@ struct ChatsView: View {
                     Spacer(minLength: 0)
                 }
 
-                VStack(spacing: 0) {
-                    Color.clear
-                        .frame(height: L.safeTop + L.navH)
-                        .allowsHitTesting(false)
-                    chatFilterBar
-                    Spacer(minLength: 0)
-                        .allowsHitTesting(false)
-                }
-                .ignoresSafeArea(edges: .top)
-                .opacity(navFadeForFloor)
-                .allowsHitTesting(!floorUp)
-                .zIndex(3)
             }
             /* 第一页面（会话列表）的底色跟通讯录统一：都用后台的「页面底色」pageBg，
                以前这里用的是 navBg，深色下比通讯录浅一档（#18181A vs #0B0B0D）。 */
