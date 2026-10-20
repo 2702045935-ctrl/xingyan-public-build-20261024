@@ -54,11 +54,11 @@ struct SearchAllView: View {
 
     private let tools: [ToolHit] = [
         ToolHit(id: "ai", title: "小星 AI", sub: "问答、创作、联网搜索与文件阅读",
-                symbol: "sparkles", keywords: "小星 AI ai 人工智能 问答 创作 搜索 助手"),
+                symbol: "sparkles", keywords: "小星 AI ai 人工智能 电话 通话 语音 问答 创作 搜索 助手"),
         ToolHit(id: "browser", title: "内置浏览器", sub: "在星言里搜索和打开网页",
-                symbol: "safari", keywords: "内置浏览器 浏览器 网页 网站 搜索"),
+                symbol: "safari", keywords: "内置浏览器 浏览器 网页 网站 打开网页 搜索"),
         ToolHit(id: "drop", title: "文件快传", sub: "面对面传照片、视频和文件",
-                symbol: "dot.radiowaves.left.and.right", keywords: "文件快传 快传 文件 传文件 面对面 传输")
+                symbol: "dot.radiowaves.left.and.right", keywords: "文件快传 快传 文件 传文件 文件传输 面对面 传输")
     ]
 
     private var matchedTools: [ToolHit] {
