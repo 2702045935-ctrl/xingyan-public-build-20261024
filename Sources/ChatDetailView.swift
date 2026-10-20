@@ -640,6 +640,8 @@ struct ChatDetailView: View {
     @State private var settleTask: Task<Void, Never>? = nil
     @State private var hasOlder = false          // 上面还有更早的记录
     @State private var loadingOlder = false
+    /// 群聊压力测试：进入会话后一次性把服务端全部历史页拉齐，不再只留最近 2000 条。
+    @State private var loadingAllGroupHistory = false
     @State private var holdScroll = false        // 上翻加载时不要自动跳到底部
     @State private var atBottom = true           // 列表是不是已经到底（没到底就别跟着新消息硬滚）
     /// 「刚才确实贴在底部」——只在手指真的滑动时更新（内容自己变高不算）。
@@ -686,6 +688,12 @@ struct ChatDetailView: View {
         if chat.type == "group" { return true }
         if (chat.memberIds ?? []).count >= 3 { return true }
         return false
+    }
+
+    /// 压力测试范围只放开“家人群”：全部历史进入同一列表，
+    /// 其它群、单聊完全保持原来的热窗口和分页策略。
+    private var isFamilyGroupLoadAll: Bool {
+        isGroup && chat.name.contains("家人")
     }
 
     /// 顶栏标题：群聊和微信一样带上当前群人数「群名(9)」，单聊就是对方名字
@@ -3773,7 +3781,9 @@ struct ChatDetailView: View {
                 if ca != cb { return ca < cb }
                 return a.id < b.id
             }
-            let nextMessages = Array(visibleMessages(merged).suffix(2000))
+            let visible = visibleMessages(merged)
+            /* 只有“家人群”进入全量压力测试；其它会话仍保留 2000 条热窗口。 */
+            let nextMessages = isFamilyGroupLoadAll ? visible : Array(visible.suffix(2000))
             let same = !initial && nextMessages.count == messages.count
                 && zip(nextMessages, messages).allSatisfy { $0.id == $1.id && $0.body == $1.body }
             if initial || !same {
@@ -3804,6 +3814,9 @@ struct ChatDetailView: View {
         }
         rebuildIndex()          // 消息列表变了：把「id → 下标」的表重建一次
         loading = false
+        if initial, isFamilyGroupLoadAll, hasOlder, !loadingAllGroupHistory {
+            Task { await loadAllGroupHistory() }
+        }
         autoOpenShopCard()
         /* 阅后即焚（2026-10-13 接回来）：这个会话开着就顺手扫一遍 ——
            我这边看过的那些，服务端看过满 1 分钟会销毁，回来的 id 直接从列表里去掉。
@@ -5262,6 +5275,43 @@ extension MessageRow: Equatable {
             && lhs.showTail == rhs.showTail
             && lhs.asrText == rhs.asrText
             && lhs.asrBusy == rhs.asrBusy
+    }
+
+    /// 群聊测试版：自动把所有更早的页全部拉完。只改消息载入上限，
+    /// 不碰聊天首秒保护、滚动贴底和图片/视频本地保存。
+    private func loadAllGroupHistory() async {
+        guard isFamilyGroupLoadAll, !loadingAllGroupHistory else { return }
+        loadingAllGroupHistory = true
+        defer { loadingAllGroupHistory = false }
+        var pages = 0
+        while hasOlder, pages < 1000, !Task.isCancelled {
+            guard let seq = messages.first?.seq, seq > 0 else { hasOlder = false; break }
+            do {
+                let page = try await API.shared.messages(chatId: chat.id, limit: 100, before: seq)
+                if page.messages.isEmpty {
+                    hasOlder = false
+                    break
+                }
+                var byId: [String: Message] = [:]
+                for m in page.messages { byId[m.id] = m }
+                for m in messages { byId[m.id] = m }
+                let merged = byId.values.sorted { a, b in
+                    let sa = a.seq ?? 0, sb = b.seq ?? 0
+                    if sa > 0 && sb > 0 && sa != sb { return sa < sb }
+                    let ca = a.createdAt ?? "", cb = b.createdAt ?? ""
+                    if ca != cb { return ca < cb }
+                    return a.id < b.id
+                }
+                messages = visibleMessages(merged)
+                hasOlder = page.hasMore
+                rebuildIndex()
+                pages += 1
+                await Task.yield()
+            } catch {
+                hasOlder = true
+                break
+            }
+        }
     }
 }
 
