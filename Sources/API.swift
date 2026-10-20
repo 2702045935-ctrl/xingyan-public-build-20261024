@@ -659,6 +659,17 @@ private struct BrandingPayload: Decodable { var branding: BrandInfo? }
 private struct BadgesPayload: Decodable { var badges: [String: String]? }
 private struct EndpointsPayload: Decodable { var endpoints: [String]? }
 
+/// 服务端仍处于响铃状态的来电（只用于 APNs / 后台恢复，不参与日常通话信令）。
+struct PendingCallInfo: Decodable {
+    var callId = ""
+    var media = "audio"
+    var peerId = ""
+    var peerName = ""
+    var peerAvatar = ""
+    var sdp: String? = nil
+    var startedAt: Double = 0
+}
+
 /* ---------------- 版本更新 + 弹窗公告（服务端 /api/version 下发） ---------------- */
 struct AppUpdateInfo: Decodable, Equatable {
     var version: String?
@@ -2795,6 +2806,14 @@ final class API {
     /// 通话诊断：连不上时把 ICE 状态报回服务器（写进 call-trace.log）
     func callDiag(_ text: String) async {
         _ = try? await request("POST", "/api/call-diag", body: ["text": text])
+    }
+
+    /// iPhone 被系统挂起后，点 APNs 来电通知时 WebSocket 里的 incoming 可能已经错过。
+    /// 用 HTTP 把服务器上仍在响铃的真实来电取回来，再按原来的接听流程走。
+    func pendingCall() async -> PendingCallInfo? {
+        struct Payload: Decodable { var call: PendingCallInfo? }
+        let payload: Payload? = try? await get("/api/call/pending", as: Payload.self)
+        return payload?.call
     }
 
     func chats() async throws -> [Chat] {

@@ -1123,6 +1123,9 @@ struct RootView: View {
                     await app.loadContacts()      // 回到前台也要重拉好友申请，不然通讯录红点不亮
                     await app.refreshDotCounts()
                     Realtime.shared.start()
+                    /* 苹果被系统挂起期间可能错过 WebSocket 的 incoming：
+                       回到前台补捞一次服务端仍在响铃的来电，不创建新通话。 */
+                    CallCenter.shared.restorePendingAfterActivation()
                 }
             } else if phase == .background {
                 GrowthStore.shared.stop()        // 退后台：把这段时长先报上去

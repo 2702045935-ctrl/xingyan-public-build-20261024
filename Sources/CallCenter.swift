@@ -257,6 +257,10 @@ final class CallCenter: NSObject, ObservableObject {
     private var pendingIce: [RTCIceCandidate] = []
     /// 等服务器回答「两端是不是同一个网络」的等待者
     private var netWaiters: [String: CheckedContinuation<Bool, Never>] = [:]
+    /// APNs 点进来时，先用 HTTP 找回服务端仍在响铃的来电，再决定是否自动接听。
+    private var pendingPushCallId = ""
+    private var pendingPushAnswer = false
+    private var pendingPushTask: Task<Void, Never>?
     /// 「模糊背景」那层采集代理（1 对 1 视频走 WebRTC 那条路，要一直持有）
     private var blurDelegate: BlurCapturer?
 
@@ -537,6 +541,123 @@ final class CallCenter: NSObject, ObservableObject {
 
     func minimize() { minimized = true }
     func restore() { minimized = false }
+
+    /// 点 APNs 来电通知（或通知上的「接听」）时调用。
+    /// 苹果后台挂起时，长连接里的 incoming 可能已经错过；先用 HTTP 找回真实来电，
+    /// 再走原来的 incoming / accept 流程。这里不重建媒体，也不改变音视频参数。
+    func resumeFromPush(callId: String, answer: Bool) {
+        guard !callId.isEmpty else { return }
+        if phase == .incoming, self.callId == callId {
+            minimized = false
+            if answer { accept() }
+            return
+        }
+        guard phase == .idle else { return }
+        recoverPendingCall(expectedCallId: callId, answer: answer)
+    }
+
+    /// APNs 上的「拒绝」：本地还没恢复来电时，直接把同一条 callId 的拒绝信令发回去。
+    func rejectFromPush(callId: String) {
+        guard !callId.isEmpty else { return }
+        if phase == .incoming, self.callId == callId {
+            reject()
+            return
+        }
+        Task { @MainActor in
+            Realtime.shared.start()
+            for _ in 0..<25 {
+                if Realtime.shared.connected { break }
+                try? await Task.sleep(nanoseconds: 200_000_000)
+            }
+            guard Realtime.shared.connected else { return }
+            Realtime.shared.sendJSON(["type": "call", "action": "reject", "callId": callId])
+            LocalNotify.clearCall(callId: callId)
+        }
+    }
+
+    /// 回到前台时顺手补一次，覆盖「APNs 弹出但用户直接点 App」以及通知中心丢失的情况。
+    func restorePendingAfterActivation() {
+        guard phase == .idle, pendingPushTask == nil else { return }
+        recoverPendingCall(expectedCallId: "", answer: false)
+    }
+
+    private func recoverPendingCall(expectedCallId: String, answer: Bool) {
+        pendingPushTask?.cancel()
+        pendingPushCallId = expectedCallId
+        pendingPushAnswer = answer
+        minimized = false
+        Realtime.shared.start()
+        pendingPushTask = Task { @MainActor [weak self] in
+            guard let self = self else { return }
+            var info: PendingCallInfo? = nil
+            /* 冷启动时令牌和会话可能还没恢复完；最多等约 6 秒，不拦住启动界面。 */
+            for attempt in 0..<12 {
+                if Task.isCancelled { self.pendingPushTask = nil; return }
+                if !expectedCallId.isEmpty, self.phase == .incoming, self.callId == expectedCallId {
+                    self.pendingPushTask = nil
+                    self.pendingPushCallId = ""
+                    self.minimized = false
+                    if self.pendingPushAnswer { self.accept() }
+                    return
+                }
+                guard self.phase == .idle else {
+                    self.pendingPushTask = nil
+                    self.pendingPushCallId = ""
+                    return
+                }
+                if !API.shared.token.isEmpty {
+                    info = await API.shared.pendingCall()
+                    if let c = info {
+                        if expectedCallId.isEmpty || c.callId == expectedCallId { break }
+                        info = nil
+                    }
+                }
+                if attempt < 11 {
+                    try? await Task.sleep(nanoseconds: 500_000_000)
+                }
+            }
+            guard !Task.isCancelled, self.phase == .idle else {
+                self.pendingPushTask = nil
+                self.pendingPushCallId = ""
+                return
+            }
+            guard let call = info,
+                  expectedCallId.isEmpty || call.callId == expectedCallId else {
+                /* 通知可能来自已经结束的通话：静默收尾，不要弹“通话已结束”打扰用户。 */
+                self.pendingPushTask = nil
+                self.pendingPushCallId = ""
+                return
+            }
+            let shouldAnswer = self.pendingPushAnswer
+            var ev = PushEvent()
+            ev.type = "call"
+            ev.callAction = "incoming"
+            ev.callId = call.callId
+            ev.callMedia = call.media
+            ev.callPeerId = call.peerId
+            ev.callPeerName = call.peerName
+            ev.callPeerAvatar = call.peerAvatar
+            ev.callSDP = call.sdp
+            self.pendingPushTask = nil
+            self.pendingPushCallId = ""
+            self.handle(ev)
+            guard shouldAnswer else {
+                self.minimized = false
+                return
+            }
+            /* 接听必须走原 WebSocket；等它真的连上后再发 accept，避免信令掉进半死连接。 */
+            for _ in 0..<30 {
+                if Task.isCancelled { return }
+                if Realtime.shared.connected {
+                    if self.phase == .incoming, self.callId == call.callId {
+                        self.accept()
+                    }
+                    return
+                }
+                try? await Task.sleep(nanoseconds: 200_000_000)
+            }
+        }
+    }
 
     /* ==================== 群语音通话（多人） ==================== */
 

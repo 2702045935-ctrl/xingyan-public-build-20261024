@@ -125,7 +125,19 @@ final class PushCenter: NSObject, ObservableObject, UIApplicationDelegate, UNUse
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 willPresent notification: UNNotification,
                                 withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-        completionHandler([.banner, .sound, .list])
+        let info = notification.request.content.userInfo
+        guard (info["kind"] as? String) == "call",
+              let callId = info["callId"] as? String, !callId.isEmpty else {
+            completionHandler([.banner, .sound, .list])
+            return
+        }
+        /* WebSocket 已经把同一通来电弹成全屏来电页时，APNs 只负责兜底，
+           不要再叠一条横幅和铃声。 */
+        Task { @MainActor in
+            let c = CallCenter.shared
+            let alreadyRinging = (c.phase == .incoming && c.callId == callId)
+            completionHandler(alreadyRinging ? [] : [.banner, .sound, .list])
+        }
     }
 
     /* ---------------- 设备确认登录：弹一条「登录确认」，点一下进确认卡片 ---------------- */
@@ -150,12 +162,22 @@ final class PushCenter: NSObject, ObservableObject, UIApplicationDelegate, UNUse
         let info = response.notification.request.content.userInfo
         /* 来电通知上的按钮：不用先进 App 再点一遍（微信在外面也能直接接） */
         if response.actionIdentifier == "call.answer" {
-            CallCenter.shared.accept()
+            let callId = (info["callId"] as? String) ?? ""
+            Task { @MainActor in
+                for _ in 0..<25 {
+                    if UIApplication.shared.applicationState == .active { break }
+                    try? await Task.sleep(nanoseconds: 200_000_000)
+                }
+                CallCenter.shared.resumeFromPush(callId: callId, answer: true)
+            }
             completionHandler()
             return
         }
         if response.actionIdentifier == "call.reject" {
-            CallCenter.shared.reject()
+            let callId = (info["callId"] as? String) ?? ""
+            Task { @MainActor in
+                CallCenter.shared.rejectFromPush(callId: callId)
+            }
             completionHandler()
             return
         }
@@ -165,13 +187,18 @@ final class PushCenter: NSObject, ObservableObject, UIApplicationDelegate, UNUse
            （用户报的「群语音弹出通知闪退」，日志里一条崩溃栈都没有、内存也正常）。
            和「点通知进聊天」那条一样：等 App 真的 active、再等 0.8 秒稳定了才弹。 */
         if (info["kind"] as? String) == "call" {
+            let callId = (info["callId"] as? String) ?? ""
             Task { @MainActor in
                 for _ in 0..<25 {
                     if UIApplication.shared.applicationState == .active { break }
                     try? await Task.sleep(nanoseconds: 200_000_000)
                 }
                 try? await Task.sleep(nanoseconds: 800_000_000)
-                CallCenter.shared.restore()
+                if callId.isEmpty {
+                    CallCenter.shared.restore()
+                } else {
+                    CallCenter.shared.resumeFromPush(callId: callId, answer: false)
+                }
             }
         }
         /* 点「登录确认」那条通知：直接进确认卡片（不用再手输 6 位数字） */
