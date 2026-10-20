@@ -3437,6 +3437,7 @@ private struct StarredPayload: Decodable {
             "token": token,
             "platform": "ios",
             "env": sandbox ? "sandbox" : "prod",
+            "deviceId": AppInfo.deviceId,
             "bundleId": Bundle.main.bundleIdentifier ?? ""
         ])
     }
