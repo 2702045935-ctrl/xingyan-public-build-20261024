@@ -21,6 +21,10 @@ struct AIHomeCardView: View {
     var onSend: (String) -> Void
     /// 点「打电话」→ 走 AI 通话
     var onCall: () -> Void
+    /// 直接在星言内打开网页
+    var onBrowser: () -> Void
+    /// 面对面传文件
+    var onDrop: () -> Void
 
     private var suggestions: [String] {
         let raw = UIConfig.text("aiHomeSuggestions",
@@ -109,7 +113,40 @@ struct AIHomeCardView: View {
                         .buttonStyle(.plain)
                     }
                 }
+
+                HairLine(inset: 0)
+                HStack(spacing: 0) {
+                    Button(action: onBrowser) {
+                        aiTool(icon: "safari", title: Tr("内置浏览器"),
+                               sub: Tr("搜索和打开网页"))
+                    }
+                    .buttonStyle(.plain)
+                    Rectangle().fill(C.hairline).frame(width: 0.5, height: 34)
+                    Button(action: onDrop) {
+                        aiTool(icon: "dot.radiowaves.left.and.right", title: Tr("文件快传"),
+                               sub: Tr("面对面传文件"))
+                    }
+                    .buttonStyle(.plain)
+                }
             }
         }
+    }
+
+    private func aiTool(icon: String, title: String, sub: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 17, weight: .medium))
+                .foregroundColor(C.green)
+                .frame(width: 24)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(pf(14.5, .medium)).foregroundColor(C.label)
+                Text(sub).font(pf(10.8)).foregroundColor(C.subLabel)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 14)
+        .frame(maxWidth: .infinity)
+        .frame(height: 54)
+        .contentShape(Rectangle())
     }
 }

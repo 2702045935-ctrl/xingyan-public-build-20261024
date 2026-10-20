@@ -922,6 +922,8 @@ struct DirectChatInfoView: View {
     /// AI 助手（「眼睛」那个号）在这一页顶上的首页卡片：点一条推荐 = 直接发进会话。
     /// ⚠ 同理，这是它没被放在聊天页里的原因（B144 放聊天页里 = 一进聊天就闪）。
     @State private var aiCall = false
+    @State private var aiBrowser = false
+    @State private var aiDrop = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -979,6 +981,17 @@ struct DirectChatInfoView: View {
         /* AI 助手「打电话」：和聊天页那颗电话走的是同一个页面（AICallView） */
         .fullScreenCover(isPresented: $aiCall) {
             AICallView(chat: chat)
+        }
+        .fullScreenCover(isPresented: $aiBrowser) {
+            InAppBrowserView().environmentObject(app)
+        }
+        .fullScreenCover(isPresented: $aiDrop) {
+            FaceToFaceFileSheet(rows: [],
+                                avatar: app.me?.avatarPath ?? "",
+                                name: app.me?.name ?? "我",
+                                ink: C.label,
+                                mode: .host)
+                .environmentObject(app)
         }
         /* 「星言团队」：自助工具 / 联系客服 / 账号与安全 / 登录设备（一个 sheet 装下四个页） */
         .sheet(item: $sysPage) { p in
@@ -1139,7 +1152,9 @@ struct DirectChatInfoView: View {
     private var aiHomeCard: some View {
         AIHomeCardView(chat: chat,
                        onSend: { text in sendToAI(text) },
-                       onCall: { aiCall = true })
+                       onCall: { aiCall = true },
+                       onBrowser: { aiBrowser = true },
+                       onDrop: { aiDrop = true })
     }
 
     private func sendToAI(_ text: String) {
