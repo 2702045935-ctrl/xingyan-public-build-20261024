@@ -625,12 +625,30 @@ final class AppState: ObservableObject {
     @Published var syncText = ""
 
     var prefetched: [String: [Message]] = [:]
+    private var syncInFlight = false
+
+    private var syncHintKey: String {
+        "chris.syncHintShown." + (me?.id ?? "")
+    }
 
     func syncRecentMessages(chatCount: Int = 20, limit: Int = 50) async {
-        guard !syncing else { return }
-        syncing = true
-        syncText = "正在同步最近的聊天记录…"
-        defer { syncing = false }
+        guard !syncInFlight else { return }
+        syncInFlight = true
+        let showHint = !UserDefaults.standard.bool(forKey: syncHintKey)
+        var completed = false
+
+        if showHint {
+            syncing = true
+            syncText = "正在同步最近的聊天记录…"
+        }
+        defer {
+            syncInFlight = false
+            syncing = false
+            syncText = ""
+            if completed && showHint {
+                UserDefaults.standard.set(true, forKey: syncHintKey)
+            }
+        }
         do {
             let r = try await API.shared.chatsWithRecentMessages(chats: chatCount, limit: limit)
             chats = r.chats
@@ -641,12 +659,12 @@ final class AppState: ObservableObject {
                     total += msgs.count
                 }
             }
-            syncText = "已同步 " + String(r.synced.count) + " 个会话 / " + String(total) + " 条消息"
-
-            try? await Task.sleep(nanoseconds: 900_000_000)
-            syncText = ""
+            completed = true
+            if showHint {
+                syncText = "同步完成"
+                try? await Task.sleep(nanoseconds: 700_000_000)
+            }
         } catch {
-            syncText = ""
         }
     }
 
@@ -722,6 +740,9 @@ final class AppState: ObservableObject {
     }
 
     func logout() async {
+        if let userId = me?.id, !userId.isEmpty {
+            UserDefaults.standard.removeObject(forKey: "chris.syncHintShown." + userId)
+        }
 
         KeepAlive.shared.stop()
         OtherLogin.shared.reset()
