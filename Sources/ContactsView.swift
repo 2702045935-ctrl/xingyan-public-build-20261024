@@ -866,29 +866,11 @@ struct ContactCardView: View {
             }
             .environmentObject(app)
         }
-        /* 推荐给朋友：微信那张「发送给」页；点发送就把名片（名字 + 微信号 + 头像）
-           作为一条 kind = "card" 的消息发给选中的聊天。 */
+        /* 推荐给朋友：微信那张「发送给」页；页面自己负责发送，
+           搜索会同时覆盖最近聊天和完整通讯录。 */
         .sheet(isPresented: $showShare) {
-            CardShareView(user: u) { chats in
-                Task {
-                    /* 名片内容就是对方的名字 / 微信号 / 头像；收端按微信那张卡渲染。
-                       ⚠ 只编码一次（以前这层编码叠加导致收端乱码）。 */
-                    /* ⚠ 键必须是 userId：服务端按 userId 去找那个人、
-                       再用服务端最新资料把名字/微信号/头像补一遍
-                       （写成 id 的话服务端找不到人，收端就只剩一句「[名片]」）。 */
-                    let payload = [
-                        "userId": u.id,
-                        "name": u.name,
-                        "username": u.username ?? "",
-                        "avatar": u.avatar ?? ""
-                    ]
-                    let text = (try? JSONSerialization.data(withJSONObject: payload))
-                        .flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
-                    for c in chats {
-                        _ = try? await API.shared.send(chatId: c.id, kind: "card", content: text)
-                    }
-                    if !chats.isEmpty { app.show(Tr("已发送")) }
-                }
+            CardShareView(user: u) {
+                Task { await app.loadChats() }
             }
             .environmentObject(app)
         }
