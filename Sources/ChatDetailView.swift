@@ -3091,7 +3091,14 @@ struct ChatDetailView: View {
                 }
                 outbox.removeAll { $0.id == p.id }
             } catch {
-                if let i2 = outbox.firstIndex(where: { $0.id == p.id }) {
+                let reason = (error as? APIError)?.errorDescription ?? "发送失败"
+                if p.kind == "text", reason.contains("敏感词") {
+                    /* 敏感词属于永久拒绝，不保留红色失败气泡，也不让用户误以为
+                       点重试就会成功。把原文放回输入框，方便用户直接修改。 */
+                    outbox.removeAll { $0.id == p.id }
+                    if input.isEmpty { input = p.content }
+                    app.show(reason)
+                } else if let i2 = outbox.firstIndex(where: { $0.id == p.id }) {
                     outbox[i2].sending = false
                     outbox[i2].failed = true
                 }
