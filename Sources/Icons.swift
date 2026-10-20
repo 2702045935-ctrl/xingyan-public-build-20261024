@@ -20,7 +20,7 @@ struct GlassBackground<S: Shape>: View {
     @Environment(\.colorScheme) private var scheme
 
     private var darkEdgeSuppressed: Bool {
-        darkEdgeOff && scheme == .dark
+        false
     }
 
     private var resolvedTint: Color? {
