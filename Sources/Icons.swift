@@ -171,17 +171,9 @@ struct CardGlassBox: View {
     var shadow: Bool = false
 
     var body: some View {
-        if UIConfig.num("cardGlass", 1) > 0 {
-            GlassBackground(shape: RoundedRectangle(cornerRadius: radius, style: .continuous),
-                            opacity: UIConfig.num("cardGlassAlpha", 0.58),
-                            edgeAlpha: UIConfig.num("cardGlassEdge", 0.45),
-                            shadow: shadow,
-                            seed: 0.62,
-                            native: false)
-        } else {
-
-            RoundedRectangle(cornerRadius: radius, style: .continuous).fill(C.cardBg)
-        }
+        RoundedRectangle(cornerRadius: radius, style: .continuous)
+            .fill(C.cardBg)
+            .shadow(color: shadow ? Color.black.opacity(0.08) : .clear, radius: 8, y: 2)
     }
 }
 

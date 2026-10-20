@@ -862,9 +862,7 @@ struct DirectChatInfoView: View {
 
     @State private var sysPage: SysPage? = nil
 
-    @State private var aiCall = false
-    @State private var aiBrowser = false
-    @State private var aiDrop = false
+    @State private var aiPanel: DirectAIPanel?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -920,19 +918,20 @@ struct DirectChatInfoView: View {
 
         .navigationDestination(isPresented: $showSearch) { ChatSearchView(chat: chat) }
 
-        .fullScreenCover(isPresented: $aiCall) {
-            AICallView(chat: chat)
-        }
-        .fullScreenCover(isPresented: $aiBrowser) {
-            InAppBrowserView().environmentObject(app)
-        }
-        .fullScreenCover(isPresented: $aiDrop) {
-            FaceToFaceFileSheet(rows: [],
-                                avatar: app.me?.avatarPath ?? "",
-                                name: app.me?.name ?? "我",
-                                ink: C.label,
-                                mode: .host)
-                .environmentObject(app)
+        .fullScreenCover(item: $aiPanel) { panel in
+            switch panel {
+            case .call:
+                AICallView(chat: chat)
+            case .browser:
+                InAppBrowserView().environmentObject(app)
+            case .drop:
+                FaceToFaceFileSheet(rows: [],
+                                    avatar: app.me?.avatarPath ?? "",
+                                    name: app.me?.name ?? "我",
+                                    ink: C.label,
+                                    mode: .host)
+                    .environmentObject(app)
+            }
         }
 
         .sheet(item: $sysPage) { p in
@@ -1085,9 +1084,9 @@ struct DirectChatInfoView: View {
     private var aiHomeCard: some View {
         AIHomeCardView(chat: chat,
                        onSend: { text in sendToAI(text) },
-                       onCall: { aiCall = true },
-                       onBrowser: { aiBrowser = true },
-                       onDrop: { aiDrop = true })
+                       onCall: { aiPanel = .call },
+                       onBrowser: { aiPanel = .browser },
+                       onDrop: { aiPanel = .drop })
     }
 
     private func sendToAI(_ text: String) {
@@ -1237,6 +1236,14 @@ struct DirectChatInfoView: View {
             app.show(Tr("已删除该聊天"))
         }
     }
+}
+
+private enum DirectAIPanel: String, Identifiable {
+    case call
+    case browser
+    case drop
+
+    var id: String { rawValue }
 }
 
 struct GroupAddMembersView: View {
