@@ -1910,7 +1910,7 @@ struct ChatDetailView: View {
                    asrBusy: asrBusy.contains(message.id),
                    onOpenFile: { body in openFile(body) },
                    onOpenArticle: { id in oaArticleId = id; showOaArticle = true },
-                   onLayoutChanged: { repinIfAtBottom() },
+                   onLayoutChanged: { scheduleSettledBottom() },
                    onShowToast: { text in app.show(text) },
                    /* 点引用条 → 跳到被引用的那条原消息（微信就是这么跳的） */
                    onOpenQuote: { id in jumpToMessage(id) }))
