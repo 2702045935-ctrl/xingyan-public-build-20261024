@@ -1850,8 +1850,8 @@ struct LoginView: View {
                 LoginTheme.apply(b)
                 /* 服务器关了滑动验证（security.json 里 sliderLogin: 0）就不显示那一块 */
                 app.sliderLogin = b.sliderLogin ?? true
-                if let n = b.login?.appName ?? b.appName, !n.isEmpty { appName = n }
-                if let lg = b.login?.logo ?? b.logo, !lg.isEmpty { logoPath = lg }
+                if let n = b.harmonyLogin?.appName ?? b.login?.appName ?? b.appName, !n.isEmpty { appName = n }
+                if let lg = b.harmonyLogin?.logo ?? b.login?.logo ?? b.logo, !lg.isEmpty { logoPath = lg }
                 bgImage = b.login?.bgImage ?? ""      // 背景图（用状态存，才能刷新生效）
                 themeTick += 1
                 return

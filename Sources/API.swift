@@ -705,6 +705,8 @@ struct BrandInfo: Decodable, Hashable {
     var iceServers: String?
     /// 登录页外观（后台「🎨 登录页」里配的）
     var login: LoginBrand?
+    /// iOS / HarmonyOS 共用的登录页品牌配置；缺省时兼容旧版 login 字段
+    var harmonyLogin: LoginBrand?
     /// 服务器有没有开「登录滑动验证」（安全验证那一块显不显示由它决定）
     var sliderLogin: Bool?
     /// 后台配的启动页图片（没有就用 App 包里那张 splash.png 兜底）

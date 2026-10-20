@@ -338,9 +338,11 @@ struct HarmonyLoginView: View {
     private func loadBranding() {
         Task {
             guard let b = await API.shared.branding() else { return }
-            if let n = b.login?.appName ?? b.appName, !n.isEmpty { brandName = n }
-            if let s = b.login?.subTitle, !s.isEmpty { brandSubtitle = s }
-            if let l = b.login?.logo ?? b.logo, !l.isEmpty { logoPath = l }
+            /* iOS / 鸿蒙只认后台同一份登录品牌配置。 */
+            let shared = b.harmonyLogin
+            if let n = shared?.appName ?? b.login?.appName ?? b.appName, !n.isEmpty { brandName = n }
+            if let s = shared?.subTitle ?? b.login?.subTitle, !s.isEmpty { brandSubtitle = s }
+            if let l = shared?.logo ?? b.login?.logo ?? b.logo, !l.isEmpty { logoPath = l }
         }
     }
 
