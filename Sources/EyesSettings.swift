@@ -116,8 +116,8 @@ struct EyesSettingsView: View {
     /// 选「开启」但还没付费 → 先弹这个确认（¥40 一次性）
     @State private var confirmOn = false
     @State private var busy = false
-    /// 点「进入 AI 助手」整页打开小星自己的对话页
-    @State private var botChat: Chat? = nil
+    /// 点「进入 AI 助手」整页打开小星 AI 首页
+    @State private var showAI = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -190,8 +190,8 @@ struct EyesSettingsView: View {
         } message: {
             Text(Tr("买断之后一直有效，不再重复收费。"))
         }
-        .fullScreenCover(item: $botChat) { c in
-            BotChatView(chat: c).environmentObject(app)
+        .fullScreenCover(isPresented: $showAI) {
+            AIPageView().environmentObject(app)
         }
     }
 
@@ -244,13 +244,8 @@ struct EyesSettingsView: View {
         }
     }
 
-    /// 「进入 AI 助手」：整页打开小星自己的对话页（和顶栏那颗眼睛点开的是同一页）
+    /// 「进入 AI 助手」：整页打开小星 AI 首页
     private func openAI() {
-        if let bot = app.chats.first(where: { $0.botRank == 0 }) { botChat = bot; return }
-        Task {
-            await app.loadChats()
-            if let b = app.chats.first(where: { $0.botRank == 0 }) { botChat = b }
-            else { app.show(Tr("AI 助手还没准备好，稍后再试")) }
-        }
+        showAI = true
     }
 }

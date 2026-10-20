@@ -1418,8 +1418,8 @@ struct ServiceView: View {
     @State private var showPayCode = false
     @State private var detailChat: Chat?
     @State private var detailInfo: TransferInfo?
-    /// 「AI 助手」：整页打开小星自己的对话页
-    @State private var botChat: Chat? = nil
+    /// 「AI 助手」：整页打开小星 AI 首页
+    @State private var showAIPage = false
 
     struct BillItem: Identifiable {
         let id: String
@@ -1527,9 +1527,9 @@ struct ServiceView: View {
         .sheet(isPresented: $showServiceSupport) { SupportView().environmentObject(app) }
         .navigationDestination(isPresented: $showBillsPage) { BillsView() }
         .navigationDestination(isPresented: $showPayCode) { PayCodePage() }
-        /* 小星关掉之后那一格「AI 助手」：整页打开小星对话页 */
-        .fullScreenCover(item: $botChat) { c in
-            BotChatView(chat: c).environmentObject(app)
+        /* 小星关掉之后那一格「AI 助手」：整页打开小星 AI 首页 */
+        .fullScreenCover(isPresented: $showAIPage) {
+            AIPageView().environmentObject(app)
         }
         .confirmationDialog(Tr("服务"), isPresented: $showMore, titleVisibility: .hidden) {
             Button(Tr(bt.moreRefresh ?? "刷新账单")) { Task { await loadBills() } }
@@ -1796,14 +1796,9 @@ struct ServiceView: View {
         }
     }
 
-    /// 「AI 助手」：整页打开小星自己的对话页（和会话页顶栏那颗眼睛点开的是同一页）
+    /// 「AI 助手」：整页打开小星 AI 首页
     private func openAI() {
-        if let bot = app.chats.first(where: { $0.botRank == 0 }) { botChat = bot; return }
-        Task {
-            await app.loadChats()
-            if let b = app.chats.first(where: { $0.botRank == 0 }) { botChat = b }
-            else { app.show(Tr("AI 助手还没准备好，稍后再试")) }
-        }
+        showAIPage = true
     }
 
     private func doRecharge() {

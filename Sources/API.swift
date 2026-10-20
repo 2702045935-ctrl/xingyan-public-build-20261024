@@ -167,6 +167,46 @@ struct Chat: Decodable, Identifiable, Hashable {
     var unreadCount: Int { unread ?? 0 }
 }
 
+/* ============================================================ 小星 AI
+   和鸿蒙版共用同一套 /api/ai/status、/api/ai/purchase：
+     · tokens = 可用 Token，不展示零钱余额
+     · plans = 后台可配置的套餐
+     · purchases = 最近购买记录
+   页面只负责展示和触发购买，扣款与幂等全部由服务端处理。 */
+struct AITokenPlan: Decodable, Identifiable, Hashable {
+    var id: String
+    var name: String
+    var tokens: Int
+    var bonus: Int
+    var price: Double
+    var tag: String?
+
+    var granted: Int { max(0, tokens) + max(0, bonus) }
+}
+
+struct AITokenPurchase: Decodable, Identifiable, Hashable {
+    var id: String
+    var name: String
+    var paid: Double
+    var granted: Int
+    var purchasedAt: String
+}
+
+struct AIWalletStatus: Decodable {
+    var name: String?
+    var model: String?
+    var tokens: Int
+    var used: Int
+    var plans: [AITokenPlan]
+    var purchases: [AITokenPurchase]
+    var features: [String]?
+}
+
+struct AITokenPurchaseResult: Decodable {
+    var tokens: Int
+    var duplicate: Bool?
+}
+
 /// 图片消息正文 → 图片地址。
 /// 老消息存的是纯路径（/uploads/x.jpg）；这里同时兼容
 /// {"url":"...","w":..,"h":..} 这种信封写法，以后换格式也不会把老图读坏。
@@ -5316,6 +5356,20 @@ private struct StarredPayload: Decodable {
     /// 结束（清除）我的状态
     func endMyStatus() async {
         _ = try? await request("POST", "/api/me/status", body: ["ended": true])
+    }
+
+    /* ---------------------------------------------------------- 小星 AI
+       Token 套餐和购买记录由后台统一下发；iOS 与鸿蒙读同一份数据。 */
+
+    func aiWallet() async throws -> AIWalletStatus {
+        let any = try await request("GET", "/api/ai/status")
+        return try decode(any, as: AIWalletStatus.self)
+    }
+
+    func buyAITokens(planId: String, password: String, requestId: String) async throws -> AITokenPurchaseResult {
+        try await post("/api/ai/purchase",
+                       ["planId": planId, "password": password, "requestId": requestId],
+                       as: AITokenPurchaseResult.self)
     }
 
     /// 图片压完再传：返回服务器上的 /uploads/xxx.jpg

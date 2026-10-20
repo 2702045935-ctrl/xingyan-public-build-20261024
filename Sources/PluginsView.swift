@@ -23,6 +23,8 @@ struct PluginsView: View {
     @State private var showBrowser = false
     /// 面对面文件快传
     @State private var showDrop = false
+    /// 小星 AI 独立首页
+    @State private var showAI = false
 
     /// 右边那行小字：小星现在是哪一档
     private var eyesValue: String {
@@ -40,6 +42,71 @@ struct PluginsView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 10) {
+                    Button { showAI = true } label: {
+                        VStack(alignment: .leading, spacing: 14) {
+                            HStack(spacing: 14) {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .fill(LinearGradient(colors: [Color(hex: 0x4A8BFF),
+                                                                      Color(hex: 0x7B61FF)],
+                                                             startPoint: .topLeading,
+                                                             endPoint: .bottomTrailing))
+                                        .frame(width: 60, height: 60)
+                                        .shadow(color: Color(hex: 0x356FF4).opacity(0.22),
+                                                radius: 14, y: 6)
+                                    Image(systemName: "sparkles")
+                                        .font(.system(size: 25, weight: .semibold))
+                                        .foregroundColor(.white)
+                                }
+                                VStack(alignment: .leading, spacing: 5) {
+                                    HStack(spacing: 7) {
+                                        Text(Tr("小星 AI"))
+                                            .font(pf(21, .semibold))
+                                            .foregroundColor(C.label)
+                                        Text(Tr("已开启"))
+                                            .font(pf(9.5, .medium))
+                                            .foregroundColor(Color(hex: 0x2F6FED))
+                                            .padding(.horizontal, 6)
+                                            .frame(height: 18)
+                                            .background(Capsule().fill(Color(hex: 0x2F6FED).opacity(0.10)))
+                                    }
+                                    Text(Tr("多模型智能助理"))
+                                        .font(pf(12.5))
+                                        .foregroundColor(C.subLabel)
+                                }
+                                Spacer(minLength: 0)
+                            }
+
+                            Text(Tr("问答、创作、联网检索与图片理解。购买 Token 后即可使用完整能力，额度实时到账。"))
+                                .font(pf(13))
+                                .lineSpacing(3)
+                                .foregroundColor(C.subLabel)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+
+                            HStack {
+                                Spacer()
+                                Text(Tr("进入小星 AI"))
+                                    .font(pf(13, .medium))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 18)
+                                    .frame(height: 36)
+                                    .background(Capsule().fill(Color(hex: 0x2F6FED)))
+                            }
+                        }
+                        .padding(17)
+                        .background(
+                            LinearGradient(colors: [
+                                Color.dyn(0xF2F6FF, 0x182338),
+                                Color.dyn(0xEEF3FF, 0x142033)
+                            ], startPoint: .topLeading, endPoint: .bottomTrailing)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(Color(hex: 0x2F6FED).opacity(0.10), lineWidth: 0.7))
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 12)
+
                     /* 微信「插件」那一页的样子：一张白卡，一行一个插件 ——
                        左边图标 + 名字 + 下面一行灰说明，右边一颗**绿色开关**；
                        有开关的行**点名字那块**照样进它自己的设置页（微信也是这样）。 */
@@ -103,6 +170,9 @@ struct PluginsView: View {
         }
         .navigationDestination(isPresented: $showEyes) { EyesSettingsView() }
         .navigationDestination(isPresented: $showBrowser) { InAppBrowserView() }
+        .navigationDestination(isPresented: $showAI) {
+            AIPageView().environmentObject(app)
+        }
         .fullScreenCover(isPresented: $showDrop) {
             FaceToFaceFileSheet(rows: [],
                                 avatar: app.me?.avatarPath ?? "",

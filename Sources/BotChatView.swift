@@ -9,6 +9,8 @@ import AVFoundation
 
 struct BotChatView: View {
     let chat: Chat
+    private let initialText: String
+    private let autoSendInitial: Bool
 
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -27,7 +29,14 @@ struct BotChatView: View {
     @State private var spoken = Set<String>()
     /// 已经发出、还在等机器人回复（这期间显示「正在输入…」）
     @State private var waitingReply = false
+    @State private var handledInitial = false
     @FocusState private var focused: Bool
+
+    init(chat: Chat, initialText: String = "", autoSendInitial: Bool = false) {
+        self.chat = chat
+        self.initialText = initialText
+        self.autoSendInitial = autoSendInitial
+    }
 
     /* 小星的档位（我 → 设置 → 更多 → 显示小星）：
        开启=会动 · 静态=画但不动 · 关闭=不画。会话页顶栏那颗按用户要求删掉了，
@@ -73,6 +82,7 @@ struct BotChatView: View {
            兜底轮询一次 —— 之前是 2.5 秒无条件轮询，翻聊天时会一直重绘、发烫又费电。 */
         .task {
             await load()
+            handleInitialPrompt()
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 8_000_000_000)
                 if Task.isCancelled { return }
@@ -247,6 +257,21 @@ struct BotChatView: View {
     }
 
     private func sendText() { send(input) }
+    private func handleInitialPrompt() {
+        guard !handledInitial else { return }
+        handledInitial = true
+        let text = initialText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else {
+            focused = true
+            return
+        }
+        if autoSendInitial {
+            send(text)
+        } else {
+            input = text
+            focused = true
+        }
+    }
 
     /// 自动朗读：新来的那条机器人回复念一遍（每条只念一次）
     private func autoReadLatestIfNeeded() {
