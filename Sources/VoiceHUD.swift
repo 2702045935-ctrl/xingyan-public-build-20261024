@@ -36,6 +36,7 @@ enum VoiceOrbMode: Int {
     }
 }
 
+@available(iOS 17.0, *)
 private struct VoiceOrbSurface: View {
     let phase: Double
     let level: CGFloat
