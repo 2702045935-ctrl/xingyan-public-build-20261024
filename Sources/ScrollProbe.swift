@@ -39,6 +39,12 @@ final class ChatScrollHandle {
         guard let sv = scroll else { return false }
         return sv.isDragging || sv.isDecelerating || sv.isTracking
     }
+
+    /// 把 SwiftUI 滚动内容坐标换算成当前屏幕坐标。只在打开长按菜单时调用。
+    func windowRect(fromContent rect: CGRect) -> CGRect {
+        guard let sv = scroll, sv.window != nil else { return rect }
+        return sv.convert(rect, to: nil)
+    }
 }
 
 /* ============================================================

@@ -422,7 +422,8 @@ struct ChatDetailView: View {
 
     private func openActions(_ m: Message) {
         if selectMode { toggleSelect(m); return }
-        menuRect = frameBox.frames[m.id] ?? .zero
+        let contentRect = frameBox.frames[m.id] ?? .zero
+        menuRect = ChatScrollHandle.shared.windowRect(fromContent: contentRect)
         actionMessage = m
     }
 
@@ -1560,6 +1561,7 @@ struct ChatDetailView: View {
                         .allowsHitTesting(false)
                 }
             }
+            .coordinateSpace(name: "chatScroll")
             .scrollDismissesKeyboard(.interactively)
             .onChange(of: messages.count) { _ in
                 /* 只有「已经到底了」或者「刚才是自己发的」才跟着滚；
@@ -1949,9 +1951,10 @@ struct ChatDetailView: View {
             }
             .background(GeometryReader { g in
                 /* 只把位置记进普通对象（不写 @State → 不触发整页重绘） */
+                let contentFrame = g.frame(in: .named("chatScroll"))
                 Color.clear
-                    .onAppear { frameBox.frames[message.id] = g.frame(in: .global) }
-                    .onChange(of: g.frame(in: .global)) { f in frameBox.frames[message.id] = f }
+                    .onAppear { frameBox.frames[message.id] = contentFrame }
+                    .onChange(of: contentFrame) { f in frameBox.frames[message.id] = f }
             })
     }
 
