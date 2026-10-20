@@ -751,17 +751,17 @@ final class AppState: ObservableObject {
 
         KeepAlive.shared.stop()
         OtherLogin.shared.reset()
-        await API.shared.unregisterPushToken(PushCenter.shared.token)
-        await API.shared.logout()
         Realtime.shared.stop()
         me = nil
         chats = []
         contacts = []
         moments = []
-
         showSavedLogin = keepSavedAccount
         needConfirmLogin = false
         syncIconBadge()
+
+        await API.shared.unregisterPushToken(PushCenter.shared.token)
+        await API.shared.logout()
     }
 
     func quickLogin(token: String? = nil) async -> Bool {
