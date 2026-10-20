@@ -295,6 +295,14 @@ private final class MomentCoverPullBox {
     var value: CGFloat = 0
 }
 
+/// 普通滚动只写这个引用对象，不触发 SwiftUI 整页重绘。
+private final class MomentScrollMetrics {
+    var topY: CGFloat = 0
+    var blockY: CGFloat = 0
+    var baseTop: CGFloat? = nil
+    var baseBlock: CGFloat? = nil
+}
+
 struct MomentsView: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
@@ -312,12 +320,11 @@ struct MomentsView: View {
     private var coverEditable: Bool { target == nil || mineOnly }
 
     /// 滚动量：两路测量各存一份（1pt 条的屏幕 y、整个内容块的屏幕 y），取滚得更多的那个
-    @State private var topY: CGFloat = 0
-    @State private var blockY: CGFloat = 0
-    @State private var baseTop: CGFloat?
-    @State private var baseBlock: CGFloat?
+    @State private var scrollMetrics = MomentScrollMetrics()
     /// 兜底：列表顶上那个哨兵被 LazyVStack 回收了（说明封面已经滚过去）
     @State private var sentinelGone = false
+    /// 只在跨过封面阈值时更新，滚动过程中不反复重绘顶部。
+    @State private var solid = false
     @State private var moments: [Moment] = []
     /// 发表页点「取消」时：写了东西先问一句（微信那套「不保留这次编辑？」）
     @State private var confirmDiscard = false
@@ -395,26 +402,29 @@ struct MomentsView: View {
     @ObservedObject private var realtime = Realtime.shared
     /// 微信那个「余下 x 条」：哪些好友那组已经被点开（key = 那一组第一条的 id）
     @State private var expandedGroups: Set<String> = []
+    /// 折叠分组缓存：不要每次 body 都重新解析日期并分组。
+    @State private var foldRowsCache: [FoldRow] = []
     /// 点「余下 x 条」进的那一页（用户要求：单独一整页看那一串）
     @State private var groupPage: MomentGroup?
     @State private var showGroupPage = false
     /// 朋友圈「消息列表」（右上角那个小信封）：有没有人在等我点开
     @State private var showNoticeList = false
 
-    /// 和网页版一致：往下滚过「封面高度 - 52」时，顶部出现「朋友圈」三个字
-    /// 两路测量 + LazyVStack 哨兵兜底，哪个先到算哪个
-    private var scrolled: CGFloat {
-        let a = baseTop.map { $0 - topY } ?? 0
-        let b = baseBlock.map { $0 - blockY } ?? 0
-        return max(0, max(a, b))
-    }
-    private var solid: Bool { scrolled > (L.coverH - 52) || sentinelGone }
+    /// 和网页版一致：往下滚过「封面高度 - 52」时，顶部出现「朋友圈」三个字。
+    /// 原始位移不再存 @State，避免滚动时整页不断重算。
     private var owner: User? { target ?? app.me }
     private var cover: String { owner?.momentCover ?? "" }
     /// 个性签名（微信「个人相册」里昵称下面那行小字）；没写就不占位置
     private var signature: String? {
         let s = (owner?.bio ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         return s.isEmpty ? nil : s
+    }
+
+    private func updateSolidState() {
+        let a = scrollMetrics.baseTop.map { $0 - scrollMetrics.topY } ?? 0
+        let b = scrollMetrics.baseBlock.map { $0 - scrollMetrics.blockY } ?? 0
+        let next = max(0, max(a, b)) > (L.coverH - 52) || sentinelGone
+        if next != solid { solid = next }
     }
 
     var body: some View {
@@ -463,8 +473,9 @@ struct MomentsView: View {
             }
             .coordinateSpace(name: "momentsScroll")
             .onPreferenceChange(OffsetKey.self) { y in
-                if baseTop == nil { baseTop = y }
-                topY = y
+                if scrollMetrics.baseTop == nil { scrollMetrics.baseTop = y }
+                scrollMetrics.topY = y
+                updateSolidState()
             }
             /* 手指在朋友圈里滑动时，就别把这一下当成「点开一张图」 */
             .simultaneousGesture(
@@ -475,8 +486,9 @@ struct MomentsView: View {
                 }
             )
             .onPreferenceChange(OffsetKey2.self) { y in
-                if baseBlock == nil { baseBlock = y }
-                blockY = y
+                if scrollMetrics.baseBlock == nil { scrollMetrics.baseBlock = y }
+                scrollMetrics.blockY = y
+                updateSolidState()
             }
             /* 备用的下拉检测：手指往下拖 + 封面还没滚走（说明在最顶上）→ 拉出彩球。
                这套不依赖几何坐标，真机上一定有效。 */
@@ -573,17 +585,26 @@ struct MomentsView: View {
             if let u = momentVideo { VideoPlayerSheet(url: u) }
         }
         .onAppear {
-            baseTop = nil
-            baseBlock = nil
+            scrollMetrics.baseTop = nil
+            scrollMetrics.baseBlock = nil
+            scrollMetrics.topY = 0
+            scrollMetrics.blockY = 0
             sentinelGone = false
+            solid = false
         }
         .task {
             /* 照微信：进页面**先把本机缓存铺出来**（秒开、断网也能看上次那几屏），再去刷最新的 */
             if moments.isEmpty, target == nil, !mineOnly {
                 let cached = LocalStore.cachedMoments()
-                if !cached.isEmpty { moments = cached }
+                if !cached.isEmpty {
+                    moments = cached
+                    rebuildFoldRows(cached)
+                }
             }
             await reload()
+        }
+        .onChange(of: moments) { fresh in
+            rebuildFoldRows(fresh)
         }
         // 别人发朋友圈 / 换了封面，这边立刻跟着变
         .onChange(of: realtime.event) { _ in
@@ -592,17 +613,13 @@ struct MomentsView: View {
                只认和朋友圈有关的事件。 */
             let t = realtime.event.type.lowercased()
             guard t.contains("moment") || t.contains("like") || t.contains("comment") else { return }
-            Task {
-                app.me = try? await API.shared.me()
-                await pollNewMoments()          // 只把新出现的插到最前面，别把翻过的页冲掉
-            }
+            Task { await pollNewMoments() }      // 只把新出现的插到最前面，别把翻过的页冲掉
         }
         .task {
             // 兜底：每 8 秒对一次（万一长连接断了）
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 8_000_000_000)
                 if Task.isCancelled { break }
-                app.me = try? await API.shared.me()
                 await pollNewMoments()
             }
         }
@@ -907,14 +924,15 @@ struct MomentsView: View {
         var rest: [Moment]
     }
 
-    /// 把时间轴按「同一个好友 + 很短时间内连发」折起来。
-    /// 微信就是这套：同一个人的连续几条只留最新那条，下面写「余下 x 条」。
-    /// 时间窗后台可调（momentFoldWindow，单位分钟，默认 10；0 = 不折叠）。
-    private var foldRows: [FoldRow] {
-        let timeline = moments.filter { $0.pinned != true }
+    private var foldRows: [FoldRow] { foldRowsCache }
+
+    /// 只在动态数据变化时重算，不在每个滚动帧里解析日期和分组。
+    private func rebuildFoldRows(_ source: [Moment]) {
+        let timeline = source.filter { $0.pinned != true }
         let win = UIConfig.num("momentFoldWindow", 10) * 60_000      // 毫秒
         guard win > 0 else {
-            return timeline.map { FoldRow(first: $0, rest: []) }
+            foldRowsCache = timeline.map { FoldRow(first: $0, rest: []) }
+            return
         }
         var out: [FoldRow] = []
         var i = 0
@@ -936,7 +954,7 @@ struct MomentsView: View {
             out.append(FoldRow(first: head, rest: rest))
             i = j
         }
-        return out
+        foldRowsCache = out
     }
 
     /// 那一行「余下 x 条」（微信就是一行灰字，点一下展开）
@@ -970,8 +988,14 @@ struct MomentsView: View {
             /* 哨兵：它被 LazyVStack 回收时说明封面已经滚过去了（滚动量测不准时的兜底） */
             Color.clear
                 .frame(height: 1)
-                .onAppear { sentinelGone = false }
-                .onDisappear { sentinelGone = true }
+                .onAppear {
+                    sentinelGone = false
+                    updateSolidState()
+                }
+                .onDisappear {
+                    sentinelGone = true
+                    updateSolidState()
+                }
             /* 没有动态时**什么都不显示**（微信就是只有封面，下面干干净净）——
                以前这里写「正在加载朋友圈…」，没动态 / 拉失败的时候一直挂着那行字，
                看着像出错。 */
@@ -1118,7 +1142,7 @@ struct MomentsView: View {
            没滚过封面还是按滚动量由浅到深。 */
         /* fallback 也跟着这一页的新底色（浅色纯白 / 深色 #191919），
            不然没滚过封面时顶栏后面会透出另一种灰 */
-        .background { TopGlassBar(scrolled: solid ? 999 : scrolled,
+        .background { TopGlassBar(scrolled: solid ? 999 : 0,
                                   fallback: Color.dyn(0xFFFFFF, 0x191919)) }
         .zIndex(25)          // 永远在最上层：不能被下面的滚动层吃掉点击
         .allowsHitTesting(true)
