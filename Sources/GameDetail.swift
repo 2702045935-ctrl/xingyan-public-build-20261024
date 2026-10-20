@@ -239,12 +239,47 @@ struct GameRankBoardView: View {
                         Text(Tr("还没有游戏")).font(pf(14)).foregroundColor(subInk)
                             .padding(.vertical, 50)
                     } else {
-                        /* 2026-10-16 用户：「排行榜那个里面的排名是游戏排名不是人」——
-                           所以这里排的是**游戏**：按「玩的人数 → 最高分」从高到低，
-                           每个人的好友榜单（人）留在游戏详情页里看。 */
-                        Color.clear.frame(height: 2)
-                        ForEach(Array(rankedGames.enumerated()), id: \.element.app.id) { _, item in
-                            boardRow(item.app, rank: item.rank)
+                        rankingHero
+
+                        if rankedScored.count > 3 {
+                            HStack {
+                                Text(Tr("全部排行")).font(pf(14.5, .medium)).foregroundColor(ink)
+                                Spacer(minLength: 0)
+                                Text(Lang.isEnglish ? "\(rankedScored.count)" : "\(rankedScored.count) 款")
+                                    .font(pf(11)).foregroundColor(subInk)
+                            }
+                            .padding(.horizontal, 2)
+
+                            VStack(spacing: 0) {
+                                ForEach(Array(rankedScored.dropFirst(3).enumerated()), id: \.element.app.id) { i, item in
+                                    if i > 0 { HairLine(inset: 60) }
+                                    rankedRow(item.app, rank: item.rank)
+                                }
+                            }
+                            .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(cardBg))
+                            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .stroke(C.hairline, lineWidth: 0.5))
+                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        }
+
+                        if !waitingScored.isEmpty {
+                            HStack {
+                                Text(Tr("待挑战")).font(pf(14.5, .medium)).foregroundColor(ink)
+                                Spacer(minLength: 0)
+                                Text(Tr("还没有好友成绩")).font(pf(11)).foregroundColor(subInk)
+                            }
+                            .padding(.horizontal, 2)
+
+                            VStack(spacing: 0) {
+                                ForEach(Array(waitingScored.enumerated()), id: \.element.app.id) { i, item in
+                                    if i > 0 { HairLine(inset: 60) }
+                                    waitingRow(item.app)
+                                }
+                            }
+                            .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(cardBg))
+                            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .stroke(C.hairline, lineWidth: 0.5))
+                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                         }
                     }
                     Color.clear.frame(height: 20)
@@ -291,6 +326,174 @@ struct GameRankBoardView: View {
             }
         }
         return out
+    }
+
+    private var rankedScored: [(app: MiniApp, rank: Int)] {
+        rankedGames.filter { scoreOf($0.app) > 0 }
+    }
+
+    private var waitingScored: [(app: MiniApp, rank: Int)] {
+        rankedGames.filter { scoreOf($0.app) <= 0 }
+    }
+
+    private func scoreOf(_ g: MiniApp) -> Int {
+        (ranks[g.id]?.rows ?? []).map { $0.scoreText }.max() ?? 0
+    }
+
+    private func playersOf(_ g: MiniApp) -> Int {
+        ranks[g.id]?.total ?? 0
+    }
+
+    private var podiumItems: [(app: MiniApp, rank: Int, place: Int)] {
+        let top = Array(rankedScored.prefix(3))
+        var out: [(app: MiniApp, rank: Int, place: Int)] = []
+        if top.count > 1 { out.append((top[1].app, top[1].rank, 2)) }
+        if !top.isEmpty { out.append((top[0].app, top[0].rank, 1)) }
+        if top.count > 2 { out.append((top[2].app, top[2].rank, 3)) }
+        return out
+    }
+
+    private var rankingHero: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(Tr("好友游戏榜")).font(pf(21, .bold)).foregroundColor(.white)
+                    Text(Tr("按好友真实最高分排列")).font(pf(11.5)).foregroundColor(.white.opacity(0.75))
+                }
+                Spacer(minLength: 0)
+                Text(Lang.isEnglish ? "\(rankedScored.count) scored"
+                                    : "\(rankedScored.count) 款有成绩")
+                    .font(pf(10.5))
+                    .foregroundColor(.white.opacity(0.86))
+                    .padding(.horizontal, 8)
+                    .frame(height: 22)
+                    .background(Capsule().fill(Color.white.opacity(0.12)))
+            }
+
+            if podiumItems.isEmpty {
+                VStack(spacing: 6) {
+                    Text("🏁").font(.system(size: 30))
+                    Text(Tr("还没有真实游戏成绩")).font(pf(14)).foregroundColor(.white)
+                    Text(Tr("先玩一局，成绩会自动进入好友排行"))
+                        .font(pf(11.5)).foregroundColor(.white.opacity(0.70))
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 112)
+            } else {
+                HStack(alignment: .bottom, spacing: 9) {
+                    ForEach(podiumItems, id: \.app.id) { item in
+                        podiumCard(item.app, place: item.place)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+            }
+        }
+        .padding(.horizontal, 15)
+        .padding(.vertical, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(LinearGradient(colors: [Color(hex: 0x171B2C),
+                                              Color(hex: 0x242B40),
+                                              Color(hex: 0x30394F)],
+                                     startPoint: .topLeading, endPoint: .bottomTrailing))
+        )
+        .shadow(color: .black.opacity(0.14), radius: 12, y: 5)
+    }
+
+    private func podiumCard(_ g: MiniApp, place: Int) -> some View {
+        VStack(spacing: 6) {
+            ZStack(alignment: .topTrailing) {
+                ZStack {
+                    Circle()
+                        .fill(LinearGradient(colors: [Color(hex: 0x2B2F3A), Color(hex: 0x171B22)],
+                                             startPoint: .topLeading, endPoint: .bottomTrailing))
+                    Text(g.iconText).font(.system(size: place == 1 ? 28 : 24))
+                    if let cv = g.cover, !cv.isEmpty {
+                        RemoteImage(path: cv, mode: .fill)
+                            .frame(width: place == 1 ? 58 : 50,
+                                   height: place == 1 ? 58 : 50)
+                            .clipShape(Circle())
+                    }
+                }
+                .frame(width: place == 1 ? 58 : 50,
+                       height: place == 1 ? 58 : 50)
+
+                Text("\(place)")
+                    .font(pf(10, .bold))
+                    .foregroundColor(Color(hex: 0x17191D))
+                    .frame(width: 19, height: 19)
+                    .background(Circle().fill(rankColor(place)))
+                    .overlay(Circle().stroke(Color.white.opacity(0.24), lineWidth: 1))
+                    .offset(x: 4, y: -4)
+            }
+
+            Text(g.name)
+                .font(pf(place == 1 ? 14.5 : 12.5, .medium))
+                .foregroundColor(.white)
+                .lineLimit(1)
+
+            Text("\(scoreOf(g))")
+                .font(pf(place == 1 ? 18 : 15, .bold))
+                .foregroundColor(rankColor(place))
+                .monospacedDigit()
+
+            Text(Lang.isEnglish ? "\(playersOf(g)) players" : "\(playersOf(g)) 人参与")
+                .font(pf(10)).foregroundColor(.white.opacity(0.72))
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: place == 1 ? 148 : 134)
+        .background(RoundedRectangle(cornerRadius: 13, style: .continuous)
+            .fill(Color.white.opacity(0.08)))
+        .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous)
+            .stroke(Color.white.opacity(0.15), lineWidth: 0.5))
+    }
+
+    private func rankedRow(_ g: MiniApp, rank: Int) -> some View {
+        HStack(spacing: 11) {
+            Text("\(rank)")
+                .font(pf(13.5, .medium))
+                .foregroundColor(rank <= 3 ? rankColor(rank) : subInk)
+                .frame(width: 24)
+            gameRankCircle(g, size: 40)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(g.name).font(pf(14.5, .medium)).foregroundColor(ink).lineLimit(1)
+                Text(Lang.isEnglish ? "\(playersOf(g)) friends"
+                                    : "\(playersOf(g)) 位好友参与")
+                    .font(pf(10.5)).foregroundColor(subInk)
+            }
+            Spacer(minLength: 0)
+            Text("\(scoreOf(g))")
+                .font(pf(16, .medium))
+                .foregroundColor(Color(hex: 0x576B95))
+                .monospacedDigit()
+        }
+        .padding(.horizontal, 14)
+        .frame(height: 64)
+    }
+
+    private func waitingRow(_ g: MiniApp) -> some View {
+        HStack(spacing: 11) {
+            gameRankCircle(g, size: 36)
+            Text(g.name).font(pf(13.5)).foregroundColor(ink).lineLimit(1)
+            Spacer(minLength: 0)
+            Text(Tr("暂无成绩")).font(pf(11.5)).foregroundColor(subInk)
+        }
+        .padding(.horizontal, 14)
+        .frame(height: 54)
+    }
+
+    private func gameRankCircle(_ g: MiniApp, size: CGFloat) -> some View {
+        ZStack {
+            Circle().fill(LinearGradient(colors: [Color(hex: 0x2B2F3A), Color(hex: 0x171B22)],
+                                         startPoint: .topLeading, endPoint: .bottomTrailing))
+            Text(g.iconText).font(.system(size: size * 0.42))
+            if let cv = g.cover, !cv.isEmpty {
+                RemoteImage(path: cv, mode: .fill)
+                    .frame(width: size, height: size)
+                    .clipShape(Circle())
+            }
+        }
+        .frame(width: size, height: size)
     }
 
     /// 名次徽章（123 名给金银铜，其余灰）

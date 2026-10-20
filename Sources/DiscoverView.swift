@@ -679,7 +679,7 @@ struct MomentsView: View {
     /* ---------------------------------------------------------- 封面 */
 
     /// 鸿蒙版同款：只在自己的朋友圈生效。下拉后点封面锁定当前高度；
-    /// 没有下拉时锁定到 120pt，再点恢复。换封面由独立按钮负责。
+    /// 没有下拉时锁定到 240pt，最多 420pt，再点恢复。换封面由独立按钮负责。
     private func toggleCoverLock() {
         guard coverEditable else { return }
         withAnimation(.easeOut(duration: 0.3)) {
@@ -687,7 +687,7 @@ struct MomentsView: View {
                 coverLocked = false
                 coverLockPull = 0
             } else {
-                coverLockPull = min(280, max(120, coverPullBox.value))
+                coverLockPull = min(420, max(240, coverPullBox.value))
                 coverLocked = true
             }
         }
@@ -779,7 +779,15 @@ struct MomentsView: View {
                             .font(pf(12.5, .medium))
                             .foregroundColor(.white)
                             .frame(width: 88, height: 32)
-                            .background(Capsule().fill(Color.black.opacity(0.44)))
+                            .background {
+                                if coverLocked {
+                                    Capsule()
+                                        .fill(.ultraThinMaterial)
+                                        .overlay(Capsule().fill(Color.black.opacity(0.12)))
+                                } else {
+                                    Capsule().fill(Color.black.opacity(0.44))
+                                }
+                            }
                             .overlay(Capsule().stroke(Color.white.opacity(0.24), lineWidth: 0.7))
                     }
                     .buttonStyle(.plain)

@@ -128,20 +128,18 @@ struct GamesPageView: View {
 
                 ForEach(groups, id: \.0) { g in
                     HStack(spacing: 6) {
-                        Text(g.0).font(pf(15.5, .semibold)).foregroundColor(ink)
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(subInk)
+                        Text(g.0).font(pf(15, .medium)).foregroundColor(ink)
                         Spacer(minLength: 0)
+                        Text(Lang.isEnglish ? "\(g.1.count)" : "\(g.1.count) 款")
+                            .font(pf(11)).foregroundColor(subInk)
                     }
-                    .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 8)
+                    .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 9)
 
-                    VStack(spacing: 10) {
-                        ForEach(g.1) { g2 in
-                            /* 微信里点卡片进**详情**（封面 + 简介 + 好友在玩），
-                               点右边那颗「立即玩」就直接开局；这里照它分两个热区 */
-                            card(g2)
-                        }
+                    LazyVGrid(columns: [
+                        GridItem(.flexible(), spacing: 10),
+                        GridItem(.flexible(), spacing: 10)
+                    ], alignment: .leading, spacing: 10) {
+                        ForEach(g.1) { g2 in posterCard(g2) }
                     }
                     .padding(.horizontal, 16)
                 }
@@ -262,7 +260,7 @@ struct GamesPageView: View {
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
-            .frame(height: 148)
+            .frame(height: 178)
 
             if items.count > 1 {
                 HStack(spacing: 5) {
@@ -305,16 +303,25 @@ struct GamesPageView: View {
             LinearGradient(colors: [.clear, .black.opacity(0.55)],
                            startPoint: .center, endPoint: .bottom)
             VStack(alignment: .leading, spacing: 3) {
-                Text(g.name).font(pf(17, .semibold)).foregroundColor(.white).lineLimit(1)
-                Text(g.desc ?? "").font(pf(12)).foregroundColor(.white.opacity(0.85))
+                Text(g.name).font(pf(19, .semibold)).foregroundColor(.white).lineLimit(1)
+                Text(g.desc ?? "").font(pf(12.5)).foregroundColor(.white.opacity(0.85))
                     .lineLimit(1)
             }
             .padding(.horizontal, 14)
             .padding(.bottom, 12)
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 148)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .frame(height: 178)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(alignment: .topLeading) {
+            Text(Tr("精选"))
+                .font(pf(10.5, .medium))
+                .foregroundColor(.white)
+                .padding(.horizontal, 8)
+                .frame(height: 22)
+                .background(Capsule().fill(Color.black.opacity(0.32)))
+                .padding(12)
+        }
     }
 
     /* ---------------------------------------------------------- 我的小游戏（最近在玩） */
@@ -335,22 +342,16 @@ struct GamesPageView: View {
                 HStack(spacing: 14) {
                     ForEach(recentGames) { g in
                         Button { recordPlayed(g); playing = g } label: {
-                            VStack(spacing: 5) {
-                                ZStack {
-                                    Circle()
-                                        .fill(LinearGradient(colors: [Color(hex: 0x2B2F3A), Color(hex: 0x171B22)],
-                                                             startPoint: .topLeading, endPoint: .bottomTrailing))
-                                    Text(g.iconText).font(.system(size: 26))
-                                    if let cv = g.cover, !cv.isEmpty {
-                                        RemoteImage(path: cv)
-                                            .frame(width: 58, height: 58)
-                                            .clipShape(Circle())
-                                    }
-                                }
-                                .frame(width: 58, height: 58)
-                                Text(g.name).font(pf(11.5)).foregroundColor(subInk)
-                                    .lineLimit(1).frame(width: 62)
+                            HStack(spacing: 8) {
+                                gameCircle(g, size: 30)
+                                Text(g.name).font(pf(12.5, .medium)).foregroundColor(ink)
+                                    .lineLimit(1).frame(maxWidth: 112, alignment: .leading)
                             }
+                            .padding(.leading, 6)
+                            .padding(.trailing, 13)
+                            .frame(height: 44)
+                            .background(Capsule().fill(cardBg))
+                            .overlay(Capsule().stroke(C.hairline, lineWidth: 0.5))
                         }
                         .buttonStyle(.plain)
                     }
@@ -417,6 +418,66 @@ struct GamesPageView: View {
             map[k]?.append(g)
         }
         return order.map { ($0, map[$0] ?? []) }
+    }
+
+    private func gameCircle(_ g: MiniApp, size: CGFloat) -> some View {
+        ZStack {
+            Circle()
+                .fill(LinearGradient(colors: [Color(hex: 0x2B2F3A), Color(hex: 0x171B22)],
+                                     startPoint: .topLeading, endPoint: .bottomTrailing))
+            Text(g.iconText).font(.system(size: size * 0.42))
+            if let cv = g.cover, !cv.isEmpty {
+                RemoteImage(path: cv, mode: .fill)
+                    .frame(width: size, height: size)
+                    .clipShape(Circle())
+            }
+        }
+        .frame(width: size, height: size)
+    }
+
+    private func posterCard(_ g: MiniApp) -> some View {
+        Button { openDetail(g) } label: {
+            VStack(alignment: .leading, spacing: 0) {
+                ZStack(alignment: .bottomLeading) {
+                    LinearGradient(colors: [Color(hex: 0x2B2F3A), Color(hex: 0x171B22)],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing)
+                    Text(g.iconText).font(.system(size: 46))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    if let cv = g.cover, !cv.isEmpty {
+                        RemoteImage(path: cv, mode: .fill)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .clipped()
+                    }
+                    LinearGradient(colors: [.clear, .black.opacity(0.62)],
+                                   startPoint: .center, endPoint: .bottom)
+                }
+                .frame(height: 112)
+                .clipped()
+                .allowsHitTesting(false)
+
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(g.name).font(pf(15, .medium)).foregroundColor(ink).lineLimit(1)
+                    Text((g.desc?.isEmpty == false) ? (g.desc ?? "") : Tr("小游戏"))
+                        .font(pf(11.5)).foregroundColor(subInk).lineLimit(1)
+                    HStack(spacing: 4) {
+                        Text(g.actionText).font(pf(11.5)).foregroundColor(Color(hex: 0x576B95))
+                        Spacer(minLength: 0)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundColor(subInk)
+                    }
+                }
+                .padding(.horizontal, 11)
+                .padding(.vertical, 8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .frame(height: 184)
+            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(cardBg))
+            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(C.hairline, lineWidth: 0.5))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 
     private func card(_ g: MiniApp) -> some View {
