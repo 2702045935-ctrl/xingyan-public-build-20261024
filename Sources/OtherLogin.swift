@@ -52,7 +52,7 @@ struct OtherLoginCard: View {
                 ZStack {
                     Color.black.opacity(0.28).ignoresSafeArea()
                     VStack(spacing: 0) {
-                        Text(Tr("你的账号在另一台设备上登录"))
+                        Text(Tr("你的账号已在其他设备登录"))
                             .font(pf(17, .semibold))
                             .foregroundColor(C.label)
                             .multilineTextAlignment(.center)
@@ -66,7 +66,7 @@ struct OtherLoginCard: View {
                             .padding(.horizontal, 22)
                             .padding(.top, 10)
 
-                        Text(Tr("如果不是你本人操作，请立刻修改密码。"))
+                        Text(Tr("当前登录已退出。如果不是你本人操作，请立刻修改密码。"))
                             .font(pf(13))
                             .foregroundColor(C.subLabel)
                             .multilineTextAlignment(.center)
@@ -75,32 +75,17 @@ struct OtherLoginCard: View {
 
                         Rectangle().fill(C.hairline).frame(height: 0.5).padding(.top, 20)
 
-                        HStack(spacing: 0) {
-                            Button {
-                                kick.dismiss()
-                            } label: {
-                                Text(Tr("我知道了"))
-                                    .font(pf(16))
-                                    .foregroundColor(C.label)
-                                    .frame(maxWidth: .infinity).frame(height: 50)
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-
-                            Rectangle().fill(C.hairline).frame(width: 0.5, height: 50)
-
-                            Button {
-                                kick.reset()
-                                Task { await app.logout() }
-                            } label: {
-                                Text(Tr("退出"))
-                                    .font(pf(16, .medium))
-                                    .foregroundColor(C.red)
-                                    .frame(maxWidth: .infinity).frame(height: 50)
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
+                        Button {
+                            kick.reset()
+                            Task { await app.logout() }
+                        } label: {
+                            Text(Tr("退出并重新登录"))
+                                .font(pf(16, .medium))
+                                .foregroundColor(C.green)
+                                .frame(maxWidth: .infinity).frame(height: 50)
+                                .contentShape(Rectangle())
                         }
+                        .buttonStyle(.plain)
                     }
                     .frame(width: 280)
                     .background(C.cardBg)
