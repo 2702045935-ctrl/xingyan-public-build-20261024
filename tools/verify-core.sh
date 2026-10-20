@@ -3,32 +3,33 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 MANIFEST="$ROOT/core.lock.json"
-FAILED=0
 
-while IFS=$'\t' read -r REL SIZE HASH; do
-  FILE="$ROOT/$REL"
-  if [[ ! -f "$FILE" ]]; then
-    echo "$REL: missing"
-    FAILED=1
-    continue
-  fi
-  ACTUAL_SIZE="$(wc -c < "$FILE" | tr -d ' ')"
-  ACTUAL_HASH="$(shasum -a 256 "$FILE" | awk '{print $1}')"
-  if [[ "$ACTUAL_SIZE" != "$SIZE" || "$ACTUAL_HASH" != "$HASH" ]]; then
-    echo "$REL: changed"
-    FAILED=1
-  fi
-done < <(python3 - "$MANIFEST" <<'PY'
-import json, sys
-with open(sys.argv[1], encoding="utf-8") as f:
+python3 - "$ROOT" "$MANIFEST" <<'PY'
+import hashlib
+import json
+from pathlib import Path
+import sys
+
+root = Path(sys.argv[1])
+with open(sys.argv[2], encoding="utf-8") as f:
     data = json.load(f)
+
+failed = []
 for item in data["files"]:
-    print(item["path"], item["size"], item["sha256"], sep="\t")
+    path = root / item["path"]
+    if not path.is_file():
+        failed.append(f'{item["path"]}: missing')
+        continue
+    content = path.read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+    digest = hashlib.sha256(content).hexdigest()
+    if len(content) != item["size"] or digest != item["sha256"]:
+        failed.append(f'{item["path"]}: changed')
+
+if failed:
+    print("Core verification failed:")
+    for row in failed:
+        print(" ", row)
+    raise SystemExit(1)
+
+print("Core verification passed.")
 PY
-)
-
-if [[ "$FAILED" -ne 0 ]]; then
-  exit 1
-fi
-
-echo "Core verification passed."

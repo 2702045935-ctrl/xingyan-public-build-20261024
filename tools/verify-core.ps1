@@ -13,9 +13,11 @@ foreach ($entry in $manifest.files) {
         $failed += "$($entry.path): missing"
         continue
     }
-    $item = Get-Item -LiteralPath $file
-    $hash = (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant()
-    if ($item.Length -ne [int64]$entry.size -or $hash -ne $entry.sha256) {
+    $text = [IO.File]::ReadAllText($file).Replace("`r`n", "`n").Replace("`r", "`n")
+    $bytes = [Text.Encoding]::UTF8.GetBytes($text)
+    $digest = [Security.Cryptography.SHA256]::HashData($bytes)
+    $hash = [BitConverter]::ToString($digest).Replace("-", "").ToLowerInvariant()
+    if ($bytes.Length -ne [int64]$entry.size -or $hash -ne $entry.sha256) {
         $failed += "$($entry.path): changed"
     }
 }
