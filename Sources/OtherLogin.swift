@@ -77,7 +77,7 @@ struct OtherLoginCard: View {
 
                         Button {
                             kick.reset()
-                            Task { await app.logout() }
+                            Task { await app.logout(keepSavedAccount: false) }
                         } label: {
                             Text(Tr("退出并重新登录"))
                                 .font(pf(16, .medium))

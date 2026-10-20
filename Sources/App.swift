@@ -744,7 +744,7 @@ final class AppState: ObservableObject {
         plusButton = c.plus
     }
 
-    func logout() async {
+    func logout(keepSavedAccount: Bool = true) async {
         if let userId = me?.id, !userId.isEmpty {
             UserDefaults.standard.removeObject(forKey: "chris.syncHintShown." + userId)
         }
@@ -759,7 +759,7 @@ final class AppState: ObservableObject {
         contacts = []
         moments = []
 
-        showSavedLogin = true
+        showSavedLogin = keepSavedAccount
         needConfirmLogin = false
         syncIconBadge()
     }

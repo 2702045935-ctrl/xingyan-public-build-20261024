@@ -22,7 +22,6 @@ struct HarmonyLoginView: View {
     @State private var brandName = "星言"
     @State private var brandSubtitle = "让每一句真心，都有回应"
     @State private var logoPath = ""
-    @State private var accountAvatar = ""
     @State private var showPassword = false
     @State private var sliderTicket = ""
     @State private var sliderSeed = 0
@@ -110,13 +109,7 @@ struct HarmonyLoginView: View {
 
     private var brandArea: some View {
         VStack(spacing: 0) {
-            if !accountAvatar.isEmpty {
-                RemoteImage(path: accountAvatar, icon: "person.fill", mode: .fill)
-                    .frame(width: 86, height: 86)
-                    .clipShape(Circle())
-                    .overlay(Circle().stroke(Color.white, lineWidth: 2))
-                    .shadow(color: Color(hex: 0x1C72F9).opacity(0.20), radius: 18, y: 10)
-            } else if !logoPath.isEmpty {
+            if !logoPath.isEmpty {
                 RemoteImage(path: logoPath, icon: "message.fill", mode: .fill)
                     .frame(width: 86, height: 86)
                     .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
@@ -221,6 +214,8 @@ struct HarmonyLoginView: View {
                 .autocorrectionDisabled()
                 .focused($focus, equals: .user)
                 .font(.system(size: 16.5))
+                .foregroundColor(Color(hex: 0x111827))
+                .tint(Color(hex: 0x1C72F9))
                 .padding(.horizontal, 18)
                 .frame(height: 56)
                 .background(Color(hex: 0xF6F7F9))
@@ -240,6 +235,8 @@ struct HarmonyLoginView: View {
                 .privacySensitive()
                 .focused($focus, equals: .pass)
                 .font(.system(size: 16.5))
+                .foregroundColor(Color(hex: 0x111827))
+                .tint(Color(hex: 0x1C72F9))
 
                 Button { showPassword.toggle() } label: {
                     Image(systemName: showPassword ? "eye.slash" : "eye")
