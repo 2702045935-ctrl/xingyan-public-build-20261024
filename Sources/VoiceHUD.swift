@@ -1,11 +1,145 @@
 import SwiftUI
 
+enum VoiceOrbMode: Int {
+    case idle = 0
+    case listening = 1
+    case transcribing = 2
+    case cancelling = 3
+    case thinking = 4
+    case speaking = 5
+    case failed = 6
+
+    var palette: [Color] {
+        switch self {
+        case .idle:
+            return [Color(hex: 0x3B7CFF), Color(hex: 0x8A5BFF),
+                    Color(hex: 0xFF5AA8), Color(hex: 0x3AD6FF)]
+        case .listening:
+            return [Color(hex: 0x2678FF), Color(hex: 0x865CFF),
+                    Color(hex: 0xFF4E9D), Color(hex: 0x2DE2FF)]
+        case .transcribing:
+            return [Color(hex: 0x22C979), Color(hex: 0x31CFBE),
+                    Color(hex: 0x91EE75), Color(hex: 0x54DDFF)]
+        case .cancelling:
+            return [Color(hex: 0xFF4A3C), Color(hex: 0xFF6A3C),
+                    Color(hex: 0xFF6B6B), Color(hex: 0xFFB03C)]
+        case .thinking:
+            return [Color(hex: 0x3C72FF), Color(hex: 0x726CFF),
+                    Color(hex: 0xC56DFF), Color(hex: 0x45D8FF)]
+        case .speaking:
+            return [Color(hex: 0x4D9CFF), Color(hex: 0x8A6CFF),
+                    Color(hex: 0xFF6AB5), Color(hex: 0x5BE7D8)]
+        case .failed:
+            return [Color(hex: 0xFF6B5E), Color(hex: 0xD84A68),
+                    Color(hex: 0xFF8B42), Color(hex: 0xA35BFF)]
+        }
+    }
+}
+
+private struct VoiceOrbSurface: View {
+    let phase: Double
+    let level: CGFloat
+    let mode: VoiceOrbMode
+    let canvas: CGFloat
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var smoothLevel: Double = 0.08
+    @State private var driveLow: Double = 0.08
+    @State private var driveHigh: Double = 0.05
+    @State private var previousLevel: Double = 0.08
+
+    private var palette: [Color] { mode.palette }
+    private var lowPower: Bool { ProcessInfo.processInfo.isLowPowerModeEnabled }
+    private var tempo: Double {
+        switch mode {
+        case .idle: return 0.72
+        case .listening: return 1.0
+        case .transcribing: return 1.18
+        case .cancelling: return 1.34
+        case .thinking: return 1.48
+        case .speaking: return 1.10
+        case .failed: return 0.88
+        }
+    }
+
+    var body: some View {
+        let colors = palette
+        let t = phase * tempo * (reduceMotion ? 0.45 : 1)
+        let shader = Circle()
+            .fill(RadialGradient(colors: [Color.black,
+                                          Color.black.opacity(0.92),
+                                          Color.black.opacity(0.48),
+                                          Color.black.opacity(0.0)],
+                                 center: .center,
+                                 startRadius: 0,
+                                 endRadius: canvas * 0.5))
+            .frame(width: canvas, height: canvas)
+            .colorEffect(ShaderLibrary.voiceOrb(
+                .float(t.truncatingRemainder(dividingBy: 1000)),
+                .float(canvas), .float(canvas),
+                .color(colors[0]), .color(colors[1]),
+                .color(colors[2]), .color(colors[3]),
+                .float(max(0.04, smoothLevel)),
+                .float(UIConfig.num("voiceOrbGlass", 0.65)),
+                .float(0.42),
+                .float(driveLow),
+                .float(driveHigh),
+                .float(Double(mode.rawValue))))
+
+        ZStack {
+            if !lowPower {
+                shader
+                    .blur(radius: 26)
+                    .opacity(0.46 + CGFloat(driveLow) * 0.16)
+                    .blendMode(.plusLighter)
+            }
+            shader
+        }
+        .clipShape(Circle())
+        .onAppear { updateBands(level) }
+        .onChange(of: level) { value in updateBands(value) }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("语音")
+        .accessibilityValue(mode.accessibilityValue)
+    }
+
+    private func updateBands(_ raw: CGFloat) {
+        let value = max(0.03, min(1, Double(raw)))
+        let delta = abs(value - previousLevel)
+        previousLevel = value
+
+        let attack = Double(UIConfig.num("voiceOrbAttack", 0.58))
+        let release = Double(UIConfig.num("voiceOrbRelease", 0.16))
+        let lowTarget = min(1, value * 0.92 + 0.05)
+        let highTarget = min(1, delta * 5.2 + max(0, value - 0.46) * 0.38)
+
+        smoothLevel += (value - smoothLevel) * (value > smoothLevel ? attack : release)
+        driveLow += (lowTarget - driveLow) * (lowTarget > driveLow ? attack : release)
+        driveHigh += (highTarget - driveHigh) * (highTarget > driveHigh ? 0.72 : 0.20)
+    }
+}
+
+private extension VoiceOrbMode {
+    var accessibilityValue: String {
+        switch self {
+        case .idle: return "待机"
+        case .listening: return "正在聆听"
+        case .transcribing: return "准备转文字"
+        case .cancelling: return "准备取消"
+        case .thinking: return "正在处理"
+        case .speaking: return "正在回答"
+        case .failed: return "处理失败"
+        }
+    }
+}
+
 struct VoiceHUD: View {
     let seconds: Int
     let level: CGFloat
     let willCancel: Bool
     var willTranscribe: Bool = false
     var maxSeconds: Int = 60
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var colors: [Color] {
         if willCancel {
@@ -36,6 +170,12 @@ struct VoiceHUD: View {
         return "松手 发语音"
     }
 
+    private var orbMode: VoiceOrbMode {
+        if willCancel { return .cancelling }
+        if willTranscribe { return .transcribing }
+        return .listening
+    }
+
     var body: some View {
         VStack(spacing: 12) {
 
@@ -50,7 +190,9 @@ struct VoiceHUD: View {
                                    : Color.white.opacity(0.10))
                 )
 
-            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { ctx in
+            TimelineView(.animation(minimumInterval: reduceMotion ||
+                                    ProcessInfo.processInfo.isLowPowerModeEnabled ? 1.0 / 30.0
+                                                                                 : 1.0 / 60.0)) { ctx in
                 orb(phase: ctx.date.timeIntervalSinceReferenceDate)
             }
             .frame(width: 258, height: 258)
@@ -170,32 +312,12 @@ struct VoiceHUD: View {
 
         return ZStack {
             if #available(iOS 17.0, *) {
-
-                let siri = Circle()
-                    .fill(RadialGradient(colors: [Color.black,
-                                                  Color.black.opacity(0.92),
-                                                  Color.black.opacity(0.52),
-                                                  Color.black.opacity(0.0)],
-                                         center: .center,
-                                         startRadius: 0,
-                                         endRadius: 129))
-                    .frame(width: 258, height: 258)
-                    .colorEffect(ShaderLibrary.voiceOrb(
-
-                        .float(phase.truncatingRemainder(dividingBy: 1000)),
-                        .float(258), .float(258),
-                        .color(c1), .color(c2), .color(c3), .color(c4),
-                        .float(amp),
-                        .float(glassAmt),
-                        .float(0.42)))
-                ZStack {
-                    siri.blur(radius: 52).opacity(0.70).blendMode(.plusLighter)
-                    siri.blur(radius: 22).opacity(0.86).blendMode(.plusLighter)
-                    siri
-                }
-                .clipShape(Circle())
-                .scaleEffect(scale)
-                .offset(y: float)
+                VoiceOrbSurface(phase: phase,
+                                level: level,
+                                mode: orbMode,
+                                canvas: 258)
+                    .scaleEffect(scale)
+                    .offset(y: reduceMotion ? 0 : float)
             } else {
 
                 Circle()
@@ -301,11 +423,15 @@ struct VoiceOrb: View {
     var diameter: CGFloat = 92
 
     var listening: Bool = false
+    var mode: VoiceOrbMode? = nil
 
     private let canvas: CGFloat = 258
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { ctx in
+        TimelineView(.animation(minimumInterval: reduceMotion ||
+                                ProcessInfo.processInfo.isLowPowerModeEnabled ? 1.0 / 30.0
+                                                                             : 1.0 / 60.0)) { ctx in
             let phase = ctx.date.timeIntervalSinceReferenceDate
             let amp = max(0.05, min(1, level))
             let fit = CGFloat(1 + 0.035 * sin(phase * 1.4))
@@ -318,29 +444,12 @@ struct VoiceOrb: View {
 
             ZStack {
                 if #available(iOS 17.0, *) {
-
-                    let siri = Circle()
-                        .fill(RadialGradient(colors: [Color.black,
-                                                      Color.black.opacity(0.92),
-                                                      Color.black.opacity(0.52),
-                                                      Color.black.opacity(0.0)],
-                                             center: .center, startRadius: 0, endRadius: 129))
-                        .frame(width: canvas, height: canvas)
-                        .colorEffect(ShaderLibrary.voiceOrb(
-                            .float(phase.truncatingRemainder(dividingBy: 1000)),
-                            .float(canvas), .float(canvas),
-                            .color(c1), .color(c2), .color(c3), .color(c4),
-                            .float(amp),
-                            .float(UIConfig.num("voiceOrbGlass", 0.65)),
-                            .float(0.42)))
-                    ZStack {
-                        siri.blur(radius: 52).opacity(0.70).blendMode(.plusLighter)
-                        siri.blur(radius: 22).opacity(0.86).blendMode(.plusLighter)
-                        siri
-                    }
-                    .clipShape(Circle())
-                    .scaleEffect(scale)
-                    .offset(y: float)
+                    VoiceOrbSurface(phase: phase,
+                                    level: level,
+                                    mode: mode ?? (listening ? .listening : .idle),
+                                    canvas: canvas)
+                        .scaleEffect(scale)
+                        .offset(y: reduceMotion ? 0 : float)
                 } else {
 
                     ZStack {
