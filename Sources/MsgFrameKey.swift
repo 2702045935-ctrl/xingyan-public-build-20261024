@@ -20,7 +20,10 @@ enum RichBodyCache {
     static func get(_ key: String) -> AttributedString? { store[key] }
 
     static func put(_ key: String, _ value: AttributedString) {
-        if store.count > 600 { store.removeAll(keepingCapacity: true) }
+        /* 家人群压力测试会同时经过几千条正文。以前 600 条就整表清空，
+           快速滚动时会反复解析同一批消息，主线程出现肉眼可见的小顿挫。
+           12000 条足够覆盖当前测试群，AttributedString 的点数也远小于图片缓存。 */
+        if store.count > 12_000 { store.removeAll(keepingCapacity: true) }
         store[key] = value
     }
 }

@@ -1579,7 +1579,9 @@ enum TimeFmt {
         dateMemoLock.unlock()
         guard let d = isoFrac.date(from: s) ?? isoPlain.date(from: s) else { return nil }
         dateMemoLock.lock()
-        if dateMemo.count > 4096 { dateMemo.removeAll(keepingCapacity: true) }
+        /* 一个几年的长会话很容易超过 4096 条。整表清空后快速回滑会把
+           途经消息的 ISO 时间重新解析一遍；扩大到 12000 条，避免缓存抖动。 */
+        if dateMemo.count > 12_000 { dateMemo.removeAll(keepingCapacity: true) }
         dateMemo[s] = d
         dateMemoLock.unlock()
         return d

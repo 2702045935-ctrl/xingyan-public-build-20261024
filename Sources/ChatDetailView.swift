@@ -1469,7 +1469,7 @@ struct ChatDetailView: View {
         /* 「提前一屏开始拉」：最早的这十几条随便哪条一露面，就说明用户快到顶了 ——
            这时候就去拉上一页，等他真滑到顶，内容已经在手里了（这才是微信那种无感）。
            以前是等最顶上那条出现才拉，等于到了顶还要等一个网络来回。 */
-        let nearTopIds = Set(messages.prefix(12).map { $0.id })
+        let nearTopIds = hasOlder ? Set(messages.prefix(12).map { $0.id }) : Set<String>()
         return ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(spacing: 0) {
@@ -3728,6 +3728,7 @@ struct ChatDetailView: View {
                 /* 旧版本可能已经写进了“前一段 + 最近一页、中间断开”的缓存。
                    首次打开回扫最近 1000 条，把历史缺口补实。 */
                 var incoming: [Message] = []
+                var incomingIds = Set<String>()
                 var latestChat: Chat? = nil
                 var more = false
                 var before = 0
@@ -3737,7 +3738,7 @@ struct ChatDetailView: View {
                     if let c = page.chat { latestChat = c }
                     let rows = page.messages
                     if rows.isEmpty { break }
-                    for m in rows where !incoming.contains(where: { $0.id == m.id }) {
+                    for m in rows where incomingIds.insert(m.id).inserted {
                         incoming.append(m)
                     }
                     more = page.hasMore
@@ -3900,6 +3901,71 @@ struct ChatDetailView: View {
             return u.username ?? ""
         }
         return ""
+    }
+
+    /// 家人群压力测试：自动把所有更早的页拉完。只改消息载入上限，
+    /// 不碰聊天首秒保护、滚动贴底和图片/视频本地保存。
+    private func loadAllGroupHistory() async {
+        guard isFamilyGroupLoadAll, !loadingAllGroupHistory else { return }
+        loadingAllGroupHistory = true
+        defer { loadingAllGroupHistory = false }
+        /* 一次拉完整段历史，再只提交一次界面。以前每 100 条就重建字典、
+           全量排序并刷新 LazyVStack，55 页会连续触发几十次主线程 diff；
+           用户快速滑动时正好撞上这些更新，就表现为 iOS 轻微掉帧。 */
+        var olderById: [String: Message] = [:]
+        var before = messages.first?.seq ?? 0
+        var reachedStart = false
+        var pages = 0
+        while hasOlder, pages < 1000, !Task.isCancelled, before > 0 {
+            do {
+                let page = try await API.shared.messages(chatId: chat.id, limit: 100, before: before)
+                if page.messages.isEmpty {
+                    reachedStart = true
+                    break
+                }
+                for message in page.messages { olderById[message.id] = message }
+                let next = page.messages.compactMap(\.seq).min() ?? 0
+                if !page.hasMore {
+                    reachedStart = true
+                    break
+                }
+                if next <= 0 || next >= before { break }
+                before = next
+                pages += 1
+                if pages % 8 == 0 { await Task.yield() }
+            } catch {
+                reachedStart = false
+                break
+            }
+        }
+
+        guard !olderById.isEmpty, !Task.isCancelled else {
+            if reachedStart { hasOlder = false }
+            return
+        }
+
+        let followBottom = atBottomNow
+        let keepAnchor = messages.first?.id
+        var mergedById = Dictionary(uniqueKeysWithValues: messages.map { ($0.id, $0) })
+        for (id, message) in olderById { mergedById[id] = message }
+        let merged = mergedById.values.sorted { a, b in
+            let sa = a.seq ?? 0, sb = b.seq ?? 0
+            if sa > 0 && sb > 0 && sa != sb { return sa < sb }
+            let ca = a.createdAt ?? "", cb = b.createdAt ?? ""
+            if ca != cb { return ca < cb }
+            return a.id < b.id
+        }
+        messages = visibleMessages(merged)
+        hasOlder = !reachedStart
+        rebuildIndex()
+
+        /* 用户停在底部时不改变贴底；已经翻到历史里的，把原来第一条钉在原位，
+           一次插入几千条也不会把正在看的消息顶走。 */
+        if !followBottom, let keepAnchor, let scroller {
+            holdScroll = true
+            DispatchQueue.main.async { scroller.scrollTo(keepAnchor, anchor: .top) }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { holdScroll = false }
+        }
     }
 }
 
@@ -5277,42 +5343,6 @@ extension MessageRow: Equatable {
             && lhs.asrBusy == rhs.asrBusy
     }
 
-    /// 群聊测试版：自动把所有更早的页全部拉完。只改消息载入上限，
-    /// 不碰聊天首秒保护、滚动贴底和图片/视频本地保存。
-    private func loadAllGroupHistory() async {
-        guard isFamilyGroupLoadAll, !loadingAllGroupHistory else { return }
-        loadingAllGroupHistory = true
-        defer { loadingAllGroupHistory = false }
-        var pages = 0
-        while hasOlder, pages < 1000, !Task.isCancelled {
-            guard let seq = messages.first?.seq, seq > 0 else { hasOlder = false; break }
-            do {
-                let page = try await API.shared.messages(chatId: chat.id, limit: 100, before: seq)
-                if page.messages.isEmpty {
-                    hasOlder = false
-                    break
-                }
-                var byId: [String: Message] = [:]
-                for m in page.messages { byId[m.id] = m }
-                for m in messages { byId[m.id] = m }
-                let merged = byId.values.sorted { a, b in
-                    let sa = a.seq ?? 0, sb = b.seq ?? 0
-                    if sa > 0 && sb > 0 && sa != sb { return sa < sb }
-                    let ca = a.createdAt ?? "", cb = b.createdAt ?? ""
-                    if ca != cb { return ca < cb }
-                    return a.id < b.id
-                }
-                messages = visibleMessages(merged)
-                hasOlder = page.hasMore
-                rebuildIndex()
-                pages += 1
-                await Task.yield()
-            } catch {
-                hasOlder = true
-                break
-            }
-        }
-    }
 }
 
 /// 聊天里点开的文件（sheet(item:) 要 Identifiable）
