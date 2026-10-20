@@ -18,6 +18,7 @@
     { "path": "Sources/GroupInfoView.swift", "size": 54324, "sha256": "acf3a553c7cd61cadf30fab32963f9533f5aa5fd0a4c7744ecb65bd6d3ec7a7b" },
     { "path": "Sources/OtherLogin.swift", "size": 4111, "sha256": "d75091383a60e471cf1f0f86a4a7ad7fb6c1990f0898b2393183c1459bc9b349" },
     { "path": "Sources/InAppBrowser.swift", "size": 14174, "sha256": "74cc3bd4b6d77f793d477c8df3ca0533ea756754a395de026397cc1fac6cd1e3" },
+    { "path": "Sources/MallWebPage.swift", "size": 4138, "sha256": "60cc98e6196efc8ef73aa4685db9b2fb55cb8a22138597abdb50cbc8ab5088c3" },
     { "path": "Sources/ChatDeferred.swift", "size": 1556, "sha256": "471d4984f84bcb0c364d10efb54d9659a29fbfc05264d34c4c569bdef90d1167" }
   ]
 }
