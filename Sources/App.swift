@@ -636,6 +636,7 @@ final class AppState: ObservableObject {
         syncInFlight = true
         let showHint = !UserDefaults.standard.bool(forKey: syncHintKey)
         var completed = false
+        let hintStarted = Date()
 
         if showHint {
             syncing = true
@@ -661,8 +662,12 @@ final class AppState: ObservableObject {
             }
             completed = true
             if showHint {
+                let remain = max(0, 0.7 - Date().timeIntervalSince(hintStarted))
+                if remain > 0 {
+                    try? await Task.sleep(nanoseconds: UInt64(remain * 1_000_000_000))
+                }
                 syncText = "同步完成"
-                try? await Task.sleep(nanoseconds: 700_000_000)
+                try? await Task.sleep(nanoseconds: 550_000_000)
             }
         } catch {
         }
