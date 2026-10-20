@@ -862,8 +862,6 @@ struct DirectChatInfoView: View {
 
     @State private var sysPage: SysPage? = nil
 
-    @State private var aiPanel: DirectAIPanel?
-
     var body: some View {
         VStack(spacing: 0) {
             NavBar(title: Tr("聊天信息"), back: { dismiss() })
@@ -880,10 +878,6 @@ struct DirectChatInfoView: View {
                     if chat.sysTeam == true {
                         teamSimpleIntro
                     } else {
-                        if chat.bot == "ai" {
-                            PanelSectionTitle(text: Tr("AI 助手"))
-                            aiHomeCard
-                        }
                         PanelSectionTitle(text: Tr("聊天设置"))
                         switchCard
                         PanelSectionTitle(text: Tr("常用"))
@@ -917,22 +911,6 @@ struct DirectChatInfoView: View {
         }
 
         .navigationDestination(isPresented: $showSearch) { ChatSearchView(chat: chat) }
-
-        .fullScreenCover(item: $aiPanel) { panel in
-            switch panel {
-            case .call:
-                AICallView(chat: chat)
-            case .browser:
-                InAppBrowserView().environmentObject(app)
-            case .drop:
-                FaceToFaceFileSheet(rows: [],
-                                    avatar: app.me?.avatarPath ?? "",
-                                    name: app.me?.name ?? "我",
-                                    ink: C.label,
-                                    mode: .host)
-                    .environmentObject(app)
-            }
-        }
 
         .sheet(item: $sysPage) { p in
             switch p {
@@ -1081,23 +1059,6 @@ struct DirectChatInfoView: View {
         }
     }
 
-    private var aiHomeCard: some View {
-        AIHomeCardView(chat: chat,
-                       onSend: { text in sendToAI(text) },
-                       onCall: { aiPanel = .call },
-                       onBrowser: { aiPanel = .browser },
-                       onDrop: { aiPanel = .drop })
-    }
-
-    private func sendToAI(_ text: String) {
-        let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !t.isEmpty else { dismiss(); return }
-        Task {
-            _ = try? await API.shared.send(chatId: chat.id, kind: "text", content: t)
-            dismiss()
-        }
-    }
-
     private var teamSimpleIntro: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(Tr("星言团队"))
@@ -1236,14 +1197,6 @@ struct DirectChatInfoView: View {
             app.show(Tr("已删除该聊天"))
         }
     }
-}
-
-private enum DirectAIPanel: String, Identifiable {
-    case call
-    case browser
-    case drop
-
-    var id: String { rawValue }
 }
 
 struct GroupAddMembersView: View {

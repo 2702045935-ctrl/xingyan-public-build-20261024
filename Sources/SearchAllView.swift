@@ -37,11 +37,37 @@ struct SearchAllView: View {
     @State private var pickedUser: User?
     @State private var showMoments = false
     @State private var showChannels = false
+    @State private var showPlugins = false
 
     private let scopes: [(String, String)] = [
         ("all", "全部"), ("people", "联系人"), ("groups", "群聊"),
         ("moments", "朋友圈"), ("videos", "视频号"), ("messages", "聊天记录")
     ]
+
+    private struct ToolHit: Identifiable {
+        let id: String
+        let title: String
+        let sub: String
+        let symbol: String
+        let keywords: String
+    }
+
+    private let tools: [ToolHit] = [
+        ToolHit(id: "ai", title: "小星 AI", sub: "问答、创作、联网搜索与文件阅读",
+                symbol: "sparkles", keywords: "小星 AI ai 人工智能 问答 创作 搜索 助手"),
+        ToolHit(id: "browser", title: "内置浏览器", sub: "在星言里搜索和打开网页",
+                symbol: "safari", keywords: "内置浏览器 浏览器 网页 网站 搜索"),
+        ToolHit(id: "drop", title: "文件快传", sub: "面对面传照片、视频和文件",
+                symbol: "dot.radiowaves.left.and.right", keywords: "文件快传 快传 文件 传文件 面对面 传输")
+    ]
+
+    private var matchedTools: [ToolHit] {
+        let key = q.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !key.isEmpty else { return [] }
+        return tools.filter {
+            $0.title.lowercased().contains(key) || $0.keywords.lowercased().contains(key)
+        }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -157,6 +183,7 @@ struct SearchAllView: View {
         }
         .fullScreenCover(isPresented: $showMoments) { MomentsView().environmentObject(app) }
         .fullScreenCover(isPresented: $showChannels) { ChannelsView().environmentObject(app) }
+        .fullScreenCover(isPresented: $showPlugins) { PluginsView().environmentObject(app) }
     }
 
     @ViewBuilder private var results: some View {
@@ -166,12 +193,30 @@ struct SearchAllView: View {
         let moments = d?.moments ?? []
         let videos = d?.videos ?? []
         let msgs = d?.messages ?? []
-        if people.isEmpty && groups.isEmpty && moments.isEmpty && videos.isEmpty && msgs.isEmpty {
+        if people.isEmpty && groups.isEmpty && moments.isEmpty && videos.isEmpty
+            && msgs.isEmpty && matchedTools.isEmpty {
             VStack(spacing: 8) {
                 SVGIcon(markup: I.searchBig, size: 42, color: C.subLabel)
                 Text(Tr("没有找到") + "「" + q + "」" + Tr("相关的内容")).font(pf(14)).foregroundColor(C.subLabel)
             }
             .frame(maxWidth: .infinity).padding(.top, 60)
+        }
+        if !matchedTools.isEmpty {
+            header(Tr("功能"), matchedTools.count)
+            ForEach(matchedTools) { tool in
+                row(tap: { showPlugins = true }) {
+                    Image(systemName: tool.symbol)
+                        .font(.system(size: 19, weight: .medium))
+                        .foregroundColor(C.green)
+                        .frame(width: 40, height: 40)
+                        .background(C.cardBg)
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    VStack(alignment: .leading, spacing: 2) {
+                        highlightMatch(tool.title, q).font(pf(15.5)).foregroundColor(C.label)
+                        Text(tool.sub).font(pf(13)).foregroundColor(C.subLabel).lineLimit(1)
+                    }
+                }
+            }
         }
         if !people.isEmpty {
             header(Tr("联系人"), people.count)
