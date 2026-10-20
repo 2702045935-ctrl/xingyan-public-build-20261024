@@ -635,6 +635,8 @@ struct ChatDetailView: View {
     @State private var pinTick = 0
     /// 正在等待落稳再贴底的任务（新事件来了就取消上一个）
     @State private var pinTask: Task<Void, Never>? = nil
+    /// 图片解码 / 长文排版 / 新消息都可能连续触发高度变化，只保留一个防抖任务。
+    @State private var settleTask: Task<Void, Never>? = nil
     @State private var hasOlder = false          // 上面还有更早的记录
     @State private var loadingOlder = false
     @State private var holdScroll = false        // 上翻加载时不要自动跳到底部
@@ -1444,6 +1446,10 @@ struct ChatDetailView: View {
         .onDisappear {
             persistTask?.cancel()
             persistTask = nil
+            settleTask?.cancel()
+            settleTask = nil
+            pinTask?.cancel()
+            pinTask = nil
             LocalStore.saveChat(chat.id, messages)
         }
     }
@@ -1521,11 +1527,7 @@ struct ChatDetailView: View {
                     lastContentHeight = h
                     if grew, atBottomNow {
                         scrollToEnd(proxy, animated: false)
-                        /* 长文/大图是**分几次**长高的（先出框、再排完版）：
-                           跟着补两下，别让最新一条被一点点顶到屏幕外面。 */
-                        for d in [0.1, 0.3, 0.7] {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + d) { repinIfAtBottom() }
-                        }
+                        scheduleSettledBottom()
                     }
                 }
                 /* 挂一个看不见的探针：把底层的 UIScrollView 交给 ChatScrollHandle。
@@ -1567,10 +1569,7 @@ struct ChatDetailView: View {
                 guard !holdScroll else { return }
                 guard atBottomNow || messages.last?.senderId == myId else { return }
                 scrollToEnd(proxy, animated: false)
-                /* 新消息也可能是长文/大图：排完版再补两次 */
-                for d in [0.08, 0.25, 0.6] {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + d) { repinIfAtBottom() }
-                }
+                scheduleSettledBottom()
             }
             .onChange(of: scrollTick) { _ in
                 atBottom = true                       // 用户自己点的「回到底部」
@@ -1605,12 +1604,7 @@ struct ChatDetailView: View {
                 wasAtBottom = true        // 刚打开会话 = 贴在底部（后面按手指滑动再更新）
                 atBottom = true
                 scrollToEnd(proxy, animated: false)
-                /* 图片/表情是**异步解码**的：行高要等解码完才定型。
-                   本来贴底的，这会儿内容会长高，底部就被顶到屏幕外面（用户说的「掉底」）。
-                   所以之后几个时间点再悄悄补几次贴底。 */
-                for d in [0.12, 0.35, 0.8, 1.5] {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + d) { repinIfAtBottom() }
-                }
+                scheduleSettledBottom()
                 /* 打点：打开会话 1.8 秒后，「最后一条离底部还剩多少 pt」——
                    ≈0（或负数）就是对的，正数就是被压在输入框下面多少。往后这个问题靠数据说话。 */
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
@@ -1684,6 +1678,19 @@ struct ChatDetailView: View {
            不然长文排完版 / 图片解码完就把正在翻历史的人拽回去了。 */
         if let g = ChatScrollHandle.shared.gap, g > 200 { return }
         pinTick += 1
+    }
+
+    /// 只保留最后一次布局变化后的贴底，避免多个延时任务来回推动聊天区。
+    private func scheduleSettledBottom(delayMs: UInt64 = 120) {
+        guard atBottomNow, !holdScroll, !ChatScrollHandle.shared.moving else { return }
+        settleTask?.cancel()
+        settleTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: delayMs * 1_000_000)
+            if Task.isCancelled { return }
+            guard atBottomNow, !holdScroll, !ChatScrollHandle.shared.moving else { return }
+            if let gap = ChatScrollHandle.shared.gap, gap > 24 { return }
+            pinTick += 1
+        }
     }
 
 
@@ -1877,10 +1884,14 @@ struct ChatDetailView: View {
 
     @ViewBuilder
     private func messageRow(_ message: Message) -> some View {
-        MessageRow(message: message,
+        EquatableView(content: MessageRow(message: message,
                    mine: mineFor(message),
                    myId: myId,
                    senderName: senderNameFor(message),
+                   senderAvatarPath: app.contact(for: message.senderId ?? "")?.avatarPath ?? "",
+                   senderQQLevel: app.contact(for: message.senderId ?? "")?.qqLevel ?? 0,
+                   currentNickname: app.me?.nickname ?? "",
+                   currentUsername: app.me?.username ?? "",
                    showTail: isRunStart(message),
                    onTapTransfer: { info in billInfo = info },
                    onOpenImage: { path in openImage(path) },
@@ -1900,8 +1911,9 @@ struct ChatDetailView: View {
                    onOpenFile: { body in openFile(body) },
                    onOpenArticle: { id in oaArticleId = id; showOaArticle = true },
                    onLayoutChanged: { repinIfAtBottom() },
+                   onShowToast: { text in app.show(text) },
                    /* 点引用条 → 跳到被引用的那条原消息（微信就是这么跳的） */
-                   onOpenQuote: { id in jumpToMessage(id) })
+                   onOpenQuote: { id in jumpToMessage(id) }))
             .padding(.bottom, gapAfter(message))
             /* 长按一条消息：弹微信那套动作条（复制/转发/收藏/引用/撤回/删除/多选）。
                ⚠ 这里必须用 simultaneousGesture，不能用 onLongPressGesture：
@@ -3949,6 +3961,11 @@ struct MessageRow: View {
     /// 我自己的 id：红包卡片要判断「我抢过没有」
     var myId: String = ""
     var senderName: String = ""
+    /// 行内只拿显示所需快照，不再让每一条消息都订阅整个 AppState。
+    var senderAvatarPath: String = ""
+    var senderQQLevel: Int = 0
+    var currentNickname: String = ""
+    var currentUsername: String = ""
     /// 气泡那个小尖角只画在「连发的第一条」上（微信就是这样，后面的气泡是普通圆角）
     var showTail: Bool = true
     /// 点转账卡片 → 打开账单详情
@@ -3985,8 +4002,8 @@ struct MessageRow: View {
     var onLayoutChanged: (() -> Void)? = nil
     /// 点引用条 → 跳到被引用的那条原消息（微信就是这么跳的）
     var onOpenQuote: ((String) -> Void)? = nil
+    var onShowToast: ((String) -> Void)? = nil
 
-    @EnvironmentObject var app: AppState
     /// 语音消息播放状态（哪条在播）
     @ObservedObject private var voicePlayer = VoicePlayer.shared
     /// 这次进聊天页里已经听过哪些语音（配合本机记录，用来点掉那个小红点）
@@ -3998,7 +4015,7 @@ struct MessageRow: View {
 
     private var avatarPath: String {
         if let p = message.senderAvatar, !p.isEmpty { return p }
-        return app.contact(for: message.senderId ?? "")?.avatarPath ?? ""
+        return senderAvatarPath
     }
 
     var body: some View {
@@ -4029,7 +4046,7 @@ struct MessageRow: View {
            等级算 0，所以自己那一侧永远没有头像框） */
         let lv = (message.senderId == myId)
             ? GrowthStore.shared.shownLevel
-            : (app.contact(for: message.senderId ?? "")?.qqLevel ?? 0)
+            : senderQQLevel
         return Avatar(path: avatarPath, size: L.chatAvatar, radius: 4, level: lv)
             .contentShape(Rectangle())
             /* 双击头像 = 拍一拍（微信就是这个手势）；单击还是看名片。
@@ -4048,9 +4065,9 @@ struct MessageRow: View {
                         .font(pf(12))
                         .foregroundColor(C.subLabel)
                         .lineLimit(1)
-                    if let lv = app.contact(for: message.senderId ?? "")?.qqLevel, lv > 0,
+                    if senderQQLevel > 0,
                        GrowthFlags.showInChats == true {
-                        QQLevelBadge(level: lv, size: 11, maxIcons: 2).fixedSize()
+                        QQLevelBadge(level: senderQQLevel, size: 11, maxIcons: 2).fixedSize()
                     }
                 }
             }
@@ -4513,8 +4530,8 @@ struct MessageRow: View {
     /// 我自己可能被 @ 到的写法（昵称 / 微信号）—— 用来把「@我」那段涂红
     private var myMentionNames: [String] {
         var names: [String] = []
-        if let n = app.me?.nickname, !n.isEmpty { names.append(n) }
-        if let u = app.me?.username, !u.isEmpty { names.append(u) }
+        if !currentNickname.isEmpty { names.append(currentNickname) }
+        if !currentUsername.isEmpty { names.append(currentUsername) }
         return names
     }
 
@@ -4691,7 +4708,7 @@ struct MessageRow: View {
             playedVoice.insert(message.id)
             VoicePlayed.markPlayed(message.id)
             guard let url = voiceURL() else {
-                app.show(Tr("这条语音找不到了"))
+                onShowToast?(Tr("这条语音找不到了"))
                 return
             }
             voicePlayer.toggle(id: message.id, url: url)
@@ -5223,6 +5240,22 @@ enum FileKind {
             let label = ext.isEmpty ? "文件" : ext.uppercased()
             return ("doc", Color(hex: 0x8A93FF), label)
         }
+    }
+}
+
+extension MessageRow: Equatable {
+    static func == (lhs: MessageRow, rhs: MessageRow) -> Bool {
+        lhs.message == rhs.message
+            && lhs.mine == rhs.mine
+            && lhs.myId == rhs.myId
+            && lhs.senderName == rhs.senderName
+            && lhs.senderAvatarPath == rhs.senderAvatarPath
+            && lhs.senderQQLevel == rhs.senderQQLevel
+            && lhs.currentNickname == rhs.currentNickname
+            && lhs.currentUsername == rhs.currentUsername
+            && lhs.showTail == rhs.showTail
+            && lhs.asrText == rhs.asrText
+            && lhs.asrBusy == rhs.asrBusy
     }
 }
 

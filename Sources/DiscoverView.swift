@@ -291,6 +291,10 @@ private struct OffsetKey2: PreferenceKey {
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
 }
 
+private final class MomentCoverPullBox {
+    var value: CGFloat = 0
+}
+
 struct MomentsView: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
@@ -326,6 +330,11 @@ struct MomentsView: View {
     @State private var coverMenu = false
     @State private var showCoverCamera = false
     @State private var coverDraft: UIImage?
+    /// 鸿蒙版同款：点封面锁定当前下拉高度，再点恢复。
+    @State private var coverLocked = false
+    @State private var coverLockPull: CGFloat = 0
+    /// 普通类只记录当前跟手高度，不触发整页重绘。
+    @State private var coverPullBox = MomentCoverPullBox()
     @State private var composerPick = false
     /* 朋友圈发视频（微信：一条动态要么九张图、要么一条视频） */
     @State private var composerVideoPick = false
@@ -434,11 +443,14 @@ struct MomentsView: View {
                        同时整体上移同样的距离（底边不动）—— 看着就是封面被"揪"下来一截；
                        松手由 ScrollView 自己的弹性收回去，不用我们做动画。 */
                     GeometryReader { g in
-                        let extra = max(0, g.frame(in: .named("momentsScroll")).minY - 1)
+                        let measured = max(0, g.frame(in: .named("momentsScroll")).minY - 1)
+                        let extra = coverLocked ? coverLockPull : measured
                         coverView(extra)
-                            .offset(y: -extra)
+                            .offset(y: coverLocked ? 0 : -extra)
+                            .onAppear { coverPullBox.value = measured }
+                            .onChange(of: measured) { coverPullBox.value = $0 }
                     }
-                    .frame(height: L.coverH)
+                    .frame(height: L.coverH + (coverLocked ? coverLockPull : 0))
                     .zIndex(1)
                     momentList
                 }
@@ -666,6 +678,21 @@ struct MomentsView: View {
 
     /* ---------------------------------------------------------- 封面 */
 
+    /// 鸿蒙版同款：只在自己的朋友圈生效。下拉后点封面锁定当前高度；
+    /// 没有下拉时锁定到 120pt，再点恢复。换封面由独立按钮负责。
+    private func toggleCoverLock() {
+        guard coverEditable else { return }
+        withAnimation(.easeOut(duration: 0.3)) {
+            if coverLocked {
+                coverLocked = false
+                coverLockPull = 0
+            } else {
+                coverLockPull = min(280, max(120, coverPullBox.value))
+                coverLocked = true
+            }
+        }
+    }
+
     /// 封面。`extra` = 下拉被拉长出来的那一段高度（0 = 正常）：
     /// 高度直接加上 extra，里面的图和名字都还在原来的位置（对齐方式不变），
     /// 所以看着就是那张图被往下拽长了一截，松手弹回去 —— 微信那个手感。
@@ -735,6 +762,35 @@ struct MomentsView: View {
                 .frame(maxHeight: .infinity, alignment: .bottom)
                 .allowsHitTesting(false)
 
+            if coverEditable {
+                Color.clear
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .contentShape(Rectangle())
+                    .onTapGesture { toggleCoverLock() }
+                    .zIndex(2)
+            }
+
+            if coverEditable {
+                HStack {
+                    Button {
+                        coverMenu = true
+                    } label: {
+                        Text(Tr("换封面"))
+                            .font(pf(12.5, .medium))
+                            .foregroundColor(.white)
+                            .frame(width: 88, height: 32)
+                            .background(Capsule().fill(Color.black.opacity(0.44)))
+                            .overlay(Capsule().stroke(Color.white.opacity(0.24), lineWidth: 0.7))
+                    }
+                    .buttonStyle(.plain)
+                    Spacer(minLength: 0)
+                }
+                .padding(.leading, 12)
+                .padding(.bottom, 12)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                .zIndex(4)
+            }
+
             HStack(alignment: .bottom, spacing: 12) {
                 /* 昵称 + 个性签名：微信「朋友圈」这一页的排法 ——
                    名字在头像左边，**个性签名挂在头像下面**（居中、跟着头像的宽度）。
@@ -773,6 +829,7 @@ struct MomentsView: View {
             .frame(maxWidth: .infinity, alignment: .trailing)
             .padding(.trailing, 16)
             .offset(y: 21)
+            .allowsHitTesting(false)
         }
         .frame(height: L.coverH + extra)
         .zIndex(1)
@@ -783,10 +840,6 @@ struct MomentsView: View {
            **看得见的「设置封面」**（只在能改的自己的朋友圈显示）——
            微信也是点封面换，但显式给一颗更不容易找不到。 */
         .contentShape(Rectangle())
-        /* 微信的交互：**点封面任意位置 → 弹「更换相册封面」**（就这一下，不放额外的按钮）
-           ⚠ 2026-10-14：之前一版在左下角加过一颗「设置封面」按钮，用户要求「改回原来的：点一下就能换」
-           —— 按钮已去掉，`contentShape` 保证整块封面（含名字/头像那块）点到都算。 */
-        .onTapGesture { if coverEditable { coverMenu = true } }
     }
 
     /* ---------------------------------------------------------- 列表 */

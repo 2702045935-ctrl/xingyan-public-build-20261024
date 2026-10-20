@@ -1,0 +1,70 @@
+name: ios-check
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+
+jobs:
+  typecheck:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode 26
+        run: |
+          set -e
+          PICK="$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)"
+          test -n "$PICK"
+          sudo xcode-select -s "$PICK"
+          xcodebuild -version
+
+      - name: Download WebRTC
+        run: |
+          set -e
+          curl -L --fail --retry 5 --retry-delay 3 --connect-timeout 15 --max-time 900 \
+            -o /tmp/webrtc.zip \
+            https://github.com/stasel/WebRTC/releases/download/153.0.0/WebRTC-M153.xcframework.zip
+          rm -rf WebRTCKit && mkdir -p WebRTCKit
+          unzip -q /tmp/webrtc.zip -d WebRTCKit
+
+      - name: Download TRTC
+        run: |
+          set -e
+          curl -L --fail --retry 3 --retry-delay 3 --connect-timeout 15 --max-time 900 \
+            -o /tmp/trtc.zip \
+            https://liteav.sdk.qcloud.com/download/latest/TXLiteAVSDK_TRTC_iOS_latest.zip
+          rm -rf /tmp/trtc-x TRTCKit
+          mkdir -p /tmp/trtc-x TRTCKit
+          unzip -q /tmp/trtc.zip -d /tmp/trtc-x
+          for NAME in TXLiteAVSDK_TRTC TXFFmpeg TXSoundTouch; do
+            FW="$(find /tmp/trtc-x -type d -name "$NAME.framework" -path '*ios-arm64_armv7*' | head -1)"
+            test -n "$FW"
+            cp -R "$FW" TRTCKit/
+          done
+
+      - name: Swift typecheck only
+        run: |
+          set -o pipefail
+          SDK="$(xcrun --sdk iphoneos --show-sdk-path)"
+          xcrun --sdk iphoneos swiftc \
+            -sdk "$SDK" \
+            -target arm64-apple-ios16.0 \
+            -swift-version 5 \
+            -parse-as-library \
+            -typecheck \
+            -F "$SDK/System/Library/Frameworks" \
+            -F WebRTCKit/WebRTC.xcframework/ios-arm64 \
+            -F TRTCKit \
+            Sources/*.swift 2>&1 | tee /tmp/ios-typecheck.log
+          ! grep -q "error:" /tmp/ios-typecheck.log
+
+      - name: Upload compiler log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-typecheck-log
+          path: /tmp/ios-typecheck.log
+          retention-days: 1

@@ -12,21 +12,7 @@ permissions:
   contents: write
 
 on:
-  push:
-    # 只有 iOS 端源码变了才打包：服务端/文档的提交不该浪费 macOS 构建时间
-    # （私有仓库的 macOS 分钟是计费的，公开仓库才免费）
-    paths:
-      - 'Sources/**'
-      - 'Info.plist'
-      # 打包流程自己改了也要重新出一版（否则改了 workflow 推上去不会触发）
-      - '.github/workflows/build-ios.yml'
-      # 启动图也在包里（CI 会把它拷进 App），换了图必须重新打包
-      - 'splash.png'
-      - 'splash.jpg'
-      # 朋友圈默认封面（没设封面时显示的那张风景照），也在包里
-      - 'moments-cover.jpg'
-      # 等级图标（Blender 渲的 3D 图）也在包里，换了必须重新打包
-      - 'levelicons/**'
+  # 这是隔离验证分支：禁止 push 自动出包，避免误发 Release。
   workflow_dispatch:
 
 jobs:
