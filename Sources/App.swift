@@ -389,6 +389,13 @@ final class AppState: ObservableObject {
             /* 对方点了「提醒你收款」：真弹一条提示（以前那颗按钮只是自己这边弹个假的） */
             show(ev.announce.isEmpty ? "对方提醒你确认收款" : ev.announce)
             coalesce { [weak self] in await self?.loadChats() }
+        case "ready":
+            /* 长连接重连成功不等于离线期间的数据已经追平。主动重拉会话摘要，
+               并把最近 20 个会话的增量消息放进本地预取，避免摘要新、内容旧。 */
+            coalesce { [weak self] in
+                await self?.loadChats()
+                await self?.syncRecentMessages(chatCount: 20, limit: 50)
+            }
         default:
             break
         }
@@ -710,7 +717,8 @@ final class AppState: ObservableObject {
     /// 预取的最近消息：chatId -> 最近 N 条
     var prefetched: [String: [Message]] = [:]
 
-    func syncRecentMessages(chatCount: Int = 10, limit: Int = 30) async {
+    func syncRecentMessages(chatCount: Int = 20, limit: Int = 50) async {
+        guard !syncing else { return }
         syncing = true
         syncText = "正在同步最近的聊天记录…"
         defer { syncing = false }
@@ -1122,6 +1130,7 @@ struct RootView: View {
                     await app.loadChats()
                     await app.loadContacts()      // 回到前台也要重拉好友申请，不然通讯录红点不亮
                     await app.refreshDotCounts()
+                    await app.syncRecentMessages()
                     Realtime.shared.start()
                     /* 苹果被系统挂起期间可能错过 WebSocket 的 incoming：
                        回到前台补捞一次服务端仍在响铃的来电，不创建新通话。 */
