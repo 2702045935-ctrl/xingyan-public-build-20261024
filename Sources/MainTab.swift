@@ -49,27 +49,26 @@ struct MainTabView: View {
                            : L.tabH + L.safeBottom)
             }
 
-            .overlay {
+            .overlay(alignment: .top) {
                 if app.syncing || !app.syncText.isEmpty {
-                    ZStack {
-                        Color.black.opacity(0.16).ignoresSafeArea()
-                        VStack(spacing: 14) {
-                            if app.syncing { ProgressView().scaleEffect(1.15) }
-                            Text(app.syncing ? "正在同步最近的聊天记录…"
-                                             : (app.syncText.isEmpty ? "已同步最近的聊天记录" : app.syncText))
-                                .font(pf(14))
-                                .foregroundColor(C.label)
-                                .multilineTextAlignment(.center)
+                    HStack(spacing: 7) {
+                        if app.syncing {
+                            ProgressView().scaleEffect(0.68)
+                        } else {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(C.green)
                         }
-                        .padding(.horizontal, 26)
-                        .padding(.vertical, 22)
-
-                        .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(C.cardBg))
-                        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .stroke(C.hairline, lineWidth: 0.5))
-                        .shadow(color: .black.opacity(0.18), radius: 16, y: 4)
+                        Text(app.syncing ? "正在同步…" : "同步完成")
+                            .font(pf(12.5, .medium))
+                            .foregroundColor(C.label)
                     }
+                    .padding(.horizontal, 14)
+                    .frame(height: 30)
+                    .background(Capsule().fill(C.cardBg.opacity(0.96)))
+                    .overlay(Capsule().stroke(C.hairline, lineWidth: 0.5))
+                    .shadow(color: .black.opacity(0.10), radius: 8, y: 3)
+                    .padding(.top, 6)
                     .transition(.opacity)
                     .allowsHitTesting(false)
                 }
