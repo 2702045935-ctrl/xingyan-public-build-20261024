@@ -97,6 +97,7 @@ xcrun --sdk iphoneos swiftc \
   -swift-version 5 \
   -parse-as-library \
   -O \
+  -whole-module-optimization \
   -F "$SDK/System/Library/Frameworks" \
   -F WebRTCKit/WebRTC.xcframework/ios-arm64 \
   -F TRTCKit \
@@ -111,6 +112,8 @@ xcrun --sdk iphoneos swiftc \
   -framework CoreVideo -framework VideoToolbox -framework MetalKit -framework Metal \
   -framework Accelerate -framework SystemConfiguration -framework ReplayKit \
   -framework CoreGraphics -framework QuartzCore -framework OpenGLES \
+  -framework Security -framework CryptoKit \
+  -Xlinker -dead_strip \
   -lz -lsqlite3 -lc++ \
   -Xlinker -rpath -Xlinker @executable_path/Frameworks 2>&1 | tee /tmp/mac-build.log
 
@@ -125,9 +128,9 @@ for NAME in WebRTC TXLiteAVSDK_TRTC TXFFmpeg TXSoundTouch; do
   rm -rf "$APP/Frameworks/$NAME.framework/Headers" \
          "$APP/Frameworks/$NAME.framework/Modules" \
          "$APP/Frameworks/$NAME.framework/PrivateHeaders"
-  [ -f "$APP/Frameworks/$NAME.framework/$NAME" ] && strip -x "$APP/Frameworks/$NAME.framework/$NAME" || true
+  [ -f "$APP/Frameworks/$NAME.framework/$NAME" ] && strip -x -S "$APP/Frameworks/$NAME.framework/$NAME" || true
 done
-strip -x "$APP/CHRIS" || true
+strip -x -S "$APP/CHRIS" || true
 
 OUT="$DIST/星言-unsigned.ipa"
 rm -f "$OUT"
