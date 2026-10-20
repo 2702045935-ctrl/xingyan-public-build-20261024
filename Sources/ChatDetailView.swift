@@ -3092,9 +3092,10 @@ struct ChatDetailView: View {
                 outbox.removeAll { $0.id == p.id }
             } catch {
                 let reason = (error as? APIError)?.errorDescription ?? "发送失败"
-                if p.kind == "text", reason.contains("敏感词") {
-                    /* 敏感词属于永久拒绝，不保留红色失败气泡，也不让用户误以为
-                       点重试就会成功。把原文放回输入框，方便用户直接修改。 */
+                if p.kind == "text", reason.contains("敏感词") || reason.contains("稍后再试") {
+                    /* 敏感词属于永久拒绝；刷屏限速只是短暂冷却。
+                       两种都不保留红色失败气泡，把原文放回输入框；
+                       冷却结束后用户直接点发送即可，不会误以为网络坏了。 */
                     outbox.removeAll { $0.id == p.id }
                     if input.isEmpty { input = p.content }
                     app.show(reason)
