@@ -794,6 +794,10 @@ struct ChatDetailView: View {
            所以这里以「会话列表里那份」为准，取不到才退回快照 —— 这就是
            用户报「阅后即焚没生效」的第一个原因。 */
         /* 这个会话单独设过背景（聊天页「⋯ → 选择背景图」，只存本机）就用它 —— 和微信一样 */
+        /* 账号级逐会话背景优先（iOS / 鸿蒙共用）；老版本本机设置作为离线兼容。 */
+        if let synced = app.me?.chatBackgrounds?[chat.id], !synced.isEmpty {
+            return synced == "auto" ? "" : synced
+        }
         let per = ChatBgStore.shared.get(chat.id)
         if !per.isEmpty { return per == "auto" ? "" : per }
         let v = app.me?.chatBackground ?? "auto"

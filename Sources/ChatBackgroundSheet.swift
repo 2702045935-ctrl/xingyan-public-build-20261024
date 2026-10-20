@@ -84,7 +84,8 @@ struct ChatBackgroundSheet: View {
     /// 现在选中的是哪一张（聊天里=本机给这个会话设的；全局=我资料里的）
     private var current: String {
         if inChat {
-            let v = store.get(chatId)
+            let synced = app.me?.chatBackgrounds?[chatId] ?? ""
+            let v = synced.isEmpty ? store.get(chatId) : synced
             return v.isEmpty ? "auto" : v
         }
         return app.me?.chatBackground ?? "auto"
@@ -119,7 +120,8 @@ struct ChatBackgroundSheet: View {
                                 VStack(spacing: 5) {
                                     ZStack {
                                         RemoteImage(path: versioned(item.path), mode: .fill)
-                                            .frame(width: 100, height: 148)
+                                            .frame(maxWidth: .infinity)
+                                            .frame(height: 148)
                                             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                                         if current == item.path {
                                             RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -222,8 +224,17 @@ struct ChatBackgroundSheet: View {
     private func pick(_ path: String) {
         /* 聊天页进来的：只改这一个会话（存本机，和微信一样） */
         if inChat {
-            ChatBgStore.shared.set(chatId, path)
-            app.show(path == "auto" ? Tr("已改用全局背景") : Tr("这个聊天的背景换好了"))
+            Task {
+                busy = true
+                if await API.shared.changeChatBackground(chatId: chatId, path: path) != nil {
+                    ChatBgStore.shared.set(chatId, path)
+                    app.me = try? await API.shared.me()
+                    app.show(path == "auto" ? Tr("已改用全局背景") : Tr("这个聊天的背景换好了"))
+                } else {
+                    app.show(Tr("背景没保存上，检查网络"))
+                }
+                busy = false
+            }
             return
         }
         Task {
@@ -245,8 +256,13 @@ struct ChatBackgroundSheet: View {
             busy = true
             if let url = try? await API.shared.uploadOriginal(image: image) {
                 if inChat {
-                    ChatBgStore.shared.set(chatId, url)
-                    app.show(Tr("这个聊天的背景换好了"))
+                    if await API.shared.changeChatBackground(chatId: chatId, path: url) != nil {
+                        ChatBgStore.shared.set(chatId, url)
+                        app.me = try? await API.shared.me()
+                        app.show(Tr("这个聊天的背景换好了"))
+                    } else {
+                        app.show(Tr("图片上传失败，换一张再试"))
+                    }
                 } else {
                     await API.shared.changeBackground(url)
                     app.me = try? await API.shared.me()

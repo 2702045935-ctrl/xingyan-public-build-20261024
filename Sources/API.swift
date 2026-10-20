@@ -38,6 +38,8 @@ struct User: Codable, Identifiable, Hashable {
     var phone: String?
     var status: String?
     var chatBackground: String?
+    /// 账号级逐会话背景：chatId -> path，iOS/鸿蒙共用。
+    var chatBackgrounds: [String: String]?
     var birthday: String?
     var momentCover: String?
     /// 拍一拍后缀（微信：我 → 个人资料 → 拍一拍）：别人拍我时念成「拍了拍我的＿＿」
@@ -5055,6 +5057,15 @@ private struct StarredPayload: Decodable {
 
     func changeBackground(_ path: String) async {
         await updateMe(["chatBackground": path])
+    }
+
+    /// 设置某个会话的背景；path 传 auto 表示删除，跟随全局背景。
+    @discardableResult
+    func changeChatBackground(chatId: String, path: String) async -> [String: String]? {
+        struct P: Decodable { var chatBackgrounds: [String: String]? }
+        guard let p: P = try? await post("/api/me/chat-background",
+                                           ["chatId": chatId, "path": path], as: P.self) else { return nil }
+        return p.chatBackgrounds ?? [:]
     }
 
     /// 「聊天背景」页要的壁纸清单（后台「聊天壁纸」页配的：默认壁纸 + 基础壁纸）。
