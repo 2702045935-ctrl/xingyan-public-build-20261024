@@ -1,15 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   商城顶部「城市定位」（2026-10-16 用户：「顶部位置做个像美团一样的城市定位」）
-
-   美团那套：首页顶上一行「📍上海 ▾」，点开是城市选择页
-     · 当前定位（用系统定位反查城市，旁边一颗「重新定位」）
-     · 热门城市（网格，一点就换）
-     · 搜索城市（输入即时查）
-   选定后存本地；天气接口按这个城市查 —— 所以**天气和二楼背景跟着城市变**。
-   ============================================================ */
-
 struct DDCityItem: Decodable, Equatable {
     var name: String
     var admin: String?
@@ -25,14 +15,11 @@ final class DDCity: ObservableObject {
     @Published private(set) var lat: Double = 0
     @Published private(set) var lon: Double = 0
     @Published private(set) var locating = false
-    /// 定位失败（美团那页会显示「定位失败，请点击重试」）
+
     @Published private(set) var locateFailed = false
-    /// 最近访问过的城市（美团有这一栏）
+
     @Published private(set) var recents: [String] = []
-    /* 2026-10-17 用户：「商城的定位有点不太准」——
-       ① 用户**手选**过的城市，别再被自动定位覆盖（以前只要进商城就会重新定位）；
-       ② 自动定位最多 6 小时刷一次（老定位别一直用着，出差/换城市也能跟上）；
-       ③ 反查失败/只拿到"区县"时服务器会纠正成城市名（见 /api/city/here）。 */
+
     @Published private(set) var manual = false
 
     private let kN = "chris.city.name"
@@ -51,7 +38,7 @@ final class DDCity: ObservableObject {
     }
 
     var isSet: Bool { !name.isEmpty }
-    /// 顶部那行显示什么：没定过就先显示「定位中」
+
     var display: String { isSet ? name : (locating ? "定位中…" : "选择城市") }
 
     func set(_ item: DDCityItem, manual byUser: Bool = false) {
@@ -64,16 +51,14 @@ final class DDCity: ObservableObject {
         UserDefaults.standard.set(lon, forKey: kO)
         UserDefaults.standard.set(byUser, forKey: kM)
         UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: kT)
-        /* 最近访问：新的排前面，留 4 个（美团那栏就是几个常用城市） */
+
         var r = recents.filter { $0 != item.name }
         r.insert(item.name, at: 0)
         recents = Array(r.prefix(4))
         UserDefaults.standard.set(recents, forKey: kR)
-        MallWeather.shared.refresh(force: true)     // 换城市 → 天气和背景跟着换
+        MallWeather.shared.refresh(force: true)
     }
 
-    /// 服务器回的"这批天气算在哪个城市" —— 只填名字，**不触发刷新**
-    /// （不然刷新→回城市名→再刷新，来回死循环）
     func adopt(name n: String, lat la: Double, lon lo: Double) {
         guard !n.isEmpty, name != n else { return }
         name = n
@@ -84,7 +69,6 @@ final class DDCity: ObservableObject {
         UserDefaults.standard.set(lon, forKey: kO)
     }
 
-    /// 用系统定位反查城市（第一次进商城会自动来一次）
     func locate() {
         guard !locating else { return }
         locating = true
@@ -104,8 +88,6 @@ final class DDCity: ObservableObject {
         }
     }
 
-    /// 顺手定位一次：没定过就定；定过是**自动定位来的**、且超过 6 小时没更新，也再定一次。
-    /// 用户自己选过的城市（manual）永远不动。
     func locateIfNeeded() {
         guard !manual else { return }
         if isSet {
@@ -115,7 +97,6 @@ final class DDCity: ObservableObject {
         locate()
     }
 
-    /// 回到「自动定位」（用户点「当前定位」那一行）：以后跟着手机走
     func useAuto() {
         manual = false
         UserDefaults.standard.set(false, forKey: kM)
@@ -123,7 +104,6 @@ final class DDCity: ObservableObject {
     }
 }
 
-/* ---------------------------------------------------------- 城市选择页（美团那种） */
 struct DDCityPickerView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var city = DDCity.shared
@@ -135,7 +115,7 @@ struct DDCityPickerView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            /* 顶栏：取消 / 标题 / 占位 */
+
             HStack {
                 Button { dismiss() } label: {
                     Image(systemName: "xmark")
@@ -151,7 +131,6 @@ struct DDCityPickerView: View {
             }
             .padding(.horizontal, 6)
 
-            /* 搜索框 */
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 14, weight: .medium))
@@ -210,7 +189,7 @@ struct DDCityPickerView: View {
                     }
                     .padding(.horizontal, 16).frame(height: 52)
                     .contentShape(Rectangle())
-                    /* 点这一行 = 用"当前定位"（以后跟着手机走，不再锁定手选的城市） */
+
                     .onTapGesture { city.useAuto(); dismiss() }
                     HairLine(inset: 16)
 
@@ -247,13 +226,12 @@ struct DDCityPickerView: View {
             .padding(.horizontal, 16).padding(.top, 18).padding(.bottom, 8)
     }
 
-    /// 城市网格：**美团那套 —— 纯文字、不带色块、每行 4 个、选中变红**
     private func cityGrid(_ list: [DDCityItem]) -> some View {
         let cols = Array(repeating: GridItem(.flexible(), alignment: .leading), count: 4)
         return LazyVGrid(columns: cols, spacing: 0) {
             ForEach(list, id: \.name) { c in
                 Button {
-                    /* 用户自己点的城市 = 手选：以后进商城不再被自动定位覆盖 */
+
                     city.set(c, manual: true)
                     dismiss()
                 } label: {

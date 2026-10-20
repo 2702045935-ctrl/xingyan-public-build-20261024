@@ -1,18 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-/* ============================================================
-   小星 AI 独立首页（我 → 插件 → 小星 AI）
-
-   和鸿蒙版共用 /api/ai/status 与 /api/ai/purchase：
-     · 不展示零钱余额，只展示 Token 额度和购买记录
-     · 写作、头脑风暴、联网搜索都是真实入口，不摆空按钮
-     · 电话直接进现有的 AICallView
-     · 文件从系统文件 App 选，上传成功后进入小星会话
-
-   ⚠ 页面不塞进 ChatDetailView。聊天主页面和已验证的音视频链路都不碰。
-   ============================================================ */
-
 struct AIPageView: View {
     @EnvironmentObject private var app: AppState
     @Environment(\.dismiss) private var dismiss

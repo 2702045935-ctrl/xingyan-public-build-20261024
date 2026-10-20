@@ -1,16 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-/* ============================================================
-   「我的二维码」下面那两排点开的两层（2026-10-12 加）
-
-     · QRStyleSheet        —— 换个样式：绿 / 蓝 / 红 / 黄 / 紫 / 黑
-     · FaceToFaceFileSheet —— 面对面收照片和文件：把自己的码给对方扫，
-                              对方加你为好友后当面把照片、文件发过来（收到的都进聊天）
-
-   （「面对面收红包」直接出示收款码那一页，见 MyQRView 里的 PayCodePage。）
-   ============================================================ */
-
 struct QRStyleSheet: View {
     @Environment(\.dismiss) private var dismiss
     let current: QRInk

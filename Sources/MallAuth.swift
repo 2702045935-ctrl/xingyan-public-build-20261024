@@ -1,31 +1,11 @@
 import SwiftUI
 
-/* ============================================================
-   进商城先授权（照微信：进「第三方」的商城，先弹一层授权卡）
-
-   微信里点开一个小程序，会先弹：
-       「拼多多」申请获取以下权限
-        获取你的公开信息（昵称、头像等）
-       [拒绝]            [允许]
-   允许了才进去；拒绝了就退回上一页。这里照这套做：
-
-   · 授权状态**按账号记**（换账号要重新授权），解除授权后下次进商城再问一次
-   · 允许 → 进商城（商城「我的」页里显示的就是你的头像 / 昵称 / 星言号）
-   · 拒绝 → 退回上一页，并提示一句
-
-   入口共两处（`MeView` 的「我 → 商城」、`ShopView` 的「小店 → 商城」），
-   都套一层 `MallAuthGate` 就行。
-   解除授权在：设置 → 账号 → 个人信息与权限 → 授权管理。
-   ============================================================ */
-
-/// 商城授权状态（按账号；一个账号授权一次就够）
 @MainActor
 final class MallAuthStore: ObservableObject {
     static let shared = MallAuthStore()
 
-    /// 已经授权给哪个账号（空 = 还没授权）
     @Published private(set) var grantedTo: String = ""
-    /// 授权时间（毫秒），「授权管理」里显示用
+
     @Published private(set) var grantedAt: Double = 0
 
     private let kUser = "dd.mallAuth.user"
@@ -54,14 +34,10 @@ final class MallAuthStore: ObservableObject {
     }
 }
 
-/* ---------------------------------------------------------- 授权卡 */
-
-/// 微信那张授权卡：申请方 + 「申请获取以下权限」+ 权限块 + 拒绝/允许
 struct MallAuthCard: View {
-    /// 申请方名字（商城名，后台可改）
+
     var appName: String
-    /// **本人**的头像 / 昵称 / 星言号 —— 授权卡上要真的把"会被获取的信息"显示出来
-    /// （2026-10-16 用户：「获取你的公开信息那个应该是本人的头像」「或者是他真的会获取」）
+
     var myAvatar: String = ""
     var myName: String = ""
     var myId: String = ""
@@ -70,12 +46,12 @@ struct MallAuthCard: View {
 
     var body: some View {
         ZStack {
-            /* 压暗底下一层（微信也是把上一页压暗） */
+
             Color.black.opacity(0.35).ignoresSafeArea()
 
             VStack(spacing: 0) {
                 VStack(spacing: 9) {
-                    /* 申请方图标：没有 logo 就用一个袋子图，底色跟着商城的红 */
+
                     RoundedRectangle(cornerRadius: 13, style: .continuous)
                         .fill(DDColor.gradBtn)
                         .frame(width: 56, height: 56)
@@ -93,8 +69,7 @@ struct MallAuthCard: View {
                 VStack(alignment: .leading, spacing: 5) {
                     Text(Tr("获取你的公开信息"))
                         .font(pf(15)).foregroundColor(C.label)
-                    /* 这块不再是干巴巴一句"昵称、头像、星言号"，而是把**真的会给出去的东西**摆出来：
-                       左边本人的头像，右边昵称 + 星言号（就是商城「我的」页会显示的那份） */
+
                     HStack(spacing: 10) {
                         Avatar(path: myAvatar, size: 40, circle: true)
                         VStack(alignment: .leading, spacing: 3) {
@@ -134,7 +109,7 @@ struct MallAuthCard: View {
                     .buttonStyle(.plain)
                     Rectangle().fill(C.hairline).frame(width: 0.5, height: 50)
                     Button(action: onAllow) {
-                        /* 2026-10-17 用户：「所有带有微信绿的按钮换个颜色」——跟全 App 主色走 */
+
                         Text(Tr("允许"))
                             .font(pf(16.5, .medium)).foregroundColor(C.green)
                             .frame(maxWidth: .infinity).frame(height: 50)
@@ -150,9 +125,6 @@ struct MallAuthCard: View {
     }
 }
 
-/* ---------------------------------------------------------- 授权门 */
-
-/// 把商城套在里面：没授权过就先弹授权卡，允许了才让商城出现。
 struct MallAuthGate<Content: View>: View {
     @EnvironmentObject private var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -161,8 +133,6 @@ struct MallAuthGate<Content: View>: View {
 
     private let content: () -> Content
 
-    /* 显式写一个 init：这个门在**别的文件**里用（MeView / ShopView），
-       靠编译器合成的那个容易因为私有属性被判成 private 而编不过。 */
     init(@ViewBuilder content: @escaping () -> Content) {
         self.content = content
     }
@@ -171,7 +141,7 @@ struct MallAuthGate<Content: View>: View {
 
     var body: some View {
         ZStack {
-            /* 没登录（拿不到账号）就不用问，直接放行 */
+
             if uid.isEmpty || auth.isGranted(uid) {
                 content()
             } else {
@@ -187,7 +157,7 @@ struct MallAuthGate<Content: View>: View {
                              })
             }
         }
-        /* 商城名可能是后台改过的：没拉到就先拉一次，别把「星言商城」这种默认名报给用户 */
+
         .task { if store.mallName.isEmpty { await store.refresh() } }
     }
 }

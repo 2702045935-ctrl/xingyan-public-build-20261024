@@ -1,45 +1,28 @@
 import SwiftUI
 import CoreLocation
 
-/* ============================================================
-   收货地址簿（2026-10-14 用户：「收货地址啥的单独开个页面存储，学京东逻辑」）
-
-   京东那套：
-     · 「我的 → 收货地址」进一个**独立的地址列表页**：一条地址一行卡片，
-       姓名 + 手机号 + 省市区详细地址，默认那条有「默认」小标签
-     · 每行右边一支铅笔 → 编辑；编辑页里能删
-     · 底部固定一颗「新增收货地址」
-     · 下单页顶部显示默认地址，点一下进同一个列表页**挑一条**，选完自动回下单页
-   数据存在 DDStore 的地址簿里（跟购物车/收藏一样落本机 dd_mall.json）。
-   ============================================================ */
-
 struct DDAddress: Identifiable, Codable, Hashable {
     var id: String
-    /// 收货人
+
     var name: String
     var phone: String
-    /// 省市区
+
     var region: String
-    /// 详细地址（街道门牌）
+
     var detail: String
     var isDefault: Bool
 
-    /// 一行里显示的那串字：省市区 + 详细地址
     var full: String { region + detail }
-    /// 信息齐全没（老数据迁移上来可能只有地址）
+
     var complete: Bool { !name.isEmpty && phone.count >= 6 && (!region.isEmpty || !detail.isEmpty) }
 }
-
-/* ---------------------------------------------------------- 地址列表 */
 
 struct DDAddressListView: View {
     @ObservedObject private var store = DDStore.shared
     @Environment(\.dismiss) private var dismiss
 
-    /// 下单页进来时传：点一行就选中它、回上一页（不传就是纯管理）
     private let pick: ((DDAddress) -> Void)?
 
-    /* 显式 init：这个页面在**别的文件**里用（我的 → 收货地址 / 下单页挑地址） */
     init(pick: ((DDAddress) -> Void)? = nil) { self.pick = pick }
 
     @State private var editing: DDAddress? = nil
@@ -138,13 +121,10 @@ struct DDAddressListView: View {
     }
 }
 
-/* ---------------------------------------------------------- 新增 / 编辑 */
-
 struct DDAddressEditView: View {
     @ObservedObject private var store = DDStore.shared
     @Environment(\.dismiss) private var dismiss
 
-    /// nil = 新增
     private let address: DDAddress?
 
     init(address: DDAddress?) { self.address = address }
@@ -155,15 +135,12 @@ struct DDAddressEditView: View {
     @State private var detail = ""
     @State private var isDefault = false
     @FocusState private var focus: Int?
-    /* 定位（2026-10-16 用户：「所在地区要直接可以定位的，真实的定位输入地址的地方」）：
-       点了就真定位一次 → 反查地址 → 自动把省市区填进「所在地区」、街道门牌填进「详细地址」，
-       用户还能接着改。定位用的是一次性的 OneShotLocation（不会后台跟踪）。 */
+
     @State private var locating = false
     @State private var locMsg: String?
 
     private var isNew: Bool { address == nil }
 
-    /// 定位到的地址（省 市 区 / 街道门牌）
     private struct LocAddr { var region = ""; var detail = "" }
 
     var body: some View {
@@ -178,7 +155,7 @@ struct DDAddressEditView: View {
                         HairLine(inset: 14)
                         field(Tr("所在地区（省 市 区）"), $region, 2, keyboard: .default)
                         HairLine(inset: 14)
-                        /* 定位那一条：和上面几行同一个卡片里，一眼就知道地址能自动填 */
+
                         Button { locateMe() } label: {
                             HStack(spacing: 9) {
                                 Image(systemName: locating ? "location.fill" : "location")
@@ -268,7 +245,7 @@ struct DDAddressEditView: View {
         .ddLight()
         .onAppear {
             guard let a = address else {
-                isDefault = store.addresses.isEmpty     // 第一条默认设成默认地址
+                isDefault = store.addresses.isEmpty
                 return
             }
             name = a.name; phone = a.phone; region = a.region; detail = a.detail; isDefault = a.isDefault
@@ -296,8 +273,6 @@ struct DDAddressEditView: View {
         .frame(height: 50)
     }
 
-    /* 真定位：拿一次坐标 → 反查地址 → 填进表单。权限 / 失败都用人话提示，
-       不给用户看 Apple 那串英文。 */
     private func locateMe() {
         guard !locating else { return }
         locating = true
@@ -312,7 +287,7 @@ struct DDAddressEditView: View {
             }
             let a = await Self.reverse(loc)
             if !a.region.isEmpty { region = a.region }
-            /* 详细地址：用户自己填过就别覆盖，只补空的 */
+
             if detail.trimmingCharacters(in: .whitespaces).isEmpty && !a.detail.isEmpty {
                 detail = a.detail
             }
@@ -323,7 +298,6 @@ struct DDAddressEditView: View {
         }
     }
 
-    /// 坐标 → 省 市 区 + 街道门牌
     private static func reverse(_ loc: CLLocation) async -> LocAddr {
         var out = LocAddr()
         guard let marks = try? await CLGeocoder().reverseGeocodeLocation(loc),
@@ -333,9 +307,9 @@ struct DDAddressEditView: View {
             guard let v = v?.trimmingCharacters(in: .whitespaces), !v.isEmpty else { return }
             if parts.last != v { parts.append(v) }
         }
-        add(m.administrativeArea)      // 省 / 直辖市
-        add(m.locality)                // 市
-        add(m.subLocality)             // 区
+        add(m.administrativeArea)
+        add(m.locality)
+        add(m.subLocality)
         out.region = parts.joined(separator: " ")
         var d: [String] = []
         if let v = m.thoroughfare, !v.isEmpty { d.append(v) }

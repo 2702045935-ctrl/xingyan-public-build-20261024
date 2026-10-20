@@ -1,12 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   个人信息（重做的高级的版）
-   · 顶部一张深色金边卡：大头像（金圈、右下角小相机）、昵称 + 等级图标、星言号 + 二维码
-   · 下面三张圆角卡片：资料（昵称/性别/地区/生日/签名）、联系方式（手机号）、来电铃声
-   · 右上「保存」做成绿色渐变胶囊
-   逻辑和旧版一模一样（点保存提交、头像先裁再传），只是界面换了。
-   ============================================================ */
 struct ProfileEditView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -22,20 +15,18 @@ struct ProfileEditView: View {
     @State private var birthday = ""
     @State private var showBirthday = false
     @State private var showRegion = false
-    /// 性别选一下（微信那样：点"性别"那一行弹出来选）
+
     @State private var showGender = false
     @State private var showPhone = false
     @State private var showPhoto = false
     @State private var busy = false
     @State private var cropImage: UIImage?
-    /// 拍一拍后缀（微信：我 → 个人资料 → 拍一拍 →「朋友拍了拍我的＿＿」）
+
     @State private var patText = ""
     @State private var showMyQR = false
-    /// 改星言号（2026-10-16 用户：注册不设、随机给；一年能改一次）
+
     @State private var showUsername = false
-    /// 服务器那份资料**填过一次**就不再覆盖用户正在改的内容
-    /// （用户报的「换了地区和生日不立马显示」：从「选地区 / 选生日」子页返回时
-    ///  onAppear 又跑了一遍，拿**还没更新的** app.me 把刚选好的值顶回旧值）
+
     @State private var filledProfile = false
 
     private let gold = Color(hex: 0xF0C24B)
@@ -62,16 +53,13 @@ struct ProfileEditView: View {
             }
 
             ScrollView(showsIndicators: false) {
-                /* 和微信同款：**就一张列表**从头到尾 ——
-                   头像 / 昵称 / 性别 / 地区 / 生日 / 拍一拍 / 个性签名 / 手机号 / 来电铃声。
-                   以前是「大头像卡 + 资料卡 + 联系方式卡 + 铃声卡 + 一行说明」，
-                   看着啰嗦，现在合成一张，行和行之间就是一条细线。 */
+
                 VStack(spacing: 0) {
                     avatarRow
                     divider
                     field(Tr("昵称"), $nickname)
                     divider
-                    /* 星言号：微信那样 —— 注册时系统随机给一个，这里一年能改一次（服务端拦） */
+
                     Button { showUsername = true } label: {
                         linkLabel(Tr("星言号"),
                                   (app.me?.username?.isEmpty == false) ? (app.me?.username ?? "—") : "—")
@@ -79,12 +67,7 @@ struct ProfileEditView: View {
                     divider
                     tapRow(Tr("性别"), gender == "female" ? Tr("女") : Tr("男")) { showGender = true }
                     divider
-                    /* 地区 / 生日 / 手机号 / 来电铃声 / 二维码：**整页 push**（不再是半屏 sheet）。
-                       ⚠ 这里**不能**用 `NavigationLink { 目标 }`（destination 版）：
-                       外层「我」页那条栈是 NavigationPath + navigationDestination(for: String)，
-                       两种写法混在一个栈里会让后面的 value 版链接全失效
-                       （用户反馈的「设置里面的页面进不去」就是这个）。
-                       全站统一用 navigationDestination(isPresented:)（见下面那几条）。 */
+
                     Button { showRegion = true } label: {
                         linkLabel(Tr("地区"), region.isEmpty ? Tr("未设置") : region)
                     }.buttonStyle(.plain)
@@ -105,9 +88,7 @@ struct ProfileEditView: View {
                         linkLabel(Tr("来电铃声"), ring.currentName)
                     }.buttonStyle(.plain)
                 }
-                /* 用户要求：**关掉玻璃** —— 就一块实色卡片（跟会话页一个底色），
-                   不画磨砂、不画亮边。想找回玻璃：把下面这行换成
-                   `.background { CardGlassBox(radius: 14) }` 即可。 */
+
                 .background(C.cardBg)
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 .padding(.horizontal, 14)
@@ -121,7 +102,7 @@ struct ProfileEditView: View {
         .swipeBack { dismiss() }
         .hidesTabBar()
         .onAppear { fillFromMe() }
-        /* app.me 晚到（进页面时才拉回来）：补填一次 */
+
         .onChange(of: app.me?.id) { _ in fillFromMe() }
         .sheet(isPresented: $showPhoto) { PhotoPicker { image in cropImage = image } }
         .sheet(isPresented: Binding(get: { cropImage != nil },
@@ -133,8 +114,7 @@ struct ProfileEditView: View {
                 }
             }
         }
-        /* 地区 / 生日 / 手机号 / 来电铃声 / 二维码：整页 push（和全站一样用 isPresented 版），
-           不再是 sheet，也不跟外层的 value 版链接混用。 */
+
         .navigationDestination(isPresented: $showRegion) {
             RegionPickerSheet { r in region = r }
         }
@@ -153,15 +133,13 @@ struct ProfileEditView: View {
         .navigationDestination(isPresented: $showUsername) {
             UsernameChangeSheet().environmentObject(app)
         }
-        /* 性别：微信那样点一行弹出来选（不是行里的分段控件） */
+
         .confirmationDialog(Tr("性别"), isPresented: $showGender, titleVisibility: .visible) {
             Button(Tr("男")) { gender = "male"; saveNow(["gender": "male"]) }
             Button(Tr("女")) { gender = "female"; saveNow(["gender": "female"]) }
             Button(Tr("取消"), role: .cancel) { }
         }
-        /* 地区 / 生日选完**立刻生效**（不用再回去按右上角那个保存）——
-           用户反馈的「设置了地区和生日都没显示生效」就是这个：
-           以前选完只是改了本地那行字，不点保存什么都没存 */
+
         .onChange(of: region) { v in
             if v != (app.me?.region ?? "") { saveNow(["region": v]) }
         }
@@ -170,7 +148,6 @@ struct ProfileEditView: View {
         }
     }
 
-    /// 把服务器那份资料填进页面（只在还没填过 / app.me 刚拉回来时填一次）
     private func fillFromMe() {
         guard let me = app.me, !filledProfile else { return }
         filledProfile = true
@@ -183,16 +160,13 @@ struct ProfileEditView: View {
         patText = me.patText ?? ""
     }
 
-    /// 选完就存（地区 / 生日 / 性别）：存完立刻把 app.me 刷一遍，页面上那行字跟着变
     private func saveNow(_ fields: [String: Any]) {
         Task {
             do {
                 try await API.shared.updateMeChecked(fields)
                 if let me = try? await API.shared.me() {
                     app.me = me
-                    /* 服务器那份回来了：把页面上这几行**跟着对齐** ——
-                       以前只刷 app.me，页面上留的还是刚才那个字（或者被
-                       onAppear 顶回旧值），看着就像「没生效」 */
+
                     filledProfile = true
                     if let v = me.region { region = v }
                     if let v = me.birthday { birthday = v }
@@ -207,8 +181,6 @@ struct ProfileEditView: View {
             }
         }
     }
-
-    /* ---------------------------------------------------------- 顶部：头像 + 昵称 + 星言号 */
 
     private var headerCard: some View {
         VStack(spacing: 12) {
@@ -244,7 +216,7 @@ struct ProfileEditView: View {
                     .font(pf(13))
                     .foregroundColor(.white.opacity(0.62))
                     .lineLimit(1)
-                /* 二维码：整页 push（同样用 isPresented 版，别用 destination 版） */
+
                 Button { showMyQR = true } label: {
                     HStack(spacing: 3) {
                         Image(systemName: "qrcode").font(.system(size: 11, weight: .semibold))
@@ -276,8 +248,6 @@ struct ProfileEditView: View {
         )
     }
 
-    /* ---------------------------------------------------------- 资料 */
-
     private var infoCard: some View {
         VStack(spacing: 0) {
             field(Tr("昵称"), $nickname)
@@ -293,8 +263,7 @@ struct ProfileEditView: View {
             .padding(.horizontal, 14)
             .padding(.bottom, 10)
             divider
-            /* 微信的格局：性别也是**一行**（左边"性别"、右边值、右箭头），点开再选 ——
-               不是嵌在行里的分段控件。 */
+
             tapRow(Tr("性别"), gender == "female" ? Tr("女") : Tr("男")) { showGender = true }
             divider
             tapRow(Tr("地区"), region.isEmpty ? Tr("未设置") : region) { showRegion = true }
@@ -303,16 +272,12 @@ struct ProfileEditView: View {
             divider
             field(Tr("个性签名"), $bio)
             divider
-            /* 拍一拍：微信那一句「朋友拍了拍我的 ＿＿」——
-               **就在这一页改**，不弹层、不给输入框（和昵称、签名一个样式）。 */
+
             HStack(spacing: 8) {
                 Text(Tr("拍一拍"))
                     .font(pf(16)).foregroundColor(C.label)
                     .frame(width: 70, alignment: .leading)
-                /* 2026-10-17 用户：「朋友拍了拍我的字靠后去 / 没有和其他字对齐」——
-                   以前这一行把「朋友拍了拍我的」直接跟在标签后面（落在中间），
-                   可上下几行（性别/地区/生日/星言号）的值全是**靠右**的，看着就散。
-                   现在先 Spacer 把它顶到右边，和后缀一起贴着右边排 —— 整页一个竖列。 */
+
                 Spacer(minLength: 8)
                 Text(Tr("朋友拍了拍我的"))
                     .font(pf(15)).foregroundColor(C.subLabel).fixedSize()
@@ -321,7 +286,7 @@ struct ProfileEditView: View {
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: 120)
                     .onChange(of: patText) { v in
-                        if v.count > 10 { patText = String(v.prefix(10)) }   // 最多 10 个字
+                        if v.count > 10 { patText = String(v.prefix(10)) }
                     }
             }
             .padding(.horizontal, 14)
@@ -398,11 +363,6 @@ struct ProfileEditView: View {
         .buttonStyle(.plain)
     }
 
-    /* ---------------------------------------------------------- 零件 */
-
-    /* ---------------------------------------------------------- 微信同款那几行 */
-
-    /// 头像那一行（微信：左边「头像」，右边一个小头像 + ›）—— 点一下换头像
     private var avatarRow: some View {
         Button { showPhoto = true } label: {
             HStack(spacing: 12) {
@@ -419,7 +379,6 @@ struct ProfileEditView: View {
         .buttonStyle(.plain)
     }
 
-    /// 拍一拍那一行：微信那句「朋友拍了拍我的 ＿＿」，**在本页直接改**（不弹层）
     private var patRow: some View {
         HStack(spacing: 8) {
             Text(Tr("拍一拍")).font(pf(16)).foregroundColor(C.label)
@@ -428,7 +387,7 @@ struct ProfileEditView: View {
             TextField(Tr("后缀"), text: $patText)
                 .font(pf(16)).foregroundColor(C.label)
                 .onChange(of: patText) { v in
-                    if v.count > 10 { patText = String(v.prefix(10)) }   // 最多 10 个字
+                    if v.count > 10 { patText = String(v.prefix(10)) }
                 }
         }
         .padding(.horizontal, 14)
@@ -495,7 +454,6 @@ struct ProfileEditView: View {
         .buttonStyle(.plain)
     }
 
-    /// NavigationLink 用的那一行（长得和 tapRow 一样，但点进去是下一个整页）
     private func linkLabel(_ title: String, _ value: String) -> some View {
         HStack(spacing: 12) {
             Text(title).font(pf(16)).foregroundColor(C.label)
@@ -507,8 +465,6 @@ struct ProfileEditView: View {
         .frame(height: 56)
         .contentShape(Rectangle())
     }
-
-    /* ---------------------------------------------------------- 干活（和旧版一致） */
 
     private func changeAvatar(_ image: UIImage) {
         busy = true
@@ -533,15 +489,14 @@ struct ProfileEditView: View {
                 "region": region,
                 "gender": gender,
                 "birthday": birthday,
-                /* 拍一拍后缀：在资料页里直接改，保存时一起提交 */
+
                 "patText": patText
             ]
             if !phone.isEmpty && phone != (app.me?.phone ?? "") { fields["phone"] = phone }
             do {
                 try await API.shared.updateMeChecked(fields)
             } catch {
-                /* 服务器说不行（昵称不合格 / 手机号一年只能改一次…）—— 直接说出来，
-                   别再吞掉然后提示"已保存" */
+
                 busy = false
                 app.show(error.localizedDescription)
                 return
@@ -555,14 +510,6 @@ struct ProfileEditView: View {
     }
 }
 
-/* ============================================================
-   改「星言号」（2026-10-16 用户：「注册不要星言号设置，按微信那样给随机的」+
-   「然后可以 1 年改一次」）
-
-   · 注册时不再让用户填，服务端随机给一个（xy 开头 10 位）
-   · 这里改：**一年只能改一次**，规则由服务端兜（`PATCH /api/me` 的 username 那条），
-     改早了服务端会把「下次可改：XXXX年X月X日」原话带回来，这里直接显示
-   ============================================================ */
 struct UsernameChangeSheet: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -571,7 +518,6 @@ struct UsernameChangeSheet: View {
     @State private var busy = false
     @State private var err = ""
 
-    /// 下一次能改的时间（服务端给的 usernameUpdatedAt + 365 天）
     private var nextChangeText: String {
         guard let s = app.me?.usernameUpdatedAt, !s.isEmpty else { return "" }
         var t = ISO8601DateFormatter().date(from: s)
@@ -582,7 +528,7 @@ struct UsernameChangeSheet: View {
         }
         guard let t else { return "" }
         let can = t.addingTimeInterval(365 * 24 * 60 * 60)
-        if can <= Date() { return "" }          // 已经能改了
+        if can <= Date() { return "" }
         let f = DateFormatter()
         f.dateFormat = "yyyy年M月d日"
         return "下次可改：" + f.string(from: can)
@@ -662,5 +608,3 @@ struct UsernameChangeSheet: View {
         }
     }
 }
-
-

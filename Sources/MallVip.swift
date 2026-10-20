@@ -1,15 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   会员中心（星言 PLUS，2026-10-15 对齐京东）
-
-   京东会员页的骨架：金色会员卡（头像 + 到期时间 + 已省）→ 权益一排 →
-   开通/续费套餐（月/季/年）→ 会员专享商品 → 说明。
-   ⚠ 演示环境：开通只写本机的到期时间（dd_mall.json），**不真扣钱**；
-     开通之后结算页会多一行「会员立减」，这个是真的会算进订单金额里。
-   ============================================================ */
-
-/// 会员套餐（京东：月卡 / 季卡 / 年卡）
 struct DDVipPlan: Identifiable {
     var id: Int { months }
     let months: Int
@@ -23,10 +13,9 @@ struct DDVipPageView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var store = DDStore.shared
 
-    /// 会员专享商品点开 → 外面换商品（商城那边传进来）
     var onOpen: ((DDProduct) -> Void)? = nil
 
-    @State private var picked = 3          // 默认季卡（京东默认推的就是季卡）
+    @State private var picked = 3
     @State private var confirm = false
 
     private let plans: [DDVipPlan] = [
@@ -37,7 +26,6 @@ struct DDVipPageView: View {
 
     private var plan: DDVipPlan { plans.first { $0.months == picked } ?? plans[1] }
 
-    /// 权益（京东那排图标 + 名字）
     private let rights: [(String, String, String)] = [
         ("tag.fill", "会员价", "下单立减 5%"),
         ("shippingbox.fill", "优先发货", "48 小时内优先发"),
@@ -74,8 +62,6 @@ struct DDVipPageView: View {
             Text(Tr("演示环境：只写本机到期时间，不会真的扣钱。"))
         }
     }
-
-    /* ---------------- 金色会员卡 ---------------- */
 
     private var vipCard: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -117,8 +103,6 @@ struct DDVipPageView: View {
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 
-    /* ---------------- 权益 ---------------- */
-
     private var rightsCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 6) {
@@ -148,8 +132,6 @@ struct DDVipPageView: View {
         .background(DDColor.card)
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
-
-    /* ---------------- 开通 / 续费 ---------------- */
 
     private var planCard: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -211,8 +193,6 @@ struct DDVipPageView: View {
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 
-    /* ---------------- 会员专享（会员价商品） ---------------- */
-
     private var goodsCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 6) {
@@ -264,7 +244,6 @@ struct DDVipPageView: View {
     }
 }
 
-/// 会员入口那一小条（「我的」页用；京东也有这么一条金卡）
 struct DDVipBanner: View {
     @ObservedObject private var store = DDStore.shared
     var onOpen: () -> Void
@@ -291,8 +270,7 @@ struct DDVipBanner: View {
                     .background(Capsule().fill(Color(hex: 0xFFE7B0)))
             }
             .padding(12)
-            /* 2026-10-17：圆角跟「我的」页其它卡统一到 16（8 太小、跟旁边的白卡不是一套），
-               再加一条同色系的细边 + 一层很淡的投影，金卡也是"浮"起来的 */
+
             .background(RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(LinearGradient(colors: [Color(hex: 0xFFF6E0), Color(hex: 0xFFE9BE)],
                                      startPoint: .leading, endPoint: .trailing)))

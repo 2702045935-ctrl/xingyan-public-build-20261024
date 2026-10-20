@@ -1,17 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   小店（2026-10-12 加，入口：我 → 小店与卡包）
-
-     · 上面是零钱余额，下面是商品列表（图 / 名字 / 价格 / 库存，标出实物还是虚拟）
-     · 点一件 → 商品详情 → 「立即购买」（可改数量、实物填收货地址、有支付密码要输密码）
-     · 下单走零钱扣款，成功 toast 一下、回到列表
-     · 右上角「我的订单」：待发货 / 已发货 / 已完成 + 金额 + 时间
-
-   接口：GET /api/shop（商品 + 我的订单 + 余额）、POST /api/shop/order（下单）。
-   商品的上架 / 改价 / 库存 / 排序在「管理」页（UserManageView 里那一块）。
-   ============================================================ */
-
 struct ShopView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -21,10 +9,10 @@ struct ShopView: View {
     @State private var balance: Double = 0
     @State private var loading = true
     @State private var errText = ""
-    /// 点开的商品（详情 + 下单都在这一页 sheet 里）
+
     @State private var open: API.ShopItem? = nil
     @State private var showOrders = false
-    /// 拼多多风格 H5 商城（2026-10-12 接入）：整页 WebView 打开
+
     @State private var showMall = false
 
     private let cols = [GridItem(.adaptive(minimum: 104), spacing: 10)]
@@ -43,7 +31,7 @@ struct ShopView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 10) {
-                    /* 拼多多风格 H5 商城：一进来最显眼的一行（微信小程序那种入口） */
+
                     Button { showMall = true } label: {
                         HStack(spacing: 12) {
                             ZStack {
@@ -74,9 +62,6 @@ struct ShopView: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-
-                    /* ⚠ 2026-10-12 用户要求「不要余额」：小店这一页不再显示零钱余额那张卡。
-                       （下单还是照旧走零钱扣款，服务端那套没动，只是页面上不再摆余额。） */
 
                     if loading && items.isEmpty {
                         ProgressView().padding(.top, 40)
@@ -124,12 +109,9 @@ struct ShopView: View {
             ShopOrdersSheet(orders: orders, balance: balance)
                 .environmentObject(app)
         }
-        /* 拼多多风格 H5 商城：整页打开（改商城只要换服务器上的文件，不用重新出包） */
+
         .fullScreenCover(isPresented: $showMall) {
-            /* ⚠ 2026-10-12 用户要求商城要**原生**：这里也改成原生商城
-               （原来这里开的是服务器上的 H5 页面，用户看到的「又是 h5」就是它）。
-               H5 那页 MallWebPage.swift 没删，留着备用。 */
-            /* 和「我 → 商城」一样：先过授权（MallAuth.swift） */
+
             MallAuthGate { MallNativeView().environmentObject(app) }
         }
     }
@@ -213,15 +195,13 @@ struct ShopView: View {
     }
 }
 
-/* ---------------------------------------------------------- 商品详情 + 下单 */
-
 struct ShopItemSheet: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
 
     let item: API.ShopItem
     let balance: Double
-    /// 下单成功后把新的零钱余额交给列表
+
     let onDone: (Double) -> Void
 
     @State private var count = 1
@@ -231,15 +211,13 @@ struct ShopItemSheet: View {
 
     private var total: Double { item.price * Double(count) }
     private var soldOut: Bool { (item.stock ?? 1) <= 0 }
-    /* 价格 / 类型 / 库存那一行：**先在属性里拼好**再交给 Text。
-       直接在 ViewBuilder 里拼 7 段字符串，swiftc 的类型检查会爆炸
-       （B171 第一次出包就是栽在这儿：ShopView.swift:192 "unable to type-check in reasonable time"）。 */
+
     private var specText: String {
         let price = Tr("价格") + " ¥" + moneyFmt(item.price)
         let stock = Tr("库存 ") + String(item.stock ?? 0)
         return price + " · " + item.kindName + " · " + stock
     }
-    /// 「合计 ¥xx　零钱 ¥xx」
+
     private var totalText: String {
         Tr("合计 ") + "¥" + moneyFmt(total) + "　" + Tr("零钱 ") + "¥" + moneyFmt(balance)
     }
@@ -331,14 +309,14 @@ struct ShopItemSheet: View {
         }
         .background(C.pageBg.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
-        /* 有支付密码的用户：弹六格密码键盘，输满 6 位自动下单 */
+
         .sheet(isPresented: $showPay) {
             ShopPaySheet(amount: total, item: item.name) { pwd in
                 await submit(payPassword: pwd)
             }
             .environmentObject(app)
         }
-        /* 2026-10-16 用户：「好多东西无法左滑返回」——商品详情补上左边缘右滑返回 */
+
         .swipeBack { dismiss() }
     }
 
@@ -352,13 +330,12 @@ struct ShopItemSheet: View {
             return
         }
         Task {
-            /* 设过支付密码才弹密码框（和转账一样） */
+
             let has = await API.shared.hasPayPassword()
             if has { showPay = true } else { _ = await submit(payPassword: "") }
         }
     }
 
-    /// 真正下单，返回错误文字（nil = 成功）
     private func submit(payPassword: String) async -> String? {
         if busy { return nil }
         busy = true
@@ -371,8 +348,7 @@ struct ShopItemSheet: View {
             DiagLog.shared.note("小店下单成功 \(item.name) ×\(count)，余额 ¥\(moneyFmt(nb))")
             onDone(nb)
             Task { app.me = try? await API.shared.me() }
-            /* 支付密码那一层要自己先收起来（它收到 nil 就会关），
-               这一层稍后再关 —— 两层 sheet 同时关在真机上容易卡住一张。 */
+
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { dismiss() }
             return nil
         } catch {
@@ -384,14 +360,13 @@ struct ShopItemSheet: View {
     }
 }
 
-/// 支付密码那一步（六格 + 安全键盘，和转账 / 红包同一套手感）
 struct ShopPaySheet: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
 
     let amount: Double
     let item: String
-    /// 真正下单的动作，抛错 = 失败
+
     let pay: (String) async -> String?
 
     @State private var password = ""
@@ -460,20 +435,16 @@ struct ShopPaySheet: View {
     }
 }
 
-/* ---------------------------------------------------------- 我的订单 */
-
 struct ShopOrdersSheet: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
 
     let orders: [API.ShopOrder]
     let balance: Double
-    @State private var filter = 0        // 0 全部 / 1 待发货 / 2 已发货 / 3 已完成
+    @State private var filter = 0
 
     private let names = ["全部", "待发货", "已发货", "已完成"]
 
-    /// 服务器给的 status 是「已下单 / 已发货 / 已完成 / 已取消」这种中文。
-    /// 按状态分到那三档里（对不上的一律当「待发货」）。
     private func stage(_ s: String?) -> Int {
         let t = s ?? ""
         if t.contains("完成") || t.contains("收货") { return 3 }
@@ -548,7 +519,7 @@ struct ShopOrdersSheet: View {
         }
         .background(C.pageBg.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
-        /* 2026-10-16：我的订单页同样补左滑返回 */
+
         .swipeBack { dismiss() }
     }
 }

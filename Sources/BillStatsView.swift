@@ -1,28 +1,13 @@
 import SwiftUI
 
-/* ============================================================
-   收支统计（账单页顶栏「收支统计 ›」进来）
-
-   2026-10-16 用户：「把收支统计按照支付宝这种的做出来」。
-   支付宝那张统计页长这样，这里照着它搭：
-     · 上面「支出 / 收入」两个 tab（选中一条短横线）
-     · 一个**大数字**：这个月的合计，下面一行跟上月比（↑↓ 百分比）
-     · 一张**柱状图**：近 6 个月的走势，点哪根就切到哪个月
-     · **构成**：钱都花在哪几类上（转账 / 红包 / 充值 / 提现 / 会员），
-       每行一条占比的横条 + 百分比 + 笔数
-     · **往来最多**：跟哪几个人来往最多（谁转了几笔、一共多少）
-
-   数据还是那份真实账单（GET /api/bills?limit=200），全在手机上算，不加新接口。
-   ============================================================ */
-
 struct BillsStatsView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var bills: [BillRecord] = []
     @State private var loading = true
-    /// 0 = 支出，1 = 收入
+
     @State private var kind = 0
-    /// 选中的月份，形如 2026-10
+
     @State private var month = ""
 
     private let expColor = Color(hex: 0xFA5151)
@@ -62,8 +47,6 @@ struct BillsStatsView: View {
         .task { await load() }
     }
 
-    /* ---------------------------------------------------------- 支出 / 收入 */
-
     private var tabs: some View {
         HStack(spacing: 30) {
             tabButton("支出", 0)
@@ -88,8 +71,6 @@ struct BillsStatsView: View {
         }
         .buttonStyle(.plain)
     }
-
-    /* ---------------------------------------------------------- 大数字 */
 
     private var bigNumber: some View {
         let cur = value(month)
@@ -122,8 +103,6 @@ struct BillsStatsView: View {
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .padding(.horizontal, 14)
     }
-
-    /* ---------------------------------------------------------- 柱状图 */
 
     private var chartCard: some View {
         let list = monthsShown
@@ -177,13 +156,10 @@ struct BillsStatsView: View {
         .padding(.horizontal, 14)
     }
 
-    /// 柱子高度：按这半年里最大的那个等比（最小也给 4pt，不然"这个月没花钱"看不出来）
     private func barHeight(_ v: Double, _ top: Double) -> CGFloat {
         guard v > 0 else { return 4 }
         return max(8, CGFloat(v / top) * 92)
     }
-
-    /* ---------------------------------------------------------- 构成 */
 
     private var categoryCard: some View {
         let list = categories
@@ -218,7 +194,7 @@ struct BillsStatsView: View {
                                 .foregroundColor(C.subLabel)
                         }
                     }
-                    /* 占比那条横条（支付宝那张图里就是一排这个） */
+
                     GeometryReader { g in
                         ZStack(alignment: .leading) {
                             Capsule().fill(barTrack)
@@ -238,8 +214,6 @@ struct BillsStatsView: View {
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .padding(.horizontal, 14)
     }
-
-    /* ---------------------------------------------------------- 往来最多 */
 
     private var peerCard: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -279,9 +253,6 @@ struct BillsStatsView: View {
         .padding(.horizontal, 14)
     }
 
-    /* ---------------------------------------------------------- 算数 */
-
-    /// 这笔算不算当前这一栏（支出：转出去就算，待收款也算；收入：只算已经收到的）
     private func counted(_ b: BillRecord) -> Bool {
         if kind == 0 { return b.mine }
         return !b.mine && (b.status ?? "") == "received"
@@ -295,7 +266,6 @@ struct BillsStatsView: View {
         return mm <= 1 ? String(format: "%04d-12", y - 1) : String(format: "%04d-%02d", y, mm - 1)
     }
 
-    /// 图表画 6 根：从选中的月份往前数 6 个月（哪个月没花钱就空着）
     private var monthsShown: [String] {
         guard !month.isEmpty else { return [] }
         var out = [month]
@@ -374,7 +344,6 @@ struct BillsStatsView: View {
 
     private struct PeerRow { var name: String; var avatar: String; var amount: Double; var count: Int }
 
-    /// 跟谁来往最多（只算转账，红包/充值那种没有"对方"）
     private var topPeers: [PeerRow] {
         var map: [String: PeerRow] = [:]
         for b in bills where monthOf(b) == month && counted(b) && (b.walletKind ?? "").isEmpty {
@@ -392,7 +361,7 @@ struct BillsStatsView: View {
         if let d = try? await API.shared.bills(limit: 200) {
             bills = d.bills
             if month.isEmpty {
-                /* 默认落在最近有账单的那个月 */
+
                 var keys: [String] = []
                 for b in d.bills {
                     let m = String((b.createdAt ?? "").prefix(7))

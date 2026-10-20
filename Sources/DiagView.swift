@@ -2,24 +2,11 @@ import SwiftUI
 import UIKit
 import Darwin
 
-/* ============================================================
-   设置 → 诊断工具
-
-   把「查问题」要用的东西全放一页，用户点一下就能上报给我：
-     · 版本 / 机型系统 / 设备标识 / 账号 / 服务器地址
-     · 内存占用 + 本机缓存占用
-     · 网络检测（连不连得上、延迟多少毫秒）
-     · 上次崩溃（CrashCatcher 落盘的那份，被杀掉也在）
-     · 最近 14 条滚动诊断（聊天页那套打点）
-     · 「上报」= 把这些打包成一条发给服务器（和崩溃上报同一个通道，
-       在后台 data/client-errors.jsonl 里就能看到）
-   ============================================================ */
-
 struct DiagView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var scrollDiag = ChatScrollDiag.shared
-    /// 通用打点（卡包 / 小店 / 被顶下线这些，见下面的 DiagLog）
+
     @ObservedObject private var diagLog = DiagLog.shared
 
     @State private var msg = ""
@@ -29,7 +16,7 @@ struct DiagView: View {
     @State private var disk = "…"
     @State private var mem = "…"
     @State private var copied = false
-    /// 「故障修复与体检」那一页（整页打开）
+
     @State private var showHealth = false
 
     var body: some View {
@@ -63,7 +50,7 @@ struct DiagView: View {
                     VStack(spacing: 0) {
                         action(Tr("网络检测"), "wifi") { Task { await netCheck() } }
                         HairLine(inset: 16)
-                        /* 微信那套「故障修复」：一列检查项 + 能修的当场修 */
+
                         action(Tr("故障修复与体检"), "wrench.and.screwdriver") { showHealth = true }
                         HairLine(inset: 16)
                         action(Tr("刷新内存 / 缓存"), "arrow.clockwise") { Task { await refresh() } }
@@ -88,8 +75,6 @@ struct DiagView: View {
                     head(Tr("最近 14 条滚动诊断"))
                     box(scrollDiag.lines.isEmpty ? Tr("（还没有记录）") : scrollDiag.lines.joined(separator: "\n"))
 
-                    /* 通用打点：卡包「空的」、小店下单失败、被顶下线这类问题都记在这儿，
-                       用户截图 / 一键上报就能一眼看出卡在哪一步。 */
                     head(Tr("最近 20 条打点（卡包 / 小店 / 登录）"))
                     box(diagLog.lines.isEmpty ? Tr("（还没有记录）") : diagLog.lines.joined(separator: "\n"))
 
@@ -108,8 +93,6 @@ struct DiagView: View {
         }
         .task { await refresh() }
     }
-
-    /* ---------------------------------------------------------- 小零件 */
 
     private var deviceText: String {
         let d = UIDevice.current
@@ -178,8 +161,6 @@ struct DiagView: View {
             .padding(.horizontal, 12)
     }
 
-    /* ---------------------------------------------------------- 干活 */
-
     private func refresh() async {
         mem = memoryText()
         crash = CrashCatcher.savedCrash()
@@ -190,14 +171,12 @@ struct DiagView: View {
         net = Tr("检测中…")
         let t0 = Date()
         var ok = false
-        /* ⚠ 这里以前打的是 /api/ping —— 服务器上没有这条路由，永远回 401，
-           于是网络明明是通的也报「不通」。改成公开的 /api/health（200 才算通）。 */
+
         if let url = URL(string: API.shared.base + "/api/health") {
             var req = URLRequest(url: url)
             req.timeoutInterval = 8
             req.cachePolicy = .reloadIgnoringLocalCacheData
-            /* 必须用 App 自己的会话（TrustAllDelegate）：自签证书用 URLSession.shared
-               会被 TLS 拦住，一直是「不通」。 */
+
             if let (_, resp) = try? await API.shared.session.data(for: req),
                let h = resp as? HTTPURLResponse, h.statusCode == 200 { ok = true }
         }
@@ -205,12 +184,11 @@ struct DiagView: View {
         net = (ok ? Tr("通") : Tr("不通")) + " · \(ms)ms"
     }
 
-    /// 把这一页的东西打包发上去（走崩溃上报那条通道）
     private func upload() async {
         busy = true
         await refresh()
         let all = fullText()
-        /* 一条最多 4000 字（通道按这个切），长就分段发 */
+
         let n = max(1, Int(ceil(Double(all.count) / 3500.0)))
         for i in 0..<n {
             let s = all.index(all.startIndex, offsetBy: min(i * 3500, all.count))
@@ -246,9 +224,6 @@ struct DiagView: View {
         return s
     }
 
-    /* ---------------------------------------------------------- 系统信息 */
-
-    /// 进程实际占的内存（phys_footprint：系统按这个值决定要不要杀掉 App）
     private func memoryText() -> String {
         var info = task_vm_info_data_t()
         var count = mach_msg_type_number_t(MemoryLayout<task_vm_info_data_t>.size / MemoryLayout<integer_t>.size)
@@ -263,7 +238,6 @@ struct DiagView: View {
         return String(format: "%.0f MB（还能用 %.0f MB）", used, left)
     }
 
-    /// 本机缓存（Caches + Documents/Local）占多少
     private static func cacheText() -> String {
         let fm = FileManager.default
         var total: Int64 = 0
@@ -288,13 +262,6 @@ struct DiagView: View {
     }
 }
 
-/* ============================================================
-   通用打点（卡包「空的」、小店下单失败、被顶下线这类问题都记这儿）
-
-   为什么不用 ChatScrollDiag：那条日志每行都带「离底多少 pt」，是聊天页专用的格式。
-   这里就是一行一条、最多留 20 条，带时间；「设置 → 通用 → 更多 → 诊断工具」里能看到，
-   一键上报的时候也会一起发上来。
-   ============================================================ */
 final class DiagLog: ObservableObject {
     static let shared = DiagLog()
     @Published private(set) var lines: [String] = []

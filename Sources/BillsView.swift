@@ -1,24 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   账单（钱包页右上角「账单」进来）
-
-   **时间轴按微信的来**（2026-10-16 用户：「年月日账单排排清楚…滚动时间轴都按照微信对齐」）：
-     · 年 + 月：一整块吸顶的行 ——「2026年10月」在左、右边是「支出 ¥x 收入 ¥y」。
-       滚动时它像微信那样**钉在顶上**，下面这个月的账单从它底下过。
-     · 日：每天的账单前面加一小行「10月16日 星期五」＋ 当天的支出。
-       所以**同一个人一天里转了好几次**、隔了几天又转，全都一眼看得清，年月日不会糊在一起。
-     · 每一笔：一行一笔，一行都不合并（对方头像 + 「转账给张三 / 张三转给你」+
-       时刻 + 金额）；还没收款的那笔把状态也带出来。
-     · 尺寸还是照参考图量的（iPhone @3x，420×912pt）：
-       顶栏高 52.4：「全部账单 ▾」药丸 90×36 在 x=16.7、
-       「查找交易」搜索框 101.7×36 在 x=124.3、「收支统计 ›」贴右 18，
-       顶栏下面一条 0.5pt 分隔线
-       ／白卡里每行 80：图标 48 圆角 12 在 x=16、标题 x=81（17pt）、
-       时间 x=81（13pt #B2B2B2）、金额贴右 18（16pt，收入 #FFC406，支出深色）
-    数据来自 GET /api/bills（真实转账记录）。
-   ============================================================ */
-
 struct BillsView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -27,20 +8,20 @@ struct BillsView: View {
     @State private var bills: [BillRecord] = []
     @State private var months: [String] = []
     @State private var summary: BillSummary?
-    @State private var month = ""                 // 空 = 全部
+    @State private var month = ""
     @State private var loading = true
     @State private var showMonths = false
     @State private var showStats = false
-    /// 右上角那三个点的面板开着没有
+
     @State private var showMoreMenu = false
-    /// 分享导出的账单文件（系统分享面板）
+
     @State private var shareFile: ShareFile?
-    /// 「选择月份」那张滚轮里的年 / 月
+
     @State private var pickYear = 2026
     @State private var pickMonth = 10
-    /// 查找交易：点一下进整页搜索
+
     @State private var showSearch = false
-    @State private var filter = "all"             // all / out / in
+    @State private var filter = "all"
     @State private var query = ""
     @State private var openBill: BillRecord?
     @State private var showDetail = false
@@ -48,11 +29,9 @@ struct BillsView: View {
     @State private var faq: [BalanceFaq] = []
     @State private var showFaq = false
     @State private var faqAnswer: String?
-    /// 顶部那颗「全部账单 ▾」的下拉开着没有
+
     @State private var showFilterMenu = false
 
-    /* 顶栏那两颗（全部账单 / 查找交易）：底色比原来浅一点、圆角更大、
-       再加一条 0.5 的细边 —— 这就是"渲染高级一点"的那点事 */
     private let fieldBg = Color.dyn(0xF1F2F5, 0x2C2C2E)
     private let fieldEdge = Color.dyn(0xE3E4E8, 0x3A3A3C)
     private let fieldInk = Color.dyn(0x3A3A3A, 0xEDEDED)
@@ -74,7 +53,7 @@ struct BillsView: View {
                 }
                 .buttonStyle(.plain)
             }
-            /* 右上角那三个点：点开是微信那种小面板（常见问题 / 导出 / 分享账单） */
+
             .overlay(alignment: .topTrailing) {
                 if showMoreMenu {
                     moreMenu
@@ -85,7 +64,7 @@ struct BillsView: View {
             .zIndex(3)
 
             topBar
-                /* 那颗「全部账单 ▾」点开的下拉：全部账单 / 支出 / 收入 + 按月份 */
+
                 .overlay(alignment: .topLeading) {
                     if showFilterMenu {
                         filterMenu
@@ -95,16 +74,10 @@ struct BillsView: View {
                 }
                 .zIndex(2)
 
-            /* 选月份：**在页面上摊开**（用户 2026-10-16：「账单日期的选也不要弹窗，也上下选」）。
-               以前是弹一张 sheet，手要抬两次；现在是年 / 月两个滚轮直接从顶栏下面展开，
-               滚到要看的年月点「完成」。 */
             if showMonths {
                 monthPickerInline
             }
 
-            /* 顶部那张蓝色「支出 / 收入 / 结余」大卡：
-               2026-10-16 用户说「把大卡片关掉那个蓝色的」→ 默认**不显示**。
-               后台 ui.json 里写 billSummaryCard = 1 就能再开回来（不用出包）。 */
             if UIConfig.num("billSummaryCard", 0) > 0 {
                 summaryCard
             }
@@ -140,7 +113,7 @@ struct BillsView: View {
                 }
             }
             .background(C.pageBg)
-            /* 面板开着的时候，点列表任意地方就收起来（微信也是点一下别处就收） */
+
             .overlay {
                 if showFilterMenu || showMoreMenu {
                     Color.black.opacity(0.05)
@@ -169,29 +142,22 @@ struct BillsView: View {
         .navigationDestination(isPresented: $showDetail) {
             if let b = openBill { billDetail(b) }
         }
-        /* 收支统计：支付宝那种真统计页（柱状图 + 构成 + 往来最多） */
+
         .navigationDestination(isPresented: $showStats) {
             BillsStatsView()
         }
-        /* 查找交易：一整页搜索 */
+
         .navigationDestination(isPresented: $showSearch) {
             BillSearchView()
         }
         .sheet(item: $shareFile) { f in ShareSheet(items: [f.url]) }
         .task { await load("") }
-        /* 对方收款 / 退回：账单这一页也跟着刷（不然状态还停在「待对方收款」） */
+
         .onChange(of: realtime.event) { ev in
             if ev.type == "transfer" || ev.type == "balance" { Task { await load(month) } }
         }
     }
 
-    /* ---------------------------------------------------------- 顶栏 */
-
-    /* ============================================================
-       顶部那张「汇总卡」——支付宝账单页最标志性的东西：
-       大字支出 + 下面收入/结余两小块，配一层蓝渐变。
-       数据就用已有的 summary（选月份时就是那个月的）。
-       ============================================================ */
     private var summaryCard: some View {
         let out = summary?.out ?? 0
         let income = summary?.inSum ?? 0
@@ -243,7 +209,7 @@ struct BillsView: View {
         .padding(.bottom, 16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            /* 支付宝那套蓝（#1677FF → #0A5BD3） */
+
             LinearGradient(colors: [Color(hex: 0x1677FF), Color(hex: 0x0A5BD3)],
                            startPoint: .topLeading, endPoint: .bottomTrailing)
         )
@@ -272,8 +238,6 @@ struct BillsView: View {
             }
             .buttonStyle(.plain)
 
-            /* 查找交易：**点一下进一整页搜索**（BillSearchView：搜索框 + 筛选 + 按月分组结果），
-               不是原来那种就地过滤的小输入框 —— 2026-10-16 用户：「不是搜索框做高级，是里面的那页」 */
             Button { showSearch = true } label: {
                 HStack(spacing: 6) {
                     SVGIcon(markup: I.searchSmall, size: 13.5, color: C.subLabel)
@@ -311,8 +275,6 @@ struct BillsView: View {
         filter == "out" ? "只看支出" : (filter == "in" ? "只看收入" : "全部账单")
     }
 
-    /* ---------------------------------------------------------- 两个下拉面板 */
-
     private func closeMenus() {
         withAnimation(.easeOut(duration: 0.12)) {
             showFilterMenu = false
@@ -320,7 +282,6 @@ struct BillsView: View {
         }
     }
 
-    /// 「全部账单 ▾」点开的那块：账单范围 + 按月份看（微信账单那颗下拉就是这个）
     private var filterMenu: some View {
         VStack(alignment: .leading, spacing: 0) {
             menuTitle("账单范围")
@@ -354,7 +315,6 @@ struct BillsView: View {
         .shadow(color: .black.opacity(0.16), radius: 20, y: 8)
     }
 
-    /// 右上角三个点的面板（微信那个「···」也是这么一小块）
     private var moreMenu: some View {
         VStack(alignment: .leading, spacing: 0) {
             menuRow(Tr("账单常见问题"), false) {
@@ -387,7 +347,6 @@ struct BillsView: View {
             .padding(.bottom, 4)
     }
 
-    /// 面板里的一行：`label ……… ✓`（选中的那一项右边打绿勾，跟微信一样）
     private func menuRow(_ title: String, _ on: Bool, _ act: @escaping () -> Void) -> some View {
         Button(action: act) {
             HStack(spacing: 8) {
@@ -409,8 +368,6 @@ struct BillsView: View {
         .buttonStyle(.plain)
     }
 
-    /* ---------------------------------------------------------- 月份行 */
-
     private func monthHeader(_ g: MonthGroup) -> some View {
         let s = monthSum(g.month)
         return HStack(spacing: 0) {
@@ -429,17 +386,11 @@ struct BillsView: View {
         .padding(.leading, 17)
         .padding(.trailing, 18)
         .frame(height: 46)
-        /* ⚠ 这一行是**吸顶**的（见 body 里的 pinnedViews）：滚动时它钉在顶上，
-           底色必须不透明，不然下面滚过去的账单会从它后面透出来 */
+
         .background(C.pageBg)
         .overlay(alignment: .bottom) { HairLine() }
     }
 
-    /* ---------------------------------------------------------- 「日」那一行 */
-
-    /* ---------------------------------------------------------- 选月份（滚轮） */
-
-    /// 有账单的那些年份（滚轮左边那一列）
     private var availableYears: [Int] {
         var s = Set<Int>()
         for m in months { if let y = Int(m.prefix(4)) { s.insert(y) } }
@@ -448,7 +399,6 @@ struct BillsView: View {
         return s.sorted(by: >)
     }
 
-    /// 打开滚轮：先把当前选中的月份拨到那一格
     private func openMonthPicker() {
         let base = month.isEmpty ? (months.first ?? "") : month
         let p = base.split(separator: "-")
@@ -462,8 +412,6 @@ struct BillsView: View {
         withAnimation(.easeOut(duration: 0.16)) { showMonths = false }
     }
 
-    /// 「2026年10月 ▾」点开的这块 —— 直接在页面上摊开，不是弹窗：
-    /// 一条「全部月份」，下面年 / 月两个滚轮（上下滚着选），右下角一颗「完成」。
     private var monthPickerInline: some View {
         let years = availableYears
         return VStack(spacing: 0) {
@@ -532,9 +480,6 @@ struct BillsView: View {
         .transition(.opacity.combined(with: .move(edge: .top)))
     }
 
-    /// 每天前面的一小行：`10月16日 星期五` ＋ 当天的支出。
-    /// 微信的日期是跟在每一行后面的；这里把「日」单独拎一行出来，
-    /// 好处是**同一个人一天里转了好几次**一眼就能数清，年月日也不会糊成一团。
     private func dayRow(_ d: DayGroup) -> some View {
         HStack(spacing: 0) {
             Text(TimeFmt.billDay(d.rows.first?.createdAt))
@@ -552,7 +497,6 @@ struct BillsView: View {
         .background(C.pageBg)
     }
 
-    /// 这一天右边那个小结：有支出就写支出，只有收入就写收入，都没有就空着
     private func dayRight(_ rows: [BillRecord]) -> String {
         let out = rows.filter { $0.mine }.reduce(0) { $0 + $1.amount }
         if out > 0 { return "支出 " + money(out) }
@@ -560,8 +504,6 @@ struct BillsView: View {
         if inc > 0 { return "收入 " + money(inc) }
         return ""
     }
-
-    /* ---------------------------------------------------------- 一行账单 */
 
     private func row(_ b: BillRecord) -> some View {
         Button {
@@ -583,7 +525,7 @@ struct BillsView: View {
                 }
                 .padding(.leading, 17)
                 Spacer(minLength: 8)
-                /* 收入不带 +，只有支出带 -（跟参考图一致） */
+
                 MoneyLabel(text: (b.mine ? "-" : "") + (style.showCurV ? money(b.amount) : moneyFmt(b.amount)),
                            size: style.amountFont, curSize: style.curFontSize,
                            color: b.mine ? C.label : incomeGold,
@@ -596,24 +538,18 @@ struct BillsView: View {
         .buttonStyle(.plain)
     }
 
-    /// 微信那一行写的是「转账给张三」/「张三转给你」——
-    /// 同一个人转了好几笔的时候，这样一眼就知道哪笔转出去、哪笔收进来。
     private func rowTitle(_ b: BillRecord) -> String {
-        /* 红包 / 充值 / 提现 / 会员不是「转给某人」，服务端已经把它们写成一句说明
-           （「发红包 · 拼手气红包」「充值」「开通XX会员」），直接用那句更清楚 */
+
         let kind = b.walletKind ?? ""
         if !kind.isEmpty, let n = b.note, !n.isEmpty { return n }
         return b.mine ? ("转账给" + b.peer) : (b.peer + "转给你")
     }
 
-    /// 时刻（只到分）；还没收款的把状态也带出来（微信里也是露在外面的）
     private func rowSub(_ b: BillRecord) -> String {
         let t = TimeFmt.billClock(b.createdAt)
         if (b.status ?? "pending") == "pending" { return t + " · " + b.stateText }
         return t
     }
-
-    /* ---------------------------------------------------------- 点一条 → 账单详情 */
 
     @ViewBuilder
     private func billDetail(_ b: BillRecord) -> some View {
@@ -644,11 +580,8 @@ struct BillsView: View {
         }
     }
 
-    /* ---------------------------------------------------------- 分组 / 汇总 / 数据 */
-
-    /// 一天（年-月-日）里的所有账单
     private struct DayGroup: Hashable { var day: String; var rows: [BillRecord] }
-    /// 一个月（年-月）里的所有天
+
     private struct MonthGroup: Hashable { var month: String; var days: [DayGroup] }
 
     private var filtered: [BillRecord] {
@@ -669,8 +602,7 @@ struct BillsView: View {
         for b in filtered {
             let m = String((b.createdAt ?? "").prefix(7))
             let d = String((b.createdAt ?? "").prefix(10))
-            /* 月份 / 日期都按**服务端给的顺序**（已经是从新到旧）连着走：
-               同一个月就接到上一个月里，同一天就接到上一天里 */
+
             var g: MonthGroup
             if out.last?.month == m { g = out.removeLast() } else { g = MonthGroup(month: m, days: []) }
             if g.days.last?.day == d {
@@ -703,14 +635,12 @@ struct BillsView: View {
 
     private func money(_ v: Double) -> String { "¥" + moneyFmt(v) }
 
-    /// 导出账单：拼一份 CSV 复制到剪贴板（手机上先这样，之后可以接分享）
     private func exportCsv() {
         guard !bills.isEmpty else { app.show(Tr("还没有账单可以导出")); return }
         UIPasteboard.general.string = csvText()
         app.show("已复制 \(bills.count) 笔账单到剪贴板（CSV）")
     }
 
-    /// 分享账单：落成一个 CSV 文件，交给系统分享面板（微信里是"用作证明材料"那条）
     private func shareCsv() {
         guard !bills.isEmpty else { app.show(Tr("还没有账单可以导出")); return }
         guard let url = writeTempFile(name: "星言账单.csv", text: csvText()) else {
@@ -752,7 +682,6 @@ struct BillsView: View {
     }
 }
 
-/// 小的下箭头（月份、筛选那种 ▾）
 struct DownChevron: View {
     var size: CGFloat = 9
     var line: CGFloat = 1.6

@@ -1,13 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   直播专场（发现 → 直播专场）
-   没有真视频（内网演示服跑不动推流），但「谁在看、谁在说话、多少赞」全是真的：
-     · 房间名单在服务器的 data/live.json（后台可直接改）
-     · 进房间上报，在线人数实时同步（长连接广播）
-     · 弹幕、点赞都是实时的：同房间的人会立刻看到
-   ============================================================ */
-
 struct LiveRoom: Decodable, Identifiable, Hashable {
     struct Host: Decodable, Hashable {
         var id: String?
@@ -22,7 +14,7 @@ struct LiveRoom: Decodable, Identifiable, Hashable {
     var hot: Int?
     var watching: Int?
     var likes: Int?
-    /// 主播正在推流（有画面可看）
+
     var streaming: Bool?
     var hostId: String?
     var host: Host?
@@ -31,10 +23,6 @@ struct LiveRoom: Decodable, Identifiable, Hashable {
     var hostName: String { host?.name ?? "主播" }
     var hostAvatar: String { host?.avatar ?? "" }
 }
-
-/* 直播房间不需要额外的 decodable：API 里那几个方法只用得到 LiveRoom */
-
-/* ---------------------------------------------------------- 房间列表 */
 
 struct LiveListView: View {
     @EnvironmentObject var app: AppState
@@ -150,8 +138,6 @@ struct LiveListView: View {
     }
 }
 
-/* ---------------------------------------------------------- 直播间 */
-
 struct LiveRoomView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -162,7 +148,7 @@ struct LiveRoomView: View {
     @State private var draft = ""
     @State private var watching = 0
     @State private var likes = 0
-    /// 退出前确认（抖音会问一句）
+
     @State private var confirmExit = false
     @State private var hearts: [UUID] = []
 
@@ -170,7 +156,7 @@ struct LiveRoomView: View {
 
     var body: some View {
         ZStack {
-            /* 背景：拿主播头像糊一层（和通话页一个做法），没有就用深色渐变 */
+
             ZStack {
                 LinearGradient(colors: [Color(hex: 0x1B2233), Color(hex: 0x0C0C0E)],
                                startPoint: .top, endPoint: .bottom)
@@ -187,7 +173,6 @@ struct LiveRoomView: View {
                 bottomBar
             }
 
-            /* 真视频层：观众看到主播画面；主播看到自己的预览（右下小窗） */
             if live.watching, live.remoteVideo != nil {
                 VideoSurface(track: live.remoteVideo)
                     .ignoresSafeArea()
@@ -213,7 +198,6 @@ struct LiveRoomView: View {
                 }
             }
 
-            /* 点赞飘心 */
             ForEach(hearts, id: \.self) { id in
                 FloatingHeart(id: id)
             }
@@ -221,7 +205,7 @@ struct LiveRoomView: View {
         .toolbar(.hidden, for: .navigationBar)
         .hidesTabBar()
         .swipeBack { dismiss() }
-        /* 抖音那套：双击屏幕点赞（连点就飘心），退出前问一句 */
+
         .simultaneousGesture(TapGesture(count: 2).onEnded {
             like()
             popHeart()
@@ -251,7 +235,7 @@ struct LiveRoomView: View {
             watching = (try? await API.shared.liveJoin(room.id)) ?? 0
             likes = room.likes ?? 0
             danmakus.append(("系统", "欢迎来到「\(room.title ?? "直播间")」，友善聊天哦～"))
-            /* 不是我的房间、而且主播在推流 → 自动看画面 */
+
             let isMine = (room.host?.id ?? "") == (app.me?.id ?? "-")
             if !isMine, let hid = room.host?.id, !hid.isEmpty, room.streaming == true {
                 live.startWatch(room: room.id, host: hid)
@@ -281,7 +265,7 @@ struct LiveRoomView: View {
             Spacer(minLength: 0)
             Text("❤️ \(likes)")
                 .font(pf(13)).foregroundColor(.white.opacity(0.9))
-            /* 我的房间：给一个开播/结束的按钮 */
+
             if isMyRoom {
                 Button {
                     Task {
@@ -386,7 +370,6 @@ struct LiveRoomView: View {
     }
 }
 
-/// 点赞飘上去的小心心
 struct FloatingHeart: View {
     let id: UUID
     @State private var up = false

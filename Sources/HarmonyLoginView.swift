@@ -1,8 +1,6 @@
 import SwiftUI
 import UIKit
 
-/// 华为端当前登录页的 iOS 同款实现。只做界面，登录、滑动验证、
-/// 解封、找回密码、品牌配置全部继续走现有接口。
 struct HarmonyLoginView: View {
     @EnvironmentObject var app: AppState
     @FocusState private var focus: Field?
@@ -338,7 +336,7 @@ struct HarmonyLoginView: View {
     private func loadBranding() {
         Task {
             guard let b = await API.shared.branding() else { return }
-            /* iOS / 鸿蒙只认后台同一份登录品牌配置。 */
+
             let shared = b.harmonyLogin
             if let n = shared?.appName ?? b.login?.appName ?? b.appName, !n.isEmpty { brandName = n }
             if let s = shared?.subTitle ?? b.login?.subTitle, !s.isEmpty { brandSubtitle = s }

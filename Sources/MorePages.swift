@@ -1,16 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   补齐「产品功能清单」里缺的那几页：
-     · 群列表（通讯录 → 群聊）
-     · 查找聊天记录（聊天页「⋯」→ 查找聊天记录）
-     · 银行卡 / 绑定银行卡（钱包）
-     · 意见反馈、关于我们 / 版本更新（设置）
-     · 密码找回（登录页 → 忘记密码）
-   ============================================================ */
-
-/* ---------------------------------------------------------- 群列表 */
-
 struct GroupListView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -36,10 +25,7 @@ struct GroupListView: View {
                         GroupCard {
                             ForEach(Array(groups.enumerated()), id: \.element.id) { idx, chat in
                                 Button {
-                                    /* 这一行只负责「上报：用户点了哪个群」，导航交给调用方。
-                                       以前这里先 dismiss() 再 onOpenChat()：两个导航动作挤在同一帧里，
-                                       dismiss 那一刀会把紧接着压上去的聊天页一起顶掉 ——
-                                       表现就是用户在星联点群聊「点了没反应」。 */
+
                                     onOpenChat(chat)
                                 } label: {
                                     HStack(spacing: 12) {
@@ -79,8 +65,6 @@ struct GroupListView: View {
     }
 }
 
-/* ---------------------------------------------------------- 查找聊天记录 */
-
 struct ChatSearchView: View {
     let chat: Chat
     @Environment(\.dismiss) private var dismiss
@@ -89,13 +73,13 @@ struct ChatSearchView: View {
     @State private var hits: [FoundMessage] = []
     @State private var busy = false
     @State private var done = false
-    /// 打字停一下自动搜的那次任务（下一次打字就取消掉）
+
     @State private var typingTask: Task<Void, Never>? = nil
-    /// 每次搜索发一个号，晚回来的旧结果不许覆盖新结果
+
     @State private var token = 0
-    /// 上面那排分类（照微信「查找聊天内容」）：选了就只留这一类
+
     @State private var filter = ""
-    /// 分类筛选用的那批（没打字时用它）：从服务器拉最近 200 条，本地按类型筛
+
     @State private var localRows: [FoundMessage] = []
     @State private var localLoaded = false
     @FocusState private var focused: Bool
@@ -115,8 +99,6 @@ struct ChatSearchView: View {
         .onAppear { focused = true }
         .onDisappear { typingTask?.cancel() }
     }
-
-    /* ---------------------------------------------------------- 顶上那条搜索框 */
 
     private var trimmed: String { keyword.trimmingCharacters(in: .whitespaces) }
 
@@ -166,10 +148,6 @@ struct ChatSearchView: View {
         .padding(.bottom, 10)
     }
 
-    /* ---------------------------------------------------------- 结果区 */
-
-    /* ------------- 分类胶囊（照微信「查找聊天内容」那一排） ------------- */
-
     private let chipList: [(String, String)] = [
         ("图片与视频", "image"), ("文件", "file"), ("链接", "link"), ("音乐与音频", "music"),
         ("交易", "trade"), ("位置", "location"), ("名片", "card"), ("表情", "sticker")
@@ -199,7 +177,6 @@ struct ChatSearchView: View {
         .padding(.bottom, 8)
     }
 
-    /// 分类筛选要用的那份聊天记录（拉一次就够）
     private func loadLocalIfNeeded() {
         guard !localLoaded else { return }
         localLoaded = true
@@ -213,7 +190,6 @@ struct ChatSearchView: View {
         }
     }
 
-    /// 这一类要不要留
     private func kindMatch(_ kind: String, _ f: String) -> Bool {
         switch f {
         case "image":    return ["image", "images", "video", "livephoto"].contains(kind)
@@ -228,7 +204,6 @@ struct ChatSearchView: View {
         }
     }
 
-    /// 现在要显示的那一批：打了字看搜索结果，没打字看分类
     private var rows: [FoundMessage] {
         let base = trimmed.isEmpty ? localRows : hits
         guard !filter.isEmpty else { return base }
@@ -248,7 +223,7 @@ struct ChatSearchView: View {
             .padding(.top, 56)
             Spacer(minLength: 0)
         } else if rows.isEmpty {
-            /* 什么都没输入 / 没选分类 = 就是上面那排分类，下面留白（和微信一样） */
+
             if trimmed.isEmpty && filter.isEmpty { Spacer(minLength: 0) } else { emptyState }
         } else {
             ScrollView(showsIndicators: false) {
@@ -346,9 +321,6 @@ struct ChatSearchView: View {
         .padding(.top, 52)
     }
 
-    /* ---------------------------------------------------------- 干活 */
-
-    /// 点了「搜索」或者键盘回车：立刻搜，不等那 0.45 秒
     private func search() {
         typingTask?.cancel()
         let q = trimmed
@@ -359,14 +331,13 @@ struct ChatSearchView: View {
         let mine = token
         Task {
             let res = await API.shared.searchMessages(chatId: chat.id, query: q)
-            guard mine == token else { return }      // 又搜了新的，这次结果作废
+            guard mine == token else { return }
             hits = res
             busy = false
             done = true
         }
     }
 
-    /// 打字停下来 0.45 秒自动搜一次（微信也是边打边出结果，不用点确认）
     private func typingChanged() {
         typingTask?.cancel()
         let q = trimmed
@@ -390,7 +361,6 @@ struct ChatSearchView: View {
         }
     }
 
-    /// 结果里那条消息该显示成什么（图片 / 视频这种 content 是网址，直接显示会很难看）
     private func preview(_ m: FoundMessage) -> String {
         let c = m.content ?? ""
         switch (m.kind ?? "text") {
@@ -416,7 +386,6 @@ struct ChatSearchView: View {
         }
     }
 
-    /// 命中的关键字标绿加粗（一段一段拼起来，微信就是这样）
     private func highlighted(_ text: String) -> Text {
         let kw = trimmed
         guard !kw.isEmpty else { return Text(text) }
@@ -430,7 +399,6 @@ struct ChatSearchView: View {
         return out + Text(String(rest))
     }
 
-    /// 消息类型对应的图标和颜色
     private static func look(for kind: String?) -> (symbol: String, colors: [Color]) {
         switch (kind ?? "text") {
         case "image":    return ("photo.fill", PanelTint.teal)
@@ -449,8 +417,6 @@ struct ChatSearchView: View {
     }
 }
 
-/* ---------------------------------------------------------- 银行卡 */
-
 struct BankCardsView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -463,7 +429,6 @@ struct BankCardsView: View {
     @State private var holder = ""
     @State private var busy = false
 
-    /// 可选银行（从服务器拉，带品牌色；拉不到就用下面这份兜底）
     @State private var bankList: [API.BankInfo] = []
     private var banks: [String] {
         let names = bankList.map { $0.name }
@@ -472,7 +437,6 @@ struct BankCardsView: View {
             : names
     }
 
-    /// 这家银行的品牌色（服务器给了就用，没给就按名字兜一个）
     private func bankColor(_ name: String) -> Color {
         if let c = bankList.first(where: { $0.name == name })?.color,
            case let hex = c.replacingOccurrences(of: "#", with: ""),
@@ -577,7 +541,7 @@ struct BankCardsView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 0) {
-                    /* 银行：横向摆一排名牌小方块（每家一个品牌色），跟微信一样点一下就选中 */
+
                     VStack(alignment: .leading, spacing: 8) {
                         Text(Tr("选择银行")).font(pf(15)).foregroundColor(C.label)
                         ScrollView(.horizontal, showsIndicators: false) {
@@ -691,8 +655,6 @@ struct BankCardsView: View {
     }
 }
 
-/* ---------------------------------------------------------- 关于我们 / 版本更新 */
-
 struct AboutView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -700,7 +662,7 @@ struct AboutView: View {
     @State private var latest = ""
     @State private var appName = "CHRIS 聊天"
     @ObservedObject private var push = PushCenter.shared
-    /// 服务器那边推送配置好没（没配好就是「等服务器配置」）
+
     @State private var pushServerReady = false
 
     private var pushText: String {
@@ -715,20 +677,11 @@ struct AboutView: View {
             NavBar(title: Tr("关于我们"), back: { dismiss() })
             ScrollView {
                 VStack(spacing: 12) {
-                    /* 2026-10-17 用户：「关于我们重新排版」+「规范审核的」——
-                       hero 重排：图标更大（84、圆角 20、白边 + 品牌色光晕），
-                       版本号拆成「v1.0」小胶囊 + 打包号，下面是**运营主体**和
-                       **APP 备案号**（审核要看；后台 appCompany / appIcp 里填，
-                       没填就先不显示，绝不编一个假的）。 */
+
                     hero
 
                     GroupCard {
-                        /* 2026-10-12 用户「关于我们的页面微信化一点」：
-                           照微信「关于微信」那一页 —— 图标/名字/版本居中在上，
-                           下面一组行：功能介绍 / 隐私保护指引 / 版本更新（+ 服务器、推送自检），
-                           最底下居中一行小灰字版权。 */
-                        /* 合规版：法律与隐私 -->
-                           用户协议 / 隐私政策 / 个人信息收集清单 / 第三方 SDK 清单 / 权限使用说明 */
+
                         aboutRow("doc.text", Tr("用户协议")) { showTerms = true }
                         HairLine(inset: 54)
                         aboutRow("hand.raised", Tr("隐私政策"), sub: Tr("更新于 ") + privacyUpdated) { showPrivacyDoc = true }
@@ -758,7 +711,7 @@ struct AboutView: View {
                         }
                         .buttonStyle(.plain)
                         HairLine(inset: 54)
-                        /* 账号与数据 + 联系我们（审核必查：App 内能注销、能给到联系渠道） */
+
                         aboutRow("person.crop.circle.badge.xmark", Tr("注销账号"),
                                  sub: Tr("App 内直接注销，7 天内可联系客服恢复"), tint: DDColor.red) { showDelete = true }
                         HairLine(inset: 54)
@@ -787,7 +740,7 @@ struct AboutView: View {
                        .padding(.horizontal, 16)
                        .frame(height: 52)
                         HairLine(inset: 16)
-                        /* 推送自检：权限同意没、服务器那边配好没、这台手机登记过没 */
+
                         HStack {
                             Text(Tr("推送通知")).font(pf(16)).foregroundColor(C.label)
                             Spacer()
@@ -807,7 +760,7 @@ struct AboutView: View {
                         .frame(maxWidth: .infinity, alignment: .center)
                         .padding(.horizontal, 30)
                         .padding(.top, 18)
-                    /* 微信那一页最下面就是一行居中的小灰字版权 */
+
                     Text("© 2026 " + appName + Tr(" · 保留所有权利"))
                         .font(pf(11.5))
                         .foregroundColor(C.subLabel.opacity(0.75))
@@ -830,7 +783,7 @@ struct AboutView: View {
         }
         .sheet(isPresented: $showFeature) { aboutText(Tr("功能介绍"), featureText) }
         .sheet(isPresented: $showPrivacy) { aboutText(Tr("隐私保护指引"), privacyText) }
-        /* 合规版新增的几页 */
+
         .sheet(isPresented: $showTerms) { TermsSheet(kind: 0) }
         .sheet(isPresented: $showPrivacyDoc) { TermsSheet(kind: 1) }
         .sheet(isPresented: $showCollect) { aboutText(Tr("个人信息收集清单"), collectText) }
@@ -841,7 +794,6 @@ struct AboutView: View {
         .sheet(isPresented: $showDelete) { DeleteAccountView().environmentObject(app) }
     }
 
-    /* ---------------- 合规版新增（2026-10-17） ---------------- */
     @State private var showTerms = false
     @State private var showPrivacyDoc = false
     @State private var showCollect = false
@@ -851,7 +803,6 @@ struct AboutView: View {
     @State private var showAccountSafe = false
     @State private var showDelete = false
 
-    /// 运营主体 / 备案号 / 客服邮箱：后台 ui.json 配了才显示（绝不编假的）
     private var company: String { UIConfig.text("appCompany", "").trimmingCharacters(in: .whitespaces) }
     private var icp: String { UIConfig.text("appIcp", "").trimmingCharacters(in: .whitespaces) }
     private var supportEmail: String { UIConfig.text("supportEmail", "").trimmingCharacters(in: .whitespaces) }
@@ -898,7 +849,6 @@ struct AboutView: View {
             .stroke(C.hairline.opacity(0.7), lineWidth: 0.6))
     }
 
-    /// 一行：30pt 淡色圆角方块图标 + 标题 +（可选）副标题 + ›
     private func aboutRow(_ icon: String, _ title: String, sub: String? = nil,
                           tint: Color = C.green, _ tap: @escaping () -> Void) -> some View {
         Button(action: tap) {
@@ -954,8 +904,6 @@ struct AboutView: View {
         + Tr("\n4. 订单、支付、发票等依法需留存的交易记录，按法律法规要求的期限保存。")
         + Tr("\n5. 想导出或提前删除数据：用「联系我们」里的客服邮箱提交，15 个工作日内处理。")
     }
-
-    /* ---------------- 关于页的两行文字 + 两段正文（照微信那两页） ---------------- */
 
     @State private var showFeature = false
     @State private var showPrivacy = false
@@ -1021,11 +969,6 @@ struct AboutView: View {
     }
 }
 
-/* ============================================================
-   注销账号（2026-10-17 审核合规：App 内必须能真的注销）
-   输入「注销」两个字才算确认 → 调 /api/me/delete → 服务端软删 + 吊销令牌 →
-   本地清 token、回登录页。
-   ============================================================ */
 struct DeleteAccountView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -1096,10 +1039,6 @@ struct DeleteAccountView: View {
     }
 }
 
-/* ---------------------------------------------------------- 密码找回 */
-
-/* ---------------------------------------------------------- 生日选择 */
-
 struct BirthdayPickerSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Binding var birthday: String
@@ -1107,7 +1046,7 @@ struct BirthdayPickerSheet: View {
     @State private var date = Date()
 
     var body: some View {
-        /* 整页 push（个人信息的子项）：不再自带 NavigationStack */
+
         VStack(spacing: 0) {
             NavBar(title: Tr("选择生日"), back: { dismiss() }) {
                 Button {
@@ -1245,9 +1184,7 @@ struct ResetPasswordSheet: View {
                 return
             }
             do {
-                /* 重置接口已经把登录态发下来了（Set-Cookie → App 收进 token），
-                   这里只要把自己的资料拉回来就行；不用再走一次登录，
-                   也就不会被登录滑动验证挡住。 */
+
                 app.me = try? await API.shared.me()
                 dismiss()
             } catch {

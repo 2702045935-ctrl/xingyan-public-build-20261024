@@ -1,29 +1,14 @@
 import Foundation
 
-/* ============================================================
-   经典表情（微信 / QQ 那套 [微笑] [撇嘴] [色] …）
-
-   做的事：
-     · 表情面板第一屏就是这一套（105 个），点一下直接进输入框
-     · 打字打 [微笑] 这种码，发出去的时候自动变成对应的表情
-     · 别人发来（或历史里）带这种码的文字，显示的时候也自动变表情
-
-   ⚠ 这里用的是系统自带的 emoji 字符，不是腾讯那张脸的图 ——
-     那套图是腾讯的版权素材，成套装进包里就是「盗图」，
-     上架/内测被投诉就是下架的由头（用户自己也在意这个）。
-     真要那张脸的图，后台「表情」里上传一套自己的表情包（我的表情）就行，
-     码表这套逻辑不用动。
-   ============================================================ */
-
 struct ClassicEmoji {
-    /// 带方括号的码：[微笑]
+
     let code: String
-    /// 对应显示的表情
+
     let glyph: String
 }
 
 enum ClassicEmojiSet {
-    /// 全部经典表情（顺序照微信表情面板那一屏一屏排：8 个一行）
+
     static let all: [ClassicEmoji] = [
         ClassicEmoji(code: "[微笑]", glyph: "🙂"),
         ClassicEmoji(code: "[撇嘴]", glyph: "😕"),
@@ -145,7 +130,6 @@ enum ClassicEmojiSet {
         ClassicEmoji(code: "[左太极]", glyph: "☯️"),
         ClassicEmoji(code: "[右太极]", glyph: "☯️"),
 
-        /* 微信后来加的几个常用的，一起给上（不占上面那一屏） */
         ClassicEmoji(code: "[奸笑]", glyph: "😏"),
         ClassicEmoji(code: "[机智]", glyph: "🤓"),
         ClassicEmoji(code: "[耶]", glyph: "✌️"),
@@ -155,7 +139,6 @@ enum ClassicEmojiSet {
         ClassicEmoji(code: "[吃瓜]", glyph: "🍉"),
         ClassicEmoji(code: "[握手言和]", glyph: "🤝"),
 
-        /* 微信后来那一批（捂脸 / 旺柴 / 裂开 …）：主要是让「打字打码」也认得 */
         ClassicEmoji(code: "[捂脸]", glyph: "🤦"),
         ClassicEmoji(code: "[嘿哈]", glyph: "😆"),
         ClassicEmoji(code: "[旺柴]", glyph: "🐶"),
@@ -207,10 +190,8 @@ enum ClassicEmojiSet {
         return m
     }()
 
-    /// [微笑] → 🙂（不认识的码返回 nil）
     static func glyph(for code: String) -> String? { byCode[code] }
 
-    /// 把一段文字里所有认识的 [xx] 换成表情，别的原样保留
     static func expand(_ text: String) -> String {
         guard text.contains("["), text.contains("]") else { return text }
         var out = ""
@@ -231,12 +212,6 @@ enum ClassicEmojiSet {
         return out
     }
 }
-
-/* ============================================================
-   系统表情按主题分组：腾讯那套表情多，光一屏平铺翻起来累 ——
-   这里分成心情 / 手势 / 人物 / 动物 / 美食 / 节日 / 符号，一屏一屏滑。
-   （用的都是系统自带的 emoji 字体，不涉及别人的图）
-   ============================================================ */
 
 enum EmojiThemes {
     struct Theme {
@@ -299,11 +274,6 @@ enum EmojiThemes {
         ])
     ]
 }
-
-/* ============================================================
-   内置表情包（「我的」那一屏里一包一包摆的）
-   都是系统 emoji 组的包，一包 16~30 个；想加图片表情包就走表情商店。
-   ============================================================ */
 
 struct BuiltinPack {
     let id: String

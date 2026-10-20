@@ -1,17 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   登录设备管理（照微信那一页做的 —— 桌面 安全 文件夹那张参考图）：
-     · 顶栏：返回 + 「登录设备管理」+ 右上「编辑 / 完成」
-     · 说明：你的账号在以下设备中登录过，你可以删除设备，
-             删除后在该设备登录时需进行安全验证。
-     · 「已登录的设备」：这台（右侧写「当前设备」）
-     · 「已退出登录的设备」：很久没登录过的那些（右侧写时间，微信那样：
-       「7月29日 晚上11:09」「2025年9月22日 上午9:05」）
-     · 底下一张卡：「确认新设备登录」+「常见问题」
-   点「编辑」每一行左边出现红「删除」，删的是服务端的登录设备记录
-   （POST /api/devices/remove），当前这台不给删。
-   ============================================================ */
 struct LoginDevicesView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -135,8 +123,6 @@ struct LoginDevicesView: View {
         }
     }
 
-    /* ---------------------------------------------------------- 分组 / 一行 */
-
     private func header(_ t: String) -> some View {
         Text(t)
             .font(pf(13))
@@ -149,7 +135,7 @@ struct LoginDevicesView: View {
 
     private func row(_ d: API.LoginDevice, right: String) -> some View {
         HStack(spacing: 12) {
-            /* 编辑模式：这一行左边冒出一个红「删除」（当前这台不给删，微信也是这样） */
+
             if editing, d.current != true {
                 Button { askDelete = d } label: {
                     Text(Tr("删除"))
@@ -163,7 +149,7 @@ struct LoginDevicesView: View {
                 .disabled(busy)
                 .transition(.scale(scale: 0.6).combined(with: .opacity))
             }
-            /* 左边两行：上面**型号**（iPhone 16 Pro）、下面系统版本 —— 微信就是这样 */
+
             VStack(alignment: .leading, spacing: 3) {
                 Text(title(d))
                     .font(pf(17))
@@ -189,13 +175,10 @@ struct LoginDevicesView: View {
         .background(C.cardBg)
     }
 
-    /* ---------------------------------------------------------- 数据 */
-
-    /// 已登录的设备：当前这台 + 最近 30 天登录过的
     private var living: [API.LoginDevice] {
         list.filter { $0.current == true || recent($0.at) }
     }
-    /// 已退出登录的设备：很久没登录过的记录
+
     private var dead: [API.LoginDevice] {
         list.filter { $0.current != true && !recent($0.at) }
     }
@@ -204,8 +187,6 @@ struct LoginDevicesView: View {
         return Date().timeIntervalSince1970 - ms / 1000 < 30 * 24 * 3600
     }
 
-    /// 一行设备的主标题：**型号优先**（用户要求：微信这一页要能看到设备型号）——
-    /// 「iPhone 16 Pro」这种；老记录没有型号再用设备名 / UA 那行，最后兜底「未知设备」。
     private func title(_ d: API.LoginDevice) -> String {
         let model = (d.model ?? "").trimmingCharacters(in: .whitespaces)
         if !model.isEmpty { return model }
@@ -216,7 +197,6 @@ struct LoginDevicesView: View {
         return dev.isEmpty ? Tr("未知设备") : dev
     }
 
-    /// 型号下面那行：**系统版本** + 设备名（有就带上）。
     private func deviceSub(_ d: API.LoginDevice) -> String {
         let os = (d.os ?? "").trimmingCharacters(in: .whitespaces)
         let raw = d.name ?? ""
@@ -229,7 +209,6 @@ struct LoginDevicesView: View {
         return bits.filter { !$0.isEmpty }.joined(separator: " · ")
     }
 
-    /// 微信那种时间：「7月29日 晚上11:09」「2025年9月22日 上午9:05」
     private func wxTime(_ ms: Double?) -> String {
         guard let ms = ms, ms > 0 else { return "" }
         let d = Date(timeIntervalSince1970: ms / 1000)
@@ -263,9 +242,6 @@ struct LoginDevicesView: View {
     }
 }
 
-/* ============================================================
-   登录设备管理 → 常见问题（微信那一页底下就是这三条）
-   ============================================================ */
 struct DevicesFaqView: View {
     @Environment(\.dismiss) private var dismiss
 

@@ -1,8 +1,6 @@
 import Foundation
 import MetricKit
 
-/* MetricKit 只负责系统级性能数据：崩溃、卡死、CPU 异常、磁盘写入异常和能耗。
-   原始 payload 保存在 Caches/XingyanMetrics，最多保留 40 份；不参与聊天、媒体或本地保存。 */
 final class AppMetrics: NSObject, MXMetricManagerSubscriber {
     static let shared = AppMetrics()
 

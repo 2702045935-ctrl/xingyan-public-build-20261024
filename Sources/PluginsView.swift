@@ -1,32 +1,20 @@
 import SwiftUI
 
-/* ============================================================
-   插件（我 → 插件）—— 2026-10-15 用户要求：
-   「把眼睛可以开关做进插件类目里面……把设置里已经做的小星开关类删掉」
-
-   所以：
-     · 小星（会话页顶栏那双眼睛）的三档开关挪到这一页（点进去还是原来那页 EyesSettingsView）
-     · 设置 → 通用 → 更多 里那一行「显示小星」已经删掉
-     · 2026-10-16 用户要求「插件里面就只要小星」→ 这一页现在**只有小星一行**
-       （听一听、小程序那两行删掉了；它们本身还在「发现」里，没丢功能）
-   ============================================================ */
-
 struct PluginsView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var eyes = EyesStore.shared
 
     @State private var showEyes = false
-    /// 2026-10-15 用户：「打开眼睛要人脸识别」——开小星之前先过一遍人脸核身
+
     @State private var showFaceForEyes = false
-    /// 内置浏览器
+
     @State private var showBrowser = false
-    /// 面对面文件快传
+
     @State private var showDrop = false
-    /// 小星 AI 独立首页
+
     @State private var showAI = false
 
-    /// 右边那行小字：小星现在是哪一档
     private var eyesValue: String {
         switch eyes.tier {
         case "off":    return Tr("已关闭")
@@ -107,18 +95,15 @@ struct PluginsView: View {
                     .buttonStyle(.plain)
                     .padding(.horizontal, 12)
 
-                    /* 微信「插件」那一页的样子：一张白卡，一行一个插件 ——
-                       左边图标 + 名字 + 下面一行灰说明，右边一颗**绿色开关**；
-                       有开关的行**点名字那块**照样进它自己的设置页（微信也是这样）。 */
                     GroupCard {
-                        switchRow(icon: "eye", tint: C.green,      // 2026-10-17：跟着主色走，不写死绿
+                        switchRow(icon: "eye", tint: C.green,
                                   title: Tr("小星"),
                                   sub: eyes.eyesOn
                                        ? Tr("正在用：") + eyesValue + Tr("　会话页顶栏那双眼睛")
                                        : Tr("已关闭：会话页顶栏那儿空出来，放大镜顶上去"),
                                   isOn: eyes.eyesOn) { on in
                             if on {
-                                /* 开之前先人脸核身（过了才真开；取消/没通过就保持关着） */
+
                                 showFaceForEyes = true
                             } else {
                                 Task { if let err = await eyes.set("off") { app.show(err) } }
@@ -152,13 +137,13 @@ struct PluginsView: View {
         .swipeBack { dismiss() }
         .hidesTabBar()
         .task { await eyes.refresh() }
-        /* 开小星 = 先过人脸（两页那套：准备页 → 活体页；有 TrueDepth 的机型还查深度防假） */
+
         .sheet(isPresented: $showFaceForEyes) {
             FaceVerifyFlowView { ok in
                 showFaceForEyes = false
                 if ok {
                     Task {
-                        /* 开启是 ¥40 一次性（走零钱）：余额不够就把原因弹出来 */
+
                         if let err = await eyes.set("on") { app.show(err) }
                         else { app.show(Tr("人脸验证通过，小星已打开")) }
                     }
@@ -183,7 +168,6 @@ struct PluginsView: View {
         }
     }
 
-    /// 带绿色开关的一行（微信插件页那种）
     private func switchRow(icon: String, tint: Color, title: String, sub: String,
                            isOn: Bool, onSet: @escaping (Bool) -> Void,
                            onOpen: @escaping () -> Void) -> some View {

@@ -1,18 +1,7 @@
 import SwiftUI
 
-/* ============================================================
-   聊天里的「笔记」卡片（2026-10-12 加）
-
-   微信的逻辑：收藏里的笔记可以「转发给朋友 / 发送到聊天」，
-   对面收到的是**一张笔记卡片**（不是一大段文字）—— 点开才看全文。
-
-   所以我们加了一个消息类型 kind = "note"，content 就是笔记正文
-   （里面 [图]路径 那几行照样会画成图片）。这一页是纯展示 + 一个自己的
-   sheet（不碰聊天页那套巨型结构，避免又被系统杀）。
-   ============================================================ */
-
 struct NoteCardBubble: View {
-    /// 笔记正文
+
     let text: String
     var mine: Bool
     var showTail: Bool
@@ -73,12 +62,11 @@ struct NoteCardBubble: View {
     }
 }
 
-/// 点开笔记卡片：全文（含插入的图片）+ 复制
 struct NoteViewerSheet: View {
     @Environment(\.dismiss) private var dismiss
     let text: String
     @State private var copied = false
-    /// 点笔记里的图看大图（overlay，不挂全屏 cover）
+
     @State private var viewerPath: String?
 
     var body: some View {
@@ -99,8 +87,7 @@ struct NoteViewerSheet: View {
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(Array(text.components(separatedBy: "\n").enumerated()), id: \.offset) { _, line in
                         if line.hasPrefix("[图]") {
-                            /* 笔记里插的图：按原比例铺满一行（以前只给 maxWidth 没给高度，
-                               GeometryReader 量出来是 0，图等于没显示） */
+
                             NoteImageBlock(path: String(line.dropFirst(3))) { p in viewerPath = p }
                         } else if !line.isEmpty {
                             Text(line)
@@ -132,26 +119,16 @@ struct NoteViewerSheet: View {
     }
 }
 
-/* ---------------------------------------------------------------
-   笔记里插进去的一张图（收藏的笔记详情、聊天里的笔记卡片、写笔记的编辑区都用它）：
-   · 按宽度铺满、高度按原比例算（最高 360，太长的图不占满一屏）
-   · 点一下放大看（复用 App 里那套大图翻页）
-   ⚠ 以前是 RemoteImage(...).scaledToFit().frame(maxWidth: .infinity)：
-     RemoteImage 里面是 GeometryReader，只给 maxWidth 不给高度时它量出来是 0，
-     图就"看不见"了 —— 用户看到的就只剩正文里那行 [图]路径。
-   --------------------------------------------------------------- */
 struct NoteImageBlock: View {
     let path: String
-    /// 点一下要干什么（给空就不响应 —— 由外面的页面自己用 overlay 弹大图）。
-    /// ⚠ 这里**不能**自己挂 fullScreenCover：这一块也会出现在聊天页那一层，
-    /// 在聊天页挂全屏 cover 会让那一页一打开就被系统杀掉。
+
     var onTap: ((String) -> Void)? = nil
 
     @State private var height: CGFloat = 210
 
     var body: some View {
         RemoteImage(path: path, mode: .fill, maxSide: 1400) { img in
-            /* 图解码出来之后按真实比例定高：短边铺满、长图不超 360 */
+
             let w = max(120, L.width - 52)
             let ratio = img.size.height / max(1, img.size.width)
             height = min(360, max(120, w * ratio))

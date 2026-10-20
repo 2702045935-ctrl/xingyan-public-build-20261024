@@ -1,7 +1,5 @@
 import SwiftUI
 
-/* 上次崩溃：App 崩过的话，下次打开自动弹这一页 —— 直接截图发我就能定位。
-   （不用连电脑、不用看 Xcode 日志） */
 struct CrashLogView: View {
     @Environment(\.dismiss) private var dismiss
 

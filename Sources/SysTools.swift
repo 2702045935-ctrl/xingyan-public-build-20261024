@@ -1,12 +1,10 @@
 import SwiftUI
 
-/// 「星言团队」那排菜单点出来的页（在最外层 MainTab 上弹，见 AppState.openSysPage）
 enum SysPage: String, Identifiable {
     case tools, kefu, security, devices
     var id: String { rawValue }
 }
 
-/// 「星言团队」会话底部那排菜单（照微信「微信团队」：自助工具 / 联系客服）
 struct SysTeamMenuBar: View {
     var onTools: () -> Void
     var onKefu: () -> Void
@@ -35,16 +33,9 @@ struct SysTeamMenuBar: View {
     }
 }
 
-/* ============================================================
-   「星言团队」的自助工具（照微信「微信团队」那一页）
-   在「星言团队」会话底下那排菜单里点「自助工具」进来的：
-     · 改密码 / 登录设备管理 —— 直接进对应的页
-     · 忘记密码 / 冻结 / 解冻 / 注销 / 反馈 —— 走在线客服
-   ============================================================ */
-
 struct SysToolsView: View {
     @Environment(\.dismiss) private var dismiss
-    /// 点了哪一项：pwd（改密码）/ devices（登录设备）/ kefu（客服）
+
     var onPick: (String) -> Void
 
     private let items: [(key: String, icon: String, title: String, sub: String)] = [

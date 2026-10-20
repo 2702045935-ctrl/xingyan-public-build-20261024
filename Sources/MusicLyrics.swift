@@ -1,17 +1,7 @@
 import SwiftUI
 
-/* ============================================================
-   滚动歌词（2026-10-15 对齐 QQ音乐）
-
-   曲库里每首歌都有 `lyrics` 字段（后台贴 LRC 或一行一句都行），这一页把它解析出来：
-     · 逐行高亮（按播放进度）、当前行自动居中
-     · 点某一行 → 跳到那一句（QQ音乐也是这样）
-     · 没有歌词 / 解析不出来 → 显示占位，不空白
-   解析支持标准 LRC（[mm:ss.xx]），也支持一行一句的纯文本（按行平均分配时间）。
-   ============================================================ */
-
 enum MusicLRC {
-    /// 解析 LRC / 纯文本 → [(开始秒数, 这一行)]
+
     static func parse(_ raw: String?, duration: Double = 0) -> [(t: Double, text: String)] {
         guard let raw = raw, !raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return [] }
         var out: [(Double, String)] = []
@@ -38,12 +28,12 @@ enum MusicLRC {
                     continue
                 }
             }
-            /* 没有时间标签：当成一行一句，稍后按顺序均分（去掉 LRC 的元信息行） */
+
             if s.hasPrefix("[ti:") || s.hasPrefix("[ar:") || s.hasPrefix("[al:") || s.hasPrefix("[by:") { continue }
             out.append((-1, s))
         }
         var list = out.sorted { $0.0 < $1.0 }
-        /* 全是 -1（纯文本）就按总时长平均铺开 */
+
         if list.allSatisfy({ $0.0 < 0 }) {
             let d = duration > 1 ? duration : Double(list.count) * 4
             let step = d / Double(max(1, list.count))
@@ -52,7 +42,6 @@ enum MusicLRC {
         return list.map { (t: max(0, $0.0), text: $0.1) }
     }
 
-    /// 当前唱到第几句（-1 = 还没到第一句）
     static func index(at seconds: Double, in lines: [(t: Double, text: String)]) -> Int {
         var idx = -1
         for (i, l) in lines.enumerated() where l.t <= seconds + 0.15 { idx = i }
@@ -60,14 +49,13 @@ enum MusicLRC {
     }
 }
 
-/// 滚动歌词（放播放页里用；外部给歌词和进度，改动只通过 onSeek 回传）
 struct LyricsView: View {
     let raw: String?
-    /// 现在播到第几秒
+
     let seconds: Double
-    /// 总时长（纯文本歌词按它均分）
+
     var duration: Double = 0
-    /// 点某一行 → 跳过去
+
     var onSeek: (Double) -> Void
 
     private var lines: [(t: Double, text: String)] { MusicLRC.parse(raw, duration: duration) }
@@ -95,8 +83,7 @@ struct LyricsView: View {
                                 .frame(maxWidth: .infinity)
                                 .id(i)
                                 .contentShape(Rectangle())
-                                /* ⚠ 用 highPriorityGesture：这一页有时候是放在"点一下翻转"的
-                                   大卡背面的，普通 onTapGesture 会被外层那颗 tap 抢走 → 点了不跳。 */
+
                                 .highPriorityGesture(TapGesture().onEnded { onSeek(ls[i].t) })
                         }
                         Spacer().frame(height: 90)

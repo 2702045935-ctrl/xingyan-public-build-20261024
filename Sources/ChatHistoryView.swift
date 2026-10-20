@@ -1,11 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   聊天记录管理（微信「设置 → 通用 → 聊天记录」）
-   · 按会话列出占用和条数，可以单独清空某个会话的聊天记录（只清自己这边）
-   · 底部「清空全部聊天记录」：把你这边的记录全清掉（服务器上别人的记录不动）
-   · 说明：备份与迁移（导出到电脑/新手机）还没做，页面上写清楚
-   ============================================================ */
 struct ChatHistoryView: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
@@ -16,7 +10,7 @@ struct ChatHistoryView: View {
     @State private var busy = false
     @State private var confirmAll = false
     @State private var doneTip = ""
-    /// 导出的文件（弹系统分享面板用）
+
     @State private var shareFile: ShareFile?
     @State private var showImport = false
     @State private var exportBusy = false
@@ -52,7 +46,6 @@ struct ChatHistoryView: View {
                     .padding(.vertical, 22)
                     .background(C.cardBg)
 
-                    /* 备份与迁移（微信「聊天记录迁移与备份」那一块） */
                     VStack(alignment: .leading, spacing: 0) {
                         Text(Tr("备份与迁移")).font(pf(13)).foregroundColor(C.subLabel)
                             .padding(.horizontal, 8).padding(.bottom, 6)
@@ -149,8 +142,6 @@ struct ChatHistoryView: View {
         loading = false
     }
 
-    /* ---------------- 备份与迁移：导出一行一个操作 ---------------- */
-
     private func backupRow(_ title: String, detail: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 10) {
@@ -169,7 +160,6 @@ struct ChatHistoryView: View {
         .disabled(exportBusy || importBusy)
     }
 
-    /// 导出：JSON 是能再导入的备份，TXT 是给人看的
     private func exportChats(json: Bool) {
         guard !exportBusy else { return }
         exportBusy = true
@@ -199,7 +189,6 @@ struct ChatHistoryView: View {
         }
     }
 
-    /// 导入：选一个导出的 JSON，服务器按消息 id 去重后合进来
     private func handleImport(_ result: Result<[URL], Error>) {
         guard case .success(let urls) = result, let url = urls.first else { return }
         let scoped = url.startAccessingSecurityScopedResource()

@@ -1,14 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   看一看（和微信一样：一屏内容流）
-   分四段，有内容才显示，全空也不会是一片白：
-     ① 朋友在看      —— 视频号里朋友看过的（有朋友头像）
-     ② 朋友点赞的     —— 朋友点过赞的动态
-     ③ 大家都在看     —— 站内热度最高的动态
-     ④ 朋友最近发的   —— 好友最近发的动态
-   ============================================================ */
-
 struct LookAroundData: Decodable {
     struct Friend: Decodable, Hashable { var id: String?; var name: String?; var avatar: String? }
     struct Video: Decodable, Hashable, Identifiable {
@@ -46,7 +37,7 @@ struct LookView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var data: LookAroundData?
     @State private var loading = true
-    @State private var tab = 0            // 0 朋友在看 / 1 精选
+    @State private var tab = 0
 
     var body: some View {
         VStack(spacing: 0) {

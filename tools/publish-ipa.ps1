@@ -1,15 +1,3 @@
-# Publish the CI-built iOS package: download -> decrypt -> verify -> upload -> check.
-#
-# Usage (no -RunId means "latest successful build"):
-#   pwsh -File publish-ipa.ps1
-#   pwsh -File publish-ipa.ps1 -RunId 35938881304
-#
-# Notes:
-#   * The workflow uploads Luchat.ipa.enc (AES-256); we decrypt it here.
-#   * Publishing = replacing /opt/chris/app/public/Luchat.ipa, which the
-#     download page and the in-app updater both read.
-#   * This file is intentionally ASCII-only: Windows PowerShell 5.1 reads
-#     UTF-8-without-BOM scripts as GBK and would corrupt non-ASCII text.
 param(
     [string]$RunId = "",
     [string]$Password = "Luchat@2026",
@@ -35,10 +23,6 @@ $RunNumber = (gh run view $RunId --repo $Repo --json number --jq '.number')
 Write-Host "run=$RunId  build=B$RunNumber"
 
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
-# 每次下载都用一个新的子目录：gh run download 碰到同名文件不会覆盖，而是直接报
-# "The file exists" 然后退出（退出码非 0，但 PowerShell 不会抛异常）。
-# 复用同一个目录的后果很严重：会把上一次拉下来的旧包当成这次的产物传上去。
-# 2026-09-24 就踩过一次（B498 那次实际发的是 B491 的字节，SHA256 一模一样）。
 $OutDir = Join-Path $OutDir ("run-" + $RunId + "-" + [int][double]::Parse((Get-Date -UFormat %s)))
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
 gh run download $RunId --repo $Repo --dir $OutDir
@@ -55,7 +39,6 @@ $size = (Get-Item $ipa).Length
 $sha = (Get-FileHash $ipa -Algorithm SHA256).Hash
 Write-Host "decrypted: $size bytes  SHA256=$sha"
 
-# Sanity check: an IPA is a zip, so the magic must be PK\x03\x04.
 $head = [System.IO.File]::ReadAllBytes($ipa)[0..3]
 $zipOk = ($head[0] -eq 0x50 -and $head[1] -eq 0x4B -and $head[2] -eq 0x03 -and $head[3] -eq 0x04)
 Write-Host ("zip magic check: " + $(if ($zipOk) { "OK" } else { "FAILED - artifact is corrupt" }))

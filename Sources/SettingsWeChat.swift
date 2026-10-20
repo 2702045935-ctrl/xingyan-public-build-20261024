@@ -1,15 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   设置里那三段（账号 / 通用 / 功能）点进去的二级页 —— 照微信那几页做：
-     · 账号 → 个人信息与权限（SelfPermView）
-     · 通用 → 更多（MoreSettingsView）
-     · 功能 → 聊天（ChatSettingsView）/ 音视频通话（CallSettingsView）
-   这些页都挂在「我」页那条 navigationDestination 上（key: selfperm / more / setchat / setcall），
-   一律**整页 push**（不是 sheet / 半屏），和微信一样。
-   ============================================================ */
-
-/// 「设置」里那种一行一项：左边标题、右边小字值、右箭头，点进下一整页
 struct SettingRowLink: View {
     let title: String
     var value: String = ""
@@ -23,7 +13,6 @@ struct SettingRowLink: View {
     }
 }
 
-/// 同上一行，但点下去不是跳页（弹窗 / 打开 iOS 设置）
 struct SettingRowButton: View {
     let title: String
     var value: String = ""
@@ -57,11 +46,9 @@ struct SettingRowLabel: View {
     }
 }
 
-/* ---------------- 账号 → 个人信息与权限 ---------------- */
-
 struct SelfPermView: View {
     @ObservedObject private var lang = LangStore.shared
-    /// 商城授权（照微信：设置 → 个人信息与权限 → 授权管理）
+
     @ObservedObject private var mallAuth = MallAuthStore.shared
     @Environment(\.dismiss) private var dismiss
     @State private var showMallAuth = false
@@ -74,15 +61,14 @@ struct SelfPermView: View {
                     GroupCard {
                         SettingRowLink(title: Tr("个人资料"), key: "profile")
                         HairLine(inset: 16)
-                        /* 微信这一行点下去就是跳到 iOS 设置里那个 App 的权限页 */
+
                         SettingRowButton(title: Tr("系统权限管理"), value: Tr("相册 / 相机 / 麦克风")) {
                             if let url = URL(string: UIApplication.openSettingsURLString) {
                                 UIApplication.shared.open(url)
                             }
                         }
                         HairLine(inset: 16)
-                        /* 微信那套「授权管理」：这里列出你授权过的第三方（现在只有商城），
-                           可以一键解除；解除后下次进商城会重新问一次 */
+
                         SettingRowButton(title: Tr("授权管理"),
                                          value: mallAuth.grantedTo.isEmpty ? Tr("无") : Tr("商城")) {
                             showMallAuth = true
@@ -111,7 +97,6 @@ struct SelfPermView: View {
     }
 }
 
-/// 授权管理：列出授权过的应用，可以解除授权（和微信一样）
 struct MallAuthManageSheet: View {
     @ObservedObject private var auth = MallAuthStore.shared
     @ObservedObject private var store = DDStore.shared
@@ -168,8 +153,6 @@ struct MallAuthManageSheet: View {
     }
 }
 
-/* ---------------- 通用 → 更多 ---------------- */
-
 struct MoreSettingsView: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
@@ -194,12 +177,10 @@ struct MoreSettingsView: View {
                         HairLine(inset: 16)
                         SettingRowLink(title: Tr("登录设备管理"), key: "devices")
                         HairLine(inset: 16)
-                        /* 微信那套「故障修复」：一列检查项，每项先检测、能修的当场修 */
+
                         SettingRowLink(title: Tr("故障修复"), key: "health")
                         HairLine(inset: 16)
-                        /* 诊断工具（用户要求「在设置里加入全套诊断工具」）：
-                           版本 / 机型 / 内存 / 缓存 / 网络 / 上次崩溃 / 聊天页打点，
-                           进这一页就能一键上报给开发者 —— 以后出问题不用再靠猜。 */
+
                         SettingRowButton(title: Tr("诊断工具")) { showDiag = true }
                     }
                     .padding(.top, 8)
@@ -215,11 +196,9 @@ struct MoreSettingsView: View {
         .sheet(isPresented: $showDiag) {
             DiagView().environmentObject(app)
         }
-        /* 小星那一档现在挪到「我 → 插件」里了（2026-10-15 用户要求），设置里不再拉它 */
+
     }
 }
-
-/* ---------------- 功能 → 聊天 ---------------- */
 
 struct ChatSettingsView: View {
     @ObservedObject private var lang = LangStore.shared
@@ -259,12 +238,10 @@ struct ChatSettingsView: View {
     }
 }
 
-/* ---------------- 功能 → 音视频通话 ---------------- */
-
 struct CallSettingsView: View {
     @ObservedObject private var lang = LangStore.shared
     @Environment(\.dismiss) private var dismiss
-    /* 视频清晰度 / 本地镜像 / 美颜（对齐微信这三样）：存本机，改完正在进行的通话立刻生效 */
+
     @State private var quality = CallPrefs.quality
     @State private var mirror = CallPrefs.mirror
     @State private var beauty = CallPrefs.beauty
@@ -281,13 +258,13 @@ struct CallSettingsView: View {
                         HairLine(inset: 16)
                         SettingRowLink(title: Tr("语音变声"), key: "g.voice")
                         HairLine(inset: 16)
-                        /* 视频清晰度：标清 360p / 高清 720p / 超清 1080p（微信也是这三档） */
+
                         Button { pickQuality = true } label: {
                             SettingRowLabel(title: Tr("视频清晰度"), value: Tr(CallPrefs.qualityName))
                         }
                         .buttonStyle(MenuPressStyle())
                         HairLine(inset: 16)
-                        /* 本地画面镜像（前置照镜子那样，默认开） */
+
                         HStack(spacing: 12) {
                             Text(Tr("本地画面镜像")).font(pf(17)).foregroundColor(C.label)
                             Spacer(minLength: 0)
@@ -298,7 +275,7 @@ struct CallSettingsView: View {
                         }
                         .padding(.horizontal, 16).frame(height: 56)
                         HairLine(inset: 16)
-                        /* 视频美颜：关 / 低 / 中 / 高 */
+
                         Button { pickBeauty = true } label: {
                             SettingRowLabel(title: Tr("视频美颜"), value: Tr(CallPrefs.beautyName))
                         }

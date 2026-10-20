@@ -1,15 +1,6 @@
 import SwiftUI
 import UIKit
 
-/* ============================================================
-   会员中心（我 → 会员中心）
-
-   · 顶上深色金卡：当前身份 / 到期时间 / 剩余天数 / 升级加速倍数
-   · 选档位（会员 / 超级会员）+ 选时长（月 / 季 / 年，各自带价格）
-   · 立即开通 / 续费 → 输支付密码 → 走零钱扣款
-   · 权益列表（后台配的文案）、自动续费开关、兑换码、开通记录
-   ============================================================ */
-
 struct MemberCenterView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -19,16 +10,16 @@ struct MemberCenterView: View {
     @State private var tierId = ""
     @State private var months = 1
     @State private var showPay = false
-    /// 付完钱那一页要显示的东西（商品 / 金额 / 到期时间）
+
     @State private var payResult: MemberPayResult?
-    /// 这次点的是「续费」还是「开通」（付完之后提示不一样）
+
     @State private var payingRenew = false
     @State private var code = ""
     @State private var redeeming = false
-    /* 会员中心那几处动画（都很轻，只动透明度/位移/阴影，不碰重绘性能） */
-    @State private var shine = false        // 英雄卡上那道慢慢扫过的光
-    @State private var glow = false         // 开通按钮的呼吸光
-    @State private var appear = false       // 权益一行行错落进场
+
+    @State private var shine = false
+    @State private var glow = false
+    @State private var appear = false
 
     private let durations: [(Int, String)] = [(1, "1 个月"), (3, "3 个月"), (12, "12 个月")]
 
@@ -41,7 +32,7 @@ struct MemberCenterView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            /* 顶栏标题也能在后台「会员中心」页里改（store.info?.title） */
+
             NavBar(title: (store.info?.title?.isEmpty == false) ? store.info!.title! : Tr("会员中心"),
                    back: { dismiss() })
 
@@ -76,7 +67,7 @@ struct MemberCenterView: View {
         .task {
             await store.refresh()
             if tierId.isEmpty { tierId = store.me?.tier ?? store.tiers.first?.id ?? "" }
-            /* 动画起手：卡片扫光（每 3 秒扫一道）、按钮呼吸光、权益错落进场 */
+
             withAnimation(.linear(duration: 1.5).delay(1.2).repeatForever(autoreverses: false)) { shine = true }
             withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true)) { glow = true }
             withAnimation(.easeOut(duration: 0.4)) { appear = true }
@@ -87,8 +78,7 @@ struct MemberCenterView: View {
                 await store.open(tierId: tierId, months: months, payPassword: pwd)
             } onDone: {
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
-                /* 付完立刻刷新，别等退出去再进来：我的资料（要挂徽章）、会话列表、
-                   通讯录、成长加速都更一遍；会员中心自己那份也在 open() 里更过了 */
+
                 Task {
                     app.me = try? await API.shared.me()
                     await app.loadChats()
@@ -104,7 +94,7 @@ struct MemberCenterView: View {
                 )
             }
         }
-        /* 付完钱弹一页「支付成功」（大对勾 + 金额 + 商品/支付方式/到期时间） */
+
         .sheet(item: $payResult) { r in
             MemberPayDoneView(result: r) {
                 payResult = nil
@@ -113,7 +103,6 @@ struct MemberCenterView: View {
         }
     }
 
-    /// 付完之后到期时间（store 在 open() 里已经更新过，这里直接读）
     private func expireAfterPay() -> String {
         guard let t = store.me?.expireAt, t > 0 else { return "-" }
         let f = DateFormatter()
@@ -121,8 +110,6 @@ struct MemberCenterView: View {
         f.dateFormat = "yyyy年M月d日"
         return f.string(from: Date(timeIntervalSince1970: t / 1000))
     }
-
-    /* ---------------------------------------------------------- 顶上那张卡 */
 
     private var heroCard: some View {
         PanelHeroCard(glow: gold) {
@@ -169,7 +156,7 @@ struct MemberCenterView: View {
                     .foregroundColor(.white.opacity(0.72))
             }
         }
-        /* 一道斜着扫过的光（会员卡那种质感）：纯位移 + 渐变，不贵 */
+
         .overlay(alignment: .topLeading) {
             LinearGradient(colors: [Color.white.opacity(0), Color.white.opacity(0.22), Color.white.opacity(0)],
                            startPoint: .top, endPoint: .bottom)
@@ -203,8 +190,6 @@ struct MemberCenterView: View {
             .overlay(Capsule().stroke(Color.white.opacity(0.22), lineWidth: 0.7))
     }
 
-    /* ---------------------------------------------------------- 档位 */
-
     private var tierCards: some View {
         VStack(alignment: .leading, spacing: 0) {
             PanelSectionTitle(text: Tr("选择档位"))
@@ -236,7 +221,7 @@ struct MemberCenterView: View {
                         )
                         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
                             .stroke(on ? Color.clear : C.hairline, lineWidth: 0.7))
-                        .scaleEffect(on ? 1.02 : 1)      // 选中那一下轻轻"弹"起来
+                        .scaleEffect(on ? 1.02 : 1)
                         .shadow(color: Color.black.opacity(on ? 0.16 : 0.05), radius: 8, y: 3)
                     }
                     .buttonStyle(.plain)
@@ -295,7 +280,7 @@ struct MemberCenterView: View {
                         Capsule().fill(LinearGradient(colors: [gold, gold2],
                                                       startPoint: .topLeading, endPoint: .bottomTrailing))
                     )
-                    /* 呼吸光：这是整页最该点的按钮，让它一直"亮着" */
+
                     .shadow(color: gold2.opacity(glow ? 0.60 : 0.28), radius: glow ? 13 : 7, y: 3)
                     .scaleEffect(glow ? 1.015 : 1)
             }
@@ -305,8 +290,6 @@ struct MemberCenterView: View {
         .background { CardGlassBox(radius: 16) }
         .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(C.hairline, lineWidth: 0.7))
     }
-
-    /* ---------------------------------------------------------- 权益 */
 
     private var benefitsCard: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -326,7 +309,7 @@ struct MemberCenterView: View {
                     }
                     .padding(.horizontal, 14)
                     .frame(minHeight: 56)
-                    /* 一行行错落进场（每行晚 50ms），看着有节奏但不花 */
+
                     .opacity(appear ? 1 : 0)
                     .offset(y: appear ? 0 : 10)
                     .animation(.easeOut(duration: 0.38).delay(Double(idx) * 0.05), value: appear)

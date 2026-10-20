@@ -1,16 +1,11 @@
 import SwiftUI
 
-/* ============================================================
-   视频转发面板（抖音那套）
-   一排圆形图标：转发给朋友 / 朋友圈 / 收藏 / 复制链接 / 保存本地
-   下面两行文字项：举报 / 不感兴趣，最下面「取消」
-   ============================================================ */
 struct VideoShareSheet: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
 
     let item: FeedItem
-    /// 转发给朋友（外层打开好友选择器）
+
     var onForward: (() -> Void)? = nil
     var onToMoments: (() -> Void)? = nil
     var onFavorite: (() -> Void)? = nil
@@ -27,13 +22,12 @@ struct VideoShareSheet: View {
                 .padding(.top, 16)
                 .padding(.bottom, 14)
 
-            /* 圆形图标那一排（抖音就是这种：图标 + 下面的字） */
             HStack(alignment: .top, spacing: 0) {
                 iconButton("转发给朋友", "paperplane.fill", Color(hex: 0x19A47A)) {
                     dismiss()
                     onForward?()
                 }
-                iconButton("朋友圈", "camera.fill", C.green) {      // 2026-10-17：跟主色走
+                iconButton("朋友圈", "camera.fill", C.green) {
                     dismiss()
                     onToMoments?()
                 }
@@ -57,7 +51,6 @@ struct VideoShareSheet: View {
                 .padding(.top, 18)
                 .padding(.horizontal, 0)
 
-            /* 文字项 */
             VStack(spacing: 0) {
                 textRow("举报", "exclamationmark.bubble") { dismiss(); app.show(Tr("已提交举报，我们会尽快核实")) }
                 HairLine(inset: 16)
@@ -115,15 +108,12 @@ struct VideoShareSheet: View {
     }
 }
 
-/* 转发给朋友：从通讯录里挑一个人，把视频链接发给他（抖音也是发一条消息） */
 struct VideoForwardPicker: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
 
     let link: String
-    /// 转发**视频消息**用的正文（聊天里那条视频的 JSON）。
-    /// 有它就按微信那套把这条视频原样转发过去（对方收到的是视频气泡），
-    /// 没有才退回"发一条链接"（朋友圈那种用法）。
+
     var videoContent: String = ""
 
     @State private var q = ""
@@ -182,8 +172,7 @@ struct VideoForwardPicker: View {
         Task {
             do {
                 let chat = try await API.shared.directChat(userId: u.id)
-                /* 是聊天里的视频 → 原样转发这条**视频消息**（对方看到的是视频气泡）；
-                   否则（朋友圈那套）还是发一条链接。 */
+
                 if !videoContent.isEmpty {
                     _ = try await API.shared.send(chatId: chat.id, kind: "video", content: videoContent)
                 } else {

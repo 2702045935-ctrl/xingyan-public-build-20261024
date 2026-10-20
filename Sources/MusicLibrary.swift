@@ -1,18 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   我的音乐（2026-10-15 听一听对齐 QQ音乐）
-
-   「听一听」页顶上那三个入口（我喜欢 / 我的歌单 / 最近播放）就是这一页的东西：
-     · 我喜欢   = **复用服务器上的点赞**（track.likes 里有我 = 我喜欢），本机不另存一份
-     · 我的歌单 = 本机数据（谁在哪个歌单里放了哪些歌），能新建/改名/加歌/删歌
-     · 最近播放 = 本机记最近 100 首（一放歌就记一条）
-   落盘位置：Documents/dd_music.json（读写都在 MusicLibrary 里，别的页面不碰文件）。
-
-   ⚠ 这一页只读曲库 + 只写本机文件，不动 StreamPlay / 本地留底 / 迷你球 / 锁屏。
-   ============================================================ */
-
-/// 最近播放的一条（存歌 id + 一份快照：歌被后台删了也还能看能播）
 struct MusicRecent: Codable, Identifiable, Hashable {
     var id: String
     var title: String
@@ -26,7 +13,6 @@ struct MusicRecent: Codable, Identifiable, Hashable {
     }
 }
 
-/// 一个歌单（只存歌 id，歌的信息永远以曲库为准）
 struct MusicPlaylist: Codable, Identifiable, Hashable {
     var id: String
     var name: String
@@ -34,7 +20,6 @@ struct MusicPlaylist: Codable, Identifiable, Hashable {
     var at: Double
 }
 
-/// 听一听顶上的三个入口
 enum MusicMineKind: String, CaseIterable, Identifiable {
     case likes
     case playlists
@@ -93,9 +78,6 @@ final class MusicLibrary: ObservableObject {
         try? d.write(to: f, options: .atomic)
     }
 
-    /* ---------------------------------------------------------- 最近播放 */
-
-    /// 放一首歌就记一条（同一首只留最新那一次，永远排在最前面）
     func markPlayed(_ t: MusicTrack) {
         guard !t.id.isEmpty, !t.title.isEmpty else { return }
         recents.removeAll { $0.id == t.id }
@@ -110,8 +92,6 @@ final class MusicLibrary: ObservableObject {
         recents = []
         save()
     }
-
-    /* ---------------------------------------------------------- 我的歌单 */
 
     @discardableResult
     func createPlaylist(name: String) -> MusicPlaylist {
@@ -173,9 +153,6 @@ final class MusicLibrary: ObservableObject {
     }
 }
 
-/* ---------------------------------------------------------- 小零件 */
-
-/// 空状态（三个「我的音乐」页共用）
 struct MusicEmptyState: View {
     let icon: String
     let title: String
@@ -198,19 +175,17 @@ struct MusicEmptyState: View {
     }
 }
 
-/// 一行歌（三个页面共用）：点一下 = 播放/暂停，并把**这一页的列表**塞成播放队列
 struct MusicSongRow: View {
     let track: MusicTrack
     var queue: [MusicTrack] = []
-    /// 右边附加的按钮（取消喜欢 / 从歌单移出 / 加入歌单）
+
     var trailing: AnyView = AnyView(EmptyView())
     @ObservedObject private var player = MusicPlayer.shared
 
     private var playing: Bool { player.isPlaying(track.id) }
 
     var body: some View {
-        /* ⚠ 右边那几颗小按钮（取消喜欢 / 移出歌单）放在**外面**，别塞进 Button 的 label 里：
-           塞进去的话点小按钮会变成点整行（去播放），按钮就废了。 */
+
         HStack(spacing: 0) {
             Button {
                 MusicPlayer.shared.setQueue(queue.isEmpty ? [track] : queue)
@@ -246,7 +221,6 @@ struct MusicSongRow: View {
     }
 }
 
-/// 一列歌（我喜欢 / 最近播放 / 歌单详情 / 选歌）
 struct MusicSongList: View {
     let tracks: [MusicTrack]
     var accessory: (MusicTrack) -> AnyView = { _ in AnyView(EmptyView()) }
@@ -264,9 +238,6 @@ struct MusicSongList: View {
     }
 }
 
-/* ---------------------------------------------------------- 入口条（挂在听一听顶上） */
-
-/// 「我喜欢 / 我的歌单 / 最近播放」三个入口
 struct MusicMineBar: View {
     var onOpen: (MusicMineKind) -> Void
 
@@ -295,9 +266,6 @@ struct MusicMineBar: View {
     }
 }
 
-/* ---------------------------------------------------------- 三个页面 */
-
-/// 三个入口点进来的那一页（自己带一层 NavigationStack 的调用方在这里面 push）
 struct MusicMinePage: View {
     let kind: MusicMineKind
 
@@ -310,7 +278,6 @@ struct MusicMinePage: View {
     }
 }
 
-/// 我喜欢（复用服务器上的点赞，不另外存一份）
 struct MusicLikesPage: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -351,7 +318,6 @@ struct MusicLikesPage: View {
         }
     }
 
-    /// 取消喜欢 + 加入歌单（QQ音乐那一列歌右边的小按钮）
     private func unlikeView(_ t: MusicTrack) -> AnyView {
         AnyView(
             HStack(spacing: 0) {
@@ -379,7 +345,6 @@ struct MusicLikesPage: View {
     }
 }
 
-/// 最近播放（本机记录）
 struct MusicRecentsPage: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var lib = MusicLibrary.shared
@@ -431,12 +396,10 @@ struct MusicRecentsPage: View {
     }
 }
 
-/// 我的歌单（新建 / 改名 / 删歌单 / 点进去看歌）
 struct MusicPlaylistsPage: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var lib = MusicLibrary.shared
-    /* ⚠ 一个弹窗把「新建 / 改名 / 删除」三件事都办了：
-       SwiftUI 在同一层同时挂 3 个 alert，行为不稳（可能只弹最后一个）。 */
+
     enum Ask: Equatable { case none, new, rename, del }
     @State private var ask: Ask = .none
     @State private var renameFor: MusicPlaylist? = nil
@@ -521,7 +484,7 @@ struct MusicPlaylistsPage: View {
     }
 
     private func row(_ pl: MusicPlaylist) -> some View {
-        /* 「⋯」菜单放在 Button **外面**：塞进 label 里点它会变成点整行 */
+
         HStack(spacing: 0) {
             Button {
                 openId = pl.id
@@ -565,7 +528,6 @@ struct MusicPlaylistsPage: View {
     }
 }
 
-/// 一个歌单里的歌（加歌 / 移出 / 改名 / 删除 / 播放全部）
 struct MusicPlaylistPage: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var lib = MusicLibrary.shared
@@ -600,7 +562,7 @@ struct MusicPlaylistPage: View {
             head
 
             if songs.isEmpty && !lib.songs(in: listId).isEmpty {
-                /* 曲库还在拉：先转个圈，别急着说"这个歌单还没有歌" */
+
                 HStack(spacing: 10) { ProgressView(); Text(Tr("正在加载…")).font(pf(15)).foregroundColor(C.subLabel) }
                     .frame(maxWidth: .infinity).frame(height: 90)
                 Spacer(minLength: 0)
@@ -637,7 +599,6 @@ struct MusicPlaylistPage: View {
         }
     }
 
-    /// 封面 + 名字 + 「播放全部 / 加入歌曲」
     private var head: some View {
         HStack(spacing: 12) {
             ZStack {
@@ -707,7 +668,6 @@ struct MusicPlaylistPage: View {
     }
 }
 
-/// 从曲库里挑歌加进歌单（点一下勾上/取消，勾了就立刻写进去）
 struct MusicPickPage: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var lib = MusicLibrary.shared
@@ -804,7 +764,6 @@ struct MusicPickPage: View {
     }
 }
 
-/// 把一首歌加进某个歌单（列表里没有歌单就顺手新建一个）
 struct AddToPlaylistSheet: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var lib = MusicLibrary.shared
@@ -860,7 +819,7 @@ struct AddToPlaylistSheet: View {
             }
         }
         .background(C.pageBg.ignoresSafeArea())
-        /* 2026-10-16：加入歌单页补左滑返回 */
+
         .swipeBack { dismiss() }
         .alert(Tr("新建歌单"), isPresented: $showNew) {
             TextField(Tr("歌单名字"), text: $name)

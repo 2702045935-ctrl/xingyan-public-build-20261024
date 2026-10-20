@@ -1,23 +1,10 @@
 import SwiftUI
 
-/* ============================================================
-   表情商店（高级版）
-
-   照微信那套逻辑，样子换成「商店」该有的样子：
-     · 顶上深色英雄卡：标题 + 「共 N 个表情包 · M 张表情」+ 卡里嵌一条搜索框
-     · 我的表情：已经添加的包横着滑（大图标卡片），点开看整包、能移除
-     · 我添加的单个表情：从相册加一张进来
-     · 表情商店：分类胶囊 + 两列「卡片宫格」，每张卡是封面 + 名字 + 数量，
-       右上角一个圆形「＋ / ✓」，点卡片看整包预览
-   添加 / 移除之后，聊天表情面板底下那排立刻跟着变。
-   ============================================================ */
-
 struct StickerStore: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var catalog = StickerCatalog.shared
 
-    /// 商店里的一包（内置的 / 图库的 / 服务端下发的，统一成一种）
     struct ShopPack: Identifiable {
         let id: String
         let name: String
@@ -76,8 +63,6 @@ struct StickerStore: View {
         }
     }
 
-    /* ---------------------------------------------------------- 顶上英雄卡 */
-
     private var heroCard: some View {
         PanelHeroCard(glow: C.green) {
             HStack(alignment: .center, spacing: 12) {
@@ -120,7 +105,6 @@ struct StickerStore: View {
                 }
             }
 
-            /* 搜索框就嵌在英雄卡里 */
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 14, weight: .medium))
@@ -156,8 +140,6 @@ struct StickerStore: View {
     private var totalStickers: Int {
         allPacks.reduce(0) { $0 + $1.count }
     }
-
-    /* ---------------------------------------------------------- 我的表情 */
 
     private var mineBlock: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -211,8 +193,6 @@ struct StickerStore: View {
         }
     }
 
-    /* ---------------------------------------------------------- 单个表情 */
-
     private var singleBlock: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
@@ -265,8 +245,6 @@ struct StickerStore: View {
         }
     }
 
-    /* ---------------------------------------------------------- 表情商店 */
-
     private var shopBlock: some View {
         VStack(alignment: .leading, spacing: 0) {
             sectionHeader(Tr("表情商店"),
@@ -294,7 +272,6 @@ struct StickerStore: View {
         }
     }
 
-    /// 一张包卡片：封面（按分类配色）+ 右上角圆形「＋」+ 名字 / 数量
     private func shopCard(_ p: ShopPack) -> some View {
         let added = isInstalled(p.id)
         let tint = Self.tint(for: p.category)
@@ -349,7 +326,6 @@ struct StickerStore: View {
         .shadow(color: Color.black.opacity(0.05), radius: 8, y: 3)
     }
 
-    /// 分类配色（封面那层渐变）
     private static func tint(for category: String) -> [Color] {
         switch category {
         case "builtin": return PanelTint.green
@@ -365,7 +341,7 @@ struct StickerStore: View {
         case "ap8":     return PanelTint.red
         case "ap9":     return PanelTint.teal
         default:
-            /* 认不出来的分类：按名字挑一个固定的（同一分类永远同一个色） */
+
             let pick = abs(category.hashValue) % 6
             return [PanelTint.green, PanelTint.blue, PanelTint.purple,
                     PanelTint.orange, PanelTint.teal, PanelTint.gray][pick]
@@ -418,8 +394,6 @@ struct StickerStore: View {
         .padding(.bottom, 6)
     }
 
-    /* ---------------------------------------------------------- 整包预览 */
-
     private func previewSheet(_ p: ShopPack) -> some View {
         let added = isInstalled(p.id)
         let tint = Self.tint(for: p.category)
@@ -428,7 +402,7 @@ struct StickerStore: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 14) {
-                    /* 头的封面卡 */
+
                     HStack(spacing: 12) {
                         ZStack {
                             LinearGradient(colors: [tint[0].opacity(0.25), tint[1].opacity(0.12)],
@@ -504,11 +478,9 @@ struct StickerStore: View {
             }
         }
         .background(C.pageBg.ignoresSafeArea())
-        /* 2026-10-16：表情包预览这一层补左滑返回 */
+
         .swipeBack { preview = nil }
     }
-
-    /* ---------------------------------------------------------- 数据 */
 
     private var allPacks: [ShopPack] {
         var out: [ShopPack] = []
@@ -600,7 +572,6 @@ struct StickerStore: View {
     }
 }
 
-/// 老的商店视图留着改名（新商店见 StickerStore），呼叫的地方一个字都不用改
 struct StickerView: View {
     var body: some View { StickerStore() }
 }

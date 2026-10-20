@@ -1,40 +1,24 @@
 import SwiftUI
 
-/* ============================================================
-   商城「对齐京东」补的数据模型 + 页面（2026-10-15 用户：「全部做出来对齐」）
-
-   这一批补的是京东有、我们原来没有的：
-     · 评价（评分 / 好评率 / 评价列表 / 我发表评价·晒单）
-     · 规格 SKU（选规格改价）
-     · 参数表、图文详情、服务承诺
-     · 订单详情页 + 物流轨迹 + 申请售后（退款/退货/换货）
-     · 优惠券、发票、备注、配送/支付方式、待付款倒计时
-     · 关注店铺、联系客服、分享商品给好友
-   ⚠ 评价：本机发的是真评价；另外每个商品带几条**示例评价**（`isDemo=true`，界面上标了「示例」），
-      要纯真实数据的话把 `DDReview.samples` 关掉即可。
-   ============================================================ */
-
-/// 一条评价
 struct DDReview: Identifiable, Codable, Hashable {
     var id: String
     var pid: String
     var title: String
-    /// 谁写的（本机发的存自己昵称）
+
     var name: String
     var avatar: String = ""
-    /// 1~5 星
+
     var rating: Int
     var text: String
-    /// 晒单图（本机发的可以选；示例是空的）
+
     var images: [String] = []
-    /// 买的哪个规格
+
     var spec: String = ""
     var at: Date
     var likes: Int = 0
-    /// 示例数据（界面上会标出来，免得当真）
+
     var isDemo: Bool = false
 
-    /// 按类目给几条示例评价（确定性：同一个商品每次都是这几条，不随机跳）
     static func samples(for p: DDProduct) -> [DDReview] {
         var h = 7
         for u in p.id.unicodeScalars { h = (h &* 31 &+ Int(u.value)) % 9973 }
@@ -89,32 +73,29 @@ struct DDReview: Identifiable, Codable, Hashable {
     }
 }
 
-/// 售后单（退款 / 退货 / 换货）
 struct DDAfterSale: Identifiable, Codable, Hashable {
     var id: String
     var orderId: String
-    /// 退款 / 退货退款 / 换货
+
     var kind: String
     var reason: String
     var text: String
-    var status: String      // 处理中 / 商家已同意 / 已完成 / 已取消
+    var status: String
     var at: Date
     var amount: Double
     var title: String
 }
 
-/// 优惠券
 struct DDCoupon: Identifiable, Codable, Hashable {
     var id: String
     var title: String
     var off: Double
-    /// 满多少能用
+
     var min: Double
     var until: Date
     var used: Bool
 }
 
-/// 商城服务通知
 struct DDNotice: Identifiable, Codable, Hashable {
     var id: String
     var title: String
@@ -123,9 +104,6 @@ struct DDNotice: Identifiable, Codable, Hashable {
     var kind: String
 }
 
-/* ============================================================ 小零件 */
-
-/// 五角星（京东那种：实心/空心）
 struct DDStars: View {
     var value: Double
     var size: CGFloat = 12
@@ -140,7 +118,6 @@ struct DDStars: View {
     }
 }
 
-/// 给评价打星（可点）
 struct DDStarPicker: View {
     @Binding var value: Int
     var size: CGFloat = 26
@@ -159,8 +136,6 @@ struct DDStarPicker: View {
         }
     }
 }
-
-/* ============================================================ 评价区 */
 
 struct DDReviewSection: View {
     @ObservedObject private var store = DDStore.shared
@@ -275,14 +250,11 @@ struct DDReviewListView: View {
     }
 }
 
-/* ============================================================ 参数 / 图文详情 / 服务 */
-
-/// 参数表（京东商品详情下半屏那张表）
 struct DDParamSection: View {
     let product: DDProduct
     private var rows: [[String]] {
         if let p = product.params, !p.isEmpty { return p }
-        /* 没有后台参数就按我们手上真有的数据生成（不编品牌/型号） */
+
         var out: [[String]] = [["商品名称", product.title]]
         if let b = product.brand, !b.isEmpty { out.append(["品牌", b]) }
         out.append(["店铺", product.shop])
@@ -317,7 +289,6 @@ struct DDParamSection: View {
     }
 }
 
-/// 图文详情（京东详情页往下拉那一屏屏）
 struct DDDetailLongSection: View {
     let product: DDProduct
     private var imgs: [String] {
@@ -357,8 +328,6 @@ struct DDDetailLongSection: View {
     }
 }
 
-/* ============================================================ 规格选择 */
-
 struct DDSpecSheet: View {
     let product: DDProduct
     var onDone: (DDVariant) -> Void
@@ -385,7 +354,7 @@ struct DDSpecSheet: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 10) {
                     Text(Tr("规格")).font(pf(14, .medium)).foregroundColor(DDColor.ink)
-                    /* 规格一般 2~5 个：横向一条（和京东一样），多了能滑 */
+
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
                             ForEach(list) { v in
@@ -425,16 +394,12 @@ struct DDSpecSheet: View {
     }
 }
 
-/* ============================================================ 店铺 / 客服 / 分享 */
-
-/// 店铺页：这家店在卖的东西（点店铺名/进店进来）
 struct DDShopPageView: View {
     @ObservedObject private var store = DDStore.shared
     @Environment(\.dismiss) private var dismiss
     let shop: String
     var onOpen: (DDProduct) -> Void
 
-    /// 被 × 掉（不感兴趣）的也在这家店里过滤掉，和首页 / 频道页一致
     private var list: [DDProduct] { store.feed(store.live).filter { $0.shop == shop } }
     private var key: String { list.first?.shopKey ?? shop }
 
@@ -475,7 +440,6 @@ struct DDShopPageView: View {
     }
 }
 
-/// 客服：常见问题 + 转人工（走 App 里「在线客服」那个会话）
 struct DDServiceSheet: View {
     @EnvironmentObject private var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -553,7 +517,6 @@ struct DDServiceSheet: View {
     }
 }
 
-/// 分享商品：复制链接 / 转发给好友（复用聊天那套「转发给」）
 struct DDShareSheet: View {
     @EnvironmentObject private var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -581,9 +544,7 @@ struct DDShareSheet: View {
         .background(DDColor.page.ignoresSafeArea())
         .ddLight()
         .sheet(isPresented: $showForward) {
-            /* 2026-10-15 用户：「商城里的分享应该是卡片可以直接跳转的」——
-               现在转发的是 kind = "mall" 的**商品卡片**，对方点一下直接进商品页
-               （以前发的是「一行字 + 网址」，收端只能看到一串文字）。 */
+
             ForwardPickerView(items: [ForwardItem(kind: "mall", content: mallCardJSON)]) {
                 dismiss()
             }
@@ -612,7 +573,6 @@ struct DDShareSheet: View {
         dismiss()
     }
 
-    /// 转发出去的卡片正文（kind = "mall"）：收端点一下直接进商品页，不用去浏览器
     private var mallCardJSON: String {
         var d: [String: Any] = ["id": product.id, "em": product.em, "title": product.title,
                                 "price": product.price, "orig": product.orig, "shop": product.shop]
@@ -623,8 +583,6 @@ struct DDShareSheet: View {
     }
 }
 
-/* ============================================================ 订单详情（京东那套） */
-
 struct DDOrderDetailView: View {
     @EnvironmentObject private var app: AppState
     @ObservedObject private var store = DDStore.shared
@@ -634,12 +592,11 @@ struct DDOrderDetailView: View {
     @State private var showAfterSale = false
     @State private var showReview = false
     @State private var showService = false
-    /// 待付款那一单：走星言支付收银台
+
     @State private var showXYPay = false
 
     private var o: DDOrder? { store.orders.first { $0.id == orderId } }
 
-    /// 立即付款：选了星言支付就先过收银台（指纹/面容 或 支付密码）
     private func payNow() {
         guard let o = o else { return }
         if store.payWay == XYPay.name {
@@ -706,11 +663,11 @@ struct DDOrderDetailView: View {
         .sheet(isPresented: $showReview) {
             if let o = o { DDReviewEditSheet(order: o).ddLight() }
         }
-        /* 客服中心：**带着这一单**进去（改地址 / 催发货 / 退货都能直接问） */
+
         .sheet(isPresented: $showService) {
             DDHelpCenterView(order: o).environmentObject(app)
         }
-        /* 星言支付收银台 */
+
         .sheet(isPresented: $showXYPay) {
             if let o = o {
                 XYPaySheet(amount: o.total, target: o.title, note: Tr("订单付款 · ") + Tr(o.statusText),
@@ -722,8 +679,6 @@ struct DDOrderDetailView: View {
             }
         }
     }
-
-    /* ---------------- 各块 ---------------- */
 
     private func statusCard(_ o: DDOrder) -> some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -821,8 +776,6 @@ struct DDOrderDetailView: View {
         }
     }
 
-    /* ---------------- 底部操作（京东那种一排按钮） ---------------- */
-
     private func actionBar(_ o: DDOrder) -> some View {
         VStack(spacing: 0) {
             HairLine()
@@ -843,7 +796,7 @@ struct DDOrderDetailView: View {
                     small(Tr("再来一单"), false) {
                         store.reorder(o)
                         app.show(Tr("已加入购物车"))
-                        store.jumpCart()      // 加进购物车之后直接跳过去（京东就是这样）
+                        store.jumpCart()
                     }
                     small(o.reviewed ? Tr("已评价") : Tr("评价晒单"), true) { if o.canReview { showReview = true } }
                 }
@@ -870,7 +823,6 @@ struct DDOrderDetailView: View {
     }
 }
 
-/// 物流轨迹（京东那条时间轴）：按状态生成一条真实可读的轨迹
 struct DDLogisticsTimeline: View {
     let order: DDOrder
     private var steps: [(String, String, Bool)] {
@@ -922,8 +874,6 @@ struct DDLogisticsTimeline: View {
         }
     }
 }
-
-/* ============================================================ 申请售后 */
 
 struct DDAfterSaleSheet: View {
     @ObservedObject private var store = DDStore.shared
@@ -1023,8 +973,6 @@ struct DDAfterSaleSheet: View {
     }
 }
 
-/* ============================================================ 评价晒单 */
-
 struct DDReviewEditSheet: View {
     @ObservedObject private var store = DDStore.shared
     @EnvironmentObject private var app: AppState
@@ -1099,8 +1047,6 @@ struct DDReviewEditSheet: View {
     }
 }
 
-/* ============================================================ 优惠券 / 售后列表 / 我的评价 */
-
 struct DDCouponSheet: View {
     @ObservedObject private var store = DDStore.shared
     @Environment(\.dismiss) private var dismiss
@@ -1164,7 +1110,6 @@ struct DDCouponSheet: View {
     }
 }
 
-/// 我的 → 退款/售后
 struct DDAfterSaleListView: View {
     @ObservedObject private var store = DDStore.shared
     @Environment(\.dismiss) private var dismiss
@@ -1217,7 +1162,6 @@ struct DDAfterSaleListView: View {
     }
 }
 
-/// 开票信息（京东：个人/公司，抬头 + 税号）
 struct DDInvoiceSheet: View {
     @Binding var title: String
     @Environment(\.dismiss) private var dismiss
@@ -1296,7 +1240,6 @@ struct DDInvoiceSheet: View {
     }
 }
 
-/// 我关注的店铺（店家 + 在售件数，点一下看这家店）
 struct DDShopFollowListView: View {
     @ObservedObject private var store = DDStore.shared
     @Environment(\.dismiss) private var dismiss
@@ -1366,7 +1309,6 @@ struct DDShopFollowListView: View {
     }
 }
 
-/// 我的 → 我的评价
 struct DDMyReviewsView: View {
     @ObservedObject private var store = DDStore.shared
     @Environment(\.dismiss) private var dismiss

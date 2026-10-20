@@ -1,11 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   在线客服（独立一页，像微信那种客服页，不是普通聊天）
-   · 顶部：客服头像 + 名字 + 值班时间，右边「转人工」
-   · 中间：对话（自己在右、客服在左）
-   · 下面：快捷问题 + 输入框（发出去的消息和后台工单是同一套）
-   ============================================================ */
 struct KefuPage: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
@@ -51,7 +45,7 @@ struct KefuPage: View {
                                 Text(connectTip).font(pf(13.5)).foregroundColor(C.subLabel)
                                     .multilineTextAlignment(.center)
                                     .padding(.horizontal, 30)
-                                Button { 
+                                Button {
                                     connectTip = ""
                                     Task { await start() }
                                 } label: {
@@ -89,7 +83,6 @@ struct KefuPage: View {
         .sheet(isPresented: $showFAQ) { FAQView().environmentObject(app) }
     }
 
-    /* ---------------------------------------------------------- 头部 */
     private var header: some View {
         VStack(spacing: 8) {
             RPAvatar(path: agentAvatar, size: 52)
@@ -125,7 +118,6 @@ struct KefuPage: View {
         .padding(.bottom, 10)
     }
 
-    /* ---------------------------------------------------------- 气泡 */
     @ViewBuilder private func kefuBubble(_ m: Message) -> some View {
         let mine = (m.senderId == myId)
         HStack(alignment: .top, spacing: 8) {
@@ -133,7 +125,7 @@ struct KefuPage: View {
             if !mine { RPAvatar(path: agentAvatar, size: 34) }
             Text(m.body)
                 .font(pf(15))
-                /* 客服中心这个小聊天也用后台配的气泡色（以前这里写死成绿色） */
+
                 .foregroundColor(mine ? C.bubbleText : C.label)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 9)
@@ -149,7 +141,6 @@ struct KefuPage: View {
         .padding(.bottom, 10)
     }
 
-    /* ---------------------------------------------------------- 快捷问题 */
     @ViewBuilder private var quickRow: some View {
         if !quick.isEmpty && messages.count <= 3 {
             ScrollView(.horizontal, showsIndicators: false) {
@@ -173,7 +164,6 @@ struct KefuPage: View {
         }
     }
 
-    /* ---------------------------------------------------------- 输入栏 */
     private var inputBar: some View {
         HStack(spacing: 8) {
             TextField(Tr("说说你遇到的问题…"), text: $input, axis: .vertical)
@@ -200,9 +190,8 @@ struct KefuPage: View {
         .background(C.pageBg)
     }
 
-    /* ---------------------------------------------------------- 逻辑 */
     private func start() async {
-        /* 先拿客服配置（头像/名字/值班时间/快捷问题），拿不到也不影响后面开会话 */
+
         if let cfg = try? await API.shared.support() {
             greet = cfg.greet ?? ""
             workTime = cfg.workTime ?? ""
@@ -217,7 +206,7 @@ struct KefuPage: View {
             chatId = r.chatId
         }
         await loadMessages()
-        /* 万一服务器没建出会话（网络问题），给个能重试的提示，别只留一个空页面 */
+
         if chatId.isEmpty { connectTip = "客服暂时接不上，点下面重试一次" }
         loading = false
     }
@@ -239,7 +228,7 @@ struct KefuPage: View {
                 messages.append(m)
             }
             sending = false
-            /* 客服（AI 或人工）回消息一般 1~3 秒，等几轮把回复拉回来 */
+
             for _ in 0..<6 {
                 try? await Task.sleep(nanoseconds: 1_500_000_000)
                 await loadMessages()
@@ -248,7 +237,6 @@ struct KefuPage: View {
         }
     }
 
-    /// 点「转人工」：给客服发一句「人工」，后台会生成工单，值班时间外会提示明天跟进
     private func askHuman() {
         if humanAsked {
             app.show(Tr("已经帮你转人工了，客服看到会在这里回复"))

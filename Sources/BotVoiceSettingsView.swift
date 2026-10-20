@@ -1,18 +1,12 @@
 import SwiftUI
 import AVFoundation
 
-/* ============================================================
-   小星的语音设置：自动朗读 / 语速 / 音色（系统自带，离线、免费）
-   以后接了腾讯云 TTS，就在这一页的音色列表里多一组「真人音色」，界面不用改。
-   ============================================================ */
-
 struct BotVoiceSettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage("bot.autoRead") private var autoRead = false
     @AppStorage("bot.voice") private var voiceID = ""
     @AppStorage("bot.rate") private var rate = 0.5
 
-    /// 系统里装的中文音色（在「设置 → 辅助功能 → 朗读内容 → 声音 → 中文」能下载更多）
     private var voices: [AVSpeechSynthesisVoice] {
         AVSpeechSynthesisVoice.speechVoices()
             .filter { $0.language.hasPrefix("zh") }

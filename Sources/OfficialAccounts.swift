@@ -1,14 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   公众号（我们自己的，照微信那套）
-     · 通讯录 → 公众号：所有号 + 关注状态
-     · 号主页：头像 / 名字 / 简介 + 订阅按钮 + 历史文章
-     · 文章页：大标题、封面、作者时间、正文（# 小标题、图片行）
-     · 会话里收到的是图文卡片（kind = oa），点开就是文章页
-   版式按"高级"来：大留白、细分隔线、克制的配色、正文行距 1.75
-   ============================================================ */
-
 struct OAAccount: Decodable, Identifiable, Hashable {
     var id: String
     var name: String
@@ -36,7 +27,7 @@ struct OAArticle: Decodable, Identifiable, Hashable {
     var content: String?
     var createdAt: String?
     var reads: Int?
-    /// 原文链接（有的话右上角「⋯」能打开）
+
     var originalUrl: String?
 
     var coverPath: String { cover ?? "" }
@@ -53,10 +44,6 @@ struct OAArticlePage: Decodable {
     var article: OAArticle?
     var account: OAAccount?
 }
-
-/* ============================================================
-   通讯录 → 公众号
-   ============================================================ */
 
 struct OfficialAccountsView: View {
     @EnvironmentObject var app: AppState
@@ -144,7 +131,6 @@ struct OfficialAccountsView: View {
         .overlay(alignment: .bottom) { HairLine(inset: 76) }
     }
 
-    /// 服务号 / 订阅号 那个小标（服务号是深色实心，订阅号是描边，一眼能分开）
     private func typeChip(_ a: OAAccount) -> some View {
         Text(a.typeLabel)
             .font(pf(10.5, .medium))
@@ -165,10 +151,6 @@ struct OfficialAccountsView: View {
         loading = false
     }
 }
-
-/* ============================================================
-   某个号的主页：头像 + 名字 + 简介 + 订阅按钮 + 历史文章
-   ============================================================ */
 
 struct OfficialAccountPage: View {
     let accountId: String
@@ -328,10 +310,6 @@ struct OfficialAccountPage: View {
     }
 }
 
-/* ============================================================
-   文章页（高级版排版）
-   ============================================================ */
-
 struct ArticleView: View {
     let articleId: String
 
@@ -417,7 +395,6 @@ struct ArticleView: View {
             }
             .background(C.cardBg)
 
-            /* 底部：作者信息 + 订阅按钮（微信文章底下也是这一条） */
             if let acc = account {
                 HStack(spacing: 12) {
                     Avatar(path: acc.avatarPath, size: 34, radius: 9, circle: false)
@@ -470,7 +447,6 @@ struct ArticleView: View {
     }
 }
 
-/// 正文渲染：空行分段、`# ` 小标题、单独一行是图片地址就画图（简单但够用）
 private struct ArticleBody: View {
     let text: String
 
@@ -513,17 +489,13 @@ private struct ArticleBody: View {
             } else if line.hasPrefix("/uploads/") || line.hasPrefix("http") {
                 out.append(.image(line))
             } else if case .para(let prev)? = out.last {
-                out[out.count - 1] = .para(prev + "\n" + line)   // 连着的行并成一段
+                out[out.count - 1] = .para(prev + "\n" + line)
             } else {
                 out.append(.para(line))
             }
         }
     }
 }
-
-/* ============================================================
-   会话里的图文卡片（kind = oa）：左边封面，右边标题 + 摘要 + 来源
-   ============================================================ */
 
 struct OAArticleCard: View {
     let json: String

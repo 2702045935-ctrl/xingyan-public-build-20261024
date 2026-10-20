@@ -1,18 +1,6 @@
 import SwiftUI
 import UIKit
 
-/* ============================================================
-   会员系统（我们自己的一套，逻辑照 QQ 会员那套）
-
-   · 档位：普通用户 / 会员(VIP) / 超级会员(SVIP)，后台能改名字、价格、倍数
-   · 开通：走零钱扣款（要支付密码），也支持后台发的兑换码
-   · 权益：升级加速（服务端真生效）、昵称挂会员徽章、名字用会员配色、群人数上限放宽
-   · 到期：服务端按到期时间算，过期自动变回普通用户
-
-   这个文件放三样东西：数据模型、MemberStore（拉/开通/续费/兑换）、
-   以及到处要用的 MemberBadge（昵称后面那个小徽章）和付钱用的 MemberPaySheet。
-   ============================================================ */
-
 struct MemberTier: Decodable, Hashable, Identifiable {
     var id: String
     var name: String
@@ -29,7 +17,6 @@ struct MemberTier: Decodable, Hashable, Identifiable {
         var year: Double?
     }
 
-    /// 买 N 个月要多少钱（月/季/年三档单价里挑最划算的，和服务器一个算法）
     func priceOf(_ months: Int) -> Double {
         let p = price ?? Price()
         let unit: Double
@@ -83,8 +70,6 @@ struct MemberInfo: Decodable {
     var history: [MemberHistoryRow]?
 }
 
-/* ------------------------------------------------------------ 商店 */
-
 @MainActor
 final class MemberStore: ObservableObject {
     static let shared = MemberStore()
@@ -106,7 +91,6 @@ final class MemberStore: ObservableObject {
         if let m = try? await API.shared.memberInfo() { info = m }
     }
 
-    /// 开通 / 续费：成功返回 nil，失败返回错误文案
     @discardableResult
     func open(tierId: String, months: Int, payPassword: String) async -> String? {
         let (me, balance, err) = await API.shared.memberOpen(tierId: tierId, months: months, payPassword: payPassword)
@@ -133,9 +117,6 @@ final class MemberStore: ObservableObject {
     }
 }
 
-/* ------------------------------------------------------------ 徽章 */
-
-/// 昵称后面那个会员小徽章（普通用户不显示）
 struct MemberBadge: View {
     var tier: String?
     var short: String?
@@ -163,14 +144,11 @@ struct MemberBadge: View {
     }
 }
 
-/* ------------------------------------------------------------ 付钱（6 格 + 自带键盘） */
-
-/// 开通会员时输支付密码那一屏：和红包那套一样，不依赖系统键盘
 struct MemberPaySheet: View {
     let amount: Double
     var purpose: String = "开通会员"
     var hasPassword: Bool = true
-    /// 真正的付款动作：返回 nil 表示成功，返回文案表示失败
+
     let pay: (String) async -> String?
     let onDone: () -> Void
 
@@ -178,7 +156,7 @@ struct MemberPaySheet: View {
     @State private var pwd = ""
     @State private var busy = false
     @State private var tip = ""
-    /// 密码错了：6 个格子左右抖一下
+
     @State private var shake: CGFloat = 0
 
     var body: some View {
@@ -201,7 +179,7 @@ struct MemberPaySheet: View {
                 .font(pfMoney(32, .medium))
                 .foregroundColor(C.label)
                 .padding(.top, 6)
-            /* 支付方式那一行（微信付款页也有）：让人知道钱是从零钱扣的 */
+
             HStack(spacing: 6) {
                 Text(Tr("支付方式"))
                 Text(Tr("零钱")).foregroundColor(C.label)
@@ -217,7 +195,7 @@ struct MemberPaySheet: View {
                 PayKeypadView(busy: busy) { tapKey($0) }
                     .padding(.top, 16)
             } else {
-                /* 没设过支付密码：先去设（服务器也会拦） */
+
                 VStack(spacing: 8) {
                     Image(systemName: "lock.shield.fill")
                         .font(.system(size: 22))
@@ -244,7 +222,7 @@ struct MemberPaySheet: View {
             }
             Spacer(minLength: 0)
         }
-        /* 付钱的时候盖一层「正在开通会员」，不要把按钮文字改来改去（那样会跳一下） */
+
         .overlay {
             if busy { PayBusyOverlay(text: "正在开通会员") }
         }
@@ -254,7 +232,7 @@ struct MemberPaySheet: View {
 
     private func tapKey(_ key: String) {
         if busy { return }
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()   // 每按一下轻震一下
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
         if key == "⌫" {
             if !pwd.isEmpty { pwd.removeLast() }
             tip = ""
@@ -269,14 +247,14 @@ struct MemberPaySheet: View {
     private func submit() {
         guard !busy else { return }
         busy = true
-        /* @MainActor：震动反馈这类 UIKit 接口是 MainActor 隔离的，在 Task 里必须显式标注 */
+
         Task { @MainActor in
             let err = await pay(pwd)
             busy = false
             if let err = err {
                 tip = err
                 pwd = ""
-                /* 密码不对：震动 + 六个格子左右抖一下（高级支付页都这么反馈） */
+
                 UINotificationFeedbackGenerator().notificationOccurred(.error)
                 withAnimation(.easeOut(duration: 0.06)) { shake = -12 }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.07) {
@@ -291,21 +269,18 @@ struct MemberPaySheet: View {
     }
 }
 
-/* ------------------------------------------------------------ 支付成功那一页 */
-
 struct MemberPayResult: Identifiable {
     let id = UUID()
-    var title: String          // 「超级会员 · 3 个月」
-    var amount: Double         // 付了多少钱
-    var expireText: String     // 到期时间
-    var isRenew: Bool          // 是开通还是续费
+    var title: String
+    var amount: Double
+    var expireText: String
+    var isRenew: Bool
 }
 
-/// 付完钱弹的那一屏（微信支付成功页那种）：大对勾 + 金额 + 明细 + 完成
 struct MemberPayDoneView: View {
     let result: MemberPayResult
     var onClose: () -> Void
-    /* 支付成功那几个动画：对勾弹出来 + 一圈扩散的涟漪 + 明细卡跟着浮上来 */
+
     @State private var pop = false
     @State private var ripple = false
     @State private var showRows = false

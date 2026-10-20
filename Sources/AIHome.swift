@@ -1,29 +1,15 @@
 import SwiftUI
 
-/* ============================================================
-   AI 助手（「眼睛」那个号）的首页
-   照用户给的那张图（ChatGPT 那种首页）做：
-     · 一句「有什么我能帮你的吗？」
-     · 「为你推荐」几条（后台 aiHomeSuggestions 可配，逗号分隔）
-     · 下面一排四颗：对话 / 打电话 / AI 创作 / 拍题答疑
-
-   ⚠ 这块**不能放进聊天页**。ChatDetailView 那个巨型视图只要再多一层 VStack / 新
-   sheet / 新 overlay，用户一进聊天就被系统杀掉（B127 / B129 / B133 / B144 全是这么
-   挂的，日志停在「8 准备打开」没有「9 页面出现」）。
-   所以它住在**聊天信息页**里（GroupInfoView.swift 的 DirectChatInfoView）：在那一页点
-   一条推荐 = 直接把这句话发进这个 AI 会话，然后退回聊天页自己聊。
-   ============================================================ */
-
 struct AIHomeCardView: View {
-    /// 这个 AI 会话（发送就用它的 id）
+
     let chat: Chat
-    /// 点一条推荐 / 点「AI 创作 / 拍题答疑」：把这句话发进去（空串 = 只想打字，回聊天页）
+
     var onSend: (String) -> Void
-    /// 点「打电话」→ 走 AI 通话
+
     var onCall: () -> Void
-    /// 直接在星言内打开网页
+
     var onBrowser: () -> Void
-    /// 面对面传文件
+
     var onDrop: () -> Void
 
     private var suggestions: [String] {
@@ -87,7 +73,6 @@ struct AIHomeCardView: View {
 
                 HairLine(inset: 0)
 
-                /* 底下那四颗（图里就是图标在上、字在下，一行四等分） */
                 HStack(spacing: 0) {
                     ForEach(Array(acts.enumerated()), id: \.offset) { _, a in
                         Button {

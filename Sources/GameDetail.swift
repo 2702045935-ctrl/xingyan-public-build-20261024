@@ -1,19 +1,8 @@
 import SwiftUI
 
-/* ============================================================
-   游戏详情 + 游戏排行榜（微信「发现 → 游戏」里点一款进去的那一页）
-
-   2026-10-16 用户：「游戏界面跟微信的游戏界面对一下看看缺少啥」。
-   微信那边点一款游戏不是直接开局，而是先看这一页：
-     · 顶上大封面（海报）+ 名字 + 一句话介绍
-     · **好友排行**：谁最高分多少（就在这一页里）
-     · 底下一条「开始游戏」大按钮 + 分享
-   排行榜页则是把每款游戏的前几名摆在一起，一眼看谁最厉害。
-   ============================================================ */
-
 struct GameDetailView: View {
     let game: MiniApp
-    /// 点「开始游戏」：交给外面（外面要记「最近在玩」+ 打开内置浏览器）
+
     var onPlay: (MiniApp) -> Void
 
     @EnvironmentObject var app: AppState
@@ -55,8 +44,6 @@ struct GameDetailView: View {
         }
         .task { await loadRank() }
     }
-
-    /* ---------------------------------------------------------- 封面 */
 
     private var cover: some View {
         ZStack {
@@ -101,8 +88,6 @@ struct GameDetailView: View {
         .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(cardBg))
     }
 
-    /* ---------------------------------------------------------- 好友排行 */
-
     private var rankCard: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 6) {
@@ -128,10 +113,7 @@ struct GameDetailView: View {
             } else {
                 ForEach(Array(topRows.enumerated()), id: \.offset) { i, r in
                     HStack(spacing: 12) {
-                        /* 名次用**服务端给的真实名次**（r.rank）。
-                           以前这里写的是 `r.rank ?? (i+1)` —— 拿不到真实名次时按列表下标补一个，
-                           看着就是"假名次"（2026-10-16 用户：「排行数字真实」）。
-                           现在拿不到就不显示数字，绝不编一个出来。 */
+
                         Text(r.rank.map { "\($0)" } ?? "—")
                             .font(pf(13, .semibold))
                             .foregroundColor(i == 0 ? Color(hex: 0xE8A33D) : subInk)
@@ -156,12 +138,10 @@ struct GameDetailView: View {
         .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(cardBg))
     }
 
-    /// 榜单前 5（只显示有分的）
     private var topRows: [GameRankRow] {
         Array((rank?.rows ?? []).filter { $0.scoreText > 0 }.prefix(5))
     }
 
-    /// 「我的最高分 128 · 第 3 名」（英文那边就写 My best 128 · #3）
     private var myScoreLine: String? {
         guard let my = rank?.myScore, my > 0 else { return nil }
         let r = rank?.myRank ?? 0
@@ -172,8 +152,6 @@ struct GameDetailView: View {
     private func playersText(_ n: Int) -> String {
         Lang.isEnglish ? "\(n) players" : "共 \(n) 人在玩"
     }
-
-    /* ---------------------------------------------------------- 底部那条 */
 
     private var bottomBar: some View {
         HStack(spacing: 12) {
@@ -210,10 +188,6 @@ struct GameDetailView: View {
         loadingRank = false
     }
 }
-
-/* ============================================================
-   游戏排行榜：每款游戏一张卡（我 + 好友的最高分）
-   ============================================================ */
 
 struct GameRankBoardView: View {
     let games: [MiniApp]
@@ -295,7 +269,6 @@ struct GameRankBoardView: View {
         .task { await loadAll() }
     }
 
-    /// 游戏榜：先按「有几好友在玩」排，人一样多再比最高分
     private var rankedGames: [(app: MiniApp, rank: Int)] {
         func metric(_ g: MiniApp) -> (Int, Int) {
             let r = ranks[g.id]
@@ -309,9 +282,7 @@ struct GameRankBoardView: View {
             if ma.1 != mb.1 { return ma.1 > mb.1 }
             return a.name < b.name
         }
-        /* ⚠ 2026-10-16 用户：「排行数字真实」——
-           指标完全一样的两款游戏**并列同名次**，后面的名次跟着跳（1,2,2,4…），
-           不是按数组下标 1,2,3,4 硬排。 */
+
         var out: [(app: MiniApp, rank: Int)] = []
         var last: (Int, Int)? = nil
         var lastRank = 0
@@ -496,7 +467,6 @@ struct GameRankBoardView: View {
         .frame(width: size, height: size)
     }
 
-    /// 名次徽章（123 名给金银铜，其余灰）
     private func rankColor(_ rank: Int) -> Color {
         switch rank {
         case 1: return Color(hex: 0xE8A33D)
@@ -506,7 +476,6 @@ struct GameRankBoardView: View {
         }
     }
 
-    /// 一行一个**游戏**：名次 + 圆形图标 + 名字 + 右边「N 人在玩 / 最高分」
     private func boardRow(_ g: MiniApp, rank: Int) -> some View {
         let r = ranks[g.id]
         let players = r?.total ?? 0
@@ -580,7 +549,7 @@ struct GameRankBoardView: View {
             } else {
                 ForEach(Array(rows.enumerated()), id: \.offset) { i, row in
                     HStack(spacing: 10) {
-                        /* 名次一律用服务端的真实名次（拿不到就显示 —，不编数字） */
+
                         Text(row.rank.map { "\($0)" } ?? "—")
                             .font(pf(12.5, .semibold))
                             .foregroundColor(i == 0 ? Color(hex: 0xE8A33D) : subInk)
@@ -600,7 +569,6 @@ struct GameRankBoardView: View {
         .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(cardBg))
     }
 
-    /// 每款游戏的榜单并行拉（串行的话四五款要等好几秒）
     private func loadAll() async {
         loading = true
         var out: [String: GameRank] = [:]
@@ -609,7 +577,7 @@ struct GameRankBoardView: View {
                 grp.addTask { await API.shared.gameRank(g.id) }
             }
             for await r in grp {
-                /* 服务端把游戏标识一起回了，直接拿它当键（不用再自己配一遍） */
+
                 if let r, let id = r.game, !id.isEmpty { out[id] = r }
             }
         }

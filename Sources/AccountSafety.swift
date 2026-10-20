@@ -1,20 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   安全中心（冻结 / 解冻 / 自助解封）—— 2026-10-12 用户要求；2026-10-13 改掉「微信」字样
-   「把微信的真实封号和解冻、可以自己冻结做出来对齐」。
-
-   对应用户看到的：
-     · 我 → 设置 → 账号与安全 → **安全中心**
-         冻结账号（本人操作，冻上以后所有设备下线、登不进来）
-         解冻账号（输入账号 + 登录密码，可再补实名身份证号）
-         账号被禁用？自助解封（身份证解封，原来登录页那套）
-     · 登录页：账号被冻结 / 被禁用时，下面直接给对应的入口
-     · 管理页：输入一个星言号 → 冻结 / 解冻 / 封禁 / 解封（带原因）
-
-   服务器接口见 API.swift 里 `冻结 / 解冻` 那一段。
-   ============================================================ */
-
 struct AccountSafetyCenterView: View {
     @EnvironmentObject private var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -25,7 +10,7 @@ struct AccountSafetyCenterView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            /* 标题用「安全中心」（2026-10-13 用户要求：不要再写「微信安全中心」） */
+
             NavBar(title: Tr("安全中心"), back: { dismiss() })
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
@@ -82,8 +67,6 @@ struct AccountSafetyCenterView: View {
         .contentShape(Rectangle())
     }
 }
-
-/* ---------------------------------------------------------- 冻结账号（本人） */
 
 struct FreezeAccountSheet: View {
     @EnvironmentObject private var app: AppState
@@ -145,11 +128,9 @@ struct FreezeAccountSheet: View {
         busy = false
         dismiss()
         app.show(Tr("账号已冻结，可在登录页点「解冻账号」随时解开"))
-        await app.logout()          // 自己冻的也立刻退出（服务器那边已经全拒了）
+        await app.logout()
     }
 }
-
-/* ---------------------------------------------------------- 解冻账号（自助） */
 
 struct UnfreezeSheet: View {
     @EnvironmentObject private var app: AppState
@@ -221,8 +202,6 @@ struct UnfreezeSheet: View {
         busy = false
     }
 }
-
-/* ---------------------------------------------------------- 管理页：账号状态（冻结 / 解冻 / 封禁 / 解封） */
 
 struct AccountOpsSection: View {
     @EnvironmentObject private var app: AppState
@@ -317,8 +296,7 @@ struct AccountOpsSection: View {
         let n = name.trimmingCharacters(in: .whitespaces)
         guard !n.isEmpty else { return }
         busy = true
-        // /api/ops/account 需要 userId：先按星言号查一次（accountState 只回状态），
-        // 所以这里用「管理侧搜索」拿 id；拿不到就直接用星言号（服务器也认 userId 里的用户名）
+
         let uid = await resolveUserId(n) ?? n
         let ok = await API.shared.opsAccount(userId: uid, action: action,
                                              reason: reason.trimmingCharacters(in: .whitespaces))
@@ -327,10 +305,9 @@ struct AccountOpsSection: View {
         await look()
     }
 
-    /// 星言号 → userId（用管理侧的搜索接口；失败返回 nil）
     private func resolveUserId(_ n: String) async -> String? {
         if n.hasPrefix("u_") { return n }
-        /* 管理侧「按用户名/昵称搜人」的接口（发卡那套用的同一个） */
+
         let hits = (try? await API.shared.opsCardFind(n)) ?? []
         return hits.first(where: { $0.username == n })?.id ?? hits.first?.id
     }

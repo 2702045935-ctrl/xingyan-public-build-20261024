@@ -2,17 +2,6 @@ import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
 
-/* ============================================================
-   App 里的「管理」（只有 ops = true 的账号才看得到这个入口）
-
-   · 上新音乐：选一个 mp3/m4a → 填歌名歌手 → （可选）挑封面、贴歌词 → 加进曲库
-   · 音乐图标：曲库里每一首后面都能换封面
-   · 游戏图标：每一款小游戏都能换图标
-
-   改的是**同一份数据**（服务器 data/music.json / data/miniapps.json），
-   所以换完后台和所有人立刻就看到了，不用重新出包。
-   ============================================================ */
-
 struct ManageData: Decodable {
     var music: [MusicTrack]?
     var games: [MiniApp]?
@@ -28,7 +17,6 @@ struct UserManageView: View {
     @State private var busy = ""
     @State private var msg = ""
 
-    /* 上新音乐这份表单 */
     @State private var title = ""
     @State private var artist = ""
     @State private var lyrics = ""
@@ -36,54 +24,54 @@ struct UserManageView: View {
     @State private var audioName = ""
     @State private var newCoverURL = ""
     @State private var showAudioPick = false
-    /// 批量：选多个文件 / 选整个文件夹（一次把一堆歌导进来）
+
     @State private var showBatchPick = false
     @State private var showFolderPick = false
     @State private var batchTotal = 0
     @State private var batchDone = 0
-    /// 正在给谁挑图："" = 上新那首的封面；"mus_xxx" = 那首歌；"g01" = 那款游戏
+
     @State private var pickFor = ""
     @State private var showCoverPick = false
-    /// 正在编辑的小程序/小游戏（点一行进编辑页）
+
     @State private var editing: MiniApp? = nil
-    /// 系统通知开关（照微信那个「微信团队」号）
+
     @State private var snOn = true
     @State private var snTypes: [String: Bool] = [:]
-    /// 官方号（星言团队 / 星联世界 …）：名字 + 头像，像换头像一样换
+
     @State private var officials: [API.OfficialAccount] = []
     @State private var editingOfficial: API.OfficialAccount? = nil
-    /// 音乐多选删除：选中了哪些 / 是不是在选
+
     @State private var pickingMusic = false
     @State private var pickedMusic: Set<String> = []
-    /* ---- 小店（商品）---- */
+
     @State private var shopItems: [API.ShopItem] = []
     @State private var shopLoading = false
     @State private var editShopItem: API.ShopItem? = nil
     @State private var newShopItem = false
-    /* ---- 卡包（发卡 / 删卡）---- */
+
     @State private var cardQuery = ""
     @State private var cardUsers: [API.OpsUserRow] = []
     @State private var cardUser: API.OpsUserRow? = nil
     @State private var cardSearching = false
     @State private var cardMsg = ""
-    /* ---- App 日志 / 崩溃汇入 ---- */
+
     @State private var logTotal = 0
     @State private var logKinds: [API.AppLogKind] = []
     @State private var logRows: [API.AppLogRow] = []
     @State private var logKind = ""
     @State private var logLoading = false
     @State private var logDetail: API.AppLogRow? = nil
-    /* ---- 红包封面（管理页可换）---- */
+
     @State private var rpCovers: [API.RPCover] = []
     @State private var rpDefault = ""
     @State private var rpEdit: API.RPCover? = nil
     @State private var rpNew = false
-    /* ---- 开关（写 ui.json 的键）---- */
+
     @State private var faceForRealName = UIConfig.num("realnameFace", 1) > 0
     @State private var chatFilterBar = UIConfig.num("chatFilterBar", 1) > 0
-    /// 「我」页排版：0 = 卡片版（头像压在卡片上沿那版）/ 1 = 微信版（一行放下头像/名字/星言号）
+
     @State private var meLayout = Int(UIConfig.num("meLayout", 0))
-    /// 多设备同时在线（ui.json 的 multiDevice）：开了以后同一个账号几台手机都在线、消息互相同步
+
     @State private var multiDevice = UIConfig.num("multiDevice", 0) > 0
 
     var body: some View {
@@ -91,11 +79,7 @@ struct UserManageView: View {
             NavBar(title: Tr("管理"), back: { dismiss() })
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 10) {
-                    /* ⚠ 2026-10-16 用户：「app 后台整理一下，太乱了」。
-                       以前是十几张卡一路平铺，找一样东西要从头翻到尾。
-                       现在这一页只当**目录**：一格一个模块（图标 + 名字 + 里面有什么），
-                       点进去才是那一模块的卡片 —— 和微信「设置」那种一层一层是一样的道理。
-                       功能一个没少，只是分到了子页里。 */
+
                     groupTitle(Tr("商城"))
                     hubCard {
                         linkRow(icon: "cart.fill", tint: Color(hex: 0xE02A0F),
@@ -188,23 +172,19 @@ struct UserManageView: View {
         .swipeBack { dismiss() }
         .hidesTabBar()
         .task { await load() }
-        /* 选音频文件：mp3 / m4a / wav 都行（服务器那边收下就存成 /uploads/xxx） */
+
         .fileImporter(isPresented: $showAudioPick,
-                      /* ⚠ 这里**不能只写音频类型**：从别处下载来的歌后缀五花八门
-                         （flac / ape / wma / opus / 甚至认不出来的），只写 .audio 的话
-                         这些文件在选择器里是灰的、根本点不了（用户反馈的
-                         「我要上传的是昨天下载那种格式」就是这个）。
-                         放开成 .item = 什么文件都能选，服务器那边会用 ffmpeg 转成 mp3。 */
+
                       allowedContentTypes: [.item],
                       allowsMultipleSelection: false) { result in
             uploadAudio(result)
         }
-        /* 一次选好几首 */
+
         .fileImporter(isPresented: $showBatchPick, allowedContentTypes: [.item],
                       allowsMultipleSelection: true) { result in
             if case .success(let urls) = result { importFiles(urls) }
         }
-        /* 直接挑一个文件夹：里面的歌全导进来（歌名就用文件名） */
+
         .fileImporter(isPresented: $showFolderPick, allowedContentTypes: [.folder],
                       allowsMultipleSelection: false) { result in
             if case .success(let urls) = result, let dir = urls.first { importFolder(dir) }
@@ -212,42 +192,42 @@ struct UserManageView: View {
         .sheet(isPresented: $showCoverPick) {
             PhotoPicker { img in uploadPic(img) }
         }
-        /* 改小程序/小游戏：名字 / 说明 / 图标 emoji / 入口地址 */
+
         .sheet(item: $editing) { g in
             MiniAppEditSheet(item: g) { await load() }
                 .environmentObject(app)
         }
-        /* 改官方号：名字 + 头像（点一下选张图，和换头像一样） */
+
         .sheet(item: $editingOfficial) { o in
             OfficialEditSheet(item: o) { await load() }
         }
-        /* 改一件商品（名字 / 价格 / 库存 / 图片 / 上架 / 排序） */
+
         .sheet(item: $editShopItem) { it in
             ShopItemEditSheet(item: it, onSaved: refreshShopSoon)
                 .environmentObject(app)
         }
-        /* 上架一件新商品 */
+
         .sheet(isPresented: $newShopItem) {
             ShopItemEditSheet(item: nil, onSaved: refreshShopSoon)
                 .environmentObject(app)
         }
-        /* 给某个人发卡 / 删卡 */
+
         .sheet(item: $cardUser) { u in
             CardAdminSheet(user: u)
                 .environmentObject(app)
         }
-        /* 点一条汇入的日志：看完整正文 + 调用栈 */
+
         .sheet(item: $logDetail) { r in
             AppLogDetailSheet(row: r)
         }
-        /* 改一张红包封面 */
+
         .sheet(item: $rpEdit) { c in
             RPCoverEditSheet(cover: c, isDefault: rpDefault == c.id) { r in
                 applyRpEdit(r, editing: c)
             }
             .environmentObject(app)
         }
-        /* 新增一张红包封面 */
+
         .sheet(isPresented: $rpNew) {
             RPCoverEditSheet(cover: nil, isDefault: false) { r in
                 applyRpEdit(r, editing: nil)
@@ -256,16 +236,6 @@ struct UserManageView: View {
         }
     }
 
-    /* ------------------------------------------------------- 小店（商品管理）
-       后台接口：GET /api/ops/shop（含已下架的）、POST /api/ops/shop
-                 （{item} 改 / {newItem} 新增 / {removeId} 删）。
-       改的是 data/shop.json，App 里「我 → 小店与卡包」立刻就是新的。 */
-
-    /* ---------------- 目录页的小零件 ----------------
-       hubCard = 一张分组卡；linkRow = 卡里的一行（图标 + 名字 + 说明 + 箭头），
-       点了推进对应的子页（子页里还是原来那些卡片）。 */
-    /* ⚠ 泛型参数不能叫 C —— 那个名字被项目里的颜色类 `C`（C.pageBg / C.label）占着，
-       一撞就把 C 遮住，编译会报 "type 'C' has no member 'pageBg'"（2026-10-16 踩过）。 */
     @ViewBuilder private func hubCard<V: View>(@ViewBuilder _ content: () -> V) -> some View {
         GroupCard { content() }
             .padding(.horizontal, 12)
@@ -326,7 +296,7 @@ struct UserManageView: View {
                                 .font(pf(12)).foregroundColor(C.subLabel).lineLimit(1)
                         }
                         Spacer(minLength: 4)
-                        /* 上架开关：点了立刻生效（不用进编辑页） */
+
                         Toggle("", isOn: Binding(
                             get: { it.on != false },
                             set: { v in Task { await shopSetOn(it, v) } }))
@@ -351,9 +321,6 @@ struct UserManageView: View {
         shopLoading = false
     }
 
-    /// 商品那一行的副标题（价格 · 库存 · 实物/虚拟 · 排序）。
-    /// ⚠ 一定要先在函数里拼好再交给 Text：直接在 ViewBuilder 里串 7 段字符串，
-    /// swiftc 的类型检查会爆炸（B171 第一次打包报的就是 "unable to type-check in reasonable time"）。
     private func shopRowSub(_ it: API.ShopItem) -> String {
         let a = "¥" + moneyFmt(it.price)
         let b = Tr("库存 ") + String(it.stock ?? 0)
@@ -361,12 +328,10 @@ struct UserManageView: View {
         return a + " · " + b + " · " + it.kindName + " · " + c
     }
 
-    /// 商品改完 / 删完，sheet 里喊一声，这边异步重拉一次列表
     private func refreshShopSoon() {
         Task { await loadShop() }
     }
 
-    /// 改上架 / 下架（只发一个字段，其余不动）
     private func shopSetOn(_ item: API.ShopItem, _ on: Bool) async {
         do {
             shopItems = try await API.shared.opsShopSave(item: ["id": item.id, "on": on], newItem: nil)
@@ -375,9 +340,6 @@ struct UserManageView: View {
             msg = (error as? APIError)?.errorDescription ?? "改上架状态失败"
         }
     }
-
-    /* ------------------------------------------------------- 卡包（发卡 / 删卡）
-       后台接口：POST /api/ops/cards（action = find 搜人 / list 某人的卡 / issue 发卡 / delete 删卡） */
 
     private var cardsSection: some View {
         card(Tr("卡包（找人 → 发券 / 删卡）")) {
@@ -446,16 +408,11 @@ struct UserManageView: View {
         cardSearching = false
     }
 
-    /// 搜人结果那一行的副标题（用户名 · 名下几张卡）—— 同样先拼好再交给 Text
     private func cardUserSub(_ u: API.OpsUserRow) -> String {
         let name = u.username ?? ""
         let n = Tr("名下 ") + String(u.cards ?? 0) + Tr(" 张卡")
         return name + " · " + n
     }
-
-    /* ------------------------------------------------------- App 日志 / 崩溃（汇入）
-       手机上的崩溃、异常、体检/日志上传都走 POST /api/clientlog 落到服务器的
-       data/client-errors.jsonl；这里（ops 账号）按类型汇总 + 看最近几条，点开看完整调用栈。 */
 
     private var logsSection: some View {
         card(Tr("App 日志 / 崩溃（汇入）")) {
@@ -516,8 +473,6 @@ struct UserManageView: View {
         Tr("汇入 ") + String(logTotal) + Tr(" 条日志")
     }
 
-    /// 「类型 5 种 · 最近 30 条」—— 先算好再交给 Text（ViewBuilder 里串 5 段字符串会把
-    /// swiftc 的类型检查拖爆，B171 那次就是这么超时的）
     private var logSubText: String {
         let a = Tr("类型 ") + String(logKinds.count) + Tr(" 种")
         let b = Tr("最近 ") + String(logRows.count) + Tr(" 条")
@@ -551,7 +506,6 @@ struct UserManageView: View {
         return parts.joined(separator: " · ")
     }
 
-    /// 服务器给的是 ISO 时间（也兼容毫秒数字串）
     private func logTime(_ s: String) -> String {
         if let n = Double(s), n > 1_000_000_000 {
             let d = Date(timeIntervalSince1970: n > 10_000_000_000 ? n / 1000 : n)
@@ -572,15 +526,6 @@ struct UserManageView: View {
         logLoading = false
     }
 
-    /* ------------------------------------------------------- 红包封面（管理页可换）
-       数据就是 data/redpacket-covers.json，和后台 manage.html 的「红包封面」互通：
-       改完发红包页立刻能看到（服务端保存时顺手更新内存缓存，不用重启）。 */
-
-    /* ------------------------------------------------------- 开关（写 ui.json 的键）
-       用户要求「要给管理一个开关」：第一个就是**实名认证前要不要先刷脸（人脸核身）**。
-       判定不准的时候管理一键关掉，用户就不会被挡在实名那一步。
-       服务端 POST /api/ops/ui 改 data/ui.json，改完这里重拉一次 UI 配置就生效。 */
-
     private var switchSection: some View {
         card(Tr("开关")) {
             HStack(spacing: 12) {
@@ -595,7 +540,7 @@ struct UserManageView: View {
                         faceForRealName = v
                         Task {
                             let ok = await API.shared.opsSetUIKey("realnameFace", v ? 1 : 0)
-                            /* 改完把 UI 配置重拉一次，本机立刻按新开关走 */
+
                             if ok {
                                 let cfg = await API.shared.uiConfig()
                                 UIConfig.apply(cfg.ui)
@@ -638,10 +583,6 @@ struct UserManageView: View {
 
             HairLine(inset: 16)
 
-            /* 用户要求：「整个『我』页面的排版可以切换给管理」—— 已经在包里的两版排版
-               在这儿切（写 ui.json 的 meLayout，改完重开 App 生效）：
-                 卡片版 = 头像压在卡片上沿 + 朋友/等级/活跃天 + 会员/状态胶囊
-                 微信版 = 照微信一行放下 头像 / 名字 / 星言号 / 二维码 / 箭头 */
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(Tr("「我」页排版")).font(pf(16)).foregroundColor(C.label)
@@ -675,8 +616,6 @@ struct UserManageView: View {
 
             HairLine(inset: 16)
 
-            /* 多设备同时在线（用户要求「消息同步多端」）：开着的时候同一个账号几台手机
-               都能保持登录、消息和已读互相同步；关掉就回到「新手机一登顶掉旧手机」。 */
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(Tr("多设备同时在线")).font(pf(16)).foregroundColor(C.label)
@@ -756,7 +695,6 @@ struct UserManageView: View {
         }
     }
 
-    /// 把整份封面存回去（服务端就是按整份覆盖处理的，和后台同一套）
     private func saveRpCovers(_ list: [API.RPCover], defaultId: String) async -> Bool {
         let arr: [[String: Any]] = list.map { c in
             var d: [String: Any] = [
@@ -781,7 +719,6 @@ struct UserManageView: View {
         }
     }
 
-    /// 编辑结果 → 拼一整份列表 → 存回去（新封面用一个临时 id，服务端会换成 cv 开头的正式 id）
     private func applyRpEdit(_ r: RPCoverEditResult, editing: API.RPCover?) {
         var list = rpCovers
         var def = rpDefault
@@ -806,8 +743,6 @@ struct UserManageView: View {
             }
         }
     }
-
-    /* ------------------------------------------------------- 上新音乐 */
 
     private var addSection: some View {
         card(Tr("上线新音乐")) {
@@ -867,8 +802,6 @@ struct UserManageView: View {
         }
     }
 
-    /* ------------------------------------------------------- 音乐图标 */
-
     private var musicIcons: some View {
         card(Tr("音乐图标")) {
             if let list = data?.music, !list.isEmpty {
@@ -914,11 +847,6 @@ struct UserManageView: View {
         }
     }
 
-    /* ------------------------------------------------------- 游戏图标 */
-
-    /* ------------------------------------------------------- 小程序（图标 + 文字） */
-
-    /* 系统通知（「星言团队」那个号）：开关就在这儿管 */
     private var sysNoticeSection: some View {
         card(Tr("系统通知（星言团队）")) {
             tipRow(Tr("总开关"), Binding(
@@ -950,7 +878,6 @@ struct UserManageView: View {
         [("login", "登录提醒"), ("security", "安全提醒"), ("pay", "支付通知"), ("notice", "官方公告")]
     }
 
-    /// 带开关的一行
     private func tipRow(_ title: String, _ on: Binding<Bool>) -> some View {
         HStack {
             Text(title).font(pf(15.5)).foregroundColor(C.label)
@@ -960,10 +887,6 @@ struct UserManageView: View {
         .padding(.horizontal, 16).frame(height: 52)
     }
 
-    /* ------------------------------------------------------- 官方号（名字 / 头像） */
-
-    /* 「星言团队」这种官方号：名字和头像都能在这儿换，换法跟换头像一模一样
-       （点一行 → 进去点头像选张图、点名字改字 → 保存）。只有管理（ops）能进这一页。 */
     private var officialSection: some View {
         card(Tr("官方号（名字 / 头像）")) {
             if officials.isEmpty {
@@ -1094,8 +1017,6 @@ struct UserManageView: View {
         .buttonStyle(.plain)
     }
 
-    /* ------------------------------------------------------- 小零件 */
-
     private func card<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(spacing: 0) {
             HStack {
@@ -1110,7 +1031,6 @@ struct UserManageView: View {
         }
     }
 
-    /// 分组小标题（用户说「管理里面排版一下，太乱了」—— 十几张卡按用途分组，每组一行小灰字）
     private func groupTitle(_ t: String) -> some View {
         Text(t)
             .font(pf(13, .medium))
@@ -1145,19 +1065,17 @@ struct UserManageView: View {
         showCoverPick = true
     }
 
-    /* ------------------------------------------------------- 干活 */
-
     private func load() async {
         data = await API.shared.manageData()
-        /* 官方号清单（名字 / 头像） */
+
         if let list = try? await API.shared.officialAccounts() { officials = list }
-        /* 系统通知那几个开关要显示服务器上的真实状态，不能一直默认「全开」 */
+
         let cfg = await API.shared.sysNoticeCfg()
         snOn = cfg.enabled
         snTypes = cfg.types
-        await loadShop()          // 小店商品（含已下架的）
-        await loadLogs()          // 汇入的 App 日志 / 崩溃
-        await loadRpCovers()      // 红包封面
+        await loadShop()
+        await loadLogs()
+        await loadRpCovers()
         loading = false
     }
 
@@ -1188,13 +1106,9 @@ struct UserManageView: View {
         }
     }
 
-    /// 按后缀报正确的 mime（以前不管什么文件都报 audio/mpeg，
-    /// 结果服务器把 m4a 也存成 .mp3，扩展名和内容对不上）。认不出来就 octet-stream，
-    /// 服务器照样收，并在入库时用 ffmpeg 嗅探真实格式转成 mp3。
     private let audioExts: Set<String> = ["mp3", "m4a", "flac", "wav", "aac", "ogg", "oga",
                                           "opus", "ape", "wma", "aiff", "aif", "amr", "mka", "mp4"]
 
-    /// 挑了一个文件夹：把里面（含子文件夹）的音频挨个导进来
     private func importFolder(_ dir: URL) {
         let ok = dir.startAccessingSecurityScopedResource()
         if !ok { msg = Tr("读不到这个文件夹") ; return }
@@ -1209,11 +1123,10 @@ struct UserManageView: View {
             msg = Tr("这个文件夹里没找到音频文件")
             return
         }
-        /* 权限要一直开到导完（下面那个 Task 里读完再释放） */
+
         importFiles(files, holding: dir)
     }
 
-    /// 批量导入：歌名就用文件名；一首一首来（顺序上传，不炸内存也不炸服务器）
     private func importFiles(_ urls: [URL], holding: URL? = nil) {
         let list = urls.filter { audioExts.contains($0.pathExtension.lowercased()) }
         guard !list.isEmpty else {
@@ -1240,7 +1153,7 @@ struct UserManageView: View {
                                                          title: u.deletingPathExtension().lastPathComponent,
                                                          artist: "", cover: "", url: r.url, lyrics: "")
                 } catch {
-                    /* 单首失败不影响后面的 */
+
                 }
                 batchDone += 1
                 msg = Tr("正在导入 ") + "\(batchDone)/\(batchTotal)"
@@ -1301,7 +1214,6 @@ struct UserManageView: View {
         busy = ""
     }
 
-    /// 批量删除选中的歌
     private func deletePicked() async {
         let ids = Array(pickedMusic)
         guard !ids.isEmpty else { msg = Tr("先勾几首再删"); return }
@@ -1319,15 +1231,10 @@ struct UserManageView: View {
     }
 }
 
-/* ============================================================
-   编辑一个小程序 / 小游戏：名字、说明、图标 emoji、图标图片、入口地址
-   （用户要的「小程序图标文字更换加入我的管理」）
-   ============================================================ */
-
 struct MiniAppEditSheet: View {
     @Environment(\.dismiss) private var dismiss
     let item: MiniApp
-    /// 存完通知外面刷新列表
+
     var onSaved: () async -> Void
 
     @State private var name = ""
@@ -1356,7 +1263,7 @@ struct MiniAppEditSheet: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
-                    /* 图标：左边一个预览，点一下换图 */
+
                     Button { showPic = true } label: {
                         HStack(spacing: 12) {
                             ZStack {
@@ -1459,16 +1366,10 @@ struct MiniAppEditSheet: View {
     }
 }
 
-/* ============================================================
-   改一个官方号（「星言团队」/「星联世界」/ AI 助手 …）：名字 + 头像
-   —— 头像跟换头像一样：点一下选张图、上传、保存。
-   用户要的「团队名字后图标都可以在管理里换，包括新闻这些的官方图标」。
-   ============================================================ */
-
 struct OfficialEditSheet: View {
     @Environment(\.dismiss) private var dismiss
     let item: API.OfficialAccount
-    /// 存完通知外面刷新列表
+
     var onSaved: () async -> Void
 
     @State private var name = ""
@@ -1492,7 +1393,7 @@ struct OfficialEditSheet: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
-                    /* 头像：点一下选张图（和换头像一样） */
+
                     Button { pickAvatar() } label: {
                         HStack(spacing: 12) {
                             ZStack {
@@ -1554,9 +1455,6 @@ struct OfficialEditSheet: View {
         }
     }
 
-    /* 选头像：**不用嵌套的 sheet**（这一页本身就是 sheet，再从里面弹一个 PHPicker，
-       有时候会直接崩 / 第二次点没反应）。走 AlbumPicker：它自己找到最上面的控制器
-       present，最稳；而且回来的图是**降采样**过的，不再把整张原图解进内存。 */
     private func pickAvatar() {
         CrashCatcher.note("官方号", "点头像 key=" + item.key)
         AlbumPicker.present { img in
@@ -1612,13 +1510,10 @@ struct OfficialEditSheet: View {
     }
 }
 
-/* ============================================================ 改 / 上架一件商品 */
-
 struct ShopItemEditSheet: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
 
-    /// nil = 上架一件新的
     let item: API.ShopItem?
     let onSaved: () -> Void
 
@@ -1650,7 +1545,7 @@ struct ShopItemEditSheet: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 10) {
                     GroupCard {
-                        /* 商品图：点一下从相册选一张，传上去自动填进 img */
+
                         Button { showPic = true } label: {
                             HStack(spacing: 12) {
                                 Text(Tr("商品图")).font(pf(16)).foregroundColor(C.label)
@@ -1829,8 +1724,6 @@ struct ShopItemEditSheet: View {
     }
 }
 
-/* ============================================================ 给某个人发卡 / 删卡 */
-
 struct CardAdminSheet: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -2003,7 +1896,6 @@ struct CardAdminSheet: View {
     }
 }
 
-/* ============================================================ 一条汇入的日志（正文 + 调用栈） */
 struct AppLogDetailSheet: View {
     @Environment(\.dismiss) private var dismiss
     let row: API.AppLogRow
@@ -2092,9 +1984,6 @@ struct AppLogDetailSheet: View {
     }
 }
 
-/* ============================================================ 管理页的子页外壳
-   2026-10-16：管理页改成「目录 + 子页」之后，每个模块点进去都是这一层壳 ——
-   一条返回栏 + 滚动区，里面放原来那几张卡。 */
 struct ManageSubPage<V: View>: View {
     let title: String
     let content: () -> V
@@ -2118,10 +2007,7 @@ struct ManageSubPage<V: View>: View {
         .background(C.pageBg.ignoresSafeArea(edges: .top))
         .toolbar(.hidden, for: .navigationBar)
         .hidesTabBar()
-        /* 2026-10-16 用户：「管理里面好多东西无法左滑返回」——
-           管理页改成「目录 + 子页」之后，所有模块都从这个壳进去，
-           而这一层壳当时**忘了挂左滑返回**（返回栏有、手势没有）。
-           补上：从左边往右滑 = 退回管理目录。 */
+
         .swipeBack { dismiss() }
     }
 }

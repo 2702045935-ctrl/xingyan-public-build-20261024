@@ -1,7 +1,5 @@
 import SwiftUI
 
-/// 把每个元素的「真实渲染尺寸」收集起来，回传到电脑上对着参考图校准。
-/// 服务器上 data/ui.json 里写 "measure": 1 才开，平时不跑。
 @MainActor
 final class Measurer: ObservableObject {
     static let shared = Measurer()

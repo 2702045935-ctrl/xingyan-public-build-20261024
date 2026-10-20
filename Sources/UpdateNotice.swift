@@ -1,15 +1,8 @@
 import SwiftUI
 
-/* ============================================================
-   弹窗公告 / 版本更新（后台「运营配置」里配，App 启动时拉 /api/version）
-   · CenterCard：居中的一张卡片（公告、可选更新都用它）
-   · ForceUpdateView：强制更新——盖住整个界面，只有一个「立即更新」按钮
-   文案/颜色都跟着 App 自己的主题走，深浅色都不会突兀。
-   ============================================================ */
-
 struct CenterCard: View {
     var title: String
-    /// 注意：这里不能叫 body —— 会和 SwiftUI 的 View.body 冲突
+
     var text: String
     var primary: String
     var onPrimary: () -> Void

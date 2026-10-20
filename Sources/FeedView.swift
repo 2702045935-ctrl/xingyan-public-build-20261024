@@ -2,15 +2,6 @@ import SwiftUI
 import AVKit
 import PhotosUI
 
-/* ============================================================
-   视频号（发现 → 视频号）—— 抖音式上下刷
-     · 一次一屏，手指上滑看下一条（松手吸附，跟手）
-     · 右侧动作栏：头像+关注 / ❤️ / 💬 / ↗️
-     · 底部：作者 + 文案 + 🎵 音乐名
-     · 右上角 ＋ 可以发表自己的视频（从相册选，传到服务器）
-   视频列表在服务器的 data/feed.json（后台可改），用户发的会追加进去。
-   ============================================================ */
-
 struct FeedAuthor: Decodable, Hashable {
     var id: String?
     var name: String?
@@ -20,11 +11,10 @@ struct FeedAuthor: Decodable, Hashable {
 struct FeedItem: Decodable, Identifiable, Hashable {
     var id: String
     var video: String?
-    /// 分片地址（服务器切好的 HLS）：有就用它 —— 拿到第一段就出画面，后面边看边下
+
     var hls: String?
     var cover: String?
 
-    /// 播放地址：优先 HLS（先播放后加载），没有就退回整包 MP4
     var playPath: String {
         if let h = hls, !h.isEmpty { return h }
         return video ?? ""
@@ -32,7 +22,7 @@ struct FeedItem: Decodable, Identifiable, Hashable {
     var desc: String?
     var music: String?
     var tag: String?
-    /* 短剧：集数标签（第3集）/ 总集数 / 剧集 id / 剧名 */
+
     var ep: String?
     var epTotal: Int?
     var series: String?
@@ -42,7 +32,7 @@ struct FeedItem: Decodable, Identifiable, Hashable {
     var author: FeedAuthor?
     var likes: Int?
     var liked: Bool?
-    /// 我有没有关注这个作者（视频号的关注是单独的，和好友关系无关）
+
     var followed: Bool?
     var comments: Int?
     var shares: Int?
@@ -54,39 +44,39 @@ struct ChannelsView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var items: [FeedItem] = []
-    /// 全屏「抖音版」播放页（一屏一条、上下滑切换）
+
     @State private var showBigPlayer = false
     @State private var index = 0
-    /// 视频号顶部 tab：0=关注 1=朋友 2=推荐（默认推荐）
+
     @State private var tab = 2
     @State private var drag: CGFloat = 0
     @State private var loading = true
     @State private var commentFor: FeedItem?
-    /// 转发面板 / 转发给朋友
+
     @State private var shareItem: FeedItem?
     @State private var forwardItem: FeedItem?
     @State private var commentText = ""
-    @State private var comments: [FeedCommentItem] = []      // 评论列表
+    @State private var comments: [FeedCommentItem] = []
     @State private var pickOpen = false
     @State private var picked: PhotosPickerItem?
     @State private var uploading = false
-    /// 上传进度（0…1）和当前阶段文案：压缩中 / 上传中（抖音也是这么给的）
+
     @State private var uploadProgress: Double = 0
     @State private var uploadStage = ""
-    /// 发布页左边那张封面（本地抽第一帧，发布时立刻有画面）
+
     @State private var pendingCover: UIImage?
     @State private var showPublish = false
     @State private var publishDesc = ""
     @State private var publishMusic = ""
     @State private var pendingVideoPath = ""
     @State private var uploadMB: Double = 0
-    @State private var trim = 0          // 0=不处理 1=剪底部10% 2=剪底部14% 3=剪右侧12% 4=剪右下角
+    @State private var trim = 0
     @State private var style = FeedStyle()
     @State private var flags = FeedFlags()
-    @State private var loadingMore = false          // 正在拉下一批（无限刷）
-    @State private var episodeFor: FeedItem?         // 短剧「选集」面板
+    @State private var loadingMore = false
+    @State private var episodeFor: FeedItem?
     @State private var seriesEpisodes: [FeedItem] = []
-    /// 精彩视频里的「B站热门」（点开用新闻那套卡片，看原视频去 B 站）
+
     @State private var showBili = false
 
     var body: some View {
@@ -100,7 +90,7 @@ struct ChannelsView: View {
                         .font(pf(14)).foregroundColor(.white.opacity(0.7))
                         .multilineTextAlignment(.center)
                 } else {
-                    /* 三条一组：上一条、当前、下一条，跟着手指上下移动 */
+
                     ForEach(visible, id: \.item.id) { row in
                         FeedCell(item: row.item,
                                  active: row.offset == 0,
@@ -138,7 +128,7 @@ struct ChannelsView: View {
                             withAnimation(.easeOut(duration: 0.22)) { drag = h }
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { index -= 1; drag = 0 }
                         } else if (far || fast), v.translation.height < 0, index >= items.count - 1 {
-                            /* 已经滑到当前这批的最后一条，还往上滑 —— 去拿下一批（无限刷） */
+
                             withAnimation(.easeOut(duration: 0.22)) { drag = -h }
                             Task {
                                 await loadMore()
@@ -156,7 +146,7 @@ struct ChannelsView: View {
         .toolbar(.hidden, for: .navigationBar)
         .hidesTabBar()
         .swipeBack { dismiss() }
-        /* 精彩视频 → B站热门：全屏打开我们那套新闻排版（只显示这一栏） */
+
         .fullScreenCover(isPresented: $showBili) {
             NavigationStack {
                 VStack(spacing: 0) {
@@ -183,14 +173,14 @@ struct ChannelsView: View {
                 .background(C.cardBg.ignoresSafeArea())
             }
         }
-        /* 全屏「抖音版」播放页：一屏一条、上下滑切换、滑到哪条自动播 */
+
         .fullScreenCover(isPresented: $showBigPlayer) {
             FeedPlayerView(items: items, start: 0).environmentObject(app)
         }
         .sheet(item: $commentFor) { item in
             commentSheet(item)
         }
-        /* 抖音那种转发面板 */
+
         .sheet(item: $shareItem) { item in
             VideoShareSheet(
                 item: item,
@@ -256,12 +246,11 @@ struct ChannelsView: View {
             }
         }
         .task { await load() }
-        /* 快滑到最后几条就提前把下一批拉回来，滑到底也不会卡住 */
+
         .onChange(of: index) { i in
             if i >= items.count - 2 { Task { await loadMore() } }
         }
-        /* 进视频号就把音频通道设成「播放」：这样手机的静音键拨下去也有声音
-           （抖音就是这个行为），离开时再交还，别影响别人听歌。 */
+
         .onAppear {
             let s = AVAudioSession.sharedInstance()
             try? s.setCategory(.playback, mode: .moviePlayback, options: [.mixWithOthers])
@@ -271,8 +260,6 @@ struct ChannelsView: View {
             try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         }
     }
-
-    /* ---------------------------------------------------------- 顶部 */
 
     private var topBar: some View {
         VStack {
@@ -285,7 +272,6 @@ struct ChannelsView: View {
                 }
                 .buttonStyle(.plain)
 
-                /* 全屏播放（抖音那种一屏一条）：点这里进去，上下滑切换 */
                 Button { showBigPlayer = true } label: {
                     Image(systemName: "rectangle.fill")
                         .font(.system(size: 17, weight: .medium))
@@ -294,7 +280,6 @@ struct ChannelsView: View {
                 }
                 .buttonStyle(.plain)
 
-                /* 精彩视频里直接能看 B 站热门（我们自己不放它的视频，点开去 B 站看） */
                 Button { showBili = true } label: {
                     Text(Tr("B站热门"))
                         .font(pf(14, .medium))
@@ -306,10 +291,8 @@ struct ChannelsView: View {
                 }
                 .buttonStyle(.plain)
 
-                /* 顶部三个 tab（和微信视频号一致）：关注 / 朋友 / 推荐
-                   推荐 = 抖音那套（热度+新鲜度，每次刷新顺序会变） */
                 HStack(spacing: 22) {
-                    /* 三个 tab 的文字后台能改：ui.json 里写 feedTab0 / feedTab1 / feedTab2 */
+
                     ForEach(Array([UIConfig.text("feedTab0", "关注"),
                                    UIConfig.text("feedTab1", "朋友"),
                                    UIConfig.text("feedTab2", "推荐")].enumerated()), id: \.offset) { i, name in
@@ -336,7 +319,7 @@ struct ChannelsView: View {
                 .frame(maxWidth: .infinity)
 
                 Spacer()
-                /* 后台把关了「允许前台发视频」就不显示这个 ＋ */
+
                 if flags.allowPublish != false {
                     Button { pickOpen = true } label: {
                         Image(systemName: "plus")
@@ -362,8 +345,6 @@ struct ChannelsView: View {
         return out
     }
 
-    /* ---------------------------------------------------------- 数据 */
-
     private func load() async {
         if let r = try? await API.shared.feed(tab: ["follow", "friends", "recommend"][tab]) {
             items = r.items
@@ -373,10 +354,6 @@ struct ChannelsView: View {
         loading = false
     }
 
-    /* 无限刷：滑到快到底部时，再拉一批接在后面。
-       服务端每次会给「下一批」（它自己记着播放进度），所以这里只管往后接。
-       如果服务端这一轮给回来的都是已经有的（说明一轮刷完了、它重新排了一轮），
-       也照样接上 —— 宁可重复，也不能滑到底。 */
     private func loadMore() async {
         if loadingMore { return }
         loadingMore = true
@@ -393,7 +370,6 @@ struct ChannelsView: View {
         }
     }
 
-    /* 收藏 / 取消收藏 */
     private func toggleFavorite(_ item: FeedItem) {
         guard let i = items.firstIndex(where: { $0.id == item.id }) else { return }
         Task {
@@ -414,7 +390,6 @@ struct ChannelsView: View {
         }
     }
 
-    /* 转发：打开抖音那种转发面板（转发给朋友 / 朋友圈 / 收藏 / 复制链接 / 保存本地 / 举报 / 不感兴趣） */
     private func share(_ item: FeedItem) {
         shareItem = item
     }
@@ -422,8 +397,7 @@ struct ChannelsView: View {
     private func follow(_ item: FeedItem) {
         guard let uid = item.author?.id, !uid.isEmpty else { return }
         Task {
-            /* 以前这里是拿用户 id 当用户名去发好友申请 → 服务器查不到 → 永远失败。
-               现在走真的关注接口（和好友关系分开，微信视频号也是这个逻辑）。 */
+
             let now = !(item.followed == true)
             let ok = await API.shared.feedFollow(userId: uid, follow: now)
             if ok {
@@ -452,17 +426,15 @@ struct ChannelsView: View {
                let i = items.firstIndex(where: { $0.id == item.id }) {
                 items[i].comments = n
             }
-            await loadComments(item)          // 发完立刻能在列表里看到
+            await loadComments(item)
             app.show(Tr("评论成功"))
         }
     }
 
-    /// 拉某条视频的评论列表
     private func loadComments(_ item: FeedItem) async {
         comments = (try? await API.shared.feedComments(item.id)) ?? []
     }
 
-    /* 短剧「选集」：列出这套剧的全部集数，点哪集跳哪集 */
     private func episodeSheet(_ item: FeedItem) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(item.seriesName?.isEmpty == false ? (item.seriesName ?? "") : Tr("选集"))
@@ -514,7 +486,6 @@ struct ChannelsView: View {
         }
     }
 
-    /* 跳到某一集：已经在列表里就直接跳，否则插到当前这条后面再跳 */
     private func jumpToEpisode(_ ep: FeedItem) {
         if let i = items.firstIndex(where: { $0.id == ep.id }) {
             index = i
@@ -530,7 +501,7 @@ struct ChannelsView: View {
             Text(Tr("评论")).font(pf(16, .medium)).padding(.top, 16)
             Text(item.desc ?? "").font(pf(13)).foregroundColor(.secondary)
                 .multilineTextAlignment(.center).padding(.horizontal, 20)
-            /* 评论列表（以前只显示视频文案，看不到别人说了什么） */
+
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 10) {
                     if comments.isEmpty {
@@ -563,15 +534,9 @@ struct ChannelsView: View {
         .task { await loadComments(item) }
     }
 
-    /* ---------------------------------------------------------- 发表 */
-
-    /* 发表页（照着抖音那版做的）：
-       顶栏「取消 · 发布视频 · 发布胶囊」+ 左边封面缩略图 + 右边多行文案 +
-       下面一张设置卡（音乐 / 剪水印 / 清晰度说明）+ 底部大按钮。
-       目标是"高级"：留白大、圆角统一、分隔线细、主按钮只有一个视觉重点。 */
     private var publishSheet: some View {
         VStack(spacing: 0) {
-            /* ---------- 顶栏 ---------- */
+
             HStack {
                 Button { showPublish = false } label: {
                     Text(Tr("取消"))
@@ -608,7 +573,7 @@ struct ChannelsView: View {
 
             ScrollView {
                 VStack(spacing: 14) {
-                    /* ---------- 封面 + 文案 ---------- */
+
                     HStack(alignment: .top, spacing: 12) {
                         ZStack {
                             if let c = pendingCover {
@@ -654,7 +619,6 @@ struct ChannelsView: View {
                     .padding(.horizontal, 16)
                     .padding(.top, 16)
 
-                    /* ---------- 设置卡 ---------- */
                     VStack(spacing: 0) {
                         HStack(spacing: 12) {
                             Image(systemName: "music.note")
@@ -728,7 +692,6 @@ struct ChannelsView: View {
                 .padding(.bottom, 20)
             }
 
-            /* ---------- 底部主按钮 ---------- */
             Button { publish() } label: {
                 Text(Tr("发布"))
                     .font(pf(16.5, .semibold))
@@ -749,7 +712,6 @@ struct ChannelsView: View {
         .presentationDetents([.height(560), .large])
     }
 
-    /// 设置卡右上角那句「剪掉水印」当前选了什么
     private var trimTitle: String {
         switch trim {
         case 1: return Tr("底部 10%")
@@ -770,13 +732,10 @@ struct ChannelsView: View {
             guard let data = try await v.loadTransferable(type: Data.self), !data.isEmpty else {
                 app.show(Tr("读不到这个视频")); return
             }
-            /* 提速策略（和抖音一个思路：先压再传，别把 4K 原片硬塞上去）：
-               ① ≤6MB：原样传（已经很小，重编码反而慢）
-               ② 6～18MB：压到 1080p
-               ③ >18MB：压到 720p（体积砍得最狠，上传快一大截） */
+
             let raw = FileManager.default.temporaryDirectory.appendingPathComponent("feed-raw-\(UUID().uuidString).mov")
             try data.write(to: raw)
-            /* 封面：本地先抽一帧，发布页立刻有画面（服务器那边也会再抽一张正式的） */
+
             if pendingCover == nil, let img = await MediaTool.firstFrame(raw) {
                 pendingCover = img
             }
@@ -795,7 +754,7 @@ struct ChannelsView: View {
                 }
             }
             try? FileManager.default.removeItem(at: raw)
-            /* 走文件流上传 + 真实进度（以前是把整段 data 塞进 httpBody，没进度、还吃内存） */
+
             uploadStage = Tr("上传中…")
             let upFile = FileManager.default.temporaryDirectory.appendingPathComponent("feed-up-\(UUID().uuidString).mp4")
             try uploadData.write(to: upFile)
@@ -812,10 +771,9 @@ struct ChannelsView: View {
         }
     }
 
-    /// 把视频压成 1080p / 720p（H.264），返回压缩后的数据；失败返回 nil
     nonisolated static func compress(_ url: URL, preset: String = "1080p") async -> Data? {
         let asset = AVURLAsset(url: url)
-        /* 1080p 起步；大文件（>18MB）降到 720p，体积砍得更狠、传得更快 */
+
         let exportName = (preset == "720p") ? AVAssetExportPreset1280x720 : AVAssetExportPreset1920x1080
         guard let export = AVAssetExportSession(asset: asset, presetName: exportName) else { return nil }
         let out = FileManager.default.temporaryDirectory.appendingPathComponent("feed-out-\(UUID().uuidString).mp4")
@@ -836,7 +794,7 @@ struct ChannelsView: View {
         let music = publishMusic.trimmingCharacters(in: .whitespacesAndNewlines)
         publishDesc = ""
         publishMusic = ""
-        pendingCover = nil            // 下一轮发布重新抽封面，别残留上一条的
+        pendingCover = nil
         let crop = trim
         showPublish = false
         Task {
@@ -869,8 +827,6 @@ struct ChannelsView: View {
     }
 }
 
-/* ---------------------------------------------------------- 单条视频 */
-
 struct FeedCell: View {
     let item: FeedItem
     let active: Bool
@@ -881,8 +837,8 @@ struct FeedCell: View {
     var onShare: () -> Void
     var onFollow: () -> Void
     var onDelete: () -> Void
-    var onPickEpisode: () -> Void = {}     // 短剧：点「选集」
-    var onFavorite: () -> Void = {}        // 收藏
+    var onPickEpisode: () -> Void = {}
+    var onFavorite: () -> Void = {}
 
     @State private var player: AVPlayer?
     @State private var loadingVideo = true
@@ -891,7 +847,7 @@ struct FeedCell: View {
     @State private var favorited = false
     @State private var favorites = 0
     @State private var bounced = false
-    @State private var progress: Double = 0        // 播放进度 0~1（抖音式底部进度条）
+    @State private var progress: Double = 0
     @State private var durationSec: Double = 0
     @State private var timeObserver: Any?
 
@@ -910,7 +866,6 @@ struct FeedCell: View {
             LinearGradient(colors: [.black.opacity(0.35), .clear, .black.opacity(0.65)],
                            startPoint: .top, endPoint: .bottom)
 
-            /* 抖音式底部细进度条：能看进度，按住还能拖 */
             VStack {
                 Spacer()
                 GeometryReader { g in
@@ -932,7 +887,6 @@ struct FeedCell: View {
                 .frame(height: 3)
             }
 
-            /* 短剧：左上角显示当前集数，旁边一个「选集」入口 */
             if !(item.ep ?? "").isEmpty {
                 VStack {
                     HStack(spacing: 8) {
@@ -990,10 +944,7 @@ struct FeedCell: View {
             .padding(.horizontal, 16)
             .padding(.bottom, max(style.padBottom ?? 28, L.safeBottom + 10))
         }
-        /* 只有「当前这一条」才建播放器并下载：
-           视频号一次显示上一条/当前/下一条三个格子，以前三条一起建 AVPlayer、
-           一起下整条视频，同一条带宽被三份分掉，手机上就是「一直在加载」。
-           现在滑到哪条才下哪条，滑走立刻停掉（抖音也是这么干的）。 */
+
         .onAppear { if active { setup() } }
         .onDisappear { teardown() }
         .onChange(of: active) { on in
@@ -1001,7 +952,6 @@ struct FeedCell: View {
         }
     }
 
-    /// 滑走/离开：停掉播放和下载，把内存里的播放器放掉
     private func teardown() {
         if let obs = timeObserver, let p = player { p.removeTimeObserver(obs) }
         timeObserver = nil
@@ -1042,7 +992,7 @@ struct FeedCell: View {
                 onLike()
             }
             railAction(icon: "bubble.right.fill", tint: .white, count: "\(item.comments ?? 0)", action: onComment)
-            /* 收藏（抖音那排的星标） */
+
             railAction(icon: "star.fill", tint: favorited ? Color(hex: 0xFFC542) : .white,
                        count: "\(favorites)", active: favorited) {
                 favorited.toggle()
@@ -1056,8 +1006,6 @@ struct FeedCell: View {
         }
     }
 
-    /* 右侧按钮：毛玻璃圆底 + 图标 + 数字。
-       比原来光秃秃的图标更精致：白色描边、柔和投影、激活时整体轻微放大。 */
     private func railAction(icon: String, tint: Color, count: String, active: Bool = false,
                             bounce: Bool = false, action: @escaping () -> Void) -> some View {
         Button(action: action) {
@@ -1093,8 +1041,7 @@ struct FeedCell: View {
         favorited = item.favorited ?? false
         favorites = item.favorites ?? 0
         guard player == nil else { return }
-        /* 播放地址：**优先整包 MP4**（和聊天里的视频一条路：先下到本地再播，最稳），
-           没有整包的才用服务器切好的分片 */
+
         let hls = item.playPath
         let mp4 = item.video ?? ""
         let path = mp4.isEmpty ? hls : mp4
@@ -1104,17 +1051,13 @@ struct FeedCell: View {
         startPlayer(path: path, url: url, canFallback: !mp4.isEmpty && mp4 != hls, viaDownload: true)
     }
 
-    /// 起播放器。**要「画面真的动起来」才算成功**；而且**边下边播**：
-    /// 分片（m3u8）够一小段就出画面，不等整段；**3 秒还没画面**就换整包 MP4 再试
-    /// （整包慢一点，给它 12 秒）。以前是死等 20+10 秒 —— 用户看到的就是一直转圈。
     private func startPlayer(path: String, url: URL, canFallback: Bool, viaDownload: Bool = false) {
         Task { @MainActor in
-            /* 边下边播：走 App 自己的会话（认自签证书），取到一段喂一段；
-               viaDownload = 兜底那一趟：整段先下到本地再播（最稳）。 */
+
             var playURL = url
             if viaDownload {
                 guard let local = await StreamPlay.download(url) else {
-                    /* 整段下不下来（极少数）：退回服务器切好的分片再试一次 */
+
                     if canFallback, let h = item.hls, !h.isEmpty,
                        let u2 = API.shared.assetURL(h), u2 != url {
                         CrashCatcher.note("视频号", "整段下载失败，改用分片 id=\(item.id)")
@@ -1129,14 +1072,10 @@ struct FeedCell: View {
             let p = viaDownload ? AVPlayer(url: playURL) : (StreamPlay.player(playURL) ?? AVPlayer(url: playURL))
             p.isMuted = false
             p.actionAtItemEnd = .none
-            /* 先缓冲再播：以前设成 false（几乎不缓冲就开播），网速一般时视频会一顿一顿。
-               缓存压到 1.5 秒 + 让系统自己判断：先出画面，后面的边看边下。 */
-            /* 抖音那套：**有数据就播**（不攒够一大段才开播），后面边播边下。
-               以前是 true + 1.5 秒缓冲：弱网下播放器会一直等"安全缓冲"，
-               用户看到的就是一直转圈（实测第二条 40 秒都没出画面）。 */
+
             p.automaticallyWaitsToMinimizeStalling = false
             p.currentItem?.preferredForwardBufferDuration = 2
-            /* 每 0.1 秒回一次播放位置，驱动底部进度条 */
+
             if let old = timeObserver, let oldP = player { oldP.removeTimeObserver(old) }
             timeObserver = p.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.1, preferredTimescale: 600), queue: .main) { t in
                 let d = p.currentItem?.duration.seconds ?? 0
@@ -1152,13 +1091,12 @@ struct FeedCell: View {
             }
             if let old = player, old !== p {
                 old.pause()
-                StreamPlay.cancel(old.currentItem)     // 旧的那条不播了：把它没下完的请求掐掉
+                StreamPlay.cancel(old.currentItem)
             }
             player = p
             if active { p.play() }
-            /* 画面真的动起来才算成功：**分片只等 3 秒**（够一小段就该出画面了），
-               有整包 MP4 兜底时超时就直接换它；整包本身慢一点，给它 12 秒。 */
-            let ticks = canFallback ? 15 : 60          // × 0.2 秒 = 3 秒 / 12 秒
+
+            let ticks = canFallback ? 15 : 60
             var moved = false
             for _ in 0..<ticks {
                 if let it = p.currentItem {
@@ -1192,8 +1130,6 @@ struct FeedCell: View {
     }
 }
 
-/// AVPlayer 的显示层（通话页那个 VideoSurface 是给 WebRTC 用的，这里是本地播放器）
-/// 「作品」页点开一个方块后播这条视频（和视频号一样：先下载到本地再播）
 struct FeedPlayerSheet: View {
     let item: FeedItem
     var all: [FeedItem] = []
@@ -1253,7 +1189,7 @@ struct FeedPlayerSheet: View {
                 .padding(.horizontal, 16)
                 .padding(.bottom, max(20, L.safeBottom + 8))
             }
-            /* 左右切换（作品页点开的那个列表） */
+
             if list.count > 1 {
                 HStack {
                     Button { step(-1) } label: { chevron("chevron.left") }
@@ -1270,7 +1206,7 @@ struct FeedPlayerSheet: View {
             likes = cur.likes ?? 0
             load(cur)
         }
-        /* 从作品页/视频号点开的大图播放器：关掉这一页也要停声音 */
+
         .onDisappear {
             player?.pause()
             player = nil
@@ -1296,7 +1232,7 @@ struct FeedPlayerSheet: View {
     }
 
     private func load(_ w: FeedItem) {
-        /* 有分片就走分片，先出画面再慢慢加载（边下边播）；分片 3 秒没画面就换整包 MP4 */
+
         let path = w.playPath
         guard let url = API.shared.assetURL(path) else { loading = false; return }
         loading = true
@@ -1305,13 +1241,13 @@ struct FeedPlayerSheet: View {
             func mount(_ playURL: URL, allowFallback: Bool, viaDownload: Bool = false) async {
                 var realURL = playURL
                 if viaDownload {
-                    /* 兜底那一趟：整段下到本地再播（自签证书也不怕） */
+
                     guard let local = await StreamPlay.download(playURL) else { loading = false; return }
                     realURL = local
                 }
                 let p = viaDownload ? AVPlayer(url: realURL) : (StreamPlay.player(realURL) ?? AVPlayer(url: realURL))
                 p.actionAtItemEnd = .none
-                /* 有数据就播（不攒够一大段），弱网下才不会一直转圈 */
+
                 p.automaticallyWaitsToMinimizeStalling = false
                 p.currentItem?.preferredForwardBufferDuration = 1.5
                 NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime,
@@ -1325,7 +1261,7 @@ struct FeedPlayerSheet: View {
                 player = p
                 p.play()
                 var moved = false
-                for _ in 0..<(allowFallback ? 15 : 60) {      // × 0.2 秒 = 3 秒 / 12 秒
+                for _ in 0..<(allowFallback ? 15 : 60) {
                     if let it = p.currentItem {
                         if it.status == .failed { break }
                         if it.status == .readyToPlay, CMTimeGetSeconds(p.currentTime()) > 0.05 {

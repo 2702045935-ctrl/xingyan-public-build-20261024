@@ -1,23 +1,6 @@
 import SwiftUI
 import CoreLocation
 
-/* ============================================================
-   商城「二楼」（2026-10-16 用户：「沿用二楼的方案，商城也做个二楼出来，
-   背景会动的夜晚」→「白天晚上都要有变化」→「背景按照天气来 / 系统天气」）
-
-   · 机制：**首页往下拉过阈值 → 整页二楼浮出来**，往上滑 / 点最底下那条收起
-     （和会话页二楼一模一样的手感）
-   · 背景：**真实天气 × 真实昼夜**
-       天气：服务器去拉（Open-Meteo，免费无密钥，数据来自各国气象局/ECMWF），
-             App 只传定位，不存任何密钥
-       昼夜：用天气接口回的 isDay（跟系统天气一致：冬天早上 6 点它也是"没天亮"）
-     画法按天气分：晴 / 少云 / 多云 / 阴 / 雾 / 小雨 / 雨 / 雪 / 雷雨，
-     另外按小时给清晨-白天-黄昏-夜里四套色调（用户：「白天晚上都要有变化」）。
-   · 内容（全是真数据，不是假占位）：搜索、我的订单（待付款/待发货/待收货带数字）、
-     收藏、按时间+天气换标题的特惠、我的快捷四格、底部收起条。
-   ============================================================ */
-
-/// 服务器回的天气（字段名跟 /api/weather 对齐）
 struct DDWeatherNow: Decodable {
     var condition: String?
     var code: Int?
@@ -26,13 +9,12 @@ struct DDWeatherNow: Decodable {
     var cloud: Int?
     var wind: Double?
     var at: String?
-    /// 服务器把这批数据算在哪个城市（顶部定位用）
+
     var city: String?
     var lat: Double?
     var lon: Double?
 }
 
-/// 天气中心：10 分钟缓存 + 用的时候顺手刷一次（定位失败也有服务器默认点兜底）
 final class MallWeather: ObservableObject {
     static let shared = MallWeather()
 
@@ -40,7 +22,7 @@ final class MallWeather: ObservableObject {
     @Published private(set) var isDay: Bool = true
     @Published private(set) var temp: Double = 0
     @Published private(set) var updatedAt: Date? = nil
-    /// 天气接口拿不到时为 true（背景退回"只按时间画"）
+
     @Published private(set) var failed = false
 
     private var loading = false
@@ -50,8 +32,7 @@ final class MallWeather: ObservableObject {
         if !force, let t = updatedAt, Date().timeIntervalSince(t) < 600 { return }
         loading = true
         Task {
-            /* 用户选过城市就按城市查（美团那种"切城市看哪儿的天气"）；
-               没选过才用系统定位。 */
+
             let picked = DDCity.shared.name
             var w: DDWeatherNow? = nil
             if !picked.isEmpty {
@@ -72,7 +53,7 @@ final class MallWeather: ObservableObject {
                     self.temp = (w.temp ?? 0)
                     self.updatedAt = Date()
                     self.failed = false
-                    /* 服务器知道这是哪个城市 → 顺手把顶部那条填上（不触发二次刷新） */
+
                     if let c = w.city, !c.isEmpty {
                         DDCity.shared.adopt(name: c, lat: w.lat ?? 0, lon: w.lon ?? 0)
                     }
@@ -85,13 +66,11 @@ final class MallWeather: ObservableObject {
     }
 }
 
-/// 首页滚动位置（判断"是不是在最上面"，只有最上面往下拉才算开二楼）
 struct DDFloorOffsetKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
 }
 
-/* ---------------------------------------------------------- 天色 / 天气 -> 画什么 */
 enum MallSkyPhase {
     case dawn, day, dusk, night
 
@@ -104,7 +83,7 @@ enum MallSkyPhase {
         default:      return .night
         }
     }
-    /// 天气说"天还没亮/已经黑了"，就按夜里画（比单纯看钟点准）
+
     static func from(isDay: Bool) -> MallSkyPhase {
         let byClock = now()
         if isDay { return byClock == .night ? .day : byClock }
@@ -128,16 +107,10 @@ enum MallSkyPhase {
     var badgeInk: Color { self == .day ? .white : Color(hex: 0x101A30) }
 }
 
-/// 天气分档（服务器已经把 WMO 码归好类，这里只决定加多少云、下不下雨雪）
 struct MallWeatherLook {
     var cond: String
     var phase: MallSkyPhase
 
-    /* 2026-10-17 用户：「天气系统下下雨啥的要有动画，就会话页」——
-       动画本身在 MallSkyBackground 里（雨丝下落 / 雪花飘 / 雷闪 / 云飘 / 星星闪 / 流星），
-       这里再给后台一个**预览开关**：ui.json 写 weatherForce=rain（+ weatherForceNight=1）
-       就能强制画成对应的天色，不用等真下雨，验收动画一目了然。
-       不写这两个键 = 照旧用真实天气。 */
     static func current(_ w: MallWeather) -> MallWeatherLook {
         let force = UIConfig.text("weatherForce", "").trimmingCharacters(in: .whitespaces)
         let forceNight = UIConfig.num("weatherForceNight", 0) > 0
@@ -149,8 +122,6 @@ struct MallWeatherLook {
                                phase: MallSkyPhase.from(isDay: !forceNight))
     }
 
-    /* 颜色 / 明暗这一类都转发给 phase（二楼的内容层只认 look，不直接碰 phase）——
-       一开始漏了这几个转发，CI 直接报 "has no member 'ink'"（B991 那次就是栽在这）。 */
     var darkInk: Bool { phase.darkInk }
     var ink: Color { phase.ink }
     var inkSoft: Color { phase.inkSoft }
@@ -169,7 +140,7 @@ struct MallWeatherLook {
     var isSnow: Bool { cond == "snow" }
     var isThunder: Bool { cond == "thunder" }
     var isWet: Bool { isDrizzle || isRain || isThunder }
-    /// 天被云压住：太阳/月亮要变淡、云要变厚
+
     var overcastAmt: Double {
         if isThunder { return 1.0 }
         if isRain { return 0.85 }
@@ -180,7 +151,7 @@ struct MallWeatherLook {
         if isClear { return 0.02 }
         return 0.3
     }
-    /// 标题（内容也跟天气一起变，用户要的"连接这个商城的感觉"）
+
     var title: String {
         switch phase {
         case .night: return "今夜特惠"
@@ -212,20 +183,11 @@ struct MallWeatherLook {
     }
 }
 
-/* ---------------------------------------------------------- 会动的天色背景（按天气） */
 struct MallSkyBackground: View {
     let look: MallWeatherLook
 
     private var phase: MallSkyPhase { look.phase }
 
-    /* ⚠ 2026-10-17 用户：「天气已经有了，但它不动」/「看到不会动的雨丝」——
-       以前星星闪、云飘、雨雪下落、日月呼吸、流星、雷闪全靠 `onAppear` 里
-       `withAnimation(...repeatForever)` 起动画，真机上**这套不发车**：
-       天色画出来了（渐变是静态的），雨丝一条条挂在那儿一动不动。
-       现在改成 **TimelineView(.animation)**：每帧拿当前时间，位置/相位全部**按时间算** ——
-       只要这一层在屏幕上就一定在动，完全不依赖 SwiftUI 那套动画事务。
-       视觉数学（周期、幅度、颜色）和原来保持一致，只是把"动画"换成"算"。
-       帧率压在 30fps：天色这种慢动效足够顺，手机上更省电。 */
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
             let t = tl.date.timeIntervalSinceReferenceDate
@@ -254,29 +216,25 @@ struct MallSkyBackground: View {
         }
     }
 
-    /* ---------------- 时间 → 数值 的小工具 ---------------- */
-
-    /// 来回晃（原来 withAnimation + autoreverses 的那些）：period 是**单程**时长
     private func wave(_ t: Double, period: Double, mid: Double, amp: Double) -> CGFloat {
         CGFloat(mid + amp * cos(2 * Double.pi * t / (period * 2)))
     }
-    /// 云的两条漂移（原来 -0.25↔0.22 / 0.30↔-0.20）
+
     private func drift(_ t: Double) -> CGFloat { wave(t, period: 9, mid: -0.015, amp: 0.235) }
     private func drift2(_ t: Double) -> CGFloat { wave(t, period: 13, mid: 0.05, amp: 0.25) }
-    /// 雨/雪往下落的相位 0…1（duration = 落一整屏要多久）
+
     private func fallPhase(_ t: Double, duration: Double, speed: Double) -> CGFloat {
         CGFloat(((t * speed) / duration).truncatingRemainder(dividingBy: 1))
     }
-    /// 呼吸 0…1（星星闪 / 日月光晕）：period = 来回一趟
+
     private func breathe(_ t: Double, period: Double) -> Double {
         0.5 + 0.5 * cos(2 * Double.pi * t / period)
     }
-    /// 雷闪：每 6.5 秒亮 0.16 秒（原来那个 Timer 的节奏）
+
     private func thunderOn(_ t: Double) -> Bool {
         t.truncatingRemainder(dividingBy: 6.5) < 0.16
     }
 
-    /* 天幕：先把「天气」压上去，再按时间给色调 */
     @ViewBuilder private var sky: some View {
         let grey = look.overcastAmt
         ZStack {
@@ -298,7 +256,7 @@ struct MallSkyBackground: View {
                                         Color(hex: 0x2A2159), Color(hex: 0x120E2A)],
                                startPoint: .top, endPoint: .bottom)
             }
-            /* 阴/雨/雪/雾：整体压一层灰，太阳月亮也就淡了 */
+
             if grey > 0.05 {
                 LinearGradient(colors: [Color(hex: 0x39435A).opacity(grey * 0.85),
                                         Color(hex: 0x6A7488).opacity(grey * 0.55),
@@ -314,12 +272,12 @@ struct MallSkyBackground: View {
     }
 
     @ViewBuilder private func stars(w: CGFloat, h: CGFloat, t: Double) -> some View {
-        /* 阴雨天星星自然要少 */
+
         ForEach(0..<70, id: \.self) { i in
             let fx = CGFloat((i * 37 + 11) % 100) / 100
             let fy = CGFloat((i * 61 + 7) % 100) / 100
             let size = CGFloat(1.2 + Double(i % 4) * 0.7)
-            /* 原来是一颗颗 .animation(repeatForever) 闪 —— 现在按时间算，每颗错开相位 */
+
             let lo = 0.25 + Double(i % 6) * 0.12
             let k = breathe(t + Double(i) * 0.37, period: 2 * (1.6 + Double(i % 5) * 0.5))
             Circle().fill(Color.white)
@@ -368,7 +326,7 @@ struct MallSkyBackground: View {
         let amt = look.overcastAmt
         let d1 = drift(t)
         let d2 = drift2(t)
-        /* 云色：白天白、阴雨灰、夜里暗蓝灰 */
+
         let base: Color = look.isWet || look.isOvercast
             ? Color(hex: 0x5B6478)
             : (phase.isNight ? Color(hex: 0x2A3252) : Color.white)
@@ -397,7 +355,6 @@ struct MallSkyBackground: View {
         }
     }
 
-    /* 雾 / 阴天：两条横向的雾带慢慢挪 */
     @ViewBuilder private func fog(w: CGFloat, h: CGFloat, t: Double) -> some View {
         let d1 = drift(t)
         let d2 = drift2(t)
@@ -411,7 +368,6 @@ struct MallSkyBackground: View {
         }
     }
 
-    /* 雨：两排不同速度的雨丝（用相位让它一直往下落） */
     @ViewBuilder private func rain(w: CGFloat, h: CGFloat, t: Double) -> some View {
         ZStack {
             ForEach(0..<26, id: \.self) { i in
@@ -427,7 +383,6 @@ struct MallSkyBackground: View {
         }
     }
 
-    /* 雪：慢一点、大一点的小白点 */
     @ViewBuilder private func snow(w: CGFloat, h: CGFloat, t: Double) -> some View {
         ForEach(0..<34, id: \.self) { i in
             let fx = CGFloat((i * 29 + 13) % 100) / 100
@@ -440,7 +395,7 @@ struct MallSkyBackground: View {
     }
 
     @ViewBuilder private func shootingStar(w: CGFloat, h: CGFloat, t: Double) -> some View {
-        /* 每 7 秒一颗：0 ~ 1.1 秒划过，前 0.25 秒淡入、0.9 秒后淡出（原来那个 Timer 的节奏） */
+
         let m = t.truncatingRemainder(dividingBy: 7)
         let p = min(1, m / 1.1)
         let x = -0.2 + 1.4 * p
@@ -456,7 +411,6 @@ struct MallSkyBackground: View {
     }
 }
 
-/* ---------------------------------------------------------- 二楼本体（内容布局） */
 struct DDMallFloor: View {
     @EnvironmentObject private var app: AppState
     @ObservedObject private var store = DDStore.shared
@@ -464,13 +418,13 @@ struct DDMallFloor: View {
 
     var onClose: () -> Void
     var onSearch: () -> Void
-    /// 0 全部 / 1 待付款 / 2 待发货 / 3 待收货
+
     var onOrders: (Int) -> Void
     var onFav: () -> Void
     var onViews: () -> Void
     var onCart: () -> Void
     var onOpen: (DDProduct) -> Void
-    /// 点顶部的城市（美团那颗「📍上海 ▾」）
+
     var onCity: () -> Void
 
     @State private var rise: CGFloat = 0
@@ -492,7 +446,6 @@ struct DDMallFloor: View {
             VStack(spacing: 0) {
                 Spacer().frame(height: L.safeTop + 6)
 
-                /* 顶部城市定位（和商城首页那颗一模一样，美团那种位置） */
                 Button { onCity() } label: {
                     HStack(spacing: 3) {
                         Image(systemName: "location.fill").font(.system(size: 11, weight: .semibold))
@@ -509,7 +462,6 @@ struct DDMallFloor: View {
 
                 Color.clear.frame(height: 10)
 
-                /* ① 搜索框 */
                 HStack(spacing: 6) {
                     Spacer(minLength: 0)
                     Image(systemName: "magnifyingglass").font(.system(size: 13.5, weight: .medium))
@@ -529,7 +481,6 @@ struct DDMallFloor: View {
 
                 Color.clear.frame(height: 22)
 
-                /* 天气那一行：告诉你背景为什么长这样 */
                 HStack(spacing: 6) {
                     Image(systemName: L2.icon).font(.system(size: 13, weight: .semibold))
                     Text(weatherTitle(L2)).font(pf(12.5))
@@ -541,7 +492,6 @@ struct DDMallFloor: View {
 
                 Color.clear.frame(height: 12)
 
-                /* ② 我的订单 */
                 floorCard(L2) {
                     HStack {
                         Text(Tr("我的订单")).font(pf(15, .medium)).foregroundColor(L2.ink)
@@ -569,7 +519,6 @@ struct DDMallFloor: View {
 
                 Color.clear.frame(height: 14)
 
-                /* ③ 特惠（标题跟时间和天气一起变） */
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(spacing: 6) {
                         Image(systemName: L2.icon)
@@ -614,7 +563,6 @@ struct DDMallFloor: View {
 
                 Color.clear.frame(height: 14)
 
-                /* ④ 我的快捷四格 */
                 floorCard(L2) {
                     HStack(spacing: 0) {
                         orderCell(L2, Tr("收藏"), store.favs.count, "heart") { onFav() }
@@ -628,7 +576,6 @@ struct DDMallFloor: View {
 
                 Spacer(minLength: 0)
 
-                /* ⑤ 底部收起条 */
                 Button { onClose() } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "chevron.up").font(.system(size: 12, weight: .semibold))
@@ -658,7 +605,6 @@ struct DDMallFloor: View {
         }
     }
 
-    /// 「多云 22° · 夜里」这句
     private func weatherTitle(_ l: MallWeatherLook) -> String {
         if weather.failed { return Tr("天气暂时拿不到") }
         var name = "多云"
@@ -680,8 +626,6 @@ struct DDMallFloor: View {
         return "\(name) \(t)° · \(dayPart)"
     }
 
-    /* ⚠ 泛型参数不能叫 C —— 项目里的颜色类就叫 `C`（C.label / C.pageBg），
-       一撞就把它遮住（UserManage.swift 踩过一次、CI 报 "has no member"）。 */
     @ViewBuilder private func floorCard<V: View>(_ l: MallWeatherLook,
                                                  @ViewBuilder _ content: () -> V) -> some View {
         VStack(spacing: 0) { content() }

@@ -1,14 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   分销 + 裂变的界面（2026-10-16 用户：「做下一步」）
-
-   服务端早就做好了，这页把 App 那半接上：
-     · DistMeView   分销员自己看的：推广码 / 复制 / 分享给好友 / 帮好友助力 / 业绩明细
-     · DistAdminCard 管理页那张：开通关闭分销、设佣金比例、业绩榜
-   规则：带推广码下单 → 记在分销员名下；签收结算佣金进零钱；退款扣回；邀满 3 人解锁大额券。
-   ============================================================ */
-
 struct DistMeView: View {
     @EnvironmentObject private var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -116,7 +107,6 @@ struct DistMeView: View {
         .frame(maxWidth: .infinity).padding(.vertical, 14)
     }
 
-    /* 帮好友助力：把好友的码粘贴进来就能领券（券也是裂变那套：双方各得一张） */
     private var helpCard: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(Tr("帮好友助力")).font(pf(15, .medium)).foregroundColor(C.label)
@@ -184,7 +174,7 @@ struct DistMeView: View {
         if let r = r {
             let mine = r.mine?.title ?? Tr("助力券")
             app.show(Tr("助力成功，你得了一张「") + mine + "」")
-            /* 记下这个码：**之后 30 天里**在这台手机下单都算这位好友的推广（佣金归他） */
+
             UserDefaults.standard.set(c, forKey: "chris.mall.ref")
             UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "chris.mall.refAt")
             codeInput = ""
@@ -194,8 +184,6 @@ struct DistMeView: View {
         }
     }
 }
-
-/* ---------------- 管理页：分销 ---------------- */
 
 struct DistAdminCard: View {
     @EnvironmentObject private var app: AppState

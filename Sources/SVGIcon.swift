@@ -1,12 +1,6 @@
 import SwiftUI
 import UIKit
 
-/* ============================================================
-   把网页版 m.html 里那些手画的 <svg> 图标原样搬到原生：
-   直接把 SVG 源码贴进来，这里解析成 Path 再画出来，
-   所以线宽、圆角、比例和网页版一模一样。
-   ============================================================ */
-
 struct IconSpec {
     var box: CGFloat = 24
     var minX: CGFloat = 0
@@ -16,10 +10,7 @@ struct IconSpec {
     var strokeWidth: CGFloat = 1.6
     var hasFill = false
     var hasStroke = false
-    /// 填充用「奇偶规则」挖空（fill-rule="evenodd"）。
-    /// 很多现成的图标集（比如 Iconly）是**一条 path + evenodd 挖空**画出轮廓的：
-    /// 齿轮中间的孔、放大镜的圈、聊天气泡里的点全靠它。不认这个属性的话
-    /// 会被画成一坨实心块 —— 所以解析时记下来，画的时候用 FillStyle(eoFill:)。
+
     var eoFill = false
 }
 
@@ -28,15 +19,11 @@ struct SVGIcon: View {
     var size: CGFloat
     var color: Color = .white
     var iconFill: Color? = nil
-    /* ⚠ 2026-10-16 用户：「底栏图标换了不生效」。
-       原因：后台换图标存下来的那段 SVG **自己带着 data-key**（比如 tab.chat 里存的那段
-       写着 data-key="i.moments"），而这里又拿它去 IconOverrides 映射了一遍 ——
-       于是画出来的是**另一个键**的图标（i.moments），看着就像"换了没生效"。
-       direct = true 表示：这段 markup 本身就是后台换过的那份，**原样画**，别再映射。 */
+
     var direct: Bool = false
 
     var body: some View {
-        // 后台换过的图标优先
+
         let raw = direct ? markup : IconOverrides.markup(markup)
         if raw.hasPrefix("<svg") {
             vector(raw)
@@ -83,8 +70,6 @@ enum SVG {
         return made
     }
 
-    /* ---------------------------------------------------------- 解析 */
-
     private static func parse(_ markup: String) -> IconSpec {
         var spec = IconSpec()
         guard let svgRange = markup.range(of: "<svg") else { return spec }
@@ -107,7 +92,6 @@ enum SVG {
         let rootStroke = rootAttrs["stroke"]
         let rootSW = CGFloat(Double(rootAttrs["stroke-width"] ?? "") ?? 1.6)
 
-        // 逐个读子元素
         let body = markup
         var searchStart = body.startIndex
         while let lt = body.range(of: "<", range: searchStart..<body.endIndex) {
@@ -165,7 +149,7 @@ enum SVG {
             if fill != "none" && !fill.isEmpty {
                 spec.fillPath.addPath(p)
                 spec.hasFill = true
-                /* 奇偶填充规则：现成图标集（Iconly 那类）靠它挖空 */
+
                 let rule = a["fill-rule"] ?? rootAttrs["fill-rule"] ?? ""
                 if rule == "evenodd" { spec.eoFill = true }
             }
@@ -197,8 +181,6 @@ enum SVG {
         return out
     }
 }
-
-/* ---------------------------------------------------------- path d 解析 */
 
 enum SVGPath {
     private struct Cmd {
@@ -232,7 +214,7 @@ enum SVGPath {
                     path.move(to: p)
                     cur = p; sub = p
                 }
-                // 后面的坐标对按 lineto 处理
+
                 while i + 1 < args.count {
                     let q = point(next(), next())
                     path.addLine(to: q); cur = q
@@ -369,7 +351,6 @@ enum SVGPath {
         return out
     }
 
-    /// SVG 的弧线转三次贝塞尔
     private static func arc(from p0: CGPoint, to p1: CGPoint,
                             rx rxIn: CGFloat, ry ryIn: CGFloat, rot: CGFloat,
                             large: Bool, sweep: Bool) -> [(CGPoint, CGPoint, CGPoint)] {

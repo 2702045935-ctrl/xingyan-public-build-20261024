@@ -2,7 +2,6 @@ import SwiftUI
 import AVFoundation
 import Speech
 
-/// 说话 → 识别成文字 → 发给 AI → 把 AI 的回复念出来（贾维斯语音电话）
 @MainActor
 final class VoiceEngine: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     @Published var listening = false
@@ -44,7 +43,7 @@ final class VoiceEngine: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
 
         let input = engine.inputNode
         let format = input.outputFormat(forBus: 0)
-        /* 采样率是 0 时不能硬装 tap：ObjC 异常 Swift 抓不住，会直接闪退 */
+
         guard format.sampleRate > 0, format.channelCount > 0 else {
             status = "麦克风还没准备好，再点一次"
             return
@@ -108,7 +107,7 @@ final class VoiceEngine: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
         let u = AVSpeechUtterance(string: String(clean.prefix(220)))
         u.voice = AVSpeechSynthesisVoice(language: "zh-CN")
         u.rate = 0.5
-        u.pitchMultiplier = 0.72          // 压一点，听着像男声
+        u.pitchMultiplier = 0.72
         synth.speak(u)
     }
 
@@ -123,8 +122,6 @@ final class VoiceEngine: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
     }
 }
 
-/* ============================================================ 通话界面 */
-
 struct AICallView: View {
     let chat: Chat
 
@@ -136,7 +133,7 @@ struct AICallView: View {
     @State private var reply = ""
     @State private var busy = false
     @State private var denyReason = ""
-    /// 点上面那个大头像 → 弹 AI 的名片（微信里点通话页头像就是这个）
+
     @State private var showCard = false
 
     var body: some View {

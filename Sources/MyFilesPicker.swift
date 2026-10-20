@@ -1,28 +1,18 @@
 import SwiftUI
 import Foundation
 
-/* ============================================================
-   发文件用**我们自己这一套**（用户要求：不要苹果那个文件 App 当主入口，
-   苹果那套留着，管理里一个开关切回去）。
-
-   这一页列出的是「这个账号发过 / 收到过的文件」——都是已经在我们服务器上的东西，
-   点一下就直接发进当前会话（不用再上传一遍，也不会再受"选不到文件"的气）。
-   底下留一颗「从「文件」App 里挑」，苹果那套照样能用。
-   ============================================================ */
-
 struct MyFilesPickerView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
 
-    /// 选中一个文件：交给聊天页发出去
     var onPick: (API.MyFileItem) -> Void
-    /// 点底下那颗按钮：回苹果的文件 App 那套（fileImporter）
+
     var onSystemPicker: (() -> Void)? = nil
 
     @State private var files: [API.MyFileItem] = []
     @State private var loading = true
     @State private var q = ""
-    /// 预览：点右边那颗眼睛 → 下到本机 → 系统预览（Word / Excel / PPT / PDF / 图片 / 文本都能看）
+
     @State private var preview: FilePreviewData?
     @State private var openingId = ""
 
@@ -39,7 +29,6 @@ struct MyFilesPickerView: View {
         VStack(spacing: 0) {
             NavBar(title: Tr("选择文件"), back: { dismiss() })
 
-            /* 搜索框（文件多了全靠它） */
             HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 14, weight: .medium))
@@ -96,7 +85,6 @@ struct MyFilesPickerView: View {
                 }
             }
 
-            /* 底下这颗：还是想用苹果那套文件 App 的时候点它 */
             if onSystemPicker != nil {
                 Button {
                     onSystemPicker?()
@@ -118,14 +106,13 @@ struct MyFilesPickerView: View {
         .background(C.pageBg.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .swipeBack { dismiss() }
-        /* 预览：系统 QuickLook（Word/Excel/PPT/PDF/图片/文本），右上角还能「分享 → 用其他应用打开」 */
+
         .sheet(item: $preview) { f in
             FilePreviewSheet(name: f.name, local: f.local)
         }
         .task { await load() }
     }
 
-    /// 一行：文件图标（按扩展名给颜色）+ 名字 + 大小/时间/来自哪个会话
     private func row(_ f: API.MyFileItem) -> some View {
         HStack(spacing: 12) {
             Text(f.ext.isEmpty ? "FILE" : f.ext.uppercased())
@@ -149,8 +136,7 @@ struct MyFilesPickerView: View {
                 }
             }
             Spacer(minLength: 6)
-            /* 「看一眼」和「发出去」分开：右边这颗眼睛 = 系统预览（不发送），
-               点整行还是老样子「直接发进当前会话」。 */
+
             Button { openPreview(f) } label: {
                 if openingId == f.id {
                     ProgressView().scaleEffect(0.72).frame(width: 34, height: 34)
@@ -172,9 +158,6 @@ struct MyFilesPickerView: View {
         .contentShape(Rectangle())
     }
 
-    /// 点眼睛：把这份文件下到本机再用系统预览打开。
-    /// 文件名没带扩展名时从 url 里补一个 —— QuickLook 是**靠扩展名**判断能不能预览的，
-    /// 少了 .docx 它就把 Word 当成不认识的二进制，界面上就是"打不开"。
     private func openPreview(_ f: API.MyFileItem) {
         guard let p = f.url, !p.isEmpty, let remote = API.shared.assetURL(p) else {
             app.show(Tr("这个文件找不到了"))
@@ -197,7 +180,6 @@ struct MyFilesPickerView: View {
         }
     }
 
-    /// 预览用的文件名：没扩展名就从 url 的路径里借一个
     static func previewName(_ name: String, path: String) -> String {
         var n = name.replacingOccurrences(of: "/", with: "_")
         if n.contains(".") { return n }
@@ -209,8 +191,6 @@ struct MyFilesPickerView: View {
         return n
     }
 
-    /// 收端文件有时只有随机存储名，没有扩展名。下载后按文件头补回来，
-    /// QuickLook 才能识别 Word/Excel/PDF/音乐和视频。
     static func previewName(_ name: String, path: String, data: Data) -> String {
         var n = previewName(name, path: path)
         if n.contains(".") { return n }

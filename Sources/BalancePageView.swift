@@ -1,16 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   零钱（钱包页点「零钱」进来）
-   尺寸照参考图量的（iPhone @3x，420×912pt）：整页白底；
-   金币 48 居中（导航栏下 59）；「我的零钱」17pt（金币下 ~36）；
-   余额 44pt 半粗（标题下 12）；冻结提示 13pt 橙（余额下 24）；
-   底下贴着屏幕底部：充值 183.7×47.7 圆角 8（绿），空 16，
-   提现同尺寸（#F2F2F2），空 71 是「常见问题 / 账户升级服务」13pt（#576B95），
-   空 10 是说明 12pt（#B3B3B3），最后留 25pt。
-   文案/按钮/链接/样式都来自后台「零钱页」模块（GET /api/balance-page），余额是真的。
-   ============================================================ */
-
 struct BalancePageView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -22,18 +11,18 @@ struct BalancePageView: View {
     @State private var rechargeAmount = ""
     @State private var showWithdraw = false
     @State private var showFaq = false
-    /// 常见问题 / 账户升级服务：微信那两页（整页打开，不是一个弹框）
+
     @State private var showFaqPage = false
     @State private var showUpgrade = false
     @State private var faqAnswer: String?
-    /// 没实名 → 整页显示「请先实名认证」（服务端强制拦，不显示任何金额）
+
     @State private var needReal = false
 
     private var st: BalanceStyle { cfg?.style ?? BalanceStyle() }
 
     var body: some View {
         VStack(spacing: 0) {
-            // 顶部导航：左边返回箭头 + 中间「零钱明细」（和参考代码一致）
+
             NavBar(title: cfg?.navTitle ?? "零钱明细", back: { dismiss() })
 
             ScrollView(showsIndicators: false) {
@@ -51,13 +40,11 @@ struct BalancePageView: View {
         .swipeBack { dismiss() }
         .hidesTabBar()
         .navigationDestination(isPresented: $showBills) { BillsView() }
-        /* 充值 / 提现：微信那套完整页面（金额 + 到账银行卡 + 服务费 + 支付密码） */
-        /* 充值和提现一样：**单独一整页**（微信零钱这两个入口都是整页，不是弹窗） */
+
         .navigationDestination(isPresented: $showRecharge) {
             RechargeView().environmentObject(app)
         }
-        /* 提现对齐微信：**单独一整页**（不是半屏弹窗）——从零钱页推上去，
-           左上有返回、右边能侧滑回来，页面里是「提现到 / 金额 / 服务费 / 提现 / 常见问题」 */
+
         .navigationDestination(isPresented: $showWithdraw) {
             WithdrawView().environmentObject(app)
         }
@@ -82,8 +69,7 @@ struct BalancePageView: View {
         .onChange(of: realtime.event) { ev in
             if ev.type == "balance" || ev.type == "transfer" || ev.type == "ui" { Task { await load() } }
         }
-        /* 强制实名：没实名时整页盖一层「请先实名」（服务端 403 拦下来的）。
-           这样不会因为拿不到配置而退回默认样式（默认金额字号 64，就是"字变大"那个坑）。 */
+
         .overlay {
             if needReal {
                 NeedRealNameView { dismiss() }
@@ -92,11 +78,9 @@ struct BalancePageView: View {
         }
     }
 
-    /* ---------------------------------------------------------- 上面：金币 + 我的零钱 + 余额 */
-
     private var top: some View {
         VStack(spacing: 0) {
-            // 黄色圆形 ¥ 图标
+
             ZStack {
                 Circle().fill(st.circleColorV)
                 Text("¥")
@@ -111,7 +95,6 @@ struct BalancePageView: View {
                 .foregroundColor(Color.dyn(0x000000, 0xEDEDED))
                 .padding(.top, st.gapTitleV)
 
-            /* 没实名：服务端不下发真数字，这里直接显示 ¥****（连 0.00 都不给看） */
             MoneyLabel(text: (cfg?.isLocked ?? false) ? "¥****" : money(cfg?.balance ?? app.me?.balance ?? 0),
                        size: st.amountFont, curSize: st.curFont, topAlign: true,
                        color: Color.dyn(0x000000, 0xEDEDED))
@@ -142,8 +125,6 @@ struct BalancePageView: View {
         }
         .frame(maxWidth: .infinity)
     }
-
-    /* ---------------------------------------------------------- 底部：充值 / 提现 / 链接 / 说明 */
 
     private var bottom: some View {
         VStack(spacing: 0) {
@@ -192,15 +173,13 @@ struct BalancePageView: View {
         }
     }
 
-    /* ---------------------------------------------------------- 动作 */
-
     private func run(_ action: String, _ label: String) {
         switch action {
         case "recharge": rechargeAmount = ""; showRecharge = true
-        /* 后台「隐藏开关」：billsShow = 0 → 零钱页那一条「账单」点了也不进（账单页藏了） */
+
         case "bills": if UIConfig.num("billsShow", 1) > 0 { showBills = true }
         case "withdraw": showWithdraw = true
-        /* 常见问题 / 账户升级服务：微信那两页，整页打开 */
+
         case "faq": showFaqPage = true
         case "upgrade": showUpgrade = true
         default: app.show("「\(label)」还没接后端，先把页面做出来")
@@ -213,8 +192,7 @@ struct BalancePageView: View {
         do {
             cfg = try await API.shared.balancePage()
         } catch let e as APIError {
-            /* 没实名：服务端硬拦（强制实名）→ 整页给「请先实名」，
-               不用默认配置兜底（那样金额字号会变成默认的 64，看着像"字变大了"）。 */
+
             if case .needRealName = e { needReal = true; return }
         } catch { }
     }

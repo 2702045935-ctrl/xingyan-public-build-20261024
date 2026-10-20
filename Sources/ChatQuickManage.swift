@@ -1,9 +1,5 @@
 import SwiftUI
 
-/// 后台配的 "#RRGGBB" / "RRGGBB" → Color；空串或格式不对就返回 nil（调用方走默认色）。
-/// ⚠ 不能往 Color 上加 `init?(hexString:)` —— Core.swift 里已经有一个**非可选**的
-/// `init(hexString:fallback:)`，再加一个可选的会让全站的 `Color(hexString:)`
-/// 全部被推成 `Color?`（B255 第一次打包就是这么挂的），所以这里用函数代替。
 func optionalHexColor(_ s: String) -> Color? {
     var t = s.trimmingCharacters(in: .whitespacesAndNewlines)
     if t.hasPrefix("#") { t.removeFirst() }
@@ -11,10 +7,6 @@ func optionalHexColor(_ s: String) -> Color? {
     return Color(hexString: s)
 }
 
-/// 管理 →「聊天快捷」：用户要求的那两件事 ——
-/// ① 输入框上面那排**快捷按钮**能管理（增删、排序、改名、开关）；
-/// ② 输入框右边那个「＋」按钮能换**颜色 / 大小 / 图片**。
-/// 存服务端（和「＋面板」同一个文件），App 回到前台自己就生效，不用重装。
 struct ChatQuickAdminSection: View {
     @EnvironmentObject var app: AppState
 
@@ -25,14 +17,13 @@ struct ChatQuickAdminSection: View {
     @State private var editingIndex = -1
     @State private var msg = ""
     @State private var saving = false
-    /// 「＋」按钮：颜色（#RRGGBB，空 = 跟主题走）和大小（0 = 默认）
+
     @State private var colorText = ""
     @State private var sizeText = "0"
     @State private var showPickPlusImage = false
-    /// 发文件用苹果的「文件」App 挑（默认关 = 用我们自己那一页「我的文件」）
+
     @State private var filePickerSystem = UIConfig.num("filePickerSystem", 0) > 0
 
-    /// 几个常用色，点一下就填上（不想记 #RRGGBB 的时候用）
     private let presetColors = ["", "#07C160", "#576B95", "#FA5151", "#FF9500", "#333333"]
 
     var body: some View {
@@ -45,7 +36,7 @@ struct ChatQuickAdminSection: View {
             .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 6)
 
             VStack(spacing: 0) {
-                /* ① 快捷按钮列表 */
+
                 ForEach(Array(chips.enumerated()), id: \.element.id) { idx, c in
                     Button { editing = c; editingIndex = idx } label: {
                         HStack(spacing: 10) {
@@ -87,7 +78,6 @@ struct ChatQuickAdminSection: View {
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .padding(.horizontal, 12)
 
-            /* ② 「＋」按钮的外观 */
             HStack {
                 Text(Tr("「＋」按钮外观")).font(pf(13)).foregroundColor(C.subLabel)
                 Spacer(minLength: 0)
@@ -95,7 +85,7 @@ struct ChatQuickAdminSection: View {
             .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 6)
 
             VStack(spacing: 0) {
-                /* 颜色 */
+
                 HStack(spacing: 10) {
                     Text(Tr("颜色")).font(pf(16)).foregroundColor(C.label)
                     Spacer(minLength: 6)
@@ -138,7 +128,6 @@ struct ChatQuickAdminSection: View {
 
                 HairLine(inset: 16)
 
-                /* 大小 */
                 HStack(spacing: 10) {
                     Text(Tr("大小")).font(pf(16)).foregroundColor(C.label)
                     Spacer(minLength: 6)
@@ -153,7 +142,6 @@ struct ChatQuickAdminSection: View {
 
                 HairLine(inset: 16)
 
-                /* 图片（自己上传一张，替换默认那个圆圈加号） */
                 HStack(spacing: 10) {
                     Text(Tr("换成图片")).font(pf(16)).foregroundColor(C.label)
                     Spacer(minLength: 6)
@@ -183,7 +171,6 @@ struct ChatQuickAdminSection: View {
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .padding(.horizontal, 12)
 
-            /* 发文件用哪一套：默认**我们自己的**「我的文件」页；打开这个开关才用苹果的文件 App */
             HStack {
                 Text(Tr("发文件")).font(pf(13)).foregroundColor(C.subLabel)
                 Spacer(minLength: 0)
@@ -244,7 +231,6 @@ struct ChatQuickAdminSection: View {
         }
     }
 
-    /// 改一个按钮：名字 / 动作 / 显示开关 / 上移下移 / 删除
     @ViewBuilder
     private func editorSheet(_ c: QuickChip) -> some View {
         NavigationStack {
@@ -339,12 +325,10 @@ struct ChatQuickAdminSection: View {
             .background(C.pageBg.ignoresSafeArea())
             .navigationBarBackButtonHidden(true)
             .toolbar(.hidden, for: .navigationBar)
-            /* 2026-10-16：快捷按钮编辑器补左滑返回 */
+
             .swipeBack { editing = nil }
         }
     }
-
-    /* ---------- 编辑时用的小工具（列表里那一份是值拷贝，改完要写回数组） ---------- */
 
     private func idx(_ c: QuickChip) -> Int? { chips.firstIndex { $0.id == c.id } }
     private func currentLabel(_ c: QuickChip) -> String { idx(c).map { chips[$0].label } ?? c.label }
@@ -393,7 +377,7 @@ struct ChatQuickAdminSection: View {
         do {
             try await API.shared.saveChatQuick(quick: chips, plus: cfg)
             plus = cfg
-            /* 本机立刻按新配置走（不用等回到前台） */
+
             app.quickChips = chips
             app.plusButton = cfg
             msg = Tr("已保存，聊天里立刻生效")

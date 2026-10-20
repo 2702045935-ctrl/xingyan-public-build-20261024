@@ -1,24 +1,17 @@
 import SwiftUI
 
-/* ============================================================
-   支付密码（我 → 设置 → 支付密码）
-   设过密码的：先验原密码 → 输新密码 → 再输一遍确认
-   没设过的：输新密码 → 再输一遍确认
-   键盘用 iOS 原生的数字键盘。
-   ============================================================ */
-
 struct PayPasswordView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
 
     private enum Step { case old, new1, new2 }
 
-    @State private var hasPwd = false          // 之前设过没有
+    @State private var hasPwd = false
     @State private var loaded = false
     @State private var step: Step = .new1
     @State private var input = ""
-    @State private var firstNew = ""           // 第一次输的新密码
-    @State private var oldPwd = ""             // 验过的原密码（改密码时要带给服务器）
+    @State private var firstNew = ""
+    @State private var oldPwd = ""
     @State private var hint: String?
     @State private var shake = false
     @State private var busy = false
@@ -64,7 +57,6 @@ struct PayPasswordView: View {
                         .padding(.top, 14)
                 }
 
-                /* 收字的输入框：1×1 藏起来，靠它弹原生数字键盘 */
                 TextField("", text: $input)
                     .keyboardType(.numberPad)
                     .focused($focus)
@@ -110,10 +102,8 @@ struct PayPasswordView: View {
         }
     }
 
-    /* ---------------------------------------------------------- 6 个格子 */
-
     private var cells: some View {
-        /* 统一用支付页那套 6 格（圆角卡片 + 当前格绿边；错了整排抖） */
+
         PayDotField(count: input.count, shake: shake ? -6 : 0,
                     busy: busy, height: 48)
             .contentShape(Rectangle())
@@ -130,9 +120,6 @@ struct PayPasswordView: View {
         .frame(height: 52)
     }
 
-    /* ---------------------------------------------------------- 流程 */
-
-    /// 半屏/整页刚进来时抢焦点偶尔会被系统吞掉，隔几拍补两次
     private func focusSoon() {
         Task {
             focus = true

@@ -1,15 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   登录页「更多登录方式」面板（2026-10-12 照微信那套重做）
-
-   微信的登录方式面板不是系统确认框，是一张从底下推上来的白卡：
-     · 每项前面一个**彩色圆图标**（这就是用户说的「微信的几个色彩」）：
-         人脸识别 = 微信绿 · 声音锁 = 橙 · 手机号 = 蓝 · 账号密码 = 靛
-     · 标题「更多登录方式」+ 每行图标 / 名字 / 副标题 / 右箭头
-     · 最下面单独一张「取消」卡
-   ============================================================ */
-
 struct LoginWaysSheet: View {
     @Environment(\.dismiss) private var dismiss
 
@@ -17,7 +7,7 @@ struct LoginWaysSheet: View {
     let onPassword: () -> Void
     let onFace: () -> Void
     let onVoice: () -> Void
-    /// 设备确认登录（扫一扫 / 输数字）。不传就不显示这一行。
+
     var onPair: (() -> Void)? = nil
 
     private struct Way: Identifiable {
@@ -30,7 +20,7 @@ struct LoginWaysSheet: View {
 
     private var ways: [Way] {
         var a: [Way] = [Way(id: "face", title: Tr("人脸识别登录"), sub: Tr("用面容直接进"), symbol: "faceid",
-                            color: C.green),        // 2026-10-17：跟主色走，不再写死微信绿
+                            color: C.green),
                         Way(id: "voice", title: Tr("声音锁登录"), sub: Tr("读出屏幕上的数字"), symbol: "waveform",
                             color: Color(hex: 0xF59A1E)),
                         Way(id: "phone", title: Tr("手机号登录"), sub: Tr("短信验证码"), symbol: "phone.fill",
@@ -62,8 +52,7 @@ struct LoginWaysSheet: View {
                         HairLine(inset: 16)
                         Button {
                             dismiss()
-                            /* 稍微等一下再关：面板收起来的动画先走完，再打开下一层，
-                               免得两个弹层打架（真机上会静默不弹）。 */
+
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
                                 switch w.id {
                                 case "face":  onFace()

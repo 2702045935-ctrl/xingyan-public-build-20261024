@@ -1,18 +1,9 @@
 import SwiftUI
 
-/* ============================================================
-   发送名片 —— 先选一个联系人
-
-   微信的路径是：聊天里点「＋」→「名片」→ 从通讯录里挑一个人 → 那张名片
-   就作为一条消息发出去。对方收到以后点这张卡片，进的是那个人的资料页；
-   还不是好友的话，资料页上就有「添加到通讯录」可以直接加 —— 这就是
-   "推名片可以加好友"。
-   ============================================================ */
-
 struct PickContactView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
-    /// 选好了哪个人（调用方把名片发出去）
+
     var onPick: (User) -> Void
 
     @State private var keyword = ""

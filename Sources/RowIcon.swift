@@ -1,10 +1,7 @@
 import Foundation
 
-/// 行图标：**用苹果自带的 SF Symbols**（不再用后台那套手画 SVG）。
-/// 「我」页和发现页的行都走这里：先按后台给的 action 认，认不出再按中文标签认，
-/// 最后给一个通用图标 —— 保证任何一行都有图标，不会空着。
 enum RowIcon {
-    /// action → SF Symbol
+
     private static let byAction: [String: String] = [
         "profile": "person.crop.circle.fill",
         "moments": "safari",
@@ -16,7 +13,7 @@ enum RowIcon {
         "games": "gamecontroller.fill",
         "news": "newspaper.fill",
         "look": "eye.fill",
-        /* 发现页的「听一听 / 音乐」和「小程序」（后台 discover.json 里配的 action） */
+
         "music": "music.note",
         "listen": "music.note",
         "miniapps": "square.grid.2x2.fill",
@@ -42,7 +39,7 @@ enum RowIcon {
         "about": "info.circle.fill",
         "settings": "gearshape.fill",
         "favorites": "star.fill",
-        /* 我页两行：卡包 / 小店（2026-10-12 加的） */
+
         "cards": "wallet.pass.fill",
         "shop": "bag.fill",
         "officialAccounts": "envelope.fill",
@@ -55,7 +52,6 @@ enum RowIcon {
         "myWork": "briefcase.fill"
     ]
 
-    /// 中文标签 → SF Symbol（后台没给 action 时的兜底）
     private static let byLabel: [String: String] = [
         "个人信息": "person.crop.circle.fill",
         "朋友圈": "safari",
@@ -71,8 +67,7 @@ enum RowIcon {
         "收藏": "star.fill",
         "卡包": "wallet.pass.fill",
         "小店": "bag.fill",
-        /* 「小店与卡包」是 2026-10-12 后台 me-page.json 里那一行的 label，
-           上面「卡包」那一行已经按用户要求去掉了，这里补上全称的兜底映射 */
+
         "小店与卡包": "bag.fill",
         "钱包": "wallet.pass.fill",
         "收付款": "yensign.circle.fill",

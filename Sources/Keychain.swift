@@ -1,7 +1,6 @@
 import Foundation
 import Security
 
-/// 登录令牌放钥匙串：**重装 App 也不会掉登录**，不用每次重新登一遍
 enum Keychain {
     private static let service = "com.chris.chatnative"
 

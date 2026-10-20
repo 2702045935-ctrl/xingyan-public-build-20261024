@@ -2,21 +2,6 @@ import SwiftUI
 import WebKit
 import UIKit
 
-/* ============================================================
-   小程序 / 小游戏运行时（发现 → 小程序）
-
-   · 小程序由**后台加**（后台「小程序 / 小游戏」页：名字 / 图标 / 说明 / 类型 / 入口地址）
-     —— 加新的、改名字图标都不用重新出包。
-   · App 这一页就是个**运行时**：内置浏览器（WKWebView）+ 一层 `wx.*` JS 桥
-     （setNavigationBarTitle / showToast / showModal / 存储 / request / 震动 / 分享 / 退出…），
-     所以按小程序 API 写的页面直接能跑。
-   · 文件先下到本机再跑（App 默认连的是 IP，证书 App 自己放过、WKWebView 不认，
-     直连必然加载失败；下到本地顺带离线也能用）。
-   ⚠ 小游戏（kind = game）**不注入** wx 桥 —— 它们自己那份 adapter.js 在浏览器模式下走 canvas。
-   ============================================================ */
-
-/* Codable（不是只 Decodable）：会话页二楼要把小程序清单**存本机一份**，
-   网络抖的时候用上次那份，二楼不会一会儿正常一会儿不正常。 */
 struct MiniApp: Codable, Identifiable, Hashable {
     var id: String
     var name: String
@@ -25,15 +10,15 @@ struct MiniApp: Codable, Identifiable, Hashable {
     var kind: String?
     var url: String
     var color: String?
-    /// 封面图（后台填，可空 —— 空就用图标那块渐变）
+
     var cover: String?
-    /// 分组名（微信那边是「发现新游 / 动作对抗游戏」这种小标题）
+
     var group: String?
-    /// 卡片上那颗按钮的文字（立即玩 / 预约 …）
+
     var action: String?
-    /// 小程序能力类目（后台可填；没填时按名字/分组自动归类）
+
     var category: String? = nil
-    /// 服务能力标签，例如「在线预约」「查件」「会员」
+
     var capabilities: [String]? = nil
     var provider: String? = nil
     var featured: Bool? = nil
@@ -104,9 +89,6 @@ struct MiniAppCapabilityCategory: Identifiable {
     ]
 }
 
-/* ---------------------------------------------------------- 分享出去的那张卡 */
-
-/// 好友发来的「小游戏 / 小程序」卡片：body 就是这一段 JSON
 struct MiniAppShare: Decodable {
     var id: String
     var name: String
@@ -123,7 +105,6 @@ struct MiniAppShare: Decodable {
     }
     var isGame: Bool { (kind ?? "") == "game" }
 
-    /// 从聊天消息 body 里解析（解析不出来就返回 nil，界面上退回一行「[小游戏]」）
     init?(json: String) {
         guard let d = json.data(using: .utf8),
               let o = (try? JSONSerialization.jsonObject(with: d)) as? [String: Any] else { return nil }
@@ -141,7 +122,6 @@ struct MiniAppShare: Decodable {
     }
 }
 
-/// 聊天里那张小游戏卡片（微信里好友分享给你的小游戏就是这个样子）
 struct MiniAppCardBubble: View {
     let info: MiniAppShare
     var onOpen: () -> Void
@@ -180,8 +160,6 @@ struct MiniAppCardBubble: View {
         .onTapGesture { onOpen() }
     }
 }
-
-/* ---------------------------------------------------------- 列表页（发现 → 小程序） */
 
 struct MiniAppsView: View {
     @EnvironmentObject var app: AppState
@@ -426,8 +404,7 @@ struct MiniAppsView: View {
                     .fill(LinearGradient(colors: [Color(hex: 0x2B2F3A), Color(hex: 0x1B1F27)],
                                          startPoint: .topLeading, endPoint: .bottomTrailing))
                 Text(it.iconText).font(.system(size: 30))
-                /* ⚠ 有上传的图标图就**用图**（后台/App 管理里换了图标这里要跟着变）——
-                   以前这里只画 emoji，所以用户换了图标，小程序页看着"怎么没换"。 */
+
                 if let cv = it.cover, !cv.isEmpty {
                     RemoteImage(path: cv)
                         .frame(width: 62, height: 62)
@@ -593,8 +570,6 @@ struct MiniAppCapabilitySheet: View {
     }
 }
 
-/* ---------------------------------------------------------- 运行时页 */
-
 struct MiniAppRuntimeView: View {
     let app: MiniApp
     @EnvironmentObject var appState: AppState
@@ -605,13 +580,13 @@ struct MiniAppRuntimeView: View {
     @State private var localDir: URL?
     @State private var loading = true
     @State private var errorText = ""
-    /// 顶栏那颗 🏆 要用它往里打 JS（好友排名面板）
+
     @StateObject private var box = WebBox()
-    /// 右上角胶囊里的「···」菜单
+
     @State private var capsuleMenu = false
 
     var body: some View {
-        /* 微信小程序那样：**整屏都是小程序**，只有右上角一颗胶囊（··· / ⊙） */
+
         ZStack(alignment: .topTrailing) {
             if let localIndex {
                 MiniAppWebView(index: localIndex, dir: localDir,
@@ -641,7 +616,7 @@ struct MiniAppRuntimeView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            /* 右上角胶囊：[ ··· | ⊙ ] */
+
             HStack(spacing: 0) {
                 Button { capsuleMenu = true } label: {
                     Image(systemName: "ellipsis")
@@ -666,7 +641,7 @@ struct MiniAppRuntimeView: View {
             .overlay(Capsule().stroke(Color.white.opacity(0.18), lineWidth: 0.5))
             .padding(.top, 8)
             .padding(.trailing, 10)
-            /* 右下角 🏆：好友排名（和游戏页一样，独立一颗好点） */
+
             if localIndex != nil {
                 VStack {
                     Spacer(minLength: 0)
@@ -699,7 +674,6 @@ struct MiniAppRuntimeView: View {
         }
     }
 
-    /// 小程序/小游戏那一套文件（约定：入口同目录下的 index.html + js/*.js）
     private var files: [String] {
         ["index.html", "js/adapter.js", "js/engine.js", "js/sound.js", "js/main.js"]
     }
@@ -721,7 +695,7 @@ struct MiniAppRuntimeView: View {
         let root = caches.appendingPathComponent("miniapps/\(app.id)", isDirectory: true)
         do {
             try fm.createDirectory(at: root, withIntermediateDirectories: true)
-            /* 文件清单问服务器（files.json），没有才用默认那 5 个 */
+
             let list = await miniAppFileList(baseDir: remoteDir)
             for f in list {
                 let dst = root.appendingPathComponent(f)
@@ -738,7 +712,6 @@ struct MiniAppRuntimeView: View {
         loading = false
     }
 
-    /// JS 桥回传的消息（wx.showToast / wx.setNavigationBarTitle / wx.vibrateShort / wx.exitMiniProgram…）
     private func handle(_ dict: [String: Any]) {
         let fn = (dict["fn"] as? String) ?? ""
         switch fn {
@@ -758,16 +731,15 @@ struct MiniAppRuntimeView: View {
     }
 }
 
-/// 内置浏览器 + （小程序才注入的）wx.* JS 桥
 struct MiniAppWebView: UIViewRepresentable {
     let index: URL
     let dir: URL?
     let injectBridge: Bool
-    /// 好友排名那一层（自动报分 + 🏆 面板）—— 游戏和小程序都注
+
     let rankJs: String
     let box: WebBox
     let onMessage: ([String: Any]) -> Void
-    /// 报分 / 拉榜：由原生替网页发（本地 file:// 直连服务器会被证书拦掉）
+
     var onScore: ((String, Int) -> Void)? = nil
     var onRank: ((String, @escaping (String) -> Void) -> Void)? = nil
 
@@ -775,14 +747,13 @@ struct MiniAppWebView: UIViewRepresentable {
         let cfg = WKWebViewConfiguration()
         cfg.allowsInlineMediaPlayback = true
         cfg.mediaTypesRequiringUserActionForPlayback = []
-        /* 安全区：小程序页面自己也吃安全区（微信就是这么做的）——
-           页面顶部的文字不再钻到刘海底下，背景/画面仍然铺满。 */
+
         cfg.userContentController.addUserScript(
             WKUserScript(source: WebSafeArea.js, injectionTime: .atDocumentStart, forMainFrameOnly: true))
         if !rankJs.isEmpty {
             cfg.userContentController.addUserScript(
                 WKUserScript(source: rankJs, injectionTime: .atDocumentStart, forMainFrameOnly: true))
-            /* 好友排行那根线（报分 / 拉榜） */
+
             context.coordinator.rank.onScore = onScore
             context.coordinator.rank.onRank = onRank
             cfg.userContentController.add(context.coordinator.rank, name: "chrisRank")
@@ -811,7 +782,7 @@ struct MiniAppWebView: UIViewRepresentable {
 
     final class Coord: NSObject, WKScriptMessageHandler {
         let onMessage: ([String: Any]) -> Void
-        /// 好友排行（自己不是一个 handler 名，见 makeUIView 里的注册）
+
         let rank = RankBridge()
         weak var web: WKWebView?
         init(onMessage: @escaping ([String: Any]) -> Void) { self.onMessage = onMessage }
@@ -822,12 +793,6 @@ struct MiniAppWebView: UIViewRepresentable {
     }
 }
 
-/* ---------------------------------------------------------- wx.* 桥（注入到小程序页面里） */
-
-/// 一套小程序/小游戏要下哪些文件 —— **问服务器**：
-/// 游戏目录里放一份 files.json（`{"files":["index.html","js/a.js",…]}`），
-/// 没有就退回默认那 5 个文件。
-/// 这样后台再加一款（哪怕 js 文件不一样多），App 不用改也不用出包。
 func miniAppFileList(baseDir: URL) async -> [String] {
     let fallback = ["index.html", "js/adapter.js", "js/engine.js", "js/sound.js", "js/main.js"]
     guard let data = try? await API.shared.assetData(baseDir.appendingPathComponent("files.json")),
@@ -836,8 +801,6 @@ func miniAppFileList(baseDir: URL) async -> [String] {
     return arr
 }
 
-/// 一层很薄的 wx 兼容层：够大多数「小程序」页面直接跑。
-/// 原生那边只接 4 件事（改标题 / toast / 震动 / 退出 / 分享），其余都在 JS 里自己搞定。
 func miniAppWxBridge(token: String, base: String) -> String {
     let t = token.replacingOccurrences(of: "\"", with: "\\\"")
     let b = base.replacingOccurrences(of: "\"", with: "\\\"")

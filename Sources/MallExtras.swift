@@ -1,21 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   商城尾款（2026-10-15 对齐京东 · 第二批）
-
-     · 首页「频道」那一排 + 频道页：百亿补贴 / 排行榜 / 9.9包邮 / 厂家直供
-     · 搜索页：联想词 + 热搜榜 + 筛选排序（销量 / 价格 / 只看有货）
-     · 消息 tab：接**真服务通知**（DDStore.notices：下单/付款/成团/发货/签收/评价/售后）
-
-   ⚠ 一律用 /api/mall 下发的**真商品**算，不编数据：
-     · 排行榜按销量（sold 里那串 "10万+" 也认）
-     · 9.9包邮按拼单价 ≤ 9.9 真筛
-     · 厂家直供按商品自带的标签筛
-     · 百亿补贴：有「补贴」标签的就用标签；这条曲库里现在没有这种标签，
-       就按**折扣力度**排（省得最多的在前），并在页头写清楚是按折扣排的
-   ============================================================ */
-
-/// 首页那四个频道
 enum DDChannelKind: String, CaseIterable, Identifiable {
     case subsidy, rank, cheap, factory
 
@@ -30,7 +14,6 @@ enum DDChannelKind: String, CaseIterable, Identifiable {
         }
     }
 
-    /// 页头那行小字：这一页到底按什么排的，写清楚（不糊弄）
     var sub: String {
         switch self {
         case .subsidy: return "平台补贴：按折扣力度排，省得最多的在前"
@@ -59,27 +42,22 @@ enum DDChannelKind: String, CaseIterable, Identifiable {
     }
 }
 
-/* 2026-10-17 用户：「百亿补贴那些位置都给管理换字换图标」——
-   首页那排宫格（4 个频道 + 4 个功能）改成**管理端可配**：
-   文字、图标（emoji 优先，其次 SF Symbol 名）、颜色、顺序、显示/隐藏都能改，
-   改完用户重开商城就是新的，不用出包。后台没配就用下面这套内置的。 */
 struct DDChannelItem: Codable, Identifiable, Hashable {
     var id: String
     var title: String
-    /// SF Symbol 名（没填 emoji 时用它）
+
     var icon: String?
-    /// emoji（填了就优先画它）
+
     var emoji: String?
-    /// subsidy / rank / cheap / factory（进频道页）或 orders / cart / fav / views（功能）
+
     var action: String?
-    /// 自定颜色（#RRGGBB，空 = 用该动作的默认色）
+
     var tint: String?
     var on: Bool?
     var sort: Int?
 
     var live: Bool { on ?? true }
 
-    /// 图标：emoji 优先 → 配置的 SF Symbol → 动作的默认图标
     var symbol: String { (icon?.isEmpty == false) ? icon! : (DDChannelKind(rawValue: action ?? "")?.icon ?? "tag.fill") }
     var emojiText: String { emoji ?? "" }
     var tintColor: Color {
@@ -88,7 +66,6 @@ struct DDChannelItem: Codable, Identifiable, Hashable {
         return DDChannelKind(rawValue: action ?? "")?.tint ?? DDColor.red
     }
 
-    /// 内置那八格（后台没配时用它，保证任何情况下首页都不会空）
     static let builtin: [DDChannelItem] = [
         DDChannelItem(id: "ch1", title: "百亿补贴", icon: "yensign.circle.fill", emoji: "💰",
                       action: "subsidy", tint: nil, on: true, sort: 1),
@@ -110,32 +87,25 @@ struct DDChannelItem: Codable, Identifiable, Hashable {
 }
 
 extension DDProduct {
-    /// 省了多少（原价 - 拼单价）
+
     var saveMoney: Double { max(0, orig - price) }
-    /// 折扣力度 0~1（越大越便宜）
+
     var discountRate: Double { orig > 1 ? max(0, min(1, 1 - price / orig)) : 0 }
-    /// 销量（数字）：优先用 sales 字段；没有就把 sold 那串 "10万+" / "3.2万" 算出来
+
     var salesNum: Int {
         if let s = sales { return s }
         let t = sold.replacingOccurrences(of: "+", with: "").trimmingCharacters(in: .whitespaces)
         if t.hasSuffix("万") { return Int((Double(String(t.dropLast())) ?? 0) * 10000) }
         return Int(t) ?? 0
     }
-    /// 有没有货：至少一个规格还有库存（京东「只看有货」用）
+
     var inStock: Bool { specList.contains { $0.stock > 0 } }
-    /// 提到的「补贴」标签（没有标签就 false）
+
     var hasSubsidy: Bool {
         tags.contains { $0.contains("补贴") } || title.contains("补贴")
     }
 }
 
-/* ---------------------------------------------------------- 首页频道入口 */
-
-/* 2026-10-15 用户：「商城和京东一样插点小广告」
-   京东首页就是这样：**双列瀑布流里插广告位**（左下角标「广告」）+ 楼层之间的广告条。
-   我们插的全是自家内容（会员 / 百亿补贴 / 听一听），所以不坑人，也都标了「广告」。 */
-
-/// 瀑布流里插的那种小广告卡（和商品卡一样大，左下角标「广告」）
 struct DDAdCard: View {
     let emoji: String
     let title: String
@@ -143,7 +113,7 @@ struct DDAdCard: View {
     let cta: String
     let top: UInt32
     let bottom: UInt32
-    /// × 掉这一张时用的标识（后台广告传 "ad:<id>"；不传就用 emoji+标题）
+
     var adKey: String = ""
     var onTap: () -> Void
 
@@ -164,7 +134,7 @@ struct DDAdCard: View {
                 .frame(height: 150)
                 .clipped()
                 .overlay(alignment: .topTrailing) {
-                    /* 右上角那颗 ×（京东的广告位也能关掉） */
+
                     Button { DDStore.shared.hideAd(adKey.isEmpty ? (emoji + title) : adKey) } label: {
                         Image(systemName: "xmark")
                             .font(.system(size: 10, weight: .bold)).foregroundColor(.white.opacity(0.9))
@@ -194,7 +164,6 @@ struct DDAdCard: View {
     }
 }
 
-/// 楼层之间的广告条（矮一点，一行字 + 一颗按钮）
 struct DDAdStrip: View {
     let emoji: String
     let title: String
@@ -236,31 +205,24 @@ struct DDAdStrip: View {
     }
 }
 
-/// 首页轮播图下面那一排（京东首页也是这么排的）
 struct DDChannelRow: View {
     var onOpen: (DDChannelKind) -> Void
-    /// 第二行那四个**常用功能**（京东那排宫格不只放频道，还放订单/购物车/收藏/足迹）
+
     var onFunc: (String) -> Void = { _ in }
     @ObservedObject private var store = DDStore.shared
 
-    /// 后台配了就用后台的（按时段/开关过滤），没配就用内置那八格
     private var items: [DDChannelItem] {
-        /* ⚠ 2026-10-17 用户：「9宫格卡片改了还是不生效」「那是我删掉的」——
-           以前只要"过滤完是空的"就退回内置八格，所以用户**删光了**也还是看到那八格（以为没生效）。
-           现在按"后台到底配过没有"分：
-             · 没配过（channelsConfigured = false）→ 内置八格兜底，首页不留白
-             · 配过（哪怕是空的）→ 就按后台那份来，删光了就是空的（这一排整块不画） */
+
         guard store.channelsConfigured else { return DDChannelItem.builtin }
         return store.channels.filter { $0.live }
     }
 
     var body: some View {
-        /* 后台把宫格删光（配过、但是空的）→ 这一排整块不画，别留一张空白卡 */
+
         if items.isEmpty {
             EmptyView()
         } else {
-        /* 2026-10-15 用户：「商城的主页排版不行，功能逻辑主页对齐京东」——
-           京东首页是**两行 8 个宫格**：第一行频道，第二行常用功能（订单/购物车/收藏/足迹）。 */
+
         LazyVGrid(columns: [GridItem(.flexible(), spacing: 0), GridItem(.flexible(), spacing: 0),
                             GridItem(.flexible(), spacing: 0), GridItem(.flexible(), spacing: 0)],
                   spacing: 12) {
@@ -273,10 +235,7 @@ struct DDChannelRow: View {
         }
         .padding(.vertical, 14)
         .background(DDColor.cardGrad)
-        /* 2026-10-17 用户：「商城首页的排版感觉还是不够高级」——
-           宫格这张卡：圆角 14→16、留白按 8pt 网格给足（上下 14、格距 14），
-           阴影换成"两层"（贴地一层 + 扩散一层），边缘的线更淡一点——
-           一眼就看得出这是一块**浮起来的玻璃白卡**，不是贴了条边框的色块。 */
+
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
             .stroke(DDColor.cardEdge.opacity(0.7), lineWidth: 0.6))
@@ -286,16 +245,13 @@ struct DDChannelRow: View {
         }
     }
 
-    /// 一格：图标优先画后台配的 emoji，没有就画 SF Symbol（颜色也是后台配的）
     private func cell(item: DDChannelItem, tap: @escaping () -> Void) -> some View {
         let tint = item.tintColor
-        /* ⚠ 上面那句 let 之后就不能再靠"最后一句自动返回"了（Swift 只在单表达式函数里隐式返回），
-           必须显式 return —— B1006 那次编译就是栽在这儿。 */
+
         return Button { tap() } label: {
             VStack(spacing: 7) {
                 ZStack {
-                    /* 图标底座：从圆改成**圆角方形**（大商城那排宫格都是方的），
-                       颜色用同色系的浅渐变 + 一条几乎看不见的高光边 —— 比"一个圆"高级得多 */
+
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
                         .fill(LinearGradient(colors: [tint.opacity(0.17), tint.opacity(0.07)],
                                              startPoint: .topLeading, endPoint: .bottomTrailing))
@@ -320,22 +276,19 @@ struct DDChannelRow: View {
     }
 }
 
-/* ---------------------------------------------------------- 频道页 */
-
-/// 频道页（百亿补贴 / 排行榜 / 9.9包邮 / 厂家直供）
 struct DDChannelView: View {
     @EnvironmentObject private var app: AppState
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var store = DDStore.shared
 
     let kind: DDChannelKind
-    /// 详情页里点「加购物车」→ 外面把 tab 切到购物车
+
     var onCart: () -> Void = { }
 
     @State private var openProduct: DDProduct? = nil
 
     private var list: [DDProduct] {
-        /* 被 × 掉（不感兴趣）的不再出现在频道页里，和首页一致 */
+
         let all = store.feed(store.live)
         switch kind {
         case .rank:
@@ -373,8 +326,7 @@ struct DDChannelView: View {
         }
         .background(DDColor.page.ignoresSafeArea())
         .swipeBack { dismiss() }
-        /* ⚠ ddLight 放最外面：侧滑返回那一层自己也有个背景（C.pageBg），
-           不放外面的话深色模式下会闪一块黑 */
+
         .ddLight()
         .preferredColorScheme(.light)
         .sheet(item: $openProduct) { p in
@@ -474,9 +426,6 @@ struct DDChannelView: View {
     }
 }
 
-/* ---------------------------------------------------------- 搜索：热搜榜 / 联想词 / 排序筛选 */
-
-/// 热搜榜（两列带名次；词是从真商品里数出来的，不是编的）
 struct DDSearchHotBoard: View {
     var words: [String]
     var onTap: (String) -> Void
@@ -520,7 +469,6 @@ struct DDSearchHotBoard: View {
     }
 }
 
-/// 输入框下面那一列联想词
 struct DDSuggestList: View {
     var words: [String]
     var onTap: (String) -> Void
@@ -549,7 +497,6 @@ struct DDSuggestList: View {
     }
 }
 
-/// 搜索结果的排序 / 筛选条（综合 · 销量 · 价格 · 只看有货）
 struct DDSearchFilterBar: View {
     var sort: String
     var onlyStock: Bool

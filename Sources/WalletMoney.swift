@@ -1,12 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   零钱：充值 / 提现（照微信那一套）
-   · 充值：银行卡 → 零钱。大号金额 + 快捷金额 + 到账银行卡 + 绿色「充值」
-   · 提现：零钱 → 银行卡。可提现余额 + 全部提现 + 手续费（0.1%，最低 0.1）+ 支付密码
-   · 银行卡只存「银行名 + 末四位」
-   ============================================================ */
-
 struct RechargeView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -42,7 +35,6 @@ struct RechargeView: View {
                     .padding(.horizontal, 20)
                     .frame(height: 66)
 
-                    /* 快捷金额（微信也有这几个档） */
                     HStack(spacing: 10) {
                         ForEach([50, 100, 200, 500], id: \.self) { v in
                             Button {
@@ -114,7 +106,7 @@ struct RechargeView: View {
             }
             .environmentObject(app)
         }
-        /* 充值中：屏幕正中三个点（微信付款时那一下过渡） */
+
         .overlay {
             if busy { PayBusyOverlay(text: "正在充值") }
         }
@@ -157,30 +149,30 @@ struct WithdrawView: View {
     @State private var bankId = ""
     @State private var busy = false
     @State private var showAddBank = false
-    /// 选到账银行卡（微信：点「提现到」那一行走一整页/半屏列表挑）
+
     @State private var showPickBank = false
     @State private var showPay = false
     @State private var ops: [API.WalletOp] = []
-    /// 底部那两条常见问题点开看答案
+
     @State private var faq: (String, String)?
     @FocusState private var amountFocused: Bool
 
     private var amount: Double { Double(amountText) ?? 0 }
     private var balance: Double { app.me?.balance ?? 0 }
-    /* 微信：每笔 0.1%，最低 0.1 元 */
+
     private var fee: Double { amount <= 0 ? 0 : max(0.1, (amount * 0.001 * 100).rounded() / 100) }
-    /// 本次实际到账（微信在服务费那行写「实际到账 ¥x」）
+
     private var net: Double { max(0, amount - fee) }
     private var picked: API.WalletBankCard? { banks.first(where: { $0.id == bankId }) }
 
     var body: some View {
         VStack(spacing: 0) {
-            /* 微信这一页的标题就叫「零钱提现」（不是「提现」） */
+
             NavBar(title: Tr("零钱提现"), back: { dismiss() })
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
-                    /* ① 提现到哪张卡（微信：一张白卡，上面是银行 + 尾号，下面小字「2小时内到账」） */
+
                     GroupCard {
                         Button {
                             if banks.isEmpty { showAddBank = true } else { showPickBank = true }
@@ -219,7 +211,6 @@ struct WithdrawView: View {
 
                     Spacer().frame(height: 8)
 
-                    /* ② 金额（微信：大号 ¥ + 金额，右边「全部提现」；下面一行「可用余额」） */
                     GroupCard {
                         HStack(alignment: .firstTextBaseline, spacing: 6) {
                             Text("¥").font(pfMoney(22)).foregroundColor(C.label)
@@ -247,7 +238,6 @@ struct WithdrawView: View {
                         .padding(.horizontal, 16).frame(height: 40)
                     }
 
-                    /* ③ 服务费 / 实际到账（微信在按钮上面这几行灰字） */
                     VStack(alignment: .leading, spacing: 6) {
                         if amount > 0 {
                             HStack {
@@ -281,7 +271,6 @@ struct WithdrawView: View {
                     .buttonStyle(.plain)
                     .disabled(busy || !canWithdraw)
 
-                    /* ④ 常见问题（微信这一页底部就是这两条链接） */
                     VStack(spacing: 0) {
                         faqRow(Tr("提现多久能到账？"),
                                Tr("一般 2 小时内到账，具体以银行处理时间为准。遇到节假日可能稍慢。")) {
@@ -297,7 +286,6 @@ struct WithdrawView: View {
                     }
                     .padding(.top, 18)
 
-                    /* 提现记录（微信在这一页下面就有） */
                     if !ops.isEmpty {
                         HStack {
                             Text(Tr("提现记录")).font(pf(13)).foregroundColor(C.subLabel)
@@ -342,7 +330,7 @@ struct WithdrawView: View {
             BankAddSheet { list in banks = list; bankId = list.first?.id ?? "" }
                 .environmentObject(app)
         }
-        /* 选到账银行卡（微信是一整页列表，这里用半屏列表，点一下就换） */
+
         .sheet(isPresented: $showPickBank) { bankPicker }
         .sheet(isPresented: $showPay) {
             PayConfirmSheet(title: Tr("提现") + " ¥" + money(amount)) { pwd, face in
@@ -350,7 +338,7 @@ struct WithdrawView: View {
             }
             .environmentObject(app)
         }
-        /* 提现中：屏幕正中三个点（和微信一样） */
+
         .overlay {
             if busy { PayBusyOverlay(text: "正在提现") }
         }
@@ -360,12 +348,11 @@ struct WithdrawView: View {
             Text(faq?.1 ?? "")
         }
         .onAppear {
-            /* 进页面就把光标放金额上（微信也是进来就能输） */
+
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { amountFocused = true }
         }
     }
 
-    /// 银行小图标：一个圆 + 银行名第一个字（微信到账卡那一行左边就是这种）
     private func bankBadge(_ bank: String) -> some View {
         let ch = bank.isEmpty ? "卡" : String(bank.prefix(1))
         return Text(ch)
@@ -399,7 +386,6 @@ struct WithdrawView: View {
         .buttonStyle(.plain)
     }
 
-    /// 选到账银行卡
     private var bankPicker: some View {
         VStack(spacing: 0) {
             NavBar(title: Tr("选择到账银行卡"), back: { showPickBank = false })
@@ -457,7 +443,7 @@ struct WithdrawView: View {
             .background(C.pageBg)
         }
         .background(C.pageBg.ignoresSafeArea())
-        /* 2026-10-16：选到账银行卡这一层也补左滑返回（滑一下 = 不收卡片，回上一页） */
+
         .swipeBack { showPickBank = false }
     }
 
@@ -490,7 +476,6 @@ struct WithdrawView: View {
     }
 }
 
-/* 添加银行卡：只存银行名 + 末四位 */
 struct BankAddSheet: View {
     var onAdded: ([API.WalletBankCard]) -> Void
 
@@ -531,7 +516,7 @@ struct BankAddSheet: View {
         .background(C.pageBg.ignoresSafeArea(edges: .top))
         .toolbar(.hidden, for: .navigationBar)
         .hidesTabBar()
-        /* 2026-10-16：添加银行卡页补左滑返回 */
+
         .swipeBack { dismiss() }
     }
 
@@ -562,7 +547,6 @@ struct BankAddSheet: View {
     }
 }
 
-/* 支付确认：6 位支付密码（有面容的话可以点「使用面容」） */
 struct PayConfirmSheet: View {
     var title: String
     var onConfirm: (String, Bool) -> Void
@@ -604,7 +588,7 @@ struct PayConfirmSheet: View {
             if Biometrics.available {
                 Button {
                     dismiss()
-                    onConfirm("", true)      // 面容已通过
+                    onConfirm("", true)
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: "faceid")

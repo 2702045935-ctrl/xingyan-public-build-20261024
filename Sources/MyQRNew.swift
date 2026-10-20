@@ -1,19 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   我的二维码（2026-10-12 按用户要求改成**微信扫一扫那种排版**）
-
-   从上到下：
-     ① 头像 + 昵称 + 星言号
-     ② 一张白底大二维码（小头像摆正中间；服务器出的码是纠错等级 H，挡一小块照样扫得出来）
-        —— 支持**换样式**：绿 / 蓝 / 红 / 黄 / 紫 / 黑，选完记住（@AppStorage），
-           保存到相册的那张图也跟着变颜色。
-     ③ 一行小字：扫一扫上面的二维码，加我为朋友
-     ④ 底下**两排**（微信扫一扫页那个排版）：面对面收照片和文件 / 面对面收红包
-                                       换个样式 / 保存到相册
-   ============================================================ */
-
-/// 二维码的六种颜色样式（都是深色，白底上扫得出来；黄用的是深琥珀，浅黄扫不出来）
 enum QRInk: String, CaseIterable {
     case green, blue, red, amber, purple, black
 
@@ -52,13 +38,13 @@ struct MyQRView: View {
     @State private var loading = true
     @State private var saved = false
     @State private var showScan = false
-    /// 换个样式（颜色）那一层
+
     @State private var showStyle = false
-    /// 面对面收照片和文件
+
     @State private var showFaceFile = false
-    /// 面对面收红包（出示收款码）
+
     @State private var showPayCode = false
-    /// 选中的样式（记住，下次进来还是这个颜色）
+
     @AppStorage("qrInkStyle") private var inkID = QRInk.green.rawValue
 
     private var ink: QRInk { QRInk(rawValue: inkID) ?? .green }
@@ -69,7 +55,7 @@ struct MyQRView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
-                    /* ① 头像 + 昵称 + 星言号 */
+
                     VStack(spacing: 10) {
                         Avatar(path: avatar.isEmpty ? (app.me?.avatarPath ?? "") : avatar,
                                size: 62, radius: 31, circle: true, level: growth.shownLevel)
@@ -85,7 +71,6 @@ struct MyQRView: View {
                     .padding(.top, 22)
                     .padding(.bottom, 18)
 
-                    /* ② 白底大二维码（小头像摆正中间，微信那种） */
                     ZStack {
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
                             .fill(Color.white)
@@ -106,13 +91,11 @@ struct MyQRView: View {
                     .frame(width: 264, height: 264)
                     .shadow(color: Color.black.opacity(0.07), radius: 10, y: 3)
 
-                    /* ③ 一行小字 */
                     Text(Tr("扫一扫上面的二维码，加我为朋友"))
                         .font(pf(13))
                         .foregroundColor(C.subLabel)
                         .padding(.top, 14)
 
-                    /* ④ 底下两排（微信扫一扫页那个排版）：上面两个「面对面」，下面换个样式 / 保存 */
                     VStack(spacing: 10) {
                         HStack(spacing: 10) {
                             qrTile(icon: "square.and.arrow.down.on.square", title: Tr("面对面收照片和文件"),
@@ -139,25 +122,24 @@ struct MyQRView: View {
         .toolbar(.hidden, for: .navigationBar)
         .swipeBack { dismiss() }
         .hidesTabBar()
-        /* 进「我的二维码」把屏幕**渐亮到最亮**，退出还原 —— 微信那一下（扫码枪才扫得出来）。
-           ⚠ 之前 BrightenScreen 写好了却一个页面都没挂，所以用户反馈「点开没有变亮」。 */
+
         .modifier(BrightenScreen())
         .fullScreenCover(isPresented: $showScan) {
             ScannerView { text in handleScanned(text, app: app) }
         }
-        /* 换个样式：绿 / 蓝 / 红 / 黄 / 紫 / 黑 */
+
         .sheet(isPresented: $showStyle) {
             QRStyleSheet(current: ink) { pick in
                 inkID = pick.rawValue
                 DiagLog.shared.note("二维码样式：" + pick.name)
             }
         }
-        /* 面对面收照片和文件（给对方扫这张码） */
+
         .sheet(isPresented: $showFaceFile) {
             FaceToFaceFileSheet(rows: rows, avatar: avatar, name: name, ink: ink.color)
                 .environmentObject(app)
         }
-        /* 面对面收红包 = 出示收款码 */
+
         .sheet(isPresented: $showPayCode) {
             NavigationStack { PayCodePage() }
                 .environmentObject(app)
@@ -173,7 +155,6 @@ struct MyQRView: View {
         }
     }
 
-    /* 底下那两排里的一个方块（微信扫一扫页底部的按钮就是这个样子：图标 + 标题 + 小字） */
     private func qrTile(icon: String, title: String, sub: String,
                         tap: @escaping () -> Void) -> some View {
         Button(action: tap) {
@@ -204,7 +185,6 @@ struct MyQRView: View {
         .buttonStyle(.plain)
     }
 
-    /* 保存到相册：一张干净的图（头像在码下面，不盖码） */
     private func saveToAlbum() {
         guard !rows.isEmpty else { return }
         let card = VStack(spacing: 16) {
@@ -236,4 +216,3 @@ struct MyQRView: View {
         app.show(Tr("保存失败，可以截图"))
     }
 }
-

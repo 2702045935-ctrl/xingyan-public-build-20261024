@@ -2,14 +2,6 @@ import Foundation
 import AVFoundation
 import Combine
 
-/* ============================================================
-   铃声：来电铃声 + 回铃音（「嘟——」那种）
-
-   不用打包音频文件，直接用 AVAudioEngine 现场合成正弦波音符，
-   所以是**真的会响**，而且想加铃声只要加一行音阶。
-   铃声在「我 → 个人信息 → 来电铃声」里能换、能试听。
-   ============================================================ */
-
 @MainActor
 final class Ringtone: ObservableObject {
     static let shared = Ringtone()
@@ -21,7 +13,6 @@ final class Ringtone: ObservableObject {
         let name: String
     }
 
-    /// 可选铃声（id 存在本机，来电时用）
     static let all: [Tone] = [
         Tone(id: "wechat", name: "默认"),
         Tone(id: "marimba", name: "马林巴"),
@@ -36,7 +27,6 @@ final class Ringtone: ObservableObject {
     @Published private(set) var previewing = ""
     @Published var current: String
 
-    /// 当前铃声的名字（设置页那行显示用）
     var currentName: String {
         Ringtone.all.first(where: { $0.id == current })?.name ?? "默认"
     }
@@ -53,11 +43,8 @@ final class Ringtone: ObservableObject {
         engine.connect(player, to: engine.mainMixerNode, format: fmt)
     }
 
-    /* ---------------------------------------------------------- 对外 */
-
-    /// 来电铃声响起来（重复播放，直到停）
     func startIncoming() { play(kind: .incoming) }
-    /// 呼出时的回铃音（嘟——嘟——）
+
     func startRingback() { play(kind: .ringback) }
 
     func stop() {
@@ -69,7 +56,6 @@ final class Ringtone: ObservableObject {
         deactivate()
     }
 
-    /// 设置页试听：放 4 秒自己停
     func preview(_ id: String) {
         stop()
         previewing = id
@@ -86,8 +72,6 @@ final class Ringtone: ObservableObject {
         }
     }
 
-    /* ---------------------------------------------------------- 内部 */
-
     private func play(kind: Kind) {
         self.kind = kind
         previewTask?.cancel()
@@ -100,7 +84,6 @@ final class Ringtone: ObservableObject {
         player.play()
     }
 
-    /// 通话铃声要能听见（静音键也响），所以用 playAndRecord + 外放
     private func activate() {
         let s = AVAudioSession.sharedInstance()
         try? s.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker])
@@ -117,12 +100,8 @@ final class Ringtone: ObservableObject {
         let dur: Double
     }
 
-    /// 回铃音（呼出时听到的「嘟—— 嘟——」）：用户选的 1 号 —— **450Hz 单音，
-    /// 响 1 秒 / 停 4 秒**（跟真手机打电话那个标准回铃音一样）。
-    /// 它跟「来电铃声」是两条独立的音轨，不受铃声选择影响。
     private static let ringback: [Note] = [Note(freq: 450, dur: 1.0), Note(freq: 0, dur: 4.0)]
 
-    /// 每种铃声就是一段音阶
     private func melody(_ id: String) -> [Note] {
         switch id {
         case "marimba":
@@ -143,7 +122,7 @@ final class Ringtone: ObservableObject {
             return [.init(freq: 440, dur: 0.4), .init(freq: 480, dur: 0.4), .init(freq: 0, dur: 1.4)]
         case "quiet":
             return [.init(freq: 587, dur: 0.5), .init(freq: 0, dur: 0.3), .init(freq: 494, dur: 0.6), .init(freq: 0, dur: 1.4)]
-        default:   // 微信
+        default:
             return [.init(freq: 659, dur: 0.16), .init(freq: 784, dur: 0.16), .init(freq: 988, dur: 0.16),
                     .init(freq: 1319, dur: 0.34), .init(freq: 0, dur: 0.18),
                     .init(freq: 988, dur: 0.16), .init(freq: 1175, dur: 0.16),
@@ -165,7 +144,7 @@ final class Ringtone: ObservableObject {
                 let t = Double(k) / rate
                 var v = 0.0
                 if n.freq > 0 {
-                    // 正弦 + 一点二次谐波，前后淡入淡出，听起来像铃声而不是"滴"声
+
                     let env = min(1, min(t / 0.012, max(0, (n.dur - t) / 0.06)))
                     v = (sin(2 * .pi * n.freq * t) * 0.62 + sin(4 * .pi * n.freq * t) * 0.2) * env
                 }

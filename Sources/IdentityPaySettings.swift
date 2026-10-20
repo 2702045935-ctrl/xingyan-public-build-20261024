@@ -1,12 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   钱包 → 身份信息 / 支付设置（微信那两页）
-   · 身份信息：实名姓名（打码）、身份证号（打码）、证件有效期、职业、常住地址；
-     没实名就给「立即认证」；还能看账户等级和已绑卡数
-   · 支付设置：支付密码、小额免密支付（含额度）、首选付款方式、自动续费/免密签约（可解约）
-   ============================================================ */
-
 struct IdentityView: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
@@ -26,7 +19,7 @@ struct IdentityView: View {
             NavBar(title: Tr("身份信息"), back: { dismiss() })
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
-                    /* 实名状态卡片 */
+
                     VStack(spacing: 6) {
                         Text((info?.verified ?? false) ? Tr("已实名认证") : Tr("未实名认证"))
                             .font(pf(16, .medium))
@@ -39,7 +32,7 @@ struct IdentityView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 20)
-                    /* 2026-10-17：绿色渐变按钮改成跟全 App 主色走（ui.json: greenColor） */
+
                     .background(LinearGradient(colors: [C.green, C.green.opacity(0.82)],
                                                startPoint: .top, endPoint: .bottom))
 
@@ -114,7 +107,6 @@ struct IdentityView: View {
         }
     }
 
-    /// 头部那行小字（拆出来，免得编译器算不明白那一串拼接）
     private var subtitleLine: String {
         let lv = info?.levelName ?? ""
         let n = info?.bankCount ?? 0
@@ -162,7 +154,6 @@ struct IdentityView: View {
     }
 }
 
-/* ---------------------------------------------------------- 支付设置 */
 struct PaySettingsView: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState

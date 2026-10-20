@@ -1,10 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   地区选择（和微信一样）：省 / 市两个滚轮，上下滑着选
-   省市表在服务端（/api/regions），一次拉回来；点「完成」把「省 市」写回个人资料。
-   ============================================================ */
-
 struct RegionPickerSheet: View {
     var onPick: (String) -> Void
 
@@ -16,24 +11,20 @@ struct RegionPickerSheet: View {
     private var cities: [String] { pi < rows.count ? rows[pi].c : [] }
     private var province: String { pi < rows.count ? rows[pi].p : "" }
     private var city: String { ci < cities.count ? cities[ci] : "" }
-    /// 当前选中的「省 市」（省市同名时只留一个）
+
     private var current: String {
         if province.isEmpty { return "" }
         if city.isEmpty || city == province { return province }
         return province + " " + city
     }
 
-    /// 热门城市：点一下直接跳到那个省 + 那个市（先把省定位出来）
     private let hot = ["北京", "上海", "广州", "深圳", "杭州", "成都", "南京", "武汉", "西安", "重庆"]
 
     var body: some View {
-        /* 整页 push（不再是半屏）：① 顶栏用全站 NavBar；
-            ② 一排**热门城市**胶囊，点一下直接就位（不用滚轮滚半天）
-            ③ 两个滚轮放进一张圆角玻璃卡里，滚轮的上下两条渐隐遮罩
-            ④ 底下一条绿色渐变的「完成」 */
+
         VStack(spacing: 0) {
             NavBar(title: Tr("选择地区"), back: { dismiss() })
-            /* 实时显示当前选中的省市（滚轮一动就跟着变） */
+
             HStack(spacing: 6) {
                 Image(systemName: "location.fill")
                     .font(.system(size: 12, weight: .semibold)).foregroundColor(C.green)
@@ -93,7 +84,7 @@ struct RegionPickerSheet: View {
                         .clipped()
                     }
                     .frame(height: 200)
-                    /* 上下两条渐隐：滚轮进出的时候是化开的，不是硬切 */
+
                     .mask(
                         LinearGradient(stops: [
                             .init(color: .clear, location: 0),
@@ -131,7 +122,6 @@ struct RegionPickerSheet: View {
         .task { if rows.isEmpty { rows = await API.shared.regions() } }
     }
 
-    /// 点热门城市：先找它在哪个省，再找市，两个滚轮一起滚过去
     private func jump(to name: String) {
         guard !rows.isEmpty else { return }
         for (i, r) in rows.enumerated() {

@@ -10,8 +10,6 @@ struct ExternalFileItem: Identifiable {
     let bytes: Int
 }
 
-/// WPS / 文件 App 通过“用其他应用打开”送进来的文件先落到这里，
-/// 再由 ExternalFileSendView 选择会话并走聊天原生的文件上传接口。
 final class ExternalFileInbox: ObservableObject {
     static let shared = ExternalFileInbox()
 
@@ -26,8 +24,7 @@ final class ExternalFileInbox: ObservableObject {
     func accept(_ urls: [URL]) {
         let valid = urls.filter { $0.isFileURL }
         guard !valid.isEmpty else { return }
-        /* SwiftUI 的 onOpenURL 和 AppDelegate 的 open 回调可能同时到达；
-           1.5 秒内同一批文件只导入一次。 */
+
         let key = valid.map(\.path).joined(separator: "|")
         if key == lastAcceptKey && Date().timeIntervalSince(lastAcceptAt) < 1.5 { return }
         lastAcceptKey = key
@@ -61,7 +58,7 @@ final class ExternalFileInbox: ObservableObject {
                                                    local: destination,
                                                    bytes: size))
                 } catch {
-                    /* 有些提供商给的是临时 URL；直接读字节再落盘更稳。 */
+
                     if let data = try? Data(contentsOf: source), !data.isEmpty {
                         do {
                             try data.write(to: destination, options: .atomic)

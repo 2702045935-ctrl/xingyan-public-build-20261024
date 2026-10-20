@@ -1,10 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   长按聊天里的消息 → 微信那一套动作条
-   （复制 · 转发 · 收藏 · 引用 · 撤回 · 删除 · 多选 · 举报）
-   ============================================================ */
-
 struct MsgAction: Identifiable, Hashable {
     var key: String
     var label: String
@@ -13,8 +8,6 @@ struct MsgAction: Identifiable, Hashable {
     var id: String { key }
 }
 
-/* 长按消息弹出来的那个小方框（微信那种：白色圆角框 + 一排图标文字，
-   贴在消息旁边，点外面就收起来）。 */
 struct MsgMenuBox: View {
     let actions: [MsgAction]
     var onPick: (MsgAction) -> Void
@@ -28,7 +21,6 @@ struct MsgMenuBox: View {
     static let padH: CGFloat = 6
     static let padV: CGFloat = 8
 
-    /// 一排最多放几个（微信也是这么横着排）
     static func columns(_ n: Int) -> Int { min(6, max(1, n)) }
 
     static func size(_ n: Int) -> CGSize {
@@ -71,9 +63,7 @@ struct MsgMenuBox: View {
         }
         .padding(.horizontal, MsgMenuBox.padH)
         .padding(.vertical, MsgMenuBox.padV)
-        /* 和顶栏/底栏/加号卡片同一套玻璃（用户要求弹层统一走玻璃）：
-           真玻璃底 + 一层淡淡的白/深色染色（保证图标文字看得清）+ 一道亮边。
-           想更透：后台 ui.json 的 menuGlassAlpha（默认 0.92）。 */
+
         .background {
             ZStack {
                 GlassBackground(shape: RoundedRectangle(cornerRadius: 10, style: .continuous),
@@ -97,19 +87,17 @@ struct ForwardItem: Hashable {
     var content: String
 }
 
-/* 转发：先选一个聊天（微信也是先选人） */
 struct ForwardPickerView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var scheme
 
-    /// 要转发的内容（可能一次转好几条）
     let items: [ForwardItem]
     var onSent: () -> Void
 
     @State private var keyword = ""
     @State private var sending = false
-    /// 勾了哪几个聊天（微信是「先勾人 → 点发送」，不是一个一个点进去就发）
+
     @State private var picked: Set<String> = []
 
     private var list: [Chat] {
@@ -134,8 +122,7 @@ struct ForwardPickerView: View {
                 LazyVStack(spacing: 0) {
                     ForEach(list) { chat in
                         Button {
-                            /* 点一下只勾/取消，不直接发（以前点一下就发，而且每行都画着
-                               对勾 —— 用户看着就像"默认全勾上了"，还说不出到底发给了谁） */
+
                             if picked.contains(chat.id) { picked.remove(chat.id) }
                             else { picked.insert(chat.id) }
                         } label: {
@@ -146,7 +133,7 @@ struct ForwardPickerView: View {
                                     .foregroundColor(C.label)
                                     .lineLimit(1)
                                 Spacer(minLength: 0)
-                                /* 没勾 = 空心圈；勾了 = 绿色实心对勾（和微信一样） */
+
                                 Image(systemName: picked.contains(chat.id) ? "checkmark.circle.fill" : "circle")
                                     .font(.system(size: 19))
                                     .foregroundColor(picked.contains(chat.id) ? C.green : C.searchIcon)
@@ -163,7 +150,6 @@ struct ForwardPickerView: View {
             }
             .background(C.pageBg)
 
-            /* 底下那条：显示选了几个 + 发送（一个都没选的时候是灰的） */
             HStack(spacing: 12) {
                 Text(picked.isEmpty
                      ? Tr("选择要转发到的聊天")
@@ -191,11 +177,10 @@ struct ForwardPickerView: View {
         }
         .background(C.pageBg.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
-        /* 2026-10-16：「转发给」页补左滑返回 */
+
         .swipeBack { dismiss() }
     }
 
-    /// 发送：把内容依次发给**勾中的每一个**聊天
     private func sendSelected() {
         let targets = list.filter { picked.contains($0.id) }
         guard !targets.isEmpty else { return }
@@ -218,7 +203,6 @@ struct ForwardPickerView: View {
     }
 }
 
-/* 多选时底下那条：转发 / 收藏 / 删除 */
 struct MultiSelectBar: View {
     let count: Int
     var onForward: () -> Void

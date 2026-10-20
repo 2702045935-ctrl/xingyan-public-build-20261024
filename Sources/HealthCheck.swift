@@ -2,21 +2,6 @@ import SwiftUI
 import UIKit
 import Darwin
 
-/* ============================================================
-   故障修复与体检（照微信「帮助与反馈 → 小扳手 → 故障修复」那套做的）
-
-   微信那一页是一列检查项，每项点一下自己检测、能修的当场修。这里也一样：
-     网络与线路 / 服务器接口 / 实时长连接 / 消息推送 / 会话列表与通讯录 /
-     本机聊天记录 / 朋友圈 / 卡包与小店 / 小星档位 / 账号与登录 /
-     存储与内存 / 崩溃与日志
-
-   每一项：**先检测**（绿勾 / 红叉 + 一句话说明），能修的右边有一颗「修复」按钮
-   （真的动手：重拉数据、清离线缓存、重连长连接、清图片视频缓存、上传日志）。
-   顶上两颗： 「全部检测」 和 「上传日志」（日志 + 打点 + 崩溃 + 体检结果一起汇入服务器）。
-
-   入口：我 → 设置 → 更多 → 故障修复；诊断工具页顶上也有一个入口。
-   ============================================================ */
-
 struct HealthCheckView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -26,7 +11,7 @@ struct HealthCheckView: View {
         let id: String
         let title: String
         let sub: String
-        var state: Int = 0          // 0 未检测 · 1 正常 · 2 有问题 · 3 检测中
+        var state: Int = 0
         var detail: String = ""
         var fixTitle: String = ""
     }
@@ -110,8 +95,6 @@ struct HealthCheckView: View {
         .task { await runAll() }
     }
 
-    /* ---------------------------------------------------------- 一行 */
-
     private func rowView(_ r: Row) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 10) {
@@ -166,8 +149,6 @@ struct HealthCheckView: View {
         .frame(width: 18, height: 18)
     }
 
-    /* ---------------------------------------------------------- 检测 */
-
     private func runAll() async {
         if running { return }
         running = true
@@ -175,7 +156,7 @@ struct HealthCheckView: View {
         running = false
         let bad = rows.filter { $0.state == 2 }.count
         result = bad == 0 ? Tr("全部通过 ✅") : (Tr("有 ") + String(bad) + Tr(" 项有问题，看上面红字"))
-        /* 体检结果也留一条打点（上报日志时会带上） */
+
         AppLog.info("体检完成：正常 " + String(rows.filter { $0.state == 1 }.count) + " 项 / 异常 " + String(bad) + " 项")
     }
 
@@ -213,7 +194,6 @@ struct HealthCheckView: View {
         set("net", r.code == 200 ? 1 : 2, lines.joined(separator: "\n"))
     }
 
-    /// 关键接口逐条打通：哪条 404 就说明这条线路的服务器太旧（卡包为空就是这种）
     private func checkAPI() async {
         let paths = ["/api/session", "/api/me", "/api/me-page", "/api/chats", "/api/contacts",
                      "/api/moments", "/api/cards", "/api/shop", "/api/me/eyes", "/api/service",
@@ -349,8 +329,6 @@ struct HealthCheckView: View {
         return String(format: "%.0f MB（还能用 %.0f MB）", used, Double(info.limit_bytes_remaining) / 1_048_576.0)
     }
 
-    /* ---------------------------------------------------------- 修复（真动手） */
-
     private func fix(_ id: String) async {
         busyFix = id
         let what = rows.first(where: { $0.id == id })?.title ?? id
@@ -386,8 +364,6 @@ struct HealthCheckView: View {
         await check(id)
     }
 
-    /* ---------------------------------------------------------- 上传日志（含崩溃） */
-
     private func uploadLog() async {
         if uploading { return }
         uploading = true
@@ -409,7 +385,6 @@ struct HealthCheckView: View {
         let scroll = ChatScrollDiag.shared.lines
         if !scroll.isEmpty { text += "\n--- 聊天页滚动诊断 ---\n" + scroll.joined(separator: "\n") + "\n" }
 
-        /* 一条最多按 3500 字切段发（和诊断工具那条通道一样），服务器按 kind 归类 */
         let n = max(1, Int(ceil(Double(text.count) / 3500.0)))
         for i in 0..<n {
             let s = text.index(text.startIndex, offsetBy: min(i * 3500, text.count))

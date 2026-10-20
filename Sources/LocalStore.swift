@@ -2,20 +2,6 @@ import Foundation
 import UIKit
 import SwiftUI
 
-/* ============================================================
-   本机存储（本地优先）
-
-   只做三件事，全部写在 App 自己的沙盒里，不碰服务器上的任何数据：
-     ① 媒体长期保留：别人发的、我发的图片/视频/语音/文件，下载过就留一份在
-        Documents/Media/…（不是 Caches，系统不会随便清掉）
-     ② 聊天记录本机留一份：每个会话最近 200 条存成 JSON，
-        断网/秒开都能先铺出来（服务器仍然是同步与转发的通道）
-     ③ 占用统计 + 分类型清理：给「设置 → 存储空间」用
-
-   为什么不是"只存本机"：发给别人的内容必须上传，对方才收得到；
-   但收到/发出的媒体，本机都留底，换不换网都能看。
-   ============================================================ */
-
 enum LocalStore {
     static let root: URL = {
         let base = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -27,9 +13,6 @@ enum LocalStore {
         return dir
     }()
 
-    /* ---------------------------------------------------------- 媒体 */
-
-    /// 媒体属于哪一类（用来分目录、分类型统计）
     static func kindOf(_ path: String) -> String {
         let p = path.lowercased()
         if p.hasSuffix(".mp4") || p.hasSuffix(".mov") || p.hasSuffix(".m4v") || p.hasSuffix(".webm") { return "video" }
@@ -39,7 +22,6 @@ enum LocalStore {
         return "file"
     }
 
-    /// 给一个远端路径（/uploads/xxx.jpg）算出本机文件名 —— 用原文件名，天然去重
     static func localURL(_ path: String) -> URL? {
         guard !path.isEmpty else { return nil }
         let name = (path as NSString).lastPathComponent
@@ -57,29 +39,22 @@ enum LocalStore {
         return try? Data(contentsOf: u)
     }
 
-    /// 下载成功 / 发送成功以后留一份底（已存在就不重复写）
     static func keep(_ path: String, data: Data) {
         guard !data.isEmpty, let u = localURL(path) else { return }
         if FileManager.default.fileExists(atPath: u.path) { return }
         try? data.write(to: u, options: .atomic)
     }
 
-    /// 自己发的：把本机原件留一份（服务器存的是压缩版，本机留原片）
     static func keepOriginal(_ path: String, from: URL, name: String? = nil) {
         guard let u = localURL(name.map { "/uploads/" + $0 } ?? path) else { return }
         if FileManager.default.fileExists(atPath: u.path) { return }
         if let d = try? Data(contentsOf: from) { try? d.write(to: u, options: .atomic) }
     }
 
-    /* ---------------------------------------------------------- 聊天记录 */
-
     static func chatFile(_ chatId: String) -> URL {
         root.appendingPathComponent("Chats").appendingPathComponent(sanitize(chatId) + ".json")
     }
 
-    /// 把会话记录留一份在本机（服务器仍然是主通道，这里只是本机留底）。
-    /// 用户要求「聊天信息也全部本地保存」：所以不再只留最近 200 条，
-    /// 整段都留（只做一个防爆上限 20000 条，几 MB 的 JSON，写起来也是一瞬间）。
     static func saveChat(_ chatId: String, _ messages: [Message]) {
         guard !messages.isEmpty else { return }
         let tail = messages.count > 20000 ? Array(messages.suffix(20000)) : messages
@@ -93,21 +68,15 @@ enum LocalStore {
         return (try? JSONDecoder().decode([Message].self, from: d)) ?? []
     }
 
-    /// 删除某个会话时只清它在手机上的底稿；别的会话不受影响。
     static func clearChat(_ chatId: String) {
         try? FileManager.default.removeItem(at: chatFile(chatId))
     }
 
-    /* ---------------------------------------------------------- 朋友圈本机缓存
-       照微信的逻辑：**朋友圈以服务端为准，本机只存"你看过的那几屏"当缓存**。
-       进朋友圈先把缓存铺出来（秒开、断网也能看上次那几屏），然后再去刷最新的 ——
-       以前一点缓存都没有，断网进去是空白。 */
     private static var momentCacheFile: URL? {
         guard let dir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first else { return nil }
         return dir.appendingPathComponent("moments-cache.json")
     }
 
-    /// 存最近 60 条（够铺一屏多；多了也没意义，反正要刷新）
     static func saveMoments(_ list: [Moment]) {
         guard !list.isEmpty, let f = momentCacheFile else { return }
         let tail = Array(list.prefix(60))
@@ -120,9 +89,6 @@ enum LocalStore {
         return (try? JSONDecoder().decode([Moment].self, from: d)) ?? []
     }
 
-    /* ---------------------------------------------------------- 统计 / 清理 */
-
-    /// 各类占用（字节）：video / image / voice / file / chat
     static func usage() -> [(String, Int)] {
         var out: [(String, Int)] = []
         for k in ["video", "image", "voice", "file"] {
@@ -134,7 +100,6 @@ enum LocalStore {
 
     static func totalUsage() -> Int { usage().reduce(0) { $0 + $1.1 } }
 
-    /// 清理某一类（chat = 清掉本机留的聊天底稿，不影响服务器和聊天页里的内容）
     static func clear(_ kind: String) {
         let dir = kind == "chat" ? root.appendingPathComponent("Chats")
                                  : root.appendingPathComponent("Media").appendingPathComponent(kind)
@@ -163,13 +128,6 @@ enum LocalStore {
     }
 }
 
-/* ============================================================
-   设置 → 存储空间（本地优先）
-     · 上面一张总占用卡（本机）
-     · 下面按类型列：视频 / 图片 / 语音 / 文件 / 聊天记录，各自多少，能单独清
-     · 说明写清楚：清的是**本机留底**，聊天记录在服务器上的那份不受影响
-   ============================================================ */
-
 struct StorageSpaceView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -179,14 +137,13 @@ struct StorageSpaceView: View {
     @State private var showClearChat = false
     @State private var showManageChats = false
 
-    /// 微信那种分色条：聊天记录一段、媒体缓存一段
     private let chatColor = Color(hex: 0x4A90D9)
     private let cacheColor = C.green
     private var cacheBytes: Int {
         rows.filter { ["image", "video", "voice", "file"].contains($0.0) }
             .reduce(0) { $0 + $1.1 }
     }
-    /// 聊天记录按服务器上的历史算（微信这一页也是按聊天记录 + 缓存分开看）
+
     @State private var info: API.StorageInfo?
     private var chatBytes: Int { info?.total ?? 0 }
 
@@ -240,9 +197,7 @@ struct StorageSpaceView: View {
     }
 
     var body: some View {
-        /* ⚠ 这一页是**被 push 进「我」页那条导航栈**的，所以里面**不能再套 NavigationStack**
-           （两层嵌套会白屏 + 直接被系统干掉，用户反馈的「设置里点进去白屏就退出」）。
-           全站统一：页面自己画 NavBar，靠 dismiss() 返回。 */
+
         VStack(spacing: 0) {
             NavBar(title: Tr("存储空间"), back: { dismiss() })
             VStack(spacing: 0) {
@@ -256,8 +211,7 @@ struct StorageSpaceView: View {
                                 .font(pf(12.5))
                                 .foregroundColor(C.subLabel)
                                 .multilineTextAlignment(.center)
-                            /* 微信那套：一条**按占比分色的进度条** + 下面图例
-                               （微信这一页就是「聊天记录 / 缓存」两段） */
+
                             usageBar
                                 .padding(.top, 6)
                             HStack(spacing: 18) {
@@ -271,7 +225,6 @@ struct StorageSpaceView: View {
                         .listRowBackground(C.cardBg)
                     }
 
-                    /* 微信这两行：缓存 →「前往清理」、聊天记录 →「管理」 */
                     Section {
                         HStack(spacing: 12) {
                             Text(Tr("缓存")).font(pf(16)).foregroundColor(C.label)
@@ -288,7 +241,7 @@ struct StorageSpaceView: View {
                             Text(Tr("聊天记录")).font(pf(16)).foregroundColor(C.label)
                             Spacer(minLength: 8)
                             Text(LocalStore.text(chatBytes)).font(pf(14)).foregroundColor(C.subLabel)
-                            /* 「管理」也整页进（以前是 sheet） */
+
                             NavigationLink(value: "storage.manage") {
                                 Text(Tr("管理")).font(pf(14)).foregroundColor(C.green)
                             }
@@ -347,7 +300,7 @@ struct StorageSpaceView: View {
                 }
                 Button(Tr("取消"), role: .cancel) { }
             }
-            /* 缓存：只清媒体缓存（图片/视频/语音/文件的本机留底） */
+
             .confirmationDialog(Tr("确定清理缓存？"), isPresented: $showClearCache, titleVisibility: .visible) {
                 Button(Tr("前往清理"), role: .destructive) {
                     for k in ["image", "video", "voice", "file"] { LocalStore.clear(k) }
@@ -355,7 +308,7 @@ struct StorageSpaceView: View {
                 }
                 Button(Tr("取消"), role: .cancel) { }
             }
-            /* 聊天记录：清本机那份聊天底稿（服务器上的还在，别人也不受影响） */
+
             .confirmationDialog(Tr("确定清空本机的聊天记录底稿？"), isPresented: $showClearChat, titleVisibility: .visible) {
                 Button(Tr("清空"), role: .destructive) {
                     LocalStore.clear("chat")
@@ -374,12 +327,6 @@ struct StorageSpaceView: View {
     }
 }
 
-/* ============================================================
-   聊天记录管理（微信：设置 → 通用 → 存储空间 → 聊天记录 → 管理）
-   · 一条会话一行：头像 + 名字 + 占用 + 条数
-   · 行首圆圈多选；底下一整条：全选 + 删除（N）
-   · 右上角切「按大小 / 按时间」
-   ============================================================ */
 struct ChatStorageManageView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss

@@ -1,14 +1,6 @@
 import Foundation
 import AVFoundation
 
-/* ============================================================
-   摇一摇的音效（和铃铛一样，全部现场合成，不打包音频文件）
-     · click：摇一下的「咔」——一小段噪声 + 很快的衰减，像木头碰一下
-     · ding ：摇到人的「叮——」——两个正弦音叠在一起慢慢衰减
-   用 .playback + mixWithOthers：静音键也不影响（摇一摇本来就要听得见），
-   同时不会把别人正在听的音乐掐掉。
-   ============================================================ */
-
 @MainActor
 final class ShakeSound {
     static let shared = ShakeSound()
@@ -28,9 +20,8 @@ final class ShakeSound {
         ready = true
     }
 
-    /// 摇一下：咔
     func click() { play(makeClick()) }
-    /// 摇到人：叮——
+
     func ding() { play(makeDing()) }
 
     private func play(_ buf: AVAudioPCMBuffer?) {
@@ -58,7 +49,6 @@ final class ShakeSound {
         return buf
     }
 
-    /// 「咔」：噪声 + 极快衰减，再叠一点点低频，听着像木头/塑料碰一下
     private func makeClick() -> AVAudioPCMBuffer? {
         var seed: UInt64 = 0x1234_5678
         func noise() -> Double {
@@ -72,14 +62,13 @@ final class ShakeSound {
         }
     }
 
-    /// 「叮——」：两个音（1319 + 1976Hz）一起响，慢慢衰减
     private func makeDing() -> AVAudioPCMBuffer? {
         buffer(seconds: 0.7) { t in
             let env = exp(-t * 4.2)
             let a = sin(2 * .pi * 1318.5 * t) * 0.5
             let b = sin(2 * .pi * 1975.5 * t) * 0.32
             let c = sin(2 * .pi * 2637.0 * t) * 0.16
-            let attack = min(1, t / 0.006)          // 起音 6ms，别「噗」一下
+            let attack = min(1, t / 0.006)
             return (a + b + c) * env * attack
         }
     }

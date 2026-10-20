@@ -1,25 +1,13 @@
 import SwiftUI
 
-/* ============================================================
-   账单搜索（账单页顶上那颗「查找交易」点进来的一整页）
-
-   2026-10-16 用户：「搜索位置渲染高级一点…不是搜索框做高级，是里面的那页」——
-   所以这是**独立的一页**，不是原来那种就地过滤的小输入框：
-     · 顶上一整条搜索框（自动聚焦、带放大镜和一键清空、取消退出）
-     · 下面一排筛选（全部/支出/收入 ＋ 全部时间/近一月/近三月/今年）
-     · 没输内容：显示「最近搜索」（本机记着，能一条条删）
-     · 输了内容：按月分组出结果，顶上告诉你「找到 N 笔」
-     · 每一行右边还是金额（收入金色、支出深色），点一下进账单详情
-   ============================================================ */
-
 struct BillSearchView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
 
     @State private var q = ""
-    /// 0 全部 / 1 支出 / 2 收入
+
     @State private var kind = 0
-    /// 0 全部时间 / 1 近一月 / 2 近三月 / 3 今年
+
     @State private var span = 0
     @State private var bills: [BillRecord] = []
     @State private var loading = true
@@ -84,12 +72,10 @@ struct BillSearchView: View {
             history = SearchHistory.all
             if let d = try? await API.shared.bills(limit: 200) { bills = d.bills }
             loading = false
-            /* 进来就聚焦，键盘直接弹出来（微信搜索页也是这样） */
+
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { focused = true }
         }
     }
-
-    /* ---------------------------------------------------------- 顶栏 */
 
     private var topBar: some View {
         HStack(spacing: 10) {
@@ -134,8 +120,6 @@ struct BillSearchView: View {
         .padding(.bottom, 10)
     }
 
-    /* ---------------------------------------------------------- 筛选 */
-
     private var filterRow: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
@@ -165,8 +149,6 @@ struct BillSearchView: View {
         .buttonStyle(.plain)
     }
 
-    /* ---------------------------------------------------------- 没输内容时 */
-
     private var emptyHint: some View {
         VStack(alignment: .leading, spacing: 0) {
             if !history.isEmpty {
@@ -187,7 +169,6 @@ struct BillSearchView: View {
                 .padding(.top, 16)
                 .padding(.bottom, 10)
 
-                /* 一条条小胶囊，点一条就填进搜索框 */
                 FlowChips(items: history) { w in
                     q = w
                     focused = true
@@ -219,8 +200,6 @@ struct BillSearchView: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 60)
     }
-
-    /* ---------------------------------------------------------- 结果 */
 
     private struct MonthGroup { var month: String; var rows: [BillRecord] }
 
@@ -343,7 +322,6 @@ struct BillSearchView: View {
     }
 }
 
-/// 一排会自动换行的小胶囊（搜索历史那种）
 struct FlowChips: View {
     let items: [String]
     var tap: (String) -> Void
@@ -370,7 +348,6 @@ struct FlowChips: View {
         }
     }
 
-    /// 简单换行：一行最多放 3 个（够用了，不做真正的排版计算）
     private func rows() -> [[String]] {
         var out: [[String]] = []
         var cur: [String] = []

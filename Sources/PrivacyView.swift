@@ -1,11 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   隐私 / 消息通知（照微信那两页的逻辑和排布做）
-   · 隐私：加我时需要验证、允许陌生人看朋友圈、添加我的方式（微信号/手机号/群聊/二维码）
-   · 消息通知：新消息通知、声音、振动、显示消息详情、免打扰时段
-   ============================================================ */
-
 struct PrivacyView: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
@@ -23,8 +17,7 @@ struct PrivacyView: View {
                         HairLine(inset: 16)
                         row(Tr("允许陌生人查看朋友圈"), $p.strangerMoments, "strangerMoments")
                         HairLine(inset: 16)
-                        /* 微信「隐私」里那一行：朋友圈可见范围（最近三天 / 最近半年 / 全部）。
-                           点一下弹选择；只对别人生效，自己永远看得见自己的全部。 */
+
                         Button { showRange = true } label: {
                             HStack(spacing: 10) {
                                 Text(Tr("朋友圈可见范围")).font(pf(16)).foregroundColor(C.label)
@@ -77,7 +70,6 @@ struct PrivacyView: View {
         }
     }
 
-    /// 当前范围显示成中文（微信那一行右边就是这三个说法之一）
     private var rangeLabel: String {
         switch p.momentsRange {
         case "3d": return Tr("最近三天")
@@ -116,7 +108,6 @@ struct NotifyView: View {
     @State private var muteOn = false
     @ObservedObject private var push = PushCenter.shared
 
-    /// 系统那一层到底允不允许通知（微信「接收新消息通知」那一行显示的就是这个）
     private var sysText: String { push.authorized ? Tr("已开启") : Tr("已关闭") }
 
     var body: some View {
@@ -124,7 +115,7 @@ struct NotifyView: View {
             NavBar(title: Tr("新消息通知"), back: { dismiss() })
             ScrollView {
                 VStack(spacing: 8) {
-                    /* 微信那一行在最上面：点一下直接跳到 iOS 设置里的通知页 */
+
                     GroupCard {
                         Button {
                             if let url = URL(string: UIApplication.openSettingsURLString) {
@@ -208,7 +199,7 @@ struct NotifyView: View {
             n = await API.shared.notifySettings()
             muteOn = !(n.muteStart.isEmpty || n.muteEnd.isEmpty)
             if !muteOn { n.muteStart = ""; n.muteEnd = "" }
-            PushCenter.shared.start()          // 顺手问一次系统权限，那一行显示的就是最新状态
+            PushCenter.shared.start()
         }
         .onChange(of: muteOn) { on in
             if on { n.muteStart = "22:00"; n.muteEnd = "07:00" }
@@ -244,8 +235,6 @@ struct NotifyView: View {
     }
 }
 
-/* ---------------- 通用（外观 / 界面语言 / 聊天背景）---------------- */
-
 struct GeneralView: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
@@ -266,9 +255,7 @@ struct GeneralView: View {
             ScrollView {
                 VStack(spacing: 0) {
                     GroupCard {
-                        /* 二级菜单一律**整页 push**（微信也是这样）：外观 / 语言 / 聊天背景 /
-                           存储空间 / 聊天记录管理 / 语音变声 —— 落点都在「我」页那条
-                           navigationDestination 上，不再是 sheet / 半屏。 */
+
                         link(Tr("外观"),
                              app.appearance == "dark" ? Tr("深色")
                                  : (app.appearance == "light" ? Tr("浅色") : Tr("跟随系统")),
@@ -280,12 +267,12 @@ struct GeneralView: View {
                              (app.me?.chatBackground ?? "auto") == "auto" ? Tr("恢复默认") : Tr("自定义"),
                              key: "g.chatbg")
                         HairLine(inset: 16)
-                        /* 微信「通用 → 存储空间」：看占用 + 清缓存 + 清某个会话的记录 */
+
                         link(Tr("存储空间"), "", key: "g.storage")
                         HairLine(inset: 16)
                         link(Tr("聊天记录管理"), "", key: "g.history")
                         HairLine(inset: 16)
-                        /* 真人变声：发语音和打电话共用一个预设 */
+
                         link(Tr("语音变声"), voiceStore.current.name, key: "g.voice")
                     }
                     .padding(.top, 8)
@@ -300,7 +287,6 @@ struct GeneralView: View {
         .hidesTabBar()
     }
 
-    /// 和 row 长得一样，但点进去是下一个**整页**（用导航，不是 sheet）
     private func link(_ title: String, _ value: String, key: String) -> some View {
         NavigationLink(value: key) {
             HStack(spacing: 12) {
@@ -335,13 +321,12 @@ struct GeneralView: View {
         Lang.code = code
         app.show(code == "en" ? "Language switched to English" : "界面语言已切成中文")
         dismiss()
-        /* 不在运行中重绘界面（重绘这条路试过两次都会闪退）：
-           语言已经存下来了，重开 App 就是新语言。 */
+
     }
 
     private func changeBg(_ image: UIImage) {
         Task {
-            if let url = try? await API.shared.uploadOriginal(image: image) {   // 聊天背景用原图
+            if let url = try? await API.shared.uploadOriginal(image: image) {
                 await API.shared.changeBackground(url)
                 app.me = try? await API.shared.me()
                 app.show(Tr("聊天背景换好了"))
@@ -350,9 +335,6 @@ struct GeneralView: View {
     }
 }
 
-/* ============================================================
-   通用 → 外观（微信也是一整页三个选项，不是底下冒出来的半屏）
-   ============================================================ */
 struct AppearanceView: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
@@ -399,9 +381,6 @@ struct AppearanceView: View {
     }
 }
 
-/* ============================================================
-   通用 → 界面语言（同样整页两个选项）
-   ============================================================ */
 struct LanguageView: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
@@ -458,8 +437,6 @@ struct LanguageView: View {
     }
 }
 
-/* ---------------- 设置数据的模型 + 接口 ---------------- */
-
 struct PrivacySettings {
     var needVerify = true
     var strangerMoments = false
@@ -467,7 +444,7 @@ struct PrivacySettings {
     var addByPhone = true
     var addByGroup = true
     var addByQR = true
-    /// 朋友圈可见范围（微信那一行）：3d 最近三天 / 6m 最近半年 / all 全部
+
     var momentsRange = "all"
 }
 

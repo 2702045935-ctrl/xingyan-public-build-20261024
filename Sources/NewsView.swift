@@ -1,32 +1,13 @@
 import SwiftUI
 
-/* ============================================================
-   星联世界（新闻）
-
-   两个地方用同一份排版：
-     · 发现 → 星联世界           （NewsView = 顶栏 + 新闻流）
-     · 会话里「星联世界」机器人那一页（ChatDetailView 里直接塞 NewsFeedView）
-
-   版式照微信来（用户要的「按照微信的排版」）：
-     · 频道条：热点 / 头条 / 要闻 / 热搜 / 百度（可左右滑；选中的加粗 + 微信绿下划线）
-     · 有图那条：左边标题 17（最多 2 行）+ 下面「来源 · 时间」小灰字，右边缩略图（圆角 4）
-       —— 和微信「看一看 / 订阅号消息」那一行一样
-     · 第一条有图的：标题在上、通栏大图在下（微信订阅号消息的头条就是这样）
-     · 没图的（微博 / 百度热搜）：榜单行 —— 名次 + 标题 + 热度，名次是黑/灰，不用红橙
-     · 整页白底 + 16 缩进的发丝线，和微信一样是「一块白」的观感
-     · 点任意一条 → App 内的 Safari 打开原文（不跳出我们的 App）
-   数据：/api/news?source=xxx（服务端多源聚合，只接国内源；每个源缓存 5 分钟）
-   ============================================================ */
-
-/// 新闻流本体：频道条 + 列表。发现页的入口和机器人的对话页共用这一个。
 struct NewsFeedView: View {
-    /// 聊天页里用「紧凑版」：大图矮一点、缩略图小一点，好塞进对话页
+
     var compact: Bool = false
-    /// 外部点「刷新」时把这个数 +1，流里就重新拉一次
+
     var refreshToken: Int = 0
-    /// 指定初始频道（精彩视频页点「B站热门」时传 bili）
+
     var initialSource: String = "qq"
-    /// 指定频道条：传了就不看服务端那份（视频页只显示「B站热门」一栏）
+
     var onlyTabs: [NewsChannel]? = nil
 
     @State private var channels: [NewsChannel] = NewsFeedView.builtinChannels
@@ -34,14 +15,13 @@ struct NewsFeedView: View {
     @State private var items: [NewsItem] = []
     @State private var loading = false
     @State private var failed = false
-    /// 正在拉的源（切来切去的时候，晚到的响应不许覆盖当前这一栏）
+
     @State private var loadingTab = ""
-    /// 「换一批」用的偏移：同一栏往后挪一批，挪到底回到开头
+
     @State private var offset = 0
     @State private var total = 0
     @State private var web: WebURL?
 
-    /// 拿不到频道列表时的兜底（和后台 /api/news 给的顺序一致）
     static let builtinChannels: [NewsChannel] = [
         NewsChannel(id: "qq", label: "热点", desc: "热点榜"),
         NewsChannel(id: "toutiao", label: "头条", desc: "今日头条热榜"),
@@ -50,7 +30,6 @@ struct NewsFeedView: View {
         NewsChannel(id: "baidu", label: "百度", desc: "百度热搜榜")
     ]
 
-    /// 主色：照微信来（选中态、链接用那支绿），不再用腾讯新闻那支蓝
     private var accent: Color { C.green }
 
     var body: some View {
@@ -69,8 +48,6 @@ struct NewsFeedView: View {
             SafariSheet(url: w.url).ignoresSafeArea()
         }
     }
-
-    /* ---------------------------------------------------------- 频道条 */
 
     private var tabs: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -97,15 +74,12 @@ struct NewsFeedView: View {
         .overlay(alignment: .bottom) { HairLine() }
     }
 
-    /// 换一批：偏移往后挪 20 条，到底回到开头
     private func nextBatch() {
         let step = 20
         offset += step
         if total > 0, offset >= total { offset = 0 }
         Task { await load(tab) }
     }
-
-    /* ---------------------------------------------------------- 列表 */
 
     private var isBoard: Bool { tab == "weibo" || tab == "baidu" }
 
@@ -155,7 +129,7 @@ struct NewsFeedView: View {
 
     private var footer: some View {
         VStack(spacing: 16) {
-            /* 换一批：这一栏往后挪一批（榜单就那么多条，到底了从头再来） */
+
             Button { nextBatch() } label: {
                 HStack(spacing: 5) {
                     Image(systemName: "arrow.triangle.2.circlepath")
@@ -182,15 +156,13 @@ struct NewsFeedView: View {
         if isBoard {
             boardCell(it, index: index)
         } else if !it.cover.isEmpty {
-            /* 机器人里的紧凑新闻采用高密度标题流：图片只做辅助，
-               不再让第一张大图把后面几条标题挤出首屏。 */
+
             if index == 0 && !compact { heroCell(it) } else { thumbCell(it) }
         } else {
             textCell(it)
         }
     }
 
-    /// 头条条：照微信「订阅号消息」第一条 —— 标题在上、通栏大图在下
     private func heroCell(_ it: NewsItem) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(it.title)
@@ -211,7 +183,6 @@ struct NewsFeedView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// 普通条：照微信「看一看 / 订阅号消息」—— 左边标题 + 来源·时间，右边缩略图
     private func thumbCell(_ it: NewsItem) -> some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 0) {
@@ -233,7 +204,6 @@ struct NewsFeedView: View {
         .padding(.vertical, compact ? 11 : 14)
     }
 
-    /// 没图的：标题 + 摘要（新浪有几条就是纯文字）
     private func textCell(_ it: NewsItem) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(it.title)
@@ -257,7 +227,6 @@ struct NewsFeedView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// 榜单行：名次 + 标题（+「热/新/沸」）+ 热度
     private func boardCell(_ it: NewsItem, index: Int) -> some View {
         let no = it.order > 0 ? it.order : (index + 1)
         return HStack(alignment: .top, spacing: 12) {
@@ -294,7 +263,6 @@ struct NewsFeedView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// 「来源 · 时间」那行小灰字
     private func meta(_ it: NewsItem) -> some View {
         HStack(spacing: 6) {
             Text(it.src)
@@ -322,16 +290,14 @@ struct NewsFeedView: View {
     }
 
     private func rankColor(_ no: Int) -> Color {
-        /* 微信那边榜单名次就是「黑的 + 灰的」，不用腾讯新闻那套红橙 */
+
         return no <= 3 ? C.label : C.time
     }
-
-    /* ---------------------------------------------------------- 数据 */
 
     private func select(_ id: String) {
         guard id != tab else { return }
         tab = id
-        offset = 0                      // 换栏目：从第一批开始
+        offset = 0
         items = []
         failed = false
         Task { await load(id) }
@@ -362,9 +328,6 @@ struct NewsFeedView: View {
         web = WebURL(url: u)
     }
 
-    /* ---------------------------------------------------------- 小工具 */
-
-    /// 时间：刚刚 / 12分钟前 / 3小时前 / 昨天 / 09-28（腾讯新闻那行小字也是这么写的）
     private static let dayFmt: DateFormatter = {
         let f = DateFormatter()
         f.locale = Locale(identifier: "zh_CN")
@@ -384,7 +347,6 @@ struct NewsFeedView: View {
         return NewsFeedView.dayFmt.string(from: d)
     }
 
-    /// 热度：1599542 → 160.0万
     private func hotText(_ v: Double) -> String {
         if v >= 10000 {
             let w = v / 10000
@@ -393,10 +355,6 @@ struct NewsFeedView: View {
         return String(format: "%.0f", v)
     }
 }
-
-/* ============================================================
-   发现 → 星联世界：顶栏「‹ 星联世界 ⟳」+ 下面就是那份新闻流
-   ============================================================ */
 
 struct NewsView: View {
     @Environment(\.dismiss) private var dismiss

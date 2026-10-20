@@ -1,9 +1,5 @@
 import SwiftUI
 
-/* 钱包 → 经营账户（微信那套）
-   · 上面：经营账户余额 + 今日/本月/累计收款
-   · 四个入口：收款记录 / 经营设置 / 提现到零钱 / 开票信息
-   数据都在服务端 data/biz.json，后台「经营账户查账」页能看到每个人的账。 */
 struct BizAccountView: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
@@ -42,8 +38,7 @@ struct BizAccountView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 22)
-                    /* 2026-10-17 用户：「所有带有微信绿的按钮换个颜色」——
-                       这种绿色渐变按钮不再写死，跟全 App 的主色走（ui.json: greenColor） */
+
                     .background(LinearGradient(colors: [C.green, C.green.opacity(0.82)],
                                                startPoint: .top, endPoint: .bottom))
 
@@ -129,7 +124,6 @@ struct BizAccountView: View {
     }
 }
 
-/* ---------------------------------------------------------- 收款记录 */
 struct BizRecordsView: View {
     @ObservedObject private var lang = LangStore.shared
     @Environment(\.dismiss) private var dismiss
@@ -236,7 +230,7 @@ struct BizRecordsView: View {
         .frame(maxWidth: .infinity)
     }
 }
-/* ---------------------------------------------------------- 经营设置 */
+
 struct BizSettingsView: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
@@ -387,7 +381,6 @@ struct BizSettingsView: View {
     }
 }
 
-/* ---------------------------------------------------------- 提现到零钱 */
 struct BizWithdrawView: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
@@ -467,7 +460,7 @@ struct BizWithdrawView: View {
             if hasPwd {
                 askPwd = true
             } else {
-                /* 没设过支付密码：钱出不去，先去设一个（微信也是这个规矩） */
+
                 app.show(Tr("还没设置支付密码：我 → 设置 → 账号与安全 → 支付密码"))
             }
         }
@@ -491,7 +484,6 @@ struct BizWithdrawView: View {
     }
 }
 
-/* ---------------------------------------------------------- 开票信息 */
 struct BizInvoiceView: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState

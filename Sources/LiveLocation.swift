@@ -2,14 +2,6 @@ import SwiftUI
 import MapKit
 import CoreLocation
 
-/* ============================================================
-   位置（微信「＋ → 位置」那一套）
-   · SendLocationView：发送位置 —— 地图上定我的位置，下面列出附近的地点，点一个就发出去
-   · LiveLocationView：共享实时位置 —— 一个会话里几个人同时在地图上，
-     每 5 秒上报一次自己的位置，别人动你会实时看到；点「停止共享」大家一起结束
-   ============================================================ */
-
-/// 共享实时位置的状态：谁在里面、都在哪（收到长连接推送就更新这儿）
 final class LiveLocationStore: ObservableObject {
     static let shared = LiveLocationStore()
 
@@ -56,8 +48,6 @@ final class LiveLocationStore: ObservableObject {
     }
 }
 
-/* ---------------------------------------------------------- 发送位置 */
-
 struct SendLocationView: View {
     var onSend: (String) -> Void
 
@@ -72,16 +62,16 @@ struct SendLocationView: View {
     @State private var loading = true
     @State private var picked = 0
     @State private var denied = false
-    /// 「我的位置」那几行（把搜索框清空就回到这一份）
+
     @State private var homePlaces: [(String, String, Double, Double)] = []
-    /// 地图中心那个点（手指拖地图选点用的，永远排第一条）
+
     @State private var centerPlace: (String, String, Double, Double)? = nil
-    /* 搜索框：可以打字找地方（写字楼 / 小区 / 商铺名都能搜） */
+
     @State private var query = ""
     @State private var searchTask: Task<Void, Never>? = nil
     @State private var centerTask: Task<Void, Never>? = nil
     @State private var searching = false
-    /// 程序自己挪地图的时候（点了搜索结果）别再算一遍「地图中心点」
+
     @State private var suppressCenter = false
 
     var body: some View {
@@ -109,7 +99,7 @@ struct SendLocationView: View {
                           tint: p.index == picked ? C.green : .red)
             }
             .frame(height: 220)
-            /* 手指拖地图 = 换选点（微信也是这样），中心那个点反查成地址放第一条 */
+
             .onChange(of: region.center.latitude) { _ in centerMoved() }
             .onChange(of: region.center.longitude) { _ in centerMoved() }
 
@@ -179,8 +169,6 @@ struct SendLocationView: View {
         var lng: Double
     }
 
-    /* ---------------------------------------------------------- 搜索框 / 列表 */
-
     private var trimmed: String { query.trimmingCharacters(in: .whitespaces) }
 
     private var searchBar: some View {
@@ -216,7 +204,7 @@ struct SendLocationView: View {
         let p = places[i]
         return Button {
             picked = i
-            /* 点结果 → 地图挪过去；这一下不算「拖地图」，别把中心点插到第一条 */
+
             suppressCenter = true
             withAnimation(.easeOut(duration: 0.22)) {
                 region.center = CLLocationCoordinate2D(latitude: p.2, longitude: p.3)
@@ -253,9 +241,6 @@ struct SendLocationView: View {
         return Tr("拖一下地图换个位置，或者在上面搜地点")
     }
 
-    /* ---------------------------------------------------------- 搜索 */
-
-    /// 打字停 0.4 秒自动搜（不用点确认），清空就回到「我的位置」
     private func queryChanged() {
         searchTask?.cancel()
         let q = trimmed
@@ -273,7 +258,6 @@ struct SendLocationView: View {
         }
     }
 
-    /// 点了键盘上的「搜索」：立刻搜，不等那 0.4 秒
     private func searchNow() {
         searchTask?.cancel()
         let q = trimmed
@@ -284,7 +268,7 @@ struct SendLocationView: View {
     private func runSearch(_ q: String) async {
         searching = true
         let res = await searchPlaces(q)
-        /* 结果回来的时候用户已经改了词：这次作废 */
+
         guard trimmed == q else { return }
         places = res
         picked = 0
@@ -292,8 +276,7 @@ struct SendLocationView: View {
     }
 
     private func searchPlaces(_ q: String) async -> [(String, String, Double, Double)] {
-        /* 先问服务器：后台配了高德 Key 就用高德的 POI（国内地点比苹果地图全很多），
-           没配（503）或者没结果就退回系统地图搜索。 */
+
         if !q.isEmpty,
            let rows = try? await API.shared.geoSearch(q: q,
                                                       lat: region.center.latitude,
@@ -307,12 +290,11 @@ struct SendLocationView: View {
         return await systemSearchPlaces(q)
     }
 
-    /// 系统地图搜索（高德没配时的兜底）
     private func systemSearchPlaces(_ q: String) async -> [(String, String, Double, Double)] {
         await withCheckedContinuation { cont in
             let req = MKLocalSearch.Request()
             req.naturalLanguageQuery = q
-            /* 以当前地图中心为准往周围找（范围给大到整个城市，附近没搜到也会给别处） */
+
             req.region = MKCoordinateRegion(center: region.center,
                                             span: MKCoordinateSpan(latitudeDelta: 0.6, longitudeDelta: 0.6))
             MKLocalSearch(request: req).start { resp, _ in
@@ -330,7 +312,6 @@ struct SendLocationView: View {
         }
     }
 
-    /// 地图被拖动：把中心那个点反查成地址，放到第一条（拖地图也能选点）
     private func centerMoved() {
         guard !suppressCenter, !loading else { return }
         centerTask?.cancel()
@@ -350,7 +331,7 @@ struct SendLocationView: View {
             }
             let place = (name, addr, lat, lng)
             centerPlace = place
-            /* 正在搜某个词的时候别把结果顶掉 */
+
             if trimmed.isEmpty {
                 places = [place] + homePlaces
                 picked = 0
@@ -360,7 +341,7 @@ struct SendLocationView: View {
 
     private func locate() async {
         guard let loc = await OneShotLocation.shared.current() else {
-            /* 定位失败 / 没给权限：直接告诉用户去开，不再瞎给一个坐标 */
+
             places = []
             denied = true
             loading = false
@@ -368,7 +349,7 @@ struct SendLocationView: View {
         }
         myLat = loc.coordinate.latitude
         myLng = loc.coordinate.longitude
-        /* 这一步是程序自己挪地图，别触发「地图中心点」 */
+
         suppressCenter = true
         region.center = loc.coordinate
         var list: [(String, String, Double, Double)] = []
@@ -391,7 +372,7 @@ struct SendLocationView: View {
     private func send() {
         guard places.indices.contains(picked) else { return }
         let p = places[picked]
-        /* 用 JSONSerialization 拼：店名里带引号也不会把消息拼坏 */
+
         let obj: [String: Any] = ["lat": p.2, "lng": p.3, "name": p.0, "addr": p.1]
         guard let data = try? JSONSerialization.data(withJSONObject: obj),
               let payload = String(data: data, encoding: .utf8) else { return }
@@ -399,8 +380,6 @@ struct SendLocationView: View {
         dismiss()
     }
 }
-
-/* ---------------------------------------------------------- 共享实时位置 */
 
 struct LiveLocationView: View {
     let chat: Chat
@@ -484,7 +463,7 @@ struct LiveLocationView: View {
         .background(C.pageBg.ignoresSafeArea(edges: .top))
         .toolbar(.hidden, for: .navigationBar)
         .hidesTabBar()
-        /* 2026-10-16：共享实时位置页补左滑返回（顺手把位置共享停掉） */
+
         .swipeBack { stopAndClose() }
         .task { await start() }
         .onDisappear { timer?.cancel() }
@@ -502,17 +481,17 @@ struct LiveLocationView: View {
             store.sessionId = r.sessionId
             store.chatId = chat.id
             store.active = true
-            if !r.joined { onStop?() }        // 是我发起的：往聊天里留一条
+            if !r.joined { onStop?() }
         }
         await pushState()
-        /* 每 5 秒报一次我的位置（和微信一样，动一下对方就能看到） */
+
         timer?.cancel()
         timer = Task {
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 5_000_000_000)
                 if Task.isCancelled { break }
                 await reportMyPosition()
-                await pushState()          // 顺便把别人的位置也拉一遍（对方动了几秒内就能看到）
+                await pushState()
             }
         }
     }

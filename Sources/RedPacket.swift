@@ -1,13 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   红包（微信那一套）
-   · 聊天里那张卡片：橙色的可以点开，领过/领完/过期都变淡
-   · 发红包：金额 + 个数（群聊）+ 祝福语 + 拼手气/普通 → 支付密码
-   · 拆红包：点「开」才进零钱，显示抢到多少
-   · 详情：谁抢了多少、手气最佳
-   ============================================================ */
-
 struct RedPacketInfo: Identifiable {
     var id = ""
     var total: Double = 0
@@ -22,7 +14,7 @@ struct RedPacketInfo: Identifiable {
     var fromName = ""
     var expiresAt: Double = 0
     var refundAmount: Double = 0
-    /* 封面（微信那套：发红包时挑一张，卡片和拆红包页都按它画） */
+
     var coverId = ""
     var coverName = ""
     var cover = ""
@@ -41,8 +33,7 @@ struct RedPacketInfo: Identifiable {
         type = (o["type"] as? String) ?? "normal"
         note = (o["note"] as? String) ?? "恭喜发财，大吉大利"
         status = (o["status"] as? String) ?? "pending"
-        /* 老版本那条「一对一红包」的消息（服务器上已经删掉那套逻辑）：
-           status 是 received，这里当成已结束画，不要当成还能抢 */
+
         if status == "received" { status = "done"; expired = true }
         expired = (o["expired"] as? Bool) ?? (status == "refunded")
         fromId = (o["fromId"] as? String) ?? ""
@@ -87,25 +78,24 @@ struct RedPacketInfo: Identifiable {
 
     var isLucky: Bool { type == "lucky" }
     func claimed(by uid: String) -> Bool { claimedIds.contains(uid) }
-    /// 还有没有得抢（群里别人还能抢）
+
     var stillOpen: Bool { !expired && status == "pending" && claimedCount < count }
-    /// 抢完了 / 过期了
+
     var isOver: Bool { !stillOpen }
-    /// 剩下多久过期（小时）
+
     var hoursLeft: Int {
         guard expiresAt > 0 else { return 0 }
         return max(0, Int((expiresAt / 1000 - Date().timeIntervalSince1970) / 3600))
     }
 }
 
-/* ============================================================ 聊天里的红包卡片 */
 struct RedPacketCard: View {
     let info: RedPacketInfo
     let mine: Bool
     let myId: String
 
     private var claimedByMe: Bool { info.claimed(by: myId) }
-    /// 领过 / 领完 / 过期 → 淡色（微信就是这样变淡的）
+
     private var pale: Bool { claimedByMe || info.isOver }
 
     private var stateText: String {
@@ -160,7 +150,7 @@ struct RedPacketCard: View {
         .background(
             Group {
                 if !info.cover.isEmpty {
-                    /* 有封面：直接用封面图当底（微信就是这么好看的） */
+
                     ZStack {
                         RPCoverView(path: info.cover, colorHex: info.coverColor)
                         LinearGradient(colors: [Color.black.opacity(0.02), Color.black.opacity(0.42)],
@@ -179,7 +169,6 @@ struct RedPacketCard: View {
     }
 }
 
-/* ============================================================ 封面图（后台配的图，按网址加载） */
 struct RPCoverView: View {
     let path: String
     var colorHex: String = "#B3241C"
@@ -204,13 +193,11 @@ struct RPCoverView: View {
     }
 }
 
-/* ============================================================ 选封面（微信那种左右滑着挑） */
 struct RedPacketCoverPicker: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
 
-    /// 选好之后回调
     var onPick: (API.RedPacketCoverRaw) -> Void
 
     @State private var covers: [API.RedPacketCoverRaw] = []
@@ -265,7 +252,7 @@ struct RedPacketCoverPicker: View {
         }
         .background(C.pageBg.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
-        /* 2026-10-16：选红包封面页补左滑返回 */
+
         .swipeBack { dismiss() }
         .task {
             if let r = try? await API.shared.redPacketCovers() {
@@ -289,7 +276,6 @@ struct RedPacketCoverPicker: View {
     }
 }
 
-/// 红包图标：红封套 + 中间一个金色小圆（微信卡片左边那个）
 struct RedPacketGlyph: View {
     var pale = false
 
@@ -305,7 +291,7 @@ struct RedPacketGlyph: View {
                             .stroke(Color.white.opacity(0.35), lineWidth: 0.5)
                     )
                     .opacity(pale ? 0.85 : 1)
-                /* 封套那一撇 */
+
                 Path { p in
                     p.move(to: CGPoint(x: 0, y: h * 0.34))
                     p.addQuadCurve(to: CGPoint(x: w, y: h * 0.34),
@@ -321,7 +307,6 @@ struct RedPacketGlyph: View {
     }
 }
 
-/* ============================================================ 发红包 */
 struct RedPacketSendView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -331,26 +316,25 @@ struct RedPacketSendView: View {
 
     @State private var amountText = ""
     @State private var countText = "1"
-    /// 群红包的个数只自动填一次（用户自己改过就不动他了）
+
     @State private var countInit = false
     @State private var note = "恭喜发财，大吉大利"
     @State private var lucky = true
     @State private var busy = false
-    /* 支付步骤直接做在这一页里（微信就是这样：点「塞钱进红包」下面翻出密码键盘）。
-       以前是在弹层里再弹一个支付面板，真机上会静默失败 —— 表现就是「按了没反应」。 */
+
     @State private var paying = false
     @State private var pwd = ""
-    /// 密码错了：六格左右抖一下
+
     @State private var payShakeValue: CGFloat = 0
     @State private var hasPwd = true
     @State private var payTip = ""
-    /// 没设过支付密码时弹「去设置」
+
     @State private var showSetPay = false
     @State private var errorText = ""
     @State private var myBalance: Double = 0
-    /// 余额有没有从服务器拿到（没拿到就别用 0 去拦人，交给服务器判断）
+
     @State private var balanceLoaded = false
-    /* 封面：默认用我在服务器上选的那张 */
+
     @State private var coverId = ""
     @State private var coverImage = ""
     @State private var coverColor = "#B3241C"
@@ -372,9 +356,7 @@ struct RedPacketSendView: View {
 
             ScrollView {
                 VStack(spacing: 0) {
-                    /* 顶部：封面（微信发红包页上面就是封面，点一下能换） */
-                    /* 高级版：一整张圆角封面卡（金边 + 投影 + 顶部高光），
-                       金额用大号金额字体居中，底下是零钱余额和「选择封面」。 */
+
                     VStack(spacing: 0) {
                         Spacer(minLength: 0)
                         VStack(spacing: 6) {
@@ -413,7 +395,7 @@ struct RedPacketSendView: View {
                                 LinearGradient(colors: [Color.black.opacity(0.10), Color.black.opacity(0.42)],
                                                startPoint: .top, endPoint: .bottom)
                             }
-                            /* 左上角那一道高光：红卡看着有"皮"的质感 */
+
                             LinearGradient(colors: [Color.white.opacity(0.28), Color.white.opacity(0)],
                                            startPoint: .topLeading, endPoint: .center)
                         }
@@ -443,7 +425,7 @@ struct RedPacketSendView: View {
                     }
 
                     VStack(spacing: 0) {
-                        formRow(icon: "yensign.circle.fill", tint: C.green, title: Tr("金额")) {   // 2026-10-17：跟主色走
+                        formRow(icon: "yensign.circle.fill", tint: C.green, title: Tr("金额")) {
                             TextField("0.00", text: $amountText)
                                 .keyboardType(.decimalPad)
                                 .multilineTextAlignment(.trailing)
@@ -529,8 +511,7 @@ struct RedPacketSendView: View {
                 myBalance = m.balance ?? 0
                 balanceLoaded = true
             }
-            /* 群里发红包：个数别再默认 1 —— 个数是 1 的话，一个人就把整个红包全抢走了
-               （线上真被这么反馈过）。按「除我之外每人一个」给个默认值，微信群红包也是这个习惯。 */
+
             if isGroup, !countInit {
                 countInit = true
                 var n = max(1, (chat.memberCount ?? 0) - 1)
@@ -540,7 +521,7 @@ struct RedPacketSendView: View {
                 }
                 if countText == "1" { countText = String(max(1, min(100, n))) }
             }
-            /* 我上次选的封面 */
+
             if let r = try? await API.shared.redPacketCovers() {
                 let mine = r.covers.first(where: { $0.id == r.mine }) ?? r.covers.first
                 if let mine = mine {
@@ -560,18 +541,15 @@ struct RedPacketSendView: View {
             }
             .environmentObject(app)
         }
-        /* 支付键盘：压在这一页上面，不是第二个弹层 */
+
         .overlay(alignment: .bottom) {
             if paying { payPanel }
         }
-        /* 没设过支付密码：先去设一个（微信的规矩：不输密码发不出去） */
+
         .sheet(isPresented: $showSetPay) {
             PayPasswordView().environmentObject(app)
         }
     }
-
-    /* ---------------------------------------------------------- 支付键盘（当前页内） */
-    /* 高级版的小零件：一行表单（左边小色块图标）+ 自己画的胶囊分段 */
 
     private func formRow<T: View>(icon: String, tint: Color, title: String,
                                   @ViewBuilder content: () -> T) -> some View {
@@ -604,11 +582,7 @@ struct RedPacketSendView: View {
 
     private func luckyPill(_ t: String, on: Bool, _ tap: @escaping () -> Void) -> some View {
         Button { tap() } label: {
-            /* ⚠ 用户反馈「拼手气红包点不了」：
-               以前选中态是 `.background { if on { 渐变胶囊 } }` —— 没选中的那颗**完全没有背景视图**，
-               加上外层还有一层胶囊底 + 描边，点击经常落在那层上、传不进按钮。
-               现在：两颗都用**同一个胶囊**（选中的填渐变、没选中的填空），
-               再显式给 44pt 高的矩形热区，点击一定吃得到。 */
+
             Text(t)
                 .font(pf(15, on ? .semibold : .regular))
                 .foregroundColor(on ? .white : C.label)
@@ -710,7 +684,7 @@ struct RedPacketSendView: View {
 
     private var helpText: String {
         if !isGroup { return "单聊红包只能发 1 个；对方点开就进他的零钱。" }
-        /* 个数 1 的时候说清楚：这不是「群里一起抢」，是一个人全拿走 */
+
         if (Int(countText) ?? 1) <= 1 {
             return "⚠️ 个数填 1 = 群里只有一个人能抢，而且整个红包都归他。想让大家都抢到，把个数改成人数。"
         }
@@ -738,7 +712,7 @@ struct RedPacketSendView: View {
             app.show("零钱不够：这个红包要 ¥\(moneyFmt(amount))，你只有 ¥\(moneyFmt(myBalance))。去「我 → 服务 → 钱包 → 零钱 → 充值」")
             return
         }
-        /* 走到这里说明参数都对：把密码键盘翻出来（没设支付密码就直接发） */
+
         Task { @MainActor in
             hasPwd = await API.shared.hasPayPassword()
             if hasPwd {
@@ -746,8 +720,7 @@ struct RedPacketSendView: View {
                 payTip = ""
                 withAnimation(.easeOut(duration: 0.2)) { paying = true }
             } else {
-                /* 没设过支付密码：先去设。以前这里直接就把红包发出去了 ——
-                   用户反馈的「别人发红包怎么不用输密码」就是这条路。 */
+
                 showSetPay = true
             }
         }
@@ -776,7 +749,7 @@ struct RedPacketSendView: View {
                 busy = false
                 pwd = ""
                 payTip = (error as? LocalizedError)?.errorDescription ?? "发红包失败，再试一次"
-                payShake($payShakeValue)      // 密码不对 / 发失败：格子抖一下 + 错误震动
+                payShake($payShakeValue)
             }
         }
     }
@@ -786,14 +759,13 @@ enum LuckLabel {
     static func text(isLucky: Bool) -> String { isLucky ? "拼手气红包" : "普通红包" }
 }
 
-/* ============================================================ 支付密码（发红包前确认） */
 struct PayPasswordSheet: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
 
     let amount: Double
     var purpose: String = "支付"
-    /// 真正付钱的动作（抛错就是失败）
+
     let pay: (String, Bool) async throws -> RedPacketInfo
     let onDone: (RedPacketInfo) -> Void
 
@@ -802,7 +774,7 @@ struct PayPasswordSheet: View {
     @State private var faceOK = false
     @State private var busy = false
     @State private var tip = ""
-    /// 密码错了：六格左右抖一下
+
     @State private var shake: CGFloat = 0
 
     var body: some View {
@@ -827,16 +799,14 @@ struct PayPasswordSheet: View {
                 .padding(.top, 6)
 
             if hasPwd {
-                /* 6 个格子 + 自带数字键盘：
-                   以前用「藏起来的输入框 + 系统键盘」，在真机上经常不弹键盘，
-                   表现就是「塞钱进红包」按了没反应 —— 现在不依赖系统键盘。 */
+
                 PayDotField(count: password.count, shake: shake, busy: busy)
                     .padding(.top, 16)
 
                 PayKeypadView(busy: busy) { tap($0) }
                     .padding(.top, 16)
             } else {
-                /* 没设过支付密码：微信不会让你「直接付」，先去设一个再说 */
+
                 VStack(spacing: 8) {
                     Image(systemName: "lock.shield.fill")
                         .font(.system(size: 22))
@@ -875,7 +845,7 @@ struct PayPasswordSheet: View {
 
             Spacer(minLength: 0)
         }
-        /* 付钱时盖一层「正在支付」：按钮文字不动，就不会跳（用户反馈的「三个点的跳转」） */
+
         .overlay {
             if busy { PayBusyOverlay() }
         }
@@ -888,7 +858,6 @@ struct PayPasswordSheet: View {
         }
     }
 
-    /// 自带数字键盘（1~9 / 0 / 删除），输满 6 位自动付
     private var keypad: some View {
         let rows: [[String]] = [["1", "2", "3"], ["4", "5", "6"], ["7", "8", "9"], ["", "0", "⌫"]]
         return VStack(spacing: 0) {
@@ -943,13 +912,12 @@ struct PayPasswordSheet: View {
                 busy = false
                 password = ""
                 tip = (error as? LocalizedError)?.errorDescription ?? "支付失败，再试一次"
-                payShake($shake)          // 密码不对 / 付失败：格子抖一下 + 错误震动
+                payShake($shake)
             }
         }
     }
 }
 
-/* ============================================================ 拆红包 */
 struct RedPacketOpenView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -1075,7 +1043,6 @@ struct RedPacketOpenView: View {
     }
 }
 
-/* ============================================================ 红包详情 */
 struct RedPacketDetailView: View {
     @ObservedObject private var lang = LangStore.shared
     @Environment(\.dismiss) private var dismiss
@@ -1139,7 +1106,6 @@ struct RedPacketDetailView: View {
     private var gold: Color { Color(hex: 0xE2A03C) }
     private var goldDeep: Color { Color(hex: 0xC8830C) }
 
-    /* 顶部：深红金渐变头卡（谁发的 + 祝福语 + 共几个/已领几个） */
     private func heroCard(_ info: RedPacketInfo) -> some View {
         VStack(spacing: 10) {
             HStack(spacing: 8) {
@@ -1190,7 +1156,6 @@ struct RedPacketDetailView: View {
         )
     }
 
-    /* 我抢到的：金色大数字 + 手气最佳 */
     private func mineCard(_ mine: API.RedPacketClaimRaw, info: RedPacketInfo) -> some View {
         let best = (raw?.bestUserId == myId) && ((raw?.claims?.count ?? 0) > 1)
         return HStack(spacing: 12) {
@@ -1224,7 +1189,6 @@ struct RedPacketDetailView: View {
         )
     }
 
-    /* 领取记录：头像 + 名字 + 时间 + 金额（金额右对齐） */
     private func claimsCard(_ info: RedPacketInfo) -> some View {
         let list = raw?.claims ?? []
         let total = max(1, info.count)
@@ -1320,7 +1284,6 @@ struct RedPacketDetailView: View {
     }
 }
 
-/* ============================================================ 通用：小头像（不要叫 AsyncImage，会盖住系统那个） */
 struct RPAvatar: View {
     let path: String
     let size: CGFloat
@@ -1360,7 +1323,6 @@ private struct AsyncImageLoad: View {
     }
 }
 
-/* 时间：2026-09-23T06:12:33.123Z → 09-23 06:12 */
 func rpTime(_ raw: String) -> String {
     let s = raw.replacingOccurrences(of: "T", with: " ")
     guard s.count >= 16 else { return s }

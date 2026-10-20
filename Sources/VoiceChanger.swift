@@ -3,48 +3,21 @@ import AVFoundation
 import SwiftUI
 import TXLiteAVSDK_TRTC
 
-/* ============================================================
-   真人变声器
-
-   两条路，都要求「听起来还是真人」而不是机器人音：
-
-   ⚠ 只做「真人嗓」：不做小孩音 / 电子音 / 机器人那种（那是 QQ 变声器的路子）。
-
-   ① 通话（实时）：用腾讯云 TRTC 自带的变声（大叔 / 萝莉 / 空灵）+ 混响（磁性 / 录音棚）
-      这是声学算法做的，音质干净、不刺耳，就是换了个人的嗓子；
-      进房后立刻生效，通话中改预设也马上变，不用挂断重打。
-
-   ② 语音消息（录完再处理）：本机用 AVAudioEngine 的离线渲染做，
-      「变速换嗓 + 时间伸缩还原语速」：变速会把音高**和共鸣腔一起**挪，
-      等于换了个大小的嗓子；只挪音高不动共鸣腔，听起来就是假音。
-      再叠两段均衡补回胸腔/头腔的共鸣，可选一点点混响（电台/空灵）。
-      处理完全在本机，原声不会上传。
-
-   预设是两边共用的：选了「磁性男声」，打电话和发语音都用它。
-   ============================================================ */
-
-/// 一个变声预设
 struct VoiceEffect: Identifiable, Equatable {
     let id: String
     let name: String
     let hint: String
 
-    /* 通话（TRTC 实时变声） */
-    let trtcChange: Int        // TXVoiceChangeType 原始值：0 原声 2 萝莉 3 大叔 6 外国腔 11 空灵…
-    let trtcReverb: Int        // TXVoiceReverbType 原始值：0 关 7 磁性 8 空灵 9 录音棚…
+    let trtcChange: Int
+    let trtcReverb: Int
 
-    /* 语音消息（本机离线处理） */
-    /// 整体变速比（1.18 = 快 18%）。这是"像真人"的关键：
-    /// 变速会把**音高和共鸣腔一起**抬高/压低（等于换了个大小的嗓子），
-    /// 后面再用时间伸缩把语速拉回原样 —— 只调音高不改共鸣腔，听起来就是"假音/电子音"。
     let speed: Float
-    let pitch: Float           // 额外微调音高，单位「音分」（100 音分 = 1 个半音）
-    let lowGain: Float         // 低频货架增益 dB（正=更厚更沉）
-    let highGain: Float        // 高频货架增益 dB（正=更亮更年轻）
-    let wet: Float             // 混响湿度 0…100（0 = 干声，最"真实"）
+    let pitch: Float
+    let lowGain: Float
+    let highGain: Float
+    let wet: Float
 }
 
-/// 变声预设表 + 我选的那个（存本机，和账号无关）
 @MainActor
 final class VoiceChangerStore: ObservableObject {
     static let shared = VoiceChangerStore()
@@ -98,15 +71,13 @@ final class VoiceChangerStore: ObservableObject {
         guard VoiceChangerStore.all.contains(where: { $0.id == id }) else { return }
         presetId = id
         UserDefaults.standard.set(id, forKey: "chris.voiceEffect")
-        /* 正在打电话的话，立刻换成新声音（TRTC 支持通话中随时改，不用挂断重打） */
+
         TRTCBridge.shared.applyVoiceEffect()
     }
 }
 
-/// 本机离线变声（语音消息用）
 enum VoiceChanger {
-    /// 把录好的语音按预设处理一遍。**处理失败就返回原文件** —— 变声是锦上添花，
-    /// 绝不能因为它让用户发不出语音。
+
     static func process(_ input: URL, preset: VoiceEffect) -> URL {
         guard preset.id != "origin" else { return input }
         do {
@@ -130,17 +101,11 @@ enum VoiceChanger {
         let eq = AVAudioUnitEQ(numberOfBands: 2)
         let reverb = AVAudioUnitReverb()
 
-        /* 换嗓，分两步（这是"像真人"的核心）：
-           ① 变速：音高和共鸣腔一起抬高/压低 —— 等于换了一个人大小的嗓子。只调音高、
-              不动共鸣腔，出来就是那种"假音"（QQ 变声器的味道）。
-           ② 再把语速拉回原样：时间伸缩不改音高，所以音色留在新嗓子上，
-              时长和原来一样（气泡上写的秒数才对得上）。 */
         speed.rate = p.speed
         pitch.rate = p.speed > 0 ? 1.0 / p.speed : 1.0
         pitch.pitch = p.pitch
         pitch.overlap = 8.0
 
-        /* 两段货架 EQ：换嗓以后"腔体大小"不匹配才显得假，这里补回来 */
         eq.bands[0].filterType = .lowShelf
         eq.bands[0].frequency = 200
         eq.bands[0].gain = p.lowGain
@@ -175,12 +140,10 @@ enum VoiceChanger {
         ]
         let outFile = try AVAudioFile(forWriting: outURL, settings: outSettings)
 
-        /* ⚠ 「离线渲染」要在 start 之前打开；maximumFrameCount 也要等打开之后才读得到真值 */
         try engine.enableManualRenderingMode(.offline, format: fmt, maximumFrameCount: 4096)
         try engine.start()
         let maxFrames = engine.manualRenderingMaximumFrameCount
 
-        /* 分块调度（语音最长 60 秒，内存完全吃得下） */
         var scheduled: AVAudioFramePosition = 0
         var lastBufferDone = false
         while scheduled < total {
@@ -202,7 +165,6 @@ enum VoiceChanger {
             return input
         }
 
-        /* 混响尾巴要放一会儿，但必须有底：渲染到「原长 + 0.6 秒」为止 */
         let tailFrames = AVAudioFramePosition(fmt.sampleRate * 0.6)
         var rendered: AVAudioFramePosition = 0
         var spins = 0
@@ -214,8 +176,7 @@ enum VoiceChanger {
                 rendered += AVAudioFramePosition(renderBuf.frameLength)
             }
             if lastBufferDone, rendered >= total + tailFrames { break }
-            /* 安全阀：万一完成回调没来（离线渲染偶发），也别让"发语音"卡死在这儿 */
-            // 2000 × 4096 帧 ≈ 六分钟，正常一段语音几十次就渲染完了
+
             spins += 1
             if spins > 2000 { break }
         }
@@ -224,10 +185,6 @@ enum VoiceChanger {
         return outURL
     }
 }
-
-/* ============================================================
-   变声设置页（我 → 设置 → 通用 → 语音变声）
-   ============================================================ */
 
 struct VoiceChangerView: View {
     @ObservedObject private var store = VoiceChangerStore.shared

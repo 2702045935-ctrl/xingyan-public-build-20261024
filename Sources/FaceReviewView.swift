@@ -1,16 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   人脸比对（后台）—— 2026-10-15 用户：「人脸给后台做个比对口」
-
-   App 那边核身通过后会传一张**那一帧的照片** + 姓名 + 身份证号上来（存服务器
-   data/faces.json），这一页就是**人工比对的口子**（只有 ops 账号看得到）：
-     · 上面是照片（核身时抓的那一帧）
-     · 下面是姓名 / 身份证（打码）/ 是哪个账号 / 什么时候传的
-     · 「通过 ✅ / 驳回 ⛔」两个按钮 → 结论写回那个用户的账号上
-       （对方在「我 → 设置 → 安全分」里能看到自己过没过）
-   ============================================================ */
-
 struct FaceReviewRow: Decodable, Identifiable, Hashable {
     var id: String
     var userId: String?
@@ -22,10 +11,9 @@ struct FaceReviewRow: Decodable, Identifiable, Hashable {
     var status: String?
     var by: String?
     var note: String?
-    /// 与账号头像的特征距离（App 上算的参考分，越小越像；0/缺省 = 没算出来）
+
     var avatarDist: Double?
 
-    /// 参考分写成一句人话（我们自己判：<0.9 像同一个人、1.0 以上就不像了）
     var avatarText: String {
         guard let d = avatarDist, d > 0 else { return "与账号头像：没算出来" }
         if d < 0.9 { return String(format: "与账号头像：像同一个人（%.2f）", d) }
@@ -113,7 +101,7 @@ struct FaceReviewView: View {
         .swipeBack { dismiss() }
         .hidesTabBar()
         .task { await load() }
-        /* 点照片放大看（比对了才敢点通过） */
+
         .overlay {
             if let z = zoom {
                 ZStack {

@@ -1,18 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   转账 4 页（按你给的设计稿实现）
-     1) TransferHomeView      填写收款人 / 金额 / 备注
-     2) TransferConfirmView   确认信息
-     3) TransferPasswordView  6 位支付密码（能真的输入，输满自动提交）
-     4) TransferSuccessView   转账成功
-   说明：设计稿里两处 iOS 上跑不通，做了等价替换：
-     · Color(hex:) → 项目里已有的 Color(hexString:)
-     · NavigationStack.popToRoot() / 空 label 的 NavigationLink → 用导航路径 path 跳转
-   颜色：默认 #007AFF / #34C759，后台「🎨 登录页」里能改（读同一份配置）
-   ============================================================ */
-
-/// 转账流程的入口：套一层导航栈，把 4 页串起来
 struct TransferPagesFlow: View {
     let chatId: String
     var peerName: String
@@ -26,7 +13,6 @@ struct TransferPagesFlow: View {
     }
 }
 
-// MARK: - 1. 转账首页
 struct TransferHomeView: View {
     @Environment(\.dismiss) var dismiss
 
@@ -47,7 +33,6 @@ struct TransferHomeView: View {
             VStack(spacing: 20) {
                 Spacer(minLength: 20)
 
-                // 收款人
                 VStack(spacing: 12) {
                     TextField("收款人姓名", text: $receiverName)
                         .font(.system(size: 16))
@@ -64,7 +49,6 @@ struct TransferHomeView: View {
                         .autocorrectionDisabled(true)
                 }
 
-                // 转账金额
                 VStack(alignment: .leading, spacing: 8) {
                     Text(Tr("转账金额"))
                         .font(.system(size: 14))
@@ -82,7 +66,6 @@ struct TransferHomeView: View {
                     .cornerRadius(12)
                 }
 
-                // 备注
                 TextField("备注（选填）", text: $remark)
                     .font(.system(size: 16))
                     .padding(16)
@@ -96,7 +79,6 @@ struct TransferHomeView: View {
 
                 Spacer()
 
-                // 下一步
                 NavigationLink {
                     TransferConfirmView(
                         chatId: resolvedChatId.isEmpty ? chatId : resolvedChatId,
@@ -138,7 +120,6 @@ struct TransferHomeView: View {
         !receiverName.isEmpty && !receiverAccount.isEmpty && !amount.isEmpty && (Double(amount) ?? 0) > 0
     }
 
-    /// 如果收款账号被改成了别人，就重新找一个会话（必须是好友，和 App 规则一致）
     private func resolveReceiver() {
         resolveError = nil
         let acc = receiverAccount.trimmingCharacters(in: .whitespaces)
@@ -159,7 +140,6 @@ struct TransferHomeView: View {
     }
 }
 
-// MARK: - 2. 转账确认页
 struct TransferConfirmView: View {
     @Environment(\.dismiss) var dismiss
 
@@ -176,7 +156,6 @@ struct TransferConfirmView: View {
             VStack(spacing: 24) {
                 Spacer(minLength: 20)
 
-                // 收款信息卡片
                 VStack(spacing: 16) {
                     Text(Tr("确认转账信息"))
                         .font(.system(size: 18, weight: .semibold))
@@ -249,7 +228,6 @@ struct TransferConfirmView: View {
     }
 }
 
-// MARK: - 3. 支付密码页（6 位，能真的输入）
 struct TransferPasswordView: View {
     @Environment(\.dismiss) var dismiss
 
@@ -275,7 +253,6 @@ struct TransferPasswordView: View {
                 .font(pfMoney(14))
                 .foregroundColor(.secondary)
 
-            // 密码格子
             HStack(spacing: 12) {
                 ForEach(0..<pwdLength, id: \.self) { index in
                     ZStack {
@@ -291,7 +268,6 @@ struct TransferPasswordView: View {
             .contentShape(Rectangle())
             .onTapGesture { focused = true }
 
-            // 真正接收输入的框（藏起来但会弹出数字键盘）
             TextField("", text: $pwd)
                 .keyboardType(.numberPad)
                 .focused($focused)
@@ -360,7 +336,6 @@ struct TransferPasswordView: View {
     }
 }
 
-// MARK: - 4. 转账成功页
 struct TransferSuccessView: View {
     let amount: String
     var onClose: () -> Void
@@ -386,7 +361,7 @@ struct TransferSuccessView: View {
 
             VStack(spacing: 16) {
                 Button {
-                    onClose()          // 关掉转账流程，去看账单
+                    onClose()
                 } label: {
                     Text(Tr("查看账单"))
                         .font(.system(size: 16, weight: .medium))
@@ -397,7 +372,7 @@ struct TransferSuccessView: View {
                 }
 
                 Button {
-                    onClose()          // 返回首页
+                    onClose()
                 } label: {
                     Text(Tr("返回首页"))
                         .font(.system(size: 16, weight: .medium))

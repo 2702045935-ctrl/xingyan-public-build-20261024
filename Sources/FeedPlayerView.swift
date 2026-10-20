@@ -2,15 +2,6 @@ import SwiftUI
 import AVFoundation
 import UIKit
 
-/* ============================================================
-   视频号「抖音版」全屏播放页
-   · 一屏一条、上下滑切换（用系统分页容器，iOS 16 也能用）
-   · 滑到哪条自动播、其它自动停；播完循环；点一下暂停/继续
-   · **播放器池**：只给「当前 / 上一条 / 下一条」建播放器，滑过去立刻有画面 ——
-     每滑一次新建播放器正是卡的根源，这里复用它
-   · 素材仍然是服务端切好的 HLS（800kbps），所以起播快、流量小
-   ============================================================ */
-
 struct FeedPlayerView: View {
     let items: [FeedItem]
     var start: Int = 0
@@ -21,11 +12,11 @@ struct FeedPlayerView: View {
     @State private var paused = false
     @State private var progress: Double = 0
     @State private var showHeart = false
-    /// 每条视频的互动状态（点赞/评论/收藏/关注）——本地先变，服务器回来再校准
+
     @State private var ui: [String: FeedItemUI] = [:]
-    /// 正在看评论的那条
+
     @State private var commentItem: FeedItem?
-    /// 分享面板
+
     @State private var shareItems: [Any] = []
     @State private var showShare = false
 
@@ -96,26 +87,22 @@ struct FeedPlayerView: View {
         }
         .sheet(isPresented: $showShare) { ShareSheet(items: shareItems) }
         .task(id: index) {
-            /* 只保留「当前 / 上一条 / 下一条」的播放器：滑得再多也不会越积越卡（内存和缓冲都省） */
+
             let lo = max(0, index - 1), hi = min(items.count - 1, index + 1)
             if lo <= hi { PlayerPool.shared.keepOnly(Array(items[lo...hi]).map { $0.id }) }
-            /* ⚠ 关键：告诉所有页面「现在轮到哪一条」。
-               以前每页的 active 是在「页面被创建那一刻」算的 —— 分页器是 UIKit 包一层，
-               滑到第 2 条时新建的页面拿到的还是旧 index（active=false），播放器永远不启动，
-               表现就是「只有第一条能播，后面的全在转圈」。 */
+
             PlayerPool.shared.currentId = items[safe: index]?.id ?? ""
             await trackProgress()
         }
     }
 
-    /// 第一次进来把每条的状态从服务器给的数据里初始化一份
     private func seed() {
         for it in items where ui[it.id] == nil { ui[it.id] = FeedItemUI(it) }
     }
 
     private func like(_ item: FeedItem, fromDoubleTap: Bool) {
         var s = ui[item.id] ?? FeedItemUI(item)
-        /* 已经赞过再双击：只播动画，不再发请求（抖音也是这样） */
+
         if fromDoubleTap, s.liked { flashHeart(); return }
         let next = !s.liked
         s.liked = next
@@ -171,7 +158,6 @@ struct FeedPlayerView: View {
         showShare = true
     }
 
-    /// 点头像/昵称：打开作者的名片（和微信一样先看是谁）
     private func openAuthor(_ item: FeedItem) {
         guard let uid = item.author?.id, !uid.isEmpty else { return }
         Task { @MainActor in
@@ -183,7 +169,6 @@ struct FeedPlayerView: View {
         }
     }
 
-    /// 底部进度条：每 0.25 秒读一次当前页的播放进度
     private func trackProgress() async {
         while !Task.isCancelled {
             try? await Task.sleep(nanoseconds: 250_000_000)
@@ -193,9 +178,6 @@ struct FeedPlayerView: View {
     }
 }
 
-/* ---------------------------------------------------------- 抖音式：互动状态 */
-
-/// 一条视频在本地的互动状态（服务器给的初始值 + 本地的即时变化）
 struct FeedItemUI {
     var liked = false
     var likes = 0
@@ -230,24 +212,20 @@ private extension Array {
     subscript(safe i: Int) -> Element? { (i >= 0 && i < count) ? self[i] : nil }
 }
 
-/* ---------------------------------------------------------- 播放器池 */
-
-/// 全局播放器池：只保留「当前 / 上一条 / 下一条」三个，多余的销毁。
-/// 这样上下滑都是「复用已经在缓冲的播放器」，不会每滑一次重新建、重新缓冲（那就是卡）。
 final class PlayerPool: ObservableObject {
     static let shared = PlayerPool()
-    /// 当前正在播的那一条（每个页面都盯着它决定自己播不播 —— 见 FeedPlayerView.task）
+
     @Published var currentId: String = ""
-    /// 正在等画面的（页面转圈用）
+
     @Published private(set) var loading: Set<String> = []
-    /// HLS 和整包 MP4 都播不出来的（页面给个「重新加载」）
+
     @Published private(set) var failed: Set<String> = []
-    private var players: [String: AVPlayer] = [:]      // itemId -> player
+    private var players: [String: AVPlayer] = [:]
     private var urls: [String: URL] = [:]
     private var tasks: [String: Task<Void, Never>] = [:]
-    /// 最近碰过的几条（最多 8 个）：滑回来立刻有画面，别每次都重建播放器
+
     private var recent: [String] = []
-    /// 已经真的出过画面的（滑回来不用再判定一遍）
+
     private var played: Set<String> = []
 
     func player(for item: FeedItem) -> AVPlayer? {
@@ -264,10 +242,8 @@ final class PlayerPool: ObservableObject {
         if recent.count > 8 { recent.removeLast(recent.count - 8) }
     }
 
-    /// 已经是「出过画面」的条目
     func hasPlayed(_ id: String) -> Bool { played.contains(id) }
 
-    /// 起播地址：**优先整包 MP4**（和聊天里的视频一条路：先下到本地再播，最稳），没有才用分片
     private func startURL(_ item: FeedItem) -> URL? {
         if let v = item.video, !v.isEmpty, let u = API.shared.assetURL(v) { return u }
         if let h = item.hls, !h.isEmpty, let u = API.shared.assetURL(h) { return u }
@@ -282,15 +258,10 @@ final class PlayerPool: ObservableObject {
     @discardableResult
     private func makePlayer(item: FeedItem, url: URL, triedMP4: Bool, fromDownload: Bool = false) -> AVPlayer {
         let key = item.id
-        /* ★★ 真因修复：**AVPlayer 不认我们的自签证书**（聊天里的视频就是这么黑屏的，
-           精彩视频"完全不播放"是同一个坑）—— 所以不能直接 `AVPlayer(url: 远程地址)`。
-           这里先建一个空播放器占住位置，媒体走 loadInto：
-             ① 本地有留底（自己发过 / 以前播过）→ 直接播本地文件；
-             ② 没有 → 用 **App 自己的会话**（认证书）把文件下下来，写进留底，再播本地文件。
-           下好用 `replaceCurrentItem` 装进**同一个**播放器 —— 页面那边的引用不用换。 */
+
         let p = AVPlayer()
         p.actionAtItemEnd = .none
-        /* 抖音那套：有数据就播，不攒够一大段才开播（弱网下「等安全缓冲」就是一直转圈） */
+
         p.automaticallyWaitsToMinimizeStalling = false
         players[key] = p
         urls[key] = url
@@ -300,22 +271,19 @@ final class PlayerPool: ObservableObject {
         return p
     }
 
-    /// 媒体怎么进播放器：**和聊天里的视频完全一样 —— 先整段下到本地，再播本地文件**。
-    /// （以前这里是「边下边播」：第二条经常一直转圈不播。本地文件不挑证书、也不用等
-    ///  AVPlayer 自己缓冲，下过一次还留底，第二次秒开。）
     private func loadInto(item: FeedItem, player p: AVPlayer, url: URL, triedMP4: Bool, fromDownload: Bool = false) {
         let key = item.id
-        /* 本来就是本地文件：直接装上 */
+
         if url.scheme != "http" && url.scheme != "https" {
             attach(item: item, player: p, file: url, remote: url, triedMP4: true)
             return
         }
-        /* ① 本地留底：自己发过 / 以前播过 → 直接播本地，秒出画面 */
+
         if let local = LocalStore.localURL(url.path), FileManager.default.fileExists(atPath: local.path) {
             attach(item: item, player: p, file: local, remote: url, triedMP4: true)
             return
         }
-        /* ② 分片（没有整包 MP4 的那些）：分片本来就是一小段一小段拉的，走边下边播 */
+
         if url.pathExtension == "m3u8", let pi = StreamPlay.item(url) {
             pi.preferredForwardBufferDuration = 1.5
             p.replaceCurrentItem(with: pi)
@@ -329,7 +297,7 @@ final class PlayerPool: ObservableObject {
             verify(item: item, player: p, url: url, triedMP4: false)
             return
         }
-        /* ③ 远程整包：**整段下到本地再播**（和聊天视频一条路） */
+
         Task { @MainActor [weak self] in
             guard let self = self else { return }
             let local = await StreamPlay.download(url)
@@ -344,7 +312,6 @@ final class PlayerPool: ObservableObject {
         }
     }
 
-    /// 把这一份真正装进播放器：循环播放 + 起播校验（校验仍用**远程地址**判断要不要退回整包 MP4）
     private func attach(item: FeedItem, player p: AVPlayer, file: URL, remote: URL, triedMP4: Bool) {
         let key = item.id
         let pi = AVPlayerItem(url: file)
@@ -360,9 +327,6 @@ final class PlayerPool: ObservableObject {
         verify(item: item, player: p, url: remote, triedMP4: triedMP4)
     }
 
-    /// 盯着刚建的播放器：**画面真的往前走才算成功**。
-    /// 分片只等 3 秒（超时就换整包 MP4），整包给它 12 秒；再不行才告诉页面「播不出来」。
-    /// （全屏这个播放器以前没有这段，所以线上表现就是「一直转圈，没有尽头」。）
     private func verify(item: FeedItem, player: AVPlayer, url: URL, triedMP4: Bool) {
         let key = item.id
         tasks[key]?.cancel()
@@ -370,17 +334,13 @@ final class PlayerPool: ObservableObject {
             guard let self = self else { return }
             if !self.played.contains(key) { self.loading.insert(key) }
             self.failed.remove(key)
-            /* ⚠ 这里以前对**预加载**的那几条也按 3 秒/12 秒判失败 ——
-               可预加载的播放器我们并不会去 play()，它当然不会「出画面」，
-               于是旁边的几条动不动就被判「播不出来」、切去整段下载（更慢），
-               用户看到的就是「只有第一条能播，后面全在转圈」。
-               现在**只有正在看的那一条才计时超时**，预加载的那些只要等它 ready 就行。 */
+
             var moved = false
             var activeWait = 0.0
-            for tick in 0..<250 {                            // 最多 50 秒
+            for tick in 0..<250 {
                 if self.players[key] !== player { return }
                 let active = (self.currentId == key)
-                if active { player.play() }                  // 这一页正显示就催一下
+                if active { player.play() }
                 if let it = player.currentItem {
                     if it.status == .failed { break }
                     if it.status == .readyToPlay, CMTimeGetSeconds(player.currentTime()) > 0.05 {
@@ -388,7 +348,7 @@ final class PlayerPool: ObservableObject {
                         break
                     }
                 }
-                /* 每 5 秒记一条诊断：下次「转圈不播」时，看日志就知道卡在哪一步 */
+
                 if tick % 25 == 0 {
                     let st = player.currentItem?.status.rawValue ?? -1
                     let t = CMTimeGetSeconds(player.currentTime())
@@ -399,7 +359,7 @@ final class PlayerPool: ObservableObject {
                         + " likely=\(player.currentItem?.isPlaybackLikelyToKeepUp ?? false)")
                 }
                 if active { activeWait += 0.2 }
-                /* 正在看、而且等够了还没画面 → 才算真失败（分片 3 秒、整包 12 秒） */
+
                 if active, activeWait >= (triedMP4 ? 12 : 3), !(player.currentItem?.isPlaybackLikelyToKeepUp ?? false) {
                     break
                 }
@@ -413,18 +373,17 @@ final class PlayerPool: ObservableObject {
                 CrashCatcher.note("视频号", "出画面 id=\(key)")
                 return
             }
-            /* 还没轮到播的那几条：别急着判「播不出来」—— 它只是还没被 play()。
-               先记一条日志，等用户真的滑到它，那时候再看要不要兜底。 */
+
             if self.currentId != key, player.currentItem?.status != .failed {
                 self.loading.remove(key)
-                self.tasks[key] = nil      // 真的轮到它的时候要能再校验一次
+                self.tasks[key] = nil
                 CrashCatcher.note("视频号", "预加载等画面超时（先不判失败）id=\(key) 源=\(url.absoluteString)")
                 return
             }
             let why = player.currentItem?.error?.localizedDescription ?? "没等到画面"
             CrashCatcher.note("视频号", "加载失败 id=\(key) 源=\(url.absoluteString) 原因=\(why)")
             player.pause()
-            StreamPlay.cancel(player.currentItem)     // 把没下完的长请求掐掉，别占着连接
+            StreamPlay.cancel(player.currentItem)
             player.replaceCurrentItem(with: nil)
             if self.players[key] === player { self.players.removeValue(forKey: key) }
             self.urls.removeValue(forKey: key)
@@ -438,7 +397,6 @@ final class PlayerPool: ObservableObject {
         }
     }
 
-    /// 用户点「重新加载」：从头再来一次（网络可能就是刚才那一会儿不好）
     func retry(_ item: FeedItem) {
         let key = item.id
         tasks[key]?.cancel()
@@ -458,8 +416,7 @@ final class PlayerPool: ObservableObject {
     func play(_ item: FeedItem) {
         guard let p = player(for: item) else { return }
         if p.timeControlStatus != .playing { p.play() }
-        /* 之前只做过「预加载」校验（那会儿不判失败）：现在真的轮到它了，
-           补一次真正的起播校验 —— 分片 3 秒 / 整包 12 秒还没画面就自动换整包。 */
+
         if !played.contains(item.id), tasks[item.id] == nil, let u = urls[item.id] {
             verify(item: item, player: p, url: u, triedMP4: (u == mp4URL(item)))
         }
@@ -476,18 +433,14 @@ final class PlayerPool: ObservableObject {
         return max(0, min(1, CMTimeGetSeconds(p.currentTime()) / total))
     }
 
-    /// 只留这些（当前 ± 1），其余释放 —— 避免越刷越占内存
     func keepOnly(_ ids: [String]) {
-        /* ⚠ 这里必须把「当前这条」和「最近碰过的几条」一起留下。
-           只留「当前 ±1」的时候，推荐流一刷新（列表会重排 / 重新拉一页），
-           正在看的那条会和它的播放器一起被丢掉 → 页面又去重新建播放器 →
-           表现就是用户说的「第二条一直在转圈、就是不出画面」。 */
+
         var keep = Set(ids)
         keep.formUnion(recent)
         if !currentId.isEmpty { keep.insert(currentId) }
         for (k, p) in players where !keep.contains(k) {
             p.pause()
-            StreamPlay.cancel(p.currentItem)     // 同上：丢掉播放器就把它的请求一起掐掉
+            StreamPlay.cancel(p.currentItem)
             p.replaceCurrentItem(with: nil)
             tasks[k]?.cancel()
             tasks.removeValue(forKey: k)
@@ -497,8 +450,6 @@ final class PlayerPool: ObservableObject {
         }
     }
 }
-
-/* ---------------------------------------------------------- 单页 */
 
 private struct PlayerPage: View {
     let item: FeedItem
@@ -515,14 +466,12 @@ private struct PlayerPage: View {
     var onAvatar: () -> Void = { }
     var progress: Double = 0
 
-    /// 当前是不是轮到我播：盯播放器池广播的 currentId（分页器包了一层 UIKit，
-    /// 传进来的 active 是创建那一刻算的，滑到这一页时可能已经是旧值）
     @ObservedObject private var pool = PlayerPool.shared
     private var isActive: Bool { pool.currentId == item.id }
 
     var body: some View {
         ZStack {
-            /* 封面先铺上（已经在缓存里），再盖播放画面 —— 所以滑过去不会白屏 */
+
             if let c = item.cover, !c.isEmpty {
                 RemoteImage(path: c, mode: .fill, maxSide: 1600)
                     .ignoresSafeArea()
@@ -530,8 +479,6 @@ private struct PlayerPage: View {
             PlayerLayerView(player: PlayerPool.shared.player(for: item))
                 .ignoresSafeArea()
 
-            /* 弱网那两种情况：还在等画面 → 转个圈；分片和整包都试过还是不行 → 给个「重新加载」。
-               以前这一页什么都不显示，用户看到的就是「一直转圈，也不知道能不能好」。 */
             if isActive {
                 if pool.failed.contains(item.id) {
                     failedBadge
@@ -543,7 +490,6 @@ private struct PlayerPage: View {
                 }
             }
 
-            /* 底部左边：作者 / 文案 / 音乐（抖音那一列） */
             VStack {
                 Spacer()
                 HStack(alignment: .bottom) {
@@ -582,10 +528,9 @@ private struct PlayerPage: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 30)
-                .padding(.trailing, 76)          // 给右边那排按钮让位
+                .padding(.trailing, 76)
             }
 
-            /* 右侧竖排操作栏（抖音那种：头像 / 赞 / 评论 / 收藏 / 分享 / 唱片） */
             VStack {
                 Spacer()
                 VStack(spacing: 18) {
@@ -626,7 +571,6 @@ private struct PlayerPage: View {
             .frame(maxWidth: .infinity, alignment: .trailing)
             .padding(.trailing, 12)
 
-            /* 底部进度条（抖音那种：细细一条贴着底） */
             VStack {
                 Spacer()
                 GeometryReader { geo in
@@ -657,7 +601,6 @@ private struct PlayerPage: View {
         }
     }
 
-    /// 这条视频起不来时页面中间那块：说清楚 + 一个「重新加载」的按钮
     private var failedBadge: some View {
         VStack(spacing: 12) {
             Image(systemName: "wifi.exclamationmark")
@@ -687,7 +630,6 @@ private struct PlayerPage: View {
     }
 }
 
-/// 一层 AVPlayerLayer（SwiftUI 里用它显示画面）
 final class PlayerLayerUIView: UIView {
     override class var layerClass: AnyClass { AVPlayerLayer.self }
 }
@@ -709,8 +651,6 @@ struct PlayerLayerView: UIViewRepresentable {
         if l?.player !== player { l?.player = player }
     }
 }
-
-/* ---------------------------------------------------------- 竖向分页容器（iOS 16 可用） */
 
 struct VerticalPager<Content: View>: UIViewControllerRepresentable {
     @Binding var index: Int
@@ -739,7 +679,7 @@ struct VerticalPager<Content: View>: UIViewControllerRepresentable {
     final class Coordinator: NSObject, UIPageViewControllerDataSource, UIPageViewControllerDelegate {
         var parent: VerticalPager
         var current: Int = 0
-        /// 每个托管页面对应的下标（滑完靠它认出当前是哪一条）
+
         private var map: [ObjectIdentifier: Int] = [:]
         init(_ p: VerticalPager) { parent = p; current = p.index }
 
@@ -767,11 +707,6 @@ struct VerticalPager<Content: View>: UIViewControllerRepresentable {
     }
 }
 
-/* ============================================================
-   抖音式：右侧操作栏 / 转动的唱片 / 评论区（半屏）
-   ============================================================ */
-
-/// 右侧操作栏上的一个按钮：图标 + 数字（带描边阴影，深色画面上也看得清）
 private struct FeedRailButton: View {
     let icon: String
     var color: Color = .white
@@ -798,14 +733,13 @@ private struct FeedRailButton: View {
 }
 
 enum FeedCount {
-    /// 数字显示：10000 → 1.0万，抖音也是这么写的
+
     static func text(_ n: Int) -> String {
         if n >= 10000 { return String(format: "%.1f万", Double(n) / 10000.0) }
         return String(n)
     }
 }
 
-/// 右下角那个转动的唱片
 private struct MusicDisc: View {
     @State private var spin = false
 
@@ -825,7 +759,6 @@ private struct MusicDisc: View {
     }
 }
 
-/// 评论区（抖音那种半屏）：列表 + 底部输入框，发出去后刷新并回报条数
 struct FeedCommentSheet: View {
     let item: FeedItem
     var onCount: (Int) -> Void

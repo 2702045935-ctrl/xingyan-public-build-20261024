@@ -1,12 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   我的二维码：每个人一张，别人扫了就能加你好友
-   （「我」页面头像右上角那个二维码小图标进来的就是这一页）
-   ============================================================ */
-/* 旧版（浅色卡片那版）：已被 MyQRNew.swift 里的新版替换，界面不再用它。
-   注意：旧版「保存到相册」把头像盖在二维码正中间 —— 这套码是纠错等级 L，
-   盖住 23% 就扫不出来了，新版已经改成头像放在码下面。 */
 struct MyQRViewOld: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
@@ -47,12 +40,7 @@ struct MyQRViewOld: View {
                             Text(Tr("二维码生成失败，稍后再试"))
                                 .font(pf(13.5)).foregroundColor(C.subLabel)
                         } else {
-                            /* 中间**不能**再盖头像了。
-                               服务器这套二维码编码器是纠错等级 L（只容忍 7% 破损），
-                               原来在正中间盖一个 44pt 的头像（占码宽 23%）＝ 把码毁掉：
-                               实测「不盖头像能扫出来、按原样盖头像完全扫不出来」。
-                               微信敢盖是因为它用纠错 H（30%）。这里改成：二维码保持干净，
-                               头像放到下面那张个人信息卡里（照样一眼认人）。 */
+
                             QRCanvas(rows: rows).frame(width: 228, height: 228)
                                 .frame(width: 228, height: 228)
                         }
@@ -104,7 +92,7 @@ struct MyQRViewOld: View {
         .toolbar(.hidden, for: .navigationBar)
         .swipeBack { dismiss() }
         .hidesTabBar()
-        /* 微信那一下「突然调亮」：进这一页把屏幕亮度拉到 100%，退出还原 —— 对方/扫码枪才扫得出来 */
+
         .modifier(BrightenScreen())
         .fullScreenCover(isPresented: $showScan) {
             ScannerView { text in handleScanned(text, app: app) }

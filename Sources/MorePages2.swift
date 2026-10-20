@@ -1,17 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   补齐功能清单用的第二批页面：
-     · 群二维码（群聊信息页 → 群二维码，扫码进群）
-     · 头像裁剪（选完头像先裁成正方形）
-     · 界面语言（中文 / English）
-   ============================================================ */
-
-/* ---------------------------------------------------------- 界面语言 */
-
-/// 极简多语言：只覆盖最显眼的那些文案（标签栏、设置、常用按钮）
-/// 语言状态：做成可观察对象，切语言时只让"读了它的页面"重画，
-/// 不重建整棵视图树（之前用 .id() 重建会闪退）
 final class LangStore: ObservableObject {
     static let shared = LangStore()
     static let key = "chris.lang"
@@ -24,7 +12,7 @@ final class LangStore: ObservableObject {
         if let saved = UserDefaults.standard.string(forKey: LangStore.key) {
             code = saved
         } else {
-            /* 没手动选过就跟随系统语言 */
+
             let sys = Locale.preferredLanguages.first?.lowercased() ?? "zh"
             code = sys.hasPrefix("en") ? "en" : "zh"
         }
@@ -46,8 +34,6 @@ enum Lang {
         }
     }
 }
-
-/* ---------------------------------------------------------- 群二维码 */
 
 struct GroupQRView: View {
     let chat: Chat
@@ -123,7 +109,7 @@ struct GroupQRView: View {
         .toolbar(.hidden, for: .navigationBar)
         .swipeBack { dismiss() }
         .hidesTabBar()
-        /* 群二维码也是给人扫的：进来渐亮、退出还原 */
+
         .modifier(BrightenScreen())
         .task {
             let r = await API.shared.groupInvite(chatId: chat.id)
@@ -150,23 +136,19 @@ struct GroupQRView: View {
     }
 }
 
-/// 把服务端算好的二维码点阵画出来（1 = 黑）
 struct QRCanvas: View {
     let rows: [String]
-    /// 中间嵌一张方形头像（微信的二维码就是这样）
-    /// 服务端出的码是纠错等级 H，正中间盖 20% 宽的头像（约 4% 面积）照样扫得出来
+
     var avatar: String = ""
-    /// 头像占二维码宽度的比例
+
     var avatarRatio: CGFloat = 0.20
-    /// 码点颜色（微信那种「换个样式」：绿 / 蓝 / 红 / 黄 / 紫 / 黑）。
-    /// 注意要用**深色**的，浅黄那种白底上扫不出来 —— 默认还是黑。
+
     var ink: Color = .black
 
     var body: some View {
         GeometryReader { geo in
             let n = max(1, rows.count)
-            /* 四周留 4 格白边：二维码标准（ISO 18004）要求至少 4 个模块的静默区，
-               以前只留 2 格，摄像头稍微偏一点就容易识别失败。 */
+
             let pad = 4
             let cell = geo.size.width / CGFloat(n + pad * 2)
             ZStack(alignment: .topLeading) {
@@ -183,7 +165,7 @@ struct QRCanvas: View {
                     }
                 }
             }
-            /* 中间那张方形头像：白边 + 圆角，和微信扫出来的一样 */
+
             .overlay(alignment: .center) {
                 if !avatar.isEmpty {
                     let side = geo.size.width * avatarRatio
@@ -200,8 +182,6 @@ struct QRCanvas: View {
     }
 }
 
-/* ---------------------------------------------------------- 头像裁剪 */
-
 struct AvatarCropSheet: View {
     let image: UIImage
     var onDone: (UIImage) -> Void
@@ -213,7 +193,7 @@ struct AvatarCropSheet: View {
     @State private var offset: CGSize = .zero
     @State private var lastOffset: CGSize = .zero
 
-    private let side: CGFloat = 280          // 取景框边长
+    private let side: CGFloat = 280
 
     var body: some View {
         NavigationStack {
@@ -273,10 +253,9 @@ struct AvatarCropSheet: View {
         }
     }
 
-    /// 按当前缩放和位移把取景框里的那一块裁出来
     private func crop() -> UIImage {
         let w = image.size.width, h = image.size.height
-        let base = max(side / w, side / h)          // scaledToFill 的基准比例
+        let base = max(side / w, side / h)
         let shown = CGSize(width: w * base * scale, height: h * base * scale)
         let originX = (shown.width - side) / 2 - offset.width
         let originY = (shown.height - side) / 2 - offset.height

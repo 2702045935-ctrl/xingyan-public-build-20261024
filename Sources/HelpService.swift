@@ -1,12 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   常见问题 + 账户升级服务（微信「帮助与反馈」和「支付 → 账户升级」那两页）
-   · 常见问题：搜索 + 热门 + 分类（内容就是后台客服中心里配的问答）
-   · 账户升级服务：三档账户等级、单笔/单日额度、还差哪一步、立即升级
-   ============================================================ */
-
-/* ---------------------------------------------------------- 常见问题 */
 struct FAQView: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
@@ -16,7 +9,7 @@ struct FAQView: View {
     @State private var q = ""
     @State private var openCat: API.SupportCategory?
     @State private var showSupport = false
-    /// 「联系在线客服」进独立客服页（不再跳普通聊天）
+
     @State private var showKefu = false
 
     private var cats: [API.SupportCategory] { cfg?.categories ?? [] }
@@ -207,7 +200,6 @@ struct FAQView: View {
     }
 }
 
-/* ---------------------------------------------------------- 账户升级服务 */
 struct WalletUpgradeView: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
@@ -253,7 +245,7 @@ struct WalletUpgradeView: View {
             RealNameView().environmentObject(app)
         }
         .sheet(isPresented: $showBankCards) {
-            /* BankCardsView 自己就带导航栈了，外面别再套一层（套两层会白屏 / 直接闪退） */
+
             BankCardsView().environmentObject(app)
         }
     }
@@ -271,7 +263,7 @@ struct WalletUpgradeView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 22)
-        /* 2026-10-17：绿色渐变按钮改成跟全 App 主色走（ui.json: greenColor） */
+
         .background(LinearGradient(colors: [C.green, C.green.opacity(0.82)],
                                    startPoint: .top, endPoint: .bottom))
     }
@@ -332,9 +324,7 @@ struct WalletUpgradeView: View {
                 Text(done ? Tr("已完成") : Tr("去完成"))
                     .font(pf(13))
                     .foregroundColor(done ? C.subLabel : C.green)
-                /* 原来写的是 if !done { Chevron(...) }，Swift 类型检查偶尔会报
-                   "type of expression is ambiguous without a type annotation"，
-                   导致云端构建时好时坏。改成用透明度控制，结果一样但不再有歧义。 */
+
                 Chevron(size: 9, line: 1.6).opacity(done ? 0 : 1)
             }
             .padding(.horizontal, 16)
@@ -405,7 +395,7 @@ struct WalletUpgradeView: View {
 
     private func money(_ v: Double?) -> String {
         guard let v = v else { return "—" }
-        /* 额度这类大数字：千分位、不要小数（¥20,000）；小额照常两位小数 */
+
         let f = moneyFmt(v)
         if v >= 1000 { return "¥" + String(f.split(separator: ".").first ?? "") }
         return "¥" + f

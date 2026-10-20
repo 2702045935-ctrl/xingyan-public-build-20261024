@@ -1,18 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   拼多多商城的**后台**（放在 App「管理」页里）—— 2026-10-12 用户要求
-   「拼多多商城后台给管理（可以上架的 / 换轮播图的）」「商城要的逻辑都要」。
-
-   管理这一页能做的，和商城那一页一一对应：
-     · 轮播图：换图 / 加一张 / 删一张（首屏最上面那块就是它）
-     · 商品：上架（新增）/ 下架（关掉开关）/ 改价改名字改分类 / 删除
-     · 商品图：可以用 emoji 顶，也可以从相册传一张真图（传上去存服务器）
-
-   数据真源都在服务器 data/mall.json（GET /api/mall 读，POST /api/ops/mall 写），
-   所以改完**用户那边重开商城就是新的**，不用重新出包。
-   ============================================================ */
-
 struct MallAdminSection: View {
     @EnvironmentObject private var app: AppState
     @ObservedObject private var store = DDStore.shared
@@ -21,24 +8,23 @@ struct MallAdminSection: View {
     @State private var adding = false
     @State private var editingAd: DDAd? = nil
     @State private var addingAd = false
-    @State private var bannerPick = -1        // 正在换第几张轮播图（-1 = 没在换）
+    @State private var bannerPick = -1
     @State private var bannerAdd = false
     @State private var busy = ""
 
     var body: some View {
         VStack(spacing: 10) {
             nameCard
-            /* 开屏广告（2026-10-17 用户：「商城开屏3秒广告封面页可以跳过，给管理接上」） */
+
             splashCard
-            /* 首页宫格（2026-10-17 用户：「百亿补贴那些位置都给管理换字换图标」） */
+
             channelCard
             bannerCard
             adsCard
             productCard
-            /* 分销：开通 / 佣金比例 / 业绩榜（2026-10-16） */
+
             DistAdminCard().environmentObject(app)
-            /* 2026-10-16：对着京东商家后台补的三块（发货 / 售后 / 发券）——
-               都在 App 里操作，不用开电脑后台 */
+
             MallOpsSection()
         }
         .task { await store.refresh() }
@@ -48,7 +34,7 @@ struct MallAdminSection: View {
         .sheet(isPresented: $adding) {
             MallProductSheet(product: nil).environmentObject(app)
         }
-        /* 换某一张轮播图：从相册选一张 → 上传 → 存到那一格 */
+
         .sheet(isPresented: Binding(get: { bannerPick >= 0 },
                                     set: { if !$0 { bannerPick = -1 } })) {
             PhotoPicker { img in
@@ -76,8 +62,6 @@ struct MallAdminSection: View {
             MallAdSheet(ad: nil).environmentObject(app)
         }
     }
-
-    /* ---------------- 商城名 / 标语 ---------------- */
 
     @State private var nameDraft = ""
     @State private var sloganDraft = ""
@@ -123,8 +107,6 @@ struct MallAdminSection: View {
         app.show(Tr("商城名已保存"))
     }
 
-    /* ---------------- 轮播图 ---------------- */
-
     private var bannerCard: some View {
         VStack(spacing: 0) {
             row(Tr("轮播图（商城首屏最上面那块）"), Tr("点「换图」从相册挑一张"))
@@ -167,12 +149,6 @@ struct MallAdminSection: View {
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    /* ---------------- 商品 ---------------- */
-
-    /* ---------------- 开屏广告（CHRIS_MALL_SPLASH_V1） ----------------
-       2026-10-17 用户：「布置下商城开屏3秒广告封面页可以跳过，给管理接上，
-       你不要放图」—— 所以这里只做**配置 + 上传**：
-       封面由你从相册传，不传就完全不会弹开屏（代码里没有任何内置图）。 */
     @State private var splashDraft = DDSplash()
     @State private var splashLoaded = false
     @State private var splashPick = false
@@ -183,7 +159,6 @@ struct MallAdminSection: View {
                 Tr("不上传封面就不会弹；右上角「跳过」带倒计时，到点自动关"))
             HairLine(inset: 16)
 
-            /* 开关 */
             HStack {
                 Text(Tr("显示开屏广告")).font(pf(15.5)).foregroundColor(C.label)
                 Spacer(minLength: 0)
@@ -194,7 +169,6 @@ struct MallAdminSection: View {
             .padding(.horizontal, 16).frame(height: 52)
             HairLine(inset: 16)
 
-            /* 封面 */
             HStack(spacing: 12) {
                 Group {
                     if let img = splashDraft.image, !img.isEmpty {
@@ -222,7 +196,6 @@ struct MallAdminSection: View {
             .padding(.horizontal, 16).frame(height: 72)
             HairLine(inset: 16)
 
-            /* 显示几秒 */
             HStack(spacing: 8) {
                 Text(Tr("显示时长")).font(pf(15)).foregroundColor(C.label)
                 Spacer(minLength: 0)
@@ -237,7 +210,6 @@ struct MallAdminSection: View {
             .padding(.horizontal, 16).frame(height: 48)
             HairLine(inset: 16)
 
-            /* 跳过文案 */
             HStack(spacing: 10) {
                 Text(Tr("跳过按钮文字")).font(pf(15)).foregroundColor(C.label)
                 Spacer(minLength: 0)
@@ -249,12 +221,10 @@ struct MallAdminSection: View {
             .padding(.horizontal, 16).frame(height: 48)
             HairLine(inset: 16)
 
-            /* 点封面去哪 */
             HStack(spacing: 8) {
                 Text(Tr("点封面")).font(pf(15)).foregroundColor(C.label)
                 Spacer(minLength: 0)
-                /* ⚠ 元组参数不要在闭包里拆成两个名字（Swift 5 不支持 tuple splat），
-                   这里直接用 pair.0 / pair.1 取 */
+
                 ForEach([("none", "不跳"), ("url", "网址"), ("product", "商品")], id: \.0) { pair in
                     Button { splashDraft.action = pair.0 } label: {
                         pill(Tr(pair.1), (splashDraft.action ?? "none") == pair.0 ? C.green : C.subLabel)
@@ -306,8 +276,7 @@ struct MallAdminSection: View {
         .onAppear {
             if !splashLoaded { splashDraft = store.splash; splashLoaded = true }
         }
-        /* 商城配置从服务器拉回来之后（MallAdminSection 的 .task 里 refresh）同步一次，
-           不然刚进后台可能显示的是空的 */
+
         .onChange(of: store.splash) { v in splashDraft = v }
     }
 
@@ -318,13 +287,9 @@ struct MallAdminSection: View {
         app.show(Tr("开屏广告已保存"))
     }
 
-    /* ---------------- 首页宫格（百亿补贴那排，CHRIS_MALL_CHANNELS_V1） ----------------
-       2026-10-17 用户：「百亿补贴那些位置都给管理换字换图标」。
-       一格里能改：**文字、emoji（或 SF Symbol 图标名）、颜色、顺序、显示/隐藏**。 */
     @State private var channelDraft: [DDChannelItem] = []
     @State private var channelLoaded = false
 
-    /// 宫格格子的"点它去哪"可选动作（前四个是频道页，后四个是功能页）
     static let channelActions: [(String, String)] = [
         ("subsidy", "百亿补贴（折扣专区）"),
         ("rank", "排行榜"),
@@ -377,8 +342,7 @@ struct MallAdminSection: View {
                         }
                         .buttonStyle(.plain)
                     }
-                    /* 点这一格去哪（2026-10-17 用户：「百亿补贴那一些要可以添加删除」——
-                       新加的那一格得能选目的地，不然点了不知道去哪） */
+
                     HStack(spacing: 8) {
                         Text(Tr("点它去哪")).font(pf(12)).foregroundColor(C.subLabel)
                         Menu {
@@ -450,34 +414,28 @@ struct MallAdminSection: View {
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .onAppear {
             if !channelLoaded {
-                /* 后台没配过 → 拿内置八格当草稿（方便直接改）；
-                   配过（哪怕被删空了）→ 就显示**真实的那份**（空的就是空的，别又冒出八格，
-                   用户上次报的「删了不生效」就是这个）。 */
+
                 channelDraft = store.channelsConfigured ? store.channels : DDChannelItem.builtin
                 channelLoaded = true
             }
         }
-        /* ⚠ 2026-10-17 用户：「首页9宫格那个我改了没生效」——
-           原来这里挂着一句 `.onChange(of: store.channels) { v in if !v.isEmpty { channelDraft = v } }`：
-           商城数据一刷新（进商城、下拉刷新都会走 refresh），就把用户**正在改的那份草稿**
-           覆盖回服务器上的旧内容 —— 用户改完再点保存，存上去的其实是"没改过"的旧值。
-           现在草稿只在进这一页时载一次，保存成功后由 saveChannels() 拿服务器那份回填。 */
+
     }
 
     private func saveChannels() async {
         busy = Tr("正在保存首页宫格…")
         let ok = await store.opsSetChannels(channelDraft)
         if ok {
-            /* 存成功：用服务器回填的那份当草稿（万一后台对字段做了裁剪，界面和线上就一致了） */
+
             if store.channelsConfigured { channelDraft = store.channels }
             busy = Tr("首页宫格已保存")
             app.show(Tr("首页宫格已保存"))
         } else {
-            /* 存失败别再说"已保存"——用户会以为生效了（2026-10-17「改了没生效」就是这么来的） */
+
             busy = Tr("保存失败")
             app.show(Tr("保存失败：后台没收到，检查网络后再点一次"))
         }
-        /* 顺便把这笔写进后台日志：哪一版、几格、第一格叫什么、成没成，一看就知道 */
+
         CrashCatcher.note("首页宫格", "保存=\(ok ? "成功" : "失败")｜\(channelDraft.count) 格｜第一格=\(channelDraft.first?.title ?? "-")")
     }
 
@@ -493,10 +451,6 @@ struct MallAdminSection: View {
         app.show(Tr("封面已保存"))
     }
 
-    /* ---------------- 广告位（商城首页那些小广告） ----------------
-       2026-10-16 用户：「把商城需要上传什么的、还缺的东西给 app 管理号接出来」——
-       广告位以前只能在电脑后台改，现在管理号在手机上就能加 / 改 / 关 / 删。
-       两种样子：`广告条`（楼层之间那一条）/ `插卡`（瀑布流里那一张卡）。 */
     private var adsCard: some View {
         VStack(spacing: 0) {
             row(Tr("广告位（商城里的京东式小广告）"),
@@ -552,7 +506,6 @@ struct MallAdminSection: View {
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    /// 这条广告点了会去哪儿（管理页上一眼能看清）
     private func adActionText(_ a: DDAd) -> String {
         switch a.action ?? "none" {
         case "vip":     return Tr("点开：会员中心")
@@ -635,8 +588,6 @@ struct MallAdminSection: View {
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    /* ---------------- 小零件 ---------------- */
-
     private func row(_ title: String, _ sub: String) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             Text(title).font(pf(16)).foregroundColor(C.label)
@@ -657,8 +608,6 @@ struct MallAdminSection: View {
             .padding(.horizontal, 10).frame(height: 28)
             .background(Capsule().fill(c.opacity(0.12)))
     }
-
-    /* ---------------- 动作 ---------------- */
 
     private func setBanner(_ idx: Int, _ img: UIImage) async {
         busy = Tr("正在上传图片…")
@@ -694,14 +643,11 @@ struct MallAdminSection: View {
     }
 }
 
-/* ---------------------------------------------------------- 上架 / 编辑一件商品 */
-
 struct MallProductSheet: View {
     @EnvironmentObject private var app: AppState
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var store = DDStore.shared
 
-    /// nil = 上架一件新的
     let product: DDProduct?
 
     @State private var em = "📦"
@@ -850,9 +796,6 @@ struct MallProductSheet: View {
         app.show(editing ? Tr("商品已保存") : Tr("已上架"))
     }
 
-    /* ============================================================ 广告位编辑
-       一条广告 = 图标 emoji + 标题 + 副标题 + 按钮文字 + 样式（广告条 / 插卡）
-                + 点开去哪儿（会员 / 听一听 / 百亿补贴 / 打开链接）+ 两个配色 + 序号 + 显示开关。 */
 }
 
 struct MallAdSheet: View {
@@ -860,7 +803,6 @@ struct MallAdSheet: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var store = DDStore.shared
 
-    /// nil = 加一条新的
     let ad: DDAd?
 
     @State private var emoji = "🛍"
@@ -883,7 +825,7 @@ struct MallAdSheet: View {
             DDSheetBar(title: editing ? Tr("编辑广告") : Tr("加一条广告"))
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 10) {
-                    /* 预览：管理页改的样子，和商城里长的一样 */
+
                     HStack(spacing: 12) {
                         Text(emoji).font(.system(size: 26))
                             .frame(width: 52, height: 52)
@@ -908,7 +850,6 @@ struct MallAdSheet: View {
                     .background(C.cardBg)
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
-                    /* 样式：广告条 / 插卡 */
                     HStack(spacing: 8) {
                         kindBtn(Tr("广告条"), "strip")
                         kindBtn(Tr("插卡"), "grid")
@@ -920,7 +861,6 @@ struct MallAdSheet: View {
                     fld(Tr("副标题（可空）"), $sub)
                     fld(Tr("按钮文字（比如 去看看）"), $cta)
 
-                    /* 点开去哪儿 */
                     VStack(spacing: 0) {
                         kindHint(Tr("点这条广告去哪儿"))
                         ForEach(adActions, id: \.0) { pair in

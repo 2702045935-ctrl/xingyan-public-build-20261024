@@ -3,22 +3,6 @@ import CryptoKit
 import UIKit
 import AudioToolbox
 
-/* ============================================================
-   手势密码（安全锁）—— 2026-10-12 重做的「高级版」
-
-   和旧版做的事一样（开锁后进钱包要先画一遍手势、可以按面容解锁、手势只存在
-   本机钥匙串、不上传），但整个手感重做了一版：
-     · 九宫格：每个点是一颗有立体感的圆点（外环 + 内芯 + 高光），选中时内芯放大、
-       外环点亮；连线是「宽光晕 + 细实线」两层圆头描边，画起来有质感；
-     · 手指还没连到下一个点时，会从最后一个点拖一条「跟手虚线段」，和微信一样跟手；
-     · 一碰一个点：轻震动（.light）；画错：错误震动 + 整盘变红 + 抖一下；成功：成功震动；
-     · 顶部一块深色渐变卡：锁图标 + 标题 + 副标题 + 错误提示 + 「还可以试几次」；
-     · 面容 / 指纹解锁做成一颗圆形玻璃按钮；
-     · 设置页三步走（画一遍 → 再画一遍 → 完成）带步骤指示，成功时先给一个绿色对勾再退出。
-
-   手势本身只存本机（SHA256(salt + 手势) 进钥匙串），服务器上没有任何影子。
-   ============================================================ */
-
 enum GestureStore {
     private static let key = "gestureLockPattern"
     private static let saltKey = "gestureLockSalt"
@@ -42,25 +26,20 @@ enum GestureStore {
     static func clear() { Keychain.remove(key) }
 }
 
-/* ---------------------------------------------------------- 九宫格 */
-
-/// 九宫格：手指划过就把点连起来（返回的是 "0-4-8" 这种）
 struct PatternPad: View {
     @Binding var picked: [Int]
-    /// 画错了：整盘变红 + 抖一下
+
     var wrong: Bool = false
-    /// 外框边长（默认 268）
+
     var box: CGFloat = 268
     var onEnd: () -> Void
 
-    /// 手指现在在哪儿（画那段"还没连上点"的跟手线）
     @State private var finger: CGPoint? = nil
-    /// 每碰一个新点震一下
+
     private let tapFb = UIImpactFeedbackGenerator(style: .light)
 
     private var dot: CGFloat { box * 0.232 }
 
-    /// 主色：正常是青绿，画错是红
     private var ink1: Color { wrong ? Color(hexString: "#FF6B6B") : Color(hexString: "#34D399") }
     private var ink2: Color { wrong ? Color(hexString: "#E5484D") : Color(hexString: "#0EA5A0") }
     private var ring: Color { Color.dyn(0xC9CDD4, 0x41454D) }
@@ -74,7 +53,7 @@ struct PatternPad: View {
 
     var body: some View {
         ZStack {
-            /* 1) 连线的两层层：宽的一层当光晕，细的实线压在上面 */
+
             if picked.count > 1 {
                 linePath
                     .stroke(ink1.opacity(0.22),
@@ -84,7 +63,7 @@ struct PatternPad: View {
                             style: StrokeStyle(lineWidth: 3.2, lineCap: .round, lineJoin: .round))
                     .shadow(color: ink1.opacity(0.55), radius: 6)
             }
-            /* 2) 手指到最后一个点那段跟手线（虚线、淡一点） */
+
             if let last = picked.last, let f = finger {
                 Path { p in
                     p.move(to: center(last))
@@ -94,7 +73,6 @@ struct PatternPad: View {
                         style: StrokeStyle(lineWidth: 2.4, lineCap: .round, dash: [3, 5]))
             }
 
-            /* 3) 九个点 */
             ForEach(0..<9, id: \.self) { i in
                 dotView(i)
             }
@@ -133,13 +111,12 @@ struct PatternPad: View {
         }
     }
 
-    /// 一颗点：外环 + 玻璃内芯 + 选中时放大 / 点亮 + 序号
     private func dotView(_ i: Int) -> some View {
         let p = center(i)
         let idx = picked.firstIndex(of: i)
         let on = idx != nil
         return ZStack {
-            /* 外圈 */
+
             Circle()
                 .fill(on ? AnyShapeStyle(LinearGradient(colors: [ink1.opacity(0.30), ink2.opacity(0.18)],
                                                         startPoint: .topLeading, endPoint: .bottomTrailing))
@@ -150,7 +127,6 @@ struct PatternPad: View {
                 .frame(width: dot, height: dot)
                 .shadow(color: on ? ink1.opacity(0.45) : Color.clear, radius: on ? 7 : 0)
 
-            /* 内芯 */
             Circle()
                 .fill(on
                       ? AnyShapeStyle(RadialGradient(colors: [ink1, ink2], center: .topLeading,
@@ -160,7 +136,6 @@ struct PatternPad: View {
                        height: on ? dot * 0.42 : dot * 0.24)
                 .shadow(color: on ? Color.white.opacity(0.35) : Color.clear, radius: 1.5, y: 0.6)
 
-            /* 选中时显示这是第几个点（淡淡的，方便自己确认有没有画对） */
             if let n = idx {
                 Text(String(n + 1))
                     .font(.system(size: dot * 0.19, weight: .semibold, design: .rounded))
@@ -173,8 +148,6 @@ struct PatternPad: View {
     }
 }
 
-/* ---------------------------------------------------------- 解锁（进钱包前画一遍） */
-
 struct GestureLockView: View {
     var hint: String = "请输入手势密码"
     var onOk: () -> Void
@@ -183,11 +156,11 @@ struct GestureLockView: View {
     @State private var picked: [Int] = []
     @State private var error = ""
     @State private var checking = false
-    /// 画错时让整盘变红 + 抖一下
+
     @State private var wrong = false
-    /// 已经错了多少次（错了 5 次就让人先冷静一下）
+
     @State private var fails = 0
-    /// 对了：整盘闪一下绿再放行
+
     @State private var okFlash = false
 
     private var triesLeft: Int { max(0, 5 - fails) }
@@ -209,7 +182,6 @@ struct GestureLockView: View {
 
             Spacer(minLength: 6)
 
-            /* 顶部那块：锁图标 + 标题 + 副标题 + 出错提示 */
             VStack(spacing: 10) {
                 ZStack {
                     Circle()
@@ -236,7 +208,7 @@ struct GestureLockView: View {
             Spacer(minLength: 10)
 
             ZStack {
-                /* 画对那一下从中间散开的一层绿光 */
+
                 Circle()
                     .fill(C.green.opacity(okFlash ? 0.18 : 0))
                     .frame(width: okFlash ? 320 : 60, height: okFlash ? 320 : 60)
@@ -295,7 +267,7 @@ struct GestureLockView: View {
         let pattern = picked.map(String.init).joined(separator: "-")
         picked = []
         if GestureStore.verify(pattern) {
-            /* 对了：成功震动 + 绿光闪一下再放行 */
+
             UINotificationFeedbackGenerator().notificationOccurred(.success)
             error = ""
             okFlash = true
@@ -307,7 +279,7 @@ struct GestureLockView: View {
             }
             return
         }
-        /* 错了：错误震动 + 整盘变红抖一下 + 记一次 */
+
         UINotificationFeedbackGenerator().notificationOccurred(.error)
         fails += 1
         error = fails >= 5 ? "手势错误（已试 5 次）" : "绘制错误，请重试"
@@ -327,24 +299,21 @@ struct GestureLockView: View {
     }
 }
 
-/* ---------------------------------------------------------- 设置 / 修改 / 关闭 */
-
 struct GestureSetupView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var app: AppState
 
     @State private var on = GestureStore.enabled
-    @State private var step = 0            // 0 画第一次 · 1 再画一次确认
+    @State private var step = 0
     @State private var first = ""
     @State private var picked: [Int] = []
     @State private var tip = "画一遍手势（至少连 4 个点）"
     @State private var error = ""
-    @State private var verifyOld = false   // 改 / 关之前先验一次老的
+    @State private var verifyOld = false
     @State private var closing = false
-    /// 画完了：先给一个绿色对勾，再退出
+
     @State private var finished = false
 
-    /// 现在在整段流程的第几步（给顶上那个步骤条用）
     private var stageIndex: Int {
         if finished { return 2 }
         if verifyOld { return 0 }
@@ -431,7 +400,6 @@ struct GestureSetupView: View {
         .hidesTabBar()
     }
 
-    /* 已经开着的时候那张状态卡 */
     private var statusCard: some View {
         VStack(spacing: 10) {
             ZStack {
@@ -453,7 +421,6 @@ struct GestureSetupView: View {
         .padding(.horizontal, 12)
     }
 
-    /* 三步条：① 画一遍 ② 再画一遍 ③ 完成 */
     private var stepsBar: some View {
         HStack(spacing: 8) {
             ForEach(0..<3, id: \.self) { i in
@@ -510,7 +477,6 @@ struct GestureSetupView: View {
         picked = []
         error = ""
 
-        /* 改 / 关之前：先验老的 */
         if verifyOld {
             guard GestureStore.verify(pattern) else {
                 UINotificationFeedbackGenerator().notificationOccurred(.error)

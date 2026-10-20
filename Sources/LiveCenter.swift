@@ -4,19 +4,12 @@ import WebRTC
 import AVFoundation
 import Combine
 
-/* ============================================================
-   真视频直播（直播专场）
-   主播：手机相机 + 麦克风 → 每个观众一路 WebRTC 连接（走我们自己的 TURN 中转）
-   观众：进房间就自动向主播发 offer（recvOnly），收到画面直接铺满屏幕
-   信令：复用那条长连接，type=live / action=sig（offer / answer / ice）
-   ============================================================ */
-
 @MainActor
 final class LiveCenter: NSObject, ObservableObject {
     static let shared = LiveCenter()
 
-    @Published private(set) var publishing = false      // 我在推流
-    @Published private(set) var watching = false        // 我在看
+    @Published private(set) var publishing = false
+    @Published private(set) var watching = false
     @Published private(set) var roomId = ""
     @Published private(set) var hostId = ""
     @Published private(set) var localVideo: RTCVideoTrack?
@@ -24,7 +17,7 @@ final class LiveCenter: NSObject, ObservableObject {
     @Published private(set) var viewers = 0
 
     private var factory: RTCPeerConnectionFactory?
-    /// 主播：每个观众一路；观众：只有一路（key = hostId）
+
     private var peers: [String: RTCPeerConnection] = [:]
     private var cam: RTCCameraVideoCapturer?
     private var videoSource: RTCVideoSource?
@@ -44,9 +37,6 @@ final class LiveCenter: NSObject, ObservableObject {
         Task { await loadIce() }
     }
 
-    /* ---------------------------------------------------------- 对外 */
-
-    /// 开播：打开相机，等观众进来（每个观众 offer 一次）
     func startPublish(room: String) async -> Bool {
         guard await Permission.ask(.audio), await Permission.ask(.video) else { return false }
         roomId = room
@@ -55,7 +45,7 @@ final class LiveCenter: NSObject, ObservableObject {
         hostId = ""
         activateAudio()
         buildTracks()
-        send(["action": "hello"])                 // 告诉服务器「这个房间有人在推流」
+        send(["action": "hello"])
         return true
     }
 
@@ -70,7 +60,6 @@ final class LiveCenter: NSObject, ObservableObject {
         deactivateAudio()
     }
 
-    /// 看直播：向主播发一个 recvOnly 的 offer
     func startWatch(room: String, host: String) {
         stopWatch()
         roomId = room
@@ -78,7 +67,7 @@ final class LiveCenter: NSObject, ObservableObject {
         watching = true
         activateAudio()
         let pc = makePC(peer: host, publish: false)
-        /* 观众只收不发：两条 recvOnly 的收发器 */
+
         let vi = RTCRtpTransceiverInit()
         vi.direction = .recvOnly
         _ = pc.addTransceiver(of: .video, init: vi)
@@ -113,8 +102,6 @@ final class LiveCenter: NSObject, ObservableObject {
         guard let fmt = RTCCameraVideoCapturer.supportedFormats(for: dev).last else { return }
         cap.startCapture(with: dev, format: fmt, fps: 24)
     }
-
-    /* ---------------------------------------------------------- 内部 */
 
     private func loadIce() async {
         var list: [RTCIceServer] = [
@@ -220,7 +207,7 @@ final class LiveCenter: NSObject, ObservableObject {
         guard !from.isEmpty else { return }
         switch ev.liveSigKind {
         case "offer":
-            /* 我是主播：这个观众要画面，建一路给他 */
+
             guard publishing, !ev.liveSDP.isEmpty else { return }
             let pc = makePC(peer: from, publish: true)
             let offer = RTCSessionDescription(type: .offer, sdp: ev.liveSDP)
@@ -283,7 +270,7 @@ extension LiveCenter: RTCPeerConnectionDelegate {
         Task { @MainActor in
             let c = LiveCenter.shared
             guard !c.roomId.isEmpty else { return }
-            /* 主播：发给所有观众；观众：发给主播 */
+
             if c.publishing {
                 for pid in c.peerIds() {
                     c.send(["action": "sig", "to": pid, "sigKind": "ice",

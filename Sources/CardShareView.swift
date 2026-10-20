@@ -1,19 +1,9 @@
 import SwiftUI
 
-/* ============================================================
-   推荐给朋友（微信那张「发送给」页）—— 桌面 安全 文件夹截图 1 的样子：
-     · 顶栏：「发送给」+ 右上「取消」
-     · 一个搜索框
-     · 「最近聊天」+「联系人」：都可搜索、可多选
-     · 没有历史会话的好友也能直接创建单聊并发送
-     · 底部固定一张**个人名片**预览和绿色「发送」，不用滚到底
-   发出去的是名片消息（kind = card），收端按微信那张卡渲染。
-   ⚠ 名字 / 微信号都要先解码再显示（收端乱码就是漏了这一步）。
-   ============================================================ */
 struct CardShareView: View {
-    /// 要推荐出去的那个人
+
     let user: User
-    /// 发送完成（调用方可以顺手刷新会话列表）
+
     var onSent: () -> Void = {}
 
     @EnvironmentObject var app: AppState
@@ -32,7 +22,6 @@ struct CardShareView: View {
         return list.filter { $0.name.localizedCaseInsensitiveContains(q) }
     }
 
-    /// 最近聊天里已经出现的人不重复放进通讯录分组。
     private var contactRows: [User] {
         let q = query.trimmingCharacters(in: .whitespaces)
         let recentUserIds = Set(recentRows.compactMap { chat -> String? in
@@ -111,8 +100,6 @@ struct CardShareView: View {
         .hidesTabBar()
     }
 
-    /* ---------------------------------------------------------- 零件 */
-
     private var searchBar: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass").font(.system(size: 14.5)).foregroundColor(C.searchIcon)
@@ -188,7 +175,6 @@ struct CardShareView: View {
         .disabled(sending)
     }
 
-    /// 名片预览卡：微信那张（头像 + 名字 + 微信号 + 下面「个人名片」底条）
     private var cardPreview: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
@@ -218,7 +204,6 @@ struct CardShareView: View {
         .overlay(RoundedRectangle(cornerRadius: 4, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
     }
 
-    /// 底部固定发送区：微信逻辑选完人直接发，不让用户再滚到页面最底下。
     private var bottomBar: some View {
         VStack(spacing: 10) {
             cardPreview
@@ -303,7 +288,6 @@ struct CardShareView: View {
         }
     }
 
-    /// 显示前先解码（客户端存的可能是百分号编码 —— 不解码就是收端看到的乱码）
     private func decode(_ s: String) -> String {
         s.removingPercentEncoding ?? s
     }

@@ -1,31 +1,13 @@
 import SwiftUI
 
-/* ============================================================
-   星言支付（2026-10-15 用户：「给软件整体接个星言支付，名字可以后台换，
-   用于商城付款转账都可以，跟华为支付逻辑一样」）
-
-   华为支付那套逻辑 = **钱包 + 银行卡式的卡面 + 生物识别/支付密码验证 + 成功回执**，
-   这里照着做成一页「收银台」：
-     · 上面一张卡（星言钱包，尾号是这台账号算出来的，稳定的）
-     · 中间金额 + 收款方
-     · 主按钮 = 「使用面容 / 使用指纹」（真的调系统生物识别：Biometrics）
-     · 兜底 = 6 位支付密码（走服务器 /api/me/paypassword/verify 真校验）
-     · 验过 → 打勾「支付成功」→ 自动关掉并把结果回调给调用方
-
-   名字/文案/开关全走后台 ui.json（「界面文字」里就能改，不用重新出包）：
-     payName = 星言支付      paySub = 指纹 / 面容 · 安全支付
-     payCard = 星言钱包      payOn  = 1（0 = 整个关掉，回到原来的支付方式）
-   ============================================================ */
-
 enum XYPay {
-    /// 支付品牌名（后台可换）
+
     static var name: String { UIConfig.text("payName", "星言支付") }
     static var sub: String { UIConfig.text("paySub", "指纹 / 面容 · 安全支付") }
     static var cardLine: String { UIConfig.text("payCard", "星言钱包") }
-    /// 总开关（0 = 关）
+
     static var on: Bool { UIConfig.num("payOn", 1) > 0 }
 
-    /// 卡号后四位：按账号算一个稳定的数（同一个号每次都一样，不会乱跳）
     static func tail(_ seed: String) -> String {
         var h = 5381
         for b in seed.utf8 { h = (h &* 33) &+ Int(b) }
@@ -33,20 +15,18 @@ enum XYPay {
     }
 }
 
-/// 星言支付收银台（商城付款 / 转账 / 订单付款都用这一页）
 struct XYPaySheet: View {
     @EnvironmentObject private var app: AppState
     @Environment(\.dismiss) private var dismiss
 
     let amount: Double
-    /// 收款方 / 商品名（显示在金额下面）
+
     var target: String = ""
-    /// 一句话说明（比如「发起拼单 · 2 人团」）
+
     var note: String = ""
-    /// 验过之后干什么（下单 / 转账 / 推进订单）
+
     var onSuccess: () -> Void
 
-    /// 0 = 待验证（指纹/面容）· 1 = 输支付密码 · 2 = 成功
     @State private var stage = 0
     @State private var pwd = ""
     @State private var hint = ""
@@ -75,12 +55,10 @@ struct XYPaySheet: View {
         }
         .background(C.pageBg.ignoresSafeArea())
         .task {
-            /* 没设过支付密码：主按钮就走生物识别，密码那一行给个提示 */
+
             noPwd = !(await API.shared.hasPayPassword())
         }
     }
-
-    /* ---------------- 顶栏 ---------------- */
 
     private var bar: some View {
         HStack(spacing: 8) {
@@ -100,8 +78,6 @@ struct XYPaySheet: View {
         .overlay(HairLine(), alignment: .bottom)
     }
 
-    /* ---------------- 卡面（华为支付那张卡的感觉） ---------------- */
-
     private var cardFace: some View {
         ZStack(alignment: .topLeading) {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
@@ -109,9 +85,7 @@ struct XYPaySheet: View {
                                      startPoint: .topLeading, endPoint: .bottomTrailing))
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 8) {
-                    /* 星言支付的**品牌图标**：后台「UI 图标」里给 pay.xy 配了图就用那个
-                       （SVG / 图片 / emoji 都行），没配就还是原来那颗金色「星」圆章 —— 
-                       也就是说这套图标**不用重新出包**，后台写一条就换掉。 */
+
                     if let brand = IconOverrides.custom("pay.xy"), !brand.isEmpty {
                         FlexIcon(custom: brand, size: 26,
                                  color: Color(hex: 0xFFE7B0), symbol: "creditcard.fill")
@@ -146,8 +120,6 @@ struct XYPaySheet: View {
         .shadow(color: .black.opacity(0.16), radius: 12, y: 6)
     }
 
-    /* ---------------- 金额 ---------------- */
-
     private var amountBlock: some View {
         VStack(spacing: 6) {
             Text(Tr("付款金额")).font(pf(12.5)).foregroundColor(C.subLabel)
@@ -166,8 +138,6 @@ struct XYPaySheet: View {
         }
         .padding(.top, 4)
     }
-
-    /* ---------------- 验证（主：生物识别；兜底：支付密码） ---------------- */
 
     private var verifyBlock: some View {
         VStack(spacing: 10) {
@@ -222,7 +192,7 @@ struct XYPaySheet: View {
             }
             .offset(x: shake ? -8 : 0)
             .animation(.default, value: shake)
-            /* 真正吃输入的是这个看不见的输入框（numberPad），上面那 6 个点是画出来的 */
+
             TextField("", text: $pwd)
                 .keyboardType(.numberPad)
                 .focused($focusPwd)
@@ -247,7 +217,6 @@ struct XYPaySheet: View {
 
     private var bad: Bool { hint.contains("不对") || hint.contains("不正确") }
 
-    /// 验过了：打勾 + 支付成功（0.7 秒后自动关掉）
     private var successBlock: some View {
         VStack(spacing: 10) {
             ZStack {
@@ -260,8 +229,6 @@ struct XYPaySheet: View {
         }
         .padding(.top, 8)
     }
-
-    /* ---------------- 验证 / 成功 ---------------- */
 
     private func facePay() {
         guard !busy else { return }

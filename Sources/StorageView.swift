@@ -1,12 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   存储空间（微信「设置 → 通用 → 存储空间」）
-   · 上面一个大数字：已用空间（聊天记录 + 缓存）
-   · 按类型分：图片 / 视频 / 文件 / 语音 各占多少
-   · 清理缓存：清掉手机上的图片缓存和网络缓存（不动聊天记录，也不动服务器上的东西）
-   · 会话列表：按占用从大到小排，点一个可以「清空这个会话的聊天记录」（只清我这边）
-   ============================================================ */
 struct StorageView: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
@@ -44,8 +37,6 @@ struct StorageView: View {
 
                     Spacer().frame(height: 8)
 
-                    /* 占用来路就按微信那套：一条**按比例分色的进度条** + 下面一行图例
-                       （图片/视频/文件/语音/其他记录/手机缓存 各占多少，一眼看出来） */
                     storageBar
                         .padding(.horizontal, 16)
                         .padding(.top, 16)
@@ -54,7 +45,6 @@ struct StorageView: View {
 
                     Spacer().frame(height: 14)
 
-                    /* 缓存：微信这一行右边就是「去清理」 */
                     GroupCard {
                         HStack(spacing: 10) {
                             VStack(alignment: .leading, spacing: 3) {
@@ -86,7 +76,6 @@ struct StorageView: View {
                         .padding(.horizontal, 22)
                         .padding(.top, 8)
 
-                    /* 会话占用 */
                     HStack {
                         Text(Tr("聊天记录占用"))
                             .font(pf(13)).foregroundColor(C.subLabel)
@@ -153,9 +142,6 @@ struct StorageView: View {
         .frame(height: 50)
     }
 
-    /* ---------------- 微信那条分色进度条 + 图例 ---------------- */
-
-    /// 一段（一类占用）
     struct Seg {
         var title: String
         var bytes: Int

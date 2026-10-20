@@ -1,13 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   换手机号（和微信一个流程）：填新号 → 收验证码 → 提交。
-   · 手机号一年只能换一次（服务端也拦）
-   · 新号不能已经绑了别的账号
-   · 没配短信通道时（后台「短信通道」还没填），验证码发不出去，
-     所以再给一个「当前登录密码」的方式验证 —— 不然公网用户根本换不了。
-   ============================================================ */
-
 struct PhoneChangeSheet: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -25,7 +17,7 @@ struct PhoneChangeSheet: View {
     }
 
     var body: some View {
-        /* 整页 push：顶栏换成全站 NavBar（不再自带 NavigationStack） */
+
         VStack(spacing: 0) {
             NavBar(title: Tr("更换手机号"), back: { dismiss() })
             VStack(alignment: .leading, spacing: 14) {

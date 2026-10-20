@@ -1,28 +1,12 @@
 import SwiftUI
 import UIKit
 
-/* ============================================================
-   支付宝（官方接口那条，2026-10-16 用户选「B」）
-
-   资金流：App 下单 → 我们服务器用**自己的应用私钥** RSA2 签名 → 回 orderStr
-          → App 打开支付宝 → 用户付款 → 支付宝回调我们服务器（验签 + 标单）
-          → App 切回来查单，确认到账。
-
-   两个关键点：
-   ① **私钥只在服务器**（data/pay.json），客户端拿不到，泄不了；
-   ② 不用引支付宝 SDK：官方 SDK 内部就是打开
-      `alipays://platformapi/startapp?appId=20000067&url=<orderStr>`，
-      我们直接照做，省一个 framework 和一堆签名配置。
-
-   名字和开关走后台（ui.json 的 alipayName / alipayOn），不用重新出包。
-   ============================================================ */
 enum AliPay {
-    /// 支付方式名字（后台「界面文字」里可改）
+
     static var name: String { UIConfig.text("alipayName", "支付宝") }
-    /// 商城里显不显示支付宝这一项（0 = 藏掉）
+
     static var on: Bool { UIConfig.num("alipayOn", 1) > 0 }
 
-    /// 调起支付宝。orderStr 是服务端签好的那一串。
     @discardableResult
     static func open(_ orderStr: String) -> Bool {
         guard !orderStr.isEmpty else { return false }
@@ -38,7 +22,6 @@ enum AliPay {
         return false
     }
 
-    /// 付完切回来：每 2 秒问一次服务端（支付宝的异步回调也会同时标单）
     static func waitPaid(orderId: String, tryTimes: Int = 30) async -> Bool {
         var left = max(1, tryTimes)
         while left > 0 {
@@ -51,17 +34,14 @@ enum AliPay {
     }
 }
 
-/* 付款等待页：调起支付宝之后盖这一层，用户切回来就能看到结果。
-   2026-10-16：用户看不到「有没有付上」是最大的坑，所以这一页
-   ① 自动查单 ② 也给一颗手动「我已付好，立刻查一下」。 */
 struct AliPayWaitingSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     let amount: Double
     let orderId: String
-    /// 调起之前把这一单同步到服务器（服务端要按自己的那份订单签名）
+
     var sync: (() async -> Void)? = nil
-    /// 结果回调：true = 已经收到钱
+
     var onResult: (Bool) -> Void
 
     @State private var checking = false
@@ -120,9 +100,9 @@ struct AliPayWaitingSheet: View {
 
     private func startAutoCheck() {
         poll = Task {
-            /* ① 先同步订单 —— 服务端得先有这一单，才签得出来 */
+
             if let sync { await sync() }
-            /* ② 让服务端签名，然后把支付宝调起来 */
+
             do {
                 let r = try await API.shared.alipayCreate(orderId: orderId)
                 if r.orderStr.isEmpty {
@@ -136,7 +116,7 @@ struct AliPayWaitingSheet: View {
                 }
                 return
             }
-            /* ③ 每 2 秒查一次（支付宝的异步回调也会同时把单标掉） */
+
             let ok = await AliPay.waitPaid(orderId: orderId, tryTimes: 45)
             if Task.isCancelled { return }
             await MainActor.run {

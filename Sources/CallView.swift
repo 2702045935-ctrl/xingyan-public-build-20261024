@@ -1,30 +1,13 @@
 import SwiftUI
 import WebRTC
 
-/* ============================================================
-   通话界面 —— 照微信参考图做的（420×912pt 量的）：
-
-     · 背景：聊天背景图「糊掉 + 压暗」（不是纯黑）。参考图实测是深橄榄色渐变，
-       说明背后是一张被虚化的照片。没设背景图就退化成深灰。
-     · 头像 96 居中，顶在 y≈251（安全区下面约 156）
-     · 名字 22pt 白色（y≈367）、状态 15pt 白 70%（y≈404）
-     · 提示（比如"暂时无法接通…"）15pt 白 55%（y≈559）
-     · 底部三个 72pt 圆按钮 + 各自标签（y≈726 圆、y≈812 标签）：
-         麦克风已开/已关      取消（红，视频/语音通话中）      扬声器已开/已关
-       来电时换成：拒接（红） / 接听（绿）
-   两个后台参数：callBackdropBlur（模糊，默认 40）、callGlassTint（压暗，默认 0.45）
-   ============================================================ */
-
 struct CallOverlay: View {
     @ObservedObject private var call = CallCenter.shared
 
     var body: some View {
         if call.phase != .idle {
             if call.minimized {
-                /* 挂起（左上那个画中画按钮）：**回到上一页**，只在页面上飘一个小浮窗
-                   —— 微信就是这样：聊天、看朋友圈都照用，通话本身一直在跑。
-                   以前这里是「整屏还是通话页的模糊背景 + 里面有个小窗」，
-                   等于没回到上一页，用户点它跟没点一样。 */
+
                 CallMiniWindow()
                     .zIndex(999)
             } else {
@@ -35,9 +18,6 @@ struct CallOverlay: View {
     }
 }
 
-/// 接通 / 挂断弹的对话框：居中的卡片 + 「确定」，颜色/圆角取后台那套
-/// （和聊天页那行时间同一个配置：底色 chatTimeBg、文字色 chatTimeColor、圆角 chatTimeRadius），
-/// 所以看着就是「聊天的框框」。通话页收起来以后它还在，所以挂断也一定看得到。
 struct CallDialogOverlay: View {
     @ObservedObject private var call = CallCenter.shared
 
@@ -96,10 +76,10 @@ struct CallDialogOverlay: View {
 
 struct CallView: View {
     @ObservedObject private var call = CallCenter.shared
-    /// 腾讯云 TRTC 的画面从它自己的 view 里来
+
     @ObservedObject private var trtc = TRTCBridge.shared
     @EnvironmentObject var app: AppState
-    /// 通话中收到的新消息（微信会在通话页顶上弹一行「XX：内容」，点一下进那个会话）
+
     private struct CallMsgBanner: Equatable {
         var chatId: String
         var name: String
@@ -107,23 +87,22 @@ struct CallView: View {
     }
     @State private var msgBanner: CallMsgBanner? = nil
     @State private var bannerTask: Task<Void, Never>? = nil
-    /// 每条会话上次看到的最后一条消息 id（第一次只记、不弹）
+
     @State private var lastMsgSeen: [String: String] = [:]
     @State private var showInvite = false
-    /* 通话页里「自己那个小画面」（画中画）：默认贴右下角，可以拖着走，松手吸附到左右边 */
+
     @State private var pipX: CGFloat? = nil
     @State private var pipY: CGFloat? = nil
     @State private var pipDrag: CGSize = .zero
-    /// 「拒绝并回复」那个菜单（2026-10-13 用户要求，对齐微信）
+
     @State private var showReplies = false
-    /// 音频出口（微信那个「听筒 / 扬声器 / 蓝牙」菜单）：长按扬声器那颗弹出来
+
     @State private var audioDevices: [CallAudioRoute] = []
     @State private var showAudioDevices = false
 
     private var blurRadius: CGFloat { UIConfig.num("callBackdropBlur", 60) }
     private var tint: CGFloat { UIConfig.num("callGlassTint", 0.45) }
 
-    /// 通话背景用的聊天背景图（自己设的 → 服务器默认 → 没有）
     private var bgPath: String {
         let v = app.me?.chatBackground ?? "auto"
         if v.isEmpty || v == "auto" {
@@ -138,7 +117,7 @@ struct CallView: View {
             backdrop
 
             if call.isGroupCall {
-                /* 群视频：每人一路画面（宫格）；群语音：头像墙 */
+
                 if call.isVideo { groupVideoLayer } else { groupLayer }
             } else if call.isVideo && call.phase == .active {
                 videoLayer
@@ -150,8 +129,7 @@ struct CallView: View {
                 topBar
                 if let b = msgBanner { msgBannerView(b) }
                 Spacer(minLength: 0)
-                /* 麦克风没开 / 没起来：明说「对方听不到你」并给自助入口 ——
-                   以前这种情况界面一切正常，用户根本不知道是哪儿的问题。 */
+
                 if call.micBlocked { micBanner }
                 bottomBar
             }
@@ -159,15 +137,14 @@ struct CallView: View {
         .sheet(isPresented: $showInvite) {
             inviteSheet
         }
-        /* 拒绝并回复：微信那几句常用话（2026-10-13 用户要求） */
+
         .confirmationDialog(Tr("拒绝并回复"), isPresented: $showReplies, titleVisibility: .visible) {
             Button(Tr("在忙，稍后联系你")) { call.reject(withReply: "在忙，稍后联系你") }
             Button(Tr("不方便接听，稍后回你")) { call.reject(withReply: "不方便接听，稍后回你") }
             Button(Tr("在开车，晚点回你")) { call.reject(withReply: "在开车，晚点回你") }
             Button(Tr("取消"), role: .cancel) { }
         }
-        /* 声音输出（微信「听筒 / 扬声器 / 蓝牙耳机」那个菜单）：长按扬声器那颗弹出来。
-           现在是哪一个在上面打钩。 */
+
         .confirmationDialog(Tr("声音输出") + "（" + call.currentAudioDeviceName + "）",
                             isPresented: $showAudioDevices, titleVisibility: .visible) {
             ForEach(audioDevices) { d in
@@ -177,9 +154,9 @@ struct CallView: View {
             }
             Button(Tr("取消"), role: .cancel) { }
         }
-        /* 通话中收到的新消息：每 2 秒扫一遍会话列表（微信也这么做） */
+
         .task(id: call.callId) {
-            /* 模糊背景扛不住的时候自己关掉了：把原因说给用户听（别一声不响） */
+
             VideoBlur.shared.onAutoOff = { msg in app.show(msg) }
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 2_000_000_000)
@@ -189,8 +166,7 @@ struct CallView: View {
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .onAppear {
-            /* 从聊天气泡/名片直接发起通话时，输入框可能还是第一响应者。
-               通话页出现时统一收键盘，否则 iPhone 会保留键盘并把通话页顶上去。 */
+
             DispatchQueue.main.async {
                 UIApplication.shared.sendAction(
                     #selector(UIResponder.resignFirstResponder),
@@ -200,7 +176,6 @@ struct CallView: View {
         }
     }
 
-    /// 通话中收到的新消息 → 顶上弹一条（点了就缩成小窗、进那个会话，通话不中断）
     private func scanNewMessages() {
         switch call.phase {
         case .idle: return
@@ -213,8 +188,8 @@ struct CallView: View {
             if sender == mine || sender.isEmpty { lastMsgSeen[c.id] = mid; continue }
             let old = lastMsgSeen[c.id]
             lastMsgSeen[c.id] = mid
-            guard let old = old, old != mid else { continue }        // 第一次进来只记，不弹旧的
-            if c.muted == true { continue }                          // 免打扰的不弹
+            guard let old = old, old != mid else { continue }
+            if c.muted == true { continue }
             let t = (lm.preview ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             showBanner(chatId: c.id, name: c.title ?? Tr("新消息"),
                        text: t.isEmpty ? Tr("[新消息]") : t)
@@ -236,7 +211,7 @@ struct CallView: View {
     private func msgBannerView(_ b: CallMsgBanner) -> some View {
         Button {
             msgBanner = nil
-            call.minimize()                     // 通话缩成小窗，继续通
+            call.minimize()
             if let c = app.chats.first(where: { $0.id == b.chatId }) { app.openChatViaList(c) }
         } label: {
             HStack(spacing: 7) {
@@ -257,13 +232,10 @@ struct CallView: View {
         .transition(.move(edge: .top).combined(with: .opacity))
     }
 
-    /* ---------------------------------------------------------- 背景 */
-
     private var backdrop: some View {
         ZStack {
             Color(red: 0.10, green: 0.11, blue: 0.10)
-            /* 和微信一样：糊的是「对方的头像」那张图（放大糊狠一点），
-               所以背景会带出这个人头像的色调。对方没头像才退回聊天背景图。 */
+
             if !call.peerAvatar.isEmpty {
                 RemoteImage(path: call.peerAvatar)
                     .blur(radius: blurRadius)
@@ -271,19 +243,16 @@ struct CallView: View {
             } else if !bgPath.isEmpty {
                 RemoteImage(path: bgPath)
                     .blur(radius: blurRadius)
-                    .scaleEffect(1.25)                  // 糊完边缘不留白
+                    .scaleEffect(1.25)
             }
-            Color.black.opacity(tint)                   // 压暗，保证白字看得清
+            Color.black.opacity(tint)
         }
         .ignoresSafeArea()
     }
 
-    /* ---------------------------------------------------------- 语音/呼叫中：头像 + 名字 */
-
     private var avatarLayer: some View {
         VStack(spacing: 0) {
-            /* 位置是照着 vx 里那张「未接通」参考图量的：
-               头像 70pt、中心在 y≈167；名字 17pt 紧贴下面（y≈199） */
+
             Spacer().frame(height: max(30, 132 - L.safeTop))
             Avatar(path: call.peerAvatar, size: 70, radius: 10)
             Text(call.peerName)
@@ -296,8 +265,7 @@ struct CallView: View {
                 .padding(.top, 5)
                 .opacity(call.phase == .outgoing ? 0 : 1)
             if call.phase == .outgoing {
-                /* 打不通就别再滚「正在等待…」了，直接把原因写在屏幕上
-                   （服务器回了不在线/忙线以后，通话页会停 8 秒让用户看清） */
+
                 if let err = call.errorText, !err.isEmpty {
                     Text(err)
                         .font(pfExact(15, .medium))
@@ -306,7 +274,7 @@ struct CallView: View {
                         .padding(.horizontal, 40)
                         .padding(.top, 6)
                 } else {
-                    // 等对方接的时候：状态文字像滚动屏一样滚（同时放回铃音）
+
                     MarqueeText(text: "正在等待对方接受邀请…")
                         .padding(.top, 6)
                 }
@@ -324,11 +292,9 @@ struct CallView: View {
         .frame(maxWidth: .infinity)
     }
 
-    /* ---------------------------------------------------------- 视频通话：远端铺满 + 本地小窗 */
-
     private var videoLayer: some View {
         ZStack {
-            /* 走了腾讯云就用腾讯云的画面；没走（或还没进房）还是老样子 */
+
             if call.usingTRTC {
                 TRTCVideoView(view: trtc.remoteView)
                     .ignoresSafeArea()
@@ -359,13 +325,12 @@ struct CallView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 14)
                 Spacer()
-                /* 自己那个小画面（画中画）：默认贴右下角，**可以拖着走**，松手吸附到左右边。
-                   点一下还是切前后摄像头（拖动要移动超过 5pt 才算拖，不会误触）。 */
+
                 GeometryReader { geo in
                     let w: CGFloat = 104
                     let h: CGFloat = 148
                     let maxX = max(8, geo.size.width - w - 12)
-                    let minY: CGFloat = 74                       // 别压住顶上的名字和按钮
+                    let minY: CGFloat = 74
                     let maxY = max(minY, geo.size.height - h - 150)
                     let homeX = geo.size.width - w - 16
                     let homeY = geo.size.height - h - 150
@@ -379,7 +344,7 @@ struct CallView: View {
                                 .onEnded { v in
                                     let nx = (pipX ?? homeX) + v.translation.width
                                     let ny = (pipY ?? homeY) + v.translation.height
-                                    /* 松手吸附：靠近哪边就贴哪边（和微信一样的手感） */
+
                                     pipX = nx + w / 2 < geo.size.width / 2 ? 8 : maxX
                                     pipY = min(max(ny, minY), maxY)
                                     pipDrag = .zero
@@ -388,8 +353,6 @@ struct CallView: View {
                 }
             }
 
-            /* 微信视频通话右上角那组：两个**竖向小圆角钮**并排（左：翻转，右：摄像头开/关）。
-               位置是照着参考图量的：贴在名字下面一点、靠右，右边距和底部小窗对齐。 */
             VStack {
                 HStack {
                     Spacer(minLength: 0)
@@ -409,7 +372,6 @@ struct CallView: View {
         }
     }
 
-    /// 画中画里的内容（自己的画面）：TRTC 或 Webrtc 两种来源；点一下切前后摄像头
     private func pipBody(w: CGFloat, h: CGFloat) -> some View {
         Group {
             if call.usingTRTC {
@@ -422,7 +384,7 @@ struct CallView: View {
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 10)
             .stroke(Color.white.opacity(0.22), lineWidth: 1))
-        /* 摄像头关了：本地小窗盖一层深色 + 一个斜杠图标（微信的「遮挡摄像头」） */
+
         .overlay {
             if call.cameraOff {
                 ZStack {
@@ -437,7 +399,6 @@ struct CallView: View {
         .onTapGesture { call.flipCamera() }
     }
 
-    /// 右上角那种竖向小钮：宽 30、高 52、圆角 12，半透明白（开着是白底深图标）
     private func topPill(symbol: String, on: Bool, hint: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol)
@@ -451,10 +412,6 @@ struct CallView: View {
         .accessibilityLabel(Text(hint))
     }
 
-    /* ---------------------------------------------------------- 文字 */
-
-    /// 群视频：**每人一路画面**排成两列宫格（自己的画面缩在右下角小窗里）。
-    /// 画面是 TRTC 直接画进 UIView 的（meetingView(for:) 按 userId 分派，见 TRTCBridge）。
     private var groupVideoLayer: some View {
         ZStack(alignment: .bottomTrailing) {
             ScrollView(showsIndicators: false) {
@@ -484,7 +441,7 @@ struct CallView: View {
                 .padding(.top, 6)
                 .padding(.bottom, 140)
             }
-            /* 自己的画面（小窗） */
+
             TRTCVideoView(view: TRTCBridge.shared.localView)
                 .frame(width: 96, height: 130)
                 .background(Color.black)
@@ -496,7 +453,6 @@ struct CallView: View {
         }
     }
 
-    /// 群语音：中间一面「头像墙」（微信的群语音就是一堆头像排着 + 谁在静音）
     private var groupLayer: some View {
         VStack(spacing: 14) {
             Text(call.groupTitle.isEmpty ? Tr("群语音通话") : call.groupTitle)
@@ -509,7 +465,7 @@ struct CallView: View {
                     VStack(spacing: 6) {
                         ZStack {
                             Avatar(path: m.avatar, size: 62, radius: 12)
-                            /* ③ 「谁在说话」（2026-10-13 对标微信）：音量最大的那个人套一圈绿光边 */
+
                             if speakOn(m) {
                                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                                     .stroke(C.green, lineWidth: 2.5)
@@ -539,8 +495,6 @@ struct CallView: View {
         }
     }
 
-    /// ③ 这个人现在是不是「在说话」：他报上来的音量是全场最大的、而且过了小门槛
-    /// （服务端每 250ms 汇总一次整屋音量，见 CallCenter.speakerLevels）
     private func speakOn(_ m: GroupCallMember) -> Bool {
         let lv = call.speakerLevels[m.userId] ?? 0
         guard lv > 0.10 else { return false }
@@ -567,16 +521,14 @@ struct CallView: View {
         }
     }
 
-    /// 参考图里"暂时无法接通，建议稍后尝试…"那一行：只在有话说的时候显示
     private var hintText: String {
         let t = call.tip
         if call.phase == .idle { return "" }
         if t == "未接听" || t == "对方已拒绝" || t == "对方不在线" { return t + "，建议稍后尝试" }
         if t.contains("失败") || t.contains("断开") { return t }
-        /* 弱网（微信也会写一行）：先于"对方状态"显示，因为这时候最要紧 */
+
         if call.weakNet { return "网络不太稳定，正在重连…" }
-        /* 对方那边的状态（微信视频通话里对方关了摄像头会写这么一行小字）——
-           以前对面关摄像头，我们这边只有一片黑，看不出是关了还是断了。 */
+
         if call.peerCameraOff { return "对方已关闭摄像头" }
         if call.peerMuted { return "对方已静音" }
         return ""
@@ -585,8 +537,6 @@ struct CallView: View {
     private var timeText: String {
         String(format: "%02d:%02d", call.seconds / 60, call.seconds % 60)
     }
-
-    /* ---------------------------------------------------------- 底部三个圆按钮 */
 
     private var bottomBar: some View {
         Group {
@@ -602,7 +552,7 @@ struct CallView: View {
                                 .font(.system(size: 27, weight: .medium))
                         }
                     }
-                    /* 拒绝并回复（2026-10-13 用户要求，对齐微信）：不去接，但先回一句 */
+
                     Button { showReplies = true } label: {
                         Text(Tr("拒绝并回复"))
                             .font(pf(14))
@@ -611,7 +561,7 @@ struct CallView: View {
                             .background(Capsule().fill(Color.white.opacity(0.16)))
                     }
                     .buttonStyle(.plain)
-                    /* 视频来电：微信还能「语音接听」（先不接画面、只接声音） */
+
                     if call.isVideo && !call.isGroupCall {
                         Button { call.accept(asAudio: true) } label: {
                             Text(Tr("语音接听"))
@@ -626,10 +576,7 @@ struct CallView: View {
                 }
                 .padding(.bottom, 54)
             } else if call.isVideo {
-                /* 视频通话：**接通前后两种布局**（都是照 vx 里那两张参考图量的）
-                   接通前 y≈717 是「麦克风 / 翻转 / 摄像头」三颗，
-                   接通后 y≈717 是「麦克风 / 扬声器」两颗（翻转、摄像头挪到右上角小钮），
-                   两种情况的红色按钮都在 y≈830、居中、更靠下。 */
+
                 VStack(spacing: 16) {
                     HStack(spacing: 0) {
                         if call.phase == .active {
@@ -653,8 +600,7 @@ struct CallView: View {
                             .buttonStyle(.plain)
                             .padding(.top, 10)
                     }
-                    /* 模糊背景（对齐微信那一档）：视频通话里点一下开/关，
-                       人还是清楚的，背后的东西虚掉。手机吃力会自动关掉并提示。 */
+
                     if call.phase == .active {
                         Button { call.toggleBlurBackground() } label: {
                             Text(call.blurBackground ? Tr("关闭背景模糊") : Tr("模糊背景"))
@@ -670,14 +616,14 @@ struct CallView: View {
                 .padding(.bottom, 40)
             } else {
                 if call.phase == .active {
-                    /* 接通后（vx 参考图那张）：一行三颗 —— 麦克风 / 挂断 / 扬声器，挂断居中 */
+
                     VStack(spacing: 14) {
                         HStack(spacing: 51) {
                             micKey
                             hangupKey
                             speakerKey
                         }
-                        /* 群语音里不做「切视频」（群视频是第二期），单聊才给这一颗 */
+
                         if !call.isGroupCall {
                             Button { call.switchVideo() } label: { switchLabel }
                                 .buttonStyle(.plain)
@@ -685,8 +631,7 @@ struct CallView: View {
                     }
                     .padding(.bottom, 54)
                 } else {
-                    /* 还没接通（呼出中）：微信只有两颗 —— 麦克风 + 红色的「取消」。
-                       以前这里也摆三颗（扬声器也出来了），和微信不一致。 */
+
                     HStack(spacing: 72) {
                         micKey
                         hangupKey
@@ -697,7 +642,6 @@ struct CallView: View {
         }
     }
 
-    /// 「切换为视频通话 / 切换为语音通话」那一小颗（通话中才有，微信也有这个）
     private var switchLabel: some View {
         Text(call.isVideo ? Tr("切换为语音通话") : Tr("切换为视频通话"))
             .font(pf(14))
@@ -715,8 +659,6 @@ struct CallView: View {
                  engaged: call.muted) { call.toggleMute() }
     }
 
-    /// 麦克风没开 / 没起来时挂在底部那颗麦克风上面的一条提示：
-    /// 「对方听不到你」+「去开启」（去系统设置）+「重试」（权限已经开了、只是没抢到麦）。
     private var micBanner: some View {
         HStack(spacing: 10) {
             Image(systemName: "mic.slash.fill")
@@ -760,7 +702,7 @@ struct CallView: View {
                  builtin: call.speakerOn ? I.callSpeaker : I.callSpeakerOff,
                  label: call.speakerOn ? "扬声器已开" : "扬声器已关",
                  engaged: call.speakerOn) { call.toggleSpeaker() }
-            /* 长按 = 换声音输出（微信那样在听筒 / 扬声器 / 蓝牙之间切） */
+
             .onLongPressGesture(minimumDuration: 0.35) {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 audioDevices = call.audioDevices()
@@ -773,7 +715,6 @@ struct CallView: View {
                  bg: Color(hex: 0xFA5151)) { call.hangup() }
     }
 
-    /// 接通前视频通话底部中间那颗：翻转摄像头（参考图里它在中间）
     private var flipKey: some View {
         roundKey(label: "翻转",
                  bg: Color.white.opacity(0.18),
@@ -784,7 +725,6 @@ struct CallView: View {
         }
     }
 
-    /// 接通前视频通话底部右边那颗：摄像头开 / 关（遮挡）
     private var cameraKey: some View {
         roundKey(label: call.cameraOff ? "摄像头已关" : "摄像头已开",
                  bg: call.cameraOff ? Color.white : Color.white.opacity(0.18),
@@ -795,8 +735,6 @@ struct CallView: View {
         }
     }
 
-    /// 左右两颗（麦克风 / 扬声器）：打开时**变白底 + 深色图标**（和微信一样），
-    /// 关着的时候是半透明黑底 + 白色图标。图标本身后台「UI 图标」里能换。
     private func roundKey(key: String, symbol: String, builtin: String,
                           label: String, engaged: Bool,
                           action: @escaping () -> Void) -> some View {
@@ -810,7 +748,6 @@ struct CallView: View {
         }
     }
 
-    /// 挂断/取消那颗：图标是微信那种宽横梁（SF Symbols 里没有一样的，自己画）
     private func roundKey(label: String, bg: Color,
                           action: @escaping () -> Void) -> some View {
         roundKey(label: label, bg: bg, ink: .white, action: action) {
@@ -835,9 +772,6 @@ struct CallView: View {
         }
     }
 
-    /* ---------------------------------------------------------- 顶部两个按钮（照参考图） */
-
-    /// 参考图实测：左上那个「画中画/最小化」在 x29-47 y79-97；右上「+」在 x384-400 y78-94
     private var topBar: some View {
         HStack {
             Button {
@@ -866,7 +800,6 @@ struct CallView: View {
         .padding(.top, 19)
     }
 
-    /// （旧版：一条横条。留着备用，不再使用）
     private var miniBarOld: some View {
         HStack(spacing: 8) {
             Circle().fill(C.green).frame(width: 8, height: 8)
@@ -897,17 +830,8 @@ struct CallView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
-    /* ---------------------------------------------------------- 邀请好友（右上 +） */
-
-    /// 这个群里的成员（群通话邀请列表用）
     @State private var groupMembers: [User] = []
 
-    /// 邀请名单：**群通话里列这个群的成员**（扣掉自己和已经在通话里的）；
-    /// 单聊里才列好友。
-    /// ⚠ 2026-10-16 用户：「群聊语音邀请好友好友进不来收不到」——
-    /// 病根就是这里：以前不管是不是群通话，列的都是 `app.contacts`（我的好友），
-    /// 而服务端只认「这个群的成员」，不是群成员的邀请会被直接丢掉，
-    /// 对方什么都不会弹（连提示都没有）。
     private var inviteList: [User] {
         if call.isGroupCall && !call.groupChatId.isEmpty {
             let mine = app.me?.id ?? ""
@@ -933,9 +857,7 @@ struct CallView: View {
                             showInvite = false
                             let name = u.nickname ?? u.username ?? "好友"
                             Task {
-                                /* ④ 2026-10-13：群通话里「邀请成员」现在真的把人叫进**同一个通话**
-                                   （服务端 group-invite → 对方弹群通话来电页 → 接听即入同一个房间）；
-                                   不在群通话里（单聊）才退回原来那条「邀请消息」。 */
+
                                 if call.isGroupCall {
                                     call.inviteToCall(u.id)
                                     app.show(Tr("已邀请 ") + name + Tr(" 加入通话"))
@@ -967,7 +889,7 @@ struct CallView: View {
             .navigationTitle(Tr("添加通话"))
             .navigationBarTitleDisplayMode(.inline)
         }
-        /* 进这个页先把群成员拉下来（群通话才需要） */
+
         .task {
             guard call.isGroupCall, !call.groupChatId.isEmpty, groupMembers.isEmpty else { return }
             if let r = try? await API.shared.chatMembers(chatId: call.groupChatId) {
@@ -977,17 +899,10 @@ struct CallView: View {
     }
 }
 
-/// 挂起（微信左上那个画中画按钮）之后，飘在页面最上面的小浮窗：
-///   · 视频通话：显示对方画面（没画面就退回头像）；语音通话：绿色一条（头像 + 名字 + 计时）
-///   · 点一下 → 回通话页；右上角小 ✕ → 直接挂断
-///   · 可以拖着走，松手吸附到左右边（微信就是这么做的）
-/// 关键：它是**透明容器**，只画这一个窗，所以底下的页面照常显示、照常能点 ——
-/// 这就是「回到上一页，但通话还在」。
 struct CallMiniWindow: View {
     @ObservedObject private var call = CallCenter.shared
     @ObservedObject private var trtc = TRTCBridge.shared
 
-    /// 小窗位置（nil = 默认贴右上角；拖过之后记住，松手吸附到左右边）
     @State private var miniX: CGFloat? = nil
     @State private var miniY: CGFloat? = nil
     @State private var dragging: CGSize = .zero
@@ -996,11 +911,11 @@ struct CallMiniWindow: View {
         GeometryReader { geo in
             let w: CGFloat = call.isVideo ? 108 : 146
             let h: CGFloat = call.isVideo ? 144 : 48
-            /* 顶部留出状态栏/刘海：以前写死 6，会钻进灵动岛里 */
+
             let topSafe = max(geo.safeAreaInsets.top, 24)
             let minY = topSafe - 6
             let maxX = max(8, geo.size.width - w - 8)
-            let maxY = max(minY, geo.size.height - h - 90)      // 90 = 底栏那一条
+            let maxY = max(minY, geo.size.height - h - 90)
             let homeX = geo.size.width - w - 10
             let homeY = topSafe + 4
             let x = min(max((miniX ?? homeX) + dragging.width, 8), maxX)
@@ -1013,7 +928,7 @@ struct CallMiniWindow: View {
                         .onEnded { v in
                             let nx = (miniX ?? homeX) + v.translation.width
                             let ny = (miniY ?? homeY) + v.translation.height
-                            // 松手吸附：靠近哪边就贴哪边（微信那种手感）
+
                             miniX = nx + w / 2 < geo.size.width / 2 ? 8 : maxX
                             miniY = min(max(ny, minY), maxY)
                             dragging = .zero
@@ -1077,7 +992,6 @@ struct CallMiniWindow: View {
         .shadow(color: .black.opacity(0.28), radius: 8, y: 3)
     }
 
-    /// 小浮窗上的计时（mm:ss；超过一小时给 h:mm:ss）
     private var miniTimeText: String {
         let s = call.seconds
         let h = s / 3600, m = (s % 3600) / 60, sec = s % 60
@@ -1087,8 +1001,6 @@ struct CallMiniWindow: View {
     }
 }
 
-/// 微信「挂断 / 取消」那个图标：一条略带弧度的宽横梁，两头向下收，宽高比约 4:1。
-/// 参考图实测 67×16pt（在 72pt 的圆里几乎占满宽度）。
 struct HangUpIcon: View {
     var width: CGFloat = 66
     var body: some View {
@@ -1097,13 +1009,13 @@ struct HangUpIcon: View {
         return Path { p in
             p.move(to: CGPoint(x: 3 * s, y: 5.4 * s))
             p.addQuadCurve(to: CGPoint(x: 63 * s, y: 5.4 * s),
-                           control: CGPoint(x: 33 * s, y: 0.4 * s))       // 上沿：中间略高
+                           control: CGPoint(x: 33 * s, y: 0.4 * s))
             p.addLine(to: CGPoint(x: 63 * s, y: 9.2 * s))
             p.addQuadCurve(to: CGPoint(x: 43 * s, y: 13.2 * s),
-                           control: CGPoint(x: 53 * s, y: 13.4 * s))      // 右腿向下收
+                           control: CGPoint(x: 53 * s, y: 13.4 * s))
             p.addLine(to: CGPoint(x: 23 * s, y: 13.2 * s))
             p.addQuadCurve(to: CGPoint(x: 3 * s, y: 9.2 * s),
-                           control: CGPoint(x: 13 * s, y: 13.4 * s))      // 左腿向下收
+                           control: CGPoint(x: 13 * s, y: 13.4 * s))
             p.closeSubpath()
         }
         .fill(Color.white)
@@ -1111,7 +1023,6 @@ struct HangUpIcon: View {
     }
 }
 
-/// 左上「最小化」：画中画图标（一个大圆角方框，右下角套一个小方框）
 struct PipIcon: View {
     var body: some View {
         GeometryReader { geo in
@@ -1133,7 +1044,6 @@ struct PipIcon: View {
     }
 }
 
-/// 右上「+」：两根线交叉（参考图实测横竖各 16pt，线宽约 1.8）
 struct PlusIcon: View {
     var body: some View {
         GeometryReader { geo in
@@ -1149,9 +1059,6 @@ struct PlusIcon: View {
     }
 }
 
-/// 通话页的图标：后台「UI 图标」里配过（ui.callMinimize / ui.callAdd / ui.callMic /
-/// ui.callMicOff / ui.callSpeaker / ui.callSpeakerOff / ui.callHangup）就用配的，
-/// 可以传 SVG、图片地址（上传的图）或者 emoji；没配就用内置的。
 struct CallIcon: View {
     let key: String
     var symbol: String = "circle"
@@ -1182,7 +1089,6 @@ struct CallIcon: View {
     }
 }
 
-/// 「滚动屏」：文字从右边缘慢慢滚到左边，循环滚（等对方接的时候用）
 struct MarqueeText: View {
     let text: String
     var size: CGFloat = 15
@@ -1210,9 +1116,6 @@ struct MarqueeText: View {
     }
 }
 
-/* ---------------------------------------------------------- 视频画面 */
-
-/// 把 WebRTC 的画面接到 SwiftUI 里（Metal 渲染，省电、延迟低）
 struct VideoSurface: UIViewRepresentable {
     let track: RTCVideoTrack?
 

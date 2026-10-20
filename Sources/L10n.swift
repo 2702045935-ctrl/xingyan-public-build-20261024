@@ -1,7 +1,5 @@
 import SwiftUI
 
-/* 英文版：所有界面文案的中英对照表。
-   Lang.code == "en" 时 Tr("中文") 返回英文；没收录的串原样返回中文。 */
 func Tr(_ zh: String) -> String {
     let display = zh.replacingOccurrences(of: "朋友圈", with: "生活圈")
     guard Lang.isEnglish else { return display }

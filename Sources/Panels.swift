@@ -2,7 +2,6 @@ import SwiftUI
 
 var panelH: CGFloat { L.v(198, 53, 240) }
 
-/// 聊天页“＋”面板 / 表情面板共用的底部玻璃材质。
 struct ChatPanelGlassBackground: View {
     @Environment(\.colorScheme) private var scheme
 
@@ -21,8 +20,6 @@ struct ChatPanelGlassBackground: View {
         }
     }
 }
-
-/* ============================================================ 表情面板 */
 
 let emojiAll: [String] = [
     "😄", "😖", "😍", "😳", "😎", "😭", "😚", "🤐",
@@ -46,7 +43,6 @@ let emojiAll: [String] = [
     "🐷", "🐵", "🐯", "🐟", "🍎", "🍓", "🍉", "🍺"
 ]
 
-/* ============================================================ 我们自己的表情（OpenMoji 那套，后台不用配） */
 enum EmojiSet {
     static let names = ["smile", "grin", "laugh", "joy", "rofl", "wink", "love", "kiss",
                         "cool", "shy", "smirk", "think", "wow", "doubt", "sweat", "shh",
@@ -56,19 +52,17 @@ enum EmojiSet {
     static func url(_ i: Int) -> String { "/uploads/emj2-" + names[max(0, min(i, names.count - 1))] + ".png" }
 }
 
-/// 表情小图的内存缓存：一包两三百张，滑上滑下不该每次都重新下一遍
 @MainActor
 final class StickerImageCache {
     static let shared = StickerImageCache()
     private var store: [String: UIImage] = [:]
     func get(_ key: String) -> UIImage? { store[key] }
     func put(_ key: String, _ image: UIImage) {
-        if store.count > 600 { store.removeAll() }   // 简单兜底，别把内存撑爆
+        if store.count > 600 { store.removeAll() }
         store[key] = image
     }
 }
 
-/// 表情小图（九宫格里的一个）
 struct StickerThumb: View {
     let url: String
     @State private var image: UIImage?
@@ -96,27 +90,25 @@ struct EmojiPanel: View {
     @Binding var draft: String
     var onSend: () -> Void
     var onDelete: () -> Void
-    /// 文字表情要插到聊天输入框的光标处，不能直接追加到草稿末尾
+
     var onInsert: ((String) -> Void)? = nil
-    /// 点我们自己的表情：以图片消息发出去（系统 emoji 那套一个都没动，只是多一页）
+
     var onSendSticker: ((String) -> Void)? = nil
-    /// 「＋」：去表情商店加表情包（和微信面板里那个 ＋ 一样）
+
     var onOpenStore: (() -> Void)? = nil
-    /// 「拍摄表情」：用相机拍一张，直接加进「我添加的表情」（微信那个拍摄表情）
+
     var onCaptureSticker: (() -> Void)? = nil
-    /// 我在表情商店里添加过的表情包 / 单个表情（「我的」那一屏摆在最上面）
+
     var mine: StickerMine? = nil
 
-    /// 现在在哪一屏：0 最近使用 / 1 经典表情 / 2 系统表情 / 3 我的表情
     @State private var tab = 1
-    /// 最近用过的表情（存在本机；微信面板第一屏就是它）
+
     @State private var recent: [String] = EmojiPanel.loadRecent()
-    /// 我添加过的表情包（内置的 + 图库里下载的）：面板底下那排一个包一个按钮
+
     @State private var installed: [PanelPack] = []
-    /// 表情图库（服务器 /emoji/packs.json）
+
     @ObservedObject private var catalog = StickerCatalog.shared
 
-    /// 「我的」那一屏排在第几个（前面是 最近 / 经典 / 系统 + 我装的每一包）
     private var mineTab: Int { 3 + installed.count }
 
     private let cols = Array(repeating: GridItem(.flexible(), spacing: 0), count: 8)
@@ -126,7 +118,6 @@ struct EmojiPanel: View {
         (UserDefaults.standard.array(forKey: recentKey) as? [String]) ?? []
     }
 
-    /// 用了一个表情：写进输入框 + 记一笔「最近使用」（最多留 24 个）
     private func use(_ glyph: String) {
         if let onInsert {
             onInsert(glyph)
@@ -140,7 +131,6 @@ struct EmojiPanel: View {
         UserDefaults.standard.set(list, forKey: Self.recentKey)
     }
 
-    /// 九宫格里的一格
     private func tile(_ glyph: String) -> some View {
         Button { use(glyph) } label: {
             Text(glyph)
@@ -152,7 +142,6 @@ struct EmojiPanel: View {
         .buttonStyle(.plain)
     }
 
-    /// 一屏表情：8 个一行，能上下滑
     private func emojiGrid(_ list: [String]) -> some View {
         ScrollView(showsIndicators: false) {
             LazyVGrid(columns: cols, spacing: 0) {
@@ -164,14 +153,12 @@ struct EmojiPanel: View {
         }
     }
 
-    /// 经典表情（微信/QQ 那套 [微笑]…）
     private var classicPage: some View {
         var seen = Set<String>()
         let glyphs = ClassicEmojiSet.all.map { $0.glyph }.filter { seen.insert($0).inserted }
         return emojiGrid(glyphs)
     }
 
-    /// 系统表情：按主题分块（心情 / 手势 / 人物 / 动物 / 美食 / 节日 / 符号）
     private var systemPage: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
@@ -193,7 +180,6 @@ struct EmojiPanel: View {
         }
     }
 
-    /// 最近使用
     @ViewBuilder
     private var recentPage: some View {
         if recent.isEmpty {
@@ -211,26 +197,25 @@ struct EmojiPanel: View {
         }
     }
 
-    /// 我的表情：我在商店加的那些 + 内置的一包包 + 我们自己的图片表情 + 「＋」去商店
     private var minePage: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
-                /* 我在表情商店里加的表情包（有才显示） */
+
                 if let packs = mine?.packList, !packs.isEmpty {
                     ForEach(packs.indices, id: \.self) { i in
                         packTitle(packs[i].icon ?? "😀", packs[i].name ?? Tr("表情包"))
                         stickerRow(packs[i].stickers ?? [])
                     }
                 }
-                /* 我自己加的单个表情 */
+
                 if let singles = mine?.singleList, !singles.isEmpty {
                     packTitle("⭐", Tr("我添加的表情"))
                     stickerRow(singles)
                 }
-                /* 我们自己的图片表情 */
+
                 packTitle("🖼", Tr("我们的表情"))
                 imageStickerRow
-                /* 最后是「＋」和「📷」：商店挑表情包 / 拍一张当表情（微信也是这样） */
+
                 HStack(spacing: 14) {
                     Button { onOpenStore?() } label: {
                         ZStack {
@@ -246,8 +231,6 @@ struct EmojiPanel: View {
                     }
                     .buttonStyle(.plain)
 
-                    /* 「拍摄表情」以前就在这儿（「我的」那一屏最底下）—— 2026-10-16 挪到
-                       底部标签栏了（任何一屏都看得见），这里不再重复放一个。 */
                     Spacer(minLength: 0)
                 }
                 .padding(.horizontal, L.v(6, 2, 10))
@@ -258,7 +241,6 @@ struct EmojiPanel: View {
         }
     }
 
-    /// 一包表情的小标题（图标 + 名字）
     private func packTitle(_ icon: String, _ name: String) -> some View {
         HStack(spacing: 6) {
             Text(icon).font(pf(13))
@@ -270,7 +252,6 @@ struct EmojiPanel: View {
         .padding(.bottom, 2)
     }
 
-    /// 纯 emoji 的一包（点一下进输入框）
     private func emojiRow(_ list: [String]) -> some View {
         LazyVGrid(columns: cols, spacing: 0) {
             ForEach(list.indices, id: \.self) { i in tile(list[i]) }
@@ -278,7 +259,6 @@ struct EmojiPanel: View {
         .padding(.horizontal, L.v(6, 2, 10))
     }
 
-    /// 商店里来的表情：图片的发图片消息，emoji 的直接进输入框
     private func stickerRow(_ list: [String]) -> some View {
         LazyVGrid(columns: cols, spacing: 0) {
             ForEach(list.indices, id: \.self) { i in
@@ -300,7 +280,6 @@ struct EmojiPanel: View {
         .padding(.horizontal, L.v(6, 2, 10))
     }
 
-    /// 我们自己的图片表情（5 个一行，点一下直接发）
     private var imageStickerRow: some View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 5), spacing: 0) {
             ForEach(EmojiSet.ours.indices, id: \.self) { i in
@@ -318,17 +297,15 @@ struct EmojiPanel: View {
 
     private func tapSticker(_ s: String) {
         guard isImageSticker(s) else { use(s); return }
-        /* 服务器只认 /emoji/... 这种本站路径，图库里存的是 emoji/ap1/1.png，补个斜杠 */
+
         let path = (s.hasPrefix("http") || s.hasPrefix("/")) ? s : "/" + s
         onSendSticker?(path)
     }
 
-    /// 这一条是不是图片表情（本站图库 /emoji/…、老的上传图 /uploads/…、或者外链）
     private func isImageSticker(_ s: String) -> Bool {
         s.hasPrefix("http") || s.hasPrefix("/uploads") || s.hasPrefix("/emoji") || s.hasPrefix("emoji/")
     }
 
-    /// 底下那排标签里的一个（选中是绿色 + 一圈淡绿底）
     private func tabButton(_ i: Int, _ title: String, _ symbol: String) -> some View {
         Button {
             withAnimation(.easeOut(duration: 0.16)) { tab = i }
@@ -344,7 +321,6 @@ struct EmojiPanel: View {
         .accessibilityLabel(title)
     }
 
-    /// 底下那排里的一个「表情包」按钮（整张表情脸当图标，选中带绿圈）
     private func packTabButton(_ i: Int, _ pack: PanelPack) -> some View {
         Button {
             withAnimation(.easeOut(duration: 0.16)) { tab = i }
@@ -365,7 +341,6 @@ struct EmojiPanel: View {
         .accessibilityLabel(pack.name)
     }
 
-    /// 某一包的表情：一包一屏（微信就是点底下哪包看哪包）
     private func packPage(_ pack: PanelPack) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 6) {
@@ -384,8 +359,7 @@ struct EmojiPanel: View {
             .padding(.top, 8)
             .padding(.bottom, 2)
             if pack.isImage {
-                /* 图片表情：点一下直接发出去。这一屏必须自带上下滑 ——
-                   一包最多 240 张，不套 ScrollView 就全挤在一屏里，滑不动。 */
+
                 ScrollView(showsIndicators: false) {
                     stickerRow(pack.stickers)
                 }
@@ -395,7 +369,6 @@ struct EmojiPanel: View {
         }
     }
 
-    /// 我添加的表情包：内置的那些 + 图库里我下载的那些（顺序就是面板底下的顺序）
     private func buildInstalled() -> [PanelPack] {
         var out: [PanelPack] = []
         for b in StickerLib.mine {
@@ -412,14 +385,14 @@ struct EmojiPanel: View {
     var body: some View {
         VStack(spacing: 0) {
             TabView(selection: $tab) {
-                recentPage.tag(0)      // 最近使用
-                classicPage.tag(1)     // 经典表情（[微笑] 那套）
-                systemPage.tag(2)      // 系统表情
-                /* 我装的每一包：一包一屏（微信就是这样，底下点哪包看哪包） */
+                recentPage.tag(0)
+                classicPage.tag(1)
+                systemPage.tag(2)
+
                 ForEach(installed.indices, id: \.self) { i in
                     packPage(installed[i]).tag(3 + i)
                 }
-                minePage.tag(mineTab)  // 我的（单个表情 + 我们的图片表情 + ＋）
+                minePage.tag(mineTab)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
             .onAppear {
@@ -428,7 +401,7 @@ struct EmojiPanel: View {
             }
 
             HStack(spacing: 0) {
-                /* 底下这一排就是微信面板底下那排：最近 / 经典 / 系统 / 我装的每一包 / 我的 / ＋ */
+
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: L.v(6, 2, 8)) {
                         tabButton(0, Tr("最近"), "clock")
@@ -448,10 +421,6 @@ struct EmojiPanel: View {
                         .buttonStyle(.plain)
                         .accessibilityLabel(Tr("表情商店"))
 
-                        /* 2026-10-16 用户：「拍摄表情的那个选项放在表情最底部能点开的位置不要藏起来」——
-                           以前它藏在「我的」那一屏的最底部（要滚到底才看得见），
-                           现在直接摆在底部这一排标签里（「＋」右边）：**任何一屏都看得见、点得到**。
-                           做成绿色小胶囊，一眼就知道能点。 */
                         Button { onCaptureSticker?() } label: {
                             HStack(spacing: 4) {
                                 Image(systemName: "camera.fill")
@@ -499,17 +468,14 @@ struct EmojiPanel: View {
     }
 }
 
-/* ============================================================ ＋ 面板 */
-
 struct PlusPanel: View {
     let items: [PlusItem]
     var onTap: (PlusItem) -> Void
-    /// 长按某一个方块（返回 true = 这一下长按被接住了，那就不再触发点击）
-    /// 目前只有「拍照」用它：长按 = 录一段视频（微信里长按拍照就是拍小视频）。
+
     var onLongPress: ((PlusItem) -> Bool)? = nil
 
     @State private var page = 0
-    /// 手指正按在哪一格（画那个"按下缩小"的手感）
+
     @State private var pressed: String? = nil
     private let perPage = 8
 
@@ -519,7 +485,6 @@ struct PlusPanel: View {
         }
     }
 
-    /// 每个动作一套主题色（后台没给颜色，就按动作分配；认不出来的用中性灰）
     private func tileColors(_ action: String?) -> [Color] {
         switch (action ?? "").lowercased() {
         case "photo":                    return [Color(hex: 0xFFB627), Color(hex: 0xF08600)]
@@ -548,9 +513,6 @@ struct PlusPanel: View {
     private var gridGap: CGFloat { L.v(10, 3.2, 14) }
     private var dotsH: CGFloat { L.v(22, 6, 26) }
 
-    /// 这个面板到底需要多高：两行方块（图标 + 底下那行字）+ 行距 + 上下留白 + 页码点。
-    /// 以前是写死 panelH 的，手机上字号一大，最下面那行的字就被切掉半个
-    /// （用户反馈：加号面板底部把字遮挡了）。
     private var neededH: CGFloat {
         let rows = CGFloat(max(1, Int(ceil(Double(min(items.count, perPage)) / 4.0))))
         return gridPad * 2 + rows * (tileH + tileGap + 16) + max(0, rows - 1) * gridGap + dotsH
@@ -594,16 +556,10 @@ struct PlusPanel: View {
         .overlay(alignment: .top) { Rectangle().fill(C.hairline).frame(height: 0.5) }
     }
 
-    /// 一格：点一下 = 正常动作；**长按**交给 onLongPress（拍照长按 = 录视频）。
-    ///
-    /// 这里**故意不用 Button**：Button 自带的手势会把同时挂上去的 LongPressGesture 吃掉，
-    /// 真机上就是"长按十次九次没反应"（用户反馈「不能长按发视频」）。
-    /// onTapGesture + onLongPressGesture 这套是 SwiftUI 里唯一稳的「点 / 长按」组合：
-    /// 长按成立时那一下点击**不会**再触发，不用再拿标记去"吃掉"它。
     private func tile(_ item: PlusItem) -> some View {
         let c = tileColors(item.action)
         return VStack(spacing: tileGap) {
-            /* 彩色圆角方块 + 白色线性图标 + 同色柔光 */
+
             ZStack {
                 RoundedRectangle(cornerRadius: L.v(17, 5, 19), style: .continuous)
                     .fill(LinearGradient(colors: c,
@@ -624,24 +580,22 @@ struct PlusPanel: View {
         }
         .frame(maxWidth: .infinity)
         .opacity(item.enabled == false ? 0.45 : 1)
-        /* 按下去轻微缩小（原来那个 ButtonStyle 的手感，这里自己画） */
+
         .scaleEffect(pressed == item.id ? 0.92 : 1)
         .animation(.easeOut(duration: 0.12), value: pressed)
         .contentShape(Rectangle())
         .onTapGesture { onTap(item) }
-        /* 0.35 秒就算长按（再久一点用户会以为没反应）；
-           手指允许飘 40 点（握着手机按住不放时手会轻微漂移，卡太紧会判定失败） */
+
         .onLongPressGesture(minimumDuration: 0.35, maximumDistance: 40,
                             pressing: { p in pressed = p ? item.id : nil }) {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            /* 没人接这一下长按（比如照片那一格）就照常当点击，别让手指白按 */
+
             if let lp = onLongPress, lp(item) { return }
             onTap(item)
         }
     }
 }
 
-/// ＋ 面板里彩色方块的手感：按下轻微缩小 + 变淡
 private struct PlusTileStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -650,8 +604,6 @@ private struct PlusTileStyle: ButtonStyle {
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }
-
-/* ============================================================ 礼物面板 */
 
 struct GiftPanel: View {
     let gifts: [Gift]
@@ -722,16 +674,13 @@ struct GiftPanel: View {
     }
 }
 
-/* ============================================================ @ 群成员 */
-
-/// 群里「@某人」的成员列表浮层（微信：输入框里打 @ 就弹出这一张，选完人继续打字）
 struct MentionPanel: View {
-    /// 候选成员（不含自己；服务端给的顺序和群头像九宫格一致）
+
     let members: [User]
     @Binding var query: String
-    /// 群主才能 @所有人（微信的规矩）
+
     let canAtAll: Bool
-    /// 显示名：和聊天页 / 服务端算出来的名字同一个（备注 → 昵称 → 微信号）
+
     let title: (User) -> String
     let onPick: (User) -> Void
     let onPickAll: () -> Void
@@ -748,7 +697,7 @@ struct MentionPanel: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            /* 上面一个搜索框：群里人多了靠它找人（微信的成员列表也是这个位置） */
+
             HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 13))
@@ -811,8 +760,6 @@ struct MentionPanel: View {
         .buttonStyle(.plain)
     }
 }
-
-/* ============================================================ 位置 */
 
 struct LocationSheet: View {
     @Environment(\.dismiss) private var dismiss

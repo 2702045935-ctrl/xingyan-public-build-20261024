@@ -1,13 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   客服中心（腾讯/微信那套）
-   · 上面一个搜索框：直接搜问题，命中的问答立刻列出来
-   · 在线客服：点「联系客服」＝和「在线客服」开一个会话（转人工）
-   · 常见问题：后台「客服中心」里配的分类 + 问答，点开看答案
-   · 提交问题：生成一张工单，处理进度在「我的工单」里看，后台回复会直接进聊天
-   所有文案、分类、问答、开关都在后台配，改完 App 里立刻生效（不用装包）
-   ============================================================ */
 struct SupportView: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
@@ -20,7 +12,7 @@ struct SupportView: View {
     @State private var openCat: API.SupportCategory?
     @State private var showTicket = false
     @State private var busyHuman = false
-    /// 「联系客服」直接开独立客服页（不再跳普通聊天）
+
     @State private var showKefu = false
 
     private var cats: [API.SupportCategory] { cfg?.categories ?? [] }
@@ -28,7 +20,6 @@ struct SupportView: View {
     private var isOpenHuman: Bool { (cfg?.human ?? 1) != 0 }
     private var isTicketOn: Bool { (cfg?.ticketOn ?? 1) != 0 }
 
-    /// 搜索命中的问答：问题或答案里有这个词就算
     private var hits: [(cat: String, item: API.SupportItem)] {
         let key = q.trimmingCharacters(in: .whitespaces)
         if key.isEmpty { return [] }
@@ -98,13 +89,12 @@ struct SupportView: View {
             }
             .environmentObject(app)
         }
-        /* 「联系客服」：开独立的在线客服页面 */
+
         .sheet(isPresented: $showKefu) {
             KefuPage().environmentObject(app)
         }
     }
 
-    /* ---------------------------------------------------------- 搜索 */
     private var searchBar: some View {
         HStack(spacing: 6) {
             Image(systemName: "magnifyingglass")
@@ -167,7 +157,6 @@ struct SupportView: View {
         }
     }
 
-    /* ---------------------------------------------------------- 在线客服 */
     private var humanCard: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
@@ -200,7 +189,6 @@ struct SupportView: View {
         .padding(.top, 10)
     }
 
-    /* ---------------------------------------------------------- 常见问题 */
     private var faqCard: some View {
         Group {
             if !cats.isEmpty {
@@ -246,7 +234,6 @@ struct SupportView: View {
         }
     }
 
-    /* ---------------------------------------------------------- 提交问题 */
     private var ticketCard: some View {
         VStack(alignment: .leading, spacing: 0) {
             GroupCard {
@@ -278,7 +265,6 @@ struct SupportView: View {
         .padding(.top, 14)
     }
 
-    /* ---------------------------------------------------------- 我的工单 */
     private var myTickets: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(Tr("我的工单"))
@@ -331,7 +317,6 @@ struct SupportView: View {
         .padding(.vertical, 12)
     }
 
-    /* ---------------------------------------------------------- 联系方式 */
     @ViewBuilder private var contactCard: some View {
         let phone = cfg?.phone ?? ""
         let mail = cfg?.email ?? ""
@@ -395,7 +380,6 @@ struct SupportView: View {
             .padding(.top, 16)
     }
 
-    /* ---------------------------------------------------------- 动作 */
     private func load() async {
         if let got = try? await API.shared.support() {
             cfg = got
@@ -403,9 +387,8 @@ struct SupportView: View {
         loading = false
     }
 
-    /// 转人工：开一个和「在线客服」的会话，直接进聊天页
     private func openHuman() {
-        /* 直接开「在线客服」独立页面（页面里自己会建会话、拉消息），不再跳普通聊天 */
+
         if busyHuman { return }
         showKefu = true
     }
@@ -426,7 +409,6 @@ struct SupportView: View {
     }
 }
 
-/* ============================================================ 一个分类里的问答 */
 struct SupportCategoryView: View {
     @ObservedObject private var lang = LangStore.shared
     @Environment(\.dismiss) private var dismiss
@@ -471,13 +453,12 @@ struct SupportCategoryView: View {
         .swipeBack { dismiss() }
         .hidesTabBar()
         .onAppear {
-            /* 搜索进来的：默认把答案展开，省得再点一下 */
+
             if !keyword.isEmpty, let first = (cat.items ?? []).first { open.insert(first.q) }
         }
     }
 }
 
-/* ============================================================ 一条问答（点一下展开答案） */
 struct QAItem: View {
     let category: String
     let item: API.SupportItem
@@ -511,7 +492,6 @@ struct QAItem: View {
     }
 }
 
-/* ============================================================ 提交问题（工单） */
 struct SupportTicketSheet: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -598,7 +578,7 @@ struct SupportTicketSheet: View {
         .background(C.pageBg.ignoresSafeArea(edges: .bottom))
         .background(C.pageBg.ignoresSafeArea(edges: .top))
         .toolbar(.hidden, for: .navigationBar)
-        /* 2026-10-16：客服「提交问题」补左滑返回 */
+
         .swipeBack { dismiss() }
     }
 
@@ -619,7 +599,6 @@ struct SupportTicketSheet: View {
     }
 }
 
-/* ============================================================ 头像（后台给的地址，可能是 /uploads/xxx） */
 struct AsyncAvatar: View {
     let path: String
     let size: CGFloat
@@ -651,7 +630,6 @@ struct AsyncAvatar: View {
     }
 }
 
-/* 时间：10-08 14:22 → 10-08 14:22（截短一点，工单列表够用） */
 func shortTime(_ raw: String) -> String {
     let s = raw.replacingOccurrences(of: "T", with: " ")
     guard s.count >= 16 else { return s }

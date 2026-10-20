@@ -2,17 +2,10 @@ import SwiftUI
 import SafariServices
 import UIKit
 
-/* ============================================================
-   AI 发来的「点外卖 / 买东西」卡片
-   —— 不甩一串网址给用户：App 直接跳（装了淘宝就跳淘宝 App，
-   没装就用 App 内的 Safari 打开），点卡片也能再跳一次。
-   ============================================================ */
-
-/// 卡片里的一行团购价：团 ¥787 · 8.5折 【国庆可用】蜈支洲岛当日购
 struct ShopLinkPrice: Hashable {
-    var price: String      // "787"（只存数字部分，显示时前面加 ¥）
-    var off: String        // "8.5折"
-    var tag: String        // "【国庆可用】蜈支洲岛当日购"
+    var price: String
+    var off: String
+    var tag: String
 }
 
 struct ShopLink: Hashable {
@@ -20,16 +13,15 @@ struct ShopLink: Hashable {
     var sub: String
     var url: String
     var scheme: String
-    /// 卡片左边那张缩略图（微信的链接卡片也带图）：/uploads/xxx.png 或 http(s) 地址
+
     var image: String
-    /// 携程/美团那种"景点卡"才有的几行：人气榜/评分、评价数、团购价
+
     var meta: String
     var reviews: String
     var prices: [ShopLinkPrice]
-    /// 有 meta 或价格行 → 按"景点卡"那种大图排版画
+
     var rich: Bool { !meta.isEmpty || !prices.isEmpty }
 
-    /// 服务端把卡片内容放在消息的 content 里（JSON）
     init?(json: String) {
         guard let d = json.data(using: .utf8),
               let o = try? JSONSerialization.jsonObject(with: d) as? [String: Any] else { return nil }
@@ -49,8 +41,6 @@ struct ShopLink: Hashable {
     }
 }
 
-/// 点了卡片 / 自动跳：先试 App 的 scheme（装了淘宝就直接进淘宝），
-/// 不行再交给外面的 inApp 回调（App 内 Safari 打开网页）
 @MainActor
 enum ShopOpener {
     static func open(_ link: ShopLink, inApp: @escaping (URL) -> Void) {
@@ -62,7 +52,6 @@ enum ShopOpener {
     }
 }
 
-/// App 内的 Safari（不跳出我们的 App）
 struct SafariSheet: UIViewControllerRepresentable {
     let url: URL
 
@@ -77,13 +66,11 @@ struct SafariSheet: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: SFSafariViewController, context: Context) { }
 }
 
-/// sheet(item:) 要 Identifiable
 struct WebURL: Identifiable {
     let id = UUID()
     var url: URL
 }
 
-/// 聊天里那张卡片
 struct ShopLinkCard: View {
     let link: ShopLink
     var onTap: () -> Void
@@ -95,8 +82,6 @@ struct ShopLinkCard: View {
         .buttonStyle(.plain)
     }
 
-    /* 携程/美团那种「景点卡」：左边大图 + 标题 + 人气榜 + 评价数 + 团购价那几行
-       （用户给的样子就是豆包回复里的这种卡片） */
     private var richBody: some View {
         HStack(alignment: .top, spacing: 10) {
             RemoteImage(path: link.image, mode: .fill, maxSide: 360)
@@ -152,10 +137,9 @@ struct ShopLinkCard: View {
             .stroke(Color.dyn(0xE8E8E8, 0x3A3A3C), lineWidth: 0.5))
     }
 
-    /* 普通链接卡：小缩略图 + 标题 + 说明 + 「打开」 */
     private var simpleBody: some View {
             HStack(spacing: 10) {
-                /* 有图就显示图（微信的链接卡片就是"图 + 标题 + 说明"），没图退回那个小色块 */
+
                 if !link.image.isEmpty {
                     RemoteImage(path: link.image, mode: .fill, maxSide: 240)
                         .frame(width: 48, height: 48)

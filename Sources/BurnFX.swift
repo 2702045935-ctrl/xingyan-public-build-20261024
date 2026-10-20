@@ -1,24 +1,9 @@
 import SwiftUI
 
-/* ============================================================
-   「阅后即焚」的焚烧动画 —— 2026-10-13 用户要求「要有动画效果」
-
-   为什么要单独放这个文件：
-     ChatDetailView 是个巨型视图，**往里加任何视图层都会被那台机器的看门狗杀掉**
-     （B224/B231/B240 都栽在这上面）。所以焚烧动画不放在聊天页里，而是放在
-     聊天页**外面那层** DeferredChatView（我们自己的文件）里，
-     由聊天页只用一行**代码**通知「该烧了」。
-
-   画法：Canvas 一层画完（不建子视图），1.1 秒：
-     · 一层从下往上扫的暖光（橙 → 金，边扫边淡）
-     · 十几粒火星往上飘、越飘越淡
-     · 起点和随机数都是**按序号算死的**（不用随机数，避免每帧重建）
-   ============================================================ */
-
 @MainActor
 final class BurnFX: ObservableObject {
     static let shared = BurnFX()
-    /// 正在烧（外层按它决定铺不铺那层动画）
+
     @Published var firing = false
     private var task: Task<Void, Never>?
 
@@ -26,7 +11,7 @@ final class BurnFX: ObservableObject {
         firing = true
         task?.cancel()
         task = Task { [weak self] in
-            try? await Task.sleep(nanoseconds: 1_500_000_000)   // 与动画的 1.4 秒对齐
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
             if Task.isCancelled { return }
             await MainActor.run { self?.firing = false }
         }
@@ -34,7 +19,7 @@ final class BurnFX: ObservableObject {
 }
 
 struct FlameSweepOverlay: View {
-    /// 动画总时长（秒）
+
     private let dur: Double = 1.4
     @State private var t0 = Date()
 
@@ -43,12 +28,11 @@ struct FlameSweepOverlay: View {
             Canvas { g, size in
                 let t = ctx.date.timeIntervalSince(t0)
                 guard t >= 0, t <= dur else { return }
-                let p = t / dur                       // 0 → 1
-                let fade = 1 - p                     // 越烧越淡
-                /* 燃烧线：从屏幕底下爬到顶上（像一张纸从底边开始烧） */
+                let p = t / dur
+                let fade = 1 - p
+
                 let edgeY = size.height * (1 - p)
 
-                /* ① 烧过的地方是焦黑的（越靠上烧得越早、越淡，最后随整段一起淡出） */
                 if edgeY > 0 {
                     let burnt = CGRect(x: 0, y: 0, width: size.width, height: edgeY)
                     g.fill(Path(burnt), with: .linearGradient(
@@ -61,7 +45,6 @@ struct FlameSweepOverlay: View {
                         endPoint: CGPoint(x: 0, y: burnt.maxY)))
                 }
 
-                /* ② 燃烧线本身：一条起伏的亮边（橙黄→红），有呼吸感 */
                 let flick = 1 + 0.18 * sin(t * 26)
                 for i in 0..<64 {
                     let fi = Double(i)
@@ -78,7 +61,6 @@ struct FlameSweepOverlay: View {
                         startRadius: 0, endRadius: r * 1.6))
                 }
 
-                /* ③ 燃烧线**上方**再压一层热光（把刚烧过的内容染暖），下方留一点余温 */
                 if edgeY > 0 {
                     let hot = CGRect(x: 0, y: max(0, edgeY - 90), width: size.width, height: min(90, edgeY))
                     g.fill(Path(hot), with: .linearGradient(
@@ -88,7 +70,6 @@ struct FlameSweepOverlay: View {
                         endPoint: CGPoint(x: 0, y: hot.maxY)))
                 }
 
-                /* ④ 火星：从燃烧线往上飘、越飘越淡越小 */
                 for i in 0..<26 {
                     let fi = Double(i)
                     let delay = fi * 0.028
@@ -104,7 +85,6 @@ struct FlameSweepOverlay: View {
                            with: .color(Color(hex: tt < 0.45 ? 0xFFE08A : 0xFF7A1E).opacity(a)))
                 }
 
-                /* ⑤ 烟：几团半透明的灰往上飘（燃烧线上面那一段） */
                 for i in 0..<9 {
                     let fi = Double(i)
                     let delay = fi * 0.06

@@ -1,11 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   安全分（照微信那套机制）
-   550~850 分 · 三个维度：身份特质 / 支付行为 / 守约历史
-   分档：较差 / 中等 / 良好 / 优秀 / 极好
-   分数是服务端按真实记录算的（资料、登录设备、转账、记账、安全事件、违规）。
-   ============================================================ */
 struct SecurityScoreView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -16,7 +10,7 @@ struct SecurityScoreView: View {
     @State private var openDim: String?
 
     private var sheetBg: Color { scheme == .dark ? Color(hex: 0x1C1C1E) : .white }
-    /* 页面底色统一走后台的 pageBg（暗色下就是会话页每行那个 #141419） */
+
     private var pageBg: Color { C.pageBg }
     private var ink: Color { scheme == .dark ? Color(hex: 0xEDEDED) : Color(hex: 0x1A1A1A) }
     private var gray: Color { scheme == .dark ? Color(hex: 0x8E8E93) : Color(hex: 0x737373) }
@@ -62,11 +56,6 @@ struct SecurityScoreView: View {
         .task { await load() }
     }
 
-    /* ---------------------------------------------------- 上面那个大分数 */
-
-    /* 2026-10-15 用户：「安全分要真实管控用户的」——
-       这一张卡就是**分数现在到底管着你什么**：单笔/单日额度，或者支付类被停。
-       数字是服务器算的（转账 / 红包 / 收付款 / 提现 都按它拦），不是摆设。 */
     private func limitsCard(_ d: CreditScore) -> some View {
         let sl = d.scoreLimit
         let blocked = sl?.block == true
@@ -144,7 +133,6 @@ struct SecurityScoreView: View {
         .background(sheetBg)
     }
 
-    /* ---------------------------------------------------- 三个维度 */
     private func dimsCard(_ d: CreditScore) -> some View {
         VStack(spacing: 0) {
             ForEach(d.dims) { dim in
@@ -176,7 +164,6 @@ struct SecurityScoreView: View {
                     }
                     .buttonStyle(.plain)
 
-                    /* 进度条 */
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
                             Capsule().fill(Color.dyn(0xEFEFEF, 0x2C2C2E))
@@ -221,7 +208,6 @@ struct SecurityScoreView: View {
         .background(sheetBg)
     }
 
-    /* ---------------------------------------------------- 怎么提分 */
     private func tipsCard(_ d: CreditScore) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(Tr("怎么提分"))

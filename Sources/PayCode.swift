@@ -3,18 +3,6 @@ import CoreImage
 import CoreImage.CIFilterBuiltins
 import UIKit
 
-/* ============================================================
-   收付款（微信那套：我 → 服务 → 收付款）
-   · 付款码：18 位数字条码 + 同一串数字的二维码，60 秒一换（微信也是 60 秒）
-     —— 别人扫它 = 我付钱给他（商家扫顾客那个逻辑）
-   · 收款码：我的一张固定二维码，扫了给我付钱；「设置金额」出来的那张带金额
-     （金额由服务器签名，改一个数字就作废）
-   · 钱当时到账：不挂「待收款」，和微信商家收款一样即时到账、即时记流水
-   ============================================================ */
-
-/* ---------------------------------------------------------- 条形码（Code128） */
-
-/// 系统自带的 Code128 生成器（不用自己抄码表），渲染成图片显示
 func code128Image(_ text: String, height: CGFloat) -> UIImage? {
     let data = text.data(using: .ascii) ?? Data()
     let filter = CIFilter.code128BarcodeGenerator()
@@ -25,7 +13,7 @@ func code128Image(_ text: String, height: CGFloat) -> UIImage? {
     let scaled = out.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
     let ctx = CIContext()
     guard let cg = ctx.createCGImage(scaled, from: scaled.extent) else { return nil }
-    /* 只要黑条，高度我们自己控；中间一片白就裁掉 */
+
     let img = UIImage(cgImage: cg)
     let drawH = max(40, height)
     let size = CGSize(width: img.size.width, height: drawH)
@@ -33,7 +21,7 @@ func code128Image(_ text: String, height: CGFloat) -> UIImage? {
     return r.image { _ in
         UIColor.white.setFill()
         UIBezierPath(rect: CGRect(origin: .zero, size: size)).fill()
-        /* 条形码原图是白底黑条，高度不够时非等比拉伸会变形 —— 这里按行取中间那条黑色细带 */
+
         img.draw(in: CGRect(x: 0, y: 0, width: size.width, height: size.height))
     }
 }
@@ -55,15 +43,13 @@ struct BarcodeView: View {
     }
 }
 
-/* ---------------------------------------------------------- 付款码（收付款首页） */
-
 struct PayCodePage: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
 
     @State private var info: PayCodeInfo?
-    @State private var left = 0                 // 还剩几秒换码
+    @State private var left = 0
     @State private var loading = true
     @State private var failed = ""
     @State private var showReceive = false
@@ -100,7 +86,7 @@ struct PayCodePage: View {
         }
         .background(C.pageBg.ignoresSafeArea(edges: .top))
         .toolbar(.hidden, for: .navigationBar)
-        /* 付款码是给收银台扫的：进来渐亮、退出还原 */
+
         .modifier(BrightenScreen())
         .sheet(isPresented: $showReceive) { ReceiveCodePage().environmentObject(app) }
         .task { await load(force: false) }
@@ -109,7 +95,7 @@ struct PayCodePage: View {
             if left <= 1 { Task { await load(force: true) } }
             else { left -= 1 }
         }
-        /* 回到前台：码可能已经过期了，立刻换一张 */
+
         .onChange(of: scenePhase) { p in
             if p == .active { Task { await load(force: false) } }
         }
@@ -196,8 +182,6 @@ struct PayCodePage: View {
     }
 }
 
-/* ---------------------------------------------------------- 收款码 */
-
 struct ReceiveCodePage: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -207,7 +191,6 @@ struct ReceiveCodePage: View {
     @State private var showSetAmount = false
     @State private var busy = false
 
-    /// 当前这张收款码带没带金额（0 = 普通收款码）
     private var amt: Double { max(0, info?.amount ?? 0) }
 
     var body: some View {
@@ -219,8 +202,7 @@ struct ReceiveCodePage: View {
                     ZStack {
                         RoundedRectangle(cornerRadius: 12).fill(Color.white)
                         if let info = info, let rows = info.rows, !rows.isEmpty {
-                            /* 中间不盖头像：这套二维码是纠错 L（只能容忍 7% 破损），
-                               盖头像等于让码扫不出来（个人码踩过这个坑）。 */
+
                             QRCanvas(rows: rows).frame(width: 232, height: 232)
                         } else {
                             ProgressView()
@@ -285,7 +267,7 @@ struct ReceiveCodePage: View {
         .background(C.pageBg.ignoresSafeArea(edges: .top))
         .toolbar(.hidden, for: .navigationBar)
         .swipeBack { dismiss() }
-        /* 收款码也是给人扫的：进来渐亮、退出还原（和「我的二维码」一样） */
+
         .modifier(BrightenScreen())
         .task { await load(amount: 0) }
         .alert(Tr("设置金额"), isPresented: $showSetAmount) {
@@ -326,11 +308,9 @@ struct ReceiveCodePage: View {
     }
 }
 
-/* ---------------------------------------------------------- 扫到码之后：确认付款 */
-
 struct PayConfirmPage: View {
     let target: PayScanInfo
-    /// 扫进来的原文（带回服务器，金额和收款人都以服务器解析的为准）
+
     var scanText: String = ""
 
     @EnvironmentObject var app: AppState
@@ -387,7 +367,7 @@ struct PayConfirmPage: View {
                         VStack(spacing: 10) {
                             Text(Tr("请输入支付密码"))
                                 .font(pf(13.5)).foregroundColor(C.subLabel)
-                            /* 统一用支付页那套 6 格 */
+
                             PayDotField(count: password.count, height: 46)
                                 .contentShape(Rectangle())
                                 .onTapGesture { pwdFocus = true }
@@ -402,7 +382,7 @@ struct PayConfirmPage: View {
                                 }
                         }
                     } else {
-                        /* 没设过支付密码：先去设，别让人不输密码就把钱付出去 */
+
                         Text(Tr("还没设置支付密码（我 → 设置 → 账号与安全 → 支付密码）"))
                             .font(pf(12.5)).foregroundColor(C.subLabel)
                             .multilineTextAlignment(.center)
@@ -443,7 +423,7 @@ struct PayConfirmPage: View {
             }
             .background(C.pageBg)
         }
-        /* 付款中：屏幕正中三个点（微信付款时那一下过渡） */
+
         .overlay {
             if busy { PayBusyOverlay(text: "正在付款") }
         }
@@ -474,6 +454,5 @@ struct PayConfirmPage: View {
         }
     }
 
-    /// 扫进来的原文再带回服务器（金额、收款人都以服务器解析出来的为准，客户端改不了）
     private var codeText: String { scanText }
 }

@@ -1,12 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   好友名片 · 新版（畅聊 / HarmonyOS 设计语言）
-   令牌：品牌蓝 #007DFF、文字 #181818/#666/#999、底 #FFFFFF/#F5F6F7、
-        分隔 #E8EAED、圆角 8/12/16/胶囊、阴影 #20000000、间距 4 的倍数
-   开关：后台 ui.json 里 cardStyle = "new" 才用这一版；默认 "old" 就是原来那版
-   ============================================================ */
-
 private let hBlue   = Color(hex: 0x007DFF)
 private let hBlueBg = Color(hex: 0xE8F3FF)
 private let hInk    = Color(hex: 0x181818)
@@ -19,14 +12,13 @@ private let hGreen  = Color(hex: 0x2E7D32)
 struct ContactCardNew: View {
     let name: String
     let idLine: String
-    /// 头像（真人用图片，眼睛机器人用会动的眼睛）
+
     let avatarPath: String
     let isEyes: Bool
     let remark: String
     let phone: String
     let momentCount: Int
-    /// 对方设的朋友圈可见范围（3d / 6m / all）：这区间里没动态时，
-    /// 那一行要写微信那句「朋友仅展示最近三天的朋友圈」，不是「暂无朋友圈动态」。
+
     let momentsRange: String
     let onClose: () -> Void
     let onMessage: () -> Void
@@ -51,7 +43,7 @@ struct ContactCardNew: View {
                                 }
                             }
                         }
-                        /* 朋友圈这一块一直在（朋友没发动态就写「暂无动态」），跟原来那版一致 */
+
                         sectionTitle("生活圈", trailing: momentCount > 0 ? "\(momentCount) 条" : "")
                             card {
                                 Button {
@@ -87,9 +79,6 @@ struct ContactCardNew: View {
         return list
     }
 
-    /// 朋友圈那一行没动态时写什么：
-    /// 对方设了「最近三天 / 最近半年」→ 微信写的是「朋友仅展示最近三天的朋友圈」；
-    /// 没设范围（all）才是「暂无朋友圈动态」。
     private var momentEmptyText: String {
         switch momentsRange {
         case "3d": return "朋友仅展示最近三天的生活圈"
@@ -117,7 +106,7 @@ struct ContactCardNew: View {
 
     private var hero: some View {
         VStack(spacing: 0) {
-            /* 好友名片是「人名卡」：头像在左、名字和微信号在右，跟官方号的居中大 logo 区分开 */
+
             HStack(alignment: .center, spacing: 16) {
                 ZStack(alignment: .bottomTrailing) {
                     Group {
@@ -140,7 +129,7 @@ struct ContactCardNew: View {
             .padding(.horizontal, 16)
             .padding(.top, 20)
             .padding(.bottom, 16)
-            /* 三枚按钮：发消息（主）· 语音通话 · 视频通话（次）—— 和原来那版一样多 */
+
             HStack(spacing: 10) {
                 pill("发消息", primary: true, action: onMessage)
                 pill("语音", primary: false, action: onVoice)
@@ -190,7 +179,6 @@ struct ContactCardNew: View {
         Rectangle().fill(hLine).frame(height: 1).padding(.leading, 16)
     }
 
-    /// 胶囊按钮（主：品牌蓝底白字；次：品牌蓝描边）
     private func pill(_ text: String, primary: Bool, action: @escaping () -> Void) -> some View {
         Button { action() } label: {
             Text(text)

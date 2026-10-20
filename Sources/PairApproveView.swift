@@ -1,24 +1,21 @@
 import SwiftUI
 
-/* 设备确认登录（确认方）：
-   网页版点「微信授权登录 / QQ 授权登录」会出一个 6 位数字，
-   在这台已经登录的手机上：我 → 设置 → 设备确认登录，输入那个数字，网页就登上了。 */
 struct PairApproveView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
-    /// 扫码过来的：数字直接带上，不用再手输（微信扫码也是直接出确认页）
+
     var startCode: String = ""
-    /// 确认完以后额外要做的事（比如把扫码那一页关掉）
+
     var onDone: (() -> Void)? = nil
 
     @State private var code = ""
     @State private var busy = false
     @State private var error: String?
-    /// 已经查过这台请求设备的资料 → 出微信那张「登录确认」卡片
+
     @State private var checked = false
     @State private var device = ""
     @State private var at = ""
-    /// 微信这一页主体是「登录设备管理」：进来先列出登录过的设备（型号 + 系统 + 时间 + 本机）
+
     @State private var devices: [API.LoginDevice] = []
     @FocusState private var focused: Bool
 
@@ -55,8 +52,6 @@ struct PairApproveView: View {
         }
     }
 
-    /* ---------------- 上面：登录设备列表（微信那一页的主体） ---------------- */
-
     @ViewBuilder private var deviceList: some View {
         if !devices.isEmpty {
             HStack {
@@ -92,7 +87,6 @@ struct PairApproveView: View {
         }
     }
 
-    /// 「用已登录的手机扫一扫 / 输 6 位数字」那一句（新版把扫码放前面）
     private var codeHint: some View {
         Text(Tr("新设备上点「微信登录」会出一个二维码和一个 6 位数字：用已登录的手机扫一下，或者把数字输在下面确认。"))
             .font(pf(12.5))
@@ -102,7 +96,6 @@ struct PairApproveView: View {
             .padding(.top, 14)
     }
 
-    /// 设备型号：服务端存的 model 优先，没有再退回设备名 / UA
     private func deviceModelText(_ d: API.LoginDevice) -> String {
         let model = (d.model ?? "").trimmingCharacters(in: .whitespaces)
         if !model.isEmpty { return model }
@@ -125,8 +118,6 @@ struct PairApproveView: View {
         }
         return bits.joined(separator: " · ")
     }
-
-    /* ---------------- 第 ① 步：输入新设备上那串数字 ---------------- */
 
     private var codeForm: some View {
         VStack(spacing: 0) {
@@ -176,8 +167,6 @@ struct PairApproveView: View {
             }
         }
     }
-
-    /* ---------------- 第 ② 步：微信那张「登录确认」卡片 ---------------- */
 
     private var confirmCard: some View {
         VStack(spacing: 0) {
@@ -236,7 +225,6 @@ struct PairApproveView: View {
         .padding(.top, 16)
     }
 
-    /// 先看看这是哪台设备在请求登录
     private func check() {
         busy = true
         error = nil
@@ -268,7 +256,6 @@ struct PairApproveView: View {
         }
     }
 
-    /// 2026-10-09T21:35:00Z → 请求时间：21:35
     private func shortTime(_ s: String) -> String {
         guard s.count >= 16 else { return "" }
         let t = String(s.dropFirst(11).prefix(5))

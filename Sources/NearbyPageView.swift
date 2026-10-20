@@ -2,19 +2,6 @@ import SwiftUI
 import CoreLocation
 import UIKit
 
-/* ============================================================
-   附近的人（发现 → 附近）
-   页面照桌面 vx 文件夹那张参考图量的（420×912pt 的截图）：
-     · 整页深色：页面 #111111、每一行 #191919、行与行之间没有分割线
-     · 行高 65pt；头像 46×46、左边距 8pt（圆角 5）
-     · 头像右边 13pt 起是两行字：第一行名字（17pt 白）、第二行距离（14pt 灰「500米以内」）
-     · 个性签名灰色，右对齐到右边距 16pt（最多两行）
-     · 顶部：‹ 返回 + 居中「附近的人」+ 右侧 ⋯（筛选/刷新/清除位置都在 ⋯ 里）
-   功能：进来先定位并上报（半小时有效），按距离排；可筛性别、可打招呼。
-   ============================================================ */
-
-/// 雷达的扫描扇（中心在圆心，从 -span 度扫到 0 度；顺着转就是"扫过去"）
-/// · span 给大一点 = 更长更淡的拖尾（高级雷达都是"长尾 + 亮前沿"）
 struct RadarWedge: Shape {
     var span: Double = 60
     var lead: Double = 0
@@ -30,7 +17,6 @@ struct RadarWedge: Shape {
     }
 }
 
-/// 定位：要一次「使用期间」权限，拿到一次坐标就够（不用一直跟）
 final class NearbyLocator: NSObject, ObservableObject, CLLocationManagerDelegate {
     @Published var lat: Double?
     @Published var lng: Double?
@@ -92,31 +78,26 @@ struct NearbyPageView: View {
     @State private var people: [NearbyPerson] = []
     @State private var loading = false
     @State private var tip = ""
-    /// all / female / male —— 和微信 ⋯ 里那三个选项一样
+
     @State private var filter = "all"
     @State private var showMenu = false
-    /// 现在看多大的范围（默认 5 公里；5 公里没人可以点「扩大范围」）
+
     @State private var maxKm: Double = 5
-    /// 20 公里内有几个人（用来提示「扩大范围」）
+
     @State private var wider = 0
 
     @State private var helloFor: NearbyPerson?
     @State private var helloText = "你好呀，我是在附近的人里看到你的"
     @State private var cardUser: User?
 
-    /* 2026-10-15 用户：「把附近的人改成雷达扫人」——
-       默认进雷达：一圈一圈的圈 + 一条转着的扫描扇 + 附近的人按角度摆在圈里，
-       扫到谁谁亮（头像）；点亮点看资料/打招呼。列表还留着（右上角那颗切换）。 */
-    @State private var mode = 0                 // 0 = 雷达 · 1 = 列表
+    @State private var mode = 0
     @State private var selected: NearbyPerson?
     @State private var sweep: Double = 0
-    /* 原来 0.05s（20fps）转起来一顿一顿的；提到 0.02s（50fps）后顺滑，
-       角度步长按同样角速度换算（48°/秒 → 每帧 0.96°）。 */
+
     private let radarTick = Timer.publish(every: 0.02, on: .main, in: .common).autoconnect()
-    /// 雷达半径（pt）
+
     private let radarD: CGFloat = 142
 
-    /* 参考图里的颜色（深色页面，不走全局主题） */
     private let pageBg = Color.dyn(0x111111, 0x141419)
     private let rowBg = Color(hex: 0x191919)
     private let nameInk = Color.white
@@ -132,9 +113,9 @@ struct NearbyPageView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            /* 顶栏：照参考图，深色 + 居中标题 + 右侧 ⋯ */
+
             ZStack {
-                /* 标题读后台：ui.json 里写 nearbyTitle（不写就是「附近的人」） */
+
                 Text(Tr(UIConfig.text("nearbyTitle", "附近的人")))
                     .font(pf(17, .semibold))
                     .foregroundColor(nameInk)
@@ -147,7 +128,7 @@ struct NearbyPageView: View {
                     }
                     .buttonStyle(.plain)
                     Spacer(minLength: 0)
-                    /* 雷达 ⇄ 列表 */
+
                     Button { withAnimation(.easeOut(duration: 0.2)) { mode = (mode == 0 ? 1 : 0) } } label: {
                         Image(systemName: mode == 0 ? "list.bullet" : "dot.radiowaves.left.and.right")
                             .font(.system(size: 17, weight: .medium))
@@ -210,7 +191,7 @@ struct NearbyPageView: View {
         .background(pageBg.ignoresSafeArea(edges: .top))
         .toolbar(.hidden, for: .navigationBar)
         .hidesTabBar()
-        /* 和微信一样：从左边缘往右一滑就回上一页（别的二级页都挂了这一个） */
+
         .swipeBack { dismiss() }
         .navigationDestination(isPresented: Binding(
             get: { cardUser != nil },
@@ -249,8 +230,6 @@ struct NearbyPageView: View {
         }
     }
 
-    /* ---------------------------------------------------------- 雷达扫人 */
-
     private var radarArea: some View {
         VStack(spacing: 0) {
             if loc.denied {
@@ -258,7 +237,7 @@ struct NearbyPageView: View {
                 Spacer(minLength: 0)
             } else {
                 ZStack {
-                    /* ① 雷达屏：一块很暗的绿黑底 + 外圈描边 + 投影 —— 亮的东西才有"屏幕感" */
+
                     Circle()
                         .fill(RadialGradient(colors: [Color(hex: 0x0F1D16), Color(hex: 0x07110C)],
                                              center: UnitPoint(x: 0.5, y: 0.42),
@@ -268,7 +247,6 @@ struct NearbyPageView: View {
                         .shadow(color: .black.opacity(0.35), radius: 16, y: 7)
                         .shadow(color: C.green.opacity(0.10), radius: 22)
 
-                    /* ② 十字准线（很淡）+ 12 个刻度（每 3 个长一点） */
                     Rectangle().fill(Color(hex: 0x2E6B52).opacity(0.30))
                         .frame(width: radarD * 2, height: 1)
                     Rectangle().fill(Color(hex: 0x2E6B52).opacity(0.30))
@@ -281,7 +259,6 @@ struct NearbyPageView: View {
                             .rotationEffect(.degrees(Double(i) * 30))
                     }
 
-                    /* ③ 三圈同心圆（由内到外一档比一档淡） */
                     ForEach(1..<4, id: \.self) { i in
                         Circle()
                             .stroke(C.green.opacity(0.30 - Double(i) * 0.07), lineWidth: 1)
@@ -289,7 +266,6 @@ struct NearbyPageView: View {
                                    height: radarD * 2 * CGFloat(i) / 3)
                     }
 
-                    /* ④ 转着的扫描：一条长拖尾 + 一条前沿亮线（跟着 sweep 转） */
                     ZStack {
                         RadarWedge(span: 92)
                             .fill(LinearGradient(colors: [C.green.opacity(0.16), .clear],
@@ -297,7 +273,7 @@ struct NearbyPageView: View {
                         RadarWedge(span: 52)
                             .fill(LinearGradient(colors: [C.green.opacity(0.42), .clear],
                                                  startPoint: .leading, endPoint: .trailing))
-                        /* 前沿那道亮线：从圆心指向外，带外发光 */
+
                         Rectangle()
                             .fill(LinearGradient(colors: [C.green.opacity(0.95), C.green.opacity(0.25)],
                                                  startPoint: .leading, endPoint: .trailing))
@@ -311,7 +287,6 @@ struct NearbyPageView: View {
                     .clipShape(Circle())
                     .frame(width: radarD * 2, height: radarD * 2)
 
-                    /* ⑤ 自己：呼吸圈（两层错开）+ 中心亮点 */
                     Circle()
                         .stroke(C.green.opacity(0.35), lineWidth: 1.4)
                         .frame(width: 54, height: 54)
@@ -323,7 +298,7 @@ struct NearbyPageView: View {
                         .scaleEffect(1 + 0.22 * CGFloat(sin(sweep * .pi / 180)))
                     Circle().fill(C.green).frame(width: 10, height: 10)
                         .shadow(color: C.green.opacity(0.9), radius: 8)
-                    /* 附近的人：角度/半径按 id 算死，扫到就亮 */
+
                     ForEach(Array(people.prefix(14))) { p in blip(p) }
                 }
                 .frame(height: radarD * 2 + 40)
@@ -348,7 +323,6 @@ struct NearbyPageView: View {
         }
     }
 
-    /// 圈里一个亮点（头像）
     private func blip(_ p: NearbyPerson) -> some View {
         let s = spot(p)
         let lit = isLit(s.ang)
@@ -374,7 +348,6 @@ struct NearbyPageView: View {
         .animation(.easeOut(duration: 0.25), value: lit)
     }
 
-    /// 这个人摆在哪：角度按 id 固定；半径按「离得越近越靠中心」（km 是真的数据）
     private func spot(_ p: NearbyPerson) -> (ang: Double, r: Double) {
         var h = 5381
         for b in p.id.utf8 { h = (h &* 33) &+ Int(b) }
@@ -384,13 +357,11 @@ struct NearbyPageView: View {
         return (ang, 0.30 + 0.66 * near)
     }
 
-    /// 扫描扇现在扫到哪个角度了（±26 度算亮）
     private func isLit(_ ang: Double) -> Bool {
         let d = abs(((ang - sweep + 540).truncatingRemainder(dividingBy: 360)) - 180)
         return d < 26
     }
 
-    /// 底下那张卡：选中了谁 / 没选中就显示扫描状态 + 重新扫描
     private var bottomCard: some View {
         VStack(spacing: 8) {
             if let p = selected {
@@ -437,8 +408,6 @@ struct NearbyPageView: View {
         .padding(.bottom, 18)
     }
 
-    /* ---------------------------------------------------------- 一行（照参考图） */
-
     private func personRow(_ p: NearbyPerson) -> some View {
         Button {
             helloFor = p
@@ -484,7 +453,6 @@ struct NearbyPageView: View {
         }
     }
 
-    /// 右边那列灰字：优先个性签名，其次简介；好友就直接写「已经是好友」
     private func signature(_ p: NearbyPerson) -> String {
         if let m = p.moodText, !m.isEmpty { return m }
         if let b = p.bio, !b.isEmpty { return b }
@@ -512,8 +480,6 @@ struct NearbyPageView: View {
         .padding(.top, 80)
     }
 
-    /* ---------------------------------------------------------- 数据 */
-
     private func setFilter(_ f: String) {
         filter = f
         Task { await reload(force: true) }
@@ -524,7 +490,7 @@ struct NearbyPageView: View {
         loading = true
         defer { loading = false }
         do {
-            /* 有定位就先上报（进这个页面等于「我在附近」） */
+
             if let la = loc.lat, let ln = loc.lng {
                 try? await API.shared.nearbyReport(lat: la, lng: ln)
             }

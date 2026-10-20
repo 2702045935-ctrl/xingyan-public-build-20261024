@@ -1,11 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   系统通知号（「星言团队」）的卡片 —— 排版照微信那个「微信团队」：
-   标题独占一行 → 一条细线 → 正文 → 一条细线 → 「查看详情 ›」
-   点整张卡进一整页看全文（复用群公告那一页）。
-   ============================================================ */
-
 struct SysNoticeInfo {
     var title = ""
     var text = ""
@@ -20,11 +14,10 @@ struct SysNoticeInfo {
         text = b
     }
 
-    /// 一整页里显示的全文（标题 + 正文）
     var fullText: String {
         text.isEmpty ? title : (title + "\n\n" + text)
     }
-    /// 会话列表里那一行的预览（千万别显示 JSON）
+
     var preview: String { text.isEmpty ? title : text }
 }
 
@@ -34,7 +27,7 @@ struct SysNoticeBubble: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            /* 标题独占一行，下面一条细线 —— 微信那个「微信团队」卡片就是这么排的 */
+
             Text(info.title)
                 .font(pf(16, .medium))
                 .foregroundColor(C.label)

@@ -1,13 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   搜一搜（照着微信那套）：
-   · 顶部搜索框 + 取消；没输入时显示「最近搜索」（可清空）
-   · 一串「搜索指定内容」：全部 / 联系人 / 群聊 / 朋友圈 / 视频号 / 聊天记录
-   · 输入后按分类分组给结果（带条数、命中文字高亮）
-   · 点结果：联系人进资料页、群聊开会话、聊天记录跳到那个会话、朋友圈去朋友圈、视频号去视频
-   ============================================================ */
-
 struct SearchAllData: Decodable {
     struct Person: Decodable, Hashable, Identifiable { var id: String; var name: String?; var username: String?; var avatar: String? }
     struct Group: Decodable, Hashable, Identifiable { var id: String; var name: String?; var avatar: String?; var members: Int? }
@@ -41,7 +33,7 @@ struct SearchAllView: View {
     @State private var history: [String] = ContactSearchHistory.load()
     @FocusState private var focused: Bool
     @State private var task: Task<Void, Never>?
-    /// 点结果要去的地方（都在这个页面里弹出，避免和发现页的导航栈打架）
+
     @State private var pickedUser: User?
     @State private var showMoments = false
     @State private var showChannels = false
@@ -79,7 +71,6 @@ struct SearchAllView: View {
             .padding(.bottom, 8)
             .background(C.chatsTopBg.ignoresSafeArea(edges: .top))
 
-            /* 搜索指定内容：横向一排，点一下就切范围（微信就是这排） */
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(scopes, id: \.0) { s in
@@ -259,7 +250,6 @@ struct SearchAllView: View {
         .padding(.horizontal, 16).frame(height: 32).background(C.pageBg)
     }
 
-    /* 注意：泛型别叫 C —— 会把颜色调色板 C 遮蔽掉（C.cardBg 就取不到了，编译直接报错） */
     private func row<Content: View>(tap: @escaping () -> Void, @ViewBuilder content: () -> Content) -> some View {
         Button(action: tap) {
             HStack(spacing: 12) {
@@ -286,7 +276,6 @@ struct SearchAllView: View {
         history = ContactSearchHistory.load()
     }
 
-    /// 打开一个会话（搜到的是 chatId，本地 chats 里查一下再打开）
     private func openChat(_ id: String) {
         if let c = app.chats.first(where: { $0.id == id }) {
             app.openChatViaList(c)
@@ -301,7 +290,7 @@ struct SearchAllView: View {
         guard !key.isEmpty else { data = nil; return }
         searching = true
         task = Task {
-            try? await Task.sleep(nanoseconds: 250_000_000)     // 打字防抖
+            try? await Task.sleep(nanoseconds: 250_000_000)
             if Task.isCancelled { return }
             let got = try? await API.shared.searchAll(key, scope: scope)
             if Task.isCancelled { return }

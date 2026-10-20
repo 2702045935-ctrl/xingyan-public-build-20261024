@@ -1,12 +1,6 @@
 import SwiftUI
 import UIKit
 
-/* ============================================================
-   搜索（微信点会话页那个搜索框进的就是这一页）
-   · 顶部：搜索框（自动聚焦）+「取消」
-   · 没输内容时：「搜索指定内容」一排（聊天记录 / 联系人 / 群聊 / 朋友圈 / 视频号）+「最近搜索」
-   · 输了内容：分「聊天记录 / 联系人 / 群聊」三组出结果，点一条直接进聊天/名片
-   ============================================================ */
 struct SearchPage: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
@@ -14,20 +8,19 @@ struct SearchPage: View {
 
     var onOpenChat: ((Chat) -> Void)? = nil
     var onOpenUser: ((User) -> Void)? = nil
-    /// 要不要那颗「语音球」（2026-10-16 用户：通讯录搜索框起来时，键盘上方居中一颗，
-    /// 键盘消失跟着消失 —— 默认关，只有通讯录那条路传 true）
+
     var voiceBall: Bool = false
 
     @State private var q = ""
     @State private var scope = "all"
-    /// 搜索历史：本机最多 20 条、自动去重、最近搜的在最前（SearchHistory 统一管着）
+
     @State private var history: [String] = []
-    /// 猜你想搜：后台配的优先，拉不到/断网就用内置那组
+
     @State private var hot: [String] = SearchSuggest.shown
     @FocusState private var focused: Bool
-    /// 语音搜索（复用聊天里那套 Dictation：说出来的字直接填进搜索框）
+
     @StateObject private var dictation = Dictation()
-    /// 键盘现在多高（0 = 没起来）—— 语音球就挂在键盘正上方
+
     @State private var kbHeight: CGFloat = 0
 
     private let scopes: [(String, String, String)] = [
@@ -49,7 +42,6 @@ struct SearchPage: View {
         }
     }
 
-    /// 会话标题：群聊用群名，单聊用对方的昵称（本地算，不依赖别的辅助函数）
     private func chatTitle(_ c: Chat) -> String {
         if let t = c.title, !t.isEmpty { return t }
         if let peerId = (c.memberIds ?? []).first(where: { $0 != (app.me?.id ?? "") }),
@@ -59,7 +51,6 @@ struct SearchPage: View {
         return Tr("聊天")
     }
 
-    /// 会话头像：群聊用群头像，单聊用对方头像
     private func chatAvatar(_ c: Chat) -> String {
         if let a = c.avatar, !a.isEmpty { return a }
         if let peerId = (c.memberIds ?? []).first(where: { $0 != (app.me?.id ?? "") }),
@@ -138,9 +129,6 @@ struct SearchPage: View {
         }
         .background(C.pageBg.ignoresSafeArea())
 
-        /* ★ 语音球：键盘起来 → 出现在键盘正上方、水平居中；键盘一收就跟着没了。
-           （这一层自己 ignoresSafeArea(.keyboard)，所以位置能按 kbHeight 精确算，
-             不会被系统那套"把整页顶上去"的内缩二次平移。） */
         GeometryReader { g in
             if voiceBall, kbHeight > 1 {
                 VoiceOrb(level: dictation.listening ? 0.55 : 0.16,
@@ -151,7 +139,7 @@ struct SearchPage: View {
                     .transition(.opacity.combined(with: .scale(scale: 0.86)))
                     .onTapGesture {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        /* 点一下开始听、再点一下收工；识别到的字实时填进搜索框 */
+
                         dictation.toggle { t in q = t }
                     }
             }
@@ -165,9 +153,9 @@ struct SearchPage: View {
             focused = true
             history = SearchHistory.all
         }
-        /* 进页拉一次「猜你想搜」（后台配的）；拉不到就还用内置那组 */
+
         .task { await loadHot() }
-        /* 键盘高度：起来 → 球出现；收起来 → 球消失 */
+
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { n in
             guard let f = n.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
             let h = max(0, UIScreen.main.bounds.height - f.minY)
@@ -206,8 +194,6 @@ struct SearchPage: View {
         }
     }
 
-    /// 搜索历史：本机 20 条，最近的在最前；**每个词一个圆角框**、词与词之间留距离，
-    /// 右边一个垃圾桶一键清空（用户要的排版）
     private var historyBlock: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
@@ -231,8 +217,8 @@ struct SearchPage: View {
             ChipFlow(spacing: 10, lineSpacing: 10) {
                 ForEach(history, id: \.self) { r in
                     chip(r, icon: "clock.arrow.circlepath") {
-                        remember(r)                 // 点过的挪到最前
-                        q = r                       // 直接搜
+                        remember(r)
+                        q = r
                     }
                 }
             }
@@ -244,7 +230,6 @@ struct SearchPage: View {
         .padding(.top, 10)
     }
 
-    /// 猜你想搜：后台配的词，每个也是**一个圆角框**，一行大概 3~4 个，点一下直接搜
     private var suggestBlock: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(Tr("猜你想搜"))
@@ -266,7 +251,6 @@ struct SearchPage: View {
         .padding(.top, 10)
     }
 
-    /// 一个词长什么样：圆角外框（浅色/深色两套底色 + 一圈细边），里面可带个小图标
     private func chip(_ text: String, icon: String? = nil, _ tap: @escaping () -> Void) -> some View {
         Button(action: tap) {
             HStack(spacing: 5) {
@@ -344,13 +328,11 @@ struct SearchPage: View {
         .padding(.top, 10)
     }
 
-    /// 记一条搜索历史（本机、自动去重、最多 20 条）
     private func remember(_ text: String) {
         SearchHistory.add(text)
         history = SearchHistory.all
     }
 
-    /// 「猜你想搜」：后台配的优先，拉不到就用内置那组（界面照常有东西点）
     private func loadHot() async {
         if let words = try? await API.shared.searchHot(), !words.isEmpty {
             SearchSuggest.remote = words
@@ -359,9 +341,6 @@ struct SearchPage: View {
     }
 }
 
-/* ============================================================
-   一行摆不下就换行的「胶囊流」（微信那种灰底圆角小胶囊排版）
-   ============================================================ */
 struct ChipFlow: Layout {
     var spacing: CGFloat = 8
     var lineSpacing: CGFloat = 8

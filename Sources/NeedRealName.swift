@@ -1,8 +1,5 @@
 import SwiftUI
 
-/* 「请先完成实名认证」整页提示。
-   强制实名（和微信一样）：没实名的账号进不了钱包 / 零钱，
-   服务端直接 403 + needRealName，这里给一张干净的提示页（不显示任何金额）。 */
 struct NeedRealNameView: View {
     var onClose: () -> Void
     @EnvironmentObject var app: AppState
@@ -41,7 +38,7 @@ struct NeedRealNameView: View {
         .background(C.pageBg.ignoresSafeArea(edges: .top))
         .toolbar(.hidden, for: .navigationBar)
         .hidesTabBar()
-        /* 2026-10-16：实名提示页补左滑返回 */
+
         .swipeBack { onClose() }
     }
 }

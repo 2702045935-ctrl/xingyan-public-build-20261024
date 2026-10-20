@@ -1,18 +1,8 @@
 import SwiftUI
 
-/* ============================================================
-   朋友圈的评论输入条（2026-10-12 加，照微信）
-
-   微信里点「评论」**不弹框**：从底下滑出一条输入条（浮在键盘上方），
-   左边是输入框、右边是「发送」；点别人的评论会带上「回复 A：」。
-   我们以前用的是系统 .alert（跳个框），用户要求对齐微信，所以做成这条。
-
-   浮在键盘上方靠 safeAreaInset(edge: .bottom)：系统会把键盘算进安全区。
-   ============================================================ */
-
 struct MomentCommentBar: View {
     @Binding var text: String
-    /// 回复谁的名字（空 = 直接评论）
+
     var replyTo: String = ""
     let onSend: () -> Void
     let onCancel: () -> Void
@@ -59,7 +49,7 @@ struct MomentCommentBar: View {
         .background(C.cardBg)
         .overlay(alignment: .top) { HairLine() }
         .task {
-            /* 稍微等一下再聚焦：输入条刚插进布局就 focus，键盘有时候不弹 */
+
             try? await Task.sleep(nanoseconds: 150_000_000)
             focused = true
         }

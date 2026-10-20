@@ -1,7 +1,6 @@
 import SwiftUI
 import UIKit
 
-/// 让 UIKit 输入框沿用 App 自己的苹方、后台字号倍率和关怀模式。
 func chatComposerUIFont(_ size: CGFloat = 17) -> UIFont {
     let scaled = max(9, (size * fontScale * CareMode.scale).rounded())
     if let name = pfName(.regular), let font = UIFont(name: name, size: scaled) {
@@ -10,11 +9,6 @@ func chatComposerUIFont(_ size: CGFloat = 17) -> UIFont {
     return .systemFont(ofSize: scaled)
 }
 
-/// 聊天输入框的 UIKit 桥。
-///
-/// SwiftUI 的 TextField 不暴露当前选区；表情面板一点开又会收起键盘，
-/// 于是表情只能追加到末尾。这里用 UITextField 自己记住最后一次选区，
-/// 表情和小键盘退格都直接作用在光标位置。
 @MainActor
 final class ChatComposerBridge: ObservableObject {
     fileprivate weak var textField: UITextField?
@@ -91,7 +85,6 @@ final class ChatComposerBridge: ObservableObject {
     }
 }
 
-/// 和原 SwiftUI TextField 外观一致的聊天输入框，额外保留选区给表情面板使用。
 struct ChatComposerTextField: UIViewRepresentable {
     @Binding var text: String
     @Binding var focused: Bool

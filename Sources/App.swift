@@ -3,82 +3,68 @@ import LocalAuthentication
 import UIKit
 import CoreImage
 
-/* ============================================================ 全局状态 */
-
 @MainActor
 final class AppState: ObservableObject {
     @Published var booting = true
 
-    /// 扫一扫扫到「登录码」：交给最外层弹微信那张「登录确认」卡片
-    /// （扫一扫自己是盖在最上面的一页，让它先收起来再弹）
     @Published var pairApproveCode = ""
-    /// 扫到「面对面传照片和视频」的连接码：交给最外层打开点对点传输页
+
     @Published var nearbyDropInvite: NearbyDropInvite?
 
-    /// 离线（连不上服务器）：界面照常显示缓存里的内容，顶上挂一条提示。
     @Published var offline = false
 
     init() {
-        /* 冷启动先用本机存的那份界面配置（字号 / 颜色 / 间距）把界面画出来，
-           再去服务器拉最新的。以前这里什么都没做：第一帧按硬编码默认值画，
-           赶上网络慢或者配置没拉到，用户看到的就是「字体啥的恢复原样了」。 */
+
         applyCachedUIConfig()
     }
 
-    /// 每几秒探一次服务器通不通（只打 /api/health）。
-    /// 离线时**什么都不清空**：会话列表、聊天记录、联系人全留着，只是收不到新的。
     func checkReachability() async {
         await API.shared.ping()
         if offline != API.shared.offline { offline = API.shared.offline }
     }
-    /// 服务器有没有开「登录滑动验证」（登录页配置里一起下发；默认开着更安全）
+
     @Published var sliderLogin = true
     @Published var me: User? {
         didSet {
-            rememberLastUser()               // 谁登录（或改了头像）就记住谁，登录页圆圈用它
-            /* 一登录就开始「红点兜底」轮询；退出登录就停 */
+            rememberLastUser()
+
             if me != nil { startDotWatch() } else { dotTask?.cancel() }
         }
     }
-    /// 这台设备上最后登录的人（登录页圆圈显示他的头像 / 名字）
+
     @Published var lastAvatar: String = UserDefaults.standard.string(forKey: "chris.lastAvatar") ?? ""
     @Published var lastName: String = UserDefaults.standard.string(forKey: "chris.lastName") ?? ""
-    /// 已经登录过的人：启动先出一层**二级登录框**（微信那样：头像 + 名字 + 「登录」），
-    /// 点了「登录」才进主界面；点「切换账号」回登录页。不是直接冲进去。
+
     @Published var needConfirmLogin = false
-    /// 退出登录之后：**回二级登录框**（上次登录的那个人 + 「登录」/「切换账号」），
-    /// 不是直接掉回一级登录页（用户要求）。
+
     @Published var showSavedLogin = false
-    /// 登录过、可以一键切换的账号（最多 3 个）
+
     @Published var accounts: [SavedAccount] = AccountStore.load()
-    /// 待处理的好友申请数量（通讯录红点用它）
+
     @Published var friendRequests = 0
-    /// 后台配的红点规则（哪个位置该不该亮）
+
     @Published var badges: [String: String] = [:]
 
-    /* ---------------- 版本更新 / 弹窗公告（后台「运营配置」里配） ---------------- */
-    /// 必须更新：盖住整个 App，不给用（和微信一样）
     @Published var forcedUpdate: AppUpdateInfo? = nil
-    /// 可选更新：可以「以后再说」
+
     @Published var optionalUpdate: AppUpdateInfo? = nil
-    /// 弹窗公告
+
     @Published var noticeAlert: NoticeInfo? = nil
 
-    /// 当前包的构建号（"B533 · 09-25 08:45" → 533）
     static var buildNumber: Int {
         let s = AppInfo.build
         guard let r = s.range(of: "B") else { return 0 }
         let digits = s[r.upperBound...].prefix { $0.isNumber }
         return Int(digits) ?? 0
     }
-    /// 后台配的版本号（"B534" → 534；写别的格式就当 0，不弹更新）
+
     static func buildNumberOf(_ v: String?) -> Int {
         let s = String(v ?? "")
         guard let r = s.range(of: "B") else { return 0 }
         let digits = s[r.upperBound...].prefix { $0.isNumber }
         return Int(digits) ?? 0
     }
-    /// "2026-10-01 00:00" / "2026-10-01" → Date（空 = 不限）
+
     private static func parseTime(_ s: String?) -> Date? {
         let t = String(s ?? "").trimmingCharacters(in: .whitespaces)
         guard !t.isEmpty else { return nil }
@@ -90,14 +76,14 @@ final class AppState: ObservableObject {
         }
         return nil
     }
-    /// 公告在不在生效时间内
+
     private static func inWindow(start: String?, end: String?) -> Bool {
         let now = Date()
         if let s = parseTime(start), now < s { return false }
         if let e = parseTime(end), now > e { return false }
         return true
     }
-    /// 公告的版本范围（B533 ~ B540 这种；留空 = 不限）
+
     private static func versionInRange(_ n: NoticeInfo) -> Bool {
         let mine = buildNumber
         let lo = buildNumberOf(n.minVersion)
@@ -106,7 +92,7 @@ final class AppState: ObservableObject {
         if hi > 0 && mine > hi { return false }
         return true
     }
-    /// 公告的稳定标识（做"弹过没"的标记用；不能用 hashValue，每次启动都不一样）
+
     private static func noticeKey(_ n: NoticeInfo) -> String {
         let s = (n.title ?? "") + "|" + (n.content ?? "")
         return String(s.prefix(40)) + "-" + String(s.count)
@@ -117,14 +103,13 @@ final class AppState: ObservableObject {
         return f.string(from: Date())
     }
 
-    /// 拉一次版本 + 公告（启动时、回到前台各一次；失败就静默跳过）
     func checkVersionAndNotice() async {
         let (info, notice) = await API.shared.versionInfo()
         if let info = info {
             let want = Self.buildNumberOf(info.version)
             if want > Self.buildNumber {
                 if info.force == true {
-                    forcedUpdate = info                       // 强制：盖住整个 App
+                    forcedUpdate = info
                 } else {
                     let key = "chris.update.seen." + String(want)
                     if !UserDefaults.standard.bool(forKey: key) { optionalUpdate = info }
@@ -141,7 +126,7 @@ final class AppState: ObservableObject {
             case "daily":
                 if UserDefaults.standard.string(forKey: key) != Self.dayKey() { noticeAlert = n }
             default:
-                noticeAlert = n                                    // 每次打开都弹
+                noticeAlert = n
             }
         }
     }
@@ -150,7 +135,7 @@ final class AppState: ObservableObject {
         if let n = noticeAlert {
             let kind = n.kind ?? "popup"
             let key = "chris.notice.seen." + Self.noticeKey(n)
-            // popup 类型不落标记（下次打开还要弹）
+
             if kind == "once" { UserDefaults.standard.set(true, forKey: key) }
             if kind == "daily" { UserDefaults.standard.set(Self.dayKey(), forKey: key) }
         }
@@ -165,16 +150,13 @@ final class AppState: ObservableObject {
         optionalUpdate = nil
     }
 
-    /// 点「立即更新」：直接开下载页（自签包不能走 App Store，跳浏览器下载）
     func openUpdate(_ u: AppUpdateInfo) {
         let fallback = (u.downloadPage?.isEmpty == false ? u.downloadPage! : (u.url ?? ""))
         Task {
-            /* 优先要一条限时签名链接：安装包直链收口（后台一个开关）以后，
-               只有这条链接能下 —— 拿不到就退回原来的公开地址（过渡期老服务器也兼容） */
+
             let signed = await API.shared.appDownloadTicket()
             let s = signed ?? fallback
-            /* 用带 completionHandler 的那个重载：Task 里直接 open(url) 会被解析成 async 版本，
-               编译报「expression is 'async' but is not marked with 'await'」（B721 就栽在这儿） */
+
             if let url = URL(string: s) {
                 UIApplication.shared.open(url, options: [:], completionHandler: nil)
             }
@@ -182,7 +164,6 @@ final class AppState: ObservableObject {
         }
     }
 
-    /// 这个位置要不要显示红点：auto = 看真实数据；on = 一直亮；off = 不显示
     func showDot(_ key: String, auto: Bool) -> Bool {
         switch badges[key] ?? "auto" {
         case "on": return true
@@ -195,9 +176,7 @@ final class AppState: ObservableObject {
         badges = await API.shared.badgeConfig()
     }
     @Published var chats: [Chat] = []
-    /* 通讯录。`contact(for:)` 在聊天页每一行都要问好几次（头像、昵称、通话头像…），
-       以前是 `contacts.first { $0.id == id }` —— 500 个好友就是每条消息几百次比较，
-       消息一多滚动就掉帧。这里跟着 contacts 一起维护一张 id → User 的表，查表 O(1)。 */
+
     @Published var contacts: [User] = [] {
         didSet { rebuildContactIndex() }
     }
@@ -208,68 +187,52 @@ final class AppState: ObservableObject {
         contactIndex = m
     }
     @Published var moments: [Moment] = []
-    /// 朋友圈有没有新的（别人发了就 > 0，「发现」上挂红点）
+
     @Published var momentsUnread = 0
-    /// 朋友圈「消息列表」未读数（谁赞了/评论了我）：朋友圈右上角小信封上的红点
+
     @Published var momentNoticeUnread = 0
-    /// 聊天输入栏上面那排「快捷按钮」（管理 → 聊天快捷 里能增删/排序/改名/开关）
+
     @Published var quickChips: [QuickChip] = QuickChip.defaults
-    /// 输入框右边那个「＋」按钮的外观（颜色 / 大小 / 图片）
+
     @Published var plusButton = PlusButtonCfg()
-    /// 切换界面语言时 +1：让整棵界面树重建，所有文案立刻变
+
     @Published var langVersion = 0
-    /// 启动页是否已经展示过（放全局：界面刷新、从后台切回来都不会重弹）
+
     @Published var splashDone = false
-    /// 服务器上配的默认聊天背景（自己没设时用它，和网页版一致）
+
     @Published var defaultChatBackground = ""
-    /// 后台配的启动页图片（空 = 用 App 包里那张）
+
     @Published var splashImage = ""
     @Published var toast: String?
-    /// 扫到收付款码之后要弹的确认付款页（扫一扫在哪个页面都能弹出来）
+
     @Published var payScan: PayScanInfo?
-    /// 扫到码的原文（一起交给付款页，金额以服务器解析的为准）
+
     @Published var payScanText: String = ""
-    /// 扫一扫扫到别人的个人码：解析出来的人 —— 跳他的资料页（和微信一样，先看是谁再加）
+
     @Published var scanCardUser: User?
-    /// 全局打开某个聊天：扫码进群、建完群、点推送都用它。
-    /// 走最外层整页打开，不依赖「会话页的导航栈还在不在」——扫一扫从任何页面都能开，
-    /// 以前那种「往会话页栈里 push」的写法，人不在会话页时通知就丢了（所以看着像不跳转）。
+
     @Published var openChat: Chat?
-    /// 点了推送通知要让会话页自己把某个会话推进去（2026-10-12）：
-    /// ⚠ 以前是直接 `openChat = c`（最外层 fullScreenCover 整页压上去）——
-    /// 用户反复报「点推送通知就闪退」，因为点通知进来时 App 可能还在冷启动，
-    /// 整页视图压上去会和启动那几帧打架被系统杀掉。
-    /// 现在改成把会话 id 放这儿，**由会话列表按它自己的导航** push（和手点一个会话一模一样）。
+
     @Published var pendingPushChatId: String?
-    /// 置 true 时 MainTab 把底栏切回「会话」那一页（配合 openChatViaList 用）
+
     @Published var wantChatsTab = false
 
-    /// **统一的「打开某个会话」入口**（2026-10-12）：
-    /// 以前各处都是 `app.openChat = c` —— 最外层 fullScreenCover 把整页聊天页压上去。
-    /// 那条路在「页面正在切换」的瞬间会被系统杀掉：点推送（用户报过）、**刚建完群**（用户报
-    /// 「创建了群也会闪退」）、扫码进群、搜索结果点进去……都是同一类。
-    /// 现在统一改成：切回会话 tab + 把会话 id 交给会话列表，由它用自己那条导航 push
-    /// —— 和用户手点一个会话**完全同一条路**，那条路一直是稳的。
     func openChatViaList(_ c: Chat) {
         wantChatsTab = true
         pendingPushChatId = c.id
     }
-    /// 从聊天里点好友分享来的小游戏卡片 → 全屏打开那个小游戏。
-    /// ⚠ 挂在**最外层**（MainTab）来弹，不放在聊天页里 —— 在聊天页里挂
-    /// `fullScreenCover(item:)` 会让聊天页一打开就闪退（2026-10-11 踩过）。
+
     @Published var openMiniApp: MiniApp?
     @Published var loadingChats = false
     @Published var loadError: String?
-    /// 服务器上的界面配置变了就 +1，整个界面重建一次（不用重装 App）
+
     @Published var uiVersion = 0
-    /// 点进二级页面（聊天、名片、朋友圈、设置…）时把底部 4 个 tab 收起来。
-    /// 用「层数」而不是布尔：从第三层返回第二层时，底栏不能错误地冒出来。
+
     @Published var tabBarDepth = 0
-    /// 会话列表「二楼」拉下来时也要把底栏收起来。它不走导航栈（是同一页里叠出来的一层），
-    /// 所以单独一个标志位；底栏该不该藏 = 导航栈有层数 **或者** 二楼开着。
+
     @Published var floorFull = false
     var tabBarHidden: Bool { tabBarDepth > 0 || floorFull }
-    /// 外观：auto=跟随系统 · light=浅色 · dark=深色（存在本机，和网页版那个「切换外观」一样）
+
     @Published var appearance: String = UserDefaults.standard.string(forKey: "chris.appearance") ?? "auto"
     func setAppearance(_ v: String) {
         appearance = v
@@ -280,18 +243,12 @@ final class AppState: ObservableObject {
     }
     private var lastUIConfig = ""
     private var refreshTask: Task<Void, Never>?
-    /// 界面配置重试用过没有（拉失败以后 5 秒再拉一次）
+
     private var uiRetryScheduled = false
 
-    /* 上一次成功拿到的界面配置（存在本机）。
-       为什么要存：后台配的字号/颜色/间距是**每次启动从服务器拉**的。
-       以前拉到空（断网、服务器重启的那十几秒、登录态过期）也会照样套用，
-       于是 numbers/strings 被清空 → 全站字号、颜色、间距全掉回硬编码默认值，
-       用户看到的就是「字体啥的怎么恢复原样了」。现在：拉失败就保持上一次的。 */
     private static let uiCacheKey = "chris.uiConfigJSON"
     private static let uiIconCacheKey = "chris.uiIconsJSON"
 
-    /// 把短时间内的很多次推送合并成一次刷新（比如一下子涌进来几百条消息）
     private func coalesce(_ work: @escaping () async -> Void) {
         refreshTask?.cancel()
         refreshTask = Task { [weak self] in
@@ -302,9 +259,8 @@ final class AppState: ObservableObject {
         }
     }
 
-    /// 长连接推过来的事情，安排界面去刷新
     func handle(_ ev: PushEvent) {
-        // 自己的资料变了（换封面 / 换头像 / 改昵称 / 改状态 / 换聊天背景）
+
         if let u = ev.user, u.id == me?.id || me == nil {
             me = u
             coalesce { [weak self] in
@@ -320,28 +276,24 @@ final class AppState: ObservableObject {
         if !ev.announce.isEmpty && ev.type == "announce" {
             show("系统公告：" + ev.announce)
         }
-        if let n = ev.momentUnread { momentsUnread = n }      // ready 里带的朋友圈未读数
-        if let n = ev.momentNoticeUnread { momentNoticeUnread = n }   // 朋友圈「消息列表」未读数
+        if let n = ev.momentUnread { momentsUnread = n }
+        if let n = ev.momentNoticeUnread { momentNoticeUnread = n }
         if let n = ev.friendRequests {
-            /* 长连接重连（手机刚从后台回来）时把「新的朋友」红点补上；
-               数字变了就把通讯录重拉一次，行里那个红点数字也跟着新 */
+
             let changed = n != friendRequests
             friendRequests = n
             if changed { coalesce { [weak self] in await self?.loadContacts() } }
         }
         switch ev.type {
         case "message", "chat":
-            /* 新消息：按「消息通知」里的设置真响真震（免打扰时段里不响） */
+
             let cid = ev.chatId
             coalesce { [weak self] in
                 await self?.loadChats()
                 guard let self = self else { return }
                 if !cid.isEmpty, let c = self.chats.first(where: { $0.id == cid }) {
-                    if c.muted == true { return }              // 这个会话自己开了免打扰
-                    /* ⚠ 同一条消息只推一次，而且只推**刚发来的**（两分钟内）——
-                       用户 2026-10-14 报「同一条通知反复推」「后面的消息不推、就推一条
-                       已经发了好些时间的」，就是这个：以前每收到一次事件就照当前
-                       最后一条消息推一遍，同一条会重复推、旧消息也会被翻出来推。 */
+                    if c.muted == true { return }
+
                     let mid = c.lastMessage?.id ?? ""
                     guard LocalNotify.shouldNotify(chatId: c.id, msgId: mid,
                                                    at: c.lastMessage?.createdAt) else { return }
@@ -355,19 +307,17 @@ final class AppState: ObservableObject {
                 }
             }
         case "transfer":
-            /* 转账状态变了（对方收款 / 24 小时自动退回）：
-               付款方这边弹一句提示，会话列表跟着刷一遍 */
+
             if ev.transferStatus == "received", ev.transferFromId == me?.id,
                let a = ev.transferAmount {
                 show("对方已收款 ¥" + money(a))
             }
             coalesce { [weak self] in await self?.loadChats() }
         case "moment":
-            momentsUnread = max(1, momentsUnread)          // 有人发朋友圈：先点红点，再拉一次
+            momentsUnread = max(1, momentsUnread)
             coalesce { [weak self] in await self?.loadMoments() }
         case "moment-notice":
-            /* 朋友圈「消息列表」：谁赞了/评论了我。小信封上的红点立刻变，
-               顺便真弹一条通知（微信也是收得到这个提醒的）。 */
+
             if let n = ev.momentNoticeUnread { momentNoticeUnread = n }
             else if ev.momentNotice != nil { momentNoticeUnread += 1 }
             if let nt = ev.momentNotice {
@@ -383,15 +333,14 @@ final class AppState: ObservableObject {
         case "friend", "presence", "profile":
             coalesce { [weak self] in await self?.loadContacts() }
         case "toast":
-            /* 服务器一句轻提示（比如"拍一拍太频繁了"） */
+
             if !ev.announce.isEmpty { show(ev.announce) }
         case "transferRemind":
-            /* 对方点了「提醒你收款」：真弹一条提示（以前那颗按钮只是自己这边弹个假的） */
+
             show(ev.announce.isEmpty ? "对方提醒你确认收款" : ev.announce)
             coalesce { [weak self] in await self?.loadChats() }
         case "ready":
-            /* 长连接重连成功不等于离线期间的数据已经追平。主动重拉会话摘要，
-               并把最近 20 个会话的增量消息放进本地预取，避免摘要新、内容旧。 */
+
             coalesce { [weak self] in
                 await self?.loadChats()
                 await self?.syncRecentMessages(chatCount: 20, limit: 50)
@@ -414,9 +363,7 @@ final class AppState: ObservableObject {
 
     func boot() async {
         CrashCatcher.note("启动", "3 boot 开始")
-        /* 兜底：不管网络多慢，最多 6 秒一定离开「正在连接…」这一屏。
-           线路被掐的时候让用户盯着「正在连接」干等，是最容易被投诉的那种体验：
-           到点就先放进 App（有缓存资料就用缓存），后台继续连，连上了界面自己会更新。 */
+
             let watchdog = Task { @MainActor in
             try? await Task.sleep(nanoseconds: 6_000_000_000)
             guard !Task.isCancelled, booting else { return }
@@ -430,7 +377,7 @@ final class AppState: ObservableObject {
         await refreshUI(force: true)
         CrashCatcher.note("启动", "4 界面配置就绪")
         await loadBadges()
-        /* 版本更新 / 弹窗公告：不阻塞启动（失败了也不影响进 App） */
+
         await checkVersionAndNotice()
         if API.shared.token.isEmpty {
             booting = false
@@ -441,8 +388,8 @@ final class AppState: ObservableObject {
             CrashCatcher.note("启动", "5 会话查询返回")
             if s.ok, let user = s.user {
                 me = user
-                rememberLastUser()      // 登录页那个圆圈用「最后登录的人」的头像
-                /* 已经登录过：先出**二级登录框**（微信那样），点了「登录」才进主界面 */
+                rememberLastUser()
+
                 needConfirmLogin = true
                 await refreshAll()
                 Realtime.shared.start()
@@ -450,32 +397,26 @@ final class AppState: ObservableObject {
                 API.shared.clearToken()
             }
         } catch {
-            /* 连不上服务器（电脑没开 / 不在同一个 Wi-Fi）：不要把人踢回登录页，
-               先用本地缓存的资料进 App，等服务器回来了再自动同步。 */
+
             if let cached = AppState.cachedUser() {
                 me = cached
-                needConfirmLogin = true      // 断网也算"已经登录过"，先出二级登录框
+                needConfirmLogin = true
             }
-            /* 而且要把**上次的会话/通讯录/朋友圈**也铺出来（API 那边存了一份），
-               不然冷启动断网时主界面是空的 —— 微信断网也是照常显示上次的列表。 */
+
             await refreshAll()
         }
         booting = false
     }
 
-    /// 本地缓存的当前用户（离线进 App 用）
     static func cachedUser() -> User? {
         guard let s = UserDefaults.standard.string(forKey: "chris.lastUserJSON"),
               let d = s.data(using: .utf8) else { return nil }
         return try? JSONDecoder().decode(User.self, from: d)
     }
 
-    /// 拉服务器上的 data/ui.json：改了数字/颜色，App 重开或回到前台就生效
     func refreshUI(force: Bool = false) async {
         let cfg = await API.shared.uiConfig()
-        /* 空 = 这次没拉到（断网 / 正好赶上服务器重启 / 掉登录）：
-           千万别把空配置套上去，那会把后台配的字号、颜色、间距全清掉。
-           保持上一次的，并安排在 5 秒后自己再拉一次。 */
+
         if cfg.ui.isEmpty && cfg.icons.isEmpty {
             applyCachedUIConfig()
             scheduleUIRetry()
@@ -490,22 +431,17 @@ final class AppState: ObservableObject {
             cacheUIConfig(cfg.ui, cfg.icons)
             uiVersion += 1
         }
-        // 服务器上配的默认聊天背景（自己没设时用）
+
         if let b = await API.shared.branding() {
             defaultChatBackground = b.chatBackground ?? ""
             splashImage = b.splash ?? ""
         }
-        /* 聊天输入栏那一份配置（快捷按钮 + 「＋」按钮外观）跟着一起拉：
-           管理里改完不用重开 App，回到前台就生效 */
+
         await loadChatQuick()
-        /* 顺手把「线路入口」列表拉一份存起来：后台改了备用地址，用户在下次进前台就生效，
-           不用等出新包。主入口连不上时，下一次请求会自动换到这份列表里的下一条。 */
+
         await API.shared.loadEndpointList()
     }
 
-    /* ---------------------------------------------------------- 界面配置的本机缓存 */
-
-    /// 存一份到本机（下次启动先用它渲染，不用等服务器）
     private func cacheUIConfig(_ ui: [String: Any], _ icons: [String: String]) {
         if let d = try? JSONSerialization.data(withJSONObject: ui),
            let s = String(data: d, encoding: .utf8) {
@@ -518,7 +454,6 @@ final class AppState: ObservableObject {
         }
     }
 
-    /// 先用本机存的那一份（启动时、以及某次拉失败时都走这里）
     func applyCachedUIConfig() {
         if let s = UserDefaults.standard.string(forKey: Self.uiCacheKey),
            let d = s.data(using: .utf8),
@@ -536,7 +471,6 @@ final class AppState: ObservableObject {
         }
     }
 
-    /// 拉失败后 5 秒再拉一次（只排一次，别堆起来）
     private func scheduleUIRetry() {
         guard !uiRetryScheduled else { return }
         uiRetryScheduled = true
@@ -555,17 +489,15 @@ final class AppState: ObservableObject {
         Realtime.shared.start()
     }
 
-    /// 账号密码登录：服务器开着滑动验证时，要带上滑块换来的一次性通行证
     func login(username: String, password: String, sliderTicket: String) async throws {
         me = try await API.shared.login(username: username, password: password, sliderTicket: sliderTicket)
         rememberLastUser()
         await refreshAll()
         Realtime.shared.start()
-        /* 登录后同步最近的聊天记录（微信那句文案对应的动作） */
+
         Task { await syncRecentMessages() }
     }
 
-    /// 注册成功后直接用返回的用户进去（注册接口已经把登录态发下来了，不用再走一次登录）
     func adoptRegistered(_ user: User) async {
         me = user
         rememberLastUser()
@@ -574,7 +506,6 @@ final class AppState: ObservableObject {
         Task { await syncRecentMessages() }
     }
 
-    /// 新用户引导完成：服务端保存头像和分类后，根视图自动切到首页。
     func finishNewUserOnboarding(avatar: String, interests: [String]) async throws {
         let updated = try await API.shared.completeOnboarding(avatar: avatar, interests: interests)
         me = updated
@@ -591,7 +522,6 @@ final class AppState: ObservableObject {
         Task { await syncRecentMessages() }
     }
 
-    /// 身份证自助解封成功后走这里：等同于登录成功（解封接口会把登录态一起发下来）
     func finishLogin(_ user: User) async {
         me = user
         rememberLastUser()
@@ -600,12 +530,6 @@ final class AppState: ObservableObject {
         Task { await syncRecentMessages() }
     }
 
-    /* ---------------- 红点兜底 ----------------
-       推送偶尔会漏（手机在后台、长连接正在重连、被系统掐了）。
-       所以除了推送，还有两层：
-       ① 长连接重连时服务器在 ready 里带上 friendRequests；
-       ② 回到前台 + 每 25 秒轻量问一次 /api/badge-counts。
-       这样「有人加你好友」最迟 25 秒内通讯录一定出红点。 */
     private var dotTask: Task<Void, Never>?
     func startDotWatch() {
         dotTask?.cancel()
@@ -621,23 +545,22 @@ final class AppState: ObservableObject {
         guard me != nil, let d = await API.shared.badgeCounts() else { return }
         if d.friendRequests != friendRequests {
             friendRequests = d.friendRequests
-            await loadContacts()          // 让「新的朋友」行里的数字也跟上
+            await loadContacts()
         }
         if d.momentUnread != momentsUnread { momentsUnread = d.momentUnread }
     }
 
-    /// 记住这台设备上最后登录的人（登录页的圆圈用它显示头像）
     func rememberLastUser() {
         guard let me = me else { return }
         lastAvatar = me.avatar ?? ""
         lastName = me.nickname ?? me.username ?? ""
         UserDefaults.standard.set(lastAvatar, forKey: "chris.lastAvatar")
         UserDefaults.standard.set(lastName, forKey: "chris.lastName")
-        /* 缓存一份完整资料：连不上服务器时用它先进 App，不把人踢回登录页 */
+
         if let d = try? JSONEncoder().encode(me), let s = String(data: d, encoding: .utf8) {
             UserDefaults.standard.set(s, forKey: "chris.lastUserJSON")
         }
-        /* 记进「登录过的账号」列表：最多 3 个，登录页可以左右滑 */
+
         if let u = me.username, !u.isEmpty, !API.shared.token.isEmpty {
             accounts = AccountStore.upsert(username: u,
                                            nickname: me.nickname ?? u,
@@ -647,32 +570,25 @@ final class AppState: ObservableObject {
     }
 
     func refreshAll() async {
-        CrashCatcher.install()              // 装上崩溃上报：崩了会把调用栈发到服务器
-        LocalNotify.prepare()               // 先要通知权限，之后新消息才会真响真震
-        PushCenter.shared.start()           // 苹果推送：要权限 + 拿 device token 交给服务器
+        CrashCatcher.install()
+        LocalNotify.prepare()
+        PushCenter.shared.start()
         PushCenter.shared.uploadIfPossible()
-        /* 换账号 / 重新登录进来了：「已被顶下线」那张卡片复位，顺便拉一次小星的档位
-           （会话页顶栏那颗眼睛按档位画：开启会动 / 静态不动 / 关闭不画） */
+
         OtherLogin.shared.reset()
-        /* 先把本机存的「小星档位」铺上（按账号存的），再去服务器拉真档位 ——
-           不然关了眼睛的人每次进来都会先冒出那双眼睛、两秒后才消失。 */
+
         EyesStore.shared.primeFromCache()
-        /* 小星档位**延后 2 秒**再去拉：一登录就拉的话，@Published 一变会话页整个顶栏会重画，
-           要是正好撞上用户"点聊天"那一下，这台测试机就被系统直接杀进程（无崩溃栈）。
-           2 秒够启动画面走完，用户也很少在 2 秒内点开一个会话。 */
+
         Task {
             try? await Task.sleep(nanoseconds: 2_000_000_000)
             await EyesStore.shared.refresh()
         }
-        /* 启动就留一条系统日志（Console 里能看到）+ 打点：
-           出了「内容不动了」这类问题，先看启动时间点对不对得上。 */
+
         AppLog.info("启动 " + AppInfo.build + " · " + AppInfo.deviceKind + " · " + API.shared.server)
         await LocalNotify.refresh()
         await loadHomeDataParallel()
     }
 
-    /// 启动/回前台时，会话、通讯录、生活圈三个独立接口并行拉取。
-    /// 以前串行执行，弱网下总耗时接近三次 RTT 相加。
     private func loadHomeDataParallel() async {
         loadingChats = true
         async let chatsRequest = API.shared.chats()
@@ -705,16 +621,9 @@ final class AppState: ObservableObject {
         syncIconBadge()
     }
 
-    /* ----------------------------------------------------------
-       登录后同步最近的聊天记录（微信那句「登录后同步最近的聊天记录」）
-       一次把最近 10 个会话、每个最近 30 条消息拉下来：
-         · 会话列表立刻就有
-         · 每个会话的最近消息先存在 prefetched 里，进会话时直接铺出来，不用等网络
-       同步是后台做的，界面顶部显示一条进度提示，失败也不拦着用。
-       ---------------------------------------------------------- */
     @Published var syncing = false
     @Published var syncText = ""
-    /// 预取的最近消息：chatId -> 最近 N 条
+
     var prefetched: [String: [Message]] = [:]
 
     func syncRecentMessages(chatCount: Int = 20, limit: Int = 50) async {
@@ -724,7 +633,7 @@ final class AppState: ObservableObject {
         defer { syncing = false }
         do {
             let r = try await API.shared.chatsWithRecentMessages(chats: chatCount, limit: limit)
-            chats = r.chats          // 这里的 chats 是 AppState 自己那份列表
+            chats = r.chats
             var total = 0
             for c in r.synced {
                 if let msgs = c.messages, !msgs.isEmpty {
@@ -733,7 +642,7 @@ final class AppState: ObservableObject {
                 }
             }
             syncText = "已同步 " + String(r.synced.count) + " 个会话 / " + String(total) + " 条消息"
-            /* 提示留一会儿再消失，别一闪而过 */
+
             try? await Task.sleep(nanoseconds: 900_000_000)
             syncText = ""
         } catch {
@@ -746,9 +655,7 @@ final class AppState: ObservableObject {
         defer { loadingChats = false }
         do {
             let fresh = try await API.shared.chats()
-            /* 只在内容真的变了才赋值。
-               以前每 4 秒（会话页的定时刷新）都无条件赋值一次，SwiftUI 会把整个
-               列表行（头像、左滑手势、角标）重建一遍 —— 这就是"看着卡卡的"的主因。 */
+
             if !AppState.sameChats(chats, fresh) { chats = fresh }
             loadError = nil
         } catch {
@@ -757,7 +664,6 @@ final class AppState: ObservableObject {
         syncIconBadge()
     }
 
-    /// 两份会话列表内容是不是一样（用来避免无意义的重画）
     static func sameChats(_ a: [Chat], _ b: [Chat]) -> Bool {
         if a.count != b.count { return false }
         for i in 0..<a.count {
@@ -766,7 +672,7 @@ final class AppState: ObservableObject {
             if x.unreadCount != y.unreadCount { return false }
             if (x.pinned ?? false) != (y.pinned ?? false) { return false }
             if (x.muted ?? false) != (y.muted ?? false) { return false }
-            /* 「标为未读」的红点标记：变了也要重画（红点 ↔ 数字的切换靠它） */
+
             if (x.flagged ?? false) != (y.flagged ?? false) { return false }
             if (x.title ?? "") != (y.title ?? "") { return false }
             if (x.avatar ?? "") != (y.avatar ?? "") { return false }
@@ -777,8 +683,6 @@ final class AppState: ObservableObject {
         return true
     }
 
-    /// 桌面图标右上角那个红点数字（微信也是这个数）：所有会话未读加一起。
-    /// 读完了就归零；有未读就显示。系统没给通知权限时这一句是空操作。
     var unreadForIcon: Int {
         var n = 0
         for c in chats where c.muted != true { n += c.unreadCount }
@@ -794,12 +698,12 @@ final class AppState: ObservableObject {
 
     func loadContacts() async {
         if let r = try? await API.shared.contactsFull() {
-            /* 同样只在变了才赋值：通讯录也是几百行，无条件重画同样会卡 */
+
             let sameOrder = contacts.map { $0.id } == r.friends.map { $0.id }
             let sameLook = contacts.count == r.friends.count
                 && zip(contacts, r.friends).allSatisfy { $0.avatarPath == $1.avatarPath && $0.name == $1.name }
             if !(sameOrder && sameLook) { contacts = r.friends }
-            friendRequests = r.incoming.count        // 别人加你好友 → 通讯录亮红点
+            friendRequests = r.incoming.count
         }
     }
 
@@ -807,12 +711,10 @@ final class AppState: ObservableObject {
         if let feed = try? await API.shared.momentsFeed() {
             moments = feed.moments
             momentsUnread = feed.unread
-            momentNoticeUnread = feed.noticeUnread      // 朋友圈小信封上的红点
+            momentNoticeUnread = feed.noticeUnread
         }
     }
 
-    /// 拉聊天输入栏那份配置（快捷按钮 + 「＋」按钮外观）。
-    /// 拉不到就保持原来那排默认的，绝不把用户的按钮清空。
     func loadChatQuick() async {
         guard let c = try? await API.shared.plusConfig() else { return }
         if !c.quick.isEmpty { quickChips = c.quick }
@@ -820,9 +722,9 @@ final class AppState: ObservableObject {
     }
 
     func logout() async {
-        /* 退出登录：这台手机不再收这个账号的推送 */
-        KeepAlive.shared.stop()          // 别在后台白占着音频
-        OtherLogin.shared.reset()        // 「已被顶下线」那张卡片复位
+
+        KeepAlive.shared.stop()
+        OtherLogin.shared.reset()
         await API.shared.unregisterPushToken(PushCenter.shared.token)
         await API.shared.logout()
         Realtime.shared.stop()
@@ -830,58 +732,51 @@ final class AppState: ObservableObject {
         chats = []
         contacts = []
         moments = []
-        /* 用户要求：退出登录之后**回二级登录框**（上次登录的那个人 + 登录/切换账号），
-           不要直接掉回一级登录页 —— 设这个标记，RootView 就会先出那一屏。 */
+
         showSavedLogin = true
         needConfirmLogin = false
-        syncIconBadge()          // 退出登录：图标上的数字清零
+        syncIconBadge()
     }
 
-    /// 一键登录：用这台设备上保存的登录令牌直接进去（登录页点头像就用这个）
     func quickLogin(token: String? = nil) async -> Bool {
         if let t = token, !t.isEmpty { API.shared.setToken(t) }
         guard !API.shared.token.isEmpty else { return false }
         guard let s = try? await API.shared.session(), s.ok, let user = s.user else {
-            API.shared.clearToken()      // 令牌过期/失效：清掉，让用户重新输密码
+            API.shared.clearToken()
             return false
         }
         me = user
         rememberLastUser()
         await refreshAll()
         Realtime.shared.start()
-        GrowthStore.shared.start()               // 等级：登录后开始记活跃天
-        Task { await syncRecentMessages() }      // 进来后顺手同步最近的聊天记录（不拦着用）
+        GrowthStore.shared.start()
+        Task { await syncRecentMessages() }
         return true
     }
 
     func contact(for id: String) -> User? {
         if me?.id == id { return me }
-        /* 查表（见上面 contactIndex 的说明）。表还没建好时兜底扫一遍。 */
+
         if let hit = contactIndex[id] { return hit }
         if contactIndex.isEmpty { return contacts.first { $0.id == id } }
         return nil
     }
 }
 
-/* ============================================================ 入口 */
-
 @main
 struct CHRISApp: App {
     @StateObject private var app = AppState()
     @StateObject private var externalFiles = ExternalFileInbox.shared
-    /* 苹果推送：拿 device token、收通知、点通知进聊天 */
+
     @UIApplicationDelegateAdaptor(PushCenter.self) private var push
 
     init() {
-        /* 一启动就装崩溃上报：连登录页崩都能抓到（以前放在登录之后，前面的崩抓不到） */
+
         CrashCatcher.install()
         AppMetrics.shared.start()
-        /* 启动分阶段打点：万一崩在启动路上，服务器日志里能看到卡在第几步
-           （只看 "launch" 一条的话，不知道是崩在配置、会话还是主界面） */
+
         CrashCatcher.note("启动", "1 App init")
-        /* 图片/视频/媒体走系统磁盘缓存：服务器现在给上传文件发的是「一年内不用再问」的长缓存，
-           把缓存容量调大以后，头像、封面、朋友圈图片、看过的视频就不再每次重下了 ——
-           这是手机上"卡"和费流量的大头。默认只有 10MB，太小。 */
+
         URLCache.shared = URLCache(memoryCapacity: 64 * 1024 * 1024,
                                    diskCapacity: 512 * 1024 * 1024,
                                    diskPath: "chris-media-cache")
@@ -889,13 +784,12 @@ struct CHRISApp: App {
 
     var body: some Scene {
         WindowGroup {
-            /* 启动页挂在窗口最外层：这样它是**整块屏幕**铺满（含状态栏那一条），
-               以前挂在页面里只覆盖安全区，顶部会露出一条。 */
+
             ZStack {
                 RootView()
                     .environmentObject(app)
                     .environmentObject(externalFiles)
-                    .preferredColorScheme(app.preferredScheme)   // 跟随系统 / 强制浅色 / 强制深色
+                    .preferredColorScheme(app.preferredScheme)
                     .onOpenURL { url in
                         if url.isFileURL { ExternalFileInbox.shared.accept([url]) }
                     }
@@ -904,7 +798,7 @@ struct CHRISApp: App {
                             .environmentObject(app)
                             .environmentObject(externalFiles)
                     }
-                /* 扫一扫扫到「登录码」：出微信那张「登录确认」卡片（写清设备名和时间） */
+
                 Color.clear
                     .frame(width: 0, height: 0)
                     .sheet(isPresented: Binding(
@@ -919,7 +813,7 @@ struct CHRISApp: App {
                         .transition(.opacity)
                         .zIndex(9)
                 }
-                /* 弹窗公告 / 可选更新 / 强制更新：一层层盖上去（和微信一样，强制更新盖在最上面） */
+
                 if let n = app.noticeAlert {
                     CenterCard(title: (n.title?.isEmpty == false ? n.title! : Tr("公告")),
                                text: n.content ?? "",
@@ -948,22 +842,13 @@ struct CHRISApp: App {
     }
 }
 
-/* ============================================================
-   二级登录框（微信那样）
-
-   已经登录过的人（本机还留着上次的登录状态），启动后**先出这一屏**：
-   上面是上次那个人的头像 + 名字（+ 一句提示），底下一条「登录」，
-   再下面一行「切换账号」。点了「登录」才进主界面 —— 不是直接冲进去。
-   ============================================================ */
 struct SavedLoginConfirm: View {
     @EnvironmentObject var app: AppState
     @State private var appear = false
     @State private var busy = false
 
-    /// 本机保存的登录令牌（退出登录之后靠它一键登回来；没有就只能去一级登录页）
     private var savedToken: String {
-        /* 令牌是**按账号存在钥匙串**里的（SavedAccount 里没有 token 字段），
-           所以这里先按"上次登录那个人"的头像找到账号名，再取钥匙串里那把令牌。 */
+
         if let a = app.accounts.first(where: { $0.avatar == app.lastAvatar }) {
             let t = AccountStore.token(for: a.username)
             if !t.isEmpty { return t }
@@ -1016,7 +901,7 @@ struct SavedLoginConfirm: View {
                 .buttonStyle(.plain)
 
                 Button {
-                    /* 切换账号：把本机的登录状态清掉，回登录页 */
+
                     API.shared.clearToken()
                     app.me = nil
                     app.needConfirmLogin = false
@@ -1041,9 +926,6 @@ struct SavedLoginConfirm: View {
         }
     }
 
-    /// 点「登录」：
-    /// · 启动那次（会话还在）→ 直接进主界面
-    /// · **退出登录之后**（会话已清）→ 用本机保存的令牌一键登回来；令牌失效就去一级登录页
     private func go() {
         if app.me != nil {
             withAnimation(.easeOut(duration: 0.18)) { app.needConfirmLogin = false }
@@ -1057,7 +939,7 @@ struct SavedLoginConfirm: View {
             if ok {
                 app.showSavedLogin = false
             } else {
-                app.showSavedLogin = false      // 令牌不管用了：回一级登录页，让用户重新输
+                app.showSavedLogin = false
             }
         }
     }
@@ -1074,17 +956,10 @@ struct RootView: View {
                 if app.booting {
                     LaunchView()
                 } else if app.needConfirmLogin || app.showSavedLogin {
-                    /* 二级登录框：启动时（之前登录过）和**退出登录之后**都先出这一屏 */
+
                     SavedLoginConfirm()
                 } else if app.me == nil {
-                    /* 2026-10-16 用户点名要「最早那版、能换圆圈头像的」——
-                       就是这版 LoginView（方案 3）：上面是登录过的账号头像（正圆，
-                       最多 3 个，左右滑切换，点一下就用那个账号一键登录），
-                       底下一颗玻璃主按钮 + 「更多登录方式 ›」（手机号 / 账号密码 / 人脸 / 声音锁）。
-                       当时切走是因为「更多登录方式 → 账号密码登录」点不动，
-                       那个坑（sheet 叠 sheet 被系统丢掉）已经在 openWay/afterSheet 里修好了：
-                       先把上一个弹窗关掉、等它收完再开目标页。
-                       微信风那版 LoginViewOld 一行没删，随时能切回来。 */
+
                     HarmonyLoginView()
                 } else if app.me?.needsOnboarding == true {
                     NewUserOnboardingView()
@@ -1108,14 +983,14 @@ struct RootView: View {
                 }
             }
             .id(app.uiVersion)
-            // 根视图也铺一层底色：万一哪个页面没铺满，顶上也不会露出系统窗口的白色
+
             .background(C.pageBg.ignoresSafeArea())
             .onAppear { L.width = geo.size.width }
             .onChange(of: geo.size.width) { w in L.width = w }
         }
         .task { await app.boot() }
         .onAppear {
-            /* 启动页只在冷启动显示 1 秒；从后台切回来、界面刷新都不再弹 */
+
             guard !app.splashDone else { return }
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                 withAnimation(.easeOut(duration: 0.35)) { app.splashDone = true }
@@ -1123,34 +998,31 @@ struct RootView: View {
         }
         .onChange(of: scenePhase) { phase in
             if phase == .active && app.me != nil {
-                KeepAlive.shared.stop()          // 回到前台：不用再保活了
+                KeepAlive.shared.stop()
                 Task {
-                    GrowthStore.shared.start()   // 等级：回前台继续记「活跃天」
+                    GrowthStore.shared.start()
                     await app.refreshUI()
                     await app.loadChats()
-                    await app.loadContacts()      // 回到前台也要重拉好友申请，不然通讯录红点不亮
+                    await app.loadContacts()
                     await app.refreshDotCounts()
                     await app.syncRecentMessages()
                     Realtime.shared.start()
-                    /* 苹果被系统挂起期间可能错过 WebSocket 的 incoming：
-                       回到前台补捞一次服务端仍在响铃的来电，不创建新通话。 */
+
                     CallCenter.shared.restorePendingAfterActivation()
                 }
             } else if phase == .background {
-                GrowthStore.shared.stop()        // 退后台：把这段时长先报上去
-                /* 退到后台：放一段静音把进程留住 —— 长连接不断，来消息才能弹通知
-                   （上滑强杀之后谁都叫不醒，那只能靠真 APNs） */
+                GrowthStore.shared.stop()
+
                 KeepAlive.shared.start()
             }
         }
         .onChange(of: realtime.event) { ev in
-            /* 后台换了图标/界面配置：服务器会推一条 type=ui，收到就立刻重拉，
-               这样不用划掉 App 重开也能看到新图标。 */
+
             if ev.type == "ui" {
                 Task { await app.refreshUI(force: true) }
                 return
             }
-            /* 后台改了成长系统（阈值/显示位置）：立刻重拉一次 */
+
             if ev.type == "growth" {
                 Task { await GrowthStore.shared.refresh() }
                 return
@@ -1177,9 +1049,6 @@ struct LaunchView: View {
     }
 }
 
-/* ============================================================ 登录页 */
-
-/* 旧的微信风登录页（保留但不再使用；新的是下面那个简洁版 LoginView） */
 struct LoginViewOld: View {
     @EnvironmentObject var app: AppState
     @Environment(\.colorScheme) private var scheme
@@ -1189,8 +1058,7 @@ struct LoginViewOld: View {
 
     @State private var usePassword = false
     @State private var country = "中国大陆 (+86)"
-    /* 上次用过的手机号：进来就带出来，省得每次重打（iCloud 钥匙串不接管我们这套登录，
-       所以自己存一份在本机）。真正的"读取本机号码"iOS 不给 API，只能靠运营商一键登录 SDK。 */
+
     @State private var phone = UserDefaults.standard.string(forKey: "chris.lastPhone") ?? ""
     @State private var code = ""
     @State private var username = ""
@@ -1204,9 +1072,7 @@ struct LoginViewOld: View {
 
     var body: some View {
         ZStack {
-            /* 底色跟着后台「登录页」那套走：配了底色就用它（现在是紫底 + 白卡 + 靛蓝主色），
-               没配才回落到系统背景。以前这里写死 systemBackground，卡片又写死深色 ——
-               浅色模式下就是"白底上一块黑砖"，输入框连边都看不出来。 */
+
             LoginTheme.bg(scheme).ignoresSafeArea()
             VStack(spacing: 0) {
                 nav
@@ -1238,7 +1104,7 @@ struct LoginViewOld: View {
             }
         }
         .onAppear {
-            /* 上一次填过的手机号带出来（用户换了号也会被下面的 textField 改掉） */
+
             if phone.isEmpty, let last = UserDefaults.standard.string(forKey: "chris.lastPhone"), !last.isEmpty {
                 phone = last
             }
@@ -1253,9 +1119,6 @@ struct LoginViewOld: View {
         }
     }
 
-    /* 「账号密码登录」入口：用户从 4 个排法里选了 D ——
-       放在主按钮**正上方的右对齐**位置（不挤按钮，也不在卡片上再加一块东西），
-       一点就切到账号/密码两行，再点变「用手机号登录」。 */
     private var switchLink: some View {
         HStack(spacing: 0) {
             Spacer(minLength: 0)
@@ -1323,8 +1186,7 @@ struct LoginViewOld: View {
                     TextField("", text: $code)
                         .focused($focus, equals: .code)
                         .keyboardType(.numberPad)
-                        /* iOS 自带的「短信验证码自动填充」：收到短信时键盘上方会直接给出
-                           那串数字，点一下就填进来 —— 这是不接运营商 SDK 也能做到的"半自动"。 */
+
                         .textContentType(.oneTimeCode)
                         .font(pf(17.5))
                         .foregroundColor(LoginTheme.ink(scheme))
@@ -1352,8 +1214,7 @@ struct LoginViewOld: View {
                 loginRow(label: "密码") {
                     SecureField("", text: $password)
                         .focused($focus, equals: .pass)
-                        /* 登录密码本来就是安全输入框（iOS 会自动切"系统安全键盘"、第三方输入法拿不到按键）；
-                           这里再把自动纠正/自动大写关掉、并标记为隐私内容（App 切后台时系统截图里会打码） */
+
                         .autocorrectionDisabled(true)
                         .textInputAutocapitalization(.never)
                         .privacySensitive()
@@ -1401,7 +1262,6 @@ struct LoginViewOld: View {
             }
             .padding(.bottom, 12.6)
 
-            /* 「账号密码登录 ›」紧贴主按钮上方、右对齐（用户选的 D 版排法） */
             switchLink
 
             Button {
@@ -1459,7 +1319,7 @@ struct LoginViewOld: View {
                     let p = phone.trimmingCharacters(in: .whitespaces)
                     if p.isEmpty || code.isEmpty { throw APIError.message("请填写手机号和验证码") }
                     try await app.login(phone: p, code: code)
-                    /* 登录成功才记住这个号：下次进来手机号已经填好，只要等短信验证码 */
+
                     UserDefaults.standard.set(p, forKey: "chris.lastPhone")
                 }
             } catch {
@@ -1497,10 +1357,6 @@ struct ServerSheet: View {
         }
     }
 }
-
-/* ============================================================ 简洁版登录 / 注册页
-   和网页版一致的极简风格：图标 + 名称 → 登录/注册两个 Tab → 一张卡片 → 一个绿色按钮。
-   注册带图形验证码（服务器给的是 SVG，用 CaptchaView 把点阵字画出来）。 */
 
 struct CaptchaView: View {
     let svg: String
@@ -1561,18 +1417,6 @@ struct CaptchaView: View {
     }
 }
 
-/* ============================================================ 登录页（按设计稿）
-   ← 返回 + 标题「账号登录」
-   图标 + App 名 → 欢迎语 →【微信登录】大按钮 → 其他登录选项 → 协议 → 版本号 */
-
-/* ============================================================
-   登录页（按你给的 WechatLoginIOSView 代码原样实现）
-   说明：你代码里有两处 iOS 上不能用，我按同款外观等价替换了：
-     · .toggleStyle(.checkbox) 是 macOS 专有 → iOS 用同外观的自定义方框勾选
-     · Text.rich(TextSpan{...}) 不是 SwiftUI 的类型 → 用 Text 拼接 / Markdown 链接，样式一致
-   「微信登录」按钮：没有微信 SDK，接到自建的「设备确认登录」（点它出 6 位数字，在已登录设备上确认）
-   ============================================================ */
-
 struct LoginView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) var dismiss
@@ -1588,21 +1432,21 @@ struct LoginView: View {
     @State private var sheet: Way? = nil
     @State private var appName = "我的App"
     @State private var logoPath: String?
-    /// 登录页背景图（后台配的）—— 用 @State 才能刷新生效
+
     @State private var bgImage = ""
-    /// 后台配置一拉到就 +1，让配色/背景跟着重绘一次
+
     @State private var themeTick = 0
-    /// 一键登录进行中
+
     @State private var quickBusy = false
-    /// 出错提示（比如一键登录的登录态过期了）
+
     @State private var error: String?
-    /// 当前滑到第几个账号
+
     @State private var avatarIndex = 0
-    /// 声音锁那一页开着没有
+
     @State private var showVoiceLock = false
-    /// 方案 3 的「更多登录方式」弹窗
+
     @State private var showMoreWays = false
-    /// 临时排查用：连接诊断的输出
+
     @State private var diag = ""
 
     enum Way: String, Identifiable { case phone, password; var id: String { rawValue } }
@@ -1610,14 +1454,9 @@ struct LoginView: View {
     var body: some View {
         ZStack {
             loginBackground
-            /* 这里原来套的是 NavigationStack —— 它会自带一层不透明的系统背景，
-               把后面的登录页背景图整个盖掉，所以后台换了背景图手机上永远看不到。
-               换成 App 自己的 NavBar（透明背景），背景图就能透出来了。 */
+
             VStack(spacing: 0) {
-                /* 方案 3（用户选的）：**极简登录页** —— 不要「账号登录」那个大标题栏，
-                   头像往下挪成视觉中心，底下只留一个玻璃主按钮 + 「更多登录方式」。
-                   头像区：登录过的账号最多 3 个，可以左右滑；点一下就用那个账号一键登录
-                   （放在滚动区外面，横向滑动才不会被上下滚动抢走手势）。 */
+
                 avatarPager
                     .padding(.top, 64)
                     .padding(.horizontal, 20)
@@ -1625,7 +1464,7 @@ struct LoginView: View {
                     VStack(spacing: 0) {
                     Text(appName)
                         .font(.system(size: 22, weight: .semibold))
-                        .foregroundColor(LoginTheme.ink(colorScheme))   // 文字颜色接后台
+                        .foregroundColor(LoginTheme.ink(colorScheme))
                         .padding(.top, 16)
                     Text(Tr("登录后同步最近的聊天记录"))
                         .font(.system(size: 13))
@@ -1634,19 +1473,13 @@ struct LoginView: View {
 
                     Spacer(minLength: 44)
 
-                    /* 主按钮：**永远点得动**。
-                       ⚠ 2026-10-16 用户反馈「点击登录没反应」——病根就在这：
-                       这里原来挂着 .disabled(!isAgree)，协议没勾上时按钮是**禁用状态**，
-                       点下去一声不响、连提示都没有（协议那行在页面下面是灰字，很容易没注意）。
-                       现在：没勾协议点 → 弹一行红字「请先勾选并同意…」；勾了 →
-                       这台设备登过的账号就直接一键进，没登过就展开「更多登录方式」。 */
                     Button {
                         guard requireAgree() else { return }
                         let last = app.accounts.first(where: { $0.avatar == app.lastAvatar }) ?? app.accounts.first
                         if let acc = last {
-                            quickLogin(account: acc)      // 登过的账号：一键登录
+                            quickLogin(account: acc)
                         } else {
-                            showMoreWays = true           // 这台手机还没登过：先选登录方式
+                            showMoreWays = true
                         }
                     } label: {
                         HStack(spacing: 8) {
@@ -1658,10 +1491,7 @@ struct LoginView: View {
                         }
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity, minHeight: 52)
-                        /* 方案 3：主按钮改成**玻璃**（原来是一整块实心绿）——
-                           但玻璃底下要垫一层品牌色，白字才看得清
-                           （只做透明玻璃的话，背景一浅白字就糊了 —— 「星言登录」看不见就是这个原因）。
-                           没勾协议时压暗一档，一眼看出"点不动"。 */
+
                         .background {
                             ZStack {
                                 GlassBackground(shape: RoundedRectangle(cornerRadius: 16, style: .continuous),
@@ -1675,9 +1505,6 @@ struct LoginView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                     }
 
-                    /* 方案 3：其他登录方式不再摊成一行，收进「更多登录方式 ›」——
-                       页面更干净；点开是系统弹单（手机号 / 账号密码 / 人脸 / 声音锁）。
-                       没勾协议一样进不去（每个入口都做了同样的判断）。 */
                     Button { showMoreWays = true } label: {
                         HStack(spacing: 4) {
                             Text(Tr("更多登录方式"))
@@ -1690,29 +1517,16 @@ struct LoginView: View {
                     }
                     .buttonStyle(.plain)
                     .padding(.top, 18)
-                    /* 更多登录方式：照微信做成从底下推上来的白卡（每项一个彩色圆图标） */
+
                     .sheet(isPresented: $showMoreWays) {
                         LoginWaysSheet(
-                            /* ⚠ 这里是「点了账号密码登录没反应」的真正原因：
-                               这几个回调是在 LoginWaysSheet **这个弹窗里面**点出来的，
-                               而它们做的事是 `sheet = .password` —— **第一个弹窗还没关**，
-                               SwiftUI 不允许在一个 sheet 上再叠一个 sheet，请求就被丢掉了。
-                               修法：先把当前弹窗关掉，等它收完再开下一个（0.35s 是收起的动画时长）。 */
+
                             onPhone: { openWay(.phone) },
                             onPassword: { openWay(.password) },
                             onFace: { if requireAgree() { showMoreWays = false; afterSheet { faceLogin() } } },
                             onVoice: { if requireAgree() { showMoreWays = false; afterSheet { voiceLogin() } } })
-                    /* 2026-10-16 用户：「大的星言登录不要跳二维码」「还是错误」——
-                       索性把「设备确认登录（扫码 / 输数字）」这条入口从登录页**彻底去掉**：
-                       不传 onPair，白卡里那一行就不出现；登录页任何入口都不会再弹二维码。
-                       （服务端那套配对逻辑保留，以后要做"网页版登录"再接回来。） */
+
                     }
-                    /* ⚠ 2026-10-16 用户：「更多登录方式点开就点不进去」——
-                       病根：这里**同时**挂了一个 .sheet(LoginWaysSheet) 和一个 .confirmationDialog，
-                       两个弹层绑在同一个 $showMoreWays 上，互相抢 → 打开的是白卡，
-                       点里面的行却又去开"系统确认框"，等于点不动。
-                       现在只留白卡那套（LoginWaysSheet），这个多余的确认框整段删掉；
-                       白卡里的回调走 openWay()：先关白卡、等它收完再开目标页，不会叠弹层。 */
 
                     if let e = error {
                         Text(e)
@@ -1724,7 +1538,6 @@ struct LoginView: View {
 
                     Spacer(minLength: 26)
 
-                    // 协议勾选
                     HStack(alignment: .top, spacing: 8) {
                         Button { isAgree.toggle() } label: {
                             RoundedRectangle(cornerRadius: 3)
@@ -1740,7 +1553,7 @@ struct LoginView: View {
 
                         Text(.init("我已阅读并同意 [《用户协议》](terms://0) 和 [《隐私政策》](terms://1)"))
                             .font(.system(size: 12))
-                            .foregroundColor(LoginTheme.ink(colorScheme))    // 协议那行文字颜色也接后台
+                            .foregroundColor(LoginTheme.ink(colorScheme))
                             .tint(LoginTheme.accent2)
                             .environment(\.openURL, OpenURLAction { url in
                                 if url.scheme == "terms" {
@@ -1751,8 +1564,6 @@ struct LoginView: View {
                             })
                     }
 
-                    /* ⚠ 临时排查用：点一下就把「App 实际连的地址 / DNS 解析 / 原始错误」
-                       全打在屏幕上。定位完这个问题就删掉这一段。 */
                     Button {
                         diag = "诊断中…"
                         Task {
@@ -1767,7 +1578,7 @@ struct LoginView: View {
                             lines.append("请求: " + (await API.shared.probe("/api/version")))
                             lines.append("公网 apple: " + (await API.shared.probeAbsolute("https://www.apple.com/")))
                             lines.append("明文 8899: " + (await API.shared.probeAbsolute("http://43.242.194.89:8899/api/version")))
-                            /* 媒体诊断：ICE(TURN) 配置 + HLS 取流 */
+
                             let br = await API.shared.probeText(API.shared.base + "/api/branding", 1500)
                             if let r = br.range(of: "iceServers") {
                                 lines.append("ICE: " + String(String(br[r.lowerBound...]).prefix(110)))
@@ -1801,7 +1612,6 @@ struct LoginView: View {
                             .padding(.top, 8)
                     }
 
-                    /* 安全提示：和网页版登录页保持一致 */
                     HStack(spacing: 5) {
                         Image(systemName: "lock.fill")
                             .font(.system(size: 10))
@@ -1828,7 +1638,7 @@ struct LoginView: View {
         .sheet(isPresented: $showPair) { PairSheet() }
         .sheet(isPresented: $showTerms) { TermsSheet(kind: termsKind) }
         .sheet(isPresented: $showVoiceLock) {
-            /* 读数字那一步单独一页：过了就用这台手机记住的登录态进去 */
+
             VoiceUnlockView { voiceLoginPassed() }
         }
         .sheet(item: $sheet) { w in
@@ -1839,20 +1649,18 @@ struct LoginView: View {
                 await loadLoginBranding()
             }
         }
-        }   // 关掉最外层 ZStack
+        }
     }
 
-    /// 拉登录页那套配色（后台「🎨 登录页」）。
-    /// 刚启动网络偶尔会抖，所以最多试 4 次；一次成功就应用 + 让界面重画。
     private func loadLoginBranding() async {
         for attempt in 0..<4 {
             if let b = await API.shared.branding() {
                 LoginTheme.apply(b)
-                /* 服务器关了滑动验证（security.json 里 sliderLogin: 0）就不显示那一块 */
+
                 app.sliderLogin = b.sliderLogin ?? true
                 if let n = b.harmonyLogin?.appName ?? b.login?.appName ?? b.appName, !n.isEmpty { appName = n }
                 if let lg = b.harmonyLogin?.logo ?? b.login?.logo ?? b.logo, !lg.isEmpty { logoPath = lg }
-                bgImage = b.login?.bgImage ?? ""      // 背景图（用状态存，才能刷新生效）
+                bgImage = b.login?.bgImage ?? ""
                 themeTick += 1
                 return
             }
@@ -1860,12 +1668,10 @@ struct LoginView: View {
         }
     }
 
-    /// 登录页背景：后台配了背景图就铺满整屏（压一层很淡的底色保证文字看得清），否则用系统背景
-    /// 头像区：最多 3 个登录过的账号，左右滑动切换；点头像 = 用那个账号一键登录
     private var avatarPager: some View {
         VStack(spacing: 8) {
             if app.accounts.isEmpty {
-                // 这台设备还没登录过：显示后台 logo / App 图标 / 灰圆
+
                 Group {
                     if let p = logoPath {
                         RemoteImage(path: p, icon: "message.fill", mode: .fill)
@@ -1957,12 +1763,10 @@ struct LoginView: View {
     }
 
     func loginWithWechat() {
-        /* 微信登录 = 「设备确认登录」：新设备出**二维码 + 6 位数字**，
-           已登录的手机扫一下（或输数字）就能确认，跟微信同一个动作。 */
+
         showPair = true
     }
 
-    /// 没勾协议一律不让登：主按钮、手机号登录、账号密码登录、人脸、点头像快捷登录都走这里
     @discardableResult
     private func requireAgree() -> Bool {
         if isAgree { return true }
@@ -1970,26 +1774,20 @@ struct LoginView: View {
         return false
     }
 
-    /// 等当前弹窗收完再执行（0.35s = 系统 sheet 收起动画）
     private func afterSheet(_ run: @escaping () -> Void) {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { run() }
     }
 
-    /// 从「更多登录方式」里选一种登录：**先把那个弹窗关掉**，再开目标页。
-    /// 不这么做的话，sheet 叠 sheet 会被系统丢掉 —— 表现就是「点了没反应」。
     private func openWay(_ w: Way) {
         guard requireAgree() else { return }
         showMoreWays = false
         afterSheet { sheet = w }
     }
 
-    /// 这台设备上有没有可以「一键登录」的登录态
     private var hasSavedLogin: Bool {
         !API.shared.token.isEmpty || !app.lastAvatar.isEmpty
     }
 
-    /// 点头像一键登录：用保存的令牌直接进去；过期了就提示重新输密码
-    /// 人脸识别登录：系统 Face ID 过了以后，用「当前选中的那个账号」的登录态进去
     private func faceLogin() {
         guard !quickBusy else { return }
         let ctx = LAContext()
@@ -2029,10 +1827,6 @@ struct LoginView: View {
         }
     }
 
-    /* ---------------- 声音锁登录（和微信一个逻辑） ----------------
-       ① 先看这台手机开通了没有、有没有能用的登录态
-       ② 读出屏幕上的随机数字 → 数字对 + 声纹像开通时那个人 → 才放行
-       ③ 过了就用这台手机记住的登录态进去（和点头像一键登录走同一条路） */
     private func voiceLogin() {
         guard !quickBusy else { return }
         guard VoiceLockStore.enabled else {
@@ -2047,7 +1841,6 @@ struct LoginView: View {
         showVoiceLock = true
     }
 
-    /// 声音锁验过了：登在「这把锁绑定的那个账号」上（绑定的账号不在列表里就用当前选中的）
     private func voiceLoginPassed() {
         let list = app.accounts
         guard !list.isEmpty else { return }
@@ -2058,7 +1851,6 @@ struct LoginView: View {
     }
 }
 
-/* ---------- 手机号登录 / 账号密码登录（点开后的表单页） ---------- */
 struct AccountLoginSheet: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -2077,16 +1869,15 @@ struct AccountLoginSheet: View {
     @State private var error: String?
     @State private var showReg = false
     @State private var showUnban = false
-    /// 账号被冻结后的「解冻账号」弹层（AccountSafety.swift）
+
     @State private var showUnfreeze = false
     @State private var showReset = false
-    /// 登录滑动验证换来的一次性通行证 + 换题用的 key
+
     @State private var sliderTicket = ""
     @State private var captchaKey = 0
-    /// 安全验证的滑块是不是要「弹出来」（默认藏着，服务端判定有风险才弹 —— 微信就是这个体验）
+
     @State private var showSlider = false
-    /// 密码右边那颗「眼睛」：点一下在**看得见 / 隐藏**之间切
-    /// （默认隐藏 —— 也就是 SecureField，和以前一样；点了才用 TextField 明文显示）
+
     @State private var showPassword = false
 
     var body: some View {
@@ -2108,9 +1899,7 @@ struct AccountLoginSheet: View {
                             .foregroundColor(LoginTheme.ink(colorScheme))
                             .textInputAutocapitalization(.never).autocorrectionDisabled(true) }
                         HairLine(color: C.navLine)
-                        /* 密码框 + 右边那颗眼睛：点一下能看见 / 隐藏。
-                           隐藏时走系统安全输入框（SecureField，第三方输入法拿不到按键）；
-                           点开才切成明文。切换时把焦点留在密码框上，光标不跳。 */
+
                         row {
                             Group {
                                 if showPassword {
@@ -2146,10 +1935,7 @@ struct AccountLoginSheet: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.top, 12)
                     }
-                    /* 滑块**不常驻**在这一页上（微信也不是）：正常点登录就进去了，
-                       只有服务端判定这次有风险（新设备 / 密码错得多）才回 428，
-                       那时再把滑块以弹层形式滑出来 —— 见 submit() 和下面的 .sheet */
-                    // 账号被禁用：直接给一个自助解封入口（填身份证号，服务器校验合法就解开）
+
                     if isBanned {
                         Button {
                             showUnban = true
@@ -2166,8 +1952,7 @@ struct AccountLoginSheet: View {
                         }
                         .padding(.top, 12)
                     }
-                    /* 账号被冻结（本人冻的 / 管理冻的）：登录页直接给「解冻账号」入口
-                       —— 和微信一样，冻了以后在登录页点一下就能自己解开 */
+
                     if isFrozen {
                         Button {
                             showUnfreeze = true
@@ -2199,7 +1984,7 @@ struct AccountLoginSheet: View {
 
                     if mode == .password {
                         HStack(spacing: 16) {
-                            /* 密码找回：手机号 + 验证码 + 新密码（功能清单里的「密码找回」） */
+
                             Button(Tr("忘记密码？")) { showReset = true }
                             Text("·").foregroundColor(C.subLabel)
                             Button(Tr("还没有账号？去注册")) { showReg = true }
@@ -2218,19 +2003,19 @@ struct AccountLoginSheet: View {
                 ToolbarItem(placement: .navigationBarLeading) { Button(Tr("取消")) { dismiss() } }
             }
             .sheet(isPresented: $showReg) { RegisterSheet() }
-            /* 服务端说「这次要验证」时滑出来的安全验证（平时不占地方） */
+
             .sheet(isPresented: $showSlider) {
                 SliderSheet(freshKey: captchaKey, onPass: { t in
                     sliderTicket = t
                     error = nil
-                    submit()            // 拿到票自动重试一次登录，不让用户再点一次
+                    submit()
                 })
             }
             .sheet(isPresented: $showReset) { ResetPasswordSheet() }
         .sheet(isPresented: $showUnban) {
                 UnbanSheet(preUser: username, prePass: password)
             }
-            /* 账号被冻结：登录页自助解冻（账号 + 密码，可补身份证号）—— AccountSafety.swift */
+
             .sheet(isPresented: $showUnfreeze) {
                 UnfreezeSheet().environmentObject(app)
             }
@@ -2241,7 +2026,7 @@ struct AccountLoginSheet: View {
         let e = error ?? ""
         return e.contains("禁用") || e.contains("封禁")
     }
-    /// 服务器回的「该账号已被冻结…」→ 登录页把「解冻账号」入口露出来
+
     private var isFrozen: Bool {
         (error ?? "").contains("冻结")
     }
@@ -2277,13 +2062,12 @@ struct AccountLoginSheet: View {
                 } else {
                     let u = username.trimmingCharacters(in: .whitespaces)
                     if u.isEmpty || password.isEmpty { throw APIError.message("请填写账号和密码") }
-                    /* 先直接登：上一次滑出来的票还在就带上，没有就空着 ——
-                       服务端默认放行，只有判定有风险才回 428（needSlider）。 */
+
                     try await app.login(username: u, password: password, sliderTicket: sliderTicket)
                 }
                 dismiss()
             } catch APIError.needSlider {
-                /* 服务端判定这次登录有风险 → 把滑块「滑出来」，滑完自动重试 */
+
                 sliderTicket = ""
                 captchaKey += 1
                 showSlider = true
@@ -2291,7 +2075,7 @@ struct AccountLoginSheet: View {
             } catch {
                 let msg = (error as? APIError)?.errorDescription ?? "登录失败"
                 self.error = msg
-                /* 通行证是一次性的：这次没用上/过期了，就换一道新题重新滑 */
+
                 if msg.contains("滑动验证") || msg.contains("安全验证") {
                     sliderTicket = ""
                     captchaKey += 1
@@ -2302,8 +2086,6 @@ struct AccountLoginSheet: View {
     }
 }
 
-/* ---------- 注册（图形验证码用 CaptchaView 画） ---------- */
-/* ---------- 身份证自助解封 ---------- */
 struct UnbanSheet: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -2413,9 +2195,7 @@ struct RegisterSheet: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                /* ⚠ 2026-10-16 用户：「注册不要星言号设置，按微信那样给随机的」——
-                   注册页**不再让用户填星言号**（服务端会随机发一个 xy 开头的号，
-                   注册完在「我 → 个人信息 → 星言号」里一年能改一次）。 */
+
                 TextField("昵称", text: $nickname).frame(height: 54).padding(.horizontal, 14)
                 HairLine(color: C.navLine)
                 SecureField("密码（至少 6 位）", text: $password)
@@ -2471,12 +2251,11 @@ struct RegisterSheet: View {
         busy = true; error = nil
         Task {
             do {
-                /* 星言号留空 → 服务端随机给一个（微信那样） */
+
                 let u = try await API.shared.register(username: "",
                                                      nickname: nickname.isEmpty ? "新用户" : nickname,
                                                      password: password, captchaId: capId, captcha: cap)
-                /* 注册接口已经把登录态发下来了（Set-Cookie → App 收进 token），
-                   直接把自己的资料挂上就行，不用再走一次登录（那条路要过滑动验证）。 */
+
                 await app.adoptRegistered(u)
                 app.show(Tr("注册成功"))
                 dismiss()
@@ -2489,8 +2268,6 @@ struct RegisterSheet: View {
     }
 }
 
-/* ---------- 二维码（「设备确认登录」那张码用的；不引第三方库） ---------- */
-/// 把一段文字画成二维码图；画不出来返回 nil（界面就只显示 6 位数字兜底）
 func qrImage(_ text: String, size: CGFloat) -> UIImage? {
     guard !text.isEmpty, let f = CIFilter(name: "CIQRCodeGenerator") else { return nil }
     f.setValue(Data(text.utf8), forKey: "inputMessage")
@@ -2503,7 +2280,6 @@ func qrImage(_ text: String, size: CGFloat) -> UIImage? {
     return UIImage(cgImage: cg)
 }
 
-/* ---------- 「微信登录」→ 设备确认登录（出二维码 + 6 位数字，在已登录设备上确认） ---------- */
 struct PairSheet: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -2520,8 +2296,6 @@ struct PairSheet: View {
                     .font(.system(size: 14)).foregroundColor(.secondary)
                     .multilineTextAlignment(.center).padding(.top, 20)
 
-                /* 微信那张码：已登录的手机「扫一扫」一下就出「登录确认」卡片，
-                   不用手输数字。二维码内容就是 xingyan://pair?code=123456 这一串。 */
                 if let q = qrImage("xingyan://pair?code=" + code, size: 190) {
                     Image(uiImage: q)
                         .interpolation(.none)
@@ -2570,7 +2344,7 @@ struct PairSheet: View {
         fail = false; status = "正在生成…"
         Task {
             do {
-                /* 报一下这是台什么设备：对方手机上「登录确认」那张卡片会写（微信也写设备名） */
+
                 let dev = UIDevice.current.model + " · iOS " + UIDevice.current.systemVersion
                 let r = try await API.shared.pairStart(device: dev)
                 code = r.code; status = "等待确认…"
@@ -2601,7 +2375,6 @@ struct PairSheet: View {
     private func stop() { timer?.invalidate(); timer = nil }
 }
 
-/* ---------- 用户协议 / 隐私政策 ---------- */
 struct TermsSheet: View {
     @Environment(\.dismiss) private var dismiss
     var kind: Int
@@ -2611,7 +2384,7 @@ struct TermsSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     Text(kind == 0 ? "用户协议" : "隐私政策").font(.system(size: 19, weight: .semibold))
-                    /* 内容由后台「🎨 登录页 → 用户协议 / 隐私政策」配置 */
+
                     Text(LoginTheme.text(kind: kind))
                     .font(.system(size: 14)).lineSpacing(6)
                 }
@@ -2624,20 +2397,11 @@ struct TermsSheet: View {
     }
 }
 
-/* ============================================================
-   手机号登录（按你给的 PhoneLoginView 代码原样实现）
-   同样只有两处 iOS 上不能用、做了同款外观的等价替换：
-     · .toggleStyle(.checkbox) 是 macOS 专有 → 同外观方框勾选
-     · Text.rich(TextSpan{...}) 不是 SwiftUI 类型 → 等价富文本写法
-   业务动作接的是真的接口：发验证码 → 服务器；点登录 → 登录并进入 App
-   ============================================================ */
-
-/// 手机号登录的「国家 / 地区」（方案 2：单独一行，可点开选）
 struct DialRegion: Identifiable, Hashable {
-    let id: String      // ISO 两位代码
+    let id: String
     let flag: String
     let name: String
-    let dial: String    // 区号，不带 +
+    let dial: String
 }
 
 let dialRegions: [DialRegion] = [
@@ -2654,13 +2418,11 @@ let dialRegions: [DialRegion] = [
     .init(id: "AU", flag: "🇦🇺", name: "澳大利亚", dial: "61")
 ]
 
-/// 选国家 / 地区（带搜索，能搜名字也能搜区号）
 struct CountryPickerView: View {
     @Environment(\.dismiss) var dismiss
     @Binding var index: Int
     @State private var q = ""
 
-    /// 命中的下标（搜索能匹配名称 / 区号 / 代码）
     private var list: [Int] {
         dialRegions.indices.filter { i in
             let r = dialRegions[i]
@@ -2704,7 +2466,7 @@ struct CountryPickerView: View {
 struct PhoneLoginView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) var dismiss
-    /// 提示文字要用它取「浅色/深色」那套配色
+
     @Environment(\.colorScheme) private var colorScheme
     @State private var phone = ""
     @State private var code = ""
@@ -2716,13 +2478,13 @@ struct PhoneLoginView: View {
     @State private var showTerms = false
     @State private var termsKind = 0
     @FocusState private var focused: Bool
-    /// 方案 2：国家/地区（单独一行，点开可选）
+
     @State private var showCountryPicker = false
     @State private var dialIdx = 0
     private var dial: DialRegion { dialRegions[min(max(dialIdx, 0), dialRegions.count - 1)] }
-    /// 真正提交的号码：中国大陆还是原来的 11 位（老逻辑一点不动），其它地方带区号
+
     private var fullPhone: String { dial.dial == "86" ? phone : ("+" + dial.dial + phone) }
-    /// 号码位数够不够（中国 11 位；其它 5~15 位）
+
     private var phoneLenOK: Bool {
         dial.dial == "86" ? phone.count == 11 : (phone.count >= 5 && phone.count <= 15)
     }
@@ -2738,10 +2500,6 @@ struct PhoneLoginView: View {
                     Text(Tr("手机号登录"))
                         .font(.system(size: 24, weight: .semibold))
 
-                    /* 方案 2（用户选的）· **无框版**：
-                       ① 国家/地区单独一行（点开是国家列表）
-                       ② 手机号、验证码都是「一条细下划线」，不要灰色圆角框
-                       ③「获取验证码」从实心按钮改成右边的文字按钮 */
                     VStack(spacing: 0) {
                         Button { showCountryPicker = true } label: {
                             HStack(spacing: 10) {
@@ -2791,7 +2549,6 @@ struct PhoneLoginView: View {
                         .font(.system(size: 12))
                         .foregroundColor(LoginTheme.inkSub(colorScheme))
 
-                    // 登录按钮
                     Button {
                         phoneLogin()
                     } label: {
@@ -2811,7 +2568,6 @@ struct PhoneLoginView: View {
                         Text(e).font(.system(size: 13)).foregroundColor(C.red)
                     }
 
-                    // 协议勾选
                     HStack(alignment: .top, spacing: 8) {
                         Button { isAgree.toggle() } label: {
                             RoundedRectangle(cornerRadius: 3)
@@ -2899,4 +2655,3 @@ struct PhoneLoginView: View {
         }
     }
 }
-

@@ -1,67 +1,46 @@
 import SwiftUI
 
-/* ============================================================
-   拼多多风格「商城」——原生版（2026-10-12 从 H5 改成原生）
-
-   以前是服务器上的 /mall/index.html，用 WKWebView 打开；用户要求改成原生的，
-   现在整页是 SwiftUI，数据存在本机 JSON（Documents/dd_mall.json），
-   第一次打开用内置那 16 个商品当种子（和 H5 里 SEED_PRODUCTS 一模一样的数据）。
-
-   页面：首页（秒杀 + 分类 + 双列瀑布流）/ 推荐（种草）/ 消息 / 购物车 / 我的
-        + 商品详情 + 下单（单独购买 / 发起拼单）+ 我的订单 + 收藏 + 足迹 + 搜索
-
-   ⚠ 用户要求：这一页**不显示零钱余额**。下单就是生成一条订单记录（不扣零钱），
-   订单状态在「我的 → 我的订单」里能一步步往前走（拼团中 → 待发货 → 待收货 → 已完成）。
-   ============================================================ */
-
-/* ---------------------------------------------------------- 数据 */
-
 struct DDProduct: Identifiable, Codable, Hashable {
     var id: String
-    /// 商品图：和 H5 一样用 emoji 画（不依赖服务器图片，离线也有图）
+
     var em: String
-    /// 也可以放一张真图（管理里从相册传上来的地址）；有图就优先显示图
+
     var img: String? = nil
     var title: String
-    /// 拼单价
+
     var price: Double
-    /// 单独购买价（划线价）
+
     var orig: Double
     var sold: String
-    /// 几人团
+
     var grp: Int
     var tags: [String]
     var shop: String
     var cate: String
-    /// 是否上架（管理里可以下架；下架的只有管理看得到）
+
     var on: Bool? = nil
 
-    /// 上架中
     var live: Bool { on ?? true }
 
-    /* ---------------- 2026-10-15 对齐京东加的字段（全可空，老数据/老包都兼容） ---------------- */
-    /// 副标题（京东：标题下面那行卖点）
     var subtitle: String? = nil
     var brand: String? = nil
-    /// 评分 0~5（没评价就是 nil）
+
     var rating: Double? = nil
-    /// 销量（数，比 sold 那个字符串更细）
+
     var sales: Int? = nil
-    /// 规格（颜色/尺码/套餐），选完价格可能变
+
     var variants: [DDVariant]? = nil
-    /// 参数表：一行是 [名称, 值]
+
     var params: [[String]]? = nil
-    /// 图文详情的图（没有就用主图 + 生成的图文块）
+
     var detailImages: [String]? = nil
-    /// 服务承诺
+
     var services: [String]? = nil
-    /// 店铺 id（关注店铺用；没有就用店铺名）
+
     var shopId: String? = nil
 
-    /// 店铺标识（关注/取关按它记）
     var shopKey: String { (shopId?.isEmpty == false) ? shopId! : shop }
 
-    /// 规格列表：后台没配就按类目合成几个 —— 京东每个商品都有规格，不能让用户点了没反应
     var specList: [DDVariant] {
         if let v = variants, !v.isEmpty { return v }
         switch cate {
@@ -79,13 +58,11 @@ struct DDProduct: Identifiable, Codable, Hashable {
         }
     }
 
-    /// 服务承诺（后台没配就给京东最常见的几句）
     var serviceList: [String] {
         if let s = services, !s.isEmpty { return s }
         return ["7天无理由退货", "退货包运费", "正品保障", "极速退款"]
     }
 
-    /// 给服务器（/api/ops/mall）用的字典
     var dict: [String: Any] {
         ["id": id, "em": em, "img": img ?? "", "title": title,
          "price": price, "orig": orig, "sold": sold, "grp": grp,
@@ -93,7 +70,6 @@ struct DDProduct: Identifiable, Codable, Hashable {
     }
 }
 
-/// 一个规格（京东的 SKU）
 struct DDVariant: Codable, Hashable, Identifiable {
     var name: String
     var price: Double
@@ -107,7 +83,6 @@ struct DDCartLine: Identifiable, Codable, Hashable {
     var id: String { pid }
 }
 
-/// 一条订单。status：grouping 拼团中 / wait 待发货 / shipped 待收货 / done 已完成 / cancel 已取消
 struct DDOrder: Identifiable, Codable, Hashable {
     var id: String
     var pid: String
@@ -117,43 +92,40 @@ struct DDOrder: Identifiable, Codable, Hashable {
     var price: Double
     var count: Int
     var group: Bool
-    /// 拼团要几个人
+
     var need: Int
-    /// 已经几个人（含我自己）
+
     var have: Int
     var status: String
     var at: Date
-    /* ---------------- 2026-10-15 对齐京东加的字段 ---------------- */
-    /// 下单时选的规格
+
     var spec: String = ""
-    /// 订单号（京东那种长号）
+
     var orderNo: String = ""
-    /// 运费
+
     var freight: Double = 0
-    /// 用掉的优惠券金额
+
     var couponOff: Double = 0
-    /// 发票抬头（空 = 不开发票）
+
     var invoice: String = ""
-    var payWay: String = ""          // 空 = 还没选，结算页会默认成星言支付（2026-10-16 去掉微信支付）
+    var payWay: String = ""
     var remark: String = ""
-    /// 收货信息（下单那一刻存下来，以后改地址不影响老订单）
+
     var addrName: String = ""
     var addrPhone: String = ""
     var addrText: String = ""
-    /// 快递公司 / 单号
+
     var express: String = ""
     var expressNo: String = ""
-    /// 付过款的时间（待付款倒计时用）
+
     var paidAt: Date? = nil
-    /// 评价过没有
+
     var reviewed: Bool = false
-    /// 会员立减（星言PLUS 专享价省下来的钱）
+
     var memberOff: Double = 0
 
-    /// 实付 = 单价×数量 + 运费 − 优惠券 − 会员立减
     var total: Double { max(0, price * Double(count) + freight - couponOff - memberOff) }
 
-    /// 京东那种订单号（纯演示用，本机生成）
     static func makeNo() -> String {
         let f = DateFormatter(); f.dateFormat = "yyyyMMddHHmmss"
         return f.string(from: Date()) + String(Int.random(in: 100000...999999))
@@ -173,35 +145,28 @@ struct DDOrder: Identifiable, Codable, Hashable {
     var canConfirm: Bool { status == "shipped" }
     var canCancel: Bool { status == "paying" || status == "grouping" || status == "wait" }
     var canPay: Bool { status == "paying" }
-    /// 已完成、还没评价过 → 能去评价晒单
+
     var canReview: Bool { status == "done" && !reviewed }
-    /// 待付款的剩余秒数（30 分钟）
+
     var payLeft: Int {
         guard status == "paying" else { return 0 }
         return max(0, 1800 - Int(Date().timeIntervalSince(at)))
     }
 }
 
-/// 商城数据（单例 + 落盘）
-/// 一条**后台下发**的广告（data/mall.json 的 ads[]，后台「商城 → 广告」里写）
-/* 商城开屏广告（CHRIS_MALL_SPLASH_V1，2026-10-17 用户：
-   「布置下商城开屏3秒广告封面页可以跳过，给管理接上，你不要放图」）
-   —— 纯机制：封面由**管理端自己传**（App 里「管理 → 商城后台 → 开屏广告」），
-      没传就不显示；代码里不放任何图。 */
 struct DDSplash: Codable, Equatable {
-    /// 开关
+
     var on: Bool?
-    /// 封面图（/uploads/xxx.jpg 或网址）；空 = 不显示开屏
+
     var image: String?
-    /// 点封面去哪：none / url / product / channel
+
     var action: String?
     var link: String?
-    /// 显示几秒（1~10，默认 3）
+
     var seconds: Double?
-    /// 跳过按钮上的字（默认「跳过」）
+
     var skipText: String?
 
-    /// 到底要不要显示：开关开着 **而且** 有封面
     var isOn: Bool { (on ?? true) && !(image ?? "").isEmpty }
     var secs: Double { min(10, max(1, seconds ?? 3)) }
     var skip: String { ((skipText ?? "").isEmpty ? "跳过" : skipText!) }
@@ -209,28 +174,27 @@ struct DDSplash: Codable, Equatable {
 
 struct DDAd: Decodable, Identifiable, Hashable {
     var id: String
-    /// grid = 插在瀑布流里的广告卡 · strip = 楼层之间的广告条
+
     var kind: String?
     var emoji: String?
     var title: String
     var sub: String?
     var cta: String?
-    /// 两个十六进制颜色（可空 = 用默认红）
+
     var top: String?
     var bottom: String?
-    /// vip / music / subsidy / none（none 就按 link 打开网页）
+
     var action: String?
     var link: String?
     var on: Bool?
     var sort: Int?
-    /// 这条广告带的券（点进去会发到卡包；没有就是 nil）
+
     var coupon: DDAdCoupon?
 
     var isGrid: Bool { (kind ?? "strip") == "grid" }
     var topColor: UInt32 { UInt32((top ?? "").replacingOccurrences(of: "#", with: ""), radix: 16) ?? 0xFFF1EA }
     var bottomColor: UInt32 { UInt32((bottom ?? "").replacingOccurrences(of: "#", with: ""), radix: 16) ?? 0xFF5F3A }
 
-    /// 管理侧写回服务器要的字段表（和 GET /api/mall 给的那份一一对应）
     var dict: [String: Any] {
         ["id": id,
          "kind": kind ?? "strip",
@@ -247,19 +211,16 @@ struct DDAd: Decodable, Identifiable, Hashable {
     }
 }
 
-/// 广告上挂的券（和服务器 mall.json 里 ads[].coupon 一一对应）
-/// 配送方式（服务器 mall.json 的 delivery.modes；2026-10-16 用户：「配送里面不要光包邮」）
 struct DDDeliveryMode: Decodable, Identifiable, Hashable {
     var id: String
     var name: String
     var fee: Double
-    /// 满多少免运费（0 = 不免/本来就免）
+
     var freeMin: Double
     var days: String?
     var note: String?
     var on: Bool?
 
-    /// 拉不到后台配置时的兜底三档（和服务器默认那三档一致）
     static let defaults: [DDDeliveryMode] = [
         DDDeliveryMode(id: "d1", name: "普通快递", fee: 8, freeMin: 99, days: "3~5 天送达", note: "全国大部分地区", on: true),
         DDDeliveryMode(id: "d2", name: "次日达", fee: 15, freeMin: 199, days: "次日送达", note: "限城区", on: true),
@@ -274,7 +235,6 @@ struct DDAdCoupon: Decodable, Hashable {
     var days: Double?
     var kind: String?
 
-    /// 「满 99 减 10」/「会员体验券」这种一句话
     var text: String {
         let o = off ?? 0
         if o > 0 { return Tr("满 ") + String(Int(min ?? 0)) + Tr(" 减 ") + String(Int(o)) }
@@ -287,96 +247,78 @@ final class DDStore: ObservableObject {
     static let shared = DDStore()
 
     @Published private(set) var products: [DDProduct] = []
-    /// 首页轮播图（管理里可以换/加/删；服务器 data/mall.json 是真源）
+
     @Published private(set) var banners: [String] = []
-    /// 商城名 / 标语（管理页可改；用户要求「商城名」）
+
     @Published private(set) var mallName: String = "星言商城"
     @Published private(set) var mallSlogan: String = "拼着买 才便宜"
     @Published private(set) var orders: [DDOrder] = []
     @Published private(set) var cart: [DDCartLine] = []
     @Published private(set) var history: [String] = []
     @Published private(set) var favs: [String] = []
-    /// 看过的商品 id（最近 60 个，最新的在前）→「我的 → 浏览足迹」
-    @Published private(set) var views: [String] = []
-    /// 收货地址（没填就显示「还没填收货地址」）
-    @Published var address: String = ""
-    /* ============================================================
-       跳转请求（2026-10-16 用户：「还有那些没跳转的」）
 
-       商城里有好几条路都会"该跳但没跳"：商品页点「加入购物车」、
-       订单页点「再来一单」、下单成功之后要去看订单……
-       这些动作发起的地方离商城根很远（详情页是 sheet 里再套 sheet、
-       聊天里那张商品卡又是另一条路），所以不在各自的地方硬跳，
-       统一挂两个请求标记，**由商城根视图 MallNativeView 统一处理**：
-       谁发的都能跳，而且商城还没打开时会等它下次打开再跳。
-       ============================================================ */
-    /// 有人要跳「购物车」
+    @Published private(set) var views: [String] = []
+
+    @Published var address: String = ""
+
     @Published var wantCart = false
-    /// 有人要跳「我的订单」
+
     @Published var wantOrders = false
     func jumpCart() { wantCart = true }
     func jumpOrders() { wantOrders = true }
-    /// 收货地址簿（照京东：多条、可设默认、可编辑删除）——`address` 是改名之前的老字段，只用来迁移
+
     @Published private(set) var addresses: [DDAddress] = []
-    /* ---------------- 2026-10-15 对齐京东加的数据 ---------------- */
-    /// 商品评价（本机记录；确认收货后自己也能发）
+
     @Published private(set) var reviews: [DDReview] = []
-    /// 售后单（退款 / 退货 / 换货）
+
     @Published private(set) var afterSales: [DDAfterSale] = []
-    /// 关注的店铺
+
     @Published private(set) var followedShops: [String] = []
-    /// 优惠券（结算时抵钱）
+
     @Published private(set) var coupons: [DDCoupon] = []
-    /// 商城服务通知（成团 / 发货 / 签收）
+
     @Published private(set) var notices: [DDNotice] = []
-    /// 购物车里每条选了什么规格：pid → 规格名
+
     @Published private(set) var cartSpec: [String: String] = [:]
-    /// 发票抬头（结算页用）
+
     @Published var invoiceTitle: String = ""
-    /// 支付方式（演示：只在订单里记一下，不真扣钱）
-    /* 2026-10-16 用户：「把商城的微信支付删掉」——默认改成星言支付（名字走后台 payName） */
+
     @Published var payWay: String = XYPay.name
-    /* ---------------- 2026-10-15 对齐京东：会员（星言 PLUS） ---------------- */
-    /// 会员到期时间（nil / 已经过去 = 不是会员）
+
     @Published private(set) var vipUntil: Date? = nil
-    /// 自动续费开关（演示：只记状态）
+
     @Published var vipAutoRenew = true
-    /// 会员累计帮省（下单时的会员立减往这里累加）
+
     @Published private(set) var vipSaved: Double = 0
-    /* ---------------- 2026-10-15：卡片可关 / 不感兴趣 ---------------- */
-    /// 关掉的小广告 id（广告卡右上角那个 ×）
+
     @Published private(set) var hiddenAds: [String] = []
-    /// 「不感兴趣」的商品 id（推荐流不再出现）
+
     @Published private(set) var disliked: [String] = []
-    /// 「不感兴趣」的类目（少推荐这一类）
+
     @Published private(set) var mutedCates: [String] = []
-    /// 后台下发的广告（空 = 用 App 内置那两条）
+
     @Published private(set) var ads: [DDAd] = []
-    /// 开屏广告（CHRIS_MALL_SPLASH_V1）：管理端配的，没配就是空的
+
     @Published private(set) var splash = DDSplash()
-    /// 首页宫格（管理端可换字换图标）—— 空 = 用内置那八格
+
     @Published private(set) var channels: [DDChannelItem] = []
-    /// 首页宫格"后台到底配过没有"：false = 从没配过（首页用内置八格兜底）；
-    /// true = 后台有一份（哪怕是空的 —— 用户自己删光了就该是空的）。
-    /// 2026-10-17 用户：「9宫格卡片改了还是不生效 / 那是我删掉的」。
+
     @Published private(set) var channelsConfigured = false
-    /// 管理页要看**全部**广告（含关掉的）；商城那边只显示开着的（ads）
+
     @Published private(set) var allAds: [DDAd] = []
-    /* ---- 商城底栏的红点（2026-10-16 用户：「商城里底栏要有红点」「购物车啥的也要有」）----
-       mallNewCoupons：上次看过之后又到账的券（「消息」那颗亮这个，点开就清）
-       mallClaimable ：还有几条广告的券没领（「首页 / 推荐」亮这个，领完自动灭） */
+
     @Published private(set) var mallNewCoupons = 0
     @Published private(set) var mallClaimable = 0
-    /// 钱包里的银行卡（结算页「银行卡」那个支付方式要用的：有卡显示尾号，没卡显示"添加银行卡"）
+
     @Published private(set) var banks: [API.WalletBankCard] = []
-    /* ---- 配送方式（2026-10-16「配送里面不要光包邮」）---- */
+
     @Published private(set) var deliveryModes: [DDDeliveryMode] = DDDeliveryMode.defaults
     @Published var deliveryModeId: String = DDDeliveryMode.defaults.first?.id ?? ""
 
     var deliveryMode: DDDeliveryMode? {
         deliveryModes.first { $0.id == deliveryModeId } ?? deliveryModes.first
     }
-    /// 这一单要多少运费（满额免运费按**商品金额**算）
+
     func deliveryFee(_ goods: Double) -> Double {
         guard let m = deliveryMode else { return 0 }
         if m.freeMin > 0 && goods >= m.freeMin { return 0 }
@@ -389,7 +331,6 @@ final class DDStore: ObservableObject {
         if !live.contains(where: { $0.id == deliveryModeId }) { deliveryModeId = live[0].id }
     }
 
-    /// 会员折扣：下单按 95 折算会员价（京东 PLUS 是专享价，这里统一一个系数，能算也能看见）
     static let vipRate = 0.95
 
     var isVip: Bool {
@@ -397,13 +338,11 @@ final class DDStore: ObservableObject {
         return d > Date()
     }
 
-    /// 会员还剩几天（不是会员 = 0）
     var vipDaysLeft: Int {
         guard isVip, let d = vipUntil else { return 0 }
         return max(0, Int(ceil(d.timeIntervalSinceNow / 86400)))
     }
 
-    /// 会员到期那天（写成人话）
     var vipUntilText: String {
         guard let d = vipUntil else { return "" }
         let f = DateFormatter()
@@ -411,17 +350,14 @@ final class DDStore: ObservableObject {
         return f.string(from: d)
     }
 
-    /// 会员价 = 拼单价 × 折扣（不是会员就是原价）
     func vipPrice(_ p: DDProduct) -> Double {
         isVip ? ((p.price * DDStore.vipRate * 100).rounded() / 100) : p.price
     }
 
-    /// 这一单会员立减多少（不是会员 = 0）
     func vipOff(_ amount: Double) -> Double {
         isVip ? ((amount * (1 - DDStore.vipRate) * 100).rounded() / 100) : 0
     }
 
-    /// 开通 / 续费：months 个月（演示：不真扣钱，只把到期时间往后推）
     func openVip(months: Int) {
         let base = max(Date(), vipUntil ?? Date())
         vipUntil = Calendar.current.date(byAdding: .month, value: max(1, months), to: base) ?? base
@@ -441,11 +377,11 @@ final class DDStore: ObservableObject {
         var history: [String]
         var favs: [String]
         var address: String
-        /// 老缓存里没有这个字段（Optional 才不会解码失败）
+
         var banners: [String]?
-        /// 同上：浏览足迹（老缓存里没有）
+
         var views: [String]?
-        /// 同上：地址簿（老缓存里没有）
+
         var addresses: [DDAddress]?
         var reviews: [DDReview]?
         var afterSales: [DDAfterSale]?
@@ -455,16 +391,14 @@ final class DDStore: ObservableObject {
         var cartSpec: [String: String]?
         var invoiceTitle: String?
         var payWay: String?
-        /// 会员（老缓存里没有这几个字段）
+
         var vipUntil: Date?
         var vipAutoRenew: Bool?
         var vipSaved: Double?
         var hiddenAds: [String]?
         var disliked: [String]?
         var mutedCates: [String]?
-        /// 开屏广告配置也存一份（老缓存里没有这个字段）
-        /// 2026-10-17：不存的话，App 冷启动后 store 里是空的，得等一次成功的
-        /// /api/mall 才有 —— 那期间进商城就没有开屏（用户报的「开屏广告又没了」）。
+
         var splash: DDSplash?
     }
 
@@ -492,7 +426,7 @@ final class DDStore: ObservableObject {
             notices = b.notices ?? []
             cartSpec = b.cartSpec ?? [:]
             invoiceTitle = b.invoiceTitle ?? ""
-            /* 老存档里存的可能是「微信支付」：读回来直接迁到星言支付，不让它再出现在界面上 */
+
             let savedWay = b.payWay ?? ""
             payWay = (savedWay.isEmpty || savedWay == "微信支付") ? XYPay.name : savedWay
             vipUntil = b.vipUntil
@@ -501,10 +435,10 @@ final class DDStore: ObservableObject {
             hiddenAds = b.hiddenAds ?? []
             disliked = b.disliked ?? []
             mutedCates = b.mutedCates ?? []
-            splash = b.splash ?? DDSplash()      // 开屏广告：冷启动也先用手上这份
+            splash = b.splash ?? DDSplash()
         }
         if products.isEmpty { products = DDStore.seeds }
-        /* 老版本只有一个 address 字符串：升级上来时把它变成地址簿里的第一条，别让用户白填过 */
+
         if addresses.isEmpty, !address.isEmpty {
             addresses = [DDAddress(id: "a" + String(Int(Date().timeIntervalSince1970 * 1000)),
                                    name: "", phone: "", region: "", detail: address, isDefault: true)]
@@ -524,29 +458,13 @@ final class DDStore: ObservableObject {
         if let d = try? JSONEncoder().encode(b) { try? d.write(to: fileURL) }
     }
 
-    /* ---------------- 和管理端同步（服务器 data/mall.json 是真源） ---------------- */
-
-    /// 上架中的商品（商城首页/搜索只显示这些；管理页看得到全部）
     var live: [DDProduct] { products.filter { $0.live } }
 
-    /* ---------------- 2026-10-15 用户：「拼单功能先关闭，可以后台开启」 ----------------
-       后台 ui.json 里写 `mallGroup = 1` 就打开拼单；**默认 0 = 关**。
-       关掉之后就是京东那种「直接买」：
-         · 商品详情底部只剩「加入购物车 / 立即购买」（不再 单独购买 vs 发起拼单）
-         · 结算页不再选拼单方式，直接按这个价结算
-         · 订单里不再出现「拼团中 / 邀好友拼单 / 拼单消息」（老订单里的拼团中还在，只是不再新增） */
     static var groupOn: Bool { UIConfig.num("mallGroup", 0) > 0 }
 
-    /// 从服务器拉一份（进商城、管理里改完、下拉刷新都走它）
     func refresh() async {
         let r = await API.shared.mallData()
-        /* 2026-10-17 用户：「商城的开屏广告显示不出来」→ 后来又说「开屏广告又没了」——
-           病根在这儿：`/api/mall` 没拉回来的时候，返回值全都是空的，
-           而下面每一条都是**无条件覆盖** —— 于是轮播图被清成空、广告位被清成空、
-           开屏配置被清成空（`splash = sp ?? DDSplash()`）。用户看到的就是
-           "进商城好好的，过一会儿开屏广告又没了 / 轮播图也不动了"。
-           现在：**拉失败（ok=false）整份原样保留**，什么都不覆盖；
-           只有真拉到了才按后台那份走（后台真把某项清空 = 就清空，语义是对的）。 */
+
         guard r.ok else { return }
         if !r.products.isEmpty { products = r.products }
         banners = r.banners
@@ -556,9 +474,7 @@ final class DDStore: ObservableObject {
         allAds = r.ads.sorted { ($0.sort ?? 99) < ($1.sort ?? 99) }
         applyDelivery(r.delivery)
         splash = r.splash ?? DDSplash()
-        /* 后台"没配过"（nil）→ 保持 channelsConfigured = false，首页那排用内置八格兜底；
-           "配了但删空了"（[]）→ channelsConfigured = true，那排就是空的（不再被兜底顶回来）。
-           2026-10-17 用户：「那是我删掉的」——删光之后要真是空的才算生效。 */
+
         if let chs = r.channels {
             channels = chs.sorted { ($0.sort ?? 99) < ($1.sort ?? 99) }
             channelsConfigured = true
@@ -566,9 +482,6 @@ final class DDStore: ObservableObject {
         save()
     }
 
-    /// 管理侧：首页宫格（换字 / 换图标 / 换颜色 / 改顺序 / 隐藏）
-    /// 返回**服务器到底收没收到** —— 以前这里把结果丢掉、界面照样提示"已保存"，
-    /// 用户看到的却是"改了没生效"（2026-10-17 报的就是这个）。
     @discardableResult
     func opsSetChannels(_ list: [DDChannelItem]) async -> Bool {
         let ok = await API.shared.opsMall(["action": "channels", "channels": list.map { c in
@@ -580,7 +493,6 @@ final class DDStore: ObservableObject {
         return ok
     }
 
-    /// 管理侧：开屏广告（封面自己传，App 打开商城时 3 秒可跳过）
     func opsSetSplash(_ s: DDSplash) async {
         _ = await API.shared.opsMall(["action": "splash", "splash": [
             "on": s.on ?? true,
@@ -593,64 +505,53 @@ final class DDStore: ObservableObject {
         await refresh()
     }
 
-    /// 管理侧：改商城名 + 标语
     func opsSetName(_ name: String, _ slogan: String) async {
         _ = await API.shared.opsMall(["action": "settings", "name": name, "slogan": slogan])
         await refresh()
     }
 
-    /// 管理侧：新增或改一件商品
     func opsSave(_ p: DDProduct) async {
         _ = await API.shared.opsMall(["action": "product", "item": p.dict])
         await refresh()
     }
 
-    /// 管理侧：删一件商品
     func opsRemove(_ id: String) async {
         _ = await API.shared.opsMall(["action": "remove", "id": id])
         await refresh()
     }
 
-    /// 管理侧：整份换轮播图
     func opsBanners(_ urls: [String]) async {
         _ = await API.shared.opsMall(["action": "banners", "banners": urls])
         await refresh()
     }
 
-    /// 管理侧：整份换广告位（商城首页那些小广告）
     func opsAds(_ list: [DDAd]) async {
         _ = await API.shared.opsMall(["action": "ads", "ads": list.map { $0.dict }])
         await refresh()
     }
 
-    /* ---------------- 券 + 底栏红点 ---------------- */
-
-    /// 拉一次「我的券」和两个红点计数（进商城、回到前台、领完券都调它）
     func refreshMallBadges() async {
         guard let r = await API.shared.mallAdMine() else { return }
         mallNewCoupons = r.newCount ?? 0
         mallClaimable = r.claimableCount ?? (r.claimable?.count ?? 0)
-        /* 服务端的券也并进本地这一份，结算页「优惠券」那一行才选得到 */
+
         mergeServerCoupons(r.coupons ?? [])
-        /* 银行卡也顺手拉一下（结算页要显示尾号 / 添加银行卡） */
+
         banks = (try? await API.shared.walletBanks()) ?? banks
     }
 
-    /// 结算页「银行卡」那一行显示什么（没绑卡就是"添加银行卡"）
     var bankPayText: String {
         guard let b = banks.first else { return Tr("添加银行卡") }
         let tail = b.tail ?? ""
         return tail.isEmpty ? Tr("银行卡") : (Tr("银行卡（尾号 ") + tail + ")")
     }
 
-    /// 打开商城「消息」→ 清掉那颗红点
     func markMallSeen() {
         guard mallNewCoupons > 0 else { return }
         mallNewCoupons = 0
         Task { await API.shared.mallAdSeen() }
     }
 
-    /// 点广告领券：领到了就顺手把本地红点状态刷新一下
     @discardableResult
     func claimAdCoupon(_ adId: String) async -> API.MallAdClaim? {
         let r = await API.shared.mallAdClaim(adId: adId)
@@ -658,7 +559,6 @@ final class DDStore: ObservableObject {
         return r
     }
 
-    /// 把服务端发的券并进本地券包（按 id 去重；本地自己造的券保留）
     private func mergeServerCoupons(_ list: [API.MallCoupon]) {
         let fmt = ISO8601DateFormatter()
         for c in list where !coupons.contains(where: { $0.id == c.id }) {
@@ -669,8 +569,6 @@ final class DDStore: ObservableObject {
     }
 
     func product(_ id: String) -> DDProduct? { products.first { $0.id == id } }
-
-    /* ---------------- 购物车 ---------------- */
 
     var cartCount: Int { cart.reduce(0) { $0 + $1.count } }
     var cartTotal: Double {
@@ -685,7 +583,7 @@ final class DDStore: ObservableObject {
         } else {
             cart.append(DDCartLine(pid: pid, count: count))
         }
-        /* 第一次加这个商品时，默认选第一个规格（京东加购就带规格） */
+
         if cartSpec[pid] == nil, let p = product(pid) { cartSpec[pid] = p.specList.first?.name ?? "" }
         save()
     }
@@ -698,8 +596,6 @@ final class DDStore: ObservableObject {
 
     func clearCart() { cart.removeAll(); save() }
 
-    /* ---------------- 订单 ---------------- */
-
     var groupingCount: Int { orders.filter { $0.status == "grouping" }.count }
 
     @discardableResult
@@ -709,10 +605,10 @@ final class DDStore: ObservableObject {
                memberOff: Double = 0,
                payWay: String = XYPay.name, paying: Bool = true) -> DDOrder {
         let p = product(pid)
-        /* 选了规格就按规格价 */
+
         var unit = group ? (p?.price ?? 0) : (p?.orig ?? p?.price ?? 0)
         if let v = p?.specList.first(where: { $0.name == spec }) { unit = v.price }
-        /* 会员：按会员价成交（不是会员时 vipOff 返回 0） */
+
         let vipOff = memberOff > 0 ? memberOff : self.vipOff(unit * Double(max(1, count)))
         if vipOff > 0 { vipSaved += vipOff }
         let now = Int(Date().timeIntervalSince1970 * 1000)
@@ -741,8 +637,7 @@ final class DDStore: ObservableObject {
                         memberOff: vipOff)
         orders.insert(o, at: 0)
         if fromCart { cart.removeAll { $0.pid == pid } }
-        /* 2026-10-16：订单**同步一份到服务器** —— 后台才能看到并发货（发货后用户端能看到真实快递轨迹）。
-           带推广码的（本机存着 chris.mall.ref，来自好友助力）一起带上，这一单就记在那个分销员名下。 */
+
         Task {
             let ref = UserDefaults.standard.string(forKey: "chris.mall.ref") ?? ""
             let total = max(0, o.price * Double(o.count) + o.freight - o.couponOff - o.memberOff)
@@ -755,7 +650,7 @@ final class DDStore: ObservableObject {
                 at: ISO8601DateFormatter().string(from: o.at),
                 remark: o.remark,
                 ref: ref,
-                /* 2026-10-16 支付宝：这一单**还没付**，别让后台当成已付款（对账要用这个状态） */
+
                 paid: (o.payWay != AliPay.name))
         }
         pushNotice(DDNotice(id: "n" + String(now), title: "订单已提交",
@@ -765,7 +660,6 @@ final class DDStore: ObservableObject {
         return o
     }
 
-    /// 付款（演示：不真扣钱，只把状态推进）
     func pay(_ id: String) {
         guard let i = orders.firstIndex(where: { $0.id == id }) else { return }
         guard orders[i].status == "paying" else { return }
@@ -778,9 +672,6 @@ final class DDStore: ObservableObject {
         save()
     }
 
-    /* ---------------- 支付宝（2026-10-16） ----------------
-       支付宝是**一次付款对一个订单号** —— 购物车勾了好几件的话，
-       合成一个订单号再去付，回调回来才对得上、对账也干净。 */
     @discardableResult
     func placeCombined(lines: [(pid: String, count: Int)], address: DDAddress?, payWay: String) -> DDOrder? {
         let picked = lines.compactMap { l -> (DDProduct, Int)? in
@@ -825,7 +716,6 @@ final class DDStore: ObservableObject {
         return o
     }
 
-    /// 把这一单同步到服务器（支付宝签名要用服务端那份订单）
     @discardableResult
     func syncToServer(_ o: DDOrder, paid: Bool) async -> Bool {
         let ref = UserDefaults.standard.string(forKey: "chris.mall.ref") ?? ""
@@ -841,12 +731,11 @@ final class DDStore: ObservableObject {
             paid: paid)
     }
 
-    /// 邀请好友拼单：直接把人数凑满 → 成团，状态进「待发货」
     func invite(_ id: String) {
         guard let i = orders.firstIndex(where: { $0.id == id }) else { return }
         orders[i].have = orders[i].need
         orders[i].status = "wait"
-        /* 成团也推一条服务通知（消息 tab 里能看到 —— 对齐京东） */
+
         pushNotice(DDNotice(id: "n" + String(Int(Date().timeIntervalSince1970 * 1000)),
                             title: "拼单成功",
                             body: "「" + orders[i].title + "」已成团，商家马上打包发货",
@@ -864,7 +753,7 @@ final class DDStore: ObservableObject {
         guard let i = orders.firstIndex(where: { $0.id == id }) else { return }
         if orders[i].status == "wait" {
             orders[i].status = "shipped"
-            /* 发货就给个快递公司和单号（京东发货后能看物流） */
+
             let kuaidi = ["顺丰速运", "中通快递", "圆通速递", "韵达快递"]
             orders[i].express = kuaidi[Int.random(in: 0..<kuaidi.count)]
             orders[i].expressNo = "SF" + String(Int(Date().timeIntervalSince1970)) + String(Int.random(in: 100...999))
@@ -898,8 +787,6 @@ final class DDStore: ObservableObject {
         save()
     }
 
-    /* ---------------- 收藏 / 足迹 ---------------- */
-
     func isFav(_ pid: String) -> Bool { favs.contains(pid) }
 
     func toggleFav(_ pid: String) {
@@ -918,9 +805,6 @@ final class DDStore: ObservableObject {
 
     func clearHistory() { history.removeAll(); save() }
 
-    /* ---------------- 浏览足迹 ---------------- */
-
-    /// 记一条浏览足迹（点开商品详情时调）：同一个商品只留最近一次
     func recordView(_ pid: String) {
         guard !pid.isEmpty else { return }
         views.removeAll { $0 == pid }
@@ -929,27 +813,21 @@ final class DDStore: ObservableObject {
         save()
     }
 
-    /// 足迹 → 商品（被下架/删掉的自动跳过，不会显示成空白卡）
     var viewed: [DDProduct] { views.compactMap { product($0) } }
 
     func clearViews() { views.removeAll(); save() }
 
     func setAddress(_ s: String) { address = s; save() }
 
-    /* ---------------- 收货地址簿（照京东那套） ---------------- */
-
-    /// 默认地址（没设默认就用第一条）
     var defaultAddress: DDAddress? {
         addresses.first { $0.isDefault } ?? addresses.first
     }
 
-    /// 地址簿里有没有「信息不全」的（姓名或手机号空着）——下单前提醒一下
     var hasCompleteAddress: Bool {
         guard let a = defaultAddress else { return false }
         return !a.name.isEmpty && a.phone.count >= 6
     }
 
-    /// 收货地址那一行的副标题（下单页 / 我的 都用它）
     var addressLine: String {
         guard let a = defaultAddress else { return "" }
         return a.region + a.detail
@@ -957,7 +835,7 @@ final class DDStore: ObservableObject {
 
     private func normalizeDefault(_ keep: String = "") {
         if addresses.isEmpty { return }
-        /* 只允许一个默认：优先 keep，其次原来标了默认的，再次第一条 */
+
         if !keep.isEmpty, let i = addresses.firstIndex(where: { $0.id == keep }) {
             for k in addresses.indices { addresses[k].isDefault = (k == i) }
             return
@@ -974,7 +852,6 @@ final class DDStore: ObservableObject {
         }
     }
 
-    /// 新增一条（京东：新地址默认「设为默认」开关打开时才抢默认）
     func addAddress(_ a: DDAddress) {
         var x = a
         if x.id.isEmpty { x.id = "a" + String(Int(Date().timeIntervalSince1970 * 1000)) }
@@ -1004,15 +881,11 @@ final class DDStore: ObservableObject {
         save()
     }
 
-    /* ---------------- 评价（对齐京东） ---------------- */
-
-    /// 本机发的评价 + 每个商品自带的几条示例评价（确定性生成，不随机跳）
     func reviews(of p: DDProduct) -> [DDReview] {
         let mine = reviews.filter { $0.pid == p.id }
         return (mine + DDReview.samples(for: p)).sorted { $0.at > $1.at }
     }
 
-    /// 平均分（没评价就 nil，界面显示"暂无评价"）
     func rating(of p: DDProduct) -> Double? {
         let list = reviews(of: p)
         guard !list.isEmpty else { return nil }
@@ -1026,8 +899,6 @@ final class DDStore: ObservableObject {
                             at: Date(), kind: "review"))
         save()
     }
-
-    /* ---------------- 售后（退款/退货/换货） ---------------- */
 
     func addAfterSale(_ a: DDAfterSale) {
         afterSales.insert(a, at: 0)
@@ -1044,8 +915,6 @@ final class DDStore: ObservableObject {
         save()
     }
 
-    /* ---------------- 关注的店铺 ---------------- */
-
     func isFollowed(_ key: String) -> Bool { followedShops.contains(key) }
 
     func toggleFollow(_ key: String) {
@@ -1055,7 +924,6 @@ final class DDStore: ObservableObject {
         save()
     }
 
-    /// 关注过的店铺 → 商品列表（去重）
     var followedProducts: [DDProduct] {
         var out: [DDProduct] = []
         for p in products where followedShops.contains(p.shopKey) && !out.contains(where: { $0.id == p.id }) {
@@ -1064,9 +932,6 @@ final class DDStore: ObservableObject {
         return out
     }
 
-    /* ---------------- 优惠券 ---------------- */
-
-    /// 这张券现在能不能用在 total 上
     func couponUsable(_ c: DDCoupon, total: Double) -> Bool {
         !c.used && Date() < c.until && total >= c.min
     }
@@ -1078,7 +943,7 @@ final class DDStore: ObservableObject {
         coupons[i].used = true
         save()
     }
-    /// 第一次打开商城送两张（京东新客券那套）
+
     func seedCouponsIfNeeded() {
         guard coupons.isEmpty else { return }
         let now = Date()
@@ -1089,23 +954,17 @@ final class DDStore: ObservableObject {
         save()
     }
 
-    /* ---------------- 服务通知 ---------------- */
-
     func pushNotice(_ n: DDNotice) {
         notices.insert(n, at: 0)
         if notices.count > 60 { notices = Array(notices.prefix(60)) }
     }
     func clearNotices() { notices.removeAll(); save() }
 
-    /// 删掉一条服务通知（消息 tab 里左滑删除用）
     func removeNotice(_ id: String) {
         notices.removeAll { $0.id == id }
         save()
     }
 
-    /* ---------------- 卡片可关 / 不感兴趣（2026-10-15 用户要求） ---------------- */
-
-    /// 广告被 × 掉了（记下来，以后不再出现）
     func hideAd(_ id: String) {
         guard !hiddenAds.contains(id) else { return }
         hiddenAds.append(id)
@@ -1113,21 +972,17 @@ final class DDStore: ObservableObject {
     }
     func adHidden(_ id: String) -> Bool { hiddenAds.contains(id) }
 
-    /// 长按商品 →「不感兴趣」：这件商品不再推，同时**少推这一类**
     func notInterested(_ p: DDProduct, muteCate: Bool) {
         if !disliked.contains(p.id) { disliked.append(p.id) }
         if muteCate, !p.cate.isEmpty, !mutedCates.contains(p.cate) { mutedCates.append(p.cate) }
         save()
     }
-    /// 恢复（把「少推这一类」撤掉）
+
     func unmuteCate(_ c: String) {
         mutedCates.removeAll { $0 == c }
         save()
     }
 
-    /* ---------------- 恢复（2026-10-16 用户：「客户把商品都 x 了没有恢复吗」） ----------------
-       以前只有「少推的类目」能恢复，而且只能一条一条从首页那条提示里点；
-       商品和广告被 × 掉之后没有任何入口能找回来。这里补齐： */
     func restoreDisliked(_ id: String) {
         disliked.removeAll { $0 == id }
         save()
@@ -1145,9 +1000,9 @@ final class DDStore: ObservableObject {
         hiddenAds.removeAll()
         save()
     }
-    /// 被 × 掉的商品（拿得到商品的显示出来，商品下架的也能按 id 列出来）
+
     var dislikedProducts: [DDProduct] { products.filter { disliked.contains($0.id) } }
-    /// 推荐流用的「干净列表」：去掉不感兴趣的；被打过「少推」的类目排到最后
+
     func feed(_ list: [DDProduct]) -> [DDProduct] {
         let kept = list.filter { !disliked.contains($0.id) }
         let sorted = kept.sorted { a, b in
@@ -1155,11 +1010,7 @@ final class DDStore: ObservableObject {
             let mb = mutedCates.contains(b.cate) ? 1 : 0
             return ma < mb
         }
-        /* ⚠ 2026-10-16 用户：「现在商城什么东西都没了」——
-           病根：把商品一个个「不感兴趣」之后，这里会把它们**全部**滤掉，
-           商城就成了空白页（没有恢复入口的老版本更是死路）。
-           兜底：如果滤完一个都不剩，就退回全量（照样按"少推类目沉底"排），
-           商城永远有东西可看；想彻底不看的，去「我的 → 不感兴趣与隐藏」里管。 */
+
         if sorted.isEmpty && !list.isEmpty {
             return list.sorted { a, b in
                 let ma = mutedCates.contains(a.cate) ? 1 : 0
@@ -1170,23 +1021,20 @@ final class DDStore: ObservableObject {
         return sorted
     }
 
-    /* ---------------- 购物车（店铺分组 / 失效 / 规格） ---------------- */
-
     func cartSpecOf(_ pid: String) -> String { cartSpec[pid] ?? "" }
     func setCartSpec(_ pid: String, _ spec: String) { cartSpec[pid] = spec; save() }
 
-    /// 失效条目：商品被删了或下架了
     var invalidCart: [DDCartLine] {
         cart.filter { l in
             guard let p = product(l.pid) else { return true }
             return !p.live
         }
     }
-    /// 有效的条目
+
     var validCart: [DDCartLine] {
         cart.filter { l in (product(l.pid)?.live ?? false) }
     }
-    /// 按店铺分组（京东购物车就是一店一卡片）
+
     func cartGrouped() -> [(shop: String, lines: [DDCartLine])] {
         var order: [String] = []
         var map: [String: [DDCartLine]] = [:]
@@ -1197,7 +1045,7 @@ final class DDStore: ObservableObject {
         }
         return order.map { (shop: $0, lines: map[$0] ?? []) }
     }
-    /// 移除失效条目
+
     func clearInvalidCart() {
         let bad = Set(invalidCart.map { $0.pid })
         cart.removeAll { bad.contains($0.pid) }
@@ -1209,13 +1057,10 @@ final class DDStore: ObservableObject {
         save()
     }
 
-    /// 再来一单：把那张订单里的商品重新加回购物车
     func reorder(_ o: DDOrder) {
         addCart(o.pid, count: max(1, o.count))
         setCartSpec(o.pid, o.spec)
     }
-
-    /* ---------------- 分类 / 搜索 ---------------- */
 
     var categories: [String] {
         var seen: [String] = []
@@ -1233,8 +1078,6 @@ final class DDStore: ObservableObject {
                 || $0.tags.contains { $0.contains(s) }
         }
     }
-
-    /* ---------------- 种子商品（和 H5 里那 16 个一模一样） ---------------- */
 
     static let seeds: [DDProduct] = [
         DDProduct(id: "p01", em: "🎧", title: "【百亿补贴】无线蓝牙耳机 主动降噪 入耳式 超长续航 苹果安卓通用",
@@ -1272,29 +1115,17 @@ final class DDStore: ObservableObject {
     ]
 }
 
-/* ---------------------------------------------------------- 小零件 */
-
 extension View {
-    /// 商城一律按**浅色**渲染：用户要求「商城背景不要黑色的」——
-    /// 深色模式下 App 的底色是 #191919，商城这一页保持拼多多那种白底/浅灰底
-    /// （颜色走 App 那套 C.* 的浅色值：页面 #EDEDED、卡片 #FFFFFF、文字深灰）。
+
     func ddLight() -> some View { environment(\.colorScheme, .light) }
 }
 
-/// 商城的调色板 —— **和服务器上那个 H5 商城（/mall/index.html）里量出来的一模一样**
-/// （用户要求「原生的商城颜值不要变，和 h5 的」）。H5 的 CSS 变量：
-///   --red:#e02f24  --red-deep:#c81e14  --red-light:#fff1ef  --orange:#ff7a1a
-///   --grad-red:135deg #ff5f3a → #ef3323 55% → #d81a10
-///   --grad-btn:96deg #ffab2e → #ff5f00 55% → #f43c0a
-///   --grad-btn-soft:96deg #ff8b3d → #f5361c
-///   --bg:#f5f5f7  --text:#141414  --text-sub:#8a8a90  --text-weak:#b4b4ba
-///   --card:#ffffff  --radius:16px  --radius-sm:12px
 enum DDColor {
     static let red      = Color(hex: 0xE02F24)
     static let redDeep  = Color(hex: 0xC81E14)
     static let redLight = Color(hex: 0xFFF1EF)
     static let orange   = Color(hex: 0xFF7A1A)
-    /// HarmonyOS 商城同色：导航与选择态用系统蓝，价格和促销仍保留红色。
+
     static let blue     = Color(hex: 0x007DFF)
     static let blueDeep = Color(hex: 0x2F6FED)
     static let blueLight = Color(hex: 0xEAF4FF)
@@ -1305,44 +1136,36 @@ enum DDColor {
     static let sub      = Color(hex: 0x707A8A)
     static let weak     = Color(hex: 0xA4ADBA)
     static let line     = Color(hex: 0xE9EDF2)
-    /* 2026-10-17 用户：「商城的各个地方有点设计感，不要每个都是平的卡片」——
-       卡片底给一层**极淡的竖向渐变**（不是一块死白），配一条细边和一层柔和投影，
-       卡片就有"厚度"了；全商城统一用这两个（原来是 .background(DDColor.card) 一片平色）。 */
+
     static let cardGrad = LinearGradient(colors: [Color(hex: 0xFFFFFF), Color(hex: 0xFBFCFE)],
                                          startPoint: .top, endPoint: .bottom)
     static let cardEdge = Color(hex: 0xE9EDF2)
     static let cardShadow = Color(hex: 0x26354A).opacity(0.07)
-    /// 「我的」资料卡与华为一致：白卡 + 极淡冷色底，不再使用红白渐变。
+
     static let mineCardGrad = LinearGradient(colors: [Color(hex: 0xFFFFFF), Color(hex: 0xFBFCFE),
                                                       Color(hex: 0xFFFFFF)],
                                              startPoint: .top, endPoint: .bottom)
-    /// HarmonyOS 分栏标题强调条。
+
     static let barGrad = LinearGradient(colors: [Color(hex: 0x2F6FED), Color(hex: 0x007DFF)],
                                         startPoint: .top, endPoint: .bottom)
-    /// 顶栏那块红（H5 的 --grad-red）
+
     static let gradHeader = LinearGradient(
         colors: [Color(hex: 0xFF5F3A), Color(hex: 0xEF3323), Color(hex: 0xD81A10)],
         startPoint: .topLeading, endPoint: .bottomTrailing)
-    /// 主要按钮（H5 的 --grad-btn）
+
     static let gradBtn = LinearGradient(
         colors: [Color(hex: 0xFFAB2E), Color(hex: 0xFF5F00), Color(hex: 0xF43C0A)],
         startPoint: .leading, endPoint: .trailing)
-    /// 次要按钮（H5 的 --grad-btn-soft）
+
     static let gradBtnSoft = LinearGradient(
         colors: [Color(hex: 0xFF8B3D), Color(hex: 0xF5361C)],
         startPoint: .leading, endPoint: .trailing)
-    /// 商品图那块暖色底
+
     static let gradThumb = LinearGradient(
         colors: [Color(hex: 0xFFF3EC), Color(hex: 0xFFFBF7)],
         startPoint: .topLeading, endPoint: .bottomTrailing)
 }
 
-/* 2026-10-15 用户：「顶部的渐变色弄浅色高级感」——
-   原来商城顶部是 H5 那套正红（#FF5F3A → #EF3323 → #D81A10），现在换成**很淡的暖白渐变**
-   （#FFFBF8 → #FFF1EA → #FFE6DC）：字/图标跟着变深色，搜索框留一条极细描边。
-   想回正红（或换成别的）：后台 ui.json 里写
-     mallTopGrad = "#FF5F3A,#EF3323,#D81A10"
-   2~3 个十六进制颜色，逗号隔开就行。 */
 func ddTopGradient() -> LinearGradient {
     func col(_ s: String) -> Color? {
         let v = s.replacingOccurrences(of: "#", with: "").trimmingCharacters(in: .whitespaces)
@@ -1360,10 +1183,6 @@ func ddTopGradient() -> LinearGradient {
                           startPoint: .topLeading, endPoint: .bottomTrailing)
 }
 
-/// 「我的」页那条**红白渐变**（2026-10-17 用户：「我的页顶栏底栏红白渐变处理」）——
-/// 顶上压一串商城的红，往下很快化成白，和淘宝/京东的个人页一个路数：
-/// 红是"这是商城的地盘"，白是把内容托起来。
-/// 后台 ui.json 写 mallMineGrad（"#E02F24,#FF6A4D,#FFF1EC" 这种）就能整套换色。
 func ddMineTopGradient() -> LinearGradient {
     func col(_ s: String) -> Color? {
         let v = s.replacingOccurrences(of: "#", with: "").trimmingCharacters(in: .whitespaces)
@@ -1380,12 +1199,11 @@ func ddMineTopGradient() -> LinearGradient {
                           startPoint: .top, endPoint: .bottom)
 }
 
-/// 商品图（emoji + 暖色渐变底，和 H5 的观感一致）
 struct DDThumb: View {
     var em: String
     var size: CGFloat
     var radius: CGFloat = 10
-    /// 有真图就显示真图（管理里从相册传上来的），没有就用 emoji 顶着
+
     var img: String? = nil
 
     var body: some View {
@@ -1404,15 +1222,13 @@ struct DDThumb: View {
     }
 }
 
-/// 价格：¥ 小一号、数字大一号（拼多多那种写法）
 struct DDPrice: View {
     var value: Double
     var size: CGFloat = 17
     var color: Color = DDColor.red
 
     var body: some View {
-        /* 2026-10-15 家长版（京东）价格排版：**¥ 小、整数大、小数小** ——
-           京东那种「¥39.9」里 39 特别大、.9 收小，一眼就是电商味。 */
+
         HStack(alignment: .firstTextBaseline, spacing: 1) {
             Text("¥").font(pf(size * 0.62, .semibold)).foregroundColor(color)
             Text(DDPrice.split(value).0)
@@ -1424,7 +1240,6 @@ struct DDPrice: View {
         }
     }
 
-    /// 把价格切成 (整数部分, ".小数部分") —— 京东那种大小字排版用
     static func split(_ v: Double) -> (String, String) {
         let s = moneyFmt(v)
         guard s.contains(".") else { return (s, "") }
@@ -1434,27 +1249,14 @@ struct DDPrice: View {
     }
 }
 
-/* ---------------------------------------------------------- 商城首页（根） */
-
-/// 商城二楼的下拉「阀门」——**和会话页二楼完全是同一套**（2026-10-17 用户：
-/// 「商城的下拉太容易误触」→「改成和会话页同样的阀门」）：
-///   · 同一个后台键 `chatsFloorPull`（默认 120）：两页的阈值一起调，调完重开 App 生效
-///   · 同一套 `floorGravity` 阻尼（heavy）：越往后越沉，随手一滑到不了阈值
-///   · 同样三颗压感点、点到第三颗松手才开
 enum DDMallFloorCfg {
-    /// 2026-10-17 用户：「商城二楼还是容易拉下来」——
-    /// 阀门本身还是会话页那套（同一个 chatsFloorPull），但商城首页是"一进来就在最上面 +
-    /// 顶上是轮播图"，随手往下一滑的行程比会话页长得多，同样 135 就显得太容易。
-    /// 所以这里再乘一个**商城专用倍率 mallFloorScale（默认 1.6）**：
-    ///   135 × 1.6 ≈ 216 → 手指实际要拉 ~320pt 才到，随手滑一两百不会开。
-    /// 想单独调商城：后台 ui.json 写 mallFloorScale（1 = 和会话页完全一样）。
+
     static var pull: CGFloat {
         let base = max(40, UIConfig.num("chatsFloorPull", 120))
         let scale = UIConfig.num("mallFloorScale", 1.6)
         return max(40, base * max(0.5, scale))
     }
 
-    /// 会话页那个 heavyPull 的同一份公式（照抄，别改一边忘了另一边）
     static func heavy(_ d: CGFloat) -> CGFloat {
         let g = UIConfig.num("floorGravity", 1)
         if g <= 0 || d <= 60 { return d }
@@ -1469,41 +1271,38 @@ struct MallNativeView: View {
     @ObservedObject private var store = DDStore.shared
 
     @State private var tab = 0
-    /// 首页顶部频道：与华为一致（星选 / 好价 / 热门 / 上新）。
+
     @State private var homeTopChannel = 0
     @State private var openProduct: DDProduct? = nil
     @State private var showSearch = false
     @State private var showOrders = false
-    /// 会员中心（顶栏那颗 PLUS）
+
     @State private var showVip = false
-    /// 城市选择页（2026-10-16 用户：「顶部位置做个像美团一样的城市定位」）
+
     @State private var showCity = false
-    /// 商城「我的」顶栏的收货地址 / 客户服务按钮
+
     @State private var showMineAddress = false
     @State private var showMineService = false
     @ObservedObject private var city = DDCity.shared
-    /* 二楼（整页浮层画在最外层，这样能盖住底栏 —— 和会话页二楼一样） */
+
     @State private var floorUp = false
     @State private var floorPull: CGFloat = 0
     @State private var floorOrders = 0
     @State private var showFloorOrders = false
     @State private var showFloorFav = false
     @State private var showFloorViews = false
-    /// 开屏广告（管理端配了封面才显示）
+
     @State private var showSplash = false
-    /// 这次进商城是什么时候（开屏配置晚回来时，只在这几秒内补弹，见 onChange(of: store.splash)）
+
     @State private var openedAt = Date()
-    /// 搜索框右边那颗「扫一扫」（2026-10-17）
+
     @State private var showScan = false
     @Environment(\.openURL) private var openURL
 
     var body: some View {
         VStack(spacing: 0) {
             header
-            /* 2026-10-17 用户：「217 的商城就正常」「改回」——
-               撤掉后来加的“内容整块上叠 14pt + 负 padding”。那套在部分机型上
-               会让内容层参与横向尺寸计算，滑轮播/瀑布流时整页看起来左右漂。
-               现在回到简单上下堆叠，宽度始终锁在屏幕内。 */
+
             content
                 .background(
                     UnevenRoundedRectangle(topLeadingRadius: 18,
@@ -1520,7 +1319,7 @@ struct MallNativeView: View {
         }
         .frame(maxWidth: .infinity)
         .background(DDColor.page.ignoresSafeArea())
-        /* 开屏广告：整屏封面 + 「跳过 N」，到点自己关 */
+
         .overlay {
             if showSplash {
                 MallSplashAdView(splash: store.splash,
@@ -1529,7 +1328,7 @@ struct MallNativeView: View {
                     .transition(.opacity)
             }
         }
-        /* 商城二楼：首页下拉露出来的那一整层 */
+
         .overlay(alignment: .top) {
             if floorPull > 0.5 || floorUp {
                 let screenH = UIScreen.main.bounds.height
@@ -1550,8 +1349,7 @@ struct MallNativeView: View {
                         .frame(height: screenH)
                         .offset(y: -(screenH - reveal))
                         .ignoresSafeArea()
-                    /* 压感提示：**和会话页二楼同款**（1 → 2 → 3 颗点亮，点到第三颗松手才开）。
-                       商城这边以前没有这几颗点，用户"随手一滑"也看不出拉到哪了，就误触。 */
+
                     VStack(spacing: 0) {
                         Spacer().frame(height: L.safeTop + 10)
                         mallPullDots
@@ -1584,7 +1382,7 @@ struct MallNativeView: View {
         .swipeBack { dismiss() }
         .hidesTabBar()
         .sheet(item: $openProduct) { p in
-            /* onCart：详情页里点「加购物车」→ 直接切到购物车那个 tab */
+
             DDDetailView(product: p,
                          onCart: { tab = 3 },
                          onOpenOther: { openProduct = $0 }).environmentObject(app)
@@ -1596,7 +1394,7 @@ struct MallNativeView: View {
             }
             .environmentObject(app)
         }
-        /* 扫一扫：搜索框右边那颗相机进来（和会话页二楼那颗同一页） */
+
         .fullScreenCover(isPresented: $showScan) {
             ScannerView { text in handleScanned(text, app: app) }
         }
@@ -1610,7 +1408,7 @@ struct MallNativeView: View {
             })
             .environmentObject(app)
         }
-        /* 城市选择页（美团那种：当前定位 / 最近访问 / 热门城市 / 搜索） */
+
         .sheet(isPresented: $showCity) {
             DDCityPickerView().environmentObject(app)
         }
@@ -1620,9 +1418,7 @@ struct MallNativeView: View {
         .sheet(isPresented: $showMineAddress) {
             DDAddressListView().environmentObject(app)
         }
-        /* 统一的跳转请求（见 DDStore.wantCart / wantOrders 那段说明）：
-           出发点是哪个页面都行 —— 商品详情、订单列表、聊天里那张商品卡 ——
-           这里统一收口：要购物车就切到购物车那一栏，要订单就弹「我的订单」。 */
+
         .onChange(of: store.wantCart) { v in
             guard v else { return }
             store.wantCart = false
@@ -1636,14 +1432,12 @@ struct MallNativeView: View {
             openProduct = nil
             showOrders = true
         }
-        /* 商城还没打开时攒下的请求（比如从聊天卡片里下的单）：一进来就补上 */
+
         .onAppear {
-            /* 开屏广告：本地缓存里已经有配置就先弹（第一次装完那次靠下面 task 刷完再弹） */
+
             if store.splash.isOn, !showSplash { showSplash = true }
             openedAt = Date()
-            /* 2026-10-17 用户报「商城的开屏广告显示不出来」——进商城先把这一刻的状态
-               打到后台日志（后台 → 崩溃/日志 里能看到）：配置有没有到 App、封面是哪张、
-               显示几秒。有了这一条，下一次就能立刻分辨是「服务端没配到」还是「没触发」。 */
+
             CrashCatcher.note("开屏广告", "进商城：配置=\(store.splash.isOn ? "有" : "无")｜封面=\(store.splash.image ?? "-")｜秒=\(Int(store.splash.secs))｜首屏=\(store.products.count)件")
             if store.wantCart {
                 store.wantCart = false
@@ -1654,34 +1448,30 @@ struct MallNativeView: View {
                 showOrders = true
             }
         }
-        /* 开屏配置**比 onAppear 晚回来**（第一次装完、或者刚从后台切回来）：
-           一到就弹，不用等下一次进商城。只在这个页面刚打开的那几秒内弹，
-           免得用户正在逛的时候突然糊一屏广告。 */
+
         .onChange(of: store.splash) { s in
             guard s.isOn, !showSplash else { return }
             guard Date().timeIntervalSince(openedAt) < 5 else { return }
             withAnimation(.easeOut(duration: 0.2)) { showSplash = true }
         }
-        /* 进商城先拉一次服务器上的商城数据（商品 + 轮播图）——管理里改完立刻能看到 */
+
         .task {
             await store.refresh()
-            await store.refreshMallBadges()          // 券 + 底栏那几颗红点
-            /* 商城配置拉回来了：开屏广告按最新配置弹 */
+            await store.refreshMallBadges()
+
             if store.splash.isOn, !showSplash { withAnimation(.easeOut(duration: 0.2)) { showSplash = true } }
-            /* 顶部城市：没定过就顺手定位一次（美团也是一进来就定位） */
+
             DDCity.shared.locateIfNeeded()
             MallWeather.shared.refresh()
         }
         .ddLight()
-        /* 顺带把状态栏也按浅色算：不然深色模式下状态栏是白字、压在浅色商城上会看不清 */
+
         .preferredColorScheme(.light)
     }
 
-    /* 2026-10-17 用户：「底栏推荐换成分类页」——第 2 格从「推荐（种草）」换成「分类」 */
     private var titles = ["商城", "分类", "消息", "购物车", "我的"]
     private let homeChannels = ["星选", "好价", "热门", "上新"]
 
-    /// 点开屏封面去哪：后台配的是 不跳 / 网址 / 某个商品
     private func openSplashTarget() {
         let a = store.splash.action ?? "none"
         let l = (store.splash.link ?? "").trimmingCharacters(in: .whitespaces)
@@ -1694,7 +1484,6 @@ struct MallNativeView: View {
         if let u = URL(string: l), u.scheme != nil { openURL(u) }
     }
 
-    /// 收起二楼
     private func closeMallFloor() {
         withAnimation(.spring(response: 0.42, dampingFraction: 0.85)) {
             floorUp = false
@@ -1702,21 +1491,6 @@ struct MallNativeView: View {
         }
     }
 
-    /* ============================================================
-       二楼下拉提示（用户：「压感点商城做高级点」→「你来设计」）
-
-       设计思路：**一条会走的轨道 + 三个停靠点**，装在一块悬浮玻璃胶囊里。
-         · 轨道：74pt、2pt 细线。底槽半透明白；走过的部分用品牌橙→暖黄渐变铺上，
-           所以"拉了多远"是一个连续的、精确的量 —— 不再是三颗孤零零的点
-         · 三个停靠点：1/3、2/3、3/3 各一颗。走到哪颗，哪颗**点亮 + 放大 + 起光晕**
-           （同时震一下，和会话页同一个 floorHaptic 强度）—— 这就是"圧感"的来源
-         · 文案跟着进度换：下拉进入二楼 → 继续下拉 → 松手进入二楼
-           （全亮那一刻文字也变橙、整块胶囊轻轻放大，一眼知道"到底了、可以松手"）
-         · 胶囊：ultraThinMaterial + 细亮边 + 随进度加深的投影（压在天气背景上不掉档次），
-           并且**前 25pt 完全不显示**，再花 40pt 淡入 —— 随手滑一下不会闪出一块 UI
-        ⚠ 所有常量都写成 CGFloat：混着字面量容易撞 Swift 的 CGFloat/Double 互转，
-          CI 会报 ambiguous use of operator（B1635 栽过一次）。
-       ============================================================ */
     private var mallPullDots: some View {
         let p: CGFloat = floorUp ? 1000 : floorPull
         let total: CGFloat = max(1, DDMallFloorCfg.pull)
@@ -1727,7 +1501,7 @@ struct MallNativeView: View {
         let label: String = allLit ? Tr("松手进入二楼")
                          : (litCount >= 1 ? Tr("继续下拉") : Tr("下拉进入二楼"))
         return HStack(spacing: 10) {
-            /* 轨道 + 三个停靠点 */
+
             ZStack(alignment: .leading) {
                 Capsule().fill(Color.white.opacity(0.34))
                     .frame(width: track, height: 2)
@@ -1768,19 +1542,16 @@ struct MallNativeView: View {
                 .shadow(color: Color.black.opacity(0.10 + 0.10 * prog), radius: 10, y: 3)
         }
         .scaleEffect(allLit ? 1.05 : 1)
-        /* 前 25pt 不出现，再用 40pt 淡进来（随手滑一下不会闪） */
+
         .opacity(min(1, max(0, (p - 25) / 40)))
         .animation(.spring(response: 0.26, dampingFraction: 0.82), value: litCount)
         .animation(.easeOut(duration: 0.16), value: floorPull)
     }
 
     private var header: some View {
-        /* 2026-10-17 用户：「把我的顶栏遮罩红白渐变给首页用」——
-           首页顶栏也走「我的」页那条红白渐变，所以顶上这些字/图标一律切白
-           （以前只有「我的」页是红底 → 白字，首页是奶油白底 → 深字）。 */
+
         let onRed = false
-        /* ⚠ 上面那句 let 之后就不能再靠"最后一句自动返回"了（Swift 只在单表达式函数里
-           隐式返回）—— 必须显式 return。B1646 那次编译就是栽在这儿（和当初 cell() 一个坑）。 */
+
         return VStack(spacing: 6) {
             HStack(spacing: 8) {
                 Button { dismiss() } label: {
@@ -1838,7 +1609,7 @@ struct MallNativeView: View {
                     .buttonStyle(.plain)
                 } else {
                     Text(Tr(titles[tab]))
-                        /* 红白渐变的那些页 → 标题走白字（别的页还是深色字） */
+
                         .font(pf(17, .semibold))
                         .foregroundColor(onRed ? .white : DDColor.ink)
                     Spacer(minLength: 0)
@@ -1869,18 +1640,14 @@ struct MallNativeView: View {
         }
         .padding(.horizontal, 10)
         .padding(.top, 4)
-        /* 内容已回到普通上下堆叠，不再需要为 14pt 叠层让位。 */
+
         .padding(.bottom, 8)
-        /* ⚠ 红色要**顶到状态栏**（京东就是这样）：只给背景铺到安全区上面，
-           内容照旧从安全区下面开始 */
+
         .background { headerBg.ignoresSafeArea(edges: .top) }
     }
 
     @ViewBuilder private var headerBg: some View {
-        /* 2026-10-16 用户：「商城顶部遮罩底部遮罩磨砂感」——
-           顶栏和底栏压一层毛玻璃（ultraThinMaterial），内容从下面滚过去是糊的、不是硬边；
-           颜色仍然保留（首页那条红渐变 / 其他页的浅底），只是上面多一层磨砂。
-           想要更实/更透：ui.json 写 mallHeaderGlass / mallTabGlass（0~1）。 */
+
         ZStack {
             DDColor.card
             Rectangle()
@@ -1889,8 +1656,6 @@ struct MallNativeView: View {
         }
     }
 
-    /// 商城「我的」顶栏右侧的并排按钮：收货地址 / 客户服务。
-    /// 首页和「我的」共用红白渐变，所以这里统一白字 + 淡白玻璃底。
     private func mineHeaderButton(_ icon: String, _ title: String,
                                   action: @escaping () -> Void) -> some View {
         Button(action: action) {
@@ -1918,8 +1683,7 @@ struct MallNativeView: View {
                 .foregroundColor(DDColor.sub)
             Text(Tr("搜索想要的商品")).font(pf(14)).foregroundColor(DDColor.sub)
             Spacer(minLength: 0)
-            /* 扫一扫（2026-10-17 用户：「搜索框加入扫一扫」）——
-               和淘宝/京东一样，搜索框最右边一颗相机，点了开扫码页 */
+
             Button { showScan = true } label: {
                 Image(systemName: "barcode.viewfinder")
                     .font(.system(size: 16, weight: .medium))
@@ -1936,7 +1700,7 @@ struct MallNativeView: View {
         .overlay(Capsule().stroke(DDColor.blue, lineWidth: 1))
         .shadow(color: DDColor.blue.opacity(0.06), radius: 6, y: 2)
         .contentShape(Rectangle())
-        /* 点盒子本体（不是相机那一下）= 进搜索页 */
+
         .onTapGesture { showSearch = true }
     }
 
@@ -1945,7 +1709,7 @@ struct MallNativeView: View {
             case 0: DDHomeTab(topChannel: homeTopChannel,
                               onOpen: openProduct_tap, onCart: { tab = 3 },
                               floorUp: $floorUp, floorPull: $floorPull)
-            /* 2026-10-17：第 2 格从「推荐（种草）」换成**分类页**（大商城那种左栏+右栏） */
+
             case 1: DDCategoryTab(onOpen: openProduct_tap, onSearch: { showSearch = true })
             case 2: DDMsgTab(onOrders: { showOrders = true })
             case 3: DDCartTab(onOpen: openProduct_tap, onOrders: { showOrders = true })
@@ -1953,7 +1717,6 @@ struct MallNativeView: View {
         }
     }
 
-    /// 点商品 → 打开详情（顺手记一条「浏览足迹」，我的 → 浏览足迹 里能看到）
     private func openProduct_tap(_ p: DDProduct) {
         store.recordView(p.id)
         openProduct = p
@@ -1963,11 +1726,7 @@ struct MallNativeView: View {
         VStack(spacing: 0) {
             HairLine()
             HStack(spacing: 0) {
-                /* 底栏红点（2026-10-16 用户要求「商城里底栏要有红点」「购物车啥的也要有」）：
-                   · 首页 / 推荐：有券还没领 → 亮（领完自动灭）
-                   · 消息：又有券到账 / 奖励进账 → 亮数字，点开这一格就清
-                   · 购物车：件数角标；另有「待付款」订单时亮红点
-                   · 我的：有待收货订单时亮红点 */
+
                 tabButton(0, "首页", "house.fill", 0,
                           dot: store.mallClaimable > 0)
                 tabButton(1, "分类", "square.grid.2x2", 0,
@@ -1979,16 +1738,11 @@ struct MallNativeView: View {
                 tabButton(4, "我的", "person.fill", 0,
                           dot: store.orders.contains { $0.status == "shipped" })
             }
-            /* 2026-10-15 用户：「底栏还是太高了」（商城）——
-               病根：这里以前又加了 `max(4, L.safeBottom)`（=34），可**外面那层 VStack
-               本来就已经避开 home 条那 34 了**，等于同一个 34 算了两遍 → 底栏高一截。
-               现在：内容高 49（京东那个量级，图标 23 + 字 10 在里面居中）+
-               贴着 home 条上方留 6pt；白色底**铺到屏幕最底**（home 条那一块也是白的，
-               和微信/京东一模一样）。想微调：ui.json 的 mallTabH / mallTabPad。 */
+
             .frame(height: UIConfig.num("mallTabH", 49))
             .padding(.bottom, UIConfig.num("mallTabPad", 2))
         }
-        /* 底栏也走磨砂：商品从下面滚过去时，底栏是糊的一层（京东/微信现在的做法） */
+
         .background {
             ZStack {
                 Rectangle().fill(.ultraThinMaterial)
@@ -2003,7 +1757,7 @@ struct MallNativeView: View {
                            dot: Bool = false) -> some View {
         Button {
             tab = i
-            if i == 2 { store.markMallSeen() }      // 打开「消息」→ 清红点
+            if i == 2 { store.markMallSeen() }
             if store.mallClaimable > 0 { Task { await store.refreshMallBadges() } }
         } label: {
             VStack(spacing: 2) {
@@ -2036,53 +1790,43 @@ struct MallNativeView: View {
     }
 }
 
-/* ---------------------------------------------------------- 首页 */
-
 struct DDHomeTab: View {
     @EnvironmentObject private var app: AppState
-    /// 后台广告可以配一个网址（action = none 时点开它）
+
     @Environment(\.openURL) private var openLink
     @ObservedObject private var store = DDStore.shared
     var topChannel: Int = 0
     var onOpen: (DDProduct) -> Void
-    /// 详情页里点「加购物车」→ 外面切到购物车那个 tab
+
     var onCart: () -> Void = { }
-    /* 二楼状态由外面（MallNativeView）持有：二楼是整页浮层，要盖住底栏，
-       所以画在商城最外层，这里只负责"下拉了多少 / 拉开没有"。 */
+
     var floorUp: Binding<Bool>? = nil
     var floorPull: Binding<CGFloat>? = nil
-    /// 压感点走到第几颗（点亮一颗震一下，和会话页二楼同一套）
+
     @State private var floorTick = 0
-    /// 这一次拖动已经判定成"滚商品列表"了 —— 整段都不再算下拉
-    /// （2026-10-17 用户：「商品往上拉就会下来」：
-    ///   手指往上滑时，起手那一两帧常常带着一点点向下的位移，
-    ///   以前只看 dy 的瞬时值，就被当成"下拉"开始积累行程，滑完一抬手二楼就下来了。
-    ///   现在加一道方向锁：只要这次拖动先往上超过 8pt，整段都不认下拉。）
+
     @State private var floorGestureLocked = false
-    /// 这次拖动的起始时间（2026-10-17 用户：「下滑特别容易出 2 楼」）——
-    /// 快速往下一甩（<0.35 秒）是"滚到顶部/回弹"的习惯动作，不该算拉二楼；
-    /// 只有慢慢拉、拉到阀门才开（微信二楼也是这种"要故意拉一下"的手感）。
+
     @State private var floorDragStart: Date? = nil
 
-    /// 打开的频道页（百亿补贴 / 排行榜 / 9.9包邮 / 厂家直供）
     @State private var channel: DDChannelKind? = nil
-    /// 广告位点开的东西：会员中心 / 听一听
+
     @State private var showVipAd = false
     @State private var showMusicAd = false
-    /// 宫格第二行那四个功能（京东那种：订单 / 购物车 / 收藏 / 足迹）
+
     @State private var showAdOrders = false
     @State private var showAdFav = false
     @State private var showAdViews = false
     @State private var showAddressHome = false
-    /* 2026-10-16 商城二楼（用户：「沿用二楼的方案，商城也做个二楼出来」） */
-    @State private var topY: CGFloat = 0           // 首页是不是在最上面
+
+    @State private var topY: CGFloat = 0
     @State private var cate: String? = nil
     @State private var secs = 2 * 3600 + 41 * 60 + 33
     private let ticker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     private var list: [DDProduct] {
         let base = cate == nil ? store.live : store.live.filter { $0.cate == cate }
-        /* 「不感兴趣」的不再出现；「少推这一类」的沉到最后 */
+
         let rows = store.feed(base)
         switch topChannel {
         case 1:
@@ -2100,11 +1844,8 @@ struct DDHomeTab: View {
         }
     }
 
-    /// 商城二楼的下拉阀门 = **和会话页二楼完全同一套**（2026-10-17 用户：
-    /// 「改成和会话页同样的阀门」）：同一个后台键 chatsFloorPull、同一套阻尼、同样松手才开。
     private var mallFloorPullValue: CGFloat { DDMallFloorCfg.pull }
 
-    /// 震动强度走会话页那个键 floorHaptic（0 关 / 1 轻 / 2 中 / 3 重）——两页手感一致
     private func mallFloorImpact(_ level: Int) {
         let strength = Int(UIConfig.num("floorHaptic", 3))
         guard strength > 0 else { return }
@@ -2116,12 +1857,11 @@ struct DDHomeTab: View {
     }
 
     var body: some View {
-        /* 用 ScrollViewReader：点轮播图 / 「更多抢购」→ 滚到「为你推荐」那一栏
-           （以前这两个地方点了没反应，用户报的「有些东西点不了」） */
+
         ScrollViewReader { proxy in
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 10) {
-                    /* 二楼探针：记首页滚到哪儿了（只有在最上面往下拉才算开二楼） */
+
                     Color.clear.frame(height: 0)
                         .background(GeometryReader { g in
                             Color.clear.preference(key: DDFloorOffsetKey.self,
@@ -2131,15 +1871,15 @@ struct DDHomeTab: View {
                     carousel(proxy)
                     sectionTitle(Tr("今日精选"), subtitle: Tr("真实商品 · 官方保障"), right: Tr("更多频道"))
                     promoBoard
-                    /* 楼间小广告：**后台下发的**（后台没配就用内置那条百亿补贴） */
+
                     adStrip
                     sectionTitle(Tr("品牌好价"), subtitle: Tr("大牌直降 · 限时补贴"), right: Tr("全部好价"))
                     dealBoard
                     sectionTitle(Tr("为你推荐"), subtitle: Tr("按热度与优惠智能排序"), right: Tr("更多好物"))
-                    /* 京东那种：标题下面一条可横滑的分类 tab（推荐 / 各分类） */
+
                     cateRow
                     if !store.mutedCates.isEmpty { mutedNote }
-                    /* 商品被"不感兴趣"藏得太多时，首页给一句提示 + 一键恢复（不再出现空商城） */
+
                     if store.disliked.count >= 20 && store.dislikedProducts.count >= store.live.count {
                         HStack(spacing: 8) {
                             Image(systemName: "hand.thumbsdown").font(.system(size: 12)).foregroundColor(DDColor.sub)
@@ -2163,18 +1903,14 @@ struct DDHomeTab: View {
             .background(DDColor.page)
             .coordinateSpace(name: "ddhome")
             .onPreferenceChange(DDFloorOffsetKey.self) { topY = $0 }
-            /* 二楼：手指在最上面往下拉 → 跟着手指露出；过阈值松手 → 停住（和会话页二楼一套） */
+
             .simultaneousGesture(
                 DragGesture(minimumDistance: 12)
                     .onChanged { v in
-                        /* ⚠ 2026-10-17 用户：「商城二楼还是容易拉下来」——
-                           以前这里判 `topY > -6`：只要"大致在最上面"就认下拉，
-                           往下滑时列表刚回弹一点点（-5）也会被算成拉二楼。
-                           现在收紧到 -1：**必须真的停在最顶上**才开始算。 */
+
                         guard !(floorUp?.wrappedValue ?? false), topY > -1 else { return }
                         let dy = v.translation.height
-                        /* 方向锁（用户：「商品往上拉就会下来」）——
-                           这次拖动先往上超过 8pt = 用户在滚商品列表，整段都不算下拉。 */
+
                         if dy < -8 {
                             floorGestureLocked = true
                             floorPull?.wrappedValue = 0
@@ -2184,10 +1920,10 @@ struct DDHomeTab: View {
                         if floorGestureLocked { return }
                         if dy <= 0 { floorPull?.wrappedValue = 0; floorTick = 0; return }
                         if floorDragStart == nil { floorDragStart = Date() }
-                        /* 阀门 = 会话页那套：先过阻尼（越拉越沉），再判阈值 */
+
                         let p = min(DDMallFloorCfg.heavy(dy), UIScreen.main.bounds.height)
                         if abs(p - (floorPull?.wrappedValue ?? 0)) > 0.5 { floorPull?.wrappedValue = p }
-                        /* 每点亮一颗提示点震一下（前三颗 medium、第三颗 heavy），和会话页一样 */
+
                         let step = max(1, mallFloorPullValue / 3)
                         let lit = min(3, Int(p / step))
                         if lit != floorTick {
@@ -2197,7 +1933,7 @@ struct DDHomeTab: View {
                     }
                     .onEnded { _ in
                         floorGestureLocked = false
-                        /* 快速一甩（<0.35s）= "滚到顶/回弹"的习惯动作，不算拉二楼 */
+
                         let dt = floorDragStart.map { Date().timeIntervalSince($0) } ?? 1
                         floorDragStart = nil
                         guard !(floorUp?.wrappedValue ?? false) else { return }
@@ -2218,12 +1954,12 @@ struct DDHomeTab: View {
                     }
             )
             .onReceive(ticker) { _ in if secs > 0 { secs -= 1 } }
-            /* 频道页整页打开（它自己带返回 + 商品列表 + 商品详情） */
+
             .sheet(item: $channel) { k in
                 DDChannelView(kind: k, onCart: { channel = nil; onCart() })
                     .environmentObject(app)
             }
-            /* 广告位点开的两页 */
+
             .sheet(isPresented: $showVipAd) {
                 DDVipPageView { p in
                     showVipAd = false
@@ -2234,7 +1970,7 @@ struct DDHomeTab: View {
             .fullScreenCover(isPresented: $showMusicAd) {
                 NavigationStack { ListenView().environmentObject(app) }
             }
-            /* 宫格第二行那几颗：订单 / 收藏 / 足迹（购物车那颗切 tab，不用弹页） */
+
             .sheet(isPresented: $showAdOrders) { DDOrdersView().environmentObject(app) }
             .sheet(isPresented: $showAdFav) {
                 DDFavView(onOpen: { p in
@@ -2259,7 +1995,6 @@ struct DDHomeTab: View {
         withAnimation(.easeInOut(duration: 0.3)) { proxy.scrollTo("dd-grid", anchor: .top) }
     }
 
-    /// 真实商城首页的第一屏信息：送到哪里、多久到、平台保障。
     private var deliveryStrip: some View {
         Button { showAddressHome = true } label: {
             HStack(spacing: 7) {
@@ -2295,7 +2030,6 @@ struct DDHomeTab: View {
         .buttonStyle(.plain)
     }
 
-    /// 华为商城「品牌好价」：2×2 横卡，左边文案、右边商品图。
     private var dealBoard: some View {
         let columns = [
             GridItem(.flexible(), spacing: 8, alignment: .top),
@@ -2353,7 +2087,6 @@ struct DDHomeTab: View {
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    /// 华为商城「今日精选」：左侧主推商品，右侧两条紧凑商品。
     private var promoBoard: some View {
         GeometryReader { g in
             HStack(spacing: 8) {
@@ -2480,9 +2213,6 @@ struct DDHomeTab: View {
         .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
     }
 
-    /* ---------------- 首页轮播图（管理页里可以换图 / 加图 / 删图） ----------------
-       没有图就不占地方（空数组时整块不画）；有图就横滑一屏一张 + 底下小圆点，
-       每 3 秒自动翻一张。 */
     @State private var bannerPage = 0
 
     @ViewBuilder private func carousel(_ proxy: ScrollViewProxy) -> some View {
@@ -2492,16 +2222,12 @@ struct DDHomeTab: View {
                 TabView(selection: $bannerPage) {
                     ForEach(imgs.indices, id: \.self) { i in
                         Button { toGrid(proxy) } label: {
-                            /* 2026-10-17 用户：「商城首页的排版感觉还是不够高级」——
-                               轮播那张图：圆角 14→18（大图用大圆角才显高级），
-                               底下压一层**从透明到黑 18% 的渐变**，小圆点挪进图里右下角 ——
-                               于是"图 + 点"是一个整体，不再是一张图下面吊着一排点。 */
+
                             ZStack(alignment: .bottomTrailing) {
                                 RemoteImage(path: imgs[i], icon: "photo")
                                     .frame(maxWidth: .infinity)
                                     .frame(height: 146)
-                                /* 底部一层很淡的黑压在图和点之间：白点才压得住（图太白也不怕），
-                                   ⚠ 必须画在**点下面**，不然把点也一起压暗了 */
+
                                 LinearGradient(colors: [.clear, .black.opacity(0.18)],
                                                startPoint: .center, endPoint: .bottom)
                                     .allowsHitTesting(false)
@@ -2510,9 +2236,7 @@ struct DDHomeTab: View {
                                         ForEach(imgs.indices, id: \.self) { k in
                                             Capsule()
                                                 .fill(k == i
-                                                      /* 2026-10-17 用户：「索引选中的圈也拿我们自己的按钮颜色」——
-                                                         选中那颗（长条）用品牌橙，没选中的还是半透明白，
-                                                         和图里那层淡黑一起看，指示得很清楚 */
+
                                                       ? DDColor.orange
                                                       : Color.white.opacity(0.45))
                                                 .frame(width: k == i ? 14 : 6, height: 6)
@@ -2532,11 +2256,7 @@ struct DDHomeTab: View {
                 .tabViewStyle(.page(indexDisplayMode: .never))
                 .frame(height: 152)
             }
-            /* 自动轮播：**别**用 Timer.publish(...).autoconnect() 写在 body 里。
-               商城首页动不动就重画（拉数据、滚动、切 tab 都会），
-               每次重画都会新建一个计时器，刚起跳的那个立刻被丢掉 ——
-               表现出来的就是用户说的「轮播图不会滚动」：一直停在第 1 张。
-               改成 .task 里的循环：跟着这个视图的生死走，只有图片数量变了才重开。 */
+
             .task(id: imgs.count) {
                 guard imgs.count > 1 else { return }
                 while !Task.isCancelled {
@@ -2552,8 +2272,7 @@ struct DDHomeTab: View {
 
     private func seckill(_ proxy: ScrollViewProxy) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            /* 2026-10-15 用户：「商城的主页排版不行，功能逻辑主页对齐京东」——
-               京东那个秒杀块是**左边一块红（竖排「限时秒杀」+ 倒计时）+ 右边横滑商品**。 */
+
             HStack(spacing: 0) {
                 Button { toGrid(proxy) } label: {
                     VStack(spacing: 5) {
@@ -2621,9 +2340,7 @@ struct DDHomeTab: View {
     }
 
     private var cateRow: some View {
-        /* 2026-10-15 用户要求「功能逻辑对齐京东」——
-           京东推荐区上面不是一排胶囊，是**一条可以左右滑的 tab**：
-           选中那个字变红 + 底下一道红短线（其余灰字），左边第一个是「推荐」。 */
+
         let names: [String] = ["推荐"] + store.categories
         return ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 22) {
@@ -2659,10 +2376,7 @@ struct DDHomeTab: View {
     }
 
     private func sectionTitle(_ t: String, subtitle: String = "", right: String) -> some View {
-        /* 2026-10-17 用户：「商城首页的排版感觉还是不够高级」——
-           标题这块重排：竖条**细一点、短一点**（3×15，上深下浅的品牌橙渐变，
-           不再是一根实心红棍），标题 17pt，右边「更多 ›」收成一组、跟标题同一个视觉重量，
-           上下留白按 8pt 网格给足（top 8 / bottom 2）—— 密而不挤。 */
+
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             RoundedRectangle(cornerRadius: 1.5, style: .continuous)
                 .fill(DDColor.blueDeep)
@@ -2680,12 +2394,11 @@ struct DDHomeTab: View {
             }
             .offset(y: -1)
         }
-        .padding(.horizontal, 12)      // 首页统一左右 12（和轮播/宫格/瀑布流一个边距）
+        .padding(.horizontal, 12)
         .padding(.top, 8)
         .padding(.bottom, 2)
     }
 
-    /// 「已少推：xxx」+ 一键恢复（长按商品选「少推这一类」之后出现）
     private var mutedNote: some View {
         HStack(spacing: 8) {
             Image(systemName: "eye.slash").font(.system(size: 12)).foregroundColor(DDColor.sub)
@@ -2703,7 +2416,6 @@ struct DDHomeTab: View {
         .padding(.vertical, 6)
     }
 
-    /// 华为商城推荐区：等宽双列商品卡；卡片本身负责自然高度与内部排版。
     private var grid: some View {
         let columns = [
             GridItem(.flexible(), spacing: 10, alignment: .top),
@@ -2734,7 +2446,6 @@ struct DDHomeTab: View {
         .padding(.horizontal, 10)
     }
 
-    /// 楼间广告条：后台 ads 里 kind=strip 的第一条（没有就用内置那条）
     @ViewBuilder private var adStrip: some View {
         let list = store.ads.filter { !$0.isGrid }
         if list.isEmpty {
@@ -2751,7 +2462,6 @@ struct DDHomeTab: View {
         }
     }
 
-    /// 插在瀑布流里的广告卡：**后台 ads 里 kind=grid 的轮着来**（没有就用内置那两条）
     @ViewBuilder private func adCard(_ n: Int) -> some View {
         let grid = store.ads.filter { $0.isGrid }
         if !grid.isEmpty {
@@ -2776,10 +2486,8 @@ struct DDHomeTab: View {
         }
     }
 
-    /// 后台那条广告点开干什么：vip / music / subsidy 走 App 内页；其它就按 link 打开
     private func runAd(_ a: DDAd) {
-        /* 带券的广告：点进去先把券发到卡包（每人每条一次），再跳去对应页面。
-           领过的人服务端会回 already，这里给一句"已经领过了"，不会重复发。 */
+
         if let c = a.coupon {
             Task {
                 let r = await store.claimAdCoupon(a.id)
@@ -2802,7 +2510,6 @@ struct DDHomeTab: View {
     }
 }
 
-/// 双列瀑布流里的那张商品卡
 struct DDProductCard: View {
     let product: DDProduct
     var onOpen: (() -> Void)? = nil
@@ -2810,8 +2517,7 @@ struct DDProductCard: View {
     @ObservedObject private var store = DDStore.shared
 
     var body: some View {
-        /* 与华为商城最新商品卡同一套信息层级：
-           大图 → 商品名 → 服务标签 → 价格 → 店铺/销量/购物车。 */
+
         VStack(alignment: .leading, spacing: 0) {
             ZStack(alignment: .topLeading) {
                 if let img = product.img, !img.isEmpty {
@@ -2958,8 +2664,6 @@ struct DDProductCard: View {
     }
 }
 
-/* ---------------------------------------------------------- 推荐（种草） */
-
 struct DDRecTab: View {
     @ObservedObject private var store = DDStore.shared
     var onOpen: (DDProduct) -> Void
@@ -3019,23 +2723,19 @@ struct DDRecTab: View {
     }
 }
 
-/* ---------------------------------------------------------- 消息 */
-
 struct DDMsgTab: View {
     @ObservedObject private var store = DDStore.shared
-    /// 点消息卡片 → 去看订单（以前整条卡片点不了，只有「邀好友拼单」那颗按钮能点）
+
     var onOrders: () -> Void
 
     @State private var confirmClear = false
 
-    /// 还在拼单中、要「邀好友拼单」那一颗的订单
     private var grouping: [DDOrder] { store.orders.filter { $0.status == "grouping" } }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 10) {
-                /* 2026-10-15：消息 tab 接**真服务通知** ——
-                   DDStore.notices 里是下单/付款/成团/发货/签收/评价/售后时真推的那些。 */
+
                 if store.notices.isEmpty && grouping.isEmpty {
                     Text(Tr("还没有消息")).font(pf(14)).foregroundColor(DDColor.sub)
                         .frame(maxWidth: .infinity).padding(.top, 60)
@@ -3078,9 +2778,8 @@ struct DDMsgTab: View {
         .padding(.top, 4)
     }
 
-    /* 一条服务通知：左边的图标按类型分（订单 / 发货 / 完成 / 评价 / 成团 / 售后） */
     private func noticeRow(_ n: DDNotice) -> some View {
-        /* 2026-10-15 用户：「服务通知要可以左滑删除」——包一层左滑行，滑出「删除」 */
+
         DDSwipeRow(onTap: { onOrders() }, onDelete: { store.removeNotice(n.id) }) {
             noticeCard(n)
         }
@@ -3134,8 +2833,6 @@ struct DDMsgTab: View {
         }
     }
 
-    /* 拼单消息那一行：用 onTapGesture 而不是再套一层 Button ——
-       套 Button 会把里面那颗「邀好友拼单」吃掉（嵌套按钮点不动） */
     private func row(_ o: DDOrder) -> some View {
         HStack(alignment: .top, spacing: 10) {
             DDThumb(em: o.em, size: 46, radius: 8)
@@ -3178,8 +2875,6 @@ struct DDMsgTab: View {
     }
 }
 
-/* ---------------------------------------------------------- 购物车 */
-
 struct DDCartTab: View {
     @EnvironmentObject private var app: AppState
     @ObservedObject private var store = DDStore.shared
@@ -3188,19 +2883,19 @@ struct DDCartTab: View {
 
     @State private var checked: Set<String> = []
     @State private var showPay = false
-    /// 支付方式 / 星言支付收银台
+
     @State private var showXYPayCart = false
-    /* 支付宝（2026-10-16）：购物车勾的几件合并成一个订单号再去付 */
+
     @State private var showAliPayCart = false
     @State private var aliPayOrder: DDOrder? = nil
-    /// 收货地址：购物车结算也要地址（2026-10-16 用户：没填地址要叫去填、填完会跳转）
+
     @State private var pickedAddrId = ""
     @State private var showAddrList = false
     @State private var needAddr = false
     @State private var waitAddrThenPay = false
 
     private var lines: [DDCartLine] { store.cart }
-    /// 这次结算用哪条地址：挑的那条优先，其次默认那条
+
     private var chosenAddr: DDAddress? {
         if !pickedAddrId.isEmpty, let a = store.addresses.first(where: { $0.id == pickedAddrId }) {
             return a
@@ -3229,12 +2924,12 @@ struct DDCartTab: View {
             } else {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 10) {
-                        /* 京东购物车是按店铺分组的：一店一个表头，下面挂这个店的商品 */
+
                         ForEach(Array(store.cartGrouped().enumerated()), id: \.offset) { _, g in
                             shopHead(g.shop, g.lines)
                             ForEach(g.lines) { l in line(l) }
                         }
-                        /* 失效商品（下架/删掉的）单独一块，能一键清空 */
+
                         if !store.invalidCart.isEmpty {
                             VStack(spacing: 0) {
                                 HStack(spacing: 8) {
@@ -3318,13 +3013,12 @@ struct DDCartTab: View {
         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
         .shadow(color: DDColor.cardShadow, radius: 10, y: 3)
         .padding(.horizontal, 10)
-        /* 左滑删除这一条（京东/微信购物车都能滑） */
+
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button(role: .destructive) { store.removeCartLine(l.pid) } label: { Text(Tr("删除")) }
         }
     }
 
-    /// 店铺表头（京东：一店一行，右边显示这店选了几件）
     private func shopHead(_ shop: String, _ ls: [DDCartLine]) -> some View {
         let n = ls.filter { checked.contains($0.pid) }.count
         return HStack(spacing: 8) {
@@ -3386,7 +3080,7 @@ struct DDCartTab: View {
             DDSheetBar(title: Tr("确认下单"))
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 10) {
-                    /* 收货地址（和商品结算页一样那一行）：没填就红字提示，点一下进地址簿 */
+
                     Button { showAddrList = true } label: {
                         HStack(alignment: .top, spacing: 10) {
                             Image(systemName: "mappin.circle.fill")
@@ -3443,7 +3137,7 @@ struct DDCartTab: View {
                         .font(pf(16, .semibold)).foregroundColor(DDColor.red)
                         .frame(maxWidth: .infinity, alignment: .trailing)
                         .padding(.horizontal, 14)
-                    /* 会员：下单时还会再减这一笔（place() 里按同一套算） */
+
                     if store.isVip {
                         Text(Tr("PLUS会员立减 ") + "-¥" + moneyFmt(store.vipOff(total)))
                             .font(pf(12.5)).foregroundColor(DDColor.red)
@@ -3451,14 +3145,14 @@ struct DDCartTab: View {
                             .padding(.horizontal, 14)
                     }
                     Spacer().frame(height: 8)
-                    /* 支付方式：**不弹窗**，直接在结算页里上下选（用户 2026-10-16 要求） */
+
                     DDPayWayList(payWay: $store.payWay)
                         .background(DDColor.cardGrad)
                         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
                         .shadow(color: DDColor.cardShadow, radius: 10, y: 3)
                     Spacer().frame(height: 8)
-                    /* 配送方式：也要能选（2026-10-16「配送里面不要光包邮」） */
+
                     DDDeliveryList(goods: total)
                         .background(DDColor.cardGrad)
                         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -3514,7 +3208,7 @@ struct DDCartTab: View {
             guard !v, waitAddrThenPay else { return }
             if addrReady {
                 waitAddrThenPay = false
-                /* 等地址页那一层真的收完再往下走（不然两层 sheet 会撞在一起） */
+
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { payAll() }
             }
         }
@@ -3526,20 +3220,18 @@ struct DDCartTab: View {
         return n > 0 ? Tr("合并付款 ") + String(n) + Tr(" 件商品") : Tr("购物车结算")
     }
 
-    /// 购物车这一次要付多少（含会员立减）
     private var payableTotal: Double {
         max(0, total - (store.isVip ? store.vipOff(total) : 0) + store.deliveryFee(total))
     }
 
     private func payAll() {
-        /* 购物车结算也一样：没填/填不全地址 → 先弹一句 + 跳到地址页，填好自动接着付 */
+
         guard addrReady else {
             waitAddrThenPay = true
             needAddr = true
             return
         }
-        /* 2026-10-16：支付方式现在**只有星言支付 + 银行卡**，所以不用再判 XYPay.on ——
-           以前后台把星言支付一关，这里就直连下单、**不弹收银台**，用户看到的就是"面容支付没接"。 */
+
         if store.payWay == XYPay.name {
             showXYPayCart = true
             return
@@ -3549,7 +3241,7 @@ struct DDCartTab: View {
 
     private func realPayAll() {
         let paid = (store.payWay == XYPay.name)
-        /* 支付宝：合并成一个订单号（一次付款对一单，回调回来才对得上、对账也干净） */
+
         if store.payWay == AliPay.name {
             let picked = lines.filter { checked.contains($0.pid) }
                 .map { (pid: $0.pid, count: $0.count) }
@@ -3563,17 +3255,16 @@ struct DDCartTab: View {
             }
         }
         for l in lines where checked.contains(l.pid) {
-            /* ⚠ 以前这里连地址都没传（address 默认 nil）—— 购物车下单下来的单子是"没地址"的。
-               现在把结算页选的那条地址带上。 */
+
             let o = store.place(pid: l.pid, count: l.count, group: false,
                                 fromCart: true, address: chosenAddr)
-            /* 星言支付 = 当场付掉（推进到待发货 + 「付款成功」通知） */
+
             if paid { store.pay(o.id) }
         }
         checked = []
         showPay = false
         app.show(paid ? Tr("支付成功") : Tr("下单成功，去「我的订单」看进度"))
-        /* 下完单直接把人送到「我的订单」（京东也是这样：下单成功 = 进订单页看进度） */
+
         store.jumpOrders()
     }
 
@@ -3581,8 +3272,6 @@ struct DDCartTab: View {
         if checked.contains(pid) { checked.remove(pid) } else { checked.insert(pid) }
     }
 }
-
-/* ---------------------------------------------------------- 我的 */
 
 struct DDMineTab: View {
     @EnvironmentObject private var app: AppState
@@ -3597,19 +3286,16 @@ struct DDMineTab: View {
     @State private var showCoupons = false
     @State private var showFollowed = false
     @State private var showService = false
-    /// 分销 / 裂变（我的推广）
+
     @State private var showDist = false
-    /// 不感兴趣 / 已隐藏（恢复页）
+
     @State private var showHidden = false
-    /// 会员中心（京东：我的页顶上那张金卡点进去）
+
     @State private var showVip = false
 
     var body: some View {
         ScrollView(showsIndicators: false) {
-            /* 2026-10-17 用户：「我的页面颜色合格了，卡片排版还是不够专业」——
-               和首页用同一套节奏：左右边距统一 12、卡片间距 12、
-               每张卡 16 圆角 + 同一条细边 + 两层阴影（贴地 + 扩散）。
-               这样"我的"整页看起来是**一组浮起来的白卡**，而不是几张拼在一起的板子。 */
+
             VStack(spacing: 12) {
                 profileCard
                 DDVipBanner { showVip = true }
@@ -3644,7 +3330,7 @@ struct DDMineTab: View {
             })
         }
         .sheet(isPresented: $showService) { DDHelpCenterView().environmentObject(app) }
-        /* 我的推广（分销 + 裂变） */
+
         .sheet(isPresented: $showDist) { DistMeView().environmentObject(app) }
         .sheet(isPresented: $showHidden) { MallHiddenView().environmentObject(app) }
         .sheet(isPresented: $showVip) {
@@ -3657,10 +3343,7 @@ struct DDMineTab: View {
     }
 
     private var profileCard: some View {
-        /* 2026-10-17 用户：「我的页面也要有设计感」——
-           资料卡做成"hero"：顶上继续那条红白渐变、头像加白圈和柔光、
-           名字旁边挂会员标，底下压一格三栏数据（订单 / 收藏 / 足迹）。
-           以前就是一行"头像 + 名字 + 一个数字"，太平。 */
+
         VStack(spacing: 0) {
             HStack(alignment: .center, spacing: 14) {
                 Avatar(path: app.me?.avatar ?? "", size: 64, radius: 32)
@@ -3682,7 +3365,7 @@ struct DDMineTab: View {
                     }
                     Text(Tr("星言号 ") + (app.me?.username ?? ""))
                         .font(pf(12.5)).foregroundColor(DDColor.sub).lineLimit(1)
-                        /* 2026-10-17 用户：「星言号要长按可以复制」 */
+
                         .copyOnLongPress(app.me?.username ?? "") { app.show($0) }
                 }
                 Spacer(minLength: 0)
@@ -3709,7 +3392,6 @@ struct DDMineTab: View {
         .padding(.horizontal, 12)
     }
 
-    /// hero 卡下面那一栏数据（点得进去）
     private func statCell(_ n: String, _ label: String, _ tap: @escaping () -> Void) -> some View {
         Button { tap() } label: {
             VStack(spacing: 4) {
@@ -3741,7 +3423,7 @@ struct DDMineTab: View {
             .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 12)
             HairLine(inset: 16)
             HStack(spacing: 0) {
-                /* 拼单关了就不再有「拼团中」（京东那种：待付款 / 待发货 / 待收货 / 已完成） */
+
                 if DDStore.groupOn {
                     orderEntry("拼团中", "person.2.fill", store.orders.filter { $0.status == "grouping" }.count)
                 } else {
@@ -3766,7 +3448,7 @@ struct DDMineTab: View {
         Button { onOrders() } label: {
             VStack(spacing: 5) {
                 ZStack(alignment: .topTrailing) {
-                    /* 带底色的小圆角方块（同工具行、宫格的观感） */
+
                     ZStack {
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
                             .fill(LinearGradient(colors: [DDColor.red.opacity(0.16), DDColor.red.opacity(0.07)],
@@ -3795,7 +3477,7 @@ struct DDMineTab: View {
         VStack(spacing: 0) {
             toolRow("我的收藏", "heart.fill", Tr("\(store.favs.count) 件")) { showFav = true }
             HairLine(inset: 52)
-            /* ⚠ 以前这里的动作是空的 `{ }`，点了没反应 —— 用户报的「有些东西点不了」就是它 */
+
             toolRow("浏览足迹", "clock.fill", Tr("\(store.viewed.count) 件")) { showViews = true }
             HairLine(inset: 52)
             toolRow("我的评价", "star.bubble", Tr("\(store.reviews.count) 条")) { showMyReviews = true }
@@ -3805,11 +3487,11 @@ struct DDMineTab: View {
             toolRow("我的优惠券", "ticket", Tr("\(store.usableCoupons(99999).count) 张可用")) { showCoupons = true }
             HairLine(inset: 52)
             toolRow("关注的店铺", "heart.circle", Tr("\(store.followedShops.count) 家")) { showFollowed = true }
-            /* 2026-10-16：分销 / 裂变入口（不是分销账号也能点，进去会提示怎么开通） */
+
             HairLine(inset: 52)
             toolRow("我的推广", "person.badge.plus", Tr("赚佣金 / 帮好友助力")) { showDist = true }
             HairLine(inset: 52)
-            /* 2026-10-16：× 掉的东西要能找回来 */
+
             toolRow("不感兴趣与隐藏", "hand.thumbsdown",
                     Tr("\(store.disliked.count) 件商品 · \(store.hiddenAds.count) 条广告")) { showHidden = true }
             HairLine(inset: 52)
@@ -3828,9 +3510,7 @@ struct DDMineTab: View {
                          _ act: @escaping () -> Void) -> some View {
         Button(action: act) {
             HStack(spacing: 12) {
-                /* 2026-10-17「我的页面也要有设计感」——
-                   图标从小红点换成**带底色的小圆角方块**（浅红底 + 红图标），
-                   和首页宫格、频道的观感统一 */
+
                 ZStack {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
                         .fill(LinearGradient(colors: [DDColor.blue.opacity(0.15), DDColor.blue.opacity(0.06)],
@@ -3853,17 +3533,15 @@ struct DDMineTab: View {
 
 }
 
-/* ---------------------------------------------------------- 商品详情 */
-
 struct DDDetailView: View {
     @EnvironmentObject private var app: AppState
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var store = DDStore.shared
 
     let product: DDProduct
-    /// 加进购物车之后要干什么（商城那边传进来：跳到「购物车」那个 tab）
+
     private let onCart: (() -> Void)?
-    /// 点了「看了又看 / 进店」换商品（商城那边把 sheet 的 item 换掉）
+
     private let onOpenOther: ((DDProduct) -> Void)?
 
     init(product: DDProduct, onCart: (() -> Void)? = nil, onOpenOther: ((DDProduct) -> Void)? = nil) {
@@ -3874,7 +3552,7 @@ struct DDDetailView: View {
 
     @State private var showOrder = false
     @State private var group = true
-    /// 选中的规格（默认第一个；京东加购带规格）
+
     @State private var pickedSpec = ""
     @State private var showSpec = false
     @State private var showShare = false
@@ -3889,7 +3567,7 @@ struct DDDetailView: View {
                     hero
                     priceCard
                     serviceRow
-                    /* 拼单关了就不显示「正在拼单」那一块（后台 ui.json 写 mallGroup=1 会回来） */
+
                     if DDStore.groupOn { groupCard }
                     shopCard
                     DDReviewSection(product: product)
@@ -3922,11 +3600,10 @@ struct DDDetailView: View {
             })
         }
         .ddLight()
-        /* 进详情页就把规格默认选第一个（京东加购带规格） */
+
         .onAppear { if pickedSpec.isEmpty { pickedSpec = product.specList.first?.name ?? "" } }
     }
 
-    /// 服务承诺那一条（京东：7天无理由 / 运费险 …）
     private var serviceRow: some View {
         HStack(spacing: 14) {
             ForEach(product.serviceList.prefix(4), id: \.self) { s in
@@ -3954,7 +3631,6 @@ struct DDDetailView: View {
         .padding(.horizontal, 14).padding(.top, 4)
     }
 
-    /// 看了又看（同店铺/同类目随便挑几个）
     private var recommendRow: some View {
         let others = store.live.filter { $0.id != product.id && ($0.cate == product.cate || $0.shop == product.shop) }.prefix(6)
         return ScrollView(.horizontal, showsIndicators: false) {
@@ -4031,7 +3707,7 @@ struct DDDetailView: View {
                     Text(Tr("单独购买 ¥") + moneyFmt(product.orig))
                         .font(pf(12)).foregroundColor(DDColor.sub).strikethrough()
                 } else {
-                    /* 不拼单就只有这一个价（京东那样），划线价留着做对比 */
+
                     Text("¥" + moneyFmt(product.orig))
                         .font(pf(12)).foregroundColor(DDColor.sub).strikethrough()
                 }
@@ -4108,7 +3784,7 @@ struct DDDetailView: View {
                     Text(Tr("分类：") + Tr(product.cate)).font(pf(12)).foregroundColor(DDColor.sub)
                 }
                 Spacer(minLength: 0)
-                /* 京东那三颗：进店 / 关注 / 客服 */
+
                 Button { showShop = true } label: {
                     Text(Tr("进店")).font(pf(12.5)).foregroundColor(DDColor.ink)
                         .padding(.horizontal, 10).frame(height: 28)
@@ -4160,7 +3836,7 @@ struct DDDetailView: View {
                 }
                 .buttonStyle(.plain)
                 if DDStore.groupOn {
-                    /* 拼单开着：单独购买 / 发起拼单 两颗（原来的样子） */
+
                     Button {
                         group = false
                         showOrder = true
@@ -4176,11 +3852,7 @@ struct DDDetailView: View {
                     }
                     .buttonStyle(.plain)
                 } else {
-                    /* 拼单关着：京东那种「加入购物车 / 立即购买」 */
-                    /* ⚠ 2026-10-16 用户：「加入购物车…也不跳转」——
-                       以前这里调的是 justAddToCart()（只加、不跳），
-                       下面那个真正会跳购物车的 addToCart() 根本没被用到。
-                       现在点「加入购物车」= 加进购物车 + 关掉商品页 + **切到购物车那一栏**。 */
+
                     Button { addToCart() } label: {
                         buyButton(Tr("加入购物车"), "", Color(hex: 0xFF8B3D))
                     }
@@ -4200,7 +3872,6 @@ struct DDDetailView: View {
         .background(DDColor.card)
     }
 
-    /// 底部那颗大按钮（拼单开着/关着都用它画，样式统一）
     private func buyButton(_ title: String, _ price: String, _ solid: Color?) -> some View {
         VStack(spacing: 1) {
             Text(title).font(pf(15, .medium))
@@ -4214,26 +3885,21 @@ struct DDDetailView: View {
         }
     }
 
-    /// 只加购物车：不跳页、不关详情（京东那颗「加入购物车」就是这样）
     private func justAddToCart() {
         if !pickedSpec.isEmpty { store.setCartSpec(product.id, pickedSpec) }
         store.addCart(product.id)
         app.show(Tr("已加入购物车"))
     }
 
-    /// 加入购物车：提示一下 → 关掉详情页 → **自动跳到「购物车」那个 tab**
-    /// （用户报的「购物车不会自动跳转到购物车」就是这里）
     private func addToCart() {
         if !pickedSpec.isEmpty { store.setCartSpec(product.id, pickedSpec) }
         store.addCart(product.id)
         app.show(Tr("已加入购物车"))
-        store.jumpCart()      // 统一请求：商城根那边切到购物车那一栏
+        store.jumpCart()
         onCart?()
         dismiss()
     }
 }
-
-/* ---------------------------------------------------------- 下单 */
 
 struct DDOrderSheet: View {
     @EnvironmentObject private var app: AppState
@@ -4241,29 +3907,29 @@ struct DDOrderSheet: View {
     @ObservedObject private var store = DDStore.shared
 
     let product: DDProduct
-    /// 下单用哪个规格（商品详情页选好传进来）
+
     private let spec: String
     @State private var group: Bool
     @State private var count = 1
-    /// 这次下单用哪条地址（空 = 用默认那条）
+
     @State private var pickedAddrId = ""
     @State private var showAddrList = false
-    /// 优惠券 / 备注 / 发票（对齐京东结算页）
+
     @State private var couponOff: Double = 0
     @State private var couponTitle = ""
     @State private var showCoupon = false
     @State private var remark = ""
     @State private var invoice = ""
     @State private var showInvoice = false
-    /// 会员中心（结算页点「PLUS会员」那行进）
+
     @State private var showVip = false
-    /// 没填收货地址时弹的那句话（点「去填写」直接跳地址页）
+
     @State private var needAddr = false
-    /// 这一单是"因为没填地址被打回来"的 —— 地址填好回来自动接着付
+
     @State private var waitAddrThenPay = false
-    /// 星言支付收银台（支付方式本身就在页面上选，不用弹窗）
+
     @State private var showXYPay = false
-    /* 支付宝（2026-10-16）：下单后盖一层「等付款」，自动查单 */
+
     @State private var showAliPay = false
     @State private var aliPayOrder: DDOrder? = nil
 
@@ -4273,7 +3939,6 @@ struct DDOrderSheet: View {
         _group = State(initialValue: group)
     }
 
-    /// 单价：拼单关着就只有一个价（product.price）
     private var unit: Double { (DDStore.groupOn && !group) ? product.orig : product.price }
     private var total: Double { unit * Double(count) }
 
@@ -4296,7 +3961,6 @@ struct DDOrderSheet: View {
                     .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
                     .shadow(color: DDColor.cardShadow, radius: 10, y: 3)
 
-                    /* 拼单开着才选方式；关着就直接按这个价买（京东那样） */
                     if DDStore.groupOn {
                         VStack(spacing: 0) {
                             pick(Tr("发起拼单") + "（\(product.grp)人团）", Tr("按拼单价，人满发货"), true)
@@ -4332,7 +3996,6 @@ struct DDOrderSheet: View {
                     .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
                     .shadow(color: DDColor.cardShadow, radius: 10, y: 3)
 
-                    /* 收货地址：显示默认那条，点一下进地址簿挑（照京东） */
                     Button { showAddrList = true } label: {
                         HStack(alignment: .top, spacing: 10) {
                             Image(systemName: "mappin.circle.fill")
@@ -4371,13 +4034,12 @@ struct DDOrderSheet: View {
                     }
                     .buttonStyle(.plain)
 
-                    /* 优惠券 / 发票 / 备注 / 配送 / 支付方式（京东结算页那几行） */
                     VStack(spacing: 0) {
                         payRow(Tr("优惠券"), couponOff > 0 ? ("-¥" + moneyFmt(couponOff)) : Tr("不使用"), red: couponOff > 0) {
                             showCoupon = true
                         }
                         HairLine(inset: 14)
-                        /* 会员立减（京东 PLUS 那行）：开着就减，没开就提示开通 */
+
                         payRow(Tr("PLUS会员"),
                                memberOff > 0
                                  ? ("-¥" + moneyFmt(memberOff))
@@ -4386,10 +4048,10 @@ struct DDOrderSheet: View {
                         HairLine(inset: 14)
                         payRow(Tr("发票"), invoice.isEmpty ? Tr("不开发票") : invoice, red: false) { showInvoice = true }
                         HairLine(inset: 14)
-                        /* 配送：真正的配送方式 + 运费（2026-10-16「不要光包邮」） */
+
                         DDDeliveryList(goods: goodsAmount)
                         HairLine(inset: 14)
-                        /* 支付方式直接摊在这一段里，点哪行选哪行（不弹窗） */
+
                         DDPayWayList(payWay: $store.payWay)
                     }
                     .background(DDColor.cardGrad)
@@ -4434,14 +4096,14 @@ struct DDOrderSheet: View {
         .sheet(isPresented: $showAddrList) {
             DDAddressListView(pick: { a in pickedAddrId = a.id })
         }
-        /* 没填地址：先提醒，点「去填写」直接跳地址页 */
+
         .alert(Tr("请先填写收货地址"), isPresented: $needAddr) {
             Button(Tr("去填写")) { showAddrList = true }
             Button(Tr("取消"), role: .cancel) { waitAddrThenPay = false }
         } message: {
             Text(Tr("收货人、手机号、详细地址都要填，填好就直接接着付款"))
         }
-        /* 从地址页回来：这一单是因为没地址被拦下的，填好了就自动继续 */
+
         .onChange(of: showAddrList) { v in
             guard !v, waitAddrThenPay else { return }
             let a = chosenAddr
@@ -4449,7 +4111,7 @@ struct DDOrderSheet: View {
             let ok = a != nil && !full.isEmpty && !(a!.name.isEmpty) && (a!.phone.count >= 6)
             if ok {
                 waitAddrThenPay = false
-                /* 等地址页那一层真的收完再往下走（不然两层 sheet 会撞在一起） */
+
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { submit() }
             }
         }
@@ -4466,14 +4128,14 @@ struct DDOrderSheet: View {
         .sheet(isPresented: $showVip) {
             DDVipPageView().environmentObject(app)
         }
-        /* 星言支付收银台：验过（指纹/面容 或 支付密码）才真下单 */
+
         .sheet(isPresented: $showXYPay) {
             XYPaySheet(amount: payable, target: product.title,
                        note: (DDStore.groupOn && group ? Tr("发起拼单") : Tr("立即购买")) + " ×" + String(count),
                        onSuccess: { doSubmit() })
                 .environmentObject(app)
         }
-        /* 支付宝：调起支付宝 + 等它回调（钱真到账了才把单标成已付） */
+
         .sheet(isPresented: $showAliPay) {
             if let o = aliPayOrder {
                 AliPayWaitingSheet(amount: o.total, orderId: o.id,
@@ -4491,18 +4153,15 @@ struct DDOrderSheet: View {
         .ddLight()
     }
 
-    /// 这一单的商品金额（不含优惠）
     private var goodsAmount: Double {
         let u = product.specList.first { $0.name == spec }?.price ?? unit
         return u * Double(count)
     }
 
-    /// 会员立减（不是会员 = 0）
     private var memberOff: Double { store.vipOff(goodsAmount) }
-    /// 不是会员的话，开通能省这么多（结算页那行提示用）
+
     private var wouldSave: Double { (goodsAmount * (1 - DDStore.vipRate) * 100).rounded() / 100 }
 
-    /// 应付 = 单价×数量 − 优惠券 − 会员立减 + 运费（运费按配送方式算）
     private var payable: Double {
         max(0, goodsAmount - couponOff - memberOff + store.deliveryFee(goodsAmount))
     }
@@ -4522,7 +4181,6 @@ struct DDOrderSheet: View {
         .buttonStyle(.plain)
     }
 
-    /// 这次下单用哪条地址：下单页里挑的那条优先，其次默认那条
     private var chosenAddr: DDAddress? {
         if !pickedAddrId.isEmpty, let a = store.addresses.first(where: { $0.id == pickedAddrId }) {
             return a
@@ -4549,10 +4207,7 @@ struct DDOrderSheet: View {
     }
 
     private func submit() {
-        /* ⚠ 2026-10-16 用户：「立即支付，没填地址要叫填写地址，然后要会跳转」。
-           以前这里不看地址，直接就把单下出去了（地址是空的）。
-           现在：地址没有 / 收货人 / 手机号 / 详细地址不全 → **先弹一句 + 点「去填写」
-           直接跳到地址页**；填好回来这一单**自动接着往下走**（不用再点一次支付）。 */
+
         let a = chosenAddr
         let full = (a?.full ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let incomplete = (a?.name.isEmpty ?? true) || ((a?.phone.count ?? 0) < 6)
@@ -4561,7 +4216,7 @@ struct DDOrderSheet: View {
             needAddr = true
             return
         }
-        /* 选了星言支付：先走收银台（指纹/面容 或 支付密码），验过了才真下单 */
+
         if store.payWay == XYPay.name {
             showXYPay = true
             return
@@ -4569,16 +4224,15 @@ struct DDOrderSheet: View {
         doSubmit()
     }
 
-    /// 真正下单（星言支付验过之后也走这里）
     private func doSubmit() {
-        /* 拼单关着：不管从哪儿进来都按「直接买」下单 */
+
         let o = store.place(pid: product.id, count: count, group: DDStore.groupOn && group, spec: spec,
                             address: chosenAddr, remark: remark.trimmingCharacters(in: .whitespaces),
                             freight: 0, couponOff: couponOff, invoice: invoice, memberOff: memberOff,
                             payWay: store.payWay, paying: true)
-        /* 星言支付 = 当场付掉，直接推到「待发货」+ 一条「付款成功」服务通知 */
+
         if store.payWay == XYPay.name { store.pay(o.id) }
-        /* 支付宝 = 先把单落下来（状态「待付款」，服务端也记成未付），再调起支付宝 */
+
         if store.payWay == AliPay.name {
             dismiss()
             aliPayOrder = o
@@ -4588,7 +4242,7 @@ struct DDOrderSheet: View {
         }
         dismiss()
         app.show(doneText)
-        /* 下完单 / 付完款 → 直接跳到「我的订单」（京东那种：订单提交成功就进订单页） */
+
         store.jumpOrders()
     }
 
@@ -4597,27 +4251,22 @@ struct DDOrderSheet: View {
     }
 }
 
-/* ---------------------------------------------------------- 我的订单 */
-
 struct DDOrdersView: View {
     @EnvironmentObject private var app: AppState
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var store = DDStore.shared
     @State private var filter = 0
 
-    /// 从商城二楼那几格点进来时，直接落在对应的筛选上（0 全部 / 1 待付款 / 2 待发货 / 3 待收货）
     init(startFilter: Int = 0) {
         _filter = State(initialValue: max(0, startFilter))
     }
 
-    /// 点订单卡进详情（京东那套）
     @State private var detailOrder: DDOrder?
-    /// 待付款订单「立即付款」走不走星言支付收银台
+
     @State private var payWithXY: DDOrder? = nil
-    /* 支付宝（2026-10-16）：待付款那一单点了「支付宝付款」→ 盖这层等回调 */
+
     @State private var payWithAli: DDOrder? = nil
 
-    /// 拼单关了就把「拼团中」换成「待付款」（京东那排）
     private var names: [String] {
         DDStore.groupOn ? ["全部", "拼团中", "待发货", "待收货", "已完成"]
                         : ["全部", "待付款", "待发货", "待收货", "已完成"]
@@ -4677,7 +4326,7 @@ struct DDOrdersView: View {
         .sheet(item: $detailOrder) { o in
             DDOrderDetailView(orderId: o.id).environmentObject(app)
         }
-        /* 星言支付收银台（待付款那一单） */
+
         .sheet(item: $payWithXY) { o in
             XYPaySheet(amount: o.total, target: o.title,
                        note: Tr("订单付款 · ") + o.statusText,
@@ -4687,7 +4336,7 @@ struct DDOrdersView: View {
                       })
                 .environmentObject(app)
         }
-        /* 支付宝付款（待付款那一单） */
+
         .sheet(item: $payWithAli) { o in
             AliPayWaitingSheet(amount: o.total, orderId: o.id,
                                sync: { _ = await store.syncToServer(o, paid: false) }) { paid in
@@ -4761,7 +4410,7 @@ struct DDOrdersView: View {
                         Button {
                             store.reorder(o)
                             app.show(Tr("已加入购物车"))
-                            store.jumpCart()      // 「再来一单」= 加进购物车 + 跳过去（京东就是这样）
+                            store.jumpCart()
                         } label: { smallBtn(Tr("再来一单"), false) }
                             .buttonStyle(.plain)
                     }
@@ -4776,7 +4425,7 @@ struct DDOrdersView: View {
         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
         .shadow(color: DDColor.cardShadow, radius: 10, y: 3)
         .padding(.horizontal, 10)
-        /* 点卡片任意位置 → 订单详情（里面那颗小按钮仍然能点，Button 优先） */
+
         .contentShape(Rectangle())
         .onTapGesture { detailOrder = o }
     }
@@ -4789,13 +4438,12 @@ struct DDOrdersView: View {
             .background(Capsule().fill(filled ? DDColor.red : DDColor.page))
     }
 
-    /// 付这一单：选了星言支付就先过收银台（指纹/面容 或 支付密码）
     private func payOrder(_ o: DDOrder) {
         if store.payWay == XYPay.name {
             payWithXY = o
             return
         }
-        /* 支付宝：直接调起支付宝，等回调（钱到了才标已付） */
+
         if store.payWay == AliPay.name {
             payWithAli = o
             return
@@ -4804,8 +4452,6 @@ struct DDOrdersView: View {
         app.show(Tr("支付成功"))
     }
 }
-
-/* ---------------------------------------------------------- 收藏 / 搜索 */
 
 struct DDFavView: View {
     @Environment(\.dismiss) private var dismiss
@@ -4838,9 +4484,6 @@ struct DDFavView: View {
     }
 }
 
-/* ---------------------------------------------------------- 浏览足迹 */
-
-/// 我看过的商品（点开详情就记一条；和「我的收藏」一个样子）
 struct DDViewsView: View {
     @ObservedObject private var store = DDStore.shared
     var onOpen: (DDProduct) -> Void
@@ -4886,15 +4529,13 @@ struct DDSearchView: View {
     var onOpen: (DDProduct) -> Void
 
     @State private var q = ""
-    /// 排序："" 综合 / "sales" 销量 / "priceUp" 价格升序 / "priceDown" 价格降序
+
     @State private var sort = ""
-    /// 只看有货（至少一个规格还有库存）
+
     @State private var onlyStock = false
 
     private var kw: String { q.trimmingCharacters(in: .whitespaces) }
 
-    /* 热搜榜：词全是从**真商品**里数出来的（分类 / 标签 / 店铺），按"有几件商品"排，
-       谁的商品多谁靠前 —— 不编关键词（以前那 6 个是写死的）。 */
     private var hot: [String] {
         var score: [String: Int] = [:]
         for p in store.live {
@@ -4906,7 +4547,6 @@ struct DDSearchView: View {
             .prefix(10).map { $0.key }
     }
 
-    /// 联想词：打了几个字 → 从分类 / 标签 / 店铺 / 标题里挑含它的（最多 6 条）
     private var suggest: [String] {
         let k = kw
         guard !k.isEmpty else { return [] }
@@ -4924,7 +4564,6 @@ struct DDSearchView: View {
         return out
     }
 
-    /// 结果：先按词筛，再「只看有货」，最后排序
     private var result: [DDProduct] {
         var list = store.search(kw)
         if onlyStock { list = list.filter { $0.inStock } }
@@ -4980,7 +4619,6 @@ struct DDSearchView: View {
         .background(DDColor.page)
     }
 
-    /// 还没打字：搜索历史 + 热搜榜
     private var idle: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 14) {
@@ -5006,7 +4644,6 @@ struct DDSearchView: View {
         .background(DDColor.page)
     }
 
-    /// 打了字：联想词 + 排序筛选条 + 结果
     private var found: some View {
         VStack(spacing: 0) {
             if !suggest.isEmpty {
@@ -5036,7 +4673,6 @@ struct DDSearchView: View {
         }
     }
 
-    /// 点了热搜 / 联想词：填进输入框 + 记一条历史
     private func pick(_ w: String) {
         q = w
         store.pushHistory(w)
@@ -5082,12 +4718,6 @@ struct DDSearchView: View {
     }
 }
 
-/* ---------------------------------------------------------- 公共小条 */
-
-/// 商城里的「左滑删除」行（消息 tab 的服务通知用）
-/// ⚠ 和会话列表**同一套**手势层（ChatsView 的 RowSwipeCatcher）：
-///    SwiftUI 的 DragGesture 在 iOS 26 SDK 下会把 ScrollView 的竖滑吃掉（踩过），
-///    UIKit 的 pan 能声明「和滚动同时识别」，竖向照常滚，横向才算左滑。
 struct DDSwipeRow<Content: View>: View {
     var onTap: () -> Void
     var onDelete: () -> Void
@@ -5118,7 +4748,7 @@ struct DDSwipeRow<Content: View>: View {
             .allowsHitTesting(dx <= -actW * 0.55)
         }
         .padding(.horizontal, 10)
-        /* 手势层盖在内容上（宽度跟着滑开量收，露出来的删除键才点得到） */
+
         .overlay(alignment: .leading) {
             RowSwipeCatcher(
                 onTap: { _ in
@@ -5126,8 +4756,8 @@ struct DDSwipeRow<Content: View>: View {
                 },
                 onBegan: { start = dx },
                 onChanged: { v in
-                    var x = min(0, start + v)                       // 只能往左
-                    if x < -actW { x = -(actW + min(26, (-x - actW) * 0.25)) }   // 拉过头有一点阻尼
+                    var x = min(0, start + v)
+                    if x < -actW { x = -(actW + min(26, (-x - actW) * 0.25)) }
                     dx = x
                 },
                 onEnded: { _, vx in
@@ -5146,7 +4776,6 @@ struct DDSwipeRow<Content: View>: View {
     }
 }
 
-/// sheet 上那条「取消 + 标题」的顶栏（这些页面是弹出来的，不需要返回箭头）
 struct DDSheetBar: View {
     @Environment(\.dismiss) private var dismiss
     let title: String
@@ -5170,7 +4799,6 @@ struct DDSheetBar: View {
     }
 }
 
-/// 「x 分钟前 / 昨天 / 10-12 15:20」这种时间
 func ddTimeText(_ d: Date) -> String {
     let cal = Calendar.current
     if cal.isDateInToday(d) {
@@ -5190,14 +4818,8 @@ func ddTimeText(_ d: Date) -> String {
 
 private func timeText(_ d: Date) -> String { ddTimeText(d) }
 
-/* ============================================================ 结算页的「支付方式」
-   用户 2026-10-16：「支付方式不要弹窗口出来，直接在那里上下选」——
-   所以这里做成一张卡片里上下排列的选项，点哪行就是选哪行，右边打勾。
-   以前是点一行 → 弹系统确认框，要再抬手点第二次，结算页里显得很跳。 */
-/* ---------------- 结算页的配送方式（2026-10-16：不要光包邮） ----------------
-   一行一行列出来（不弹窗），点哪行用哪行；右边显示这一单的运费（满额显示"免运费"）。 */
 struct DDDeliveryList: View {
-    /// 商品金额（用来算满额免运费）
+
     let goods: Double
     @ObservedObject private var store = DDStore.shared
 
@@ -5240,23 +4862,18 @@ struct DDDeliveryList: View {
 
 struct DDPayWayList: View {
     @Binding var payWay: String
-    /// 没绑卡时点「添加银行卡」→ 外面弹绑卡页（绑完这张卡自动可用）
+
     var onAddCard: (() -> Void)? = nil
     @ObservedObject private var store = DDStore.shared
 
-    /// 可选项：**只有我们自己的支付 + 银行卡**（2026-10-16 用户：
-    /// 「把商城的微信支付删掉」「就留我们自己的和添加银行卡」）。
-    /// 星言支付的名字走后台 payName，不写死。
     private var ways: [String] {
         var out: [String] = [XYPay.name]
-        /* 2026-10-16 用户选「B」：加支付宝（官方接口那条）。
-           后台 ui.json 的 alipayOn 写 0 就能整条藏掉，不用出新包。 */
+
         if AliPay.on { out.append(AliPay.name) }
         out.append(store.bankPayText)
         return out
     }
 
-    /// 银行卡那一行：没绑卡先去绑卡（绑完回来再点一次就选中了）
     private func tap(_ w: String) {
         if w == store.bankPayText && store.banks.isEmpty {
             onAddCard?()

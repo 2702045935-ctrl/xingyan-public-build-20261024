@@ -1,13 +1,11 @@
 import SwiftUI
 
-/// 来电铃声选择：一行一个，点右边喇叭试听（放 4 秒自己停），点一行就是选中
 struct RingtonePicker: View {
     @ObservedObject private var ring = Ringtone.shared
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        /* 二级菜单一律**整页 push**（和微信一致）：不再自带 NavigationStack
-           （套在外层栈里会变成"两层导航栏、没有返回键"），改用全站那套 NavBar。 */
+
         VStack(spacing: 0) {
             NavBar(title: Tr("来电铃声"), back: { ring.stop(); dismiss() }) {
                 Button { ring.stop(); dismiss() } label: {
@@ -21,7 +19,7 @@ struct RingtonePicker: View {
                     ForEach(Ringtone.all) { tone in
                         Button {
                             ring.current = tone.id
-                            ring.preview(tone.id)          // 选中顺便试听一下
+                            ring.preview(tone.id)
                         } label: {
                             HStack(spacing: 10) {
                                 Text(tone.name).foregroundColor(C.label)

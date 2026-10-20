@@ -1,13 +1,6 @@
 import SwiftUI
 import UIKit
 
-/* ============================================================
-   新用户首次引导（iOS）
-   · 只有注册接口明确返回 needsOnboarding=true 的新账号会出现
-   · 不提供跳过：头像 + 至少两个兴趣分类完成后才进首页
-   · 视觉参考小红书：大留白、柔和渐变、圆形头像、胶囊分类
-   ============================================================ */
-
 private struct OnboardingInterest: Identifiable {
     let id: String
     let symbol: String

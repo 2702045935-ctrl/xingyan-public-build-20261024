@@ -1,12 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   支付分（微信「我 → 服务 → 钱包 → 支付分」那页）
-   · 上面一个大分数 + 等级 + 分数区间刻度
-   · 三个维度：身份特质 / 支付行为 / 履约记录（进度条 + 一句说明 + 怎么提升）
-   · 免押服务：够分显示「可免押」，不够显示「还差 N 分」
-   · 分值变化记录
-   ============================================================ */
 struct PayScoreView: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
@@ -27,7 +20,7 @@ struct PayScoreView: View {
             NavBar(title: Tr("支付分"), back: { dismiss() })
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
-                    /* 大分数 */
+
                     VStack(spacing: 6) {
                         Text(loading ? "…" : String(Int(score)))
                             .font(pfMoney(52, .medium))
@@ -46,7 +39,6 @@ struct PayScoreView: View {
                     .background(LinearGradient(colors: [levelColor, levelColor.opacity(0.75)],
                                                startPoint: .top, endPoint: .bottom))
 
-                    /* 五项维度（2026-10-16 重排：规则由甲方定，权重直接标在名字后面） */
                     VStack(alignment: .leading, spacing: 0) {
                         Text(Tr("分是怎么来的")).font(pf(13)).foregroundColor(C.subLabel)
                             .padding(.horizontal, 8).padding(.bottom, 6)
@@ -70,7 +62,6 @@ struct PayScoreView: View {
                     }
                     .padding(.horizontal, 8).padding(.top, 12)
 
-                    /* 免押服务 */
                     VStack(alignment: .leading, spacing: 0) {
                         Text(Tr("凭支付分可以免押")).font(pf(13)).foregroundColor(C.subLabel)
                             .padding(.horizontal, 8).padding(.bottom, 6)
@@ -102,7 +93,6 @@ struct PayScoreView: View {
                     }
                     .padding(.horizontal, 8).padding(.top, 14)
 
-                    /* 分值变化 */
                     VStack(alignment: .leading, spacing: 0) {
                         Text(Tr("最近的分值变化")).font(pf(13)).foregroundColor(C.subLabel)
                             .padding(.horizontal, 8).padding(.bottom, 6)
@@ -160,7 +150,7 @@ struct PayScoreView: View {
                         .background(Capsule().fill(C.hairline))
                 }
                 Spacer(minLength: 6)
-                /* 拿到的分 / 满分（比原来只写一个 0~100 的数直观得多） */
+
                 if let p = d.points, let m = d.max {
                     Text(moneyTrim(p) + " / " + moneyTrim(m))
                         .font(pfMoney(15))
@@ -169,7 +159,7 @@ struct PayScoreView: View {
                     Text("\(Int(d.value))").font(pfMoney(15)).foregroundColor(C.subLabel)
                 }
             }
-            /* 进度条 */
+
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule().fill(C.hairline).frame(height: 6)
@@ -187,7 +177,6 @@ struct PayScoreView: View {
         .padding(.vertical, 12)
     }
 
-    /// 这一项拿到的分占满分的比例 → 颜色（低了发黄、空了发红，一眼看出该补哪一项）
     private func scoreColor(_ got: Double, _ full: Double) -> Color {
         let r = full <= 0 ? 1 : got / full
         if r >= 0.8 { return C.green }

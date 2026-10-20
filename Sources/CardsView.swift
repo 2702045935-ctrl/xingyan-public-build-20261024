@@ -1,14 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   卡包（照微信那套：我 → 卡包）
-     · 上面按类分：优惠券 / 会员卡 / 礼品卡 / 票
-     · 一张卡点开 = 卡面（名称、面额/折扣、有效期、说明）+ 核销码 + 「核销」按钮
-     · 用过的卡标灰、沉到「已使用」那一组
-   数据和发卡都在服务端（data/cards.json，管理侧 /api/ops/cards 发卡）。
-   ⚠ 这一页和聊天页完全无关，不会碰到那个"一点就闪"的巨型视图。
-   ============================================================ */
-
 struct WalletCard: Decodable, Identifiable, Hashable {
     var id: String
     var userId: String?
@@ -57,7 +48,7 @@ struct CardsView: View {
     @State private var cards: [WalletCard] = []
     @State private var loading = true
     @State private var open: WalletCard? = nil
-    /// 「为什么是空的」定位用：这次请求成没成、拿到几条（显示在空页上 + 进诊断打点）
+
     @State private var diagNote = ""
 
     private var live: [WalletCard] { cards.filter { $0.used != true } }
@@ -158,7 +149,7 @@ struct CardsView: View {
             NavBar(title: c.title ?? Tr("卡券"), back: { open = nil })
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 14) {
-                    /* 卡面 */
+
                     VStack(spacing: 8) {
                         Image(systemName: c.symbol)
                             .font(.system(size: 30, weight: .semibold))
@@ -194,7 +185,6 @@ struct CardsView: View {
                         }
                     }
 
-                    /* 核销码 */
                     GroupCard {
                         VStack(spacing: 8) {
                             Text(Tr("核销码")).font(pf(13)).foregroundColor(C.subLabel)
@@ -236,7 +226,7 @@ struct CardsView: View {
         }
         .background(C.pageBg.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
-        /* 2026-10-16：卡券详情这一层补左滑返回（滑一下 = 退回卡包） */
+
         .swipeBack { open = nil }
     }
 
@@ -251,7 +241,7 @@ struct CardsView: View {
     }
 
     private func load() async {
-        /* 带打点的那一版：请求成败 + 拿到几条都记下来（「卡包是空的」一次就能定位） */
+
         let r = await API.shared.walletCardsDiag()
         DiagLog.shared.note(r.note)
         await MainActor.run {

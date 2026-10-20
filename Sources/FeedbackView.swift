@@ -1,14 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   意见反馈（照微信那套）：
-   · 先选分类：功能异常 / 产品建议 / 界面样式 / 其他
-   · 写描述，右下角 0/200 字数，超了截断
-   · 可以贴截图，最多 3 张（相册或拍照），点图可删
-   · 联系方式（选填）
-   · 提交后整页「感谢你的反馈」，下面还有「我的反馈」能看到官方回复
-   ============================================================ */
-
 struct FeedbackView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -28,7 +19,7 @@ struct FeedbackView: View {
 
     var body: some View {
         if done {
-            /* 提交成功：绿色渐变圆 + 白勾（带柔光），下面两个按钮 */
+
             VStack(spacing: 0) {
                 Spacer(minLength: 70)
                 ZStack {
@@ -112,7 +103,7 @@ struct FeedbackView: View {
 
                 ScrollView {
                     VStack(spacing: 0) {
-                        /* ① 分类：四张卡片（图标 + 名称），选中的描绿边、浅绿底 */
+
                         VStack(alignment: .leading, spacing: 9) {
                             Text(Tr("问题类型"))
                                 .font(pf(12.5))
@@ -159,7 +150,6 @@ struct FeedbackView: View {
                         }
                         .padding(.top, 10)
 
-                        /* ② 描述 + 字数 + 截图 */
                         Text(Tr("问题描述"))
                             .font(pf(12.5))
                             .foregroundColor(C.subLabel)
@@ -192,7 +182,7 @@ struct FeedbackView: View {
                                     .padding(.trailing, 16).padding(.bottom, 8)
                             }
                             HairLine(inset: 16)
-                            /* 截图：最多 3 张（+ 号加图，点图删） */
+
                             HStack(spacing: 10) {
                                 ForEach(Array(picked.enumerated()), id: \.offset) { _, img in
                                     ZStack(alignment: .topTrailing) {
@@ -253,7 +243,6 @@ struct FeedbackView: View {
                         .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous)
                             .stroke(C.hairline, lineWidth: 0.6))
 
-                        /* ③ 联系方式 */
                         HStack(spacing: 10) {
                             Image(systemName: "person.crop.circle")
                                 .font(.system(size: 18))
@@ -268,7 +257,6 @@ struct FeedbackView: View {
                             .stroke(C.hairline, lineWidth: 0.6))
                         .padding(.top, 10)
 
-                        /* ④ 我的反馈 */
                         NavigationLink(value: "feedback.history") {
                             HStack(spacing: 10) {
                                 ZStack {
@@ -323,7 +311,6 @@ struct FeedbackView: View {
         }
     }
 
-    /// 分类卡片的图标
     private func catIcon(_ c: String) -> String {
         switch c {
         case "功能异常": return "wrench.and.screwdriver.fill"
@@ -333,7 +320,6 @@ struct FeedbackView: View {
         }
     }
 
-    /// 分类卡片的配色（红=出问题、金=点子、紫=好看、灰=其他）
     private func catColors(_ c: String) -> [Color] {
         switch c {
         case "功能异常": return [Color(hex: 0xFF8A73), Color(hex: 0xE2432E)]
@@ -348,7 +334,7 @@ struct FeedbackView: View {
         if text.isEmpty { app.show(Tr("先写点内容")); return }
         busy = true
         Task {
-            /* 先把截图传上去（拿到的就是服务器路径），再提交反馈 */
+
             var urls: [String] = []
             for img in picked {
                 if let u = try? await API.shared.upload(image: img) { urls.append(u) }
@@ -367,7 +353,6 @@ struct FeedbackView: View {
     }
 }
 
-/* 我的反馈：一条条列出来，处理中 / 已回复，回复内容直接显示在下面（和微信一样） */
 struct FeedbackHistoryView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss

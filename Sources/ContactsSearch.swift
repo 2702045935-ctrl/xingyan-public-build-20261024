@@ -1,14 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   星联（通讯录）的搜索：照着微信那套逻辑做
-   · 点搜索框 → 整页展开成搜索页（右上角「取消」）
-   · 没输入时显示「最近搜索」（本地记 8 条，可一键清空）
-   · 「搜索指定内容」= 全部 / 联系人 / 群聊，点一下切换范围
-   · 输入后：昵称/备注、账号、拼音首字母都能搜到，命中文字高亮
-   · 结果分组（联系人 / 群聊），带条数；没有结果给「没有找到相关…」
-   ============================================================ */
-
 enum ContactSearchHistory {
     private static let key = "chris.contact.search.history"
     static func load() -> [String] {
@@ -24,7 +15,6 @@ enum ContactSearchHistory {
     static func clear() { UserDefaults.standard.removeObject(forKey: key) }
 }
 
-/// 命中文字高亮（微信那种：匹配到的那几个字变品牌色）
 func highlightMatch(_ text: String, _ query: String) -> Text {
     let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !q.isEmpty else { return Text(text) }
@@ -39,19 +29,18 @@ func highlightMatch(_ text: String, _ query: String) -> Text {
 }
 
 struct ContactsSearchView: View {
-    /// 搜到的联系人点一下要跳去他的资料页
+
     var onPickUser: (User) -> Void
-    /// 搜到的群聊点一下要打开会话
+
     var onPickChat: (Chat) -> Void
     var onCancel: () -> Void
 
     @EnvironmentObject var app: AppState
     @State private var q = ""
-    @State private var scope = 0          // 0 全部 / 1 联系人 / 2 群聊
+    @State private var scope = 0
     @State private var history: [String] = ContactSearchHistory.load()
     @FocusState private var focused: Bool
 
-    /// 昵称/备注、账号、拼音首字母都能命中（微信也是这几种）
     private func match(_ u: User) -> Bool {
         let key = q.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         if key.isEmpty { return false }
@@ -76,7 +65,7 @@ struct ContactsSearchView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            /* 顶部：搜索框 + 取消（微信点开搜索就是这样一条） */
+
             HStack(spacing: 8) {
                 HStack(spacing: 5) {
                     SVGIcon(markup: I.searchSmall, size: 16, color: C.searchIcon)
@@ -109,7 +98,6 @@ struct ContactsSearchView: View {
             .padding(.bottom, 8)
             .background(C.chatsTopBg.ignoresSafeArea(edges: .top))
 
-            /* 搜索范围（微信的「搜索指定内容」）：点一下切换 */
             if !q.isEmpty {
                 HStack(spacing: 8) {
                     ForEach(Array(["全部", "联系人", "群聊"].enumerated()), id: \.offset) { idx, name in

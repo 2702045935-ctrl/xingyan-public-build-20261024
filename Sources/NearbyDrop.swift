@@ -4,7 +4,6 @@ import MultipeerConnectivity
 import Photos
 import UniformTypeIdentifiers
 
-/// 面对面传输码。二维码只带一次性会话号和显示名，不包含账号或好友关系。
 struct NearbyDropInvite: Identifiable, Equatable {
     let id: String
     let name: String
@@ -38,8 +37,6 @@ enum NearbyDropPhase: Equatable {
     case connected
 }
 
-/// 双机近距离传输：一边展示二维码并广播，另一边扫码加入。
-/// 媒体文件走 MultipeerConnectivity 的点对点连接，不经过聊天服务器。
 final class NearbyDropCenter: NSObject, ObservableObject {
     @Published private(set) var phase: NearbyDropPhase = .idle
     @Published private(set) var invite: NearbyDropInvite?

@@ -1,23 +1,12 @@
 import SwiftUI
 
-/* ============================================================
-   客服中心（2026-10-15 对齐京东）
-
-   京东那套客服是「一页三块」：
-     ① 上面一块上下文（是哪个商品 / 哪一单，直接带过来）
-     ② 「在线客服」：能问、答不上来再转人工（快捷问题一排 chips）
-     ③ 「常见问题」：分组的，点一下**就地展开答案**（不是弹个 toast）
-   ⚠ 答案只写和我们这套系统对得上的（发货 48 小时、订单里看物流、7 天无理由、
-     优惠券在结算页抵、发票在结算页填…），不编「48 小时必达」这种我们做不到的承诺。
-   ============================================================ */
-
 struct DDFaq {
     let q: String
     let a: String
 }
 
 enum DDHelp {
-    /// 常见问题（分了 4 组，和京东那种「订单物流 / 退换 / 支付发票 / 优惠会员」一样）
+
     static let groups: [(String, [DDFaq])] = [
         ("订单与物流", [
             DDFaq(q: "多久发货？",
@@ -55,10 +44,8 @@ enum DDHelp {
         ]),
     ]
 
-    /// 快捷问题（在线客服那一排 chips，点一下直接问）
     static let quick = ["多久发货？", "怎么查物流？", "七天无理由怎么退？", "怎么开发票？", "优惠券怎么用？", "会员有什么好处？"]
 
-    /// 智能客服：按关键词给一条**和我们这套对得上**的答案
     static func answer(_ text: String, order: DDOrder?, product: DDProduct?) -> String {
         let t = text.lowercased()
         func hit(_ keys: String...) -> Bool { keys.contains { t.contains($0) } }
@@ -107,13 +94,11 @@ enum DDHelp {
     }
 }
 
-/// 客服中心（商品详情 / 订单详情 / 我的 三处都进这一页）
 struct DDHelpCenterView: View {
     @EnvironmentObject private var app: AppState
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var store = DDStore.shared
 
-    /// 从哪儿进来的：带商品 / 带订单（都为 nil = 从「我的」进来的通用客服）
     var product: DDProduct? = nil
     var order: DDOrder? = nil
 
@@ -145,8 +130,6 @@ struct DDHelpCenterView: View {
         }
     }
 
-    /* ---------------- 上下文：这件商品 / 这一单 ---------------- */
-
     @ViewBuilder private var contextCard: some View {
         if let p = product {
             HStack(spacing: 10) {
@@ -175,8 +158,6 @@ struct DDHelpCenterView: View {
             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
     }
-
-    /* ---------------- 在线客服：对话 + 快捷问题 ---------------- */
 
     private var onlineCard: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -227,8 +208,6 @@ struct DDHelpCenterView: View {
         chat.append((false, DDHelp.answer(q, order: order, product: product)))
     }
 
-    /* ---------------- 常见问题（点开就地展开答案） ---------------- */
-
     private var faqCard: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(Tr("常见问题")).font(pf(15, .semibold)).foregroundColor(DDColor.ink)
@@ -265,8 +244,6 @@ struct DDHelpCenterView: View {
         .background(DDColor.card)
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
-
-    /* ---------------- 底下：输入框 + 转人工 ---------------- */
 
     private var bottom: some View {
         VStack(spacing: 8) {

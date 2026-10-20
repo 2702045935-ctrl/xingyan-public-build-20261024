@@ -2,14 +2,6 @@ import SwiftUI
 import MapKit
 import UIKit
 
-/* ============================================================
-   位置消息（微信那套）
-   · 聊天里的位置气泡：一张**本机渲染**的小地图快照（苹果地图，国内走高德数据）
-     —— 以前用的是 tile.openstreetmap.org 的瓦片，国内网络经常拉不到，气泡就是一片空白
-   · 点一下气泡：整页打开大地图（可缩放拖动）+ 地址卡片 + 「导航 / 复制地址」
-   ============================================================ */
-
-/// 一条位置消息
 struct LocationPoint: Identifiable, Equatable {
     var lat: Double
     var lng: Double
@@ -20,7 +12,6 @@ struct LocationPoint: Identifiable, Equatable {
     var coord: CLLocationCoordinate2D { CLLocationCoordinate2D(latitude: lat, longitude: lng) }
     var title: String { name.isEmpty ? "位置" : name }
 
-    /// 消息体是 {"lat":..,"lng":..,"name":..,"addr":..} 这种 JSON
     static func parse(_ json: String) -> LocationPoint? {
         guard let data = json.data(using: .utf8),
               let o = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
@@ -32,21 +23,17 @@ struct LocationPoint: Identifiable, Equatable {
                              addr: (o["addr"] as? String) ?? "")
     }
 
-    /// 用系统地图导航过去（苹果地图在国内是高德的数据，能直接用）
     var navigateURL: URL? {
         let q = title.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
         return URL(string: "http://maps.apple.com/?daddr=\(lat),\(lng)&q=\(q)&dirflg=d")
     }
 }
 
-/* ---------------------------------------------------------- 小地图快照 */
-
-/// 苹果地图快照 + 中间一个红色定位针（本机渲染，不依赖任何外部瓦片服务）
 struct MapSnapshotView: View {
     let point: LocationPoint
     var width: CGFloat = 216
     var height: CGFloat = 136
-    /// 给位置详情页那种大图用（不画针，针由 MKMapView 自己画）
+
     var drawPin: Bool = true
 
     @State private var image: UIImage?
@@ -72,8 +59,7 @@ struct MapSnapshotView: View {
     private func load() async {
         let key = "\(point.id)@\(Int(width))x\(Int(height))\(drawPin ? "p" : "")" as NSString
         if let hit = MapSnapshotView.cache.object(forKey: key) { image = hit; return }
-        /* 新版 SDK 里 UIScreen.main 是 @MainActor 的，这里在后台异步上下文，
-           取屏幕缩放要回主线程取一下（不然编译报 "expression is 'async'"）。 */
+
         let scale = await MainActor.run { UIScreen.main.scale }
         let opts = MKMapSnapshotter.Options()
         opts.region = MKCoordinateRegion(center: point.coord,
@@ -85,7 +71,7 @@ struct MapSnapshotView: View {
         let shot = try? await snap.start()
         guard let shot = shot else { return }
         guard drawPin else { image = shot.image; MapSnapshotView.cache.setObject(shot.image, forKey: key); return }
-        /* 中间画一个红针（和微信那个位置气泡一样） */
+
         let size = CGSize(width: width, height: height)
         let renderer = UIGraphicsImageRenderer(size: size)
         let out = renderer.image { _ in
@@ -112,16 +98,13 @@ struct MapSnapshotView: View {
     }
 }
 
-/* ---------------------------------------------------------- 点开的大地图 */
-
-/// 点位置气泡进来的整页地图（可缩放拖动，带地址卡片和「导航」）
 struct LocationDetailView: View {
     let point: LocationPoint
 
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
     @State private var copied = false
-    /// 「导航」→ 让用户选哪个地图（高德 / 百度 / 苹果）
+
     @State private var pickMap = false
 
     var body: some View {
@@ -140,9 +123,7 @@ struct LocationDetailView: View {
                 }
                 HStack(spacing: 10) {
                     Button {
-                        /* 微信那套：导航问一句用哪个地图（高德 / 百度 / 苹果）。
-                           高德、百度的坐标在 MapLink 里转过了（WGS-84 → GCJ-02 / BD-09），
-                           不然点会偏 500 米。 */
+
                         pickMap = true
                     } label: {
                         HStack(spacing: 6) {
@@ -190,7 +171,6 @@ struct LocationDetailView: View {
     }
 }
 
-/// MKMapView 包一层：显示一个红色大头针，进来就居中到那个点
 struct MapBigView: UIViewRepresentable {
     let point: LocationPoint
 

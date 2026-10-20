@@ -1,13 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   服务页那套图标（和服务器 data/icon-defaults.json 里的 svc.* 一模一样）
-
-   正常情况图标是从后台下发的（/api/service 里带着 svg，后台换成自定义的也生效），
-   这里只是「拉不到配置 / 服务器还没升级」时的兜底，保证页面不会开天窗。
-   描边风格和发现页、我页那套 i.* 一致：fill=none + stroke=currentColor。
-   ============================================================ */
-
 enum SvcIcon {
     static let map: [String: String] = [
         "svc.pay": #"<svg data-key="svc.pay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.4v11.2M8 6.4v11.2M12 6.4v11.2M16 6.4v11.2M20 6.4v11.2"/></svg>"#,
@@ -31,7 +23,6 @@ enum SvcIcon {
         "svc.pdd": #"<svg data-key="svc.pdd" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.6" y="8.8" width="16.8" height="11.2" rx="2"/><path d="M3.6 12.4h16.8M12 8.8v11.2"/><path d="M12 8.8S10.8 4.2 8.4 4.2a2.2 2.2 0 0 0 0 4.6M12 8.8s1.2-4.6 3.6-4.6a2.2 2.2 0 0 1 0 4.6"/></svg>"#
     ]
 
-    /// 拿图标：优先用后台下发的 svg，没有就用内置这套
     static func markup(_ key: String?, _ served: String?) -> String {
         if let served = served, !served.isEmpty { return served }
         if let key = key, let hit = map[key] { return hit }
@@ -39,7 +30,6 @@ enum SvcIcon {
     }
 }
 
-/* 服务器联系不上 / 还没升级时的兜底：内容和参考图一致，图标走上面那套内置的 */
 enum ServiceFallback {
     static let groups: [(String, [(String, String, String)])] = [
         ("金融理财", [("信用卡还款", "svc.creditcard", "#19A47A"), ("理财通", "svc.fund", "#10AEFF"), ("保险服务", "svc.insure", "#FA9D3B")]),
@@ -51,11 +41,6 @@ enum ServiceFallback {
                    ("拼多多", "svc.pdd", "#FA5151")])
     ]
 }
-
-/* ============================================================
-   钱包页的图标 + 兜底内容（和服务器 data/icon-defaults.json 里的 svc.w* 一致）
-   正常情况下这些都从 /api/wallet 下发，这里只是服务器连不上/还没升级时不至于白屏。
-   ============================================================ */
 
 enum WalletIcon {
     static let map: [String: String] = [
@@ -76,7 +61,7 @@ enum WalletIcon {
 }
 
 enum WalletFallback {
-    /// 拉不到 /api/wallet 时用这份（内容和参考图一致；零钱那行的数值由视图现填余额）
+
     static func config(balance: Double) -> WalletConfig {
         func item(_ id: String, _ label: String, _ key: String, _ color: String,
                   value: String? = nil, note: String? = nil, kind: String? = nil, action: String = "soon") -> WalletItem {

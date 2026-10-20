@@ -1,10 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   官方号名片 · 新版（畅聊 / HarmonyOS 设计语言）
-   开关：后台 ui.json 里 agentCardStyle = "new" 才走这一版；默认 "old" = 原来那版
-   ============================================================ */
-
 private let aBlue   = Color(hex: 0x007DFF)
 private let aBlueBg = Color(hex: 0xE8F3FF)
 private let aInk    = Color(hex: 0x181818)
@@ -71,7 +66,7 @@ struct BotCardNew: View {
 
     private var hero: some View {
         VStack(spacing: 0) {
-            /* 官方号是「账号卡」：顶上一条品牌浅蓝 banner，logo 压在上面（跟好友人名卡区分开） */
+
             ZStack(alignment: .bottom) {
                 LinearGradient(colors: [aBlueBg, aBlueBg.opacity(0.55)], startPoint: .top, endPoint: .bottom)
                     .frame(height: 84)

@@ -2,14 +2,6 @@ import SwiftUI
 import UIKit
 import WebKit
 
-/* ============================================================
-   星言内置浏览器
-
-   和微信内置浏览器一样，网页一直在 App 里打开，不把用户甩到 Safari。
-   支持地址/搜索、前进后退、刷新、分享，以及网页里的 alert / confirm / prompt。
-   只有我们自己的服务器放行自签证书；其他网站仍走系统 TLS 校验。
-   ============================================================ */
-
 struct InAppBrowserView: View {
     @Environment(\.dismiss) private var dismiss
 
@@ -169,7 +161,6 @@ struct InAppBrowserView: View {
     }
 }
 
-/// 工具栏操作打到当前 WebView；页面只保留一个，所以单例足够。
 final class BrowserCommands {
     static let shared = BrowserCommands()
     weak var web: WKWebView?
@@ -292,12 +283,15 @@ private struct BrowserWebView: UIViewRepresentable {
                      completionHandler: @escaping (URLSession.AuthChallengeDisposition,
                                                    URLCredential?) -> Void) {
             guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
-                  API.trustedHost(challenge.protectionSpace.host),
                   let trust = challenge.protectionSpace.serverTrust else {
                 completionHandler(.performDefaultHandling, nil)
                 return
             }
-            completionHandler(.useCredential, URLCredential(trust: trust))
+            if ServerTrustPolicy.canAccept(trust, host: challenge.protectionSpace.host) {
+                completionHandler(.useCredential, URLCredential(trust: trust))
+            } else {
+                completionHandler(.cancelAuthenticationChallenge, nil)
+            }
         }
 
         func webView(_ webView: WKWebView,

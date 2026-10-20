@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// 转账面板：金额 + 备注 + 付款方式 + 支付密码
 struct TransferSheet: View {
     let chat: Chat
     var onConfirm: (Double, String, String, String) -> Void
@@ -27,8 +26,7 @@ struct TransferSheet: View {
                             .font(pf(26, .medium))
                             .keyboardType(.decimalPad)
                     }
-                    /* 说明提示文案（微信这句）：收付款双方可见，最多 60 个字；
-                       输入框本身不预填任何字 */
+
                     TextField("收付款双方可见，最多 60 个字", text: $note)
                         .onChange(of: note) { v in
                             if v.count > 60 { note = String(v.prefix(60)) }

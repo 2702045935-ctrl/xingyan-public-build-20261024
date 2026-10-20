@@ -1,17 +1,7 @@
 import SwiftUI
 
-/* ============================================================
-   管理页 → 红包封面（2026-10-12 加：用户要求「红包封面给管理可以换」）
-
-   数据就是服务器 data/redpacket-covers.json，和后台 manage.html 的「红包封面」互通：
-     · 名字 / 封面图（上传一张）/ 主题色（发红包页的底色）/ 启用 / 设为默认
-     · 删掉某张（默认那张删了会自动落到第一张）
-   保存是**整份覆盖**（服务端就是这个协议，和后台一致），父页负责拼整份。
-   ============================================================ */
-
-/// 编辑结果交回父页：父页拼整份列表再保存
 struct RPCoverEditResult {
-    /// 编辑后的封面（nil = 删除）
+
     var cover: API.RPCover?
     var deleted: Bool = false
     var makeDefault: Bool = false
@@ -21,9 +11,8 @@ struct RPCoverEditSheet: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
 
-    /// nil = 新增一张
     let cover: API.RPCover?
-    /// 它现在是不是默认封面
+
     let isDefault: Bool
     let onDone: (RPCoverEditResult) -> Void
 
@@ -37,7 +26,6 @@ struct RPCoverEditSheet: View {
     @State private var busy = false
     @State private var msg = ""
 
-    /// 主题色候选（微信封面那几种：大红 / 金 / 墨绿 / 宝蓝 / 紫 / 黑）
     private let colors: [(String, String)] = [
         ("#B3241C", "大红"), ("#8E1412", "酒红"), ("#C9A227", "金"),
         ("#0E332E", "墨绿"), ("#1B5FD0", "宝蓝"), ("#5B2C87", "紫"), ("#111111", "黑")
@@ -58,7 +46,7 @@ struct RPCoverEditSheet: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 10) {
-                    /* 封面图 */
+
                     GroupCard {
                         Button { showPic = true } label: {
                             HStack(spacing: 12) {
@@ -96,7 +84,6 @@ struct RPCoverEditSheet: View {
                     }
                     .padding(.top, 10)
 
-                    /* 主题色（发红包页那层底色） */
                     GroupCard {
                         VStack(alignment: .leading, spacing: 10) {
                             Text(Tr("主题色（发红包页的底色）")).font(pf(13)).foregroundColor(C.subLabel)

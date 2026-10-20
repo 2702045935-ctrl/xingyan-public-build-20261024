@@ -1,16 +1,3 @@
-#!/bin/bash
-# ============================================================
-# 在 Mac 上直接出包（不走 GitHub Actions 那台云端机器）
-#
-# 用法（在 chris-native 目录里）：
-#     bash mac-build.sh            # 出包
-#     bash mac-build.sh 348        # 顺便把版本号写成 348（不写就自动 +1）
-#
-# 出来的文件：dist/星言-unsigned.ipa
-#   —— 和云端那条流水线做出来的东西一样：未签名 IPA，用爱思助手自己签。
-#
-# 需要机器上有：Xcode（含 iOS SDK）+ 命令行工具。其余依赖（WebRTC / TRTC）脚本自己下。
-# ============================================================
 set -e
 cd "$(dirname "$0")"
 
@@ -19,8 +6,6 @@ DIST="dist"
 mkdir -p "$DIST"
 
 echo "=== 0) 选 Xcode ==="
-# Xcode 没设成默认时（只装了命令行工具）要切一下 —— 这一步可能要输 Mac 密码。
-# 已经能编的机器**不会**问你密码。
 if ! xcodebuild -version >/dev/null 2>&1; then
   echo "Xcode 还没设成命令行默认，切一下（可能要输一次 Mac 开机密码）："
   sudo xcode-select -s /Applications/Xcode.app 2>/dev/null || true
@@ -83,10 +68,6 @@ if [ -d Assets.xcassets ]; then
     || echo "actool 跳过：启动屏用系统默认底色"
 fi
 
-# 语音球那个 GPU 着色器：编成 default.metallib 放进 App 根目录。
-# ⚠ 有些 Xcode 没装 Metal Toolchain（云 Mac 上实测报
-#   "cannot execute tool 'metal' due to missing Metal Toolchain"），
-#   那就退而求其次：直接拿线上包里现成的 default.metallib（同一份源码编出来的）。
 if [ -f Sources/VoiceOrb.metal ]; then
   if xcrun -sdk iphoneos metal -c Sources/VoiceOrb.metal -o /tmp/VoiceOrb.air 2>/dev/null; then
     xcrun -sdk iphoneos metallib /tmp/VoiceOrb.air -o "$APP/default.metallib" 2>/dev/null || true
@@ -156,12 +137,6 @@ echo "SHA256: $(shasum -a 256 "$OUT" | awk '{print $1}')"
 echo
 echo "本地这一份：$(pwd)/$OUT（未签名，用爱思助手自己签）"
 
-# ============================================================
-# 第 7 步：回传服务器
-#   传上去以后，Codex 那边直接从服务器取包、走原来的发布流程（解密校验 +
-#   两台服务器同步），所以这台 Mac 只要编出来就算完事。
-#   下面这串口令 = 上传权限，别外传；不想回传就把这一行清空。
-# ============================================================
 UPLOAD_KEY="xy-mac-4f12cded"
 if [ -n "$UPLOAD_KEY" ] && [ -f "$OUT" ]; then
   echo "=== 7) 回传到服务器（aa.x8iu.com）… ==="

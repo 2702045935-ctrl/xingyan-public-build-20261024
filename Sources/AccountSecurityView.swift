@@ -1,12 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   账号与安全（微信「设置 → 账号与安全」那一页）
-   · 个人信息 / 微信号（星言号）/ 手机号
-   · 修改登录密码
-   · 实名认证、支付密码、安全锁（手势）、安全分 —— 原来散在设置页，现在归到这一页
-   · 登录设备确认 + 退出其他设备
-   ============================================================ */
 struct AccountSecurityView: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
@@ -16,13 +9,13 @@ struct AccountSecurityView: View {
     @State private var hasPay = false
     @State private var showChangePwd = false
     @State private var confirmLogoutOthers = false
-    /// 安全中心（冻结 / 解冻 / 自助解封）
+
     @State private var showSafety = false
 
     private var me: User? { app.me }
     private var phoneText: String {
         let p = (me?.phone ?? "").trimmingCharacters(in: .whitespaces)
-        return p.isEmpty ? Tr("未绑定") : maskPhone(p)      // 中间打码：138****8888
+        return p.isEmpty ? Tr("未绑定") : maskPhone(p)
     }
     private var usernameText: String {
         let u = (me?.username ?? "").trimmingCharacters(in: .whitespaces)
@@ -51,8 +44,7 @@ struct AccountSecurityView: View {
                         }
                         .buttonStyle(.plain)
                         HairLine(inset: 16)
-                        /* 2026-10-12 用户要求「微信的真实封号和解冻、可以自己冻结做出来对齐」：
-                           名字用「安全中心」（2026-10-13 用户要求：不要写「微信安全中心」） */
+
                         Button { showSafety = true } label: {
                             row(Tr("安全中心"), Tr("冻结 / 解冻 / 自助解封"), chevron: true)
                         }
@@ -63,7 +55,7 @@ struct AccountSecurityView: View {
                     Spacer().frame(height: 8)
 
                     GroupCard {
-                        /* 二级菜单整页进（以前是 sheet 从底下冒出来） */
+
                         NavigationLink(value: "changepwd") {
                             row(Tr("修改登录密码"), "", chevron: true)
                         }
@@ -85,7 +77,7 @@ struct AccountSecurityView: View {
                         }
                         .buttonStyle(.plain)
                         HairLine(inset: 16)
-                        /* 声音锁（微信同一个位置：账号与安全 → 声音锁） */
+
                         NavigationLink(value: "voicelock") {
                             row(Tr("声音锁"),
                                 VoiceLockStore.enabled ? Tr("已开启") : Tr("未开启"), chevron: true)
@@ -101,10 +93,7 @@ struct AccountSecurityView: View {
                     Spacer().frame(height: 8)
 
                     GroupCard {
-                        /* 微信这一页就是「登录设备管理」：列出所有登录过的手机
-                           （真设备名 + 系统 + 最后登录时间 + 本机）。
-                           以前这里还有一行「登录设备确认」——点进去是一串 6 位数字，
-                           用户看着跟微信对不上，现在把它收进「登录设备管理」页里了。 */
+
                         NavigationLink(value: "devices") {
                             row(Tr("登录设备管理"), "", chevron: true)
                         }
@@ -132,7 +121,7 @@ struct AccountSecurityView: View {
         .toolbar(.hidden, for: .navigationBar)
         .swipeBack { dismiss() }
         .hidesTabBar()
-        /* 安全中心：冻结 / 解冻 / 自助解封（AccountSafety.swift） */
+
         .sheet(isPresented: $showSafety) {
             AccountSafetyCenterView().environmentObject(app)
         }
@@ -174,9 +163,6 @@ struct AccountSecurityView: View {
     }
 }
 
-/* ============================================================
-   修改登录密码（微信「账号与安全 → 修改密码」）
-   ============================================================ */
 struct ChangePasswordSheet: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -231,7 +217,7 @@ struct ChangePasswordSheet: View {
         .background(C.pageBg.ignoresSafeArea(edges: .top))
         .toolbar(.hidden, for: .navigationBar)
         .hidesTabBar()
-        /* 2026-10-16：改密码页补左滑返回（同一个 App 里别有的能滑有的不能） */
+
         .swipeBack { dismiss() }
     }
 

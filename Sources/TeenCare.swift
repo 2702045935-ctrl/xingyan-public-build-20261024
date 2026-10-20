@@ -1,25 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   未成年人模式 / 关怀模式（微信「设置」里那两项）
-
-   未成年人模式（照微信官方帮助中心那套流程）：
-     我 → 设置 → 未成年人模式 → **阅读条款** → 「开启」→ **设置独立密码** →
-     **邀请家长为监护人**（这三步就是那"两层"：密码 + 监护人）
-     · 开了以后：「我」页会挂一把**小雨伞**；完全不可访问的：视频号、直播、游戏、
-       附近的人、摇一摇、搜一搜；微信支付可以按需调整
-     · 关闭 / 改设置 / 换监护人：都要独立密码
-     · 服务端（/api/me/teen）真的会把这些接口挡住，不是只改界面
-
-   关怀模式（照微信）：文字更大、色彩更强、按钮更大；还能开「听文字消息」——
-     开启后点一下聊天里的文字消息就念出来。
-   ============================================================ */
-
-/* ---------------------------------------------------------- 未成年人模式 */
-
-/// 一把小雨伞（未成年人模式的标志：微信里开了青少年/未成年人模式，
-/// 「我」页上就会挂这么一把）。**自己画**，不依赖系统 SF Symbols 里有没有伞，
-/// 哪台手机、哪个系统版本都是一样的形状。
 struct UmbrellaIcon: View {
     var color: Color
     var size: CGFloat = 24
@@ -28,7 +8,7 @@ struct UmbrellaIcon: View {
         Canvas { ctx, sz in
             let w = sz.width, h = sz.height
             let domeH = h * 0.56
-            /* 伞面：一条弧 + 下沿的波浪 */
+
             var dome = Path()
             dome.move(to: CGPoint(x: 0, y: domeH))
             dome.addQuadCurve(to: CGPoint(x: w, y: domeH),
@@ -43,7 +23,7 @@ struct UmbrellaIcon: View {
                               control: CGPoint(x: w * 0.125, y: domeH + h * 0.10))
             dome.closeSubpath()
             ctx.fill(dome, with: .color(color))
-            /* 伞柄（底下带个小弯钩） */
+
             var stick = Path()
             stick.move(to: CGPoint(x: w / 2, y: domeH - h * 0.04))
             stick.addLine(to: CGPoint(x: w / 2, y: h * 0.84))
@@ -64,18 +44,17 @@ struct TeenModeView: View {
 
     @State private var cfg: API.TeenStatus?
     @State private var loading = true
-    /// 要独立密码才能做的事
+
     @State private var ask: Ask?
     @State private var pin = ""
     @State private var showSetup = false
     @State private var showGuardian = false
     @State private var guardianDraft = ""
-    /// 通过密码校验后的那一串（换监护人时保存要用）
+
     @State private var guardianPin = ""
 
     private enum Ask: Equatable { case close, guardian, pay(Bool) }
 
-    /// 微信里「启用后完全不可访问」的那几项
     private let blocked: [(String, String)] = [
         ("feed", "视频号"), ("live", "直播"), ("games", "游戏"),
         ("nearby", "附近的人"), ("shake", "摇一摇"), ("search", "搜一搜")
@@ -107,12 +86,12 @@ struct TeenModeView: View {
         .swipeBack { dismiss() }
         .hidesTabBar()
         .task { await load() }
-        /* 开启向导：条款 → 独立密码 → 邀请监护人（微信就是这三步） */
+
         .fullScreenCover(isPresented: $showSetup) {
             TeenSetupWizard { await load() }
                 .environmentObject(app)
         }
-        /* 换监护人 */
+
         .sheet(isPresented: $showGuardian) { guardianSheet }
         .alert(Tr("输入独立密码"), isPresented: Binding(
             get: { ask != nil },
@@ -125,8 +104,6 @@ struct TeenModeView: View {
             Text(Tr("未成年人模式的开关和设置都要这个密码"))
         }
     }
-
-    /* ---------------- 没开启：说明 + 开启 ---------------- */
 
     private var offPage: some View {
         VStack(spacing: 0) {
@@ -174,8 +151,6 @@ struct TeenModeView: View {
                 .padding(.horizontal, 28).padding(.top, 14)
         }
     }
-
-    /* ---------------- 已开启：管理页 ---------------- */
 
     private var onPage: some View {
         VStack(spacing: 0) {
@@ -269,8 +244,6 @@ struct TeenModeView: View {
         .buttonStyle(.plain)
     }
 
-    /* ---------------- 换监护人 ---------------- */
-
     private var guardianSheet: some View {
         VStack(spacing: 0) {
             NavBar(title: Tr("监护人"), back: { showGuardian = false }) {
@@ -296,15 +269,13 @@ struct TeenModeView: View {
             Spacer(minLength: 0)
         }
         .background(C.pageBg.ignoresSafeArea())
-        /* 2026-10-16：换监护人这一层补左滑返回 */
+
         .swipeBack { showGuardian = false }
         .onAppear {
-            /* 服务端只回脱敏号码，回填不了；这里就让用户重新填一次 */
+
             guardianDraft = ""
         }
     }
-
-    /* ---------------- 干活 ---------------- */
 
     private func load() async {
         cfg = try? await API.shared.teen()
@@ -330,7 +301,7 @@ struct TeenModeView: View {
                     cfg = try await API.shared.teenSet(pin: p, enabled: false, scopes: nil, guardianPhone: nil)
                     app.show(Tr("已关闭未成年人模式"))
                 case .guardian:
-                    /* 密码对了才让进去改（错密码服务端会回错误） */
+
                     _ = try await API.shared.teenSet(pin: p, enabled: nil, scopes: nil, guardianPhone: nil)
                     guardianPin = p
                     guardianDraft = ""
@@ -358,12 +329,10 @@ struct TeenModeView: View {
     }
 }
 
-/* ---------------------------------------------------------- 开启向导（条款 → 独立密码 → 监护人） */
-
 struct TeenSetupWizard: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
-    /// 全部走完以后回调（父页面重新拉一次状态）
+
     var onDone: () async -> Void
 
     @State private var step = 0
@@ -409,7 +378,6 @@ struct TeenSetupWizard: View {
         .toolbar(.hidden, for: .navigationBar)
     }
 
-    /* 第 1 层：阅读条款 */
     private var termsStep: some View {
         VStack(spacing: 0) {
             VStack(spacing: 10) {
@@ -446,7 +414,6 @@ struct TeenSetupWizard: View {
         }
     }
 
-    /* 第 2 层：设置独立密码 */
     private var pinStep: some View {
         VStack(spacing: 0) {
             Text(Tr("设置独立密码"))
@@ -487,7 +454,6 @@ struct TeenSetupWizard: View {
         }
     }
 
-    /* 第 3 层：邀请监护人 */
     private var guardianStep: some View {
         VStack(spacing: 0) {
             Text(Tr("邀请家长作为监护人"))
@@ -547,7 +513,6 @@ struct TeenSetupWizard: View {
         .disabled(!enabled)
     }
 
-    /// 真正开工：先设密码（服务端会顺手开启），再把监护人写进去
     private func finish() async {
         busy = true
         error = ""
@@ -567,13 +532,12 @@ struct TeenSetupWizard: View {
     }
 }
 
-/* ---------------------------------------------------------- 关怀模式 */
 struct CareModeView: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
     @State private var on = CareMode.on
-    /// 「听文字消息」（微信关怀模式里的那一项）
+
     @State private var speak = CareMode.speakText
     @State private var confirm = false
 
@@ -582,7 +546,7 @@ struct CareModeView: View {
             NavBar(title: Tr("关怀模式"), back: { dismiss() })
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
-                    /* 顶上那三句就是微信的说法：文字更大、色彩更强、按钮更大 */
+
                     VStack(spacing: 12) {
                         Image(systemName: "figure.wave")
                             .font(.system(size: 48))
@@ -615,12 +579,11 @@ struct CareModeView: View {
                     }
                     .padding(.horizontal, 12)
 
-                    /* 效果预览：开了以后字真的会大一圈（全站字号都被放大） */
                     VStack(spacing: 10) {
                         Text(Tr("效果预览")).font(pf(13)).foregroundColor(C.subLabel)
                         HStack(spacing: 10) {
                             Avatar(path: app.me?.avatarPath ?? "", size: on ? 34 : 30, radius: 5)
-                            Text(Tr("这条消息开了关怀模式会更大")) 
+                            Text(Tr("这条消息开了关怀模式会更大"))
                                 .font(on ? .system(size: 19) : .system(size: 16))
                                 .foregroundColor(C.label)
                                 .padding(.horizontal, 12).padding(.vertical, 8)
@@ -628,7 +591,7 @@ struct CareModeView: View {
                             Spacer(minLength: 0)
                         }
                         HStack {
-                            Text(Tr("通讯录")) 
+                            Text(Tr("通讯录"))
                                 .font(on ? .system(size: 18) : .system(size: 15))
                                 .foregroundColor(C.label)
                             Spacer(minLength: 0)
@@ -644,7 +607,6 @@ struct CareModeView: View {
                     .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
                     .padding(.horizontal, 12).padding(.top, 12)
 
-                    /* 听文字消息：微信关怀模式 8.0.16 之后加的，点一下文字消息就念 */
                     GroupCard {
                         HStack {
                             VStack(alignment: .leading, spacing: 3) {
@@ -684,7 +646,7 @@ struct CareModeView: View {
         .toolbar(.hidden, for: .navigationBar)
         .swipeBack { dismiss() }
         .hidesTabBar()
-        /* 微信开/关都会先问一句（它还要重启微信；我们不用重启，立刻生效） */
+
         .alert(on ? Tr("关闭关怀模式？") : Tr("开启关怀模式？"), isPresented: $confirm) {
             Button(Tr("取消"), role: .cancel) { pending = on }
             Button(Tr("确定")) {

@@ -1,18 +1,7 @@
 import SwiftUI
 
-/* ============================================================
-   登录滑动验证（拖滑块拼图）
-   服务端出一题：坐标系多大、缺口在哪、背景用什么种子画。
-   这里把背景画出来、把缺口挖个暗坑、再放一个能拖的滑块；
-   松手把落点报回服务端，对上了就换来一张一次性通行证交给登录用。
-
-   注意：客户端**不自己判对错**，对不对由服务端说了算。
-   ============================================================ */
-
-/// 登录时才滑出来的安全验证弹层。
-/// 微信那种体验：平时页面上什么都不占，服务端判定有风险了才从底部滑出来。
 struct SliderSheet: View {
-    /// 换题用的 key：每次弹出来都换一道新题
+
     var freshKey: Int = 0
     var onPass: (String) -> Void
 
@@ -46,16 +35,16 @@ struct SliderSheet: View {
                 }
             }
         }
-        /* 从底部滑出来一小块就够（拼图 130 + 滑轨 44 + 文字），不铺满整屏 */
+
         .presentationDetents([.height(320)])
         .presentationDragIndicator(.visible)
     }
 }
 
 struct SliderCaptchaView: View {
-    /// 验证通过：把一次性通行证交给登录
+
     let onTicket: (String) -> Void
-    /// 没对上：给外面报个错误（可选）
+
     var onFail: ((String) -> Void)? = nil
 
     @State private var challenge: API.SliderChallenge? = nil
@@ -81,8 +70,6 @@ struct SliderCaptchaView: View {
         .task { await load() }
     }
 
-    /* ---------------------------------------------------------- 拼图区 */
-
     private var puzzle: some View {
         let w = CGFloat(challenge?.width ?? 260)
         let h = CGFloat(challenge?.height ?? 130)
@@ -93,7 +80,6 @@ struct SliderCaptchaView: View {
             SliderScene(seed: challenge?.seed ?? 1)
                 .frame(width: w, height: h)
 
-            /* 缺口：一个暗坑 + 白边（位置由服务端定） */
             RoundedRectangle(cornerRadius: 6, style: .continuous)
                 .fill(Color.black.opacity(done ? 0.12 : 0.36))
                 .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous)
@@ -101,7 +87,6 @@ struct SliderCaptchaView: View {
                 .frame(width: pw, height: pw)
                 .offset(x: tx, y: ty)
 
-            /* 滑块：内容是「同一张图的同一块」，所以推到位就正好补齐缺口 */
             piece(w: w, h: h, pw: pw, tx: tx, ty: ty)
                 .offset(x: dragX, y: ty)
         }
@@ -124,8 +109,6 @@ struct SliderCaptchaView: View {
             .shadow(color: .black.opacity(0.25), radius: 2, x: 0, y: 1)
     }
 
-    /* ---------------------------------------------------------- 下面那条滑轨 */
-
     private var track: some View {
         let w = CGFloat(challenge?.width ?? 260)
         let pw = CGFloat(challenge?.piece ?? 44)
@@ -135,7 +118,6 @@ struct SliderCaptchaView: View {
                 .fill(Color.dyn(0xF2F2F3, 0x2A2A2C))
                 .frame(height: trackH)
 
-            /* 拖过的部分填一层浅色，看着像"已经滑了这么多" */
             RoundedRectangle(cornerRadius: 6, style: .continuous)
                 .fill((done ? C.green : Color.dyn(0x19A47A, 0x1DC9BD)).opacity(0.16))
                 .frame(width: dragX + pw, height: trackH)
@@ -169,8 +151,6 @@ struct SliderCaptchaView: View {
         )
     }
 
-    /* ---------------------------------------------------------- 动作 */
-
     private func load() async {
         done = false
         busy = false
@@ -193,7 +173,7 @@ struct SliderCaptchaView: View {
                                                               x: Double(dragX),
                                                               y: c.targetY)
                 done = true
-                /* 视觉上把它吸到缺口里，看着就"补齐了" */
+
                 withAnimation(.easeOut(duration: 0.15)) { dragX = CGFloat(c.targetX) }
                 note = "验证通过"
                 onTicket(ticket)
@@ -210,12 +190,6 @@ struct SliderCaptchaView: View {
         }
     }
 }
-
-/* ============================================================
-   滑块验证那张"图"：用服务端给的 seed 画出来。
-   背景和滑块用的是同一个视图 + 同一个 seed，
-   所以滑块里那块内容天然跟背景对得上（不是贴图）。
-   ============================================================ */
 
 struct SliderScene: View {
     let seed: Int
@@ -240,7 +214,6 @@ struct SliderScene: View {
         }
     }
 
-    /// seed → 稳定的 0.08~0.92（两边画出来必须一模一样，所以不能用 random）
     static func frac(_ seed: Int, _ i: Int) -> CGFloat {
         var x = UInt64(truncatingIfNeeded: seed &* 2654435761 &+ i &* 40503)
         x ^= x >> 13

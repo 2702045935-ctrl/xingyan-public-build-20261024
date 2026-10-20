@@ -3,27 +3,15 @@ import AVFoundation
 import Speech
 import Accelerate
 
-/* ============================================================
-   声音锁（微信「我 → 设置 → 账号与安全 → 声音锁」那一套）
-   · 开通：屏幕给 8 位数字，按住读一遍；换一组数字，再读一遍
-   · 使用：登录页点「声音锁」，读出屏幕上的数字 → 进去
-   和微信一样是两道关：
-     ① 数字 —— 屏幕上是随机的，必须真的念出来（用系统语音识别，**在本机认**，音频不出手机）
-     ② 声纹 —— 录下来的频谱特征和开通时存的那份比对，模板只存这台手机的钥匙串
-   声纹松紧后台能调：data/ui.json 里写 {"voiceMinScore": 0.42}（0~1，越大越严）
-   ============================================================ */
-
 enum VoiceLockStore {
     private static let onKey = "voiceLockOn"
     private static let printKey = "voiceLockPrint"
     private static let userKey = "voiceLockUser"
 
-    /// 开通过没有（开关和模板都在才算）
     static var enabled: Bool { Keychain.get(onKey) == "1" && !template.isEmpty }
-    /// 这把锁绑在哪个账号上（换账号要重设）
+
     static var boundUser: String { Keychain.get(userKey) ?? "" }
 
-    /// 声纹模板：一串小数（频谱特征）
     static var template: [Double] {
         guard let s = Keychain.get(printKey), !s.isEmpty else { return [] }
         return s.split(separator: ",").compactMap { Double($0) }
@@ -41,7 +29,6 @@ enum VoiceLockStore {
         Keychain.remove(onKey)
     }
 
-    /// 像不像同一个人：阈值默认 0.42，后台 data/ui.json 的 voiceMinScore 能改
     static var minScore: Double { Double(UIConfig.num("voiceMinScore", 0.42)) }
 
     static func voiceMatches(_ v: [Double]) -> (ok: Bool, score: Double) {
@@ -52,10 +39,6 @@ enum VoiceLockStore {
     }
 }
 
-/* ------------------------------------------------------------ 声纹特征 */
-
-/// 把一段录音变成一串特征：24 个频带的能量（均值 + 波动），再标准化。
-/// 同一个人读同一批数字，这串特征的形状很像；换个人就不像。
 enum VoicePrint {
     static let bands = 24
 
@@ -70,7 +53,6 @@ enum VoicePrint {
         var window = [Float](repeating: 0, count: n)
         vDSP_hann_window(&window, vDSP_Length(n), Int32(vDSP_HANN_NORM))
 
-        /* 频带边界：80Hz 到 8kHz（超过采样率一半就砍掉）等分 */
         let top = min(8000.0, sampleRate / 2)
         let edges = melEdges(from: 80, to: max(top, 400), count: bands + 1)
         let binHz = sampleRate / Double(n)
@@ -125,7 +107,7 @@ enum VoicePrint {
             meanPart.append(mean)
             stdPart.append(v.squareRoot())
         }
-        /* 两半各自去均值再归一：整体音量大小就不影响比对了 */
+
         return normalize(meanPart) + normalize(stdPart)
     }
 
@@ -165,9 +147,6 @@ enum VoicePrint {
     }
 }
 
-/* ------------------------------------------------------------ 录音 + 本机识别 */
-
-/// 录音线程和主线程都要碰的盒子：tap 回调跑在音频线程上，不能直接摸 View 的东西
 private final class VoiceBox {
     private let lock = NSLock()
     private var buf: [Float] = []
@@ -193,14 +172,12 @@ private final class VoiceBox {
     }
 }
 
-/// 数字这一套（随机 8 位、把听到的话变成数字、对不上）—— 纯函数，谁都能用
 enum VoiceDigits {
-    /// 微信那种「随机 8 位数字」
+
     static func random() -> String {
         (0..<8).map { _ in String(Int.random(in: 0...9)) }.joined()
     }
 
-    /// 识别出来的话 → 数字串（"一 二 三" / "123" / "幺二三" 都认）
     static func digits(_ s: String) -> String {
         let map: [Character: String] = ["零": "0", "〇": "0", "○": "0", "洞": "0",
                                         "一": "1", "幺": "1", "二": "2", "两": "2",
@@ -217,7 +194,6 @@ enum VoiceDigits {
         return out
     }
 
-    /// 读的和屏幕上的对不对：听漏一个字也放过（差一个字的距离）
     static func match(_ heard: String, _ want: String) -> Bool {
         guard want.count >= 4, !heard.isEmpty else { return false }
         if heard.contains(want) { return true }
@@ -241,7 +217,6 @@ enum VoiceDigits {
     }
 }
 
-/// 按住说话那一套：一边录一边让系统在本机认字，松手算特征
 @MainActor
 final class VoiceReader: ObservableObject {
     @Published var listening = false
@@ -255,7 +230,7 @@ final class VoiceReader: ObservableObject {
     private var said = ""
     private var done: (([Double], String) -> Void)?
     private var timeout: Task<Void, Never>?
-    /// 权限那一串是异步的，这中间别被别人又按一下重复开（会开起两路麦克风）
+
     private var starting = false
     private let box = VoiceBox()
 
@@ -299,7 +274,7 @@ final class VoiceReader: ObservableObject {
 
         let node = engine.inputNode
         let fmt = node.outputFormat(forBus: 0)
-        /* 格式没准备好（采样率 0）时硬装 tap 会抛 ObjC 异常、Swift 抓不住，直接闪退 */
+
         guard fmt.sampleRate > 0, fmt.channelCount > 0 else {
             lastError = "麦克风还没准备好，再按一次"
             finish([])
@@ -310,7 +285,7 @@ final class VoiceReader: ObservableObject {
         let req = SFSpeechAudioBufferRecognitionRequest()
         req.shouldReportPartialResults = true
         req.taskHint = .dictation
-        /* 声音锁的录音不出手机：只在**本机**认 */
+
         if recognizer?.supportsOnDeviceRecognition == true { req.requiresOnDeviceRecognition = true }
         request = req
 
@@ -321,7 +296,7 @@ final class VoiceReader: ObservableObject {
         }
 
         node.removeTap(onBus: 0)
-        let tap = self.box          // 只把这个盒子交给音频线程（self 用弱引用，别让它俩互相拽住）
+        let tap = self.box
         node.installTap(onBus: 0, bufferSize: 2048, format: fmt) { [weak self] buf, _ in
             req.append(buf)
             guard let ch = buf.floatChannelData?[0] else { return }
@@ -340,7 +315,7 @@ final class VoiceReader: ObservableObject {
             return
         }
         listening = true
-        /* 12 秒还没松手就自己收（别把麦克风一直占着） */
+
         timeout?.cancel()
         timeout = Task { @MainActor in
             try? await Task.sleep(nanoseconds: 12_000_000_000)
@@ -358,7 +333,7 @@ final class VoiceReader: ObservableObject {
         if engine.isRunning { engine.stop() }
         engine.inputNode.removeTap(onBus: 0)
         request?.endAudio()
-        /* 等系统把最后一句吐完（最多 1 秒），再算声纹 */
+
         Task { @MainActor in
             try? await Task.sleep(nanoseconds: 900_000_000)
             let s = self.box.samples()
@@ -371,7 +346,6 @@ final class VoiceReader: ObservableObject {
         }
     }
 
-    /// 收工：把结果交给调用方（读不到就交空的）
     private func finish(_ feats: [Double]) {
         listening = false
         starting = false
@@ -383,9 +357,6 @@ final class VoiceReader: ObservableObject {
     }
 }
 
-/* ------------------------------------------------------------ 界面零件 */
-
-/// 8 位数字（微信那种一格一格的大字）
 struct VoiceDigitsRow: View {
     let digits: String
 
@@ -402,7 +373,6 @@ struct VoiceDigitsRow: View {
     }
 }
 
-/// 说话时跳的那几根小竖条（微信录声音锁时也有）
 struct VoiceLevelBars: View {
     var level: Double
     var active: Bool
@@ -421,7 +391,6 @@ struct VoiceLevelBars: View {
     }
 }
 
-/// 「按住 读出以上数字」那颗按钮（松手就结束）
 struct VoiceReadButton: View {
     var listening: Bool
     var disabled: Bool = false
@@ -449,24 +418,21 @@ struct VoiceReadButton: View {
     }
 }
 
-/* ------------------------------------------------------------ 设置声音锁 */
-
-/// 我 → 设置 → 账号与安全 → 声音锁（开通 / 重新设置 / 关闭）
 struct VoiceLockSetupView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var app: AppState
 
     @StateObject private var reader = VoiceReader()
     @State private var on = VoiceLockStore.enabled
-    /// 0 还没开始 · 1 读第一遍 · 2 读第二遍
+
     @State private var step = 0
     @State private var digits = ""
     @State private var tip = ""
     @State private var error = ""
     @State private var firstPrint: [Double] = []
-    /// 这次是来「关闭」的：先读一遍验身份
+
     @State private var closing = false
-    /// 这次要先读一遍确认是本人（关 / 重设都要；第一次开通不用）
+
     @State private var verifyFirst = false
 
     var body: some View {
@@ -485,7 +451,6 @@ struct VoiceLockSetupView: View {
         .onDisappear { if reader.listening { reader.stop() } }
     }
 
-    /* 已经开了：只有两行，和微信一样 */
     private var enabledBody: some View {
         ScrollView {
             VStack(spacing: 0) {
@@ -502,7 +467,6 @@ struct VoiceLockSetupView: View {
         .background(C.pageBg)
     }
 
-    /* 没开过 / 正在设置 */
     private var setupBody: some View {
         VStack(spacing: 16) {
             if step == 0 {
@@ -574,7 +538,7 @@ struct VoiceLockSetupView: View {
 
     private func begin(closing: Bool) {
         self.closing = closing
-        /* 已经开通过的：先读一遍确认是本人（微信也是这个顺序） */
+
         verifyFirst = VoiceLockStore.enabled
         step = 1
         firstPrint = []
@@ -583,7 +547,6 @@ struct VoiceLockSetupView: View {
         digits = VoiceDigits.random()
     }
 
-    /// 松手以后拿到（特征, 听到的话），在这里判定
     private func handle(_ feats: [Double], _ said: String) {
         if !reader.lastError.isEmpty {
             error = reader.lastError
@@ -592,11 +555,11 @@ struct VoiceLockSetupView: View {
         let heard = VoiceDigits.digits(said)
         guard VoiceDigits.match(heard, digits) else {
             error = heard.isEmpty ? Tr("没听清，凑近一点、大声一点再读一遍") : Tr("读的和屏幕上的数字不一样")
-            digits = VoiceDigits.random()          // 换一组，别照着刚念的那组再来
+            digits = VoiceDigits.random()
             return
         }
         error = ""
-        /* 已经开通过的：这一遍只是确认是本人（数字之外再比一次声纹） */
+
         if verifyFirst {
             let m = VoiceLockStore.voiceMatches(feats)
             if !m.ok {
@@ -612,7 +575,7 @@ struct VoiceLockSetupView: View {
                 dismiss()
                 return
             }
-            /* 重新设置：验过之后从第一遍重新读 */
+
             step = 1
             firstPrint = []
             tip = Tr("请读出以下数字")
@@ -630,7 +593,7 @@ struct VoiceLockSetupView: View {
             digits = VoiceDigits.random()
             return
         }
-        /* 两遍都过了：模板取两次的平均，只存这台手机的钥匙串 */
+
         VoiceLockStore.enable(template: VoicePrint.average(firstPrint, feats),
                               user: app.me?.username ?? "")
         on = true
@@ -639,9 +602,6 @@ struct VoiceLockSetupView: View {
     }
 }
 
-/* ------------------------------------------------------------ 用声音锁登录 */
-
-/// 读屏幕上的数字 → 数字对 + 声纹像 → 放行（登录页点「声音锁」弹这个）
 struct VoiceUnlockView: View {
     var onOk: () -> Void
 
@@ -712,13 +672,13 @@ struct VoiceUnlockView: View {
             error = reader.lastError
             return
         }
-        /* ① 数字对不对 */
+
         let heard = VoiceDigits.digits(said)
         guard VoiceDigits.match(heard, digits) else {
             fail(heard.isEmpty ? Tr("没听清，再读一遍") : Tr("读的数字不对"))
             return
         }
-        /* ② 声纹像不像开通时的那个人 */
+
         let m = VoiceLockStore.voiceMatches(feats)
         guard m.ok else {
             fail(m.score > 0 ? Tr("这个声音和开通时不太像") : Tr("没听清，再读一遍"))

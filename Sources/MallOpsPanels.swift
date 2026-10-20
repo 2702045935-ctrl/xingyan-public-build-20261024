@@ -1,16 +1,5 @@
 import SwiftUI
 
-/* ============================================================
-   商城后台的「订单发货 / 发券 / 售后」三块（2026-10-16 用户：
-   「缺的补上」「给 app 管理」「后台部分」）。
-
-   对着京东商家后台补的：
-     · 订单发货：待发货列表 → 填快递公司 + 运单号 → 发货（用户端立刻能看到**真实**快递轨迹）
-     · 发券：给某个人发 / 给所有人发（面额、门槛、有效期、张数），发完对方收到系统消息
-     · 售后：用户提交退款/退货/换货 → 这里审核，同意就退到零钱
-   数据都在服务器（/api/ops/mallorders、/api/ops/coupon/send、/api/ops/aftersales）。
-   ============================================================ */
-
 struct MallOpsSection: View {
     @EnvironmentObject private var app: AppState
 
@@ -21,7 +10,7 @@ struct MallOpsSection: View {
     @State private var pushing: API.OpsOrderRow? = nil
     @State private var reviewing: API.AfterSaleRow? = nil
     @State private var showSend = false
-    /// 只发这个人的券（空 = 所有人）
+
     @State private var sendTo = ""
 
     var body: some View {
@@ -52,8 +41,6 @@ struct MallOpsSection: View {
         afterSales = await b
         loading = false
     }
-
-    /* ---------------- 订单发货 ---------------- */
 
     private var orderCard: some View {
         VStack(spacing: 0) {
@@ -103,8 +90,6 @@ struct MallOpsSection: View {
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    /* ---------------- 售后 ---------------- */
-
     private var afterSaleCard: some View {
         VStack(spacing: 0) {
             header(Tr("售后处理"), sub: Tr("待处理 ") + String(afterSales.count) + Tr(" 单"), reload: nil)
@@ -144,8 +129,6 @@ struct MallOpsSection: View {
         default:         return Tr("退款")
         }
     }
-
-    /* ---------------- 发券 ---------------- */
 
     private var couponCard: some View {
         VStack(spacing: 0) {
@@ -190,8 +173,6 @@ struct MallOpsSection: View {
             .padding(.horizontal, 16).padding(.bottom, 14)
     }
 }
-
-/* ---------------- 发货：填快递公司 + 单号 ---------------- */
 
 struct ShipSheet: View {
     @EnvironmentObject private var app: AppState
@@ -268,8 +249,6 @@ struct ShipSheet: View {
     }
 }
 
-/* ---------------- 补一条物流 ---------------- */
-
 struct PushTrackSheet: View {
     @EnvironmentObject private var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -332,8 +311,6 @@ struct PushTrackSheet: View {
     }
 }
 
-/* ---------------- 售后审核 ---------------- */
-
 struct AfterSaleReviewSheet: View {
     @EnvironmentObject private var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -392,8 +369,6 @@ struct AfterSaleReviewSheet: View {
         else { app.show(Tr("处理失败")) }
     }
 }
-
-/* ---------------- 发券 ---------------- */
 
 struct SendCouponSheet: View {
     @EnvironmentObject private var app: AppState
