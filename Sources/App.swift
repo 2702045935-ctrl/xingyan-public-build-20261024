@@ -1077,7 +1077,7 @@ struct RootView: View {
                        那个坑（sheet 叠 sheet 被系统丢掉）已经在 openWay/afterSheet 里修好了：
                        先把上一个弹窗关掉、等它收完再开目标页。
                        微信风那版 LoginViewOld 一行没删，随时能切回来。 */
-                    LoginView()
+                    HarmonyLoginView()
                 } else if app.me?.needsOnboarding == true {
                     NewUserOnboardingView()
                         .environmentObject(app)

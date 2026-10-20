@@ -20,7 +20,6 @@ struct SwitchAccountView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var growth = GrowthStore.shared
 
-    @State private var managing = false
     @State private var adding = false
     @State private var busy = ""
     @State private var note = ""
@@ -37,8 +36,8 @@ struct SwitchAccountView: View {
                再也不动那个公共组件。 */
             HStack(spacing: 0) {
                 Button { dismiss() } label: {
-                    Text(Tr("关闭"))
-                        .font(pf(17))
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 19, weight: .medium))
                         .foregroundColor(C.label)
                         .frame(height: L.navH)
                         .padding(.horizontal, 16)
@@ -48,17 +47,7 @@ struct SwitchAccountView: View {
                 Spacer(minLength: 0)
                 Text(Tr("切换账号")).font(pf(17, .semibold)).foregroundColor(C.label)
                 Spacer(minLength: 0)
-                Button {
-                    withAnimation(.easeInOut(duration: 0.18)) { managing.toggle() }
-                } label: {
-                    Text(Tr(managing ? "完成" : "管理"))
-                        .font(pf(16))
-                        .foregroundColor(managing ? C.green : C.label)
-                        .frame(height: L.navH)
-                        .padding(.horizontal, 16)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
+                Color.clear.frame(width: 51, height: L.navH)
             }
             .frame(height: L.navH)
             .background(C.navBg)
@@ -72,22 +61,21 @@ struct SwitchAccountView: View {
                     /* 照截图量：这行字是**居中**的（x 284~970，中心 627 ≈ 屏幕中心），
                        原文是「轻触头像以切换**账号**」。 */
                     Text(Tr("轻触头像以切换账号"))
-                        .font(pf(13))
-                        .foregroundColor(C.subLabel)
+                        .font(pf(16.5))
+                        .foregroundColor(C.label)
                         .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.top, 12)
-                        .padding(.bottom, 10)
+                        .padding(.top, 56)
+                        .padding(.bottom, 40)
 
                     /* 用户指出微信这里是**一条条独立的卡片**（不是一个整块 + 细线）：
                        每个账号一张圆角卡（12）、卡与卡之间留 10pt 缝、最下面「添加账号」也是一张卡。 */
-                    VStack(spacing: 10) {
+                    VStack(spacing: 12) {
                         ForEach(app.accounts) { acct in
                             accountRow(acct)
                         }
                         addRow
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.top, 10)
+                    .padding(.horizontal, 24)
 
                     if !note.isEmpty {
                         Text(note)
@@ -107,8 +95,8 @@ struct SwitchAccountView: View {
         .toolbar(.hidden, for: .navigationBar)
         .swipeBack { dismiss() }
         .hidesTabBar()
-        .sheet(isPresented: $adding) {
-            AccountLoginSheet(mode: .password)
+        .fullScreenCover(isPresented: $adding) {
+            HarmonyLoginView()
                 .environmentObject(app)
         }
     }
@@ -124,11 +112,11 @@ struct SwitchAccountView: View {
             tap(a, current: current)
         } label: {
             /* 截图量出来：名字左边那条线在 x≈103pt（卡片内缩 12 + 内边距 16 + 头像 60 + 缝 15） */
-            HStack(spacing: 15) {
-                Avatar(path: a.avatar, size: 60, radius: 6, level: levelOf(a))
-                    .frame(width: 60, height: 60)
+            HStack(spacing: 12) {
+                Avatar(path: a.avatar, size: 48, radius: 7, level: levelOf(a))
+                    .frame(width: 48, height: 48)
 
-                VStack(alignment: .leading, spacing: 5) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(a.nickname.isEmpty ? a.username : a.nickname)
                         .font(pf(17))
                         .foregroundColor(C.label)
@@ -143,24 +131,26 @@ struct SwitchAccountView: View {
 
                 if busy == a.username {
                     ProgressView()
-                } else if managing, !current {
-                    Text(Tr("移除"))
-                        .font(pf(15))
-                        .foregroundColor(C.red)
                 } else if current {
                     Text(Tr("当前使用"))
-                        .font(pf(13))
+                        .font(pf(13.5))
                         .foregroundColor(C.subLabel)
                 }
             }
             .padding(.horizontal, 16)
-            .frame(height: 84)
-            /* 一张卡：圆角 12、实色，和下面「添加账号」同一种 */
+            .frame(height: 80)
             .background(C.cardBg)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .contextMenu {
+            if !current {
+                Button(role: .destructive) { remove(a) } label: {
+                    Label(Tr("从这台设备移除"), systemImage: "trash")
+                }
+            }
+        }
     }
 
     /// 最后一行「添加账号」：和上面同一种行，左边一个灰底方角块里一个加号。
@@ -168,11 +158,11 @@ struct SwitchAccountView: View {
         Button { adding = true } label: {
             HStack(spacing: 12) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
                         .fill(Color.dyn(0xEDEDED, 0x2C2C2E))
-                        .frame(width: 56, height: 56)
+                        .frame(width: 48, height: 48)
                     Image(systemName: "plus")
-                        .font(.system(size: 21, weight: .regular))
+                        .font(.system(size: 20, weight: .regular))
                         .foregroundColor(C.subLabel)
                 }
                 Text(Tr("添加账号"))
@@ -181,9 +171,9 @@ struct SwitchAccountView: View {
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 16)
-            .frame(height: 84)
+            .frame(height: 80)
             .background(C.cardBg)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -199,10 +189,6 @@ struct SwitchAccountView: View {
     }
 
     private func tap(_ a: SavedAccount, current: Bool) {
-        if managing {
-            if !current { remove(a) }
-            return
-        }
         guard !current, busy.isEmpty else { return }
         switchTo(a)
     }
@@ -227,6 +213,5 @@ struct SwitchAccountView: View {
         AccountStore.remove(username: a.username)
         app.accounts = AccountStore.load()
         app.show(Tr("已移除") + "「" + a.nickname + "」")
-        if app.accounts.isEmpty { managing = false }
     }
 }
