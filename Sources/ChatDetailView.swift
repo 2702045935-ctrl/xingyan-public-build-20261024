@@ -652,6 +652,8 @@ struct ChatDetailView: View {
     @State private var scroller: ScrollViewProxy?
     /// 上滑自动加载的节流：0.4 秒内只触发一次，免得一屏里反复触发
     @State private var lastOlderLoad = Date.distantPast
+    /// 新消息在底部到达时隔流写服务端已读，避免多端反复显示旧未读。
+    @State private var lastReadSyncAt = Date.distantPast
     /// 刚选好的照片/视频/实况：先出预览页（原图、实况开关），点发送才真发
     @State private var pendingMedia: MediaSendSheet.Payload?
     /// 点视频气泡 / 长按实况 → 全屏播放这个视频
@@ -1580,11 +1582,13 @@ struct ChatDetailView: View {
                 guard atBottomNow || messages.last?.senderId == myId else { return }
                 scrollToEnd(proxy, animated: false)
                 scheduleSettledBottom()
+                markConversationReadSoon()
             }
             .onChange(of: scrollTick) { _ in
                 atBottom = true                       // 用户自己点的「回到底部」
                 wasAtBottom = true
                 scrollToEnd(proxy, animated: true)
+                markConversationReadSoon()
             }
             /* 键盘 / 面板引起的贴底：不带动画，直接贴（见 pinToBottomSoon 的说明） */
             .onChange(of: pinTick) { _ in
@@ -1688,6 +1692,13 @@ struct ChatDetailView: View {
            不然长文排完版 / 图片解码完就把正在翻历史的人拽回去了。 */
         if let g = ChatScrollHandle.shared.gap, g > 200 { return }
         pinTick += 1
+    }
+
+    private func markConversationReadSoon() {
+        let now = Date()
+        guard now.timeIntervalSince(lastReadSyncAt) > 1.5 else { return }
+        lastReadSyncAt = now
+        Task { await API.shared.markRead(chatId: chat.id) }
     }
 
     /// 只保留最后一次布局变化后的贴底，避免多个延时任务来回推动聊天区。
@@ -3753,7 +3764,7 @@ struct ChatDetailView: View {
                 var latestChat: Chat? = nil
                 var more = false
                 var since = cachedLastSeq
-                for _ in 0..<50 {
+                for _ in 0..<100 {
                     let page = try await API.shared.messagesSince(chatId: chat.id, since: since, limit: 200)
                     if let c = page.chat { latestChat = c }
                     incoming.append(contentsOf: page.messages)
