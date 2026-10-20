@@ -497,6 +497,7 @@ const MENUS = [
   { key: 'alerts', icon: '🚨', name: '告警配置', perm: 'ops', group: '系统设置' },
   { key: 'whitelist', icon: '🧱', name: '访问白名单', perm: 'admins', group: '系统设置' },
   { key: 'ops', icon: '⚙️', name: '运维 / 系统公告', perm: 'ops', group: '系统设置' },
+  { key: 'vault', icon: '🔐', name: '密钥与安全审计', perm: 'admins', superOnly: true, group: '系统设置' },
   { key: 'sms', icon: '📱', name: '短信通道', perm: 'ops', superOnly: true, group: '系统设置' },
   { key: 'push', icon: '🔔', name: '推送通知', perm: 'ops', superOnly: true, group: '系统设置' },
 
@@ -1309,7 +1310,9 @@ PAGES.risk = async () => {
 const RISK_KIND_NAME = {
   sensitive: '命中敏感词', link: '发外链', mass_send: '群发同一内容', fast_send: '发送过快',
   fast_friend: '加好友过快', report: '被举报', login_new_device: '新设备登录',
-  same_ip_multi: '同 IP 多账号', signup_burst: '同 IP 批量注册'
+  same_ip_multi: '同 IP 多账号', same_device_multi: '同设备多账号',
+  device_switch_burst: '短时频繁换设备', device_revoked_access: '撤销设备继续访问',
+  signup_burst: '同 IP 批量注册'
 };
 function riskLevelBadge(lv) {
   if (lv === '高危') return badge(lv, 'r');
@@ -4684,6 +4687,53 @@ function editIcon(it, current, all) {
 }
 
 /* ---------------- 审计日志 ---------------- */
+
+PAGES.vault = async () => {
+  const d = await api('/security/vault?limit=200');
+  const purposes = Object.entries(d.vault.purposes || {}).map(([name, row]) =>
+    '<tr><td>' + esc(name) + '</td><td><b>v' + esc(row.active) + '</b></td>'
+    + '<td>' + esc((row.versions || []).map((v) => 'v' + v).join(' / ')) + '</td>'
+    + '<td><code>' + esc(row.fingerprint) + '</code></td></tr>').join('');
+  const events = (d.events || []).map((e) =>
+    '<tr><td>' + esc(hm(e.at)) + '</td><td>' + badge(e.action, 'b') + '</td>'
+    + '<td>' + esc(e.actor) + '</td><td>' + esc(JSON.stringify(e.details || {})) + '</td>'
+    + '<td><code>' + esc(String(e.hash || '').slice(0, 16)) + '</code></td></tr>').join('');
+  $('content').innerHTML =
+    '<div class="panel"><h3>密钥层级<span class="sp"></span><span class="hint">'
+    + esc(d.vault.provider) + '</span></h3><table>'
+    + '<tr><th>用途</th><th>当前版本</th><th>保留版本</th><th>密钥指纹</th></tr>'
+    + (purposes || '<tr><td colspan="4"><div class="empty">没有密钥记录</div></td></tr>')
+    + '</table></div>'
+    + '<div class="panel"><h3>防篡改审计链<span class="sp"></span>'
+    + '<span class="hint">' + (d.auditChain.ok
+      ? '校验通过 · ' + d.auditChain.rows + ' 条'
+      : '校验失败 · 断点 ' + d.auditChain.brokenAt) + '</span></h3><div class="body">'
+    + '<div class="hint">管理员操作、设备注册、风控事件和密钥轮换都会写入链式哈希审计。</div>'
+    + (ME && ME.role === 'super'
+      ? '<div class="row" style="margin-top:10px"><button class="btn red" id="vaultRotate">轮换消息密钥</button>'
+        + '<span class="hint">需要再次输入当前管理员密码；旧版本密钥保留，历史消息不受影响。</span></div>'
+      : '')
+    + '</div></div>'
+    + '<div class="panel"><h3>最近安全事件<span class="sp"></span><span class="hint">只追加、不可删除</span></h3>'
+    + '<table><tr><th>时间</th><th>事件</th><th>操作者</th><th>详情</th><th>哈希</th></tr>'
+    + (events || '<tr><td colspan="5"><div class="empty">还没有安全事件</div></td></tr>')
+    + '</table></div>';
+  const rotate = $('vaultRotate');
+  if (rotate) rotate.addEventListener('click', async () => {
+    const password = prompt('再次输入当前管理员密码');
+    if (!password) return;
+    const reason = prompt('轮换原因', '定期轮换') || '定期轮换';
+    if (!confirm('确认轮换消息落盘密钥？新消息会立即使用新版本。')) return;
+    try {
+      await api('/security/vault/rotate', {
+        method: 'POST',
+        body: { purpose: 'message', password, reason }
+      });
+      toast('消息密钥已轮换');
+      PAGES.vault();
+    } catch (e) { toast(e.message, true); }
+  });
+};
 
 PAGES.audit = async () => {
   const st = STATE.audit = Object.assign({ q: '', range: 'all', d1: '', d2: '', limit: 300 }, STATE.audit);
