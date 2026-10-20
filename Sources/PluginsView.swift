@@ -19,6 +19,10 @@ struct PluginsView: View {
     @State private var showEyes = false
     /// 2026-10-15 用户：「打开眼睛要人脸识别」——开小星之前先过一遍人脸核身
     @State private var showFaceForEyes = false
+    /// 内置浏览器
+    @State private var showBrowser = false
+    /// 面对面文件快传
+    @State private var showDrop = false
 
     /// 右边那行小字：小星现在是哪一档
     private var eyesValue: String {
@@ -53,13 +57,20 @@ struct PluginsView: View {
                                 Task { if let err = await eyes.set("off") { app.show(err) } }
                             }
                         } onOpen: { showEyes = true }
-                        /* 2026-10-16 用户要求：「插件里面就只要小星，听一听和小程序不要」——
-                           那两行已经删掉（听一听在「发现」里，小程序在「发现 → 小程序」里，都还在，
-                           只是不再往插件页里塞）。 */
+                        HairLine(inset: 16)
+                        row(icon: "safari", tint: C.link,
+                            title: Tr("内置浏览器"),
+                            sub: Tr("在星言里直接打开网页，支持搜索、前进后退和分享"),
+                            value: "") { showBrowser = true }
+                        HairLine(inset: 16)
+                        row(icon: "dot.radiowaves.left.and.right", tint: C.green,
+                            title: Tr("文件快传"),
+                            sub: Tr("两台手机面对面传照片、视频和文件，不经过聊天服务器"),
+                            value: "") { showDrop = true }
                     }
                     .padding(.horizontal, 12)
 
-                    Text(Tr("小星的开关在这一页里。点名字可以进去调更细的档位（开启 / 静态 / 关闭）。"))
+                    Text(Tr("小星的开关在这一页里；浏览器和文件快传也放在这里。"))
                         .font(pf(12)).foregroundColor(C.subLabel)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 20)
@@ -91,6 +102,15 @@ struct PluginsView: View {
             .environmentObject(app)
         }
         .navigationDestination(isPresented: $showEyes) { EyesSettingsView() }
+        .navigationDestination(isPresented: $showBrowser) { InAppBrowserView() }
+        .fullScreenCover(isPresented: $showDrop) {
+            FaceToFaceFileSheet(rows: [],
+                                avatar: app.me?.avatarPath ?? "",
+                                name: app.me?.name ?? "我",
+                                ink: C.label,
+                                mode: .host)
+                .environmentObject(app)
+        }
     }
 
     /// 带绿色开关的一行（微信插件页那种）
