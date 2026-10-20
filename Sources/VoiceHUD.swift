@@ -51,6 +51,7 @@ private struct VoiceOrbSurface: View {
 
     private var palette: [Color] { mode.palette }
     private var lowPower: Bool { ProcessInfo.processInfo.isLowPowerModeEnabled }
+    private var renderScale: CGFloat { lowPower ? 1.25 : 1.65 }
     private var tempo: Double {
         switch mode {
         case .idle: return 0.72
@@ -66,6 +67,7 @@ private struct VoiceOrbSurface: View {
     var body: some View {
         let colors = palette
         let t = phase * tempo * (reduceMotion ? 0.45 : 1)
+        let renderCanvas = canvas * renderScale
         let shader = Circle()
             .fill(RadialGradient(colors: [Color.black,
                                           Color.black.opacity(0.92),
@@ -73,11 +75,11 @@ private struct VoiceOrbSurface: View {
                                           Color.black.opacity(0.0)],
                                  center: .center,
                                  startRadius: 0,
-                                 endRadius: canvas * 0.5))
-            .frame(width: canvas, height: canvas)
+                                 endRadius: renderCanvas * 0.5))
+            .frame(width: renderCanvas, height: renderCanvas)
             .colorEffect(ShaderLibrary.voiceOrb(
                 .float(t.truncatingRemainder(dividingBy: 1000)),
-                .float(canvas), .float(canvas),
+                .float(renderCanvas), .float(renderCanvas),
                 .color(colors[0]), .color(colors[1]),
                 .color(colors[2]), .color(colors[3]),
                 .float(max(0.04, smoothLevel)),
@@ -88,14 +90,11 @@ private struct VoiceOrbSurface: View {
                 .float(Double(mode.rawValue))))
 
         ZStack {
-            if !lowPower {
-                shader
-                    .blur(radius: 26)
-                    .opacity(0.46 + CGFloat(driveLow) * 0.16)
-                    .blendMode(.plusLighter)
-            }
             shader
         }
+        .frame(width: renderCanvas, height: renderCanvas)
+        .scaleEffect(1 / renderScale)
+        .frame(width: canvas, height: canvas)
         .clipShape(Circle())
         .onAppear { updateBands(level) }
         .onChange(of: level) { value in updateBands(value) }
@@ -141,6 +140,14 @@ struct VoiceHUD: View {
     var willTranscribe: Bool = false
     var maxSeconds: Int = 60
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var frameInterval: Double {
+        if reduceMotion || ProcessInfo.processInfo.isLowPowerModeEnabled {
+            return 1.0 / 30.0
+        }
+        let fps = max(60, min(120, UIScreen.main.maximumFramesPerSecond))
+        return 1.0 / Double(fps)
+    }
 
     private var colors: [Color] {
         if willCancel {
@@ -191,9 +198,7 @@ struct VoiceHUD: View {
                                    : Color.white.opacity(0.10))
                 )
 
-            TimelineView(.animation(minimumInterval: reduceMotion ||
-                                    ProcessInfo.processInfo.isLowPowerModeEnabled ? 1.0 / 30.0
-                                                                                 : 1.0 / 60.0)) { ctx in
+            TimelineView(.animation(minimumInterval: frameInterval)) { ctx in
                 orb(phase: ctx.date.timeIntervalSinceReferenceDate)
             }
             .frame(width: 258, height: 258)
@@ -429,10 +434,16 @@ struct VoiceOrb: View {
     private let canvas: CGFloat = 258
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    private var frameInterval: Double {
+        if reduceMotion || ProcessInfo.processInfo.isLowPowerModeEnabled {
+            return 1.0 / 30.0
+        }
+        let fps = max(60, min(120, UIScreen.main.maximumFramesPerSecond))
+        return 1.0 / Double(fps)
+    }
+
     var body: some View {
-        TimelineView(.animation(minimumInterval: reduceMotion ||
-                                ProcessInfo.processInfo.isLowPowerModeEnabled ? 1.0 / 30.0
-                                                                             : 1.0 / 60.0)) { ctx in
+        TimelineView(.animation(minimumInterval: frameInterval)) { ctx in
             let phase = ctx.date.timeIntervalSinceReferenceDate
             let amp = max(0.05, min(1, level))
             let fit = CGFloat(1 + 0.035 * sin(phase * 1.4))
