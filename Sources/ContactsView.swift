@@ -1343,6 +1343,7 @@ struct ContactCardView: View {
                    才能从里面找到 requestId，点一下要等两个来回，所以才觉得慢 */
                 let res = await API.shared.respondFriend(userId: u.id, accept: true)
                 if res.ok {
+                    UINotification.lightTap()
                     app.show(Tr("已同意，现在可以聊天了"))
                     if let n = res.pending { app.friendRequests = n }
                     await app.loadContacts()

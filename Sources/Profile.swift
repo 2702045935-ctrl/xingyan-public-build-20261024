@@ -321,6 +321,9 @@ struct NewFriendsView: View {
     @State private var loading = true
     @State private var keyword = ""
     @State private var busy: Set<String> = []
+    /// 当前页刚同意的人：服务器摘要偶尔会晚一拍，先在本地压住，
+    /// 避免轮询把这一行又塞回“好友申请”，直到用户离开页面重新拉真源。
+    @State private var locallyAccepted: [String: User] = [:]
 
     private func hit(_ u: User) -> Bool {
         if keyword.isEmpty { return true }
@@ -516,11 +519,16 @@ struct NewFriendsView: View {
 
     private func load() async {
         if let d = try? await API.shared.friendRequests() {
-            incoming = d.incoming
+            let localIds = Set(locallyAccepted.keys)
+            incoming = d.incoming.filter { !localIds.contains($0.id) }
             outgoing = d.outgoing
-            added = d.added
+            var mergedAdded = d.added
+            for user in locallyAccepted.values where !mergedAdded.contains(where: { $0.id == user.id }) {
+                mergedAdded.insert(user, at: 0)
+            }
+            added = mergedAdded
             app.contacts = d.friends
-            app.friendRequests = d.incoming.count
+            app.friendRequests = incoming.count
         }
         loading = false
     }
@@ -537,8 +545,13 @@ struct NewFriendsView: View {
            手机上就是点了没反应（那个 558KB 的通讯录要下好一会儿）。 */
         let backup = incoming
         busy.insert(user.id)
-        incoming.removeAll { $0.id == user.id }
-        if accept { added.insert(user, at: 0) }
+        if accept { locallyAccepted[user.id] = user }
+        withAnimation(.easeOut(duration: 0.18)) {
+            incoming.removeAll { $0.id == user.id }
+            if accept, !added.contains(where: { $0.id == user.id }) {
+                added.insert(user, at: 0)
+            }
+        }
         app.friendRequests = incoming.count
         Task {
             let res: (ok: Bool, pending: Int?) = (user.requestId ?? "").isEmpty
@@ -547,6 +560,7 @@ struct NewFriendsView: View {
             busy.remove(user.id)
             guard res.ok else {
                 /* 没成功（断网 / 服务端不认这条申请）：把这一行放回去，再对一次账 */
+                locallyAccepted[user.id] = nil
                 incoming = backup
                 app.friendRequests = incoming.count
                 app.show(Tr("网络不太好，再试一次"))
@@ -555,6 +569,7 @@ struct NewFriendsView: View {
             }
             if let n = res.pending { app.friendRequests = n }
             app.show(accept ? Tr("已添加到通讯录") : Tr("已拒绝"))
+            if accept { UINotification.lightTap() }
             /* 通讯录 / 会话在后台慢慢同步，不挡这一下点击 */
             await app.loadContacts()
             await app.loadChats()
@@ -819,6 +834,7 @@ struct AddFriendView: View {
                 app.show(Tr("到「通讯录 → 新的朋友」里同意"))
                 return
             }
+            UINotification.lightTap()
             if let n = res.pending { app.friendRequests = n }
             app.show(Tr("已添加到通讯录"))
             await app.loadContacts()

@@ -1953,4 +1953,11 @@ enum UINotification {
         gen.impactOccurred()
         AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
     }
+
+    /// 好友通过这类“完成动作”的轻反馈：有明确确认感，但不打断操作。
+    static func lightTap() {
+        let gen = UIImpactFeedbackGenerator(style: .light)
+        gen.prepare()
+        gen.impactOccurred(intensity: 0.7)
+    }
 }
