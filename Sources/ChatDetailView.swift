@@ -1911,9 +1911,9 @@ struct ChatDetailView: View {
                    onOpenFile: { body in openFile(body) },
                    onOpenArticle: { id in oaArticleId = id; showOaArticle = true },
                    onLayoutChanged: { scheduleSettledBottom() },
-                   onShowToast: { text in app.show(text) },
                    /* 点引用条 → 跳到被引用的那条原消息（微信就是这么跳的） */
-                   onOpenQuote: { id in jumpToMessage(id) }))
+                   onOpenQuote: { id in jumpToMessage(id) },
+                   onShowToast: { text in app.show(text) }))
             .padding(.bottom, gapAfter(message))
             /* 长按一条消息：弹微信那套动作条（复制/转发/收藏/引用/撤回/删除/多选）。
                ⚠ 这里必须用 simultaneousGesture，不能用 onLongPressGesture：
@@ -4141,7 +4141,7 @@ struct MessageRow: View {
         .onTapGesture {
             guard !asrText.isEmpty else { return }
             UIPasteboard.general.string = asrText
-            app.show(Tr("已复制"))
+            onShowToast?(Tr("已复制"))
         }
         .transition(.asymmetric(insertion: .opacity.combined(with: .move(edge: .top)),
                                 removal: .opacity))
