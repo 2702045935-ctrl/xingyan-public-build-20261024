@@ -50,7 +50,8 @@ struct MainTabView: View {
             }
 
             .overlay(alignment: .top) {
-                if app.syncing || !app.syncText.isEmpty {
+                if tab == 0 && !app.tabBarHidden &&
+                   (app.syncing || !app.syncText.isEmpty) {
                     HStack(spacing: 7) {
                         if app.syncing {
                             ProgressView().scaleEffect(0.68)
