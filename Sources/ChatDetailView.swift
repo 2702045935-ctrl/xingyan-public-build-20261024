@@ -3042,6 +3042,9 @@ struct ChatDetailView: View {
         outbox.append(PendingMsg(id: UUID().uuidString, kind: kind, content: content,
                                  mentions: mentions, quoteJSON: qJSON))
         saveOutbox()
+        /* 微信那种很轻的“发出去了”确认：只在本地先上屏时给一次，
+           不等网络返回，也不做气泡弹跳，连续发消息不会打断输入。 */
+        UINotification.lightTap()
         pinToBottomSoon(force: true)
         Task { await flushOutbox() }
     }
