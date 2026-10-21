@@ -1331,7 +1331,7 @@ struct ChatsView: View {
 
                             HStack(spacing: 8) {
 
-                                if eyes.navEyesOn {
+                                if UIConfig.num("navEyesVisible", 0) > 0, eyes.navEyesOn {
                                     Button {
                                         if let bot = app.chats.first(where: { $0.botRank == 0 }) {
                                             botChat = bot
