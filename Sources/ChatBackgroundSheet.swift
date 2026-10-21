@@ -192,23 +192,30 @@ struct ChatBackgroundSheet: View {
     private func pick(_ path: String) {
 
         if inChat {
+            let oldUser = app.me
+            let oldLocal = ChatBgStore.shared.get(chatId)
+            applyChatBackground(path)
             Task {
                 busy = true
-                if await API.shared.changeChatBackground(chatId: chatId, path: path) != nil {
-                    ChatBgStore.shared.set(chatId, path)
-                    app.me = try? await API.shared.me()
+                if let saved = await API.shared.changeChatBackground(chatId: chatId, path: path) {
+                    applySyncedChatBackgrounds(saved)
                     app.show(path == "auto" ? Tr("已改用全局背景") : Tr("这个聊天的背景换好了"))
                 } else {
+                    app.me = oldUser
+                    ChatBgStore.shared.set(chatId, oldLocal)
                     app.show(Tr("背景没保存上，检查网络"))
                 }
                 busy = false
             }
             return
         }
+        if var me = app.me {
+            me.chatBackground = path
+            app.me = me
+        }
         Task {
             busy = true
             await API.shared.changeBackground(path)
-            app.me = try? await API.shared.me()
             busy = false
         }
     }
@@ -218,16 +225,19 @@ struct ChatBackgroundSheet: View {
             busy = true
             if let url = try? await API.shared.uploadOriginal(image: image) {
                 if inChat {
-                    if await API.shared.changeChatBackground(chatId: chatId, path: url) != nil {
-                        ChatBgStore.shared.set(chatId, url)
-                        app.me = try? await API.shared.me()
+                    if let saved = await API.shared.changeChatBackground(chatId: chatId, path: url) {
+                        applyChatBackground(url)
+                        applySyncedChatBackgrounds(saved)
                         app.show(Tr("这个聊天的背景换好了"))
                     } else {
                         app.show(Tr("图片上传失败，换一张再试"))
                     }
                 } else {
+                    if var me = app.me {
+                        me.chatBackground = url
+                        app.me = me
+                    }
                     await API.shared.changeBackground(url)
-                    app.me = try? await API.shared.me()
                     app.show(Tr("聊天背景换好了"))
                 }
             } else {
@@ -235,5 +245,24 @@ struct ChatBackgroundSheet: View {
             }
             busy = false
         }
+    }
+
+    private func applyChatBackground(_ path: String) {
+        ChatBgStore.shared.set(chatId, path)
+        guard var me = app.me else { return }
+        var map = me.chatBackgrounds ?? [:]
+        if path == "auto" {
+            map[chatId] = "auto"
+        } else {
+            map[chatId] = path
+        }
+        me.chatBackgrounds = map
+        app.me = me
+    }
+
+    private func applySyncedChatBackgrounds(_ map: [String: String]) {
+        guard var me = app.me else { return }
+        me.chatBackgrounds = map
+        app.me = me
     }
 }
