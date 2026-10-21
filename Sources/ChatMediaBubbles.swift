@@ -82,25 +82,43 @@ struct AnnounceBubble: View {
     var onOpen: (() -> Void)? = nil
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 5) {
                 Image(systemName: "megaphone.fill")
                     .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(C.subLabel)
                 Text(Tr("群公告"))
-                    .font(pf(12, .medium))
+                    .font(pf(12.5, .medium))
+                    .foregroundColor(C.label)
             }
-            .foregroundColor(C.green)
+            .padding(.horizontal, 12)
+            .frame(height: 36)
+
             Text(text)
                 .font(pf(14))
                 .foregroundColor(C.label)
-                .lineLimit(6)
+                .lineSpacing(3)
+                .lineLimit(5)
                 .multilineTextAlignment(.leading)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 10)
+
+            HairLine(inset: 0)
+
+            HStack(spacing: 4) {
+                Text(Tr("查看详情"))
+                    .font(pf(12))
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 9, weight: .semibold))
+            }
+            .foregroundColor(C.green)
+            .padding(.horizontal, 12)
+            .frame(height: 32)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .frame(width: 232, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(C.cardBg))
-        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
+        .frame(width: 244, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 7, style: .continuous).fill(C.cardBg))
+        .overlay(RoundedRectangle(cornerRadius: 7, style: .continuous)
             .stroke(C.hairline, lineWidth: 0.5))
         .contentShape(Rectangle())
         .onTapGesture { onOpen?() }

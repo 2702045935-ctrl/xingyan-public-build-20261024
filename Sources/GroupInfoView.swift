@@ -1023,18 +1023,54 @@ struct GroupAnnounceView: View {
     var body: some View {
         VStack(spacing: 0) {
             NavBar(title: Tr("群公告"), back: { dismiss() })
-            ScrollView {
-                VStack(alignment: .leading, spacing: 10) {
-                    if !groupName.isEmpty {
-                        Text(groupName).font(pf(13)).foregroundColor(C.subLabel)
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack(spacing: 10) {
+                            Image(systemName: "megaphone.fill")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(C.green)
+                                .frame(width: 38, height: 38)
+                                .background(C.green.opacity(0.10))
+                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(Tr("群公告"))
+                                    .font(pf(16.5, .semibold))
+                                    .foregroundColor(C.label)
+                                if !groupName.isEmpty {
+                                    Text(groupName)
+                                        .font(pf(12.5))
+                                        .foregroundColor(C.subLabel)
+                                        .lineLimit(1)
+                                }
+                            }
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 16)
+
+                        HairLine(inset: 18)
+
+                        Text(text)
+                            .font(pf(16))
+                            .foregroundColor(C.label)
+                            .lineSpacing(6)
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 18)
                     }
-                    Text(text)
-                        .font(pf(16.5))
-                        .foregroundColor(C.label)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    Spacer().frame(height: 24)
+                    .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(C.cardBg))
+                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(C.hairline.opacity(0.72), lineWidth: 0.6))
+
+                    Text(Tr("群公告仅群成员可见"))
+                        .font(pf(11.5))
+                        .foregroundColor(C.subLabel)
                 }
-                .padding(16)
+                .padding(.horizontal, 14)
+                .padding(.top, 12)
+                .padding(.bottom, 30)
             }
             .background(C.pageBg)
         }
