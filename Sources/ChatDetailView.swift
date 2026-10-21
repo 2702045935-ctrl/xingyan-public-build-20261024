@@ -17,6 +17,7 @@ private enum ChatTheme {
     static let quoteBg = Color.dyn(0xE9E9EB, 0x30343A)
     static let composerBg = Color.dyn(0xFFFFFF, 0x23262C)
     static let separator = Color.dyn(0xE5E5E5, 0x2F3238)
+    static var link: Color { UIConfig.color("linkColor", 0x576B95, 0xA3D0FF) }
 }
 
 enum AlbumFold {
@@ -4151,7 +4152,12 @@ struct MessageRow: View {
 
     private func linkText(_ s: String) -> AttributedString {
 
-        RichText.linkified(s)
+        var linked = RichText.linkified(s)
+        let linkRanges = linked.runs.compactMap { $0.link == nil ? nil : $0.range }
+        for range in linkRanges {
+            linked[range].foregroundColor = ChatTheme.link
+        }
+        return linked
     }
 
     private func linkFallbackText(_ raw: String) -> String {
@@ -4222,7 +4228,7 @@ struct MessageRow: View {
                 let token = String(s[i..<j])
                 var seg = AttributedString(token)
                 let name = String(token.dropFirst())
-                seg.foregroundColor = (atMe && mineNames.contains(name)) ? C.red : C.link
+                seg.foregroundColor = (atMe && mineNames.contains(name)) ? C.red : ChatTheme.link
                 out += seg
                 i = j
                 continue
