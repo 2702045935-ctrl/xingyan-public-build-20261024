@@ -346,35 +346,45 @@ struct AIWorkspaceView: View {
     @ViewBuilder
     private func messageRow(_ message: Message) -> some View {
         let mine = message.senderId == myId
+        let isImage = message.kindName.lowercased() == "image"
         if mine {
             HStack(alignment: .top, spacing: 8) {
                 Spacer(minLength: 42)
-                messageContent(message, mine: true)
-                    .padding(.horizontal, 13)
-                    .padding(.vertical, 10)
-                    .background(accent)
-                    .foregroundColor(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                if isImage {
+                    messageContent(message, mine: true)
+                } else {
+                    messageContent(message, mine: true)
+                        .padding(.horizontal, 13)
+                        .padding(.vertical, 10)
+                        .background(accent)
+                        .foregroundColor(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                }
                 Avatar(path: app.me?.avatarPath ?? "", size: 32, radius: 11)
             }
             .padding(.bottom, 14)
         } else {
             HStack(alignment: .top, spacing: 8) {
                 AIWorkspaceMark()
-                messageContent(message, mine: false)
-                    .frame(maxWidth: 330, alignment: .leading)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 9)
-                    .background {
-                        GlassBackground(shape: RoundedRectangle(cornerRadius: 15,
-                                                                style: .continuous),
-                                        opacity: 0.72,
-                                        shadow: false,
-                                        seed: 0.24)
-                    }
-                    .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous)
-                        .stroke(C.hairline.opacity(0.55), lineWidth: 0.5))
+                if isImage {
+                    messageContent(message, mine: false)
+                        .frame(maxWidth: 330, alignment: .leading)
+                } else {
+                    messageContent(message, mine: false)
+                        .frame(maxWidth: 330, alignment: .leading)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 9)
+                        .background {
+                            GlassBackground(shape: RoundedRectangle(cornerRadius: 15,
+                                                                    style: .continuous),
+                                            opacity: 0.72,
+                                            shadow: false,
+                                            seed: 0.24)
+                        }
+                        .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous)
+                            .stroke(C.hairline.opacity(0.55), lineWidth: 0.5))
+                }
                 Spacer(minLength: 12)
             }
             .padding(.bottom, 17)
