@@ -722,7 +722,6 @@ struct ContactCardView: View {
                 }
             }
 
-            if showMore { morePanel.transition(.opacity) }
         }
         .animation(.easeOut(duration: 0.18), value: showMore)
         .toolbar(.hidden, for: .navigationBar)
@@ -730,6 +729,28 @@ struct ContactCardView: View {
         .hidesTabBar()
         .confirmationDialog(Tr("删除好友？"), isPresented: $confirmDelete, titleVisibility: .visible) {
             Button(Tr("删除"), role: .destructive) { removeFriend() }
+            Button(Tr("取消"), role: .cancel) { }
+        }
+        .confirmationDialog(Tr("更多操作"), isPresented: $showMore, titleVisibility: .hidden) {
+            if isBot {
+                Button(Tr("发消息")) { openChat() }
+                Button(Tr("语音通话")) { startAICall() }
+            } else {
+                Button(Tr("设置备注和标签")) { showRemark = true }
+                Button(Tr("推荐给朋友")) { showShare = true }
+                Button(Tr("朋友权限")) { showPerm = true }
+                Button(meta?.star == true ? Tr("取消星标朋友") : Tr("设为星标朋友")) {
+                    toggleStar()
+                }
+                Button(meta?.block == true ? Tr("移出黑名单") : Tr("加入黑名单")) {
+                    toggleBlock()
+                }
+                Button(Tr("删除好友"), role: .destructive) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                        confirmDelete = true
+                    }
+                }
+            }
             Button(Tr("取消"), role: .cancel) { }
         }
 
