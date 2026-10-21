@@ -837,7 +837,10 @@ struct ContactCardView: View {
                           onRemark: { showRemark = true },
                           onPerm: { showPerm = true },
                           onMore: { showInfo = true },
-                          onMenu: { showMore = true },
+                          onMenu: {
+                              CrashCatcher.note("三点", "联系人三点 \(u.id)")
+                              showMore = true
+                          },
                           onApply: { showApply = true },
                           onAgree: { run(CardAct(title: "同意好友申请", key: "agree")) })
     }

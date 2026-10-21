@@ -852,7 +852,9 @@ struct ChatDetailView: View {
                     }
                     if !isStarWorld || !newsMode {
                         Button {
-
+                            CrashCatcher.note("三点", isGroup
+                                ? "群聊三点 \(chat.id)"
+                                : "单聊三点 \(chat.id)")
                             if isGroup { showGroupInfo = true } else { showChatInfo = true }
                         } label: {
                             Text("⋯")
