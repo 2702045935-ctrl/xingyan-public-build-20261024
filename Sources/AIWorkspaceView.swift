@@ -8,6 +8,8 @@ struct AIWorkspaceView: View {
 
     @ObservedObject private var realtime = Realtime.shared
     @AppStorage("bot.autoRead") private var autoRead = false
+    @AppStorage("bot.voice") private var voiceID = ""
+    @AppStorage("bot.rate") private var voiceRate = 0.5
 
     @State private var wallet: AIWalletStatus?
     @State private var chat: Chat?
@@ -413,28 +415,51 @@ struct AIWorkspaceView: View {
             }
             .padding(.bottom, 14)
         } else {
-            HStack(alignment: .top, spacing: 8) {
-                AIWorkspaceMark()
-                if isImage {
-                    messageContent(message, mine: false)
-                        .frame(maxWidth: 330, alignment: .leading)
-                } else {
-                    messageContent(message, mine: false)
-                        .frame(maxWidth: 330, alignment: .leading)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 9)
-                        .background {
-                            GlassBackground(shape: RoundedRectangle(cornerRadius: 15,
-                                                                    style: .continuous),
-                                            opacity: 0.72,
-                                            shadow: false,
-                                            seed: 0.24)
-                        }
-                        .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous)
-                            .stroke(C.hairline.opacity(0.55), lineWidth: 0.5))
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .top, spacing: 8) {
+                    AIWorkspaceMark()
+                    if isImage {
+                        messageContent(message, mine: false)
+                            .frame(maxWidth: 330, alignment: .leading)
+                    } else {
+                        messageContent(message, mine: false)
+                            .frame(maxWidth: 330, alignment: .leading)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 9)
+                            .background {
+                                GlassBackground(shape: RoundedRectangle(cornerRadius: 15,
+                                                                        style: .continuous),
+                                                opacity: 0.72,
+                                                shadow: false,
+                                                seed: 0.24)
+                            }
+                            .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous)
+                                .stroke(C.hairline.opacity(0.55), lineWidth: 0.5))
+                    }
+                    Spacer(minLength: 12)
                 }
-                Spacer(minLength: 12)
+
+                if !isImage, !speechText(message).isEmpty {
+                    HStack(spacing: 0) {
+                        Spacer().frame(width: 40)
+                        Button {
+                            speak(speechText(message))
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "speaker.wave.2")
+                                Text(Tr("朗读"))
+                            }
+                            .font(pf(10.5, .medium))
+                            .foregroundColor(C.subLabel)
+                            .padding(.horizontal, 8)
+                            .frame(height: 26)
+                            .background(Capsule().fill(C.fieldBg.opacity(0.82)))
+                        }
+                        .buttonStyle(.plain)
+                        Spacer(minLength: 0)
+                    }
+                }
             }
             .padding(.bottom, 17)
         }
@@ -849,10 +874,24 @@ struct AIWorkspaceView: View {
 
     private func autoReadLatest(_ message: Message) {
         guard autoRead, !spoken.contains(message.id) else { return }
-        let text = message.body.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty, !text.hasPrefix("{") else { return }
+        let text = speechText(message)
+        guard !text.isEmpty else { return }
         spoken.insert(message.id)
+        speak(text)
+    }
+
+    private func speechText(_ message: Message) -> String {
+        guard !message.isRecalled else { return "" }
+        let text = message.body.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty, !text.hasPrefix("{") else { return "" }
+        return text
+    }
+
+    private func speak(_ text: String) {
+        Speaker.chosenVoice = voiceID
+        Speaker.chosenRate = Float(voiceRate)
         Speaker.shared.speak(text)
+        app.show(Tr("正在朗读…"))
     }
 
     private func open(_ link: AIWorkspaceLinkPayload) {
@@ -1411,6 +1450,7 @@ private struct AIPaymentSheet: View {
 private struct AIProfileSheet: View {
     @EnvironmentObject private var app: AppState
     @Environment(\.dismiss) private var dismiss
+    @AppStorage("bot.autoRead") private var autoRead = false
 
     let wallet: AIWalletStatus
     let onClearChat: () async -> String?
@@ -1422,6 +1462,7 @@ private struct AIProfileSheet: View {
     @State private var savingName = false
     @State private var showResetConfirm = false
     @State private var showClearChatConfirm = false
+    @State private var showVoiceSettings = false
     @State private var clearingChat = false
     private let accent = Color(hex: 0x356FF4)
 
@@ -1537,6 +1578,36 @@ private struct AIProfileSheet: View {
                         }
                     }
 
+                    settingBlock(Tr("朗读")) {
+                        HStack(spacing: 12) {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(Tr("自动朗读回复"))
+                                    .font(pf(13.5, .medium))
+                                    .foregroundColor(C.label)
+                                Text(Tr("每条回答下方也可以手动点「朗读」"))
+                                    .font(pf(10.5))
+                                    .foregroundColor(C.subLabel)
+                            }
+                            Spacer(minLength: 4)
+                            Toggle("", isOn: $autoRead)
+                                .labelsHidden()
+                                .tint(accent)
+                        }
+                        Button {
+                            showVoiceSettings = true
+                        } label: {
+                            HStack {
+                                Text(Tr("语音与语速"))
+                                    .font(pf(13))
+                                    .foregroundColor(accent)
+                                Spacer()
+                                Chevron(size: 8, line: 1.4, color: C.subLabel)
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+
                     settingBlock(Tr("对话记录")) {
                         HStack(spacing: 12) {
                             VStack(alignment: .leading, spacing: 3) {
@@ -1590,6 +1661,9 @@ private struct AIProfileSheet: View {
             Button(Tr("取消"), role: .cancel) { }
         } message: {
             Text(Tr("只清空你和小星的工作台聊天，不影响其他会话。"))
+        }
+        .sheet(isPresented: $showVoiceSettings) {
+            BotVoiceSettingsView()
         }
         .onAppear {
             let clean = wallet.name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
