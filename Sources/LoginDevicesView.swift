@@ -59,6 +59,7 @@ struct LoginDevicesView: View {
                                 row(d, right: d.current == true ? Tr("当前设备") : wxTime(d.at))
                             }
                         }
+                        .padding(.horizontal, 12)
                     }
 
                     if !dead.isEmpty {
@@ -69,6 +70,7 @@ struct LoginDevicesView: View {
                                 row(d, right: wxTime(d.at))
                             }
                         }
+                        .padding(.horizontal, 12)
                     }
 
                     Spacer().frame(height: 14)
@@ -171,7 +173,7 @@ struct LoginDevicesView: View {
             }
         }
         .padding(.horizontal, 16)
-        .frame(minHeight: 60)
+        .frame(minHeight: 74)
         .background(C.cardBg)
     }
 
