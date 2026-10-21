@@ -112,7 +112,6 @@ struct GroupInfoView: View {
         .swipeBack { dismiss() }
         .hidesTabBar()
         .task {
-            CrashCatcher.note("三点", "群聊信息页出现 \(chat.id)")
 
             let live = app.chats.first { $0.id == chat.id } ?? chat
             pinned = live.pinned == true
@@ -897,7 +896,6 @@ struct DirectChatInfoView: View {
         .swipeBack { dismiss() }
         .hidesTabBar()
         .task {
-            CrashCatcher.note("三点", "单聊信息页出现 \(chat.id)")
 
             let live = app.chats.first { $0.id == chat.id } ?? chat
             pinned = live.pinned == true

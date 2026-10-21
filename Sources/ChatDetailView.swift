@@ -852,9 +852,7 @@ struct ChatDetailView: View {
                     }
                     if !isStarWorld || !newsMode {
                         Button {
-                            CrashCatcher.note("三点", isGroup
-                                ? "群聊三点 \(chat.id)"
-                                : "单聊三点 \(chat.id)")
+
                             if isGroup { showGroupInfo = true } else { showChatInfo = true }
                         } label: {
                             Text("⋯")
@@ -992,11 +990,8 @@ struct ChatDetailView: View {
             Button(Tr("取消"), role: .cancel) { redialAsk = nil }
         }
 
-        .sheet(isPresented: $showChatInfo) {
-            NavigationStack {
-                DirectChatInfoView(chat: chat)
-                    .environmentObject(app)
-            }
+        .navigationDestination(isPresented: $showChatInfo) {
+            DirectChatInfoView(chat: chat).environmentObject(app)
         }
         .swipeBack { dismiss() }
         .hidesTabBar()
@@ -1123,11 +1118,8 @@ struct ChatDetailView: View {
         }
         .onChange(of: messages.count) { _ in autoOpenShopCard() }
 
-        .sheet(isPresented: $showGroupInfo) {
-            NavigationStack {
-                GroupInfoView(chat: chat)
-                    .environmentObject(app)
-            }
+        .navigationDestination(isPresented: $showGroupInfo) {
+            GroupInfoView(chat: chat).environmentObject(app)
         }
         .sheet(isPresented: $showSearch) { ChatSearchView(chat: chat) }
 
