@@ -12,12 +12,16 @@ private enum ChatTheme {
     static let ink = Color.dyn(0x191919, 0xE9EBF0)
     static let mineInk = Color.dyn(0xFFFFFF, 0xE9EBF0)
     static let secondary = Color.dyn(0x999999, 0x7D8188)
+    static let secondaryOnMine = Color.dyn(0x999999, 0xB7D7CF)
     static let timeInk = Color.dyn(0x8A8A8E, 0x8A8D94)
     static let timeBg = Color.dyn(0xE5E5E5, 0x22252A)
-    static let quoteBg = Color.dyn(0xE9E9EB, 0x30343A)
+    static let quoteBg = Color.dyn(0xE9E9EB, 0x282C31)
+    static let quoteBgMine = Color.dyn(0xE9E9EB, 0x06483C)
+    static let quoteInk = Color.dyn(0x999999, 0x92979F)
     static let composerBg = Color.dyn(0xFFFFFF, 0x23262C)
     static let separator = Color.dyn(0xE5E5E5, 0x2F3238)
     static var link: Color { UIConfig.color("linkColor", 0x576B95, 0xA3D0FF) }
+    static let mentionMe = Color.dyn(0xFA5151, 0xFFB3A7)
 }
 
 enum AlbumFold {
@@ -4108,12 +4112,12 @@ struct MessageRow: View {
                     if !q.sender.isEmpty {
                         Text(q.sender)
                             .font(pf(12, .medium))
-                            .foregroundColor(ChatTheme.secondary)
+                            .foregroundColor(mine ? ChatTheme.secondaryOnMine : ChatTheme.quoteInk)
                             .lineLimit(1)
                     }
                     Text(q.summary.isEmpty ? Tr("[引用]") : q.summary)
                         .font(pf(12.5))
-                        .foregroundColor(ChatTheme.secondary)
+                        .foregroundColor(mine ? ChatTheme.secondaryOnMine : ChatTheme.quoteInk)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
                 }
@@ -4128,7 +4132,7 @@ struct MessageRow: View {
             .padding(.horizontal, 7)
             .padding(.vertical, 6)
             .background(RoundedRectangle(cornerRadius: 4, style: .continuous)
-                .fill(ChatTheme.quoteBg))
+                .fill(mine ? ChatTheme.quoteBgMine : ChatTheme.quoteBg))
             .contentShape(Rectangle())
             .onTapGesture {
                 if !q.refId.isEmpty { onOpenQuote?(q.refId) }
@@ -4228,7 +4232,7 @@ struct MessageRow: View {
                 let token = String(s[i..<j])
                 var seg = AttributedString(token)
                 let name = String(token.dropFirst())
-                seg.foregroundColor = (atMe && mineNames.contains(name)) ? C.red : ChatTheme.link
+                seg.foregroundColor = (atMe && mineNames.contains(name)) ? ChatTheme.mentionMe : ChatTheme.link
                 out += seg
                 i = j
                 continue
