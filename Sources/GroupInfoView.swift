@@ -111,6 +111,12 @@ struct GroupInfoView: View {
         .toolbar(.hidden, for: .navigationBar)
         .swipeBack { dismiss() }
         .hidesTabBar()
+        .onAppear {
+            CrashCatcher.markStep("三点", "群聊信息页出现 \(chat.id)")
+        }
+        .onDisappear {
+            CrashCatcher.clearStep()
+        }
         .task {
 
             let live = app.chats.first { $0.id == chat.id } ?? chat
@@ -895,6 +901,12 @@ struct DirectChatInfoView: View {
         .toolbar(.hidden, for: .navigationBar)
         .swipeBack { dismiss() }
         .hidesTabBar()
+        .onAppear {
+            CrashCatcher.markStep("三点", "单聊信息页出现 \(chat.id)")
+        }
+        .onDisappear {
+            CrashCatcher.clearStep()
+        }
         .task {
 
             let live = app.chats.first { $0.id == chat.id } ?? chat

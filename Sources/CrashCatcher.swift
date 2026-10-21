@@ -100,6 +100,20 @@ enum CrashCatcher {
 
     static func savedCrash() -> String { loadCrashFile() }
 
+    static func markStep(_ kind: String, _ text: String) {
+        let stack = Thread.callStackSymbols.joined(separator: "\n")
+        let raw = "\(kind)\n\(text)\n\n\(stack)"
+        UserDefaults.standard.set(raw, forKey: "chris.lastCrash")
+        UserDefaults.standard.set(ISO8601DateFormatter().string(from: Date()), forKey: "chris.lastCrashAt")
+        saveCrashFile(raw)
+    }
+
+    static func clearStep() {
+        UserDefaults.standard.removeObject(forKey: "chris.lastCrash")
+        UserDefaults.standard.removeObject(forKey: "chris.lastCrashAt")
+        clearCrashFile()
+    }
+
     static func note(_ kind: String, _ text: String, keepLocal: Bool = false) {
         let stack = Thread.callStackSymbols.joined(separator: "\n")
         if keepLocal {
