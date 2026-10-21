@@ -535,7 +535,7 @@ final class AppState: ObservableObject {
         Task { await syncRecentMessages() }
     }
 
-    private func finishLoginTransition() {
+    func finishLoginTransition() {
         booting = false
         needConfirmLogin = false
         showSavedLogin = false
@@ -980,7 +980,7 @@ struct SavedLoginConfirm: View {
 
     private func go() {
         if app.me != nil {
-            withAnimation(.easeOut(duration: 0.18)) { app.needConfirmLogin = false }
+            withAnimation(.easeOut(duration: 0.18)) { app.finishLoginTransition() }
             return
         }
         guard !busy else { return }
