@@ -167,7 +167,8 @@ struct HarmonyLoginView: View {
                     .foregroundColor(Color(hex: 0x111827))
                 Rectangle().fill(Color(hex: 0xD7DCE6)).frame(width: 0.7, height: 20)
                 TextField("请输入手机号", text: $phone)
-                    .keyboardType(.numberPad)
+                    .keyboardType(.phonePad)
+                    .textContentType(.telephoneNumber)
                     .focused($focus, equals: .phone)
                     .font(.system(size: 16.5))
                     .foregroundColor(Color(hex: 0x111827))
@@ -186,6 +187,7 @@ struct HarmonyLoginView: View {
                 HStack(spacing: 12) {
                     TextField("请输入 6 位验证码", text: $code)
                         .keyboardType(.numberPad)
+                        .textContentType(.oneTimeCode)
                         .focused($focus, equals: .code)
                         .font(.system(size: 16.5))
                         .foregroundColor(Color(hex: 0x111827))
