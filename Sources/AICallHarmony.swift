@@ -174,11 +174,11 @@ struct AICallView: View {
             ZStack {
                 Circle()
                     .fill(Color(hex: 0xAFC9F4).opacity(0.26))
-                    .frame(width: 246 + voice.level * 44,
-                           height: 246 + voice.level * 44)
+                    .frame(width: 246 + orbLevel * 54,
+                           height: 246 + orbLevel * 54)
                     .blur(radius: 30)
 
-                VoiceOrb(level: voice.listening ? voice.level : 0.16,
+                VoiceOrb(level: orbLevel,
                          diameter: 224,
                          listening: voice.listening,
                          mode: orbMode)
@@ -186,8 +186,8 @@ struct AICallView: View {
                     .onTapGesture {
                         tapOrb()
                     }
-                    .scaleEffect(1 + voice.level * 0.035)
-                    .animation(.easeOut(duration: 0.1), value: voice.level)
+                    .scaleEffect(1 + orbLevel * 0.045)
+                    .animation(.easeOut(duration: 0.09), value: orbLevel)
                     .shadow(color: Color(hex: 0x4E5A70).opacity(0.18),
                             radius: 34, y: 16)
             }
@@ -391,6 +391,10 @@ struct AICallView: View {
         if voice.outputting || phaseText.contains("回答") { return .speaking }
         if phaseText.contains("失败") || phaseText.contains("没") { return .failed }
         return .idle
+    }
+
+    private var orbLevel: CGFloat {
+        voice.listening || voice.outputting ? max(0.16, voice.level) : 0.16
     }
 
     private func prepare() async {

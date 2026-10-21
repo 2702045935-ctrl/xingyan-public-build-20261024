@@ -18,6 +18,8 @@ final class VoiceEngine: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
     private let synth = AVSpeechSynthesizer()
     private var onSpokenDone: (() -> Void)?
     private var cloudPlayer: AVAudioPlayer?
+    private var meterTimer: Timer?
+    private var meterPhase: CGFloat = 0
     private var autoStop: Task<Void, Never>?
     private var onText: ((String) -> Void)?
 
@@ -55,6 +57,19 @@ final class VoiceEngine: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
         input.removeTap(onBus: 0)
         input.installTap(onBus: 0, bufferSize: 1024, format: format) { buf, _ in
             req.append(buf)
+            guard let channels = buf.floatChannelData, buf.frameLength > 0 else { return }
+            let count = Int(buf.frameLength)
+            var sum: Float = 0
+            for i in 0..<count {
+                let sample = channels[0][i]
+                sum += sample * sample
+            }
+            let rms = sqrt(sum / Float(max(1, count)))
+            let raw = min(1, max(0, CGFloat(rms) * 9))
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                self.level = self.level * 0.58 + raw * 0.42
+            }
         }
         engine.prepare()
         do {
@@ -102,6 +117,7 @@ final class VoiceEngine: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
         request = nil
         task = nil
         listening = false
+        level = 0
     }
 
     func speak(_ text: String, done: @escaping () -> Void) {
@@ -114,6 +130,7 @@ final class VoiceEngine: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
         u.voice = AVSpeechSynthesisVoice(language: "zh-CN")
         u.rate = 0.5
         u.pitchMultiplier = 0.72
+        startSyntheticMeter()
         synth.speak(u)
     }
 
@@ -133,9 +150,11 @@ final class VoiceEngine: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
                 try? session.setActive(true)
                 let player = try AVAudioPlayer(data: data)
                 player.delegate = self
+                player.isMeteringEnabled = true
                 player.prepareToPlay()
                 guard player.play() else { throw APIError.message("语音播放失败") }
                 cloudPlayer = player
+                startOutputMeter(player)
                 _ = requestedVoice
             } catch {
                 speak(text, done: done)
@@ -146,6 +165,9 @@ final class VoiceEngine: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
     func stopSpeech() {
         cloudPlayer?.stop()
         cloudPlayer = nil
+        meterTimer?.invalidate()
+        meterTimer = nil
+        level = 0
         if synth.isSpeaking { synth.stopSpeaking(at: .immediate) }
         onSpokenDone = nil
         outputting = false
@@ -156,6 +178,9 @@ final class VoiceEngine: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             self.outputting = false
+            self.meterTimer?.invalidate()
+            self.meterTimer = nil
+            self.level = 0
             let cb = self.onSpokenDone
             self.onSpokenDone = nil
             cb?()
@@ -167,9 +192,37 @@ final class VoiceEngine: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
             guard let self = self else { return }
             self.cloudPlayer = nil
             self.outputting = false
+            self.meterTimer?.invalidate()
+            self.meterTimer = nil
+            self.level = 0
             let cb = self.onSpokenDone
             self.onSpokenDone = nil
             cb?()
+        }
+    }
+
+    private func startOutputMeter(_ player: AVAudioPlayer) {
+        meterTimer?.invalidate()
+        meterTimer = Timer.scheduledTimer(withTimeInterval: 0.055, repeats: true) {
+            [weak self, weak player] _ in
+            guard let self = self, let player = player, player.isPlaying else { return }
+            player.updateMeters()
+            let power = player.averagePower(forChannel: 0)
+            let raw = min(1, max(0, CGFloat((power + 48) / 48)))
+            self.level = self.level * 0.42 + raw * 0.58
+        }
+    }
+
+    private func startSyntheticMeter() {
+        meterTimer?.invalidate()
+        meterPhase = 0
+        meterTimer = Timer.scheduledTimer(withTimeInterval: 0.075, repeats: true) {
+            [weak self] _ in
+            guard let self = self, self.outputting else { return }
+            self.meterPhase += 0.72
+            let wave = 0.32 + abs(sin(self.meterPhase)) * 0.28
+            let flutter = CGFloat.random(in: 0.88...1.12)
+            self.level = self.level * 0.34 + wave * flutter * 0.66
         }
     }
 }
