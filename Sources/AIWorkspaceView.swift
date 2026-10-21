@@ -644,9 +644,7 @@ struct AIWorkspaceView: View {
     private func prepareChat() async {
         if chat == nil {
             await app.loadChats()
-            chat = app.chats.first(where: {
-                $0.bot == "housekeeper" || ($0.botRank == 0 && $0.type != "group")
-            })
+            chat = workspaceChat(in: app.chats)
         }
         if chat != nil { await loadMessages(silent: false) }
     }
@@ -655,7 +653,8 @@ struct AIWorkspaceView: View {
         guard let chat = chat else { return }
         if !silent { loadingMessages = true }
         if let result = try? await API.shared.messages(chatId: chat.id, limit: 60) {
-            messages = result.messages
+            let clearSeq = Int(API.shared.getLocal("ai.workspace.clearSeq", "0")) ?? 0
+            messages = result.messages.filter { ($0.seq ?? 0) > clearSeq }
             if let last = messages.last, last.senderId != myId {
                 waitingReply = false
             }
@@ -797,12 +796,15 @@ struct AIWorkspaceView: View {
     private func resolveChat() async -> Chat? {
         if let chat = chat { return chat }
         await app.loadChats()
-        let found = app.chats.first(where: {
-            $0.bot == "housekeeper" || ($0.botRank == 0 && $0.type != "group")
-        })
+        let found = workspaceChat(in: app.chats)
         chat = found
         if found == nil { app.show(Tr("小星正在准备中，请稍后再试")) }
         return found
+    }
+
+    private func workspaceChat(in chats: [Chat]) -> Chat? {
+        chats.first(where: { $0.bot == "housekeeper" })
+            ?? chats.first(where: { $0.botRank == 0 && $0.type != "group" })
     }
 
     private func openCall() {
@@ -827,6 +829,10 @@ struct AIWorkspaceView: View {
         }
         if let error = await API.shared.clearChat(chatId: target.id) {
             return error
+        }
+        let clearSeq = messages.compactMap { $0.seq }.max() ?? 0
+        if clearSeq > 0 {
+            API.shared.setLocal("ai.workspace.clearSeq", String(clearSeq))
         }
         LocalStore.clearChat(target.id)
         LocalNotify.clearChat(target.id)
@@ -1576,13 +1582,11 @@ private struct AIProfileSheet: View {
             }
             Button(Tr("取消"), role: .cancel) { }
         }
-        .confirmationDialog(Tr("确定清除 AI 工作台的对话吗？"),
-                            isPresented: $showClearChatConfirm,
-                            titleVisibility: .visible) {
-            Button(Tr("清除对话"), role: .destructive) {
-                clearChat()
-            }
+        .alert(Tr("确定清除 AI 工作台的对话吗？"), isPresented: $showClearChatConfirm) {
+            Button(Tr("清除对话"), role: .destructive) { clearChat() }
             Button(Tr("取消"), role: .cancel) { }
+        } message: {
+            Text(Tr("只清空你和小星的工作台聊天，不影响其他会话。"))
         }
         .onAppear {
             let clean = wallet.name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
