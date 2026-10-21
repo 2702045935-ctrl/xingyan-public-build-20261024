@@ -930,16 +930,23 @@ struct DirectChatInfoView: View {
                 SysToolsView { key in
                     sysPage = nil
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                        sysPage = (key == "pwd") ? .security
-                                : (key == "devices") ? .devices : .kefu
+                        sysPage = sysDestination(for: key)
                     }
                 }
+            case .support:
+                SupportView().environmentObject(app)
             case .kefu:
                 KefuPage().environmentObject(app)
             case .security:
                 AccountSecurityView().environmentObject(app)
             case .devices:
                 LoginDevicesView().environmentObject(app)
+            case .safety:
+                AccountSafetyCenterView().environmentObject(app)
+            case .feedback:
+                FeedbackView().environmentObject(app)
+            case .delete:
+                DeleteAccountView().environmentObject(app)
             }
         }
         .sheet(isPresented: $showChatBg) {
@@ -1090,60 +1097,68 @@ struct DirectChatInfoView: View {
     }
 
     private var sysQuickBar: some View {
-        HStack(spacing: 10) {
-            Button { sysPage = .tools } label: {
-                HStack(spacing: 9) {
-                    Image(systemName: "wrench.and.screwdriver.fill")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(C.green)
-                        .frame(width: 38, height: 38)
-                        .background(C.green.opacity(0.12))
-                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(Tr("自助工具"))
-                            .font(pf(15, .semibold))
-                            .foregroundColor(C.label)
-                        Text(Tr("改密码 · 登录设备 · 找回"))
-                            .font(pf(10.5))
-                            .foregroundColor(C.subLabel)
-                            .lineLimit(1)
-                    }
-                    Spacer(minLength: 0)
-                }
-                .padding(.horizontal, 10)
-                .frame(maxWidth: .infinity)
-                .frame(height: 58)
-                .background(C.cardBg)
-                .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-            }
-            .buttonStyle(.plain)
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 10),
+                            GridItem(.flexible(), spacing: 10)], spacing: 10) {
+            sysQuickButton(symbol: "wrench.and.screwdriver.fill",
+                           title: Tr("自助工具"),
+                           sub: Tr("改密码 · 登录设备"),
+                           color: C.green) { sysPage = .tools }
+            sysQuickButton(symbol: "headphones",
+                           title: Tr("帮助中心"),
+                           sub: Tr("常见问题 · 工单"),
+                           color: Color(hex: 0x2F73C9)) { sysPage = .support }
+            sysQuickButton(symbol: "lock.shield.fill",
+                           title: Tr("安全中心"),
+                           sub: Tr("冻结 · 解冻 · 解封"),
+                           color: Color(hex: 0xE59A2F)) { sysPage = .safety }
+            sysQuickButton(symbol: "bubble.left.and.text.bubble.right.fill",
+                           title: Tr("意见反馈"),
+                           sub: Tr("提交问题 · 看回复"),
+                           color: Color(hex: 0x7A5AF8)) { sysPage = .feedback }
+        }
+    }
 
-            Button { sysPage = .kefu } label: {
-                HStack(spacing: 9) {
-                    Image(systemName: "headphones")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(Color(hex: 0x2F73C9))
-                        .frame(width: 38, height: 38)
-                        .background(Color(hex: 0x2F73C9).opacity(0.12))
-                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(Tr("联系客服"))
-                            .font(pf(15, .semibold))
-                            .foregroundColor(C.label)
-                        Text(Tr("常见问题 · 转人工"))
-                            .font(pf(10.5))
-                            .foregroundColor(C.subLabel)
-                            .lineLimit(1)
-                    }
-                    Spacer(minLength: 0)
+    private func sysQuickButton(symbol: String, title: String, sub: String,
+                                color: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: symbol)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(color)
+                    .frame(width: 34, height: 34)
+                    .background(color.opacity(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(pf(13.5, .semibold))
+                        .foregroundColor(C.label)
+                        .lineLimit(1)
+                    Text(sub)
+                        .font(pf(9.5))
+                        .foregroundColor(C.subLabel)
+                        .lineLimit(1)
                 }
-                .padding(.horizontal, 10)
-                .frame(maxWidth: .infinity)
-                .frame(height: 58)
-                .background(C.cardBg)
-                .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                Spacer(minLength: 0)
             }
-            .buttonStyle(.plain)
+            .padding(.horizontal, 9)
+            .frame(maxWidth: .infinity)
+            .frame(height: 54)
+            .background(C.cardBg)
+            .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func sysDestination(for key: String) -> SysPage {
+        switch key {
+        case "pwd": return .security
+        case "devices": return .devices
+        case "support": return .support
+        case "safety": return .safety
+        case "feedback": return .feedback
+        case "delete": return .delete
+        default: return .kefu
         }
     }
 

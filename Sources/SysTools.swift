@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum SysPage: String, Identifiable {
-    case tools, kefu, security, devices
+    case tools, support, kefu, security, devices, safety, feedback, delete
     var id: String { rawValue }
 }
 
@@ -41,11 +41,11 @@ struct SysToolsView: View {
     private let items: [(key: String, icon: String, title: String, sub: String)] = [
         ("pwd",     "lock.rotation",        "修改登录密码",   "改完别的设备要重新登录"),
         ("devices", "iphone.gen3",          "登录设备管理",   "看有谁登录过你的号，可以踢掉"),
-        ("kefu",    "questionmark.circle",  "找回密码",       "密码忘了？找客服帮你重置"),
-        ("kefu",    "snowflake",            "冻结账号",       "怀疑被盗，先冻住不让别人登"),
-        ("kefu",    "sun.max",              "解冻账号",       "已经冻结过的号，申请解冻"),
-        ("kefu",    "xmark.circle",         "注销账号",       "不用了？注销前先看客服说明"),
-        ("kefu",    "bubble.left",          "意见反馈",       "哪里不好用，直接跟客服说")
+        ("support", "questionmark.circle",  "找回密码",       "查看找回流程或联系人工客服"),
+        ("safety",  "snowflake",            "冻结账号",       "怀疑被盗，先冻住不让别人登"),
+        ("safety",  "sun.max",              "解冻账号",       "已经冻结过的号，申请解冻"),
+        ("delete",  "xmark.circle",         "注销账号",       "不用了？注销前先看清数据说明"),
+        ("feedback","bubble.left",          "意见反馈",       "提交问题并查看处理结果")
     ]
 
     var body: some View {
