@@ -25,6 +25,7 @@ struct GroupInfoView: View {
     @State private var showRename = false
     @State private var nameDraft = ""
     @State private var showSearch = false
+    @State private var membersExpanded = false
 
     @State private var showGroupBg = false
     @State private var confirmClear = false
@@ -475,13 +476,20 @@ struct GroupInfoView: View {
         return s
     }
 
+    private var visibleMembers: [User] {
+        if membersExpanded || members.count <= 20 {
+            return members
+        }
+        return Array(members.prefix(19))
+    }
+
     private var memberCard: some View {
         VStack(alignment: .leading, spacing: 0) {
             if loading && members.isEmpty {
                 ProgressView().frame(maxWidth: .infinity).padding(.vertical, 22)
             } else {
                 LazyVGrid(columns: gridColumns, spacing: 14) {
-                    ForEach(members) { u in
+                    ForEach(visibleMembers) { u in
                         VStack(spacing: 6) {
                             ZStack(alignment: .topLeading) {
                                 Avatar(path: u.avatarPath, size: 52, radius: 10, level: u.qqLevel ?? 0)
@@ -545,6 +553,31 @@ struct GroupInfoView: View {
                                 Button { } label: { Label(Tr("只有群主能管理成员"), systemImage: "info.circle") }
                             }
                         }
+                    }
+
+                    if members.count > 20 && !membersExpanded {
+                        VStack(spacing: 6) {
+                            Button {
+                                withAnimation(.easeOut(duration: 0.18)) {
+                                    membersExpanded = true
+                                }
+                            } label: {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .fill(Color.dyn(0xF2F2F2, 0x2C2C31))
+                                        .frame(width: 52, height: 52)
+                                    Image(systemName: "person.2.fill")
+                                        .font(.system(size: 19, weight: .medium))
+                                        .foregroundColor(C.subLabel)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            Text(Tr("更多群成员"))
+                                .font(pf(10.5))
+                                .foregroundColor(C.subLabel)
+                                .lineLimit(1)
+                        }
+                        .frame(maxWidth: .infinity)
                     }
 
                     VStack(spacing: 6) {
