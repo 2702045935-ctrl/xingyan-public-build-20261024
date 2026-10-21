@@ -167,6 +167,7 @@ struct AITokenPlan: Decodable, Identifiable, Hashable {
     var bonus: Int
     var price: Double
     var tag: String?
+    var desc: String?
 
     var granted: Int { max(0, tokens) + max(0, bonus) }
 }
@@ -182,6 +183,15 @@ struct AITokenPurchase: Decodable, Identifiable, Hashable {
 struct AIWalletStatus: Decodable {
     var name: String?
     var model: String?
+    var voice: String?
+    var voices: [AIVoiceOption]?
+    var tier: String?
+    var tierName: String?
+    var voiceCall: Bool?
+    var longContext: Bool?
+    var extendedOutput: Bool?
+    var learning: Bool?
+    var learned: Int?
     var tokens: Int
     var used: Int
     var plans: [AITokenPlan]
@@ -192,6 +202,17 @@ struct AIWalletStatus: Decodable {
 struct AITokenPurchaseResult: Decodable {
     var tokens: Int
     var duplicate: Bool?
+}
+
+struct AIVoiceOption: Decodable, Identifiable, Hashable {
+    var id: String
+    var name: String
+    var desc: String?
+}
+
+struct AILearningStatus: Decodable {
+    var learning: Bool
+    var learned: Int
 }
 
 func imageRefPath(_ content: String) -> String {
@@ -4840,6 +4861,26 @@ private struct StarredPayload: Decodable {
         try await post("/api/ai/purchase",
                        ["planId": planId, "password": password, "requestId": requestId],
                        as: AITokenPurchaseResult.self)
+    }
+
+    func setAIName(_ name: String) async throws -> String {
+        struct Result: Decodable { var name: String }
+        let result: Result = try await post("/api/ai/name", ["name": name], as: Result.self)
+        return result.name
+    }
+
+    func setAIVoice(_ voice: String) async throws -> String {
+        struct Result: Decodable { var voice: String }
+        let result: Result = try await post("/api/ai/voice", ["voice": voice], as: Result.self)
+        return result.voice
+    }
+
+    func setAILearning(_ enabled: Bool) async throws -> AILearningStatus {
+        try await post("/api/ai/learning", ["enabled": enabled], as: AILearningStatus.self)
+    }
+
+    func resetAILearning() async throws -> AILearningStatus {
+        try await post("/api/ai/learning/reset", [:], as: AILearningStatus.self)
     }
 
     func upload(image: UIImage) async throws -> String {

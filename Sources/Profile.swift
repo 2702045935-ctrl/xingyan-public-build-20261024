@@ -1443,7 +1443,7 @@ struct ServiceView: View {
         .navigationDestination(isPresented: $showPayCode) { PayCodePage() }
 
         .fullScreenCover(isPresented: $showAIPage) {
-            AIPageView().environmentObject(app)
+            AIWorkspaceView().environmentObject(app)
         }
         .confirmationDialog(Tr("服务"), isPresented: $showMore, titleVisibility: .hidden) {
             Button(Tr(bt.moreRefresh ?? "刷新账单")) { Task { await loadBills() } }

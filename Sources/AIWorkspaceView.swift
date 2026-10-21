@@ -1,0 +1,1511 @@
+import SwiftUI
+import UIKit
+import UniformTypeIdentifiers
+
+struct AIWorkspaceView: View {
+    @EnvironmentObject private var app: AppState
+    @Environment(\.dismiss) private var dismiss
+
+    @ObservedObject private var realtime = Realtime.shared
+    @AppStorage("bot.autoRead") private var autoRead = false
+
+    @State private var wallet: AIWalletStatus?
+    @State private var chat: Chat?
+    @State private var messages: [Message] = []
+    @State private var prompt = ""
+    @State private var loading = true
+    @State private var loadingMessages = false
+    @State private var sending = false
+    @State private var waitingReply = false
+    @State private var uploading = false
+    @State private var loadError = ""
+
+    @State private var showCamera = false
+    @State private var showPhotos = false
+    @State private var showFiles = false
+    @State private var showAttachMenu = false
+    @State private var showRecharge = false
+    @State private var showProfile = false
+    @State private var callChat: Chat?
+    @State private var web: WebURL?
+    @State private var spoken = Set<String>()
+
+    @FocusState private var inputFocused: Bool
+
+    private let accent = Color(hex: 0x356FF4)
+
+    private var aiName: String {
+        let value = wallet?.name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return value.isEmpty ? "小星" : value
+    }
+
+    private var myId: String { app.me?.id ?? "" }
+    private var canSend: Bool {
+        !prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !sending && !uploading
+    }
+    private var tierName: String {
+        let name = wallet?.tierName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return name.isEmpty ? "轻量包" : name
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            navBar
+
+            if loading && wallet == nil {
+                VStack(spacing: 12) {
+                    ProgressView().tint(accent)
+                    Text(Tr("正在进入 AI 工作台"))
+                        .font(pf(12.5))
+                        .foregroundColor(C.subLabel)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if wallet == nil {
+                unavailable
+            } else {
+                workspace
+            }
+        }
+        .background(C.pageBg.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+        .swipeBack { dismiss() }
+        .hidesTabBar()
+        .task {
+            await load()
+            await poll()
+        }
+        .onChange(of: realtime.event) { _ in
+            guard chat != nil else { return }
+            Task { await loadMessages(silent: true) }
+        }
+        .sheet(isPresented: $showCamera) {
+            CameraPicker { image in
+                sendImage(image)
+            }
+            .ignoresSafeArea()
+        }
+        .sheet(isPresented: $showPhotos) {
+            PhotoPicker { image in
+                sendImage(image)
+            }
+        }
+        .sheet(isPresented: $showProfile, onDismiss: {
+            Task { await load(showLoading: false) }
+        }) {
+            if let current = wallet {
+                AIProfileSheet(wallet: current)
+                    .environmentObject(app)
+            }
+        }
+        .fullScreenCover(isPresented: $showRecharge, onDismiss: {
+            Task { await load(showLoading: false) }
+        }) {
+            if let current = wallet {
+                AIRechargeView(wallet: current) { updated in
+                    wallet = updated
+                }
+                .environmentObject(app)
+            }
+        }
+        .fullScreenCover(item: $callChat) {
+            AICallView(chat: $0)
+                .environmentObject(app)
+        }
+        .sheet(item: $web) {
+            SafariSheet(url: $0.url)
+        }
+        .fileImporter(isPresented: $showFiles,
+                      allowedContentTypes: [.item],
+                      allowsMultipleSelection: false) { result in
+            switch result {
+            case .success(let urls):
+                if let url = urls.first { sendFile(url) }
+            case .failure:
+                app.show(Tr("没有选中文件"))
+            }
+        }
+        .confirmationDialog(Tr("添加内容"), isPresented: $showAttachMenu, titleVisibility: .visible) {
+            Button(Tr("相册")) { showPhotos = true }
+            Button(Tr("文件")) { showFiles = true }
+            Button(Tr("取消"), role: .cancel) { }
+        }
+        .overlay {
+            if uploading {
+                ZStack {
+                    Color.black.opacity(0.18).ignoresSafeArea()
+                    VStack(spacing: 12) {
+                        ProgressView().tint(accent)
+                        Text(Tr("正在上传…"))
+                            .font(pf(13, .medium))
+                            .foregroundColor(C.label)
+                    }
+                    .padding(.horizontal, 26)
+                    .padding(.vertical, 20)
+                    .background(C.cardBg)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .shadow(color: .black.opacity(0.16), radius: 20, y: 8)
+                }
+            }
+        }
+    }
+
+    private var navBar: some View {
+        NavBar(title: Tr("AI工作台"), back: { dismiss() }) {
+            HStack(spacing: 7) {
+                Button {
+                    showProfile = true
+                } label: {
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(C.label)
+                        .frame(width: 32, height: 32)
+                        .background(Circle().fill(C.fieldBg))
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    openCall()
+                } label: {
+                    Image(systemName: "phone.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(accent)
+                        .frame(width: 32, height: 32)
+                        .background(Circle().fill(accent.opacity(0.11)))
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    showRecharge = true
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "bolt.fill")
+                            .font(.system(size: 9, weight: .bold))
+                        Text(compactTokens(wallet?.tokens ?? 0))
+                            .font(pf(10.5, .semibold))
+                    }
+                    .foregroundColor(C.subLabel)
+                    .padding(.horizontal, 9)
+                    .frame(height: 30)
+                    .background(Capsule().fill(C.fieldBg))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private var unavailable: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "sparkles")
+                .font(.system(size: 30, weight: .medium))
+                .foregroundColor(accent)
+            Text(Tr("AI 工作台暂时不可用"))
+                .font(pf(17, .semibold))
+                .foregroundColor(C.label)
+            Text(loadError.isEmpty ? Tr("请检查网络后再试") : loadError)
+                .font(pf(13))
+                .foregroundColor(C.subLabel)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 30)
+            Button(Tr("重新加载")) {
+                Task { await load() }
+            }
+            .font(pf(14, .medium))
+            .foregroundColor(.white)
+            .padding(.horizontal, 20)
+            .frame(height: 40)
+            .background(Capsule().fill(accent))
+            .buttonStyle(.plain)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var workspace: some View {
+        ScrollViewReader { proxy in
+            ScrollView(showsIndicators: false) {
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    if messages.isEmpty && !loadingMessages {
+                        emptyState
+                    } else {
+                        ForEach(messages) { message in
+                            messageRow(message)
+                                .id(message.id)
+                        }
+                        if waitingReply {
+                            typingRow.id("ai-working")
+                        }
+                    }
+                    Color.clear.frame(height: 1).id("ai-bottom")
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 16)
+            }
+            .scrollDismissesKeyboard(.interactively)
+            .onChange(of: messages.count) { _ in
+                scrollBottom(proxy)
+            }
+            .onChange(of: waitingReply) { _ in
+                scrollBottom(proxy)
+            }
+            .onChange(of: inputFocused) { focused in
+                if focused { scrollBottom(proxy) }
+            }
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            composer
+        }
+    }
+
+    private var emptyState: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(alignment: .center, spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(LinearGradient(colors: [Color(hex: 0x4A8BFF),
+                                                      Color(hex: 0x7B61FF)],
+                                             startPoint: .topLeading,
+                                             endPoint: .bottomTrailing))
+                        .frame(width: 52, height: 52)
+                        .shadow(color: accent.opacity(0.2), radius: 14, y: 6)
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundColor(.white)
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(Tr("你好，我是") + aiName)
+                        .font(pf(23, .bold))
+                        .foregroundColor(C.label)
+                    Text(Tr("今天想一起完成什么？"))
+                        .font(pf(14.5))
+                        .foregroundColor(C.subLabel)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.top, 8)
+
+            Text(tierName + " · " + Tr("写作、问答与日常代办"))
+                .font(pf(11.5, .medium))
+                .foregroundColor(C.subLabel)
+
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: 9),
+                GridItem(.flexible(), spacing: 9)
+            ], spacing: 9) {
+                ForEach(quickPrompts, id: \.0) { item in
+                    Button {
+                        submit(item.1)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Image(systemName: item.2)
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(accent)
+                            Text(item.0)
+                                .font(pf(13.5, .medium))
+                                .foregroundColor(C.label)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .padding(13)
+                        .frame(maxWidth: .infinity, minHeight: 78, alignment: .leading)
+                        .background(C.cardBg)
+                        .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous)
+                            .stroke(C.hairline.opacity(0.75), lineWidth: 0.6))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            HStack(spacing: 7) {
+                Image(systemName: "lock.open.fill")
+                    .font(.system(size: 10, weight: .semibold))
+                Text(Tr("聊天内容只用于完成当前任务"))
+                    .font(pf(10.5))
+            }
+            .foregroundColor(C.subLabel)
+            .padding(.top, 2)
+        }
+        .padding(.bottom, 18)
+    }
+
+    private var quickPrompts: [(String, String, String)] {
+        [
+            (Tr("帮我写作"), Tr("帮我写一份清楚、自然的工作通知。"), "square.and.pencil"),
+            (Tr("做一份计划"), Tr("帮我把今天要做的事情整理成一份可执行的计划。"), "checklist"),
+            (Tr("阅读文件"), Tr("我先发你一份文件，请帮我提炼重点。"), "doc.text.fill"),
+            (Tr("查最新资讯"), Tr("请联网查一下今天值得关注的科技资讯。"), "globe")
+        ]
+    }
+
+    @ViewBuilder
+    private func messageRow(_ message: Message) -> some View {
+        let mine = message.senderId == myId
+        if mine {
+            HStack {
+                Spacer(minLength: 48)
+                messageContent(message, mine: true)
+                    .padding(.horizontal, 13)
+                    .padding(.vertical, 10)
+                    .background(accent)
+                    .foregroundColor(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
+            .padding(.bottom, 14)
+        } else {
+            HStack(alignment: .top, spacing: 9) {
+                JarvisEyesAvatar(size: 25,
+                                 tint: EyesStore.shared.eyesOn ? nil : Color.clear,
+                                 staticOnly: true)
+                    .padding(.top, 2)
+                messageContent(message, mine: false)
+                    .frame(maxWidth: 330, alignment: .leading)
+                Spacer(minLength: 12)
+            }
+            .padding(.bottom, 17)
+        }
+    }
+
+    @ViewBuilder
+    private func messageContent(_ message: Message, mine: Bool) -> some View {
+        if message.isRecalled {
+            Text(Tr("这条消息已撤回"))
+                .font(pf(12.5))
+                .foregroundColor(mine ? Color.white.opacity(0.72) : C.subLabel)
+        } else {
+            switch message.kindName.lowercased() {
+            case "link":
+                if let link = linkPayload(message.body) {
+                    AIWorkspaceLinkCard(payload: link, accent: accent) {
+                        open(link)
+                    }
+                } else {
+                    messageText(message, mine: mine)
+                }
+            case "image":
+                RemoteImage(path: message.imagePath, mode: .fill, maxSide: 1000)
+                    .frame(width: 220, height: 164)
+                    .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+            case "file":
+                fileCard(message, mine: mine)
+            default:
+                if !mine, let target = firstWebLink(message.body) {
+                    VStack(alignment: .leading, spacing: 9) {
+                        messageText(message, mine: false)
+                        AIWorkspacePlainLinkCard(url: target, accent: accent) {
+                            web = WebURL(url: target)
+                        }
+                    }
+                } else {
+                    messageText(message, mine: mine)
+                }
+            }
+        }
+    }
+
+    private func messageText(_ message: Message, mine: Bool) -> some View {
+        let body = message.body.trimmingCharacters(in: .whitespacesAndNewlines)
+        return Text(RichText.lines(body.isEmpty ? "[" + message.kindName + "]" : body, size: 15.5))
+            .font(pf(15.5))
+            .lineSpacing(4)
+            .foregroundColor(mine ? .white : C.label)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func fileCard(_ message: Message, mine: Bool) -> some View {
+        let info = filePayload(message.body)
+        return Button {
+            if let url = info.url, let target = URL(string: url) {
+                web = WebURL(url: target)
+            }
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "doc.fill")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(mine ? .white : accent)
+                    .frame(width: 34, height: 34)
+                    .background(Circle().fill(mine ? Color.white.opacity(0.15) : accent.opacity(0.10)))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(info.name)
+                        .font(pf(13.5, .medium))
+                        .foregroundColor(mine ? .white : C.label)
+                        .lineLimit(1)
+                    Text(Tr("点击查看文件"))
+                        .font(pf(10.5))
+                        .foregroundColor(mine ? Color.white.opacity(0.7) : C.subLabel)
+                }
+                Spacer(minLength: 4)
+            }
+            .padding(10)
+            .frame(width: 220, alignment: .leading)
+            .background(mine ? Color.white.opacity(0.10) : C.cardBg)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var typingRow: some View {
+        HStack(alignment: .center, spacing: 9) {
+            JarvisEyesAvatar(size: 25,
+                             tint: EyesStore.shared.eyesOn ? nil : Color.clear,
+                             staticOnly: false)
+            HStack(spacing: 7) {
+                ProgressView()
+                    .controlSize(.small)
+                    .tint(accent)
+                Text(aiName + Tr("正在整理回答"))
+                    .font(pf(13))
+                    .foregroundColor(C.subLabel)
+            }
+            Spacer(minLength: 12)
+        }
+        .padding(.bottom, 16)
+    }
+
+    private var composer: some View {
+        VStack(spacing: 9) {
+            HStack(alignment: .bottom, spacing: 10) {
+                Button {
+                    showCamera = true
+                } label: {
+                    Image(systemName: "camera.fill")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(accent)
+                        .frame(width: 36, height: 36)
+                        .background(Circle().fill(accent.opacity(0.09)))
+                }
+                .buttonStyle(.plain)
+
+                TextField(Tr("开启一天的工作之旅吧…"), text: $prompt, axis: .vertical)
+                    .font(pf(15.5))
+                    .foregroundColor(C.label)
+                    .tint(accent)
+                    .lineLimit(1...5)
+                    .focused($inputFocused)
+                    .padding(.vertical, 9)
+
+                Button {
+                    submit(prompt)
+                } label: {
+                    Image(systemName: waitingReply ? "hourglass" : "arrow.up")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(width: 36, height: 36)
+                        .background(Circle().fill(canSend ? accent : accent.opacity(0.30)))
+                }
+                .buttonStyle(.plain)
+                .disabled(!canSend)
+            }
+
+            HStack(spacing: 8) {
+                composerButton("photo.fill", Tr("相册")) { showPhotos = true }
+                composerButton("plus", Tr("文件")) { showAttachMenu = true }
+                Spacer(minLength: 0)
+                Button {
+                    submit(Tr("请联网查一下最新信息，并给我一句清楚的结论。"))
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "globe")
+                        Text(Tr("联网"))
+                    }
+                    .font(pf(11, .medium))
+                    .foregroundColor(Color(hex: 0x4E6D96))
+                    .padding(.horizontal, 10)
+                    .frame(height: 27)
+                    .background(Capsule().fill(accent.opacity(0.08)))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.top, 11)
+        .padding(.bottom, 10)
+        .background(C.pageBg)
+        .overlay(alignment: .top) {
+            HairLine()
+        }
+    }
+
+    private func composerButton(_ icon: String, _ title: String,
+                                tap: @escaping () -> Void) -> some View {
+        Button(action: tap) {
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 11, weight: .semibold))
+                Text(title)
+                    .font(pf(11, .medium))
+            }
+            .foregroundColor(C.subLabel)
+            .padding(.horizontal, 9)
+            .frame(height: 27)
+            .background(Capsule().fill(C.fieldBg))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func scrollBottom(_ proxy: ScrollViewProxy) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.03) {
+            withAnimation(.easeOut(duration: 0.2)) {
+                proxy.scrollTo("ai-bottom", anchor: .bottom)
+            }
+        }
+    }
+
+    private func load(showLoading: Bool = true) async {
+        if showLoading { loading = true }
+        do {
+            wallet = try await API.shared.aiWallet()
+            loadError = ""
+        } catch {
+            loadError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        }
+        loading = false
+        await prepareChat()
+    }
+
+    private func prepareChat() async {
+        if chat == nil {
+            await app.loadChats()
+            chat = app.chats.first(where: {
+                $0.bot == "housekeeper" || ($0.botRank == 0 && $0.type != "group")
+            })
+        }
+        if chat != nil { await loadMessages(silent: false) }
+    }
+
+    private func loadMessages(silent: Bool) async {
+        guard let chat = chat else { return }
+        if !silent { loadingMessages = true }
+        if let result = try? await API.shared.messages(chatId: chat.id, limit: 60) {
+            messages = result.messages
+            if let last = messages.last, last.senderId != myId {
+                waitingReply = false
+            }
+            if let last = messages.last, last.senderId != myId {
+                autoReadLatest(last)
+            }
+        }
+        loadingMessages = false
+    }
+
+    private func poll() async {
+        while !Task.isCancelled {
+            try? await Task.sleep(nanoseconds: 12_000_000_000)
+            if Task.isCancelled { return }
+            if chat != nil { await loadMessages(silent: true) }
+        }
+    }
+
+    private func submit(_ raw: String) {
+        let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty, !sending, !uploading else { return }
+        prompt = ""
+        inputFocused = false
+        Task {
+            guard let target = await resolveChat() else { return }
+            await deliverText(text, chat: target)
+        }
+    }
+
+    private func deliverText(_ text: String, chat target: Chat) async {
+        sending = true
+        waitingReply = true
+        do {
+            _ = try await API.shared.send(chatId: target.id,
+                                          kind: "text",
+                                          content: text,
+                                          clientId: UUID().uuidString.lowercased())
+            await loadMessages(silent: true)
+            sending = false
+            await waitForReply()
+        } catch {
+            sending = false
+            waitingReply = false
+            app.show((error as? LocalizedError)?.errorDescription ?? "发送失败，请检查网络")
+        }
+    }
+
+    private func waitForReply() async {
+        for _ in 0..<45 {
+            if Task.isCancelled || !waitingReply { return }
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            if Task.isCancelled { return }
+            await loadMessages(silent: true)
+        }
+        if waitingReply {
+            waitingReply = false
+            app.show(Tr("小星还在处理，回复到了会自动显示"))
+        }
+    }
+
+    private func sendImage(_ image: UIImage) {
+        guard !uploading else { return }
+        let ask = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+        prompt = ""
+        uploading = true
+        waitingReply = true
+        Task {
+            do {
+                let target = await resolveChat()
+                guard let target = target else {
+                    uploading = false
+                    waitingReply = false
+                    return
+                }
+                let uploaded = try await API.shared.uploadImageForSend(image, original: false)
+                _ = try await API.shared.send(chatId: target.id,
+                                              kind: "image",
+                                              content: uploaded.url,
+                                              clientId: UUID().uuidString.lowercased(),
+                                              imgW: Int(image.size.width * image.scale),
+                                              imgH: Int(image.size.height * image.scale))
+                uploading = false
+                await loadMessages(silent: true)
+                await deliverText(ask.isEmpty ? Tr("请看看这张图片，告诉我里面有什么重点。") : ask,
+                                  chat: target)
+            } catch {
+                uploading = false
+                waitingReply = false
+                app.show((error as? LocalizedError)?.errorDescription ?? "图片发送失败")
+            }
+        }
+    }
+
+    private func sendFile(_ url: URL) {
+        guard !uploading else { return }
+        let ask = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+        prompt = ""
+        uploading = true
+        waitingReply = true
+        Task {
+            let accessed = url.startAccessingSecurityScopedResource()
+            defer { if accessed { url.stopAccessingSecurityScopedResource() } }
+            do {
+                let target = await resolveChat()
+                guard let target = target else {
+                    uploading = false
+                    waitingReply = false
+                    return
+                }
+                let data = try Data(contentsOf: url)
+                guard !data.isEmpty else { throw APIError.message("读不到这个文件") }
+                guard data.count <= 80 * 1024 * 1024 else {
+                    throw APIError.message("文件超过 80MB，请先压缩再发")
+                }
+                let name = url.lastPathComponent.isEmpty ? "file" : url.lastPathComponent
+                let uploaded = try await API.shared.rawUpload([
+                    "dataUrl": "data:application/octet-stream;base64," + data.base64EncodedString(),
+                    "filename": name
+                ])
+                let safeName = name.replacingOccurrences(of: "\"", with: "")
+                    .replacingOccurrences(of: "\\", with: "")
+                let content = "{\"url\":\"\(uploaded.url)\",\"name\":\"\(safeName)\",\"bytes\":\(data.count)}"
+                _ = try await API.shared.send(chatId: target.id,
+                                              kind: "file",
+                                              content: content,
+                                              clientId: UUID().uuidString.lowercased())
+                uploading = false
+                await loadMessages(silent: true)
+                await deliverText(ask.isEmpty ? Tr("请阅读这份文件并提炼重点。") : ask,
+                                  chat: target)
+            } catch {
+                uploading = false
+                waitingReply = false
+                app.show((error as? LocalizedError)?.errorDescription ?? "文件发送失败")
+            }
+        }
+    }
+
+    private func resolveChat() async -> Chat? {
+        if let chat = chat { return chat }
+        await app.loadChats()
+        let found = app.chats.first(where: {
+            $0.bot == "housekeeper" || ($0.botRank == 0 && $0.type != "group")
+        })
+        chat = found
+        if found == nil { app.show(Tr("小星正在准备中，请稍后再试")) }
+        return found
+    }
+
+    private func openCall() {
+        Task {
+            if let target = await resolveChat() { callChat = target }
+        }
+    }
+
+    private func autoReadLatest(_ message: Message) {
+        guard autoRead, !spoken.contains(message.id) else { return }
+        let text = message.body.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty, !text.hasPrefix("{") else { return }
+        spoken.insert(message.id)
+        Speaker.shared.speak(text)
+    }
+
+    private func open(_ link: AIWorkspaceLinkPayload) {
+        if let raw = link.scheme, !raw.isEmpty, let target = URL(string: raw),
+           UIApplication.shared.canOpenURL(target) {
+            UIApplication.shared.open(target)
+            return
+        }
+        if let target = URL(string: link.url), ["http", "https"].contains(target.scheme?.lowercased() ?? "") {
+            web = WebURL(url: target)
+            return
+        }
+        app.show(Tr("这个链接暂时打不开"))
+    }
+
+    private func linkPayload(_ body: String) -> AIWorkspaceLinkPayload? {
+        guard let data = body.data(using: .utf8) else { return nil }
+        return try? JSONDecoder().decode(AIWorkspaceLinkPayload.self, from: data)
+    }
+
+    private func filePayload(_ body: String) -> (name: String, url: String?) {
+        guard let data = body.data(using: .utf8),
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return (body.isEmpty ? "文件" : body, nil)
+        }
+        let name = (object["name"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "文件"
+        let path = object["url"] as? String
+        return (name.isEmpty ? "文件" : name,
+                path.flatMap { API.shared.assetURL($0)?.absoluteString })
+    }
+
+    private func firstWebLink(_ body: String) -> URL? {
+        guard let regex = try? NSRegularExpression(pattern: "https?://[^\\s<>]+",
+                                                   options: [.caseInsensitive]) else { return nil }
+        let source = body as NSString
+        guard let match = regex.firstMatch(in: body, range: NSRange(location: 0, length: source.length))
+        else { return nil }
+        var raw = source.substring(with: match.range)
+        while let last = raw.last, ".,，。!！?？;；)".contains(last) {
+            raw.removeLast()
+        }
+        return URL(string: raw)
+    }
+
+    private func compactTokens(_ value: Int) -> String {
+        let n = max(0, value)
+        if n >= 1_000_000 {
+            let v = Double(n) / 1_000_000
+            return String(format: v >= 10 ? "%.0fM" : "%.1fM", v)
+        }
+        if n >= 1_000 {
+            let v = Double(n) / 1_000
+            return String(format: v >= 100 ? "%.0fK" : "%.1fK", v)
+        }
+        return String(n)
+    }
+}
+
+private struct AIWorkspaceLinkPayload: Decodable {
+    var title: String?
+    var sub: String?
+    var url: String
+    var scheme: String?
+    var image: String?
+    var cardType: String?
+    var badge: String?
+    var action: String?
+    var keyword: String?
+    var meta: String?
+    var reviews: String?
+}
+
+private struct AIWorkspaceLinkCard: View {
+    let payload: AIWorkspaceLinkPayload
+    let accent: Color
+    let onTap: () -> Void
+
+    private var title: String {
+        let value = payload.title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return value.isEmpty ? "打开链接" : value
+    }
+
+    private var subtitle: String {
+        let value = payload.sub?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !value.isEmpty { return value }
+        return payload.meta ?? payload.url
+    }
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: 0) {
+                if let image = payload.image, !image.isEmpty {
+                    RemoteImage(path: image, mode: .fill, maxSide: 500)
+                        .frame(height: 108)
+                }
+                VStack(alignment: .leading, spacing: 7) {
+                    HStack(alignment: .top, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text(title)
+                                .font(pf(14.5, .semibold))
+                                .foregroundColor(C.label)
+                                .lineLimit(2)
+                                .multilineTextAlignment(.leading)
+                            if !subtitle.isEmpty {
+                                Text(subtitle)
+                                    .font(pf(11.5))
+                                    .foregroundColor(C.subLabel)
+                                    .lineLimit(2)
+                                    .multilineTextAlignment(.leading)
+                            }
+                        }
+                        Spacer(minLength: 4)
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(accent)
+                            .frame(width: 25, height: 25)
+                            .background(Circle().fill(accent.opacity(0.09)))
+                    }
+                    if let badge = payload.badge, !badge.isEmpty {
+                        Text(badge)
+                            .font(pf(9.5, .medium))
+                            .foregroundColor(accent)
+                            .padding(.horizontal, 7)
+                            .frame(height: 19)
+                            .background(Capsule().fill(accent.opacity(0.09)))
+                    }
+                }
+                .padding(12)
+            }
+            .frame(width: 280, alignment: .leading)
+            .background(C.cardBg)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(C.hairline, lineWidth: 0.7))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct AIWorkspacePlainLinkCard: View {
+    let url: URL
+    let accent: Color
+    let onTap: () -> Void
+
+    private var host: String {
+        let value = url.host ?? url.absoluteString
+        return value.hasPrefix("www.") ? String(value.dropFirst(4)) : value
+    }
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 9) {
+                Image(systemName: "safari.fill")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(accent)
+                    .frame(width: 30, height: 30)
+                    .background(Circle().fill(accent.opacity(0.09)))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(host)
+                        .font(pf(12.5, .medium))
+                        .foregroundColor(C.label)
+                        .lineLimit(1)
+                    Text(Tr("在星言内打开链接"))
+                        .font(pf(10.5))
+                        .foregroundColor(C.subLabel)
+                }
+                Spacer(minLength: 4)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(C.subLabel)
+            }
+            .padding(10)
+            .background(C.cardBg)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(C.hairline, lineWidth: 0.7))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct AIRechargeView: View {
+    @EnvironmentObject private var app: AppState
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var wallet: AIWalletStatus
+    @State private var selectedPlan: AITokenPlan?
+
+    let onUpdate: (AIWalletStatus) -> Void
+    private let accent = Color(hex: 0x356FF4)
+
+    init(wallet: AIWalletStatus, onUpdate: @escaping (AIWalletStatus) -> Void) {
+        _wallet = State(initialValue: wallet)
+        self.onUpdate = onUpdate
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            NavBar(title: Tr("充值"), back: { dismiss() }) { }
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 7) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(Tr("当前方案"))
+                                    .font(pf(11.5))
+                                    .foregroundColor(C.subLabel)
+                                Text(wallet.tierName ?? "轻量包")
+                                    .font(pf(18, .semibold))
+                                    .foregroundColor(C.label)
+                            }
+                            Spacer()
+                            HStack(spacing: 5) {
+                                Image(systemName: "bolt.fill")
+                                    .font(.system(size: 10, weight: .bold))
+                                Text(compact(wallet.tokens) + " Token")
+                                    .font(pf(12.5, .semibold))
+                            }
+                            .foregroundColor(accent)
+                        }
+                        Text(Tr("按使用量计费。充值后立即到账，可在工作台查看消耗。"))
+                            .font(pf(12))
+                            .foregroundColor(C.subLabel)
+                            .lineSpacing(3)
+                    }
+                    .padding(16)
+                    .background(C.cardBg)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(C.hairline, lineWidth: 0.7))
+
+                    Text(Tr("选择套餐"))
+                        .font(pf(16, .semibold))
+                        .foregroundColor(C.label)
+
+                    ForEach(wallet.plans) { plan in
+                        planCard(plan)
+                    }
+
+                    Text(Tr("Token 用于 AI 问答、文件理解和代办任务。套餐功能以实际账号权限为准。"))
+                        .font(pf(10.5))
+                        .foregroundColor(C.subLabel)
+                        .lineSpacing(3)
+                        .padding(.top, 2)
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 36)
+            }
+            .background(C.pageBg)
+        }
+        .background(C.pageBg.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+        .sheet(item: $selectedPlan) { plan in
+            AIPaymentSheet(plan: plan, accent: accent) { result in
+                var current = wallet
+                current.tokens = result.tokens
+                wallet = current
+                onUpdate(current)
+                app.show(Tr("Token 已到账"))
+                Task { await refresh() }
+            }
+            .environmentObject(app)
+        }
+    }
+
+    private func planCard(_ plan: AITokenPlan) -> some View {
+        let recommended = plan.tag == "推荐" || plan.id == "standard"
+        return Button {
+            selectedPlan = plan
+        } label: {
+            VStack(alignment: .leading, spacing: 13) {
+                HStack(spacing: 8) {
+                    Text(plan.name)
+                        .font(pf(17, .semibold))
+                        .foregroundColor(C.label)
+                    if recommended {
+                        Text(Tr("推荐"))
+                            .font(pf(9, .medium))
+                            .foregroundColor(accent)
+                            .padding(.horizontal, 7)
+                            .frame(height: 19)
+                            .background(Capsule().fill(accent.opacity(0.10)))
+                    }
+                    Spacer()
+                    Text("¥" + moneyFmt(plan.price))
+                        .font(pfMoney(22, .bold))
+                        .foregroundColor(C.label)
+                }
+
+                HStack(spacing: 6) {
+                    Text(compact(plan.granted) + " Token")
+                        .font(pf(12.5, .semibold))
+                        .foregroundColor(accent)
+                    if plan.bonus > 0 {
+                        Text(Tr("含赠送") + compact(plan.bonus))
+                            .font(pf(10.5))
+                            .foregroundColor(C.subLabel)
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 7) {
+                    ForEach(features(for: plan), id: \.self) { feature in
+                        HStack(spacing: 7) {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundColor(accent)
+                                .frame(width: 16, height: 16)
+                                .background(Circle().fill(accent.opacity(0.09)))
+                            Text(feature)
+                                .font(pf(12))
+                                .foregroundColor(C.subLabel)
+                        }
+                    }
+                }
+
+                HStack {
+                    if let desc = plan.desc, !desc.isEmpty {
+                        Text(desc)
+                            .font(pf(10.5))
+                            .foregroundColor(C.subLabel)
+                            .lineLimit(2)
+                    }
+                    Spacer(minLength: 8)
+                    Text(Tr("选择"))
+                        .font(pf(12, .semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 15)
+                        .frame(height: 31)
+                        .background(Capsule().fill(accent))
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(C.cardBg)
+            .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 17, style: .continuous)
+                .stroke(recommended ? accent.opacity(0.46) : C.hairline,
+                        lineWidth: recommended ? 1 : 0.7))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func features(for plan: AITokenPlan) -> [String] {
+        switch plan.id {
+        case "pro":
+            return [
+                Tr("写作、联网检索、文件与图片理解"),
+                Tr("Word / Excel / PPT 与代码工作"),
+                Tr("语音通话、代码排查和完整代办"),
+                Tr("AI 点外卖、购物与消息代办")
+            ]
+        case "standard":
+            return [
+                Tr("写作、联网检索、文件与图片理解"),
+                Tr("Word / Excel / PPT 办公"),
+                Tr("语音通话与长上下文"),
+                Tr("提醒、天气与消息代办")
+            ]
+        default:
+            return [
+                Tr("简单文字对话"),
+                Tr("基础问答与灵感"),
+                Tr("不包含文件和代码服务"),
+                Tr("不包含语音通话")
+            ]
+        }
+    }
+
+    private func refresh() async {
+        guard let updated = try? await API.shared.aiWallet() else { return }
+        wallet = updated
+        onUpdate(updated)
+    }
+
+    private func compact(_ value: Int) -> String {
+        let n = max(0, value)
+        if n >= 1_000_000 {
+            let v = Double(n) / 1_000_000
+            return String(format: v >= 10 ? "%.0fM" : "%.1fM", v)
+        }
+        if n >= 1_000 {
+            let v = Double(n) / 1_000
+            return String(format: v >= 100 ? "%.0fK" : "%.1fK", v)
+        }
+        return String(n)
+    }
+}
+
+private struct AIPaymentSheet: View {
+    @EnvironmentObject private var app: AppState
+    @Environment(\.dismiss) private var dismiss
+
+    let plan: AITokenPlan
+    let accent: Color
+    let onPaid: (AITokenPurchaseResult) -> Void
+
+    @State private var password = ""
+    @State private var requestId = UUID().uuidString.lowercased()
+    @State private var paying = false
+    @State private var errorText = ""
+    @FocusState private var focused: Bool
+
+    private var valid: Bool { password.count == 6 && !paying }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(Tr("确认充值"))
+                    .font(pf(18, .semibold))
+                    .foregroundColor(C.label)
+                Spacer()
+                Button(Tr("关闭")) { dismiss() }
+                    .font(pf(13))
+                    .foregroundColor(C.subLabel)
+                    .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 20)
+            .frame(height: 58)
+
+            VStack(alignment: .leading, spacing: 7) {
+                Text(plan.name)
+                    .font(pf(16, .semibold))
+                    .foregroundColor(C.label)
+                Text(compact(plan.granted) + " Token · ¥" + moneyFmt(plan.price))
+                    .font(pf(13, .medium))
+                    .foregroundColor(accent)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(15)
+            .background(accent.opacity(0.07))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .padding(.horizontal, 20)
+
+            SecureField(Tr("输入 6 位支付密码"), text: $password)
+                .keyboardType(.numberPad)
+                .textContentType(.password)
+                .focused($focused)
+                .font(pf(17, .medium))
+                .padding(.horizontal, 14)
+                .frame(height: 50)
+                .background(C.fieldBg)
+                .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                .padding(.horizontal, 20)
+                .padding(.top, 18)
+                .onChange(of: password) { value in
+                    let clean = String(value.filter { $0 >= "0" && $0 <= "9" }.prefix(6))
+                    if clean != value { password = clean }
+                    errorText = ""
+                }
+
+            if !errorText.isEmpty {
+                Text(errorText)
+                    .font(pf(12.5))
+                    .foregroundColor(C.red)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 9)
+            }
+
+            Button {
+                pay()
+            } label: {
+                HStack(spacing: 8) {
+                    if paying { ProgressView().tint(.white) }
+                    Text(paying ? Tr("处理中…") : Tr("确认支付"))
+                        .font(pf(14.5, .semibold))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 48)
+                .background(RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    .fill(valid ? accent : accent.opacity(0.35)))
+            }
+            .buttonStyle(.plain)
+            .disabled(!valid)
+            .padding(.horizontal, 20)
+            .padding(.top, 18)
+
+            Text(Tr("Token 为虚拟数字权益，购买后立即到账，不支持退款。"))
+                .font(pf(10.5))
+                .foregroundColor(C.subLabel)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 26)
+                .padding(.top, 12)
+
+            Spacer(minLength: 20)
+        }
+        .background(C.cardBg.ignoresSafeArea())
+        .onAppear { focused = true }
+    }
+
+    private func pay() {
+        guard valid else { return }
+        paying = true
+        errorText = ""
+        Task {
+            do {
+                let result = try await API.shared.buyAITokens(planId: plan.id,
+                                                              password: password,
+                                                              requestId: requestId)
+                await MainActor.run {
+                    paying = false
+                    onPaid(result)
+                    dismiss()
+                }
+            } catch {
+                await MainActor.run {
+                    paying = false
+                    errorText = (error as? LocalizedError)?.errorDescription ?? "充值失败，请稍后再试"
+                }
+            }
+        }
+    }
+
+    private func compact(_ value: Int) -> String {
+        let n = max(0, value)
+        if n >= 1_000_000 {
+            let v = Double(n) / 1_000_000
+            return String(format: v >= 10 ? "%.0fM" : "%.1fM", v)
+        }
+        if n >= 1_000 {
+            let v = Double(n) / 1_000
+            return String(format: v >= 100 ? "%.0fK" : "%.1fK", v)
+        }
+        return String(n)
+    }
+}
+
+private struct AIProfileSheet: View {
+    @EnvironmentObject private var app: AppState
+    @Environment(\.dismiss) private var dismiss
+
+    let wallet: AIWalletStatus
+
+    @State private var name = ""
+    @State private var selectedVoice = ""
+    @State private var learning = true
+    @State private var learned = 0
+    @State private var savingName = false
+    @State private var showResetConfirm = false
+    private let accent = Color(hex: 0x356FF4)
+
+    private var voices: [AIVoiceOption] { wallet.voices ?? [] }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(Tr("小星设置"))
+                    .font(pf(18, .semibold))
+                    .foregroundColor(C.label)
+                Spacer()
+                Button(Tr("完成")) { dismiss() }
+                    .font(pf(13.5, .medium))
+                    .foregroundColor(accent)
+                    .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 20)
+            .frame(height: 58)
+
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 18) {
+                    settingBlock(Tr("AI 名字")) {
+                        HStack(spacing: 9) {
+                            TextField(Tr("小星"), text: $name)
+                                .font(pf(15))
+                                .foregroundColor(C.label)
+                                .padding(.horizontal, 12)
+                                .frame(height: 44)
+                                .background(C.fieldBg)
+                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            Button {
+                                saveName()
+                            } label: {
+                                Text(savingName ? Tr("保存中") : Tr("保存"))
+                                    .font(pf(12.5, .semibold))
+                                    .foregroundColor(.white)
+                                    .frame(width: 66, height: 44)
+                                    .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .fill(savingName ? accent.opacity(0.4) : accent))
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(savingName)
+                        }
+                    }
+
+                    settingBlock(Tr("习惯学习")) {
+                        HStack(spacing: 12) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(Tr("越用越懂你的表达和偏好"))
+                                    .font(pf(13))
+                                    .foregroundColor(C.label)
+                                Text(Tr("已记录 ") + "\(learned)" + Tr(" 条偏好"))
+                                    .font(pf(11))
+                                    .foregroundColor(C.subLabel)
+                            }
+                            Spacer()
+                            Toggle("", isOn: Binding(get: { learning }, set: { value in
+                                learning = value
+                                setLearning(value)
+                            }))
+                            .labelsHidden()
+                            .tint(accent)
+                        }
+                        Button {
+                            showResetConfirm = true
+                        } label: {
+                            Text(Tr("清除学习记录"))
+                                .font(pf(12))
+                                .foregroundColor(C.red)
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(!learning || learned == 0)
+                    }
+
+                    settingBlock(Tr("音色")) {
+                        if voices.isEmpty {
+                            HStack(spacing: 9) {
+                                Image(systemName: "lock.fill")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundColor(C.subLabel)
+                                Text(Tr("音色和语音通话需要标准包及以上"))
+                                    .font(pf(12))
+                                    .foregroundColor(C.subLabel)
+                            }
+                        } else {
+                            ForEach(voices) { voice in
+                                Button {
+                                    chooseVoice(voice.id)
+                                } label: {
+                                    HStack(spacing: 10) {
+                                        Image(systemName: selectedVoice == voice.id
+                                              ? "checkmark.circle.fill" : "circle")
+                                            .font(.system(size: 17, weight: .medium))
+                                            .foregroundColor(selectedVoice == voice.id ? accent : C.subLabel)
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(voice.name)
+                                                .font(pf(13.5, .medium))
+                                                .foregroundColor(C.label)
+                                            if let desc = voice.desc, !desc.isEmpty {
+                                                Text(desc)
+                                                    .font(pf(10.5))
+                                                    .foregroundColor(C.subLabel)
+                                            }
+                                        }
+                                        Spacer(minLength: 0)
+                                    }
+                                    .padding(.vertical, 8)
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+
+                    if wallet.tier == "starter" {
+                        Text(Tr("轻量包只支持简单文字对话。需要写作、文件、语音或代办时，可在充值页升级。"))
+                            .font(pf(11.5))
+                            .foregroundColor(C.subLabel)
+                            .lineSpacing(3)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 10)
+                .padding(.bottom, 32)
+            }
+        }
+        .background(C.cardBg.ignoresSafeArea())
+        .confirmationDialog(Tr("确定清除小星的学习记录吗？"),
+                            isPresented: $showResetConfirm,
+                            titleVisibility: .visible) {
+            Button(Tr("清除"), role: .destructive) {
+                resetLearning()
+            }
+            Button(Tr("取消"), role: .cancel) { }
+        }
+        .onAppear {
+            let clean = wallet.name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            name = clean.isEmpty ? "小星" : clean
+            selectedVoice = wallet.voice ?? ""
+            learning = wallet.learning ?? true
+            learned = wallet.learned ?? 0
+        }
+    }
+
+    private func settingBlock<Content: View>(_ title: String,
+                                             @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 11) {
+            Text(title)
+                .font(pf(14, .semibold))
+                .foregroundColor(C.label)
+            content()
+        }
+        .padding(15)
+        .background(C.pageBg)
+        .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous)
+            .stroke(C.hairline, lineWidth: 0.7))
+    }
+
+    private func saveName() {
+        let clean = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        savingName = true
+        Task {
+            do {
+                let saved = try await API.shared.setAIName(clean)
+                await MainActor.run {
+                    name = saved.isEmpty ? "小星" : saved
+                    savingName = false
+                    app.show(Tr("名字已更新"))
+                }
+            } catch {
+                await MainActor.run {
+                    savingName = false
+                    app.show((error as? LocalizedError)?.errorDescription ?? "名字保存失败")
+                }
+            }
+        }
+    }
+
+    private func setLearning(_ enabled: Bool) {
+        Task {
+            do {
+                let result = try await API.shared.setAILearning(enabled)
+                await MainActor.run {
+                    learning = result.learning
+                    learned = result.learned
+                    app.show(enabled ? Tr("已开启习惯学习") : Tr("已关闭习惯学习"))
+                }
+            } catch {
+                await MainActor.run {
+                    learning = !enabled
+                    app.show((error as? LocalizedError)?.errorDescription ?? "设置失败")
+                }
+            }
+        }
+    }
+
+    private func resetLearning() {
+        Task {
+            do {
+                let result = try await API.shared.resetAILearning()
+                await MainActor.run {
+                    learning = result.learning
+                    learned = result.learned
+                    app.show(Tr("学习记录已清除"))
+                }
+            } catch {
+                await MainActor.run {
+                    app.show((error as? LocalizedError)?.errorDescription ?? "清除失败")
+                }
+            }
+        }
+    }
+
+    private func chooseVoice(_ id: String) {
+        guard selectedVoice != id else { return }
+        let old = selectedVoice
+        selectedVoice = id
+        Task {
+            do {
+                selectedVoice = try await API.shared.setAIVoice(id)
+                await MainActor.run { app.show(Tr("音色已切换")) }
+            } catch {
+                await MainActor.run {
+                    selectedVoice = old
+                    app.show((error as? LocalizedError)?.errorDescription ?? "音色切换失败")
+                }
+            }
+        }
+    }
+}

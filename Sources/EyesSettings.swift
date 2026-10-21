@@ -163,7 +163,7 @@ struct EyesSettingsView: View {
             Text(Tr("买断之后一直有效，不再重复收费。"))
         }
         .fullScreenCover(isPresented: $showAI) {
-            AIPageView().environmentObject(app)
+            AIWorkspaceView().environmentObject(app)
         }
     }
 

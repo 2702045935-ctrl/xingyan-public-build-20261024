@@ -51,21 +51,15 @@ struct PluginsView: View {
                                         Text(Tr("小星 AI"))
                                             .font(pf(21, .semibold))
                                             .foregroundColor(C.label)
-                                        Text(Tr("已开启"))
-                                            .font(pf(9.5, .medium))
-                                            .foregroundColor(Color(hex: 0x2F6FED))
-                                            .padding(.horizontal, 6)
-                                            .frame(height: 18)
-                                            .background(Capsule().fill(Color(hex: 0x2F6FED).opacity(0.10)))
                                     }
-                                    Text(Tr("多模型智能助理"))
+                                    Text(Tr("写作、问答与日常代办"))
                                         .font(pf(12.5))
                                         .foregroundColor(C.subLabel)
                                 }
                                 Spacer(minLength: 0)
                             }
 
-                            Text(Tr("问答、创作、联网检索与图片理解。购买 Token 后即可使用完整能力，额度实时到账。"))
+                            Text(Tr("在一个页面里完成写作、文件阅读、联网检索和日常代办。"))
                                 .font(pf(13))
                                 .lineSpacing(3)
                                 .foregroundColor(C.subLabel)
@@ -156,7 +150,7 @@ struct PluginsView: View {
         .navigationDestination(isPresented: $showEyes) { EyesSettingsView() }
         .navigationDestination(isPresented: $showBrowser) { InAppBrowserView() }
         .navigationDestination(isPresented: $showAI) {
-            AIPageView().environmentObject(app)
+            AIWorkspaceView().environmentObject(app)
         }
         .fullScreenCover(isPresented: $showDrop) {
             FaceToFaceFileSheet(rows: [],
