@@ -219,9 +219,9 @@ struct AIWorkspaceView: View {
                         .frame(width: 34, height: 34)
                         .background {
                             GlassBackground(shape: Circle(),
-                                            tint: Color(hex: 0xEEF2F8).opacity(0.45),
                                             shadow: true,
-                                            seed: 0.70)
+                                            seed: 0.70,
+                                            tint: Color(hex: 0xEEF2F8).opacity(0.45))
                         }
                 }
                 .buttonStyle(.plain)
