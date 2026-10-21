@@ -339,7 +339,7 @@ struct AIWorkspaceView: View {
             }
 
             if wallet?.tier != "starter" {
-                HStack(spacing: 10) {
+                HStack(spacing: 8) {
                     officeQuickButton(
                         title: Tr("Word 文档"),
                         symbol: "doc.text.fill",
@@ -350,6 +350,13 @@ struct AIWorkspaceView: View {
                         symbol: "tablecells.fill",
                         prompt: Tr("请帮我用 Excel 做一份表格，内容包括：")
                     )
+                    if wallet?.tier == "pro" {
+                        officeQuickButton(
+                            title: Tr("网页 H5"),
+                            symbol: "safari.fill",
+                            prompt: Tr("请直接做一个完整、可打开、可交互的网页或小程序，需求是：")
+                        )
+                    }
                 }
                 .padding(.top, 6)
             }
@@ -1268,6 +1275,7 @@ private struct AIRechargeView: View {
             return [
                 Tr("写作、联网检索、文件与图片理解"),
                 Tr("Word / Excel / PPT 与代码工作"),
+                Tr("复杂网页 / H5 / 小程序成品直接打开"),
                 Tr("语音通话、代码排查和完整代办"),
                 Tr("AI 点外卖、购物与消息代办")
             ]
