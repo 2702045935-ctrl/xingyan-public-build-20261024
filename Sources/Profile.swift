@@ -500,7 +500,10 @@ struct NewFriendsView: View {
     private func load() async {
         if let d = try? await API.shared.friendRequests() {
             let localIds = Set(locallyAccepted.keys)
-            incoming = d.incoming.filter { !localIds.contains($0.id) }
+            let friendIds = Set(d.friends.map { $0.id })
+            incoming = d.incoming.filter {
+                !localIds.contains($0.id) && !friendIds.contains($0.id)
+            }
             outgoing = d.outgoing
             var mergedAdded = d.added
             for user in locallyAccepted.values where !mergedAdded.contains(where: { $0.id == user.id }) {

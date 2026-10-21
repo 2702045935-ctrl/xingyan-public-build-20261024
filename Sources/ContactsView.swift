@@ -670,6 +670,8 @@ struct ContactCardView: View {
 
     @State private var cardIn = false
 
+    @State private var relationOverride: String?
+
     private var avatarPath: String { u.avatarPath }
 
     private var u: User { full ?? user }
@@ -687,6 +689,7 @@ struct ContactCardView: View {
 
     private var isEyesBot: Bool { (u.username ?? "").lowercased() == "housekeeper" }
     private var relation: String {
+        if let r = relationOverride, !r.isEmpty { return r }
         if let r = u.relation, !r.isEmpty { return r }
         return u.id == app.me?.id ? "self" : "none"
     }
@@ -1233,6 +1236,7 @@ struct ContactCardView: View {
 
                 let res = await API.shared.respondFriend(userId: u.id, accept: true)
                 if res.ok {
+                    relationOverride = "friend"
                     UINotification.lightTap()
                     app.show(Tr("已同意，现在可以聊天了"))
                     if let n = res.pending { app.friendRequests = n }
