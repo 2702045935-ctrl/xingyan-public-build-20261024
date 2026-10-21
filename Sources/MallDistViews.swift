@@ -241,9 +241,7 @@ struct DistAdminCard: View {
                     HStack(spacing: 10) {
                         VStack(alignment: .leading, spacing: 3) {
                             Text(r.name ?? "").font(pf(14.5, .medium)).foregroundColor(C.label)
-                            Text(Tr("码 ") + (r.code ?? "") + Tr("　比例 ")
-                                 + String(Int(((r.rate ?? 0.05) * 100).rounded())) + "%"
-                                 + Tr("　成交 ") + String(r.orders ?? 0) + Tr(" 单"))
+                            Text(distLine(r))
                                 .font(pf(11.5)).foregroundColor(C.subLabel)
                         }
                         Spacer(minLength: 0)
@@ -268,6 +266,14 @@ struct DistAdminCard: View {
     private func load() async {
         rows = await API.shared.opsDistList()
         loading = false
+    }
+
+    private func distLine(_ row: API.DistRow) -> String {
+        let percent = Int(((row.rate ?? 0.05) * 100).rounded())
+        let code = Tr("码 ") + (row.code ?? "")
+        let rate = Tr("　比例 ") + String(percent) + "%"
+        let orders = Tr("　成交 ") + String(row.orders ?? 0) + Tr(" 单")
+        return code + rate + orders
     }
 
     private func setDist(_ on: Bool, _ row: API.DistRow? = nil) async {
