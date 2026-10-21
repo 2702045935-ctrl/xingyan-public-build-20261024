@@ -942,7 +942,7 @@ struct SettingsView: View {
                         .buttonStyle(.plain)
                         HairLine(inset: 16)
 
-                        settingLink(Tr("关于我们 · 版本更新"), "1.0 · " + AppInfo.build, key: "about")
+                        settingLink(Tr("关于我们 · 版本更新"), AppInfo.displayVersion + " · " + AppInfo.build, key: "about")
                     }
 
                     NavigationLink(value: "switch") {
@@ -1113,7 +1113,7 @@ struct SettingsView: View {
                               keywords: "界面语言 语言 中文 英文 language", run: { showLang = true }),
             SettingSearchItem(title: Tr("帮助与反馈"), sub: "",
                               keywords: "帮助 反馈 意见 客服 投诉", key: "feedback"),
-            SettingSearchItem(title: Tr("关于我们 · 版本更新"), sub: "1.0 · " + AppInfo.build,
+            SettingSearchItem(title: Tr("关于我们 · 版本更新"), sub: AppInfo.displayVersion + " · " + AppInfo.build,
                               keywords: "关于 版本 更新 检查更新 当前版本", key: "about"),
             SettingSearchItem(title: Tr("诊断工具"), sub: "",
                               keywords: "诊断 上报 日志 崩溃 机型 内存 缓存 网络", run: { showDiag = true }),

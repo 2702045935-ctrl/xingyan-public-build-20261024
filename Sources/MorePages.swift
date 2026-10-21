@@ -688,8 +688,6 @@ struct AboutView: View {
                         HairLine(inset: 54)
                         aboutRow("list.bullet.rectangle", Tr("个人信息收集清单")) { showCollect = true }
                         HairLine(inset: 54)
-                        aboutRow("shippingbox", Tr("第三方 SDK 共享清单")) { showSDK = true }
-                        HairLine(inset: 54)
                         aboutRow("checkmark.shield", Tr("权限使用说明")) { showPerm = true }
                         HairLine(inset: 54)
                         aboutRow("sparkles", Tr("功能介绍"), sub: Tr("聊天 / 通话 / 朋友圈 / 视界…")) { showFeature = true }
@@ -727,18 +725,6 @@ struct AboutView: View {
                         }
                         HairLine(inset: 54)
                         aboutRow("clock", Tr("服务时间"), sub: supportHours) { }
-                        HairLine(inset: 16)
-                        HStack {
-                            Text(Tr("服务器")).font(pf(16)).foregroundColor(C.label)
-                            Spacer()
-                       Text(API.shared.base)
-                               .font(pf(13))
-                               .foregroundColor(C.subLabel)
-                               .lineLimit(1)
-                               .truncationMode(.middle)
-                       }
-                       .padding(.horizontal, 16)
-                       .frame(height: 52)
                         HairLine(inset: 16)
 
                         HStack {
@@ -787,7 +773,6 @@ struct AboutView: View {
         .sheet(isPresented: $showTerms) { TermsSheet(kind: 0) }
         .sheet(isPresented: $showPrivacyDoc) { TermsSheet(kind: 1) }
         .sheet(isPresented: $showCollect) { aboutText(Tr("个人信息收集清单"), collectText) }
-        .sheet(isPresented: $showSDK) { aboutText(Tr("第三方 SDK 共享清单"), sdkText) }
         .sheet(isPresented: $showDataDel) { aboutText(Tr("数据删除与导出"), dataDelText) }
         .sheet(isPresented: $showPerm) { SelfPermView() }
         .sheet(isPresented: $showAccountSafe) { AccountSecurityView().environmentObject(app) }
@@ -797,7 +782,6 @@ struct AboutView: View {
     @State private var showTerms = false
     @State private var showPrivacyDoc = false
     @State private var showCollect = false
-    @State private var showSDK = false
     @State private var showDataDel = false
     @State private var showPerm = false
     @State private var showAccountSafe = false
@@ -826,8 +810,12 @@ struct AboutView: View {
                 .stroke(Color.white.opacity(0.85), lineWidth: 2))
             .shadow(color: C.green.opacity(0.20), radius: 16, y: 6)
             Text(appName).font(pf(21, .semibold)).foregroundColor(C.label)
+            Text(Tr("安全、稳定、面向团队的即时通信平台"))
+                .font(pf(12.5))
+                .foregroundColor(C.subLabel)
+                .multilineTextAlignment(.center)
             HStack(spacing: 8) {
-                Text("v" + AppInfo.version)
+                Text("v" + AppInfo.displayVersion)
                     .font(pf(11.5, .semibold)).foregroundColor(C.green)
                     .padding(.horizontal, 8).frame(height: 20)
                     .background(Capsule().fill(C.green.opacity(0.12)))
@@ -886,16 +874,6 @@ struct AboutView: View {
         + Tr("\n\n以上信息不会卖给或提供给第三方；注销后按「数据删除与导出」处理。")
     }
 
-    private var sdkText: String {
-        Tr("我们集成了以下第三方 SDK，仅用于对应功能，不用于广告追踪：")
-        + Tr("\n\n· 腾讯 TRTC / WebRTC —— 语音视频通话（相机、麦克风）")
-        + Tr("\n· 支付宝 SDK —— 商城支付、对账")
-        + Tr("\n· 推送（APNs / 厂商推送）—— 消息通知（设备令牌）")
-        + Tr("\n· 系统定位与地图 —— 城市定位、附近、天气")
-        + Tr("\n· 系统人脸检测 —— 拍摄表情贴纸、人脸核验（本机处理）")
-        + Tr("\n\n各 SDK 的隐私政策以对应厂商公布的最新版本为准，我们会随版本更新这份清单。")
-    }
-
     private var dataDelText: String {
         Tr("注销与数据删除规则：")
         + Tr("\n\n1. 在「关于我们 → 注销账号」输入「注销」即可注销，不需要联系客服。")
@@ -909,13 +887,12 @@ struct AboutView: View {
     @State private var showPrivacy = false
 
     private var featureText: String {
-        Tr("星言是一款自建服务器的即时通讯：")
-            + Tr("\n· 聊天：单聊 / 群聊，文字、图片、语音、视频、文件、位置、名片、红包、转账")
-            + Tr("\n· 通话：一对一和群里的语音 / 视频通话")
-            + Tr("\n· 朋友圈：发动态、图片和视频，点赞评论，可设可见范围")
-            + Tr("\n· 视界：视频号、直播、听一听、小游戏、小程序")
-            + Tr("\n· 其他：收藏、笔记、卡包、小店与商城、成长等级、状态、人脸核身")
-            + Tr("\n\n数据都存你自己的服务器上，不经过第三方。")
+        Tr("星言是一体化即时通信与协作平台，面向个人沟通、团队协同和日常服务场景，提供安全、稳定的消息与内容能力。")
+            + Tr("\n\n消息与沟通：支持单聊、群聊、多方会话、消息引用、撤回、@提醒和群公告，覆盖文字、图片、语音、视频、文件、位置、名片、红包与转账。")
+            + Tr("\n\n音视频协作：提供一对一及群组语音、视频通话，支持低延迟通信与多端消息同步。")
+            + Tr("\n\n内容与服务：整合朋友圈、视频号、直播、收藏、笔记、小程序、商城与生活服务入口。")
+            + Tr("\n\n安全与效率：提供账号安全、登录设备管理、隐私控制、聊天记录迁移备份，以及 AI 工作台和智能助手能力。")
+            + Tr("\n\n数据由自有服务统一管理，面向个人和团队提供可配置、可持续扩展的通信体验。")
     }
 
     private var privacyText: String {

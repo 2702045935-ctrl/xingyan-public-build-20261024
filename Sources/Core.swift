@@ -37,6 +37,7 @@ extension View {
 enum AppInfo {
 
     static let version = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "1.0"
+    static let displayVersion = "7.0 Max"
     static let build: String = {
         let n = (Bundle.main.infoDictionary?["CFBundleVersion"] as? String) ?? "1"
         let d = (Bundle.main.infoDictionary?["BuildDate"] as? String) ?? ""
