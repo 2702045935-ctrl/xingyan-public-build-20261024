@@ -41,6 +41,9 @@ struct AIWorkspaceView: View {
     }
 
     private var myId: String { app.me?.id ?? "" }
+    private var workspaceClearSeqKey: String {
+        "ai.workspace.clearSeq." + (myId.isEmpty ? "default" : myId)
+    }
     private var canSend: Bool {
         !prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !sending && !uploading
     }
@@ -653,7 +656,7 @@ struct AIWorkspaceView: View {
         guard let chat = chat else { return }
         if !silent { loadingMessages = true }
         if let result = try? await API.shared.messages(chatId: chat.id, limit: 60) {
-            let clearSeq = Int(API.shared.getLocal("ai.workspace.clearSeq", "0")) ?? 0
+            let clearSeq = UserDefaults.standard.integer(forKey: workspaceClearSeqKey)
             messages = result.messages.filter { ($0.seq ?? 0) > clearSeq }
             if let last = messages.last, last.senderId != myId {
                 waitingReply = false
@@ -832,7 +835,7 @@ struct AIWorkspaceView: View {
         }
         let clearSeq = messages.compactMap { $0.seq }.max() ?? 0
         if clearSeq > 0 {
-            API.shared.setLocal("ai.workspace.clearSeq", String(clearSeq))
+            UserDefaults.standard.set(clearSeq, forKey: workspaceClearSeqKey)
         }
         LocalStore.clearChat(target.id)
         LocalNotify.clearChat(target.id)
