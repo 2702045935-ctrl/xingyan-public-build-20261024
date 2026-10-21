@@ -178,7 +178,7 @@ struct AIWorkspaceView: View {
                 }
             }
         )
-        return NavBar(title: "", back: { dismiss() }, titleView: titleView) {
+        return NavBar(title: aiName, back: { dismiss() }, titleView: titleView) {
             HStack(spacing: 7) {
                 Button {
                     showProfile = true
@@ -545,9 +545,18 @@ struct AIWorkspaceView: View {
             Text(Tr("约 ") + wordText(wallet?.tokens ?? 0) + Tr(" 可用"))
             Text("·")
             Text(Tr("已用约 ") + wordText(wallet?.used ?? 0))
-            Button(Tr("购买")) { showRecharge = true }
-                .buttonStyle(.plain)
-                .foregroundColor(accent)
+            Button {
+                showRecharge = true
+            } label: {
+                Text(Tr("购买"))
+                    .font(pf(10.5, .semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 11)
+                    .frame(height: 25)
+                    .background(Capsule().fill(accent))
+                    .contentShape(Capsule())
+            }
+            .buttonStyle(.plain)
         }
         .font(pf(10.5))
         .foregroundColor(C.subLabel)
@@ -957,6 +966,23 @@ private struct AIRechargeView: View {
     let onUpdate: (AIWalletStatus) -> Void
     private let accent = Color(hex: 0x356FF4)
 
+    private var plans: [AITokenPlan] {
+        if !wallet.plans.isEmpty {
+            return wallet.plans
+        }
+        return [
+            AITokenPlan(id: "starter", name: "轻量包", tokens: 1_000_000,
+                        bonus: 0, price: 15.90, tag: "入门",
+                        desc: "只支持简单文字对话；不含办公、代码和语音"),
+            AITokenPlan(id: "standard", name: "标准包", tokens: 5_000_000,
+                        bonus: 500_000, price: 59.90, tag: "推荐",
+                        desc: "写作、联网、文件、办公、长上下文和语音通话"),
+            AITokenPlan(id: "pro", name: "专业包", tokens: 20_000_000,
+                        bonus: 3_000_000, price: 199, tag: "高用量",
+                        desc: "代码、完整代办、最高输出上限和超长对话")
+        ]
+    }
+
     init(wallet: AIWalletStatus, onUpdate: @escaping (AIWalletStatus) -> Void) {
         _wallet = State(initialValue: wallet)
         self.onUpdate = onUpdate
@@ -964,7 +990,7 @@ private struct AIRechargeView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            NavBar(title: Tr("充值"), back: { dismiss() }) { }
+            NavBar(title: Tr("购买 AI 套餐"), back: { dismiss() }) { }
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 16) {
                     VStack(alignment: .leading, spacing: 7) {
@@ -1001,7 +1027,7 @@ private struct AIRechargeView: View {
                         .font(pf(16, .semibold))
                         .foregroundColor(C.label)
 
-                    ForEach(wallet.plans) { plan in
+                    ForEach(plans) { plan in
                         planCard(plan)
                     }
 
@@ -1090,7 +1116,7 @@ private struct AIRechargeView: View {
                             .lineLimit(2)
                     }
                     Spacer(minLength: 8)
-                    Text(Tr("选择"))
+                    Text(Tr("购买"))
                         .font(pf(12, .semibold))
                         .foregroundColor(.white)
                         .padding(.horizontal, 15)
