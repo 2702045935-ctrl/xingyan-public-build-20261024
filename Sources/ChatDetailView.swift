@@ -306,6 +306,7 @@ struct ChatDetailView: View {
     @State private var showGroupInfo = false
     @State private var showSearch = false
     @State private var showChatInfo = false
+    @State private var sysToolsPage: SysPage?
     @State private var showFile = false
 
     @State private var showMyFiles = false
@@ -917,11 +918,16 @@ struct ChatDetailView: View {
                                onDelete: { multiDelete() },
                                onCancel: { selectMode = false; selected = [] })
             } else {
-                composer
+                VStack(spacing: 0) {
+                    if chat.sysTeam == true, !focused, panel == .none {
+                        sysTeamToolsBar
+                    }
+                    composer
 
-                    .padding(.bottom, UIConfig.num("chatKeyboardManual", 1) > 0
-                             ? max(0, kbHeight - (UIConfig.num("chatKbFlush", 1) > 0 ? L.safeBottom : 0))
-                             : 0)
+                        .padding(.bottom, UIConfig.num("chatKeyboardManual", 1) > 0
+                                 ? max(0, kbHeight - (UIConfig.num("chatKbFlush", 1) > 0 ? L.safeBottom : 0))
+                                 : 0)
+                }
             }
         }
 
@@ -997,6 +1003,10 @@ struct ChatDetailView: View {
                 DirectChatInfoView(chat: chat)
                     .environmentObject(app)
             }
+        }
+        .sheet(item: $sysToolsPage) { page in
+            sysToolsPageView(page)
+                .environmentObject(app)
         }
         .swipeBack { dismiss() }
         .hidesTabBar()
@@ -1932,6 +1942,82 @@ struct ChatDetailView: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+
+    private var sysTeamToolsBar: some View {
+        Button {
+            focused = false
+            sysToolsPage = .tools
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "wrench.and.screwdriver.fill")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(C.green)
+                    .frame(width: 30, height: 30)
+                    .background(C.green.opacity(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(Tr("自助工具"))
+                        .font(pf(13.5, .semibold))
+                        .foregroundColor(C.label)
+                    Text(Tr("改密码 · 登录设备 · 找回 · 安全"))
+                        .font(pf(10))
+                        .foregroundColor(C.subLabel)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 0)
+                Chevron(size: 8, line: 1.5, color: C.subLabel)
+            }
+            .padding(.horizontal, 12)
+            .frame(height: 46)
+            .background(C.cardBg.opacity(0.96))
+            .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous)
+                .stroke(C.hairline, lineWidth: 0.6))
+            .padding(.horizontal, 12)
+            .padding(.bottom, 4)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private func sysToolsPageView(_ page: SysPage) -> some View {
+        switch page {
+        case .tools:
+            SysToolsView { key in
+                sysToolsPage = nil
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    sysToolsPage = chatSysDestination(for: key)
+                }
+            }
+        case .support:
+            SupportView()
+        case .kefu:
+            KefuPage()
+        case .security:
+            AccountSecurityView()
+        case .devices:
+            LoginDevicesView()
+        case .safety:
+            AccountSafetyCenterView()
+        case .feedback:
+            FeedbackView()
+        case .delete:
+            DeleteAccountView()
+        }
+    }
+
+    private func chatSysDestination(for key: String) -> SysPage {
+        switch key {
+        case "pwd": return .security
+        case "devices": return .devices
+        case "support": return .support
+        case "safety": return .safety
+        case "feedback": return .feedback
+        case "delete": return .delete
+        default: return .kefu
+        }
     }
 
     private var composer: some View {
