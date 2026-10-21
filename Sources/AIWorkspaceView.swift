@@ -332,6 +332,22 @@ struct AIWorkspaceView: View {
                 .background(C.fieldBg.opacity(0.72))
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
+
+            if wallet?.tier != "starter" {
+                HStack(spacing: 10) {
+                    officeQuickButton(
+                        title: Tr("Word 文档"),
+                        symbol: "doc.text.fill",
+                        prompt: Tr("请帮我用 Word 写一份工作文档，主题是：")
+                    )
+                    officeQuickButton(
+                        title: Tr("Excel 表格"),
+                        symbol: "tablecells.fill",
+                        prompt: Tr("请帮我用 Excel 做一份表格，内容包括：")
+                    )
+                }
+                .padding(.top, 6)
+            }
         }
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 24)
@@ -344,6 +360,33 @@ struct AIWorkspaceView: View {
         if !nickname.isEmpty { return nickname }
         let username = app.me?.username?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return username.isEmpty ? Tr("你好") : username
+    }
+
+    private func officeQuickButton(title: String, symbol: String,
+                                   prompt text: String) -> some View {
+        Button {
+            prompt = text
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                inputFocused = true
+            }
+        } label: {
+            HStack(spacing: 7) {
+                Image(systemName: symbol)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(accent)
+                Text(title)
+                    .font(pf(12, .medium))
+                    .foregroundColor(C.label)
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, 13)
+            .frame(height: 38)
+            .background {
+                GlassBackground(shape: Capsule(), opacity: 0.78,
+                                shadow: true, seed: 0.58)
+            }
+        }
+        .buttonStyle(.plain)
     }
 
     @ViewBuilder
