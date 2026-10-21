@@ -990,8 +990,11 @@ struct ChatDetailView: View {
             Button(Tr("取消"), role: .cancel) { redialAsk = nil }
         }
 
-        .navigationDestination(isPresented: $showChatInfo) {
-            DirectChatInfoView(chat: chat).environmentObject(app)
+        .sheet(isPresented: $showChatInfo) {
+            NavigationStack {
+                DirectChatInfoView(chat: chat)
+                    .environmentObject(app)
+            }
         }
         .swipeBack { dismiss() }
         .hidesTabBar()
@@ -1118,8 +1121,11 @@ struct ChatDetailView: View {
         }
         .onChange(of: messages.count) { _ in autoOpenShopCard() }
 
-        .navigationDestination(isPresented: $showGroupInfo) {
-            GroupInfoView(chat: chat).environmentObject(app)
+        .sheet(isPresented: $showGroupInfo) {
+            NavigationStack {
+                GroupInfoView(chat: chat)
+                    .environmentObject(app)
+            }
         }
         .sheet(isPresented: $showSearch) { ChatSearchView(chat: chat) }
 
