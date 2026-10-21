@@ -43,37 +43,79 @@ struct StorageView: View {
                     legend
                         .padding(.top, 12)
 
-                    Spacer().frame(height: 14)
+                    Text(Tr("存储管理"))
+                        .font(pf(13, .medium))
+                        .foregroundColor(C.subLabel)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 20)
+                        .padding(.bottom, 6)
 
                     GroupCard {
-                        HStack(spacing: 10) {
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(Tr("缓存")).font(pf(16)).foregroundColor(C.label)
-                                Text(Tr("图片缓存和网络缓存，随时可以清理"))
-                                    .font(pf(12.5)).foregroundColor(C.subLabel)
+                        NavigationLink(value: "g.history") {
+                            HStack(spacing: 12) {
+                                storageIcon("clock.arrow.circlepath", color: C.green)
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(Tr("聊天记录管理"))
+                                        .font(pf(16))
+                                        .foregroundColor(C.label)
+                                    Text(Tr("导出、导入备份，或按会话清理"))
+                                        .font(pf(12.5))
+                                        .foregroundColor(C.subLabel)
+                                        .lineLimit(1)
+                                }
+                                Spacer(minLength: 8)
+                                Text("\((info?.chats ?? []).count) " + Tr("个会话"))
+                                    .font(pf(13))
+                                    .foregroundColor(C.subLabel)
+                                Chevron(size: 8, line: 1.5)
                             }
-                            Spacer(minLength: 8)
-                            Text(mb(cacheBytes)).font(pf(14)).foregroundColor(C.subLabel)
-                            Button { clearCache() } label: {
+                            .padding(.horizontal, 16)
+                            .frame(height: 66)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+
+                        HairLine(inset: 16)
+
+                        Button { clearCache() } label: {
+                            HStack(spacing: 12) {
+                                storageIcon("internaldrive", color: Color(hex: 0x4A90D9))
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(Tr("缓存"))
+                                        .font(pf(16))
+                                        .foregroundColor(C.label)
+                                    Text(Tr("图片缓存和网络缓存，清理不影响聊天记录"))
+                                        .font(pf(12.5))
+                                        .foregroundColor(C.subLabel)
+                                        .lineLimit(1)
+                                }
+                                Spacer(minLength: 8)
+                                Text(mb(cacheBytes))
+                                    .font(pf(13))
+                                    .foregroundColor(C.subLabel)
                                 Text(clearing ? Tr("清理中…") : Tr("去清理"))
-                                    .font(pf(13.5, .medium))
+                                    .font(pf(12.5, .medium))
                                     .foregroundColor(.white)
-                                    .padding(.horizontal, 13)
-                                    .frame(height: 28)
+                                    .padding(.horizontal, 11)
+                                    .frame(height: 26)
                                     .background(Capsule().fill(C.green))
                             }
-                            .buttonStyle(.plain)
-                            .disabled(clearing)
+                            .padding(.horizontal, 16)
+                            .frame(height: 66)
+                            .contentShape(Rectangle())
                         }
-                        .padding(.horizontal, 16)
-                        .frame(height: 64)
+                        .buttonStyle(.plain)
+                        .disabled(clearing || cacheBytes == 0)
+                        .opacity(cacheBytes == 0 ? 0.55 : 1)
                     }
+                    .padding(.horizontal, 12)
 
                     Text(Tr("清理缓存只删手机上的图片缓存，不会删除聊天记录，也不影响服务器上的任何东西。"))
                         .font(pf(12.5))
                         .foregroundColor(C.subLabel)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 22)
+                        .padding(.horizontal, 18)
                         .padding(.top, 8)
 
                     HStack {
@@ -140,6 +182,15 @@ struct StorageView: View {
         }
         .padding(.horizontal, 16)
         .frame(height: 50)
+    }
+
+    private func storageIcon(_ symbol: String, color: Color) -> some View {
+        Image(systemName: symbol)
+            .font(.system(size: 17, weight: .semibold))
+            .foregroundColor(color)
+            .frame(width: 38, height: 38)
+            .background(color.opacity(0.12))
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
     struct Seg {

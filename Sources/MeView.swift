@@ -182,7 +182,7 @@ struct MeView: View {
                 } else if key == "general" {
                     GeneralView()
                 } else if key == "storage" {
-                    StorageSpaceView()
+                    StorageView()
                 } else if key == "feedback" {
                     FeedbackView()
                 } else if key == "about" {
@@ -231,7 +231,7 @@ struct MeView: View {
                 } else if key == "g.voice" {
                     VoiceChangerView()
                 } else if key == "storage.manage" {
-                    ChatStorageManageView()
+                    ChatHistoryView()
                 } else if key == "feedback.history" {
                     FeedbackHistoryView()
                 } else {
