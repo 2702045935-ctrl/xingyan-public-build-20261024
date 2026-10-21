@@ -4,6 +4,21 @@ import Combine
 import UIKit
 import QuickLook
 
+private enum ChatTheme {
+    static let page = Color.dyn(0xEDEDED, 0x0E1014)
+    static let panel = Color.dyn(0xF7F7F7, 0x181A1E)
+    static let bubbleMine = Color.dyn(0xD8F2E4, 0x075E4E)
+    static let bubbleOther = Color.dyn(0xFFFFFF, 0x25282D)
+    static let ink = Color.dyn(0x191919, 0xE9EBF0)
+    static let mineInk = Color.dyn(0xFFFFFF, 0xE9EBF0)
+    static let secondary = Color.dyn(0x999999, 0x7D8188)
+    static let timeInk = Color.dyn(0x8A8A8E, 0x8A8D94)
+    static let timeBg = Color.dyn(0xE5E5E5, 0x22252A)
+    static let quoteBg = Color.dyn(0xE9E9EB, 0x30343A)
+    static let composerBg = Color.dyn(0xFFFFFF, 0x23262C)
+    static let separator = Color.dyn(0xE5E5E5, 0x2F3238)
+}
+
 enum AlbumFold {
     private static let key = "chris.albumOpen"
 
@@ -130,9 +145,9 @@ struct BubbleFill: View {
     private var tint: Color {
         if mine {
 
-            return C.bubbleMine.opacity(UIConfig.num("bubbleTintMine", scheme == .dark ? 0.20 : 0.16))
+            return ChatTheme.bubbleMine.opacity(UIConfig.num("bubbleTintMine", scheme == .dark ? 0.08 : 0.16))
         }
-        return C.bubbleOther.opacity(UIConfig.num("bubbleTintOther", scheme == .dark ? 0.20 : 0.34))
+        return ChatTheme.bubbleOther.opacity(UIConfig.num("bubbleTintOther", scheme == .dark ? 0.05 : 0.34))
     }
     private var gloss: Color {
 
@@ -181,7 +196,7 @@ struct BubbleFill: View {
                 .opacity(UIConfig.num("bubbleGlassAlpha", 0))
             } else {
                 BubbleShape(mine: mine, tail: tail, pill: pill)
-                    .fill(mine ? C.bubbleMine : C.bubbleOther)
+                    .fill(mine ? ChatTheme.bubbleMine : ChatTheme.bubbleOther)
             }
 
             BubbleShape(mine: mine, tail: tail, pill: pill).fill(tint)
@@ -724,10 +739,21 @@ struct ChatDetailView: View {
                 )
                 .background {
                     ZStack {
-                        C.pageBg
+                        ChatTheme.page
                         if !backgroundPath.isEmpty {
                             RemoteImage(path: backgroundPath)
                                 .id(backgroundPath)
+                            if scheme == .dark {
+                                LinearGradient(
+                                    stops: [
+                                        .init(color: Color.black.opacity(0.56), location: 0),
+                                        .init(color: Color.black.opacity(0.66), location: 0.56),
+                                        .init(color: Color.black.opacity(0.76), location: 1)
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            }
                         }
                     }
                     .ignoresSafeArea()
@@ -794,7 +820,7 @@ struct ChatDetailView: View {
                                     .padding(.horizontal, unreadHere > 0 ? 11 : 0)
                                     .frame(minWidth: 34, minHeight: 34)
                                     .background(Capsule().fill(C.cardBg.opacity(0.96)))
-                                    .overlay(Capsule().stroke(C.hairline, lineWidth: 0.5))
+                                    .overlay(Capsule().stroke(ChatTheme.separator, lineWidth: 0.5))
                                     .shadow(color: Color.black.opacity(0.18), radius: 8, y: 3)
                                 }
                                 .buttonStyle(.plain)
@@ -1529,7 +1555,7 @@ struct ChatDetailView: View {
             }
             Text(p.preview)
                 .font(pf(16))
-                .foregroundColor(C.bubbleText)
+                .foregroundColor(ChatTheme.ink)
                 .lineLimit(6)
                 .multilineTextAlignment(.leading)
                 .padding(.horizontal, 12)
@@ -1639,12 +1665,12 @@ struct ChatDetailView: View {
     private func timeLine(_ message: Message) -> some View {
         Text(TimeFmt.bubble(message.createdAt))
             .font(pf(L.msgTimeSize))
-            .foregroundColor(C.chatTimeInk)
+            .foregroundColor(ChatTheme.timeInk)
 
             .padding(.horizontal, L.o("chatTimePadX", 8))
             .padding(.vertical, L.o("chatTimePadY", 3))
             .background(RoundedRectangle(cornerRadius: L.o("chatTimeRadius", 4), style: .continuous)
-                .fill(C.chatTimeBg))
+                .fill(ChatTheme.timeBg))
             .frame(maxWidth: .infinity)
             .padding(.top, L.o("chatTimeGapTop", 12))
             .padding(.bottom, L.o("chatTimeGapBottom", 12))
@@ -1654,11 +1680,11 @@ struct ChatDetailView: View {
         Text(recallText(message))
             .font(pf(13))
 
-            .foregroundColor(C.chatTimeInk)
+            .foregroundColor(ChatTheme.timeInk)
             .multilineTextAlignment(.center)
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
-            .background(RoundedRectangle(cornerRadius: 4, style: .continuous).fill(C.chatTimeBg))
+            .background(RoundedRectangle(cornerRadius: 4, style: .continuous).fill(ChatTheme.timeBg))
             .frame(maxWidth: .infinity)
             .padding(.horizontal, 40)
     }
@@ -1718,7 +1744,7 @@ struct ChatDetailView: View {
                     Image(systemName: selected.contains(message.id)
                           ? "checkmark.circle.fill" : "circle")
                         .font(.system(size: 21))
-                        .foregroundColor(selected.contains(message.id) ? C.green : C.subLabel)
+                        .foregroundColor(selected.contains(message.id) ? C.green : ChatTheme.secondary)
                         .padding(.leading, 10)
                 }
             }
@@ -1974,7 +2000,7 @@ struct ChatDetailView: View {
             .background(C.cardBg.opacity(0.96))
             .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous)
-                .stroke(C.hairline, lineWidth: 0.6))
+                .stroke(ChatTheme.separator, lineWidth: 0.6))
             .padding(.horizontal, 12)
             .padding(.bottom, 4)
             .contentShape(Rectangle())
@@ -2153,7 +2179,7 @@ struct ChatDetailView: View {
                 }
                 .padding(.horizontal, 12)
                 .padding(.top, 6)
-                .background(C.tabBg)
+                .background(ChatTheme.panel)
             }
 
             if let draft = reEditDraft {
@@ -2177,7 +2203,7 @@ struct ChatDetailView: View {
                 .padding(.leading, 12)
                 .padding(.trailing, 6)
                 .frame(height: 36)
-                .background(C.tabBg)
+                .background(ChatTheme.panel)
                 .overlay(alignment: .top) {
                     Rectangle().fill(C.navLine).frame(height: 0.5)
                 }
@@ -2340,7 +2366,7 @@ struct ChatDetailView: View {
                         Capsule(style: .continuous)
                             .fill(recorder.recording
                                   ? (recorder.willCancel ? Color.dyn(0xFFF1F1, 0x3A2A2A) : Color.dyn(0xF2F2F2, 0x242427))
-                                  : Color.dyn(0xFFFFFF, 0x2C2C2E))
+                                  : ChatTheme.composerBg)
                             .opacity(UIConfig.num("inputGlassTint", 0.35))
                     }
                 )
@@ -2419,10 +2445,10 @@ struct ChatDetailView: View {
                         } else if panel == .plus {
                             ZStack {
                                 Rectangle().fill(.bar)
-                                C.tabBg.opacity(0.35)
+                                ChatTheme.panel.opacity(0.35)
                             }
                         } else {
-                            C.tabBg
+                            ChatTheme.panel
                         }
                     }
                     .ignoresSafeArea(edges: .bottom)
@@ -3370,7 +3396,7 @@ struct ChatDetailView: View {
             icon()
                 .frame(width: 34, height: 34)
                 .background(Circle().fill(C.cardBg.opacity(0.96)))
-                .overlay(Circle().stroke(C.hairline, lineWidth: 0.5))
+                .overlay(Circle().stroke(ChatTheme.separator, lineWidth: 0.5))
                 .shadow(color: Color.black.opacity(0.18), radius: 8, y: 3)
         }
         .buttonStyle(.plain)
@@ -3649,15 +3675,15 @@ struct SystemLine: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 4)
         .background(RoundedRectangle(cornerRadius: 4, style: .continuous)
-            .fill(C.chatTimeBg))
+            .fill(ChatTheme.timeBg))
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 40)
     }
 
     private var ink: Color {
 
-        guard message.isCallRecord else { return C.chatTimeInk }
-        return message.isBadCallRecord ? Color(hex: 0xFA5151) : C.chatTimeInk
+        guard message.isCallRecord else { return ChatTheme.timeInk }
+        return message.isBadCallRecord ? Color(hex: 0xFA5151) : ChatTheme.timeInk
     }
 }
 
@@ -3682,7 +3708,7 @@ struct CallRecordBubble: View {
     }
 
     private var ink: Color {
-        message.isBadCallRecord ? Color(hex: 0xFA5151) : C.msgTime
+        message.isBadCallRecord ? Color(hex: 0xFA5151) : ChatTheme.secondary
     }
 }
 
@@ -3877,16 +3903,16 @@ struct MessageRow: View {
         if message.isRecalled {
             Text(mine ? "你撤回了一条消息" : "对方撤回了一条消息")
                 .font(pf(12))
-                .foregroundColor(C.msgTime)
+                .foregroundColor(ChatTheme.secondary)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
-                .background(RoundedRectangle(cornerRadius: 5).fill(C.bubbleOther))
+                .background(RoundedRectangle(cornerRadius: 5).fill(ChatTheme.bubbleOther))
         } else {
             bubble
         }
     }
 
-    private var bubbleFill: Color { mine ? C.bubbleMine : C.bubbleOther }
+    private var bubbleFill: Color { mine ? ChatTheme.bubbleMine : ChatTheme.bubbleOther }
 
     @ViewBuilder
     private var bubble: some View {
@@ -3931,7 +3957,7 @@ struct MessageRow: View {
 
                 Text(linkFallbackText(message.body))
                     .font(pf(L.chatFontSize))
-                    .foregroundColor(C.bubbleText)
+                    .foregroundColor(ChatTheme.ink)
                     .padding(.horizontal, L.bubblePadHPill)
                     .padding(.vertical, L.bubblePadV)
                 .background(BubbleFill(mine: mine, tail: showTail, seed: bubbleSeed(message.id)))
@@ -3961,7 +3987,7 @@ struct MessageRow: View {
                      ? "[名片] 原文：" + String(message.body.prefix(80))
                      : Tr("[名片]"))
                     .font(pf(L.chatFontSize))
-                    .foregroundColor(C.bubbleText)
+                    .foregroundColor(ChatTheme.ink)
                     .padding(.horizontal, L.bubblePadHPill)
                     .padding(.vertical, L.bubblePadV)
                     .background(BubbleFill(mine: mine, tail: showTail, seed: bubbleSeed(message.id)))
@@ -3978,7 +4004,7 @@ struct MessageRow: View {
             } else {
                 Text(Tr("[音乐]"))
                     .font(pf(L.chatFontSize))
-                    .foregroundColor(C.bubbleText)
+                    .foregroundColor(ChatTheme.ink)
                     .padding(.horizontal, L.bubblePadHPill)
                     .padding(.vertical, L.bubblePadV)
                     .background(BubbleFill(mine: mine, tail: showTail, seed: bubbleSeed(message.id)))
@@ -3993,7 +4019,7 @@ struct MessageRow: View {
             } else {
                 Text(Tr("[商品]"))
                     .font(pf(L.chatFontSize))
-                    .foregroundColor(C.bubbleText)
+                    .foregroundColor(ChatTheme.ink)
                     .padding(.horizontal, L.bubblePadHPill)
                     .padding(.vertical, L.bubblePadV)
                     .background(BubbleFill(mine: mine, tail: showTail, seed: bubbleSeed(message.id)))
@@ -4017,7 +4043,7 @@ struct MessageRow: View {
             } else {
                 Text(Tr("[小游戏]"))
                     .font(pf(L.chatFontSize))
-                    .foregroundColor(C.bubbleText)
+                    .foregroundColor(ChatTheme.ink)
                     .padding(.horizontal, L.bubblePadHPill)
                     .padding(.vertical, L.bubblePadV)
                     .background(BubbleFill(mine: mine, tail: showTail, seed: bubbleSeed(message.id)))
@@ -4030,7 +4056,7 @@ struct MessageRow: View {
             } else {
                 Text(Tr("[通知]"))
                     .font(pf(L.chatFontSize))
-                    .foregroundColor(C.bubbleText)
+                    .foregroundColor(ChatTheme.ink)
                     .padding(.horizontal, L.bubblePadHPill)
                     .padding(.vertical, L.bubblePadV)
                     .background(BubbleFill(mine: mine, tail: showTail, seed: bubbleSeed(message.id)))
@@ -4050,7 +4076,7 @@ struct MessageRow: View {
             if message.body.hasPrefix("{") {
                 Text(unknownCardText(message.body))
                     .font(pf(L.chatFontSize))
-                    .foregroundColor(C.bubbleText)
+                    .foregroundColor(ChatTheme.ink)
                     .padding(.horizontal, L.bubblePadHPill)
                     .padding(.vertical, L.bubblePadV)
                     .background(BubbleFill(mine: mine, tail: showTail, seed: bubbleSeed(message.id)))
@@ -4062,7 +4088,7 @@ struct MessageRow: View {
             Text(richBody(message.body))
                 .font(pf(L.chatFontSize))
 
-                .foregroundColor(mine && UIConfig.num("bubbleMineWhiteText", 1) > 0 ? .white : C.bubbleText)
+                .foregroundColor(mine && UIConfig.num("bubbleMineWhiteText", 1) > 0 ? ChatTheme.mineInk : ChatTheme.ink)
                 .lineSpacing(L.msgLineSpacing)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, L.bubblePadHPill)
@@ -4081,12 +4107,12 @@ struct MessageRow: View {
                     if !q.sender.isEmpty {
                         Text(q.sender)
                             .font(pf(12, .medium))
-                            .foregroundColor(C.subLabel)
+                            .foregroundColor(ChatTheme.secondary)
                             .lineLimit(1)
                     }
                     Text(q.summary.isEmpty ? Tr("[引用]") : q.summary)
                         .font(pf(12.5))
-                        .foregroundColor(C.subLabel)
+                        .foregroundColor(ChatTheme.secondary)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
                 }
@@ -4101,14 +4127,14 @@ struct MessageRow: View {
             .padding(.horizontal, 7)
             .padding(.vertical, 6)
             .background(RoundedRectangle(cornerRadius: 4, style: .continuous)
-                .fill(Color.dyn(0xE9E9EB, 0x3A3A3C)))
+                .fill(ChatTheme.quoteBg))
             .contentShape(Rectangle())
             .onTapGesture {
                 if !q.refId.isEmpty { onOpenQuote?(q.refId) }
             }
             Text(richBody(raw))
                 .font(pf(L.chatFontSize))
-                .foregroundColor(mine && UIConfig.num("bubbleMineWhiteText", 1) > 0 ? .white : C.bubbleText)
+                .foregroundColor(mine && UIConfig.num("bubbleMineWhiteText", 1) > 0 ? ChatTheme.mineInk : ChatTheme.ink)
                 .lineSpacing(L.msgLineSpacing)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -4233,9 +4259,9 @@ struct MessageRow: View {
 
             MapSnapshotView(point: pt, width: 216, height: 136)
             VStack(alignment: .leading, spacing: 2) {
-                Text(name).font(pf(15)).foregroundColor(C.bubbleText).lineLimit(1)
+                Text(name).font(pf(15)).foregroundColor(ChatTheme.ink).lineLimit(1)
                 Text(addr.isEmpty ? "点击查看地图" : addr)
-                    .font(pf(12)).foregroundColor(C.subLabel).lineLimit(1)
+                    .font(pf(12)).foregroundColor(ChatTheme.secondary).lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 12)
@@ -4323,10 +4349,10 @@ struct MessageRow: View {
 
             Text("[红包] 这条记录是旧版本的，已经失效")
                 .font(pf(14))
-                .foregroundColor(C.subLabel)
+                .foregroundColor(ChatTheme.secondary)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
-                .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(C.hairline))
+                .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(ChatTheme.separator))
         }
     }
 
@@ -4351,7 +4377,7 @@ struct MessageRow: View {
             if mine {
                 Text(playing || scrubbing ? "\(shown)″" : "\(secs)″")
                     .font(pfMoney(12.5))
-                    .foregroundColor(playing || scrubbing ? C.green : C.subLabel)
+                    .foregroundColor(playing || scrubbing ? C.green : ChatTheme.secondary)
                     .frame(minWidth: 26, alignment: .trailing)
                 voiceTrack(playing: playing)
                 speakerIcon(playing: playing)
@@ -4360,7 +4386,7 @@ struct MessageRow: View {
                 voiceTrack(playing: playing)
                 Text(playing || scrubbing ? "\(shown)″" : "\(secs)″")
                     .font(pfMoney(12.5))
-                    .foregroundColor(playing || scrubbing ? C.green : C.subLabel)
+                    .foregroundColor(playing || scrubbing ? C.green : ChatTheme.secondary)
                     .frame(minWidth: 26, alignment: .leading)
             }
             if !mine { Spacer(minLength: 0) }
@@ -4400,8 +4426,8 @@ struct MessageRow: View {
                 .font(pf(11, .semibold))
                 .foregroundColor(C.green)
                 .frame(width: 32, height: 19)
-                .background(Capsule().fill(Color.dyn(0xFFFFFF, 0x2C2C2E).opacity(0.94)))
-                .overlay(Capsule().stroke(C.hairline, lineWidth: 0.5))
+                .background(Capsule().fill(ChatTheme.composerBg.opacity(0.94)))
+                .overlay(Capsule().stroke(ChatTheme.separator, lineWidth: 0.5))
         }
         .buttonStyle(.plain)
         .padding(mine ? .trailing : .leading, 2)
@@ -4427,7 +4453,7 @@ struct MessageRow: View {
                     let at = (Double(i) + 0.5) / Double(n)
                     let on = live && at <= f
                     Capsule()
-                        .fill(on ? C.green : C.bubbleText.opacity(0.22))
+                        .fill(on ? C.green : ChatTheme.ink.opacity(0.22))
 
                         .frame(width: on && at + 1.0 / Double(n) > f ? 3.4 : 2.6,
                                height: 5 + hs[i] * 13)
@@ -4475,7 +4501,7 @@ struct MessageRow: View {
 
     private func speakerIcon(playing: Bool) -> some View {
         SVGIcon(markup: I.speaker, size: 20,
-                color: playing ? C.green : C.bubbleText)
+                color: playing ? C.green : ChatTheme.ink)
     }
 
     private var imagesGridBubble: some View {
@@ -4523,7 +4549,7 @@ struct MessageRow: View {
         RoundedRectangle(cornerRadius: 8, style: .continuous)
             .fill(Color.dyn(0xE9E9EB, 0x3A3A3F))
             .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(C.hairline, lineWidth: 0.5))
+                .stroke(ChatTheme.separator, lineWidth: 0.5))
             .frame(width: side, height: side)
     }
 
@@ -4585,7 +4611,7 @@ struct MessageRow: View {
                             .font(.system(size: 9.5, weight: .bold))
                         Text(Tr("收起")).font(pf(11.5))
                     }
-                    .foregroundColor(C.subLabel)
+                    .foregroundColor(ChatTheme.secondary)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3.5)
                     .background(Capsule().fill(Color.dyn(0xEDEDF0, 0x33333A)))
@@ -4603,7 +4629,7 @@ struct MessageRow: View {
         return HStack(spacing: 10) {
             Text(icon).font(pf(30))
             VStack(alignment: .leading, spacing: 2) {
-                Text(name).font(pf(15, .medium)).foregroundColor(C.bubbleText)
+                Text(name).font(pf(15, .medium)).foregroundColor(ChatTheme.ink)
                     Text("¥\(String(format: "%.0f", price))").font(pfMoney(12)).foregroundColor(C.red)
             }
         }
@@ -4638,7 +4664,7 @@ struct MessageRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(name)
                     .font(pf(14))
-                    .foregroundColor(C.label)
+                    .foregroundColor(ChatTheme.ink)
                     .lineLimit(1)
                     .truncationMode(.middle)
                 HStack(spacing: 6) {
@@ -4649,13 +4675,13 @@ struct MessageRow: View {
                         .padding(.horizontal, 5)
                         .frame(height: 16)
                         .background(Capsule().fill(look.color.opacity(0.12)))
-                    Text(byteText(bytes)).font(pf(11)).foregroundColor(C.subLabel)
+                    Text(byteText(bytes)).font(pf(11)).foregroundColor(ChatTheme.secondary)
                 }
             }
             Spacer(minLength: 0)
             Image(systemName: "chevron.right")
                 .font(.system(size: 10, weight: .semibold))
-                .foregroundColor(C.subLabel.opacity(0.7))
+                .foregroundColor(ChatTheme.secondary.opacity(0.7))
         }
         .padding(.horizontal, 12)
         .frame(width: 210, height: 64, alignment: .leading)
@@ -4664,7 +4690,7 @@ struct MessageRow: View {
                 .fill(Color.dyn(0xFFFFFF, 0x1C1C1E))
                 .overlay {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(C.hairline.opacity(0.75), lineWidth: 0.6)
+                        .stroke(ChatTheme.separator.opacity(0.75), lineWidth: 0.6)
                 }
                 .shadow(color: Color.black.opacity(mine ? 0.05 : 0.10),
                         radius: 6, x: 0, y: 3)
@@ -4681,11 +4707,11 @@ struct MessageRow: View {
 
     private func card(icon: String, title: String, detail: String) -> some View {
         HStack(spacing: 10) {
-            SVGIcon(markup: icon, size: 20, color: mine ? C.bubbleText : C.green)
+            SVGIcon(markup: icon, size: 20, color: mine ? ChatTheme.ink : C.green)
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(pf(15, .medium)).foregroundColor(C.bubbleText)
+                Text(title).font(pf(15, .medium)).foregroundColor(ChatTheme.ink)
                 if !detail.isEmpty {
-                    Text(detail).font(pf(12)).foregroundColor(C.subLabel).lineLimit(2)
+                    Text(detail).font(pf(12)).foregroundColor(ChatTheme.secondary).lineLimit(2)
                 }
             }
         }
