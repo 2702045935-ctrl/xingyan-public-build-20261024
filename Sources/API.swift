@@ -3397,13 +3397,14 @@ private struct StarredPayload: Decodable {
         var model: String?
 
         var os: String?
+        var kind: String?
         var ip: String?
 
         var at: Double?
 
         var current: Bool?
 
-        private enum CodingKeys: String, CodingKey { case id, name, device, model, os, ip, at, current }
+        private enum CodingKeys: String, CodingKey { case id, name, device, model, os, kind, ip, at, current }
 
         init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -3412,6 +3413,7 @@ private struct StarredPayload: Decodable {
             device = try? c.decodeIfPresent(String.self, forKey: .device)
             model = try? c.decodeIfPresent(String.self, forKey: .model)
             os = try? c.decodeIfPresent(String.self, forKey: .os)
+            kind = try? c.decodeIfPresent(String.self, forKey: .kind)
             ip = try? c.decodeIfPresent(String.self, forKey: .ip)
             current = try? c.decodeIfPresent(Bool.self, forKey: .current)
             if let n = try? c.decodeIfPresent(Double.self, forKey: .at) {
@@ -3437,6 +3439,10 @@ private struct StarredPayload: Decodable {
         struct Payload: Decodable { var devices: [LoginDevice]? }
         guard let p: Payload = try? await get("/api/devices", as: Payload.self) else { return [] }
         return p.devices ?? []
+    }
+
+    func touchCurrentDevice() async {
+        _ = try? await request("GET", "/api/devices")
     }
 
     func musicTracks() async -> [MusicTrack] {

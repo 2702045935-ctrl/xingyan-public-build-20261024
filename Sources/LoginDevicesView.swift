@@ -56,7 +56,7 @@ struct LoginDevicesView: View {
                         GroupCard {
                             ForEach(Array(living.enumerated()), id: \.offset) { i, d in
                                 if i > 0 { HairLine(inset: 16) }
-                                row(d, right: d.current == true ? Tr("当前设备") : "")
+                                row(d, right: d.current == true ? Tr("当前设备") : wxTime(d.at))
                             }
                         }
                     }
@@ -159,7 +159,7 @@ struct LoginDevicesView: View {
                     Text(deviceSub(d))
                         .font(pf(13))
                         .foregroundColor(C.subLabel)
-                        .lineLimit(1)
+                        .lineLimit(2)
                 }
             }
             Spacer(minLength: 8)
@@ -198,13 +198,19 @@ struct LoginDevicesView: View {
     }
 
     private func deviceSub(_ d: API.LoginDevice) -> String {
+        let kind = (d.kind ?? "").trimmingCharacters(in: .whitespaces)
         let os = (d.os ?? "").trimmingCharacters(in: .whitespaces)
+        let ip = (d.ip ?? "").trimmingCharacters(in: .whitespaces)
         let raw = d.name ?? ""
         let name = (raw.isEmpty ? "" : (raw.removingPercentEncoding ?? raw))
             .trimmingCharacters(in: .whitespaces)
         var bits: [String] = []
+        if !kind.isEmpty {
+            bits.append(kind == "tablet" ? Tr("平板") : (kind == "desktop" ? Tr("电脑") : Tr("手机")))
+        }
         if !os.isEmpty { bits.append(os) }
         if !name.isEmpty, name != title(d) { bits.append(name) }
+        if !ip.isEmpty { bits.append("IP " + ip) }
         if bits.isEmpty { bits.append((d.device ?? "").trimmingCharacters(in: .whitespaces)) }
         return bits.filter { !$0.isEmpty }.joined(separator: " · ")
     }

@@ -389,6 +389,7 @@ final class AppState: ObservableObject {
             if s.ok, let user = s.user {
                 me = user
                 rememberLastUser()
+                Task { await API.shared.touchCurrentDevice() }
 
                 needConfirmLogin = true
                 await refreshAll()
@@ -641,6 +642,11 @@ final class AppState: ObservableObject {
 
     private var syncHintKey: String {
         "chris.syncHintShown." + (me?.id ?? "")
+    }
+
+    func touchCurrentDevice() async {
+        guard me != nil, !API.shared.token.isEmpty else { return }
+        await API.shared.touchCurrentDevice()
     }
 
     func syncRecentMessages(chatCount: Int = 20, limit: Int = 50) async {
@@ -1053,6 +1059,7 @@ struct RootView: View {
                 KeepAlive.shared.stop()
                 Task {
                     GrowthStore.shared.start()
+                    Task { await app.touchCurrentDevice() }
                     await app.refreshUI()
                     await app.loadChats()
                     await app.loadContacts()
