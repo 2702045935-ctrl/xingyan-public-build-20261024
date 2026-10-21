@@ -1122,6 +1122,7 @@ struct ChatDetailView: View {
 
         .environment(\.openURL, OpenURLAction { url in
             if url.scheme == "http" || url.scheme == "https" {
+                if ExternalLinkRouter.openIfNeeded(url) { return .handled }
                 web = WebURL(url: url)
                 return .handled
             }

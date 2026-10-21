@@ -41,6 +41,29 @@ struct ShopLink: Hashable {
     }
 }
 
+enum ExternalLinkRouter {
+    private static let systemHosts = [
+        "meituan.com", "meituan.net", "dianping.com", "dpurl.cn",
+        "taobao.com", "tmall.com", "tb.cn",
+        "jd.com", "jingdong.com",
+        "pinduoduo.com", "yangkeduo.com",
+        "ele.me", "alipay.com", "xiaohongshu.com", "douyin.com"
+    ]
+
+    static func prefersSystem(_ url: URL) -> Bool {
+        guard ["http", "https"].contains(url.scheme?.lowercased() ?? ""),
+              let host = url.host?.lowercased(), !host.isEmpty else { return false }
+        return systemHosts.contains { host == $0 || host.hasSuffix("." + $0) }
+    }
+
+    @MainActor
+    static func openIfNeeded(_ url: URL) -> Bool {
+        guard prefersSystem(url) else { return false }
+        UIApplication.shared.open(url)
+        return true
+    }
+}
+
 @MainActor
 enum ShopOpener {
     static func open(_ link: ShopLink, inApp: @escaping (URL) -> Void) {
@@ -48,7 +71,9 @@ enum ShopOpener {
             UIApplication.shared.open(u)
             return
         }
-        if let u = URL(string: link.url) { inApp(u) }
+        if let u = URL(string: link.url) {
+            if !ExternalLinkRouter.openIfNeeded(u) { inApp(u) }
+        }
     }
 }
 

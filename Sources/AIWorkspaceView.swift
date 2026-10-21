@@ -901,6 +901,7 @@ struct AIWorkspaceView: View {
             return
         }
         if let target = URL(string: link.url), ["http", "https"].contains(target.scheme?.lowercased() ?? "") {
+            if ExternalLinkRouter.openIfNeeded(target) { return }
             web = WebURL(url: target)
             return
         }
