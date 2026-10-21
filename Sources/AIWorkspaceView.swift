@@ -26,6 +26,7 @@ struct AIWorkspaceView: View {
     @State private var showAttachMenu = false
     @State private var showRecharge = false
     @State private var showProfile = false
+    @State private var showTopClearConfirm = false
     @State private var callChat: Chat?
     @State private var web: WebURL?
     @State private var spoken = Set<String>()
@@ -42,6 +43,14 @@ struct AIWorkspaceView: View {
     private var myId: String { app.me?.id ?? "" }
     private var canSend: Bool {
         !prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !sending && !uploading
+    }
+    private var cloudSpeechAvailable: Bool {
+        guard let current = wallet else { return false }
+        return current.tier != "starter" && !(current.voices ?? []).isEmpty
+    }
+    private var voiceCallAvailable: Bool {
+        guard let current = wallet else { return false }
+        return current.voiceCall == true && current.tier != "starter"
     }
     private var tierName: String {
         let name = wallet?.tierName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -125,6 +134,7 @@ struct AIWorkspaceView: View {
             }
         }
         .confirmationDialog(Tr("添加内容"), isPresented: $showAttachMenu, titleVisibility: .visible) {
+            Button(Tr("拍照")) { showCamera = true }
             Button(Tr("相册")) { showPhotos = true }
             Button(Tr("文件")) { showFiles = true }
             Button(Tr("取消"), role: .cancel) { }
@@ -150,43 +160,69 @@ struct AIWorkspaceView: View {
     }
 
     private var navBar: some View {
-        NavBar(title: Tr("AI工作台"), back: { dismiss() }) {
+        let titleView = AnyView(
+            HStack(spacing: 7) {
+                Text("✦")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(accent)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(aiName)
+                        .font(pf(16, .semibold))
+                        .foregroundColor(C.label)
+                        .lineLimit(1)
+                    Text((messages.isEmpty ? Tr("快速回答") : Tr("正在对话"))
+                         + " · " + tierName)
+                        .font(pf(9.5))
+                        .foregroundColor(C.subLabel)
+                        .lineLimit(1)
+                }
+            }
+        )
+        return NavBar(title: "", back: { dismiss() }, titleView: titleView) {
             HStack(spacing: 7) {
                 Button {
                     showProfile = true
                 } label: {
-                    Image(systemName: "slider.horizontal.3")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(C.label)
-                        .frame(width: 32, height: 32)
-                        .background(Circle().fill(C.fieldBg))
+                    Image(systemName: "gearshape")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(C.subLabel)
+                        .frame(width: 34, height: 34)
+                        .background { GlassBackground(shape: Circle(), shadow: true, seed: 0.38) }
                 }
                 .buttonStyle(.plain)
 
                 Button {
                     openCall()
                 } label: {
-                    Image(systemName: "phone.fill")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(accent)
-                        .frame(width: 32, height: 32)
-                        .background(Circle().fill(accent.opacity(0.11)))
+                    ZStack(alignment: .topTrailing) {
+                        Image(systemName: "phone.fill")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(voiceCallAvailable ? accent : C.subLabel)
+                        if !voiceCallAvailable {
+                            Image(systemName: "lock.fill")
+                                .font(.system(size: 8, weight: .bold))
+                                .foregroundColor(Color(hex: 0xE59A2F))
+                                .offset(x: 1, y: -1)
+                        }
+                    }
+                    .frame(width: 34, height: 34)
+                    .background { GlassBackground(shape: Circle(), shadow: true, seed: 0.54) }
                 }
                 .buttonStyle(.plain)
 
                 Button {
-                    showRecharge = true
+                    showAttachMenu = true
                 } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "bolt.fill")
-                            .font(.system(size: 9, weight: .bold))
-                        Text(compactTokens(wallet?.tokens ?? 0))
-                            .font(pf(10.5, .semibold))
-                    }
-                    .foregroundColor(C.subLabel)
-                    .padding(.horizontal, 9)
-                    .frame(height: 30)
-                    .background(Capsule().fill(C.fieldBg))
+                    Image(systemName: "plus")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(C.label)
+                        .frame(width: 34, height: 34)
+                        .background {
+                            GlassBackground(shape: Circle(),
+                                            tint: Color(hex: 0xEEF2F8).opacity(0.45),
+                                            shadow: true,
+                                            seed: 0.70)
+                        }
                 }
                 .buttonStyle(.plain)
             }
@@ -257,107 +293,88 @@ struct AIWorkspaceView: View {
     }
 
     private var emptyState: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack(alignment: .center, spacing: 12) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(LinearGradient(colors: [Color(hex: 0x4A8BFF),
-                                                      Color(hex: 0x7B61FF)],
-                                             startPoint: .topLeading,
-                                             endPoint: .bottomTrailing))
-                        .frame(width: 52, height: 52)
-                        .shadow(color: accent.opacity(0.2), radius: 14, y: 6)
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 22, weight: .semibold))
-                        .foregroundColor(.white)
-                }
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(Tr("你好，我是") + aiName)
-                        .font(pf(23, .bold))
-                        .foregroundColor(C.label)
-                    Text(Tr("今天想一起完成什么？"))
-                        .font(pf(14.5))
-                        .foregroundColor(C.subLabel)
-                }
-                Spacer(minLength: 0)
-            }
-            .padding(.top, 8)
+        VStack(spacing: 10) {
+            Text("Hi，" + displayName)
+                .font(pf(27, .bold))
+                .foregroundColor(C.label)
+                .multilineTextAlignment(.center)
 
-            Text(tierName + " · " + Tr("写作、问答与日常代办"))
-                .font(pf(11.5, .medium))
+            Text(wallet?.tier == "starter"
+                 ? Tr("我是") + aiName + Tr("，现在可以陪你简单聊聊，回答日常问题")
+                 : Tr("我是") + aiName + Tr("，聊天、写作、搜索、文件和办公都能帮你"))
+                .font(pf(14.5))
                 .foregroundColor(C.subLabel)
+                .multilineTextAlignment(.center)
+                .lineSpacing(3)
+                .frame(maxWidth: 310)
 
-            LazyVGrid(columns: [
-                GridItem(.flexible(), spacing: 9),
-                GridItem(.flexible(), spacing: 9)
-            ], spacing: 9) {
-                ForEach(quickPrompts, id: \.0) { item in
-                    Button {
-                        submit(item.1)
-                    } label: {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Image(systemName: item.2)
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundColor(accent)
-                            Text(item.0)
-                                .font(pf(13.5, .medium))
-                                .foregroundColor(C.label)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        .padding(13)
-                        .frame(maxWidth: .infinity, minHeight: 78, alignment: .leading)
-                        .background(C.cardBg)
-                        .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous)
-                            .stroke(C.hairline.opacity(0.75), lineWidth: 0.6))
+            if wallet?.tier == "starter" {
+                VStack(spacing: 4) {
+                    Text(Tr("轻量包为纯聊天模式"))
+                        .font(pf(11.5, .medium))
+                        .foregroundColor(C.label)
+                    Text(Tr("写作、搜索、文件、办公、代码和语音需要升级标准包"))
+                        .font(pf(10))
+                        .foregroundColor(C.subLabel)
+                        .multilineTextAlignment(.center)
+                    Button(Tr("查看标准包")) {
+                        showRecharge = true
                     }
+                    .font(pf(10.5))
+                    .foregroundColor(accent)
                     .buttonStyle(.plain)
                 }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(C.fieldBg.opacity(0.72))
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
-
-            HStack(spacing: 7) {
-                Image(systemName: "lock.open.fill")
-                    .font(.system(size: 10, weight: .semibold))
-                Text(Tr("聊天内容只用于完成当前任务"))
-                    .font(pf(10.5))
-            }
-            .foregroundColor(C.subLabel)
-            .padding(.top, 2)
         }
-        .padding(.bottom, 18)
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 24)
+        .padding(.top, 32)
+        .padding(.bottom, 24)
     }
 
-    private var quickPrompts: [(String, String, String)] {
-        [
-            (Tr("帮我写作"), Tr("帮我写一份清楚、自然的工作通知。"), "square.and.pencil"),
-            (Tr("做一份计划"), Tr("帮我把今天要做的事情整理成一份可执行的计划。"), "checklist"),
-            (Tr("阅读文件"), Tr("我先发你一份文件，请帮我提炼重点。"), "doc.text.fill"),
-            (Tr("查最新资讯"), Tr("请联网查一下今天值得关注的科技资讯。"), "globe")
-        ]
+    private var displayName: String {
+        let nickname = app.me?.nickname?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !nickname.isEmpty { return nickname }
+        let username = app.me?.username?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return username.isEmpty ? Tr("你好") : username
     }
 
     @ViewBuilder
     private func messageRow(_ message: Message) -> some View {
         let mine = message.senderId == myId
         if mine {
-            HStack {
-                Spacer(minLength: 48)
+            HStack(alignment: .top, spacing: 8) {
+                Spacer(minLength: 42)
                 messageContent(message, mine: true)
                     .padding(.horizontal, 13)
                     .padding(.vertical, 10)
                     .background(accent)
                     .foregroundColor(.white)
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                Avatar(path: app.me?.avatarPath ?? "", size: 32, radius: 11)
             }
             .padding(.bottom, 14)
         } else {
-            HStack(alignment: .top, spacing: 9) {
-                JarvisEyesAvatar(size: 25,
-                                 tint: EyesStore.shared.eyesOn ? nil : Color.clear,
-                                 staticOnly: true)
-                    .padding(.top, 2)
+            HStack(alignment: .top, spacing: 8) {
+                AIWorkspaceMark()
                 messageContent(message, mine: false)
                     .frame(maxWidth: 330, alignment: .leading)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 9)
+                    .background {
+                        GlassBackground(shape: RoundedRectangle(cornerRadius: 15,
+                                                                style: .continuous),
+                                        opacity: 0.72,
+                                        shadow: false,
+                                        seed: 0.24)
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .stroke(C.hairline.opacity(0.55), lineWidth: 0.5))
                 Spacer(minLength: 12)
             }
             .padding(.bottom, 17)
@@ -443,10 +460,8 @@ struct AIWorkspaceView: View {
     }
 
     private var typingRow: some View {
-        HStack(alignment: .center, spacing: 9) {
-            JarvisEyesAvatar(size: 25,
-                             tint: EyesStore.shared.eyesOn ? nil : Color.clear,
-                             staticOnly: false)
+        HStack(alignment: .center, spacing: 8) {
+            AIWorkspaceMark()
             HStack(spacing: 7) {
                 ProgressView()
                     .controlSize(.small)
@@ -455,30 +470,44 @@ struct AIWorkspaceView: View {
                     .font(pf(13))
                     .foregroundColor(C.subLabel)
             }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            .background {
+                GlassBackground(shape: RoundedRectangle(cornerRadius: 15,
+                                                        style: .continuous),
+                                opacity: 0.68,
+                                shadow: false,
+                                seed: 0.44)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
             Spacer(minLength: 12)
         }
         .padding(.bottom, 16)
     }
 
     private var composer: some View {
-        VStack(spacing: 9) {
-            HStack(alignment: .bottom, spacing: 10) {
-                Button {
-                    showCamera = true
-                } label: {
-                    Image(systemName: "camera.fill")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(accent)
-                        .frame(width: 36, height: 36)
-                        .background(Circle().fill(accent.opacity(0.09)))
+        VStack(spacing: 2) {
+            HStack(spacing: 4) {
+                if wallet?.tier != "starter" {
+                    Button {
+                        showAttachMenu = true
+                    } label: {
+                        Image(systemName: "camera")
+                            .font(.system(size: 19, weight: .regular))
+                            .foregroundColor(C.label)
+                            .frame(width: 42, height: 42)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
 
-                TextField(Tr("开启一天的工作之旅吧…"), text: $prompt, axis: .vertical)
+                TextField(wallet?.tier == "starter"
+                          ? Tr("和小星简单聊聊")
+                          : Tr("开启一天的工作之旅吧..."),
+                          text: $prompt, axis: .vertical)
                     .font(pf(15.5))
                     .foregroundColor(C.label)
                     .tint(accent)
-                    .lineLimit(1...5)
+                    .lineLimit(1...4)
                     .focused($inputFocused)
                     .padding(.vertical, 9)
 
@@ -486,59 +515,45 @@ struct AIWorkspaceView: View {
                     submit(prompt)
                 } label: {
                     Image(systemName: waitingReply ? "hourglass" : "arrow.up")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.white)
-                        .frame(width: 36, height: 36)
-                        .background(Circle().fill(canSend ? accent : accent.opacity(0.30)))
+                        .frame(width: 42, height: 42)
+                        .background(Circle().fill(canSend
+                                                  ? accent
+                                                  : Color.dyn(0xF1F2F4, 0x262C35)))
                 }
                 .buttonStyle(.plain)
                 .disabled(!canSend)
             }
+            .padding(3)
+            .background { AIChatSystemGlass() }
 
-            HStack(spacing: 8) {
-                composerButton("photo.fill", Tr("相册")) { showPhotos = true }
-                composerButton("plus", Tr("文件")) { showAttachMenu = true }
-                Spacer(minLength: 0)
-                Button {
-                    submit(Tr("请联网查一下最新信息，并给我一句清楚的结论。"))
-                } label: {
-                    HStack(spacing: 5) {
-                        Image(systemName: "globe")
-                        Text(Tr("联网"))
-                    }
-                    .font(pf(11, .medium))
-                    .foregroundColor(Color(hex: 0x4E6D96))
-                    .padding(.horizontal, 10)
-                    .frame(height: 27)
-                    .background(Capsule().fill(accent.opacity(0.08)))
-                }
-                .buttonStyle(.plain)
-            }
+            tokenBar
+
+            Text(Tr("内容由 AI 生成，仅供参考"))
+                .font(pf(9.5))
+                .foregroundColor(C.subLabel)
+                .frame(maxWidth: .infinity)
+                .padding(.bottom, 4)
         }
         .padding(.horizontal, 12)
-        .padding(.top, 11)
-        .padding(.bottom, 10)
-        .background(C.pageBg)
-        .overlay(alignment: .top) {
-            HairLine()
-        }
+        .padding(.bottom, 6)
     }
 
-    private func composerButton(_ icon: String, _ title: String,
-                                tap: @escaping () -> Void) -> some View {
-        Button(action: tap) {
-            HStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.system(size: 11, weight: .semibold))
-                Text(title)
-                    .font(pf(11, .medium))
-            }
-            .foregroundColor(C.subLabel)
-            .padding(.horizontal, 9)
-            .frame(height: 27)
-            .background(Capsule().fill(C.fieldBg))
+    private var tokenBar: some View {
+        HStack(spacing: 8) {
+            Text(Tr("约 ") + wordText(wallet?.tokens ?? 0) + Tr(" 可用"))
+            Text("·")
+            Text(Tr("已用约 ") + wordText(wallet?.used ?? 0))
+            Button(Tr("购买")) { showRecharge = true }
+                .buttonStyle(.plain)
+                .foregroundColor(accent)
         }
-        .buttonStyle(.plain)
+        .font(pf(10.5))
+        .foregroundColor(C.subLabel)
+        .frame(maxWidth: .infinity)
+        .padding(.top, 7)
+        .padding(.bottom, 2)
     }
 
     private func scrollBottom(_ proxy: ScrollViewProxy) {
@@ -726,6 +741,11 @@ struct AIWorkspaceView: View {
     }
 
     private func openCall() {
+        guard voiceCallAvailable else {
+            app.show(Tr("语音通话需标准包，已为你打开补充页"))
+            showRecharge = true
+            return
+        }
         Task {
             if let target = await resolveChat() { callChat = target }
         }
@@ -792,6 +812,15 @@ struct AIWorkspaceView: View {
             return String(format: v >= 100 ? "%.0fK" : "%.1fK", v)
         }
         return String(n)
+    }
+
+    private func wordText(_ value: Int) -> String {
+        let n = max(0, value)
+        if n >= 10_000 {
+            let v = Double(n) / 10_000
+            return String(format: v >= 100 ? "%.0f万字" : "%.1f万字", v)
+        }
+        return "\(n)字"
     }
 }
 
@@ -1507,5 +1536,48 @@ private struct AIProfileSheet: View {
                 }
             }
         }
+    }
+}
+private struct AIWorkspaceMark: View {
+    var body: some View {
+        Text("✦")
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundColor(.white)
+            .frame(width: 32, height: 32)
+            .background(
+                LinearGradient(colors: [Color(hex: 0x4A8BFF),
+                                        Color(hex: 0x7B61FF)],
+                               startPoint: .topLeading,
+                               endPoint: .bottomTrailing)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+            .shadow(color: Color(hex: 0x356FF4).opacity(0.16), radius: 8, y: 3)
+    }
+}
+
+private struct AIChatSystemGlass: View {
+    private let shape = RoundedRectangle(cornerRadius: 29, style: .continuous)
+
+    var body: some View {
+        #if compiler(>=6.2)
+        if #available(iOS 26.0, *) {
+            Color.clear
+                .glassEffect(.regular, in: shape)
+                .shadow(color: .black.opacity(0.10), radius: 12, y: 6)
+                .allowsHitTesting(false)
+        } else {
+            fallback
+        }
+        #else
+        fallback
+        #endif
+    }
+
+    private var fallback: some View {
+        shape
+            .fill(.ultraThinMaterial)
+            .overlay(shape.stroke(Color.white.opacity(0.42), lineWidth: 0.8))
+            .shadow(color: .black.opacity(0.10), radius: 12, y: 6)
+            .allowsHitTesting(false)
     }
 }

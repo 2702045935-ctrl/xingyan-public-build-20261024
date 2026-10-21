@@ -3,10 +3,13 @@ import AVFoundation
 import Speech
 
 @MainActor
-final class VoiceEngine: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
+final class VoiceEngine: NSObject, ObservableObject, AVSpeechSynthesizerDelegate, AVAudioPlayerDelegate {
     @Published var listening = false
     @Published var heard = ""
     @Published var status = "点一下麦克风开始说话"
+    @Published var level: CGFloat = 0
+    @Published var outputting = false
+    var aiVoice = ""
 
     private let engine = AVAudioEngine()
     private var request: SFSpeechAudioBufferRecognitionRequest?
@@ -14,6 +17,7 @@ final class VoiceEngine: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
     private let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "zh-CN"))
     private let synth = AVSpeechSynthesizer()
     private var onSpokenDone: (() -> Void)?
+    private var cloudPlayer: AVAudioPlayer?
     private var autoStop: Task<Void, Never>?
     private var onText: ((String) -> Void)?
 
@@ -101,7 +105,9 @@ final class VoiceEngine: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
     }
 
     func speak(_ text: String, done: @escaping () -> Void) {
+        stopSpeech()
         onSpokenDone = done
+        outputting = true
         let clean = text.replacingOccurrences(of: "```", with: " ")
             .replacingOccurrences(of: "#", with: "")
         let u = AVSpeechUtterance(string: String(clean.prefix(220)))
@@ -111,10 +117,56 @@ final class VoiceEngine: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
         synth.speak(u)
     }
 
+    func speakCloud(_ text: String, done: @escaping () -> Void) {
+        stopSpeech()
+        onSpokenDone = done
+        outputting = true
+        let requestedVoice = aiVoice
+        Task {
+            do {
+                let result = try await API.shared.aiSpeech(String(text.prefix(500)))
+                guard let data = Data(base64Encoded: result.audio), !data.isEmpty else {
+                    throw APIError.message("语音数据不完整")
+                }
+                let session = AVAudioSession.sharedInstance()
+                try? session.setCategory(.playback, mode: .spokenAudio, options: [.duckOthers])
+                try? session.setActive(true)
+                let player = try AVAudioPlayer(data: data)
+                player.delegate = self
+                player.prepareToPlay()
+                guard player.play() else { throw APIError.message("语音播放失败") }
+                cloudPlayer = player
+                _ = requestedVoice
+            } catch {
+                speak(text, done: done)
+            }
+        }
+    }
+
+    func stopSpeech() {
+        cloudPlayer?.stop()
+        cloudPlayer = nil
+        if synth.isSpeaking { synth.stopSpeaking(at: .immediate) }
+        onSpokenDone = nil
+        outputting = false
+    }
+
     nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer,
                                        didFinish utterance: AVSpeechUtterance) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
+            self.outputting = false
+            let cb = self.onSpokenDone
+            self.onSpokenDone = nil
+            cb?()
+        }
+    }
+
+    nonisolated func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.cloudPlayer = nil
+            self.outputting = false
             let cb = self.onSpokenDone
             self.onSpokenDone = nil
             cb?()
@@ -122,7 +174,7 @@ final class VoiceEngine: NSObject, ObservableObject, AVSpeechSynthesizerDelegate
     }
 }
 
-struct AICallView: View {
+private struct LegacyAICallView: View {
     let chat: Chat
 
     @EnvironmentObject var app: AppState
