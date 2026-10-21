@@ -484,6 +484,7 @@ final class AppState: ObservableObject {
 
     func login(username: String, password: String) async throws {
         me = try await API.shared.login(username: username, password: password, sliderTicket: "")
+        finishLoginTransition()
         rememberLastUser()
         await refreshAll()
         Realtime.shared.start()
@@ -491,6 +492,7 @@ final class AppState: ObservableObject {
 
     func login(username: String, password: String, sliderTicket: String) async throws {
         me = try await API.shared.login(username: username, password: password, sliderTicket: sliderTicket)
+        finishLoginTransition()
         rememberLastUser()
         await refreshAll()
         Realtime.shared.start()
@@ -500,6 +502,7 @@ final class AppState: ObservableObject {
 
     func adoptRegistered(_ user: User) async {
         me = user
+        finishLoginTransition()
         rememberLastUser()
         await refreshAll()
         Realtime.shared.start()
@@ -516,6 +519,7 @@ final class AppState: ObservableObject {
 
     func login(phone: String, code: String) async throws {
         me = try await API.shared.loginPhone(phone: phone, code: code)
+        finishLoginTransition()
         rememberLastUser()
         await refreshAll()
         Realtime.shared.start()
@@ -524,10 +528,18 @@ final class AppState: ObservableObject {
 
     func finishLogin(_ user: User) async {
         me = user
+        finishLoginTransition()
         rememberLastUser()
         await refreshAll()
         Realtime.shared.start()
         Task { await syncRecentMessages() }
+    }
+
+    private func finishLoginTransition() {
+        booting = false
+        needConfirmLogin = false
+        showSavedLogin = false
+        uiVersion += 1
     }
 
     private var dotTask: Task<Void, Never>?
@@ -785,6 +797,7 @@ final class AppState: ObservableObject {
             return false
         }
         me = user
+        finishLoginTransition()
         rememberLastUser()
         await refreshAll()
         Realtime.shared.start()

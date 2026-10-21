@@ -28,6 +28,7 @@ struct HarmonyLoginView: View {
     @State private var showSlider = false
     @State private var showReset = false
     @State private var showUnban = false
+    @State private var showRegister = false
     @State private var showTerms = false
     @State private var termsKind = 0
     @State private var countdownTask: Task<Void, Never>?
@@ -103,6 +104,9 @@ struct HarmonyLoginView: View {
         .sheet(isPresented: $showReset) { ResetPasswordSheet() }
         .sheet(isPresented: $showUnban) {
             UnbanSheet(preUser: user, prePass: pass)
+        }
+        .sheet(isPresented: $showRegister) {
+            RegisterSheet().environmentObject(app)
         }
         .sheet(isPresented: $showTerms) { TermsSheet(kind: termsKind) }
     }
@@ -256,6 +260,7 @@ struct HarmonyLoginView: View {
             HStack(spacing: 14) {
                 Button("找回密码") { showReset = true }
                 Button("自助解封") { showUnban = true }
+                Button("注册") { showRegister = true }
                 Spacer()
                 Button(mode == .phone ? "密码登录 ›" : "验证码登录 ›") {
                     mode = mode == .phone ? .password : .phone
@@ -387,6 +392,9 @@ struct HarmonyLoginView: View {
         guard canPrimary || busy == false else { return }
         busy = true
         message = ""
+        focus = nil
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),
+                                        to: nil, from: nil, for: nil)
         Task {
             do {
                 if mode == .phone {
