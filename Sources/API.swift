@@ -215,6 +215,14 @@ struct AILearningStatus: Decodable {
     var learned: Int
 }
 
+struct AITTSResult: Decodable {
+    var audio: String
+    var mime: String
+    var voice: String?
+    var usage: Int?
+    var cached: Bool?
+}
+
 func imageRefPath(_ content: String) -> String {
     let b = content
     guard b.hasPrefix("{"), let d = b.data(using: .utf8),
@@ -4881,6 +4889,10 @@ private struct StarredPayload: Decodable {
 
     func resetAILearning() async throws -> AILearningStatus {
         try await post("/api/ai/learning/reset", [:], as: AILearningStatus.self)
+    }
+
+    func aiSpeech(_ text: String) async throws -> AITTSResult {
+        try await post("/api/ai/tts", ["text": text], as: AITTSResult.self)
     }
 
     func upload(image: UIImage) async throws -> String {
