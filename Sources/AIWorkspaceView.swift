@@ -102,7 +102,7 @@ struct AIWorkspaceView: View {
             Task { await load(showLoading: false) }
         }) {
             if let current = wallet {
-                AIProfileSheet(wallet: current)
+                AIProfileSheet(wallet: current, onClearChat: clearWorkspaceChat)
                     .environmentObject(app)
             }
         }
@@ -816,6 +816,28 @@ struct AIWorkspaceView: View {
         }
     }
 
+    private func clearWorkspaceChat() async -> String? {
+        let target: Chat
+        if let chat = chat {
+            target = chat
+        } else if let found = await resolveChat() {
+            target = found
+        } else {
+            return "小星会话还没有准备好"
+        }
+        if let error = await API.shared.clearChat(chatId: target.id) {
+            return error
+        }
+        LocalStore.clearChat(target.id)
+        LocalNotify.clearChat(target.id)
+        await MainActor.run {
+            messages = []
+            waitingReply = false
+            spoken = []
+        }
+        return nil
+    }
+
     private func autoReadLatest(_ message: Message) {
         guard autoRead, !spoken.contains(message.id) else { return }
         let text = message.body.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1382,6 +1404,7 @@ private struct AIProfileSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     let wallet: AIWalletStatus
+    let onClearChat: () async -> String?
 
     @State private var name = ""
     @State private var selectedVoice = ""
@@ -1389,6 +1412,8 @@ private struct AIProfileSheet: View {
     @State private var learned = 0
     @State private var savingName = false
     @State private var showResetConfirm = false
+    @State private var showClearChatConfirm = false
+    @State private var clearingChat = false
     private let accent = Color(hex: 0x356FF4)
 
     private var voices: [AIVoiceOption] { wallet.voices ?? [] }
@@ -1503,6 +1528,33 @@ private struct AIProfileSheet: View {
                         }
                     }
 
+                    settingBlock(Tr("对话记录")) {
+                        HStack(spacing: 12) {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(Tr("清除 AI 工作台对话"))
+                                    .font(pf(13.5, .medium))
+                                    .foregroundColor(C.label)
+                                Text(Tr("只清空你和小星的工作台聊天，不影响其他会话"))
+                                    .font(pf(10.5))
+                                    .foregroundColor(C.subLabel)
+                            }
+                            Spacer(minLength: 4)
+                            Button {
+                                showClearChatConfirm = true
+                            } label: {
+                                if clearingChat {
+                                    ProgressView().controlSize(.small).tint(C.red)
+                                } else {
+                                    Text(Tr("清除"))
+                                        .font(pf(12, .medium))
+                                        .foregroundColor(C.red)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(clearingChat)
+                        }
+                    }
+
                     if wallet.tier == "starter" {
                         Text(Tr("轻量包只支持简单文字对话。需要写作、文件、语音或代办时，可在充值页升级。"))
                             .font(pf(11.5))
@@ -1521,6 +1573,14 @@ private struct AIProfileSheet: View {
                             titleVisibility: .visible) {
             Button(Tr("清除"), role: .destructive) {
                 resetLearning()
+            }
+            Button(Tr("取消"), role: .cancel) { }
+        }
+        .confirmationDialog(Tr("确定清除 AI 工作台的对话吗？"),
+                            isPresented: $showClearChatConfirm,
+                            titleVisibility: .visible) {
+            Button(Tr("清除对话"), role: .destructive) {
+                clearChat()
             }
             Button(Tr("取消"), role: .cancel) { }
         }
@@ -1598,6 +1658,23 @@ private struct AIProfileSheet: View {
             } catch {
                 await MainActor.run {
                     app.show((error as? LocalizedError)?.errorDescription ?? "清除失败")
+                }
+            }
+        }
+    }
+
+    private func clearChat() {
+        guard !clearingChat else { return }
+        clearingChat = true
+        Task {
+            let error = await onClearChat()
+            await MainActor.run {
+                clearingChat = false
+                if let error = error {
+                    app.show(error)
+                } else {
+                    app.show(Tr("工作台对话已清除"))
+                    dismiss()
                 }
             }
         }
