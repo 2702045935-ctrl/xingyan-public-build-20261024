@@ -1105,7 +1105,7 @@ struct ChatsView: View {
     private var floorRecentApps: [MiniApp] {
         guard !floorApps.isEmpty else { return [] }
 
-        return Array(floorApps.prefix(8))
+        return Array(floorApps.filter { $0.id != "office" }.prefix(8))
     }
 
     private var miniApps: [(String, String, String)] {
