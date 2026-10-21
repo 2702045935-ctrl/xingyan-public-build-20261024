@@ -141,13 +141,19 @@ struct ChatRow: View {
                             height: L.v(11.5, 3.2, 13))
                     .fixedSize()
             }
-            Text(chat.lastMessage?.preview ?? "")
+            mentionPreview
                 .font(pf(L.rowPreviewSize))
-                .foregroundColor(C.subLabel.opacity(0.94))
                 .kerning(-0.05)
                 .lineLimit(1)
                 .truncationMode(.tail)
         }
+    }
+
+    private var mentionPreview: Text {
+        let preview = chat.lastMessage?.preview ?? ""
+        let body = Text(preview).foregroundColor(C.subLabel.opacity(0.94))
+        guard chat.lastMessage?.mentionMe == true, chat.unreadCount > 0 else { return body }
+        return Text("[有人@我] ").foregroundColor(C.red) + body
     }
 
     private var rightColumn: some View {

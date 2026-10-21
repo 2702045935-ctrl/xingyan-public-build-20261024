@@ -727,6 +727,13 @@ struct ChatDetailView: View {
         return v
     }
 
+    private var groupAnnouncement: String {
+        guard isGroup else { return "" }
+        let live = app.chats.first(where: { $0.id == chat.id })?.announce ?? chat.announce ?? ""
+        return live.replacingOccurrences(of: "\n", with: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     var body: some View {
         ZStack {
 
@@ -916,6 +923,36 @@ struct ChatDetailView: View {
                         .ignoresSafeArea(edges: .top)
                     }
                 }
+            }
+
+            if !groupAnnouncement.isEmpty {
+                Button {
+                    announcePage = groupAnnouncement
+                    showAnnouncePage = true
+                } label: {
+                    HStack(spacing: 7) {
+                        Image(systemName: "megaphone.fill")
+                            .font(.system(size: 12, weight: .semibold))
+                        Text(Tr("群公告"))
+                            .font(pf(12.5, .semibold))
+                        Text(groupAnnouncement)
+                            .font(pf(13))
+                            .foregroundColor(C.label)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                        Spacer(minLength: 0)
+                        Chevron(size: 7, line: 1.4, color: C.subLabel)
+                    }
+                    .foregroundColor(C.green)
+                    .padding(.horizontal, 12)
+                    .frame(height: 36)
+                    .background(ChatTheme.panel)
+                    .overlay(alignment: .bottom) {
+                        Rectangle().fill(ChatTheme.separator).frame(height: 0.5)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
             }
 
             if callActiveHere {
@@ -1526,7 +1563,10 @@ struct ChatDetailView: View {
         let now = Date()
         guard now.timeIntervalSince(lastReadSyncAt) > 1.5 else { return }
         lastReadSyncAt = now
-        Task { await API.shared.markRead(chatId: chat.id) }
+        Task {
+            await API.shared.markRead(chatId: chat.id)
+            await app.loadChats()
+        }
     }
 
     private func scheduleSettledBottom(delayMs: UInt64 = 120) {
