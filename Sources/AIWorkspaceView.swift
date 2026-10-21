@@ -277,6 +277,9 @@ struct AIWorkspaceView: View {
                 .padding(.bottom, 16)
             }
             .scrollDismissesKeyboard(.interactively)
+            .simultaneousGesture(TapGesture().onEnded {
+                inputFocused = false
+            })
             .onChange(of: messages.count) { _ in
                 scrollBottom(proxy)
             }
