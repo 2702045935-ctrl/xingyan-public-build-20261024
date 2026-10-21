@@ -17756,15 +17756,27 @@ async function handleApi(req, res, pathname, query) {
   /* 用户举报：App 里长按消息 / 动态可以举报，后台「举报处理」里看 */
   if (parts[0] === 'reports' && method === 'POST') {
     const body = await readBody(req);
-    const target = findUser(str(body.targetUserId, 40));
-    if (!target) return fail(res, 404, '被举报的人不存在');
+    const groupReport = body.targetType === 'group';
+    const target = groupReport ? null : findUser(str(body.targetUserId, 40));
+    let targetChat = null;
+    if (groupReport) {
+      targetChat = db.chats.find((c) => c.id === str(body.chatId, 60));
+      if (!targetChat || targetChat.type !== 'group') return fail(res, 404, '被投诉的群聊不存在');
+      if (!targetChat.memberIds.includes(user.id)) return fail(res, 403, '你不在这个群里');
+    } else if (!target) {
+      return fail(res, 404, '被举报的人不存在');
+    }
+    const targetName = groupReport
+      ? (targetChat.name || str(body.targetName, 60) || '群聊')
+      : (target.nickname || target.username);
     const row = {
       id: uid('rp'),
       at: now(),
       byUserId: user.id,
       byName: user.nickname || user.username,
-      targetUserId: target.id,
-      targetName: target.nickname || target.username,
+      targetType: groupReport ? 'group' : 'user',
+      targetUserId: groupReport ? '' : target.id,
+      targetName,
       reason: str(body.reason, 60) || '未填写原因',
       content: str(body.content, 300),
       chatId: str(body.chatId, 60),
@@ -17773,7 +17785,7 @@ async function handleApi(req, res, pathname, query) {
     opsStore.reports.unshift(row);
     if (opsStore.reports.length > 500) opsStore.reports.length = 500;
     saveReports();
-    audit(req, null, '用户举报', target.username, row.reason);
+    audit(req, null, groupReport ? '投诉群聊' : '用户举报', targetName, row.reason);
     ok(res, { reported: true });
     return;
   }

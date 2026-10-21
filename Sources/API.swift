@@ -5197,6 +5197,22 @@ private struct StarredPayload: Decodable {
             "content": content
         ])
     }
+
+    func reportGroup(chatId: String, groupName: String,
+                     reason: String, content: String) async -> String? {
+        do {
+            _ = try await request("POST", "/api/reports", body: [
+                "targetType": "group",
+                "chatId": chatId,
+                "targetName": groupName,
+                "reason": reason,
+                "content": content
+            ])
+            return nil
+        } catch {
+            return (error as? APIError)?.errorDescription ?? "投诉提交失败"
+        }
+    }
 }
 
 extension UIImage {

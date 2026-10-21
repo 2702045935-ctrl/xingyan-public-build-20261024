@@ -1406,17 +1406,17 @@ PAGES.riskengine = async () => {
 PAGES.reports = async () => {
   const d = await api('/reports');
   $('content').innerHTML =
-    '<div class="panel"><h3>用户举报<span class="sp"></span><span class="hint">App 里长按消息 → 举报</span></h3><table>'
-    + '<tr><th>时间</th><th>举报人</th><th>被举报人</th><th>原因</th><th>内容</th><th>状态</th><th></th></tr>'
+    '<div class="panel"><h3>举报处理<span class="sp"></span><span class="hint">用户、消息与群聊投诉</span></h3><table>'
+    + '<tr><th>时间</th><th>举报人</th><th>被举报对象</th><th>原因</th><th>内容</th><th>状态</th><th></th></tr>'
     + (d.reports.length ? d.reports.map((r) =>
       '<tr><td>' + fmtTime(r.at) + '</td><td>' + esc(r.byName || r.byUserId) + '</td>'
-      + '<td>' + esc(r.targetName || r.targetUserId) + '</td><td>' + esc(r.reason) + '</td>'
+      + '<td>' + esc((r.targetType === 'group' ? '群聊 · ' : '') + (r.targetName || r.targetUserId)) + '</td><td>' + esc(r.reason) + '</td>'
       + '<td>' + esc(String(r.content || '').slice(0, 60)) + '</td>'
       + '<td>' + (r.status === 'open' ? badge('待处理', 'o')
         : (r.status === 'banned' ? badge('已封号', 'r') : badge('已处理', 'g'))) + '</td>'
       + '<td>' + (r.status === 'open' && can('reports')
         ? '<button class="btn sm" data-rep="' + r.id + '" data-ban="0">处理</button> '
-          + '<button class="btn sm red" data-rep="' + r.id + '" data-ban="1">处理并封号</button>' : '') + '</td></tr>').join('')
+          + (r.targetType === 'group' ? '' : '<button class="btn sm red" data-rep="' + r.id + '" data-ban="1">处理并封号</button>') : '') + '</td></tr>').join('')
       : '<tr><td colspan="7"><div class="empty">暂无举报</div></td></tr>')
     + '</table></div>';
   $('content').querySelectorAll('[data-rep]').forEach((b) => {

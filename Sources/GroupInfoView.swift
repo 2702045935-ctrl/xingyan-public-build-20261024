@@ -26,6 +26,7 @@ struct GroupInfoView: View {
     @State private var nameDraft = ""
     @State private var showSearch = false
     @State private var membersExpanded = false
+    @State private var showComplaint = false
 
     @State private var showGroupBg = false
     @State private var confirmClear = false
@@ -152,6 +153,10 @@ struct GroupInfoView: View {
         .navigationDestination(isPresented: $showSearch) { ChatSearchView(chat: chat) }
         .sheet(isPresented: $showGroupBg) {
             ChatBackgroundSheet(chatId: chat.id).environmentObject(app)
+        }
+        .sheet(isPresented: $showComplaint) {
+            GroupComplaintView(chatId: chat.id, groupName: chat.name)
+                .environmentObject(app)
         }
         .navigationDestination(isPresented: $showQR) { GroupQRView(chat: chat) }
         .navigationDestination(isPresented: $showAdd) {
@@ -480,7 +485,7 @@ struct GroupInfoView: View {
         if membersExpanded || members.count <= 20 {
             return members
         }
-        return Array(members.prefix(19))
+        return Array(members.prefix(20))
     }
 
     private var memberCard: some View {
@@ -732,6 +737,12 @@ struct GroupInfoView: View {
                 }
                 .environmentObject(app)
             }
+            PanelDivider()
+            PanelRow(symbol: "exclamationmark.bubble.fill", colors: PanelTint.gray,
+                     title: Tr("投诉群聊"),
+                     value: Tr("违法违规、诈骗或骚扰")) {
+                showComplaint = true
+            }
         }
     }
 
@@ -757,6 +768,162 @@ struct GroupInfoView: View {
 
             PanelDangerRow(symbol: "rectangle.portrait.and.arrow.right",
                            title: isOwner ? "解散并退出群聊" : "退出群聊") { confirmQuit = true }
+        }
+    }
+}
+
+struct GroupComplaintView: View {
+    @EnvironmentObject var app: AppState
+    @Environment(\.dismiss) private var dismiss
+
+    let chatId: String
+    let groupName: String
+
+    @State private var reason = "违法违规"
+    @State private var detail = ""
+    @State private var busy = false
+
+    private let reasons = ["违法违规", "诈骗或欺诈", "色情低俗", "骚扰或辱骂", "侵权或冒充", "其他问题"]
+
+    var body: some View {
+        VStack(spacing: 0) {
+            NavBar(title: Tr("投诉群聊"), back: { dismiss() }) {
+                Button { submit() } label: {
+                    Text(busy ? Tr("提交中…") : Tr("提交"))
+                        .font(pf(14.5, .medium))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 15)
+                        .frame(height: 32)
+                        .background(Capsule().fill(busy ? C.subLabel : C.green))
+                        .padding(.trailing, 14)
+                }
+                .buttonStyle(.plain)
+                .disabled(busy)
+            }
+
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 12) {
+                    GroupCard {
+                        HStack(spacing: 12) {
+                            Image(systemName: "exclamationmark.shield.fill")
+                                .font(.system(size: 22, weight: .semibold))
+                                .foregroundColor(C.red)
+                                .frame(width: 44, height: 44)
+                                .background(C.red.opacity(0.10))
+                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(groupName)
+                                    .font(pf(16, .medium))
+                                    .foregroundColor(C.label)
+                                    .lineLimit(1)
+                                Text(Tr("投诉会提交给安全团队审核，群成员不会看到"))
+                                    .font(pf(12))
+                                    .foregroundColor(C.subLabel)
+                                    .lineLimit(2)
+                            }
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 13)
+                    }
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(Tr("投诉类型"))
+                            .font(pf(13, .medium))
+                            .foregroundColor(C.subLabel)
+                            .padding(.leading, 4)
+                        GroupCard {
+                            ForEach(reasons.indices, id: \.self) { index in
+                                if index > 0 { HairLine(inset: 16) }
+                                Button {
+                                    reason = reasons[index]
+                                } label: {
+                                    HStack(spacing: 10) {
+                                        Text(Tr(reasons[index]))
+                                            .font(pf(15.5))
+                                            .foregroundColor(C.label)
+                                        Spacer(minLength: 0)
+                                        Image(systemName: reason == reasons[index]
+                                              ? "checkmark.circle.fill" : "circle")
+                                            .font(.system(size: 19))
+                                            .foregroundColor(reason == reasons[index] ? C.green : C.subLabel)
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .frame(height: 48)
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(Tr("补充说明"))
+                            .font(pf(13, .medium))
+                            .foregroundColor(C.subLabel)
+                            .padding(.leading, 4)
+                        GroupCard {
+                            ZStack(alignment: .topLeading) {
+                                if detail.isEmpty {
+                                    Text(Tr("请描述具体情况，选填"))
+                                        .font(pf(14))
+                                        .foregroundColor(C.subLabel.opacity(0.75))
+                                        .padding(.horizontal, 15)
+                                        .padding(.top, 13)
+                                }
+                                TextEditor(text: $detail)
+                                    .font(pf(14.5))
+                                    .foregroundColor(C.label)
+                                    .scrollContentBackground(.hidden)
+                                    .padding(.horizontal, 10)
+                                    .padding(.top, 5)
+                            }
+                            .frame(height: 130)
+                            .overlay(alignment: .bottomTrailing) {
+                                Text("\(detail.count)/200")
+                                    .font(pf(10.5))
+                                    .foregroundColor(C.subLabel)
+                                    .padding(.trailing, 12)
+                                    .padding(.bottom, 9)
+                            }
+                        }
+                    }
+
+                    Text(Tr("请如实提交投诉。恶意投诉不会影响群聊正常使用，但会被记录。"))
+                        .font(pf(12))
+                        .foregroundColor(C.subLabel)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 4)
+                }
+                .padding(.horizontal, 12)
+                .padding(.top, 8)
+                .padding(.bottom, 30)
+            }
+        }
+        .background(C.pageBg.ignoresSafeArea())
+        .onChange(of: detail) { value in
+            if value.count > 200 { detail = String(value.prefix(200)) }
+        }
+    }
+
+    private func submit() {
+        guard !busy else { return }
+        busy = true
+        Task {
+            let note = detail.trimmingCharacters(in: .whitespacesAndNewlines)
+            let err = await API.shared.reportGroup(
+                chatId: chatId,
+                groupName: groupName,
+                reason: reason,
+                content: note
+            )
+            busy = false
+            if let err {
+                app.show(err)
+            } else {
+                dismiss()
+                app.show(Tr("投诉已提交，安全团队会尽快审核"))
+            }
         }
     }
 }
