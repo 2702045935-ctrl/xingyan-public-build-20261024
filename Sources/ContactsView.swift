@@ -985,7 +985,7 @@ struct ContactCardView: View {
             Button { showMore = true } label: {
                 FlexIcon(custom: IconOverrides.custom("nav.more"), size: 22,
                          color: ink, symbol: "ellipsis")
-                    .frame(width: 54, height: 48)
+                    .frame(width: 54, height: 36)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)

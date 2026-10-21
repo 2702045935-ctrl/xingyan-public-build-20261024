@@ -113,9 +113,11 @@ struct ContactCardWechat: View {
                 Image(systemName: "ellipsis")
                     .font(.system(size: 17))
                     .foregroundColor(ink)
-                    .frame(width: 44, height: L.navH)
+                    .frame(width: 54, height: 36)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(Tr("更多"))
         }
         .background(pageBg)
     }
