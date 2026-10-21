@@ -93,7 +93,7 @@ struct ChatBackgroundSheet: View {
                               spacing: 12) {
 
                         ForEach(Array(shownPresets.enumerated()), id: \.offset) { _, item in
-                            Button { pick(item.path) } label: {
+                            Button { pick(item.path, cacheKey: versioned(item.path)) } label: {
                                 VStack(spacing: 5) {
                                     ZStack {
                                         RemoteImage(path: versioned(item.path), mode: .fill)
@@ -189,8 +189,9 @@ struct ChatBackgroundSheet: View {
         }
     }
 
-    private func pick(_ path: String) {
+    private func pick(_ path: String, cacheKey: String = "") {
 
+        primeBackgroundCache(path: path, cacheKey: cacheKey)
         if inChat {
             let oldUser = app.me
             let oldLocal = ChatBgStore.shared.get(chatId)
@@ -224,6 +225,7 @@ struct ChatBackgroundSheet: View {
         Task {
             busy = true
             if let url = try? await API.shared.uploadOriginal(image: image) {
+                primeBackgroundCache(path: url, image: image)
                 if inChat {
                     if let saved = await API.shared.changeChatBackground(chatId: chatId, path: url) {
                         applyChatBackground(url)
@@ -264,5 +266,26 @@ struct ChatBackgroundSheet: View {
         guard var me = app.me else { return }
         me.chatBackgrounds = map
         app.me = me
+    }
+
+    private func primeBackgroundCache(path: String, cacheKey: String = "", image: UIImage? = nil) {
+        guard !path.isEmpty, path != "auto" else { return }
+        if let image = image {
+            ImageStore.shared.put(path, image)
+            if let data = image.jpegData(compressionQuality: 0.86) {
+                Task.detached(priority: .userInitiated) { ImageStore.shared.diskWrite(path, data) }
+            }
+            return
+        }
+        guard !cacheKey.isEmpty, cacheKey != path else { return }
+        if let cached = ImageStore.shared.get(cacheKey) {
+            ImageStore.shared.put(path, cached)
+            return
+        }
+        if let data = ImageStore.shared.diskRead(cacheKey),
+           let image = RemoteImage.downsampled(data, maxSide: 1600) {
+            ImageStore.shared.put(path, image)
+            Task.detached(priority: .userInitiated) { ImageStore.shared.diskWrite(path, data) }
+        }
     }
 }
