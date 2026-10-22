@@ -384,11 +384,12 @@ struct FuncIcon: View {
     let markup: String
     let bg: Color
     var size: CGFloat = 40
+    var iconSize: CGFloat = 22
 
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 8, style: .continuous).fill(bg)
-            SVGIcon(markup: markup, size: 22, color: .white)
+            SVGIcon(markup: markup, size: iconSize, color: .white)
         }
         .frame(width: size, height: size)
     }

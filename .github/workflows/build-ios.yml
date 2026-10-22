@@ -8,19 +8,24 @@ on:
 
 jobs:
   build:
-    runs-on: [self-hosted, cloud-mac]
+    runs-on: macos-15
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: 选 Xcode 26（macos-15 默认 16.4，必须切过去才有 iOS 26 SDK / 原生玻璃）
+      - name: 选 Xcode（优先 26，没有就用最新可用的）
         run: |
           set -e
-          ls -d /Applications/Xcode_26*.app 2>/dev/null || true
+          ls -d /Applications/Xcode*.app 2>/dev/null || true
           PICK="$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)"
-          if [ -z "$PICK" ]; then echo "这台机器上没有 Xcode 26"; exit 1; fi
-          sudo xcode-select -s "$PICK"
-          echo "用上了 $PICK"
+          if [ -z "$PICK" ]; then
+            PICK="$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -1)"
+            echo "⚠️ 这台机器没有 Xcode 26，退回最新的：$PICK"
+          else
+            echo "用上了 Xcode 26：$PICK"
+          fi
+          if [ -z "$PICK" ]; then echo "机器上没有 Xcode"; exit 1; fi
+          sudo xcode-select -s "$PICK" 2>/dev/null || sudo xcode-select -s "$PICK/Contents/Developer"
           xcodebuild -version
           xcrun --sdk iphoneos --show-sdk-version
 

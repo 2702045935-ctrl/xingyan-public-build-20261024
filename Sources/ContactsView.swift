@@ -125,21 +125,6 @@ private var funcs: [(String, String, Color, String)] {
                 VStack(spacing: 0) {
 
                 NavBar(title: C.tabText1,
-                       leftExtra: AnyView(
-                        Button {
-                            plusMenu = false
-                            showSearch = true
-                        } label: {
-                            Image(systemName: "magnifyingglass")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(C.label)
-                                .frame(width: 36, height: 36)
-                                .background { GlassBackground(shape: Circle(), shadow: true, seed: 0.40) }
-                                .contentShape(Circle())
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(Tr("搜索"))
-                       ),
                        floating: true,
                        leftExtraGlass: false) {
                     Button {
@@ -173,6 +158,12 @@ private var funcs: [(String, String, Color, String)] {
                                     .frame(height: 0)
 
                                 Color.clear.frame(height: listHeadH)
+
+                                contactsSearchBar
+                                    .padding(.horizontal, 16)
+                                    .padding(.top, 6)
+                                    .padding(.bottom, 10)
+
                                 if keyword.isEmpty {
 
                                     funcStrip
@@ -354,24 +345,45 @@ private var funcs: [(String, String, Color, String)] {
         }
     }
 
+    private var contactsSearchBar: some View {
+        Button {
+            plusMenu = false
+            showSearch = true
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(C.subLabel)
+                Text(Tr("搜索"))
+                    .font(pf(16.5))
+                    .foregroundColor(C.subLabel)
+            }
+            .padding(.horizontal, 12)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .frame(height: 38)
+            .background(
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    .fill(UIConfig.color("ctSearchBg", 0xE9E9ED, 0x2C2C2E))
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Tr("搜索"))
+    }
+
     private var funcStrip: some View {
 
         VStack(spacing: 0) {
             ForEach(Array(ctFuncs.enumerated()), id: \.offset) { i, item in
-                Button { openFunc(item.3) } label: { proRow(item) }
+                Button { openFunc(item.3) } label: { entryRow(item) }
                     .buttonStyle(MenuPressStyle())
-                if i < ctFuncs.count - 1 { HairLine(inset: 62) }
+                if i < ctFuncs.count - 1 { HairLine(inset: 64) }
             }
         }
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(C.cardBg))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
-            .stroke(C.hairline, lineWidth: 0.6))
-        .shadow(color: Color.black.opacity(0.05), radius: 8, y: 2)
-        .padding(.horizontal, 12)
-        .padding(.top, 8)
+        .background(C.contactsBg)
     }
 
-    private func proRow(_ item: (String, String, Color, String)) -> some View {
+    private func entryRow(_ item: (String, String, Color, String)) -> some View {
         let sym: String
         switch item.3 {
         case "newFriends":      sym = "person.badge.plus"
@@ -379,37 +391,42 @@ private var funcs: [(String, String, Color, String)] {
         case "tags":            sym = "tag.fill"
         default:                sym = "dot.radiowaves.left.and.right"
         }
-        return HStack(spacing: 12) {
+        return HStack(spacing: 13) {
             ZStack {
-                Circle()
-                    .fill(item.2.opacity(0.14))
-                    .frame(width: 34, height: 34)
-
                 if !item.1.isEmpty {
-                    SVGIcon(markup: item.1, size: 17, color: item.2)
-                        .frame(width: 17, height: 17)
+                    FuncIcon(markup: item.1, bg: item.2, size: 32, iconSize: 18)
                 } else {
-                    Image(systemName: sym)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(item.2)
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 8, style: .continuous).fill(item.2)
+                        Image(systemName: sym)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(.white)
+                    }
+                    .frame(width: 32, height: 32)
                 }
             }
+            .frame(width: 32, height: 32)
+
             Text(item.0)
-                .font(pf(16.5))
+                .font(pf(17))
                 .foregroundColor(C.label)
+
             Spacer(minLength: 8)
+
             if item.3 == "newFriends" && app.showDot("newFriends", auto: app.friendRequests > 0) {
                 Text(app.friendRequests > 99 ? "99+" : "\(app.friendRequests)")
                     .font(pf(12, .medium))
                     .foregroundColor(.white)
                     .padding(.horizontal, app.friendRequests > 9 ? 6 : 0)
-                    .frame(minWidth: 18, minHeight: 18)
+                    .frame(minWidth: 20, minHeight: 20)
                     .background(Capsule().fill(C.red))
             }
+
             Chevron(size: 9, line: 1.6)
         }
-        .padding(.horizontal, 14)
-        .frame(height: 52)
+        .padding(.leading, 16)
+        .padding(.trailing, 18)
+        .frame(height: 58)
         .contentShape(Rectangle())
     }
 
