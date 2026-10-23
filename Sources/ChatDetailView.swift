@@ -893,7 +893,7 @@ struct ChatDetailView: View {
 
         .safeAreaInset(edge: .top, spacing: 0) {
 
-            VStack(spacing: 0) {
+            AnyView(VStack(spacing: 0) {
 
             NavBar(title: navTitleShown, back: { dismiss() }, leftExtra: leftUnreadBadge,
                    floating: true) {
@@ -997,27 +997,29 @@ struct ChatDetailView: View {
                 }
                 .buttonStyle(.plain)
             }
-            }
+            })
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            if selectMode {
-                MultiSelectBar(count: selected.count,
-                               onForward: { multiForward() },
-                               onFavorite: { multiFavorite() },
-                               onDelete: { multiDelete() },
-                               onCancel: { selectMode = false; selected = [] })
-            } else {
-                VStack(spacing: 0) {
-                    if chat.sysTeam == true, !focused, panel == .none {
-                        sysTeamToolsBar
-                    }
-                    composer
+            AnyView(Group {
+                if selectMode {
+                    MultiSelectBar(count: selected.count,
+                                   onForward: { multiForward() },
+                                   onFavorite: { multiFavorite() },
+                                   onDelete: { multiDelete() },
+                                   onCancel: { selectMode = false; selected = [] })
+                } else {
+                    VStack(spacing: 0) {
+                        if chat.sysTeam == true, !focused, panel == .none {
+                            AnyView(sysTeamToolsBar)
+                        }
+                        AnyView(composer)
 
-                        .padding(.bottom, UIConfig.num("chatKeyboardManual", 1) > 0
-                                 ? max(0, kbHeight - (UIConfig.num("chatKbFlush", 1) > 0 ? L.safeBottom : 0))
-                                 : 0)
+                            .padding(.bottom, UIConfig.num("chatKeyboardManual", 1) > 0
+                                     ? max(0, kbHeight - (UIConfig.num("chatKbFlush", 1) > 0 ? L.safeBottom : 0))
+                                     : 0)
+                    }
                 }
-            }
+            })
         }
 
         .modifier(KeyboardLiftDisable(enabled: UIConfig.num("chatKeyboardManual", 1) > 0))
