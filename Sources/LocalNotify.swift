@@ -65,6 +65,8 @@ enum LocalNotify {
         guard !mutedNow() else { return }
         if settings.sound { AudioServicesPlaySystemSound(1007) }
         if settings.vibrate { AudioServicesPlaySystemSound(kSystemSoundID_Vibrate) }
+        // 微信在前台只更新会话与角标，不连续弹三条系统横幅。
+        guard UIApplication.shared.applicationState != .active else { return }
         let c = UNMutableNotificationContent()
         c.title = title
         c.body = settings.showDetail ? body : "你收到一条新消息"
@@ -76,8 +78,8 @@ enum LocalNotify {
 
         if !chatId.isEmpty { c.threadIdentifier = chatId }
         let id: String
-        if !msgId.isEmpty { id = "msg-" + msgId }
-        else if !chatId.isEmpty { id = "chat-" + chatId }
+        if !chatId.isEmpty { id = "chat-" + chatId }
+        else if !msgId.isEmpty { id = "msg-" + msgId }
         else { id = UUID().uuidString }
         let req = UNNotificationRequest(identifier: id, content: c, trigger: nil)
         UNUserNotificationCenter.current().add(req, withCompletionHandler: nil)
