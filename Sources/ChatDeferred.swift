@@ -27,11 +27,8 @@ struct DeferredChatView: View {
         }
         .task {
             guard !ready else { return }
-            CrashCatcher.note("聊天保护", "A 会话背景出现 " + chat.id)
-            try? await Task.sleep(nanoseconds: 900_000_000)
-            guard !Task.isCancelled else { return }
-            CrashCatcher.note("聊天保护", "B 挂载聊天主体 " + chat.id)
-            withAnimation(.easeOut(duration: 0.16)) { ready = true }
+            await Task.yield()
+            ready = true
         }
     }
 
