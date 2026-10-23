@@ -15,6 +15,8 @@ final class Dictation: NSObject, ObservableObject {
     private var onText: ((String) -> Void)?
     private var silence: Timer?
     private var started = false
+    private var tapInstalled = false
+    private var generation = 0
 
     private var settled = ""
     private var lastEmitted = ""
@@ -26,6 +28,8 @@ final class Dictation: NSObject, ObservableObject {
     }
 
     func start(_ onText: @escaping (String) -> Void) {
+        generation += 1
+        let token = generation
         self.onText = onText
         text = ""
         error = ""
@@ -35,12 +39,14 @@ final class Dictation: NSObject, ObservableObject {
         SFSpeechRecognizer.requestAuthorization { [weak self] st in
             DispatchQueue.main.async {
                 guard let self = self else { return }
+                guard token == self.generation else { return }
                 guard st == .authorized else {
                     self.error = "没给语音识别权限：设置 → 隐私 → 语音识别 里打开"
                     return
                 }
                 AVAudioSession.sharedInstance().requestRecordPermission { ok in
                     DispatchQueue.main.async {
+                        guard token == self.generation else { return }
                         guard ok else {
                             self.error = "没给麦克风权限：设置 → 隐私 → 麦克风 里打开"
                             return
@@ -74,10 +80,13 @@ final class Dictation: NSObject, ObservableObject {
             self.error = "麦克风还没准备好，再点一次话筒"
             return
         }
-        node.removeTap(onBus: 0)
+        if tapInstalled { node.removeTap(onBus: 0); tapInstalled = false }
         node.installTap(onBus: 0, bufferSize: 1024, format: fmt) { buf, _ in req.append(buf) }
+        tapInstalled = true
         engine.prepare()
         do { try engine.start() } catch {
+            if tapInstalled { node.removeTap(onBus: 0); tapInstalled = false }
+            try? session.setActive(false, options: [.notifyOthersOnDeactivation])
             self.error = "麦克风打不开，等一下再试"
             return
         }
@@ -131,7 +140,10 @@ final class Dictation: NSObject, ObservableObject {
         request?.endAudio()
         request = nil
         if engine.isRunning { engine.stop() }
-        engine.inputNode.removeTap(onBus: 0)
+        if tapInstalled {
+            engine.inputNode.removeTap(onBus: 0)
+            tapInstalled = false
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { [weak self] in
             guard let self = self, self.listening else { return }
             self.begin()
@@ -139,10 +151,14 @@ final class Dictation: NSObject, ObservableObject {
     }
 
     func stop() {
+        generation += 1
         silence?.invalidate()
         silence = nil
         if engine.isRunning { engine.stop() }
-        engine.inputNode.removeTap(onBus: 0)
+        if tapInstalled {
+            engine.inputNode.removeTap(onBus: 0)
+            tapInstalled = false
+        }
         request?.endAudio()
         task?.cancel()
         task = nil

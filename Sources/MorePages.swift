@@ -115,6 +115,7 @@ struct ChatSearchView: View {
     @State private var memberName = ""
     @State private var showMembers = false
     @State private var showDate = false
+    @State private var dateOpenToken = 0
     @State private var selectedDate = Date()
     @State private var dateFrom: Date?
     @State private var dateTo: Date?
@@ -122,18 +123,26 @@ struct ChatSearchView: View {
     @FocusState private var focused: Bool
 
     var body: some View {
-        VStack(spacing: 0) {
-            NavBar(title: Tr("查找聊天记录"), back: { dismiss() })
+        ZStack {
+            VStack(spacing: 0) {
+                NavBar(title: Tr("查找聊天记录"), back: { dismiss() })
 
-            searchBar
-            if trimmed.isEmpty && filter.isEmpty && memberId.isEmpty && dateFrom == nil {
-                categoryGrid
-                Spacer(minLength: 0)
-            } else {
-                resultArea
+                searchBar
+                if trimmed.isEmpty && filter.isEmpty && memberId.isEmpty && dateFrom == nil {
+                    categoryGrid
+                    Spacer(minLength: 0)
+                } else {
+                    resultArea
+                }
+            }
+            if showDate {
+                datePicker
+                    .transition(.opacity)
+                    .zIndex(20)
             }
         }
         .background(C.pageBg.ignoresSafeArea())
+        .animation(.easeOut(duration: 0.16), value: showDate)
         .toolbar(.hidden, for: .navigationBar)
         .swipeBack { dismiss() }
         .hidesTabBar()
@@ -150,9 +159,6 @@ struct ChatSearchView: View {
         .onDisappear { typingTask?.cancel() }
         .sheet(isPresented: $showMembers) {
             memberPicker
-        }
-        .sheet(isPresented: $showDate) {
-            datePicker
         }
     }
 
@@ -225,8 +231,15 @@ struct ChatSearchView: View {
             return
         }
         if c.key == "date" {
+            focused = false
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),
+                                            to: nil, from: nil, for: nil)
             selectedDate = Date()
-            showDate = true
+            dateOpenToken += 1
+            let token = dateOpenToken
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) {
+                if token == dateOpenToken { showDate = true }
+            }
             return
         }
         filter = c.key
@@ -274,13 +287,23 @@ struct ChatSearchView: View {
     }
 
     private var datePicker: some View {
-        NavigationStack {
-            VStack(spacing: 16) {
+        ZStack {
+            Color.black.opacity(0.3).ignoresSafeArea()
+                .onTapGesture { showDate = false }
+            VStack(spacing: 14) {
+                HStack {
+                    Text(Tr("按日期查找"))
+                        .font(pf(17, .semibold))
+                        .foregroundColor(C.label)
+                    Spacer()
+                    Button(Tr("取消")) { showDate = false }
+                        .font(pf(15))
+                        .foregroundColor(C.subLabel)
+                }
                 DatePicker("", selection: $selectedDate, displayedComponents: .date)
-                    .datePickerStyle(.graphical)
+                    .datePickerStyle(.wheel)
                     .labelsHidden()
                     .padding(.horizontal, 10)
-                Spacer(minLength: 0)
                 Button { applyDateSearch() } label: {
                     Text(Tr("查找这一天"))
                         .font(pf(16, .medium))
@@ -294,22 +317,21 @@ struct ChatSearchView: View {
                 }
                 .buttonStyle(.plain)
                 .padding(.horizontal, 18)
-                .padding(.bottom, 16)
             }
-            .navigationTitle(Tr("按日期查找"))
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(Tr("取消")) { showDate = false }
-                }
-            }
+            .padding(.top, 18)
+            .padding(.bottom, 16)
+            .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(C.cardBg))
+            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(C.hairline, lineWidth: 0.7))
+            .padding(.horizontal, 24)
         }
     }
 
     private func applyDateSearch() {
         let day = selectedDate
         showDate = false
-        // 等系统日期面板完成一次事务后再查询，避免在 DatePicker 更新中关闭弹层。
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+        // 先卸掉日期控件，再发起查询，避免同一布局事务内重排结果页。
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) {
             let cal = Calendar.current
             let start = cal.startOfDay(for: day)
             dateFrom = start

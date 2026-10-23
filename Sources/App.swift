@@ -293,6 +293,8 @@ final class AppState: ObservableObject {
 
             if let incoming = ev.chat {
                 applyRealtimeChat(incoming)
+            } else if let message = ev.message {
+                applyRealtimeMessage(message, chatId: ev.chatId)
             }
             let cid = ev.chatId
             coalesce { [weak self] in
@@ -846,19 +848,86 @@ final class AppState: ObservableObject {
                 merged.unread = max(current.unreadCount, incoming.unreadCount)
             }
             rows[index] = merged
-            if let sender = incoming.lastMessage?.senderId, sender != me?.id {
+            if !incomingMid.isEmpty {
                 optimisticChats[incoming.id] = merged
                 optimisticAt[incoming.id] = Date()
             }
         } else {
             rows.insert(incoming, at: 0)
-            if let sender = incoming.lastMessage?.senderId, sender != me?.id {
+            if !(incoming.lastMessage?.id ?? "").isEmpty {
                 optimisticChats[incoming.id] = incoming
                 optimisticAt[incoming.id] = Date()
             }
         }
-        chats = rows
+        chats = sortChatRows(rows)
         syncIconBadge()
+    }
+
+    /// 兼容只带 message、没有 chat 摘要的实时事件。
+    private func applyRealtimeMessage(_ message: Message, chatId: String) {
+        let ids = [message.chatId ?? "", chatId]
+        guard let id = ids.first(where: { !$0.isEmpty }),
+              let index = chats.firstIndex(where: { $0.id == id }) else { return }
+        var row = chats[index]
+        if row.lastMessage?.id != message.id, message.senderId != me?.id {
+            row.unread = row.unreadCount + 1
+        }
+        var preview = Self.realtimePreview(message)
+        if row.type == "group", message.senderId != me?.id,
+           let sender = message.senderName, !sender.isEmpty, !preview.isEmpty {
+            preview = sender + "：" + preview
+        }
+        row.lastMessage = LastMessage(
+            id: message.id,
+            senderId: message.senderId,
+            senderName: message.senderName,
+            kind: message.kindName,
+            preview: preview,
+            createdAt: message.createdAt,
+            mentionMe: message.mentionsUser(me?.id ?? "")
+        )
+        row.updatedAt = message.createdAt ?? row.updatedAt
+        var rows = chats
+        rows[index] = row
+        chats = sortChatRows(rows)
+        optimisticChats[id] = row
+        optimisticAt[id] = Date()
+        syncIconBadge()
+    }
+
+    private func sortChatRows(_ rows: [Chat]) -> [Chat] {
+        rows.sorted { a, b in
+            if (a.pinned ?? false) != (b.pinned ?? false) { return a.pinned == true }
+            let ar = a.botRank ?? 9
+            let br = b.botRank ?? 9
+            if ar != br { return ar < br }
+            return (a.updatedAt ?? "") > (b.updatedAt ?? "")
+        }
+    }
+
+    private static func realtimePreview(_ message: Message) -> String {
+        switch message.kindName {
+        case "text", "":
+            let text = message.body.trimmingCharacters(in: .whitespacesAndNewlines)
+            return text.isEmpty ? "消息" : String(text.prefix(80))
+        case "image", "images": return "[图片]"
+        case "video", "livephoto": return "[视频]"
+        case "audio", "voice": return "[语音]"
+        case "file": return "[文件]"
+        case "link", "oa": return "[链接]"
+        case "music": return "[音乐]"
+        case "location": return "[位置]"
+        case "card": return "[名片]"
+        case "transfer": return "[转账]"
+        case "redpacket": return "[红包]"
+        case "gift": return "[礼物]"
+        case "miniapp", "mini", "app", "mall": return "[小程序]"
+        case "channels", "channel", "feed", "shortvideo": return "[视频号]"
+        case "call", "voicecall": return "[语音通话]"
+        case "videocall": return "[视频通话]"
+        case "system": return "消息"
+        default: return "[消息]"
+        }
     }
 
     /// 清空聊天记录后立即丢掉列表预览、预取缓存和本机底稿。

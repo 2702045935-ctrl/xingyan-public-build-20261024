@@ -430,6 +430,8 @@ struct VoiceOrb: View {
 
     var listening: Bool = false
     var mode: VoiceOrbMode? = nil
+    /// 键盘场景可关闭 Metal colorEffect，避免输入法切换时重建渲染管线。
+    var metalShader: Bool = true
 
     private let canvas: CGFloat = 258
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -455,7 +457,7 @@ struct VoiceOrb: View {
             let c4 = Color(hex: 0x3AD6FF)
 
             ZStack {
-                if #available(iOS 17.0, *) {
+                if #available(iOS 17.0, *), metalShader {
                     VoiceOrbSurface(phase: phase,
                                     level: level,
                                     mode: mode ?? (listening ? .listening : .idle),

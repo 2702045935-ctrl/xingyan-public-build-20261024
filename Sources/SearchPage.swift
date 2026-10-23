@@ -135,7 +135,8 @@ struct SearchPage: View {
             if voiceBall, kbHeight > 1, !inputMethodChanging {
                 VoiceOrb(level: dictation.listening ? 0.55 : 0.16,
                          diameter: 92,
-                         listening: dictation.listening)
+                         listening: dictation.listening,
+                         metalShader: false)
                     .position(x: g.size.width / 2,
                               y: max(70, g.size.height - kbHeight - 62))
                     .transition(.opacity.combined(with: .scale(scale: 0.86)))
