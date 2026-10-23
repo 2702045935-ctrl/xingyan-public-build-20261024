@@ -44,6 +44,17 @@ final class ChatScrollHandle {
         guard let sv = scroll, sv.window != nil else { return rect }
         return sv.convert(rect, to: nil)
     }
+
+    /** SwiftUI 的命名坐标空间是屏幕视口坐标，不能再让 UIScrollView
+        按 contentOffset 二次平移；这里只把 ScrollView 可见区域原点加上去。 */
+    func windowRectFromViewport(_ rect: CGRect) -> CGRect {
+        guard let sv = scroll, sv.window != nil else { return rect }
+        let viewport = sv.convert(sv.bounds, to: nil)
+        return CGRect(x: viewport.minX + rect.minX,
+                      y: viewport.minY + rect.minY,
+                      width: rect.width,
+                      height: rect.height)
+    }
 }
 
 final class ChatScrollDiag: ObservableObject {

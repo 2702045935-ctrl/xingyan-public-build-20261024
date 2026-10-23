@@ -382,8 +382,12 @@ struct ChatDetailView: View {
     private func openActions(_ m: Message) {
         if selectMode { toggleSelect(m); return }
         let contentRect = frameBox.frames[m.id] ?? .zero
-        menuRect = ChatScrollHandle.shared.windowRect(fromContent: contentRect)
+        menuRect = ChatScrollHandle.shared.windowRectFromViewport(contentRect)
         actionMessage = m
+        DispatchQueue.main.async {
+            let latest = frameBox.frames[m.id] ?? contentRect
+            menuRect = ChatScrollHandle.shared.windowRectFromViewport(latest)
+        }
     }
 
     private var deletedMessageKey: String { "chris.deleted." + chat.id }
@@ -1868,6 +1872,12 @@ struct ChatDetailView: View {
         .contentShape(Rectangle())
         .onTapGesture { redialAsk = message }
         .onLongPressGesture { openActions(message) }
+        .background(GeometryReader { g in
+            let contentFrame = g.frame(in: .named("chatScroll"))
+            Color.clear
+                .onAppear { frameBox.frames[message.id] = contentFrame }
+                .onChange(of: contentFrame) { f in frameBox.frames[message.id] = f }
+        })
     }
 
     private func pat(_ userId: String) {
