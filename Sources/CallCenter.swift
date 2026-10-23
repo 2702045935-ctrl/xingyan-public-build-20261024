@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import AVFoundation
 import AudioToolbox
 import UIKit
@@ -423,11 +424,16 @@ final class CallCenter: NSObject, ObservableObject {
     }
 
     func toggleMute() {
-        muted.toggle()
-        audioTrack?.isEnabled = !muted
-        if usingTRTC { TRTCBridge.shared.setMuted(muted) }
-
-        sendCall(["action": "state", "muted": muted, "camOff": cameraOff])
+        let next = !muted
+        withAnimation(.easeOut(duration: 0.12)) { muted = next }
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        // 先完成按钮反馈，再切换可能阻塞的音频线程。
+        Task { @MainActor in
+            await Task.yield()
+            audioTrack?.isEnabled = !next
+            if usingTRTC { TRTCBridge.shared.setMuted(next) }
+            sendCall(["action": "state", "muted": next, "camOff": cameraOff])
+        }
     }
 
     func toggleCamera() {
@@ -458,9 +464,14 @@ final class CallCenter: NSObject, ObservableObject {
     }
 
     func toggleSpeaker() {
-        speakerOn.toggle()
-        applySpeaker()
-        if usingTRTC { TRTCBridge.shared.setSpeaker(speakerOn) }
+        let next = !speakerOn
+        withAnimation(.easeOut(duration: 0.12)) { speakerOn = next }
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        Task { @MainActor in
+            await Task.yield()
+            applySpeaker()
+            if usingTRTC { TRTCBridge.shared.setSpeaker(next) }
+        }
     }
 
     func minimize() { minimized = true }

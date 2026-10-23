@@ -456,10 +456,18 @@ struct GroupInfoView: View {
     private var headCard: some View {
         PanelHeroCard(glow: C.green) {
             HStack(spacing: 14) {
-                Avatar(path: chat.avatar ?? "", size: 64, radius: 14)
-                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .stroke(Color.white.opacity(0.35), lineWidth: 0.8))
-                    .shadow(color: Color.black.opacity(0.3), radius: 8, y: 3)
+                Group {
+                    if (chat.avatar ?? "").isEmpty {
+                        GroupAvatarMosaic(chatId: chat.id,
+                                          memberIds: chat.memberIds ?? members.map(\.id),
+                                          size: 64, radius: 14)
+                    } else {
+                        Avatar(path: chat.avatar ?? "", size: 64, radius: 14, group: true)
+                    }
+                }
+                .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(Color.white.opacity(0.35), lineWidth: 0.8))
+                .shadow(color: Color.black.opacity(0.3), radius: 8, y: 3)
                 VStack(alignment: .leading, spacing: 6) {
                     Text(chat.name)
                         .font(pf(18, .semibold))

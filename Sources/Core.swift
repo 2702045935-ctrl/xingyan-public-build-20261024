@@ -811,6 +811,7 @@ struct Avatar: View {
     var size: CGFloat = 48
     var radius: CGFloat = 6
     var circle = false
+    var group = false
 
     var level: Int = 0
 
@@ -824,13 +825,19 @@ struct Avatar: View {
             } else if path.isEmpty {
 
                 ZStack {
-                    shape.fill(Color.dyn(0xEDEDED, 0x2C2C2E))
-                    Image(systemName: "person.fill")
+                    if group {
+                        shape.fill(LinearGradient(colors: [Color(hex: 0x58B94F), Color(hex: 0x2F923C)],
+                                                  startPoint: .topLeading, endPoint: .bottomTrailing))
+                    } else {
+                        shape.fill(Color.dyn(0xEDEDED, 0x2C2C2E))
+                    }
+                    Image(systemName: group ? "person.3.fill" : "person.fill")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: size * 0.56, height: size * 0.56)
-                        .foregroundColor(Color.dyn(0xFFFFFF, 0x8E8E93))
-                        .offset(y: size * 0.04)
+                        .frame(width: group ? size * 0.54 : size * 0.56,
+                               height: group ? size * 0.54 : size * 0.56)
+                        .foregroundColor(group ? .white : Color.dyn(0x707074, 0x8E8E93))
+                        .offset(y: group ? 0 : size * 0.04)
                 }
                 .frame(width: size, height: size)
                 .clipShape(shape)
@@ -856,6 +863,101 @@ struct Avatar: View {
     private var shape: AnyShape {
         if circle { return AnyShape(Circle()) }
         return AnyShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
+    }
+}
+
+/// 微信式群头像：没有单独上传群头像时，用前四个成员的头像拼图。
+/// 群成员信息优先取本地通讯录；本地不全时只对可见会话补拉一次。
+struct GroupAvatarMosaic: View {
+    let chatId: String
+    let memberIds: [String]
+    var size: CGFloat = 48
+    var radius: CGFloat = 6
+
+    @EnvironmentObject private var app: AppState
+    @State private var fetchedMembers: [User] = []
+    @State private var loaded = false
+
+    private var users: [User] {
+        let local = ([app.me].compactMap { $0 } + app.contacts + fetchedMembers)
+        var seen = Set<String>()
+        return memberIds.compactMap { id in
+            guard !seen.contains(id) else { return nil }
+            seen.insert(id)
+            return local.first(where: { $0.id == id })
+        }
+    }
+
+    private var paths: [String] {
+        Array(users.compactMap {
+            let path = $0.avatarPath
+            return path.isEmpty ? nil : path
+        }.prefix(4))
+    }
+
+    var body: some View {
+        Group {
+            if paths.count >= 4 {
+                VStack(spacing: 1) {
+                    HStack(spacing: 1) {
+                        tile(paths[0], width: (size - 1) / 2, height: (size - 1) / 2)
+                        tile(paths[1], width: (size - 1) / 2, height: (size - 1) / 2)
+                    }
+                    HStack(spacing: 1) {
+                        tile(paths[2], width: (size - 1) / 2, height: (size - 1) / 2)
+                        tile(paths[3], width: (size - 1) / 2, height: (size - 1) / 2)
+                    }
+                }
+            } else if paths.count == 3 {
+                VStack(spacing: 1) {
+                    HStack(spacing: 1) {
+                        tile(paths[0], width: (size - 1) / 2, height: (size - 1) / 2)
+                        tile(paths[1], width: (size - 1) / 2, height: (size - 1) / 2)
+                    }
+                    HStack(spacing: 1) {
+                        tile(paths[2], width: (size - 1) / 2, height: (size - 1) / 2)
+                        Color.dyn(0xE5E5E5, 0x36393D)
+                            .frame(width: (size - 1) / 2, height: (size - 1) / 2)
+                    }
+                }
+            } else if paths.count == 2 {
+                HStack(spacing: 1) {
+                    tile(paths[0], width: (size - 1) / 2, height: size)
+                    tile(paths[1], width: (size - 1) / 2, height: size)
+                }
+            } else {
+                Avatar(path: "", size: size, radius: radius, group: true)
+            }
+        }
+        .frame(width: size, height: size)
+        .background(Color.dyn(0xFFFFFF, 0x222528))
+        .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: radius, style: .continuous)
+                .stroke(C.hairline.opacity(0.45), lineWidth: 0.5)
+        )
+        .task(id: chatId) {
+            guard !loaded, !memberIds.isEmpty else { return }
+            loaded = true
+            let known = Set(([app.me].compactMap { $0 } + app.contacts).map(\.id))
+            guard memberIds.contains(where: { !known.contains($0) }) else { return }
+            if let r = try? await API.shared.chatMembers(chatId: chatId) {
+                fetchedMembers = r.members
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func tile(_ path: String, width: CGFloat, height: CGFloat) -> some View {
+        if path.isEmpty {
+            Color.dyn(0xE5E5E5, 0x36393D)
+                .frame(width: width, height: height)
+        } else {
+            RemoteImage(path: path, icon: "person.fill")
+                .aspectRatio(contentMode: .fill)
+                .frame(width: width, height: height)
+                .clipped()
+        }
     }
 }
 

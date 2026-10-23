@@ -181,7 +181,18 @@ struct ChatRow: View {
     }
 
     private var avatar: some View {
-        Avatar(path: chat.avatar ?? "", size: L.avatar, radius: 4, level: chat.qqLevel ?? 0)
+        Group {
+            if (chat.avatar ?? "").isEmpty,
+               chat.type == "group" || (chat.memberCount ?? 0) > 2 {
+                GroupAvatarMosaic(chatId: chat.id,
+                                  memberIds: chat.memberIds ?? [],
+                                  size: L.avatar, radius: 4)
+            } else {
+                Avatar(path: chat.avatar ?? "", size: L.avatar, radius: 4,
+                       group: chat.type == "group" || (chat.memberCount ?? 0) > 2,
+                       level: chat.qqLevel ?? 0)
+            }
+        }
 
             .overlay(alignment: .bottomTrailing) {
                 if let icon = chat.moodIcon, !icon.isEmpty {

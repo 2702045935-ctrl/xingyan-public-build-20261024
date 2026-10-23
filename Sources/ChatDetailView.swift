@@ -1550,12 +1550,23 @@ struct ChatDetailView: View {
         if !force, let g = ChatScrollHandle.shared.gap, g > 200 { stick = false }
         ChatScrollDiag.shared.note("pinToBottomSoon force=\(force ? 1 : 0) stick=\(stick ? 1 : 0)")
         guard stick else { return }
+        if force { ChatScrollHandle.shared.allowAutomaticPinning() }
         pinTask?.cancel()
         pinTask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 280_000_000)
+            try? await Task.sleep(nanoseconds: force ? 120_000_000 : 280_000_000)
             if Task.isCancelled { return }
             atBottom = true
+            if force {
+                ChatScrollHandle.shared.allowAutomaticPinning()
+                scroller?.scrollTo("__bottom", anchor: .bottom)
+            }
             pinTick += 1
+            if force {
+                try? await Task.sleep(nanoseconds: 320_000_000)
+                if Task.isCancelled { return }
+                ChatScrollHandle.shared.allowAutomaticPinning()
+                scroller?.scrollTo("__bottom", anchor: .bottom)
+            }
         }
     }
 

@@ -12,6 +12,11 @@ final class ChatScrollHandle {
         lastUserMotionAt = Date()
     }
 
+    /// 用户点输入框/键盘弹出时允许立即回到最新消息。
+    func allowAutomaticPinning() {
+        lastUserMotionAt = .distantPast
+    }
+
     @discardableResult
     func pinToBottom(animated: Bool) -> Bool {
         guard let sv = scroll, sv.window != nil else { return false }
