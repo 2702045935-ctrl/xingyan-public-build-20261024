@@ -22,6 +22,7 @@ struct SearchPage: View {
     @StateObject private var dictation = Dictation()
 
     @State private var kbHeight: CGFloat = 0
+    @State private var inputMethodChanging = false
 
     private let scopes: [(String, String, String)] = [
         ("all", "全部", "magnifyingglass"),
@@ -130,7 +131,7 @@ struct SearchPage: View {
         .background(C.pageBg.ignoresSafeArea())
 
         GeometryReader { g in
-            if voiceBall, kbHeight > 1 {
+            if voiceBall, kbHeight > 1, !inputMethodChanging {
                 VoiceOrb(level: dictation.listening ? 0.55 : 0.16,
                          diameter: 92,
                          listening: dictation.listening)
@@ -167,6 +168,15 @@ struct SearchPage: View {
             if kbHeight != 0 {
                 dictation.stop()
                 withAnimation(.easeOut(duration: 0.22)) { kbHeight = 0 }
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UITextInputMode.currentInputModeDidChangeNotification)) { _ in
+            // 输入法切换会同时重建键盘和 Metal 语音球；先停识别并短暂卸载球，
+            // 等键盘布局稳定后再显示，避免语音球在切换动画中闪退。
+            dictation.stop()
+            inputMethodChanging = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                inputMethodChanging = false
             }
         }
         .onDisappear { dictation.stop() }
