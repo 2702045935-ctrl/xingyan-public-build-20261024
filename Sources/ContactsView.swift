@@ -458,7 +458,7 @@ private var funcs: [(String, String, Color, String)] {
                     ForEach(starUsers) { u in
                         NavigationLink(value: u) {
                             VStack(spacing: 6) {
-                                Avatar(path: u.avatarPath, size: 46, radius: 23,
+                                Avatar(path: u.avatarPath, size: 46, radius: 10,
 
                                        level: (u.qqLevel ?? 0) > 1 ? (u.qqLevel ?? 0) : 0)
                                 Text(u.name)
@@ -565,7 +565,7 @@ private var funcs: [(String, String, Color, String)] {
     private func contactRow(_ user: User) -> some View {
         HStack(spacing: L.ctGap) {
 
-            Avatar(path: user.avatarPath, size: min(L.ctAvatar, 38), radius: 19,
+            Avatar(path: user.avatarPath, size: min(L.ctAvatar, 38), radius: 8,
                    level: (user.qqLevel ?? 0) > 1 ? (user.qqLevel ?? 0) : 0)
             Text(user.name)
                 .font(pf(min(L.ctNameSize, 16.5)))
