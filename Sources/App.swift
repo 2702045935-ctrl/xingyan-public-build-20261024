@@ -13,6 +13,10 @@ final class AppState: ObservableObject {
 
     @Published var offline = false
 
+    /// 实时事件先上屏的会话摘要；旧列表响应不能用空值把它冲掉。
+    private var optimisticChats: [String: Chat] = [:]
+    private var optimisticAt: [String: Date] = [:]
+
     init() {
 
         applyCachedUIConfig()
@@ -717,8 +721,48 @@ final class AppState: ObservableObject {
         defer { loadingChats = false }
         do {
             let fresh = try await API.shared.chats()
+            let now = Date()
+            var merged = fresh.map { server -> Chat in
+                guard let local = optimisticChats[server.id],
+                      let localLast = local.lastMessage,
+                      let stamp = optimisticAt[server.id],
+                      now.timeIntervalSince(stamp) < 45 else {
+                    optimisticChats[server.id] = nil
+                    optimisticAt[server.id] = nil
+                    return server
+                }
+                if server.lastMessage?.id == localLast.id {
+                    optimisticChats[server.id] = nil
+                    optimisticAt[server.id] = nil
+                    return server
+                }
+                if let serverLast = server.lastMessage,
+                   (serverLast.createdAt ?? "") > (localLast.createdAt ?? "") {
+                    optimisticChats[server.id] = nil
+                    optimisticAt[server.id] = nil
+                    return server
+                }
+                var out = server
+                out.lastMessage = localLast
+                out.unread = max(server.unreadCount, local.unreadCount)
+                out.updatedAt = max(server.updatedAt ?? "", local.updatedAt ?? "")
+                return out
+            }
+            let freshIds = Set(fresh.map(\.id))
+            var staleOptimisticIds: [String] = []
+            for (id, local) in optimisticChats where !freshIds.contains(id) {
+                if let stamp = optimisticAt[id], now.timeIntervalSince(stamp) < 45 {
+                    merged.insert(local, at: 0)
+                } else {
+                    staleOptimisticIds.append(id)
+                }
+            }
+            for id in staleOptimisticIds {
+                optimisticChats[id] = nil
+                optimisticAt[id] = nil
+            }
 
-            if !AppState.sameChats(chats, fresh) { chats = fresh }
+            if !AppState.sameChats(chats, merged) { chats = merged }
             loadError = nil
         } catch {
             loadError = (error as? APIError)?.errorDescription ?? "加载失败"
@@ -734,15 +778,24 @@ final class AppState: ObservableObject {
             let currentMid = current.lastMessage?.id ?? ""
             let incomingMid = incoming.lastMessage?.id ?? ""
             var merged = incoming
-            if !incomingMid.isEmpty, incomingMid != currentMid,
+            if let sender = incoming.lastMessage?.senderId, sender != me?.id,
+               !incomingMid.isEmpty, incomingMid != currentMid,
                incoming.unreadCount <= current.unreadCount {
                 merged.unread = current.unreadCount + 1
             } else {
                 merged.unread = max(current.unreadCount, incoming.unreadCount)
             }
             rows[index] = merged
+            if let sender = incoming.lastMessage?.senderId, sender != me?.id {
+                optimisticChats[incoming.id] = merged
+                optimisticAt[incoming.id] = Date()
+            }
         } else {
             rows.insert(incoming, at: 0)
+            if let sender = incoming.lastMessage?.senderId, sender != me?.id {
+                optimisticChats[incoming.id] = incoming
+                optimisticAt[incoming.id] = Date()
+            }
         }
         chats = rows
         syncIconBadge()
