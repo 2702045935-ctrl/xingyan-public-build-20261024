@@ -109,6 +109,7 @@ final class Realtime: ObservableObject {
     private let pathQueue = DispatchQueue(label: "com.chris.chatnative.realtime.path")
     private var pathMonitorStarted = false
     private var pathSatisfied = true
+    private var lastPathKind = ""
 
     private var socketUpAt = Date()
 
@@ -270,10 +271,29 @@ final class Realtime: ObservableObject {
         pathMonitorStarted = true
         pathMonitor.pathUpdateHandler = { [weak self] path in
             let ok = path.status == .satisfied
+            let kind: String
+            if path.usesInterfaceType(.wifi) { kind = "wifi" }
+            else if path.usesInterfaceType(.cellular) { kind = "cellular" }
+            else if path.usesInterfaceType(.wiredEthernet) { kind = "wired" }
+            else { kind = "other" }
             Task { @MainActor [weak self] in
                 guard let self = self else { return }
                 let recovered = ok && !self.pathSatisfied
+                let switched = ok && !self.lastPathKind.isEmpty && kind != self.lastPathKind
                 self.pathSatisfied = ok
+                self.lastPathKind = kind
+                if switched, !API.shared.token.isEmpty {
+                    AppLog.info("网络线路已切换，重新探测并建立长连接", net: true)
+                    self.failCount = 0
+                    self.socket?.cancel(with: .goingAway, reason: nil)
+                    self.socket = nil
+                    let probe = await API.shared.probe("/api/version")
+                    if !probe.hasPrefix("成功 HTTP 2") {
+                        _ = API.shared.rotateEndpoint(force: true)
+                    }
+                    self.start()
+                    return
+                }
                 if recovered, !API.shared.token.isEmpty, !self.connected {
                     AppLog.info("网络已恢复，立即重建实时连接", net: true)
                     self.failCount = 0
