@@ -768,7 +768,20 @@ final class AppState: ObservableObject {
             optimisticChats[id] = nil
             optimisticAt[id] = nil
         }
-        return merged
+        // 刷新只更新原行内容，保持当前屏幕上的行顺序，避免会话互相换位。
+        var byId: [String: Chat] = [:]
+        for row in merged { byId[row.id] = row }
+        var ordered: [Chat] = []
+        var seen = Set<String>()
+        for row in chats {
+            if let next = byId[row.id], seen.insert(row.id).inserted {
+                ordered.append(next)
+            }
+        }
+        for row in merged where seen.insert(row.id).inserted {
+            ordered.append(row)
+        }
+        return ordered.isEmpty ? merged : ordered
     }
 
     private func mergeServerChat(_ server: Chat, local: Chat) -> Chat {
@@ -848,18 +861,18 @@ final class AppState: ObservableObject {
                 merged.unread = max(current.unreadCount, incoming.unreadCount)
             }
             rows[index] = merged
-            if !incomingMid.isEmpty {
+            if let sender = incoming.lastMessage?.senderId, sender != me?.id {
                 optimisticChats[incoming.id] = merged
                 optimisticAt[incoming.id] = Date()
             }
         } else {
             rows.insert(incoming, at: 0)
-            if !(incoming.lastMessage?.id ?? "").isEmpty {
+            if let sender = incoming.lastMessage?.senderId, sender != me?.id {
                 optimisticChats[incoming.id] = incoming
                 optimisticAt[incoming.id] = Date()
             }
         }
-        chats = sortChatRows(rows)
+        chats = rows
         syncIconBadge()
     }
 
@@ -889,23 +902,10 @@ final class AppState: ObservableObject {
         row.updatedAt = message.createdAt ?? row.updatedAt
         var rows = chats
         rows[index] = row
-        chats = sortChatRows(rows)
+        chats = rows
         optimisticChats[id] = row
         optimisticAt[id] = Date()
         syncIconBadge()
-    }
-
-    private func sortChatRows(_ rows: [Chat]) -> [Chat] {
-        rows.sorted { a, b in
-            if (a.pinned ?? false) != (b.pinned ?? false) { return a.pinned == true }
-            let ar = a.botRank ?? 9
-            let br = b.botRank ?? 9
-            if ar != br { return ar < br }
-            let at = a.updatedAt ?? ""
-            let bt = b.updatedAt ?? ""
-            if at != bt { return at > bt }
-            return a.id < b.id
-        }
     }
 
     private static func realtimePreview(_ message: Message) -> String {
