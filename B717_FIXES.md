@@ -16,6 +16,8 @@ working B717 build unable to connect.
 - Search covers the Huawei category set and opens the matching message.
 - Video calls enable TRTC automatic resolution adjustment and cloud QoS
   (smooth-first), while retaining B717's existing audio weak-network handling.
+- Automatic bottom pinning is suppressed for 0.45 seconds while the user is
+  dragging or the list is decelerating, preventing group chats from jumping.
 
 ## Protected baseline
 
@@ -34,4 +36,5 @@ working B717 build unable to connect.
       member's matching messages; selecting a result opens the original message.
 - [ ] One-to-one and group voice still work.
 - [ ] Video call negotiates and weak-network QoS parameters are accepted.
+- [ ] Fast scrolling in a long group chat does not jump to an unrelated place.
 - [ ] Huawei build and data are unchanged.

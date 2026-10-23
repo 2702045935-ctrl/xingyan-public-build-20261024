@@ -4,10 +4,20 @@ import UIKit
 final class ChatScrollHandle {
     static let shared = ChatScrollHandle()
     weak var scroll: UIScrollView?
+    /// 用户刚滑动过的短暂保护期：列表预渲染/图片解码触发的“补底”
+    /// 不能在这一小段时间里抢走滚动位置。
+    private var lastUserMotionAt = Date.distantPast
+
+    func noteUserMotion() {
+        lastUserMotionAt = Date()
+    }
 
     @discardableResult
     func pinToBottom(animated: Bool) -> Bool {
         guard let sv = scroll, sv.window != nil else { return false }
+        if moving || Date().timeIntervalSince(lastUserMotionAt) < 0.45 {
+            return true
+        }
         let bottom = sv.contentSize.height - sv.bounds.height + sv.adjustedContentInset.bottom
         let y = max(bottom, -sv.adjustedContentInset.top)
         sv.setContentOffset(CGPoint(x: 0, y: y), animated: animated)
@@ -110,9 +120,13 @@ struct ScrollOffsetProbe: UIViewRepresentable {
 
             sv.alwaysBounceVertical = true
             obsOffset = sv.observe(\.contentOffset, options: [.new]) { [weak self] s, _ in
+                if s.isDragging || s.isDecelerating || s.isTracking {
+                    ChatScrollHandle.shared.noteUserMotion()
+                }
                 self?.report(s.contentOffset.y)
             }
             obsDrag = sv.observe(\.isDragging, options: [.new]) { [weak self] s, _ in
+                if s.isDragging { ChatScrollHandle.shared.noteUserMotion() }
                 self?.reportDrag(s.isDragging)
             }
 
