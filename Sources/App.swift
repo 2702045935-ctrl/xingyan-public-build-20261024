@@ -901,7 +901,10 @@ final class AppState: ObservableObject {
             let ar = a.botRank ?? 9
             let br = b.botRank ?? 9
             if ar != br { return ar < br }
-            return (a.updatedAt ?? "") > (b.updatedAt ?? "")
+            let at = a.updatedAt ?? ""
+            let bt = b.updatedAt ?? ""
+            if at != bt { return at > bt }
+            return a.id < b.id
         }
     }
 
