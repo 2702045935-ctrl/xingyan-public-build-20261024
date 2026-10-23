@@ -434,7 +434,7 @@ struct ChatDetailView: View {
             list.append(MsgAction(key: "fav", label: "收藏", icon: "star"))
             list.append(MsgAction(key: "quote", label: "引用", icon: "text.quote"))
         }
-        if m.senderId == myId, m.canRecallNow {
+        if m.senderId == myId, !m.isRecalled {
             list.append(MsgAction(key: "recall", label: "撤回", icon: "arrow.uturn.backward", danger: true))
         }
         list.append(MsgAction(key: "multi", label: "多选", icon: "checkmark.circle"))
@@ -3411,16 +3411,9 @@ struct ChatDetailView: View {
     }
 
     private func recall(_ message: Message) {
-        guard message.canRecallNow else {
-            app.show(Tr("超过 2 分钟，不能撤回"))
-            return
-        }
         let draft = message.kindName == "text" ? message.body : ""
         Task {
-            if let err = await API.shared.recall(chatId: chat.id, messageId: message.id) {
-                app.show(err)
-                return
-            }
+            await API.shared.recall(chatId: chat.id, messageId: message.id)
             await load(initial: true)
             guard !draft.isEmpty else { return }
             reEditDraft = draft

@@ -274,12 +274,6 @@ struct Message: Codable, Identifiable, Hashable {
     var kindName: String { kind ?? "text" }
     var body: String { content ?? "" }
     var isRecalled: Bool { recalled ?? false }
-    var canRecallNow: Bool {
-        guard !isRecalled, let d = TimeFmt.date(createdAt) else { return false }
-        let age = Date().timeIntervalSince(d)
-        return age >= -5 && age <= 2 * 60
-    }
-
     var imagePath: String { imageRefPath(body) }
 
     var imagePixelSize: CGSize? {
@@ -5075,13 +5069,8 @@ private struct StarredPayload: Decodable {
         return payload.message
     }
 
-    func recall(chatId: String, messageId: String) async -> String? {
-        do {
-            _ = try await request("POST", "/api/messages/\(messageId)/recall", body: ["chatId": chatId])
-            return nil
-        } catch {
-            return (error as? APIError)?.errorDescription ?? "撤回失败"
-        }
+    func recall(chatId: String, messageId: String) async {
+        _ = try? await request("POST", "/api/messages/\(messageId)/recall", body: ["chatId": chatId])
     }
 
     func likeMoment(id: String) async {
