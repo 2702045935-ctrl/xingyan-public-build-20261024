@@ -287,6 +287,13 @@ final class AppState: ObservableObject {
         switch ev.type {
         case "message", "chat":
 
+            if let fresh = ev.chat {
+                if let i = chats.firstIndex(where: { $0.id == fresh.id }) {
+                    chats[i] = fresh
+                } else {
+                    chats.append(fresh)
+                }
+            }
             let cid = ev.chatId
             coalesce { [weak self] in
                 await self?.loadChats()
@@ -703,6 +710,23 @@ final class AppState: ObservableObject {
             loadError = (error as? APIError)?.errorDescription ?? "加载失败"
         }
         syncIconBadge()
+    }
+
+    /// 清空聊天记录后立即丢掉列表预览、预取缓存和本机底稿。
+    /// 不能等下一次 loadChats：否则会短暂显示旧预览，重新进会话还会从本机缓存“复活”。
+    func forgetChatHistory(_ chatId: String, notify: Bool = true) {
+        if let i = chats.firstIndex(where: { $0.id == chatId }) {
+            var c = chats[i]
+            c.lastMessage = nil
+            c.unread = 0
+            c.flagged = false
+            chats[i] = c
+        }
+        prefetched[chatId] = nil
+        LocalStore.clearChat(chatId)
+        if notify {
+            NotificationCenter.default.post(name: .chrisChatCleared, object: chatId)
+        }
     }
 
     static func sameChats(_ a: [Chat], _ b: [Chat]) -> Bool {

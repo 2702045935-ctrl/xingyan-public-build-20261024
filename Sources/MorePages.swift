@@ -65,23 +65,60 @@ struct GroupListView: View {
     }
 }
 
+private struct ChatSearchCategoryItem {
+    let key: String
+    let title: String
+    let symbol: String
+    let tint: [Color]
+}
+
+enum ChatSearchJump {
+    static let didRequest = Notification.Name("CHRISChatSearchJump")
+
+    static func request(chatId: String, messageId: String, seq: Int?) {
+        var info: [String: Any] = [
+            "chatId": chatId,
+            "messageId": messageId
+        ]
+        if let seq, seq > 0 { info["seq"] = seq }
+        NotificationCenter.default.post(name: didRequest, object: nil, userInfo: info)
+    }
+
+    static func destination(from note: Notification) -> (chatId: String, messageId: String, seq: Int?)? {
+        guard let info = note.userInfo,
+              let chatId = info["chatId"] as? String,
+              let messageId = info["messageId"] as? String,
+              !chatId.isEmpty, !messageId.isEmpty else { return nil }
+        return (chatId, messageId, info["seq"] as? Int)
+    }
+}
+
 struct ChatSearchView: View {
     let chat: Chat
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var app: AppState
 
     @State private var keyword = ""
     @State private var hits: [FoundMessage] = []
     @State private var busy = false
     @State private var done = false
+    @State private var total = 0
+    @State private var hasMore = false
 
     @State private var typingTask: Task<Void, Never>? = nil
 
     @State private var token = 0
 
     @State private var filter = ""
-
-    @State private var localRows: [FoundMessage] = []
-    @State private var localLoaded = false
+    @State private var members: [User] = []
+    @State private var memberId = ""
+    @State private var memberName = ""
+    @State private var showMembers = false
+    @State private var showDate = false
+    @State private var selectedDate = Date()
+    @State private var dateFrom: Date?
+    @State private var dateTo: Date?
+    @State private var dateLabel = ""
     @FocusState private var focused: Bool
 
     var body: some View {
@@ -89,15 +126,34 @@ struct ChatSearchView: View {
             NavBar(title: Tr("查找聊天记录"), back: { dismiss() })
 
             searchBar
-            if trimmed.isEmpty { chips }
-            resultArea
+            if trimmed.isEmpty && filter.isEmpty && memberId.isEmpty && dateFrom == nil {
+                categoryGrid
+                Spacer(minLength: 0)
+            } else {
+                resultArea
+            }
         }
         .background(C.pageBg.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .swipeBack { dismiss() }
         .hidesTabBar()
-        .onAppear { focused = true }
+        .onAppear {
+            focused = true
+            if chat.type == "group", members.isEmpty {
+                Task {
+                    if let r = try? await API.shared.chatMembers(chatId: chat.id) {
+                        members = r.members
+                    }
+                }
+            }
+        }
         .onDisappear { typingTask?.cancel() }
+        .sheet(isPresented: $showMembers) {
+            memberPicker
+        }
+        .sheet(isPresented: $showDate) {
+            datePicker
+        }
     }
 
     private var trimmed: String { keyword.trimmingCharacters(in: .whitespaces) }
@@ -129,85 +185,174 @@ struct ChatSearchView: View {
             .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .stroke(C.hairline, lineWidth: 0.6))
 
-            Button { search() } label: {
-                Text(Tr("搜索"))
-                    .font(pf(14.5, .medium))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 15)
-                    .frame(height: 34)
-                    .background(Capsule().fill(LinearGradient(colors: PanelTint.green,
-                                                              startPoint: .topLeading,
-                                                              endPoint: .bottomTrailing)))
+            Button { dismiss() } label: {
+                Text(Tr("取消"))
+                    .font(pf(15, .medium))
+                    .foregroundColor(C.label)
+                    .frame(height: 36)
             }
             .buttonStyle(.plain)
-            .opacity(trimmed.isEmpty ? 0.45 : 1)
-            .disabled(trimmed.isEmpty)
         }
         .padding(.horizontal, 14)
         .padding(.top, 4)
         .padding(.bottom, 10)
     }
 
-    private let chipList: [(String, String)] = [
-        ("图片与视频", "image"), ("文件", "file"), ("链接", "link"), ("音乐与音频", "music"),
-        ("交易", "trade"), ("位置", "location"), ("名片", "card"), ("表情", "sticker")
+    private let categories: [ChatSearchCategoryItem] = [
+        ChatSearchCategoryItem(key: "member", title: "群成员", symbol: "person.3.fill", tint: PanelTint.blue),
+        ChatSearchCategoryItem(key: "date", title: "日期", symbol: "calendar", tint: PanelTint.orange),
+        ChatSearchCategoryItem(key: "image", title: "图片与视频", symbol: "photo.on.rectangle", tint: PanelTint.teal),
+        ChatSearchCategoryItem(key: "file", title: "文件", symbol: "folder.fill", tint: PanelTint.orange),
+        ChatSearchCategoryItem(key: "link", title: "链接", symbol: "link", tint: PanelTint.blue),
+        ChatSearchCategoryItem(key: "music", title: "音乐与音频", symbol: "music.note", tint: PanelTint.purple),
+        ChatSearchCategoryItem(key: "trade", title: "交易", symbol: "wallet.pass.fill", tint: PanelTint.green),
+        ChatSearchCategoryItem(key: "miniapp", title: "小程序", symbol: "square.grid.2x2.fill", tint: PanelTint.teal),
+        ChatSearchCategoryItem(key: "channels", title: "视频号", symbol: "play.rectangle.fill", tint: PanelTint.red)
     ]
 
-    private var chips: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
-            ForEach(chipList, id: \.1) { c in
+    private var visibleCategories: [ChatSearchCategoryItem] {
+        chat.type == "group" ? categories : categories.filter { $0.key != "member" }
+    }
+
+    private func choose(_ c: ChatSearchCategoryItem) {
+        memberId = ""
+        memberName = ""
+        dateFrom = nil
+        dateTo = nil
+        dateLabel = ""
+        if c.key == "member" {
+            showMembers = true
+            return
+        }
+        if c.key == "date" {
+            selectedDate = Date()
+            showDate = true
+            return
+        }
+        filter = c.key
+        search()
+    }
+
+    private var selectedCategoryTitle: String {
+        if filter == "member" { return memberName.isEmpty ? Tr("群成员") : memberName }
+        if filter == "date" { return dateLabel.isEmpty ? Tr("日期") : dateLabel }
+        if filter.isEmpty { return Tr("全部") }
+        return Tr(categories.first(where: { $0.key == filter })?.title ?? "全部")
+    }
+
+    private var memberPicker: some View {
+        NavigationStack {
+            List(members) { u in
                 Button {
-                    filter = (filter == c.1) ? "" : c.1
-                    loadLocalIfNeeded()
+                    memberId = u.id
+                    memberName = u.name
+                    filter = "member"
+                    showMembers = false
+                    search()
                 } label: {
-                    Text(Tr(c.0))
-                        .font(pf(13))
-                        .foregroundColor(filter == c.1 ? .white : C.label)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+                    HStack(spacing: 12) {
+                        Avatar(path: u.avatarPath, size: 42, radius: 8)
+                        Text(u.name)
+                            .font(pf(15))
+                            .foregroundColor(C.label)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(C.subLabel)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+            .navigationTitle(Tr("选择群成员"))
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(Tr("取消")) { showMembers = false }
+                }
+            }
+        }
+    }
+
+    private var datePicker: some View {
+        NavigationStack {
+            VStack(spacing: 16) {
+                DatePicker("", selection: $selectedDate, displayedComponents: .date)
+                    .datePickerStyle(.graphical)
+                    .labelsHidden()
+                    .padding(.horizontal, 10)
+                    .onChange(of: selectedDate) { _ in applyDateSearch() }
+                Spacer(minLength: 0)
+                Button { applyDateSearch() } label: {
+                    Text(Tr("查找这一天"))
+                        .font(pf(16, .medium))
+                        .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 32)
-                        .background(Capsule().fill(filter == c.1 ? C.green : C.searchBg))
-                        .overlay(Capsule().stroke(C.hairline, lineWidth: 0.6))
+                        .frame(height: 46)
+                        .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(LinearGradient(colors: PanelTint.green,
+                                                 startPoint: .topLeading,
+                                                 endPoint: .bottomTrailing)))
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 18)
+                .padding(.bottom, 16)
+            }
+            .navigationTitle(Tr("按日期查找"))
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(Tr("取消")) { showDate = false }
+                }
+            }
+        }
+    }
+
+    private func applyDateSearch() {
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: selectedDate)
+        dateFrom = start
+        dateTo = cal.date(byAdding: .day, value: 1, to: start)
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "zh_CN")
+        f.dateFormat = "yyyy年M月d日"
+        dateLabel = f.string(from: selectedDate)
+        filter = "date"
+        showDate = false
+        search()
+    }
+
+    private var categoryGrid: some View {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 3), spacing: 0) {
+            ForEach(visibleCategories, id: \.key) { c in
+                Button { choose(c) } label: {
+                    VStack(spacing: 9) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 13, style: .continuous)
+                                .fill(LinearGradient(colors: c.tint, startPoint: .topLeading,
+                                                     endPoint: .bottomTrailing))
+                                .frame(width: 48, height: 48)
+                            Image(systemName: c.symbol)
+                                .font(.system(size: 21, weight: .medium))
+                                .foregroundColor(.white)
+                        }
+                        Text(Tr(c.title))
+                            .font(pf(13))
+                            .foregroundColor(C.label)
+                            .lineLimit(1)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 92)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.bottom, 8)
-    }
-
-    private func loadLocalIfNeeded() {
-        guard !localLoaded else { return }
-        localLoaded = true
-        Task {
-            if let r = try? await API.shared.messages(chatId: chat.id, limit: 200) {
-                localRows = r.messages.reversed().compactMap { m in
-                    FoundMessage(id: m.id, seq: m.seq, kind: m.kindName, content: m.body,
-                                 createdAt: m.createdAt, senderId: m.senderId, senderName: m.senderName)
-                }
-            }
-        }
-    }
-
-    private func kindMatch(_ kind: String, _ f: String) -> Bool {
-        switch f {
-        case "image":    return ["image", "images", "video", "livephoto"].contains(kind)
-        case "file":     return kind == "file"
-        case "link":     return ["link", "oa"].contains(kind)
-        case "music":    return ["music", "audio"].contains(kind)
-        case "trade":    return ["transfer", "redpacket", "gift"].contains(kind)
-        case "location": return kind == "location"
-        case "card":     return kind == "card"
-        case "sticker":  return kind == "sticker"
-        default:         return true
-        }
+        .padding(.horizontal, 12)
+        .padding(.top, 12)
+        .background(C.cardBg)
     }
 
     private var rows: [FoundMessage] {
-        let base = trimmed.isEmpty ? localRows : hits
-        guard !filter.isEmpty else { return base }
-        return base.filter { kindMatch($0.kind ?? "", filter) }
+        hits
     }
 
     @ViewBuilder
@@ -224,7 +369,11 @@ struct ChatSearchView: View {
             Spacer(minLength: 0)
         } else if rows.isEmpty {
 
-            if trimmed.isEmpty && filter.isEmpty { Spacer(minLength: 0) } else { emptyState }
+            if trimmed.isEmpty && filter.isEmpty && memberId.isEmpty && dateFrom == nil {
+                Spacer(minLength: 0)
+            } else {
+                emptyState
+            }
         } else {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
@@ -235,6 +384,17 @@ struct ChatSearchView: View {
                             if idx < rows.count - 1 { PanelDivider() }
                         }
                     }
+                    if hasMore {
+                        Button { loadMore() } label: {
+                            Text(busy ? Tr("正在加载…") : Tr("加载更多"))
+                                .font(pf(13))
+                                .foregroundColor(C.green)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(busy)
+                    }
                     Spacer().frame(height: 30)
                 }
                 .padding(.horizontal, 14)
@@ -244,12 +404,15 @@ struct ChatSearchView: View {
 
     private var resultHeader: some View {
         HStack(spacing: 6) {
-            Text(Tr("聊天记录") + " · \(rows.count) 条")
+            Text(selectedCategoryTitle)
+                .font(pf(12.5, .medium))
+                .foregroundColor(C.green)
+            Text("· \(total) 条")
                 .font(pf(12.5, .medium))
                 .foregroundColor(C.subLabel)
             Spacer(minLength: 0)
-            if rows.count >= 60 {
-                Text(Tr("只显示最近 60 条"))
+            if rows.count < total {
+                Text(Tr("已显示 ") + "\(rows.count)")
                     .font(pf(11.5))
                     .foregroundColor(C.subLabel)
             }
@@ -260,31 +423,54 @@ struct ChatSearchView: View {
     }
 
     private func resultRow(_ m: FoundMessage) -> some View {
-        let look = Self.look(for: m.kind)
-        return HStack(alignment: .top, spacing: 11) {
-            PanelIcon(symbol: look.symbol, colors: look.colors, size: 28)
-            VStack(alignment: .leading, spacing: 6) {
-                highlighted(preview(m))
-                    .font(pf(15))
-                    .lineLimit(3)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                HStack(spacing: 6) {
-                    Text((m.senderName?.isEmpty == false) ? m.senderName! : Tr("消息"))
-                        .font(pf(12))
-                        .foregroundColor(C.subLabel)
-                        .lineLimit(1)
-                    Text("·").font(pf(12)).foregroundColor(C.subLabel)
-                    Text(TimeFmt.bubble(m.createdAt ?? ""))
-                        .font(pf(12))
-                        .foregroundColor(C.subLabel)
-                    Spacer(minLength: 0)
+        return Button {
+            openMessage(m)
+        } label: {
+            HStack(alignment: .top, spacing: 11) {
+                Avatar(path: avatarFor(m), size: 40, radius: 8)
+                VStack(alignment: .leading, spacing: 6) {
+                    highlighted(preview(m))
+                        .font(pf(15))
+                        .lineLimit(3)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    HStack(spacing: 6) {
+                        Text((m.senderName?.isEmpty == false) ? m.senderName! : Tr("消息"))
+                            .font(pf(12))
+                            .foregroundColor(C.subLabel)
+                            .lineLimit(1)
+                        Text("·").font(pf(12)).foregroundColor(C.subLabel)
+                        Text(TimeFmt.bubble(m.createdAt ?? ""))
+                            .font(pf(12))
+                            .foregroundColor(C.subLabel)
+                        Spacer(minLength: 0)
+                    }
                 }
             }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .contentShape(Rectangle())
+        .buttonStyle(.plain)
+    }
+
+    private func openMessage(_ message: FoundMessage) {
+        let chatId = chat.id
+        let messageId = message.id
+        let seq = message.seq
+        dismiss()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.32) {
+            ChatSearchJump.request(chatId: chatId, messageId: messageId, seq: seq)
+        }
+    }
+
+    private func avatarFor(_ m: FoundMessage) -> String {
+        if let a = m.senderAvatar, !a.isEmpty { return a }
+        if let id = m.senderId {
+            if let u = members.first(where: { $0.id == id }) { return u.avatarPath }
+            if let u = app.contacts.first(where: { $0.id == id }) { return u.avatarPath }
+        }
+        return ""
     }
 
     private var emptyState: some View {
@@ -321,20 +507,59 @@ struct ChatSearchView: View {
         .padding(.top, 52)
     }
 
+    private var hasSearchCondition: Bool {
+        !trimmed.isEmpty || !filter.isEmpty || !memberId.isEmpty || dateFrom != nil
+    }
+
+    private var kindFilter: String {
+        ["member", "date"].contains(filter) ? "" : filter
+    }
+
     private func search() {
         typingTask?.cancel()
-        let q = trimmed
-        guard !q.isEmpty else { hits = []; done = false; return }
+        guard hasSearchCondition else {
+            hits = []
+            total = 0
+            hasMore = false
+            done = false
+            return
+        }
         busy = true
         focused = false
         token += 1
         let mine = token
         Task {
-            let res = await API.shared.searchMessages(chatId: chat.id, query: q)
+            let r = await API.shared.chatHistorySearch(chatId: chat.id, query: trimmed,
+                                                       filter: kindFilter,
+                                                       memberId: memberId,
+                                                       from: dateFrom, to: dateTo,
+                                                       before: nil, limit: 100)
             guard mine == token else { return }
-            hits = res
+            hits = r.messages
+            total = r.total
+            hasMore = r.hasMore
             busy = false
             done = true
+        }
+    }
+
+    private func loadMore() {
+        guard hasMore, !busy, let before = hits.last?.seq else { return }
+        busy = true
+        token += 1
+        let mine = token
+        Task {
+            let r = await API.shared.chatHistorySearch(chatId: chat.id, query: trimmed,
+                                                       filter: kindFilter,
+                                                       memberId: memberId,
+                                                       from: dateFrom, to: dateTo,
+                                                       before: before, limit: 100)
+            guard mine == token else { return }
+            let known = Set(hits.map(\.id))
+            hits.append(contentsOf: r.messages.filter { !known.contains($0.id) })
+            total = r.total
+            hasMore = r.hasMore
+            busy = false
         }
     }
 
@@ -343,19 +568,31 @@ struct ChatSearchView: View {
         let q = trimmed
         guard !q.isEmpty else {
             hits = []
+            total = 0
+            hasMore = false
             done = false
             busy = false
             return
         }
+        filter = ""
+        memberId = ""
+        memberName = ""
+        dateFrom = nil
+        dateTo = nil
+        dateLabel = ""
         typingTask = Task {
             try? await Task.sleep(nanoseconds: 450_000_000)
             if Task.isCancelled { return }
             busy = true
             token += 1
             let mine = token
-            let res = await API.shared.searchMessages(chatId: chat.id, query: q)
+            let r = await API.shared.chatHistorySearch(chatId: chat.id, query: q,
+                                                       filter: "", memberId: "",
+                                                       from: nil, to: nil, before: nil, limit: 100)
             guard mine == token else { return }
-            hits = res
+            hits = r.messages
+            total = r.total
+            hasMore = r.hasMore
             busy = false
             done = true
         }
@@ -365,8 +602,8 @@ struct ChatSearchView: View {
         let c = m.content ?? ""
         switch (m.kind ?? "text") {
         case "text":     return ClassicEmojiSet.expand(c)
-        case "image":    return Tr("[图片]")
-        case "video":    return Tr("[视频]")
+        case "image", "images": return Tr("[图片]")
+        case "video", "livephoto": return Tr("[视频]")
         case "voice", "audio": return Tr("[语音]")
         case "location": return Tr("[位置]")
         case "file":
@@ -382,6 +619,22 @@ struct ChatSearchView: View {
         case "call":      return Tr("[通话]")
         case "card":      return Tr("[名片]")
         case "sticker", "emoji": return Tr("[表情]")
+        case "link", "oa":
+            if let d = c.data(using: .utf8),
+               let o = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
+               let title = o["title"] as? String, !title.isEmpty {
+                return Tr("[链接] ") + title
+            }
+            return Tr("[链接]")
+        case "music":
+            if let d = c.data(using: .utf8),
+               let o = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
+               let title = o["title"] as? String, !title.isEmpty {
+                return Tr("[音乐] ") + title
+            }
+            return Tr("[音乐]")
+        case "miniapp", "mini", "mall": return Tr("[小程序]")
+        case "channels", "channel", "feed": return Tr("[视频号]")
         default:          return c.isEmpty ? Tr("[消息]") : ClassicEmojiSet.expand(c)
         }
     }

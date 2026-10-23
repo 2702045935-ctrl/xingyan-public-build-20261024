@@ -223,8 +223,12 @@ struct ChatHistoryView: View {
     private func clear(_ chatId: String) {
         busy = true
         Task {
-            await API.shared.clearChat(chatId: chatId)
-            doneTip = Tr("已清空一个会话")
+            if let err = await API.shared.clearChat(chatId: chatId) {
+                app.show(err)
+            } else {
+                app.forgetChatHistory(chatId, notify: false)
+                doneTip = Tr("已清空一个会话")
+            }
             await load()
             await app.loadChats()
             busy = false
@@ -235,8 +239,18 @@ struct ChatHistoryView: View {
         busy = true
         Task {
             let ids = (info?.chats ?? []).map { $0.id }
-            for id in ids { await API.shared.clearChat(chatId: id) }
-            doneTip = Tr("已清空全部聊天记录（已清 ") + "\(ids.count)" + Tr(" 个会话）")
+            var failed = 0
+            for id in ids {
+                if await API.shared.clearChat(chatId: id) == nil {
+                    app.forgetChatHistory(id, notify: false)
+                } else {
+                    failed += 1
+                }
+                await Task.yield()
+            }
+            doneTip = failed == 0
+                ? Tr("已清空全部聊天记录（已清 ") + "\(ids.count)" + Tr(" 个会话）")
+                : Tr("部分会话清空失败，请稍后重试")
             await load()
             await app.loadChats()
             busy = false

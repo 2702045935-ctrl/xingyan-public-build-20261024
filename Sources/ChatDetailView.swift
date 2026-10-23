@@ -434,7 +434,7 @@ struct ChatDetailView: View {
             list.append(MsgAction(key: "fav", label: "收藏", icon: "star"))
             list.append(MsgAction(key: "quote", label: "引用", icon: "text.quote"))
         }
-        if m.senderId == myId, !m.isRecalled {
+        if m.senderId == myId, m.canRecallNow {
             list.append(MsgAction(key: "recall", label: "撤回", icon: "arrow.uturn.backward", danger: true))
         }
         list.append(MsgAction(key: "multi", label: "多选", icon: "checkmark.circle"))
@@ -1209,6 +1209,27 @@ struct ChatDetailView: View {
             }
         }
         .sheet(isPresented: $showSearch) { ChatSearchView(chat: chat) }
+        .onReceive(NotificationCenter.default.publisher(for: ChatSearchJump.didRequest)) { note in
+            guard let target = ChatSearchJump.destination(from: note),
+                  target.chatId == chat.id else { return }
+            showSearch = false
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 350_000_000)
+                jumpToMessage(target.messageId, seq: target.seq)
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .chrisChatCleared)) { note in
+            guard let chatId = note.object as? String, chatId == chat.id else { return }
+            messages.removeAll()
+            outbox.removeAll()
+            selected.removeAll()
+            selectMode = false
+            hasOlder = false
+            hiddenMessageIds.removeAll()
+            UserDefaults.standard.removeObject(forKey: deletedMessageKey)
+            rebuildIndex()
+            DispatchQueue.main.async { scroller?.scrollTo("__bottom", anchor: .bottom) }
+        }
 
         .sheet(isPresented: $showStickerStore, onDismiss: { Task { await loadMyStickers() } }) {
             StickerView().environmentObject(app)
@@ -3390,10 +3411,16 @@ struct ChatDetailView: View {
     }
 
     private func recall(_ message: Message) {
-
+        guard message.canRecallNow else {
+            app.show(Tr("超过 2 分钟，不能撤回"))
+            return
+        }
         let draft = message.kindName == "text" ? message.body : ""
         Task {
-            await API.shared.recall(chatId: chat.id, messageId: message.id)
+            if let err = await API.shared.recall(chatId: chat.id, messageId: message.id) {
+                app.show(err)
+                return
+            }
             await load(initial: true)
             guard !draft.isEmpty else { return }
             reEditDraft = draft
@@ -3403,17 +3430,22 @@ struct ChatDetailView: View {
         }
     }
 
-    private func jumpToMessage(_ id: String) {
+    private func jumpToMessage(_ id: String, seq targetSeq: Int? = nil) {
         guard !id.isEmpty else { return }
         if messages.contains(where: { $0.id == id }) {
             withAnimation(.easeInOut(duration: 0.25)) { scroller?.scrollTo(id, anchor: .center) }
             return
         }
         Task { @MainActor in
-            var tries = 0
-            while hasOlder, tries < 12, !messages.contains(where: { $0.id == id }) {
-                await loadOlder()
-                tries += 1
+            if let targetSeq, targetSeq > 0,
+               targetSeq < (messages.first?.seq ?? Int.max) {
+                await loadHistory(to: id, targetSeq: targetSeq)
+            } else {
+                var tries = 0
+                while hasOlder, tries < 12, !messages.contains(where: { $0.id == id }) {
+                    await loadOlder()
+                    tries += 1
+                }
             }
             guard messages.contains(where: { $0.id == id }) else {
                 app.show(Tr("那条消息在更早的记录里，往上翻就能看到"))
@@ -3422,6 +3454,58 @@ struct ChatDetailView: View {
             try? await Task.sleep(nanoseconds: 80_000_000)
             withAnimation(.easeInOut(duration: 0.25)) { scroller?.scrollTo(id, anchor: .center) }
         }
+    }
+
+    private func loadHistory(to targetId: String, targetSeq: Int) async {
+        guard !loadingOlder, let firstSeq = messages.first?.seq, firstSeq > targetSeq else { return }
+        loadingOlder = true
+        lastOlderLoad = Date()
+        defer { loadingOlder = false }
+
+        var cursor = firstSeq
+        var pageHasMore = true
+        var older: [Message] = []
+
+        while pageHasMore, cursor > targetSeq, older.count < 20_000, !Task.isCancelled {
+            do {
+                let page = try await API.shared.messages(chatId: chat.id, limit: 100, before: cursor)
+                if page.messages.isEmpty {
+                    pageHasMore = false
+                    break
+                }
+                older.append(contentsOf: page.messages)
+                pageHasMore = page.hasMore
+                if page.messages.contains(where: { $0.id == targetId }) { break }
+                let next = page.messages.compactMap(\.seq).min() ?? 0
+                if next <= 0 || next >= cursor { break }
+                cursor = next
+            } catch {
+                lastOlderLoad = Date.distantPast
+                app.show(Tr("聊天记录加载失败"))
+                return
+            }
+        }
+
+        guard !older.isEmpty else { return }
+        let keep = messages.first?.id
+        holdScroll = true
+        var mergedById = Dictionary(uniqueKeysWithValues: messages.map { ($0.id, $0) })
+        for message in older { mergedById[message.id] = message }
+        let merged = mergedById.values.sorted { a, b in
+            let sa = a.seq ?? 0, sb = b.seq ?? 0
+            if sa > 0 && sb > 0 && sa != sb { return sa < sb }
+            let ca = a.createdAt ?? "", cb = b.createdAt ?? ""
+            if ca != cb { return ca < cb }
+            return a.id < b.id
+        }
+        messages = visibleMessages(merged)
+        hasOlder = pageHasMore
+        rebuildIndex()
+
+        if let keep, let proxy = scroller {
+            DispatchQueue.main.async { proxy.scrollTo(keep, anchor: .top) }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) { holdScroll = false }
     }
 
     private func report(_ message: Message) {

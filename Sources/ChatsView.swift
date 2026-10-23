@@ -203,6 +203,7 @@ struct ChatRow: View {
 extension Notification.Name {
 
     static let chrisRowSwipe = Notification.Name("chris.rowSwipe")
+    static let chrisChatCleared = Notification.Name("chris.chatCleared")
 }
 
 struct SwipeChatRow: View {
@@ -1445,6 +1446,18 @@ struct ChatsView: View {
 
             .onAppear { openPendingPushChat(app.pendingPushChatId) }
             .onChange(of: app.pendingPushChatId) { v in openPendingPushChat(v) }
+            .onReceive(NotificationCenter.default.publisher(for: .chrisChatCleared)) { note in
+                guard let chatId = note.object as? String, !chatId.isEmpty else { return }
+                let shouldReopen = !path.isEmpty
+                path = NavigationPath()
+                guard shouldReopen else { return }
+                Task { @MainActor in
+                    await app.loadChats()
+                    guard let fresh = app.chats.first(where: { $0.id == chatId }) else { return }
+                    try? await Task.sleep(nanoseconds: 120_000_000)
+                    path.append(fresh)
+                }
+            }
 
             .navigationDestination(isPresented: $showOA) {
                 OfficialAccountPage(accountId: oaOpenId)
@@ -1570,6 +1583,7 @@ struct ChatsView: View {
             let err = clear
                 ? await API.shared.deleteChat(chatId: chat.id)
                 : await API.shared.hideChat(chatId: chat.id)
+            if clear, err == nil { app.forgetChatHistory(chat.id) }
             await app.loadChats()
             app.show(err ?? (clear ? "已清空记录并设为不显示" : "已不显示该聊天"))
         }

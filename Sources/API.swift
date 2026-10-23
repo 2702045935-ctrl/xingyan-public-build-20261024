@@ -274,6 +274,11 @@ struct Message: Codable, Identifiable, Hashable {
     var kindName: String { kind ?? "text" }
     var body: String { content ?? "" }
     var isRecalled: Bool { recalled ?? false }
+    var canRecallNow: Bool {
+        guard !isRecalled, let d = TimeFmt.date(createdAt) else { return false }
+        let age = Date().timeIntervalSince(d)
+        return age >= -5 && age <= 2 * 60
+    }
 
     var imagePath: String { imageRefPath(body) }
 
@@ -570,7 +575,11 @@ private struct PinPayload: Decodable { var pinned: Bool?; var forced: Bool? }
 private struct ChatInfoPayload: Decodable { var name: String?; var announce: String? }
 private struct MutePayload: Decodable { var muted: Bool? }
 private struct GroupActionPayload: Decodable { var memberCount: Int?; var left: Bool?; var dismissed: Bool? }
-private struct SearchPayload: Decodable { var messages: [FoundMessage] }
+private struct SearchPayload: Decodable {
+    var messages: [FoundMessage]
+    var hasMore: Bool?
+    var total: Int?
+}
 private struct BankCardsPayload: Decodable { var cards: [BankCard]? }
 private struct SendPayload: Decodable { var sent: Bool?; var id: String? }
 
@@ -597,6 +606,13 @@ struct FoundMessage: Decodable, Identifiable, Hashable {
     var createdAt: String?
     var senderId: String?
     var senderName: String?
+    var senderAvatar: String?
+}
+
+struct ChatHistorySearchResult {
+    var messages: [FoundMessage]
+    var hasMore: Bool
+    var total: Int
 }
 private struct UsersPayload: Decodable { var users: [User] }
 private struct MessagesPayload: Decodable {
@@ -4338,10 +4354,32 @@ private struct StarredPayload: Decodable {
     }
 
     func searchMessages(chatId: String, query: String) async -> [FoundMessage] {
+        let result = await chatHistorySearch(chatId: chatId, query: query)
+        return result.messages
+    }
+
+    func chatHistorySearch(chatId: String, query: String,
+                           filter: String = "", memberId: String = "",
+                           from: Date? = nil, to: Date? = nil,
+                           before: Int? = nil, limit: Int = 100) async -> ChatHistorySearchResult {
+        var parts = ["limit=\(limit)"]
         guard let q = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-              let p: SearchPayload = try? await get("/api/chats/\(chatId)/search?q=\(q)", as: SearchPayload.self)
-        else { return [] }
-        return p.messages
+              let kind = filter.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+              let member = memberId.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
+        else { return ChatHistorySearchResult(messages: [], hasMore: false, total: 0) }
+        parts.append("q=\(q)")
+        if !filter.isEmpty { parts.append("kind=\(kind)") }
+        if !memberId.isEmpty { parts.append("memberId=\(member)") }
+        if let from { parts.append("from=\(Int(from.timeIntervalSince1970 * 1000))") }
+        if let to { parts.append("to=\(Int(to.timeIntervalSince1970 * 1000))") }
+        if let before, before > 0 { parts.append("before=\(before)") }
+        let path = "/api/chats/\(chatId)/search?" + parts.joined(separator: "&")
+        guard let p: SearchPayload = try? await get(path, as: SearchPayload.self) else {
+            return ChatHistorySearchResult(messages: [], hasMore: false, total: 0)
+        }
+        return ChatHistorySearchResult(messages: p.messages,
+                                       hasMore: p.hasMore ?? false,
+                                       total: p.total ?? p.messages.count)
     }
 
     func bankCards() async -> [BankCard] {
@@ -5037,8 +5075,13 @@ private struct StarredPayload: Decodable {
         return payload.message
     }
 
-    func recall(chatId: String, messageId: String) async {
-        _ = try? await request("POST", "/api/messages/\(messageId)/recall", body: ["chatId": chatId])
+    func recall(chatId: String, messageId: String) async -> String? {
+        do {
+            _ = try await request("POST", "/api/messages/\(messageId)/recall", body: ["chatId": chatId])
+            return nil
+        } catch {
+            return (error as? APIError)?.errorDescription ?? "撤回失败"
+        }
     }
 
     func likeMoment(id: String) async {

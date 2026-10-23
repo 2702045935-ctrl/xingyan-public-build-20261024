@@ -119,6 +119,11 @@ final class TRTCBridge: NSObject, ObservableObject {
         let c = TRTCCloud.sharedInstance()
         c.delegate = self
         cloud = c
+        // 弱网优先保流畅：云端自动控速，视频编码允许自动降分辨率。
+        let qos = TRTCNetworkQosParam()
+        if let pref = TRTCVideoQosPreference(rawValue: 1) { qos.preference = pref }
+        if let mode = TRTCQosControlMode(rawValue: 1) { qos.controlMode = mode }
+        c.setNetworkQosParam(qos)
         if prefsObserver == nil {
             prefsObserver = NotificationCenter.default.addObserver(
                 forName: Notification.Name("chrisCallPrefsChanged"), object: nil, queue: .main
@@ -162,6 +167,7 @@ final class TRTCBridge: NSObject, ObservableObject {
         if let mode = TRTCVideoResolutionMode(rawValue: 1) { enc.resMode = mode }
         enc.videoFps = p.fps
         enc.videoBitrate = p.bitrate
+        enc.enableAdjustRes = true
         c.setVideoEncoderParam(enc)
 
         let r = TRTCRenderParams()

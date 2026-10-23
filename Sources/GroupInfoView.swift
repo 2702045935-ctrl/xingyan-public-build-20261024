@@ -168,6 +168,12 @@ struct GroupInfoView: View {
                 }
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: ChatSearchJump.didRequest)) { note in
+            guard let target = ChatSearchJump.destination(from: note),
+                  target.chatId == chat.id else { return }
+            showSearch = false
+            dismiss()
+        }
 
         .overlay {
             if confirmClear {
@@ -413,6 +419,7 @@ struct GroupInfoView: View {
             if let err = await API.shared.clearChat(chatId: chat.id) {
                 app.show(err)
             } else {
+                app.forgetChatHistory(chat.id)
                 app.show(Tr("聊天记录已清空"))
             }
         }
@@ -1159,6 +1166,12 @@ struct DirectChatInfoView: View {
         }
 
         .navigationDestination(isPresented: $showSearch) { ChatSearchView(chat: chat) }
+        .onReceive(NotificationCenter.default.publisher(for: ChatSearchJump.didRequest)) { note in
+            guard let target = ChatSearchJump.destination(from: note),
+                  target.chatId == chat.id else { return }
+            showSearch = false
+            dismiss()
+        }
 
         .sheet(item: $sysPage) { p in
             switch p {
@@ -1444,6 +1457,7 @@ struct DirectChatInfoView: View {
             if let err = await API.shared.clearChat(chatId: chat.id) {
                 app.show(err)
             } else {
+                app.forgetChatHistory(chat.id)
                 app.show(Tr("聊天记录已清空"))
             }
         }

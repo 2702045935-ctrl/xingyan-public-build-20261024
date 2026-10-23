@@ -272,6 +272,7 @@ struct StorageView: View {
             if let err = await API.shared.clearChat(chatId: c.chatId) {
                 app.show(err)
             } else {
+                app.forgetChatHistory(c.chatId)
                 app.show(Tr("这个会话的记录已清空"))
             }
             await load()
