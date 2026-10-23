@@ -399,8 +399,11 @@ final class AppState: ObservableObject {
                 Task { await API.shared.touchCurrentDevice() }
 
                 needConfirmLogin = true
-                await refreshAll()
-                Realtime.shared.start()
+                booting = false
+                Task {
+                    await refreshAll()
+                    Realtime.shared.start()
+                }
             } else {
                 API.shared.clearToken()
             }
@@ -409,9 +412,10 @@ final class AppState: ObservableObject {
             if let cached = AppState.cachedUser() {
                 me = cached
                 needConfirmLogin = true
+                booting = false
             }
 
-            await refreshAll()
+            Task { await refreshAll() }
         }
         booting = false
     }
