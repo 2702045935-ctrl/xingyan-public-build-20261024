@@ -280,7 +280,6 @@ struct ChatSearchView: View {
                     .datePickerStyle(.graphical)
                     .labelsHidden()
                     .padding(.horizontal, 10)
-                    .onChange(of: selectedDate) { _ in applyDateSearch() }
                 Spacer(minLength: 0)
                 Button { applyDateSearch() } label: {
                     Text(Tr("查找这一天"))
@@ -307,17 +306,21 @@ struct ChatSearchView: View {
     }
 
     private func applyDateSearch() {
-        let cal = Calendar.current
-        let start = cal.startOfDay(for: selectedDate)
-        dateFrom = start
-        dateTo = cal.date(byAdding: .day, value: 1, to: start)
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "zh_CN")
-        f.dateFormat = "yyyy年M月d日"
-        dateLabel = f.string(from: selectedDate)
-        filter = "date"
+        let day = selectedDate
         showDate = false
-        search()
+        // 等系统日期面板完成一次事务后再查询，避免在 DatePicker 更新中关闭弹层。
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            let cal = Calendar.current
+            let start = cal.startOfDay(for: day)
+            dateFrom = start
+            dateTo = cal.date(byAdding: .day, value: 1, to: start)
+            let f = DateFormatter()
+            f.locale = Locale(identifier: "zh_CN")
+            f.dateFormat = "yyyy年M月d日"
+            dateLabel = f.string(from: day)
+            filter = "date"
+            search()
+        }
     }
 
     private var categoryGrid: some View {

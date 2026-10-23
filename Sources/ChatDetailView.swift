@@ -3690,10 +3690,8 @@ struct ChatDetailView: View {
         let fresh = ids.filter { !burnedIds.contains($0) }
         guard !fresh.isEmpty else { return }
         burnedIds.formUnion(fresh)
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        BurnFX.shared.fire()
-        app.show(Tr("🔥 消息已焚毁"))
-        withAnimation(.easeOut(duration: 0.5)) {
+        // 微信逻辑：到时的消息在原位置静默消失，不弹全屏火焰，也不跟随滚动。
+        withAnimation(.easeOut(duration: 0.18)) {
             messages.removeAll { fresh.contains($0.id) }
         }
         rebuildIndex()
