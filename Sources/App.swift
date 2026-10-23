@@ -635,7 +635,8 @@ final class AppState: ObservableObject {
 
         do {
             let fresh = try await chatsRequest
-            if !AppState.sameChats(chats, fresh) { chats = fresh }
+            let merged = mergeServerChats(fresh)
+            if !AppState.sameChats(chats, merged) { chats = merged }
             loadError = nil
         } catch {
             loadError = (error as? APIError)?.errorDescription ?? "加载失败"
@@ -737,7 +738,6 @@ final class AppState: ObservableObject {
         var current: [String: Chat] = [:]
         for chat in chats { current[chat.id] = chat }
         var merged = fresh.map { server -> Chat in
-            let optimistic = optimisticChats[server.id]
             if let stamp = optimisticAt[server.id], now.timeIntervalSince(stamp) >= 86_400 {
                 optimisticChats[server.id] = nil
                 optimisticAt[server.id] = nil
