@@ -1525,6 +1525,7 @@ struct ChatDetailView: View {
                 CrashCatcher.note("聊天页", "9 页面出现 " + chat.id)
                 scroller = proxy
                 backfillVoiceText()
+                ChatScrollHandle.shared.allowAutomaticPinning()
                 wasAtBottom = true
                 atBottom = true
                 scrollToEnd(proxy, animated: false)
@@ -1617,7 +1618,10 @@ struct ChatDetailView: View {
         }
     }
 
-    private var atBottomNow: Bool { wasAtBottom || atBottom }
+    private var atBottomNow: Bool {
+        if ChatScrollHandle.shared.userScrolledAway { return false }
+        return wasAtBottom || atBottom
+    }
 
     private func pendingBubble(_ p: PendingMsg) -> some View {
         HStack(alignment: .center, spacing: 7) {
