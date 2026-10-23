@@ -19,6 +19,7 @@ enum MomentsPref {
 extension Notification.Name {
 
     static let chrisUIPrefsChanged = Notification.Name("chrisUIPrefsChanged")
+    static let chrisChatRead = Notification.Name("chris.chatRead")
 }
 
 extension View {

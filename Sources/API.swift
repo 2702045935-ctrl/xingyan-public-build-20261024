@@ -4469,7 +4469,11 @@ private struct StarredPayload: Decodable {
     }
 
     func markRead(chatId: String) async {
-        _ = try? await request("POST", "/api/chats/\(chatId)/read", body: [:])
+        do {
+            _ = try await request("POST", "/api/chats/\(chatId)/read", body: [:])
+            NotificationCenter.default.post(name: .chrisChatRead, object: chatId)
+        } catch {
+        }
     }
 
     struct ChatDump {

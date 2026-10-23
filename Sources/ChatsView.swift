@@ -1608,6 +1608,7 @@ struct ChatsView: View {
                 ? await API.shared.deleteChat(chatId: chat.id)
                 : await API.shared.hideChat(chatId: chat.id)
             if clear, err == nil { app.forgetChatHistory(chat.id) }
+            if err == nil { app.dropOptimisticSummary(chat.id) }
             await app.loadChats()
             app.show(err ?? (clear ? "已清空记录并设为不显示" : "已不显示该聊天"))
         }
@@ -1618,6 +1619,7 @@ struct ChatsView: View {
             let err = await API.shared.deleteChat(chatId: chat.id)
             if err == nil {
                 LocalStore.clearChat(chat.id)
+                app.dropOptimisticSummary(chat.id)
             }
             await app.loadChats()
             app.show(err ?? "已删除")

@@ -695,7 +695,8 @@ final class AppState: ObservableObject {
         }
         do {
             let r = try await API.shared.chatsWithRecentMessages(chats: chatCount, limit: limit)
-            chats = r.chats
+            let merged = mergeServerChats(r.chats)
+            if !AppState.sameChats(chats, merged) { chats = merged }
             var total = 0
             for c in r.synced {
                 if let msgs = c.messages, !msgs.isEmpty {
@@ -721,46 +722,7 @@ final class AppState: ObservableObject {
         defer { loadingChats = false }
         do {
             let fresh = try await API.shared.chats()
-            let now = Date()
-            var merged = fresh.map { server -> Chat in
-                guard let local = optimisticChats[server.id],
-                      let localLast = local.lastMessage,
-                      let stamp = optimisticAt[server.id],
-                      now.timeIntervalSince(stamp) < 45 else {
-                    optimisticChats[server.id] = nil
-                    optimisticAt[server.id] = nil
-                    return server
-                }
-                if server.lastMessage?.id == localLast.id {
-                    optimisticChats[server.id] = nil
-                    optimisticAt[server.id] = nil
-                    return server
-                }
-                if let serverLast = server.lastMessage,
-                   (serverLast.createdAt ?? "") > (localLast.createdAt ?? "") {
-                    optimisticChats[server.id] = nil
-                    optimisticAt[server.id] = nil
-                    return server
-                }
-                var out = server
-                out.lastMessage = localLast
-                out.unread = max(server.unreadCount, local.unreadCount)
-                out.updatedAt = max(server.updatedAt ?? "", local.updatedAt ?? "")
-                return out
-            }
-            let freshIds = Set(fresh.map(\.id))
-            var staleOptimisticIds: [String] = []
-            for (id, local) in optimisticChats where !freshIds.contains(id) {
-                if let stamp = optimisticAt[id], now.timeIntervalSince(stamp) < 45 {
-                    merged.insert(local, at: 0)
-                } else {
-                    staleOptimisticIds.append(id)
-                }
-            }
-            for id in staleOptimisticIds {
-                optimisticChats[id] = nil
-                optimisticAt[id] = nil
-            }
+            let merged = mergeServerChats(fresh)
 
             if !AppState.sameChats(chats, merged) { chats = merged }
             loadError = nil
@@ -768,6 +730,104 @@ final class AppState: ObservableObject {
             loadError = (error as? APIError)?.errorDescription ?? "加载失败"
         }
         syncIconBadge()
+    }
+
+    private func mergeServerChats(_ fresh: [Chat]) -> [Chat] {
+        let now = Date()
+        var current: [String: Chat] = [:]
+        for chat in chats { current[chat.id] = chat }
+        var merged = fresh.map { server -> Chat in
+            let optimistic = optimisticChats[server.id]
+            if let stamp = optimisticAt[server.id], now.timeIntervalSince(stamp) >= 86_400 {
+                optimisticChats[server.id] = nil
+                optimisticAt[server.id] = nil
+            }
+            guard let local = optimisticChats[server.id] ?? current[server.id] else { return server }
+            var out = mergeServerChat(server, local: local)
+            if let stamp = optimisticAt[server.id], now.timeIntervalSince(stamp) < 86_400,
+               serverCaughtUp(server, local: local) {
+                optimisticChats[server.id] = nil
+                optimisticAt[server.id] = nil
+                out = server
+            }
+            return out
+        }
+
+        let freshIds = Set(fresh.map(\.id))
+        var staleOptimisticIds: [String] = []
+        for (id, local) in optimisticChats where !freshIds.contains(id) {
+            if let stamp = optimisticAt[id], now.timeIntervalSince(stamp) < 86_400 {
+                if local.unreadCount > 0 { merged.insert(local, at: 0) }
+            } else {
+                staleOptimisticIds.append(id)
+            }
+        }
+        for id in staleOptimisticIds {
+            optimisticChats[id] = nil
+            optimisticAt[id] = nil
+        }
+        return merged
+    }
+
+    private func mergeServerChat(_ server: Chat, local: Chat) -> Chat {
+        guard let localLast = local.lastMessage else { return server }
+        var out = server
+        let sameMessage = !(server.lastMessage?.id ?? "").isEmpty
+            && server.lastMessage?.id == localLast.id
+        let serverNewer: Bool
+        if let serverLast = server.lastMessage {
+            serverNewer = (serverLast.createdAt ?? "") > (localLast.createdAt ?? "")
+        } else {
+            serverNewer = false
+        }
+
+        if sameMessage {
+            if (server.lastMessage?.preview ?? "").isEmpty,
+               !(localLast.preview ?? "").isEmpty {
+                out.lastMessage = localLast
+            }
+        } else if !serverNewer {
+            out.lastMessage = localLast
+        }
+
+        if !serverNewer, local.unreadCount > out.unreadCount {
+            out.unread = local.unreadCount
+        }
+        if !serverNewer {
+            out.updatedAt = max(out.updatedAt ?? "", local.updatedAt ?? "")
+        }
+        return out
+    }
+
+    private func serverCaughtUp(_ server: Chat, local: Chat) -> Bool {
+        guard let serverLast = server.lastMessage,
+              let localLast = local.lastMessage else {
+            return local.lastMessage == nil
+        }
+        if serverLast.id == localLast.id {
+            let serverHasPreview = !(serverLast.preview ?? "").isEmpty
+            let localHasPreview = !(localLast.preview ?? "").isEmpty
+            return server.unreadCount >= local.unreadCount
+                && (serverHasPreview || !localHasPreview)
+        }
+        return (serverLast.createdAt ?? "") > (localLast.createdAt ?? "")
+    }
+
+    func markChatReadLocally(_ chatId: String) {
+        optimisticChats[chatId] = nil
+        optimisticAt[chatId] = nil
+        if let i = chats.firstIndex(where: { $0.id == chatId }) {
+            var c = chats[i]
+            c.unread = 0
+            c.flagged = false
+            chats[i] = c
+        }
+        syncIconBadge()
+    }
+
+    func dropOptimisticSummary(_ chatId: String) {
+        optimisticChats[chatId] = nil
+        optimisticAt[chatId] = nil
     }
 
     /// WebSocket 已带会话摘要时先更新预览与红点，再等后台全量校准。
@@ -812,6 +872,8 @@ final class AppState: ObservableObject {
             chats[i] = c
         }
         prefetched[chatId] = nil
+        optimisticChats[chatId] = nil
+        optimisticAt[chatId] = nil
         LocalStore.clearChat(chatId)
         if notify {
             NotificationCenter.default.post(name: .chrisChatCleared, object: chatId)
@@ -1186,6 +1248,11 @@ struct RootView: View {
                 GrowthStore.shared.stop()
 
                 KeepAlive.shared.start()
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .chrisChatRead)) { note in
+            if let id = note.object as? String, !id.isEmpty {
+                Task { @MainActor in app.markChatReadLocally(id) }
             }
         }
         .onChange(of: realtime.event) { ev in
