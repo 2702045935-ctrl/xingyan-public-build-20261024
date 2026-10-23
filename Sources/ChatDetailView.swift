@@ -3573,7 +3573,10 @@ struct ChatDetailView: View {
             hasOlder = rows.count > messages.count
         } else if initial, messages.isEmpty {
 
-            let local = LocalStore.cachedChat(chat.id)
+            let chatId = chat.id
+            let local = await Task.detached(priority: .userInitiated) {
+                LocalStore.cachedChat(chatId)
+            }.value
             if !local.isEmpty {
                 let rows = visibleMessages(local)
                 messages = Array(rows.suffix(initialMessageWindow))
