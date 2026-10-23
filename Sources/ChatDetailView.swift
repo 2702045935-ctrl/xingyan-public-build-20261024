@@ -417,6 +417,16 @@ struct ChatDetailView: View {
         }
     }
 
+    private func upsertVisibleMessage(_ message: Message) {
+        guard !hiddenMessageIds.contains(message.id) else { return }
+        if let index = messages.firstIndex(where: { $0.id == message.id }) {
+            messages[index] = message
+        } else {
+            appendVisibleMessage(message)
+        }
+        rebuildIndex()
+    }
+
     private func actionTitle(_ m: Message) -> String {
         let t = m.kindName == "text" ? m.body : "[" + ((m.kindName == "image" || m.kindName == "images") ? "图片" : m.kindName) + "]"
         return String(t.prefix(40))
@@ -1332,10 +1342,12 @@ struct ChatDetailView: View {
 
             await StickerCatalog.shared.loadIfNeeded()
             while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 15_000_000_000)
+                try? await Task.sleep(nanoseconds: 60_000_000_000)
                 if Task.isCancelled { break }
-                await load(initial: false)
-                await flushOutbox()
+                if !realtime.connected {
+                    await load(initial: false)
+                    await flushOutbox()
+                }
 
                 if needBurnSweep {
                     let gone = await API.shared.burnSweep(chatId: chat.id)
@@ -1382,18 +1394,24 @@ struct ChatDetailView: View {
                 burnAway(ev.burnIds)
             }
 
-            pushTask?.cancel()
-            pushTask = Task {
-                try? await Task.sleep(nanoseconds: 250_000_000)
-                if Task.isCancelled { return }
-
-                AppLog.error("聊天页刷新开", "事件=" + ev.type + " 条数=\(messages.count)")
-                await load(initial: false)
-                AppLog.error("聊天页刷新完", "条数=\(messages.count)")
+            if ev.type == "message", ev.chatId == chat.id, let message = ev.message {
+                upsertVisibleMessage(message)
+                if let seq = message.seq { Realtime.shared.ackDelivery(chatId: chat.id, seq: seq) }
+                markConversationReadSoon()
+            } else if (ev.type == "message" || ev.type == "chat"), ev.chatId == chat.id {
+                pushTask?.cancel()
+                pushTask = Task {
+                    try? await Task.sleep(nanoseconds: 250_000_000)
+                    if Task.isCancelled { return }
+                    await load(initial: false)
+                }
             }
         }
 
         .onChange(of: messages) { _ in schedulePersist() }
+        .onChange(of: realtime.connected) { connected in
+            if connected { Task { await load(initial: false) } }
+        }
 
         .onDisappear {
             persistTask?.cancel()
