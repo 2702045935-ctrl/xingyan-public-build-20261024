@@ -617,6 +617,7 @@ struct ChatDetailView: View {
 
     @State private var peerTyping = ""
     @State private var typingClear: Task<Void, Never>?
+    @State private var blockedSendMessage = ""
 
     @State private var lastTypingSent = Date.distantPast
 
@@ -869,6 +870,14 @@ struct ChatDetailView: View {
             Button(Tr("取消"), role: .cancel) { }
         } message: {
             Text(Tr("对方通过验证后，你们就能聊天了。"))
+        }
+        .alert(Tr("无法发送"), isPresented: Binding(
+            get: { !blockedSendMessage.isEmpty },
+            set: { if !$0 { blockedSendMessage = "" } }
+        )) {
+            Button(Tr("知道了"), role: .cancel) { blockedSendMessage = "" }
+        } message: {
+            Text(blockedSendMessage)
         }
 
         .onChange(of: focused) { f in pinToBottomSoon(force: f) }
@@ -2937,7 +2946,7 @@ struct ChatDetailView: View {
 
                     outbox.removeAll { $0.id == p.id }
                     if input.isEmpty { input = p.content }
-                    app.show(reason)
+                    blockedSendMessage = reason
                 } else if let i2 = outbox.firstIndex(where: { $0.id == p.id }) {
                     outbox[i2].sending = false
                     outbox[i2].failed = true
