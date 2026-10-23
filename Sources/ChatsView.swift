@@ -1446,18 +1446,6 @@ struct ChatsView: View {
 
             .onAppear { openPendingPushChat(app.pendingPushChatId) }
             .onChange(of: app.pendingPushChatId) { v in openPendingPushChat(v) }
-            .onReceive(NotificationCenter.default.publisher(for: .chrisChatCleared)) { note in
-                guard let chatId = note.object as? String, !chatId.isEmpty else { return }
-                let shouldReopen = !path.isEmpty
-                path = NavigationPath()
-                guard shouldReopen else { return }
-                Task { @MainActor in
-                    await app.loadChats()
-                    guard let fresh = app.chats.first(where: { $0.id == chatId }) else { return }
-                    try? await Task.sleep(nanoseconds: 120_000_000)
-                    path.append(fresh)
-                }
-            }
 
             .navigationDestination(isPresented: $showOA) {
                 OfficialAccountPage(accountId: oaOpenId)
