@@ -366,6 +366,16 @@ final class AppState: ObservableObject {
 
     func boot() async {
         CrashCatcher.note("启动", "3 boot 开始")
+        // 本地已有账号时先放行到上次账号页，网络校验放到后台完成。
+        applyCachedUIConfig()
+        let savedUser = AppState.cachedUser()
+        if !API.shared.token.isEmpty, savedUser != nil {
+            showSavedLogin = true
+            booting = false
+        } else if API.shared.token.isEmpty {
+            booting = false
+            return
+        }
 
             let watchdog = Task { @MainActor in
             try? await Task.sleep(nanoseconds: 6_000_000_000)
@@ -383,6 +393,7 @@ final class AppState: ObservableObject {
 
         await checkVersionAndNotice()
         if API.shared.token.isEmpty {
+            showSavedLogin = false
             booting = false
             return
         }
@@ -402,6 +413,9 @@ final class AppState: ObservableObject {
                 }
             } else {
                 API.shared.clearToken()
+                me = nil
+                needConfirmLogin = false
+                showSavedLogin = false
             }
         } catch {
 
