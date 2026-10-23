@@ -1730,6 +1730,18 @@ final class API {
     func assetData(_ url: URL) async throws -> Data {
         var req = URLRequest(url: url)
         req.timeoutInterval = 15
+
+        /*
+         商城商品图来自阿里 CDN。它们必须走系统默认 TLS 校验，
+         不能用只信任星言服务器证书的固定会话；同时也不能把登录令牌
+         发给第三方图片域名。自家服务器仍走固定证书会话并带上令牌。
+        */
+        let host = url.host ?? ""
+        if !API.trustedHost(host) {
+            let (data, _) = try await URLSession.shared.data(for: req)
+            return data
+        }
+
         if !token.isEmpty { req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
         let (data, _) = try await session.data(for: req)
         return data
