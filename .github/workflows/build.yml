@@ -9,7 +9,7 @@ on:
       source_ref:
         description: Private source branch or commit
         required: false
-        default: main
+        default: codex/b717-targeted-fixes
         type: string
   push:
     branches:
@@ -25,7 +25,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: m6cvfg86yd-gif/xingyan-build-1
-          ref: ${{ inputs.source_ref || 'main' }}
+          ref: ${{ inputs.source_ref || 'codex/b717-targeted-fixes' }}
           token: ${{ secrets.SRC_TOKEN }}
 
       - name: 选 Xcode（优先 26，没有就用最新可用的）
