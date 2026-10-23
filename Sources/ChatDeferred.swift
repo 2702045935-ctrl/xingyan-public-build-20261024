@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct DeferredChatView: View {
     @EnvironmentObject private var app: AppState
@@ -19,18 +20,19 @@ struct DeferredChatView: View {
                     .ignoresSafeArea()
             }
 
+            ChatTransitionProbe {
+                guard !ready else { return }
+                withAnimation(.easeOut(duration: 0.16)) { ready = true }
+            }
+            .frame(width: 1, height: 1)
+            .opacity(0.001)
+            .allowsHitTesting(false)
+
             if burnFX.firing {
                 FlameSweepOverlay()
                     .ignoresSafeArea()
                     .transition(.opacity)
             }
-        }
-        .task {
-            guard !ready else { return }
-
-            // 给超大聊天页首帧和导航事务留出稳定时间，避免系统看门狗在首帧前杀进程。
-            try? await Task.sleep(nanoseconds: 2_000_000_000)
-            withAnimation(.easeOut(duration: 0.16)) { ready = true }
         }
     }
 
@@ -54,5 +56,44 @@ struct DeferredChatView: View {
             return def == "auto" ? "" : def
         }
         return v
+    }
+}
+
+/// 导航 push 的 viewDidAppear 完成后再挂载重聊天页，不引入固定可见等待。
+private struct ChatTransitionProbe: UIViewControllerRepresentable {
+    let onReady: () -> Void
+
+    func makeUIViewController(context: Context) -> ProbeController {
+        ProbeController(onReady: onReady)
+    }
+
+    func updateUIViewController(_ controller: ProbeController, context: Context) {
+        controller.onReady = onReady
+    }
+
+    final class ProbeController: UIViewController {
+        var onReady: () -> Void
+        private var fired = false
+
+        init(onReady: @escaping () -> Void) {
+            self.onReady = onReady
+            super.init(nibName: nil, bundle: nil)
+        }
+
+        @available(*, unavailable)
+        required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+        override func loadView() {
+            view = UIView(frame: .zero)
+            view.backgroundColor = .clear
+            view.isUserInteractionEnabled = false
+        }
+
+        override func viewDidAppear(_ animated: Bool) {
+            super.viewDidAppear(animated)
+            guard !fired else { return }
+            fired = true
+            DispatchQueue.main.async { [weak self] in self?.onReady() }
+        }
     }
 }

@@ -411,6 +411,10 @@ struct ChatDetailView: View {
     private func appendVisibleMessage(_ message: Message) {
         guard !hiddenMessageIds.contains(message.id) else { return }
         messages.append(message)
+        if messages.count > maxMessageWindow {
+            messages.removeFirst(messages.count - maxMessageWindow)
+            hasOlder = true
+        }
     }
 
     private func actionTitle(_ m: Message) -> String {
@@ -644,6 +648,9 @@ struct ChatDetailView: View {
     private var isFamilyGroupLoadAll: Bool {
         isGroup && chat.name.contains("家人")
     }
+
+    private let initialMessageWindow = 300
+    private let maxMessageWindow = 800
 
     private var navTitle: String {
         guard isGroup else { return chat.name }
@@ -3561,14 +3568,16 @@ struct ChatDetailView: View {
     private func load(initial: Bool) async {
 
         if initial, messages.isEmpty, let cached = app.prefetched[chat.id], !cached.isEmpty {
-            messages = visibleMessages(cached)
-            hasOlder = true
+            let rows = visibleMessages(cached)
+            messages = Array(rows.suffix(initialMessageWindow))
+            hasOlder = rows.count > messages.count
         } else if initial, messages.isEmpty {
 
             let local = LocalStore.cachedChat(chat.id)
             if !local.isEmpty {
-                messages = visibleMessages(local)
-                hasOlder = true
+                let rows = visibleMessages(local)
+                messages = Array(rows.suffix(initialMessageWindow))
+                hasOlder = rows.count > messages.count
             }
         }
         do {
@@ -3582,7 +3591,7 @@ struct ChatDetailView: View {
                 var latestChat: Chat? = nil
                 var more = false
                 var before = 0
-                for _ in 0..<10 {
+                for _ in 0..<2 {
                     let page = try await API.shared.messages(chatId: chat.id, limit: 100,
                                                              before: before > 0 ? before : nil)
                     if let c = page.chat { latestChat = c }
@@ -3595,7 +3604,7 @@ struct ChatDetailView: View {
                     let next = rows.compactMap { $0.seq }.min() ?? 0
                     if !more || next <= 0 || (before > 0 && next >= before) { break }
                     before = next
-                    if incoming.count >= 1000 { break }
+                    if incoming.count >= 200 { break }
                 }
                 result = (latestChat, incoming, more)
             } else if cachedLastSeq > 0 {
@@ -3629,7 +3638,7 @@ struct ChatDetailView: View {
             }
             let visible = visibleMessages(merged)
 
-            let nextMessages = isFamilyGroupLoadAll ? visible : Array(visible.suffix(2000))
+            let nextMessages = Array(visible.suffix(initialMessageWindow))
             let same = !initial && nextMessages.count == messages.count
                 && zip(nextMessages, messages).allSatisfy { $0.id == $1.id && $0.body == $1.body }
             if initial || !same {
@@ -3660,9 +3669,6 @@ struct ChatDetailView: View {
         }
         rebuildIndex()
         loading = false
-        if initial, isFamilyGroupLoadAll, hasOlder, !loadingAllGroupHistory {
-            Task { await loadAllGroupHistory() }
-        }
         autoOpenShopCard()
 
         if needBurnSweep {
@@ -3708,7 +3714,9 @@ struct ChatDetailView: View {
             guard !r.messages.isEmpty else { hasOlder = false; return }
             let keep = first.id
             holdScroll = true
-            messages = visibleMessages(r.messages + messages)
+            let merged = visibleMessages(r.messages + messages)
+            messages = Array(merged.suffix(maxMessageWindow))
+            if merged.count > messages.count { hasOlder = true }
             rebuildIndex()
 
             if let proxy = scroller {
