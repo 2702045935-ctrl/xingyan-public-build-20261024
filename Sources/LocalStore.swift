@@ -48,7 +48,9 @@ enum LocalStore {
     static func keepOriginal(_ path: String, from: URL, name: String? = nil) {
         guard let u = localURL(name.map { "/uploads/" + $0 } ?? path) else { return }
         if FileManager.default.fileExists(atPath: u.path) { return }
-        if let d = try? Data(contentsOf: from) { try? d.write(to: u, options: .atomic) }
+        try? FileManager.default.createDirectory(at: u.deletingLastPathComponent(),
+                                                 withIntermediateDirectories: true)
+        try? FileManager.default.copyItem(at: from, to: u)
     }
 
     static func chatFile(_ chatId: String) -> URL {

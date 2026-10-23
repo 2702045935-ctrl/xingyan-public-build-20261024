@@ -3111,7 +3111,9 @@ struct ChatDetailView: View {
                     return
                 }
 
-                LocalStore.keepOriginal(up, from: file)
+                await Task.detached(priority: .utility) {
+                    LocalStore.keepOriginal(up, from: file)
+                }.value
                 var body: [String: Any] = ["url": up, "seconds": secs]
                 if let wh = wh { body["w"] = wh.w; body["h"] = wh.h }
 
@@ -3157,7 +3159,9 @@ struct ChatDetailView: View {
                         DispatchQueue.main.async { sendProgress = from + p * (1 - from) }
                     }, skipServerTranscode: !original) else { throw APIError.message("实况上传失败") }
 
-                    LocalStore.keepOriginal(vurl, from: file)
+                    await Task.detached(priority: .utility) {
+                        LocalStore.keepOriginal(vurl, from: file)
+                    }.value
                     let body: [String: Any] = ["image": iurl, "video": vurl]
                     let json = (try? JSONSerialization.data(withJSONObject: body)).flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
                     if let m = try await API.shared.send(chatId: chat.id, kind: "livephoto", content: json) {
