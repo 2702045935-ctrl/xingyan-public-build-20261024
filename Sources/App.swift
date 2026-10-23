@@ -287,12 +287,8 @@ final class AppState: ObservableObject {
         switch ev.type {
         case "message", "chat":
 
-            if let fresh = ev.chat {
-                if let i = chats.firstIndex(where: { $0.id == fresh.id }) {
-                    chats[i] = fresh
-                } else {
-                    chats.append(fresh)
-                }
+            if let incoming = ev.chat {
+                applyRealtimeChat(incoming)
             }
             let cid = ev.chatId
             coalesce { [weak self] in
@@ -713,6 +709,28 @@ final class AppState: ObservableObject {
         } catch {
             loadError = (error as? APIError)?.errorDescription ?? "加载失败"
         }
+        syncIconBadge()
+    }
+
+    /// WebSocket 已带会话摘要时先更新预览与红点，再等后台全量校准。
+    private func applyRealtimeChat(_ incoming: Chat) {
+        var rows = chats
+        if let index = rows.firstIndex(where: { $0.id == incoming.id }) {
+            let current = rows[index]
+            let currentMid = current.lastMessage?.id ?? ""
+            let incomingMid = incoming.lastMessage?.id ?? ""
+            var merged = incoming
+            if !incomingMid.isEmpty, incomingMid != currentMid,
+               incoming.unreadCount <= current.unreadCount {
+                merged.unread = current.unreadCount + 1
+            } else {
+                merged.unread = max(current.unreadCount, incoming.unreadCount)
+            }
+            rows[index] = merged
+        } else {
+            rows.insert(incoming, at: 0)
+        }
+        chats = rows
         syncIconBadge()
     }
 
