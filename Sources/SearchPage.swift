@@ -23,6 +23,7 @@ struct SearchPage: View {
 
     @State private var kbHeight: CGFloat = 0
     @State private var inputMethodChanging = false
+    @State private var inputMethodChangeToken = 0
 
     private let scopes: [(String, String, String)] = [
         ("all", "全部", "magnifyingglass"),
@@ -161,6 +162,7 @@ struct SearchPage: View {
             guard let f = n.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
             let h = max(0, UIScreen.main.bounds.height - f.minY)
             if abs(h - kbHeight) > 0.5 {
+                if voiceBall { beginInputMethodTransition() }
                 withAnimation(.easeOut(duration: 0.22)) { kbHeight = h }
             }
         }
@@ -171,15 +173,21 @@ struct SearchPage: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: UITextInputMode.currentInputModeDidChangeNotification)) { _ in
-            // 输入法切换会同时重建键盘和 Metal 语音球；先停识别并短暂卸载球，
-            // 等键盘布局稳定后再显示，避免语音球在切换动画中闪退。
-            dictation.stop()
-            inputMethodChanging = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                inputMethodChanging = false
-            }
+            beginInputMethodTransition()
         }
         .onDisappear { dictation.stop() }
+    }
+
+    private func beginInputMethodTransition() {
+        guard voiceBall else { return }
+        // 文字/表情/手写键盘都会重建键盘视图，先卸载 Metal 球再恢复。
+        dictation.stop()
+        inputMethodChanging = true
+        inputMethodChangeToken += 1
+        let token = inputMethodChangeToken
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            if token == inputMethodChangeToken { inputMethodChanging = false }
+        }
     }
 
     private var scopeRow: some View {
