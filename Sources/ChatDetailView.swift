@@ -660,7 +660,7 @@ struct ChatDetailView: View {
     }
 
     private let initialMessageWindow = 300
-    private let maxMessageWindow = 800
+    private let maxMessageWindow = 20_000
 
     private var navTitle: String {
         guard isGroup else { return chat.name }
