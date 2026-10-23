@@ -18,6 +18,16 @@ working B717 build unable to connect.
   (smooth-first), while retaining B717's existing audio weak-network handling.
 - Automatic bottom pinning is suppressed for 0.45 seconds while the user is
   dragging or the list is decelerating, preventing group chats from jumping.
+- Focusing the composer forces two bottom scroll passes after the keyboard
+  changes height, so the newest message stays visible.
+- Call mute/speaker buttons update their visual state and haptics before the
+  audio route/TRTC work runs on the next main-loop turn.
+- Groups without an uploaded avatar render a member-photo mosaic, with the
+  green group fallback when fewer than two portraits are available.
+- Wi-Fi/cellular interface changes trigger an endpoint probe and realtime
+  reconnect; a failed probe rotates to the next configured endpoint.
+- The message long-press menu uses viewport coordinates and re-samples the
+  bubble frame after layout, including call-record bubbles.
 
 ## Protected baseline
 
@@ -35,6 +45,11 @@ working B717 build unable to connect.
 - [ ] Group search shows `群成员` and `日期`; member filter returns only that
       member's matching messages; selecting a result opens the original message.
 - [ ] One-to-one and group voice still work.
+- [ ] Mute/speaker buttons change immediately during voice calls.
 - [ ] Video call negotiates and weak-network QoS parameters are accepted.
+- [ ] Wi-Fi/cellular switching reconnects without restarting the app.
+- [ ] New groups without an uploaded avatar show a member mosaic.
+- [ ] Composer focus returns to the newest message after the keyboard opens.
+- [ ] Long-press action cards are anchored to the pressed bubble.
 - [ ] Fast scrolling in a long group chat does not jump to an unrelated place.
 - [ ] Huawei build and data are unchanged.
