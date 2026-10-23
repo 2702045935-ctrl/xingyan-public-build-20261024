@@ -1,8 +1,8 @@
 {
-  "baseline": "B2036 / e15beaa",
+  "baseline": "B2036 / e15beaa + B2061 2s chat-opening guard",
   "files": [
     { "path": "Sources/ChatDetailView.swift", "size": 203922, "sha256": "95e800a284eded109e14f0e8ab5dd22bb2f900812a7e1e2de623c8998a10b9a0" },
-    { "path": "Sources/ChatDeferred.swift", "size": 1556, "sha256": "471d4984f84bcb0c364d10efb54d9659a29fbfc05264d34c4c569bdef90d1167" },
+    { "path": "Sources/ChatDeferred.swift", "size": 1679, "sha256": "0572119f8ad01b68520ee21f84ee0b0cf849e6749cf947b37d2c468c626d760a" },
     { "path": "Sources/ContactsView.swift", "size": 56900, "sha256": "79e818d37f0b74bd752eeea99025bb0837641eeb4a0db56dc55d0b3099812dfb" },
     { "path": "Sources/ScrollProbe.swift", "size": 7173, "sha256": "6fe825461292711e752af73a353764761577ed5eaddba179660f94720feccb14" }
   ]

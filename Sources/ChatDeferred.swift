@@ -28,7 +28,8 @@ struct DeferredChatView: View {
         .task {
             guard !ready else { return }
 
-            try? await Task.sleep(nanoseconds: 350_000_000)
+            // 给超大聊天页首帧和导航事务留出稳定时间，避免系统看门狗在首帧前杀进程。
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
             withAnimation(.easeOut(duration: 0.16)) { ready = true }
         }
     }
