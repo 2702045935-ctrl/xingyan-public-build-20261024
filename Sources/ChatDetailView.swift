@@ -617,7 +617,6 @@ struct ChatDetailView: View {
 
     @State private var peerTyping = ""
     @State private var typingClear: Task<Void, Never>?
-    @State private var blockedSendMessage = ""
 
     @State private var lastTypingSent = Date.distantPast
 
@@ -870,14 +869,6 @@ struct ChatDetailView: View {
             Button(Tr("取消"), role: .cancel) { }
         } message: {
             Text(Tr("对方通过验证后，你们就能聊天了。"))
-        }
-        .alert(Tr("无法发送"), isPresented: Binding(
-            get: { !blockedSendMessage.isEmpty },
-            set: { if !$0 { blockedSendMessage = "" } }
-        )) {
-            Button(Tr("知道了"), role: .cancel) { blockedSendMessage = "" }
-        } message: {
-            Text(blockedSendMessage)
         }
 
         .onChange(of: focused) { f in pinToBottomSoon(force: f) }
@@ -1534,7 +1525,6 @@ struct ChatDetailView: View {
                 CrashCatcher.note("聊天页", "9 页面出现 " + chat.id)
                 scroller = proxy
                 backfillVoiceText()
-                ChatScrollHandle.shared.allowAutomaticPinning()
                 wasAtBottom = true
                 atBottom = true
                 scrollToEnd(proxy, animated: false)
@@ -1627,10 +1617,7 @@ struct ChatDetailView: View {
         }
     }
 
-    private var atBottomNow: Bool {
-        if ChatScrollHandle.shared.userScrolledAway { return false }
-        return wasAtBottom || atBottom
-    }
+    private var atBottomNow: Bool { wasAtBottom || atBottom }
 
     private func pendingBubble(_ p: PendingMsg) -> some View {
         HStack(alignment: .center, spacing: 7) {
@@ -2946,7 +2933,7 @@ struct ChatDetailView: View {
 
                     outbox.removeAll { $0.id == p.id }
                     if input.isEmpty { input = p.content }
-                    blockedSendMessage = reason
+                    app.show(reason)
                 } else if let i2 = outbox.firstIndex(where: { $0.id == p.id }) {
                     outbox[i2].sending = false
                     outbox[i2].failed = true
@@ -3111,9 +3098,7 @@ struct ChatDetailView: View {
                     return
                 }
 
-                await Task.detached(priority: .utility) {
-                    LocalStore.keepOriginal(up, from: file)
-                }.value
+                LocalStore.keepOriginal(up, from: file)
                 var body: [String: Any] = ["url": up, "seconds": secs]
                 if let wh = wh { body["w"] = wh.w; body["h"] = wh.h }
 
@@ -3159,9 +3144,7 @@ struct ChatDetailView: View {
                         DispatchQueue.main.async { sendProgress = from + p * (1 - from) }
                     }, skipServerTranscode: !original) else { throw APIError.message("实况上传失败") }
 
-                    await Task.detached(priority: .utility) {
-                        LocalStore.keepOriginal(vurl, from: file)
-                    }.value
+                    LocalStore.keepOriginal(vurl, from: file)
                     let body: [String: Any] = ["image": iurl, "video": vurl]
                     let json = (try? JSONSerialization.data(withJSONObject: body)).flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
                     if let m = try await API.shared.send(chatId: chat.id, kind: "livephoto", content: json) {
@@ -3703,8 +3686,10 @@ struct ChatDetailView: View {
         let fresh = ids.filter { !burnedIds.contains($0) }
         guard !fresh.isEmpty else { return }
         burnedIds.formUnion(fresh)
-        // 微信逻辑：到时的消息在原位置静默消失，不弹全屏火焰，也不跟随滚动。
-        withAnimation(.easeOut(duration: 0.18)) {
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        BurnFX.shared.fire()
+        app.show(Tr("🔥 消息已焚毁"))
+        withAnimation(.easeOut(duration: 0.5)) {
             messages.removeAll { fresh.contains($0.id) }
         }
         rebuildIndex()

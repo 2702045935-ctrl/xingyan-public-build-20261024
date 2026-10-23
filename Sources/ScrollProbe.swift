@@ -7,23 +7,20 @@ final class ChatScrollHandle {
     /// 用户刚滑动过的短暂保护期：列表预渲染/图片解码触发的“补底”
     /// 不能在这一小段时间里抢走滚动位置。
     private var lastUserMotionAt = Date.distantPast
-    private(set) var userScrolledAway = false
 
-    func noteUserMotion(gap: CGFloat? = nil) {
+    func noteUserMotion() {
         lastUserMotionAt = Date()
-        if let gap { userScrolledAway = gap > 24 }
     }
 
     /// 用户点输入框/键盘弹出时允许立即回到最新消息。
     func allowAutomaticPinning() {
         lastUserMotionAt = .distantPast
-        userScrolledAway = false
     }
 
     @discardableResult
     func pinToBottom(animated: Bool) -> Bool {
         guard let sv = scroll, sv.window != nil else { return false }
-        if userScrolledAway || moving || Date().timeIntervalSince(lastUserMotionAt) < 0.45 {
+        if moving || Date().timeIntervalSince(lastUserMotionAt) < 0.45 {
             return true
         }
         let bottom = sv.contentSize.height - sv.bounds.height + sv.adjustedContentInset.bottom
@@ -140,18 +137,12 @@ struct ScrollOffsetProbe: UIViewRepresentable {
             sv.alwaysBounceVertical = true
             obsOffset = sv.observe(\.contentOffset, options: [.new]) { [weak self] s, _ in
                 if s.isDragging || s.isDecelerating || s.isTracking {
-                    let gap = s.contentSize.height - s.bounds.height
-                        + s.adjustedContentInset.bottom - s.contentOffset.y
-                    ChatScrollHandle.shared.noteUserMotion(gap: gap)
+                    ChatScrollHandle.shared.noteUserMotion()
                 }
                 self?.report(s.contentOffset.y)
             }
             obsDrag = sv.observe(\.isDragging, options: [.new]) { [weak self] s, _ in
-                if s.isDragging {
-                    let gap = s.contentSize.height - s.bounds.height
-                        + s.adjustedContentInset.bottom - s.contentOffset.y
-                    ChatScrollHandle.shared.noteUserMotion(gap: gap)
-                }
+                if s.isDragging { ChatScrollHandle.shared.noteUserMotion() }
                 self?.reportDrag(s.isDragging)
             }
 
