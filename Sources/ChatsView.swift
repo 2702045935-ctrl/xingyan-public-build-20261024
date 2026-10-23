@@ -150,10 +150,35 @@ struct ChatRow: View {
     }
 
     private var mentionPreview: Text {
-        let preview = chat.lastMessage?.preview ?? ""
+        let raw = (chat.lastMessage?.preview ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let preview = raw.isEmpty ? fallbackPreview(chat.lastMessage?.kind ?? "") : raw
         let body = Text(preview).foregroundColor(C.subLabel.opacity(0.94))
         guard chat.lastMessage?.mentionMe == true, chat.unreadCount > 0 else { return body }
         return Text("[有人@我] ").foregroundColor(C.red) + body
+    }
+
+    /// 旧服务端或实时推送偶尔只带 kind 不带 preview，列表仍按微信占位。
+    private func fallbackPreview(_ kind: String) -> String {
+        switch kind {
+        case "image", "images": return "[图片]"
+        case "video", "livephoto": return "[视频]"
+        case "audio", "voice": return "[语音]"
+        case "file": return "[文件]"
+        case "link", "oa": return "[链接]"
+        case "music": return "[音乐]"
+        case "location": return "[位置]"
+        case "card": return "[名片]"
+        case "transfer": return "[转账]"
+        case "redpacket": return "[红包]"
+        case "gift": return "[礼物]"
+        case "miniapp", "mini", "app", "mall": return "[小程序]"
+        case "channels", "channel", "feed", "shortvideo": return "[视频号]"
+        case "call", "voicecall": return "[语音通话]"
+        case "videocall": return "[视频通话]"
+        case "system": return "消息"
+        case "": return ""
+        default: return "[消息]"
+        }
     }
 
     private var rightColumn: some View {
