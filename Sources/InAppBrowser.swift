@@ -60,6 +60,8 @@ struct InAppBrowserView: View {
         }
         .background(Color.black.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
+        .statusBarHidden(true)
+        .persistentSystemOverlays(.hidden)
         .swipeBack { dismiss() }
         .hidesTabBar()
         .confirmationDialog(title.isEmpty ? Tr("浏览器") : title,
