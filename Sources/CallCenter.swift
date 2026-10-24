@@ -703,6 +703,7 @@ final class CallCenter: NSObject, ObservableObject {
     }
 
     private func applySpeaker() {
+        if usingTRTC { return }
         let s = AVAudioSession.sharedInstance()
 
         try? s.overrideOutputAudioPort((speakerOn && !proximityNear) ? .speaker : .none)
@@ -815,6 +816,7 @@ final class CallCenter: NSObject, ObservableObject {
 
     private func startServerAudioIfVoice() {
         guard !isVideo else { return }
+        guard !usingTRTC else { return }
         guard !serverAudioOn else { return }
         serverAudioOn = true
         audioTrack?.isEnabled = false
@@ -1125,20 +1127,47 @@ final class CallCenter: NSObject, ObservableObject {
 
     private let pathMonitor = NWPathMonitor()
     private var lastPathStatus: NWPath.Status? = nil
+    private var lastPathKind: String? = nil
+
+    private func pathKind(_ path: NWPath) -> String {
+        if path.usesInterfaceType(.wifi) { return "wifi" }
+        if path.usesInterfaceType(.cellular) { return "cellular" }
+        if path.usesInterfaceType(.wiredEthernet) { return "wired" }
+        return "other"
+    }
 
     private func startPathMonitor() {
         pathMonitor.pathUpdateHandler = { [weak self] path in
             Task { @MainActor in
                 guard let self = self else { return }
                 let prev = self.lastPathStatus
+                let prevKind = self.lastPathKind
+                let kind = self.pathKind(path)
                 self.lastPathStatus = path.status
-                guard prev != nil, prev != path.status else { return }
+                self.lastPathKind = kind
+                let interfaceChanged = path.status == .satisfied
+                    && prevKind != nil && prevKind != kind
+                guard prev != nil, prev != path.status || interfaceChanged else { return }
                 guard self.phase == .active else { return }
-                self.note("网络切换（" + (path.status == .satisfied ? "已联网" : "断开") + "）→ 自动重连")
+                let routeText = (prevKind ?? "unknown") + " → " + kind
+                self.note("网络切换（" + (path.status == .satisfied ? routeText : "断开") + "）→ 自动重连")
                 self.weakNet = true
                 if self.tip != "通话中" && self.tip != "视频通话中" { self.tip = "网络切换，正在重连…" }
                 if !self.usingTRTC { await self.startTRTCIfPossible() }
-                if !self.isVideo { CallAudioPipe.shared.resetHandOver() }
+                if !self.isVideo, !self.usingTRTC {
+                    try? await Task.sleep(nanoseconds: 600_000_000)
+                    guard self.phase == .active, !self.usingTRTC else { return }
+                    CallAudioPipe.shared.repairAudioNow()
+                }
+                Task { @MainActor [weak self] in
+                    try? await Task.sleep(nanoseconds: 3_000_000_000)
+                    guard let self = self, self.phase == .active else { return }
+                    if self.usingTRTC || self.pc?.connectionState == .connected
+                        || (self.pc == nil && Realtime.shared.connected) {
+                        self.weakNet = false
+                        if self.tip == "网络切换，正在重连…" { self.tip = "通话中" }
+                    }
+                }
             }
         }
         pathMonitor.start(queue: DispatchQueue(label: "chris.call.path"))

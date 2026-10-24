@@ -284,6 +284,9 @@ final class CallAudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegat
 
         var lastOut = -1
         var stalledTicks = 0
+        var lastIn = -1
+        var lastScheduled = -1
+        var playbackStallTicks = 0
         t.setEventHandler { [weak self] in
             guard let self = self, self.started, !self.handedOver else { return }
             self.startPlaybackOnQueue()
@@ -304,6 +307,21 @@ final class CallAudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegat
                 stalledTicks = 0
                 lastOut = self.framesOut
             }
+
+            let receivedNewAudio = self.framesIn > lastIn || !self.pendingFrames.isEmpty
+            let scheduledNothing = self.framesScheduled == lastScheduled
+            if receivedNewAudio && scheduledNothing {
+                playbackStallTicks += 1
+                if playbackStallTicks >= 2 {
+                    playbackStallTicks = 0
+                    self.lastError = "播放队列停住，已自动重建音频引擎"
+                    self.restartPlaybackOnQueue()
+                }
+            } else {
+                playbackStallTicks = 0
+            }
+            lastIn = self.framesIn
+            lastScheduled = self.framesScheduled
         }
         watchdog = t
         t.resume()
@@ -346,6 +364,7 @@ final class CallAudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegat
             if force || !self.capture.isRunning {
                 _ = self.startCaptureBlocking()
             }
+            guard self.started, !self.handedOver else { return }
             self.startPlayback()
             if self.capture.isRunning { DispatchQueue.main.async { self.onStateChange?(true) } }
         }
@@ -358,7 +377,7 @@ final class CallAudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegat
     }
 
     private func startPlaybackOnQueue() {
-        guard let fmt = playFormat else { return }
+        guard !handedOver, let fmt = playFormat else { return }
 
         if playerReady, player.isRunning, playerNode.isPlaying { return }
         framesInFlight = 0
@@ -411,11 +430,29 @@ final class CallAudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegat
         }
     }
 
+    private func restartPlaybackOnQueue() {
+        guard !handedOver, started else { return }
+        framesInFlight = 0
+        pendingFrames.removeAll()
+        queuedUntil = .distantPast
+        playerReady = false
+        playerNode.stop()
+        player.stop()
+        playerNode.reset()
+        player.reset()
+        if wired {
+            player.disconnectNodeOutput(playerNode)
+            player.detach(playerNode)
+            wired = false
+        }
+        startPlaybackOnQueue()
+    }
+
     private func configureSession() {
         let session = AVAudioSession.sharedInstance()
         do {
 
-            try session.setCategory(.playAndRecord, mode: .default,
+            try session.setCategory(.playAndRecord, mode: .voiceChat,
                                     options: [.defaultToSpeaker, .allowBluetooth])
         } catch {
             lastError = "setCategory 失败: \(error.localizedDescription)"
@@ -582,9 +619,16 @@ final class CallAudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegat
     }
 
     private func playOnQueue(_ data: Data) {
+        guard !handedOver else {
+            framesDropped += 1
+            pendingFrames.removeAll()
+            framesInFlight = 0
+            return
+        }
 
         if !(playerReady && player.isRunning && playerNode.isPlaying) { startPlaybackOnQueue() }
-        guard playerReady, player.isRunning, let fmt = playFormat else {
+        guard !handedOver, playerReady, player.isRunning, playerNode.isPlaying,
+              let fmt = playFormat else {
             framesDropped += 1
             return
         }
@@ -654,6 +698,12 @@ final class CallAudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegat
 
     private func pumpPending(_ fmt: AVAudioFormat) {
         while framesInFlight < bufferTarget, !pendingFrames.isEmpty {
+            guard !handedOver, playerReady, player.isRunning, playerNode.isPlaying else {
+                pendingFrames.removeAll()
+                framesInFlight = 0
+                playerReady = false
+                return
+            }
             let d = pendingFrames.removeFirst()
             let frames = d.count / 2
             guard frames > 0,

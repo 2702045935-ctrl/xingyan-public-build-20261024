@@ -3405,20 +3405,29 @@ struct ChatDetailView: View {
 
         let attrs = try? FileManager.default.attributesOfItem(atPath: url.path)
         let sizeBytes = (attrs?[.size] as? NSNumber)?.intValue ?? 0
-        if sizeBytes > 80 * 1024 * 1024 {
-            app.show(Tr("这个文件超过 80MB，先压缩一下再发"))
+        if sizeBytes > 100 * 1024 * 1024 {
+            app.show(Tr("这个文件超过 100MB，先压缩一下再发"))
             return
         }
-        guard let data = try? Data(contentsOf: url), !data.isEmpty else {
+        guard sizeBytes > 0 else {
             app.show(Tr("读不到这个文件"))
             return
         }
-        let b64 = data.base64EncodedString()
-        let payload: [String: Any] = ["dataUrl": "data:application/octet-stream;base64," + b64,
-                                      "filename": name]
+        let sourceMime = UTType(filenameExtension: url.pathExtension)?.preferredMIMEType
+            ?? "application/octet-stream"
         do {
-            let bytes = try await API.shared.rawUpload(payload)
-            let content = "{\"url\":\"\(bytes.url)\",\"name\":\"\(name)\",\"bytes\":\(data.count)}"
+            let uploadedURL = try await API.shared.uploadBinaryFile(
+                url, mime: "application/octet-stream", skipTranscode: true, onProgress: { _ in })
+            let body: [String: Any] = [
+                "url": uploadedURL,
+                "name": name,
+                "bytes": sizeBytes,
+                "mime": sourceMime
+            ]
+            let jsonData = try JSONSerialization.data(withJSONObject: body)
+            guard let content = String(data: jsonData, encoding: .utf8) else {
+                throw APIError.message("文件信息生成失败")
+            }
             if let message = try await API.shared.send(chatId: chat.id, kind: "file", content: content) {
                 appendVisibleMessage(message)
             }
