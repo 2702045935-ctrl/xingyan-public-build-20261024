@@ -196,20 +196,13 @@ private var funcs: [(String, String, Color, String)] {
 
                                         HStack(spacing: 6) {
                                             Text(section.letter)
-                                                .font(pf(L.ctHeadSize))
+                                                .font(pf(max(7, L.ctHeadSize - 1)))
                                                 .foregroundColor(Color(hex: 0x737373))
                                             Spacer(minLength: 0)
                                         }
                                         .padding(.leading, 16)
                                         .frame(height: L.ctHeadH)
-                                        .background {
-                                            ZStack {
-                                                C.contactsBg
-                                                if UIConfig.num("contactsStickyGlass", 1) > 0 {
-                                                    Rectangle().fill(.ultraThinMaterial).opacity(0.55)
-                                                }
-                                            }
-                                        }
+                                        .background(C.contactsBg)
                                         .id("letter-\(section.letter)")
                                     }
                                 }
@@ -424,7 +417,6 @@ private var funcs: [(String, String, Color, String)] {
                     .background(Capsule().fill(C.red))
             }
 
-            Chevron(size: 9, line: 1.6)
         }
         .padding(.leading, 16)
         .padding(.trailing, 18)
