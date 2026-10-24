@@ -227,6 +227,29 @@ final class AppState: ObservableObject {
     }
 
     @Published var openMiniApp: MiniApp?
+    /// 从小程序返回时恢复原来的聊天；小程序始终只由一个全屏窗口承载。
+    @Published var resumeChatAfterMiniApp: Chat?
+
+    func launchMiniApp(_ mini: MiniApp, returningTo chat: Chat? = nil) {
+        resumeChatAfterMiniApp = chat
+        if openChat != nil {
+            openChat = nil
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.20) { [weak self] in
+                self?.openMiniApp = mini
+            }
+        } else {
+            openMiniApp = mini
+        }
+    }
+
+    func miniAppDidClose() {
+        openMiniApp = nil
+        guard let chat = resumeChatAfterMiniApp else { return }
+        resumeChatAfterMiniApp = nil
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) { [weak self] in
+            self?.openChat = chat
+        }
+    }
     @Published var loadingChats = false
     @Published var loadError: String?
 

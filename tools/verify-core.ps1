@@ -13,7 +13,9 @@ function Get-VerifiedText([string]$path, [string]$text) {
     $new = "    static var bubbleMine: Color {`n" +
            "        UIConfig.color(`"bubbleMineColor`", 0x95EC69, 0x1E88C7)`n" +
            "    }"
-    return $text.Replace($new, $old)
+    $launchNew = "onOpenMiniApp: { g in app.launchMiniApp(g, returningTo: chat) },"
+    $launchOld = "onOpenMiniApp: { g in app.openMiniApp = g },"
+    return $text.Replace($new, $old).Replace($launchNew, $launchOld)
 }
 
 foreach ($entry in $manifest.files) {

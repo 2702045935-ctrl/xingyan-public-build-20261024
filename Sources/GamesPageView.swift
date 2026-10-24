@@ -43,8 +43,6 @@ struct GamesPageView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
     @State private var games: [MiniApp] = []
-    @State private var playing: MiniApp?
-
     @State private var shareApp: MiniApp?
 
     @State private var iconPickFor = ""
@@ -143,10 +141,6 @@ struct GamesPageView: View {
         .hidesTabBar()
         .swipeBack { dismiss() }
 
-        .fullScreenCover(item: $playing) { g in
-            GameWebPage(game: g).environmentObject(app)
-        }
-
         .sheet(isPresented: $showIconPick) {
             PhotoPicker { img in
                 let id = iconPickFor
@@ -182,7 +176,7 @@ struct GamesPageView: View {
             if let g = detail {
                 GameDetailView(game: g) { pick in
                     recordPlayed(pick)
-                    playing = pick
+                    app.launchMiniApp(pick)
                 }
             }
         }
@@ -311,7 +305,7 @@ struct GamesPageView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 14) {
                     ForEach(recentGames) { g in
-                        Button { recordPlayed(g); playing = g } label: {
+                        Button { recordPlayed(g); app.launchMiniApp(g) } label: {
                             HStack(spacing: 8) {
                                 gameCircle(g, size: 30)
                                 Text(g.name).font(pf(12.5, .medium)).foregroundColor(ink)
@@ -347,7 +341,7 @@ struct GamesPageView: View {
 
     private func play(_ g: MiniApp) {
         recordPlayed(g)
-        playing = g
+        app.launchMiniApp(g)
     }
 
     private var rankEntry: some View {
@@ -548,10 +542,16 @@ struct GameWebPage: View {
 
         stage
             .background(Color(hex: 0x0B0E17).ignoresSafeArea())
-            .statusBarHidden(true)
+            .statusBarHidden(false)
 
-            .onAppear { Self.setGameAudio(true) }
-            .onDisappear { Self.setGameAudio(false) }
+            .onAppear {
+                Self.setGameAudio(true)
+                StatusBarStyle.shared.set(light: true)
+            }
+            .onDisappear {
+                Self.setGameAudio(false)
+                StatusBarStyle.shared.set(light: false)
+            }
             .task {
                 if isRoomGame { await loadTables() }
                 await prepare()
@@ -664,30 +664,10 @@ struct GameWebPage: View {
     }
 
     private var miniCapsule: some View {
-        HStack(spacing: 0) {
-            Button { capsuleMenu = true } label: {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(width: 48, height: 32)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            Rectangle()
-                .fill(Color.white.opacity(0.25))
-                .frame(width: 0.5, height: 18)
-            Button { dismiss() } label: {
-                ZStack {
-                    Circle().stroke(Color.white, lineWidth: 1.6).frame(width: 15, height: 15)
-                    Circle().fill(Color.white).frame(width: 5.5, height: 5.5)
-                }
-                .frame(width: 46, height: 32)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-        }
-        .background(Capsule().fill(Color.black.opacity(0.35)))
-        .overlay(Capsule().stroke(Color.white.opacity(0.18), lineWidth: 0.5))
+        GameWindowCapsule(
+            onMenu: { capsuleMenu = true },
+            onClose: { dismiss() }
+        )
     }
 
     private var lobby: some View {

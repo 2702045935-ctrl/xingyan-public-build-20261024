@@ -182,7 +182,7 @@ struct MainTabView: View {
             .animation(.easeOut(duration: 0.22), value: musicSheet.open)
         }
 
-        .fullScreenCover(item: $app.openMiniApp) { g in
+        .fullScreenCover(item: $app.openMiniApp, onDismiss: { app.miniAppDidClose() }) { g in
             GameWebPage(game: g).environmentObject(app)
         }
         .onReceive(NotificationCenter.default.publisher(for: .chrisOpenChat)) { note in

@@ -1873,6 +1873,49 @@ extension View {
     func hidesTabBar() -> some View { modifier(HidesTabBar()) }
 }
 
+/// 小程序的统一悬浮控制：右侧只有一个大圆点和三个点。
+/// 外层页面不画导航栏、标题栏或第二层窗口，网页/游戏内容直接铺满全屏。
+struct GameWindowCapsule: View {
+    var onMenu: () -> Void
+    var onClose: () -> Void
+
+    var body: some View {
+        HStack(spacing: 0) {
+            Button(action: onMenu) {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 46, height: 34)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Tr("更多"))
+
+            Rectangle()
+                .fill(Color.white.opacity(0.24))
+                .frame(width: 0.5, height: 19)
+
+            Button(action: onClose) {
+                ZStack {
+                    Circle()
+                        .stroke(Color.white, lineWidth: 1.7)
+                        .frame(width: 20, height: 20)
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 8, height: 8)
+                }
+                .frame(width: 48, height: 34)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Tr("关闭"))
+        }
+        .background(Capsule(style: .continuous).fill(Color.black.opacity(0.38)))
+        .overlay(Capsule(style: .continuous).stroke(Color.white.opacity(0.20), lineWidth: 0.6))
+        .shadow(color: .black.opacity(0.18), radius: 8, y: 3)
+    }
+}
+
 struct TapAvatarCard: ViewModifier {
     @Binding var cardUser: User?
 

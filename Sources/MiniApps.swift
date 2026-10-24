@@ -166,7 +166,6 @@ struct MiniAppsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var items: [MiniApp] = []
     @State private var loading = true
-    @State private var run: MiniApp?
     @State private var search = ""
     @State private var category = ""
     @State private var capability: MiniAppCapabilityCategory?
@@ -273,10 +272,6 @@ struct MiniAppsView: View {
             favoriteIds = Set(UserDefaults.standard.stringArray(forKey: favKey) ?? [])
             recentIds = UserDefaults.standard.stringArray(forKey: recentKey) ?? []
             loading = false
-        }
-        .fullScreenCover(item: $run) { it in
-            MiniAppRuntimeView(app: it)
-                .environmentObject(app)
         }
         .sheet(item: $capability) { c in
             MiniAppCapabilitySheet(category: c)
@@ -485,7 +480,7 @@ struct MiniAppsView: View {
         recentIds.insert(it.id, at: 0)
         recentIds = Array(recentIds.prefix(8))
         UserDefaults.standard.set(recentIds, forKey: recentKey)
-        run = it
+        app.launchMiniApp(it)
     }
 
     private func toggleFavorite(_ it: MiniApp) {
@@ -617,28 +612,10 @@ struct MiniAppRuntimeView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
 
-            HStack(spacing: 0) {
-                Button { capsuleMenu = true } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(width: 48, height: 32)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                Rectangle().fill(Color.white.opacity(0.25)).frame(width: 0.5, height: 18)
-                Button { dismiss() } label: {
-                    ZStack {
-                        Circle().stroke(Color.white, lineWidth: 1.6).frame(width: 15, height: 15)
-                        Circle().fill(Color.white).frame(width: 5.5, height: 5.5)
-                    }
-                    .frame(width: 46, height: 32)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            }
-            .background(Capsule().fill(Color.black.opacity(0.35)))
-            .overlay(Capsule().stroke(Color.white.opacity(0.18), lineWidth: 0.5))
+            GameWindowCapsule(
+                onMenu: { capsuleMenu = true },
+                onClose: { dismiss() }
+            )
             .padding(.top, 8)
             .padding(.trailing, 10)
 
@@ -664,8 +641,10 @@ struct MiniAppRuntimeView: View {
             }
         }
         .background(Color(hex: 0x0B0E17).ignoresSafeArea())
-        .statusBarHidden(true)
+        .statusBarHidden(false)
         .task { await prepare() }
+        .onAppear { StatusBarStyle.shared.set(light: true) }
+        .onDisappear { StatusBarStyle.shared.set(light: false) }
         .confirmationDialog(title.isEmpty ? app.name : title, isPresented: $capsuleMenu, titleVisibility: .visible) {
             Button(Tr("好友排名")) { box.web?.evaluateJavaScript("window.chrisRank && chrisRank.show()") }
             Button(Tr("重新进入")) { Task { await prepare(force: true) } }

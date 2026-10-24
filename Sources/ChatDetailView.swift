@@ -1824,7 +1824,7 @@ struct ChatDetailView: View {
                    onOpenUserCard: { uid in openCardUser(uid) },
                    onOpenAnnounce: { text in announcePage = text; showAnnouncePage = true },
 
-                   onOpenMiniApp: { g in app.openMiniApp = g },
+                   onOpenMiniApp: { g in app.launchMiniApp(g, returningTo: chat) },
                    onOpenVideo: { u in videoToPlay = u; videoPayload = message.body },
                    onPat: { uid in pat(uid) },
                    onTapRedPacket: { info in tapRedPacket(info) },

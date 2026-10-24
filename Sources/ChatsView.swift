@@ -565,7 +565,6 @@ struct ChatsView: View {
 
     @State private var showFloorCity = false
 
-    @State private var floorAppOpen: MiniApp?
 
     @State private var showAppSearch = false
 
@@ -1081,23 +1080,23 @@ struct ChatsView: View {
         }
     }
 
-    private func floorAppCell(_ app: MiniApp, look: MallWeatherLook,
+    private func floorAppCell(_ mini: MiniApp, look: MallWeatherLook,
                               t: CGFloat, delay: Double) -> some View {
-        Button { floorAppOpen = app } label: {
+        Button { app.launchMiniApp(mini) } label: {
             VStack(spacing: 11) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .fill(LinearGradient(colors: [Color(hex: 0x2B2F3A), Color(hex: 0x171B22)],
                                              startPoint: .topLeading, endPoint: .bottomTrailing))
-                    Text(app.iconText).font(.system(size: 24))
-                    if let cv = app.cover, !cv.isEmpty {
+                    Text(mini.iconText).font(.system(size: 24))
+                    if let cv = mini.cover, !cv.isEmpty {
                         RemoteImage(path: cv)
                             .frame(width: 48, height: 48)
                             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     }
                 }
                 .frame(width: 48, height: 48)
-                Text(app.name)
+                Text(mini.name)
                     .font(pf(12))
                     .foregroundColor(look.inkSoft)
                     .lineLimit(1)
@@ -1523,14 +1522,12 @@ struct ChatsView: View {
             ScannerView { text in handleScanned(text, app: app) }
         }
 
-        .fullScreenCover(item: $floorAppOpen) { m in
-            GameWebPage(game: m).environmentObject(app)
-        }
-
         .sheet(isPresented: $showAppSearch) {
             MiniAppSearchView(apps: floorApps) { m in
                 showAppSearch = false
-                floorAppOpen = m
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.20) {
+                    app.launchMiniApp(m)
+                }
             }
             .environmentObject(app)
         }

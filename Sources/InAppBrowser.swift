@@ -65,6 +65,7 @@ struct InAppBrowserView: View {
         .confirmationDialog(title.isEmpty ? Tr("浏览器") : title,
                             isPresented: $showMenu,
                             titleVisibility: .visible) {
+            Button(Tr("输入网址")) { showAddress = true }
             Button(Tr("后退")) { BrowserCommands.shared.back() }
                 .disabled(!canBack)
             Button(Tr("前进")) { BrowserCommands.shared.forward() }
@@ -104,38 +105,10 @@ struct InAppBrowserView: View {
     }
 
     private func floatingControls(top: CGFloat) -> some View {
-        HStack(spacing: 0) {
-            Button {
-                showAddress = true
-            } label: {
-                Circle()
-                    .fill(Color.white.opacity(0.92))
-                    .frame(width: 7, height: 7)
-                    .frame(width: 34, height: 34)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Tr("打开网址"))
-
-            Rectangle()
-                .fill(Color.primary.opacity(0.16))
-                .frame(width: 0.5, height: 16)
-
-            Button {
-                showMenu = true
-            } label: {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: 17, weight: .bold))
-                    .foregroundColor(.primary)
-                    .frame(width: 46, height: 34)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Tr("浏览器菜单"))
-        }
-        .background(.ultraThinMaterial, in: Capsule(style: .continuous))
-        .overlay(Capsule(style: .continuous).stroke(Color.white.opacity(0.28), lineWidth: 0.6))
-        .shadow(color: .black.opacity(0.16), radius: 8, y: 3)
+        GameWindowCapsule(
+            onMenu: { showMenu = true },
+            onClose: { dismiss() }
+        )
         .padding(.top, max(6, top + 6))
     }
 

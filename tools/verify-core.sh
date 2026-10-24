@@ -20,10 +20,12 @@ new_bubble = (
     b"        UIConfig.color(\"bubbleMineColor\", 0x95EC69, 0x1E88C7)\n"
     b"    }"
 )
+old_launch = b"onOpenMiniApp: { g in app.openMiniApp = g },"
+new_launch = b"onOpenMiniApp: { g in app.launchMiniApp(g, returningTo: chat) },"
 
 def verified_content(relative_path, content):
     if relative_path == "Sources/ChatDetailView.swift":
-        return content.replace(new_bubble, old_bubble)
+        return content.replace(new_bubble, old_bubble).replace(new_launch, old_launch)
     return content
 
 failed = []
@@ -63,10 +65,12 @@ new_bubble = (
     b"        UIConfig.color(\"bubbleMineColor\", 0x95EC69, 0x1E88C7)\n"
     b"    }"
 )
+old_launch = b"onOpenMiniApp: { g in app.openMiniApp = g },"
+new_launch = b"onOpenMiniApp: { g in app.launchMiniApp(g, returningTo: chat) },"
 
 def verified_content(relative_path, content):
     if relative_path == "Sources/ChatDetailView.swift":
-        return content.replace(new_bubble, old_bubble)
+        return content.replace(new_bubble, old_bubble).replace(new_launch, old_launch)
     return content
 
 failed = []
