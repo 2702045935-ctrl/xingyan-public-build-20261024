@@ -435,12 +435,15 @@ struct TabBar: View {
         /* WhatsApp 的预览是一个悬浮液体玻璃胶囊：图标和文字一起装在
            28pt 圆角胶囊里，按节点磁吸移动；切换节点时只替换泡内内容，
            旧内容向一侧滑出，新内容延迟 25ms 从另一侧滑入，形成粘连感。 */
-        let h = 52.0
+        let h = 58.0
         if i < items.count {
             ZStack {
-                Capsule(style: .continuous)
-                    .fill(.ultraThinMaterial)
-                    .opacity(0.92)
+                GlassBackground(shape: Capsule(style: .continuous),
+                                opacity: 0.96,
+                                edgeAlpha: 0.82,
+                                shadow: true,
+                                seed: 0.74,
+                                native: true)
                 Capsule(style: .continuous)
                     .fill(scheme == .dark ? Color.black.opacity(0.24) : Color.white.opacity(0.18))
                 Capsule(style: .continuous)
@@ -456,9 +459,10 @@ struct TabBar: View {
                     Image(systemName: items[i].1)
                         .font(.system(size: 28, weight: .regular))
                     Text(items[i].2)
-                        .font(pf(14, .medium))
+                        .font(pf(15, .semibold))
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)
+                        .contentTransition(.interpolate)
                 }
                 .foregroundColor(selColor)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -469,9 +473,9 @@ struct TabBar: View {
                 ))
                 .animation(.easeOut(duration: 0.12), value: i)
             }
-            .frame(width: 92, height: h)
-            .shadow(color: .black.opacity(0.22), radius: 16, y: 8)
-            .animation(.interactiveSpring(response: 0.18, dampingFraction: 0.82), value: i)
+            .frame(width: 108, height: h)
+            .shadow(color: .black.opacity(0.26), radius: 18, y: 9)
+            .animation(.interactiveSpring(response: 0.22, dampingFraction: 0.76), value: i)
         }
     }
 
@@ -563,12 +567,19 @@ struct TabBar: View {
         .background(alignment: .leading) {
             if barWidth > 1, !items.isEmpty {
                 let seg = barWidth / CGFloat(items.count)
-                let w = max(0, seg - UIConfig.num("tabSliderInset", 10))
+                let w = max(0, seg - UIConfig.num("tabSliderInset", 7))
                 let cx = slideX ?? dragX ?? (seg * (CGFloat(selection) + 0.5))
-                Capsule(style: .continuous)
-                    .fill(.ultraThinMaterial)
-
-                    .opacity(UIConfig.num("tabSliderAlpha", 0.55))
+                ZStack {
+                    GlassBackground(shape: Capsule(style: .continuous),
+                                    opacity: UIConfig.num("tabSliderAlpha", 0.72),
+                                    edgeAlpha: 0.78,
+                                    shadow: true,
+                                    seed: 0.22,
+                                    native: true)
+                    Capsule(style: .continuous)
+                        .fill(scheme == .dark ? Color.white.opacity(0.055)
+                                              : Color.white.opacity(0.20))
+                }
                     .overlay(
 
                         Capsule(style: .continuous)
@@ -577,11 +588,11 @@ struct TabBar: View {
                                                    startPoint: .top, endPoint: .bottom),
                                     lineWidth: 0.9)
                     )
-                    .shadow(color: .black.opacity(0.10), radius: 6, y: 3)
-                    .frame(width: w, height: max(0, L.tabH - UIConfig.num("tabSliderVInset", 14)))
+                    .frame(width: w, height: max(0, L.tabH - UIConfig.num("tabSliderVInset", 10)))
+                    .scaleEffect(slideX != nil ? 1.035 : 1)
                     .offset(x: cx - w / 2)
 
-                    .animation(.spring(response: 0.28, dampingFraction: 0.84), value: selection)
+                    .animation(.spring(response: 0.30, dampingFraction: 0.78), value: selection)
                     .animation(nil, value: dragX)
             }
         }
@@ -632,8 +643,10 @@ struct TabBar: View {
                         let i = min(items.count - 1, max(0, Int(x / seg)))
                         if i != slideIndex { dragHaptic.impactOccurred() }
                         slideIndex = i
+                        dragIndex = i
                     }
                     slideX = x
+                    dragX = x
                 },
                 onSlideEnded: { x in
 
