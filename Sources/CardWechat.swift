@@ -53,34 +53,37 @@ struct ContactCardWechat: View {
     private var rowH: CGFloat { UIConfig.num("cardWechatRowH", 54) }
     private var btnH: CGFloat { UIConfig.num("cardWechatBtnH", 46) }
     private var radius: CGFloat { UIConfig.num("cardWechatRadius", 8) }
+    private var cardRadius: CGFloat { max(24, min(32, radius + 18)) }
+    private var avatarRadius: CGFloat { max(16, min(24, radius + 10)) }
 
     var body: some View {
         VStack(spacing: 0) {
             nav
             ScrollView {
                 VStack(spacing: 0) {
-                    header
-                    gap
-
-                    card { friendInfoCard }
-                    gap
-                    momentsRow
-                    gap
-
-                    card {
-                        actionRow(Tr("发消息"), "bubble.left.and.bubble.right.fill") { onMessage() }
-                        hairline
-                        actionRow(secondTitle, "video.fill", enabled: secondEnabled) { secondTap() }
+                    PremiumGlassCard(radius: cardRadius,
+                                     tint: scheme == .dark ? green.opacity(0.045)
+                                                           : Color.white.opacity(0.035)) {
+                        VStack(spacing: 0) {
+                            header
+                            premiumDivider
+                            friendInfoCard
+                            premiumDivider
+                            momentsRow
+                            premiumDivider
+                            buttons
+                        }
                     }
+                    .padding(.horizontal, 12)
+                    .padding(.top, 10)
                     Spacer(minLength: 28)
                 }
 
                 .opacity(appeared ? 1 : 0)
                 .offset(y: appeared ? 0 : 6)
             }
-            .background(pageBg)
         }
-        .background(pageBg.ignoresSafeArea())
+        .background(PremiumProfileBackground())
         .onAppear { withAnimation(.easeOut(duration: 0.30)) { appeared = true } }
 
         .overlay(alignment: .bottom) {
@@ -119,76 +122,89 @@ struct ContactCardWechat: View {
             .buttonStyle(.plain)
             .accessibilityLabel(Tr("更多"))
         }
-        .background(pageBg)
+        .background(Color.clear)
     }
 
     private var header: some View {
-
-        HStack(alignment: .top, spacing: 14) {
-            VStack(alignment: .leading, spacing: 7) {
+        HStack(alignment: .center, spacing: 15) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(isBot ? Tr("星言助手") : Tr("星言联系人"))
+                    .font(pf(10.5, .semibold))
+                    .tracking(1.4)
+                    .foregroundColor(green)
                 Text(name)
-                    .font(pf(nameSize, .semibold))
+                    .font(pf(max(22, nameSize + 1), .semibold))
                     .foregroundColor(ink)
                     .lineLimit(2)
-                Text(wxId)
-                    .font(pf(14))
-                    .foregroundColor(gray)
-                    .lineLimit(1)
-
-                    .copyOnLongPress(wxId) { msg in
-                        withAnimation(.easeOut(duration: 0.15)) { copied = msg }
-                    }
-                Text(Tr("地区") + "：" + region)
-                    .font(pf(14))
-                    .foregroundColor(gray)
-                    .lineLimit(1)
-            }
-            Spacer(minLength: 0)
-            Group {
-                if isEyes {
-                    JarvisEyesAvatar(size: avatarSize)
-                        .frame(width: avatarSize, height: avatarSize)
-                } else {
-                    Avatar(path: avatarPath, size: avatarSize, radius: radius)
+                    .minimumScaleFactor(0.82)
+                HStack(spacing: 6) {
+                    Text(Tr("星言号"))
+                        .font(pf(11.5, .medium))
+                        .foregroundColor(gray)
+                    Text(wxId)
+                        .font(.system(size: 12.5, weight: .medium, design: .monospaced))
+                        .foregroundColor(ink.opacity(0.78))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                        .copyOnLongPress(wxId) { msg in
+                            withAnimation(.easeOut(duration: 0.15)) { copied = msg }
+                        }
+                }
+                if !region.isEmpty {
+                    Text(Tr("地区") + "  " + region)
+                        .font(pf(11.5))
+                        .foregroundColor(gray)
+                        .lineLimit(1)
                 }
             }
-
-            .overlay(RoundedRectangle(cornerRadius: radius + 1, style: .continuous)
-                .stroke(LinearGradient(colors: [Color.white.opacity(0.90),
-                                                Color(hex: 0xF0C24B).opacity(scheme == .dark ? 0.55 : 0.70),
-                                                Color.white.opacity(0.25)],
-                                       startPoint: .topLeading, endPoint: .bottomTrailing),
-                        lineWidth: 1))
-            .shadow(color: .black.opacity(scheme == .dark ? 0.50 : 0.10), radius: 6, y: 2)
+            Spacer(minLength: 0)
+            ZStack {
+                RoundedRectangle(cornerRadius: avatarRadius + 6, style: .continuous)
+                    .fill(LinearGradient(colors: [green.opacity(scheme == .dark ? 0.15 : 0.18),
+                                                  Color.white.opacity(scheme == .dark ? 0.04 : 0.48)],
+                                         startPoint: .topLeading,
+                                         endPoint: .bottomTrailing))
+                Group {
+                    if isEyes {
+                        JarvisEyesAvatar(size: avatarSize)
+                            .frame(width: avatarSize, height: avatarSize)
+                    } else {
+                        Avatar(path: avatarPath, size: avatarSize, radius: avatarRadius)
+                    }
+                }
+                .padding(4)
+            }
+            .frame(width: avatarSize + 14, height: avatarSize + 14)
+            .overlay(RoundedRectangle(cornerRadius: avatarRadius + 6, style: .continuous)
+                .stroke(LinearGradient(colors: [Color.white.opacity(0.85),
+                                                green.opacity(0.20),
+                                                Color.white.opacity(0.18)],
+                                       startPoint: .topLeading,
+                                       endPoint: .bottomTrailing),
+                        lineWidth: 0.8))
+            .shadow(color: .black.opacity(scheme == .dark ? 0.34 : 0.10), radius: 10, y: 4)
             .contentShape(Rectangle())
             .onTapGesture { onAvatar() }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 16)
-
-        .background(
-            LinearGradient(colors: [cardBg,
-                                    scheme == .dark ? Color(hex: 0x1F1F1F) : Color(hex: 0xFCFCFC)],
-                           startPoint: .top, endPoint: .bottom)
-        )
-        .shadow(color: .black.opacity(scheme == .dark ? 0.40 : 0.04), radius: 8, y: 2)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 20)
     }
 
     private var friendInfoCard: some View {
         Button { onRemark() } label: {
             VStack(alignment: .leading, spacing: 3) {
-                Text(Tr("朋友资料"))
-                    .font(pf(16))
+                Text(Tr("关系与备注"))
+                    .font(pf(15.5, .medium))
                     .foregroundColor(ink)
-                Text(Tr("添加朋友的备注名、电话、标签、备忘、照片等，并设置朋友权限。"))
-                    .font(pf(13))
+                Text(Tr("补充备注、电话和标签，并管理联系权限。"))
+                    .font(pf(12))
                     .foregroundColor(gray)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 14)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -217,74 +233,105 @@ struct ContactCardWechat: View {
     private var momentsRow: some View {
         Button { onMoments() } label: {
             HStack(spacing: 10) {
-                Text(Tr("朋友圈"))
-                    .font(pf(16))
-                    .foregroundColor(ink)
+                ZStack {
+                    Circle().fill(green.opacity(scheme == .dark ? 0.14 : 0.10))
+                    Image(systemName: "photo.on.rectangle.angled")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(green)
+                }
+                .frame(width: 32, height: 32)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(Tr("朋友圈"))
+                        .font(pf(15.5, .medium))
+                        .foregroundColor(ink)
+                    Text(momentsHint.isEmpty ? Tr("最近动态") : Tr(momentsHint))
+                        .font(pf(10.5))
+                        .foregroundColor(gray)
+                        .lineLimit(1)
+                }
                 Spacer(minLength: 8)
                 if !thumbs.isEmpty {
                     HStack(spacing: 5) {
                         ForEach(thumbs.prefix(3).indices, id: \.self) { i in
                             RemoteImage(path: thumbs[i])
                                 .frame(width: thumbSize, height: thumbSize)
-                                .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                                .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
                         }
                     }
-                } else {
-                    Text(momentsHint.isEmpty ? Tr("暂无朋友圈动态") : Tr(momentsHint))
-                        .font(pf(13.5))
-                        .foregroundColor(gray)
-                        .lineLimit(1)
                 }
                 Chevron(size: 9, line: 1.6)
             }
-            .padding(.horizontal, 16)
-            .frame(height: rowH)
-            .background(cardBg)
+            .padding(.horizontal, 18)
+            .frame(height: max(rowH, 64))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
 
     private var buttons: some View {
-        VStack(spacing: 0) {
+        HStack(spacing: 10) {
             Button { onMessage() } label: {
-                Text(Tr("发消息"))
-                    .font(pf(17, .medium))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: btnH)
-                    .background(RoundedRectangle(cornerRadius: radius, style: .continuous).fill(green))
+                HStack(spacing: 7) {
+                    Image(systemName: "bubble.left.and.bubble.right.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text(Tr("发消息"))
+                        .font(pf(15.5, .semibold))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: btnH)
+                .background(Capsule().fill(green))
+                .overlay(Capsule().stroke(Color.white.opacity(0.20), lineWidth: 0.7))
             }
             .buttonStyle(.plain)
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
-            .padding(.bottom, 10)
 
             Button { secondTap() } label: {
-                Text(secondTitle)
-                    .font(pf(17, .medium))
-                    .foregroundColor(secondEnabled ? green : gray)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: btnH)
-                    .background(RoundedRectangle(cornerRadius: radius, style: .continuous).fill(cardBg))
-                    .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous)
-                        .stroke(secondEnabled ? green : hair, lineWidth: 1))
+                HStack(spacing: 7) {
+                    Image(systemName: secondIcon)
+                        .font(.system(size: 14, weight: .semibold))
+                    Text(secondTitle)
+                        .font(pf(14.5, .semibold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.76)
+                }
+                .foregroundColor(secondEnabled ? green : gray)
+                .frame(maxWidth: .infinity)
+                .frame(height: btnH)
+                .background(Capsule().fill(C.cardBg.opacity(scheme == .dark ? 0.18 : 0.54)))
+                .overlay(Capsule().stroke(secondEnabled ? green.opacity(0.30) : hair,
+                                          lineWidth: 0.8))
             }
             .buttonStyle(.plain)
             .disabled(!secondEnabled)
-            .padding(.horizontal, 16)
-            .padding(.bottom, 16)
         }
-        .background(cardBg)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
+    }
+
+    private var secondIcon: String {
+        if isBot { return "waveform" }
+        switch relation {
+        case "friend", "self": return "phone.fill"
+        case "incoming":       return "person.badge.plus"
+        case "requested":      return "clock"
+        default:               return "person.badge.plus"
+        }
+    }
+
+    private var premiumDivider: some View {
+        Rectangle()
+            .fill(hair)
+            .frame(height: 0.5)
+            .padding(.horizontal, 18)
     }
 
     private var secondTitle: String {
         if isBot { return Tr("语音通话") }
         switch relation {
-        case "friend", "self": return Tr("音视频通话")
-        case "incoming":       return Tr("同意好友申请")
-        case "requested":      return Tr("已发送好友申请")
-        default:               return Tr("添加到通讯录")
+        case "friend", "self": return Tr("音视频")
+        case "incoming":       return Tr("同意申请")
+        case "requested":      return Tr("申请已发送")
+        default:               return Tr("添加联系人")
         }
     }
 

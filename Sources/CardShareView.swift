@@ -176,32 +176,59 @@ struct CardShareView: View {
     }
 
     private var cardPreview: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 12) {
-                Avatar(path: user.avatarPath, size: 48, radius: 4)
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(decode(user.name)).font(pf(16)).foregroundColor(C.label).lineLimit(1)
-                    Text(Tr("微信号") + "：" + decode(user.username ?? "—"))
-                        .font(pf(13)).foregroundColor(C.subLabel).lineLimit(1)
+        PremiumGlassCard(radius: 20) {
+            VStack(spacing: 0) {
+                HStack(spacing: 12) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 15, style: .continuous)
+                            .fill(C.green.opacity(0.10))
+                        Avatar(path: user.avatarPath, size: 48, radius: 13)
+                    }
+                    .frame(width: 56, height: 56)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(Tr("星言身份卡"))
+                            .font(pf(9.5, .semibold))
+                            .tracking(1.1)
+                            .foregroundColor(C.green)
+                        Text(decode(user.name))
+                            .font(pf(16.5, .semibold))
+                            .foregroundColor(C.label)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                        HStack(spacing: 5) {
+                            Text(Tr("星言号"))
+                                .font(pf(10.5))
+                                .foregroundColor(C.subLabel)
+                            Text(decode(user.username ?? "—"))
+                                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                .foregroundColor(C.label.opacity(0.76))
+                                .lineLimit(1)
+                        }
+                    }
+                    Spacer(minLength: 0)
                 }
-                Spacer(minLength: 0)
-            }
-            .padding(.horizontal, 12).padding(.top, 12).padding(.bottom, 10)
+                .padding(.horizontal, 13)
+                .padding(.vertical, 12)
 
-            HairLine(inset: 12)
+                Rectangle()
+                    .fill(C.hairline)
+                    .frame(height: 0.5)
+                    .padding(.horizontal, 13)
 
-            HStack(spacing: 6) {
-                Image(systemName: "person.crop.square")
-                    .font(.system(size: 12)).foregroundColor(C.subLabel)
-                Text(Tr("个人名片")).font(pf(12.5)).foregroundColor(C.subLabel)
-                Spacer(minLength: 0)
+                HStack(spacing: 5) {
+                    Image(systemName: "person.text.rectangle")
+                        .font(.system(size: 11, weight: .semibold))
+                    Text(Tr("个人名片"))
+                        .font(pf(11.5, .medium))
+                    Spacer(minLength: 0)
+                }
+                .foregroundColor(C.subLabel)
+                .padding(.horizontal, 13)
+                .frame(height: 31)
             }
-            .padding(.horizontal, 12).frame(height: 28)
         }
         .frame(width: 250)
-        .background(C.cardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 4, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
     }
 
     private var bottomBar: some View {

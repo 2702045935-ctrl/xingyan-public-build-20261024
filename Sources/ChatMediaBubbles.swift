@@ -32,47 +32,69 @@ struct UserCardInfo {
 
 struct UserCardBubble: View {
     let info: UserCardInfo
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
+        PremiumGlassCard(radius: 18,
+                         tint: scheme == .dark ? C.green.opacity(0.045)
+                                               : Color.white.opacity(0.03)) {
+            VStack(spacing: 0) {
+                HStack(spacing: 12) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 15, style: .continuous)
+                            .fill(C.green.opacity(scheme == .dark ? 0.14 : 0.10))
+                        RemoteImage(path: info.avatar, icon: "person.fill")
+                            .frame(width: 48, height: 48)
+                            .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                    }
+                    .frame(width: 56, height: 56)
 
-        VStack(spacing: 0) {
-            HStack(spacing: 11) {
-
-                RemoteImage(path: info.avatar, icon: "person.fill")
-                    .frame(width: 48, height: 48)
-                    .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(info.name.isEmpty ? Tr("微信联系人") : info.name)
-                        .font(pf(16, .medium))
-                        .foregroundColor(C.label)
-                        .lineLimit(1)
-                    Text(Tr("微信号：") + (info.username.isEmpty ? "—" : info.username))
-                        .font(pf(12.5))
-                        .foregroundColor(C.subLabel)
-                        .lineLimit(1)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(Tr("星言联系人"))
+                            .font(pf(9.5, .semibold))
+                            .tracking(1.1)
+                            .foregroundColor(C.green)
+                        Text(info.name.isEmpty ? Tr("星言联系人") : info.name)
+                            .font(pf(16.5, .semibold))
+                            .foregroundColor(C.label)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                        HStack(spacing: 5) {
+                            Text(Tr("星言号"))
+                                .font(pf(10.5))
+                                .foregroundColor(C.subLabel)
+                            Text(info.username.isEmpty ? "—" : info.username)
+                                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                .foregroundColor(C.label.opacity(0.76))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.75)
+                        }
+                    }
+                    Spacer(minLength: 0)
                 }
-                Spacer(minLength: 0)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 11)
+                .padding(.horizontal, 13)
+                .padding(.vertical, 12)
 
-            HairLine(inset: 0)
+                Rectangle()
+                    .fill(C.hairline)
+                    .frame(height: 0.5)
+                    .padding(.horizontal, 13)
 
-            HStack(spacing: 4) {
-                Image(systemName: "person.crop.square")
-                    .font(.system(size: 11.5, weight: .medium))
-                Text(Tr("个人名片"))
-                    .font(pf(12))
-                Spacer(minLength: 0)
+                HStack(spacing: 5) {
+                    Image(systemName: "person.text.rectangle")
+                        .font(.system(size: 11, weight: .semibold))
+                    Text(Tr("星言身份卡"))
+                        .font(pf(11.5, .medium))
+                    Spacer(minLength: 0)
+                    Image(systemName: "arrow.up.right")
+                        .font(.system(size: 9, weight: .semibold))
+                }
+                .foregroundColor(C.subLabel)
+                .padding(.horizontal, 13)
+                .frame(height: 31)
             }
-            .foregroundColor(C.subLabel)
-            .padding(.horizontal, 12)
-            .frame(height: 28)
         }
-        .frame(width: 250, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(C.cardBg))
-        .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous)
-            .stroke(C.hairline, lineWidth: 0.5))
+        .frame(width: 258)
     }
 }
 
