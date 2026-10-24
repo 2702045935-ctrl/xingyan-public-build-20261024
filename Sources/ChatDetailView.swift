@@ -965,14 +965,11 @@ struct ChatDetailView: View {
                         HarmonyDarkMask(strength: 1)
                             .ignoresSafeArea(edges: .top)
                     } else {
-                        ZStack {
-                            let topLayers = max(1, min(3, Int(UIConfig.num("glassLayers", 2))))
-                            ForEach(0..<topLayers, id: \.self) { _ in
-                                Rectangle().fill(.ultraThinMaterial)
-                            }
-                            Color.dyn(0xFFFFFF, 0x1C1C1E)
-                                .opacity(max(0, min(0.5, UIConfig.num("glassAlpha", 0.8) - 0.5)))
-                        }
+                        GlassBackground(shape: Rectangle(),
+                                        opacity: UIConfig.num("glassAlpha", 0.8),
+                                        edgeAlpha: UIConfig.num("glassEdgeAlpha", 0.65),
+                                        seed: 0.18,
+                                        native: true)
                         .ignoresSafeArea(edges: .top)
                     }
                 }
@@ -2301,15 +2298,11 @@ struct ChatDetailView: View {
             Rectangle().fill(C.navLine).frame(height: 0.5)
         }
         .background {
-            ZStack {
-
-                let layers = max(1, min(3, Int(UIConfig.num("glassLayers", 2))))
-                ForEach(0..<layers, id: \.self) { _ in
-                    Rectangle().fill(.ultraThinMaterial)
-                }
-                Color.dyn(0xFFFFFF, 0x1C1C1E)
-                    .opacity(max(0, min(0.5, UIConfig.num("glassAlpha", 0.8) - 0.5)))
-            }
+            GlassBackground(shape: Rectangle(),
+                            opacity: UIConfig.num("glassAlpha", 0.8),
+                            edgeAlpha: UIConfig.num("glassEdgeAlpha", 0.65),
+                            seed: 0.31,
+                            native: true)
             .ignoresSafeArea(edges: .bottom)
         }
     }
@@ -2636,15 +2629,11 @@ struct ChatDetailView: View {
                     HarmonyDarkMask(strength: 1)
                         .ignoresSafeArea(edges: .bottom)
                 } else {
-                    ZStack {
-
-                        let barLayers = max(1, min(3, Int(UIConfig.num("glassLayers", 2))))
-                        ForEach(0..<barLayers, id: \.self) { _ in
-                            Rectangle().fill(.ultraThinMaterial)
-                        }
-                        Color.dyn(0xFFFFFF, 0x1C1C1E)
-                            .opacity(max(0, min(0.5, UIConfig.num("glassAlpha", 0.8) - 0.5)))
-                    }
+                    GlassBackground(shape: Rectangle(),
+                                    opacity: UIConfig.num("glassAlpha", 0.8),
+                                    edgeAlpha: UIConfig.num("glassEdgeAlpha", 0.65),
+                                    seed: 0.54,
+                                    native: true)
                     .ignoresSafeArea(edges: .bottom)
                 }
             }
