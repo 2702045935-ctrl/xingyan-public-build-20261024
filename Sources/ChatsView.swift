@@ -295,8 +295,6 @@ struct SwipeChatRow: View {
 
     private var redBg: Color { UIConfig.color("swipeRed", 0xFA5151, 0xFA5151) }
 
-    @State private var pressedBar = ""
-
     @State private var crossedOpen = false
 
     @State private var dragVelocity: CGFloat = 0
@@ -405,7 +403,6 @@ struct SwipeChatRow: View {
 
     private func collapse() {
         guard offset != 0 || mode != .none else { return }
-        pressedBar = ""
         dragVelocity = 0
         withAnimation(swipeSpring) {
             offset = 0
@@ -484,50 +481,48 @@ struct SwipeChatRow: View {
     private func bar(_ title: String, _ symbol: String, _ bg: Color, _ width: CGFloat,
                      sep: Bool = false,
                      action: @escaping () -> Void) -> some View {
-        VStack(spacing: 4) {
-            Image(systemName: symbol)
-                .font(.system(size: iconSize, weight: .medium))
-                .foregroundColor(.white)
-            Text(title)
-                .font(pfExact(btnFont, .medium))
-                .foregroundColor(.white)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-        }
-
-        .scaleEffect(0.88 + 0.12 * barReveal)
-        .opacity(0.62 + 0.38 * barReveal)
-        .frame(width: max(0, width), height: cardH)
-        .background(bg.opacity(pressedBar == title ? 0.84 : 1))
-
-        .overlay(alignment: .leading) {
-            if sep {
-                Rectangle()
-                    .fill(Color.white.opacity(0.36))
-                    .frame(width: 0.5)
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Image(systemName: symbol)
+                    .font(.system(size: iconSize, weight: .medium))
+                    .foregroundColor(.white)
+                Text(title)
+                    .font(pfExact(btnFont, .medium))
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
             }
+            .scaleEffect(0.88 + 0.12 * barReveal)
+            .opacity(0.62 + 0.38 * barReveal)
+            .frame(width: max(0, width), height: cardH)
+            .background(bg)
+            .overlay(alignment: .leading) {
+                if sep {
+                    Rectangle()
+                        .fill(Color.white.opacity(0.36))
+                        .frame(width: 0.5)
+                }
+            }
+            .contentShape(Rectangle())
         }
-        .contentShape(Rectangle())
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in
-                    if pressedBar != title { pressedBar = title }
-                }
-                .onEnded { v in
-                    pressedBar = ""
-
-                    if abs(v.translation.width) < 14, abs(v.translation.height) < 14 { action() }
-                }
-        )
+        .buttonStyle(RowSwipeActionButtonStyle())
     }
 
     private func close() {
-        pressedBar = ""
         dragVelocity = 0
         withAnimation(swipeSpring) {
             offset = 0
             mode = .none
         }
+    }
+}
+
+private struct RowSwipeActionButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .opacity(configuration.isPressed ? 0.82 : 1)
+            .scaleEffect(configuration.isPressed ? 0.985 : 1)
+            .animation(.easeOut(duration: 0.10), value: configuration.isPressed)
     }
 }
 
@@ -1636,7 +1631,6 @@ struct ChatsView: View {
         Task {
             await API.shared.markUnread(chatId: chat.id)
             await app.loadChats()
-            app.show(Tr("已标为未读"))
         }
     }
 
@@ -1648,7 +1642,7 @@ struct ChatsView: View {
             if clear, err == nil { app.forgetChatHistory(chat.id) }
             if err == nil { app.dropOptimisticSummary(chat.id) }
             await app.loadChats()
-            app.show(err ?? (clear ? "已清空记录并设为不显示" : "已不显示该聊天"))
+            if let err { app.show(err) }
         }
     }
 
@@ -1660,7 +1654,7 @@ struct ChatsView: View {
                 app.dropOptimisticSummary(chat.id)
             }
             await app.loadChats()
-            app.show(err ?? "已删除")
+            if let err { app.show(err) }
         }
     }
 
