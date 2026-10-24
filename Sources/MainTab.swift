@@ -1028,6 +1028,7 @@ struct MenuPressStyle: ButtonStyle {
 
 struct GroupCard<Content: View>: View {
     let content: Content
+    @Environment(\.colorScheme) private var scheme
 
     var glass: Bool = false
 
@@ -1039,7 +1040,7 @@ struct GroupCard<Content: View>: View {
     }
 
     var body: some View {
-        if glass {
+        if glass && scheme != .dark {
             VStack(spacing: 0) { content }
                 .background {
                     ZStack {
