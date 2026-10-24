@@ -167,9 +167,6 @@ struct VideoBubble: View {
             if info.seconds > 0 { timeBadge }
         }
         .frame(width: size.width, height: size.height)
-        .overlay(alignment: .topLeading) {
-            if UIConfig.num("videoDiag", 0) > 0 { diagOverlay }
-        }
         .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
         .contentShape(Rectangle())
 
@@ -212,29 +209,6 @@ struct VideoBubble: View {
         .padding(7)
     }
 
-    private var diagOverlay: some View {
-        let urlText = info.url.isEmpty ? "（空！）" : String(info.url.suffix(26))
-        let coverText = info.cover.isEmpty ? "（空！）" : String(info.cover.suffix(20))
-        let secs = String(info.seconds)
-        let wh = String(info.w) + "x" + String(info.h)
-        let box = String(Int(size.width)) + "x" + String(Int(size.height))
-        let missing = info.url.isEmpty || info.cover.isEmpty
-        return VStack(alignment: .leading, spacing: 1) {
-            Text("url:" + urlText)
-            Text("cover:" + coverText)
-            Text("秒:" + secs + " 尺寸:" + wh)
-            Text("气泡:" + box)
-            if missing {
-                Text("→ 发送端就没带上，视频注定黑屏")
-            }
-        }
-        .font(.system(size: 8.5, design: .monospaced))
-        .foregroundColor(.white)
-        .padding(4)
-        .background(Color.black.opacity(0.68))
-        .padding(3)
-        .allowsHitTesting(false)
-    }
 }
 
 struct LivePhotoBubble: View {
