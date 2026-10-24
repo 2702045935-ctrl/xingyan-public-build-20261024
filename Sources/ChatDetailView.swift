@@ -1062,6 +1062,9 @@ struct ChatDetailView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
             withAnimation(.easeOut(duration: 0.22)) { kbHeight = 0 }
         }
+        .onChange(of: panel) { next in
+            if next != .none { kbHeight = 0 }
+        }
 
         .overlay {
             GeometryReader { geo in
