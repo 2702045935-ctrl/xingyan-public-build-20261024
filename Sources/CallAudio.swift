@@ -89,6 +89,8 @@ final class CallAudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegat
     }
 
     private var started = false
+    private let lifecycleLock = NSLock()
+    private var starting = false
 
     private var startTask: Task<Void, Never>?
 
@@ -112,13 +114,51 @@ final class CallAudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegat
         AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: sampleRate, channels: 1, interleaved: false)
     }
 
-    func start() {
-        if handedOver { return }
-        if started { return }
+    private func claimStart() -> Bool {
+        lifecycleLock.lock()
+        defer { lifecycleLock.unlock() }
+        guard !handedOver, !started, !starting else { return false }
+        starting = true
+        return true
+    }
 
-        stop()
+    private func finishStart(_ ok: Bool) {
+        lifecycleLock.lock()
+        started = ok
+        starting = false
+        lifecycleLock.unlock()
+    }
+
+    private func cleanupAudioResources() {
         startTask?.cancel()
-        started = false
+        startTask = nil
+        for o in observers { NotificationCenter.default.removeObserver(o) }
+        observers.removeAll()
+        watchdog?.cancel()
+        watchdog = nil
+        captureQueue.async { [capture] in if capture.isRunning { capture.stopRunning() } }
+        playQueue.sync {
+            playerNode.stop()
+            player.stop()
+            player.reset()
+            playerNode.reset()
+            if wired {
+                player.disconnectNodeOutput(playerNode)
+                player.detach(playerNode)
+                wired = false
+            }
+            playerReady = false
+            queuedUntil = Date.distantPast
+            pendingFrames.removeAll()
+            framesInFlight = 0
+        }
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    }
+
+    func start() {
+        guard claimStart() else { return }
+
+        cleanupAudioResources()
         lastError = ""
 
         outSeq = 0
@@ -148,11 +188,14 @@ final class CallAudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegat
         startTask = Task.detached { [weak self] in
             guard let self = self else { return }
             for attempt in 0..<6 {
-                if Task.isCancelled || self.started || self.handedOver { return }
+                if Task.isCancelled || self.handedOver {
+                    self.finishStart(false)
+                    return
+                }
                 self.configureSession()
                 self.startPlayback()
                 if self.startCaptureBlocking() {
-                    self.started = true
+                    self.finishStart(true)
                     self.lastError = ""
 
                     self.startPlayback()
@@ -162,9 +205,12 @@ final class CallAudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegat
 
                 try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
                 try? await Task.sleep(nanoseconds: 700_000_000)
-                if Task.isCancelled { return }
+                if Task.isCancelled {
+                    self.finishStart(false)
+                    return
+                }
             }
-            self.started = false
+            self.finishStart(false)
             DispatchQueue.main.async { self.onStateChange?(false) }
         }
     }
@@ -191,37 +237,15 @@ final class CallAudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegat
     }
 
     func stop() {
-        started = false
-        startTask?.cancel()
-        startTask = nil
-        for o in observers { NotificationCenter.default.removeObserver(o) }
-        observers.removeAll()
-        watchdog?.cancel()
-        watchdog = nil
-        captureQueue.async { [capture] in if capture.isRunning { capture.stopRunning() } }
-        playQueue.sync {
-            playerNode.stop()
-            player.stop()
-            player.reset()
-            playerNode.reset()
-            if wired {
-                player.disconnectNodeOutput(playerNode)
-                player.detach(playerNode)
-                wired = false
-            }
-            playerReady = false
-            queuedUntil = Date.distantPast
-            pendingFrames.removeAll()
-            framesInFlight = 0
-        }
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        finishStart(false)
+        cleanupAudioResources()
     }
 
     func handOverToTRTC() {
         handedOver = true
         onFrame = nil
         onStateChange = nil
-        started = false
+        finishStart(false)
         startTask?.cancel()
         startTask = nil
         for o in observers { NotificationCenter.default.removeObserver(o) }
@@ -360,6 +384,15 @@ final class CallAudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegat
                 _ = try AVAudioSession.sharedInstance().setActive(true, options: [])
                 player.prepare()
                 if !player.isRunning { try player.start() }
+                guard player.isRunning else {
+                    lastError = (lastError.isEmpty ? "" : lastError + " / ") + "播放引擎未运行"
+                    continue
+                }
+                let output = playerNode.outputFormat(forBus: 0)
+                guard output.sampleRate > 0, output.channelCount > 0 else {
+                    lastError = (lastError.isEmpty ? "" : lastError + " / ") + "播放节点未接入"
+                    continue
+                }
                 if !playerNode.isPlaying { playerNode.play() }
                 if player.isRunning, playerNode.isPlaying {
                     playerReady = true

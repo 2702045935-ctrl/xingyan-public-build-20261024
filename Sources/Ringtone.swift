@@ -43,9 +43,15 @@ final class Ringtone: ObservableObject {
         engine.connect(player, to: engine.mainMixerNode, format: fmt)
     }
 
-    func startIncoming() { play(kind: .incoming) }
+    func startIncoming() {
+        if kind == .incoming, player.isPlaying { return }
+        play(kind: .incoming)
+    }
 
-    func startRingback() { play(kind: .ringback) }
+    func startRingback() {
+        if kind == .ringback, player.isPlaying { return }
+        play(kind: .ringback)
+    }
 
     func stop() {
         previewTask?.cancel()
