@@ -599,8 +599,7 @@ struct UserManageView: View {
                         Task {
                             let ok = await API.shared.opsSetUIKey("chatsCardStyle", v ? 1 : 0)
                             if ok {
-                                let cfg = await API.shared.uiConfig()
-                                UIConfig.apply(cfg.ui)
+                                await app.refreshUI(force: true)
                             }
                             msg = ok ? (v ? Tr("已开启会话页分组卡片") : Tr("已恢复原会话列表"))
                                      : Tr("保存失败")
