@@ -398,6 +398,8 @@ final class AppState: ObservableObject {
     }
 
     func boot() async {
+        guard !didInitialBoot else { return }
+        didInitialBoot = true
         CrashCatcher.note("启动", "3 boot 开始")
         // 本地已有账号时先放行到上次账号页，网络校验放到后台完成。
         applyCachedUIConfig()
@@ -594,9 +596,9 @@ final class AppState: ObservableObject {
         booting = false
         needConfirmLogin = false
         showSavedLogin = false
-        uiVersion += 1
     }
 
+    private var didInitialBoot = false
     private var dotTask: Task<Void, Never>?
     func startDotWatch() {
         dotTask?.cancel()
@@ -1072,11 +1074,18 @@ final class AppState: ObservableObject {
     func quickLogin(token: String? = nil) async -> Bool {
         if let t = token, !t.isEmpty { API.shared.setToken(t) }
         guard !API.shared.token.isEmpty else { return false }
-        guard let s = try? await API.shared.session(), s.ok, let user = s.user else {
-            API.shared.clearToken()
-            return false
+        do {
+            let s = try await API.shared.session()
+            guard s.ok, let user = s.user else {
+                API.shared.clearToken()
+                return false
+            }
+            me = user
+        } catch {
+            /* 网络短暂失败不能删登录令牌，否则用户会被错误地要求重新输账号密码。 */
+            guard let cached = AppState.cachedUser() else { return false }
+            me = cached
         }
-        me = user
         finishLoginTransition()
         rememberLastUser()
         await refreshAll()

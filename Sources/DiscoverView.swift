@@ -1609,8 +1609,11 @@ struct MomentsView: View {
 
     private func like(_ moment: Moment) {
         Task {
-            await API.shared.likeMoment(id: moment.id)
-            await reload()
+            if let err = await API.shared.likeMoment(id: moment.id) {
+                app.show(err)
+            } else {
+                await reload()
+            }
         }
     }
 
@@ -1641,8 +1644,11 @@ struct MomentsView: View {
         let to = replyToId
         closeCommentBar()
         Task {
-            await API.shared.commentMoment(id: moment.id, text: text, replyTo: to)
-            await reload()
+            if let err = await API.shared.commentMoment(id: moment.id, text: text, replyTo: to) {
+                app.show(err)
+            } else {
+                await reload()
+            }
         }
     }
 
@@ -1655,10 +1661,13 @@ struct MomentsView: View {
 
     private func remove(_ moment: Moment) {
         Task {
-            await API.shared.deleteMoment(id: moment.id)
-            await reload()
-            await app.loadMoments()
-            app.show(Tr("已删除"))
+            if let err = await API.shared.deleteMoment(id: moment.id) {
+                app.show(err)
+            } else {
+                await reload()
+                await app.loadMoments()
+                app.show(Tr("已删除"))
+            }
         }
     }
 }

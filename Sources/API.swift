@@ -5093,8 +5093,13 @@ private struct StarredPayload: Decodable {
         _ = try? await request("POST", "/api/messages/\(messageId)/recall", body: ["chatId": chatId])
     }
 
-    func likeMoment(id: String) async {
-        _ = try? await request("POST", "/api/moments/\(id)/like", body: [:])
+    func likeMoment(id: String) async -> String? {
+        do {
+            _ = try await request("POST", "/api/moments/\(id)/like", body: [:])
+            return nil
+        } catch {
+            return (error as? APIError)?.errorDescription ?? "点赞失败"
+        }
     }
 
     func momentNotices() async -> (items: [MomentNotice], unread: Int) {
@@ -5112,15 +5117,25 @@ private struct StarredPayload: Decodable {
         _ = try? await request("POST", "/api/moments/seen", body: [:])
     }
 
-    func commentMoment(id: String, text: String, replyTo: String = "") async {
+    func commentMoment(id: String, text: String, replyTo: String = "") async -> String? {
         var b: [String: Any] = ["content": text]
 
         if !replyTo.isEmpty { b["replyTo"] = replyTo }
-        _ = try? await request("POST", "/api/moments/\(id)/comments", body: b)
+        do {
+            _ = try await request("POST", "/api/moments/\(id)/comments", body: b)
+            return nil
+        } catch {
+            return (error as? APIError)?.errorDescription ?? "评论失败"
+        }
     }
 
-    func deleteMoment(id: String) async {
-        _ = try? await request("DELETE", "/api/moments/\(id)")
+    func deleteMoment(id: String) async -> String? {
+        do {
+            _ = try await request("DELETE", "/api/moments/\(id)")
+            return nil
+        } catch {
+            return (error as? APIError)?.errorDescription ?? "删除失败"
+        }
     }
 
     func pinMoment(id: String, pinned: Bool) async {
