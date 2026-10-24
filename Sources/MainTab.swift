@@ -301,7 +301,7 @@ struct TabBarTouchLayer: UIViewRepresentable {
         let press = UILongPressGestureRecognizer(target: context.coordinator,
                                                  action: #selector(Coord.handlePress(_:)))
 
-        press.minimumPressDuration = min(0.22, max(0.18, UIConfig.num("tabLoupePress", 0.22)))
+        press.minimumPressDuration = min(0.18, max(0.12, UIConfig.num("tabLoupePress", 0.12)))
 
         press.allowableMovement = 10000
         press.delegate = context.coordinator
@@ -369,6 +369,8 @@ struct TabBar: View {
     @State private var barWidth: CGFloat = 0
     @State private var dragX: CGFloat? = nil
     @State private var dragIndex: Int? = nil
+    @State private var dragOriginX: CGFloat? = nil
+    @Namespace private var tabLoupeNS
 
     @State private var slideX: CGFloat? = nil
     @State private var slideIndex: Int? = nil
@@ -377,9 +379,25 @@ struct TabBar: View {
     private func updateDrag(_ x: CGFloat) {
         guard barWidth > 1, !items.isEmpty else { return }
         let seg = barWidth / CGFloat(items.count)
-        let i = min(items.count - 1, max(0, Int(x / seg)))
+        if dragOriginX == nil { dragOriginX = x }
+        let first = seg * 0.5
+        let last = barWidth - seg * 0.5
+        let bounded: CGFloat
+        if x < first {
+            bounded = first - (first - x) * 0.4
+        } else if x > last {
+            bounded = last + (x - last) * 0.4
+        } else {
+            bounded = x
+        }
+        let origin = dragOriginX ?? bounded
+        let damped = origin + (bounded - origin) * 0.92
+        let nearest = min(items.count - 1, max(0, Int(((damped - seg * 0.5) / seg).rounded())))
+        let center = seg * (CGFloat(nearest) + 0.5)
+        let magnetized = abs(damped - center) <= 18 ? center : damped
+        let i = min(items.count - 1, max(0, Int(((magnetized - seg * 0.5) / seg).rounded())))
         if i != dragIndex { dragHaptic.impactOccurred() }
-        dragX = x
+        dragX = magnetized
         dragIndex = i
     }
 
@@ -441,7 +459,7 @@ struct TabBar: View {
                 GlassBackground(shape: Capsule(style: .continuous),
                                 opacity: 0.96,
                                 edgeAlpha: 0.82,
-                                shadow: true,
+                                shadow: false,
                                 seed: 0.74,
                                 native: true)
                 Capsule(style: .continuous)
@@ -474,7 +492,8 @@ struct TabBar: View {
                 .animation(.easeOut(duration: 0.12), value: i)
             }
             .frame(width: 108, height: h)
-            .shadow(color: .black.opacity(0.26), radius: 18, y: 9)
+            .matchedGeometryEffect(id: "tab-loupe-\(i)", in: tabLoupeNS,
+                                   isSource: dragIndex == i)
             .animation(.interactiveSpring(response: 0.22, dampingFraction: 0.76), value: i)
         }
     }
@@ -542,6 +561,9 @@ struct TabBar: View {
                             }
                         }
                         .frame(width: L.tabIconBox + 10, height: L.tabIconBox + 3)
+                        .matchedGeometryEffect(id: "tab-loupe-\(i)", in: tabLoupeNS,
+                                               isSource: dragIndex != i)
+                        .opacity(dragIndex == i ? 0.05 : 1)
                         .scaleEffect(dragIndex == i ? 1.08 : 1)
                         .opacity(dragIndex != nil && dragIndex != i ? 0.58 : 1)
                         .animation(.easeOut(duration: 0.12), value: dragIndex)
@@ -573,7 +595,7 @@ struct TabBar: View {
                     GlassBackground(shape: Capsule(style: .continuous),
                                     opacity: UIConfig.num("tabSliderAlpha", 0.72),
                                     edgeAlpha: 0.78,
-                                    shadow: true,
+                                    shadow: false,
                                     seed: 0.22,
                                     native: true)
                     Capsule(style: .continuous)
@@ -634,31 +656,22 @@ struct TabBar: View {
                     withAnimation(.easeOut(duration: 0.16)) {
                         dragX = nil
                         dragIndex = nil
+                        dragOriginX = nil
                     }
                 },
                 onSlide: { x in
-
-                    if barWidth > 1, !items.isEmpty {
-                        let seg = barWidth / CGFloat(items.count)
-                        let i = min(items.count - 1, max(0, Int(x / seg)))
-                        if i != slideIndex { dragHaptic.impactOccurred() }
-                        slideIndex = i
-                        dragIndex = i
-                    }
-                    slideX = x
-                    dragX = x
+                    updateDrag(x)
+                    slideIndex = dragIndex
+                    slideX = dragX
                 },
                 onSlideEnded: { x in
-
-                    let seg = barWidth > 1 ? barWidth / CGFloat(items.count) : 0
-                    if seg > 0 {
-                        selection = min(items.count - 1, max(0, Int(x / seg)))
-                    }
+                    if let i = dragIndex, i < items.count { selection = i }
                     withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
                         slideX = nil
                         slideIndex = nil
                         dragX = nil
                         dragIndex = nil
+                        dragOriginX = nil
                     }
                 }
             )
@@ -666,12 +679,7 @@ struct TabBar: View {
         .overlay(alignment: .topLeading) {
             if let i = dragIndex, let x = dragX {
                 magnifier(i, x: x)
-                    .position(
-                        x: barWidth > 1
-                            ? (barWidth / CGFloat(items.count)) * (CGFloat(i) + 0.5)
-                            : x,
-                        y: 8
-                    )
+                    .position(x: x, y: 8)
                     .animation(.interactiveSpring(response: 0.20, dampingFraction: 0.82), value: i)
                     .transition(.scale.combined(with: .opacity))
                     .allowsHitTesting(false)
