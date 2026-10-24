@@ -274,6 +274,8 @@ struct SwipeChatRow: View {
     var onUnread: () -> Void
     var onHide: (Bool) -> Void
     var onDelete: () -> Void
+    var cardStyle: Bool = false
+    var horizontalInset: CGFloat = 0
 
     @State private var offset: CGFloat = 0
     @State private var startOffset: CGFloat = 0
@@ -317,13 +319,14 @@ struct SwipeChatRow: View {
                                     damping: fast ? 30 : 26)
     }
 
-    private var rowBg: Color { C.chatsRowBg }
+    private var rowWidth: CGFloat { max(1, L.width - max(0, horizontalInset) * 2) }
+    private var rowBg: Color { cardStyle ? .clear : C.chatsRowBg }
 
     var body: some View {
         ZStack(alignment: .trailing) {
 
             ChatRow(chat: chat, onTapAvatar: onTapAvatar)
-                .frame(width: L.width, height: L.rowH, alignment: .leading)
+                .frame(width: rowWidth, height: L.rowH, alignment: .leading)
                 .background(rowBg)
                 .overlay(alignment: .bottom) { HairLine(inset: L.dividerLeft) }
                 .offset(x: offset)
@@ -334,7 +337,7 @@ struct SwipeChatRow: View {
                 .allowsHitTesting(offset != 0)
                 .zIndex(2)
         }
-        .frame(width: L.width, height: L.rowH, alignment: .leading)
+        .frame(width: rowWidth, height: L.rowH, alignment: .leading)
 
         .background(rowBg)
         .clipped()
@@ -389,7 +392,7 @@ struct SwipeChatRow: View {
                     settle(velocity: vx)
                 }
             )
-            .frame(width: max(0, L.width + offset), height: L.rowH)
+            .frame(width: max(0, rowWidth + offset), height: L.rowH)
         }
 
         .onReceive(NotificationCenter.default.publisher(for: .chrisRowSwipe)) { note in
@@ -565,6 +568,9 @@ struct ChatsView: View {
     private let chatFilterH: CGFloat = 52
     private var chatFilterVisible: Bool { UIConfig.num("chatFilterBar", 1) > 0 }
     private var chatFilterOffset: CGFloat { chatFilterVisible ? chatFilterH : 0 }
+    private var chatsCardStyle: Bool { UIConfig.num("chatsCardStyle", 1) > 0 }
+    private var chatsCardInset: CGFloat { max(0, UIConfig.num("chatsCardInset", 12)) }
+    private var chatsCardRadius: CGFloat { max(0, UIConfig.num("chatsCardRadius", 16)) }
 
     @State private var scrolled: CGFloat = 0
 
@@ -1219,6 +1225,39 @@ struct ChatsView: View {
         .allowsHitTesting(false)
     }
 
+    @ViewBuilder private var chatsCardBackground: some View {
+        if scheme == .dark {
+            RoundedRectangle(cornerRadius: chatsCardRadius, style: .continuous)
+                .fill(C.chatsRowBg)
+        } else {
+            ZStack {
+                GlassBackground(shape: RoundedRectangle(cornerRadius: chatsCardRadius, style: .continuous),
+                                opacity: UIConfig.num("meGlassAlpha", 0.62),
+                                edgeAlpha: UIConfig.num("meGlassEdge", 0.55),
+                                shadow: true,
+                                seed: 0.42,
+                                native: true)
+                RoundedRectangle(cornerRadius: chatsCardRadius, style: .continuous)
+                    .fill(C.chatsRowBg.opacity(0.42))
+            }
+        }
+    }
+
+    @ViewBuilder private func chatListRows(_ chats: [Chat]) -> some View {
+        ForEach(chats) { chat in
+            SwipeChatRow(
+                chat: chat,
+                onOpen: { openRow(chat) },
+                onTapAvatar: ((chat.botRank ?? 9) < 9) ? { botCardChat = chat } : nil,
+                onUnread: { markUnread(chat) },
+                onHide: { clear in hide(chat, clear: clear) },
+                onDelete: { remove(chat) },
+                cardStyle: chatsCardStyle,
+                horizontalInset: chatsCardStyle ? chatsCardInset : 0
+            )
+        }
+    }
+
     var body: some View {
         let snapshot = chatSnapshot()
         return NavigationStack(path: $path) {
@@ -1242,16 +1281,24 @@ struct ChatsView: View {
                                     .frame(maxWidth: .infinity)
                                     .padding(.top, 54)
                             }
-                            ForEach(snapshot.list) { chat in
-                                SwipeChatRow(
-                                    chat: chat,
-                                    onOpen: { openRow(chat) },
-
-                                    onTapAvatar: ((chat.botRank ?? 9) < 9) ? { botCardChat = chat } : nil,
-                                    onUnread: { markUnread(chat) },
-                                    onHide: { clear in hide(chat, clear: clear) },
-                                    onDelete: { remove(chat) }
-                                )
+                            if chatsCardStyle {
+                                LazyVStack(spacing: 0) {
+                                    chatListRows(snapshot.list)
+                                }
+                                .background { chatsCardBackground }
+                                .clipShape(RoundedRectangle(cornerRadius: chatsCardRadius,
+                                                            style: .continuous))
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: chatsCardRadius,
+                                                     style: .continuous)
+                                        .stroke(Color.white.opacity(scheme == .dark ? 0 : 0.18),
+                                                lineWidth: 0.6)
+                                }
+                                .padding(.horizontal, chatsCardInset)
+                                .padding(.top, 6)
+                                .padding(.bottom, 10)
+                            } else {
+                                chatListRows(snapshot.list)
                             }
 
                             Color.clear.frame(height: L.tabH + L.safeBottom + 10)

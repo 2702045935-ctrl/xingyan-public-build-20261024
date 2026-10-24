@@ -69,6 +69,7 @@ struct UserManageView: View {
 
     @State private var faceForRealName = UIConfig.num("realnameFace", 1) > 0
     @State private var chatFilterBar = UIConfig.num("chatFilterBar", 1) > 0
+    @State private var chatsCardStyle = UIConfig.num("chatsCardStyle", 1) > 0
 
     @State private var meLayout = Int(UIConfig.num("meLayout", 0))
 
@@ -574,6 +575,34 @@ struct UserManageView: View {
                                 UIConfig.apply(cfg.ui)
                             }
                             msg = ok ? (v ? Tr("已开启会话页分类横条") : Tr("已关闭会话页分类横条"))
+                                     : Tr("保存失败")
+                        }
+                    }))
+                    .labelsHidden().tint(C.green)
+            }
+            .padding(.horizontal, 16).frame(height: 66)
+
+            HairLine(inset: 16)
+
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(Tr("会话页分组卡片")).font(pf(16)).foregroundColor(C.label)
+                    Text(Tr("开 = 会话列表包在一块圆角卡片里；关 = 恢复原来的整页列表"))
+                        .font(pf(12)).foregroundColor(C.subLabel)
+                        .lineLimit(2)
+                }
+                Spacer(minLength: 6)
+                Toggle("", isOn: Binding(
+                    get: { chatsCardStyle },
+                    set: { v in
+                        chatsCardStyle = v
+                        Task {
+                            let ok = await API.shared.opsSetUIKey("chatsCardStyle", v ? 1 : 0)
+                            if ok {
+                                let cfg = await API.shared.uiConfig()
+                                UIConfig.apply(cfg.ui)
+                            }
+                            msg = ok ? (v ? Tr("已开启会话页分组卡片") : Tr("已恢复原会话列表"))
                                      : Tr("保存失败")
                         }
                     }))
