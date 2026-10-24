@@ -443,20 +443,23 @@ struct ExternalFileSendView: View {
             var done = 0
             for item in inbox.files {
                 progress = Tr("正在上传") + " \(done + 1)/\(inbox.files.count)"
-                guard let data = try? Data(contentsOf: item.local), !data.isEmpty else { continue }
-                if data.count > 80 * 1024 * 1024 {
-                    alert = Tr("单个文件不能超过 80MB")
+                let bytes = (try? item.local.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+                if bytes > 100 * 1024 * 1024 {
+                    alert = Tr("单个文件不能超过 100MB")
                     break
                 }
+                guard bytes > 0 else { continue }
                 do {
-                    let up = try await uploadItem(item, data: data)
+                    let uploadedURL = try await uploadItem(item)
                     let contentObject: [String: Any] = [
-                        "url": up.url,
+                        "url": uploadedURL,
                         "name": item.name,
-                        "bytes": data.count
+                        "bytes": bytes,
+                        "mime": UTType(filenameExtension: item.local.pathExtension)?.preferredMIMEType
+                            ?? "application/octet-stream"
                     ]
                     let body = try JSONSerialization.data(withJSONObject: contentObject, options: [])
-                    let content = String(data: body, encoding: .utf8) ?? "{\"url\":\"\(up.url)\"}"
+                    let content = String(data: body, encoding: .utf8) ?? "{\"url\":\"\(uploadedURL)\"}"
                     _ = try await API.shared.send(chatId: chat.id, kind: "file", content: content)
                     done += 1
                 } catch {
@@ -481,20 +484,23 @@ struct ExternalFileSendView: View {
             var done = 0
             for item in inbox.files {
                 progress = Tr("正在收藏") + " \(done + 1)/\(inbox.files.count)"
-                guard let data = try? Data(contentsOf: item.local), !data.isEmpty else { continue }
-                if data.count > 80 * 1024 * 1024 {
-                    alert = Tr("单个文件不能超过 80MB")
+                let bytes = (try? item.local.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+                if bytes > 100 * 1024 * 1024 {
+                    alert = Tr("单个文件不能超过 100MB")
                     break
                 }
+                guard bytes > 0 else { continue }
                 do {
-                    let up = try await uploadItem(item, data: data)
+                    let uploadedURL = try await uploadItem(item)
                     let body = try JSONSerialization.data(withJSONObject: [
-                        "url": up.url,
+                        "url": uploadedURL,
                         "name": item.name,
-                        "bytes": data.count
+                        "bytes": bytes,
+                        "mime": UTType(filenameExtension: item.local.pathExtension)?.preferredMIMEType
+                            ?? "application/octet-stream"
                     ], options: [])
                     saved.append((name: item.name,
-                                  content: String(data: body, encoding: .utf8) ?? "{\"url\":\"\(up.url)\"}"))
+                                  content: String(data: body, encoding: .utf8) ?? "{\"url\":\"\(uploadedURL)\"}"))
                     done += 1
                 } catch {
                     alert = (error as? APIError)?.errorDescription ?? Tr("收藏失败")
@@ -522,11 +528,9 @@ struct ExternalFileSendView: View {
         }
     }
 
-    private func uploadItem(_ item: ExternalFileItem,
-                            data: Data) async throws -> (url: String, name: String, bytes: Int) {
-        try await API.shared.rawUpload([
-            "dataUrl": "data:application/octet-stream;base64," + data.base64EncodedString(),
-            "filename": item.name
-        ])
+    private func uploadItem(_ item: ExternalFileItem) async throws -> String {
+        try await API.shared.uploadBinaryFile(
+            item.local, mime: "application/octet-stream",
+            skipTranscode: true, onProgress: { _ in })
     }
 }

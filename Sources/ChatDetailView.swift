@@ -1353,8 +1353,14 @@ struct ChatDetailView: View {
             NavigationStack { ArticleView(articleId: oaArticleId).environmentObject(app) }
         }
 
-        .fileImporter(isPresented: $showFile, allowedContentTypes: [.item], allowsMultipleSelection: true) { result in
-            if case .success(let urls) = result { sendFiles(urls) }
+        .sheet(isPresented: $showFile) {
+            AnyFilePicker(
+                onPick: { urls in
+                    showFile = false
+                    sendFiles(urls)
+                },
+                onCancel: { showFile = false }
+            )
         }
 
         .sheet(isPresented: $showMyFiles) {
@@ -3365,11 +3371,7 @@ struct ChatDetailView: View {
     }
 
     private func openFilePicker() {
-        if UIConfig.num("filePickerSystem", 0) > 0 {
-            showFile = true
-        } else {
-            showMyFiles = true
-        }
+        showFile = true
     }
 
     private func normalizedPlusItems(_ raw: [PlusItem]) -> [PlusItem] {
@@ -3397,14 +3399,25 @@ struct ChatDetailView: View {
     }
 
     private func uploadAndSendFile(_ url: URL) async {
-        let name = url.lastPathComponent
         uploading = true
         defer { uploading = false }
         let ok = url.startAccessingSecurityScopedResource()
         defer { if ok { url.stopAccessingSecurityScopedResource() } }
 
-        let attrs = try? FileManager.default.attributesOfItem(atPath: url.path)
-        let sizeBytes = (attrs?[.size] as? NSNumber)?.intValue ?? 0
+        let staged: URL
+        do {
+            staged = try await Task.detached(priority: .userInitiated) {
+                try Self.stageFileForUpload(url)
+            }.value
+        } catch {
+            app.show(Tr("读不到这个文件：") + url.lastPathComponent)
+            return
+        }
+        defer { try? FileManager.default.removeItem(at: staged.deletingLastPathComponent()) }
+
+        let values = try? staged.resourceValues(forKeys: [.fileSizeKey, .nameKey])
+        let sizeBytes = values?.fileSize ?? 0
+        let name = values?.name ?? staged.lastPathComponent
         if sizeBytes > 100 * 1024 * 1024 {
             app.show(Tr("这个文件超过 100MB，先压缩一下再发"))
             return
@@ -3413,11 +3426,11 @@ struct ChatDetailView: View {
             app.show(Tr("读不到这个文件"))
             return
         }
-        let sourceMime = UTType(filenameExtension: url.pathExtension)?.preferredMIMEType
+        let sourceMime = UTType(filenameExtension: staged.pathExtension)?.preferredMIMEType
             ?? "application/octet-stream"
         do {
             let uploadedURL = try await API.shared.uploadBinaryFile(
-                url, mime: "application/octet-stream", skipTranscode: true, onProgress: { _ in })
+                staged, mime: "application/octet-stream", skipTranscode: true, onProgress: { _ in })
             let body: [String: Any] = [
                 "url": uploadedURL,
                 "name": name,
@@ -3435,6 +3448,36 @@ struct ChatDetailView: View {
             app.show((error as? APIError)?.errorDescription ?? "文件发送失败")
         }
         await app.loadChats()
+    }
+
+    nonisolated private static func stageFileForUpload(_ source: URL) throws -> URL {
+        let fm = FileManager.default
+        let dir = fm.temporaryDirectory.appendingPathComponent("chris-file-\(UUID().uuidString)", isDirectory: true)
+        try fm.createDirectory(at: dir, withIntermediateDirectories: true)
+        let name = (try? source.resourceValues(forKeys: [.nameKey]).name)
+            ?? source.lastPathComponent
+        let dst = dir.appendingPathComponent(name.isEmpty ? "file" : name)
+
+        var coordinationError: NSError?
+        var copyError: Error?
+        NSFileCoordinator().coordinate(readingItemAt: source, options: .withoutChanges,
+                                       error: &coordinationError) { readable in
+            do {
+                try fm.copyItem(at: readable, to: dst)
+            } catch {
+                copyError = error
+            }
+        }
+        if let copyError {
+            try? fm.removeItem(at: dir)
+            throw copyError
+        }
+        if !fm.fileExists(atPath: dst.path) {
+            try? fm.removeItem(at: dir)
+            if let coordinationError { throw coordinationError }
+            throw APIError.message("文件读取失败")
+        }
+        return dst
     }
 
     private func openFile(_ body: String) {
