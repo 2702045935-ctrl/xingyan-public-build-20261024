@@ -22311,6 +22311,29 @@ async function handleOps(req, res, parts, query) {
     ok(res, { id: id, enabled: it.enabled !== false });
     return;
   }
+  if (sub === 'miniapps' && parts[2] === 'reorder' && method === 'POST') {
+    if (!can(admin, 'ops.write')) return fail(res, 403, '你的角色没有改内容的权限');
+    const mb = await readBody(req);
+    if (!Array.isArray(mb.ids)) return fail(res, 422, '排序数据格式不对');
+    const cfg = readMiniApps();
+    const pos = {};
+    mb.ids.slice(0, 500).forEach((id, index) => {
+      const key = String(id || '');
+      if (key && pos[key] === undefined) pos[key] = index;
+    });
+    cfg.items.sort((a, b) => {
+      const ai = pos[a.id];
+      const bi = pos[b.id];
+      if (ai === undefined && bi === undefined) return 0;
+      if (ai === undefined) return 1;
+      if (bi === undefined) return -1;
+      return ai - bi;
+    });
+    saveMiniApps(cfg);
+    audit(req, admin, 'miniapp.reorder', '小程序', String(cfg.items.length) + ' 个入口');
+    ok(res, { items: cfg.items.map((x) => x.id) });
+    return;
+  }
 
   /* 系统通知开关（照微信团队那个号）：后台面板里管控 */
   if (sub === 'sysnotice' && method === 'GET') {

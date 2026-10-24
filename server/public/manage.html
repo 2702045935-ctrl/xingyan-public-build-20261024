@@ -335,7 +335,8 @@
       payments: '<rect x="3" y="5" width="18" height="14" rx="2.4"/><path d="M3 10h18M7 15h3"/>',
       feedback: '<path d="M4 5h16v11H9l-5 4z"/>',
       groups2: '<circle cx="12" cy="8" r="3"/><circle cx="6" cy="16" r="2.4"/><circle cx="18" cy="16" r="2.4"/><path d="M9 9.6l-1.6 4M15 9.6l1.6 4"/>',
-      biz: '<path d="M4 9l1.5-5h13L20 9"/><path d="M4 9h16v11H4z"/><path d="M9 20v-6h6v6"/>'
+      biz: '<path d="M4 9l1.5-5h13L20 9"/><path d="M4 9h16v11H4z"/><path d="M9 20v-6h6v6"/>',
+      miniapps: '<rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><path d="M17 13.5v7M13.5 17h7"/>'
     };
     nav.querySelectorAll('button').forEach(function (btn) {
       if (btn.getAttribute('data-wxicon') === '1') return;
@@ -442,6 +443,7 @@ const MENUS = [
 
   /* ---------------- 内容管理（我们自己的公众号） ---------------- */
   { key: 'oa', icon: '📰', name: '公众号', perm: 'ops', group: '内容管理' },
+  { key: 'miniapps', icon: '🧩', name: '小程序与游戏', perm: 'ops', group: '内容管理' },
 
   /* ---------------- 用户管理 ---------------- */
   { key: 'users', icon: '👤', name: '用户列表', perm: 'users', group: '用户管理' },
@@ -5634,6 +5636,205 @@ function oaUpload(kind) {
     inp.click();
   });
 }
+
+/* ============================================================
+   小程序与游戏：添加、编辑、启停、排序、入口与封面配置
+   App 直接读取这里的清单，不用重新出包。
+   ============================================================ */
+PAGES.miniapps = async function () {
+  const st = STATE.miniapps || (STATE.miniapps = { q: '', kind: '', status: '' });
+  let items = [];
+  try {
+    const d = await api('/miniapps');
+    items = Array.isArray(d.items) ? d.items : [];
+  } catch (e) {
+    $('content').innerHTML = '<div class="empty">' + esc(e.message) + '</div>';
+    return;
+  }
+
+  const filtered = items.filter(function (it) {
+    const q = st.q.trim().toLowerCase();
+    if (q && !((it.name || '') + ' ' + (it.desc || '') + ' ' + (it.group || '') + ' ' + (it.url || ''))
+      .toLowerCase().includes(q)) return false;
+    if (st.kind && (it.kind === 'game' ? 'game' : 'mini') !== st.kind) return false;
+    if (st.status === 'on' && it.enabled === false) return false;
+    if (st.status === 'off' && it.enabled !== false) return false;
+    return true;
+  });
+
+  function logo(it) {
+    const cover = String(it.cover || '');
+    if (/^(https?:|\/uploads|data:)/.test(cover)) {
+      return '<img src="' + esc(cover) + '" alt="" style="width:46px;height:46px;object-fit:cover;border-radius:10px;border:1px solid #EEE">';
+    }
+    return '<span style="display:flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:10px;background:#F5F7FA;font-size:24px">'
+      + esc(it.icon || '🧩') + '</span>';
+  }
+
+  function editor(it) {
+    const editing = !!it;
+    const x = Object.assign({ name: '', desc: '', icon: '🧩', kind: 'mini', url: '', cover: '', group: '', action: '立即打开' }, it || {});
+    openModal(
+      '<div class="row" style="justify-content:space-between;margin:0 0 14px">'
+      + '<h3 style="margin:0">' + (editing ? '编辑小程序' : '添加小程序') + '</h3>'
+      + '<button class="btn sm ghost" id="maClose">关闭</button></div>'
+      + '<div class="panel">'
+      + '<div class="kv"><b>名称</b><span><input id="maName" class="wide" maxlength="20" value="' + esc(x.name) + '" placeholder="例如：小满火锅"></span></div>'
+      + '<div class="kv"><b>类型</b><span><select id="maKind"><option value="mini"' + (x.kind !== 'game' ? ' selected' : '') + '>小程序</option><option value="game"' + (x.kind === 'game' ? ' selected' : '') + '>小游戏</option></select></span></div>'
+      + '<div class="kv"><b>简介</b><span><input id="maDesc" class="wide" maxlength="40" value="' + esc(x.desc) + '" placeholder="一句话说明用途"></span></div>'
+      + '<div class="kv"><b>分类</b><span><input id="maGroup" maxlength="16" value="' + esc(x.group) + '" placeholder="美食 / 工具 / 娱乐"></span></div>'
+      + '<div class="kv"><b>入口按钮</b><span><input id="maAction" maxlength="6" value="' + esc(x.action || '立即打开') + '" placeholder="立即打开"></span></div>'
+      + '<div class="kv"><b>Emoji 图标</b><span><input id="maIcon" maxlength="8" value="' + esc(x.icon || '🧩') + '" placeholder="🧩"><span class="hint">没有封面时显示</span></span></div>'
+      + '<div class="kv"><b>封面图片</b><span><input id="maCover" class="wide" maxlength="400" value="' + esc(x.cover) + '" placeholder="/uploads/xxx.jpg 或图片网址">'
+      + '<label class="btn sm ghost" style="cursor:pointer">上传图片<input id="maCoverFile" type="file" accept="image/*" style="display:none"></label></span></div>'
+      + '<div class="kv"><b></b><span><img id="maCoverPreview" src="' + esc(x.cover) + '" alt="" style="display:' + (/^(https?:|\/uploads|data:)/.test(String(x.cover || '')) ? 'block' : 'none') + ';width:150px;max-height:100px;object-fit:cover;border-radius:8px;border:1px solid #EEE"></span></div>'
+      + '<div class="kv"><b>入口地址</b><span><input id="maUrl" class="wide" maxlength="400" value="' + esc(x.url) + '" placeholder="/miniapps/demo/index.html 或 https://..."><span class="hint">静态目录里放 index.html；有 files.json 时按清单下载全部资源</span></span></div>'
+      + '</div>'
+      + '<div class="row"><button class="btn main" id="maSave">' + (editing ? '保存修改' : '添加并上线') + '</button>'
+      + '<button class="btn" id="maCancel">取消</button></div>'
+    );
+    $('maClose').onclick = closeModal;
+    $('maCancel').onclick = closeModal;
+    $('maCoverFile').onchange = function () {
+      const f = this.files && this.files[0];
+      if (!f) return;
+      const fr = new FileReader();
+      fr.onload = async function () {
+        try {
+          const r = await api('/upload', { method: 'POST', body: { filename: f.name, dataUrl: fr.result } });
+          $('maCover').value = r.url || '';
+          $('maCoverPreview').src = r.url || '';
+          $('maCoverPreview').style.display = r.url ? 'block' : 'none';
+          toast('封面已上传');
+        } catch (e) { toast('上传失败：' + e.message, true); }
+      };
+      fr.readAsDataURL(f);
+    };
+    $('maSave').onclick = async function () {
+      const body = {
+        name: $('maName').value.trim(),
+        kind: $('maKind').value,
+        desc: $('maDesc').value.trim(),
+        group: $('maGroup').value.trim(),
+        action: $('maAction').value.trim() || '立即打开',
+        icon: $('maIcon').value.trim() || '🧩',
+        cover: $('maCover').value.trim(),
+        url: $('maUrl').value.trim()
+      };
+      if (!body.name) return toast('请填写名称', true);
+      if (!/^(\/|https?:\/\/)/.test(body.url)) return toast('入口地址要写 / 开头或 http(s):// 开头', true);
+      this.disabled = true;
+      this.textContent = '保存中…';
+      try {
+        if (editing) {
+          body.id = it.id;
+          await api('/miniapps/update', { method: 'POST', body: body });
+        } else {
+          await api('/miniapps/add', { method: 'POST', body: body });
+        }
+        closeModal();
+        toast(editing ? '已保存' : '已添加并上线');
+        PAGES.miniapps();
+      } catch (e) {
+        this.disabled = false;
+        this.textContent = editing ? '保存修改' : '添加并上线';
+        toast(e.message, true);
+      }
+    };
+  }
+
+  function draw() {
+    const games = items.filter(function (x) { return x.kind === 'game'; }).length;
+    const on = items.filter(function (x) { return x.enabled !== false; }).length;
+    $('pageTitle').textContent = '小程序与游戏（' + items.length + '）';
+    $('content').innerHTML =
+      '<div class="wx-head"><div class="wx-crumb">内容管理 / 小程序与游戏</div><h1 class="wx-title">小程序与游戏（' + items.length + '）</h1></div>'
+      + '<div class="panel"><h3>运行概览 <span class="hint">后台修改后 App 会自动读取，不用重新出包</span></h3>'
+      + '<div class="row" style="margin:0 0 14px">'
+      + '<span class="tag b">全部 ' + items.length + '</span>'
+      + '<span class="tag g">启用 ' + on + '</span>'
+      + '<span class="tag gy">小程序 ' + (items.length - games) + '</span>'
+      + '<span class="tag o">小游戏 ' + games + '</span>'
+      + '</div>'
+      + '<div class="row" style="margin-bottom:12px">'
+      + '<input id="maQ" value="' + esc(st.q) + '" placeholder="搜索名称、分类或入口地址" style="min-width:260px">'
+      + '<select id="maKindF"><option value="">全部类型</option><option value="mini"' + (st.kind === 'mini' ? ' selected' : '') + '>小程序</option><option value="game"' + (st.kind === 'game' ? ' selected' : '') + '>小游戏</option></select>'
+      + '<select id="maStatusF"><option value="">全部状态</option><option value="on"' + (st.status === 'on' ? ' selected' : '') + '>启用中</option><option value="off"' + (st.status === 'off' ? ' selected' : '') + '>已停用</option></select>'
+      + '<button class="btn main" id="maAdd">＋ 添加小程序</button>'
+      + '</div>'
+      + '<table class="tbl"><thead><tr><th>小程序</th><th>类型 / 分类</th><th>入口</th><th>状态</th><th>排序</th><th>操作</th></tr></thead><tbody>'
+      + (filtered.length ? filtered.map(function (it) {
+          const original = items.indexOf(it);
+          return '<tr data-id="' + esc(it.id) + '">'
+            + '<td><div style="display:flex;gap:11px;align-items:center">' + logo(it)
+            + '<div><b>' + esc(it.name || '未命名') + '</b><div class="hint">' + esc(it.desc || '未填写简介') + '</div></div></div></td>'
+            + '<td>' + badge(it.kind === 'game' ? '小游戏' : '小程序', it.kind === 'game' ? 'o' : 'b')
+            + '<div class="hint">' + esc(it.group || '未分类') + '</div></td>'
+            + '<td><a href="' + esc(it.url || '#') + '" target="_blank" rel="noopener">' + esc(it.url || '未配置') + '</a></td>'
+            + '<td>' + badge(it.enabled === false ? '已停用' : '启用中', it.enabled === false ? 'gy' : 'g') + '</td>'
+            + '<td><button class="btn sm" data-up="' + esc(it.id) + '"' + (original <= 0 ? ' disabled' : '') + '>上移</button>'
+            + '<button class="btn sm" data-down="' + esc(it.id) + '"' + (original >= items.length - 1 ? ' disabled' : '') + '>下移</button></td>'
+            + '<td><button class="btn sm" data-edit="' + esc(it.id) + '">编辑</button>'
+            + '<button class="btn sm" data-toggle="' + esc(it.id) + '">' + (it.enabled === false ? '启用' : '停用') + '</button>'
+            + '<button class="btn sm" data-del="' + esc(it.id) + '">删除</button></td></tr>';
+        }).join('') : '<tr><td colspan="6"><div class="hint">还没有小程序。点右上「添加小程序」创建第一条。</div></td></tr>')
+      + '</tbody></table></div>';
+
+    $('maAdd').onclick = function () { editor(null); };
+    $('maKindF').onchange = function () { st.kind = this.value; draw(); };
+    $('maStatusF').onchange = function () { st.status = this.value; draw(); };
+    $('maQ').onkeydown = function (e) {
+      if (e.key !== 'Enter') return;
+      st.q = this.value.trim();
+      draw();
+    };
+    $('content').querySelectorAll('[data-edit]').forEach(function (b) {
+      b.onclick = function () {
+        const it = items.find(function (x) { return x.id === b.getAttribute('data-edit'); });
+        if (it) editor(it);
+      };
+    });
+    $('content').querySelectorAll('[data-toggle]').forEach(function (b) {
+      b.onclick = async function () {
+        try {
+          await api('/miniapps/toggle', { method: 'POST', body: { id: b.getAttribute('data-toggle') } });
+          toast('状态已更新');
+          PAGES.miniapps();
+        } catch (e) { toast(e.message, true); }
+      };
+    });
+    $('content').querySelectorAll('[data-del]').forEach(function (b) {
+      b.onclick = async function () {
+        const id = b.getAttribute('data-del');
+        const it = items.find(function (x) { return x.id === id; });
+        if (!window.confirm('删除「' + (it ? it.name : '这个小程序') + '」？\n删除后 App 入口会立即消失。')) return;
+        try {
+          await api('/miniapps/remove', { method: 'POST', body: { id: id } });
+          toast('已删除');
+          PAGES.miniapps();
+        } catch (e) { toast(e.message, true); }
+      };
+    });
+    function move(id, delta) {
+      const ids = items.map(function (x) { return x.id; });
+      const from = ids.indexOf(id);
+      const to = from + delta;
+      if (from < 0 || to < 0 || to >= ids.length) return;
+      const t = ids[from]; ids[from] = ids[to]; ids[to] = t;
+      return api('/miniapps/reorder', { method: 'POST', body: { ids: ids } })
+        .then(function () { toast('顺序已更新'); PAGES.miniapps(); })
+        .catch(function (e) { toast(e.message, true); });
+    }
+    $('content').querySelectorAll('[data-up]').forEach(function (b) {
+      b.onclick = function () { move(b.getAttribute('data-up'), -1); };
+    });
+    $('content').querySelectorAll('[data-down]').forEach(function (b) {
+      b.onclick = function () { move(b.getAttribute('data-down'), 1); };
+    });
+  }
+
+  draw();
+};
 
 PAGES.oa = async function () {
   let d = {};

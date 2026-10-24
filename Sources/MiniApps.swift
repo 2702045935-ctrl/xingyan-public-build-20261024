@@ -700,6 +700,9 @@ struct MiniAppRuntimeView: View {
             appState.show((dict["title"] as? String) ?? "")
         case "vibrate":
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        case "clipboard":
+            UIPasteboard.general.string = (dict["text"] as? String) ?? ""
+            appState.show(Tr("已复制"))
         case "share":
             appState.show(Tr("已分享"))
         case "exit":
@@ -809,6 +812,33 @@ func miniAppWxBridge(token: String, base: String) -> String {
         getStorageSync: function (k) { try { var s = localStorage.getItem('wx_' + k); return s == null ? '' : JSON.parse(s); } catch (e) { return ''; } },
         removeStorageSync: function (k) { try { localStorage.removeItem('wx_' + k); } catch (e) { } },
         clearStorageSync: function () { try { Object.keys(localStorage).forEach(function (k) { if (k.indexOf('wx_') === 0) localStorage.removeItem(k); }); } catch (e) { } },
+        setStorage: function (o) {
+          try { api.setStorageSync(o && o.key, o && o.data); if (o && o.success) o.success({ errMsg: 'setStorage:ok' }); }
+          catch (e) { if (o && o.fail) o.fail({ errMsg: String(e) }); }
+        },
+        getStorage: function (o) {
+          try { if (o && o.success) o.success({ data: api.getStorageSync(o && o.key), errMsg: 'getStorage:ok' }); }
+          catch (e) { if (o && o.fail) o.fail({ errMsg: String(e) }); }
+        },
+        removeStorage: function (o) {
+          try { api.removeStorageSync(o && o.key); if (o && o.success) o.success({ errMsg: 'removeStorage:ok' }); }
+          catch (e) { if (o && o.fail) o.fail({ errMsg: String(e) }); }
+        },
+        clearStorage: function (o) {
+          try { api.clearStorageSync(); if (o && o.success) o.success({ errMsg: 'clearStorage:ok' }); }
+          catch (e) { if (o && o.fail) o.fail({ errMsg: String(e) }); }
+        },
+        getStorageInfoSync: function () {
+          var keys = [], size = 0;
+          try {
+            Object.keys(localStorage).forEach(function (k) {
+              if (k.indexOf('wx_') !== 0) return;
+              keys.push(k.slice(3));
+              size += String(localStorage.getItem(k) || '').length;
+            });
+          } catch (e) { }
+          return { keys: keys, currentSize: Math.ceil(size / 1024), limitSize: 10240 };
+        },
         request: function (o) {
           o = o || {};
           var h = {}; var hh = o.header || {};
@@ -828,16 +858,94 @@ func miniAppWxBridge(token: String, base: String) -> String {
                    screenWidth: window.innerWidth, screenHeight: window.innerHeight,
                    safeArea: { top: 0, bottom: 0, left: 0, right: 0 } };
         },
+        getSystemInfo: function (o) {
+          setTimeout(function () { if (o && o.success) o.success(api.getSystemInfoSync()); }, 0);
+        },
+        getWindowInfo: function () {
+          return { windowWidth: window.innerWidth, windowHeight: window.innerHeight,
+                   screenWidth: window.innerWidth, screenHeight: window.innerHeight,
+                   pixelRatio: window.devicePixelRatio || 2 };
+        },
+        getDeviceInfo: function () {
+          return { brand: 'Apple', model: 'iPhone', platform: 'ios', system: 'iOS' };
+        },
+        getAppBaseInfo: function () {
+          return { SDKVersion: '3.0.0', language: 'zh_CN', version: '1.0.0' };
+        },
+        getNetworkType: function (o) {
+          var type = navigator.onLine ? 'wifi' : 'none';
+          setTimeout(function () { if (o && o.success) o.success({ networkType: type }); }, 0);
+        },
+        onNetworkStatusChange: function (cb) {
+          if (typeof cb !== 'function') return;
+          api.__networkListeners = api.__networkListeners || [];
+          api.__networkListeners.push(cb);
+          cb({ isConnected: navigator.onLine, networkType: navigator.onLine ? 'wifi' : 'none' });
+        },
+        offNetworkStatusChange: function (cb) {
+          api.__networkListeners = (api.__networkListeners || []).filter(function (x) { return x !== cb; });
+        },
+        canIUse: function (name) { return !!(name && api[name]); },
+        nextTick: function (cb) { setTimeout(cb || function () { }, 0); },
+        getMenuButtonBoundingClientRect: function () {
+          return { top: 6, bottom: 38, left: window.innerWidth - 60, right: window.innerWidth - 10,
+                   width: 50, height: 32 };
+        },
+        pageScrollTo: function (o) {
+          window.scrollTo({ top: (o && o.scrollTop) || 0, behavior: 'smooth' });
+        },
+        setClipboardData: function (o) {
+          post({ fn: 'clipboard', text: String((o && o.data) || '') });
+          if (o && o.success) o.success({ errMsg: 'setClipboardData:ok' });
+        },
+        getAccountInfoSync: function () {
+          return { miniProgram: { appId: 'chris-miniapp', envVersion: 'release' } };
+        },
+        reportAnalytics: function () { },
         getLaunchOptionsSync: function () { return { scene: 1001, query: {}, path: '' }; },
+        getEnterOptionsSync: function () { return api.getLaunchOptionsSync(); },
         showShareMenu: function () { }, hideShareMenu: function () { },
         onShareAppMessage: function () { }, onShow: function () { }, onHide: function () { },
         onError: function () { }, onUnhandledRejection: function () { },
         shareAppMessage: function () { post({ fn: 'share' }); },
         exitMiniProgram: function () { post({ fn: 'exit' }); },
-        navigateBack: function () { post({ fn: 'exit' }); },
-        navigateTo: function () { post({ fn: 'exit' }); }
+        navigateTo: function (o) {
+          if (!o || !o.url) return;
+          window.location.href = abs(o.url);
+          if (o.success) o.success({ errMsg: 'navigateTo:ok' });
+        },
+        redirectTo: function (o) {
+          if (!o || !o.url) return;
+          window.location.replace(abs(o.url));
+          if (o.success) o.success({ errMsg: 'redirectTo:ok' });
+        },
+        reLaunch: function (o) {
+          if (!o || !o.url) return;
+          window.location.replace(abs(o.url));
+          if (o.success) o.success({ errMsg: 'reLaunch:ok' });
+        },
+        switchTab: function (o) {
+          if (!o || !o.url) return;
+          window.location.href = abs(o.url);
+          if (o.success) o.success({ errMsg: 'switchTab:ok' });
+        },
+        navigateBack: function (o) {
+          if (window.history.length > 1) window.history.back();
+          else post({ fn: 'exit' });
+          if (o && o.success) o.success({ errMsg: 'navigateBack:ok' });
+        }
       };
       window.wx = api;
+      window.addEventListener('online', function () {
+        (api.__networkListeners || []).forEach(function (cb) {
+          try { cb({ isConnected: true, networkType: 'wifi' }); } catch (e) { }
+        });
+      });
+      window.addEventListener('offline', function () {
+        (api.__networkListeners || []).forEach(function (cb) {
+          try { cb({ isConnected: false, networkType: 'none' }); } catch (e) { }
+        });
+      });
     })();
     """
 }

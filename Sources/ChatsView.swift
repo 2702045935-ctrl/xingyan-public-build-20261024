@@ -1354,9 +1354,15 @@ struct ChatsView: View {
                                    Text(C.tabText0)
                                        .font(pf(17, .semibold))
                                        .foregroundColor(C.label)
+                                   Text("（")
+                                       .font(pf(17, .semibold))
+                                       .foregroundColor(C.label)
                                    RollingNumber(value: unreadTotal,
                                                  font: pf(17, .semibold),
                                                  color: C.label, height: 20)
+                                   Text("）")
+                                       .font(pf(17, .semibold))
+                                       .foregroundColor(C.label)
                                }
                            ) : nil,
 
