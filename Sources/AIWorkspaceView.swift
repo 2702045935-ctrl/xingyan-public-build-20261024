@@ -799,19 +799,23 @@ struct AIWorkspaceView: View {
                     waitingReply = false
                     return
                 }
-                let data = try Data(contentsOf: url)
-                guard !data.isEmpty else { throw APIError.message("读不到这个文件") }
-                guard data.count <= 80 * 1024 * 1024 else {
-                    throw APIError.message("文件超过 80MB，请先压缩再发")
+                let staged = try await Task.detached(priority: .userInitiated) {
+                    try FileUploadStaging.copyToTemporary(url)
+                }.value
+                defer { try? FileManager.default.removeItem(at: staged.deletingLastPathComponent()) }
+                let values = try staged.resourceValues(forKeys: [.fileSizeKey, .nameKey])
+                let bytes = values.fileSize ?? 0
+                guard bytes > 0 else { throw APIError.message("读不到这个文件") }
+                guard bytes <= 100 * 1024 * 1024 else {
+                    throw APIError.message("文件超过 100MB，请先压缩再发")
                 }
-                let name = url.lastPathComponent.isEmpty ? "file" : url.lastPathComponent
-                let uploaded = try await API.shared.rawUpload([
-                    "dataUrl": "data:application/octet-stream;base64," + data.base64EncodedString(),
-                    "filename": name
-                ])
+                let name = values.name ?? (staged.lastPathComponent.isEmpty ? "file" : staged.lastPathComponent)
+                let uploadedURL = try await API.shared.uploadBinaryFile(
+                    staged, mime: "application/octet-stream",
+                    skipTranscode: true, onProgress: { _ in })
                 let safeName = name.replacingOccurrences(of: "\"", with: "")
                     .replacingOccurrences(of: "\\", with: "")
-                let content = "{\"url\":\"\(uploaded.url)\",\"name\":\"\(safeName)\",\"bytes\":\(data.count)}"
+                let content = "{\"url\":\"\(uploadedURL)\",\"name\":\"\(safeName)\",\"bytes\":\(bytes),\"mime\":\"\(UTType(filenameExtension: staged.pathExtension)?.preferredMIMEType ?? "application/octet-stream")\"}"
                 _ = try await API.shared.send(chatId: target.id,
                                               kind: "file",
                                               content: content,

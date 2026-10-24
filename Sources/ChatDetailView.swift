@@ -3407,7 +3407,7 @@ struct ChatDetailView: View {
         let staged: URL
         do {
             staged = try await Task.detached(priority: .userInitiated) {
-                try Self.stageFileForUpload(url)
+                try FileUploadStaging.copyToTemporary(url)
             }.value
         } catch {
             app.show(Tr("读不到这个文件：") + url.lastPathComponent)
@@ -3448,36 +3448,6 @@ struct ChatDetailView: View {
             app.show((error as? APIError)?.errorDescription ?? "文件发送失败")
         }
         await app.loadChats()
-    }
-
-    nonisolated private static func stageFileForUpload(_ source: URL) throws -> URL {
-        let fm = FileManager.default
-        let dir = fm.temporaryDirectory.appendingPathComponent("chris-file-\(UUID().uuidString)", isDirectory: true)
-        try fm.createDirectory(at: dir, withIntermediateDirectories: true)
-        let name = (try? source.resourceValues(forKeys: [.nameKey]).name)
-            ?? source.lastPathComponent
-        let dst = dir.appendingPathComponent(name.isEmpty ? "file" : name)
-
-        var coordinationError: NSError?
-        var copyError: Error?
-        NSFileCoordinator().coordinate(readingItemAt: source, options: .withoutChanges,
-                                       error: &coordinationError) { readable in
-            do {
-                try fm.copyItem(at: readable, to: dst)
-            } catch {
-                copyError = error
-            }
-        }
-        if let copyError {
-            try? fm.removeItem(at: dir)
-            throw copyError
-        }
-        if !fm.fileExists(atPath: dst.path) {
-            try? fm.removeItem(at: dir)
-            if let coordinationError { throw coordinationError }
-            throw APIError.message("文件读取失败")
-        }
-        return dst
     }
 
     private func openFile(_ body: String) {
