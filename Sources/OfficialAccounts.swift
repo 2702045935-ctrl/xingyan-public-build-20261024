@@ -113,6 +113,7 @@ struct OfficialAccountsView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 6) {
                         Text(a.name).font(pf(16, .medium)).foregroundColor(C.label).lineLimit(1)
+                        OfficialMark()
                         typeChip(a)
                     }
                     Text(a.about.isEmpty ? Tr("还没有简介") : a.about)
@@ -165,7 +166,16 @@ struct OfficialAccountPage: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            NavBar(title: account?.name ?? Tr("公众号"), back: { dismiss() })
+            NavBar(title: account?.name ?? Tr("公众号"),
+                   back: { dismiss() },
+                   titleView: account == nil ? nil : AnyView(
+                       HStack(spacing: 6) {
+                           Text(account?.name ?? "")
+                               .font(pf(17, .semibold))
+                               .foregroundColor(C.label)
+                           OfficialMark()
+                       }
+                   ))
             ScrollView {
                 LazyVStack(spacing: 0) {
                     header
@@ -202,7 +212,10 @@ struct OfficialAccountPage: View {
                             .stroke(C.hairline, lineWidth: 0.5)
                     )
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(account?.name ?? "").font(pf(19, .semibold)).foregroundColor(C.label)
+                    HStack(spacing: 6) {
+                        Text(account?.name ?? "").font(pf(19, .semibold)).foregroundColor(C.label)
+                        OfficialMark()
+                    }
                     HStack(spacing: 6) {
                         if let a = account {
                             Text(a.typeLabel)

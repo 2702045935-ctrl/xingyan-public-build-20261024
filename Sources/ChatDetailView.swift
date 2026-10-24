@@ -909,6 +909,14 @@ struct ChatDetailView: View {
             AnyView(VStack(spacing: 0) {
 
             NavBar(title: navTitleShown, back: navBackAction,
+                   titleView: (!selectMode && peerTyping.isEmpty && chat.showsOfficialMark) ? AnyView(
+                       HStack(spacing: 6) {
+                           Text(navTitle)
+                               .font(pf(17, .semibold))
+                               .foregroundColor(C.label)
+                           OfficialMark()
+                       }
+                   ) : nil,
                    leftExtra: selectMode ? nil : leftUnreadBadge,
                    floating: true) {
                 HStack(spacing: 0) {

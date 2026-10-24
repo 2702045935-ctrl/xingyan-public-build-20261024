@@ -889,43 +889,43 @@ struct GroupAvatarMosaic: View {
         }
     }
 
-    private var paths: [String] {
-        Array(users.compactMap {
-            let path = $0.avatarPath
-            return path.isEmpty ? nil : path
-        }.prefix(4))
+    private var slots: [User?] {
+        let picked = Array(users.prefix(4))
+        return (0..<4).map { $0 < picked.count ? picked[$0] : nil }
     }
 
     var body: some View {
         Group {
-            if paths.count >= 4 {
+            if users.count >= 4 {
                 VStack(spacing: 1) {
                     HStack(spacing: 1) {
-                        tile(paths[0], width: (size - 1) / 2, height: (size - 1) / 2)
-                        tile(paths[1], width: (size - 1) / 2, height: (size - 1) / 2)
+                        tile(slots[0], width: (size - 1) / 2, height: (size - 1) / 2)
+                        tile(slots[1], width: (size - 1) / 2, height: (size - 1) / 2)
                     }
                     HStack(spacing: 1) {
-                        tile(paths[2], width: (size - 1) / 2, height: (size - 1) / 2)
-                        tile(paths[3], width: (size - 1) / 2, height: (size - 1) / 2)
+                        tile(slots[2], width: (size - 1) / 2, height: (size - 1) / 2)
+                        tile(slots[3], width: (size - 1) / 2, height: (size - 1) / 2)
                     }
                 }
-            } else if paths.count == 3 {
+            } else if users.count == 3 {
                 VStack(spacing: 1) {
                     HStack(spacing: 1) {
-                        tile(paths[0], width: (size - 1) / 2, height: (size - 1) / 2)
-                        tile(paths[1], width: (size - 1) / 2, height: (size - 1) / 2)
+                        tile(slots[0], width: (size - 1) / 2, height: (size - 1) / 2)
+                        tile(slots[1], width: (size - 1) / 2, height: (size - 1) / 2)
                     }
                     HStack(spacing: 1) {
-                        tile(paths[2], width: (size - 1) / 2, height: (size - 1) / 2)
-                        Color.dyn(0xE5E5E5, 0x36393D)
+                        tile(slots[2], width: (size - 1) / 2, height: (size - 1) / 2)
+                        tile(nil, width: (size - 1) / 2, height: (size - 1) / 2)
                             .frame(width: (size - 1) / 2, height: (size - 1) / 2)
                     }
                 }
-            } else if paths.count == 2 {
+            } else if users.count == 2 {
                 HStack(spacing: 1) {
-                    tile(paths[0], width: (size - 1) / 2, height: size)
-                    tile(paths[1], width: (size - 1) / 2, height: size)
+                    tile(slots[0], width: (size - 1) / 2, height: size)
+                    tile(slots[1], width: (size - 1) / 2, height: size)
                 }
+            } else if let only = users.first {
+                tile(only, width: size, height: size)
             } else {
                 Avatar(path: "", size: size, radius: radius, group: true)
             }
@@ -933,10 +933,6 @@ struct GroupAvatarMosaic: View {
         .frame(width: size, height: size)
         .background(Color.dyn(0xFFFFFF, 0x222528))
         .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: radius, style: .continuous)
-                .stroke(C.hairline.opacity(0.45), lineWidth: 0.5)
-        )
         .task(id: chatId) {
             guard !loaded, !memberIds.isEmpty else { return }
             loaded = true
@@ -949,15 +945,20 @@ struct GroupAvatarMosaic: View {
     }
 
     @ViewBuilder
-    private func tile(_ path: String, width: CGFloat, height: CGFloat) -> some View {
-        if path.isEmpty {
-            Color.dyn(0xE5E5E5, 0x36393D)
-                .frame(width: width, height: height)
-        } else {
+    private func tile(_ user: User?, width: CGFloat, height: CGFloat) -> some View {
+        if let path = user?.avatarPath, !path.isEmpty {
             RemoteImage(path: path, icon: "person.fill")
                 .aspectRatio(contentMode: .fill)
                 .frame(width: width, height: height)
                 .clipped()
+        } else {
+            ZStack {
+                Color.dyn(0xFFFFFF, 0x2A2D31)
+                Image(systemName: user == nil ? "person.3.fill" : "person.fill")
+                    .font(.system(size: min(width, height) * 0.40, weight: .regular))
+                    .foregroundColor(Color.dyn(0xC7C7CC, 0x777C84))
+            }
+                .frame(width: width, height: height)
         }
     }
 }
