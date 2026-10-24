@@ -235,7 +235,7 @@ enum L {
 
     static var bubblePadHPill: CGFloat { bubblePadH + 3 }
 
-    static var msgLineSpacing: CGFloat { o("msgLineSpacing", 3) }
+    static var msgLineSpacing: CGFloat { o("msgLineSpacing", 0) }
 
     static var bubbleMaxW: CGFloat { o("bubbleMaxW", min(310, max(240, width * 0.69))) }
     static var composerH: CGFloat { o("composerH", 56) }
@@ -387,7 +387,7 @@ enum C {
 
     static var meCardBg    : Color { UIConfig.color("meCardBg", 0xFFFFFF, 0x141419) }
 
-    static var bubbleMine  : Color { UIConfig.color("bubbleMineColor", 0xD8F2E4, 0x1DC9BD) }
+    static var bubbleMine  : Color { UIConfig.color("bubbleMineColor", 0x95EC69, 0x1E88C7) }
     static var bubbleOther : Color { UIConfig.color("bubbleOtherColor", 0xFFFFFF, 0x2D2D30) }
     static var bubbleText  : Color { UIConfig.color("bubbleTextColor", 0x191919, 0xEDEDED) }
 

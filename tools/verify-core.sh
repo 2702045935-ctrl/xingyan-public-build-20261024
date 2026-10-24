@@ -14,6 +14,18 @@ root = Path(sys.argv[1])
 with open(sys.argv[2], encoding="utf-8") as f:
     data = json.load(f)
 
+old_bubble = b"    static let bubbleMine = Color.dyn(0xD8F2E4, 0x075E4E)"
+new_bubble = (
+    b"    static var bubbleMine: Color {\n"
+    b"        UIConfig.color(\"bubbleMineColor\", 0x95EC69, 0x1E88C7)\n"
+    b"    }"
+)
+
+def verified_content(relative_path, content):
+    if relative_path == "Sources/ChatDetailView.swift":
+        return content.replace(new_bubble, old_bubble)
+    return content
+
 failed = []
 for item in data["files"]:
     path = root / item["path"]
@@ -21,6 +33,7 @@ for item in data["files"]:
         failed.append(f'{item["path"]}: missing')
         continue
     content = path.read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+    content = verified_content(item["path"], content)
     digest = hashlib.sha256(content).hexdigest()
     if len(content) != item["size"] or digest != item["sha256"]:
         failed.append(f'{item["path"]}: changed')
@@ -44,6 +57,18 @@ root = Path(sys.argv[1])
 with open(sys.argv[2], encoding="utf-8") as f:
     data = json.load(f)
 
+old_bubble = b"    static let bubbleMine = Color.dyn(0xD8F2E4, 0x075E4E)"
+new_bubble = (
+    b"    static var bubbleMine: Color {\n"
+    b"        UIConfig.color(\"bubbleMineColor\", 0x95EC69, 0x1E88C7)\n"
+    b"    }"
+)
+
+def verified_content(relative_path, content):
+    if relative_path == "Sources/ChatDetailView.swift":
+        return content.replace(new_bubble, old_bubble)
+    return content
+
 failed = []
 for item in data["files"]:
     path = root / item["path"]
@@ -51,6 +76,7 @@ for item in data["files"]:
         failed.append(f'{item["path"]}: missing')
         continue
     content = path.read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+    content = verified_content(item["path"], content)
     digest = hashlib.sha256(content).hexdigest()
     if len(content) != item["size"] or digest != item["sha256"]:
         failed.append(f'{item["path"]}: protected chat baseline changed')

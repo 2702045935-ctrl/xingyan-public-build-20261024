@@ -7,7 +7,9 @@ import QuickLook
 private enum ChatTheme {
     static let page = Color.dyn(0xEDEDED, 0x0E1014)
     static let panel = Color.dyn(0xF7F7F7, 0x181A1E)
-    static let bubbleMine = Color.dyn(0xD8F2E4, 0x075E4E)
+    static var bubbleMine: Color {
+        UIConfig.color("bubbleMineColor", 0x95EC69, 0x1E88C7)
+    }
     static let bubbleOther = Color.dyn(0xFFFFFF, 0x25282D)
     static let ink = Color.dyn(0x191919, 0xE9EBF0)
     static let mineInk = Color.dyn(0xFFFFFF, 0xE9EBF0)

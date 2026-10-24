@@ -16,74 +16,143 @@ struct InAppBrowserView: View {
     @State private var currentURL: URL?
     @State private var reloadTick = 0
     @State private var showShare = false
+    @State private var showMenu = false
+    @State private var showAddress = false
     @FocusState private var editingAddress: Bool
     @State private var addressEditing = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            NavBar(title: title.isEmpty ? Tr("浏览器") : title, back: { dismiss() }) {
-                Button { reloadTick += 1 } label: {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(C.label)
-                        .frame(width: 42, height: 42)
+        GeometryReader { geo in
+            ZStack(alignment: .topTrailing) {
+                BrowserWebView(
+                    initialURL: InAppBrowserView.normalizedURL(initialURL),
+                    reloadTick: reloadTick,
+                    title: $title,
+                    progress: $progress,
+                    loading: $loading,
+                    canBack: $canBack,
+                    canForward: $canForward,
+                    currentURL: $currentURL,
+                    address: $address,
+                    addressEditing: $addressEditing
+                )
+                .ignoresSafeArea()
+
+                if loading {
+                    ProgressView(value: progress)
+                        .tint(C.green)
+                        .frame(height: 2)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, geo.safeAreaInsets.top)
+                        .allowsHitTesting(false)
                 }
-                .buttonStyle(.plain)
+
+                if showAddress {
+                    addressOverlay(top: geo.safeAreaInsets.top)
+                        .padding(.horizontal, 12)
+                } else {
+                    floatingControls(top: geo.safeAreaInsets.top)
+                        .padding(.trailing, 10)
+                }
             }
-
-            addressBar
-
-            if loading {
-                ProgressView(value: progress)
-                    .tint(C.green)
-                    .frame(height: 2)
-            } else {
-                Rectangle().fill(C.hairline).frame(height: 0.5)
-            }
-
-            BrowserWebView(
-                initialURL: InAppBrowserView.normalizedURL(initialURL),
-                reloadTick: reloadTick,
-                title: $title,
-                progress: $progress,
-                loading: $loading,
-                canBack: $canBack,
-                canForward: $canForward,
-                currentURL: $currentURL,
-                address: $address,
-                addressEditing: $addressEditing
-            )
-
-            toolbar
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.black)
         }
-        .background(C.pageBg.ignoresSafeArea())
+        .background(Color.black.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .swipeBack { dismiss() }
         .hidesTabBar()
+        .confirmationDialog(title.isEmpty ? Tr("浏览器") : title,
+                            isPresented: $showMenu,
+                            titleVisibility: .visible) {
+            Button(Tr("后退")) { BrowserCommands.shared.back() }
+                .disabled(!canBack)
+            Button(Tr("前进")) { BrowserCommands.shared.forward() }
+                .disabled(!canForward)
+            Button(Tr("刷新")) { BrowserCommands.shared.reload() }
+            if currentURL != nil {
+                Button(Tr("复制链接")) {
+                    if let url = currentURL { UIPasteboard.general.url = url }
+                }
+                Button(Tr("分享")) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+                        showShare = true
+                    }
+                }
+                Button(Tr("用 Safari 打开")) {
+                    if let url = currentURL { UIApplication.shared.open(url) }
+                }
+            }
+            Button(Tr("关闭浏览器"), role: .destructive) { dismiss() }
+            Button(Tr("取消"), role: .cancel) { }
+        }
         .sheet(isPresented: $showShare) {
             if let u = currentURL {
                 ShareSheet(items: [u])
             }
         }
+        .onChange(of: showAddress) { visible in
+            if visible {
+                showMenu = false
+                addressEditing = true
+                editingAddress = true
+            } else {
+                addressEditing = false
+                editingAddress = false
+            }
+        }
     }
 
-    private var addressBar: some View {
+    private func floatingControls(top: CGFloat) -> some View {
+        HStack(spacing: 0) {
+            Button {
+                showAddress = true
+            } label: {
+                Circle()
+                    .fill(Color.white.opacity(0.92))
+                    .frame(width: 7, height: 7)
+                    .frame(width: 34, height: 34)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Tr("打开网址"))
+
+            Rectangle()
+                .fill(Color.primary.opacity(0.16))
+                .frame(width: 0.5, height: 16)
+
+            Button {
+                showMenu = true
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundColor(.primary)
+                    .frame(width: 46, height: 34)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Tr("浏览器菜单"))
+        }
+        .background(.ultraThinMaterial, in: Capsule(style: .continuous))
+        .overlay(Capsule(style: .continuous).stroke(Color.white.opacity(0.28), lineWidth: 0.6))
+        .shadow(color: .black.opacity(0.16), radius: 8, y: 3)
+        .padding(.top, max(6, top + 6))
+    }
+
+    private func addressOverlay(top: CGFloat) -> some View {
         HStack(spacing: 8) {
             Image(systemName: currentURL?.scheme == "https" ? "lock.fill" : "globe")
                 .font(.system(size: 12.5, weight: .semibold))
-                .foregroundColor(C.subLabel)
+                .foregroundColor(.secondary)
             TextField(Tr("输入网址或搜索内容"), text: $address)
                 .font(pf(14.5))
-                .foregroundColor(C.label)
+                .foregroundColor(.primary)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .keyboardType(.URL)
                 .submitLabel(.go)
                 .focused($editingAddress)
-                .onChange(of: editingAddress) { focused in
-                    addressEditing = focused
-                }
-                .onSubmit { reloadTick += 1 }
+                .onSubmit { submitAddress() }
             if !address.isEmpty {
                 Button {
                     address = ""
@@ -91,57 +160,30 @@ struct InAppBrowserView: View {
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 15))
-                        .foregroundColor(C.searchIcon)
+                        .foregroundColor(.secondary)
                 }
                 .buttonStyle(.plain)
             }
+            Button(Tr("关闭")) {
+                showAddress = false
+            }
+            .font(pf(13.5, .medium))
+            .foregroundColor(.secondary)
+            .buttonStyle(.plain)
         }
-        .padding(.horizontal, 11)
-        .frame(height: 38)
-        .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(C.searchBg))
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(C.pageBg)
+        .padding(.horizontal, 13)
+        .frame(height: 42)
+        .background(.ultraThinMaterial, in: Capsule(style: .continuous))
+        .overlay(Capsule(style: .continuous).stroke(Color.white.opacity(0.3), lineWidth: 0.6))
+        .shadow(color: .black.opacity(0.18), radius: 10, y: 4)
+        .padding(.top, max(6, top + 6))
     }
 
-    private var toolbar: some View {
-        HStack {
-            toolbarButton("chevron.left", enabled: canBack) {
-                BrowserCommands.shared.back()
-            }
-            Spacer()
-            toolbarButton("chevron.right", enabled: canForward) {
-                BrowserCommands.shared.forward()
-            }
-            Spacer()
-            toolbarButton("house", enabled: true) {
-                address = "https://m.baidu.com/"
-                reloadTick += 1
-            }
-            Spacer()
-            toolbarButton("square.and.arrow.up", enabled: currentURL != nil) {
-                showShare = true
-            }
-        }
-        .padding(.horizontal, 24)
-        .frame(height: 50)
-        .background(C.cardBg)
-        .overlay(alignment: .top) {
-            Rectangle().fill(C.hairline).frame(height: 0.5)
-        }
-    }
-
-    private func toolbarButton(_ icon: String, enabled: Bool,
-                               action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: icon)
-                .font(.system(size: 18, weight: .medium))
-                .foregroundColor(enabled ? C.label : C.time)
-                .frame(width: 44, height: 44)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .disabled(!enabled)
+    private func submitAddress() {
+        addressEditing = false
+        editingAddress = false
+        showAddress = false
+        reloadTick += 1
     }
 
     static func normalizedURL(_ raw: String) -> URL? {
@@ -167,6 +209,7 @@ final class BrowserCommands {
 
     func back() { web?.goBack() }
     func forward() { web?.goForward() }
+    func reload() { web?.reload() }
 }
 
 private struct BrowserWebView: UIViewRepresentable {
@@ -194,11 +237,12 @@ private struct BrowserWebView: UIViewRepresentable {
         let web = WKWebView(frame: .zero, configuration: config)
         web.navigationDelegate = context.coordinator
         web.uiDelegate = context.coordinator
-        web.allowsBackForwardNavigationGestures = true
+        web.allowsBackForwardNavigationGestures = false
         web.isOpaque = false
         web.backgroundColor = .clear
         web.scrollView.backgroundColor = .clear
-        web.scrollView.contentInsetAdjustmentBehavior = .automatic
+        web.scrollView.contentInsetAdjustmentBehavior = .never
+        web.scrollView.keyboardDismissMode = .interactive
         context.coordinator.web = web
         BrowserCommands.shared.web = web
         context.coordinator.observe(web)

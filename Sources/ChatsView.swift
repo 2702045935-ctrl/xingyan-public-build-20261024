@@ -122,9 +122,8 @@ struct ChatRow: View {
         VStack(alignment: .leading, spacing: max(3, L.rowTextGap - 1)) {
             HStack(spacing: 5) {
                 Text(chat.name)
-                    .font(pf(L.rowNameSize, .medium))
+                    .font(pf(L.rowNameSize))
                     .foregroundColor(C.name)
-                    .kerning(-0.12)
                     .lineLimit(1)
                     .minimumScaleFactor(0.9)
                     .layoutPriority(1)
@@ -143,7 +142,6 @@ struct ChatRow: View {
             }
             mentionPreview
                 .font(pf(L.rowPreviewSize))
-                .kerning(-0.05)
                 .lineLimit(1)
                 .truncationMode(.tail)
         }
@@ -152,7 +150,7 @@ struct ChatRow: View {
     private var mentionPreview: Text {
         let raw = (chat.lastMessage?.preview ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let preview = raw.isEmpty ? fallbackPreview(chat.lastMessage?.kind ?? "") : raw
-        let body = Text(preview).foregroundColor(C.subLabel.opacity(0.94))
+        let body = Text(preview).foregroundColor(C.preview)
         guard chat.lastMessage?.mentionMe == true, chat.unreadCount > 0 else { return body }
         return Text("[有人@我] ").foregroundColor(C.red) + body
     }
@@ -186,7 +184,6 @@ struct ChatRow: View {
             Text(TimeFmt.list(chat.lastMessage?.createdAt ?? chat.updatedAt))
                 .font(pf(L.rowTimeSize, .regular))
                 .foregroundColor(C.time)
-                .kerning(-0.05)
                 .fixedSize()
         }
     }

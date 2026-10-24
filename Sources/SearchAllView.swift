@@ -38,6 +38,7 @@ struct SearchAllView: View {
     @State private var showMoments = false
     @State private var showChannels = false
     @State private var showPlugins = false
+    @State private var showBrowser = false
 
     private let scopes: [(String, String)] = [
         ("all", "全部"), ("people", "联系人"), ("groups", "群聊"),
@@ -184,6 +185,7 @@ struct SearchAllView: View {
         .fullScreenCover(isPresented: $showMoments) { MomentsView().environmentObject(app) }
         .fullScreenCover(isPresented: $showChannels) { ChannelsView().environmentObject(app) }
         .fullScreenCover(isPresented: $showPlugins) { PluginsView().environmentObject(app) }
+        .fullScreenCover(isPresented: $showBrowser) { InAppBrowserView() }
     }
 
     @ViewBuilder private var results: some View {
@@ -204,7 +206,10 @@ struct SearchAllView: View {
         if !matchedTools.isEmpty {
             header(Tr("功能"), matchedTools.count)
             ForEach(matchedTools) { tool in
-                row(tap: { showPlugins = true }) {
+                row(tap: {
+                    if tool.id == "browser" { showBrowser = true }
+                    else { showPlugins = true }
+                }) {
                     Image(systemName: tool.symbol)
                         .font(.system(size: 19, weight: .medium))
                         .foregroundColor(C.green)
