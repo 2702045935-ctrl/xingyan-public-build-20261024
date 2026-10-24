@@ -232,6 +232,9 @@ private var funcs: [(String, String, Color, String)] {
                                     }
                                 }
                                 .background(C.contactsBg)
+
+                                Color.clear
+                                    .frame(height: L.tabH + L.safeBottom + 12)
                             }
                         }
                         .background(C.contactsBg)
