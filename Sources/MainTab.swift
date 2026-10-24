@@ -81,6 +81,7 @@ struct MainTabView: View {
                              contactsDot: app.showDot("contacts", auto: app.friendRequests > 0),
                              momentsDot: app.showDot("discover", auto: app.momentsUnread > 0),
                              meDot: app.showDot("me", auto: false))
+                    .frame(height: max(42, L.tabH - 6))
 
                     .background {
 
