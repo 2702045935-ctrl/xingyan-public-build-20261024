@@ -371,6 +371,7 @@ struct TabBar: View {
     @State private var dragIndex: Int? = nil
 
     @State private var slideX: CGFloat? = nil
+    @State private var slideIndex: Int? = nil
     private let dragHaptic = UIImpactFeedbackGenerator(style: .light)
 
     private func updateDrag(_ x: CGFloat) {
@@ -598,6 +599,12 @@ struct TabBar: View {
                 },
                 onSlide: { x in
 
+                    if barWidth > 1, !items.isEmpty {
+                        let seg = barWidth / CGFloat(items.count)
+                        let i = min(items.count - 1, max(0, Int(x / seg)))
+                        if i != slideIndex { dragHaptic.impactOccurred() }
+                        slideIndex = i
+                    }
                     slideX = x
                 },
                 onSlideEnded: { x in
@@ -608,6 +615,7 @@ struct TabBar: View {
                     }
                     withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
                         slideX = nil
+                        slideIndex = nil
                     }
                 }
             )

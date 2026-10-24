@@ -78,7 +78,7 @@ struct ContactsView: View {
 
     @State private var starIds: [String] = []
 
-    private var listHeadH: CGFloat { L.navH }
+    private var listHeadH: CGFloat { max(0, L.navH - 7) }
 
 private var funcs: [(String, String, Color, String)] {
     [
@@ -144,6 +144,7 @@ private var funcs: [(String, String, Color, String)] {
                 }
 
                 .background { TopGlassBar(scrolled: navScrolled, fallback: C.pageBg, always: true) }
+                .offset(y: -7)
 
                 }
                 .zIndex(1)
@@ -426,12 +427,12 @@ private var funcs: [(String, String, Color, String)] {
         }
         .padding(.leading, 16)
         .padding(.trailing, 18)
-        .frame(height: 58)
+        .frame(height: 56)
         .contentShape(Rectangle())
     }
 
     private var ctFuncs: [(String, String, Color, String)] {
-        let want = ["newFriends", "groups", "tags", "officialAccounts"]
+        let want = ["newFriends", "groups", "tags", "officialAccounts", "work", "myWork"]
         var out: [(String, String, Color, String)] = []
         for k in want {
             if let f = funcs.first(where: { $0.3 == k }) { out.append(f) }
