@@ -1,7 +1,7 @@
 {
   "baseline": "WeChat-style lazy message window + navigation-complete chat mount",
   "files": [
-    { "path": "Sources/ChatDetailView.swift", "size": 208324, "sha256": "ba4bf4640d7406a392bcd0630bf66b10b1ea9d9ca3db32fa8ee17cae55b169b5" },
+    { "path": "Sources/ChatDetailView.swift", "size": 209925, "sha256": "30df9b20852c58ec40d98ecb050ead0edf6d907ad7cb951897d5f115dc104e8a" },
     { "path": "Sources/ChatDeferred.swift", "size": 1482, "sha256": "1f979b7ffceea5f4e1b079371ac586ffd9242ac9b2d1a8f3392991a1c14e52e2" },
     { "path": "Sources/ContactsView.swift", "size": 56536, "sha256": "c56e46f9a0e63c6b005b4236ee591cf0985785f0fd2e84b945418ca118c98f21" },
     { "path": "Sources/ScrollProbe.swift", "size": 7173, "sha256": "6fe825461292711e752af73a353764761577ed5eaddba179660f94720feccb14" }

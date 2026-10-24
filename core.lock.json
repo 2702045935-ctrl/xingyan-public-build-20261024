@@ -1,8 +1,8 @@
 {
   "version": "B669",
   "files": [
-    { "path": "Sources/API.swift", "size": 193725, "sha256": "9ba1cf5b0430d806f0b40518918ca93dd37ef8143bddcd34bcd7a7f160f3091c" },
-    { "path": "Sources/App.swift", "size": 117315, "sha256": "ce590f9184e03c5dd1b8c787e8ab92df67ab9715369a45f3fe97431076260bf1" },
+    { "path": "Sources/API.swift", "size": 194187, "sha256": "4fcdf7e8e962141c68c2c3816a711a4cc10e7c54af100aa5f0ed2fd1f2fa2091" },
+    { "path": "Sources/App.swift", "size": 117695, "sha256": "bd67653d06d54734a447ba876bec6f45747dce0f074d4edd074cc47b0c909055" },
     { "path": "Sources/Realtime.swift", "size": 16812, "sha256": "f83c106ecd1d7c7a4a7452de2edef28cd12b6ba9cc9d4121b0ba8bef3edb4ea2" },
     { "path": "Sources/CallAudio.swift", "size": 26757, "sha256": "40948fb750ccef12892e3beb775f6896291a24578b3c6c0be59c74ac34a9fad8" },
     { "path": "Sources/CallCenter.swift", "size": 67849, "sha256": "39979757ab9f873ab8cf15ec6943df2d862430a2f3a8240bf406fbe73b4f5d20" },
@@ -14,7 +14,7 @@
     { "path": "Sources/LocalStore.swift", "size": 20516, "sha256": "6b3218bbfae2e1db0477a3cf46cc9422532a47b2bf12954870efec84a353e078" },
     { "path": "Sources/MsgFrameKey.swift", "size": 651, "sha256": "fdf3a779255614d9915d9bcf528868ac2517b5feafbfa1180956cd162403993a" },
     { "path": "Sources/PushCenter.swift", "size": 7780, "sha256": "c49cf8ca8275a8a177ae1da719bcff894fdffc8fd8b873f1377eac48107b4c0f" },
-    { "path": "Sources/ChatDetailView.swift", "size": 208324, "sha256": "ba4bf4640d7406a392bcd0630bf66b10b1ea9d9ca3db32fa8ee17cae55b169b5" },
+    { "path": "Sources/ChatDetailView.swift", "size": 209925, "sha256": "30df9b20852c58ec40d98ecb050ead0edf6d907ad7cb951897d5f115dc104e8a" },
     { "path": "Sources/GroupInfoView.swift", "size": 65760, "sha256": "713c8a5f5a3d35bb2e7131c299049be536d07db71dd056392965fb3d62f8d5de" },
     { "path": "Sources/OtherLogin.swift", "size": 3452, "sha256": "5aff74e52ce2e023cb57d226ddacc182fb9a0d508b9ffaba93022ccfbc1f1785" },
     { "path": "Sources/InAppBrowser.swift", "size": 15732, "sha256": "359c5de18ccf0279f49a31101037aa3160f94a4ad92f03de694c87e45767b06a" },
