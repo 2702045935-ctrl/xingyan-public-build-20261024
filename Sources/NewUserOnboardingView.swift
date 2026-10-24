@@ -1,25 +1,19 @@
 import SwiftUI
 import UIKit
 
-private struct OnboardingInterest: Identifiable {
+private struct OnboardingFeature: Identifiable {
     let id: String
     let symbol: String
-    let colors: [Color]
-    let hint: String
+    let title: String
+    let detail: String
 
-    static let all: [OnboardingInterest] = [
-        .init(id: "穿搭", symbol: "sparkles", colors: [Color(hex: 0xFF6B81), Color(hex: 0xFF9E7A)], hint: "OOTD"),
-        .init(id: "美食", symbol: "fork.knife", colors: [Color(hex: 0xFF9D39), Color(hex: 0xFFD166)], hint: "探店"),
-        .init(id: "旅行", symbol: "airplane", colors: [Color(hex: 0x4B8DF8), Color(hex: 0x72D5FF)], hint: "出发"),
-        .init(id: "摄影", symbol: "camera.fill", colors: [Color(hex: 0x6257E8), Color(hex: 0x9B8CFF)], hint: "记录"),
-        .init(id: "运动", symbol: "figure.run", colors: [Color(hex: 0x18B57B), Color(hex: 0x6CE3AE)], hint: "动起来"),
-        .init(id: "音乐", symbol: "music.note", colors: [Color(hex: 0xEC5E95), Color(hex: 0xFF9AC5)], hint: "循环中"),
-        .init(id: "宠物", symbol: "pawprint.fill", colors: [Color(hex: 0xD9854A), Color(hex: 0xF3BE78)], hint: "毛孩子"),
-        .init(id: "游戏", symbol: "gamecontroller.fill", colors: [Color(hex: 0x6C63E8), Color(hex: 0xA895FF)], hint: "开黑"),
-        .init(id: "阅读", symbol: "book.fill", colors: [Color(hex: 0x3E9B84), Color(hex: 0x86D3B8)], hint: "书单"),
-        .init(id: "数码", symbol: "iphone", colors: [Color(hex: 0x4E6D8F), Color(hex: 0x8DB4D9)], hint: "装备"),
-        .init(id: "美妆", symbol: "paintbrush.pointed.fill", colors: [Color(hex: 0xE15E7E), Color(hex: 0xFFA6B9)], hint: "变美"),
-        .init(id: "生活", symbol: "leaf.fill", colors: [Color(hex: 0x62A84E), Color(hex: 0xA8DD80)], hint: "日常")
+    static let all: [OnboardingFeature] = [
+        .init(id: "chat", symbol: "bubble.left.and.bubble.right.fill",
+              title: "聊天与通话", detail: "单聊、群聊、语音和视频通话"),
+        .init(id: "discover", symbol: "safari.fill",
+              title: "动态与服务", detail: "朋友圈、视频号、小程序和常用服务"),
+        .init(id: "security", symbol: "lock.shield.fill",
+              title: "账号与安全", detail: "登录设备、隐私权限和安全设置可随时管理")
     ]
 }
 
@@ -28,17 +22,11 @@ struct NewUserOnboardingView: View {
     @State private var step = 0
     @State private var avatar: UIImage?
     @State private var avatarPath = ""
-    @State private var selectedInterests: Set<String> = []
     @State private var showPicker = false
     @State private var uploading = false
     @State private var saving = false
     @State private var error = ""
     @State private var appeared = false
-
-    private let columns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12)
-    ]
 
     var body: some View {
         ZStack {
@@ -54,7 +42,7 @@ struct NewUserOnboardingView: View {
                                 insertion: .move(edge: .trailing).combined(with: .opacity),
                                 removal: .move(edge: .leading).combined(with: .opacity)))
                     } else {
-                        interestStep
+                        welcomeStep
                             .transition(.asymmetric(
                                 insertion: .move(edge: .trailing).combined(with: .opacity),
                                 removal: .move(edge: .leading).combined(with: .opacity)))
@@ -81,14 +69,14 @@ struct NewUserOnboardingView: View {
 
     private var onboardingBackground: some View {
         ZStack {
-            Color.dyn(0xFFFBF8, 0x121214).ignoresSafeArea()
+            Color.dyn(0xF7F8F7, 0x121214).ignoresSafeArea()
             Circle()
-                .fill(Color(hex: 0xFF7A90).opacity(0.17))
+                .fill(Color(hex: 0x07C160).opacity(0.12))
                 .frame(width: 310, height: 310)
                 .blur(radius: 46)
                 .offset(x: -155, y: -310)
             Circle()
-                .fill(Color(hex: 0xFFB368).opacity(0.13))
+                .fill(Color(hex: 0x3D7EFF).opacity(0.09))
                 .frame(width: 280, height: 280)
                 .blur(radius: 50)
                 .offset(x: 165, y: 285)
@@ -106,7 +94,7 @@ struct NewUserOnboardingView: View {
             HStack(spacing: 7) {
                 ZStack {
                     Circle().fill(LinearGradient(
-                        colors: [Color(hex: 0xFF6B81), Color(hex: 0xFF9A5C)],
+                        colors: [Color(hex: 0x07C160), Color(hex: 0x16B979)],
                         startPoint: .topLeading, endPoint: .bottomTrailing))
                     Image(systemName: "sparkles")
                         .font(.system(size: 13, weight: .bold))
@@ -122,7 +110,7 @@ struct NewUserOnboardingView: View {
                 ForEach(0..<2, id: \.self) { index in
                     Capsule()
                         .fill(index <= step
-                              ? LinearGradient(colors: [Color(hex: 0xFF6B81), Color(hex: 0xFF9A5C)],
+                              ? LinearGradient(colors: [Color(hex: 0x07C160), Color(hex: 0x16B979)],
                                                startPoint: .leading, endPoint: .trailing)
                               : LinearGradient(colors: [C.subLabel.opacity(0.18), C.subLabel.opacity(0.18)],
                                                startPoint: .leading, endPoint: .trailing))
@@ -138,12 +126,12 @@ struct NewUserOnboardingView: View {
     private var avatarStep: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
-                Text("先让大家记住你")
-                    .font(.system(size: 31, weight: .bold))
+                Text("完善个人资料")
+                    .font(.system(size: 30, weight: .bold))
                     .foregroundColor(C.label)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.top, 44)
-                Text("一张清晰、有辨识度的头像，是新朋友认识你的第一步。")
+                Text("设置一张清晰头像，方便联系人和群成员识别你。")
                     .font(.system(size: 14.5))
                     .foregroundColor(C.subLabel)
                     .lineSpacing(5)
@@ -154,10 +142,10 @@ struct NewUserOnboardingView: View {
                     ZStack {
                         Circle()
                             .fill(LinearGradient(
-                                colors: [Color(hex: 0xFF6B81), Color(hex: 0xFF9F5A), Color(hex: 0xFFD36E)],
+                                colors: [Color(hex: 0x07C160), Color(hex: 0x25C885), Color(hex: 0x82E5B9)],
                                 startPoint: .topLeading, endPoint: .bottomTrailing))
                             .frame(width: 172, height: 172)
-                            .shadow(color: Color(hex: 0xFF786F).opacity(0.25), radius: 25, y: 14)
+                            .shadow(color: Color(hex: 0x07C160).opacity(0.20), radius: 25, y: 14)
 
                         if let avatar {
                             Image(uiImage: avatar)
@@ -174,11 +162,11 @@ struct NewUserOnboardingView: View {
                                     .font(.system(size: 48, weight: .light))
                                     .foregroundColor(C.subLabel.opacity(0.62))
                                 if uploading {
-                                    ProgressView().tint(Color(hex: 0xFF6B81))
+                                    ProgressView().tint(Color(hex: 0x07C160))
                                 } else {
                                     Label("选择头像", systemImage: "camera.fill")
                                         .font(.system(size: 13, weight: .medium))
-                                        .foregroundColor(Color(hex: 0xFF6B81))
+                                        .foregroundColor(Color(hex: 0x07C160))
                                 }
                             }
                         }
@@ -228,94 +216,84 @@ struct NewUserOnboardingView: View {
         }
     }
 
-    private var interestStep: some View {
-        VStack(spacing: 0) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("找到你的同频圈子")
-                        .font(.system(size: 29, weight: .bold))
-                        .foregroundColor(C.label)
-                    Text("选择 2～5 个兴趣，我们会优先展示你更喜欢的内容。")
-                        .font(.system(size: 14))
-                        .foregroundColor(C.subLabel)
-                        .lineSpacing(4)
-                }
-                Spacer(minLength: 8)
-                Text("\(selectedInterests.count)/5")
-                    .font(.system(size: 12.5, weight: .semibold))
-                    .foregroundColor(selectedInterests.count >= 2 ? Color(hex: 0xFF6B81) : C.subLabel)
-                    .padding(.horizontal, 11)
-                    .frame(height: 27)
-                    .background(Capsule().fill(Color.dyn(0xFFFFFF, 0x222225)))
-                    .overlay(Capsule().stroke(C.hairline, lineWidth: 0.6))
-                    .padding(.top, 5)
-            }
-            .padding(.top, 34)
-            .padding(.bottom, 22)
+    private var welcomeStep: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("欢迎开始使用")
+                    .font(.system(size: 30, weight: .bold))
+                    .foregroundColor(C.label)
+                    .padding(.top, 36)
+                Text("账号已经创建。下面是星言的主要功能，进入后可随时在「发现」和「我」中找到。")
+                    .font(.system(size: 14.5))
+                    .foregroundColor(C.subLabel)
+                    .lineSpacing(5)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 11)
 
-            ScrollView(showsIndicators: false) {
-                LazyVGrid(columns: columns, spacing: 12) {
-                    ForEach(OnboardingInterest.all) { interest in
-                        interestCard(interest)
+                VStack(spacing: 10) {
+                    ForEach(OnboardingFeature.all) { feature in
+                        featureCard(feature)
                     }
                 }
+                .padding(.top, 26)
+
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: "checkmark.shield.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(Color(hex: 0x07C160))
+                        .padding(.top, 1)
+                    Text("头像和资料之后可在「我 → 个人信息」中修改；登录设备与隐私权限在「我 → 设置」中管理。")
+                        .font(.system(size: 12.5))
+                        .foregroundColor(C.subLabel)
+                        .lineSpacing(4)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(14)
+                .background(
+                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .fill(Color(hex: 0x07C160).opacity(0.07))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .stroke(Color(hex: 0x07C160).opacity(0.18), lineWidth: 0.7)
+                )
+                .padding(.top, 18)
                 .padding(.bottom, 18)
             }
         }
     }
 
-    private func interestCard(_ interest: OnboardingInterest) -> some View {
-        let selected = selectedInterests.contains(interest.id)
-        return Button {
-            let generator = UISelectionFeedbackGenerator()
-            generator.selectionChanged()
-            if selected {
-                selectedInterests.remove(interest.id)
-            } else if selectedInterests.count < 5 {
-                selectedInterests.insert(interest.id)
+    private func featureCard(_ feature: OnboardingFeature) -> some View {
+        HStack(spacing: 13) {
+            Image(systemName: feature.symbol)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(Color(hex: 0x07C160))
+                .frame(width: 42, height: 42)
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color(hex: 0x07C160).opacity(0.10))
+                )
+            VStack(alignment: .leading, spacing: 3) {
+                Text(feature.title)
+                    .font(.system(size: 15.5, weight: .semibold))
+                    .foregroundColor(C.label)
+                Text(feature.detail)
+                    .font(.system(size: 12.5))
+                    .foregroundColor(C.subLabel)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-        } label: {
-            HStack(spacing: 11) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 11, style: .continuous)
-                        .fill(LinearGradient(colors: interest.colors,
-                                             startPoint: .topLeading, endPoint: .bottomTrailing))
-                    Image(systemName: interest.symbol)
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.white)
-                }
-                .frame(width: 39, height: 39)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(interest.id)
-                        .font(.system(size: 15.5, weight: .semibold))
-                        .foregroundColor(C.label)
-                    Text(interest.hint)
-                        .font(.system(size: 11.5))
-                        .foregroundColor(C.subLabel)
-                }
-                Spacer(minLength: 0)
-                Image(systemName: selected ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(selected ? Color(hex: 0xFF6B81) : C.subLabel.opacity(0.28))
-            }
-            .padding(.horizontal, 12)
-            .frame(height: 67)
-            .background(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(selected
-                          ? Color(hex: 0xFF6B81).opacity(0.09)
-                          : Color.dyn(0xFFFFFF, 0x1D1D20).opacity(0.94))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(selected ? Color(hex: 0xFF6B81).opacity(0.72) : C.hairline,
-                            lineWidth: selected ? 1.25 : 0.55)
-            )
-            .scaleEffect(selected ? 1.015 : 1)
-            .animation(.spring(response: 0.28, dampingFraction: 0.78), value: selected)
+            Spacer(minLength: 0)
         }
-        .buttonStyle(OnboardingPressStyle())
+        .padding(.horizontal, 14)
+        .frame(minHeight: 72)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.dyn(0xFFFFFF, 0x1D1D20).opacity(0.96))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(C.hairline, lineWidth: 0.55)
+        )
     }
 
     private var bottomAction: some View {
@@ -335,10 +313,6 @@ struct NewUserOnboardingView: View {
                     error = ""
                     withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) { step = 1 }
                 } else {
-                    guard selectedInterests.count >= 2 else {
-                        error = "请至少选择两个兴趣分类"
-                        return
-                    }
                     finish()
                 }
             } label: {
@@ -346,7 +320,7 @@ struct NewUserOnboardingView: View {
                     if saving {
                         ProgressView().tint(.white)
                     }
-                    Text(step == 0 ? "继续" : saving ? "正在创建你的主页…" : "完成，进入星言")
+                    Text(step == 0 ? "继续" : saving ? "正在完成设置…" : "完成，进入星言")
                         .font(.system(size: 16, weight: .semibold))
                     if step == 0 && !saving {
                         Image(systemName: "arrow.right")
@@ -359,11 +333,11 @@ struct NewUserOnboardingView: View {
                 .background(
                     Capsule().fill(LinearGradient(
                         colors: canContinue
-                              ? [Color(hex: 0xFF6B81), Color(hex: 0xFF955C)]
+                              ? [Color(hex: 0x07C160), Color(hex: 0x16B979)]
                               : [C.subLabel.opacity(0.28), C.subLabel.opacity(0.28)],
                         startPoint: .leading, endPoint: .trailing))
                 )
-                .shadow(color: canContinue ? Color(hex: 0xFF6B81).opacity(0.22) : .clear,
+                .shadow(color: canContinue ? Color(hex: 0x07C160).opacity(0.20) : .clear,
                         radius: 16, y: 8)
             }
             .buttonStyle(OnboardingPressStyle())
@@ -386,7 +360,7 @@ struct NewUserOnboardingView: View {
 
     private var canContinue: Bool {
         if step == 0 { return !avatarPath.isEmpty && !uploading && !saving }
-        return selectedInterests.count >= 2 && !saving
+        return !saving
     }
 
     private func uploadAvatar(_ image: UIImage) {
@@ -414,10 +388,9 @@ struct NewUserOnboardingView: View {
         guard !saving else { return }
         saving = true
         error = ""
-        let interests = OnboardingInterest.all.map(\.id).filter { selectedInterests.contains($0) }
         Task {
             do {
-                try await app.finishNewUserOnboarding(avatar: avatarPath, interests: interests)
+                try await app.finishNewUserOnboarding(avatar: avatarPath, interests: [])
                 await MainActor.run {
                     let generator = UINotificationFeedbackGenerator()
                     generator.notificationOccurred(.success)
