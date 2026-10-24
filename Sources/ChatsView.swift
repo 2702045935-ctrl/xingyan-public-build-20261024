@@ -19,6 +19,24 @@ struct RowSwipeCatcher: UIViewRepresentable {
         var onEnded: (CGFloat, CGFloat) -> Void = { _, _ in }
 
         private var horizontal = false
+        private weak var frozenScroll: UIScrollView?
+
+        private func freezeEnclosingScroll(_ view: UIView?) {
+            var candidate = view
+            while let current = candidate {
+                if let scroll = current as? UIScrollView {
+                    scroll.isScrollEnabled = false
+                    frozenScroll = scroll
+                    return
+                }
+                candidate = current.superview
+            }
+        }
+
+        private func restoreEnclosingScroll() {
+            frozenScroll?.isScrollEnabled = true
+            frozenScroll = nil
+        }
 
         @objc func handlePan(_ g: UIPanGestureRecognizer) {
             let t = g.translation(in: g.view)
@@ -30,11 +48,13 @@ struct RowSwipeCatcher: UIViewRepresentable {
 
                     guard abs(t.x) > abs(t.y) + 4 else { return }
                     horizontal = true
+                    freezeEnclosingScroll(g.view)
                     onBegan()
                 }
                 onChanged(t.x)
             case .ended, .cancelled, .failed:
                 if horizontal { onEnded(t.x, g.velocity(in: g.view).x) }
+                restoreEnclosingScroll()
                 horizontal = false
             default:
                 break
