@@ -673,7 +673,11 @@ private struct UserPayload: Decodable { var user: User? }
 private struct LoginPayload: Decodable { var user: User? }
 private struct SessionPayload: Decodable { var authenticated: Bool?; var user: User? }
 private struct PhoneCodePayload: Decodable { var sent: Bool?; var devCode: String?; var nickname: String? }
-private struct CaptchaPayload: Decodable { var id: String?; var svg: String? }
+private struct CaptchaPayload: Decodable {
+    var id: String?
+    var svg: String?
+    var required: Bool?
+}
 private struct PairStartPayload: Decodable { var code: String?; var expiresIn: Int? }
 private struct PairStatusPayload: Decodable { var status: String?; var user: User?; var token: String? }
 private struct MomentsPayload: Decodable {
@@ -2413,9 +2417,9 @@ final class API {
         return payload.devCode
     }
 
-    func captcha() async throws -> (id: String, svg: String) {
+    func captcha() async throws -> (id: String, svg: String, required: Bool) {
         let payload: CaptchaPayload = try await get("/api/captcha", as: CaptchaPayload.self)
-        return (payload.id ?? "", payload.svg ?? "")
+        return (payload.id ?? "", payload.svg ?? "", payload.required ?? true)
     }
 
     func register(username: String, nickname: String, password: String, captchaId: String, captcha: String) async throws -> User {

@@ -2527,6 +2527,7 @@ struct RegisterSheet: View {
     @State private var cap = ""
     @State private var capId = ""
     @State private var capSvg = ""
+    @State private var capRequired = true
     @State private var busy = false
     @State private var error: String?
 
@@ -2541,19 +2542,21 @@ struct RegisterSheet: View {
                     .textInputAutocapitalization(.never)
                     .privacySensitive()
                     .frame(height: 54).padding(.horizontal, 14)
-                HairLine(color: C.navLine)
-                HStack(spacing: 10) {
-                    TextField("4 位数字验证码", text: $cap)
-                        .autocorrectionDisabled(true)
-                        .keyboardType(.numberPad)
-                    CaptchaView(svg: capSvg)
-                        .frame(width: 96, height: 36)
-                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(C.navLine, lineWidth: 0.5))
-                        .onTapGesture { loadCaptcha() }
+                if capRequired {
+                    HairLine(color: C.navLine)
+                    HStack(spacing: 10) {
+                        TextField("4 位数字验证码", text: $cap)
+                            .autocorrectionDisabled(true)
+                            .keyboardType(.numberPad)
+                        CaptchaView(svg: capSvg)
+                            .frame(width: 96, height: 36)
+                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(C.navLine, lineWidth: 0.5))
+                            .onTapGesture { loadCaptcha() }
+                    }
+                    .font(.system(size: 15))
+                    .frame(height: 54).padding(.horizontal, 14)
                 }
-                .font(.system(size: 15))
-                .frame(height: 54).padding(.horizontal, 14)
 
                 if let e = error {
                     Text(e).font(.system(size: 13)).foregroundColor(C.red)
@@ -2582,12 +2585,17 @@ struct RegisterSheet: View {
 
     private func loadCaptcha() {
         Task {
-            if let c = try? await API.shared.captcha() { capId = c.id; capSvg = c.svg }
+            if let c = try? await API.shared.captcha() {
+                capId = c.id
+                capSvg = c.svg
+                capRequired = c.required
+                if !c.required { cap = "" }
+            }
         }
     }
     private func submit() {
         if password.count < 6 { error = "密码至少 6 位"; return }
-        if cap.isEmpty { error = "请填写图形验证码"; return }
+        if capRequired && cap.isEmpty { error = "请填写图形验证码"; return }
         busy = true; error = nil
         Task {
             do {
