@@ -642,6 +642,7 @@ struct NavBar<Right: View>: View {
     var floating: Bool = true
 
     var leftExtraGlass: Bool = true
+    var rightGlass: Bool = true
     private let right: Right
 
     init(title: String,
@@ -651,6 +652,7 @@ struct NavBar<Right: View>: View {
          leftExtra: AnyView? = nil,
          floating: Bool = true,
          leftExtraGlass: Bool = true,
+         rightGlass: Bool = true,
          @ViewBuilder right: () -> Right) {
         self.title = title
         self.titleView = titleView
@@ -659,6 +661,7 @@ struct NavBar<Right: View>: View {
         self.leftExtra = leftExtra
         self.floating = floating
         self.leftExtraGlass = leftExtraGlass
+        self.rightGlass = rightGlass
         self.right = right()
     }
 
@@ -727,10 +730,12 @@ struct NavBar<Right: View>: View {
                     right
                         .frame(height: 36)
                         .background {
-                            GlassBackground(shape: Capsule(),
-                                            shadow: true,
-                                            seed: 0.80,
-                                            darkEdgeOff: true)
+                            if rightGlass {
+                                GlassBackground(shape: Capsule(),
+                                                shadow: true,
+                                                seed: 0.80,
+                                                darkEdgeOff: true)
+                            }
                         }
                         .padding(.trailing, 10)
                 } else {

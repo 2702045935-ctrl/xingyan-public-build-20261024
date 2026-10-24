@@ -75,20 +75,22 @@ struct NavPlusGlassBackground: View {
     @Environment(\.colorScheme) private var scheme
 
     var body: some View {
+        let base = UIConfig.color("navPlusBg", 0x51A969, 0x51A969)
         ZStack {
-            GlassBackground(shape: Capsule(style: .continuous),
-                            opacity: scheme == .dark ? 0.78 : 0.88,
-                            edgeAlpha: scheme == .dark ? 0.26 : 0.42,
-                            shadow: true,
-                            seed: 0.57,
-                            native: true)
-            Capsule(style: .continuous)
-                .fill(UIConfig.color("navPlusBg", 0x0F5A3C, 0x0F5A3C))
-                .opacity(scheme == .dark ? 0.28 : 0.14)
-            Capsule(style: .continuous)
-                .stroke(Color.white.opacity(scheme == .dark ? 0.22 : 0.58),
+            Circle().fill(base)
+            Circle().fill(
+                LinearGradient(colors: [
+                    Color.white.opacity(scheme == .dark ? 0.13 : 0.18),
+                    Color.clear,
+                    Color.black.opacity(scheme == .dark ? 0.10 : 0.07)
+                ], startPoint: .topLeading, endPoint: .bottomTrailing)
+            )
+            Circle()
+                .stroke(Color.white.opacity(scheme == .dark ? 0.16 : 0.24),
                         lineWidth: 0.7)
         }
+        .shadow(color: Color.black.opacity(scheme == .dark ? 0.30 : 0.16),
+                radius: 8, y: 4)
     }
 }
 

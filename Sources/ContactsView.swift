@@ -126,7 +126,8 @@ private var funcs: [(String, String, Color, String)] {
 
                 NavBar(title: C.tabText1,
                        floating: true,
-                       leftExtraGlass: false) {
+                       leftExtraGlass: false,
+                       rightGlass: false) {
                     Button {
 
                         withAnimation(.spring(response: 0.32, dampingFraction: 0.62)) { plusMenu = true }
@@ -135,8 +136,8 @@ private var funcs: [(String, String, Color, String)] {
 
                             .font(pf(UIConfig.num("navPlusSize", 20)))
                             .foregroundColor(UIConfig.color("navPlusInk", 0xFFFFFF, 0xFFFFFF))
-                            .frame(width: UIConfig.num("navPlusW", 44),
-                                   height: UIConfig.num("navPlusH", 36))
+                            .frame(width: UIConfig.num("navPlusW", 42),
+                                   height: UIConfig.num("navPlusH", 42))
                             .background { NavPlusGlassBackground() }
                     }
 

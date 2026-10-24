@@ -1406,7 +1406,8 @@ struct ChatsView: View {
                            ),
 
                            floating: true,
-                           leftExtraGlass: false) {
+                           leftExtraGlass: false,
+                           rightGlass: false) {
                         Button {
 
                             withAnimation(.spring(response: 0.32, dampingFraction: 0.62)) { plusMenu = true }
@@ -1415,8 +1416,8 @@ struct ChatsView: View {
                                      size: UIConfig.num("navPlusSize", 20),
                                      color: UIConfig.color("navPlusInk", 0xFFFFFF, 0xFFFFFF),
                                      symbol: "plus")
-                                .frame(width: UIConfig.num("navPlusW", 44),
-                                       height: UIConfig.num("navPlusH", 36))
+                                .frame(width: UIConfig.num("navPlusW", 42),
+                                       height: UIConfig.num("navPlusH", 42))
                                 .background { NavPlusGlassBackground() }
                         }
 
