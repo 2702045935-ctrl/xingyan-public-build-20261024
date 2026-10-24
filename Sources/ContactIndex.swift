@@ -27,9 +27,10 @@ struct ContactIndexBar: View {
 
     private var dotSide: CGFloat { max(15, rowH + 1.5) }
 
-    private var initialLetter: String {
-        Self.letters.first(where: { available.contains($0) }) ?? "A"
+    private var letters: [String] {
+        Self.letters.filter { available.contains($0) }
     }
+    private var initialLetter: String { letters.first ?? "A" }
     private var shownLetter: String { touching ? (active ?? initialLetter) : initialLetter }
 
     private var activeBg: Color { UIConfig.colorIfSet("ctIdxActiveBg") ?? C.green }
@@ -46,7 +47,7 @@ struct ContactIndexBar: View {
             .accessibilityLabel(Tr("搜索"))
 
             VStack(spacing: 0) {
-                ForEach(Self.letters, id: \.self) { L in
+                ForEach(letters, id: \.self) { L in
                     Text(L)
                         .font(pf(fontSize, ctIdxWeight()))
 
@@ -67,9 +68,10 @@ struct ContactIndexBar: View {
                 DragGesture(minimumDistance: 0)
                     .updating($touching) { _, state, _ in state = true }
                     .onChanged { value in
-                        let i = max(0, min(Self.letters.count - 1,
+                        guard !letters.isEmpty else { return }
+                        let i = max(0, min(letters.count - 1,
                                            Int(floor(value.location.y / pitch))))
-                        pick(Self.letters[i])
+                        pick(letters[i])
                     }
                     .onEnded { _ in
                         active = nil
