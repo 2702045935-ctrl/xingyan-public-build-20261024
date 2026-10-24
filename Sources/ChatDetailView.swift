@@ -1799,6 +1799,7 @@ struct ChatDetailView: View {
                     }
             }
         }
+        .padding(.leading, selectMode ? 34 : 0)
         .overlay(alignment: .leading) {
             if selectMode {
                 Image(systemName: selected.contains(message.id)
