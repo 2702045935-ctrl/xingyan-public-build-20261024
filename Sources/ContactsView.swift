@@ -86,21 +86,29 @@ private var funcs: [(String, String, Color, String)] {
         (Tr("群聊"), I.groups, Color(hex: 0x22AC8B), "groups"),
         (Tr("仅聊天的朋友"), I.chatOnly, Color(hex: 0x8E8E99), "chatOnly"),
         (Tr("标签"), I.tag, Color(hex: 0x4C93DD), "tags"),
-        (Tr("公众号"), I.service, Color(hex: 0x4C93DD), "officialAccounts"),
-        (Tr("企业联系人"), I.workMate, Color(hex: 0x35A87E), "work"),
-        (Tr("我的企业"), I.myWork, Color(hex: 0x35A87E), "myWork")
+        (Tr("公众号"), I.service, Color(hex: 0x4C93DD), "officialAccounts")
     ]
 }
 
+    private func hiddenContact(_ user: User) -> Bool {
+        let username = (user.username ?? "").lowercased()
+        if username == "ai" || username == "housekeeper" { return true }
+        let name = user.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return name == "ai助手" || name == "ai 助手" || name == "小星"
+    }
+
     private var filtered: [User] {
-        let sorted = app.contacts.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+        let sorted = app.contacts.filter { !hiddenContact($0) }
+            .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
         guard !keyword.isEmpty else { return sorted }
         return sorted.filter { $0.name.contains(keyword) || ($0.username ?? "").contains(keyword) }
     }
 
     private var starUsers: [User] {
         guard !starIds.isEmpty else { return [] }
-        return starIds.compactMap { id in app.contacts.first { $0.id == id } }
+        return starIds.compactMap { id in
+            app.contacts.first { $0.id == id && !hiddenContact($0) }
+        }
     }
 
     private var sections: [ContactSection] {
@@ -425,7 +433,7 @@ private var funcs: [(String, String, Color, String)] {
     }
 
     private var ctFuncs: [(String, String, Color, String)] {
-        let want = ["newFriends", "groups", "tags", "officialAccounts", "work", "myWork"]
+        let want = ["newFriends", "groups", "tags", "officialAccounts"]
         var out: [(String, String, Color, String)] = []
         for k in want {
             if let f = funcs.first(where: { $0.3 == k }) { out.append(f) }
