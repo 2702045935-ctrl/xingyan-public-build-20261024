@@ -554,6 +554,7 @@ struct ChatsView: View {
     @State private var scrolled: CGFloat = 0
 
     @State private var pullDown: CGFloat = 0
+    @State private var floorDragActive = false
 
     @State private var floorUp = false
 
@@ -1257,6 +1258,16 @@ struct ChatsView: View {
                             .onChanged { g in
                                 guard scrolled < 8 else { return }
                                 let dy = g.translation.height
+                                let dx = abs(g.translation.width)
+                                if !floorDragActive {
+                                    if dx > max(10, abs(dy) * 1.15) {
+                                        if pullDown != 0 { pullDown = 0 }
+                                        floorTick = 0
+                                        return
+                                    }
+                                    guard dy > 10, dy > dx * 1.15 else { return }
+                                    floorDragActive = true
+                                }
                                 if floorOn, dy > 0 {
                                     pullDown = heavyPull(dy)
 
@@ -1277,7 +1288,8 @@ struct ChatsView: View {
                             .onEnded { g in
 
                                 let fling = abs(g.predictedEndTranslation.height - g.translation.height)
-                                let open = floorOn && pullDown > floorPull && fling < 220
+                                let open = floorDragActive && floorOn && pullDown > floorPull && fling < 220
+                                floorDragActive = false
 
                                 if open {
                                     floorImpact(3)
