@@ -219,7 +219,7 @@ struct CardShareView: View {
                 HStack(spacing: 5) {
                     Image(systemName: "person.text.rectangle")
                         .font(.system(size: 11, weight: .semibold))
-                    Text(Tr("个人名片"))
+                    Text(Tr("星言身份卡"))
                         .font(pf(11.5, .medium))
                     Spacer(minLength: 0)
                 }
