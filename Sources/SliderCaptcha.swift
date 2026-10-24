@@ -122,7 +122,7 @@ struct SliderCaptchaView: View {
                 .fill((done ? C.green : Color.dyn(0x19A47A, 0x1DC9BD)).opacity(0.16))
                 .frame(width: dragX + pw, height: trackH)
 
-            Text(done ? Tr("验证通过") : (busy ? Tr("正在核对…") : Tr("按住滑块，拖到最右边")))
+            Text(done ? Tr("验证通过") : (busy ? Tr("正在核对…") : Tr("按住滑块，拖到缺口位置")))
                 .font(.system(size: 12.5))
                 .foregroundColor(done ? C.green : C.subLabel)
                 .frame(maxWidth: .infinity)

@@ -301,7 +301,7 @@ struct TabBarTouchLayer: UIViewRepresentable {
         let press = UILongPressGestureRecognizer(target: context.coordinator,
                                                  action: #selector(Coord.handlePress(_:)))
 
-        press.minimumPressDuration = UIConfig.num("tabLoupePress", 0.22)
+        press.minimumPressDuration = min(0.22, max(0.18, UIConfig.num("tabLoupePress", 0.22)))
 
         press.allowableMovement = 10000
         press.delegate = context.coordinator
@@ -432,15 +432,46 @@ struct TabBar: View {
 
     @ViewBuilder
     private func magnifier(_ i: Int, x: CGFloat) -> some View {
-        /* WhatsApp 长按后的效果只是“一个更大的 Filled 图标跟着手指走”：
-           没有浮球、没有玻璃圆底，也不把底栏文字抬起来。
-           后台旧值 72 会让图标大得离谱，所以这里按截图比例限制到 30–32pt。 */
-        let d = min(32, max(28, UIConfig.num("tabLoupeSize", 30)))
+        /* WhatsApp 的预览是一个悬浮液体玻璃胶囊：图标和文字一起装在
+           28pt 圆角胶囊里，按节点磁吸移动；切换节点时只替换泡内内容，
+           旧内容向一侧滑出，新内容延迟 25ms 从另一侧滑入，形成粘连感。 */
+        let h = 52.0
         if i < items.count {
-            Image(systemName: items[i].1)
-                .font(.system(size: d, weight: .regular))
+            ZStack {
+                Capsule(style: .continuous)
+                    .fill(.ultraThinMaterial)
+                    .opacity(0.92)
+                Capsule(style: .continuous)
+                    .fill(scheme == .dark ? Color.black.opacity(0.24) : Color.white.opacity(0.18))
+                Capsule(style: .continuous)
+                    .stroke(
+                        LinearGradient(
+                            colors: [Color.white.opacity(0.78), Color.white.opacity(0.18)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        ),
+                        lineWidth: 0.8
+                    )
+                VStack(spacing: 0) {
+                    Image(systemName: items[i].1)
+                        .font(.system(size: 28, weight: .regular))
+                    Text(items[i].2)
+                        .font(pf(14, .medium))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                }
                 .foregroundColor(selColor)
-                .frame(width: d + 6, height: d + 6)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .id(i)
+                .transition(.asymmetric(
+                    insertion: .offset(x: 10).combined(with: .opacity),
+                    removal: .offset(x: -10).combined(with: .opacity)
+                ))
+                .animation(.easeOut(duration: 0.12), value: i)
+            }
+            .frame(width: 92, height: h)
+            .shadow(color: .black.opacity(0.22), radius: 16, y: 8)
+            .animation(.interactiveSpring(response: 0.18, dampingFraction: 0.82), value: i)
         }
     }
 
@@ -507,6 +538,9 @@ struct TabBar: View {
                             }
                         }
                         .frame(width: L.tabIconBox + 10, height: L.tabIconBox + 3)
+                        .scaleEffect(dragIndex == i ? 1.08 : 1)
+                        .opacity(dragIndex != nil && dragIndex != i ? 0.58 : 1)
+                        .animation(.easeOut(duration: 0.12), value: dragIndex)
                         Text(items[i].2)
                             .font(pf(UIConfig.num("tabLabel", L.tabLabel),
                                      selection == i ? .medium : .regular))
@@ -598,10 +632,8 @@ struct TabBar: View {
                         let i = min(items.count - 1, max(0, Int(x / seg)))
                         if i != slideIndex { dragHaptic.impactOccurred() }
                         slideIndex = i
-                        dragIndex = i
                     }
                     slideX = x
-                    dragX = x
                 },
                 onSlideEnded: { x in
 
@@ -621,7 +653,13 @@ struct TabBar: View {
         .overlay(alignment: .topLeading) {
             if let i = dragIndex, let x = dragX {
                 magnifier(i, x: x)
-                    .position(x: x, y: max(22, min(L.tabH - 10, L.tabH * 0.42)))
+                    .position(
+                        x: barWidth > 1
+                            ? (barWidth / CGFloat(items.count)) * (CGFloat(i) + 0.5)
+                            : x,
+                        y: 8
+                    )
+                    .animation(.interactiveSpring(response: 0.20, dampingFraction: 0.82), value: i)
                     .transition(.scale.combined(with: .opacity))
                     .allowsHitTesting(false)
             }
