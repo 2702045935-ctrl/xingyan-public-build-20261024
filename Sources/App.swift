@@ -769,12 +769,19 @@ final class AppState: ObservableObject {
         var current: [String: Chat] = [:]
         for chat in chats { current[chat.id] = chat }
         var merged = fresh.map { server -> Chat in
-            if let stamp = optimisticAt[server.id], now.timeIntervalSince(stamp) >= 86_400 {
+            let stamp = optimisticAt[server.id]
+            if let stamp, now.timeIntervalSince(stamp) >= 86_400 {
                 optimisticChats[server.id] = nil
                 optimisticAt[server.id] = nil
             }
             guard let local = optimisticChats[server.id] ?? current[server.id] else { return server }
             var out = mergeServerChat(server, local: local)
+            /* 实时消息先把未读数加上，随后 400ms 的列表刷新可能拿到尚未追上
+               阅读游标的旧快照。短时间内必须保留本地较大的未读数，否则红点会闪一下消失。 */
+            if let stamp, now.timeIntervalSince(stamp) < 90,
+               local.unreadCount > out.unreadCount {
+                out.unread = local.unreadCount
+            }
             if let stamp = optimisticAt[server.id], now.timeIntervalSince(stamp) < 86_400,
                serverCaughtUp(server, local: local) {
                 optimisticChats[server.id] = nil
@@ -855,6 +862,7 @@ final class AppState: ObservableObject {
                 && (serverHasPreview || !localHasPreview)
         }
         return (serverLast.createdAt ?? "") > (localLast.createdAt ?? "")
+            && server.unreadCount >= local.unreadCount
     }
 
     func markChatReadLocally(_ chatId: String) {
