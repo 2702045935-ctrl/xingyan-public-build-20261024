@@ -367,6 +367,10 @@ final class AppState: ObservableObject {
         case "toast":
 
             if !ev.announce.isEmpty { show(ev.announce) }
+        case "ui":
+            /* 后台改标题、行文案和界面样式后会发送 ui 事件。
+               以前这里被忽略，必须杀进程重开才能看到；现在当场重拉配置。 */
+            Task { [weak self] in await self?.refreshUI(force: true) }
         case "transferRemind":
 
             show(ev.announce.isEmpty ? "对方提醒你确认收款" : ev.announce)
@@ -2539,7 +2543,9 @@ struct RegisterSheet: View {
                     .frame(height: 54).padding(.horizontal, 14)
                 HairLine(color: C.navLine)
                 HStack(spacing: 10) {
-                    TextField("图形验证码", text: $cap).autocorrectionDisabled(true)
+                    TextField("4 位数字验证码", text: $cap)
+                        .autocorrectionDisabled(true)
+                        .keyboardType(.numberPad)
                     CaptchaView(svg: capSvg)
                         .frame(width: 96, height: 36)
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))

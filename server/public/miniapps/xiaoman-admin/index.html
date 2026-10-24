@@ -1,0 +1,869 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#070706">
+  <title>小满火锅 · 运营台</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --gold: #d5b06f;
+      --gold2: #f1d8a4;
+      --ink: #f7f2e8;
+      --muted: #a69f91;
+      --line: rgba(213,176,111,.18);
+      --panel: rgba(19,18,16,.88);
+      --panel2: rgba(29,27,23,.94);
+      --danger: #f16c65;
+      --ok: #6fd49b;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { margin: 0; min-height: 100%; background: #070706; }
+    body {
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif;
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+      overflow-x: hidden;
+    }
+    button, input, textarea, select { font: inherit; }
+    button { color: inherit; }
+    .page-bg {
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      background:
+        radial-gradient(circle at 85% -8%, rgba(213,176,111,.2), transparent 34%),
+        radial-gradient(circle at -12% 42%, rgba(125,73,36,.18), transparent 36%),
+        linear-gradient(155deg, #11100e 0%, #070706 46%, #0d0b09 100%);
+    }
+    .page-bg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      opacity: .16;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.28'/%3E%3C/svg%3E");
+      mix-blend-mode: soft-light;
+      pointer-events: none;
+    }
+    .shell { width: min(100%, 860px); margin: 0 auto; padding: 14px 16px calc(30px + var(--chris-safe-bottom, 0px)); }
+    .topline {
+      min-height: 52px;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding-right: 78px;
+    }
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      color: #171208;
+      font-weight: 900;
+      font-size: 17px;
+      background: linear-gradient(145deg, #f7e2b8, #bc8e43);
+      box-shadow: 0 8px 28px rgba(213,176,111,.2), inset 0 1px 0 rgba(255,255,255,.66);
+      overflow: hidden;
+      flex: 0 0 auto;
+    }
+    .brand-mark img { width: 100%; height: 100%; object-fit: cover; }
+    .brand-copy { min-width: 0; }
+    .brand-copy b { display: block; font-size: 15px; letter-spacing: .4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .brand-copy span { display: block; margin-top: 2px; color: var(--muted); font-size: 10px; letter-spacing: 1.6px; }
+    .hero {
+      position: relative;
+      min-height: 208px;
+      overflow: hidden;
+      border-radius: 24px;
+      border: 1px solid rgba(240,216,169,.16);
+      background:
+        linear-gradient(0deg, rgba(6,6,5,.92) 0%, rgba(7,7,6,.2) 65%),
+        linear-gradient(135deg, #2d2419, #0f0e0c);
+      isolation: isolate;
+      box-shadow: 0 22px 70px rgba(0,0,0,.32);
+    }
+    .hero > img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: -2;
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background: linear-gradient(180deg, rgba(0,0,0,.02) 15%, rgba(5,5,4,.3) 52%, rgba(5,5,4,.94) 100%);
+    }
+    .hero-copy { position: absolute; left: 20px; right: 20px; bottom: 18px; }
+    .eyebrow { color: var(--gold2); font-size: 10px; letter-spacing: 2.4px; font-weight: 700; }
+    .hero h1 { margin: 8px 0 6px; font-family: "Songti SC", "STSong", serif; font-size: clamp(28px, 7vw, 38px); line-height: 1.05; letter-spacing: 1px; }
+    .hero p { margin: 0; color: rgba(255,255,255,.72); font-size: 12.5px; line-height: 1.55; max-width: 88%; }
+    .live {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      height: 30px;
+      padding: 0 11px;
+      border-radius: 999px;
+      background: rgba(10,10,9,.62);
+      border: 1px solid rgba(255,255,255,.14);
+      backdrop-filter: blur(16px);
+      font-size: 11px;
+    }
+    .live i { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 12px var(--ok); }
+    .live.off i { background: var(--danger); box-shadow: 0 0 12px var(--danger); }
+    .tabs {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 4px;
+      margin: 14px 0;
+      padding: 5px;
+      border-radius: 16px;
+      background: rgba(12,12,11,.78);
+      border: 1px solid rgba(255,255,255,.07);
+      backdrop-filter: blur(20px) saturate(130%);
+    }
+    .tab {
+      min-width: 0;
+      height: 39px;
+      border: 0;
+      border-radius: 12px;
+      background: transparent;
+      color: #8f897e;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .tab.on {
+      color: #171208;
+      background: linear-gradient(145deg, #f1d9a8, #c69a54);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 7px 20px rgba(0,0,0,.24);
+    }
+    .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 12px; }
+    .stat {
+      padding: 15px 16px;
+      border-radius: 17px;
+      min-height: 91px;
+      background: linear-gradient(150deg, rgba(38,34,28,.92), rgba(19,18,16,.94));
+      border: 1px solid var(--line);
+    }
+    .stat span { display: block; color: var(--muted); font-size: 11px; }
+    .stat b { display: block; margin-top: 8px; font-size: 25px; font-weight: 700; letter-spacing: -.5px; }
+    .section { margin-top: 12px; padding: 17px; border-radius: 20px; background: var(--panel); border: 1px solid rgba(255,255,255,.07); }
+    .section-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .section-head h2 { margin: 0; font-family: "Songti SC", "STSong", serif; font-size: 19px; letter-spacing: .5px; }
+    .section-head p { margin: 3px 0 0; color: var(--muted); font-size: 11px; }
+    .section-head .sp { flex: 1; }
+    .btn {
+      height: 38px;
+      border-radius: 11px;
+      border: 1px solid rgba(213,176,111,.25);
+      padding: 0 14px;
+      background: rgba(213,176,111,.08);
+      color: var(--gold2);
+      font-size: 12.5px;
+      font-weight: 650;
+    }
+    .btn.primary {
+      color: #171208;
+      border: 0;
+      background: linear-gradient(145deg, #f2dcae, #c0924d);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.72);
+    }
+    .btn.danger { color: #ffaaa4; border-color: rgba(241,108,101,.25); background: rgba(241,108,101,.08); }
+    .btn.small { height: 31px; padding: 0 10px; border-radius: 9px; font-size: 11.5px; }
+    .btn:disabled { opacity: .45; }
+    .field { margin-top: 12px; }
+    .field:first-child { margin-top: 0; }
+    .field label { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; color: #b8b0a2; font-size: 11.5px; }
+    .field .hint { color: #716c63; font-size: 10px; font-weight: 400; }
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid rgba(255,255,255,.09);
+      border-radius: 12px;
+      outline: 0;
+      background: #11110f;
+      color: var(--ink);
+      padding: 11px 12px;
+      font-size: 13px;
+    }
+    textarea { resize: vertical; min-height: 74px; line-height: 1.5; }
+    input:focus, textarea:focus, select:focus { border-color: rgba(213,176,111,.56); box-shadow: 0 0 0 3px rgba(213,176,111,.08); }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .switches { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+    .switch {
+      min-height: 46px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 12px;
+      border-radius: 13px;
+      background: #11110f;
+      border: 1px solid rgba(255,255,255,.07);
+      color: #cec6b8;
+      font-size: 12px;
+    }
+    .switch input { width: 17px; height: 17px; accent-color: var(--gold); padding: 0; }
+    .image-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 14px; }
+    .image-card {
+      position: relative;
+      min-height: 118px;
+      overflow: hidden;
+      border-radius: 15px;
+      background: linear-gradient(145deg, #262117, #11100e);
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .image-card img { width: 100%; height: 118px; object-fit: cover; display: block; }
+    .image-card .empty { min-height: 118px; display: grid; place-items: center; color: #6f695f; font-size: 24px; }
+    .image-card .bar {
+      position: absolute;
+      inset: auto 0 0;
+      padding: 18px 9px 8px;
+      background: linear-gradient(transparent, rgba(0,0,0,.86));
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 7px;
+    }
+    .image-card .bar b { font-size: 11px; font-weight: 600; text-shadow: 0 1px 3px #000; }
+    .image-card .bar button { height: 27px; padding: 0 9px; border-radius: 8px; border: 1px solid rgba(255,255,255,.2); background: rgba(0,0,0,.4); color: white; font-size: 10.5px; backdrop-filter: blur(8px); }
+    .chips { display: flex; gap: 7px; overflow-x: auto; padding: 1px 0 6px; scrollbar-width: none; }
+    .chips::-webkit-scrollbar { display: none; }
+    .chip {
+      flex: 0 0 auto;
+      height: 31px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.09);
+      background: #11110f;
+      color: #aaa397;
+      padding: 0 12px;
+      font-size: 11.5px;
+    }
+    .chip.on { color: #19140b; border-color: transparent; background: linear-gradient(145deg, #f1d9a8, #c4954e); font-weight: 700; }
+    .dish-list, .order-list, .coupon-list, .category-list { display: grid; gap: 10px; }
+    .dish {
+      display: grid;
+      grid-template-columns: 82px minmax(0, 1fr);
+      gap: 12px;
+      min-height: 91px;
+      padding: 10px;
+      border-radius: 16px;
+      background: var(--panel2);
+      border: 1px solid rgba(255,255,255,.07);
+    }
+    .dish .thumb, .order .thumb {
+      overflow: hidden;
+      border-radius: 12px;
+      background: linear-gradient(145deg, #342a1e, #15120e);
+      display: grid;
+      place-items: center;
+      color: var(--gold);
+      font-family: "Songti SC", serif;
+      font-size: 25px;
+    }
+    .dish .thumb img, .order .thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .dish .main { min-width: 0; display: flex; flex-direction: column; }
+    .dish h3 { margin: 0; font-size: 13.5px; line-height: 1.38; }
+    .dish p { margin: 5px 0 0; color: #8e887d; font-size: 10.5px; line-height: 1.4; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    .dish .meta { margin-top: auto; padding-top: 6px; display: flex; align-items: end; gap: 7px; }
+    .price { color: var(--gold2); font-size: 15px; font-weight: 750; }
+    .orig { color: #716a5f; font-size: 10px; text-decoration: line-through; }
+    .status { margin-left: auto; color: #8e887d; font-size: 10px; }
+    .status.off { color: #d87870; }
+    .order { padding: 14px; border-radius: 16px; background: var(--panel2); border: 1px solid rgba(255,255,255,.07); }
+    .order-head { display: flex; align-items: center; gap: 9px; }
+    .order-head b { font-size: 13px; }
+    .order-head time { margin-left: auto; color: #777166; font-size: 10px; }
+    .order-items { margin: 10px 0; color: #b7afa1; font-size: 11.5px; line-height: 1.7; }
+    .order-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+    .coupon { padding: 14px; border-radius: 15px; border: 1px solid rgba(213,176,111,.15); background: linear-gradient(135deg, rgba(213,176,111,.11), rgba(30,26,20,.96)); }
+    .coupon b { font-size: 13px; }
+    .coupon span { color: var(--muted); font-size: 11px; }
+    .coupon .amount { float: right; color: var(--gold2); font-size: 20px; font-weight: 750; }
+    .member {
+      position: relative;
+      min-height: 168px;
+      overflow: hidden;
+      padding: 18px;
+      border-radius: 21px;
+      background:
+        radial-gradient(circle at 80% 0, rgba(213,176,111,.3), transparent 42%),
+        linear-gradient(135deg, #292218, #0a0908 70%);
+      border: 1px solid rgba(240,216,169,.25);
+    }
+    .member > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .62; }
+    .member::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(7,7,6,.9), rgba(7,7,6,.08)); }
+    .member > div { position: relative; z-index: 1; }
+    .member .name { font-family: "Songti SC", serif; font-size: 27px; color: #f2dbab; }
+    .member .sub { margin-top: 5px; color: #b9a98d; font-size: 11.5px; }
+    .member .points { position: absolute; right: 18px; bottom: 18px; text-align: right; }
+    .member .points b { display: block; font-size: 25px; color: white; }
+    .member .points span { color: var(--muted); font-size: 10px; }
+    .footer-note { margin: 18px 4px 2px; color: #676157; font-size: 10px; line-height: 1.6; text-align: center; }
+    .empty-panel { padding: 34px 16px; border-radius: 17px; border: 1px dashed rgba(255,255,255,.1); text-align: center; color: #7e786d; font-size: 12px; line-height: 1.7; }
+    .loading { min-height: 68vh; display: grid; place-items: center; text-align: center; color: #8d8578; font-size: 12px; }
+    .loading .ring { width: 28px; height: 28px; margin: 0 auto 12px; border-radius: 50%; border: 2px solid rgba(213,176,111,.15); border-top-color: var(--gold); animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .toast {
+      position: fixed;
+      z-index: 100;
+      left: 50%;
+      bottom: calc(24px + var(--chris-safe-bottom, 0px));
+      transform: translate(-50%, 18px);
+      opacity: 0;
+      max-width: min(82vw, 360px);
+      padding: 10px 15px;
+      border-radius: 12px;
+      background: rgba(245,235,216,.96);
+      color: #171208;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      pointer-events: none;
+      transition: .2s ease;
+      box-shadow: 0 12px 40px rgba(0,0,0,.32);
+    }
+    .toast.on { opacity: 1; transform: translate(-50%, 0); }
+    .modal-mask {
+      position: fixed;
+      z-index: 80;
+      inset: 0;
+      display: none;
+      align-items: end;
+      justify-content: center;
+      padding: 12px;
+      background: rgba(0,0,0,.62);
+      backdrop-filter: blur(12px);
+    }
+    .modal-mask.on { display: flex; }
+    .modal {
+      width: min(100%, 700px);
+      max-height: min(86vh, 860px);
+      overflow: auto;
+      border-radius: 24px;
+      padding: 17px;
+      background: #14130f;
+      border: 1px solid rgba(213,176,111,.2);
+      box-shadow: 0 30px 100px rgba(0,0,0,.6);
+    }
+    .modal-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .modal-head h2 { margin: 0; font-family: "Songti SC", serif; font-size: 20px; }
+    .modal-close { margin-left: auto; width: 32px; height: 32px; border-radius: 10px; border: 1px solid rgba(255,255,255,.09); background: #1e1d18; color: #aaa397; font-size: 18px; }
+    .modal-actions { display: flex; gap: 8px; margin-top: 16px; }
+    .modal-actions .btn { flex: 1; }
+    .category-row { display: grid; grid-template-columns: 1fr 65px auto; gap: 7px; margin-top: 8px; }
+    .category-row input { padding: 9px 10px; }
+    @media (min-width: 700px) {
+      .shell { padding-left: 24px; padding-right: 24px; }
+      .stats { grid-template-columns: repeat(4, 1fr); }
+      .image-grid { grid-template-columns: repeat(4, 1fr); }
+      .dish-list { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-bg" aria-hidden="true"></div>
+  <div class="shell" id="shell">
+    <div class="loading"><div><div class="ring"></div><div id="bootText">正在连接门店后台…</div></div></div>
+  </div>
+  <div class="toast" id="toast"></div>
+  <div class="modal-mask" id="modalMask"><div class="modal" id="modal"></div></div>
+  <script>
+    (function () {
+      "use strict";
+      var data = null;
+      var tab = "home";
+      var toastTimer = 0;
+      var shell = document.getElementById("shell");
+      var toastEl = document.getElementById("toast");
+      var modalMask = document.getElementById("modalMask");
+      var modal = document.getElementById("modal");
+
+      function esc(v) {
+        return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+        });
+      }
+      function money(v) {
+        var n = Number(v);
+        return "¥" + (Number.isFinite(n) ? n.toFixed(2) : "0.00");
+      }
+      function toast(message) {
+        clearTimeout(toastTimer);
+        toastEl.textContent = message;
+        toastEl.classList.add("on");
+        try { if (window.wx && wx.vibrateShort) wx.vibrateShort(); } catch (e) { }
+        toastTimer = setTimeout(function () { toastEl.classList.remove("on"); }, 1900);
+      }
+      function request(path, method, body) {
+        return new Promise(function (resolve, reject) {
+          var opts = { url: "/api" + path, method: method || "GET", data: body || null };
+          function finish(status, payload) {
+            var json = payload || {};
+            if (status >= 400 || json.ok === false) {
+              reject(new Error(json.error || json.message || ("请求失败 " + status)));
+              return;
+            }
+            resolve(json.data == null ? json : json.data);
+          }
+          if (window.wx && wx.request && wx.__chris) {
+            wx.request({
+              url: opts.url,
+              method: opts.method,
+              data: opts.data,
+              success: function (r) { finish(Number(r.statusCode) || 200, r.data); },
+              fail: function (e) { reject(new Error((e && e.errMsg) || "网络连接失败")); }
+            });
+            return;
+          }
+          fetch(opts.url, {
+            method: opts.method,
+            credentials: "same-origin",
+            headers: opts.data ? { "Content-Type": "application/json" } : {},
+            body: opts.data ? JSON.stringify(opts.data) : undefined
+          }).then(function (r) {
+            return r.json().catch(function () { return {}; }).then(function (j) { finish(r.status, j); });
+          }).catch(reject);
+        });
+      }
+      function imageMarkup(url, fallback) {
+        if (/^(\/|https?:|data:)/.test(String(url || ""))) {
+          return '<img src="' + esc(url) + '" alt="">';
+        }
+        return '<div class="' + (fallback || "empty") + '">' + (fallback === "thumb" ? "满" : "＋") + '</div>';
+      }
+      function sectionsHead(title, sub, action) {
+        return '<div class="section-head"><div><h2>' + esc(title) + '</h2><p>' + esc(sub || "") + '</p></div><div class="sp"></div>' + (action || "") + '</div>';
+      }
+      function currentShop() { return (data && data.shop) || {}; }
+      function shopImageField(key, label, hint) {
+        var url = currentShop()[key] || "";
+        return '<div class="field"><label>' + esc(label) + '<span class="hint">' + esc(hint || "") + '</span></label>' +
+          '<input data-shop="' + key + '" value="' + esc(url) + '" placeholder="/uploads/图片.jpg 或图片网址">' +
+          '<div class="image-card" style="margin-top:8px">' +
+            '<div data-preview-wrap="' + key + '">' + imageMarkup(url) + '</div>' +
+            '<div class="bar"><b>' + (url ? "已设置" : "未设置") + '</b><div>' +
+              '<button type="button" data-upload="' + key + '">上传图片</button> ' +
+              '<button type="button" data-clear-image="' + key + '">清除</button>' +
+            '</div></div>' +
+          '</div></div>';
+      }
+      function inputField(key, label, value, hint, type) {
+        return '<div class="field"><label>' + esc(label) + (hint ? '<span class="hint">' + esc(hint) + '</span>' : '') + '</label>' +
+          '<input data-shop="' + key + '" type="' + (type || "text") + '" value="' + esc(value == null ? "" : value) + '"></div>';
+      }
+      function textAreaField(key, label, value, hint) {
+        return '<div class="field"><label>' + esc(label) + (hint ? '<span class="hint">' + esc(hint) + '</span>' : '') + '</label>' +
+          '<textarea data-shop="' + key + '">' + esc(value == null ? "" : value) + '</textarea></div>';
+      }
+      function footer() {
+        return '<div class="footer-note">修改后点对应页面的保存按钮，App 下次打开会读取最新内容。<br>图片支持 JPG / PNG / WebP，上传成功后再保存。</div>';
+      }
+
+      function homeView() {
+        var s = currentShop();
+        var st = data.stats || {};
+        return '<div class="hero">' + (s.homeCover ? '<img src="' + esc(s.homeCover) + '" alt="">' : "") +
+            '<div class="live ' + (s.open === false ? "off" : "") + '"><i></i>' + (s.open === false ? "暂停营业" : "营业中") + '</div>' +
+            '<div class="hero-copy"><div class="eyebrow">' + esc(s.homeKicker || "XIAOMAN · HOT POT") + '</div>' +
+            '<h1>' + esc(s.homeTitle || s.name || "小满火锅") + '</h1>' +
+            '<p>' + esc(s.homeSubtitle || s.announcement || "鲜切牛肉 · 热气腾腾的每一餐") + '</p></div></div>' +
+          '<div class="stats">' +
+            '<div class="stat"><span>今日订单</span><b>' + Number(st.todayOrders || 0) + '</b></div>' +
+            '<div class="stat"><span>今日营收</span><b>' + money(st.revenue || 0) + '</b></div>' +
+            '<div class="stat"><span>在售菜品</span><b>' + Number(st.dishOn || 0) + '</b></div>' +
+            '<div class="stat"><span>售罄</span><b>' + Number(st.soldOut || 0) + '</b></div>' +
+          '</div>' +
+          '<div class="section">' + sectionsHead("门店概览", s.name || "") +
+            '<div class="switch" style="margin-bottom:9px"><span>门店状态</span><span style="margin-left:auto;color:' + (s.open === false ? "var(--danger)" : "var(--ok)") + '">' + (s.open === false ? "已打烊" : "营业中") + '</span></div>' +
+            '<div class="switches">' +
+              '<div class="switch"><input type="checkbox" disabled ' + (s.dine !== false ? "checked" : "") + '>堂食</div>' +
+              '<div class="switch"><input type="checkbox" disabled ' + (s.pick !== false ? "checked" : "") + '>自提</div>' +
+              '<div class="switch"><input type="checkbox" disabled ' + (s.deliver !== false ? "checked" : "") + '>外卖</div>' +
+              '<div class="switch"><input type="checkbox" disabled ' + (s.memberTitle ? "checked" : "") + '>' + esc(s.memberTitle || "会员") + '</div>' +
+            '</div>' +
+            '<button class="btn primary" style="width:100%;margin-top:12px" data-go="shop">进入门店装修</button>' +
+          '</div>' + footer();
+      }
+
+      function shopView() {
+        var s = currentShop();
+        return '<div class="section">' + sectionsHead("首页视觉", "首页大图、标题和品牌标识") +
+            '<div class="grid2">' + inputField("homeKicker", "首页英文眉题", s.homeKicker) + inputField("homeTitle", "首页主标题", s.homeTitle) + '</div>' +
+            textAreaField("homeSubtitle", "首页副标题", s.homeSubtitle) +
+            '<div class="image-grid">' + shopImageField("homeCover", "首页整屏背景", "建议 3:4 竖图") +
+              shopImageField("logo", "品牌 Logo", "方形图片最佳") + '</div>' +
+          '</div>' +
+          '<div class="section">' + sectionsHead("门店资料", "顾客端和订单都会使用这些信息") +
+            inputField("name", "门店名称", s.name) +
+            inputField("address", "门店地址", s.address) +
+            textAreaField("announcement", "门店公告", s.announcement, "最多 120 字") +
+            inputField("accent", "主题金色", s.accent || "#D5B06F", "六位色值", "color") +
+          '</div>' +
+          '<div class="section">' + sectionsHead("营业方式", "堂食、自提、外卖可独立开关") +
+            '<div class="switches">' +
+              '<label class="switch"><input data-shop-bool="open" type="checkbox" ' + (s.open !== false ? "checked" : "") + '>门店营业</label>' +
+              '<label class="switch"><input data-shop-bool="dine" type="checkbox" ' + (s.dine !== false ? "checked" : "") + '>堂食</label>' +
+              '<label class="switch"><input data-shop-bool="pick" type="checkbox" ' + (s.pick !== false ? "checked" : "") + '>到店自提</label>' +
+              '<label class="switch"><input data-shop-bool="deliver" type="checkbox" ' + (s.deliver !== false ? "checked" : "") + '>外卖配送</label>' +
+            '</div>' +
+            '<div class="grid2" style="margin-top:12px">' +
+              inputField("packFee", "打包费", s.packFee, "", "number") +
+              inputField("deliverFee", "配送费", s.deliverFee, "", "number") +
+              inputField("minOrder", "外卖起送价", s.minOrder, "", "number") +
+              inputField("freeDeliverAt", "满额免配送", s.freeDeliverAt, "", "number") +
+              inputField("estimatedMinutes", "预计制作分钟", s.estimatedMinutes, "", "number") +
+            '</div>' +
+          '</div>' +
+          '<div class="section">' + sectionsHead("会员与订做背景", "黑金会员卡和订做页背景都可以单独替换") +
+            '<div class="grid2">' + inputField("memberTitle", "会员名称", s.memberTitle) + inputField("memberSub", "会员副标题", s.memberSub) + '</div>' +
+            inputField("memberPoints", "会员积分", s.memberPoints, "", "number") +
+            '<div class="image-grid">' + shopImageField("memberBg", "会员卡背景", "建议横图") +
+              shopImageField("orderBg", "订单页订做背景", "建议竖图") + '</div>' +
+          '</div>' +
+          '<button class="btn primary" id="saveShop" style="width:100%;height:45px;margin-top:12px">保存全部门店设置</button>' +
+          footer();
+      }
+
+      function dishCard(it) {
+        var cat = (data.categories || []).filter(function (x) { return x.id === it.catId; })[0] || {};
+        return '<div class="dish"><div class="thumb">' + imageMarkup(it.image, "thumb") + '</div><div class="main">' +
+          '<h3>' + esc(it.name) + '</h3><p>' + esc(it.desc || cat.name || "") + '</p>' +
+          '<div class="meta"><span class="price">' + money(it.price) + '</span>' +
+            (Number(it.orig || 0) > Number(it.price || 0) ? '<span class="orig">' + money(it.orig) + '</span>' : "") +
+            '<span class="status ' + (it.enabled === false ? "off" : "") + '">' + (it.enabled === false ? "已下架" : (it.soldOut ? "售罄" : "在售")) + '</span>' +
+          '</div></div><button class="btn small" style="align-self:start" data-edit-dish="' + esc(it.id) + '">编辑</button></div>';
+      }
+
+      function dishesView() {
+        var cats = data.categories || [];
+        var dishes = data.dishes || [];
+        return '<div class="chips"><button class="chip on">全部 ' + dishes.length + '</button>' +
+            cats.map(function (c) {
+              var n = dishes.filter(function (x) { return x.catId === c.id; }).length;
+              return '<button class="chip ' + (c.enabled === false ? "" : "") + '">' + esc(c.name) + ' ' + n + '</button>';
+            }).join("") + '</div>' +
+          '<div class="section">' + sectionsHead("商品管理", "图片、价格和上下架都在这里", '<button class="btn small primary" id="addDish">＋ 新菜品</button>') +
+            '<div class="dish-list">' + (dishes.length ? dishes.map(dishCard).join("") : '<div class="empty-panel">还没有菜品</div>') + '</div>' +
+            '<button class="btn" id="manageCategories" style="width:100%;margin-top:11px">管理全部分类</button>' +
+          '</div>' + footer();
+      }
+
+      function memberView() {
+        var s = currentShop();
+        var coupons = data.coupons || [];
+        return '<div class="member">' + (s.memberBg ? '<img src="' + esc(s.memberBg) + '" alt="">' : "") +
+            '<div><div class="name">' + esc(s.memberTitle || "黑金会员") + '</div><div class="sub">' + esc(s.memberSub || "") + '</div></div>' +
+            '<div class="points"><b>' + Number(s.memberPoints || 0) + '</b><span>会员积分</span></div></div>' +
+          '<div class="section">' + sectionsHead("会员卡设定", "名称、副标题和卡面背景") +
+            '<div class="grid2">' + inputField("memberTitle", "会员名称", s.memberTitle) + inputField("memberSub", "会员副标题", s.memberSub) + '</div>' +
+            inputField("memberPoints", "展示积分", s.memberPoints, "", "number") +
+            '<div class="image-grid">' + shopImageField("memberBg", "会员卡背景", "建议横图") + '</div>' +
+            '<button class="btn" id="saveMember" style="width:100%;margin-top:11px">保存会员卡</button>' +
+          '</div>' +
+          '<div class="section">' + sectionsHead("优惠活动", "阶梯满减优惠", '<button class="btn small primary" id="addCoupon">＋ 新优惠</button>') +
+            '<div class="coupon-list">' + (coupons.length ? coupons.map(function (c) {
+              return '<div class="coupon"><span class="amount">' + money(c.amount) + '</span><b>' + esc(c.title) + '</b><br>' +
+                '<span>满 ' + money(c.min) + ' 可用 · ' + (c.enabled === false ? "已停用" : "生效中") + '</span>' +
+                '<button class="btn small" data-edit-coupon="' + esc(c.id) + '" style="margin-top:9px">编辑</button></div>';
+            }).join("") : '<div class="empty-panel">还没有优惠</div>') + '</div>' +
+          '</div>' + footer();
+      }
+
+      function statusName(s) {
+        return ({ pending: "待接单", confirmed: "已接单", preparing: "制作中", ready: "待取餐", completed: "已完成", cancelled: "已取消" })[s] || s || "待接单";
+      }
+      function ordersView() {
+        var orders = data.orders || [];
+        return '<div class="section">' + sectionsHead("订单中心", "接单后按制作进度更新状态") +
+          '<div class="order-list">' + (orders.length ? orders.map(function (o) {
+            var items = (o.items || []).map(function (x) { return esc(x.name) + " × " + Number(x.qty || 0); }).join(" · ");
+            var way = ({ dine: "堂食", pick: "自提", deliver: "外卖" })[o.way] || "堂食";
+            return '<div class="order"><div class="order-head"><b>' + esc(o.no || o.id) + '</b><span class="status">' + esc(statusName(o.status)) + '</span><time>' + esc(String(o.createdAt || "").slice(11, 16)) + '</time></div>' +
+              '<div class="order-items">' + items + (o.tableNo ? "<br>桌号 " + esc(o.tableNo) : "") + (o.address ? "<br>" + esc(o.address) : "") + '</div>' +
+              '<div class="amount-line" style="display:flex;align-items:center"><b class="price">' + money(o.total) + '</b><span class="status" style="margin-left:auto">' + way + '</span></div>' +
+              '<div class="order-actions">' +
+                (o.status === "pending" ? '<button class="btn small primary" data-order="' + esc(o.id) + '" data-status="confirmed">接单</button>' : "") +
+                (["pending", "confirmed"].indexOf(o.status) >= 0 ? '<button class="btn small" data-order="' + esc(o.id) + '" data-status="preparing">开始制作</button>' : "") +
+                (o.status === "preparing" ? '<button class="btn small" data-order="' + esc(o.id) + '" data-status="ready">制作完成</button>' : "") +
+                (o.status === "ready" || o.status === "confirmed" ? '<button class="btn small" data-order="' + esc(o.id) + '" data-status="completed">完成订单</button>' : "") +
+                (["completed", "cancelled"].indexOf(o.status) < 0 ? '<button class="btn small danger" data-order="' + esc(o.id) + '" data-status="cancelled">取消</button>' : "") +
+              '</div></div>';
+          }).join("") : '<div class="empty-panel">还没有订单</div>') + '</div>' +
+        '</div>' + footer();
+      }
+
+      function render() {
+        var s = currentShop();
+        var views = { home: homeView, shop: shopView, dishes: dishesView, member: memberView, orders: ordersView };
+        var labels = [["home", "概览"], ["shop", "门店"], ["dishes", "菜品"], ["member", "会员"], ["orders", "订单"]];
+        shell.innerHTML =
+          '<div class="topline"><div class="brand-mark">' + (s.logo ? '<img src="' + esc(s.logo) + '" alt="">' : "满") + '</div>' +
+            '<div class="brand-copy"><b>' + esc(s.name || "小满火锅") + '</b><span>STORE OPERATIONS</span></div></div>' +
+          '<nav class="tabs">' + labels.map(function (x) {
+            return '<button class="tab ' + (tab === x[0] ? "on" : "") + '" data-go="' + x[0] + '">' + x[1] + '</button>';
+          }).join("") + '</nav>' +
+          views[tab]();
+        window.scrollTo(0, 0);
+      }
+
+      function setData(next) {
+        data = next || data;
+        if (!data.shop) data.shop = {};
+        if (!Array.isArray(data.categories)) data.categories = [];
+        if (!Array.isArray(data.dishes)) data.dishes = [];
+        if (!Array.isArray(data.coupons)) data.coupons = [];
+        if (!Array.isArray(data.orders)) data.orders = [];
+      }
+
+      function openModal(title, body) {
+        modal.innerHTML = '<div class="modal-head"><h2>' + esc(title) + '</h2><button class="modal-close" id="modalClose">×</button></div>' + body;
+        modalMask.classList.add("on");
+        document.getElementById("modalClose").onclick = closeModal;
+      }
+      function closeModal() { modalMask.classList.remove("on"); modal.innerHTML = ""; }
+
+      async function uploadImage(key) {
+        var input = document.createElement("input");
+        input.type = "file";
+        input.accept = "image/*";
+        input.onchange = async function () {
+          var file = input.files && input.files[0];
+          if (!file) return;
+          if (!/^image\//.test(file.type || "")) return toast("请选择图片文件");
+          if (file.size > 16 * 1024 * 1024) return toast("图片不能超过 16MB");
+          toast("图片上传中…");
+          try {
+            var dataUrl = await new Promise(function (resolve, reject) {
+              var reader = new FileReader();
+              reader.onload = function () { resolve(String(reader.result || "")); };
+              reader.onerror = reject;
+              reader.readAsDataURL(file);
+            });
+            var result = await request("/upload", "POST", { filename: file.name, dataUrl: dataUrl });
+            if (!result.url) throw new Error("服务器没有返回图片地址");
+            var inputs = document.querySelectorAll('[data-shop="' + key + '"], [data-image-field="' + key + '"]');
+            inputs.forEach(function (el) { el.value = result.url; });
+            document.querySelectorAll('[data-preview-wrap="' + key + '"]').forEach(function (el) {
+              el.innerHTML = imageMarkup(result.url);
+            });
+            toast("图片已上传，记得保存");
+          } catch (e) { toast(e.message || "上传失败"); }
+        };
+        input.click();
+      }
+
+      function shopPayload() {
+        var out = {};
+        shell.querySelectorAll("[data-shop]").forEach(function (el) {
+          var key = el.getAttribute("data-shop");
+          out[key] = el.type === "number" ? Number(el.value || 0) : el.value.trim();
+        });
+        shell.querySelectorAll("[data-shop-bool]").forEach(function (el) {
+          out[el.getAttribute("data-shop-bool")] = !!el.checked;
+        });
+        return out;
+      }
+      async function saveShop() {
+        var button = document.getElementById("saveShop") || document.getElementById("saveMember");
+        if (button) { button.disabled = true; button.textContent = "保存中…"; }
+        try {
+          var result = await request("/dining/admin/shop", "POST", shopPayload());
+          setData(result);
+          render();
+          toast("门店设置已保存");
+        } catch (e) {
+          toast(e.message || "保存失败");
+          if (button) { button.disabled = false; button.textContent = "重新保存"; }
+        }
+      }
+
+      function dishEditor(item) {
+        var it = item || { name: "", desc: "", catId: (data.categories[0] || {}).id || "", price: "", orig: 0, tag: "", image: "", enabled: true, soldOut: false, sort: (data.dishes || []).length };
+        var options = (data.categories || []).map(function (c) {
+          return '<option value="' + esc(c.id) + '"' + (c.id === it.catId ? " selected" : "") + '>' + esc(c.name) + '</option>';
+        }).join("");
+        openModal(item ? "编辑菜品" : "添加菜品",
+          '<div class="field"><label>菜品名称</label><input id="dishName" value="' + esc(it.name) + '"></div>' +
+          '<div class="field"><label>所属分类</label><select id="dishCat">' + options + '</select></div>' +
+          '<div class="field"><label>菜品介绍</label><textarea id="dishDesc">' + esc(it.desc || "") + '</textarea></div>' +
+          '<div class="grid2"><div class="field"><label>售价</label><input id="dishPrice" type="number" step=".01" value="' + esc(it.price) + '"></div>' +
+            '<div class="field"><label>划线价</label><input id="dishOrig" type="number" step=".01" value="' + esc(it.orig || 0) + '"></div></div>' +
+          '<div class="grid2"><div class="field"><label>标签</label><input id="dishTag" value="' + esc(it.tag || "") + '"></div>' +
+            '<div class="field"><label>排序</label><input id="dishSort" type="number" value="' + esc(it.sort || 0) + '"></div></div>' +
+          '<input id="dishImage" data-image-field="dishImage" value="' + esc(it.image || "") + '" style="display:none">' +
+          '<div class="field"><label>商品图片<span class="hint">用于菜单卡片</span></label><div class="image-card">' +
+            '<div data-preview-wrap="dishImage">' + imageMarkup(it.image, "thumb") + '</div>' +
+            '<div class="bar"><b>商品图</b><div><button type="button" data-upload="dishImage">上传图片</button></div></div></div></div>' +
+          '<div class="switches"><label class="switch"><input id="dishEnabled" type="checkbox" ' + (it.enabled !== false ? "checked" : "") + '>上架销售</label>' +
+            '<label class="switch"><input id="dishSold" type="checkbox" ' + (it.soldOut ? "checked" : "") + '>标记售罄</label></div>' +
+          '<div class="modal-actions"><button class="btn primary" id="saveDish">保存菜品</button>' +
+            (item ? '<button class="btn danger" id="deleteDish">删除</button>' : "") + '</div>');
+        document.getElementById("saveDish").onclick = async function () {
+          var b = {
+            action: item ? "update" : "add", id: item && item.id, name: document.getElementById("dishName").value.trim(),
+            catId: document.getElementById("dishCat").value, desc: document.getElementById("dishDesc").value.trim(),
+            price: Number(document.getElementById("dishPrice").value || 0), orig: Number(document.getElementById("dishOrig").value || 0),
+            tag: document.getElementById("dishTag").value.trim(), sort: Number(document.getElementById("dishSort").value || 0),
+            image: document.getElementById("dishImage").value.trim(), enabled: document.getElementById("dishEnabled").checked,
+            soldOut: document.getElementById("dishSold").checked
+          };
+          if (!b.name) return toast("请填写菜品名称");
+          if (!b.catId) return toast("请先创建分类");
+          if (b.price <= 0) return toast("售价必须大于 0");
+          this.disabled = true;
+          try {
+            var result = await request("/dining/admin/dish", "POST", b);
+            setData(result); closeModal(); render(); toast("菜品已保存");
+          } catch (e) { this.disabled = false; toast(e.message || "保存失败"); }
+        };
+        var del = document.getElementById("deleteDish");
+        if (del) del.onclick = async function () {
+          if (!confirm("确定删除「" + it.name + "」？")) return;
+          try {
+            var result = await request("/dining/admin/dish", "POST", { action: "remove", id: it.id, name: it.name });
+            setData(result); closeModal(); render(); toast("菜品已删除");
+          } catch (e) { toast(e.message || "删除失败"); }
+        };
+      }
+
+      function categoryManager() {
+        openModal("管理分类",
+          '<div id="categoryRows">' + data.categories.map(function (c) {
+            return '<div class="category-row" data-category="' + esc(c.id) + '"><input class="catName" value="' + esc(c.name) + '">' +
+              '<input class="catSort" type="number" value="' + esc(c.sort || 0) + '"><button class="btn small catSave">保存</button></div>';
+          }).join("") + '</div>' +
+          '<div class="field"><label>新增分类</label><div class="category-row"><input id="newCatName" placeholder="例如：新品推荐"><input id="newCatSort" type="number" value="' + data.categories.length + '"><button class="btn small primary" id="addCategory">添加</button></div></div>');
+        modal.querySelectorAll("[data-category]").forEach(function (row) {
+          row.querySelector(".catSave").onclick = async function () {
+            try {
+              var result = await request("/dining/admin/category", "POST", {
+                action: "update", id: row.getAttribute("data-category"),
+                name: row.querySelector(".catName").value.trim(),
+                sort: Number(row.querySelector(".catSort").value || 0)
+              });
+              setData(result); closeModal(); render(); toast("分类已保存");
+            } catch (e) { toast(e.message || "保存失败"); }
+          };
+        });
+        document.getElementById("addCategory").onclick = async function () {
+          var name = document.getElementById("newCatName").value.trim();
+          if (!name) return toast("请填写分类名");
+          try {
+            var result = await request("/dining/admin/category", "POST", {
+              action: "add", name: name, sort: Number(document.getElementById("newCatSort").value || 0)
+            });
+            setData(result); closeModal(); render(); toast("分类已添加");
+          } catch (e) { toast(e.message || "添加失败"); }
+        };
+      }
+
+      function couponEditor(item) {
+        var c = item || { title: "", min: 0, amount: 0, enabled: true };
+        openModal(item ? "编辑优惠" : "添加优惠",
+          '<div class="field"><label>活动名称</label><input id="couponTitle" value="' + esc(c.title) + '"></div>' +
+          '<div class="grid2"><div class="field"><label>满多少元</label><input id="couponMin" type="number" step=".01" value="' + esc(c.min || 0) + '"></div>' +
+            '<div class="field"><label>减多少元</label><input id="couponAmount" type="number" step=".01" value="' + esc(c.amount || 0) + '"></div></div>' +
+          '<label class="switch"><input id="couponEnabled" type="checkbox" ' + (c.enabled !== false ? "checked" : "") + '>生效中</label>' +
+          '<div class="modal-actions"><button class="btn primary" id="saveCoupon">保存优惠</button>' +
+            (item ? '<button class="btn danger" id="deleteCoupon">删除</button>' : "") + '</div>');
+        document.getElementById("saveCoupon").onclick = async function () {
+          var b = {
+            action: item ? "update" : "add", id: item && item.id, title: document.getElementById("couponTitle").value.trim(),
+            min: Number(document.getElementById("couponMin").value || 0),
+            amount: Number(document.getElementById("couponAmount").value || 0),
+            enabled: document.getElementById("couponEnabled").checked
+          };
+          if (!b.title) return toast("请填写活动名称");
+          try {
+            var result = await request("/dining/admin/coupon", "POST", b);
+            setData(result); closeModal(); render(); toast("优惠已保存");
+          } catch (e) { toast(e.message || "保存失败"); }
+        };
+        var del = document.getElementById("deleteCoupon");
+        if (del) del.onclick = async function () {
+          if (!confirm("确定删除这条优惠？")) return;
+          try {
+            var result = await request("/dining/admin/coupon", "POST", { action: "remove", id: item.id, title: item.title });
+            setData(result); closeModal(); render(); toast("优惠已删除");
+          } catch (e) { toast(e.message || "删除失败"); }
+        };
+      }
+
+      shell.addEventListener("click", async function (event) {
+        var go = event.target.closest("[data-go]");
+        if (go) { tab = go.getAttribute("data-go"); render(); return; }
+        var upload = event.target.closest("[data-upload]");
+        if (upload) { uploadImage(upload.getAttribute("data-upload")); return; }
+        var clear = event.target.closest("[data-clear-image]");
+        if (clear) {
+          var key = clear.getAttribute("data-clear-image");
+          var input = shell.querySelector('[data-shop="' + key + '"]');
+          if (input) input.value = "";
+          var wrap = shell.querySelector('[data-preview-wrap="' + key + '"]');
+          if (wrap) wrap.innerHTML = imageMarkup("");
+          return;
+        }
+        if (event.target.id === "saveShop" || event.target.id === "saveMember") { saveShop(); return; }
+        if (event.target.id === "addDish") { dishEditor(null); return; }
+        var editDish = event.target.closest("[data-edit-dish]");
+        if (editDish) {
+          var id = editDish.getAttribute("data-edit-dish");
+          dishEditor((data.dishes || []).filter(function (x) { return x.id === id; })[0]);
+          return;
+        }
+        if (event.target.id === "manageCategories") { categoryManager(); return; }
+        if (event.target.id === "addCoupon") { couponEditor(null); return; }
+        var editCoupon = event.target.closest("[data-edit-coupon]");
+        if (editCoupon) {
+          var cid = editCoupon.getAttribute("data-edit-coupon");
+          couponEditor((data.coupons || []).filter(function (x) { return x.id === cid; })[0]);
+          return;
+        }
+        var order = event.target.closest("[data-order]");
+        if (order) {
+          var status = order.getAttribute("data-status");
+          if (status === "cancelled" && !confirm("确定取消这个订单？")) return;
+          order.disabled = true;
+          try {
+            var result = await request("/dining/admin/order", "POST", {
+              id: order.getAttribute("data-order"), status: status
+            });
+            setData(result); render(); toast("订单状态已更新");
+          } catch (e) { order.disabled = false; toast(e.message || "更新失败"); }
+        }
+      });
+      shell.addEventListener("input", function (event) {
+        var key = event.target.getAttribute("data-shop") || event.target.getAttribute("data-image-field");
+        if (!key) return;
+        var wrap = document.querySelector('[data-preview-wrap="' + key + '"]');
+        if (wrap) wrap.innerHTML = imageMarkup(event.target.value.trim(), key === "dishImage" ? "thumb" : "");
+      });
+      modalMask.addEventListener("click", function (event) {
+        if (event.target === modalMask) closeModal();
+      });
+
+      request("/dining/admin").then(function (result) {
+        setData(result);
+        render();
+      }).catch(function (error) {
+        shell.innerHTML = '<div class="loading"><div><div style="font-size:44px;margin-bottom:14px">◈</div>' +
+          '<b style="display:block;color:#f0d8a7;font-size:18px;margin-bottom:8px">当前账号不是门店运营</b>' +
+          '<span style="display:block;line-height:1.7;max-width:280px">请使用开通了 App 运营权限的账号登录后再进入。<br>' +
+          esc(error.message || "") + '</span></div></div>';
+      });
+    })();
+  </script>
+</body>
+</html>
