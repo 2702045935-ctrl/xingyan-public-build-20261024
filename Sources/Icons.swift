@@ -219,11 +219,19 @@ enum I {
     """
 
     static let callRecord = """
-    <svg data-key="ui.callRecord" viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 2.4c.5 0 1 .3 1.2.8l1.5 3.3c.2.5.1 1.1-.3 1.5l-1.3 1.3c1 2 2.6 3.6 4.6 4.6l1.3-1.3c.4-.4 1-.5 1.5-.3l3.3 1.5c.5.2.8.7.8 1.2v3.2c0 .8-.6 1.5-1.4 1.6-.6.1-1.2.1-1.9.1C9.7 19.9 4.1 14.3 3.3 6.6c-.1-.7-.1-1.3 0-1.9.1-.8.8-1.4 1.6-1.4h1.7z"/></svg>
+    <svg data-key="ui.callRecord" viewBox="0 0 24 24" fill="currentColor"><path d="M7.1 2.8c.7 0 1.3.4 1.6 1l1.9 3.8c.3.6.2 1.3-.2 1.8l-1.5 1.7a14.8 14.8 0 0 0 5.4 5.4l1.7-1.5c.5-.4 1.2-.5 1.8-.2l3.8 1.9c.6.3 1 .9 1 1.6v1.5c0 1.3-1.1 2.4-2.4 2.4C10.2 21.7 2.3 13.8 2.3 3.8c0-1.3 1.1-2.4 2.4-2.4h2.4Z"/></svg>
     """
 
     static let callRecordVideo = """
-    <svg data-key="ui.callRecordVideo" viewBox="0 0 24 24" fill="currentColor"><rect x="2.2" y="5.6" width="13.2" height="12.8" rx="3.4"/><path d="M16.9 10.4l3.9-2.6c.5-.3 1.1 0 1.1.6v7.2c0 .6-.6.9-1.1.6l-3.9-2.6z"/></svg>
+    <svg data-key="ui.callRecordVideo" viewBox="0 0 24 24" fill="currentColor"><rect x="2.2" y="5.3" width="14" height="13.4" rx="3.7"/><path d="M17.5 10.2 21.2 8c.6-.4 1.3 0 1.3.7v6.6c0 .7-.7 1.1-1.3.7l-3.7-2.2v-3.6Z"/></svg>
+    """
+
+    static let callRecordMissed = """
+    <svg data-key="ui.callRecordMissed" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6.8 3.2c.6 0 1.1.3 1.4.8l1.5 3c.2.5.2 1.1-.2 1.5L8.2 9.8a13 13 0 0 0 4.7 4.7l1.3-1.2c.4-.4 1-.5 1.5-.2l3 1.5c.5.2.8.7.8 1.3v1.3c0 1.1-.9 2-2 2C10.2 19.9 4.1 13.8 4.1 6.5c0-1.1.9-2 2-2h.7Z"/><path d="M17.7 13.4v4.1m0 0-1.6-1.6m1.6 1.6 1.6-1.6" fill="none" stroke-width="1.8"/></svg>
+    """
+
+    static let callRecordVideoMissed = """
+    <svg data-key="ui.callRecordVideoMissed" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="2.2" y="5.1" width="12.9" height="12.4" rx="3.5"/><path d="m16.2 9.7 3.5-2.2c.6-.4 1.3 0 1.3.7v6.1c0 .7-.7 1.1-1.3.7l-3.5-2.1V9.7Z"/><path d="M18.2 15.2v4.1m0 0-1.6-1.6m1.6 1.6 1.6-1.6" fill="none" stroke-width="1.8"/></svg>
     """
 
     static let plusRing = """

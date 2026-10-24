@@ -14,18 +14,7 @@ root = Path(sys.argv[1])
 with open(sys.argv[2], encoding="utf-8") as f:
     data = json.load(f)
 
-old_bubble = b"    static let bubbleMine = Color.dyn(0xD8F2E4, 0x075E4E)"
-new_bubble = (
-    b"    static var bubbleMine: Color {\n"
-    b"        UIConfig.color(\"bubbleMineColor\", 0x95EC69, 0x1E88C7)\n"
-    b"    }"
-)
-old_launch = b"onOpenMiniApp: { g in app.openMiniApp = g },"
-new_launch = b"onOpenMiniApp: { g in app.launchMiniApp(g, returningTo: chat) },"
-
 def verified_content(relative_path, content):
-    if relative_path == "Sources/ChatDetailView.swift":
-        return content.replace(new_bubble, old_bubble).replace(new_launch, old_launch)
     return content
 
 failed = []
@@ -59,18 +48,7 @@ root = Path(sys.argv[1])
 with open(sys.argv[2], encoding="utf-8") as f:
     data = json.load(f)
 
-old_bubble = b"    static let bubbleMine = Color.dyn(0xD8F2E4, 0x075E4E)"
-new_bubble = (
-    b"    static var bubbleMine: Color {\n"
-    b"        UIConfig.color(\"bubbleMineColor\", 0x95EC69, 0x1E88C7)\n"
-    b"    }"
-)
-old_launch = b"onOpenMiniApp: { g in app.openMiniApp = g },"
-new_launch = b"onOpenMiniApp: { g in app.launchMiniApp(g, returningTo: chat) },"
-
 def verified_content(relative_path, content):
-    if relative_path == "Sources/ChatDetailView.swift":
-        return content.replace(new_bubble, old_bubble).replace(new_launch, old_launch)
     return content
 
 failed = []

@@ -3836,16 +3836,13 @@ struct SystemLine: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            if message.isCallRecord {
-                CallIcon(key: message.isVideoCall ? "ui.callRecordVideo" : "ui.callRecord",
-                         symbol: message.isVideoCall ? "video.fill" : "phone.fill",
-                         builtin: message.isVideoCall ? I.callRecordVideo : I.callRecord,
-                         size: 13, color: ink)
-            }
             Text(message.body)
                 .font(pf(13))
                 .foregroundColor(ink)
                 .multilineTextAlignment(.center)
+            if message.isCallRecord {
+                callIcon(size: 13)
+            }
         }
 
         .padding(.horizontal, 10)
@@ -3856,10 +3853,33 @@ struct SystemLine: View {
         .padding(.horizontal, 40)
     }
 
+    @ViewBuilder
+    private func callIcon(size: CGFloat) -> some View {
+        CallIcon(key: callIconKey,
+                 symbol: message.isVideoCall ? "video.fill" : "phone.fill",
+                 builtin: callIconMarkup,
+                 size: size,
+                 color: ink)
+    }
+
+    private var callIconKey: String {
+        if message.isBadCallRecord {
+            return message.isVideoCall ? "ui.callRecordVideoMissed" : "ui.callRecordMissed"
+        }
+        return message.isVideoCall ? "ui.callRecordVideo" : "ui.callRecord"
+    }
+
+    private var callIconMarkup: String {
+        if message.isBadCallRecord {
+            return message.isVideoCall ? I.callRecordVideoMissed : I.callRecordMissed
+        }
+        return message.isVideoCall ? I.callRecordVideo : I.callRecord
+    }
+
     private var ink: Color {
 
         guard message.isCallRecord else { return ChatTheme.timeInk }
-        return message.isBadCallRecord ? Color(hex: 0xFA5151) : ChatTheme.timeInk
+        return message.isBadCallRecord ? ChatTheme.mentionMe : ChatTheme.timeInk
     }
 }
 
@@ -3869,22 +3889,42 @@ struct CallRecordBubble: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            CallIcon(key: message.isVideoCall ? "ui.callRecordVideo" : "ui.callRecord",
-                     symbol: message.isVideoCall ? "video.fill" : "phone.fill",
-                     builtin: message.isVideoCall ? I.callRecordVideo : I.callRecord,
-                     size: 15, color: ink)
             Text(message.callText)
                 .font(pf(L.chatFontSize))
                 .foregroundColor(ink)
+            callIcon
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 9)
         .background(BubbleFill(mine: mine))
         .frame(maxWidth: L.bubbleMaxW, alignment: mine ? .trailing : .leading)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var callIcon: some View {
+        CallIcon(key: callIconKey,
+                 symbol: message.isVideoCall ? "video.fill" : "phone.fill",
+                 builtin: callIconMarkup,
+                 size: 15,
+                 color: ink)
+    }
+
+    private var callIconKey: String {
+        if message.isBadCallRecord {
+            return message.isVideoCall ? "ui.callRecordVideoMissed" : "ui.callRecordMissed"
+        }
+        return message.isVideoCall ? "ui.callRecordVideo" : "ui.callRecord"
+    }
+
+    private var callIconMarkup: String {
+        if message.isBadCallRecord {
+            return message.isVideoCall ? I.callRecordVideoMissed : I.callRecordMissed
+        }
+        return message.isVideoCall ? I.callRecordVideo : I.callRecord
     }
 
     private var ink: Color {
-        message.isBadCallRecord ? Color(hex: 0xFA5151) : ChatTheme.secondary
+        message.isBadCallRecord ? ChatTheme.mentionMe : ChatTheme.ink
     }
 }
 

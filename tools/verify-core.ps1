@@ -8,14 +8,7 @@ $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
 $failed = @()
 
 function Get-VerifiedText([string]$path, [string]$text) {
-    if ($path -ne "Sources/ChatDetailView.swift") { return $text }
-    $old = "    static let bubbleMine = Color.dyn(0xD8F2E4, 0x075E4E)"
-    $new = "    static var bubbleMine: Color {`n" +
-           "        UIConfig.color(`"bubbleMineColor`", 0x95EC69, 0x1E88C7)`n" +
-           "    }"
-    $launchNew = "onOpenMiniApp: { g in app.launchMiniApp(g, returningTo: chat) },"
-    $launchOld = "onOpenMiniApp: { g in app.openMiniApp = g },"
-    return $text.Replace($new, $old).Replace($launchNew, $launchOld)
+    return $text
 }
 
 foreach ($entry in $manifest.files) {

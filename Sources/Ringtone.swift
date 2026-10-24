@@ -77,7 +77,9 @@ final class Ringtone: ObservableObject {
         previewTask?.cancel()
         previewing = ""
         activate()
-        guard let buf = makeBuffer(kind == .ringback ? Ringtone.ringback : melody(current)) else { return }
+        let timbre: Timbre = kind == .ringback ? .ringback : .melodic
+        guard let buf = makeBuffer(kind == .ringback ? Ringtone.ringback : melody(current),
+                                   timbre: timbre) else { return }
         player.stop()
         player.scheduleBuffer(buf, at: nil, options: .loops)
         if !engine.isRunning { try? engine.start() }
@@ -100,7 +102,17 @@ final class Ringtone: ObservableObject {
         let dur: Double
     }
 
-    private static let ringback: [Note] = [Note(freq: 450, dur: 1.0), Note(freq: 0, dur: 4.0)]
+    private enum Timbre: Equatable {
+        case melodic
+        case ringback
+    }
+
+    /// 外呼等待音：柔和的双音提示，保留电话等待感，但避免传统单频“嘟——”的生硬。
+    private static let ringback: [Note] = [
+        Note(freq: 392.00, dur: 0.56),
+        Note(freq: 523.25, dur: 0.72),
+        Note(freq: 0, dur: 2.52)
+    ]
 
     private func melody(_ id: String) -> [Note] {
         switch id {
@@ -130,7 +142,7 @@ final class Ringtone: ObservableObject {
         }
     }
 
-    private func makeBuffer(_ notes: [Note]) -> AVAudioPCMBuffer? {
+    private func makeBuffer(_ notes: [Note], timbre: Timbre = .melodic) -> AVAudioPCMBuffer? {
         let fmt = AVAudioFormat(standardFormatWithSampleRate: rate, channels: 1)!
         let total = notes.reduce(0.0) { $0 + $1.dur }
         let frames = AVAudioFrameCount(max(1, total * rate))
@@ -144,11 +156,20 @@ final class Ringtone: ObservableObject {
                 let t = Double(k) / rate
                 var v = 0.0
                 if n.freq > 0 {
-
-                    let env = min(1, min(t / 0.012, max(0, (n.dur - t) / 0.06)))
-                    v = (sin(2 * .pi * n.freq * t) * 0.62 + sin(4 * .pi * n.freq * t) * 0.2) * env
+                    let attack = timbre == .ringback ? 0.045 : 0.012
+                    let release = timbre == .ringback ? min(0.28, n.dur * 0.48) : 0.06
+                    let env = min(1, min(t / attack, max(0, (n.dur - t) / release)))
+                    let base = sin(2 * .pi * n.freq * t)
+                    let second = sin(4 * .pi * n.freq * t)
+                    if timbre == .ringback {
+                        let third = sin(6 * .pi * n.freq * t)
+                        let breath = 0.97 + 0.03 * sin(2 * .pi * 2.1 * t)
+                        v = (base * 0.58 + second * 0.12 + third * 0.035) * env * breath
+                    } else {
+                        v = (base * 0.62 + second * 0.2) * env
+                    }
                 }
-                ptr[i] = Float(v * 0.55)
+                ptr[i] = Float(v * (timbre == .ringback ? 0.36 : 0.55))
                 i += 1
             }
         }
