@@ -432,22 +432,16 @@ struct TabBar: View {
 
     @ViewBuilder
     private func magnifier(_ i: Int, x: CGFloat) -> some View {
-        let d: CGFloat = UIConfig.num("tabLoupeSize", 64)
-        ZStack {
-            Circle().fill(.ultraThinMaterial)
-            Circle().stroke(LinearGradient(colors: [Color.white.opacity(0.75),
-                                                    Color.white.opacity(0.22)],
-                                           startPoint: .top, endPoint: .bottom),
-                            lineWidth: 1)
-            if i < items.count {
-                Image(systemName: i == selection ? items[i].1 : items[i].0)
-                    .font(.system(size: d * 0.46, weight: .medium))
-                    .foregroundColor(selColor)
-            }
+        /* WhatsApp 长按后的效果只是“一个更大的 Filled 图标跟着手指走”：
+           没有浮球、没有玻璃圆底，也不把底栏文字抬起来。
+           后台旧值 72 会让图标大得离谱，所以这里按截图比例限制到 30–32pt。 */
+        let d = min(32, max(28, UIConfig.num("tabLoupeSize", 30)))
+        if i < items.count {
+            Image(systemName: items[i].1)
+                .font(.system(size: d, weight: .regular))
+                .foregroundColor(selColor)
+                .frame(width: d + 6, height: d + 6)
         }
-        .frame(width: d, height: d)
-        .shadow(color: .black.opacity(0.22), radius: 10, y: 5)
-        .offset(x: x - d / 2, y: -d - 12)
     }
 
     var body: some View {
@@ -604,8 +598,10 @@ struct TabBar: View {
                         let i = min(items.count - 1, max(0, Int(x / seg)))
                         if i != slideIndex { dragHaptic.impactOccurred() }
                         slideIndex = i
+                        dragIndex = i
                     }
                     slideX = x
+                    dragX = x
                 },
                 onSlideEnded: { x in
 
@@ -616,13 +612,16 @@ struct TabBar: View {
                     withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
                         slideX = nil
                         slideIndex = nil
+                        dragX = nil
+                        dragIndex = nil
                     }
                 }
             )
         }
-        .overlay(alignment: .bottomLeading) {
+        .overlay(alignment: .topLeading) {
             if let i = dragIndex, let x = dragX {
                 magnifier(i, x: x)
+                    .position(x: x, y: max(22, min(L.tabH - 10, L.tabH * 0.42)))
                     .transition(.scale.combined(with: .opacity))
                     .allowsHitTesting(false)
             }
