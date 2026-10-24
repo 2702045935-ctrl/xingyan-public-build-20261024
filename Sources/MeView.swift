@@ -49,6 +49,7 @@ struct MeView: View {
                                 MenuRow(icon: (item.svg?.isEmpty == false) ? item.svg! : I.star,
                                         iconColor: Color(hexString: item.color ?? "#4A90D9", fallback: 0x4A90D9),
                 title: Tr(item.label),
+                                        showArrow: false,
                                         onTap: { open(item) },
                                         clearBg: true,
 
@@ -69,6 +70,7 @@ struct MeView: View {
                             MenuRow(icon: I.star,
                                     iconColor: Color(hex: 0x4A90D9),
                                     title: Tr("管理"),
+                                    showArrow: false,
                                     onTap: { path.append("manage") },
                                     clearBg: true,
                                     iconTile: true,
@@ -77,6 +79,7 @@ struct MeView: View {
                             MenuRow(icon: I.star,
                                     iconColor: Color(hex: 0x5B8FF9),
                                     title: Tr("人脸比对"),
+                                    showArrow: false,
                                     onTap: { path.append("faces") },
                                     clearBg: true,
                                     iconTile: true,
@@ -490,7 +493,6 @@ struct MeView: View {
             }
             .buttonStyle(.plain)
 
-            Chevron(size: 10, line: 1.8)
         }
         .padding(.horizontal, 16)
         .frame(height: 96)
@@ -664,9 +666,6 @@ struct MeView: View {
                 Text(Tr("活跃 ") + daysText + Tr(" 天"))
                     .font(pf(L.v(12.5, 3.4, 13.5)))
                     .foregroundColor(C.subLabel)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundColor(C.arrow)
             }
             .padding(.horizontal, L.v(10, 3.2, 13))
             .frame(height: L.v(26, 7.5, 30))
@@ -773,7 +772,6 @@ struct MeView: View {
                         .lineLimit(1)
                 }
                 Spacer(minLength: 0)
-                Chevron(size: 9, line: 1.6).padding(.trailing, 3)
             }
             .padding(.leading, L.v(16, 5, 19))
             .padding(.trailing, L.v(14, 4, 16))
