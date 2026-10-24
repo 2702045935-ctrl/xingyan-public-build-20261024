@@ -9,6 +9,7 @@ struct NativeTabBar: UIViewRepresentable {
     let contactsDot: Bool
     let momentsDot: Bool
     let meDot: Bool
+    let avatarPath: String
 
     func makeCoordinator() -> Coordinator {
         Coordinator(selection: $selection)
@@ -40,6 +41,7 @@ struct NativeTabBar: UIViewRepresentable {
         if let item = bar.items?[safe: selection], bar.selectedItem !== item {
             bar.selectedItem = item
         }
+        context.coordinator.loadAvatar(avatarPath, in: bar)
         refresh(bar)
     }
 
@@ -58,6 +60,7 @@ struct NativeTabBar: UIViewRepresentable {
 
     final class Coordinator: NSObject, UITabBarDelegate {
         var selection: Binding<Int>
+        private var avatarKey = ""
 
         init(selection: Binding<Int>) {
             self.selection = selection
@@ -66,6 +69,29 @@ struct NativeTabBar: UIViewRepresentable {
         func tabBar(_ tabBar: UITabBar, didSelect item: UITabBarItem) {
             guard let index = tabBar.items?.firstIndex(where: { $0 === item }) else { return }
             selection.wrappedValue = index
+        }
+
+        func loadAvatar(_ path: String, in bar: UITabBar) {
+            guard path != avatarKey, let item = bar.items?[safe: 3] else { return }
+            avatarKey = path
+            guard !path.isEmpty, let url = API.shared.assetURL(path) else {
+                item.image = UIImage(systemName: "person.crop.circle")
+                item.selectedImage = UIImage(systemName: "person.crop.circle.fill")
+                return
+            }
+            Task { @MainActor [weak self] in
+                guard let self = self, self.avatarKey == path,
+                      let data = try? await API.shared.assetData(url),
+                      let image = UIImage(data: data) else { return }
+                let size = CGSize(width: 25, height: 25)
+                let avatar = UIGraphicsImageRenderer(size: size).image { _ in
+                    UIBezierPath(ovalIn: CGRect(origin: .zero, size: size)).addClip()
+                    image.draw(in: CGRect(origin: .zero, size: size))
+                }
+                let rendered = avatar.withRenderingMode(.alwaysOriginal)
+                item.image = rendered
+                item.selectedImage = rendered
+            }
         }
     }
 }
