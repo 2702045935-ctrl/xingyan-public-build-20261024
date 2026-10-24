@@ -473,6 +473,23 @@ struct TabBar: View {
                         ),
                         lineWidth: 0.8
                     )
+                Capsule(style: .continuous)
+                    .stroke(
+                        AngularGradient(
+                            colors: [
+                                Color(red: 0.34, green: 0.88, blue: 1.00).opacity(0.34),
+                                Color(red: 0.62, green: 0.52, blue: 1.00).opacity(0.24),
+                                Color(red: 1.00, green: 0.58, blue: 0.80).opacity(0.20),
+                                Color(red: 1.00, green: 0.86, blue: 0.48).opacity(0.24),
+                                Color(red: 0.54, green: 1.00, blue: 0.76).opacity(0.20),
+                                Color(red: 0.34, green: 0.88, blue: 1.00).opacity(0.34)
+                            ],
+                            center: .center,
+                            angle: .degrees(28)
+                        ),
+                        lineWidth: 1.15
+                    )
+                    .blendMode(.plusLighter)
                 VStack(spacing: 0) {
                     Image(systemName: items[i].1)
                         .font(.system(size: 28, weight: .regular))
