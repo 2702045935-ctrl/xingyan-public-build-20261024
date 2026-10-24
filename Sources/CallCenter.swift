@@ -1028,7 +1028,7 @@ final class CallCenter: NSObject, ObservableObject {
                 tip = "正在接通…"
             } else {
 
-                if !serverAudioOn { CallAudioPipe.shared.start(); serverAudioOn = true }
+                if !serverAudioOn { startServerAudioIfVoice() }
                 if phase != .active {
                     phase = .active
                     tip = "通话中"
@@ -1178,6 +1178,12 @@ final class CallCenter: NSObject, ObservableObject {
         }
 
         if !isVideo {
+            if iAmCaller, phase == .outgoing {
+                sendCall(["action": "invite", "toUserId": peerId, "media": "audio"])
+                tip = "正在呼叫…"
+                return
+            }
+
             serverAudioOn = true
             CallAudioPipe.shared.onFrame = { [weak self] data in
                 guard let self = self, !self.muted else { return }
