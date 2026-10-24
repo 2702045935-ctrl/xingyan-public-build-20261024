@@ -1153,11 +1153,19 @@ final class CallCenter: NSObject, ObservableObject {
                 self.note("网络切换（" + (path.status == .satisfied ? routeText : "断开") + "）→ 自动重连")
                 self.weakNet = true
                 if self.tip != "通话中" && self.tip != "视频通话中" { self.tip = "网络切换，正在重连…" }
-                if !self.usingTRTC { await self.startTRTCIfPossible() }
-                if !self.isVideo, !self.usingTRTC {
+                if self.usingTRTC {
+                    TRTCBridge.shared.recoverAudioAfterNetworkChange()
+                } else {
+                    await self.startTRTCIfPossible()
+                }
+                if !self.usingTRTC {
                     try? await Task.sleep(nanoseconds: 600_000_000)
-                    guard self.phase == .active, !self.usingTRTC else { return }
-                    CallAudioPipe.shared.repairAudioNow()
+                    guard self.phase == .active else { return }
+                    if self.usingTRTC {
+                        TRTCBridge.shared.recoverAudioAfterNetworkChange()
+                    } else {
+                        CallAudioPipe.shared.repairAudioNow()
+                    }
                 }
                 Task { @MainActor [weak self] in
                     try? await Task.sleep(nanoseconds: 3_000_000_000)

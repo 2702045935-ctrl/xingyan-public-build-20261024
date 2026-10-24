@@ -55,6 +55,7 @@ final class TRTCBridge: NSObject, ObservableObject {
 
     private var active = false
     private var muted = false
+    private var speakerOn = false
 
     private var micReady = false
 
@@ -72,6 +73,7 @@ final class TRTCBridge: NSObject, ObservableObject {
     private var pendingQuality: TRTCAudioQuality?
     private var qualityTask: Task<Void, Never>?
     private var micWatchTask: Task<Void, Never>?
+    private var audioRecoveryTask: Task<Void, Never>?
 
     private var prefsObserver: NSObjectProtocol? = nil
 
@@ -149,6 +151,7 @@ final class TRTCBridge: NSObject, ObservableObject {
         micReady = false
         c.startLocalAudio(audioQuality)
         c.muteLocalAudio(false)
+        applyAudioRoute()
         scheduleMicRecoveryWatch()
         if isVideo {
 
@@ -224,6 +227,8 @@ final class TRTCBridge: NSObject, ObservableObject {
         qualityTask = nil
         micWatchTask?.cancel()
         micWatchTask = nil
+        audioRecoveryTask?.cancel()
+        audioRecoveryTask = nil
         if let ob = prefsObserver {
             NotificationCenter.default.removeObserver(ob)
             prefsObserver = nil
@@ -259,9 +264,35 @@ final class TRTCBridge: NSObject, ObservableObject {
     }
 
     func setSpeaker(_ on: Bool) {
+        speakerOn = on
+        applyAudioRoute()
+    }
 
-        if let route = TRTCAudioRoute(rawValue: on ? 0 : 1) {
+    private func applyAudioRoute() {
+        if let route = TRTCAudioRoute(rawValue: speakerOn ? 0 : 1) {
             cloud?.setAudioRoute(route)
+        }
+    }
+
+    /// Wi-Fi / 蜂窝互切后，TRTC 负责传输重连；这里重新拉起本地音频并恢复输出路由，
+    /// 防止“通话仍在计时，但系统把录音和播放设备释放了”。音质档位保持当前值。
+    func recoverAudioAfterNetworkChange() {
+        guard joined, active else { return }
+        audioRecoveryTask?.cancel()
+        audioRecoveryTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 700_000_000)
+            guard let self = self, !Task.isCancelled,
+                  self.joined, self.active, let c = self.cloud else { return }
+            self.micReady = false
+            self.micRecoveryCount = 0
+            self.lastError = "网络切换，正在恢复通话音频"
+            c.stopLocalAudio()
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            guard !Task.isCancelled, self.joined, self.active, self.cloud === c else { return }
+            c.startLocalAudio(self.audioQuality)
+            c.muteLocalAudio(self.muted)
+            self.applyAudioRoute()
+            self.scheduleMicRecoveryWatch()
         }
     }
 
@@ -270,6 +301,8 @@ final class TRTCBridge: NSObject, ObservableObject {
         qualityTask = nil
         micWatchTask?.cancel()
         micWatchTask = nil
+        audioRecoveryTask?.cancel()
+        audioRecoveryTask = nil
         pendingQuality = nil
         audioQuality = .default
         audioQualityLabel = "50kbps"
@@ -484,6 +517,7 @@ extension TRTCBridge: TRTCCloudDelegate {
         Task { @MainActor in
             self.networkQuality = 2
             self.scheduleAudioQuality(.default)
+            self.recoverAudioAfterNetworkChange()
         }
     }
 
