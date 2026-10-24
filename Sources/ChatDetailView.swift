@@ -293,6 +293,7 @@ struct ChatDetailView: View {
     @State private var showForward = false
     @State private var selectMode = false
     @State private var selected: Set<String> = []
+    @State private var showMultiDeleteConfirm = false
     @State private var quote: Message?
 
     @State private var reEditDraft: String?
@@ -520,6 +521,12 @@ struct ChatDetailView: View {
         if selected.contains(m.id) { selected.remove(m.id) } else { selected.insert(m.id) }
     }
 
+    private func exitSelectMode() {
+        selectMode = false
+        selected = []
+        actionMessage = nil
+    }
+
     private func mySelected() -> [Message] {
         messages.filter { selected.contains($0.id) }
     }
@@ -575,19 +582,18 @@ struct ChatDetailView: View {
                                                 content: fav.content, title: chat.name, from: displayName(m)) { n += 1 }
             }
             app.show(Tr("已收藏") + " \(n) " + Tr("条"))
-            selectMode = false
-            selected = []
+            exitSelectMode()
         }
     }
 
     private func multiDelete() {
         let ids = Array(selected)
+        guard !ids.isEmpty else { return }
         persistDeletedMessageIds(ids)
         messages.removeAll { ids.contains($0.id) }
         rebuildIndex()
-        app.show(Tr("已删除"))
-        selectMode = false
-        selected = []
+        app.show(Tr("已删除") + " \(ids.count) " + Tr("条"))
+        exitSelectMode()
     }
 
     @State private var focused = false
@@ -671,8 +677,13 @@ struct ChatDetailView: View {
     }
 
     private var navTitleShown: String {
+        if selectMode { return Tr("已选择") + " \(selected.count) " + Tr("项") }
         guard !peerTyping.isEmpty else { return navTitle }
         return isGroup ? "有人正在输入…" : "对方正在输入…"
+    }
+
+    private var navBackAction: (() -> Void)? {
+        selectMode ? nil : { dismiss() }
     }
 
     private func reportTyping() {
@@ -897,11 +908,22 @@ struct ChatDetailView: View {
 
             AnyView(VStack(spacing: 0) {
 
-            NavBar(title: navTitleShown, back: { dismiss() }, leftExtra: leftUnreadBadge,
+            NavBar(title: navTitleShown, back: navBackAction,
+                   leftExtra: selectMode ? nil : leftUnreadBadge,
                    floating: true) {
                 HStack(spacing: 0) {
 
-                    if isStarWorld {
+                    if selectMode {
+                        Button {
+                            exitSelectMode()
+                        } label: {
+                            Text(Tr("取消"))
+                                .font(pf(15.5))
+                                .foregroundColor(C.label)
+                                .frame(width: 52, height: 36)
+                        }
+                        .buttonStyle(.plain)
+                    } else if isStarWorld {
                         Button {
                             withAnimation(.easeInOut(duration: 0.18)) { newsMode.toggle() }
                         } label: {
@@ -912,7 +934,7 @@ struct ChatDetailView: View {
                         }
                         .buttonStyle(.plain)
                     }
-                    if !isStarWorld || !newsMode {
+                    if !selectMode && (!isStarWorld || !newsMode) {
                         Button {
                             CrashCatcher.markStep("三点", isGroup
                                 ? "群聊三点点击 \(chat.id)"
@@ -1007,8 +1029,7 @@ struct ChatDetailView: View {
                     MultiSelectBar(count: selected.count,
                                    onForward: { multiForward() },
                                    onFavorite: { multiFavorite() },
-                                   onDelete: { multiDelete() },
-                                   onCancel: { selectMode = false; selected = [] })
+                                   onDelete: { showMultiDeleteConfirm = true })
                 } else {
                     VStack(spacing: 0) {
                         if chat.sysTeam == true, !focused, panel == .none {
@@ -1075,6 +1096,14 @@ struct ChatDetailView: View {
             Button(Tr("语音通话")) { startRealCall(video: false) }
             Button(Tr("视频通话")) { startRealCall(video: true) }
             Button(Tr("取消"), role: .cancel) { }
+        }
+
+        .confirmationDialog(Tr("删除所选消息？"), isPresented: $showMultiDeleteConfirm,
+                            titleVisibility: .visible) {
+            Button(Tr("删除"), role: .destructive) { multiDelete() }
+            Button(Tr("取消"), role: .cancel) { }
+        } message: {
+            Text(Tr("删除后，将无法恢复。"))
         }
 
         .confirmationDialog(redialTitle, isPresented: Binding(
@@ -1770,6 +1799,22 @@ struct ChatDetailView: View {
                     }
             }
         }
+        .overlay(alignment: .leading) {
+            if selectMode {
+                Image(systemName: selected.contains(message.id)
+                      ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 21))
+                    .foregroundColor(selected.contains(message.id) ? C.green : ChatTheme.secondary)
+                    .padding(.leading, 10)
+            }
+        }
+        .overlay {
+            if selectMode {
+                Color.clear
+                    .contentShape(Rectangle())
+                    .onTapGesture { toggleSelect(message) }
+            }
+        }
     }
 
     private func timeLine(_ message: Message) -> some View {
@@ -1849,22 +1894,6 @@ struct ChatDetailView: View {
                     if !t.isEmpty { Speaker.shared.speak(t) }
                 }
             )
-            .overlay(alignment: .leading) {
-                if selectMode {
-                    Image(systemName: selected.contains(message.id)
-                          ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: 21))
-                        .foregroundColor(selected.contains(message.id) ? C.green : ChatTheme.secondary)
-                        .padding(.leading, 10)
-                }
-            }
-            .overlay {
-                if selectMode {
-                    Color.clear
-                        .contentShape(Rectangle())
-                        .onTapGesture { toggleSelect(message) }
-                }
-            }
             .background(GeometryReader { g in
 
                 let contentFrame = g.frame(in: .named("chatScroll"))

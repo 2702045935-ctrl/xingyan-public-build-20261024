@@ -208,7 +208,6 @@ struct MultiSelectBar: View {
     var onForward: () -> Void
     var onFavorite: () -> Void
     var onDelete: () -> Void
-    var onCancel: () -> Void
 
     @Environment(\.colorScheme) private var scheme
     private var ink: Color { scheme == .dark ? Color(hex: 0xEDEDED) : Color(hex: 0x1A1A1A) }
@@ -218,13 +217,6 @@ struct MultiSelectBar: View {
             item("转发", "arrowshape.turn.up.right", onForward)
             item("收藏", "star", onFavorite)
             item("删除", "trash", onDelete, danger: true)
-            Button { onCancel() } label: {
-                Text(Tr("取消"))
-                    .font(pf(15))
-                    .foregroundColor(ink)
-                    .frame(width: 70, height: 54)
-            }
-            .buttonStyle(.plain)
         }
         .frame(height: 54)
         .background(C.tabBg)
@@ -238,10 +230,12 @@ struct MultiSelectBar: View {
                 Text(Tr(title)).font(pf(11))
             }
             .foregroundColor(danger ? Color(hexString: "#FA5151") : ink)
+            .opacity(count == 0 ? 0.45 : 1)
             .frame(maxWidth: .infinity)
             .frame(height: 54)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .disabled(count == 0)
     }
 }
