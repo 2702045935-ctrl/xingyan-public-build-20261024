@@ -464,7 +464,6 @@ struct EmojiPanel: View {
             .frame(height: L.v(38, 10.4, 46))
         }
         .frame(height: panelH)
-        .background { ChatPanelGlassBackground() }
     }
 }
 
@@ -552,7 +551,6 @@ struct PlusPanel: View {
             }
         }
         .frame(height: max(panelH, neededH))
-        .background { ChatPanelGlassBackground() }
         .overlay(alignment: .top) { Rectangle().fill(C.hairline).frame(height: 0.5) }
     }
 

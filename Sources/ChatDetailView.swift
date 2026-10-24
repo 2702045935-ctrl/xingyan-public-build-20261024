@@ -2596,15 +2596,10 @@ struct ChatDetailView: View {
 
                 .background {
                     Group {
-                        if panel == .none {
-                            Color.clear
-                        } else if panel == .plus {
-                            ZStack {
-                                Rectangle().fill(.bar)
-                                ChatTheme.panel.opacity(0.35)
-                            }
+                        if panel != .none {
+                            ChatPanelGlassBackground()
                         } else {
-                            ChatTheme.panel
+                            Color.clear
                         }
                     }
                     .ignoresSafeArea(edges: .bottom)
