@@ -902,6 +902,13 @@ final class AppState: ObservableObject {
         syncIconBadge()
     }
 
+    func setChatUnreadLocally(_ chatId: String, unread: Int?, flagged: Bool?) {
+        guard let index = chats.firstIndex(where: { $0.id == chatId }) else { return }
+        chats[index].unread = unread
+        chats[index].flagged = flagged
+        syncIconBadge()
+    }
+
     func dropOptimisticSummary(_ chatId: String) {
         optimisticChats[chatId] = nil
         optimisticAt[chatId] = nil

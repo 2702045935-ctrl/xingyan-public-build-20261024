@@ -36,7 +36,7 @@ struct ChatBackgroundSheet: View {
     static let presets: [String] = ["/bg/bw1.jpg", "/bg/bw2.jpg", "/bg/bw3.jpg",
                                     "/bg/bw4.jpg", "/bg/bw5.jpg", "/bg/bw6.jpg"]
 
-    static let names: [String] = ["浅灰渐变", "深灰渐变", "细斜纹", "细网格", "磨砂噪点", "同心圆"]
+    static let names: [String] = ["流光晨雾", "深空石墨", "雾蓝丝绸", "苔原微光", "烟粉云霞", "黑曜星砂"]
 
     @State private var remotePresets: [ChatBgPayload.Item] = []
     @State private var remoteVersion = ""

@@ -1357,15 +1357,15 @@ const ME_ACTIONS = ['service', 'favorites', 'moments', 'works', 'stickers', 'set
 const CHAT_BG_FILE = 'chat-bg.json';
 const CHAT_BG_PRESETS_MAX = 12;
 const DEFAULT_CHAT_BG = {
-  version: 1,
-  default: '',
+  version: 2,
+  default: '/bg/bw1.jpg',
   presets: [
-    { path: '/bg/bw1.jpg', name: '浅灰渐变' },
-    { path: '/bg/bw2.jpg', name: '深灰渐变' },
-    { path: '/bg/bw3.jpg', name: '细斜纹' },
-    { path: '/bg/bw4.jpg', name: '细网格' },
-    { path: '/bg/bw5.jpg', name: '磨砂噪点' },
-    { path: '/bg/bw6.jpg', name: '同心圆' }
+    { path: '/bg/bw1.jpg', name: '流光晨雾' },
+    { path: '/bg/bw2.jpg', name: '深空石墨' },
+    { path: '/bg/bw3.jpg', name: '雾蓝丝绸' },
+    { path: '/bg/bw4.jpg', name: '苔原微光' },
+    { path: '/bg/bw5.jpg', name: '烟粉云霞' },
+    { path: '/bg/bw6.jpg', name: '黑曜星砂' }
   ]
 };
 function normalizeChatBg(o) {

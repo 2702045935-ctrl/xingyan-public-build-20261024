@@ -4529,8 +4529,8 @@ private struct StarredPayload: Decodable {
         return (out.imported ?? 0, out.skipped ?? 0, out.chats ?? 0)
     }
 
-    func markUnread(chatId: String) async {
-        _ = try? await request("POST", "/api/chats/\(chatId)/unread", body: [:])
+    func markUnread(chatId: String) async -> Bool {
+        (try? await request("POST", "/api/chats/\(chatId)/unread", body: [:])) != nil
     }
 
     @discardableResult

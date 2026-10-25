@@ -1675,8 +1675,15 @@ struct ChatsView: View {
     }
 
     private func markUnread(_ chat: Chat) {
+        let oldUnread = chat.unread
+        let oldFlagged = chat.flagged
+        app.setChatUnreadLocally(chat.id, unread: max(1, chat.unreadCount), flagged: true)
         Task {
-            await API.shared.markUnread(chatId: chat.id)
+            guard await API.shared.markUnread(chatId: chat.id) else {
+                app.setChatUnreadLocally(chat.id, unread: oldUnread, flagged: oldFlagged)
+                app.show(Tr("标为未读失败"))
+                return
+            }
             await app.loadChats()
         }
     }
