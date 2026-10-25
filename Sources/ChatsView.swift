@@ -1689,11 +1689,16 @@ struct ChatsView: View {
             let err = clear
                 ? await API.shared.deleteChat(chatId: chat.id)
                 : await API.shared.hideChat(chatId: chat.id)
-            app.revealChatLocally(chat.id)
-            if clear, err == nil { app.forgetChatHistory(chat.id) }
-            if err == nil { app.dropOptimisticSummary(chat.id) }
+            if let err {
+                app.revealChatLocally(chat.id)
+                await app.loadChats()
+                app.show(err)
+                return
+            }
+            if clear { app.forgetChatHistory(chat.id) }
+            app.dropOptimisticSummary(chat.id)
             await app.loadChats()
-            if let err { app.show(err) }
+            app.revealChatLocally(chat.id)
         }
     }
 
@@ -1703,13 +1708,16 @@ struct ChatsView: View {
         }
         Task {
             let err = await API.shared.deleteChat(chatId: chat.id)
-            app.revealChatLocally(chat.id)
-            if err == nil {
-                LocalStore.clearChat(chat.id)
-                app.dropOptimisticSummary(chat.id)
+            if let err {
+                app.revealChatLocally(chat.id)
+                await app.loadChats()
+                app.show(err)
+                return
             }
+            LocalStore.clearChat(chat.id)
+            app.dropOptimisticSummary(chat.id)
             await app.loadChats()
-            if let err { app.show(err) }
+            app.revealChatLocally(chat.id)
         }
     }
 
