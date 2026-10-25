@@ -4416,7 +4416,16 @@ struct MessageRow: View {
     }
 
     private func quotedTextBubble(_ q: QuoteRef, raw: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: mine ? .trailing : .leading, spacing: 4) {
+            Text(richBody(raw))
+                .font(pf(L.chatFontSize))
+                .foregroundColor(mine && UIConfig.num("bubbleMineWhiteText", 1) > 0 ? ChatTheme.mineInk : ChatTheme.ink)
+                .lineSpacing(L.msgLineSpacing)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, L.bubblePadHPill)
+                .padding(.vertical, L.bubblePadV)
+                .background(BubbleFill(mine: mine, tail: showTail))
+
             HStack(alignment: .top, spacing: 8) {
                 Button {
                     if !q.refId.isEmpty { onOpenQuote?(q.refId) }
@@ -4458,15 +4467,8 @@ struct MessageRow: View {
                 RoundedRectangle(cornerRadius: 4, style: .continuous)
                     .stroke(C.hairline.opacity(0.55), lineWidth: 0.5)
             }
-            Text(richBody(raw))
-                .font(pf(L.chatFontSize))
-                .foregroundColor(mine && UIConfig.num("bubbleMineWhiteText", 1) > 0 ? ChatTheme.mineInk : ChatTheme.ink)
-                .lineSpacing(L.msgLineSpacing)
-                .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: 250, alignment: mine ? .trailing : .leading)
         }
-        .padding(.horizontal, L.bubblePadHPill)
-        .padding(.vertical, L.bubblePadV)
-        .background(BubbleFill(mine: mine, tail: showTail))
     }
 
     private func quoteThumbnail(_ q: QuoteRef) -> some View {
