@@ -6,22 +6,39 @@ struct OfficialMark: View {
 
     var body: some View {
         Text(Tr("官方"))
-            .font(pf(10.5, .medium))
-            .foregroundColor(C.label.opacity(0.86))
-            .padding(.horizontal, 6)
-            .frame(height: 18)
+            .font(pf(10.5, .semibold))
+            .foregroundColor(C.label.opacity(0.90))
+            .padding(.horizontal, 7)
+            .frame(height: 19)
             .background {
-                GlassBackground(shape: Capsule(style: .continuous),
-                                opacity: scheme == .dark ? 0.64 : 0.78,
-                                edgeAlpha: scheme == .dark ? 0.42 : 0.56,
-                                shadow: false,
-                                seed: 0.74,
-                                native: true)
+                ZStack {
+                    Capsule(style: .continuous)
+                        .fill(C.cardBg.opacity(scheme == .dark ? 0.30 : 0.44))
+                    GlassBackground(shape: Capsule(style: .continuous),
+                                    opacity: scheme == .dark ? 0.78 : 0.92,
+                                    edgeAlpha: scheme == .dark ? 0.52 : 0.68,
+                                    shadow: false,
+                                    seed: 0.74,
+                                    native: true)
+                }
             }
             .overlay {
                 Capsule(style: .continuous)
-                    .stroke(Color.white.opacity(scheme == .dark ? 0.14 : 0.48), lineWidth: 0.6)
+                    .stroke(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(scheme == .dark ? 0.22 : 0.82),
+                                C.green.opacity(scheme == .dark ? 0.22 : 0.30),
+                                Color.white.opacity(scheme == .dark ? 0.12 : 0.58)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 0.8
+                    )
             }
+            .shadow(color: Color.black.opacity(scheme == .dark ? 0.18 : 0.06),
+                    radius: 2.5, x: 0, y: 1)
             .accessibilityLabel(Tr("官方账号"))
     }
 }
