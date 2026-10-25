@@ -841,18 +841,6 @@ struct ChatDetailView: View {
                         Spacer(minLength: 0)
                         VStack(spacing: 8) {
 
-                            if let firstMsg = messages.first?.id {
-                                arrowButton {
-                                    withAnimation(.easeOut(duration: 0.26)) {
-                                        scroller?.scrollTo(firstMsg, anchor: .top)
-                                    }
-                                } icon: {
-                                    Image(systemName: "chevron.up")
-                                        .font(.system(size: 15, weight: .semibold))
-                                        .foregroundColor(C.label)
-                                }
-                            }
-
                             if let lastMsg = messages.last?.id {
                                 Button {
                                     withAnimation(.easeOut(duration: 0.26)) {
@@ -3680,18 +3668,6 @@ struct ChatDetailView: View {
                                     content: String(message.body.prefix(200)))
             app.show(Tr("已举报，管理员会处理"))
         }
-    }
-
-    private func arrowButton<Icon: View>(_ action: @escaping () -> Void,
-                                         @ViewBuilder icon: () -> Icon) -> some View {
-        Button(action: action) {
-            icon()
-                .frame(width: 34, height: 34)
-                .background(Circle().fill(C.cardBg.opacity(0.96)))
-                .overlay(Circle().stroke(ChatTheme.separator, lineWidth: 0.5))
-                .shadow(color: Color.black.opacity(0.18), radius: 8, y: 3)
-        }
-        .buttonStyle(.plain)
     }
 
     private func schedulePersist() {
