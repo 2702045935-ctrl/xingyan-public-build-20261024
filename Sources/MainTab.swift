@@ -101,8 +101,13 @@ struct MainTabView: View {
         .overlay(CallOverlay())
 
         .sheet(isPresented: Binding(
-            get: { !(UserDefaults.standard.string(forKey: "chris.lastCrash") ?? "").isEmpty && !shownCrash },
-            set: { v in shownCrash = true })) {
+            get: { CrashCatcher.hasUnseenCrash() && !shownCrash },
+            set: { v in
+                if !v {
+                    shownCrash = true
+                    CrashCatcher.acknowledgeCrashNotice()
+                }
+            })) {
                 CrashLogView()
         }
 

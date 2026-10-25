@@ -16,6 +16,10 @@ enum CrashCatcher {
         guard let dir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first else { return nil }
         return dir.appendingPathComponent("chris-last-crash.txt")
     }
+    private static var stepFile: URL? {
+        guard let dir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first else { return nil }
+        return dir.appendingPathComponent("chris-last-step.txt")
+    }
     private static func saveCrashFile(_ text: String) {
         guard let f = crashFile else { return }
         try? Data(text.prefix(20000).utf8).write(to: f, options: [.atomic])
@@ -23,6 +27,17 @@ enum CrashCatcher {
     private static func loadCrashFile() -> String {
         guard let f = crashFile, let d = try? Data(contentsOf: f) else { return "" }
         return String(data: d, encoding: .utf8) ?? ""
+    }
+    private static func saveStepFile(_ text: String) {
+        guard let f = stepFile else { return }
+        try? Data(text.prefix(12000).utf8).write(to: f, options: [.atomic])
+    }
+    private static func loadStepFile() -> String {
+        guard let f = stepFile, let d = try? Data(contentsOf: f) else { return "" }
+        return String(data: d, encoding: .utf8) ?? ""
+    }
+    private static func clearStepFile() {
+        if let f = stepFile { try? FileManager.default.removeItem(at: f) }
     }
     private static func clearCrashFile() { if let f = crashFile { try? FileManager.default.removeItem(at: f) } }
 
@@ -100,22 +115,42 @@ enum CrashCatcher {
 
     static func savedCrash() -> String { loadCrashFile() }
 
+    static func hasUnseenCrash() -> Bool {
+        let raw = UserDefaults.standard.string(forKey: "chris.lastCrash") ?? ""
+        guard raw.hasPrefix("NSException\n") || raw.hasPrefix("Signal\n") else { return false }
+        guard !raw.isEmpty else { return false }
+        let at = UserDefaults.standard.string(forKey: "chris.lastCrashAt") ?? ""
+        let seen = UserDefaults.standard.string(forKey: "chris.lastCrashSeenAt") ?? ""
+        return seen != at
+    }
+
+    static func acknowledgeCrashNotice() {
+        let at = UserDefaults.standard.string(forKey: "chris.lastCrashAt") ?? ""
+        if !at.isEmpty {
+            UserDefaults.standard.set(at, forKey: "chris.lastCrashSeenAt")
+        }
+    }
+
     static func markStep(_ kind: String, _ text: String) {
         let stack = Thread.callStackSymbols.joined(separator: "\n")
         let raw = "\(kind)\n\(text)\n\n\(stack)"
-        UserDefaults.standard.set(raw, forKey: "chris.lastCrash")
-        UserDefaults.standard.set(ISO8601DateFormatter().string(from: Date()), forKey: "chris.lastCrashAt")
-        saveCrashFile(raw)
+        UserDefaults.standard.set(raw, forKey: "chris.lastStep")
+        UserDefaults.standard.set(ISO8601DateFormatter().string(from: Date()), forKey: "chris.lastStepAt")
+        saveStepFile(raw)
     }
 
     static func clearStep() {
-        UserDefaults.standard.removeObject(forKey: "chris.lastCrash")
-        UserDefaults.standard.removeObject(forKey: "chris.lastCrashAt")
-        clearCrashFile()
+        UserDefaults.standard.removeObject(forKey: "chris.lastStep")
+        UserDefaults.standard.removeObject(forKey: "chris.lastStepAt")
+        clearStepFile()
     }
 
     static func note(_ kind: String, _ text: String, keepLocal: Bool = false) {
-        let stack = Thread.callStackSymbols.joined(separator: "\n")
+        let callStack = Thread.callStackSymbols.joined(separator: "\n")
+        let step = loadStepFile().isEmpty
+            ? (UserDefaults.standard.string(forKey: "chris.lastStep") ?? "")
+            : loadStepFile()
+        let stack = step.isEmpty ? callStack : ("最近步骤：\n" + step + "\n\n调用栈：\n" + callStack)
         if keepLocal {
 
             UserDefaults.standard.set("\(kind)\n\(text)\n\n\(stack)".prefix(6000).description,
