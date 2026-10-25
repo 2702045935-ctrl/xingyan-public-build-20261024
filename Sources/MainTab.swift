@@ -91,7 +91,7 @@ struct MainTabView: View {
                         }
                     }
 
-                    .offset(y: UIConfig.num("tabBarDrop", 0))
+                    .offset(y: UIConfig.num("tabBarDrop", 0) + 8)
                     .transition(.move(edge: .bottom))
             }
         }
