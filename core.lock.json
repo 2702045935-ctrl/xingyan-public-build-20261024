@@ -14,7 +14,7 @@
     { "path": "Sources/LocalStore.swift", "size": 20516, "sha256": "6b3218bbfae2e1db0477a3cf46cc9422532a47b2bf12954870efec84a353e078" },
     { "path": "Sources/MsgFrameKey.swift", "size": 651, "sha256": "fdf3a779255614d9915d9bcf528868ac2517b5feafbfa1180956cd162403993a" },
     { "path": "Sources/PushCenter.swift", "size": 7780, "sha256": "c49cf8ca8275a8a177ae1da719bcff894fdffc8fd8b873f1377eac48107b4c0f" },
-    { "path": "Sources/ChatDetailView.swift", "size": 209243, "sha256": "2d91436552c38cbc7c7fe7819dbbb5d7d204fe48eeee52c76be118da25832017" },
+    { "path": "Sources/ChatDetailView.swift", "size": 209293, "sha256": "34eca66d06d7db09028bbf12c9e6d876522f92664ca9611325b7818dd0ea2136" },
     { "path": "Sources/GroupInfoView.swift", "size": 67328, "sha256": "42830d50310513769e5478b4b9788c12af561bba453b6bf4eeb732b2e060c3ae" },
     { "path": "Sources/OtherLogin.swift", "size": 3452, "sha256": "5aff74e52ce2e023cb57d226ddacc182fb9a0d508b9ffaba93022ccfbc1f1785" },
     { "path": "Sources/InAppBrowser.swift", "size": 15806, "sha256": "78736dee4b98c55e07d5f53a5b57154c1638322aa0ff5ac9080bc2b2a6c64838" },

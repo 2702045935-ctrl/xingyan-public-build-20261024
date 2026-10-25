@@ -1944,7 +1944,12 @@ struct ChatDetailView: View {
                 Avatar(path: callerAvatar, size: L.chatAvatar, radius: 4)
                 Spacer().frame(width: L.chatGapMsg)
             }
-            CallRecordBubble(message: message, mine: mine)
+            Button {
+                redialAsk = message
+            } label: {
+                CallRecordBubble(message: message, mine: mine)
+            }
+            .buttonStyle(.plain)
             if mine {
                 Spacer().frame(width: L.chatGapMsg)
                 Avatar(path: callerAvatar, size: L.chatAvatar, radius: 4)
@@ -1953,8 +1958,6 @@ struct ChatDetailView: View {
         }
         .padding(.bottom, gapAfter(message))
 
-        .contentShape(Rectangle())
-        .onTapGesture { redialAsk = message }
         .onLongPressGesture { openActions(message) }
         .background(GeometryReader { g in
             let contentFrame = g.frame(in: .named("chatScroll"))
