@@ -897,6 +897,18 @@ final class AppState: ObservableObject {
         locallyHiddenChats.remove(chatId)
     }
 
+    func applyFriendRemarkLocally(userId: String, displayName: String) {
+        let name = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return }
+        for i in contacts.indices where contacts[i].id == userId {
+            contacts[i].nickname = name
+        }
+        for i in chats.indices where (chats[i].type ?? "direct") == "direct"
+            && chats[i].memberIds?.contains(userId) == true {
+            chats[i].title = name
+        }
+    }
+
     /// WebSocket 已带会话摘要时先更新预览与红点，再等后台全量校准。
     private func applyRealtimeChat(_ incoming: Chat) {
         var rows = chats

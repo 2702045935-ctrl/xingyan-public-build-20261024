@@ -977,10 +977,19 @@ struct FriendRemarkSheet: View {
         let list = tags.split(whereSeparator: { "、,，;； ".contains($0) })
             .map { String($0).trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
         Task {
-            await API.shared.setFriendMeta(userId: user.id,
-                                           remark: remark.trimmingCharacters(in: .whitespaces),
-                                           tags: list)
+            let cleanRemark = remark.trimmingCharacters(in: .whitespaces)
+            let saved = await API.shared.setFriendMeta(userId: user.id,
+                                                       remark: cleanRemark,
+                                                       tags: list)
+            guard saved else {
+                saving = false
+                app.show(Tr("保存失败"))
+                return
+            }
+            app.applyFriendRemarkLocally(userId: user.id,
+                                         displayName: cleanRemark.isEmpty ? user.name : cleanRemark)
             await app.loadContacts()
+            await app.loadChats()
             await onSaved()
             saving = false
             dismiss()
