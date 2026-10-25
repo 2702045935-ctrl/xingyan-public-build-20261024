@@ -16,6 +16,8 @@ final class AppState: ObservableObject {
     /// 实时事件先上屏的会话摘要；旧列表响应不能用空值把它冲掉。
     private var optimisticChats: [String: Chat] = [:]
     private var optimisticAt: [String: Date] = [:]
+    /// 左滑隐藏/删除请求还没落库时，先挡住轮询把旧会话行加回来。
+    private var locallyHiddenChats: Set<String> = []
 
     init() {
 
@@ -766,9 +768,10 @@ final class AppState: ObservableObject {
 
     private func mergeServerChats(_ fresh: [Chat]) -> [Chat] {
         let now = Date()
+        let visibleFresh = fresh.filter { !locallyHiddenChats.contains($0.id) }
         var current: [String: Chat] = [:]
         for chat in chats { current[chat.id] = chat }
-        var merged = fresh.map { server -> Chat in
+        var merged = visibleFresh.map { server -> Chat in
             let stamp = optimisticAt[server.id]
             if let stamp, now.timeIntervalSince(stamp) >= 86_400 {
                 optimisticChats[server.id] = nil
@@ -791,7 +794,7 @@ final class AppState: ObservableObject {
             return out
         }
 
-        let freshIds = Set(fresh.map(\.id))
+        let freshIds = Set(visibleFresh.map(\.id))
         var staleOptimisticIds: [String] = []
         for (id, local) in optimisticChats where !freshIds.contains(id) {
             if let stamp = optimisticAt[id], now.timeIntervalSince(stamp) < 86_400 {
@@ -880,6 +883,18 @@ final class AppState: ObservableObject {
     func dropOptimisticSummary(_ chatId: String) {
         optimisticChats[chatId] = nil
         optimisticAt[chatId] = nil
+    }
+
+    func hideChatLocally(_ chatId: String) {
+        locallyHiddenChats.insert(chatId)
+        optimisticChats[chatId] = nil
+        optimisticAt[chatId] = nil
+        chats.removeAll { $0.id == chatId }
+        syncIconBadge()
+    }
+
+    func revealChatLocally(_ chatId: String) {
+        locallyHiddenChats.remove(chatId)
     }
 
     /// WebSocket 已带会话摘要时先更新预览与红点，再等后台全量校准。
@@ -1059,6 +1074,7 @@ final class AppState: ObservableObject {
             API.shared.clearToken()
             me = nil
             chats = []
+            locallyHiddenChats.removeAll()
             contacts = []
             moments = []
             showSavedLogin = false
@@ -1072,6 +1088,7 @@ final class AppState: ObservableObject {
         Realtime.shared.stop()
         me = nil
         chats = []
+        locallyHiddenChats.removeAll()
         contacts = []
         moments = []
         showSavedLogin = true

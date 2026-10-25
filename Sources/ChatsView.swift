@@ -1682,10 +1682,14 @@ struct ChatsView: View {
     }
 
     private func hide(_ chat: Chat, clear: Bool) {
+        withAnimation(.easeOut(duration: 0.18)) {
+            app.hideChatLocally(chat.id)
+        }
         Task {
             let err = clear
                 ? await API.shared.deleteChat(chatId: chat.id)
                 : await API.shared.hideChat(chatId: chat.id)
+            app.revealChatLocally(chat.id)
             if clear, err == nil { app.forgetChatHistory(chat.id) }
             if err == nil { app.dropOptimisticSummary(chat.id) }
             await app.loadChats()
@@ -1694,8 +1698,12 @@ struct ChatsView: View {
     }
 
     private func remove(_ chat: Chat) {
+        withAnimation(.easeOut(duration: 0.18)) {
+            app.hideChatLocally(chat.id)
+        }
         Task {
             let err = await API.shared.deleteChat(chatId: chat.id)
+            app.revealChatLocally(chat.id)
             if err == nil {
                 LocalStore.clearChat(chat.id)
                 app.dropOptimisticSummary(chat.id)
