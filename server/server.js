@@ -7273,6 +7273,10 @@ function handleClientMessage(user, socket, raw) {
       const rid = str(msg.roomId, 40);
       const room = callRooms.get(rid);
       if (!room || !room.members.has(user.id)) return;
+      if (!room.audioTraceDone) {
+        room.audioTraceDone = true;
+        callTrace('群通话音频开始 room=' + room.id + ' first=' + (user.username || user.id));
+      }
       const data = typeof msg.data === 'string' ? msg.data : '';
       if (!data || data.length > 24000) return;
       try { room.frames.set(user.id, { at: Date.now(), buf: Buffer.from(data, 'base64') }); } catch (e) {}
