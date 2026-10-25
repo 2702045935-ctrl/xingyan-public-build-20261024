@@ -708,6 +708,10 @@ struct ContactCardView: View {
 
     private var displayName: String {
         if let r = meta?.remark, !r.trimmingCharacters(in: .whitespaces).isEmpty { return r }
+        if let r = u.remark, !r.trimmingCharacters(in: .whitespaces).isEmpty { return r }
+        if let r = app.contact(for: u.id)?.remark, !r.trimmingCharacters(in: .whitespaces).isEmpty {
+            return r
+        }
         return u.name
     }
     private var phone: String { (u.phone ?? "").trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -735,7 +739,8 @@ struct ContactCardView: View {
                                    idLine: "账号 " + (u.username ?? ""),
                                    avatarPath: u.avatarPath,
                                    isEyes: isEyesBot,
-                                   remark: meta?.remark ?? "",
+                                   remark: meta?.remark
+                                     ?? (u.remark?.isEmpty == false ? (u.remark ?? "") : ""),
                                    phone: phone,
                                    momentCount: thumbs.count,
                                    momentsRange: u.momentsRange ?? "all",

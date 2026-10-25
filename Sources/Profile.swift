@@ -986,8 +986,11 @@ struct FriendRemarkSheet: View {
                 app.show(Tr("保存失败"))
                 return
             }
+            let fallback = user.realNickname?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let realName = (fallback?.isEmpty == false) ? fallback! : user.name
             app.applyFriendRemarkLocally(userId: user.id,
-                                         displayName: cleanRemark.isEmpty ? user.name : cleanRemark)
+                                         displayName: cleanRemark.isEmpty ? realName : cleanRemark,
+                                         remark: cleanRemark)
             await app.loadContacts()
             await app.loadChats()
             await onSaved()

@@ -899,11 +899,12 @@ final class AppState: ObservableObject {
         locallyHiddenChats.remove(chatId)
     }
 
-    func applyFriendRemarkLocally(userId: String, displayName: String) {
+    func applyFriendRemarkLocally(userId: String, displayName: String, remark: String? = nil) {
         let name = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { return }
         for i in contacts.indices where contacts[i].id == userId {
             contacts[i].nickname = name
+            contacts[i].remark = remark ?? name
         }
         for i in chats.indices where (chats[i].type ?? "direct") == "direct"
             && chats[i].memberIds?.contains(userId) == true {
@@ -1055,7 +1056,10 @@ final class AppState: ObservableObject {
 
             let sameOrder = contacts.map { $0.id } == r.friends.map { $0.id }
             let sameLook = contacts.count == r.friends.count
-                && zip(contacts, r.friends).allSatisfy { $0.avatarPath == $1.avatarPath && $0.name == $1.name }
+                && zip(contacts, r.friends).allSatisfy {
+                    $0.avatarPath == $1.avatarPath && $0.name == $1.name
+                        && ($0.remark ?? "") == ($1.remark ?? "")
+                }
             if !(sameOrder && sameLook) { contacts = r.friends }
             friendRequests = r.incoming.count
         }
