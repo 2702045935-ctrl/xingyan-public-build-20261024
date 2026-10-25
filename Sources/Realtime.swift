@@ -223,10 +223,11 @@ final class Realtime: ObservableObject {
     }
 
     private nonisolated static func consumeCallAudioIfAny(_ text: String) -> Bool {
-        guard text.contains("\"audio\"") else { return false }
+        guard text.contains("audio") else { return false }
         guard let d = text.data(using: .utf8),
               let o = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
-              (o["action"] as? String) == "audio",
+              let action = o["action"] as? String,
+              action == "audio" || action == "group-audio",
               let b64 = o["data"] as? String,
               let ad = Data(base64Encoded: b64) else { return false }
         CallAudioPipe.shared.play(ad)
