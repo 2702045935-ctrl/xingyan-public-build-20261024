@@ -20,6 +20,8 @@ struct MomentCommentsSheet: View {
     @State private var videoURL: URL?
     @State private var imageActions = false
     @State private var actionPath = ""
+    @State private var openSwipeKey: String?
+    @State private var swipeOffsets: [String: CGFloat] = [:]
 
     init(moment: Moment, onChanged: @escaping () -> Void) {
         self.initial = moment
@@ -74,7 +76,7 @@ struct MomentCommentsSheet: View {
                             } else {
                                 ForEach(Array(comments.enumerated()), id: \.offset) { index, item in
                                     if index > 0 { HairLine(inset: 39) }
-                                    commentRow(item)
+                                    commentRow(item, index: index)
                                         .id(commentKey(item, index))
                                 }
                             }
@@ -316,45 +318,106 @@ struct MomentCommentsSheet: View {
         .padding(.bottom, 3)
     }
 
-    private func commentRow(_ item: MomentComment) -> some View {
-        HStack(alignment: .top, spacing: 9) {
-            commentAvatar(item)
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 5) {
-                    Text(item.nickname ?? "")
-                        .font(pf(12.5, .medium))
-                        .foregroundColor(C.label.opacity(0.74))
-                        .lineLimit(1)
-                    if let target = item.replyToName, !target.isEmpty {
-                        Text(Tr("回复") + " @" + target)
-                            .font(pf(11.5))
-                            .foregroundColor(C.green)
-                            .lineLimit(1)
+    private func commentRow(_ item: MomentComment, index: Int) -> some View {
+        let key = commentKey(item, index)
+        let canDelete = item.userId == app.me?.id
+        let offset = swipeOffsets[key] ?? 0
+        return ZStack(alignment: .trailing) {
+            if canDelete {
+                Button {
+                    openSwipeKey = nil
+                    swipeOffsets[key] = 0
+                    deleting = item
+                } label: {
+                    VStack(spacing: 4) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 15, weight: .medium))
+                        Text(Tr("删除"))
+                            .font(pf(11.5, .medium))
                     }
-                    Spacer(minLength: 0)
-                    Text(TimeFmt.ago(item.at))
-                        .font(pf(10.5))
-                        .foregroundColor(C.subLabel)
+                    .foregroundColor(.white)
+                    .frame(width: 74)
+                    .frame(maxHeight: .infinity)
+                    .background(Color(hex: 0xFA5151))
+                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
                 }
-                Text(item.content ?? "")
-                    .font(pf(14.5))
-                    .foregroundColor(C.label)
-                    .lineSpacing(2)
-                    .fixedSize(horizontal: false, vertical: true)
+                .buttonStyle(.plain)
             }
-        }
-        .padding(.vertical, 9)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            guard item.userId != app.me?.id else { return }
-            replyToId = item.userId ?? ""
-            replyToName = item.nickname ?? ""
-        }
-        .simultaneousGesture(
-            LongPressGesture(minimumDuration: 0.45).onEnded { _ in
-                if item.userId == app.me?.id { deleting = item }
+
+            HStack(alignment: .top, spacing: 9) {
+                commentAvatar(item)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 5) {
+                        Text(item.nickname ?? "")
+                            .font(pf(12.5, .medium))
+                            .foregroundColor(C.label.opacity(0.74))
+                            .lineLimit(1)
+                        if let target = item.replyToName, !target.isEmpty {
+                            Text(Tr("回复") + " @" + target)
+                                .font(pf(11.5))
+                                .foregroundColor(C.green)
+                                .lineLimit(1)
+                        }
+                        Spacer(minLength: 0)
+                        Text(TimeFmt.ago(item.at))
+                            .font(pf(10.5))
+                            .foregroundColor(C.subLabel)
+                    }
+                    Text(item.content ?? "")
+                        .font(pf(14.5))
+                        .foregroundColor(C.label)
+                        .lineSpacing(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
-        )
+            .padding(.vertical, 9)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(C.cardBg)
+            .contentShape(Rectangle())
+            .offset(x: offset)
+            .animation(.easeOut(duration: 0.16), value: offset)
+            .onTapGesture {
+                if offset < -1 {
+                    openSwipeKey = nil
+                    swipeOffsets[key] = 0
+                    return
+                }
+                if let openSwipeKey, openSwipeKey != key {
+                    swipeOffsets[openSwipeKey] = 0
+                    self.openSwipeKey = nil
+                }
+                guard item.userId != app.me?.id else { return }
+                replyToId = item.userId ?? ""
+                replyToName = item.nickname ?? ""
+            }
+            .simultaneousGesture(
+                LongPressGesture(minimumDuration: 0.45).onEnded { _ in
+                    if canDelete { deleting = item }
+                }
+            )
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 10)
+                    .onChanged { value in
+                        guard canDelete,
+                              abs(value.translation.width) > abs(value.translation.height) else { return }
+                        if openSwipeKey != nil, openSwipeKey != key {
+                            swipeOffsets[openSwipeKey!] = 0
+                        }
+                        let base: CGFloat = openSwipeKey == key ? -78 : 0
+                        swipeOffsets[key] = max(-78, min(0, base + value.translation.width))
+                    }
+                    .onEnded { value in
+                        guard canDelete else { return }
+                        let shouldOpen = value.translation.width < -32
+                            || value.predictedEndTranslation.width < -70
+                        withAnimation(.easeOut(duration: 0.16)) {
+                            swipeOffsets[key] = shouldOpen ? -78 : 0
+                            openSwipeKey = shouldOpen ? key : nil
+                        }
+                    }
+            )
+        }
+        .clipped()
     }
 
     private var composer: some View {
@@ -443,6 +506,8 @@ struct MomentCommentsSheet: View {
                 app.show(error)
             } else {
                 live.comments = comments.filter { $0.id != id }
+                swipeOffsets.removeAll()
+                openSwipeKey = nil
                 onChanged()
             }
         }
