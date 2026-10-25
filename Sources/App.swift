@@ -365,7 +365,17 @@ final class AppState: ObservableObject {
                 LocalNotify.incoming(title: Tr("生活圈"), body: who + what, badge: unreadForIcon)
             }
         case "friend", "presence", "profile":
-            coalesce { [weak self] in await self?.loadContacts() }
+            if ev.type == "friend", ev.action == "accepted", let user = ev.user {
+                applyFriendAccepted(user)
+                refreshTask?.cancel()
+                refreshTask = Task { [weak self] in
+                    await self?.loadContacts()
+                    await self?.loadChats()
+                    self?.refreshTask = nil
+                }
+            } else {
+                coalesce { [weak self] in await self?.loadContacts() }
+            }
         case "toast":
 
             if !ev.announce.isEmpty { show(ev.announce) }
@@ -547,27 +557,24 @@ final class AppState: ObservableObject {
         me = try await API.shared.login(username: username, password: password, sliderTicket: "")
         finishLoginTransition()
         rememberLastUser()
-        await refreshAll()
         Realtime.shared.start()
+        Task { await refreshAll(); await syncRecentMessages() }
     }
 
     func login(username: String, password: String, sliderTicket: String) async throws {
         me = try await API.shared.login(username: username, password: password, sliderTicket: sliderTicket)
         finishLoginTransition()
         rememberLastUser()
-        await refreshAll()
         Realtime.shared.start()
-
-        Task { await syncRecentMessages() }
+        Task { await refreshAll(); await syncRecentMessages() }
     }
 
     func adoptRegistered(_ user: User) async {
         me = user
         finishLoginTransition()
         rememberLastUser()
-        await refreshAll()
         Realtime.shared.start()
-        Task { await syncRecentMessages() }
+        Task { await refreshAll(); await syncRecentMessages() }
     }
 
     func finishNewUserOnboarding(avatar: String, interests: [String]) async throws {
@@ -582,18 +589,16 @@ final class AppState: ObservableObject {
         me = try await API.shared.loginPhone(phone: phone, code: code)
         finishLoginTransition()
         rememberLastUser()
-        await refreshAll()
         Realtime.shared.start()
-        Task { await syncRecentMessages() }
+        Task { await refreshAll(); await syncRecentMessages() }
     }
 
     func finishLogin(_ user: User) async {
         me = user
         finishLoginTransition()
         rememberLastUser()
-        await refreshAll()
         Realtime.shared.start()
-        Task { await syncRecentMessages() }
+        Task { await refreshAll(); await syncRecentMessages() }
     }
 
     func finishLoginTransition() {
@@ -909,6 +914,21 @@ final class AppState: ObservableObject {
         for i in chats.indices where (chats[i].type ?? "direct") == "direct"
             && chats[i].memberIds?.contains(userId) == true {
             chats[i].title = name
+        }
+    }
+
+    func applyFriendAccepted(_ user: User) {
+        var merged = user
+        merged.relation = "friend"
+        if let index = contacts.firstIndex(where: { $0.id == user.id }) {
+            let old = contacts[index]
+            merged.avatar = merged.avatar ?? old.avatar
+            merged.nickname = merged.nickname ?? old.nickname
+            merged.realNickname = merged.realNickname ?? old.realNickname
+            merged.remark = merged.remark ?? old.remark
+            contacts[index] = merged
+        } else {
+            contacts.append(merged)
         }
     }
 

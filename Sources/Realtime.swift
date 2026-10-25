@@ -4,6 +4,7 @@ import Network
 
 struct PushEvent: Equatable {
     var type = ""
+    var action = ""
     var chatId = ""
     var chat: Chat? = nil
     var message: Message? = nil
@@ -312,6 +313,7 @@ final class Realtime: ObservableObject {
               let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
         var ev = PushEvent()
         ev.type = (obj["type"] as? String) ?? ""
+        ev.action = (obj["action"] as? String) ?? ""
         ev.chatId = (obj["chatId"] as? String) ?? ""
         if let rawChat = obj["chat"] as? [String: Any],
            let chatData = try? JSONSerialization.data(withJSONObject: rawChat),

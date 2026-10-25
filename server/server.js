@@ -1108,6 +1108,10 @@ function friendSetCached(viewerId) {
   return c.set;
 }
 
+function forgetFriendSetCache(...userIds) {
+  userIds.filter(Boolean).forEach((id) => friendSetCache.delete(String(id)));
+}
+
 /* 名片 / 会话成员统一走这里：好友给完整资料，陌生人只给最小资料 */
 function memberProfile(u, viewerId) {
   if (!u) return null;
@@ -16187,6 +16191,7 @@ async function handleApi(req, res, pathname, query) {
       exist.status = 'accepted';
       exist.respondedAt = now();
       saveFriendships();
+      forgetFriendSetCache(exist.fromId, exist.toId);
       /* 互相加好友（对方先加过我）：同样立刻在两个人的「微信」首页开出会话 */
       const c2 = openChatForFriendship(exist.fromId, exist.toId);
       sendTo(target.id, { type: 'friend', action: 'accepted', user: publicUser(user) });
@@ -16200,6 +16205,7 @@ async function handleApi(req, res, pathname, query) {
         respondedAt: now() };
       db.friendships.push(auto);
       saveFriendships();
+      forgetFriendSetCache(target.id, user.id);
       const c0 = openChatForFriendship(target.id, user.id);
       sendTo(target.id, { type: 'friend', action: 'accepted', user: publicUser(user) });
       sendTo(user.id, { type: 'chat', chatId: c0 ? c0.id : '' });
@@ -16279,6 +16285,7 @@ async function handleApi(req, res, pathname, query) {
     if (!f) return fail(res, 404, '你们还不是好友');
     db.friendships = db.friendships.filter((x) => x.id !== f.id);
     saveFriendships();
+    forgetFriendSetCache(user.id, target.id);
     /* 只动我这边：把会话从我的列表里藏掉（对方那边不受影响，微信就是这样） */
     const chat = db.chats.find((c) => c.type === 'direct' && c.memberIds.includes(user.id) && c.memberIds.includes(target.id));
     if (chat) {
@@ -16317,6 +16324,7 @@ async function handleApi(req, res, pathname, query) {
       f.status = 'accepted';
       f.respondedAt = now();
       saveFriendships();
+      forgetFriendSetCache(f.fromId, f.toId);
       /* 通过好友以后，两个人的「微信」首页立刻各多一个会话（不用等谁先说话） */
       const newChat = openChatForFriendship(f.fromId, f.toId);
       /* 和微信一样：通过以后聊天里留一条系统提示 */
@@ -16335,6 +16343,7 @@ async function handleApi(req, res, pathname, query) {
     } else {
       db.friendships = db.friendships.filter((x) => x.id !== f.id);
       saveFriendships();
+      forgetFriendSetCache(user.id, f.fromId);
       ok(res, { rejected: true, pending: pendingLeft() });
     }
     return;

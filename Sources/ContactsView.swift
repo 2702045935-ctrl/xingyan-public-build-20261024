@@ -1282,6 +1282,7 @@ struct ContactCardView: View {
                     app.show(Tr("已同意，现在可以聊天了"))
                     if let n = res.pending { app.friendRequests = n }
                     await app.loadContacts()
+                    await app.loadChats()
                     await load()
                 } else {
                     app.show(Tr("到「通讯录 → 新的朋友」里同意"))

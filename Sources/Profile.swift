@@ -796,6 +796,7 @@ struct AddFriendView: View {
             if let n = res.pending { app.friendRequests = n }
             app.show(Tr("已添加到通讯录"))
             await app.loadContacts()
+            await app.loadChats()
             search()
         }
     }
