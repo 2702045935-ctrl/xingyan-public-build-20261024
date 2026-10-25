@@ -6961,37 +6961,6 @@ function handleClientMessage(user, socket, raw) {
         } catch (err) { }
         return ws.sendText(socket, JSON.stringify({ type: 'call-error', callId, error: '先加为好友才能通话' }));
       }
-      /* 控制信令会在弱网/切网后自动补发。同一个 callId 的重复 invite
-         必须恢复原通话，而不能被误判成"对方忙线"或再建一通。 */
-      const existingInvite = calls.get(callId);
-      if (existingInvite && existingInvite.from === user.id && existingInvite.to === target.id) {
-        callTrace('invite-resend ' + user.id + ' -> ' + target.id
-          + ' callId=' + callId + ' state=' + existingInvite.state);
-        if (existingInvite.state === 'ringing') {
-          callSend(target.id, {
-            type: 'call', action: 'incoming', callId,
-            media: existingInvite.media || 'audio',
-            peerId: user.id, peerName: user.nickname,
-            peerAvatar: user.avatar || '', sdp: existingInvite.sdp || null
-          });
-          ws.sendText(socket, JSON.stringify({
-            type: 'call', action: 'ringing', callId,
-            media: existingInvite.media || 'audio',
-            peerId: target.id, peerName: target.nickname,
-            peerAvatar: target.avatar || ''
-          }));
-        } else {
-          callSend(target.id, {
-            type: 'call', action: 'accept-ack', callId,
-            media: existingInvite.media || 'audio', peerId: user.id
-          });
-          callSend(user.id, {
-            type: 'call', action: 'accepted', callId,
-            media: existingInvite.media || 'audio', peerId: target.id
-          });
-        }
-        return;
-      }
       callTrace('invite ' + user.id + ' -> ' + target.id + ' media=' + (msg.media === 'video' ? 'video' : 'audio')
         + ' 对方在线=' + connections.has(target.id)
         + ' 主叫版本=' + (socket.__appBuild || '?')
@@ -7211,7 +7180,6 @@ function handleClientMessage(user, socket, raw) {
       call.state = 'active';
       call.startedAt = Date.now();
       if (call.timer) { clearTimeout(call.timer); call.timer = null; }
-      callSend(user, { type: 'call', action: 'accept-ack', callId, media: call.media || 'audio', peerId: call.from });
       callSend(peer, { type: 'call', action: 'accepted', callId, media: call.media || 'audio', peerId: user.id });
       if (msg.sdp) callSend(call.from, { type: 'call', action: 'sdp', callId, peerId: user.id, sdp: msg.sdp });
       return;
@@ -7282,9 +7250,6 @@ function handleClientMessage(user, socket, raw) {
         call.startedAt = Date.now();
         if (call.timer) { clearTimeout(call.timer); call.timer = null; }
         callTrace('被叫开始推语音帧，视为已接听 ' + callId + '（老客户端不发 accept）');
-        callSend(call.to, {
-          type: 'call', action: 'accept-ack', callId, media: call.media || 'audio', peerId: call.from
-        });
         callSend(call.from, {
           type: 'call', action: 'accepted', callId, media: call.media || 'audio', peerId: user.id
         });
