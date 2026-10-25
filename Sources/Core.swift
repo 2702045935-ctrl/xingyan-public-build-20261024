@@ -412,9 +412,9 @@ enum C {
 
     static var discoverBg  : Color { UIConfig.color("discoverBg", 0xEDEDED, 0x141419) }
 
-    static var discoverCardBg: Color { UIConfig.color("discoverCardBg", 0xFFFFFF, 0x141419) }
+    static var discoverCardBg: Color { UIConfig.color("discoverCardBg", 0xFFFFFF, 0x1C1C22) }
 
-    static var meCardBg    : Color { UIConfig.color("meCardBg", 0xFFFFFF, 0x141419) }
+    static var meCardBg    : Color { UIConfig.color("meCardBg", 0xFFFFFF, 0x1C1C22) }
 
     static var bubbleMine  : Color { UIConfig.color("bubbleMineColor", 0x95EC69, 0x1E88C7) }
     static var bubbleOther : Color { UIConfig.color("bubbleOtherColor", 0xFFFFFF, 0x2D2D30) }

@@ -1066,6 +1066,16 @@ struct GroupCard<Content: View>: View {
         } else {
             VStack(spacing: 0) { content }
                 .background(bg ?? C.cardBg)
+                .clipShape(RoundedRectangle(cornerRadius: scheme == .dark ? 14 : 0,
+                                            style: .continuous))
+                .overlay {
+                    if scheme == .dark {
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(Color.white.opacity(0.11), lineWidth: 0.7)
+                    }
+                }
+                .padding(.horizontal, scheme == .dark ? 12 : 0)
+                .padding(.bottom, scheme == .dark ? 8 : 0)
         }
     }
 }
