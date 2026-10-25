@@ -1,11 +1,11 @@
 import SwiftUI
 import Photos
+import UIKit
 
 struct MomentNoteCard: View {
     let moment: Moment
     let columnWidth: CGFloat
     let onOpenComments: () -> Void
-    let onOpenImage: (String, [String], Int) -> Void
     let onOpenVideo: (URL) -> Void
     let onOpenAvatar: (User) -> Void
     let onLike: () -> Void
@@ -14,9 +14,18 @@ struct MomentNoteCard: View {
     @EnvironmentObject private var app: AppState
     @State private var heartBounce = false
     @State private var imageMenu = false
+    @State private var likedOverride: Bool?
 
     private var images: [String] { moment.images ?? [] }
     private var isVideo: Bool { !(moment.video ?? "").isEmpty }
+    private var showingLiked: Bool { likedOverride ?? (moment.likedByMe == true) }
+    private var showingLikeCount: Int {
+        let base = (moment.likes ?? []).count
+        guard let likedOverride else { return base }
+        let server = moment.likedByMe == true
+        if likedOverride == server { return base }
+        return max(0, base + (likedOverride ? 1 : -1))
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -77,6 +86,7 @@ struct MomentNoteCard: View {
             Button(Tr("查看评论")) { onOpenComments() }
             Button(Tr("取消"), role: .cancel) { }
         }
+        .onChange(of: moment.likedByMe) { _ in likedOverride = nil }
     }
 
     private var media: some View {
@@ -141,7 +151,7 @@ struct MomentNoteCard: View {
 
     private var authorRow: some View {
         HStack(spacing: 5) {
-            Avatar(path: moment.author?.avatarPath ?? "", size: 22, radius: 7)
+            authorAvatar
                 .contentShape(Rectangle())
                 .onTapGesture {
                     if let user = moment.author { onOpenAvatar(user) }
@@ -162,9 +172,25 @@ struct MomentNoteCard: View {
         }
     }
 
+    @ViewBuilder
+    private var authorAvatar: some View {
+        let path = moment.author?.avatarPath ?? ""
+        if path.isEmpty {
+            Text(String((moment.author?.name ?? Tr("友")).prefix(1)))
+                .font(pf(9.5, .medium))
+                .foregroundColor(C.subLabel)
+                .frame(width: 22, height: 22)
+                .background(RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(Color.dyn(0xEFEFEE, 0x2B2B2B)))
+        } else {
+            Avatar(path: path, size: 22, radius: 7)
+        }
+    }
+
     private var actionRow: some View {
         HStack(spacing: 12) {
             Button {
+                likedOverride = !showingLiked
                 withAnimation(.spring(response: 0.22, dampingFraction: 0.58)) {
                     heartBounce = true
                 }
@@ -174,12 +200,15 @@ struct MomentNoteCard: View {
                 onLike()
             } label: {
                 HStack(spacing: 3) {
-                    Image(systemName: moment.likedByMe == true ? "heart.fill" : "heart")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(moment.likedByMe == true ? Color(hex: 0xFA5151) : C.subLabel)
-                        .scaleEffect(heartBounce ? 1.28 : 1)
-                    if !(moment.likes ?? []).isEmpty || moment.likedByMe == true {
-                        Text("\((moment.likes ?? []).count)")
+                    ZStack {
+                        Image(systemName: showingLiked ? "heart.fill" : "heart")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(showingLiked ? Color(hex: 0xFA5151) : C.subLabel)
+                            .scaleEffect(heartBounce ? 1.28 : 1)
+                        if heartBounce { HeartBurst() }
+                    }
+                    if showingLikeCount > 0 {
+                        Text("\(showingLikeCount)")
                             .font(pf(10.5))
                             .foregroundColor(C.subLabel)
                     }

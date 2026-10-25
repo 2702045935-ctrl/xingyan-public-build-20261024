@@ -1,6 +1,7 @@
 import SwiftUI
 import AVKit
 import Photos
+import UIKit
 
 struct MomentCommentsSheet: View {
     let initial: Moment
@@ -18,6 +19,7 @@ struct MomentCommentsSheet: View {
     @State private var fullViewerIndex: Int?
     @State private var videoURL: URL?
     @State private var imageActions = false
+    @State private var actionPath = ""
 
     init(moment: Moment, onChanged: @escaping () -> Void) {
         self.initial = moment
@@ -110,8 +112,8 @@ struct MomentCommentsSheet: View {
             Button(Tr("取消"), role: .cancel) { deleting = nil }
         }
         .sheet(isPresented: $imageActions) {
-            if let first = images.first {
-                MomentImageActions(path: first)
+            if !actionPath.isEmpty {
+                MomentImageActions(path: actionPath)
                     .environmentObject(app)
                     .presentationDetents([.medium])
                     .presentationDragIndicator(.visible)
@@ -131,6 +133,7 @@ struct MomentCommentsSheet: View {
             PhotoPager(paths: images, startIndex: fullViewerIndex ?? 0, showActions: true) {
                 fullViewerIndex = nil
             }
+            .environmentObject(app)
         }
         .onDisappear { onChanged() }
     }
@@ -190,6 +193,11 @@ struct MomentCommentsSheet: View {
             .contentShape(Rectangle())
             .simultaneousGesture(
                 LongPressGesture(minimumDuration: 0.45).onEnded { _ in
+                    if images.indices.contains(previewIndex) {
+                        actionPath = images[previewIndex]
+                    } else {
+                        actionPath = images.first ?? ""
+                    }
                     imageActions = true
                 }
             )
@@ -298,7 +306,7 @@ struct MomentCommentsSheet: View {
 
     private func commentRow(_ item: MomentComment) -> some View {
         HStack(alignment: .top, spacing: 9) {
-            Avatar(path: avatar(for: item.userId ?? ""), size: 30, radius: 15)
+            commentAvatar(item)
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 5) {
                     Text(item.nickname ?? "")
@@ -451,6 +459,20 @@ struct MomentCommentsSheet: View {
     private func avatar(for userId: String) -> String {
         if userId == app.me?.id { return app.me?.avatarPath ?? "" }
         return app.contact(for: userId)?.avatarPath ?? ""
+    }
+
+    @ViewBuilder
+    private func commentAvatar(_ item: MomentComment) -> some View {
+        let path = avatar(for: item.userId ?? "")
+        if path.isEmpty {
+            Text(String((item.nickname ?? Tr("友")).prefix(1)))
+                .font(pf(12, .medium))
+                .foregroundColor(Color.dyn(0x676C68, 0xD6DAD7))
+                .frame(width: 30, height: 30)
+                .background(Circle().fill(Color.dyn(0xF0F1EE, 0x2B2B2B)))
+        } else {
+            Avatar(path: path, size: 30, radius: 15)
+        }
     }
 
     private func commentKey(_ item: MomentComment, _ index: Int) -> String {

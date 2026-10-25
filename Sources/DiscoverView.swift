@@ -327,13 +327,9 @@ struct MomentsView: View {
     @State private var draft = ""
     @State private var picked: [UIImage] = []
     @State private var uploading = false
-    @State private var commenting: Moment?
-    @State private var commentText = ""
     @State private var commentsSheet: Moment?
     @State private var showMyQR = false
 
-    @State private var replyToId = ""
-    @State private var replyToName = ""
     @State private var actionMoment: Moment?
 
     @State private var viewerPaths: [String] = []
@@ -621,14 +617,6 @@ struct MomentsView: View {
         }
         .sheet(isPresented: $posting) { publishSheet }
 
-        .safeAreaInset(edge: .bottom) {
-            if commenting != nil {
-                MomentCommentBar(text: $commentText,
-                                 replyTo: replyToName,
-                                 onSend: { submitComment() },
-                                 onCancel: { closeCommentBar() })
-            }
-        }
         .confirmationDialog(Tr("这条动态"), isPresented: Binding(
             get: { actionMoment != nil },
             set: { if !$0 { actionMoment = nil } }
@@ -643,6 +631,9 @@ struct MomentsView: View {
                     commentsSheet = m
                 }
                 if m.mine == true {
+                    Button(m.pinned == true ? Tr("取消置顶") : Tr("置顶")) {
+                        togglePin(m)
+                    }
                     Button(Tr("删除"), role: .destructive) { remove(m) }
                 }
             }
@@ -708,69 +699,6 @@ struct MomentsView: View {
                     .onTapGesture { toggleCoverLock() }
                     .zIndex(2)
             }
-
-            if coverEditable {
-                HStack {
-                    Button {
-                        coverMenu = true
-                    } label: {
-                        Text(Tr("换封面"))
-                            .font(pf(12.5, .medium))
-                            .foregroundColor(.white)
-                            .frame(width: 88, height: 32)
-                            .background {
-                                if coverLocked {
-                                    Capsule()
-                                        .fill(.ultraThinMaterial)
-                                        .overlay(Capsule().fill(Color.black.opacity(0.12)))
-                                } else {
-                                    Capsule().fill(Color.black.opacity(0.44))
-                                }
-                            }
-                            .overlay(Capsule().stroke(Color.white.opacity(0.24), lineWidth: 0.7))
-                    }
-                    .buttonStyle(.plain)
-                    Spacer(minLength: 0)
-                }
-                .padding(.leading, 12)
-                .padding(.bottom, 12)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-                .zIndex(4)
-            }
-
-            HStack(alignment: .bottom, spacing: 12) {
-
-                VStack(alignment: .trailing, spacing: 3) {
-                    Text(owner?.name ?? "")
-                        .font(pf(17, .semibold))
-                        .foregroundColor(.white)
-                        .shadow(color: Color.black.opacity(0.55), radius: 4, x: 0, y: 1)
-                        .lineLimit(1)
-                }
-                .padding(.bottom, 24)
-                VStack(spacing: 4) {
-                    Avatar(path: owner?.avatarPath ?? "", size: L.coverAvatar, radius: 8)
-                        .shadow(color: Color.black.opacity(0.28), radius: 5, x: 0, y: 2)
-                    if let sign = signature {
-
-                        Text(sign)
-                            .font(pf(12.5))
-                            .foregroundColor(C.label)
-                            .lineLimit(2)
-                            .multilineTextAlignment(.center)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 3)
-                            .background(RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .fill(Color.dyn(0xFFFFFF, 0x000000).opacity(0.62)))
-                            .frame(width: L.coverAvatar + 56, alignment: .center)
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .trailing)
-            .padding(.trailing, 16)
-            .offset(y: 21)
-            .allowsHitTesting(false)
 
             momentIdentityCard
                 .padding(.horizontal, 12)
@@ -872,11 +800,6 @@ struct MomentsView: View {
             moment: moment,
             columnWidth: noteColumnWidth,
             onOpenComments: { commentsSheet = moment },
-            onOpenImage: { path, paths, index in
-                viewerPaths = paths
-                viewerIndex = index
-                _ = path
-            },
             onOpenVideo: { url in momentVideo = url },
             onOpenAvatar: { user in cardUser = user },
             onLike: { like(moment) },
@@ -1746,28 +1669,6 @@ struct MomentsView: View {
             }
             await reload()
         }
-    }
-
-    private func submitComment() {
-        guard let moment = commenting else { return }
-        let text = commentText.trimmingCharacters(in: .whitespacesAndNewlines)
-        if text.isEmpty { return }
-        let to = replyToId
-        closeCommentBar()
-        Task {
-            if let err = await API.shared.commentMoment(id: moment.id, text: text, replyTo: to) {
-                app.show(err)
-            } else {
-                await reload()
-            }
-        }
-    }
-
-    private func closeCommentBar() {
-        commenting = nil
-        commentText = ""
-        replyToId = ""
-        replyToName = ""
     }
 
     private func remove(_ moment: Moment) {
