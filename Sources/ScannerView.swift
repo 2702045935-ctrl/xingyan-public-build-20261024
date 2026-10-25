@@ -642,7 +642,7 @@ private struct CameraPreview: UIViewRepresentable {
     var onCode: (String) -> Void
 
     func makeCoordinator() -> Coordinator {
-        let statusBinding = status
+        let statusBinding = _status
         return Coordinator(onCode: onCode) { next in
             guard statusBinding.wrappedValue != next else { return }
             statusBinding.wrappedValue = next
