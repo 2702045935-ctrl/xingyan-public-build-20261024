@@ -5591,7 +5591,12 @@ function directChatBetween(a, b) {
    —— 新加的好友会立刻出现在「微信」首页，不用等谁先发第一条消息。 */
 function openChatForFriendship(aId, bId) {
   const exist = directChatBetween(aId, bId);
-  if (exist) return exist;
+  if (exist) {
+    exist.hiddenFor = (exist.hiddenFor || []).filter((id) => id !== aId && id !== bId);
+    exist.dismissed = false;
+    chatsDirty = true;
+    return exist;
+  }
   return createDirectChat(aId, bId);
 }
 
