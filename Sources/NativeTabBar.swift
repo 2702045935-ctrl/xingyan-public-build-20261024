@@ -79,6 +79,14 @@ struct NativeTabBar: UIViewRepresentable {
     private func applyColors(_ bar: UITabBar) {
         bar.tintColor = UIColor(C.green)
         bar.unselectedItemTintColor = UIColor(C.subLabel)
+
+        let appearance = UITabBarAppearance()
+        appearance.configureWithDefaultBackground()
+        if scheme == .dark {
+            appearance.backgroundColor = UIColor(white: 0.025, alpha: 0.76)
+        }
+        bar.standardAppearance = appearance
+        bar.scrollEdgeAppearance = appearance
     }
 
     private func refresh(_ bar: UITabBar) {
