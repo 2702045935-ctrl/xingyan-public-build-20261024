@@ -1014,7 +1014,18 @@ final class AppState: ObservableObject {
         merged.remark = merged.remark ?? old.remark
         merged.relation = merged.relation ?? old.relation
         merged.momentCover = merged.momentCover ?? old.momentCover
-        contacts[index] = applyLocalRemarksToContacts([merged]).first ?? merged
+        let updated = applyLocalRemarksToContacts([merged]).first ?? merged
+        contacts[index] = updated
+        for i in chats.indices where (chats[i].type ?? "direct") == "direct"
+            && chats[i].memberIds?.contains(user.id) == true {
+            chats[i].avatar = updated.avatarPath
+            if let remark = updated.remark?.trimmingCharacters(in: .whitespacesAndNewlines),
+               !remark.isEmpty {
+                chats[i].title = remark
+            } else {
+                chats[i].title = updated.name
+            }
+        }
     }
 
     func applyMyProfileFields(_ fields: [String: Any]) {

@@ -671,9 +671,15 @@ struct ChatDetailView: View {
     private let maxMessageWindow = 20_000
 
     private var navTitle: String {
-        guard isGroup else { return chat.name }
-        let n = chat.memberCount ?? (chat.memberIds?.count ?? 0)
-        return n > 0 ? chat.name + "(" + String(n) + ")" : chat.name
+        guard isGroup else {
+            if let peer = peerUserId, let user = app.contact(for: peer) {
+                let remark = (user.remark ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                return remark.isEmpty ? user.name : remark
+            }
+            return liveChat.name
+        }
+        let n = liveChat.memberCount ?? (liveChat.memberIds?.count ?? 0)
+        return n > 0 ? liveChat.name + "(" + String(n) + ")" : liveChat.name
     }
 
     private var navTitleShown: String {
@@ -3821,7 +3827,10 @@ struct ChatDetailView: View {
     }
 
     private var peerAccount: String {
-        if let t = chat.title, let u = app.contacts.first(where: { ($0.nickname ?? "") == t || ($0.name ?? "") == t }) {
+        if let peer = peerUserId, let u = app.contact(for: peer) {
+            return u.username ?? ""
+        }
+        if let t = liveChat.title, let u = app.contacts.first(where: { ($0.nickname ?? "") == t || ($0.name ?? "") == t }) {
             return u.username ?? ""
         }
         return ""
