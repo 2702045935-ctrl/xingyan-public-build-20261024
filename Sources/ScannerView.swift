@@ -306,6 +306,8 @@ struct ScannerView: View {
     @State private var torch = false
     @State private var denied = false
     @State private var permissionChecked = false
+    @State private var cameraStatus = CameraStatus.starting
+    @State private var cameraRetryID = 0
     @State private var hint = "把二维码放进框里，自动识别"
 
     @State private var busy = false
@@ -343,7 +345,7 @@ struct ScannerView: View {
                         .padding(.horizontal, 40)
                 }
             } else {
-                CameraPreview(torch: $torch) { text in
+                CameraPreview(torch: $torch, status: $cameraStatus, retryID: cameraRetryID) { text in
                     onFound(text)
                     dismiss()
                 }
@@ -351,6 +353,39 @@ struct ScannerView: View {
 
                 ScanFrame()
                     .frame(width: 250, height: 250)
+
+                if cameraStatus != .running {
+                    VStack(spacing: 10) {
+                        if cameraStatus == .starting {
+                            ProgressView().tint(.white)
+                            Text(Tr("正在启动相机…"))
+                                .font(pf(13))
+                                .foregroundColor(.white.opacity(0.78))
+                        } else {
+                            Image(systemName: "camera.metering.unknown")
+                                .font(.system(size: 26))
+                                .foregroundColor(.white.opacity(0.82))
+                            Text(Tr("相机没有启动"))
+                                .font(pf(15, .medium))
+                                .foregroundColor(.white)
+                            Button {
+                                cameraStatus = .starting
+                                cameraRetryID += 1
+                            } label: {
+                                Text(Tr("重试"))
+                                    .font(pf(14, .medium))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 18)
+                                    .frame(height: 36)
+                                    .background(Capsule().fill(Color.black.opacity(0.42)))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 14)
+                    .background(RoundedRectangle(cornerRadius: 16).fill(Color.black.opacity(0.28)))
+                }
 
                 VStack {
                     HStack {
@@ -594,21 +629,36 @@ private struct ScanFrame: View {
     }
 }
 
+private enum CameraStatus: Equatable {
+    case starting
+    case running
+    case failed
+}
+
 private struct CameraPreview: UIViewRepresentable {
     @Binding var torch: Bool
+    @Binding var status: CameraStatus
+    var retryID: Int
     var onCode: (String) -> Void
 
-    func makeCoordinator() -> Coordinator { Coordinator(onCode: onCode) }
+    func makeCoordinator() -> Coordinator {
+        let statusBinding = status
+        return Coordinator(onCode: onCode) { next in
+            guard statusBinding.wrappedValue != next else { return }
+            statusBinding.wrappedValue = next
+        }
+    }
 
     func makeUIView(context: Context) -> PreviewView {
         let view = PreviewView()
         view.backgroundColor = .black
-        context.coordinator.start(in: view, torch: torch)
+        context.coordinator.start(in: view, torch: torch, retryID: retryID)
         return view
     }
 
     func updateUIView(_ uiView: PreviewView, context: Context) {
         context.coordinator.setTorch(torch)
+        context.coordinator.update(retryID: retryID)
     }
 
     static func dismantleUIView(_ uiView: PreviewView, coordinator: Coordinator) {
@@ -616,45 +666,198 @@ private struct CameraPreview: UIViewRepresentable {
     }
 
     final class PreviewView: UIView {
-        override class var layerClass: AnyClass { AVCaptureVideoPreviewLayer.self }
-        var previewLayer: AVCaptureVideoPreviewLayer { layer as! AVCaptureVideoPreviewLayer }
+        let videoLayer = AVCaptureVideoPreviewLayer()
+
+        override init(frame: CGRect) {
+            super.init(frame: frame)
+            backgroundColor = .black
+            layer.addSublayer(videoLayer)
+        }
+
+        required init?(coder: NSCoder) {
+            super.init(coder: coder)
+            backgroundColor = .black
+            layer.addSublayer(videoLayer)
+        }
+
+        override func layoutSubviews() {
+            super.layoutSubviews()
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            videoLayer.frame = bounds
+            CATransaction.commit()
+        }
     }
 
     final class Coordinator: NSObject, AVCaptureMetadataOutputObjectsDelegate {
         private let session = AVCaptureSession()
         private let queue = DispatchQueue(label: "chris.scanner")
         private var device: AVCaptureDevice?
+        private weak var previewView: PreviewView?
+        private var observers: [NSObjectProtocol] = []
+        private var configured = false
+        private var active = false
+        private var lastRetryID = 0
         private var done = false
         private let onCode: (String) -> Void
+        private let onStatus: (CameraStatus) -> Void
 
-        init(onCode: @escaping (String) -> Void) { self.onCode = onCode }
+        init(onCode: @escaping (String) -> Void,
+             onStatus: @escaping (CameraStatus) -> Void) {
+            self.onCode = onCode
+            self.onStatus = onStatus
+        }
 
-        func start(in view: PreviewView, torch: Bool) {
-            guard let dev = AVCaptureDevice.default(for: .video),
-                  let input = try? AVCaptureDeviceInput(device: dev) else { return }
+        func start(in view: PreviewView, torch: Bool, retryID: Int) {
+            guard !active else { return }
+            active = true
+            previewView = view
+            lastRetryID = retryID
+            installObservers()
+            guard configure() else {
+                active = false
+                removeObservers()
+                publish(.failed)
+                return
+            }
+            attachPreview(to: view)
+            setTorch(torch)
+            startRunning(attempt: 0)
+        }
+
+        private func configure() -> Bool {
+            if configured { return !session.inputs.isEmpty && !session.outputs.isEmpty }
+            guard let dev = AVCaptureDevice.default(.builtInWideAngleCamera,
+                                                    for: .video,
+                                                    position: .back),
+                  let input = try? AVCaptureDeviceInput(device: dev) else {
+                return false
+            }
             device = dev
             session.beginConfiguration()
+            session.sessionPreset = .high
             guard session.canAddInput(input) else {
                 session.commitConfiguration()
-                return
+                return false
             }
             session.addInput(input)
             let output = AVCaptureMetadataOutput()
             guard session.canAddOutput(output) else {
+                session.removeInput(input)
                 session.commitConfiguration()
-                return
+                return false
             }
             session.addOutput(output)
             output.setMetadataObjectsDelegate(self, queue: DispatchQueue.main)
             output.metadataObjectTypes = [.qr, .ean13, .ean8, .upce, .code128, .code39, .code93,
                                           .itf14, .pdf417, .aztec, .dataMatrix]
             session.commitConfiguration()
-            view.previewLayer.session = session
-            view.previewLayer.videoGravity = .resizeAspectFill
-            queue.async { [session] in if !session.isRunning { session.startRunning() } }
+            configured = true
+            return true
+        }
+
+        private func attachPreview(to view: PreviewView) {
+            view.videoLayer.session = session
+            view.videoLayer.videoGravity = .resizeAspectFill
+            view.layoutIfNeeded()
+            if let connection = view.videoLayer.connection {
+                connection.isEnabled = true
+                if #available(iOS 17.0, *) {
+                    if connection.isVideoRotationAngleSupported(90) {
+                        connection.videoRotationAngle = 90
+                    }
+                } else {
+                    connection.videoOrientation = .portrait
+                }
+            }
+        }
+
+        private func startRunning(attempt: Int) {
+            queue.asyncAfter(deadline: .now() + (attempt == 0 ? 0.12 : 0)) { [weak self] in
+                guard let self, self.active else { return }
+                if !self.session.isRunning {
+                    self.session.startRunning()
+                }
+                let running = self.session.isRunning
+                if running {
+                    DispatchQueue.main.async { [weak self] in
+                        if let view = self?.previewView { self?.attachPreview(to: view) }
+                    }
+                }
+                self.publish(running ? .running : (attempt >= 3 ? .failed : .starting))
+                if !running, attempt < 3, self.active {
+                    self.queue.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+                        self?.startRunning(attempt: attempt + 1)
+                    }
+                }
+            }
+        }
+
+        private func restart() {
+            queue.async { [weak self] in
+                guard let self, self.active else { return }
+                if self.session.isRunning { self.session.stopRunning() }
+                self.startRunning(attempt: 0)
+            }
+        }
+
+        private func installObservers() {
+            guard observers.isEmpty else { return }
+            let center = NotificationCenter.default
+            observers.append(center.addObserver(
+                forName: AVCaptureSession.runtimeErrorNotification,
+                object: session,
+                queue: .main
+            ) { [weak self] _ in
+                self?.restart()
+            })
+            observers.append(center.addObserver(
+                forName: AVCaptureSession.interruptionEndedNotification,
+                object: session,
+                queue: .main
+            ) { [weak self] _ in
+                self?.restart()
+            })
+            observers.append(center.addObserver(
+                forName: AVCaptureSession.wasInterruptedNotification,
+                object: session,
+                queue: .main
+            ) { [weak self] _ in
+                self?.publish(.starting)
+            })
+            observers.append(center.addObserver(
+                forName: UIApplication.didBecomeActiveNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                self?.restart()
+            })
+        }
+
+        private func removeObservers() {
+            observers.forEach { NotificationCenter.default.removeObserver($0) }
+            observers.removeAll()
+        }
+
+        private func publish(_ next: CameraStatus) {
+            DispatchQueue.main.async { [onStatus] in
+                onStatus(next)
+            }
+        }
+
+        func update(retryID: Int) {
+            guard retryID != lastRetryID else { return }
+            lastRetryID = retryID
+            if configured {
+                restart()
+            } else if let view = previewView {
+                start(in: view, torch: device?.torchMode == .on, retryID: retryID)
+            }
         }
 
         func stop() {
+            active = false
+            removeObservers()
             queue.async { [session] in if session.isRunning { session.stopRunning() } }
         }
 
@@ -677,6 +880,10 @@ private struct CameraPreview: UIViewRepresentable {
                 onCode(text)
                 return
             }
+        }
+
+        deinit {
+            removeObservers()
         }
     }
 }
