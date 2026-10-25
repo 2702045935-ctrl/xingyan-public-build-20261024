@@ -18,6 +18,7 @@ struct InAppBrowserView: View {
     @State private var showShare = false
     @State private var showMenu = false
     @State private var showAddress = false
+    @State private var loadError = ""
     @FocusState private var editingAddress: Bool
     @State private var addressEditing = false
 
@@ -34,8 +35,10 @@ struct InAppBrowserView: View {
                     canForward: $canForward,
                     currentURL: $currentURL,
                     address: $address,
-                    addressEditing: $addressEditing
+                    addressEditing: $addressEditing,
+                    loadError: $loadError
                 )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .ignoresSafeArea()
 
                 if loading {
@@ -53,6 +56,48 @@ struct InAppBrowserView: View {
                 } else {
                     floatingControls(top: geo.safeAreaInsets.top)
                         .padding(.trailing, 10)
+                }
+
+                if !loadError.isEmpty {
+                    VStack(spacing: 12) {
+                        Image(systemName: "wifi.exclamationmark")
+                            .font(.system(size: 30))
+                            .foregroundColor(C.subLabel)
+                        Text(Tr("网页没有加载出来"))
+                            .font(pf(17, .semibold))
+                            .foregroundColor(C.label)
+                        Text(loadError)
+                            .font(pf(12.5))
+                            .foregroundColor(C.subLabel)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(3)
+                        HStack(spacing: 10) {
+                            Button(Tr("重试")) {
+                                loadError = ""
+                                reloadTick += 1
+                            }
+                            .buttonStyle(.plain)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 42)
+                            .background(Capsule().fill(C.green))
+
+                            if let currentURL {
+                                Button(Tr("用 Safari 打开")) {
+                                    UIApplication.shared.open(currentURL)
+                                }
+                                .buttonStyle(.plain)
+                                .foregroundColor(C.label)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 42)
+                                .background(Capsule().fill(C.cardBg))
+                            }
+                        }
+                    }
+                    .padding(18)
+                    .frame(maxWidth: 320)
+                    .background { CardGlassBox(radius: 18) }
+                    .padding(.horizontal, 24)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -198,6 +243,7 @@ private struct BrowserWebView: UIViewRepresentable {
     @Binding var currentURL: URL?
     @Binding var address: String
     @Binding var addressEditing: Bool
+    @Binding var loadError: String
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -292,6 +338,7 @@ private struct BrowserWebView: UIViewRepresentable {
         func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
             parent.loading = true
             parent.progress = max(0.02, parent.progress)
+            parent.loadError = ""
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
@@ -303,12 +350,18 @@ private struct BrowserWebView: UIViewRepresentable {
 
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
             parent.loading = false
+            if (error as NSError).code != NSURLErrorCancelled {
+                parent.loadError = error.localizedDescription
+            }
         }
 
         func webView(_ webView: WKWebView,
                      didFailProvisionalNavigation navigation: WKNavigation!,
                      withError error: Error) {
             parent.loading = false
+            if (error as NSError).code != NSURLErrorCancelled {
+                parent.loadError = error.localizedDescription
+            }
         }
 
         func webView(_ webView: WKWebView,
