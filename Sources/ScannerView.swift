@@ -305,6 +305,7 @@ struct ScannerView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var torch = false
     @State private var denied = false
+    @State private var permissionChecked = false
     @State private var hint = "把二维码放进框里，自动识别"
 
     @State private var busy = false
@@ -320,7 +321,14 @@ struct ScannerView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            if denied {
+            if !permissionChecked {
+                VStack(spacing: 12) {
+                    ProgressView().tint(.white)
+                    Text(Tr("正在打开相机…"))
+                        .font(pf(14))
+                        .foregroundColor(.white.opacity(0.78))
+                }
+            } else if denied {
                 VStack(spacing: 12) {
                     Image(systemName: "camera.metering.unknown")
                         .font(.system(size: 40))
@@ -546,12 +554,17 @@ struct ScannerView: View {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
             denied = false
+            permissionChecked = true
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .video) { ok in
-                DispatchQueue.main.async { denied = !ok }
+                DispatchQueue.main.async {
+                    denied = !ok
+                    permissionChecked = true
+                }
             }
         default:
             denied = true
+            permissionChecked = true
         }
     }
 }
@@ -621,14 +634,20 @@ private struct CameraPreview: UIViewRepresentable {
                   let input = try? AVCaptureDeviceInput(device: dev) else { return }
             device = dev
             session.beginConfiguration()
-            if session.canAddInput(input) { session.addInput(input) }
-            let output = AVCaptureMetadataOutput()
-            if session.canAddOutput(output) {
-                session.addOutput(output)
-                output.setMetadataObjectsDelegate(self, queue: DispatchQueue.main)
-                output.metadataObjectTypes = [.qr, .ean13, .ean8, .upce, .code128, .code39, .code93,
-                                              .itf14, .pdf417, .aztec, .dataMatrix]
+            guard session.canAddInput(input) else {
+                session.commitConfiguration()
+                return
             }
+            session.addInput(input)
+            let output = AVCaptureMetadataOutput()
+            guard session.canAddOutput(output) else {
+                session.commitConfiguration()
+                return
+            }
+            session.addOutput(output)
+            output.setMetadataObjectsDelegate(self, queue: DispatchQueue.main)
+            output.metadataObjectTypes = [.qr, .ean13, .ean8, .upce, .code128, .code39, .code93,
+                                          .itf14, .pdf417, .aztec, .dataMatrix]
             session.commitConfiguration()
             view.previewLayer.session = session
             view.previewLayer.videoGravity = .resizeAspectFill
