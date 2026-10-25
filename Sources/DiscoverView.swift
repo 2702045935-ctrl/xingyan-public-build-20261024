@@ -680,6 +680,75 @@ struct MomentsView: View {
                     .id(cover)
             }
 
+            if cover.isEmpty && coverEditable {
+                VStack(spacing: 10) {
+                    Image(systemName: "photo.badge.plus")
+                        .font(.system(size: 21, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(width: 46, height: 46)
+                        .background {
+                            ZStack {
+                                GlassBackground(shape: Circle(), opacity: 0.92,
+                                                edgeAlpha: 0.74, seed: 0.36)
+                                Circle().fill(Color.black.opacity(0.18))
+                            }
+                        }
+
+                    Text(Tr("设置生活圈封面"))
+                        .font(pf(16.5, .semibold))
+                        .foregroundColor(.white)
+
+                    Text(Tr("从相册选一张图，让朋友一眼记住你"))
+                        .font(pf(12.2))
+                        .foregroundColor(.white.opacity(0.82))
+                        .multilineTextAlignment(.center)
+
+                    Button {
+                        coverMenu = true
+                    } label: {
+                        Text(Tr("立即设置"))
+                            .font(pf(14.5, .semibold))
+                            .foregroundColor(.white)
+                            .frame(width: 118, height: 38)
+                            .background {
+                                ZStack {
+                                    GlassBackground(shape: Capsule(style: .continuous),
+                                                    opacity: 0.96,
+                                                    edgeAlpha: 0.82,
+                                                    seed: 0.62)
+                                    Capsule().fill(C.green.opacity(0.26))
+                                }
+                            }
+                            .overlay {
+                                Capsule(style: .continuous)
+                                    .stroke(Color.white.opacity(0.42), lineWidth: 0.8)
+                            }
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 18)
+                .frame(maxWidth: 286)
+                .background {
+                    ZStack {
+                        GlassBackground(shape: RoundedRectangle(cornerRadius: 22, style: .continuous),
+                                        opacity: 0.82,
+                                        edgeAlpha: 0.58,
+                                        shadow: true,
+                                        seed: 0.48)
+                        RoundedRectangle(cornerRadius: 22, style: .continuous)
+                            .fill(Color.black.opacity(0.24))
+                    }
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .stroke(Color.white.opacity(0.24), lineWidth: 0.7)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(.horizontal, 24)
+                .zIndex(4)
+            }
+
             Group {
                 if scheme == .dark {
                     HarmonyDarkMask(strength: 0.94)
@@ -724,7 +793,7 @@ struct MomentsView: View {
                     .zIndex(2)
             }
 
-            if coverEditable {
+            if coverEditable && !cover.isEmpty {
                 HStack {
                     Button {
                         coverMenu = true
