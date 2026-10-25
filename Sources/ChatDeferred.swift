@@ -44,8 +44,9 @@ struct DeferredChatView: View {
 
     private var bgPath: String {
         let synced = app.me?.chatBackgrounds?[chat.id] ?? ""
-        let per = synced.isEmpty ? ChatBgStore.shared.get(chat.id) : synced
-        if !per.isEmpty { return per == "auto" ? "" : per }
+        if !synced.isEmpty, synced != "auto" { return synced }
+        let per = ChatBgStore.shared.get(chat.id)
+        if !per.isEmpty, per != "auto" { return per }
         let v = app.me?.chatBackground ?? "auto"
         if v.isEmpty || v == "auto" {
             let def = app.defaultChatBackground

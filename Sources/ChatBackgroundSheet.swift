@@ -254,7 +254,7 @@ struct ChatBackgroundSheet: View {
         guard var me = app.me else { return }
         var map = me.chatBackgrounds ?? [:]
         if path == "auto" {
-            map[chatId] = "auto"
+            map.removeValue(forKey: chatId)
         } else {
             map[chatId] = path
         }
@@ -264,7 +264,7 @@ struct ChatBackgroundSheet: View {
 
     private func applySyncedChatBackgrounds(_ map: [String: String]) {
         guard var me = app.me else { return }
-        me.chatBackgrounds = map
+        me.chatBackgrounds = map.filter { !$0.value.isEmpty && $0.value != "auto" }
         app.me = me
     }
 

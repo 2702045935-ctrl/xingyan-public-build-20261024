@@ -754,11 +754,12 @@ struct ChatDetailView: View {
 
     private var backgroundPath: String {
 
-        if let synced = app.me?.chatBackgrounds?[chat.id], !synced.isEmpty {
-            return synced == "auto" ? "" : synced
+        if let synced = app.me?.chatBackgrounds?[chat.id],
+           !synced.isEmpty, synced != "auto" {
+            return synced
         }
         let per = ChatBgStore.shared.get(chat.id)
-        if !per.isEmpty { return per == "auto" ? "" : per }
+        if !per.isEmpty, per != "auto" { return per }
         let v = app.me?.chatBackground ?? "auto"
         if v.isEmpty || v == "auto" {
 
