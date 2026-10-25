@@ -252,6 +252,13 @@ final class CallCenter: NSObject, ObservableObject {
     private var ringTimer: Timer?
 
     private var connectTimer: Timer?
+    private var inviteRetryTask: Task<Void, Never>?
+    private var acceptRetryTask: Task<Void, Never>?
+    private var lastOutgoingInvite: [String: Any]?
+    private var lastAccept: [String: Any]?
+    private var reliableInviteCallId = ""
+    private var inviteAcked = false
+    private var acceptAcked = false
     private var sub: AnyCancellable?
 
     private var iceServers: [RTCIceServer] = [
@@ -316,6 +323,7 @@ final class CallCenter: NSObject, ObservableObject {
         micBlocked = false
         cameraOff = false
         seconds = 0
+        resetCallReliability()
         tip = video ? "正在等待对方接受邀请…" : "正在呼叫…"
         callId = "call" + String(Int(Date().timeIntervalSince1970 * 1000)) + String(UUID().uuidString.prefix(4))
         phase = .outgoing
@@ -811,7 +819,82 @@ final class CallCenter: NSObject, ObservableObject {
     private func sendCall(_ body: [String: Any]) {
         var msg: [String: Any] = ["type": "call", "callId": callId]
         body.forEach { msg[$0.key] = $0.value }
-        Realtime.shared.sendJSON(msg)
+        let action = (body["action"] as? String) ?? ""
+        if action == "audio" {
+            Realtime.shared.sendJSON(msg)
+            return
+        }
+        if action == "invite", iAmCaller {
+            if reliableInviteCallId != callId {
+                reliableInviteCallId = callId
+                inviteAcked = false
+            }
+            lastOutgoingInvite = msg
+            if !inviteAcked, inviteRetryTask == nil {
+                startInviteRetry()
+            }
+        } else if action == "accept", !iAmCaller {
+            lastAccept = msg
+            if !acceptAcked, acceptRetryTask == nil {
+                startAcceptRetry()
+            }
+        }
+        transmitCall(msg)
+    }
+
+    private func transmitCall(_ msg: [String: Any]) {
+        let action = (msg["action"] as? String) ?? ""
+        if action == "audio" {
+            Realtime.shared.sendJSON(msg)
+        } else {
+            Realtime.shared.sendCallControl(msg)
+        }
+    }
+
+    private func startInviteRetry() {
+        inviteRetryTask?.cancel()
+        inviteRetryTask = Task { @MainActor [weak self] in
+            let delays: [UInt64] = [1_500_000_000, 3_000_000_000, 5_000_000_000,
+                                    8_000_000_000, 12_000_000_000, 16_000_000_000]
+            for delay in delays {
+                try? await Task.sleep(nanoseconds: delay)
+                guard let self = self, !Task.isCancelled,
+                      self.iAmCaller, !self.inviteAcked,
+                      self.phase == .outgoing || self.phase == .connecting,
+                      let invite = self.lastOutgoingInvite else { return }
+                self.note("通话邀请尚未确认，自动补发")
+                self.transmitCall(invite)
+            }
+        }
+    }
+
+    private func startAcceptRetry() {
+        acceptRetryTask?.cancel()
+        acceptRetryTask = Task { @MainActor [weak self] in
+            let delays: [UInt64] = [1_500_000_000, 3_000_000_000, 5_000_000_000,
+                                    8_000_000_000, 12_000_000_000]
+            for delay in delays {
+                try? await Task.sleep(nanoseconds: delay)
+                guard let self = self, !Task.isCancelled,
+                      !self.iAmCaller, !self.acceptAcked,
+                      self.phase == .connecting || self.phase == .active,
+                      let accept = self.lastAccept else { return }
+                self.note("接听确认尚未收到，自动补发")
+                self.transmitCall(accept)
+            }
+        }
+    }
+
+    private func resetCallReliability() {
+        inviteRetryTask?.cancel()
+        acceptRetryTask?.cancel()
+        inviteRetryTask = nil
+        acceptRetryTask = nil
+        lastOutgoingInvite = nil
+        lastAccept = nil
+        reliableInviteCallId = ""
+        inviteAcked = false
+        acceptAcked = false
     }
 
     private func startServerAudioIfVoice() {
@@ -884,6 +967,13 @@ final class CallCenter: NSObject, ObservableObject {
 
         if ev.type == "ready" {
             if phase != .idle, ev.callActive == false { finish(tip: "通话已结束") }
+            if phase == .outgoing || phase == .connecting, iAmCaller,
+               !inviteAcked, let invite = lastOutgoingInvite {
+                transmitCall(invite)
+            } else if phase == .connecting || phase == .active,
+                      !iAmCaller, !acceptAcked, let accept = lastAccept {
+                transmitCall(accept)
+            }
             return
         }
         if ev.type == "call-error" {
@@ -906,6 +996,7 @@ final class CallCenter: NSObject, ObservableObject {
                 return
             }
             callId = ev.callId
+            resetCallReliability()
             peerId = ev.callPeerId
             peerName = ev.callPeerName.isEmpty ? "对方" : ev.callPeerName
             peerAvatar = ev.callPeerAvatar
@@ -929,6 +1020,9 @@ final class CallCenter: NSObject, ObservableObject {
 
         case "ringing":
             guard ev.callId == callId else { return }
+            inviteAcked = true
+            inviteRetryTask?.cancel()
+            inviteRetryTask = nil
             tip = isVideo ? "正在等待对方接受邀请…" : "正在呼叫…"
 
         case "state":
@@ -1023,6 +1117,9 @@ final class CallCenter: NSObject, ObservableObject {
 
         case "accepted":
             guard ev.callId == callId else { return }
+            inviteAcked = true
+            inviteRetryTask?.cancel()
+            inviteRetryTask = nil
             Ringtone.shared.stop()
             startConnectWatch()
             if isVideo {
@@ -1043,6 +1140,12 @@ final class CallCenter: NSObject, ObservableObject {
                 reportMicState(prefix: "App 语音走服务器转发（对方已接）")
                 Task { await startTRTCIfPossible() }
             }
+
+        case "accept-ack":
+            guard ev.callId == callId, !iAmCaller else { return }
+            acceptAcked = true
+            acceptRetryTask?.cancel()
+            acceptRetryTask = nil
 
         case "audio":
 
@@ -1440,6 +1543,7 @@ final class CallCenter: NSObject, ObservableObject {
             diag.removeAll()
             Task { await API.shared.callDiag(line) }
         }
+        resetCallReliability()
         callId = ""
         peerId = ""
         remoteOfferSDP = nil

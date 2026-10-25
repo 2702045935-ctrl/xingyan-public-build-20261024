@@ -116,6 +116,7 @@ final class Realtime: ObservableObject {
 
     private var pending: PushEvent?
     private var publishTask: Task<Void, Never>?
+    private var pendingCallSignals: [(key: String, text: String)] = []
 
     private var heartbeat: Task<Void, Never>?
     private let rxClock = RxClock()
@@ -203,6 +204,7 @@ final class Realtime: ObservableObject {
         }
         connected = true
         rxClock.touch()
+        flushPendingCallSignals()
 
         heartbeat?.cancel()
         heartbeat = Task { [weak self] in
@@ -255,6 +257,56 @@ final class Realtime: ObservableObject {
               let data = try? JSONSerialization.data(withJSONObject: obj),
               let text = String(data: data, encoding: .utf8) else { return }
         socket.send(.string(text)) { _ in }
+    }
+
+    /// 通话邀请、接听等控制信令不能像音频帧一样在断线时直接丢掉。
+    /// 这里只补发控制消息；音频帧始终走 sendJSON，避免重连后堆积一串过期声音。
+    func sendCallControl(_ obj: [String: Any]) {
+        guard let data = try? JSONSerialization.data(withJSONObject: obj),
+              let text = String(data: data, encoding: .utf8) else { return }
+        let action = (obj["action"] as? String) ?? ""
+        let callId = (obj["callId"] as? String) ?? ""
+        let key = callId + "|" + action
+        guard let socket = socket, connected else {
+            enqueueCallSignal(key: key, text: text)
+            start()
+            return
+        }
+        socket.send(.string(text)) { [weak self] error in
+            guard error != nil else { return }
+            Task { @MainActor [weak self] in
+                guard let self = self else { return }
+                self.enqueueCallSignal(key: key, text: text)
+                self.start()
+            }
+        }
+    }
+
+    private func enqueueCallSignal(key: String, text: String) {
+        if let index = pendingCallSignals.firstIndex(where: { $0.key == key }) {
+            pendingCallSignals[index] = (key, text)
+            return
+        }
+        pendingCallSignals.append((key, text))
+        if pendingCallSignals.count > 24 {
+            pendingCallSignals.removeFirst(pendingCallSignals.count - 24)
+        }
+    }
+
+    private func flushPendingCallSignals() {
+        guard let socket = socket, connected, !pendingCallSignals.isEmpty else { return }
+        let batch = pendingCallSignals
+        pendingCallSignals.removeAll()
+        for entry in batch {
+            socket.send(.string(entry.text)) { [weak self] error in
+                guard error != nil else { return }
+                Task { @MainActor [weak self] in
+                    guard let self = self else { return }
+                    self.enqueueCallSignal(key: entry.key, text: entry.text)
+                    self.start()
+                }
+            }
+        }
     }
 
     func stop() {
