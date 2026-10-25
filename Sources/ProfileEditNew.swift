@@ -460,6 +460,7 @@ struct ProfileEditView: View {
         busy = true
         Task {
             if let url = try? await API.shared.upload(image: image) {
+                cacheUploadedImage(image, path: url)
                 do {
                     try await API.shared.updateMeChecked(["avatar": url])
                     app.applyMyProfileFields(["avatar": url])

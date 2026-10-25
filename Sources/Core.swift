@@ -728,6 +728,17 @@ final class ImageStore {
     }
 }
 
+func cacheUploadedImage(_ image: UIImage, path: String, maxSide: CGFloat = 640) {
+    guard !path.isEmpty else { return }
+    guard let data = image.resizedJPEG(maxSide: maxSide, quality: 0.88),
+          let prepared = RemoteImage.downsampled(data, maxSide: maxSide) else {
+        ImageStore.shared.put(path, image)
+        return
+    }
+    ImageStore.shared.put(path, prepared)
+    ImageStore.shared.diskWrite(path, data)
+}
+
 struct RemoteImage: View {
     let path: String
     var icon: String = "photo"

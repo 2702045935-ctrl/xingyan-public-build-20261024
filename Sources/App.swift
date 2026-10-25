@@ -1454,8 +1454,8 @@ struct RootView: View {
         .onAppear {
 
             guard !app.splashDone else { return }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                withAnimation(.easeOut(duration: 0.35)) { app.splashDone = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                withAnimation(.easeOut(duration: 0.22)) { app.splashDone = true }
             }
         }
         .onChange(of: scenePhase) { phase in

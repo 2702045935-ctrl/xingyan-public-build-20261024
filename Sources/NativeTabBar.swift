@@ -126,19 +126,29 @@ struct NativeTabBar: UIViewRepresentable {
                 item.selectedImage = UIImage(systemName: "person.crop.circle.fill")
                 return
             }
+            if let cached = ImageStore.shared.get(path) {
+                applyAvatar(cached, to: item)
+                return
+            }
             Task { @MainActor [weak self] in
                 guard let self = self, self.avatarKey == path,
                       let data = try? await API.shared.assetData(url),
                       let image = UIImage(data: data) else { return }
-                let size = CGSize(width: 25, height: 25)
-                let avatar = UIGraphicsImageRenderer(size: size).image { _ in
-                    UIBezierPath(ovalIn: CGRect(origin: .zero, size: size)).addClip()
-                    image.draw(in: CGRect(origin: .zero, size: size))
-                }
-                let rendered = avatar.withRenderingMode(.alwaysOriginal)
-                item.image = rendered
-                item.selectedImage = rendered
+                ImageStore.shared.put(path, image)
+                ImageStore.shared.diskWrite(path, data)
+                self.applyAvatar(image, to: item)
             }
+        }
+
+        private func applyAvatar(_ image: UIImage, to item: UITabBarItem) {
+            let size = CGSize(width: 25, height: 25)
+            let avatar = UIGraphicsImageRenderer(size: size).image { _ in
+                UIBezierPath(ovalIn: CGRect(origin: .zero, size: size)).addClip()
+                image.draw(in: CGRect(origin: .zero, size: size))
+            }
+            let rendered = avatar.withRenderingMode(.alwaysOriginal)
+            item.image = rendered
+            item.selectedImage = rendered
         }
     }
 }
