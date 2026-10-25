@@ -407,7 +407,9 @@ final class AppState: ObservableObject {
         applyCachedUIConfig()
         let savedUser = AppState.cachedUser()
         if !API.shared.token.isEmpty, savedUser != nil {
-            showSavedLogin = true
+            me = savedUser
+            showSavedLogin = false
+            needConfirmLogin = false
             booting = false
         } else if API.shared.token.isEmpty {
             booting = false
@@ -419,7 +421,7 @@ final class AppState: ObservableObject {
             guard !Task.isCancelled, booting else { return }
             if me == nil, let cached = AppState.cachedUser() {
                 me = cached
-                needConfirmLogin = true
+                needConfirmLogin = false
             }
             booting = false
         }
@@ -442,15 +444,15 @@ final class AppState: ObservableObject {
                 rememberLastUser()
                 Task { await API.shared.touchCurrentDevice() }
 
-                needConfirmLogin = true
+                needConfirmLogin = false
                 booting = false
                 Task {
-                    await refreshAll()
-                    Realtime.shared.start()
-                }
-            } else {
-                API.shared.clearToken()
-                me = nil
+                await refreshAll()
+                Realtime.shared.start()
+            }
+        } else {
+            API.shared.clearToken()
+            me = nil
                 needConfirmLogin = false
                 showSavedLogin = false
             }
@@ -458,7 +460,7 @@ final class AppState: ObservableObject {
 
             if let cached = AppState.cachedUser() {
                 me = cached
-                needConfirmLogin = true
+                needConfirmLogin = false
                 booting = false
             }
 
@@ -1327,13 +1329,15 @@ struct RootView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.scenePhase) private var scenePhase
     @ObservedObject private var realtime = Realtime.shared
+    /// 二级登录确认默认关闭；保留 SavedLoginConfirm，后续可通过该开关恢复。
+    @AppStorage("chris.savedLoginConfirmEnabled") private var savedLoginConfirmEnabled = false
 
     var body: some View {
         GeometryReader { geo in
             ZStack {
                 if app.booting {
                     LaunchView()
-                } else if app.needConfirmLogin || app.showSavedLogin {
+                } else if savedLoginConfirmEnabled && (app.needConfirmLogin || app.showSavedLogin) {
 
                     SavedLoginConfirm()
                 } else if app.me == nil {
