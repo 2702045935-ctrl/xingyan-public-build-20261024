@@ -17,6 +17,26 @@ private struct OnboardingFeature: Identifiable {
     ]
 }
 
+private struct OnboardingInterest: Identifiable {
+    let id: String
+    let symbol: String
+
+    static let all: [OnboardingInterest] = [
+        .init(id: "穿搭", symbol: "tshirt.fill"),
+        .init(id: "美食", symbol: "fork.knife"),
+        .init(id: "旅行", symbol: "airplane"),
+        .init(id: "摄影", symbol: "camera.fill"),
+        .init(id: "运动", symbol: "figure.run"),
+        .init(id: "音乐", symbol: "music.note"),
+        .init(id: "宠物", symbol: "pawprint.fill"),
+        .init(id: "游戏", symbol: "gamecontroller.fill"),
+        .init(id: "阅读", symbol: "book.fill"),
+        .init(id: "数码", symbol: "desktopcomputer"),
+        .init(id: "美妆", symbol: "sparkles"),
+        .init(id: "生活", symbol: "sun.max.fill")
+    ]
+}
+
 struct NewUserOnboardingView: View {
     @EnvironmentObject private var app: AppState
     @State private var step = 0
@@ -27,6 +47,7 @@ struct NewUserOnboardingView: View {
     @State private var saving = false
     @State private var error = ""
     @State private var appeared = false
+    @State private var selectedInterests: Set<String> = []
 
     var body: some View {
         ZStack {
@@ -219,23 +240,37 @@ struct NewUserOnboardingView: View {
     private var welcomeStep: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
-                Text("欢迎开始使用")
+                Text("选择你的兴趣")
                     .font(.system(size: 30, weight: .bold))
                     .foregroundColor(C.label)
                     .padding(.top, 36)
-                Text("账号已经创建。下面是星言的主要功能，进入后可随时在「发现」和「我」中找到。")
+                Text("至少选择 2 个，最多 5 个。我们会据此为你推荐更有兴趣的内容。")
                     .font(.system(size: 14.5))
                     .foregroundColor(C.subLabel)
                     .lineSpacing(5)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 11)
 
-                VStack(spacing: 10) {
-                    ForEach(OnboardingFeature.all) { feature in
-                        featureCard(feature)
+                LazyVGrid(
+                    columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3),
+                    spacing: 10
+                ) {
+                    ForEach(OnboardingInterest.all) { interest in
+                        interestCard(interest)
                     }
                 }
                 .padding(.top, 26)
+
+                HStack {
+                    Text("已选择 \(selectedInterests.count) / 5")
+                        .font(.system(size: 12.5, weight: .medium))
+                        .foregroundColor(selectedInterests.count >= 2 ? Color(hex: 0x18A66A) : C.subLabel)
+                    Spacer(minLength: 0)
+                    Text(selectedInterests.count < 2 ? "还需选择 \(2 - selectedInterests.count) 个" : "可以继续")
+                        .font(.system(size: 12))
+                        .foregroundColor(C.subLabel)
+                }
+                .padding(.top, 14)
 
                 HStack(alignment: .top, spacing: 10) {
                     Image(systemName: "checkmark.shield.fill")
@@ -261,6 +296,45 @@ struct NewUserOnboardingView: View {
                 .padding(.bottom, 18)
             }
         }
+    }
+
+    private func interestCard(_ interest: OnboardingInterest) -> some View {
+        let selected = selectedInterests.contains(interest.id)
+        return Button {
+            error = ""
+            if selected {
+                selectedInterests.remove(interest.id)
+            } else if selectedInterests.count >= 5 {
+                error = "最多选择 5 个兴趣分类"
+            } else {
+                selectedInterests.insert(interest.id)
+            }
+        } label: {
+            VStack(spacing: 7) {
+                Image(systemName: interest.symbol)
+                    .font(.system(size: 19, weight: .medium))
+                Text(interest.id)
+                    .font(.system(size: 13.5, weight: selected ? .semibold : .regular))
+            }
+            .foregroundColor(selected ? .white : C.label)
+            .frame(maxWidth: .infinity)
+            .frame(height: 78)
+            .background {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(selected
+                          ? LinearGradient(colors: [Color(hex: 0x07C160), Color(hex: 0x16B979)],
+                                           startPoint: .topLeading, endPoint: .bottomTrailing)
+                          : LinearGradient(colors: [Color.dyn(0xFFFFFF, 0x1D1D20),
+                                                    Color.dyn(0xFFFFFF, 0x1D1D20)],
+                                           startPoint: .top, endPoint: .bottom))
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(selected ? Color.white.opacity(0.25) : C.hairline, lineWidth: 0.7)
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(OnboardingPressStyle())
     }
 
     private func featureCard(_ feature: OnboardingFeature) -> some View {
@@ -341,7 +415,7 @@ struct NewUserOnboardingView: View {
                         radius: 16, y: 8)
             }
             .buttonStyle(OnboardingPressStyle())
-            .disabled(saving || uploading)
+            .disabled(saving || uploading || (step == 1 && selectedInterests.count < 2))
 
             if step == 1 {
                 Button {
@@ -360,7 +434,7 @@ struct NewUserOnboardingView: View {
 
     private var canContinue: Bool {
         if step == 0 { return !avatarPath.isEmpty && !uploading && !saving }
-        return !saving
+        return !saving && selectedInterests.count >= 2
     }
 
     private func uploadAvatar(_ image: UIImage) {
@@ -386,11 +460,18 @@ struct NewUserOnboardingView: View {
 
     private func finish() {
         guard !saving else { return }
+        guard selectedInterests.count >= 2 else {
+            error = "请至少选择两个兴趣分类"
+            return
+        }
         saving = true
         error = ""
         Task {
             do {
-                try await app.finishNewUserOnboarding(avatar: avatarPath, interests: [])
+                let interests = OnboardingInterest.all
+                    .map(\.id)
+                    .filter { selectedInterests.contains($0) }
+                try await app.finishNewUserOnboarding(avatar: avatarPath, interests: interests)
                 await MainActor.run {
                     let generator = UINotificationFeedbackGenerator()
                     generator.notificationOccurred(.success)
