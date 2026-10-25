@@ -190,7 +190,11 @@ func openScannedCard(_ code: String, app: AppState) {
 
     if let link = scannedWebLink(t) {
         presentAfterScanner {
-            app.scanWebURL = link
+            if let url = URL(string: link) {
+                UIApplication.shared.open(url)
+            } else {
+                app.scanTextResult = t
+            }
         }
         return
     }
