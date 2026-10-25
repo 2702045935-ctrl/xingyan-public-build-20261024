@@ -83,7 +83,7 @@ struct NativeTabBar: UIViewRepresentable {
         let appearance = UITabBarAppearance()
         appearance.configureWithDefaultBackground()
         if scheme == .dark {
-            appearance.backgroundColor = UIColor(white: 0.025, alpha: 0.76)
+            appearance.backgroundColor = UIColor(white: 0.008, alpha: 0.90)
         }
         bar.standardAppearance = appearance
         bar.scrollEdgeAppearance = appearance
