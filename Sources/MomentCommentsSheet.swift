@@ -20,6 +20,8 @@ struct MomentCommentsSheet: View {
     @State private var videoURL: URL?
     @State private var imageActions = false
     @State private var actionPath = ""
+    @State private var fullImageActions = false
+    @State private var fullActionPath = ""
     @State private var openSwipeKey: String?
     @State private var swipeOffsets: [String: CGFloat] = [:]
 
@@ -132,10 +134,32 @@ struct MomentCommentsSheet: View {
             get: { fullViewerIndex != nil },
             set: { if !$0 { fullViewerIndex = nil } }
         )) {
-            PhotoPager(paths: images, startIndex: fullViewerIndex ?? 0, showActions: true) {
-                fullViewerIndex = nil
+            if let start = fullViewerIndex {
+                PhotoPager(
+                    paths: images,
+                    startIndex: start,
+                    showActions: false,
+                    onLongPress: {
+                        if images.indices.contains(start) {
+                            fullActionPath = images[start]
+                        } else {
+                            fullActionPath = images.first ?? ""
+                        }
+                        fullImageActions = true
+                    }
+                ) {
+                    fullViewerIndex = nil
+                }
+                .environmentObject(app)
+                .sheet(isPresented: $fullImageActions) {
+                    if !fullActionPath.isEmpty {
+                        MomentImageActions(path: fullActionPath)
+                            .environmentObject(app)
+                            .presentationDetents([.medium])
+                            .presentationDragIndicator(.visible)
+                    }
+                }
             }
-            .environmentObject(app)
         }
         .onDisappear { onChanged() }
     }
