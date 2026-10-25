@@ -1273,11 +1273,12 @@ struct ContactCardView: View {
             showApply = true
         case "agree":
             busy = true
+            relationOverride = "friend"
+            app.applyFriendAccepted(u)
             Task {
 
                 let res = await API.shared.respondFriend(userId: u.id, accept: true)
                 if res.ok {
-                    relationOverride = "friend"
                     UINotification.lightTap()
                     app.show(Tr("已同意，现在可以聊天了"))
                     if let n = res.pending { app.friendRequests = n }
@@ -1285,6 +1286,9 @@ struct ContactCardView: View {
                     await app.loadChats()
                     await load()
                 } else {
+                    relationOverride = nil
+                    await app.loadContacts()
+                    await app.loadChats()
                     app.show(Tr("到「通讯录 → 新的朋友」里同意"))
                 }
                 busy = false

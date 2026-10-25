@@ -615,6 +615,10 @@ private struct MessagesPayload: Decodable {
     var hasMore: Bool?
 }
 private struct MessagePayload: Decodable { var message: Message? }
+private struct AddFriendPayload: Decodable {
+    var accepted: Bool?
+    var friend: User?
+}
 private struct CreditScorePayload: Decodable { var score: CreditScore }
 
 struct CreditScore: Decodable, Hashable {
@@ -2677,16 +2681,22 @@ final class API {
         return payload.users
     }
 
-    func addFriend(username: String, note: String) async throws {
+    @discardableResult
+    func addFriend(username: String, note: String) async throws -> (accepted: Bool, friend: User?) {
         var body: [String: Any] = ["username": username]
         if !note.isEmpty { body["message"] = note }
-        _ = try await request("POST", "/api/friends/request", body: body)
+        let any = try await request("POST", "/api/friends/request", body: body)
+        let payload = try decode(any, as: AddFriendPayload.self)
+        return (payload.accepted == true, payload.friend)
     }
 
-    func addFriend(userId: String, note: String = "") async throws {
+    @discardableResult
+    func addFriend(userId: String, note: String = "") async throws -> (accepted: Bool, friend: User?) {
         var body: [String: Any] = ["userId": userId]
         if !note.isEmpty { body["message"] = note }
-        _ = try await request("POST", "/api/friends/request", body: body)
+        let any = try await request("POST", "/api/friends/request", body: body)
+        let payload = try decode(any, as: AddFriendPayload.self)
+        return (payload.accepted == true, payload.friend)
     }
 
     struct FriendMeta: Decodable {

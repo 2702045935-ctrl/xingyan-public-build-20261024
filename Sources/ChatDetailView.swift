@@ -2259,9 +2259,18 @@ struct ChatDetailView: View {
         let note = applyNote.trimmingCharacters(in: .whitespaces)
         Task {
             do {
-                try await API.shared.addFriend(userId: peerId,
-                                               note: note.isEmpty ? ("我是" + (app.me?.nickname ?? "")) : note)
-                app.show(Tr("已发送朋友验证"))
+                let result = try await API.shared.addFriend(
+                    userId: peerId,
+                    note: note.isEmpty ? ("我是" + (app.me?.nickname ?? "")) : note)
+                if result.accepted {
+                    if let user = result.friend ?? app.contact(for: peerId) {
+                        app.applyFriendAccepted(user)
+                    }
+                    await app.loadChats()
+                    app.show(Tr("你们已经是好友了"))
+                } else {
+                    app.show(Tr("已发送朋友验证"))
+                }
             } catch {
                 app.show((error as? APIError)?.errorDescription ?? "发送失败")
             }

@@ -523,6 +523,7 @@ struct NewFriendsView: View {
         let backup = incoming
         busy.insert(user.id)
         if accept { locallyAccepted[user.id] = user }
+        if accept { app.applyFriendAccepted(user) }
         withAnimation(.easeOut(duration: 0.18)) {
             incoming.removeAll { $0.id == user.id }
             if accept, !added.contains(where: { $0.id == user.id }) {
@@ -541,6 +542,7 @@ struct NewFriendsView: View {
                 incoming = backup
                 app.friendRequests = incoming.count
                 app.show(Tr("网络不太好，再试一次"))
+                await app.loadContacts()
                 await load()
                 return
             }
@@ -881,12 +883,19 @@ struct FriendApplySheet: View {
         sending = true
         Task {
             do {
+                let result: (accepted: Bool, friend: User?)
                 if let un = user.username, !un.isEmpty {
-                    try await API.shared.addFriend(username: un, note: trimmed)
+                    result = try await API.shared.addFriend(username: un, note: trimmed)
                 } else {
-                    try await API.shared.addFriend(userId: user.id, note: trimmed)
+                    result = try await API.shared.addFriend(userId: user.id, note: trimmed)
                 }
-                app.show(Tr("好友申请已发出"))
+                if result.accepted {
+                    app.applyFriendAccepted(result.friend ?? user)
+                    await app.loadChats()
+                    app.show(Tr("你们已经是好友了"))
+                } else {
+                    app.show(Tr("好友申请已发出"))
+                }
                 onSent()
                 dismiss()
             } catch {
