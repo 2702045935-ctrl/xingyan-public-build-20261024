@@ -697,10 +697,11 @@ final class AppState: ObservableObject {
         }
 
         if let r = try? await contactsRequest {
-            let sameOrder = contacts.map { $0.id } == r.friends.map { $0.id }
-            let sameLook = contacts.count == r.friends.count
-                && zip(contacts, r.friends).allSatisfy { $0.avatarPath == $1.avatarPath && $0.name == $1.name }
-            if !(sameOrder && sameLook) { contacts = r.friends }
+            let friends = applyLocalRemarksToContacts(r.friends)
+            let sameOrder = contacts.map { $0.id } == friends.map { $0.id }
+            let sameLook = contacts.count == friends.count
+                && zip(contacts, friends).allSatisfy { $0.avatarPath == $1.avatarPath && $0.name == $1.name }
+            if !(sameOrder && sameLook) { contacts = friends }
             friendRequests = r.incoming.count
         }
 
@@ -841,7 +842,7 @@ final class AppState: ObservableObject {
         for row in merged where seen.insert(row.id).inserted {
             ordered.append(row)
         }
-        return ordered.isEmpty ? merged : ordered
+        return applyLocalRemarksToChats(ordered.isEmpty ? merged : ordered)
     }
 
     private func mergeServerChat(_ server: Chat, local: Chat) -> Chat {
@@ -921,13 +922,59 @@ final class AppState: ObservableObject {
     func applyFriendRemarkLocally(userId: String, displayName: String, remark: String? = nil) {
         let name = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { return }
+        var remarks = localFriendRemarkMap
+        let stored = (remark ?? name).trimmingCharacters(in: .whitespacesAndNewlines)
+        if stored.isEmpty {
+            remarks.removeValue(forKey: userId)
+        } else {
+            remarks[userId] = stored
+        }
+        UserDefaults.standard.set(remarks, forKey: Self.localFriendRemarksKey)
         for i in contacts.indices where contacts[i].id == userId {
+            if (contacts[i].realNickname ?? "").isEmpty {
+                contacts[i].realNickname = contacts[i].nickname
+            }
             contacts[i].nickname = name
             contacts[i].remark = remark ?? name
         }
         for i in chats.indices where (chats[i].type ?? "direct") == "direct"
             && chats[i].memberIds?.contains(userId) == true {
             chats[i].title = name
+        }
+    }
+
+    private static let localFriendRemarksKey = "chris.localFriendRemarks.v1"
+
+    private var localFriendRemarkMap: [String: String] {
+        let raw = UserDefaults.standard.dictionary(forKey: Self.localFriendRemarksKey) ?? [:]
+        return raw.reduce(into: [:]) { out, pair in
+            if let value = pair.value as? String, !value.isEmpty { out[pair.key] = value }
+        }
+    }
+
+    private func applyLocalRemarksToContacts(_ users: [User]) -> [User] {
+        let remarks = localFriendRemarkMap
+        guard !remarks.isEmpty else { return users }
+        return users.map { user in
+            guard let remark = remarks[user.id], !remark.isEmpty else { return user }
+            var out = user
+            if (out.realNickname ?? "").isEmpty { out.realNickname = out.nickname }
+            out.remark = remark
+            out.nickname = remark
+            return out
+        }
+    }
+
+    private func applyLocalRemarksToChats(_ rows: [Chat]) -> [Chat] {
+        let remarks = localFriendRemarkMap
+        guard !remarks.isEmpty else { return rows }
+        return rows.map { chat in
+            guard (chat.type ?? "direct") == "direct" else { return chat }
+            guard let peer = (chat.memberIds ?? []).first(where: { remarks[$0] != nil }),
+                  let remark = remarks[peer] else { return chat }
+            var out = chat
+            out.title = remark
+            return out
         }
     }
 
@@ -940,9 +987,9 @@ final class AppState: ObservableObject {
             merged.nickname = merged.nickname ?? old.nickname
             merged.realNickname = merged.realNickname ?? old.realNickname
             merged.remark = merged.remark ?? old.remark
-            contacts[index] = merged
+            contacts[index] = applyLocalRemarksToContacts([merged]).first ?? merged
         } else {
-            contacts.append(merged)
+            contacts.append(applyLocalRemarksToContacts([merged]).first ?? merged)
         }
     }
 
@@ -967,7 +1014,7 @@ final class AppState: ObservableObject {
         merged.remark = merged.remark ?? old.remark
         merged.relation = merged.relation ?? old.relation
         merged.momentCover = merged.momentCover ?? old.momentCover
-        contacts[index] = merged
+        contacts[index] = applyLocalRemarksToContacts([merged]).first ?? merged
     }
 
     func applyMyProfileFields(_ fields: [String: Any]) {
@@ -1130,13 +1177,14 @@ final class AppState: ObservableObject {
     func loadContacts() async {
         if let r = try? await API.shared.contactsFull() {
 
-            let sameOrder = contacts.map { $0.id } == r.friends.map { $0.id }
-            let sameLook = contacts.count == r.friends.count
-                && zip(contacts, r.friends).allSatisfy {
+            let friends = applyLocalRemarksToContacts(r.friends)
+            let sameOrder = contacts.map { $0.id } == friends.map { $0.id }
+            let sameLook = contacts.count == friends.count
+                && zip(contacts, friends).allSatisfy {
                     $0.avatarPath == $1.avatarPath && $0.name == $1.name
                         && ($0.remark ?? "") == ($1.remark ?? "")
                 }
-            if !(sameOrder && sameLook) { contacts = r.friends }
+            if !(sameOrder && sameLook) { contacts = friends }
             friendRequests = r.incoming.count
         }
     }
