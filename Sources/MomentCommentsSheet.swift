@@ -264,6 +264,20 @@ struct MomentCommentsSheet: View {
                     .lineLimit(1)
             }
             Spacer(minLength: 0)
+            Button(action: toggleLike) {
+                HStack(spacing: 4) {
+                    Image(systemName: live.likedByMe == true ? "heart.fill" : "heart")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(live.likedByMe == true ? Color(hex: 0xFA5151) : C.subLabel)
+                    if likes.count > 0 {
+                        Text("\(likes.count)")
+                            .font(pf(11.5))
+                            .foregroundColor(C.subLabel)
+                    }
+                }
+                .frame(height: 32)
+            }
+            .buttonStyle(.plain)
         }
         .padding(.top, 10)
     }
@@ -283,8 +297,6 @@ struct MomentCommentsSheet: View {
         .padding(.vertical, 10)
         .padding(.top, 2)
         .overlay(alignment: .bottom) { HairLine(inset: 0) }
-        .contentShape(Rectangle())
-        .onTapGesture { toggleLike() }
     }
 
     private var commentsHeader: some View {
