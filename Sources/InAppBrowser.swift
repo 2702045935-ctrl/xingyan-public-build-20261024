@@ -56,9 +56,9 @@ struct InAppBrowserView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.black)
+            .background(Color.white)
         }
-        .background(Color.black.ignoresSafeArea())
+        .background(Color.white.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .statusBarHidden(true)
         .persistentSystemOverlays(.hidden)
@@ -213,9 +213,11 @@ private struct BrowserWebView: UIViewRepresentable {
         web.navigationDelegate = context.coordinator
         web.uiDelegate = context.coordinator
         web.allowsBackForwardNavigationGestures = false
-        web.isOpaque = false
-        web.backgroundColor = .clear
-        web.scrollView.backgroundColor = .clear
+        web.isOpaque = true
+        web.backgroundColor = .white
+        web.scrollView.backgroundColor = .white
+        web.scrollView.isOpaque = true
+        web.underPageBackgroundColor = .white
         web.scrollView.contentInsetAdjustmentBehavior = .never
         web.scrollView.keyboardDismissMode = .interactive
         context.coordinator.web = web
