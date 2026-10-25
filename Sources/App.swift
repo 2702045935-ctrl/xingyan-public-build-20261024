@@ -21,6 +21,9 @@ final class AppState: ObservableObject {
 
     init() {
 
+        if let cached = Self.cachedUser(), !cached.id.isEmpty {
+            chats = LocalStore.cachedChatList(userId: cached.id)
+        }
         applyCachedUIConfig()
     }
 
@@ -781,6 +784,9 @@ final class AppState: ObservableObject {
             let merged = mergeServerChats(fresh)
 
             if !AppState.sameChats(chats, merged) { chats = merged }
+            if let userId = me?.id, !userId.isEmpty {
+                LocalStore.saveChatList(chats, userId: userId)
+            }
             loadError = nil
         } catch {
             loadError = (error as? APIError)?.errorDescription ?? "加载失败"
@@ -1283,6 +1289,8 @@ final class AppState: ObservableObject {
                 return false
             }
             me = user
+            let cachedChats = LocalStore.cachedChatList(userId: user.id)
+            if !cachedChats.isEmpty { chats = cachedChats }
         } catch {
             /* 网络短暂失败不能删登录令牌，否则用户会被错误地要求重新输账号密码。 */
             guard let cached = AppState.cachedUser() else { return false }

@@ -1,8 +1,8 @@
 {
   "version": "B669",
   "files": [
-    { "path": "Sources/API.swift", "size": 194909, "sha256": "6b8b3d17d2cd419c8456501a660d24d8a1a53044fb3ac643a5e3ed6ae5f9fc15" },
-    { "path": "Sources/App.swift", "size": 127123, "sha256": "2aa2dd63064ee1dbf2551562082811f0a7c0ee083099ae5682b696a41ea33171" },
+    { "path": "Sources/API.swift", "size": 194905, "sha256": "b75fad32ddccc0e7d3ed89780cab06f467df6ebdd5137b5dad218ac593cd1c45" },
+    { "path": "Sources/App.swift", "size": 127526, "sha256": "f1ceb980507325a790ff8f4050aa4463b2aaa6922848c2090efae6a28beff52b" },
     { "path": "Sources/Realtime.swift", "size": 17014, "sha256": "d2817130819a128dc67711348c8d0479916ffee62ce88043da5483805576e6e1" },
     { "path": "Sources/CallAudio.swift", "size": 26757, "sha256": "40948fb750ccef12892e3beb775f6896291a24578b3c6c0be59c74ac34a9fad8" },
     { "path": "Sources/CallCenter.swift", "size": 68118, "sha256": "9a28297930f238a9538020bc82fddaf04181fa6953dd1cab1ec67ee947cb12ff" },
@@ -11,7 +11,7 @@
     { "path": "Sources/TRTCBridge.swift", "size": 18872, "sha256": "d57eb7ac673aeec37f8b6ba00f9a2ec46d62d9b2ab53402b306db83922321f31" },
     { "path": "Sources/StreamPlayback.swift", "size": 10724, "sha256": "18cf6e93d83cdb349e7d3d8ac35f1e59f19b149cb8dd297ad5c0dc69bd334ce4" },
     { "path": "Sources/Keychain.swift", "size": 1566, "sha256": "eb7ee8dc834acee01af28933156e2a6218bb0ecdea3c85fba7e9503c54a2e451" },
-    { "path": "Sources/LocalStore.swift", "size": 20516, "sha256": "6b3218bbfae2e1db0477a3cf46cc9422532a47b2bf12954870efec84a353e078" },
+    { "path": "Sources/LocalStore.swift", "size": 21381, "sha256": "9818df5013a5b9d60c550d623761536949fac9bf766ef9c25a75ad383bd27d64" },
     { "path": "Sources/MsgFrameKey.swift", "size": 651, "sha256": "fdf3a779255614d9915d9bcf528868ac2517b5feafbfa1180956cd162403993a" },
     { "path": "Sources/PushCenter.swift", "size": 7780, "sha256": "c49cf8ca8275a8a177ae1da719bcff894fdffc8fd8b873f1377eac48107b4c0f" },
     { "path": "Sources/ChatDetailView.swift", "size": 211684, "sha256": "18f5ef0c3c9aeff88287d3f14b037efca636ae96d332322eb6e728cd35090bd2" },

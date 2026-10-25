@@ -96,7 +96,7 @@ struct User: Codable, Identifiable, Hashable {
     var avatarPath: String { avatar ?? "" }
 }
 
-struct LastMessage: Decodable, Hashable {
+struct LastMessage: Codable, Hashable {
     var id: String?
     var senderId: String?
     var senderName: String?
@@ -107,7 +107,7 @@ struct LastMessage: Decodable, Hashable {
     var mentionMe: Bool?
 }
 
-struct Chat: Decodable, Identifiable, Hashable {
+struct Chat: Codable, Identifiable, Hashable {
     var id: String
     var type: String?
     var title: String?

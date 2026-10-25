@@ -2,6 +2,7 @@ import SwiftUI
 import AVFoundation
 import CoreImage
 import Vision
+import VisionKit
 
 enum AlbumScan {
 
@@ -345,16 +346,13 @@ struct ScannerView: View {
                         .padding(.horizontal, 40)
                 }
             } else {
-                CameraPreview(torch: $torch, status: $cameraStatus, retryID: cameraRetryID) { text in
-                    onFound(text)
-                    dismiss()
-                }
+                liveScanner
                 .ignoresSafeArea()
 
                 ScanFrame()
                     .frame(width: 250, height: 250)
 
-                if cameraStatus != .running {
+                if !useNativeScanner, cameraStatus != .running {
                     VStack(spacing: 10) {
                         if cameraStatus == .starting {
                             ProgressView().tint(.white)
@@ -602,6 +600,25 @@ struct ScannerView: View {
             permissionChecked = true
         }
     }
+
+    private var useNativeScanner: Bool {
+        DataScannerViewController.isSupported && DataScannerViewController.isAvailable
+    }
+
+    @ViewBuilder
+    private var liveScanner: some View {
+        if useNativeScanner {
+            NativeQRScanner(torch: $torch, acceptsCodes: mode == 0) { text in
+                onFound(text)
+                dismiss()
+            }
+        } else {
+            CameraPreview(torch: $torch, status: $cameraStatus, retryID: cameraRetryID) { text in
+                onFound(text)
+                dismiss()
+            }
+        }
+    }
 }
 
 private struct ScanFrame: View {
@@ -633,6 +650,96 @@ private enum CameraStatus: Equatable {
     case starting
     case running
     case failed
+}
+
+private struct NativeQRScanner: UIViewControllerRepresentable {
+    @Binding var torch: Bool
+    var acceptsCodes: Bool
+    var onCode: (String) -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(onCode: onCode) }
+
+    func makeUIViewController(context: Context) -> DataScannerViewController {
+        let scanner = DataScannerViewController(
+            recognizedDataTypes: [
+                .barcode(symbologies: [.qr, .ean13, .ean8, .upce,
+                                       .code128, .code39, .code93, .itf14,
+                                       .pdf417, .aztec, .dataMatrix])
+            ],
+            qualityLevel: .balanced,
+            recognizesMultipleItems: true,
+            isHighFrameRateTrackingEnabled: false,
+            isPinchToZoomEnabled: true,
+            isGuidanceEnabled: true,
+            isHighlightingEnabled: true
+        )
+        scanner.delegate = context.coordinator
+        context.coordinator.scanner = scanner
+        context.coordinator.acceptsCodes = acceptsCodes
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            if DataScannerViewController.isAvailable, !scanner.isScanning {
+                try? scanner.startScanning()
+            }
+        }
+        return scanner
+    }
+
+    func updateUIViewController(_ scanner: DataScannerViewController, context: Context) {
+        context.coordinator.acceptsCodes = acceptsCodes
+        context.coordinator.setTorch(torch)
+        if DataScannerViewController.isAvailable, !scanner.isScanning {
+            try? scanner.startScanning()
+        }
+    }
+
+    static func dismantleUIViewController(_ scanner: DataScannerViewController,
+                                          coordinator: Coordinator) {
+        if scanner.isScanning { scanner.stopScanning() }
+    }
+
+    final class Coordinator: NSObject, DataScannerViewControllerDelegate {
+        weak var scanner: DataScannerViewController?
+        var acceptsCodes = true
+        private var done = false
+        private let onCode: (String) -> Void
+
+        init(onCode: @escaping (String) -> Void) {
+            self.onCode = onCode
+        }
+
+        func dataScanner(_ dataScanner: DataScannerViewController,
+                         didAdd addedItems: [RecognizedItem],
+                         allItems: [RecognizedItem]) {
+            accept(addedItems)
+        }
+
+        func dataScanner(_ dataScanner: DataScannerViewController,
+                         didTapOn item: RecognizedItem) {
+            accept([item])
+        }
+
+        private func accept(_ items: [RecognizedItem]) {
+            guard acceptsCodes, !done else { return }
+            for item in items {
+                guard case .barcode(let barcode) = item,
+                      let text = barcode.payloadStringValue, !text.isEmpty else { continue }
+                done = true
+                scanner?.stopScanning()
+                onCode(text)
+                return
+            }
+        }
+
+        func setTorch(_ on: Bool) {
+            guard let device = AVCaptureDevice.default(.builtInWideAngleCamera,
+                                                       for: .video,
+                                                       position: .back),
+                  device.hasTorch,
+                  (try? device.lockForConfiguration()) != nil else { return }
+            device.torchMode = on ? .on : .off
+            device.unlockForConfiguration()
+        }
+    }
 }
 
 private struct CameraPreview: UIViewRepresentable {

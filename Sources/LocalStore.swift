@@ -70,6 +70,26 @@ enum LocalStore {
         return (try? JSONDecoder().decode([Message].self, from: d)) ?? []
     }
 
+    private static func chatListFile(_ userId: String) -> URL? {
+        guard !userId.isEmpty,
+              let dir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first else {
+            return nil
+        }
+        return dir.appendingPathComponent("chat-list-" + sanitize(userId) + ".json")
+    }
+
+    static func saveChatList(_ chats: [Chat], userId: String) {
+        guard !chats.isEmpty, let file = chatListFile(userId),
+              let data = try? JSONEncoder().encode(Array(chats.prefix(300))) else { return }
+        try? data.write(to: file, options: .atomic)
+    }
+
+    static func cachedChatList(userId: String) -> [Chat] {
+        guard let file = chatListFile(userId),
+              let data = try? Data(contentsOf: file) else { return [] }
+        return (try? JSONDecoder().decode([Chat].self, from: data)) ?? []
+    }
+
     static func clearChat(_ chatId: String) {
         try? FileManager.default.removeItem(at: chatFile(chatId))
     }
