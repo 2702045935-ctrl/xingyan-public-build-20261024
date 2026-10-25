@@ -371,6 +371,7 @@ struct ChatDetailView: View {
     @State private var showOaArticle = false
 
     @State private var lastContentHeight: CGFloat = 0
+    @State private var followOwnSendUntil = Date.distantPast
 
     @State private var cardUser: User?
 
@@ -1549,7 +1550,10 @@ struct ChatDetailView: View {
                         }
                     }, onDragChange: { dragging in
 
-                        if dragging { ScrollGate.shared.touch() }
+                        if dragging {
+                            ScrollGate.shared.touch()
+                            followOwnSendUntil = Date.distantPast
+                        }
                     }, onSizeChange: {
 
                         guard wasAtBottom, !holdScroll else { return }
@@ -1685,12 +1689,13 @@ struct ChatDetailView: View {
 
     private func scheduleSettledBottom(delayMs: UInt64 = 120) {
         guard atBottomNow, !holdScroll, !ChatScrollHandle.shared.moving else { return }
+        let followOwnSend = Date() < followOwnSendUntil
         settleTask?.cancel()
         settleTask = Task { @MainActor in
             try? await Task.sleep(nanoseconds: delayMs * 1_000_000)
             if Task.isCancelled { return }
             guard atBottomNow, !holdScroll, !ChatScrollHandle.shared.moving else { return }
-            if let gap = ChatScrollHandle.shared.gap, gap > 24 { return }
+            if !followOwnSend, let gap = ChatScrollHandle.shared.gap, gap > 24 { return }
             pinTick += 1
         }
     }
@@ -2979,6 +2984,7 @@ struct ChatDetailView: View {
         }
         outbox.append(PendingMsg(id: UUID().uuidString, kind: kind, content: content,
                                  mentions: mentions, quoteJSON: qJSON))
+        followOwnSendUntil = Date().addingTimeInterval(5)
         saveOutbox()
 
         UINotification.lightTap()
