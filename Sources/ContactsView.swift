@@ -367,11 +367,15 @@ private var funcs: [(String, String, Color, String)] {
             .padding(.horizontal, 12)
             .frame(maxWidth: .infinity, alignment: .center)
             .frame(height: 38)
-            .background(
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
-                    .fill(UIConfig.color("ctSearchBg", 0xE9E9ED, 0x2C2C2E))
-            )
-            .contentShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+            .background {
+                GlassBackground(shape: RoundedRectangle(cornerRadius: 12, style: .continuous),
+                                opacity: 0.88,
+                                edgeAlpha: 0.55,
+                                shadow: false,
+                                seed: 0.26,
+                                native: true)
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Tr("搜索"))

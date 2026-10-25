@@ -86,7 +86,14 @@ struct ContactsSearchView: View {
                 }
                 .padding(.horizontal, 8)
                 .frame(height: 34)
-                .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(C.searchBg))
+                .background {
+                    GlassBackground(shape: RoundedRectangle(cornerRadius: 10, style: .continuous),
+                                    opacity: 0.90,
+                                    edgeAlpha: 0.52,
+                                    shadow: false,
+                                    seed: 0.22,
+                                    native: true)
+                }
 
                 Button(Tr("取消")) { onCancel() }
                     .font(pf(16))

@@ -1171,9 +1171,14 @@ struct SettingsView: View {
             }
             .padding(.horizontal, 12)
             .frame(height: 38)
-            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(C.searchBg))
-            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(C.hairline, lineWidth: 0.6))
+            .background {
+                GlassBackground(shape: RoundedRectangle(cornerRadius: 12, style: .continuous),
+                                opacity: 0.88,
+                                edgeAlpha: 0.55,
+                                shadow: false,
+                                seed: 0.28,
+                                native: true)
+            }
 
             if searchActive {
                 Button {
