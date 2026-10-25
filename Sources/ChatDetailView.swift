@@ -4445,8 +4445,19 @@ struct MessageRow: View {
             }
             .padding(.horizontal, 7)
             .padding(.vertical, 6)
-            .background(RoundedRectangle(cornerRadius: 4, style: .continuous)
-                .fill(mine ? ChatTheme.quoteBgMine : ChatTheme.quoteBg))
+            .background {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        .fill(.ultraThinMaterial)
+                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        .fill(mine ? ChatTheme.quoteBgMine : ChatTheme.quoteBg)
+                        .opacity(0.24)
+                }
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .stroke(C.hairline.opacity(0.55), lineWidth: 0.5)
+            }
             Text(richBody(raw))
                 .font(pf(L.chatFontSize))
                 .foregroundColor(mine && UIConfig.num("bubbleMineWhiteText", 1) > 0 ? ChatTheme.mineInk : ChatTheme.ink)
