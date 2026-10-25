@@ -383,6 +383,9 @@ final class AppState: ObservableObject {
                     await self?.loadChats()
                 }
             } else {
+                if ev.type == "profile", let user = ev.user {
+                    applyProfileUpdate(user)
+                }
                 coalesce { [weak self] in await self?.loadContacts() }
             }
         case "toast":
@@ -950,6 +953,20 @@ final class AppState: ObservableObject {
         for chat in removed {
             hideChatLocally(chat.id)
         }
+    }
+
+    func applyProfileUpdate(_ user: User) {
+        guard let index = contacts.firstIndex(where: { $0.id == user.id }) else { return }
+        let old = contacts[index]
+        var merged = user
+        merged.avatar = merged.avatar ?? old.avatar
+        merged.nickname = merged.nickname ?? old.nickname
+        merged.realNickname = merged.realNickname ?? old.realNickname
+        merged.remark = merged.remark ?? old.remark
+        merged.relation = merged.relation ?? old.relation
+        merged.momentCover = merged.momentCover ?? old.momentCover
+        merged.momentCoverPos = merged.momentCoverPos ?? old.momentCoverPos
+        contacts[index] = merged
     }
 
     /// WebSocket 已带会话摘要时先更新预览与红点，再等后台全量校准。

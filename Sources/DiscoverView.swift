@@ -337,6 +337,7 @@ struct MomentsView: View {
     @State private var momentVideo: URL?
 
     @State private var cardUser: User?
+    @State private var liveTarget: User?
 
     @State private var hasMoreMoments = false
 
@@ -376,7 +377,12 @@ struct MomentsView: View {
 
     @State private var showNoticeList = false
 
-    private var owner: User? { target ?? app.me }
+    private var owner: User? {
+        if let target {
+            return liveTarget ?? app.contact(for: target.id) ?? target
+        }
+        return app.me
+    }
     private var cover: String { owner?.momentCover ?? "" }
 
     private var signature: String? {
@@ -564,12 +570,17 @@ struct MomentsView: View {
         }
 
         .onChange(of: realtime.event) { _ in
+            if realtime.event.type == "profile", let user = realtime.event.user,
+               user.id == target?.id {
+                liveTarget = user
+            }
 
             let t = realtime.event.type.lowercased()
             guard t.contains("moment") || t.contains("like") || t.contains("comment") else { return }
             Task { await pollNewMoments() }
         }
         .task {
+            if liveTarget == nil { liveTarget = target }
 
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 8_000_000_000)
@@ -1614,13 +1625,26 @@ struct MomentsView: View {
     private func changeCover(_ image: UIImage) {
         Task {
             uploading = true
+            guard let url = try? await API.shared.uploadCover(image: image) else {
+                uploading = false
+                app.show(Tr("封面没保存上，再试一次"))
+                return
+            }
 
-            if let url = try? await API.shared.uploadCover(image: image) {
-                await API.shared.updateMe(["momentCover": url])
-                if let me = try? await API.shared.me() {
+            let previous = app.me?.momentCover
+            if var me = app.me {
+                me.momentCover = url
+                app.me = me
+            }
+            do {
+                try await API.shared.updateMeChecked(["momentCover": url])
+                app.show(Tr("封面换好了"))
+            } catch {
+                if var me = app.me, me.momentCover == url {
+                    me.momentCover = previous
                     app.me = me
                 }
-                app.show(Tr("封面换好了"))
+                app.show(Tr("封面没保存上，再试一次"))
             }
             uploading = false
         }
