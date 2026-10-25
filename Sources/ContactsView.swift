@@ -715,6 +715,13 @@ struct ContactCardView: View {
         return u.name
     }
     private var phone: String { (u.phone ?? "").trimmingCharacters(in: .whitespacesAndNewlines) }
+    private var realNicknameText: String {
+        if let name = u.realNickname?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !name.isEmpty { return name }
+        if let name = app.contact(for: u.id)?.realNickname?
+            .trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty { return name }
+        return u.name
+    }
     private var isBot: Bool { u.bot == true }
 
     private var isEyesBot: Bool { (u.username ?? "").lowercased() == "housekeeper" }
@@ -786,12 +793,15 @@ struct ContactCardView: View {
         }
         .confirmationDialog("", isPresented: $showInfo, titleVisibility: .hidden) {
             if isBot {
-                Button("昵称：\(u.name)") { }
+                Button("昵称：\(realNicknameText)") { }
                 Button("账号：\(u.username ?? "—")") { }
                 if let b = u.bio, !b.isEmpty { Button("简介：\(b)") { } }
             } else {
-                Button("昵称：\(u.name)") { }
+                Button("昵称：\(realNicknameText)") { }
                 Button("账号：\(u.username ?? "—")") { }
+                if let r = meta?.remark ?? u.remark, !r.trimmingCharacters(in: .whitespaces).isEmpty {
+                    Button("备注：\(r)") { }
+                }
 
                 if let b = u.bio, !b.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     Button("个性签名：\(b)") { }
