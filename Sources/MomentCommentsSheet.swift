@@ -22,6 +22,7 @@ struct MomentCommentsSheet: View {
     @State private var actionPath = ""
     @State private var fullImageActions = false
     @State private var fullActionPath = ""
+    @FocusState private var commentFocused: Bool
     @State private var openSwipeKey: String?
     @State private var swipeOffsets: [String: CGFloat] = [:]
 
@@ -39,6 +40,9 @@ struct MomentCommentsSheet: View {
         NavigationStack {
             VStack(spacing: 0) {
                 header
+                    .simultaneousGesture(TapGesture().onEnded {
+                        commentFocused = false
+                    })
                 HairLine(inset: 0)
 
                 ScrollViewReader { proxy in
@@ -87,6 +91,10 @@ struct MomentCommentsSheet: View {
                         .padding(.bottom, 18)
                     }
                     .scrollDismissesKeyboard(.interactively)
+                    .contentShape(Rectangle())
+                    .simultaneousGesture(TapGesture().onEnded {
+                        commentFocused = false
+                    })
                     .onChange(of: comments.count) { _ in
                         if let last = comments.last {
                             withAnimation(.easeOut(duration: 0.22)) {
@@ -469,6 +477,7 @@ struct MomentCommentsSheet: View {
                 TextField(Tr("说点什么…"), text: $text)
                     .font(pf(14.5))
                     .foregroundColor(C.label)
+                    .focused($commentFocused)
                     .padding(.horizontal, 14)
                     .frame(height: 42)
                     .background(Capsule().fill(Color.dyn(0xF4F4F2, 0x292929)))
