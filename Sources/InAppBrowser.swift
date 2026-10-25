@@ -1,6 +1,43 @@
 import SwiftUI
 import UIKit
 import WebKit
+import SafariServices
+
+struct ScannedWebBrowserView: UIViewControllerRepresentable {
+    let url: URL
+    let onClose: () -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onClose: onClose)
+    }
+
+    func makeUIViewController(context: Context) -> SFSafariViewController {
+        let configuration = SFSafariViewController.Configuration()
+        configuration.entersReaderIfAvailable = false
+        configuration.barCollapsingEnabled = true
+
+        let browser = SFSafariViewController(url: url, configuration: configuration)
+        browser.delegate = context.coordinator
+        browser.dismissButtonStyle = .close
+        browser.preferredControlTintColor = UIColor(C.green)
+        browser.modalPresentationStyle = .fullScreen
+        return browser
+    }
+
+    func updateUIViewController(_ controller: SFSafariViewController, context: Context) {}
+
+    final class Coordinator: NSObject, SFSafariViewControllerDelegate {
+        private let onClose: () -> Void
+
+        init(onClose: @escaping () -> Void) {
+            self.onClose = onClose
+        }
+
+        func safariViewControllerDidFinish(_ controller: SFSafariViewController) {
+            onClose()
+        }
+    }
+}
 
 struct InAppBrowserView: View {
     @Environment(\.dismiss) private var dismiss

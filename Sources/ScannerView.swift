@@ -85,6 +85,7 @@ enum AlbumScan {
 @MainActor
 func handleScanned(_ text: String, app: AppState) {
     let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
+    let lower = t.lowercased()
 
     if let invite = NearbyDropInvite.parse(t) {
         Task { @MainActor in
@@ -95,7 +96,8 @@ func handleScanned(_ text: String, app: AppState) {
     }
 
     let isPayCode = (t.count == 18 && t.allSatisfy({ $0.isNumber }))
-        || (t.contains("pay.html") && (t.contains("?c=") || t.contains("&c=") || t.contains("?u=") || t.contains("&u=")))
+        || (lower.contains("/pay.html")
+            && (t.contains("?c=") || t.contains("&c=") || t.contains("?u=") || t.contains("&u=")))
     if isPayCode {
         Task { @MainActor in
             do {
@@ -111,7 +113,7 @@ func handleScanned(_ text: String, app: AppState) {
         return
     }
 
-    if let r = t.range(of: "u="), t.contains("add.html") {
+    if let r = t.range(of: "u="), lower.contains("/add.html") {
         var code = String(t[r.upperBound...])
         if let amp = code.firstIndex(of: "&") { code = String(code[..<amp]) }
         code = code.trimmingCharacters(in: .whitespaces)
@@ -129,27 +131,7 @@ func handleScanned(_ text: String, app: AppState) {
         return
     }
 
-    if !t.lowercased().hasPrefix("www."),
-       !t.contains(" "), t.contains("."), t.count >= 6, t.count <= 40,
-       t.allSatisfy({ $0.isLetter || $0.isNumber || $0 == "." || $0 == "_" || $0 == "-" }) {
-        openScannedCard(t, app: app)
-        return
-    }
-
-func openScannedCard(_ code: String, app: AppState) {
-    Task { @MainActor in
-        let res = await API.shared.userByCode(code)
-        guard let u = res.user else {
-            app.show(res.message.isEmpty ? Tr("这个二维码无效或者过期了") : res.message)
-            return
-        }
-
-        try? await Task.sleep(nanoseconds: 400_000_000)
-        app.scanCardUser = u
-    }
-}
-
-    if let r = t.range(of: "c=") {
+    if let r = t.range(of: "c="), lower.contains("/join.html") {
         var code = String(t[r.upperBound...])
         if let amp = code.firstIndex(of: "&") { code = String(code[..<amp]) }
         code = code.trimmingCharacters(in: .whitespaces)
@@ -174,9 +156,24 @@ func openScannedCard(_ code: String, app: AppState) {
         return
     }
 
+    // Match WeChat's routing: a normal web address must not be mistaken for
+    // an account, group invite, or login code merely because of its query.
+    if let link = scannedWebLink(t) {
+        presentAfterScanner {
+            app.scanWebURL = link
+        }
+        return
+    }
+
+    if !t.contains(" "), t.contains("."), t.count >= 6, t.count <= 40,
+       t.allSatisfy({ $0.isLetter || $0.isNumber || $0 == "." || $0 == "_" || $0 == "-" }) {
+        openScannedCard(t, app: app)
+        return
+    }
+
     var loginCode = t
     if !(loginCode.count == 6 && loginCode.allSatisfy({ $0.isNumber })),
-       t.lowercased().contains("pair"), let r = t.range(of: "code=") {
+       lower.contains("pair"), let r = t.range(of: "code=") {
         loginCode = String(t[r.upperBound...].prefix(6)).filter { $0.isNumber }
     }
     if loginCode.count == 6, loginCode.allSatisfy({ $0.isNumber }) {
@@ -188,16 +185,6 @@ func openScannedCard(_ code: String, app: AppState) {
         return
     }
 
-    if let link = scannedWebLink(t) {
-        presentAfterScanner {
-            if let url = URL(string: link) {
-                UIApplication.shared.open(url)
-            } else {
-                app.scanTextResult = t
-            }
-        }
-        return
-    }
     if t.count >= 3, t.count <= 24, !t.contains(" ") {
         Task {
             do {
@@ -214,14 +201,45 @@ func openScannedCard(_ code: String, app: AppState) {
     }
 }
 
+@MainActor
+private func openScannedCard(_ code: String, app: AppState) {
+    Task { @MainActor in
+        let res = await API.shared.userByCode(code)
+        guard let u = res.user else {
+            app.show(res.message.isEmpty ? Tr("这个二维码无效或者过期了") : res.message)
+            return
+        }
+
+        try? await Task.sleep(nanoseconds: 400_000_000)
+        app.scanCardUser = u
+    }
+}
+
 private func scannedWebLink(_ raw: String) -> String? {
     let text = raw.replacingOccurrences(of: "\\/", with: "/")
     let pattern = #"(?i)((?:https?://|www\.)[^\s"'<>]+)"#
-    guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
-    let range = NSRange(text.startIndex..<text.endIndex, in: text)
-    guard let match = regex.firstMatch(in: text, range: range),
-          let hit = Range(match.range(at: 1), in: text) else { return nil }
-    var link = String(text[hit])
+    var link: String?
+    if let regex = try? NSRegularExpression(pattern: pattern) {
+        let range = NSRange(text.startIndex..<text.endIndex, in: text)
+        if let match = regex.firstMatch(in: text, range: range),
+           let hit = Range(match.range(at: 1), in: text) {
+            link = String(text[hit])
+        }
+    }
+
+    if link == nil {
+        let bare = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !bare.contains(" "), bare.count >= 4, bare.count <= 2_048,
+              bare.allSatisfy({ $0.isASCII && ($0.isLetter || $0.isNumber || ".-_".contains($0)) }),
+              let host = URLComponents(string: "https://" + bare)?.host,
+              host.contains("."),
+              plainWebSuffixes.contains(host.split(separator: ".").last.map(String.init)?.lowercased() ?? "") else {
+            return nil
+        }
+        link = "https://" + bare
+    }
+
+    guard var link else { return nil }
     let trailing = CharacterSet(charactersIn: ")]}>,.;，。")
     while let last = link.last, last.unicodeScalars.allSatisfy(trailing.contains) {
         link.removeLast()
@@ -232,6 +250,15 @@ private func scannedWebLink(_ raw: String) -> String? {
     guard URL(string: link) != nil else { return nil }
     return link
 }
+
+private let plainWebSuffixes: Set<String> = [
+    "ai", "app", "au", "be", "biz", "br", "ca", "cc", "ch", "cloud", "cn",
+    "co", "com", "de", "dev", "dk", "edu", "es", "fi", "fr", "gov", "hk",
+    "id", "in", "info", "io", "it", "jp", "kr", "link", "live", "me", "mil",
+    "mx", "my", "net", "nl", "no", "online", "org", "ph", "pl", "pro",
+    "ru", "se", "sg", "shop", "site", "th", "top", "tv", "tw", "uk", "us",
+    "vip", "vn", "xyz", "za"
+]
 
 private func presentAfterScanner(_ present: @escaping () -> Void) {
     Task { @MainActor in

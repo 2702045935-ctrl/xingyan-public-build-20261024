@@ -138,8 +138,14 @@ struct MainTabView: View {
         .fullScreenCover(isPresented: Binding(
             get: { app.scanWebURL != nil },
             set: { if !$0 { app.scanWebURL = nil } })) {
-                if let url = app.scanWebURL {
-                    InAppBrowserView(initialURL: url)
+                if let raw = app.scanWebURL,
+                   let url = URL(string: raw),
+                   let scheme = url.scheme?.lowercased(),
+                   scheme == "http" || scheme == "https" {
+                    ScannedWebBrowserView(url: url) {
+                        app.scanWebURL = nil
+                    }
+                    .ignoresSafeArea()
                 }
             }
 
