@@ -329,6 +329,8 @@ struct MomentsView: View {
     @State private var uploading = false
     @State private var commenting: Moment?
     @State private var commentText = ""
+    @State private var commentsSheet: Moment?
+    @State private var showMyQR = false
 
     @State private var replyToId = ""
     @State private var replyToName = ""
@@ -537,6 +539,16 @@ struct MomentsView: View {
                                     set: { if !$0 { momentVideo = nil } })) {
             if let u = momentVideo { VideoPlayerSheet(url: u) }
         }
+        .sheet(item: $commentsSheet) { moment in
+            MomentCommentsSheet(moment: moment) {
+                Task { await reload() }
+            }
+            .environmentObject(app)
+        }
+        .sheet(isPresented: $showMyQR) {
+            MyQRView()
+                .environmentObject(app)
+        }
         .onAppear {
             scrollMetrics.baseTop = nil
             scrollMetrics.baseBlock = nil
@@ -628,10 +640,7 @@ struct MomentsView: View {
                     Button(Tr("赞")) { like(m) }
                 }
                 Button(Tr("评论")) {
-                    commentText = ""
-                    replyToId = ""
-                    replyToName = ""
-                    commenting = m
+                    commentsSheet = m
                 }
                 if m.mine == true {
                     Button(Tr("删除"), role: .destructive) { remove(m) }
@@ -673,24 +682,6 @@ struct MomentsView: View {
                 RemoteImage(path: cover, icon: "photo", maxSide: 2560)
                     .id(cover)
             }
-
-            Group {
-                if scheme == .dark {
-                    HarmonyDarkMask(strength: 0.94)
-                        .mask(
-                            LinearGradient(
-                                colors: [Color.black, Color.black.opacity(0.70), Color.clear],
-                                startPoint: .top, endPoint: .bottom)
-                        )
-                } else {
-                    LinearGradient(colors: [Color.black.opacity(max(0, UIConfig.num("momentTopMask", 0.20))),
-                                            Color.black.opacity(0)],
-                                   startPoint: .top, endPoint: .bottom)
-                }
-            }
-                .frame(height: max(L.safeTop + 56, UIConfig.num("momentTopMaskH", 150)))
-                .frame(maxHeight: .infinity, alignment: .top)
-                .allowsHitTesting(false)
 
             Group {
                 if scheme == .dark {
@@ -780,6 +771,11 @@ struct MomentsView: View {
             .padding(.trailing, 16)
             .offset(y: 21)
             .allowsHitTesting(false)
+
+            momentIdentityCard
+                .padding(.horizontal, 12)
+                .offset(y: 34)
+                .zIndex(6)
         }
         .frame(height: L.coverH + extra)
         .zIndex(1)
@@ -787,23 +783,148 @@ struct MomentsView: View {
         .contentShape(Rectangle())
     }
 
+    private var momentIdentityCard: some View {
+        HStack(spacing: 13) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 17, style: .continuous)
+                    .fill(C.green.opacity(scheme == .dark ? 0.14 : 0.11))
+                Avatar(path: owner?.avatarPath ?? "", size: 54, radius: 15)
+                    .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .stroke(Color.white.opacity(0.65), lineWidth: 0.7))
+            }
+            .frame(width: 62, height: 62)
+            .shadow(color: Color.black.opacity(0.14), radius: 8, y: 3)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                if let owner { cardUser = owner }
+            }
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(coverEditable ? "MY LIFE" : "LIFE JOURNAL")
+                    .font(pf(9, .medium))
+                    .foregroundColor(C.green)
+                    .tracking(1.2)
+                Text(owner?.name ?? Tr("我"))
+                    .font(pf(20, .bold))
+                    .foregroundColor(C.label)
+                    .lineLimit(1)
+                Text(signature ?? Tr("记录此刻，也记录生活里的光。"))
+                    .font(pf(11.5))
+                    .foregroundColor(C.subLabel)
+                    .lineLimit(2)
+                Text("\(moments.count) 条生活 · \(TimeFmt.ago(moments.first?.createdAt))")
+                    .font(pf(9.5))
+                    .foregroundColor(C.subLabel.opacity(0.85))
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            if coverEditable {
+                VStack(spacing: 7) {
+                    identityAction("qrcode") { showMyQR = true }
+                    identityAction("photo") { coverMenu = true }
+                }
+            }
+        }
+        .padding(.horizontal, 13)
+        .padding(.vertical, 10)
+        .frame(height: 92)
+        .background {
+            ZStack {
+                GlassBackground(
+                    shape: RoundedRectangle(cornerRadius: 24, style: .continuous),
+                    opacity: UIConfig.num("momentCardGlass", 0.88),
+                    edgeAlpha: UIConfig.num("momentCardEdge", 0.46),
+                    shadow: true,
+                    seed: 0.42
+                )
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(C.cardBg.opacity(scheme == .dark ? 0.32 : 0.24))
+            }
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(Color.white.opacity(scheme == .dark ? 0.14 : 0.42), lineWidth: 0.7)
+        }
+    }
+
+    private func identityAction(_ symbol: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(C.label)
+                .frame(width: 34, height: 34)
+                .background {
+                    GlassBackground(
+                        shape: Circle(),
+                        opacity: 0.72,
+                        edgeAlpha: 0.34,
+                        shadow: false,
+                        seed: symbol.count > 5 ? 0.52 : 0.34
+                    )
+                }
+        }
+        .buttonStyle(.plain)
+    }
+
     private func momentRow(_ moment: Moment) -> some View {
-        MomentRow(moment: moment,
-                  onMore: { actionMoment = moment },
-                  onOpenImage: { path in openPhoto(path, in: moment) },
-                  onOpenVideo: { u in momentVideo = u },
-                  onOpenAvatar: { u in cardUser = u },
-                  onDeleteComment: { cid in deleteComment(moment.id, cid) },
-                  myId: app.me?.id ?? "",
-                  onLike: { like(moment) },
-                  onComment: { commentText = ""; replyToId = ""; replyToName = ""; commenting = moment },
-                  onDeleteMoment: { remove(moment) },
-                  onReplyComment: { uid, name in
-                      replyToId = uid
-                      replyToName = name
-                      commenting = moment
-                  },
-                  onTogglePin: { togglePin(moment) })
+        MomentNoteCard(
+            moment: moment,
+            columnWidth: noteColumnWidth,
+            onOpenComments: { commentsSheet = moment },
+            onOpenImage: { path, paths, index in
+                viewerPaths = paths
+                viewerIndex = index
+                _ = path
+            },
+            onOpenVideo: { url in momentVideo = url },
+            onOpenAvatar: { user in cardUser = user },
+            onLike: { like(moment) },
+            onMore: { actionMoment = moment }
+        )
+    }
+
+    private var noteColumnWidth: CGFloat {
+        max(138, (L.width - 16 - 10) / 2)
+    }
+
+    private func noteColumns() -> ([Moment], [Moment]) {
+        let pinned = moments.filter { $0.pinned == true }
+        let regular = moments.filter { $0.pinned != true }
+        var left: [Moment] = []
+        var right: [Moment] = []
+        var leftH: CGFloat = 0
+        var rightH: CGFloat = 0
+        for moment in pinned + regular {
+            let h = estimatedNoteHeight(moment)
+            if leftH <= rightH {
+                left.append(moment)
+                leftH += h + 14
+            } else {
+                right.append(moment)
+                rightH += h + 14
+            }
+        }
+        return (left, right)
+    }
+
+    private func estimatedNoteHeight(_ moment: Moment) -> CGFloat {
+        let width = noteColumnWidth
+        var media: CGFloat = 0
+        if !(moment.video ?? "").isEmpty {
+            let w = CGFloat(max(1, moment.videoW ?? 4))
+            let h = CGFloat(max(1, moment.videoH ?? 5))
+            media = min(width * 1.48, max(width * 0.68, width * h / w))
+        } else if let first = (moment.images ?? []).first,
+                  let size = moment.imageSizes?[first], size.count >= 2,
+                  size[0] > 0, size[1] > 0 {
+            media = min(width * 1.50, max(width * 0.72,
+                                          width * CGFloat(size[1]) / CGFloat(size[0])))
+        } else if !(moment.images ?? []).isEmpty {
+            media = width * 1.16
+        }
+        let text = moment.content?.isEmpty == false ? CGFloat(64) : 10
+        return max(92, media + text + 55)
     }
 
     private func dayLabel(_ s: String?) -> String {
@@ -895,9 +1016,8 @@ struct MomentsView: View {
     }
 
     private var momentList: some View {
-
-        LazyVStack(spacing: 0) {
-
+        let lanes = noteColumns()
+        return LazyVStack(spacing: 0) {
             Color.clear
                 .frame(height: 1)
                 .onAppear {
@@ -909,30 +1029,23 @@ struct MomentsView: View {
                     updateSolidState()
                 }
 
-            let pinnedOnes = moments.filter { $0.pinned == true }
+            HStack(alignment: .top, spacing: 10) {
+                LazyVStack(spacing: 14) {
+                    ForEach(lanes.0) { moment in
+                        momentRow(moment)
+                    }
+                }
+                .frame(width: noteColumnWidth)
 
-            let divInset = UIConfig.num("momentDividerInset", 12)
-            let divTrail = UIConfig.num("momentDividerTrail", 12)
-            ForEach(pinnedOnes) { moment in
-                momentRow(moment)
-                HairLine(inset: divInset, trailingInset: divTrail)
+                LazyVStack(spacing: 14) {
+                    ForEach(lanes.1) { moment in
+                        momentRow(moment)
+                    }
+                }
+                .frame(width: noteColumnWidth)
             }
-
-            ForEach(Array(foldRows.enumerated()), id: \.element.id) { i, row in
-                let day = dayLabel(row.first.createdAt)
-                if i == 0 || dayLabel(foldRows[i - 1].first.createdAt) != day {
-                    dayHeader(day)
-                }
-                momentRow(row.first)
-                if !row.rest.isEmpty {
-
-                    packedRow(row)
-                }
-
-                if i < foldRows.count - 1 {
-                    HairLine(inset: divInset, trailingInset: divTrail)
-                }
-            }
+            .frame(maxWidth: .infinity, alignment: .top)
+            .padding(.horizontal, 8)
 
             if hasMoreMoments {
                 Text(loadingMore ? "正在加载…" : " ")
@@ -961,11 +1074,10 @@ struct MomentsView: View {
                     .padding(.vertical, 16)
             }
         }
-        .padding(.top, 60)
-        .padding(.horizontal, L.momentPadH)
-        .padding(.bottom, 40)
+        .padding(.top, 46)
+        .padding(.bottom, max(42, L.safeBottom + 20))
         .frame(maxWidth: .infinity)
-        .background(Color.dyn(0xFFFFFF, 0x191919))
+        .background(C.cardBg)
         .offset(y: 0)
         .zIndex(0)
     }
@@ -1032,10 +1144,9 @@ struct MomentsView: View {
 
     private func openPhoto(_ path: String, in moment: Moment) {
         guard Date() >= tapLockUntil else { return }
-        let all = moment.images ?? []
-        guard !all.isEmpty else { return }
-        viewerPaths = all
-        viewerIndex = all.firstIndex(of: path) ?? 0
+        guard !(moment.images ?? []).isEmpty else { return }
+        _ = path
+        commentsSheet = moment
     }
 
     private func openNotice(_ n: MomentNotice) {
