@@ -4179,10 +4179,10 @@ private struct StarredPayload: Decodable {
     }
 
     @discardableResult
-    func setPinned(chatId: String, pinned: Bool) async -> Bool {
-        let p: PinPayload? = try? await post("/api/chats/\(chatId)/pin",
-                                             ["pinned": pinned], as: PinPayload.self)
-        return p?.pinned ?? pinned
+    func setPinned(chatId: String, pinned: Bool) async -> Bool? {
+        guard let p: PinPayload = try? await post("/api/chats/\(chatId)/pin",
+                                                 ["pinned": pinned], as: PinPayload.self) else { return nil }
+        return p.pinned ?? pinned
     }
 
     @discardableResult
@@ -4195,9 +4195,10 @@ private struct StarredPayload: Decodable {
     }
 
     @discardableResult
-    func setMuted(chatId: String, muted: Bool) async -> Bool {
-        let p: MutePayload? = try? await post("/api/chats/\(chatId)/mute", ["muted": muted], as: MutePayload.self)
-        return p?.muted ?? muted
+    func setMuted(chatId: String, muted: Bool) async -> Bool? {
+        guard let p: MutePayload = try? await post("/api/chats/\(chatId)/mute",
+                                                  ["muted": muted], as: MutePayload.self) else { return nil }
+        return p.muted ?? muted
     }
 
     @discardableResult

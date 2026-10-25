@@ -919,6 +919,23 @@ final class AppState: ObservableObject {
         locallyHiddenChats.remove(chatId)
     }
 
+    func applyPinnedLocally(chatId: String, pinned: Bool) {
+        guard let i = chats.firstIndex(where: { $0.id == chatId }) else { return }
+        chats[i].pinned = pinned
+        let top = chats.filter { $0.pinned == true }
+        let rest = chats.filter { $0.pinned != true }.sorted {
+            let ra = $0.botRank ?? 9, rb = $1.botRank ?? 9
+            if ra != rb { return ra < rb }
+            return ($0.updatedAt ?? "") > ($1.updatedAt ?? "")
+        }
+        chats = top + rest
+    }
+
+    func applyMutedLocally(chatId: String, muted: Bool) {
+        guard let i = chats.firstIndex(where: { $0.id == chatId }) else { return }
+        chats[i].muted = muted
+    }
+
     func applyFriendRemarkLocally(userId: String, displayName: String, remark: String? = nil) {
         let name = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { return }

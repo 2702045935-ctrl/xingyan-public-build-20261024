@@ -679,9 +679,16 @@ struct GroupInfoView: View {
                            subtitle: pinned ? Tr("已置顶，会排在会话列表最上面") : nil,
                            isOn: pinned) { v in
                 pinned = v
+                app.applyPinnedLocally(chatId: chat.id, pinned: v)
                 Task {
-                    let now = await API.shared.setPinned(chatId: chat.id, pinned: v)
+                    guard let now = await API.shared.setPinned(chatId: chat.id, pinned: v) else {
+                        pinned = !v
+                        app.applyPinnedLocally(chatId: chat.id, pinned: !v)
+                        app.show(Tr("置顶设置失败"))
+                        return
+                    }
                     pinned = now
+                    app.applyPinnedLocally(chatId: chat.id, pinned: now)
                     await app.loadChats()
                 }
             }
@@ -712,9 +719,16 @@ struct GroupInfoView: View {
                            subtitle: muted ? Tr("这个群来消息不响也不弹") : nil,
                            isOn: muted) { v in
                 muted = v
+                app.applyMutedLocally(chatId: chat.id, muted: v)
                 Task {
-                    let now = await API.shared.setMuted(chatId: chat.id, muted: v)
+                    guard let now = await API.shared.setMuted(chatId: chat.id, muted: v) else {
+                        muted = !v
+                        app.applyMutedLocally(chatId: chat.id, muted: !v)
+                        app.show(Tr("免打扰设置失败"))
+                        return
+                    }
                     muted = now
+                    app.applyMutedLocally(chatId: chat.id, muted: now)
                     await app.loadChats()
                 }
             }
@@ -1284,8 +1298,16 @@ struct DirectChatInfoView: View {
                            subtitle: muted ? Tr("这个人来消息不响也不弹") : nil,
                            isOn: muted) { v in
                 muted = v
+                app.applyMutedLocally(chatId: chat.id, muted: v)
                 Task {
-                    muted = await API.shared.setMuted(chatId: chat.id, muted: v)
+                    guard let now = await API.shared.setMuted(chatId: chat.id, muted: v) else {
+                        muted = !v
+                        app.applyMutedLocally(chatId: chat.id, muted: !v)
+                        app.show(Tr("免打扰设置失败"))
+                        return
+                    }
+                    muted = now
+                    app.applyMutedLocally(chatId: chat.id, muted: now)
                     await app.loadChats()
                 }
             }
@@ -1326,8 +1348,16 @@ struct DirectChatInfoView: View {
                            subtitle: pinned ? Tr("已置顶，会排在会话列表最上面") : nil,
                            isOn: pinned) { v in
                 pinned = v
+                app.applyPinnedLocally(chatId: chat.id, pinned: v)
                 Task {
-                    pinned = await API.shared.setPinned(chatId: chat.id, pinned: v)
+                    guard let now = await API.shared.setPinned(chatId: chat.id, pinned: v) else {
+                        pinned = !v
+                        app.applyPinnedLocally(chatId: chat.id, pinned: !v)
+                        app.show(Tr("置顶设置失败"))
+                        return
+                    }
+                    pinned = now
+                    app.applyPinnedLocally(chatId: chat.id, pinned: now)
                     await app.loadChats()
                 }
             }
