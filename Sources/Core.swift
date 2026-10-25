@@ -68,6 +68,17 @@ enum AppInfo {
     static let deviceModel: String = friendlyModel(deviceMachine)
     private static func friendlyModel(_ id: String) -> String {
         let map: [String: String] = [
+            "iPhone10,1": "iPhone 8", "iPhone10,4": "iPhone 8",
+            "iPhone10,2": "iPhone 8 Plus", "iPhone10,5": "iPhone 8 Plus",
+            "iPhone10,3": "iPhone X", "iPhone10,6": "iPhone X",
+            "iPhone11,2": "iPhone XS", "iPhone11,4": "iPhone XS Max",
+            "iPhone11,6": "iPhone XS Max", "iPhone11,8": "iPhone XR",
+            "iPhone12,1": "iPhone 11", "iPhone12,3": "iPhone 11 Pro",
+            "iPhone12,5": "iPhone 11 Pro Max", "iPhone12,8": "iPhone SE2",
+            "iPhone13,1": "iPhone 12 mini", "iPhone13,2": "iPhone 12",
+            "iPhone13,3": "iPhone 12 Pro", "iPhone13,4": "iPhone 12 Pro Max",
+            "iPhone14,2": "iPhone 13 Pro", "iPhone14,3": "iPhone 13 Pro Max",
+            "iPhone14,4": "iPhone 13 mini", "iPhone14,5": "iPhone 13",
             "iPhone14,6": "iPhone SE3", "iPhone14,7": "iPhone 14", "iPhone14,8": "iPhone 14 Plus",
             "iPhone15,2": "iPhone 14 Pro", "iPhone15,3": "iPhone 14 Pro Max",
             "iPhone15,4": "iPhone 15", "iPhone15,5": "iPhone 15 Plus",
@@ -77,10 +88,24 @@ enum AppInfo {
             "iPhone17,5": "iPhone 16e",
             "iPhone18,3": "iPhone 17", "iPhone18,4": "iPhone Air",
             "iPhone18,1": "iPhone 17 Pro", "iPhone18,2": "iPhone 17 Pro Max",
-            "iPad14,8": "iPad Air 11", "iPad14,9": "iPad Air 13", "iPad16,5": "iPad Pro 13"
+            "iPhone18,5": "iPhone 17e",
+            "iPad13,1": "iPad Air 4", "iPad13,2": "iPad Air 4",
+            "iPad13,4": "iPad Pro 11 M1", "iPad13,5": "iPad Pro 11 M1",
+            "iPad13,6": "iPad Pro 12.9 M1", "iPad13,7": "iPad Pro 12.9 M1",
+            "iPad13,8": "iPad mini 6", "iPad13,9": "iPad mini 6",
+            "iPad13,10": "iPad 10", "iPad13,11": "iPad 10",
+            "iPad13,16": "iPad Air 5", "iPad13,17": "iPad Air 5",
+            "iPad14,3": "iPad Pro 11 M2", "iPad14,4": "iPad Pro 11 M2",
+            "iPad14,5": "iPad Pro 12.9 M2", "iPad14,6": "iPad Pro 12.9 M2",
+            "iPad14,8": "iPad Air 11 M2", "iPad14,9": "iPad Air 13 M2",
+            "iPad14,10": "iPad mini 7", "iPad14,11": "iPad mini 7",
+            "iPad16,3": "iPad Pro 11 M4", "iPad16,4": "iPad Pro 11 M4",
+            "iPad16,5": "iPad Pro 13 M4", "iPad16,6": "iPad Pro 13 M4"
         ]
         if let v = map[id] { return v }
-        return id.lowercased().hasPrefix("ipad") ? "iPad" : "iPhone"
+        if id.lowercased().hasPrefix("ipad") { return "iPad · \(id)" }
+        if id.lowercased().hasPrefix("iphone") { return "iPhone · \(id)" }
+        return id.isEmpty ? UIDevice.current.model : id
     }
 
     static let deviceOs: String = "iOS " + UIDevice.current.systemVersion

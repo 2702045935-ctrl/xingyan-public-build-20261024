@@ -2743,7 +2743,7 @@ struct PairSheet: View {
         Task {
             do {
 
-                let dev = UIDevice.current.model + " · iOS " + UIDevice.current.systemVersion
+                let dev = AppInfo.deviceModel + " · " + AppInfo.deviceOs
                 let r = try await API.shared.pairStart(device: dev)
                 code = r.code; status = "等待确认…"
                 timer?.invalidate()
