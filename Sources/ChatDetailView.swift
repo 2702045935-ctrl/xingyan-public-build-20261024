@@ -408,27 +408,42 @@ struct ChatDetailView: View {
     }
 
     private func visibleMessages(_ rows: [Message]) -> [Message] {
-        guard !hiddenMessageIds.isEmpty else { return rows }
-        return rows.filter { !hiddenMessageIds.contains($0.id) }
+        rows.filter { !hiddenMessageIds.contains($0.id) }
+            .sorted(by: messageSortsBefore)
+    }
+
+    private func messageSortsBefore(_ a: Message, _ b: Message) -> Bool {
+        let ca = a.createdAt ?? "", cb = b.createdAt ?? ""
+        if ca != cb { return ca < cb }
+        let sa = a.seq ?? 0, sb = b.seq ?? 0
+        if sa != sb { return sa < sb }
+        return a.id < b.id
     }
 
     private func appendVisibleMessage(_ message: Message) {
         guard !hiddenMessageIds.contains(message.id) else { return }
-        messages.append(message)
+        if let index = messages.firstIndex(where: { $0.id == message.id }) {
+            messages.remove(at: index)
+        }
+        var low = 0, high = messages.count
+        while low < high {
+            let middle = (low + high) / 2
+            if messageSortsBefore(message, messages[middle]) {
+                high = middle
+            } else {
+                low = middle + 1
+            }
+        }
+        messages.insert(message, at: low)
         if messages.count > maxMessageWindow {
             messages.removeFirst(messages.count - maxMessageWindow)
             hasOlder = true
         }
+        rebuildIndex()
     }
 
     private func upsertVisibleMessage(_ message: Message) {
-        guard !hiddenMessageIds.contains(message.id) else { return }
-        if let index = messages.firstIndex(where: { $0.id == message.id }) {
-            messages[index] = message
-        } else {
-            appendVisibleMessage(message)
-        }
-        rebuildIndex()
+        appendVisibleMessage(message)
     }
 
     private func actionTitle(_ m: Message) -> String {
@@ -3643,13 +3658,7 @@ struct ChatDetailView: View {
         holdScroll = true
         var mergedById = Dictionary(uniqueKeysWithValues: messages.map { ($0.id, $0) })
         for message in older { mergedById[message.id] = message }
-        let merged = mergedById.values.sorted { a, b in
-            let sa = a.seq ?? 0, sb = b.seq ?? 0
-            if sa > 0 && sb > 0 && sa != sb { return sa < sb }
-            let ca = a.createdAt ?? "", cb = b.createdAt ?? ""
-            if ca != cb { return ca < cb }
-            return a.id < b.id
-        }
+        let merged = mergedById.values.sorted(by: messageSortsBefore)
         messages = visibleMessages(merged)
         hasOlder = pageHasMore
         rebuildIndex()
@@ -3751,13 +3760,7 @@ struct ChatDetailView: View {
             var mergedById: [String: Message] = [:]
             for m in messages { mergedById[m.id] = m }
             for m in result.messages { mergedById[m.id] = m }
-            let merged = mergedById.values.sorted { a, b in
-                let sa = a.seq ?? 0, sb = b.seq ?? 0
-                if sa > 0 && sb > 0 && sa != sb { return sa < sb }
-                let ca = a.createdAt ?? "", cb = b.createdAt ?? ""
-                if ca != cb { return ca < cb }
-                return a.id < b.id
-            }
+            let merged = mergedById.values.sorted(by: messageSortsBefore)
             let visible = visibleMessages(merged)
 
             let nextMessages = Array(visible.suffix(initialMessageWindow))
@@ -3912,13 +3915,7 @@ struct ChatDetailView: View {
         let keepAnchor = messages.first?.id
         var mergedById = Dictionary(uniqueKeysWithValues: messages.map { ($0.id, $0) })
         for (id, message) in olderById { mergedById[id] = message }
-        let merged = mergedById.values.sorted { a, b in
-            let sa = a.seq ?? 0, sb = b.seq ?? 0
-            if sa > 0 && sb > 0 && sa != sb { return sa < sb }
-            let ca = a.createdAt ?? "", cb = b.createdAt ?? ""
-            if ca != cb { return ca < cb }
-            return a.id < b.id
-        }
+        let merged = mergedById.values.sorted(by: messageSortsBefore)
         messages = visibleMessages(merged)
         hasOlder = !reachedStart
         rebuildIndex()

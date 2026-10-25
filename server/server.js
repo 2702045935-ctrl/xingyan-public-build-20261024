@@ -4289,6 +4289,15 @@ function appendMessage(chatId, message) {
   if (list.length > MAX_CACHE) list.splice(0, list.length - MAX_CACHE);
 }
 
+/* 会话自身 seq 是批量落盘的，进程若在 1.5 秒窗口内重启，可能比消息文件慢。
+   新消息继续用旧 seq 就会在客户端排到聊天最前面；每次生成消息前从文件尾自恢复。 */
+function nextMessageSeq(chat) {
+  const list = loadMessages(chat.id);
+  const last = list.length ? Number(list[list.length - 1].seq || 0) : 0;
+  chat.seq = Math.max(Number(chat.seq || 0), last) + 1;
+  return chat.seq;
+}
+
 /* ------------------------------------------------------------------ 鉴权 */
 
 /* ------------------------------------------------------------------
@@ -4686,7 +4695,7 @@ function chatIdFromInvite(code) {
 
 /** 往会话里塞一条系统消息（通话记录、退群、踢人、解散这种居中灰字），返回这条消息 */
 function pushSystemMessage(chat, text) {
-  chat.seq = (chat.seq || 0) + 1;
+  chat.seq = nextMessageSeq(chat);
   const msg = {
     id: uid('m'), chatId: chat.id, seq: chat.seq, senderId: 'system',
     kind: 'system', content: text, createdAt: now(), recalled: false
@@ -6788,7 +6797,7 @@ function callLog(fromId, toId, text, meta) {
     db.chats.push(chat);
   }
   chat.hiddenFor = (chat.hiddenFor || []).filter((id) => id !== fromId && id !== toId);
-  chat.seq = (chat.seq || 0) + 1;
+  chat.seq = nextMessageSeq(chat);
   const message = {
     id: uid('m'), chatId: chat.id, seq: chat.seq, senderId: 'system',
     kind: 'system', content: text, createdAt: now(), recalled: false
@@ -6937,7 +6946,7 @@ function handleClientMessage(user, socket, raw) {
     }
     user.lastPatAt = t0;
     saveUsers();
-    chat.seq = (chat.seq || 0) + 1;
+    chat.seq = nextMessageSeq(chat);
     const message = {
       id: uid('m'), chatId: chat.id, seq: chat.seq, senderId: user.id,
       kind: 'pat',
@@ -7078,7 +7087,7 @@ function handleClientMessage(user, socket, raw) {
         try {
           const chat = openChatForFriendship(user.id, target.id);   // CHRIS_BUSY_AUTOREPLY_V1
           if (chat) {
-            chat.seq = (chat.seq || 0) + 1;
+            chat.seq = nextMessageSeq(chat);
             const auto = {
               id: uid('m'), chatId: chat.id, seq: chat.seq, senderId: target.id, kind: 'text',
               content: '[自动回复] 我正在通话中，稍后联系你', createdAt: now(), recalled: false
@@ -7304,7 +7313,7 @@ function handleClientMessage(user, socket, raw) {
         if (say) {
           const chat = openChatForFriendship(call.from, call.to);
           if (chat) {
-            chat.seq = (chat.seq || 0) + 1;
+            chat.seq = nextMessageSeq(chat);
             const one = {
               id: uid('m'), chatId: chat.id, seq: chat.seq, senderId: user.id, kind: 'text',
               content: say, createdAt: now(), recalled: false
@@ -7692,7 +7701,7 @@ function deliverMessage(user, chatId, kind, content, clientId, mentionHint, medi
     }
   }
 
-  chat.seq = (chat.seq || 0) + 1;
+  chat.seq = nextMessageSeq(chat);
   // 有新消息就把「已删除会话」的隐藏标记清掉，会话重新出现在双方列表里
   if (Array.isArray(chat.hiddenFor) && chat.hiddenFor.length) chat.hiddenFor = [];
   const message = {
@@ -10973,7 +10982,7 @@ async function handleAdmin(req, res, parts, query) {
     if (!content) return fail(res, 422, '公告内容不能为空');
     let chats = 0;
     db.chats.forEach((chat) => {
-      chat.seq = (chat.seq || 0) + 1;
+      chat.seq = nextMessageSeq(chat);
       const message = {
         id: uid('m'), chatId: chat.id, seq: chat.seq, senderId: 'system',
         kind: 'system', content, createdAt: now(), recalled: false
@@ -16505,7 +16514,7 @@ async function handleApi(req, res, pathname, query) {
       }
     }
     if (created || joined) {
-      chat.seq = (chat.seq || 0) + 1;
+      chat.seq = nextMessageSeq(chat);
       /* 群成员变了：重拼一次九宫格群头像（面对面建群也是一样） */
       buildGroupAvatar(chat);
       const text = created ? '你创建了面对面群聊（数字 ' + code + '）'
@@ -20890,7 +20899,7 @@ async function handleOps(req, res, parts, query) {
     if (!content) return fail(res, 422, '公告内容不能为空');
     let chats = 0;
     db.chats.forEach((chat) => {
-      chat.seq = (chat.seq || 0) + 1;
+      chat.seq = nextMessageSeq(chat);
       const message = {
         id: uid('m'), chatId: chat.id, seq: chat.seq, senderId: 'system',
         kind: 'system', content, createdAt: now(), recalled: false
