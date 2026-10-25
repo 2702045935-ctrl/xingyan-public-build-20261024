@@ -260,7 +260,7 @@ struct ProfileEditViewOld: View {
         Task {
             do {
                 try await API.shared.updateMeChecked(fields)
-                app.me = try? await API.shared.me()
+                app.applyMyProfileFields(fields)
             } catch {
                 app.show(error.localizedDescription)
             }
@@ -286,7 +286,7 @@ struct ProfileEditViewOld: View {
                 app.show(error.localizedDescription)
                 return
             }
-            app.me = try? await API.shared.me()
+            app.applyMyProfileFields(fields)
             await app.loadContacts()
             busy = false
             app.show(Tr("已保存"))

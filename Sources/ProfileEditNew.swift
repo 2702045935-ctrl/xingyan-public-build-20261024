@@ -164,18 +164,8 @@ struct ProfileEditView: View {
         Task {
             do {
                 try await API.shared.updateMeChecked(fields)
-                if let me = try? await API.shared.me() {
-                    app.me = me
-
-                    filledProfile = true
-                    if let v = me.region { region = v }
-                    if let v = me.birthday { birthday = v }
-                    if let v = me.gender { gender = v == "female" ? "female" : "male" }
-                    nickname = me.nickname ?? nickname
-                    bio = me.bio ?? bio
-                    patText = me.patText ?? patText
-                    if let v = me.phone { phone = v }
-                }
+                app.applyMyProfileFields(fields)
+                filledProfile = true
             } catch {
                 app.show(error.localizedDescription)
             }
@@ -501,7 +491,7 @@ struct ProfileEditView: View {
                 app.show(error.localizedDescription)
                 return
             }
-            app.me = try? await API.shared.me()
+            app.applyMyProfileFields(fields)
             await app.loadContacts()
             busy = false
             app.show(Tr("已保存"))

@@ -970,6 +970,23 @@ final class AppState: ObservableObject {
         contacts[index] = merged
     }
 
+    func applyMyProfileFields(_ fields: [String: Any]) {
+        guard var me = me else { return }
+        func text(_ key: String) -> String? { fields[key] as? String }
+        if let value = text("nickname") { me.nickname = value }
+        if let value = text("bio") { me.bio = value }
+        if let value = text("region") { me.region = value }
+        if let value = text("gender") { me.gender = value }
+        if let value = text("birthday") { me.birthday = value }
+        if let value = text("patText") { me.patText = value }
+        if let value = text("phone") { me.phone = value }
+        if let value = text("username") { me.username = value }
+        if let value = text("avatar") { me.avatar = value }
+        if let value = text("momentCover") { me.momentCover = value }
+        self.me = me
+        rememberLastUser()
+    }
+
     /// WebSocket 已带会话摘要时先更新预览与红点，再等后台全量校准。
     private func applyRealtimeChat(_ incoming: Chat) {
         var rows = chats
