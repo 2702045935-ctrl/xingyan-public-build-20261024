@@ -983,6 +983,7 @@ final class AppState: ObservableObject {
         if let value = text("username") { me.username = value }
         if let value = text("avatar") { me.avatar = value }
         if let value = text("momentCover") { me.momentCover = value }
+        if let value = text("chatBackground") { me.chatBackground = value }
         self.me = me
         rememberLastUser()
     }

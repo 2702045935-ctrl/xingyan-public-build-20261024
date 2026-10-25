@@ -248,8 +248,14 @@ struct ProfileEditViewOld: View {
         busy = true
         Task {
             if let url = try? await API.shared.upload(image: image) {
-                await API.shared.updateMe(["avatar": url])
-                app.me = try? await API.shared.me()
+                do {
+                    try await API.shared.updateMeChecked(["avatar": url])
+                    app.applyMyProfileFields(["avatar": url])
+                } catch {
+                    busy = false
+                    app.show(Tr("头像上传失败，再试一次"))
+                    return
+                }
                 app.show(Tr("头像换好了"))
             }
             busy = false

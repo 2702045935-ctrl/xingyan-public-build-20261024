@@ -1045,8 +1045,14 @@ struct SettingsView: View {
         busy = true
         Task {
             if let url = try? await API.shared.uploadOriginal(image: image) {
-                await API.shared.changeBackground(url)
-                app.me = try? await API.shared.me()
+                do {
+                    try await API.shared.updateMeChecked(["chatBackground": url])
+                    app.applyMyProfileFields(["chatBackground": url])
+                } catch {
+                    busy = false
+                    app.show(Tr("聊天背景设置失败"))
+                    return
+                }
                 app.show(Tr("聊天背景换好了"))
             }
             busy = false
