@@ -1,6 +1,37 @@
 import SwiftUI
 import UIKit
 
+private final class CompactDotTabBar: UITabBar {
+    var dotIndexes: Set<Int> = [] {
+        didSet { setNeedsLayout() }
+    }
+
+    private var dotViews: [Int: UIView] = [:]
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        let slot = bounds.width / 4
+        for index in 0..<4 {
+            let dot = dotViews[index] ?? {
+                let view = UIView()
+                view.isUserInteractionEnabled = false
+                view.layer.cornerRadius = 4
+                addSubview(view)
+                dotViews[index] = view
+                return view
+            }()
+            dot.backgroundColor = UIColor(C.red)
+            dot.layer.borderColor = UIColor(C.tabBg).cgColor
+            dot.layer.borderWidth = 1
+            dot.isHidden = !dotIndexes.contains(index)
+            guard !dot.isHidden else { continue }
+            let centerX = slot * (CGFloat(index) + 0.5)
+            dot.frame = CGRect(x: centerX + 9.5, y: 3.5, width: 8, height: 8)
+            bringSubviewToFront(dot)
+        }
+    }
+}
+
 /// 只替换底栏；页面、顶栏、导航和键盘布局继续使用 B2103 原实现。
 struct NativeTabBar: UIViewRepresentable {
     @Binding var selection: Int
@@ -16,7 +47,7 @@ struct NativeTabBar: UIViewRepresentable {
     }
 
     func makeUIView(context: Context) -> UITabBar {
-        let bar = UITabBar()
+        let bar = CompactDotTabBar()
         bar.delegate = context.coordinator
         bar.itemPositioning = .fill
         bar.items = [
@@ -53,9 +84,17 @@ struct NativeTabBar: UIViewRepresentable {
     private func refresh(_ bar: UITabBar) {
         guard let items = bar.items, items.count == 4 else { return }
         items[0].badgeValue = badge > 0 ? (badge > 99 ? "99+" : "\(badge)") : nil
-        items[1].badgeValue = contactsDot ? "●" : nil
-        items[2].badgeValue = momentsDot ? "●" : nil
-        items[3].badgeValue = meDot ? "●" : nil
+        items[1].badgeValue = nil
+        items[2].badgeValue = nil
+        items[3].badgeValue = nil
+        if let bar = bar as? CompactDotTabBar {
+            var dots: Set<Int> = []
+            if contactsDot { dots.insert(1) }
+            if momentsDot { dots.insert(2) }
+            if meDot { dots.insert(3) }
+            bar.dotIndexes = dots
+            bar.setNeedsLayout()
+        }
     }
 
     final class Coordinator: NSObject, UITabBarDelegate {
