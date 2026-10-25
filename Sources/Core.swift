@@ -68,6 +68,10 @@ enum AppInfo {
     static let deviceModel: String = friendlyModel(deviceMachine)
     private static func friendlyModel(_ id: String) -> String {
         let map: [String: String] = [
+            "iPhone8,1": "iPhone 6s", "iPhone8,2": "iPhone 6s Plus",
+            "iPhone8,4": "iPhone SE",
+            "iPhone9,1": "iPhone 7", "iPhone9,3": "iPhone 7",
+            "iPhone9,2": "iPhone 7 Plus", "iPhone9,4": "iPhone 7 Plus",
             "iPhone10,1": "iPhone 8", "iPhone10,4": "iPhone 8",
             "iPhone10,2": "iPhone 8 Plus", "iPhone10,5": "iPhone 8 Plus",
             "iPhone10,3": "iPhone X", "iPhone10,6": "iPhone X",

@@ -3678,6 +3678,20 @@ function msOf(v) {
 /* 机器号 → 机型名（iPhone17,1 → iPhone 16 Pro）：老记录里存的是机器号，
    登录设备管理那一页要显示的是机型名。 */
 const DEVICE_MODEL_NAMES = {
+  'iPhone8,1': 'iPhone 6s', 'iPhone8,2': 'iPhone 6s Plus', 'iPhone8,4': 'iPhone SE',
+  'iPhone9,1': 'iPhone 7', 'iPhone9,3': 'iPhone 7',
+  'iPhone9,2': 'iPhone 7 Plus', 'iPhone9,4': 'iPhone 7 Plus',
+  'iPhone10,1': 'iPhone 8', 'iPhone10,4': 'iPhone 8',
+  'iPhone10,2': 'iPhone 8 Plus', 'iPhone10,5': 'iPhone 8 Plus',
+  'iPhone10,3': 'iPhone X', 'iPhone10,6': 'iPhone X',
+  'iPhone11,2': 'iPhone XS', 'iPhone11,4': 'iPhone XS Max',
+  'iPhone11,6': 'iPhone XS Max', 'iPhone11,8': 'iPhone XR',
+  'iPhone12,1': 'iPhone 11', 'iPhone12,3': 'iPhone 11 Pro',
+  'iPhone12,5': 'iPhone 11 Pro Max', 'iPhone12,8': 'iPhone SE2',
+  'iPhone13,1': 'iPhone 12 mini', 'iPhone13,2': 'iPhone 12',
+  'iPhone13,3': 'iPhone 12 Pro', 'iPhone13,4': 'iPhone 12 Pro Max',
+  'iPhone14,2': 'iPhone 13 Pro', 'iPhone14,3': 'iPhone 13 Pro Max',
+  'iPhone14,4': 'iPhone 13 mini', 'iPhone14,5': 'iPhone 13',
   'iPhone14,6': 'iPhone SE3', 'iPhone14,7': 'iPhone 14', 'iPhone14,8': 'iPhone 14 Plus',
   'iPhone15,2': 'iPhone 14 Pro', 'iPhone15,3': 'iPhone 14 Pro Max',
   'iPhone15,4': 'iPhone 15', 'iPhone15,5': 'iPhone 15 Plus',
@@ -3685,14 +3699,25 @@ const DEVICE_MODEL_NAMES = {
   'iPhone17,1': 'iPhone 16 Pro', 'iPhone17,2': 'iPhone 16 Pro Max',
   'iPhone17,3': 'iPhone 16', 'iPhone17,4': 'iPhone 16 Plus', 'iPhone17,5': 'iPhone 16e',
   'iPhone18,1': 'iPhone 17 Pro', 'iPhone18,2': 'iPhone 17 Pro Max',
-  'iPhone18,3': 'iPhone 17', 'iPhone18,4': 'iPhone Air',
-  'iPad14,8': 'iPad Air 11', 'iPad14,9': 'iPad Air 13', 'iPad16,5': 'iPad Pro 13'
+  'iPhone18,3': 'iPhone 17', 'iPhone18,4': 'iPhone Air', 'iPhone18,5': 'iPhone 17e',
+  'iPad13,1': 'iPad Air 4', 'iPad13,2': 'iPad Air 4',
+  'iPad13,4': 'iPad Pro 11 M1', 'iPad13,5': 'iPad Pro 11 M1',
+  'iPad13,6': 'iPad Pro 12.9 M1', 'iPad13,7': 'iPad Pro 12.9 M1',
+  'iPad13,8': 'iPad mini 6', 'iPad13,9': 'iPad mini 6',
+  'iPad13,10': 'iPad 10', 'iPad13,11': 'iPad 10',
+  'iPad13,16': 'iPad Air 5', 'iPad13,17': 'iPad Air 5',
+  'iPad14,3': 'iPad Pro 11 M2', 'iPad14,4': 'iPad Pro 11 M2',
+  'iPad14,5': 'iPad Pro 12.9 M2', 'iPad14,6': 'iPad Pro 12.9 M2',
+  'iPad14,8': 'iPad Air 11 M2', 'iPad14,9': 'iPad Air 13 M2',
+  'iPad14,10': 'iPad mini 7', 'iPad14,11': 'iPad mini 7',
+  'iPad16,3': 'iPad Pro 11 M4', 'iPad16,4': 'iPad Pro 11 M4',
+  'iPad16,5': 'iPad Pro 13 M4', 'iPad16,6': 'iPad Pro 13 M4'
 };
 function friendlyModelName(m) {
   const x = String(m == null ? '' : m).trim();
   if (!x) return '';
   if (DEVICE_MODEL_NAMES[x]) return DEVICE_MODEL_NAMES[x];
-  if (/^(iPhone|iPad)\d+,\d+$/.test(x)) return x.toLowerCase().indexOf('ipad') === 0 ? 'iPad' : 'iPhone';
+  if (/^(iPhone|iPad)\d+,\d+$/.test(x)) return (x.toLowerCase().indexOf('ipad') === 0 ? 'iPad' : 'iPhone') + ' · ' + x;
   return x;
 }
 
@@ -3718,7 +3743,73 @@ function clientInfo(req) {
   const model = headOf('x-device-model');
   const osName = headOf('x-device-os');
   const devName = headOf('x-device-name');
-  return { ip, device: describeDevice(ua), deviceId, model, os: osName, name: devName };
+  const kind = headOf('x-device-kind');
+  return { ip, device: describeDevice(ua), deviceId, model, os: osName, name: devName, kind };
+}
+
+/* IP → 省级属地。带 6 小时内存缓存；失败不阻塞设备管理页。
+   私网地址直接标“局域网”，不把 127/192.168 等发给第三方查询。 */
+const IP_PROVINCE_CACHE = new Map();
+const IP_PROVINCE_TTL_MS = 6 * 60 * 60 * 1000;
+
+function isPrivateIp(ip) {
+  const s = String(ip || '').replace('::ffff:', '');
+  if (!s || s === '127.0.0.1' || s === '::1' || s === 'localhost') return true;
+  if (s.startsWith('10.') || s.startsWith('192.168.') || s.startsWith('169.254.')) return true;
+  if (s.startsWith('fc') || s.startsWith('fd') || s.startsWith('fe80:')) return true;
+  if (s.startsWith('172.')) {
+    const n = Number(s.split('.')[1]);
+    return n >= 16 && n <= 31;
+  }
+  return false;
+}
+
+function provinceForIp(ip) {
+  const value = String(ip || '').replace('::ffff:', '').trim();
+  if (!value) return Promise.resolve('');
+  if (isPrivateIp(value)) return Promise.resolve('局域网');
+  const hit = IP_PROVINCE_CACHE.get(value);
+  if (hit && Date.now() - hit.at < IP_PROVINCE_TTL_MS) return Promise.resolve(hit.province);
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (province) => {
+      if (done) return;
+      done = true;
+      const clean = String(province || '').trim().slice(0, 40);
+      IP_PROVINCE_CACHE.set(value, { province: clean, at: Date.now() });
+      if (IP_PROVINCE_CACHE.size > 3000) IP_PROVINCE_CACHE.clear();
+      resolve(clean);
+    };
+    const req = https.get('https://ipwho.is/' + encodeURIComponent(value) + '?lang=zh-CN', {
+      timeout: 4000,
+      headers: { 'User-Agent': 'CHRIS-Device-Region/1.0', 'Accept': 'application/json' }
+    }, (resp) => {
+      if (resp.statusCode !== 200) {
+        resp.resume();
+        finish('');
+        return;
+      }
+      const chunks = [];
+      let size = 0;
+      resp.on('data', (chunk) => {
+        size += chunk.length;
+        if (size <= 65536) chunks.push(chunk);
+      });
+      resp.on('end', () => {
+        try {
+          const row = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+          const province = row && row.success !== false
+            ? (String(row.region || '').trim() || String(row.country || '').trim())
+            : '';
+          finish(province);
+        } catch (err) {
+          finish('');
+        }
+      });
+    });
+    req.setTimeout(4000, () => req.destroy());
+    req.on('error', () => finish(''));
+  });
 }
 
 /** 记一条登录 / 安全事件 */
@@ -14036,14 +14127,16 @@ async function handleApi(req, res, pathname, query) {
 
   if (parts[0] === 'devices' && method === 'GET') {
     const cur = clientInfo(req);
-    const rows = (Array.isArray(user.devices) ? user.devices : []).map((d) => ({
+    let rows = (Array.isArray(user.devices) ? user.devices : []).map((d) => ({
       id: d.id || '',
       name: d.name || '',
       device: d.device || '未知设备',
       /* 机型名优先（老记录存的是 iPhone17,1 这种机器号，这里映射成人看的名字） */
       model: friendlyModelName(d.model) || friendlyModelName(d.deviceMachine) || '',
       os: d.os || '',
+      kind: d.kind || '',
       ip: d.ip || '',
+      province: d.province || '',
       /* ⚠ 必须是毫秒数字：以前给 ISO 字符串，客户端解不出来整页就空了 */
       at: msOf(d.at),
       current: !!(cur.deviceId && d.id && d.id === cur.deviceId)
@@ -14051,12 +14144,17 @@ async function handleApi(req, res, pathname, query) {
     /* 这台设备是「恢复会话」进来的（没走过登录那一步）也不能漏：列表里补一条本机 */
     if (cur.deviceId && !rows.some((d) => d.id === cur.deviceId)) {
       rows.unshift({ id: cur.deviceId, name: cur.name || '', device: cur.device || '',
-                     model: friendlyModelName(cur.model) || '', os: cur.os || '', ip: cur.ip || '',
+                     model: friendlyModelName(cur.model) || '', os: cur.os || '', kind: cur.kind || '', ip: cur.ip || '',
                      at: msOf(now()), current: true });
     }
+    rows = await Promise.all(rows.map(async (d) => Object.assign({}, d, {
+      province: d.province || await provinceForIp(d.ip)
+    })));
+    const currentProvince = await provinceForIp(cur.ip);
     ok(res, {
       devices: rows,
-      current: { id: cur.deviceId, device: cur.device, model: cur.model, os: cur.os, ip: cur.ip, at: now() }
+      current: { id: cur.deviceId, device: cur.device, model: cur.model, os: cur.os,
+                 kind: cur.kind, ip: cur.ip, province: currentProvince, at: now() }
     });
     return;
   }
@@ -19450,10 +19548,19 @@ function rememberDevice(user, req) {
       .filter((d) => deviceKeyOf(d) !== key);
     list.unshift({ id: info.deviceId || '', ip: info.ip, device: info.device,
                    model: friendlyModelName(info.model) || '', deviceMachine: info.model || '',
-                   os: info.os || '', name: info.name || '', at: now() });
+                   os: info.os || '', kind: info.kind || '', name: info.name || '', at: now() });
     if (list.length > 10) list.length = 10;
     user.devices = list;
     user.deviceUpdatedAt = now();
+    const deviceId = info.deviceId || '';
+    provinceForIp(info.ip).then((province) => {
+      if (!province) return;
+      const current = (Array.isArray(user.devices) ? user.devices : [])
+        .find((d) => (deviceId && d.id === deviceId) || (!deviceId && d.ip === info.ip));
+      if (!current || current.province === province) return;
+      current.province = province;
+      saveUsers();
+    }).catch(() => {});
   } catch (e) { }
 }
 

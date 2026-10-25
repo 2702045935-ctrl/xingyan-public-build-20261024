@@ -108,8 +108,10 @@ struct PairApproveView: View {
 
     private func deviceTimeText(_ d: API.LoginDevice) -> String {
         let os = (d.os ?? "").trimmingCharacters(in: .whitespaces)
+        let province = (d.province ?? "").trimmingCharacters(in: .whitespaces)
         var bits: [String] = []
         if !os.isEmpty { bits.append(os) }
+        if !province.isEmpty { bits.append(province) }
         if let ms = d.at, ms > 0 {
             let f = DateFormatter()
             f.locale = Locale(identifier: "zh_CN")

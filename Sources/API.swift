@@ -3425,12 +3425,15 @@ private struct StarredPayload: Decodable {
         var os: String?
         var kind: String?
         var ip: String?
+        var province: String?
 
         var at: Double?
 
         var current: Bool?
 
-        private enum CodingKeys: String, CodingKey { case id, name, device, model, os, kind, ip, at, current }
+        private enum CodingKeys: String, CodingKey {
+            case id, name, device, model, os, kind, ip, province, at, current
+        }
 
         init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -3441,6 +3444,7 @@ private struct StarredPayload: Decodable {
             os = try? c.decodeIfPresent(String.self, forKey: .os)
             kind = try? c.decodeIfPresent(String.self, forKey: .kind)
             ip = try? c.decodeIfPresent(String.self, forKey: .ip)
+            province = try? c.decodeIfPresent(String.self, forKey: .province)
             current = try? c.decodeIfPresent(Bool.self, forKey: .current)
             if let n = try? c.decodeIfPresent(Double.self, forKey: .at) {
                 at = n
