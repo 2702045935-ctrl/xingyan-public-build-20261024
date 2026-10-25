@@ -315,6 +315,9 @@ final class AppState: ObservableObject {
         }
         switch ev.type {
         case "message", "chat":
+            if ev.type == "chat", ev.action == "removed" || ev.action == "deleted" {
+                hideChatLocally(ev.chatId)
+            }
 
             if let incoming = ev.chat {
                 applyRealtimeChat(incoming)
@@ -372,6 +375,12 @@ final class AppState: ObservableObject {
                     await self?.loadContacts()
                     await self?.loadChats()
                     self?.refreshTask = nil
+                }
+            } else if ev.type == "friend", ev.action == "removed", !ev.userId.isEmpty {
+                applyFriendRemoved(userId: ev.userId)
+                coalesce { [weak self] in
+                    await self?.loadContacts()
+                    await self?.loadChats()
                 }
             } else {
                 coalesce { [weak self] in await self?.loadContacts() }
@@ -929,6 +938,17 @@ final class AppState: ObservableObject {
             contacts[index] = merged
         } else {
             contacts.append(merged)
+        }
+    }
+
+    func applyFriendRemoved(userId: String) {
+        guard !userId.isEmpty else { return }
+        contacts.removeAll { $0.id == userId }
+        let removed = chats.filter {
+            ($0.type ?? "direct") == "direct" && ($0.memberIds ?? []).contains(userId)
+        }
+        for chat in removed {
+            hideChatLocally(chat.id)
         }
     }
 

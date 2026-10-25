@@ -6968,6 +6968,11 @@ function handleClientMessage(user, socket, raw) {
   }
 
   if (msg.type === 'send') {
+    const friendError = directFriendMessageError(user, msg.chatId);
+    if (friendError) {
+      ws.sendText(socket, JSON.stringify({ type: 'error', clientId: msg.clientId, error: friendError }));
+      return;
+    }
     const result = deliverMessage(user, msg.chatId, msg.kind, msg.content, msg.clientId, msg.mentions,
       { imgW: msg.imgW, imgH: msg.imgH, quote: msg.quote });
     if (result.error) {
@@ -7531,6 +7536,14 @@ function handleSocket(user, socket) {
 }
 
 /* ------------------------------------------------------------------ 消息 */
+
+function directFriendMessageError(user, chatId) {
+  const chat = db.chats.find((c) => c.id === chatId);
+  if (!chat || chat.type !== 'direct') return '';
+  const peerId = chat.memberIds.find((id) => id !== user.id);
+  if (!peerId || peerId === user.id || friendSetCached(user.id).has(peerId) || readIm().allowStranger) return '';
+  return '你还不是他（她）朋友，请先发送朋友验证请求，对方验证通过后才能聊天';
+}
 
 function deliverMessage(user, chatId, kind, content, clientId, mentionHint, mediaExtra) {
   if (user.banned) return { error: '账号已被管理员禁用，无法发送消息' };
@@ -16813,6 +16826,8 @@ async function handleApi(req, res, pathname, query) {
 
   if (parts[0] === 'chats' && parts[2] === 'messages' && method === 'POST') {
     const body = await readBody(req);
+    const friendError = directFriendMessageError(user, parts[1]);
+    if (friendError) return fail(res, 403, friendError);
     if (!msgRateAllow(user.id) || !globalMsgAllow()) {
       riskEvent(user, 'fast_send', { note: '触发消息限流' });      // 频率异常记一笔（不罚，累计到阈值才受限）
       return fail(res, 429, '发得太快了，歇一秒再发');
