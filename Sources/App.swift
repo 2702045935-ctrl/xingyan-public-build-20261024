@@ -2702,7 +2702,10 @@ struct RegisterSheet: View {
                 app.show(Tr("注册成功"))
                 dismiss()
             } catch {
-                self.error = (error as? APIError)?.errorDescription ?? "注册失败"
+                let message = (error as? APIError)?.errorDescription ?? "注册失败"
+                self.error = message.contains("这台设备已经注册过账号")
+                    ? "这台设备 24 小时内最多注册 2 个账号。请直接登录已有账号，或 24 小时后再试。"
+                    : message
                 loadCaptcha()
             }
             busy = false
