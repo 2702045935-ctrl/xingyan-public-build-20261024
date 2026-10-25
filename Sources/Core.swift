@@ -2149,12 +2149,15 @@ struct PhotoPager: View {
 
             TabView(selection: $index) {
                 ForEach(paths.indices, id: \.self) { i in
-
-                    ZoomableRemoteImage(path: paths[i], onDoubleTap: {
-
-                        tapCloseTask?.cancel()
-                    })
-                        .tag(i)
+                    ZStack {
+                        Color.black
+                        if abs(i - index) <= 1 {
+                            ZoomableRemoteImage(path: paths[i], onDoubleTap: {
+                                tapCloseTask?.cancel()
+                            })
+                        }
+                    }
+                    .tag(i)
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
