@@ -967,7 +967,6 @@ final class AppState: ObservableObject {
         merged.remark = merged.remark ?? old.remark
         merged.relation = merged.relation ?? old.relation
         merged.momentCover = merged.momentCover ?? old.momentCover
-        merged.momentCoverPos = merged.momentCoverPos ?? old.momentCoverPos
         contacts[index] = merged
     }
 
