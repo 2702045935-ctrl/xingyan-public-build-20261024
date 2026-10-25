@@ -128,7 +128,8 @@ func handleScanned(_ text: String, app: AppState) {
         return
     }
 
-    if !t.contains(" "), t.contains("."), t.count >= 6, t.count <= 40,
+    if !t.lowercased().hasPrefix("www."),
+       !t.contains(" "), t.contains("."), t.count >= 6, t.count <= 40,
        t.allSatisfy({ $0.isLetter || $0.isNumber || $0 == "." || $0 == "_" || $0 == "-" }) {
         openScannedCard(t, app: app)
         return
@@ -186,8 +187,10 @@ func openScannedCard(_ code: String, app: AppState) {
         return
     }
 
-    if t.hasPrefix("http") {
-        app.show(Tr("扫到链接：") + t)
+    if let link = scannedWebLink(t) {
+        presentAfterScanner {
+            app.scanWebURL = link
+        }
         return
     }
     if t.count >= 3, t.count <= 24, !t.contains(" ") {
@@ -201,7 +204,99 @@ func openScannedCard(_ code: String, app: AppState) {
         }
         return
     }
-    app.show(Tr("扫到：") + t)
+    presentAfterScanner {
+        app.scanTextResult = t
+    }
+}
+
+private func scannedWebLink(_ raw: String) -> String? {
+    let text = raw.replacingOccurrences(of: "\\/", with: "/")
+    let pattern = #"(?i)((?:https?://|www\.)[^\s"'<>]+)"#
+    guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
+    let range = NSRange(text.startIndex..<text.endIndex, in: text)
+    guard let match = regex.firstMatch(in: text, range: range),
+          let hit = Range(match.range(at: 1), in: text) else { return nil }
+    var link = String(text[hit])
+    let trailing = CharacterSet(charactersIn: ")]}>,.;，。")
+    while let last = link.last, last.unicodeScalars.allSatisfy(trailing.contains) {
+        link.removeLast()
+    }
+    if link.lowercased().hasPrefix("www.") {
+        link = "https://" + link
+    }
+    guard URL(string: link) != nil else { return nil }
+    return link
+}
+
+private func presentAfterScanner(_ present: @escaping () -> Void) {
+    Task { @MainActor in
+        try? await Task.sleep(nanoseconds: 500_000_000)
+        present()
+    }
+}
+
+struct ScannedTextResultView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var showBrowser = false
+
+    let text: String
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                ScrollView {
+                    Text(text)
+                        .font(pf(16))
+                        .foregroundColor(C.label)
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(18)
+                }
+                .background(C.cardBg)
+
+                HStack(spacing: 10) {
+                    Button {
+                        UIPasteboard.general.string = text
+                    } label: {
+                        Text(Tr("复制"))
+                            .font(pf(15, .medium))
+                            .foregroundColor(C.label)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 46)
+                            .background(C.cardBg)
+                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        showBrowser = true
+                    } label: {
+                        Text(Tr("浏览器打开"))
+                            .font(pf(15, .medium))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 46)
+                            .background(C.green)
+                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(12)
+                .background(C.pageBg)
+            }
+            .background(C.pageBg)
+            .navigationTitle(Tr("扫描结果"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(Tr("完成")) { dismiss() }
+                }
+            }
+        }
+        .fullScreenCover(isPresented: $showBrowser) {
+            InAppBrowserView(initialURL: text)
+        }
+    }
 }
 
 struct ScannerView: View {

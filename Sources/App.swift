@@ -216,6 +216,8 @@ final class AppState: ObservableObject {
     @Published var payScanText: String = ""
 
     @Published var scanCardUser: User?
+    @Published var scanWebURL: String?
+    @Published var scanTextResult: String?
 
     @Published var openChat: Chat?
 

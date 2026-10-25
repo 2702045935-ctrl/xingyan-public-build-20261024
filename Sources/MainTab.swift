@@ -135,6 +135,22 @@ struct MainTabView: View {
             }
         }
 
+        .fullScreenCover(isPresented: Binding(
+            get: { app.scanWebURL != nil },
+            set: { if !$0 { app.scanWebURL = nil } })) {
+                if let url = app.scanWebURL {
+                    InAppBrowserView(initialURL: url)
+                }
+            }
+
+        .sheet(isPresented: Binding(
+            get: { app.scanTextResult != nil },
+            set: { if !$0 { app.scanTextResult = nil } })) {
+                if let text = app.scanTextResult {
+                    ScannedTextResultView(text: text)
+                }
+            }
+
         .fullScreenCover(item: $app.nearbyDropInvite) { invite in
             FaceToFaceFileSheet(rows: [], avatar: "", name: invite.name, mode: .join(invite))
                 .environmentObject(app)
