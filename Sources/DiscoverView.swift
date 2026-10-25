@@ -328,7 +328,6 @@ struct MomentsView: View {
     @State private var picked: [UIImage] = []
     @State private var uploading = false
     @State private var commentsSheet: Moment?
-    @State private var showMyQR = false
 
     @State private var actionMoment: Moment?
 
@@ -541,10 +540,6 @@ struct MomentsView: View {
             }
             .environmentObject(app)
         }
-        .sheet(isPresented: $showMyQR) {
-            MyQRView()
-                .environmentObject(app)
-        }
         .onAppear {
             scrollMetrics.baseTop = nil
             scrollMetrics.baseBlock = nil
@@ -676,6 +671,24 @@ struct MomentsView: View {
 
             Group {
                 if scheme == .dark {
+                    HarmonyDarkMask(strength: 0.94)
+                        .mask(
+                            LinearGradient(
+                                colors: [Color.black, Color.black.opacity(0.70), Color.clear],
+                                startPoint: .top, endPoint: .bottom)
+                        )
+                } else {
+                    LinearGradient(colors: [Color.black.opacity(max(0, UIConfig.num("momentTopMask", 0.20))),
+                                            Color.black.opacity(0)],
+                                   startPoint: .top, endPoint: .bottom)
+                }
+            }
+                .frame(height: max(L.safeTop + 56, UIConfig.num("momentTopMaskH", 150)))
+                .frame(maxHeight: .infinity, alignment: .top)
+                .allowsHitTesting(false)
+
+            Group {
+                if scheme == .dark {
                     HarmonyDarkMask(strength: 0.96)
                         .mask(
                             LinearGradient(
@@ -700,99 +713,71 @@ struct MomentsView: View {
                     .zIndex(2)
             }
 
-            momentIdentityCard
-                .padding(.horizontal, 12)
-                .offset(y: 34)
-                .zIndex(6)
+            if coverEditable {
+                HStack {
+                    Button {
+                        coverMenu = true
+                    } label: {
+                        Text(Tr("换封面"))
+                            .font(pf(12.5, .medium))
+                            .foregroundColor(.white)
+                            .frame(width: 88, height: 32)
+                            .background {
+                                if coverLocked {
+                                    Capsule()
+                                        .fill(.ultraThinMaterial)
+                                        .overlay(Capsule().fill(Color.black.opacity(0.12)))
+                                } else {
+                                    Capsule().fill(Color.black.opacity(0.44))
+                                }
+                            }
+                            .overlay(Capsule().stroke(Color.white.opacity(0.24), lineWidth: 0.7))
+                    }
+                    .buttonStyle(.plain)
+                    Spacer(minLength: 0)
+                }
+                .padding(.leading, 12)
+                .padding(.bottom, 12)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                .zIndex(4)
+            }
+
+            HStack(alignment: .bottom, spacing: 12) {
+                VStack(alignment: .trailing, spacing: 3) {
+                    Text(owner?.name ?? "")
+                        .font(pf(17, .semibold))
+                        .foregroundColor(.white)
+                        .shadow(color: Color.black.opacity(0.55), radius: 4, x: 0, y: 1)
+                        .lineLimit(1)
+                }
+                .padding(.bottom, 24)
+                VStack(spacing: 4) {
+                    Avatar(path: owner?.avatarPath ?? "", size: L.coverAvatar, radius: 8)
+                        .shadow(color: Color.black.opacity(0.28), radius: 5, x: 0, y: 2)
+                    if let sign = signature {
+                        Text(sign)
+                            .font(pf(12.5))
+                            .foregroundColor(C.label)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .fill(Color.dyn(0xFFFFFF, 0x000000).opacity(0.62)))
+                            .frame(width: L.coverAvatar + 56, alignment: .center)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .trailing)
+            .padding(.trailing, 16)
+            .offset(y: 21)
+            .allowsHitTesting(false)
         }
         .frame(height: L.coverH + extra)
         .zIndex(1)
 
         .contentShape(Rectangle())
-    }
-
-    private var momentIdentityCard: some View {
-        HStack(spacing: 13) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 17, style: .continuous)
-                    .fill(C.green.opacity(scheme == .dark ? 0.14 : 0.11))
-                Avatar(path: owner?.avatarPath ?? "", size: 54, radius: 15)
-                    .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous)
-                        .stroke(Color.white.opacity(0.65), lineWidth: 0.7))
-            }
-            .frame(width: 62, height: 62)
-            .shadow(color: Color.black.opacity(0.14), radius: 8, y: 3)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                if let owner { cardUser = owner }
-            }
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(coverEditable ? "MY LIFE" : "LIFE JOURNAL")
-                    .font(pf(9, .medium))
-                    .foregroundColor(C.green)
-                    .tracking(1.2)
-                Text(owner?.name ?? Tr("我"))
-                    .font(pf(20, .bold))
-                    .foregroundColor(C.label)
-                    .lineLimit(1)
-                Text(signature ?? Tr("记录此刻，也记录生活里的光。"))
-                    .font(pf(11.5))
-                    .foregroundColor(C.subLabel)
-                    .lineLimit(2)
-                Text("\(moments.count) 条生活 · \(TimeFmt.ago(moments.first?.createdAt))")
-                    .font(pf(9.5))
-                    .foregroundColor(C.subLabel.opacity(0.85))
-                    .lineLimit(1)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            if coverEditable {
-                VStack(spacing: 7) {
-                    identityAction("qrcode") { showMyQR = true }
-                    identityAction("photo") { coverMenu = true }
-                }
-            }
-        }
-        .padding(.horizontal, 13)
-        .padding(.vertical, 10)
-        .frame(height: 92)
-        .background {
-            ZStack {
-                GlassBackground(
-                    shape: RoundedRectangle(cornerRadius: 24, style: .continuous),
-                    opacity: UIConfig.num("momentCardGlass", 0.88),
-                    edgeAlpha: UIConfig.num("momentCardEdge", 0.46),
-                    shadow: true,
-                    seed: 0.42
-                )
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(C.cardBg.opacity(scheme == .dark ? 0.32 : 0.24))
-            }
-        }
-        .overlay {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(Color.white.opacity(scheme == .dark ? 0.14 : 0.42), lineWidth: 0.7)
-        }
-    }
-
-    private func identityAction(_ symbol: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: symbol)
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(C.label)
-                .frame(width: 34, height: 34)
-                .background {
-                    GlassBackground(
-                        shape: Circle(),
-                        opacity: 0.72,
-                        edgeAlpha: 0.34,
-                        shadow: false,
-                        seed: symbol.count > 5 ? 0.52 : 0.34
-                    )
-                }
-        }
-        .buttonStyle(.plain)
     }
 
     private func momentRow(_ moment: Moment) -> some View {
@@ -997,7 +982,7 @@ struct MomentsView: View {
                     .padding(.vertical, 16)
             }
         }
-        .padding(.top, 46)
+        .padding(.top, 60)
         .padding(.bottom, max(42, L.safeBottom + 20))
         .frame(maxWidth: .infinity)
         .background(C.cardBg)
