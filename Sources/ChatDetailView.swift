@@ -2338,17 +2338,24 @@ struct ChatDetailView: View {
 
             if let q = quote {
                 HStack(spacing: 8) {
-                    Rectangle().fill(C.green).frame(width: 3, height: 30)
+                    Rectangle().fill(C.green).frame(width: 3, height: 38)
                     VStack(alignment: .leading, spacing: 1) {
                         Text(q.senderId == myId ? Tr("我") : displayName(q))
                             .font(pf(11.5))
                             .foregroundColor(C.green)
-                        Text(q.kindName == "text" ? String(q.body.prefix(40)) : "[" + q.kindName + "]")
+                        Text(quoteComposerSummary(q))
                             .font(pf(12.5))
                             .foregroundColor(C.subLabel)
                             .lineLimit(1)
                     }
                     Spacer(minLength: 0)
+                    if !quotePreviewThumb(q).isEmpty {
+                        RemoteImage(path: quotePreviewThumb(q), mode: .fill, maxSide: 240)
+                            .frame(width: 38, height: 38)
+                            .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 5, style: .continuous)
+                                .stroke(Color.black.opacity(0.08), lineWidth: 0.5))
+                    }
                     Button { quote = nil } label: {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 17))
@@ -2357,7 +2364,7 @@ struct ChatDetailView: View {
                     .buttonStyle(.plain)
                 }
                 .padding(.horizontal, 12)
-                .padding(.top, 6)
+                .padding(.vertical, 6)
                 .background(ChatTheme.panel)
             }
 
@@ -2812,23 +2819,64 @@ struct ChatDetailView: View {
         guard let q = q, !q.id.isEmpty else { return nil }
         let who = q.senderId == myId ? Tr("我") : displayName(q)
         var d: [String: Any] = ["id": q.id, "who": who, "kind": q.kindName]
+        let thumb = quotePreviewThumb(q)
+        if !thumb.isEmpty { d["thumb"] = thumb }
         switch q.kindName {
         case "text":
             d["text"] = String(q.body.prefix(90))
         case "image":
             d["text"] = Tr("[图片]")
-            d["thumb"] = q.imagePath
         case "images":
             d["text"] = Tr("[图片]")
-            if let p = Self.firstImagePath(q.body) { d["thumb"] = p }
         case "audio":
             d["text"] = Tr("[语音]")
-        case "video", "livephoto":
+        case "video":
             d["text"] = Tr("[视频]")
+        case "livephoto":
+            d["text"] = Tr("[实况]")
         default:
             d["text"] = "[" + q.kindName + "]"
         }
         return d
+    }
+
+    private func quoteComposerSummary(_ q: Message) -> String {
+        switch q.kindName {
+        case "text", "link":
+            return String(q.body.prefix(40))
+        case "image", "images":
+            return Tr("[图片]")
+        case "video":
+            return Tr("[视频]")
+        case "livephoto":
+            return Tr("[实况]")
+        case "audio":
+            return Tr("[语音]")
+        default:
+            return "[" + q.kindName + "]"
+        }
+    }
+
+    private func quotePreviewThumb(_ q: Message) -> String {
+        switch q.kindName {
+        case "image":
+            return q.imagePath
+        case "images":
+            return Self.firstImagePath(q.body) ?? ""
+        case "video":
+            return Self.firstJSONString(q.body, key: "cover") ?? ""
+        case "livephoto":
+            return Self.firstJSONString(q.body, key: "image") ?? ""
+        default:
+            return ""
+        }
+    }
+
+    private static func firstJSONString(_ body: String, key: String) -> String? {
+        guard let d = body.data(using: .utf8),
+              let o = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
+              let value = o[key] as? String, !value.isEmpty else { return nil }
+        return value
     }
 
     private static func firstImagePath(_ body: String) -> String? {
@@ -2900,6 +2948,7 @@ struct ChatDetailView: View {
                 }
             }
         }
+        if !path.isEmpty, !all.contains(path) { all.insert(path, at: 0) }
         guard !all.isEmpty else { return }
         viewer = PhotoPager.Item(paths: all, index: all.firstIndex(of: path) ?? 0)
     }
@@ -4392,36 +4441,36 @@ struct MessageRow: View {
 
     private func quotedTextBubble(_ q: QuoteRef, raw: String) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 7) {
-                VStack(alignment: .leading, spacing: 2) {
-                    if !q.sender.isEmpty {
-                        Text(q.sender)
-                            .font(pf(12, .medium))
+            HStack(alignment: .top, spacing: 8) {
+                Button {
+                    if !q.refId.isEmpty { onOpenQuote?(q.refId) }
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        if !q.sender.isEmpty {
+                            Text(q.sender)
+                                .font(pf(12, .medium))
+                                .foregroundColor(mine ? ChatTheme.secondaryOnMine : ChatTheme.quoteInk)
+                                .lineLimit(1)
+                        }
+                        Text(q.summary.isEmpty ? Tr("[引用]") : q.summary)
+                            .font(pf(12.5))
                             .foregroundColor(mine ? ChatTheme.secondaryOnMine : ChatTheme.quoteInk)
-                            .lineLimit(1)
+                            .lineLimit(3)
+                            .multilineTextAlignment(.leading)
                     }
-                    Text(q.summary.isEmpty ? Tr("[引用]") : q.summary)
-                        .font(pf(12.5))
-                        .foregroundColor(mine ? ChatTheme.secondaryOnMine : ChatTheme.quoteInk)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
                 }
-                Spacer(minLength: 0)
+                .buttonStyle(.plain)
 
-                if q.thumbPath.isEmpty == false {
-                    RemoteImage(path: q.thumbPath, mode: .fill, maxSide: 200)
-                        .frame(width: 34, height: 34)
-                        .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
+                if !q.thumbPath.isEmpty {
+                    quoteThumbnail(q)
                 }
             }
             .padding(.horizontal, 7)
             .padding(.vertical, 6)
             .background(RoundedRectangle(cornerRadius: 4, style: .continuous)
                 .fill(mine ? ChatTheme.quoteBgMine : ChatTheme.quoteBg))
-            .contentShape(Rectangle())
-            .onTapGesture {
-                if !q.refId.isEmpty { onOpenQuote?(q.refId) }
-            }
             Text(richBody(raw))
                 .font(pf(L.chatFontSize))
                 .foregroundColor(mine && UIConfig.num("bubbleMineWhiteText", 1) > 0 ? ChatTheme.mineInk : ChatTheme.ink)
@@ -4431,6 +4480,36 @@ struct MessageRow: View {
         .padding(.horizontal, L.bubblePadHPill)
         .padding(.vertical, L.bubblePadV)
         .background(BubbleFill(mine: mine, tail: showTail))
+    }
+
+    private func quoteThumbnail(_ q: QuoteRef) -> some View {
+        Button {
+            switch q.kind ?? "" {
+            case "image", "images":
+                onOpenImage?(q.thumbPath)
+            default:
+                if !q.refId.isEmpty { onOpenQuote?(q.refId) }
+            }
+        } label: {
+            ZStack {
+                RemoteImage(path: q.thumbPath, mode: .fill, maxSide: 420)
+                if q.kind == "video" || q.kind == "livephoto" {
+                    Circle()
+                        .fill(Color.black.opacity(0.46))
+                        .frame(width: 25, height: 25)
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.white)
+                        .offset(x: 1)
+                }
+            }
+            .frame(width: 58, height: 58)
+            .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 5, style: .continuous)
+                .stroke(Color.black.opacity(0.10), lineWidth: 0.5))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Tr("查看引用的图片"))
     }
 
     private func dict(_ json: String) -> [String: Any] {
