@@ -854,8 +854,6 @@ struct SettingsView: View {
     @State private var showNotify = false
     @State private var showGeneral = false
     @State private var showStorage = false
-    @AppStorage(XingjiNativePages.enabledKey) private var xingjiNativePages = true
-
     @State private var storageText = ""
     @State private var showProfileEdit = false
 
@@ -887,24 +885,6 @@ struct SettingsView: View {
                         HairLine(inset: 16)
 
                         settingLink(Tr("界面与显示"), "", key: "general")
-                        HairLine(inset: 16)
-
-                        HStack(spacing: 12) {
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(Tr("星轨页面"))
-                                    .font(pf(16))
-                                    .foregroundColor(C.label)
-                                Text(Tr("WhatsApp 式信息密度，底栏和深页保持原生"))
-                                    .font(pf(11))
-                                    .foregroundColor(C.subLabel)
-                            }
-                            Spacer(minLength: 8)
-                            Toggle("", isOn: $xingjiNativePages)
-                                .labelsHidden()
-                                .tint(C.green)
-                        }
-                        .padding(.horizontal, 16)
-                        .frame(minHeight: 58)
                         HairLine(inset: 16)
 
                         HStack(spacing: 12) {

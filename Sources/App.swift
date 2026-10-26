@@ -369,7 +369,7 @@ final class AppState: ObservableObject {
             guard !Task.isCancelled, booting else { return }
             if me == nil, let cached = AppState.cachedUser() {
                 me = cached
-                needConfirmLogin = true
+                needConfirmLogin = false
             }
             booting = false
         }
@@ -395,15 +395,23 @@ final class AppState: ObservableObject {
                 Realtime.shared.start()
             } else {
                 API.shared.clearToken()
+                me = nil
+                needConfirmLogin = false
             }
         } catch {
-
-            if let cached = AppState.cachedUser() {
+            if Self.isAuthFailure(error) {
+                API.shared.clearToken()
+                me = nil
+                chats = []
+                contacts = []
+                moments = []
+                needConfirmLogin = false
+            } else if let cached = AppState.cachedUser() {
                 me = cached
-                needConfirmLogin = true
+                needConfirmLogin = false
             }
 
-            await refreshAll()
+            if me != nil { await refreshAll() }
         }
         booting = false
     }
@@ -412,6 +420,12 @@ final class AppState: ObservableObject {
         guard let s = UserDefaults.standard.string(forKey: "chris.lastUserJSON"),
               let d = s.data(using: .utf8) else { return nil }
         return try? JSONDecoder().decode(User.self, from: d)
+    }
+
+    private static func isAuthFailure(_ error: Error) -> Bool {
+        if case APIError.otherLogin = error { return true }
+        let text = (error as? APIError)?.errorDescription ?? error.localizedDescription
+        return text == "请先登录" || text.contains("另一台设备") || text.contains("登录状态")
     }
 
     func refreshUI(force: Bool = false) async {
@@ -600,6 +614,15 @@ final class AppState: ObservableObject {
             if !AppState.sameChats(chats, fresh) { chats = fresh }
             loadError = nil
         } catch {
+            if Self.isAuthFailure(error) {
+                API.shared.clearToken()
+                chats = []
+                contacts = []
+                moments = []
+                me = nil
+                needConfirmLogin = false
+                OtherLogin.shared.reset()
+            }
             loadError = (error as? APIError)?.errorDescription ?? "加载失败"
         }
 

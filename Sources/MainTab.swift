@@ -5,7 +5,6 @@ struct MainTabView: View {
     @EnvironmentObject var app: AppState
     @State private var tab = 0
     @State private var shownCrash = false
-    @AppStorage(XingjiNativePages.enabledKey) private var xingjiNativePages = true
 
     @ObservedObject private var lang = LangStore.shared
 
@@ -29,9 +28,7 @@ struct MainTabView: View {
         ZStack(alignment: .bottom) {
 
             ZStack {
-                if xingjiNativePages {
-                    XingjiNativePageHost(tab: $tab)
-                } else if tab == 0 {
+                if tab == 0 {
                     ChatsView()
                 } else if tab == 1 {
                     ContactsView()
