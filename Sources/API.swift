@@ -1402,6 +1402,7 @@ enum APIError: LocalizedError {
 
 enum ServerTrustPolicy {
     private static let pinnedCertificate: Set<String> = [
+        "ec0d5e4e90c5d76c40142e4c122b6f89af557bd58ac5de97e9ff81fc1f7683b5",
         "c3e72ccf02acda9d4dd335d653408ab5776150c66afb1b518640d0ce6d52c095"
     ]
 
@@ -1470,13 +1471,14 @@ final class API {
 
     private(set) var token: String = ""
 
-    private(set) var server: String = "43.242.194.89"
+    /* 当前公网入口。旧包主地址 43.242.194.89 已经无法完成 TLS 握手，
+       iOS 会在 43 / u.598218.xyz 之间反复换线，表现就是一直“重新连接”。 */
+    private(set) var server: String = "aa.x8iu.com"
 
     private(set) var backups: [String] = API.builtinBackups
 
     static let trustedHosts: Set<String> = [
-        "43.242.194.89",
-        "u.598218.xyz"
+        "aa.x8iu.com"
     ]
     static func trustedHost(_ s: String) -> Bool {
         var h = s.lowercased()
@@ -1516,9 +1518,10 @@ final class API {
     }
 
     static let builtinBackups: [String] = [
-        "43.242.194.89:5443",
-        "43.242.194.89:8443",
-        "u.598218.xyz"
+        "aa.x8iu.com",
+        "aa.x8iu.com:5443",
+        "aa.x8iu.com:8443",
+        "aa.x8iu.com:2053"
     ]
 
     private var lastRotate = Date.distantPast
@@ -1536,9 +1539,9 @@ final class API {
         let legacyServers: Set<String> = [
 
             "192.168.2.7:5443", "192.168.2.7", "206.187.208.79",
-            "aa.x8iu.com", "aa.x8iu.com:5443",
             "103.233.254.147", "103.233.254.147:5443",
-            "43.242.194.89:5443"
+            "43.242.194.89", "43.242.194.89:5443",
+            "u.598218.xyz", "u.598218.xyz:5443"
         ]
         if let saved = UserDefaults.standard.string(forKey: "chris.server"),
            !saved.isEmpty,
