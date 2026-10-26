@@ -29,7 +29,7 @@ struct MainTabView: View {
 
             ZStack {
                 if tab == 0 {
-                    ChatsView()
+                    OrbitChatsPage()
                 } else if tab == 1 {
                     ContactsView()
                 } else if tab == 2 {
