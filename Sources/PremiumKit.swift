@@ -5,11 +5,13 @@ struct PanelSectionTitle: View {
 
     var body: some View {
         Text(text)
-            .font(pf(12.5, .medium))
+            .font(pf(C.xingjiOn ? 11.5 : 12.5,
+                     C.xingjiOn ? .semibold : .medium))
             .foregroundColor(C.subLabel)
+            .tracking(C.xingjiOn ? 0.35 : 0)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.leading, 6)
-            .padding(.top, 14)
+            .padding(.top, C.xingjiOn ? 16 : 14)
             .padding(.bottom, 6)
     }
 }
@@ -27,15 +29,18 @@ struct PanelCard<Content: View>: View {
         VStack(spacing: 0) { content() }
             .frame(maxWidth: .infinity, alignment: .leading)
             .background {
-                if solid {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous).fill(C.cardBg)
+                if solid || C.xingjiOn {
+                    RoundedRectangle(cornerRadius: C.xingjiOn ? 16 : 14, style: .continuous)
+                        .fill(C.cardBg)
                 } else {
                     CardGlassBox(radius: 14)
                 }
             }
-            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+            .overlay(RoundedRectangle(cornerRadius: C.xingjiOn ? 16 : 14, style: .continuous)
                 .stroke(C.hairline, lineWidth: 0.6))
-            .shadow(color: Color.black.opacity(0.05), radius: 8, y: 2)
+            .shadow(color: Color.black.opacity(C.xingjiOn ? 0 : 0.05),
+                    radius: C.xingjiOn ? 0 : 8,
+                    y: C.xingjiOn ? 0 : 2)
     }
 }
 
@@ -52,29 +57,40 @@ struct PanelHeroCard<Content: View>: View {
         VStack(spacing: 14) { content() }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(16)
-            .background(
-                ZStack {
-                    LinearGradient(colors: [Color(hex: 0x1C2130), Color(hex: 0x2A2433), Color(hex: 0x14111A)],
-                                   startPoint: .topLeading, endPoint: .bottomTrailing)
-                    RadialGradient(colors: [glow.opacity(0.26), Color.clear],
-                                   center: .topTrailing, startRadius: 2, endRadius: 210)
+            .background {
+                if C.xingjiOn {
+                    Color.dyn(0x153B32, 0x0B1815)
+                } else {
+                    ZStack {
+                        LinearGradient(colors: [Color(hex: 0x1C2130), Color(hex: 0x2A2433), Color(hex: 0x14111A)],
+                                       startPoint: .topLeading, endPoint: .bottomTrailing)
+                        RadialGradient(colors: [glow.opacity(0.26), Color.clear],
+                                       center: .topTrailing, startRadius: 2, endRadius: 210)
 
-                    RadialGradient(colors: [Color.white.opacity(0.10), Color.clear],
-                                   center: .topLeading, startRadius: 1, endRadius: 260)
+                        RadialGradient(colors: [Color.white.opacity(0.10), Color.clear],
+                                       center: .topLeading, startRadius: 1, endRadius: 260)
+                    }
                 }
-            )
+            }
             .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color.white.opacity(0.11), lineWidth: 1))
+                .stroke(C.xingjiOn ? C.green.opacity(0.38) : Color.white.opacity(0.11),
+                        lineWidth: 1))
             .overlay(
 
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(LinearGradient(colors: [Color.white.opacity(0.22), Color.clear],
-                                           startPoint: .top, endPoint: .center),
+                    .stroke(C.xingjiOn
+                            ? AnyShapeStyle(Color.clear)
+                            : AnyShapeStyle(LinearGradient(colors: [Color.white.opacity(0.22), Color.clear],
+                                                           startPoint: .top, endPoint: .center)),
                             lineWidth: 0.8)
             )
-            .shadow(color: Color.black.opacity(0.26), radius: 18, y: 9)
-            .shadow(color: (glow).opacity(0.12), radius: 16, y: 4)
+            .shadow(color: Color.black.opacity(C.xingjiOn ? 0 : 0.26),
+                    radius: C.xingjiOn ? 0 : 18,
+                    y: C.xingjiOn ? 0 : 9)
+            .shadow(color: glow.opacity(C.xingjiOn ? 0 : 0.12),
+                    radius: C.xingjiOn ? 0 : 16,
+                    y: C.xingjiOn ? 0 : 4)
     }
 }
 
@@ -97,10 +113,16 @@ struct PanelPill: View {
             .padding(.horizontal, 12)
             .frame(height: 32)
             .background(
-                Capsule().fill(LinearGradient(colors: colors.map { $0.opacity(0.9) },
-                                              startPoint: .topLeading, endPoint: .bottomTrailing))
+                Group {
+                    if C.xingjiOn {
+                        Capsule().fill(C.green)
+                    } else {
+                        Capsule().fill(LinearGradient(colors: colors.map { $0.opacity(0.9) },
+                                                      startPoint: .topLeading, endPoint: .bottomTrailing))
+                    }
+                }
             )
-            .overlay(Capsule().stroke(Color.white.opacity(0.22), lineWidth: 0.8))
+            .overlay(Capsule().stroke(Color.white.opacity(C.xingjiOn ? 0 : 0.22), lineWidth: 0.8))
         }
         .buttonStyle(.plain)
     }
@@ -113,14 +135,20 @@ struct PanelIcon: View {
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: size * 0.31, style: .continuous)
-                .fill(LinearGradient(colors: colors, startPoint: .topLeading, endPoint: .bottomTrailing))
+            RoundedRectangle(cornerRadius: size * (C.xingjiOn ? 0.34 : 0.31), style: .continuous)
+                .fill(C.xingjiOn
+                      ? AnyShapeStyle(C.jadeSoft)
+                      : AnyShapeStyle(LinearGradient(colors: colors,
+                                                     startPoint: .topLeading,
+                                                     endPoint: .bottomTrailing)))
                 .frame(width: size, height: size)
             Image(systemName: symbol)
                 .font(.system(size: size * 0.47, weight: .semibold))
-                .foregroundColor(.white)
+                .foregroundColor(C.xingjiOn ? C.green : .white)
         }
-        .shadow(color: (colors.last ?? .clear).opacity(0.32), radius: 4, y: 2)
+        .shadow(color: (colors.last ?? .clear).opacity(C.xingjiOn ? 0 : 0.32),
+                radius: C.xingjiOn ? 0 : 4,
+                y: C.xingjiOn ? 0 : 2)
     }
 }
 
@@ -280,9 +308,11 @@ struct PanelConfirmDialog: View {
                 }
             }
             .background(C.cardBg)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: C.xingjiOn ? 18 : 12, style: .continuous))
             .frame(width: 272)
-            .shadow(color: Color.black.opacity(0.22), radius: 22, y: 8)
+            .shadow(color: Color.black.opacity(C.xingjiOn ? 0.12 : 0.22),
+                    radius: C.xingjiOn ? 12 : 22,
+                    y: C.xingjiOn ? 4 : 8)
         }
     }
 }
@@ -299,7 +329,7 @@ struct PanelCircleButton: View {
                 .foregroundColor(tint)
                 .frame(width: 30, height: 30)
                 .background(
-                    Circle().fill(C.pageBg.opacity(0.9))
+                    Circle().fill(C.xingjiOn ? C.fieldBg : C.pageBg.opacity(0.9))
                 )
                 .overlay(Circle().stroke(C.hairline, lineWidth: 0.6))
         }

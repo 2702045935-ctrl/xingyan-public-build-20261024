@@ -98,6 +98,7 @@ struct MainTabView: View {
         }
 
         .background(C.pageBg.ignoresSafeArea())
+        .tint(C.green)
 
         .overlay(CallOverlay())
 
@@ -665,6 +666,14 @@ struct NavBar<Right: View>: View {
 
     var body: some View {
         ZStack {
+            if C.xingjiOn {
+                ZStack {
+                    Rectangle().fill(.ultraThinMaterial)
+                    C.navBg.opacity(0.24)
+                }
+                .ignoresSafeArea(edges: .top)
+            }
+
             if useFloating {
 
                 if !title.isEmpty {
@@ -674,10 +683,12 @@ struct NavBar<Right: View>: View {
                     .padding(.horizontal, 14)
                     .frame(height: 36)
                     .background {
-                        GlassBackground(shape: Capsule(),
-                                        shadow: true,
-                                        seed: 0.30,
-                                        darkEdgeOff: true)
+                        if !C.xingjiOn {
+                            GlassBackground(shape: Capsule(),
+                                            shadow: true,
+                                            seed: 0.30,
+                                            darkEdgeOff: true)
+                        }
                     }
                 }
             } else {
@@ -697,15 +708,19 @@ struct NavBar<Right: View>: View {
                             .frame(width: useFloating ? 36 : 44, height: useFloating ? 36 : L.navH)
                             .background {
                                 if useFloating {
-                                    GlassBackground(shape: Circle(),
-                                                    shadow: true,
-                                                    seed: 0.10,
-                                                    darkEdgeOff: true)
+                                    if C.xingjiOn {
+                                        Circle().fill(C.fieldBg.opacity(0.88))
+                                    } else {
+                                        GlassBackground(shape: Circle(),
+                                                        shadow: true,
+                                                        seed: 0.10,
+                                                        darkEdgeOff: true)
+                                    }
                                 }
                             }
                     }
                     .buttonStyle(.plain)
-                    .padding(.leading, useFloating ? 10 : 0)
+                    .padding(.leading, useFloating ? (C.xingjiOn ? 12 : 10) : 0)
                 }
                 if let leftExtra = leftExtra {
                     if useFloating && leftExtraGlass {
@@ -726,18 +741,27 @@ struct NavBar<Right: View>: View {
                     right
                         .frame(height: 36)
                         .background {
-                            GlassBackground(shape: Capsule(),
-                                            shadow: true,
-                                            seed: 0.80,
-                                            darkEdgeOff: true)
+                            if C.xingjiOn {
+                                Capsule().fill(C.fieldBg.opacity(0.88))
+                            } else {
+                                GlassBackground(shape: Capsule(),
+                                                shadow: true,
+                                                seed: 0.80,
+                                                darkEdgeOff: true)
+                            }
                         }
-                        .padding(.trailing, 10)
+                        .padding(.trailing, C.xingjiOn ? 12 : 10)
                 } else {
                     right
                 }
             }
         }
         .frame(height: L.navH)
+        .overlay(alignment: .bottom) {
+            if C.xingjiOn {
+                Rectangle().fill(C.navLine).frame(height: 0.5)
+            }
+        }
     }
 
     private var titleText: some View {
@@ -810,10 +834,16 @@ struct SearchBoxCenter: View {
         .padding(.trailing, centered ? 18 : 9)
         .frame(height: L.searchBoxH)
         .background(
-
-            GlassBackground(shape: Capsule(style: .continuous),
-                            opacity: UIConfig.num("searchGlassAlpha", 0.55),
-                            edgeAlpha: UIConfig.num("searchGlassEdge", 0))
+            Group {
+                if C.xingjiOn {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(C.fieldBg)
+                } else {
+                    GlassBackground(shape: Capsule(style: .continuous),
+                                    opacity: UIConfig.num("searchGlassAlpha", 0.55),
+                                    edgeAlpha: UIConfig.num("searchGlassEdge", 0))
+                }
+            }
         )
     }
 }
@@ -840,10 +870,16 @@ struct SearchBoxLeft: View {
         .padding(.horizontal, 18)
         .frame(height: L.searchBoxH)
         .background(
-
-            GlassBackground(shape: Capsule(style: .continuous),
-                            opacity: UIConfig.num("searchGlassAlpha", 0.55),
-                            edgeAlpha: UIConfig.num("searchGlassEdge", 0))
+            Group {
+                if C.xingjiOn {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(C.fieldBg)
+                } else {
+                    GlassBackground(shape: Capsule(style: .continuous),
+                                    opacity: UIConfig.num("searchGlassAlpha", 0.55),
+                                    edgeAlpha: UIConfig.num("searchGlassEdge", 0))
+                }
+            }
         )
     }
 }
@@ -875,7 +911,7 @@ struct MenuRow: View {
                 if iconTile {
 
                     ZStack {
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        RoundedRectangle(cornerRadius: C.xingjiOn ? 10 : 7, style: .continuous)
                             .fill(iconColor)
                         if !sf.isEmpty {
                             Image(systemName: sf)
@@ -940,7 +976,9 @@ struct MenuRow: View {
 struct MenuPressStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .background(configuration.isPressed ? Color.gray.opacity(0.16) : Color.clear)
+            .background(configuration.isPressed
+                        ? C.pressBg.opacity(C.xingjiOn ? 0.72 : 0.16)
+                        : Color.clear)
     }
 }
 
@@ -957,7 +995,17 @@ struct GroupCard<Content: View>: View {
     }
 
     var body: some View {
-        if glass {
+        if C.xingjiOn {
+            VStack(spacing: 0) { content }
+                .background(C.cardBg)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(C.hairline, lineWidth: 0.5)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .padding(.horizontal, 12)
+                .padding(.bottom, 10)
+        } else if glass {
             VStack(spacing: 0) { content }
                 .background {
                     ZStack {
@@ -977,16 +1025,6 @@ struct GroupCard<Content: View>: View {
         } else {
             VStack(spacing: 0) { content }
                 .background(bg ?? C.cardBg)
-                .overlay {
-                    if C.xingjiOn {
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(C.hairline, lineWidth: 0.5)
-                    }
-                }
-                .clipShape(RoundedRectangle(cornerRadius: C.xingjiOn ? 16 : 0,
-                                            style: .continuous))
-                .padding(.horizontal, C.xingjiOn ? 12 : 0)
-                .padding(.bottom, C.xingjiOn ? 10 : 0)
         }
     }
 }

@@ -2238,15 +2238,22 @@ struct ChatDetailView: View {
                 .frame(height: L.inputH)
                 .background(
                     ZStack {
-
-                        GlassBackground(shape: Capsule(style: .continuous),
-                                        opacity: UIConfig.num("inputGlassAlpha", 0.55),
-                                        seed: 0.45)
-                        Capsule(style: .continuous)
-                            .fill(recorder.recording
-                                  ? (recorder.willCancel ? Color.dyn(0xFFF1F1, 0x3A2A2A) : Color.dyn(0xF2F2F2, 0x242427))
-                                  : Color.dyn(0xFFFFFF, 0x2C2C2E))
-                            .opacity(UIConfig.num("inputGlassTint", 0.35))
+                        if C.xingjiOn {
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .fill(recorder.recording
+                                      ? (recorder.willCancel ? Color.dyn(0xFFF1F1, 0x3A2A2A)
+                                                             : C.fieldBg)
+                                      : C.raisedBg)
+                        } else {
+                            GlassBackground(shape: Capsule(style: .continuous),
+                                            opacity: UIConfig.num("inputGlassAlpha", 0.55),
+                                            seed: 0.45)
+                            Capsule(style: .continuous)
+                                .fill(recorder.recording
+                                      ? (recorder.willCancel ? Color.dyn(0xFFF1F1, 0x3A2A2A) : Color.dyn(0xF2F2F2, 0x242427))
+                                      : Color.dyn(0xFFFFFF, 0x2C2C2E))
+                                .opacity(UIConfig.num("inputGlassTint", 0.35))
+                        }
                     }
                 )
                 .overlay(
@@ -2290,8 +2297,12 @@ struct ChatDetailView: View {
                     .padding(.horizontal, 4)
                     .frame(height: L.composerIconBox + 8)
                     .background {
-                        GlassBackground(shape: Capsule(style: .continuous), shadow: true, seed: 0.45)
-                            .opacity(panel == .none ? 0.9 : 1)
+                        if C.xingjiOn {
+                            Capsule(style: .continuous).fill(C.fieldBg)
+                        } else {
+                            GlassBackground(shape: Capsule(style: .continuous), shadow: true, seed: 0.45)
+                                .opacity(panel == .none ? 0.9 : 1)
+                        }
                     }
                 } else {
                     Button {
@@ -2302,7 +2313,8 @@ struct ChatDetailView: View {
                             .foregroundColor(.white)
                             .padding(.horizontal, 13)
                             .frame(height: 32)
-                            .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(C.green))
+                            .background(RoundedRectangle(cornerRadius: C.xingjiOn ? 12 : 6,
+                                                         style: .continuous).fill(C.green))
                     }
                     .buttonStyle(.plain)
                 }

@@ -352,6 +352,10 @@ enum C {
     static var searchBg    : Color { xingjiOn ? Color.dyn(0xFCFBF8, 0x161A1D) : UIConfig.color("searchBg", 0xFFFFFF, 0x2A2A2C) }
 
     static var fieldBg     : Color { xingjiOn ? Color.dyn(0xE9E6DF, 0x161A1D) : UIConfig.color("fieldBg", 0xF2F2F2, 0x2C2C2E) }
+    static var raisedBg    : Color { xingjiOn ? Color.dyn(0xFFFFFF, 0x161A1D) : UIConfig.color("raisedBg", 0xFFFFFF, 0x242426) }
+    static var jadeSoft    : Color { xingjiOn ? Color.dyn(0xDDEFE8, 0x18382F) : UIConfig.color("jadeSoft", 0xD8F2E4, 0x173C32) }
+    static var goldSoft    : Color { xingjiOn ? Color.dyn(0xF4E8D2, 0x3B3020) : UIConfig.color("goldSoft", 0xFFF4DB, 0x3A2E17) }
+    static var pressBg     : Color { xingjiOn ? Color.dyn(0xDCD8D0, 0x22282B) : UIConfig.color("pressBg", 0xE8E8E8, 0x2C2C2E) }
     static var searchIcon  : Color { xingjiOn ? Color.dyn(0x89928D, 0x737F79) : UIConfig.color("searchIcon", 0xB2B2B2, 0x9A9A9E) }
     static var searchIcon2 : Color { xingjiOn ? Color.dyn(0x737F79, 0xA7B1AC) : UIConfig.color("searchIcon2", 0x8C8C8C, 0x9A9A9E) }
     static let searchBorder = Color(UIColor { t in

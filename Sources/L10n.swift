@@ -675,7 +675,7 @@ enum L10n {
         "在通知上回复或标为已读": "Reply or mark as read from the notification",
         "关闭时保持旧版通知：点击通知进入聊天，不在通知上显示操作按钮。": "When off, notifications keep the legacy behavior: tap to open the chat with no action buttons.",
         "星轨页面": "Orbit pages",
-        "WhatsApp 式信息密度，底栏和深页保持原生": "WhatsApp-like density with the native tab bar and detail pages",
+        "全局纸面与玉色语言，保留原生底栏与手势": "Paper-and-jade language throughout, with the native tab bar and gestures preserved",
         "我的星言": "My Xingyan",
         "把沟通延伸到更大的现场": "Take conversations into a wider world",
         "生活圈 · 公共内容 · 小程序": "Moments · Public content · Mini apps",

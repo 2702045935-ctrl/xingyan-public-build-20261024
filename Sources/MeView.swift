@@ -894,7 +894,7 @@ struct SettingsView: View {
                                 Text(Tr("星轨页面"))
                                     .font(pf(16))
                                     .foregroundColor(C.label)
-                                Text(Tr("WhatsApp 式信息密度，底栏和深页保持原生"))
+                                Text(Tr("全局纸面与玉色语言，保留原生底栏与手势"))
                                     .font(pf(11))
                                     .foregroundColor(C.subLabel)
                             }
@@ -1289,18 +1289,30 @@ struct SettingsView: View {
 
     private func settingsGroupHeader(_ text: String) -> some View {
         Text(text)
-            .font(pf(13.5))
-            .foregroundColor(Color.dyn(0x767676, 0x8F8F8F))
+            .font(pf(C.xingjiOn ? 11.5 : 13.5,
+                     C.xingjiOn ? .semibold : .regular))
+            .foregroundColor(C.subLabel)
+            .tracking(C.xingjiOn ? 0.35 : 0)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 16)
-            .padding(.top, 18)
+            .padding(.horizontal, C.xingjiOn ? 24 : 16)
+            .padding(.top, C.xingjiOn ? 16 : 18)
             .padding(.bottom, 7)
     }
 
     private func settingLink(_ title: String, _ value: String, key: String) -> some View {
         NavigationLink(value: key) {
             HStack(spacing: 12) {
-                Text(title).font(pf(17)).foregroundColor(C.label)
+                if C.xingjiOn {
+                    Image(systemName: settingsGlyph(for: key))
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(C.green)
+                        .frame(width: 30, height: 30)
+                        .background(RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            .fill(C.jadeSoft))
+                }
+                Text(title)
+                    .font(pf(C.xingjiOn ? 16 : 17))
+                    .foregroundColor(C.label)
                 Spacer(minLength: 0)
                 if !value.isEmpty {
                     Text(value).font(pf(15)).foregroundColor(C.subLabel)
@@ -1313,5 +1325,24 @@ struct SettingsView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(MenuPressStyle())
+    }
+
+    private func settingsGlyph(for key: String) -> String {
+        switch key {
+        case "profile": return "person.crop.circle"
+        case "account": return "shield.lefthalf.filled"
+        case "selfperm": return "checkmark.shield"
+        case "notify": return "bell"
+        case "general": return "display"
+        case "privacy": return "hand.raised"
+        case "storage": return "internaldrive"
+        case "more": return "ellipsis.circle"
+        case "setchat": return "bubble.left.and.bubble.right"
+        case "setcall": return "phone"
+        case "g.history": return "clock.arrow.circlepath"
+        case "feedback": return "questionmark.bubble"
+        case "about": return "info.circle"
+        default: return "chevron.forward.circle"
+        }
     }
 }

@@ -563,9 +563,13 @@ struct GroupInfoView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(C.cardBg))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
-        .shadow(color: Color.black.opacity(0.05), radius: 8, y: 2)
+        .background(RoundedRectangle(cornerRadius: C.xingjiOn ? 16 : 14,
+                                     style: .continuous).fill(C.cardBg))
+        .overlay(RoundedRectangle(cornerRadius: C.xingjiOn ? 16 : 14,
+                                  style: .continuous).stroke(C.hairline, lineWidth: 0.6))
+        .shadow(color: Color.black.opacity(C.xingjiOn ? 0 : 0.05),
+                radius: C.xingjiOn ? 0 : 8,
+                y: C.xingjiOn ? 0 : 2)
     }
 
     private var infoCard: some View {

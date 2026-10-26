@@ -124,7 +124,9 @@ struct WalletView: View {
         let rows = (g.items ?? []).filter { $0.enabled != false }
         let s = st
         return VStack(spacing: 0) {
-            Rectangle().fill(C.hairline).frame(height: 0.5)
+            if !C.xingjiOn {
+                Rectangle().fill(C.hairline).frame(height: 0.5)
+            }
             ForEach(Array(rows.enumerated()), id: \.element.id) { idx, it in
                 row(it)
                 if idx < rows.count - 1 {
@@ -133,6 +135,15 @@ struct WalletView: View {
             }
         }
         .background(C.cardBg)
+        .clipShape(RoundedRectangle(cornerRadius: C.xingjiOn ? 16 : 0,
+                                    style: .continuous))
+        .overlay {
+            if C.xingjiOn {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(C.hairline, lineWidth: 0.5)
+            }
+        }
+        .padding(.horizontal, C.xingjiOn ? 12 : 0)
     }
 
     private func row(_ it: WalletItem) -> some View {
