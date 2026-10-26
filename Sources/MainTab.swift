@@ -361,8 +361,12 @@ struct TabBar: View {
         UIConfig.num("tabIcon\(i)", L.tabIconBox)
     }
 
-    private var selColor: Color { UIConfig.color("tabSelColor", 0x1A1A1A, 0xEDEDED) }
-    private var unselColor: Color { UIConfig.color("tabUnselColor", 0x6B6B6B, 0x8E8E93) }
+    private var selColor: Color {
+        C.xingjiOn ? C.green : UIConfig.color("tabSelColor", 0x1A1A1A, 0xEDEDED)
+    }
+    private var unselColor: Color {
+        C.xingjiOn ? C.subLabel : UIConfig.color("tabUnselColor", 0x6B6B6B, 0x8E8E93)
+    }
 
     private func tabIconFont(_ i: Int, on: Bool) -> Font {
         let base = UIConfig.num("tabIcon\(i)", (i == 0 || i == 1) ? L.tabIcon - 2 : L.tabIcon)
@@ -393,12 +397,12 @@ struct TabBar: View {
 
     private var tabMaskLayer: some View {
 
-        if scheme == .dark {
+        if scheme == .dark && !C.xingjiOn {
             return AnyView(HarmonyDarkMask(strength: 0.98))
         }
-        let fill = UIConfig.colorIfSet("tabBarColor")
-            ?? UIConfig.colorIfSet("tabBg")
-            ?? C.tabBg
+        let fill = C.xingjiOn
+            ? C.tabBg
+            : (UIConfig.colorIfSet("tabBarColor") ?? UIConfig.colorIfSet("tabBg") ?? C.tabBg)
 
         let glassOn = UIConfig.num("tabGlass", 1) > 0
         if glassOn {
@@ -973,6 +977,16 @@ struct GroupCard<Content: View>: View {
         } else {
             VStack(spacing: 0) { content }
                 .background(bg ?? C.cardBg)
+                .overlay {
+                    if C.xingjiOn {
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(C.hairline, lineWidth: 0.5)
+                    }
+                }
+                .clipShape(RoundedRectangle(cornerRadius: C.xingjiOn ? 16 : 0,
+                                            style: .continuous))
+                .padding(.horizontal, C.xingjiOn ? 12 : 0)
+                .padding(.bottom, C.xingjiOn ? 10 : 0)
         }
     }
 }

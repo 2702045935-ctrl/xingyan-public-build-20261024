@@ -338,18 +338,22 @@ func colorDyn(_ raw: String?, light: UInt32, dark: UInt32) -> Color {
 }
 
 enum C {
+    /// 星轨总开关。关闭后，所有原有页面和旧 UIConfig 覆盖原样生效。
+    static var xingjiOn: Bool {
+        UserDefaults.standard.object(forKey: XingjiNativePages.enabledKey) as? Bool ?? true
+    }
 
-    static var pageBg      : Color { UIConfig.color("pageBg", 0xEDEDED, 0x0B0B0D) }
-    static var navBg       : Color { UIConfig.color("navBg", 0xEDEDED, 0x18181A) }
-    static var tabBg       : Color { UIConfig.color("tabBg", 0xF7F7F7, 0x18181A) }
-    static var cardBg      : Color { UIConfig.color("cardBg", 0xFFFFFF, 0x1C1C1E) }
-    static var chatRowBg   : Color { UIConfig.color("chatRowBg", 0xFFFFFF, 0x2A2A2A) }
-    static var pinnedBg    : Color { UIConfig.color("pinnedBg", 0xF2F2F2, 0x333335) }
-    static var searchBg    : Color { UIConfig.color("searchBg", 0xFFFFFF, 0x2A2A2C) }
+    static var pageBg      : Color { xingjiOn ? Color.dyn(0xF3F1EC, 0x000000) : UIConfig.color("pageBg", 0xEDEDED, 0x0B0B0D) }
+    static var navBg       : Color { xingjiOn ? Color.dyn(0xF7F7F7, 0x090B0C) : UIConfig.color("navBg", 0xEDEDED, 0x18181A) }
+    static var tabBg       : Color { xingjiOn ? Color.dyn(0xF7F7F7, 0x090B0C) : UIConfig.color("tabBg", 0xF7F7F7, 0x18181A) }
+    static var cardBg      : Color { xingjiOn ? Color.dyn(0xFCFBF8, 0x101315) : UIConfig.color("cardBg", 0xFFFFFF, 0x1C1C1E) }
+    static var chatRowBg   : Color { xingjiOn ? Color.dyn(0xFCFBF8, 0x101315) : UIConfig.color("chatRowBg", 0xFFFFFF, 0x2A2A2A) }
+    static var pinnedBg    : Color { xingjiOn ? Color.dyn(0xF4E8D2, 0x3B3020) : UIConfig.color("pinnedBg", 0xF2F2F2, 0x333335) }
+    static var searchBg    : Color { xingjiOn ? Color.dyn(0xFCFBF8, 0x161A1D) : UIConfig.color("searchBg", 0xFFFFFF, 0x2A2A2C) }
 
-    static var fieldBg     : Color { UIConfig.color("fieldBg", 0xF2F2F2, 0x2C2C2E) }
-    static var searchIcon  : Color { UIConfig.color("searchIcon", 0xB2B2B2, 0x9A9A9E) }
-    static var searchIcon2 : Color { UIConfig.color("searchIcon2", 0x8C8C8C, 0x9A9A9E) }
+    static var fieldBg     : Color { xingjiOn ? Color.dyn(0xE9E6DF, 0x161A1D) : UIConfig.color("fieldBg", 0xF2F2F2, 0x2C2C2E) }
+    static var searchIcon  : Color { xingjiOn ? Color.dyn(0x89928D, 0x737F79) : UIConfig.color("searchIcon", 0xB2B2B2, 0x9A9A9E) }
+    static var searchIcon2 : Color { xingjiOn ? Color.dyn(0x737F79, 0xA7B1AC) : UIConfig.color("searchIcon2", 0x8C8C8C, 0x9A9A9E) }
     static let searchBorder = Color(UIColor { t in
         t.userInterfaceStyle == .dark ? UIColor(white: 1, alpha: 0.12) : UIColor(hex: 0xF0F0F0)
     })
@@ -357,44 +361,44 @@ enum C {
     static let searchBorderChats = Color(UIColor { t in
         t.userInterfaceStyle == .dark ? UIColor(white: 1, alpha: 0.12) : UIColor.clear
     })
-    static var name        : Color { UIConfig.color("nameColor", 0x1C1C1E, 0xF2F2F7) }
-    static var label       : Color { UIConfig.color("labelColor", 0x191919, 0xF2F2F7) }
-    static var preview     : Color { UIConfig.color("previewColor", 0xB2B2B2, 0xB2B2B2) }
-    static var time        : Color { UIConfig.color("timeColor", 0xC7C7CC, 0xC7C7CC) }
+    static var name        : Color { xingjiOn ? Color.dyn(0x17211D, 0xEFF4F1) : UIConfig.color("nameColor", 0x1C1C1E, 0xF2F2F7) }
+    static var label       : Color { xingjiOn ? Color.dyn(0x17211D, 0xEFF4F1) : UIConfig.color("labelColor", 0x191919, 0xF2F2F7) }
+    static var preview     : Color { xingjiOn ? Color.dyn(0x58635D, 0xA7B1AC) : UIConfig.color("previewColor", 0xB2B2B2, 0xB2B2B2) }
+    static var time        : Color { xingjiOn ? Color.dyn(0x89928D, 0x737F79) : UIConfig.color("timeColor", 0xC7C7CC, 0xC7C7CC) }
 
-    static var ctIdxColor  : Color { UIConfig.color("ctIdxColor", 0x555555, 0x8E8E93) }
-    static var subLabel    : Color { UIConfig.color("subLabelColor", 0x999999, 0x8F8F8F) }
-    static var hairline    : Color { UIConfig.color("lineColor", 0xE5E5E5, 0x333335) }
-    static var navLine     : Color { UIConfig.color("navLineColor", 0xE8E8E8, 0x2C2C2E) }
+    static var ctIdxColor  : Color { xingjiOn ? Color.dyn(0x58635D, 0x737F79) : UIConfig.color("ctIdxColor", 0x555555, 0x8E8E93) }
+    static var subLabel    : Color { xingjiOn ? Color.dyn(0x58635D, 0xA7B1AC) : UIConfig.color("subLabelColor", 0x999999, 0x8F8F8F) }
+    static var hairline    : Color { xingjiOn ? Color.dyn(0xE5E1D9, 0x24282C) : UIConfig.color("lineColor", 0xE5E5E5, 0x333335) }
+    static var navLine     : Color { xingjiOn ? Color.dyn(0xE5E1D9, 0x24282C) : UIConfig.color("navLineColor", 0xE8E8E8, 0x2C2C2E) }
 
-    static var green       : Color { UIConfig.color("greenColor", 0x07C160, 0x07C160) }
-    static var red         : Color { UIConfig.color("redColor", 0xFA5151, 0xFA5151) }
-    static var orange      : Color { UIConfig.color("orangeColor", 0xFF9500, 0xFF9500) }
-    static var tabInk      : Color { UIConfig.color("tabInkColor", 0x191919, 0xB5B5B5) }
+    static var green       : Color { xingjiOn ? Color.dyn(0x176A57, 0x63C6A5) : UIConfig.color("greenColor", 0x07C160, 0x07C160) }
+    static var red         : Color { xingjiOn ? Color.dyn(0xC94C4C, 0xE06B6B) : UIConfig.color("redColor", 0xFA5151, 0xFA5151) }
+    static var orange      : Color { xingjiOn ? Color.dyn(0xC58C32, 0xE2B35F) : UIConfig.color("orangeColor", 0xFF9500, 0xFF9500) }
+    static var tabInk      : Color { xingjiOn ? Color.dyn(0x17211D, 0xEFF4F1) : UIConfig.color("tabInkColor", 0x191919, 0xB5B5B5) }
 
-    static var chatsTopBg  : Color { UIConfig.color("chatsTopBg", 0xF7F7F7, 0x18181A) }
+    static var chatsTopBg  : Color { xingjiOn ? Color.dyn(0xF7F7F7, 0x090B0C) : UIConfig.color("chatsTopBg", 0xF7F7F7, 0x18181A) }
 
-    static var chatsPageBg : Color { UIConfig.color("chatsPageBg", 0xEDEDED, 0x0B0B0D) }
-    static var chatsRowBg  : Color { UIConfig.color("chatsRowBg", 0xFFFFFF, 0x1C1C1E) }
+    static var chatsPageBg : Color { xingjiOn ? Color.dyn(0xF3F1EC, 0x000000) : UIConfig.color("chatsPageBg", 0xEDEDED, 0x0B0B0D) }
+    static var chatsRowBg  : Color { xingjiOn ? Color.dyn(0xFCFBF8, 0x101315) : UIConfig.color("chatsRowBg", 0xFFFFFF, 0x1C1C1E) }
 
-    static var contactsBg  : Color { UIConfig.color("contactsBg", 0xFFFFFF, 0x141419) }
+    static var contactsBg  : Color { xingjiOn ? Color.dyn(0xF3F1EC, 0x000000) : UIConfig.color("contactsBg", 0xFFFFFF, 0x141419) }
 
-    static var discoverBg  : Color { UIConfig.color("discoverBg", 0xEDEDED, 0x141419) }
+    static var discoverBg  : Color { xingjiOn ? Color.dyn(0xF3F1EC, 0x000000) : UIConfig.color("discoverBg", 0xEDEDED, 0x141419) }
 
-    static var discoverCardBg: Color { UIConfig.color("discoverCardBg", 0xFFFFFF, 0x141419) }
+    static var discoverCardBg: Color { xingjiOn ? Color.dyn(0xFCFBF8, 0x101315) : UIConfig.color("discoverCardBg", 0xFFFFFF, 0x141419) }
 
-    static var meCardBg    : Color { UIConfig.color("meCardBg", 0xFFFFFF, 0x141419) }
+    static var meCardBg    : Color { xingjiOn ? Color.dyn(0xFCFBF8, 0x101315) : UIConfig.color("meCardBg", 0xFFFFFF, 0x141419) }
 
-    static var bubbleMine  : Color { UIConfig.color("bubbleMineColor", 0xD8F2E4, 0x1DC9BD) }
-    static var bubbleOther : Color { UIConfig.color("bubbleOtherColor", 0xFFFFFF, 0x2D2D30) }
-    static var bubbleText  : Color { UIConfig.color("bubbleTextColor", 0x191919, 0xEDEDED) }
+    static var bubbleMine  : Color { xingjiOn ? Color.dyn(0xDDEFE8, 0x173C32) : UIConfig.color("bubbleMineColor", 0xD8F2E4, 0x1DC9BD) }
+    static var bubbleOther : Color { xingjiOn ? Color.dyn(0xFFFFFF, 0x161A1D) : UIConfig.color("bubbleOtherColor", 0xFFFFFF, 0x2D2D30) }
+    static var bubbleText  : Color { xingjiOn ? Color.dyn(0x17211D, 0xEFF4F1) : UIConfig.color("bubbleTextColor", 0x191919, 0xEDEDED) }
 
-    static var msgTime     : Color { UIConfig.color("msgTimeColor", 0xAEAEB2, 0xAEAEB2) }
+    static var msgTime     : Color { xingjiOn ? Color.dyn(0x89928D, 0x737F79) : UIConfig.color("msgTimeColor", 0xAEAEB2, 0xAEAEB2) }
 
-    static var chatTimeBg  : Color { UIConfig.color("chatTimeBg", 0xE5E5E5, 0x2C2C2E) }
-    static var chatTimeInk : Color { UIConfig.color("chatTimeColor", 0x8A8A8E, 0x8A8A8E) }
+    static var chatTimeBg  : Color { xingjiOn ? Color.dyn(0xFCFBF8, 0x161A1D) : UIConfig.color("chatTimeBg", 0xE5E5E5, 0x2C2C2E) }
+    static var chatTimeInk : Color { xingjiOn ? Color.dyn(0x89928D, 0x737F79) : UIConfig.color("chatTimeColor", 0x8A8A8E, 0x8A8A8E) }
 
-    static var link        : Color { UIConfig.color("linkColor", 0x576B95, 0x7D90A9) }
+    static var link        : Color { xingjiOn ? Color.dyn(0x176A57, 0x63C6A5) : UIConfig.color("linkColor", 0x576B95, 0x7D90A9) }
     static let arrow       = Color.dyn(0xB2B2B2, 0x8A8A8E)
     static let ringInk     = Color(UIColor { t in
         t.userInterfaceStyle == .dark
