@@ -199,9 +199,19 @@ struct ChatRow: View {
         case "call", "voicecall": return "[语音通话]"
         case "videocall": return "[视频通话]"
         case "system": return "消息"
-        case "": return ""
+        case "": return idlePreview
         default: return "[消息]"
         }
+    }
+
+    private var idlePreview: String {
+        if chat.type == "group" {
+            let count = chat.memberCount ?? chat.memberIds?.count ?? 0
+            return count > 0 ? "\(count) 人群聊" : "群聊"
+        }
+        if chat.bot == "qqnews" { return "看看今天的热点" }
+        if chat.showsOfficialMark { return "查看官方内容" }
+        return "新的会话"
     }
 
     private var rightColumn: some View {
@@ -217,7 +227,7 @@ struct ChatRow: View {
     private var unreadOnAvatar: some View {
         if chat.unreadCount > 0 {
 
-            if chat.muted == true || chat.flagged == true {
+            if (chat.muted == true || chat.flagged == true), chat.bot != "qqnews" {
                 UnreadDot(border: C.chatsRowBg)
                     .offset(x: 5, y: -5)
             } else {
