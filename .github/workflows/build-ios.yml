@@ -74,7 +74,9 @@ jobs:
         run: |
           set -e
           BUILDDATE="$(TZ=Asia/Shanghai date '+%m-%d %H:%M')"
-          BUILDNO=$(( 625 + ${{ github.run_number }} ))
+          # 新构建仓库的 run_number 会重新计数；必须高于旧仓库的 B2000+，
+          # 否则 iOS 会把包当成降级，继续显示旧界面，只更新不到实际内容。
+          BUILDNO=$(( 300000 + ${{ github.run_number }} ))
           echo "构建号 = $BUILDNO"
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILDNO" Info.plist || true
           /usr/libexec/PlistBuddy -c "Add :BuildDate string $BUILDDATE" Info.plist \
