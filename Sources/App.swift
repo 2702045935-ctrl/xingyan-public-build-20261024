@@ -364,6 +364,13 @@ final class AppState: ObservableObject {
     func boot() async {
         CrashCatcher.note("启动", "3 boot 开始")
 
+        /* 有本地登录态时先把主界面放出来，网络校验在后台继续。
+           不再让用户每次启动都卡在“正在连接…”和二次登录确认页。 */
+        if !API.shared.token.isEmpty, let cached = AppState.cachedUser() {
+            me = cached
+            booting = false
+        }
+
             let watchdog = Task { @MainActor in
             try? await Task.sleep(nanoseconds: 6_000_000_000)
             guard !Task.isCancelled, booting else { return }
@@ -380,6 +387,8 @@ final class AppState: ObservableObject {
 
         await checkVersionAndNotice()
         if API.shared.token.isEmpty {
+            me = nil
+            needConfirmLogin = false
             booting = false
             return
         }
@@ -390,17 +399,19 @@ final class AppState: ObservableObject {
                 me = user
                 rememberLastUser()
 
-                needConfirmLogin = true
+                needConfirmLogin = false
                 await refreshAll()
                 Realtime.shared.start()
             } else {
                 API.shared.clearToken()
+                me = nil
+                needConfirmLogin = false
             }
         } catch {
 
             if let cached = AppState.cachedUser() {
                 me = cached
-                needConfirmLogin = true
+                needConfirmLogin = false
             }
 
             await refreshAll()
