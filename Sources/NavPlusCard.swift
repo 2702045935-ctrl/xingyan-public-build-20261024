@@ -15,49 +15,53 @@ struct NavPlusCard: View {
     var body: some View {
         VStack(spacing: 0) {
             ForEach(Array(items.enumerated()), id: \.offset) { idx, item in
-                if idx > 0 { HairLine(inset: 46) }
+                if idx > 0 {
+                    Rectangle()
+                        .fill(OrbitTheme.divider)
+                        .frame(height: 0.5)
+                        .padding(.leading, 54)
+                }
                 Button {
                     onPick()
                     item.action()
                 } label: {
-                    HStack(spacing: 10) {
+                    HStack(spacing: 12) {
                         ZStack {
-                            RoundedRectangle(cornerRadius: 9, style: .continuous)
-                                .fill(LinearGradient(colors: item.colors,
-                                                     startPoint: .topLeading,
-                                                     endPoint: .bottomTrailing))
-                                .frame(width: 30, height: 30)
-                                .shadow(color: item.colors.count > 1 ? item.colors[1].opacity(0.30) : .clear,
-                                        radius: 5, y: 2)
+                            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                .fill(OrbitTheme.field)
                             Image(systemName: item.symbol)
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(.white)
+                                .font(.system(size: 14.5, weight: .semibold))
+                                .foregroundColor(OrbitTheme.jade)
                         }
-                        Text(item.title).font(pf(15)).foregroundColor(C.label)
+                        .frame(width: 34, height: 34)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                .stroke(OrbitTheme.divider, lineWidth: 0.6)
+                        )
+
+                        Text(item.title)
+                            .font(.system(size: 14.5, weight: .medium))
+                            .foregroundColor(OrbitTheme.ink)
                         Spacer(minLength: 0)
                     }
-                    .padding(.horizontal, 12)
-                    .frame(height: 48)
+                    .padding(.horizontal, 14)
+                    .frame(height: 52)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(NavPlusRowPressStyle())
             }
         }
-        .frame(width: 178)
+        .frame(width: 194)
 
         .background {
-            GlassBackground(shape: RoundedRectangle(cornerRadius: 15, style: .continuous),
-                            opacity: UIConfig.num("plusCardAlpha", 0.9),
-                            edgeAlpha: UIConfig.num("plusCardEdge", 0.30),
-                            shadow: false,
-                            seed: 0.75,
-                            native: true)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(OrbitTheme.raised)
         }
         .overlay(
-            RoundedRectangle(cornerRadius: 15, style: .continuous)
-                .stroke(Color.white.opacity(0.26), lineWidth: 0.6)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(OrbitTheme.divider, lineWidth: 0.7)
         )
-        .shadow(color: Color.black.opacity(0.18), radius: 16, y: 8)
+        .shadow(color: Color.black.opacity(0.16), radius: 18, y: 9)
     }
 }
 
@@ -65,7 +69,7 @@ private struct NavPlusRowPressStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
-            .background(configuration.isPressed ? Color.black.opacity(0.05) : Color.clear)
+            .background(configuration.isPressed ? OrbitTheme.jadeSoft.opacity(0.72) : Color.clear)
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }

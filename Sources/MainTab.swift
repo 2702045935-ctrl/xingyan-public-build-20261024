@@ -87,7 +87,7 @@ struct MainTabView: View {
                     .background {
 
                         if UIConfig.num("tabBarOpaqueBg", 0) > 0 {
-                            C.pageBg.ignoresSafeArea(edges: .bottom)
+                            OrbitTheme.raised.ignoresSafeArea(edges: .bottom)
                         }
                     }
 
@@ -387,8 +387,8 @@ struct TabBar: View {
         UIConfig.num("tabIcon\(i)", L.tabIconBox)
     }
 
-    private var selColor: Color { UIConfig.color("tabSelColor", 0x1A1A1A, 0xEDEDED) }
-    private var unselColor: Color { UIConfig.color("tabUnselColor", 0x6B6B6B, 0x8E8E93) }
+    private var selColor: Color { UIConfig.color("tabOrbitSelColor", 0x17201C, 0xDDF7ED) }
+    private var unselColor: Color { UIConfig.color("tabOrbitUnselColor", 0x626B66, 0x85938D) }
 
     private func tabIconFont(_ i: Int, on: Bool) -> Font {
         let base = UIConfig.num("tabIcon\(i)", (i == 0 || i == 1) ? L.tabIcon - 2 : L.tabIcon)
@@ -439,7 +439,22 @@ struct TabBar: View {
     private var tabMaskLayer: some View {
 
         if scheme == .dark {
-            return AnyView(HarmonyDarkMask(strength: 0.98))
+            return AnyView(ZStack {
+                Rectangle().fill(.ultraThinMaterial)
+                    .opacity(0.78)
+                LinearGradient(
+                    colors: [Color(hex: 0x121A17).opacity(0.82),
+                             Color(hex: 0x090B0A).opacity(0.94)],
+                    startPoint: .top, endPoint: .bottom
+                )
+                OrbitTheme.jade.opacity(0.035)
+                VStack(spacing: 0) {
+                    Rectangle()
+                        .fill(OrbitTheme.divider.opacity(0.85))
+                        .frame(height: 0.5)
+                    Spacer(minLength: 0)
+                }
+            })
         }
         let fill = UIConfig.colorIfSet("tabBarColor")
             ?? UIConfig.colorIfSet("tabBg")
@@ -492,11 +507,14 @@ struct TabBar: View {
                                 seed: 0.74,
                                 native: true)
                 Capsule(style: .continuous)
-                    .fill(scheme == .dark ? Color.black.opacity(0.24) : Color.white.opacity(0.18))
+                    .fill(scheme == .dark ? OrbitTheme.raised.opacity(0.82)
+                                          : Color.white.opacity(0.18))
                 Capsule(style: .continuous)
                     .stroke(
                         LinearGradient(
-                            colors: [Color.white.opacity(0.78), Color.white.opacity(0.18)],
+                            colors: [scheme == .dark ? OrbitTheme.jade.opacity(0.55)
+                                                     : Color.white.opacity(0.78),
+                                     Color.white.opacity(0.12)],
                             startPoint: .top,
                             endPoint: .bottom
                         ),
@@ -586,7 +604,7 @@ struct TabBar: View {
                                 Circle()
                                     .fill(C.red)
                                     .frame(width: 9, height: 9)
-                                    .overlay(Circle().stroke(C.tabBg, lineWidth: 1.5))
+                                    .overlay(Circle().stroke(OrbitTheme.raised, lineWidth: 1.5))
                                     .offset(x: 4, y: -2)
                             }
 
@@ -594,7 +612,7 @@ struct TabBar: View {
                                 Circle()
                                     .fill(C.red)
                                     .frame(width: 9, height: 9)
-                                    .overlay(Circle().stroke(C.tabBg, lineWidth: 1.5))
+                                    .overlay(Circle().stroke(OrbitTheme.raised, lineWidth: 1.5))
                                     .offset(x: 4, y: -2)
                             }
 
@@ -602,7 +620,7 @@ struct TabBar: View {
                                 Circle()
                                     .fill(C.red)
                                     .frame(width: 9, height: 9)
-                                    .overlay(Circle().stroke(C.tabBg, lineWidth: 1.5))
+                                    .overlay(Circle().stroke(OrbitTheme.raised, lineWidth: 1.5))
                                     .offset(x: 4, y: -2)
                             }
                         }
@@ -645,14 +663,16 @@ struct TabBar: View {
                                     seed: 0.22,
                                     native: true)
                     Capsule(style: .continuous)
-                        .fill(scheme == .dark ? Color.white.opacity(0.055)
+                        .fill(scheme == .dark ? OrbitTheme.jade.opacity(0.10)
                                               : Color.white.opacity(0.20))
                 }
                     .overlay(
 
                         Capsule(style: .continuous)
-                            .stroke(LinearGradient(colors: [Color.white.opacity(0.70),
-                                                            Color.white.opacity(0.16)],
+                            .stroke(LinearGradient(colors: [scheme == .dark
+                                                            ? OrbitTheme.jade.opacity(0.48)
+                                                            : Color.white.opacity(0.70),
+                                                            Color.white.opacity(0.12)],
                                                    startPoint: .top, endPoint: .bottom),
                                     lineWidth: 0.9)
                     )

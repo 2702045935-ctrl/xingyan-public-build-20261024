@@ -12,8 +12,8 @@ struct ContactIndexBar: View {
 
     private let padV: CGFloat = 4.2
 
-    private let searchBox: CGFloat = 22
-    private let searchGap: CGFloat = 4
+    private let searchBox: CGFloat = 26
+    private let searchGap: CGFloat = 6
 
     @State private var active: String? = nil
 
@@ -21,43 +21,44 @@ struct ContactIndexBar: View {
 
     private let haptic = UIImpactFeedbackGenerator(style: .heavy)
 
-    private var fontSize: CGFloat { max(6, L.ctIdxSize) }
+    private var fontSize: CGFloat { max(6.5, L.ctIdxSize - 0.5) }
     private var rowH: CGFloat { max(fontSize, L.ctIdxItemH) }
     private var pitch: CGFloat { rowH }
 
-    private var dotSide: CGFloat { max(15, rowH + 1.5) }
+    private var dotSide: CGFloat { max(16, rowH + 2) }
 
     private var letters: [String] {
         Self.letters.filter { available.contains($0) }
     }
-    private var initialLetter: String { letters.first ?? "A" }
-    private var shownLetter: String { touching ? (active ?? initialLetter) : initialLetter }
-
-    private var activeBg: Color { UIConfig.colorIfSet("ctIdxActiveBg") ?? C.green }
+    private var shownLetter: String? { touching ? active : nil }
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: searchGap) {
             Button(action: onSearch) {
-                SVGIcon(markup: I.searchBig, size: 13, color: C.ctIdxColor)
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 11.5, weight: .semibold))
+                    .foregroundStyle(OrbitTheme.jade)
                     .frame(width: searchBox, height: searchBox)
+                    .background(Circle().fill(OrbitTheme.raised))
+                    .overlay(Circle().stroke(OrbitTheme.divider, lineWidth: 0.6))
+                    .shadow(color: Color.black.opacity(0.08), radius: 5, y: 2)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .padding(.bottom, searchGap)
             .accessibilityLabel(Tr("搜索"))
 
             VStack(spacing: 0) {
                 ForEach(letters, id: \.self) { L in
                     Text(L)
-                        .font(pf(fontSize, ctIdxWeight()))
+                        .font(.system(size: fontSize, weight: shownLetter == L ? .bold : .medium))
 
-                        .foregroundColor(shownLetter == L ? .white : C.ctIdxColor)
+                        .foregroundColor(shownLetter == L ? .white : OrbitTheme.tertiary)
                         .frame(height: rowH)
-                        .frame(width: 22)
+                        .frame(width: 18)
                         .background {
                             if shownLetter == L {
-                                Circle()
-                                    .fill(activeBg)
+                                Capsule(style: .continuous)
+                                    .fill(OrbitTheme.jade)
                                     .frame(width: dotSide, height: dotSide)
                             }
                         }
@@ -78,9 +79,18 @@ struct ContactIndexBar: View {
                     }
             )
             .onDisappear { active = nil }
+            .padding(.vertical, 5)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(OrbitTheme.field.opacity(0.92))
+                    .overlay(
+                        Capsule(style: .continuous)
+                            .stroke(OrbitTheme.divider, lineWidth: 0.6)
+                    )
+            )
         }
         .padding(.vertical, padV)
-        .frame(width: 22)
+        .frame(width: 28)
         .onAppear { haptic.prepare() }
         .onChange(of: available) { _ in haptic.prepare() }
     }
@@ -100,12 +110,17 @@ struct LetterBubble: View {
 
     var body: some View {
         Text(letter)
-            .font(pf(36, .semibold))
-            .foregroundColor(.white)
-            .frame(width: 78, height: 78)
+            .font(.system(size: 34, weight: .bold))
+            .foregroundColor(OrbitTheme.ink)
+            .frame(width: 74, height: 74)
             .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(Color.black.opacity(0.62))
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(OrbitTheme.raised.opacity(0.96))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 22, style: .continuous)
+                            .stroke(OrbitTheme.jade.opacity(0.42), lineWidth: 1)
+                    )
+                    .shadow(color: Color.black.opacity(0.16), radius: 16, y: 7)
             )
             .allowsHitTesting(false)
     }

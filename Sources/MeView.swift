@@ -270,7 +270,7 @@ struct MeView: View {
             }
             .navigationDestination(for: String.self) { key in
                 if key == "settings" {
-                    SettingsView()
+                    AppleSettingsView()
                 } else if key == "moments" {
 
                     MomentsView(mineOnly: true)
