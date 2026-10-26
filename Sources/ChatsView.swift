@@ -110,18 +110,13 @@ struct ChatRow: View {
 
     var body: some View {
 
-        HStack(alignment: .top, spacing: 0) {
+        HStack(alignment: .center, spacing: 12) {
             avatarBlock
-                .padding(.top, avatarTop)
-            Spacer().frame(width: L.rowGap)
             textColumn
-                .padding(.top, L.rowPadTop)
             Spacer(minLength: 6)
             rightColumn
-                .padding(.top, L.rowPadTop)
         }
-        .padding(.leading, L.rowPadL)
-        .padding(.trailing, L.rowPadR)
+        .padding(.horizontal, 14)
         .frame(height: L.rowH)
         .contentShape(Rectangle())
     }
@@ -139,11 +134,11 @@ struct ChatRow: View {
     }
 
     private var textColumn: some View {
-        VStack(alignment: .leading, spacing: max(3, L.rowTextGap - 1)) {
+        VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 5) {
                 Text(chat.name)
-                    .font(pf(L.rowNameSize))
-                    .foregroundColor(C.name)
+                    .font(.system(size: 15.5, weight: .semibold))
+                    .foregroundStyle(OrbitTheme.ink)
                     .lineLimit(1)
                     .minimumScaleFactor(0.9)
                     .layoutPriority(1)
@@ -164,9 +159,27 @@ struct ChatRow: View {
                             color2: chat.memberColor2,
                             height: L.v(11.5, 3.2, 13))
                     .fixedSize()
+
+                if chat.type == "group" || (chat.memberCount ?? 0) > 2 {
+                    let count = chat.memberCount ?? chat.memberIds?.count ?? 0
+                    if count > 0 {
+                        Text("\(count)人")
+                            .font(.system(size: 9.5, weight: .semibold))
+                            .foregroundStyle(OrbitTheme.tertiary)
+                            .padding(.horizontal, 5)
+                            .frame(height: 17)
+                            .background(Capsule().fill(OrbitTheme.field))
+                    }
+                }
+
+                if chat.pinned == true {
+                    Image(systemName: "pin.fill")
+                        .font(.system(size: 8.5))
+                        .foregroundStyle(OrbitTheme.gold)
+                }
             }
             mentionPreview
-                .font(pf(L.rowPreviewSize))
+                .font(.system(size: 12.5))
                 .lineLimit(1)
                 .truncationMode(.tail)
         }
@@ -175,9 +188,9 @@ struct ChatRow: View {
     private var mentionPreview: Text {
         let raw = (chat.lastMessage?.preview ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let preview = raw.isEmpty ? fallbackPreview(chat.lastMessage?.kind ?? "") : raw
-        let body = Text(preview).foregroundColor(C.preview)
+        let body = Text(preview).foregroundColor(OrbitTheme.secondary)
         guard chat.lastMessage?.mentionMe == true, chat.unreadCount > 0 else { return body }
-        return Text("[有人@我] ").foregroundColor(C.red) + body
+        return Text("[有人@我] ").foregroundColor(OrbitTheme.jade) + body
     }
 
     /// 旧服务端或实时推送偶尔只带 kind 不带 preview，列表仍按微信占位。
@@ -215,10 +228,10 @@ struct ChatRow: View {
     }
 
     private var rightColumn: some View {
-        VStack(alignment: .trailing, spacing: 5) {
+        VStack(alignment: .trailing, spacing: 7) {
             Text(TimeFmt.list(chat.lastMessage?.createdAt ?? chat.updatedAt))
-                .font(pf(L.rowTimeSize, .regular))
-                .foregroundColor(C.time)
+                .font(.system(size: 10.5, weight: .medium))
+                .foregroundStyle(OrbitTheme.tertiary)
                 .fixedSize()
         }
     }
@@ -228,11 +241,14 @@ struct ChatRow: View {
         if chat.unreadCount > 0 {
 
             if (chat.muted == true || chat.flagged == true), chat.bot != "qqnews" {
-                UnreadDot(border: C.chatsRowBg)
-                    .offset(x: 5, y: -5)
+                Circle()
+                    .fill(OrbitTheme.tertiary)
+                    .frame(width: 7, height: 7)
+                    .overlay(Circle().stroke(OrbitTheme.raised, lineWidth: 1.4))
+                    .offset(x: 2, y: -2)
             } else {
-                UnreadBadge(count: chat.unreadCount, border: C.chatsRowBg)
-                    .offset(x: 8, y: -8)
+                OrbitUnreadBadge(count: chat.unreadCount)
+                    .offset(x: 4, y: -4)
             }
         }
     }
@@ -243,9 +259,9 @@ struct ChatRow: View {
                chat.type == "group" || (chat.memberCount ?? 0) > 2 {
                 GroupAvatarMosaic(chatId: chat.id,
                                   memberIds: chat.memberIds ?? [],
-                                  size: L.avatar, radius: 4)
+                                  size: L.avatar, radius: 16)
             } else {
-                Avatar(path: chat.avatar ?? "", size: L.avatar, radius: 4,
+                Avatar(path: chat.avatar ?? "", size: L.avatar, radius: 16,
                        group: chat.type == "group" || (chat.memberCount ?? 0) > 2,
                        level: chat.qqLevel ?? 0)
             }
@@ -330,7 +346,7 @@ struct SwipeChatRow: View {
     }
 
     private var rowWidth: CGFloat { max(1, L.width - max(0, horizontalInset) * 2) }
-    private var rowBg: Color { cardStyle ? .clear : C.chatsRowBg }
+    private var rowBg: Color { cardStyle ? .clear : OrbitTheme.raised }
 
     var body: some View {
         ZStack(alignment: .trailing) {
@@ -338,7 +354,12 @@ struct SwipeChatRow: View {
             ChatRow(chat: chat, onTapAvatar: onTapAvatar)
                 .frame(width: rowWidth, height: L.rowH, alignment: .leading)
                 .background(rowBg)
-                .overlay(alignment: .bottom) { HairLine(inset: L.dividerLeft) }
+                .overlay(alignment: .bottom) {
+                    Rectangle()
+                        .fill(OrbitTheme.divider)
+                        .frame(height: 0.5)
+                        .padding(.leading, 76)
+                }
                 .offset(x: offset)
                 .contentShape(Rectangle())
                 .zIndex(1)
@@ -575,12 +596,12 @@ struct ChatsView: View {
     @State private var keyword = ""
     @State private var chatFilter: ChatFilter = .all
     @Namespace private var filterSelectionNS
-    private let chatFilterH: CGFloat = 52
-    private var chatFilterVisible: Bool { UIConfig.num("chatFilterBar", 1) > 0 }
+    private let chatFilterH: CGFloat = 46
+    private var chatFilterVisible: Bool { UIConfig.num("chatsOrbitFilter", 1) > 0 }
     private var chatFilterOffset: CGFloat { chatFilterVisible ? chatFilterH : 0 }
-    private var chatsCardStyle: Bool { UIConfig.num("chatsCardStyle", 1) > 0 }
-    private var chatsCardInset: CGFloat { max(0, UIConfig.num("chatsCardInset", 12)) }
-    private var chatsCardRadius: CGFloat { max(0, UIConfig.num("chatsCardRadius", 16)) }
+    private var chatsCardStyle: Bool { UIConfig.num("chatsOrbitCard", 1) > 0 }
+    private var chatsCardInset: CGFloat { max(8, UIConfig.num("chatsOrbitInset", 12)) }
+    private var chatsCardRadius: CGFloat { max(16, UIConfig.num("chatsOrbitRadius", 22)) }
 
     @State private var scrolled: CGFloat = 0
 
@@ -620,6 +641,7 @@ struct ChatsView: View {
     @State private var showScan = false
 
     @State private var showPayCode = false
+    @State private var showAccounts = false
     @State private var openRow: String?
 
     @State private var showSearch = false
@@ -673,22 +695,22 @@ struct ChatsView: View {
         if count > 0 {
             Group {
                 if item == .all {
-                    Circle().fill(C.red).frame(width: 8, height: 8)
+                    Circle().fill(OrbitTheme.jade).frame(width: 7, height: 7)
                 } else {
                     Text(count > 99 ? "99+" : "\(count)")
                         .font(pfExact(9, .semibold))
-                        .foregroundColor(.white)
+                        .foregroundColor(OrbitTheme.jade)
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
                         .padding(.horizontal, count > 9 ? 4 : 3)
                         .frame(minWidth: 15)
                         .frame(height: 15)
-                        .background(Capsule().fill(C.red))
+                        .background(Capsule().fill(OrbitTheme.jadeSoft))
                 }
             }
             .overlay {
                 if item != .all {
-                    Capsule().stroke(C.chatsPageBg, lineWidth: 1)
+                    Capsule().stroke(OrbitTheme.canvas, lineWidth: 1)
                 }
             }
             .offset(x: -3, y: -3)
@@ -714,64 +736,32 @@ struct ChatsView: View {
     }
 
     private func chatFilterBar(unreadCounts: [ChatFilter: Int]) -> some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 18) {
             ForEach(ChatFilter.allCases) { item in
                 Button {
                     chooseFilter(item)
                 } label: {
-                    ZStack {
-                        if chatFilter == item {
-                            GlassBackground(shape: Capsule(style: .continuous),
-                                            opacity: 0.96,
-                                            edgeAlpha: 0.82,
-                                            shadow: false,
-                                            seed: 0.32)
-                                .overlay {
-                                    Capsule(style: .continuous)
-                                        .fill(
-                                            LinearGradient(
-                                                colors: [
-                                                    Color.white.opacity(scheme == .dark ? 0.20 : 0.42),
-                                                    Color.white.opacity(0.025),
-                                                    Color.white.opacity(scheme == .dark ? 0.09 : 0.18)
-                                                ],
-                                                startPoint: .topLeading,
-                                                endPoint: .bottomTrailing
-                                            )
-                                        )
-                                }
-                                .overlay {
-                                    Capsule(style: .continuous)
-                                        .stroke(
-                                            LinearGradient(
-                                                colors: [
-                                                    Color.white.opacity(scheme == .dark ? 0.68 : 0.94),
-                                                    Color.white.opacity(0.06),
-                                                    Color.black.opacity(scheme == .dark ? 0.42 : 0.20)
-                                                ],
-                                                startPoint: .topLeading,
-                                                endPoint: .bottomTrailing
-                                            ),
-                                            lineWidth: 1.1
-                                        )
-                                }
-                                .shadow(color: Color.black.opacity(scheme == .dark ? 0.22 : 0.08),
-                                        radius: 5, x: 0, y: 2)
-                                .matchedGeometryEffect(id: "chatFilterSelection",
-                                                       in: filterSelectionNS)
-                        }
-
+                    VStack(spacing: 5) {
                         HStack(spacing: 4) {
-                            Image(systemName: item.symbol)
-                                .font(.system(size: 11.5, weight: .medium))
-                                .frame(width: 13)
                             Text(Tr(item.rawValue))
-                                .font(pf(13.5, chatFilter == item ? .semibold : .regular))
+                                .font(.system(size: 12.5,
+                                              weight: chatFilter == item ? .semibold : .regular))
                                 .lineLimit(1)
                         }
-                        .foregroundColor(chatFilter == item ? C.label : C.subLabel)
+                        .foregroundStyle(chatFilter == item ? OrbitTheme.ink : OrbitTheme.tertiary)
+
+                        Group {
+                            if chatFilter == item {
+                                Capsule()
+                                    .fill(OrbitTheme.jade)
+                                    .frame(width: 18, height: 2)
+                                    .matchedGeometryEffect(id: "chatFilterSelection",
+                                                           in: filterSelectionNS)
+                            } else {
+                                Color.clear.frame(width: 18, height: 2)
+                            }
+                        }
                     }
-                    .frame(maxWidth: .infinity)
                     .frame(height: 34)
                     .overlay(alignment: .topTrailing) {
                         filterReminder(item, count: unreadCounts[item, default: 0])
@@ -781,7 +771,7 @@ struct ChatsView: View {
                 .buttonStyle(.plain)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .center)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .simultaneousGesture(
             DragGesture(minimumDistance: 18)
                 .onEnded { g in
@@ -790,24 +780,13 @@ struct ChatsView: View {
                     moveFilter(dx < 0 ? 1 : -1)
                 }
         )
-        .padding(4)
-        .background {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(C.chatsPageBg)
-        }
-        .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(C.hairline.opacity(0.72), lineWidth: 0.6)
-        }
-        .shadow(color: Color.black.opacity(scheme == .dark ? 0.20 : 0.06),
-                radius: 7, x: 0, y: 3)
         .padding(.horizontal, 12)
-        .padding(.top, 4)
-        .padding(.bottom, 6)
+        .padding(.top, 7)
+        .padding(.bottom, 4)
         .frame(height: chatFilterH)
-        .background(C.chatsPageBg)
+        .background(OrbitTheme.canvas)
         .overlay(alignment: .bottom) {
-            Rectangle().fill(C.hairline.opacity(0.72)).frame(height: 0.5)
+            Rectangle().fill(OrbitTheme.divider).frame(height: 0.5)
         }
         .zIndex(2)
     }
@@ -1226,8 +1205,8 @@ struct ChatsView: View {
                 ZStack {
                     Rectangle().fill(.bar)
                         .opacity(max(0, min(1, blur)))
-                    (UIConfig.colorIfSet("chatsNavMaskColor") ?? C.chatsPageBg)
-                        .opacity(max(0, min(1, mask)))
+                    (UIConfig.colorIfSet("chatsNavMaskColor") ?? OrbitTheme.canvas)
+                        .opacity(max(0.72, min(1, mask + 0.5)))
                 }
             }
         }
@@ -1236,21 +1215,14 @@ struct ChatsView: View {
     }
 
     @ViewBuilder private var chatsCardBackground: some View {
-        if scheme == .dark {
-            RoundedRectangle(cornerRadius: chatsCardRadius, style: .continuous)
-                .fill(C.chatsRowBg)
-        } else {
-            ZStack {
-                GlassBackground(shape: RoundedRectangle(cornerRadius: chatsCardRadius, style: .continuous),
-                                opacity: UIConfig.num("meGlassAlpha", 0.62),
-                                edgeAlpha: UIConfig.num("meGlassEdge", 0.55),
-                                shadow: true,
-                                seed: 0.42,
-                                native: true)
+        RoundedRectangle(cornerRadius: chatsCardRadius, style: .continuous)
+            .fill(OrbitTheme.raised)
+            .overlay(
                 RoundedRectangle(cornerRadius: chatsCardRadius, style: .continuous)
-                    .fill(C.chatsRowBg.opacity(0.42))
-            }
-        }
+                    .stroke(OrbitTheme.divider, lineWidth: 0.7)
+            )
+            .shadow(color: Color.black.opacity(scheme == .dark ? 0.22 : 0.07),
+                    radius: 16, x: 0, y: 7)
     }
 
     @ViewBuilder private func chatListRows(_ chats: [Chat]) -> some View {
@@ -1301,8 +1273,7 @@ struct ChatsView: View {
                                 .overlay {
                                     RoundedRectangle(cornerRadius: chatsCardRadius,
                                                      style: .continuous)
-                                        .stroke(Color.white.opacity(scheme == .dark ? 0 : 0.18),
-                                                lineWidth: 0.6)
+                                   .stroke(OrbitTheme.divider, lineWidth: 0.7)
                                 }
                                 .padding(.horizontal, chatsCardInset)
                                 .padding(.top, 6)
@@ -1438,22 +1409,36 @@ struct ChatsView: View {
                 VStack(spacing: 0) {
                     NavBar(title: navTitle,
 
-                           titleView: (!app.offline && unreadTotal > 0) ? AnyView(
-                               HStack(spacing: 0) {
-                                   Text(C.tabText0)
-                                       .font(pf(17, .semibold))
-                                       .foregroundColor(C.label)
-                                   Text("（")
-                                       .font(pf(17, .semibold))
-                                       .foregroundColor(C.label)
-                                   RollingNumber(value: unreadTotal,
-                                                 font: pf(17, .semibold),
-                                                 color: C.label, height: 20)
-                                   Text("）")
-                                       .font(pf(17, .semibold))
-                                       .foregroundColor(C.label)
+                           titleView: AnyView(
+                               HStack(spacing: 10) {
+                                   Button {
+                                       showAccounts = true
+                                   } label: {
+                                       Avatar(path: app.me?.avatarPath ?? "",
+                                              size: 37, radius: 13)
+                                           .overlay(
+                                               RoundedRectangle(cornerRadius: 13, style: .continuous)
+                                                   .stroke(OrbitTheme.jade.opacity(0.42),
+                                                           lineWidth: 1)
+                                           )
+                                   }
+                                   .buttonStyle(.plain)
+                                   .accessibilityLabel(Tr("切换账号"))
+
+                                   VStack(alignment: .leading, spacing: 1) {
+                                       Text(app.me?.name ?? C.tabText0)
+                                           .font(.system(size: 20, weight: .bold))
+                                           .foregroundStyle(OrbitTheme.ink)
+                                           .lineLimit(1)
+                                       Text(app.offline ? Tr("离线")
+                                            : (unreadTotal > 0 ? "\(unreadTotal) 条未读消息"
+                                                               : Tr("消息已读完")))
+                                           .font(.system(size: 10.5, weight: .medium))
+                                           .foregroundStyle(OrbitTheme.secondary)
+                                           .lineLimit(1)
+                                   }
                                }
-                           ) : nil,
+                           ),
 
                            leftExtra: floorUp ? nil : AnyView(
 
@@ -1479,9 +1464,10 @@ struct ChatsView: View {
                                 } label: {
                                     Image(systemName: "magnifyingglass")
                                         .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(C.label)
+                                        .foregroundColor(OrbitTheme.ink)
                                         .frame(width: 36, height: 36)
-                                        .background { GlassBackground(shape: Circle(), shadow: true, seed: 0.40) }
+                                        .background(Circle().fill(OrbitTheme.field))
+                                        .overlay(Circle().stroke(OrbitTheme.divider, lineWidth: 0.6))
                                 }
                                 .buttonStyle(.plain)
 
@@ -1498,11 +1484,17 @@ struct ChatsView: View {
                         } label: {
                             FlexIcon(custom: IconOverrides.custom("nav.plus"),
                                      size: UIConfig.num("navPlusSize", 20),
-                                     color: UIConfig.color("navPlusInk", 0xFFFFFF, 0xFFFFFF),
+                                     color: .white,
                                      symbol: "plus")
                                 .frame(width: UIConfig.num("navPlusW", 42),
                                        height: UIConfig.num("navPlusH", 42))
-                                .background { NavPlusGlassBackground() }
+                                .background(
+                                    Circle().fill(
+                                        LinearGradient(colors: [OrbitTheme.jadeDeep, OrbitTheme.jade],
+                                                       startPoint: .topLeading,
+                                                       endPoint: .bottomTrailing)
+                                    )
+                                )
                         }
 
                         .buttonStyle(NavPlusPressStyle())
@@ -1520,7 +1512,7 @@ struct ChatsView: View {
                     }
 
                     .overlay(alignment: .bottom) {
-                        Rectangle().fill(C.navLine).frame(height: 0.5)
+                        Rectangle().fill(OrbitTheme.divider).frame(height: 0.5)
                             .opacity(scrolled > 6 ? 1 : 0)
                     }
 
@@ -1545,12 +1537,12 @@ struct ChatsView: View {
                 .zIndex(3)
             }
 
-            .background(C.chatsPageBg.ignoresSafeArea(edges: .bottom))
+            .background(OrbitTheme.canvas.ignoresSafeArea(edges: .bottom))
             .sheet(isPresented: $showSearch) {
                 SearchPage(onOpenChat: { c in path.append(c) })
                     .environmentObject(app)
             }
-            .background(C.chatsPageBg.ignoresSafeArea(edges: .top))
+            .background(OrbitTheme.canvas.ignoresSafeArea(edges: .top))
             .toolbar(.hidden, for: .navigationBar)
 
             .onChange(of: path.count) { n in
@@ -1628,6 +1620,13 @@ struct ChatsView: View {
             .environmentObject(app)
         }
 
+        .sheet(isPresented: $showAccounts) {
+            NavigationStack {
+                SwitchAccountView()
+                    .environmentObject(app)
+            }
+        }
+
         .sheet(isPresented: $showFloorCity) {
             DDCityPickerView().environmentObject(app)
         }
@@ -1681,7 +1680,7 @@ struct ChatsView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity)
-        .background(C.chatsPageBg)
+        .background(OrbitTheme.canvas)
     }
 
     private func markUnread(_ chat: Chat) {

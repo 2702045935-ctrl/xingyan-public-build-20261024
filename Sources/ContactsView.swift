@@ -133,6 +133,16 @@ private var funcs: [(String, String, Color, String)] {
                 VStack(spacing: 0) {
 
                 NavBar(title: C.tabText1,
+                       titleView: AnyView(
+                           VStack(alignment: .leading, spacing: 1) {
+                               Text(C.tabText1)
+                                   .font(.system(size: 22, weight: .bold))
+                                   .foregroundStyle(OrbitTheme.ink)
+                               Text("\(filtered.count) 位联系人")
+                                   .font(.system(size: 10.5, weight: .medium))
+                                   .foregroundStyle(OrbitTheme.secondary)
+                           }
+                       ),
                        floating: true,
                        leftExtraGlass: false,
                        rightGlass: false) {
@@ -140,19 +150,24 @@ private var funcs: [(String, String, Color, String)] {
 
                         withAnimation(.spring(response: 0.32, dampingFraction: 0.62)) { plusMenu = true }
                     } label: {
-                        Text("＋")
-
-                            .font(pf(UIConfig.num("navPlusSize", 20)))
-                            .foregroundColor(UIConfig.color("navPlusInk", 0xFFFFFF, 0xFFFFFF))
+                        Image(systemName: "plus")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(.white)
                             .frame(width: UIConfig.num("navPlusW", 42),
                                    height: UIConfig.num("navPlusH", 42))
-                            .background { NavPlusGlassBackground() }
+                            .background(
+                                Circle().fill(
+                                    LinearGradient(colors: [OrbitTheme.jadeDeep, OrbitTheme.jade],
+                                                   startPoint: .topLeading,
+                                                   endPoint: .bottomTrailing)
+                                )
+                            )
                     }
 
                     .buttonStyle(NavPlusPressStyle())
                 }
 
-                .background { TopGlassBar(scrolled: navScrolled, fallback: C.pageBg, always: true) }
+                .background { TopGlassBar(scrolled: navScrolled, fallback: OrbitTheme.canvas, always: true) }
                 .offset(y: -7)
 
                 }
@@ -194,23 +209,25 @@ private var funcs: [(String, String, Color, String)] {
                                                 contactRow(user)
                                             }
                                             .buttonStyle(.plain)
-
-                                            HairLine(inset: 16)
                                         }
-                                        .background(C.contactsBg)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 3)
                                         .id(user.id)
                                       }
                                     } header: {
 
                                         HStack(spacing: 6) {
                                             Text(section.letter)
-                                                .font(pf(max(7, L.ctHeadSize - 1)))
-                                                .foregroundColor(Color(hex: 0x737373))
+                                                .font(.system(size: 10.5, weight: .bold))
+                                                .foregroundStyle(OrbitTheme.secondary)
+                                                .padding(.horizontal, 8)
+                                                .frame(height: 20)
+                                                .background(Capsule().fill(OrbitTheme.field))
                                             Spacer(minLength: 0)
                                         }
-                                        .padding(.leading, 16)
-                                        .frame(height: L.ctHeadH)
-                                        .background(C.contactsBg)
+                                        .padding(.leading, 14)
+                                        .frame(height: max(30, L.ctHeadH))
+                                        .background(OrbitTheme.canvas)
                                         .id("letter-\(section.letter)")
                                     }
                                 }
@@ -219,25 +236,25 @@ private var funcs: [(String, String, Color, String)] {
                                     if filtered.isEmpty {
                                         Text(Tr("还没有联系人，点右上角 ＋ 添加"))
                                             .font(pf(16))
-                                            .foregroundColor(C.subLabel)
+                                            .foregroundColor(OrbitTheme.secondary)
                                             .frame(maxWidth: .infinity)
                                             .padding(.top, 40)
                                     } else {
                                         Text("\(filtered.count)位联系人")
 
-                                            .font(pf(16))
-                                            .foregroundColor(C.subLabel)
+                                            .font(.system(size: 12.5, weight: .medium))
+                                            .foregroundColor(OrbitTheme.tertiary)
                                             .frame(maxWidth: .infinity)
                                             .padding(.vertical, 20)
                                     }
                                 }
-                                .background(C.contactsBg)
+                                .background(OrbitTheme.canvas)
 
                                 Color.clear
                                     .frame(height: L.tabH + L.safeBottom + 12)
                             }
                         }
-                        .background(C.contactsBg)
+                        .background(OrbitTheme.canvas)
                         .topScrollTracking($navScrolled, space: "contactsScroll")
                         .refreshable { await app.loadContacts() }
 
@@ -268,9 +285,9 @@ private var funcs: [(String, String, Color, String)] {
 
                 .padding(.top, -listHeadH)
             }
-            .background(C.pageBg.ignoresSafeArea(edges: .bottom))
+            .background(OrbitTheme.canvas.ignoresSafeArea(edges: .bottom))
 
-            .background(C.pageBg.ignoresSafeArea(edges: .top))
+            .background(OrbitTheme.canvas.ignoresSafeArea(edges: .top))
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: User.self) { user in
                 ContactCardView(user: user,
@@ -359,38 +376,40 @@ private var funcs: [(String, String, Color, String)] {
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(C.subLabel)
+                    .foregroundColor(OrbitTheme.tertiary)
                 Text(Tr("搜索"))
-                    .font(pf(16.5))
-                    .foregroundColor(C.subLabel)
+                    .font(.system(size: 14))
+                    .foregroundColor(OrbitTheme.secondary)
+                Spacer(minLength: 0)
             }
             .padding(.horizontal, 12)
-            .frame(maxWidth: .infinity, alignment: .center)
-            .frame(height: 38)
-            .background {
-                GlassBackground(shape: RoundedRectangle(cornerRadius: 12, style: .continuous),
-                                opacity: 0.88,
-                                edgeAlpha: 0.55,
-                                shadow: false,
-                                seed: 0.26,
-                                native: true)
-            }
-            .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(height: 42)
+            .background(OrbitTheme.control.fill(OrbitTheme.field))
+            .overlay(OrbitTheme.control.stroke(OrbitTheme.divider, lineWidth: 0.6))
+            .contentShape(OrbitTheme.control)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Tr("搜索"))
     }
 
     private var funcStrip: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            OrbitSectionLabel(text: Tr("快捷入口"), count: ctFuncs.count)
 
-        VStack(spacing: 0) {
-            ForEach(Array(ctFuncs.enumerated()), id: \.offset) { i, item in
-                Button { openFunc(item.3) } label: { entryRow(item) }
-                    .buttonStyle(MenuPressStyle())
-                if i < ctFuncs.count - 1 { HairLine(inset: 64) }
+            LazyVGrid(
+                columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4),
+                spacing: 8
+            ) {
+                ForEach(Array(ctFuncs.enumerated()), id: \.offset) { _, item in
+                    funcCell(item)
+                }
             }
         }
-        .background(C.contactsBg)
+        .padding(13)
+        .background(OrbitTheme.cardBackground())
+        .padding(.horizontal, 12)
+        .padding(.bottom, 6)
     }
 
     private func entryRow(_ item: (String, String, Color, String)) -> some View {
@@ -449,32 +468,30 @@ private var funcs: [(String, String, Color, String)] {
     }
 
     private var starStrip: some View {
-        VStack(alignment: .leading, spacing: 11) {
-            HStack(spacing: 6) {
-                Image(systemName: "star.fill")
-                    .font(.system(size: 12))
-                    .foregroundColor(Color(hex: 0xE8A33D))
-                Text(Tr("星标朋友"))
-                    .font(pf(13.5, .medium))
-                    .foregroundColor(C.label)
-                Spacer(minLength: 0)
-                Text("\(starUsers.count)")
-                    .font(pf(12))
-                    .foregroundColor(C.subLabel)
-            }
+        VStack(alignment: .leading, spacing: 13) {
+            OrbitSectionLabel(text: Tr("星标朋友"), count: starUsers.count)
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) {
+                HStack(spacing: 15) {
                     ForEach(starUsers) { u in
                         NavigationLink(value: u) {
-                            VStack(spacing: 6) {
-                                Avatar(path: u.avatarPath, size: 46, radius: 10,
+                            VStack(spacing: 7) {
+                                Avatar(path: u.avatarPath, size: 48, radius: 15,
 
                                        level: (u.qqLevel ?? 0) > 1 ? (u.qqLevel ?? 0) : 0)
+                                    .overlay(alignment: .bottomTrailing) {
+                                        Image(systemName: "star.fill")
+                                            .font(.system(size: 7.5))
+                                            .foregroundStyle(.white)
+                                            .frame(width: 17, height: 17)
+                                            .background(Circle().fill(OrbitTheme.gold))
+                                            .overlay(Circle().stroke(OrbitTheme.raised, lineWidth: 1.4))
+                                            .offset(x: 3, y: 3)
+                                    }
                                 Text(u.name)
-                                    .font(pf(11.5))
-                                    .foregroundColor(C.subLabel)
+                                    .font(.system(size: 11.5, weight: .medium))
+                                    .foregroundColor(OrbitTheme.secondary)
                                     .lineLimit(1)
-                                    .frame(width: 56)
+                                    .frame(width: 58)
                             }
                         }
                         .buttonStyle(.plain)
@@ -483,10 +500,10 @@ private var funcs: [(String, String, Color, String)] {
                 .padding(.vertical, 1)
             }
         }
-        .padding(14)
-        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(C.cardBg))
+        .padding(13)
+        .background(OrbitTheme.cardBackground())
         .padding(.horizontal, 12)
-        .padding(.top, 10)
+        .padding(.bottom, 6)
     }
 
     private func funcCell(_ item: (String, String, Color, String)) -> some View {
@@ -495,7 +512,7 @@ private var funcs: [(String, String, Color, String)] {
         } label: {
             VStack(spacing: 8) {
                 ZStack(alignment: .topTrailing) {
-                    FuncIcon(markup: item.1, bg: item.2, size: 52)
+                    FuncIcon(markup: item.1, bg: item.2, size: 45)
 
                     if item.3 == "newFriends" && app.showDot("newFriends", auto: app.friendRequests > 0) {
                         Text(app.friendRequests > 99 ? "99+" : "\(app.friendRequests)")
@@ -508,8 +525,8 @@ private var funcs: [(String, String, Color, String)] {
                     }
                 }
                 Text(item.0)
-                    .font(pf(13))
-                    .foregroundColor(C.label)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(OrbitTheme.ink)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }
@@ -572,31 +589,58 @@ private var funcs: [(String, String, Color, String)] {
     }
 
     private func contactRow(_ user: User) -> some View {
-        HStack(spacing: L.ctGap) {
+        HStack(spacing: 11) {
 
-            Avatar(path: user.avatarPath, size: min(L.ctAvatar, 38), radius: 8,
+            Avatar(path: user.avatarPath, size: min(L.ctAvatar, 42), radius: 14,
                    level: (user.qqLevel ?? 0) > 1 ? (user.qqLevel ?? 0) : 0)
-            Text(user.name)
-                .font(pf(min(L.ctNameSize, 16.5)))
-                .foregroundColor(C.label)
-                .lineLimit(1)
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 5) {
+                    Text(user.name)
+                        .font(.system(size: 15.5, weight: .semibold))
+                        .foregroundColor(OrbitTheme.ink)
+                        .lineLimit(1)
 
-            if (user.qqLevel ?? 0) > 1, GrowthFlags.showInContacts != false {
-                QQLevelBadge(level: user.qqLevel ?? 0, size: L.v(14, 4, 16), maxIcons: 3)
-                    .fixedSize()
+                    if (user.qqLevel ?? 0) > 1, GrowthFlags.showInContacts != false {
+                        QQLevelBadge(level: user.qqLevel ?? 0, size: L.v(14, 4, 16), maxIcons: 3)
+                            .fixedSize()
+                    }
+
+                    MemberBadge(tier: user.memberTier,
+                                short: user.memberShort,
+                                color: user.memberColor,
+                                color2: user.memberColor2,
+                                height: L.v(12, 3.4, 14))
+                        .fixedSize()
+                }
+
+                if let subtitle = contactSubtitle(user) {
+                    Text(subtitle)
+                        .font(.system(size: 11, weight: .regular))
+                        .foregroundColor(OrbitTheme.tertiary)
+                        .lineLimit(1)
+                }
             }
 
-            MemberBadge(tier: user.memberTier,
-                        short: user.memberShort,
-                        color: user.memberColor,
-                        color2: user.memberColor2,
-                        height: L.v(12, 3.4, 14))
-                .fixedSize()
             Spacer(minLength: 0)
+            if starIds.contains(user.id) {
+                Image(systemName: "star.fill")
+                    .font(.system(size: 10))
+                    .foregroundColor(OrbitTheme.gold)
+            }
         }
-        .padding(.leading, L.ctPadL)
-        .frame(height: min(L.ctRowH, 52))
+        .padding(.horizontal, 12)
+        .frame(height: max(58, L.ctRowH - 2))
+        .background(OrbitTheme.control.fill(OrbitTheme.raised))
+        .overlay(OrbitTheme.control.stroke(OrbitTheme.divider, lineWidth: 0.6))
         .contentShape(Rectangle())
+    }
+
+    private func contactSubtitle(_ user: User) -> String? {
+        for value in [user.moodText, user.bio, user.region] {
+            let text = (value ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            if !text.isEmpty { return text }
+        }
+        return nil
     }
 
     private func indexBar(_ proxy: ScrollViewProxy) -> some View {
@@ -614,12 +658,12 @@ private var funcs: [(String, String, Color, String)] {
 
                         .foregroundColor(idxLetter == section.letter
                                          ? .white
-                                         : UIConfig.color("ctIdxColor", 0x555555, 0x8E8E93))
+                                         : OrbitTheme.tertiary)
                         .frame(width: 22, height: rowH)
                         .background {
                             if idxLetter == section.letter {
                                 Circle()
-                                    .fill(UIConfig.colorIfSet("ctIdxActiveBg") ?? C.green)
+                                    .fill(OrbitTheme.jade)
                                     .frame(width: max(15, rowH + 1.5))
                             }
                         }
@@ -647,17 +691,10 @@ private var funcs: [(String, String, Color, String)] {
         .padding(.vertical, 6)
         .padding(.horizontal, 3)
         .background {
-            ZStack {
-
-                GlassBackground(shape: Capsule(style: .continuous),
-                                opacity: UIConfig.num("indexGlassAlpha", 1),
-                                edgeAlpha: UIConfig.num("indexGlassEdge", 0.45),
-                                shadow: true,
-                                seed: 0.90)
-
-                Capsule(style: .continuous)
-                    .fill(C.cardBg.opacity(UIConfig.num("indexGlassTint", 0.35)))
-            }
+            Capsule(style: .continuous)
+                .fill(OrbitTheme.field.opacity(0.94))
+                .overlay(Capsule(style: .continuous).stroke(OrbitTheme.divider, lineWidth: 0.6))
+                .shadow(color: Color.black.opacity(0.08), radius: 8, y: 3)
         }
         .padding(.trailing, 4)
     }
