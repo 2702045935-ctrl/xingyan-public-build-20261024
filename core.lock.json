@@ -1,0 +1,24 @@
+{
+  "version": "B669",
+  "files": [
+    { "path": "Sources/API.swift", "size": 189289, "sha256": "cc59d060fbddf99c350bf31f35c0dc6be9ba50fe79f27aac58035ebb3a960f89" },
+    { "path": "Sources/App.swift", "size": 103812, "sha256": "7b8164935b3b8f0360eb39b99c18302a427c2ec030b1829495537ab2d453fa7e" },
+    { "path": "Sources/Realtime.swift", "size": 15253, "sha256": "586f099232c21be3f46fbc2e98b58675605bf5f1d5a879a5cab765932e9a0fed" },
+    { "path": "Sources/CallAudio.swift", "size": 23848, "sha256": "7df7945119635d268ee64a4122513b8407768fd612c551ffa80706159fe5f66d" },
+    { "path": "Sources/CallCenter.swift", "size": 65661, "sha256": "9ead0f82ce04c4029a3ad619e5d7a448a5dfbf25831e87e8f4d4abc0383fe699" },
+    { "path": "Sources/CallView.swift", "size": 44835, "sha256": "f2ce2ed344bb869fb37bdac1f08e0652b73df96f0dd0958da7e6250a65ee2d0a" },
+    { "path": "Sources/AICall.swift", "size": 9902, "sha256": "54e7046974477646c1794e383dce276945ca0d6d94d68f9c7ee3c512cbfbcf11" },
+    { "path": "Sources/TRTCBridge.swift", "size": 16976, "sha256": "468ffcadd66e761a7b7061f5a7150fbd3aa041050669e31b18147056a0d3b5d0" },
+    { "path": "Sources/StreamPlayback.swift", "size": 10724, "sha256": "18cf6e93d83cdb349e7d3d8ac35f1e59f19b149cb8dd297ad5c0dc69bd334ce4" },
+    { "path": "Sources/Keychain.swift", "size": 1566, "sha256": "eb7ee8dc834acee01af28933156e2a6218bb0ecdea3c85fba7e9503c54a2e451" },
+    { "path": "Sources/LocalStore.swift", "size": 20378, "sha256": "7de19daa5f9ed2e19552aa4ee2857621a3d5424242bf44c6e9dc4d2dff95f39a" },
+    { "path": "Sources/MsgFrameKey.swift", "size": 651, "sha256": "fdf3a779255614d9915d9bcf528868ac2517b5feafbfa1180956cd162403993a" },
+    { "path": "Sources/PushCenter.swift", "size": 9719, "sha256": "9ce197c209ce0672c3d09d92335f57187f7127fad97cebeeef0846524455561f" },
+    { "path": "Sources/ChatDetailView.swift", "size": 192098, "sha256": "3829652aa4ad3928af69a458db784ca2164aac6ae1f3ce3ec96ca6ceb268a666" },
+    { "path": "Sources/GroupInfoView.swift", "size": 54324, "sha256": "acf3a553c7cd61cadf30fab32963f9533f5aa5fd0a4c7744ecb65bd6d3ec7a7b" },
+    { "path": "Sources/OtherLogin.swift", "size": 4111, "sha256": "d75091383a60e471cf1f0f86a4a7ad7fb6c1990f0898b2393183c1459bc9b349" },
+    { "path": "Sources/InAppBrowser.swift", "size": 14174, "sha256": "74cc3bd4b6d77f793d477c8df3ca0533ea756754a395de026397cc1fac6cd1e3" },
+    { "path": "Sources/MallWebPage.swift", "size": 4138, "sha256": "60cc98e6196efc8ef73aa4685db9b2fb55cb8a22138597abdb50cbc8ab5088c3" },
+    { "path": "Sources/ChatDeferred.swift", "size": 1556, "sha256": "471d4984f84bcb0c364d10efb54d9659a29fbfc05264d34c4c569bdef90d1167" }
+  ]
+}

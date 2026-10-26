@@ -1,0 +1,245 @@
+import SwiftUI
+
+struct JarvisEyesAvatar: View {
+    var size: CGFloat = 28
+
+    var tint: Color? = nil
+
+    var staticOnly: Bool = false
+
+    @Environment(\.colorScheme) private var scheme
+
+    private var eyeTint: Color {
+        if let t = tint { return t }
+        if let c = UIConfig.colorIfSet("eyesColor") { return c }
+        return scheme == .dark ? Color.white : Color(hexString: "#1B1D22")
+    }
+
+    private var customTint: Bool { tint != nil || UIConfig.colorIfSet("eyesColor") != nil }
+
+    @State private var blink: CGFloat = 0
+
+    @State private var lookX: CGFloat = 0
+
+    @State private var lookY: CGFloat = 0.15
+
+    @State private var breathe: CGFloat = 0
+
+    @State private var nod: CGFloat = 0
+
+    @State private var alive = false
+
+    private var eyeW: CGFloat { size * 0.20 }
+    private var eyeH: CGFloat { size * 0.30 }
+
+    var body: some View {
+        ZStack {
+
+            HStack(spacing: size * 0.185) {
+                eye
+                eye
+            }
+            .offset(y: size * 0.015)
+        }
+        .frame(width: size, height: size)
+        .scaleEffect(1 + breathe * 0.05)
+        .offset(y: nod * size * 0.03)
+        .task {
+            if staticOnly { return }
+            await runLoops()
+        }
+    }
+
+    private var eye: some View {
+        Capsule()
+
+            .fill(eyeTint)
+            .frame(width: eyeW, height: max(size * 0.035, eyeH * (1 - blink * 0.94)))
+
+            .offset(x: lookX * size * 0.055, y: -lookY * size * 0.028)
+
+            .overlay(alignment: .top) {
+                Circle()
+
+                    .fill(customTint
+                          ? Color.white.opacity(0.6)
+                          : (scheme == .dark ? Color.black.opacity(0.35) : Color.white.opacity(0.55)))
+                    .frame(width: eyeW * 0.36, height: eyeW * 0.36)
+                    .offset(x: -eyeW * 0.14, y: eyeH * 0.10)
+                    .opacity(blink > 0.6 ? 0 : 1)
+            }
+            .animation(.easeInOut(duration: 0.42), value: lookX)
+            .animation(.easeInOut(duration: 0.42), value: lookY)
+    }
+
+    private func runLoops() async {
+        if staticOnly { return }
+        guard !alive else { return }
+        alive = true
+
+        withAnimation(.easeInOut(duration: 2.1).repeatForever(autoreverses: true)) { breathe = 1 }
+        withAnimation(.easeInOut(duration: 2.9).repeatForever(autoreverses: true)) { nod = 1 }
+
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask { await blinkLoop() }
+            group.addTask { await glanceLoop() }
+        }
+    }
+
+    private func blinkLoop() async {
+        while !Task.isCancelled {
+            let gap = Double.random(in: 2.2...4.6)
+            try? await Task.sleep(nanoseconds: UInt64(gap * 1_000_000_000))
+            if Task.isCancelled { return }
+            await blinkOnce()
+            if Bool.random() && Double.random(in: 0...1) < 0.3 {
+                try? await Task.sleep(nanoseconds: 160_000_000)
+                if Task.isCancelled { return }
+                await blinkOnce()
+            }
+        }
+    }
+
+    private func blinkOnce() async {
+        withAnimation(.easeInOut(duration: 0.085)) { blink = 1 }
+        try? await Task.sleep(nanoseconds: 105_000_000)
+        withAnimation(.easeInOut(duration: 0.13)) { blink = 0 }
+    }
+
+    private func glanceLoop() async {
+        while !Task.isCancelled {
+            let x: CGFloat = [CGFloat(-1), 1].randomElement() ?? 1
+            withAnimation(.easeInOut(duration: 0.7)) {
+                lookX = x * CGFloat.random(in: 0.45...1)
+                lookY = CGFloat.random(in: -0.35...0.35)
+            }
+            try? await Task.sleep(nanoseconds: UInt64(Double.random(in: 1.3...2.6) * 1_000_000_000))
+        }
+    }
+}
+
+struct BotCardView: View {
+    let chat: Chat
+
+    @EnvironmentObject var app: AppState
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var scheme
+
+    @State private var calling = false
+
+    private var isEyesBot: Bool { (chat.botRank ?? 9) == 0 }
+
+    private var sheetBg: Color { scheme == .dark ? Color(hex: 0x1C1C1E) : .white }
+
+    private var pageBg: Color { C.pageBg }
+    private var ink: Color { scheme == .dark ? Color(hex: 0xEDEDED) : Color(hex: 0x1A1A1A) }
+    private var gray: Color { scheme == .dark ? Color(hex: 0x8E8E93) : Color(hex: 0x737373) }
+    private var link: Color { scheme == .dark ? Color(hex: 0x7D90B8) : Color(hex: 0x576B95) }
+    private var lineColor: Color { scheme == .dark ? Color(white: 1, opacity: 0.09) : Color(hex: 0xE5E5E5) }
+
+    private var bio: String {
+        if isEyesBot { return "您的私人助理：聊天、提醒、天气、记账、代发消息，随时为您效劳" }
+        if chat.name.contains("新闻") { return "热点新闻、时事资讯，想听哪条跟我说" }
+        return "有问题随时问我，还能帮你查最新资讯～"
+    }
+
+    var body: some View {
+        if UIConfig.text("agentCardStyle", "old") == "new" {
+            BotCardNew(name: chat.name,
+                       bio: bio,
+                       avatarPath: chat.avatar ?? "",
+                       isEyes: isEyesBot,
+                       onClose: { dismiss() },
+                       onMessage: { dismiss() },
+                       onCall: { calling = true })
+        } else {
+            cardBody
+        }
+    }
+
+    private var cardBody: some View {
+        VStack(spacing: 0) {
+            NavBar(title: "", back: { dismiss() }) { EmptyView() }
+                .background(sheetBg)
+
+            ScrollView {
+                VStack(spacing: 0) {
+                    hero
+                    Rectangle().fill(pageBg).frame(height: 10)
+                    acts
+                    Spacer(minLength: 0)
+                }
+            }
+            .background(pageBg)
+        }
+        .background(pageBg.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+        .hidesTabBar()
+        .fullScreenCover(isPresented: $calling) {
+            AICallView(chat: chat).environmentObject(app)
+        }
+    }
+
+    private var hero: some View {
+        HStack(alignment: .top, spacing: 14) {
+            if isEyesBot {
+                JarvisEyesAvatar(size: 74)
+                    .frame(width: 88, height: 88)
+                    .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(sheetBg))
+                    .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(lineColor, lineWidth: 0.6))
+            } else {
+                Avatar(path: chat.avatar ?? "", size: 88, radius: 8)
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(chat.name)
+                    .font(pf(20, .medium))
+                    .foregroundColor(ink)
+                    .lineLimit(1)
+                Text(isEyesBot ? "官方 AI 助理" : "官方账号")
+                    .font(pf(14))
+                    .foregroundColor(gray)
+                    .lineLimit(1)
+                Text("简介：" + bio)
+                    .font(pf(14))
+                    .foregroundColor(gray)
+                    .lineLimit(3)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 18)
+        .padding(.top, 18)
+        .padding(.bottom, 20)
+        .background(sheetBg)
+    }
+
+    private var acts: some View {
+        VStack(spacing: 0) {
+            row("发消息", key: "msg")
+            Rectangle().fill(lineColor).frame(height: 0.5).padding(.leading, 18)
+            row("语音通话", key: "call")
+        }
+        .background(sheetBg)
+        .overlay(alignment: .top) { Rectangle().fill(lineColor).frame(height: 0.5) }
+        .overlay(alignment: .bottom) { Rectangle().fill(lineColor).frame(height: 0.5) }
+    }
+
+    private func row(_ title: String, key: String) -> some View {
+        Button {
+            if key == "msg" { dismiss() } else { calling = true }
+        } label: {
+            HStack(spacing: 14) {
+                SVGIcon(markup: key == "msg" ? I.cardChat : I.cardVideo, size: 20, color: link)
+                Text(Tr(title))
+                    .font(pf(16))
+                    .foregroundColor(link)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 18)
+            .frame(height: 52)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
