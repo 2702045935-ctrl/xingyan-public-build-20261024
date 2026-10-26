@@ -340,7 +340,7 @@ func colorDyn(_ raw: String?, light: UInt32, dark: UInt32) -> Color {
 enum C {
     /// 星轨总开关。关闭后，所有原有页面和旧 UIConfig 覆盖原样生效。
     static var xingjiOn: Bool {
-        UserDefaults.standard.object(forKey: XingjiNativePages.enabledKey) as? Bool ?? true
+        !UserDefaults.standard.bool(forKey: XingjiNativePages.legacyMainKey)
     }
 
     static var pageBg      : Color { xingjiOn ? Color.dyn(0xF3F1EC, 0x000000) : UIConfig.color("pageBg", 0xEDEDED, 0x0B0B0D) }

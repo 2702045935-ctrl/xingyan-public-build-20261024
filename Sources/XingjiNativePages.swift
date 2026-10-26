@@ -3,6 +3,7 @@ import UIKit
 
 enum XingjiNativePages {
     static let enabledKey = "chris.xingjiNativePages"
+    static let legacyMainKey = "chris.legacyMainPages"
 }
 
 private enum XJN {
