@@ -56,24 +56,24 @@ struct HarmonyLoginView: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            LinearGradient(colors: [Color(hex: 0xF8FAFF), .white],
-                           startPoint: .top, endPoint: .bottom)
-                .ignoresSafeArea()
+            C.pageBg.ignoresSafeArea()
 
             Circle()
-                .fill(Color(hex: 0x6AA3FF).opacity(0.07))
-                .frame(width: 260, height: 260)
-                .offset(x: 250, y: -120)
+                .fill(C.jadeSoft.opacity(0.42))
+                .frame(width: 300, height: 300)
+                .offset(x: 240, y: -155)
 
             Circle()
-                .fill(Color(hex: 0x9DC3FF).opacity(0.06))
-                .frame(width: 170, height: 170)
-                .offset(x: -85, y: 105)
+                .stroke(C.goldSoft.opacity(0.72), lineWidth: 0.6)
+                .frame(width: 210, height: 210)
+                .offset(x: -115, y: 80)
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
                     brandArea
-                    Spacer().frame(height: 46)
+                    Spacer().frame(height: 30)
+                    modeSwitch
+                    Spacer().frame(height: 18)
 
                     if mode == .phone {
                         phoneFields
@@ -87,11 +87,12 @@ struct HarmonyLoginView: View {
                     termsArea
                     Spacer(minLength: 36)
                 }
-                .padding(.top, 104)
+                .padding(.top, 76)
+                .padding(.horizontal, 22)
                 .padding(.bottom, max(24, L.safeBottom))
             }
         }
-        .background(Color.white.ignoresSafeArea())
+        .background(C.pageBg.ignoresSafeArea())
         .onAppear { loadBranding() }
         .onDisappear { countdownTask?.cancel() }
         .sheet(isPresented: $showSlider) {
@@ -112,87 +113,125 @@ struct HarmonyLoginView: View {
         VStack(spacing: 0) {
             if !accountAvatar.isEmpty {
                 RemoteImage(path: accountAvatar, icon: "person.fill", mode: .fill)
-                    .frame(width: 86, height: 86)
+                    .frame(width: 82, height: 82)
                     .clipShape(Circle())
-                    .overlay(Circle().stroke(Color.white, lineWidth: 2))
-                    .shadow(color: Color(hex: 0x1C72F9).opacity(0.20), radius: 18, y: 10)
+                    .overlay(Circle().stroke(C.jadeSoft, lineWidth: 4))
             } else if !logoPath.isEmpty {
                 RemoteImage(path: logoPath, icon: "message.fill", mode: .fill)
-                    .frame(width: 86, height: 86)
-                    .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
-                    .shadow(color: Color(hex: 0x1C72F9).opacity(0.20), radius: 18, y: 10)
+                    .frame(width: 82, height: 82)
+                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
             } else {
                 ZStack(alignment: .topTrailing) {
-                    RoundedRectangle(cornerRadius: 25, style: .continuous)
-                        .fill(LinearGradient(colors: [Color(hex: 0x68A0FF),
-                                                      Color(hex: 0x1C72F9),
-                                                      Color(hex: 0x155BD5)],
-                                             startPoint: .topLeading, endPoint: .bottomTrailing))
-                        .frame(width: 78, height: 78)
-                        .shadow(color: Color(hex: 0x1C72F9).opacity(0.20), radius: 18, y: 10)
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .fill(C.green)
+                        .frame(width: 76, height: 76)
+                        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous)
+                            .stroke(Color.white.opacity(0.12), lineWidth: 0.8))
                     Text("星")
-                        .font(.system(size: 39, weight: .bold))
+                        .font(.system(size: 38, weight: .semibold))
                         .foregroundColor(.white)
-                        .frame(width: 78, height: 78)
+                        .frame(width: 76, height: 76)
                     Circle()
-                        .fill(Color(hex: 0xFFD166))
-                        .frame(width: 14, height: 14)
-                        .overlay(Circle().stroke(Color.white, lineWidth: 2))
-                        .offset(x: -3, y: 5)
+                        .fill(Color.dyn(0xC58C32, 0xE2B35F))
+                        .frame(width: 13, height: 13)
+                        .overlay(Circle().stroke(C.pageBg, lineWidth: 2))
+                        .offset(x: -2, y: 4)
                 }
-                .frame(width: 86, height: 86)
+                .frame(width: 82, height: 82)
             }
 
+            Text("STAR ORBIT · XINGYAN")
+                .font(pf(9.5, .semibold))
+                .foregroundColor(C.green)
+                .tracking(1.5)
+                .padding(.top, 16)
+
             Text(brandName)
-                .font(.system(size: 34, weight: .bold))
-                .foregroundColor(Color(hex: 0x101828))
-                .tracking(3)
-                .padding(.top, 12)
+                .font(pf(32, .bold))
+                .foregroundColor(C.label)
+                .tracking(2.4)
+                .padding(.top, 7)
 
             Text(brandSubtitle)
-                .font(.system(size: 14.5))
-                .foregroundColor(Color(hex: 0x8A94A6))
-                .tracking(0.6)
-                .padding(.top, 9)
+                .font(pf(13.5))
+                .foregroundColor(C.subLabel)
+                .tracking(0.4)
+                .padding(.top, 7)
         }
         .frame(maxWidth: .infinity)
+    }
+
+    private var modeSwitch: some View {
+        HStack(spacing: 4) {
+            modeButton(.phone, title: "验证码登录")
+            modeButton(.password, title: "密码登录")
+        }
+        .padding(4)
+        .frame(maxWidth: 340)
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(C.fieldBg))
+    }
+
+    private func modeButton(_ value: Mode, title: String) -> some View {
+        Button {
+            withAnimation(.easeOut(duration: 0.16)) {
+                mode = value
+                sliderTicket = ""
+                message = ""
+                hint = ""
+            }
+        } label: {
+            Text(title)
+                .font(pf(13.5, mode == value ? .semibold : .regular))
+                .foregroundColor(mode == value ? C.green : C.subLabel)
+                .frame(maxWidth: .infinity)
+                .frame(height: 36)
+                .background {
+                    if mode == value {
+                        RoundedRectangle(cornerRadius: 11, style: .continuous).fill(C.raisedBg)
+                    }
+                }
+        }
+        .buttonStyle(.plain)
     }
 
     private var phoneFields: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("手机号")
-                .font(.system(size: 13.5, weight: .medium))
-                .foregroundColor(Color(hex: 0x0F1626))
+                .font(pf(11.5, .semibold))
+                .foregroundColor(C.subLabel)
+                .tracking(0.35)
 
             HStack(spacing: 12) {
                 Text("+86")
-                    .font(.system(size: 16.5, weight: .medium))
-                    .foregroundColor(Color(hex: 0x111827))
-                Rectangle().fill(Color(hex: 0xD7DCE6)).frame(width: 0.7, height: 20)
+                    .font(pf(15.5, .medium))
+                    .foregroundColor(C.label)
+                Rectangle().fill(C.hairline).frame(width: 0.7, height: 20)
                 TextField("请输入手机号", text: $phone)
                     .keyboardType(.numberPad)
                     .focused($focus, equals: .phone)
-                    .font(.system(size: 16.5))
-                    .foregroundColor(Color(hex: 0x111827))
-                    .tint(Color(hex: 0x1C72F9))
+                    .font(pf(16))
+                    .foregroundColor(C.label)
+                    .tint(C.green)
                     .onChange(of: phone) { value in
                         phone = String(value.filter(\.isNumber).prefix(11))
                         message = ""
                     }
             }
-            .frame(height: 56)
-            .padding(.horizontal, 18)
-            .background(Color(hex: 0xF6F7F9))
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .frame(height: 54)
+            .padding(.horizontal, 16)
+            .background(C.raisedBg)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(C.hairline, lineWidth: 0.5))
 
             if codeSent {
                 HStack(spacing: 12) {
                     TextField("请输入 6 位验证码", text: $code)
                         .keyboardType(.numberPad)
                         .focused($focus, equals: .code)
-                        .font(.system(size: 16.5))
-                        .foregroundColor(Color(hex: 0x111827))
-                        .tint(Color(hex: 0x1C72F9))
+                        .font(pf(16))
+                        .foregroundColor(C.label)
+                        .tint(C.green)
                         .onChange(of: code) { value in
                             code = String(value.filter(\.isNumber).prefix(6))
                             message = ""
@@ -200,31 +239,36 @@ struct HarmonyLoginView: View {
                     Button(countdown > 0 ? "\(countdown) 秒" : "重新获取") {
                         if countdown == 0 { requestCode() }
                     }
-                    .font(.system(size: 13.5, weight: .medium))
-                    .foregroundColor(countdown > 0 ? Color(hex: 0xA7AFBE) : Color(hex: 0x1C72F9))
+                    .font(pf(12.5, .medium))
+                    .foregroundColor(countdown > 0 ? C.time : C.green)
                     .disabled(countdown > 0)
                 }
-                .frame(height: 56)
-                .padding(.horizontal, 18)
-                .background(Color(hex: 0xF6F7F9))
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .frame(height: 54)
+                .padding(.horizontal, 16)
+                .background(C.raisedBg)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(C.hairline, lineWidth: 0.5))
             }
         }
-        .frame(maxWidth: 332)
+        .frame(maxWidth: 340)
     }
 
     private var passwordFields: some View {
         VStack(spacing: 10) {
-            TextField("账号", text: $user)
+            TextField("星言号", text: $user)
                 .textContentType(.username)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .focused($focus, equals: .user)
-                .font(.system(size: 16.5))
-                .padding(.horizontal, 18)
-                .frame(height: 56)
-                .background(Color(hex: 0xF6F7F9))
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .font(pf(16))
+                .foregroundColor(C.label)
+                .padding(.horizontal, 16)
+                .frame(height: 54)
+                .background(C.raisedBg)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(C.hairline, lineWidth: 0.5))
 
             HStack {
                 Group {
@@ -239,19 +283,22 @@ struct HarmonyLoginView: View {
                 .autocorrectionDisabled()
                 .privacySensitive()
                 .focused($focus, equals: .pass)
-                .font(.system(size: 16.5))
+                .font(pf(16))
+                .foregroundColor(C.label)
 
                 Button { showPassword.toggle() } label: {
                     Image(systemName: showPassword ? "eye.slash" : "eye")
-                        .foregroundColor(Color(hex: 0xA7AFBE))
+                        .foregroundColor(C.subLabel)
                 }
             }
-            .padding(.horizontal, 18)
-            .frame(height: 56)
-            .background(Color(hex: 0xF6F7F9))
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .padding(.horizontal, 16)
+            .frame(height: 54)
+            .background(C.raisedBg)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(C.hairline, lineWidth: 0.5))
         }
-        .frame(maxWidth: 332)
+        .frame(maxWidth: 340)
     }
 
     private var actionArea: some View {
@@ -260,42 +307,40 @@ struct HarmonyLoginView: View {
                 Button("找回密码") { showReset = true }
                 Button("自助解封") { showUnban = true }
                 Spacer()
-                Button(mode == .phone ? "密码登录 ›" : "验证码登录 ›") {
-                    mode = mode == .phone ? .password : .phone
-                    sliderTicket = ""
-                    message = ""
-                    hint = ""
-                }
             }
-            .font(.system(size: 13.5))
-            .foregroundColor(Color(hex: 0x7A8699))
+            .font(pf(12.5))
+            .foregroundColor(C.subLabel)
             .buttonStyle(.plain)
-            .frame(maxWidth: 332)
+            .frame(maxWidth: 340)
 
             Button { primaryAction() } label: {
-                Text(primaryTitle)
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 54)
-                    .background(canPrimary ? Color(hex: 0x1C72F9) : Color(hex: 0x92B6FF))
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    .shadow(color: canPrimary ? Color(hex: 0x1C72F9).opacity(0.16) : .clear,
-                            radius: 14, y: 7)
+                HStack(spacing: 8) {
+                    if busy { ProgressView().tint(.white) }
+                    Text(primaryTitle)
+                        .font(pf(16.5, .semibold))
+                }
+                .foregroundColor(canPrimary ? .white : C.subLabel)
+                .frame(maxWidth: .infinity)
+                .frame(height: 52)
+                .background {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(canPrimary ? C.green : C.fieldBg)
+                }
             }
             .buttonStyle(.plain)
-            .frame(maxWidth: 332)
+            .disabled(busy)
+            .frame(maxWidth: 340)
 
             if !message.isEmpty {
                 Text(message)
-                    .font(.system(size: 12.5))
-                    .foregroundColor(Color(hex: 0xE5484D))
-                    .frame(maxWidth: 332, alignment: .leading)
+                    .font(pf(12.5))
+                    .foregroundColor(C.red)
+                    .frame(maxWidth: 340, alignment: .leading)
             } else if !hint.isEmpty {
                 Text(hint)
-                    .font(.system(size: 12.5))
-                    .foregroundColor(Color(hex: 0x6F7D91))
-                    .frame(maxWidth: 332, alignment: .leading)
+                    .font(pf(12.5))
+                    .foregroundColor(C.subLabel)
+                    .frame(maxWidth: 340, alignment: .leading)
             }
         }
     }
@@ -305,9 +350,8 @@ struct HarmonyLoginView: View {
             Button { agreed.toggle() } label: {
                 ZStack {
                     Circle()
-                        .fill(agreed ? Color(hex: 0x1C72F9) : Color.white)
-                        .overlay(Circle().stroke(agreed ? Color(hex: 0x1C72F9)
-                                                        : Color(hex: 0xB9C1CE), lineWidth: 1.3))
+                        .fill(agreed ? C.green : C.raisedBg)
+                        .overlay(Circle().stroke(agreed ? C.green : C.time, lineWidth: 1.2))
                     if agreed {
                         Image(systemName: "checkmark")
                             .font(.system(size: 10, weight: .bold))
@@ -319,9 +363,9 @@ struct HarmonyLoginView: View {
             .buttonStyle(.plain)
 
             Text(.init("我已阅读并同意 [《用户协议》](terms://0) 和 [《隐私政策》](terms://1)"))
-                .font(.system(size: 12.2))
-                .foregroundColor(Color(hex: 0x7A8699))
-                .tint(Color(hex: 0x4C7DD8))
+                .font(pf(11.5))
+                .foregroundColor(C.subLabel)
+                .tint(C.green)
                 .environment(\.openURL, OpenURLAction { url in
                     if url.scheme == "terms" {
                         termsKind = Int(url.host ?? "0") ?? 0
@@ -330,7 +374,7 @@ struct HarmonyLoginView: View {
                     return .handled
                 })
         }
-        .frame(maxWidth: 332, alignment: .leading)
+        .frame(maxWidth: 340, alignment: .leading)
     }
 
     private func loadBranding() {
@@ -338,7 +382,8 @@ struct HarmonyLoginView: View {
             guard let b = await API.shared.branding() else { return }
 
             let shared = b.harmonyLogin
-            if let n = shared?.appName ?? b.login?.appName ?? b.appName, !n.isEmpty { brandName = n }
+            if let n = shared?.appName ?? b.login?.appName ?? b.appName, !n.isEmpty,
+               n != "智信", n != "Luming" { brandName = n }
             if let s = shared?.subTitle ?? b.login?.subTitle, !s.isEmpty { brandSubtitle = s }
             if let l = shared?.logo ?? b.login?.logo ?? b.logo, !l.isEmpty { logoPath = l }
         }
