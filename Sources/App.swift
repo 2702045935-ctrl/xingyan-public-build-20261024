@@ -386,11 +386,15 @@ final class AppState: ObservableObject {
         do {
             let s = try await API.shared.session()
             CrashCatcher.note("启动", "5 会话查询返回")
-            if s.ok, let user = s.user {
-                me = user
+            if s.ok, let sessionUser = s.user {
+                // 会话接口偶尔会带回短缓存里的旧资料。启动时以 /api/me 为准，
+                // 避免头像、昵称和签名在重新安装后仍显示上一次的资料。
+                let freshUser = (try? await API.shared.me()) ?? sessionUser
+                me = freshUser
                 rememberLastUser()
 
-                needConfirmLogin = true
+                // 登录态已经由服务端确认，不再用本机旧头像拦一次“确认登录”。
+                needConfirmLogin = false
                 await refreshAll()
                 Realtime.shared.start()
             } else {

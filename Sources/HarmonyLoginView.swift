@@ -1,6 +1,19 @@
 import SwiftUI
 import UIKit
 
+private enum LoginStyle {
+    static let canvas = Color.dyn(0xF5F4F0, 0x080A09)
+    static let surface = Color.dyn(0xFFFFFF, 0x111513)
+    static let field = Color.dyn(0xECEAE4, 0x171B19)
+    static let ink = Color.dyn(0x17201C, 0xEFF4F1)
+    static let secondary = Color.dyn(0x626B66, 0xA8B2AD)
+    static let tertiary = Color.dyn(0x929994, 0x727C77)
+    static let divider = Color.dyn(0xE2DFD7, 0x232925)
+    static let jade = Color.dyn(0x176A57, 0x63C6A5)
+    static let jadeDeep = Color.dyn(0x0F4F41, 0x3B9C7E)
+    static let gold = Color.dyn(0xC18A32, 0xE3B464)
+}
+
 struct HarmonyLoginView: View {
     @EnvironmentObject var app: AppState
     @FocusState private var focus: Field?
@@ -22,7 +35,6 @@ struct HarmonyLoginView: View {
     @State private var brandName = "星言"
     @State private var brandSubtitle = "让每一句真心，都有回应"
     @State private var logoPath = ""
-    @State private var accountAvatar = ""
     @State private var showPassword = false
     @State private var sliderTicket = ""
     @State private var sliderSeed = 0
@@ -55,43 +67,57 @@ struct HarmonyLoginView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            LinearGradient(colors: [Color(hex: 0xF8FAFF), .white],
-                           startPoint: .top, endPoint: .bottom)
-                .ignoresSafeArea()
-
-            Circle()
-                .fill(Color(hex: 0x6AA3FF).opacity(0.07))
-                .frame(width: 260, height: 260)
-                .offset(x: 250, y: -120)
-
-            Circle()
-                .fill(Color(hex: 0x9DC3FF).opacity(0.06))
-                .frame(width: 170, height: 170)
-                .offset(x: -85, y: 105)
+        ZStack {
+            LoginStyle.canvas.ignoresSafeArea()
+            orbitBackdrop
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
                     brandArea
-                    Spacer().frame(height: 46)
+                    Spacer().frame(height: 34)
 
-                    if mode == .phone {
-                        phoneFields
-                    } else {
-                        passwordFields
+                    VStack(spacing: 0) {
+                        if mode == .phone {
+                            phoneFields
+                        } else {
+                            passwordFields
+                        }
+
+                        Spacer().frame(height: 18)
+                        actionArea
+
+                        if !message.isEmpty || !hint.isEmpty {
+                            Spacer().frame(height: 12)
+                            Text(message.isEmpty ? hint : message)
+                                .font(.system(size: 12.5, weight: .medium))
+                                .foregroundStyle(message.isEmpty ? LoginStyle.secondary : Color(hex: 0xD9534F))
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 2)
+                        }
                     }
+                    .padding(18)
+                    .frame(maxWidth: 364)
+                    .background(
+                        RoundedRectangle(cornerRadius: 28, style: .continuous)
+                            .fill(LoginStyle.surface)
+                            .shadow(color: Color.black.opacity(0.08), radius: 28, y: 16)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 28, style: .continuous)
+                            .stroke(LoginStyle.divider, lineWidth: 0.7)
+                    )
 
-                    Spacer().frame(height: 18)
-                    actionArea
-                    Spacer().frame(height: 20)
+                    Spacer().frame(height: 16)
                     termsArea
                     Spacer(minLength: 36)
                 }
-                .padding(.top, 104)
+                .padding(.horizontal, 24)
+                .padding(.top, 74)
                 .padding(.bottom, max(24, L.safeBottom))
             }
+            .scrollDismissesKeyboard(.interactively)
         }
-        .background(Color.white.ignoresSafeArea())
+        .background(LoginStyle.canvas.ignoresSafeArea())
         .onAppear { loadBranding() }
         .onDisappear { countdownTask?.cancel() }
         .sheet(isPresented: $showSlider) {
@@ -108,73 +134,96 @@ struct HarmonyLoginView: View {
         .sheet(isPresented: $showTerms) { TermsSheet(kind: termsKind) }
     }
 
+    private var orbitBackdrop: some View {
+        GeometryReader { geo in
+            ZStack {
+                Circle()
+                    .stroke(LoginStyle.jade.opacity(0.14), lineWidth: 1)
+                    .frame(width: min(geo.size.width * 1.35, 540))
+                    .offset(x: geo.size.width * 0.34, y: -geo.size.height * 0.32)
+                Circle()
+                    .stroke(LoginStyle.gold.opacity(0.12), lineWidth: 1)
+                    .frame(width: min(geo.size.width * 0.76, 310))
+                    .offset(x: -geo.size.width * 0.38, y: geo.size.height * 0.14)
+                Circle()
+                    .fill(LoginStyle.jade.opacity(0.08))
+                    .frame(width: 8, height: 8)
+                    .offset(x: geo.size.width * 0.31, y: -geo.size.height * 0.16)
+                Circle()
+                    .fill(LoginStyle.gold.opacity(0.55))
+                    .frame(width: 5, height: 5)
+                    .offset(x: -geo.size.width * 0.30, y: geo.size.height * 0.32)
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
     private var brandArea: some View {
         VStack(spacing: 0) {
-            if !accountAvatar.isEmpty {
-                RemoteImage(path: accountAvatar, icon: "person.fill", mode: .fill)
-                    .frame(width: 86, height: 86)
-                    .clipShape(Circle())
-                    .overlay(Circle().stroke(Color.white, lineWidth: 2))
-                    .shadow(color: Color(hex: 0x1C72F9).opacity(0.20), radius: 18, y: 10)
-            } else if !logoPath.isEmpty {
+            ZStack {
+                Circle()
+                    .stroke(LoginStyle.jade.opacity(0.18), lineWidth: 1)
+                    .frame(width: 104, height: 104)
+                Circle()
+                    .trim(from: 0.08, to: 0.62)
+                    .stroke(LoginStyle.gold.opacity(0.75),
+                            style: StrokeStyle(lineWidth: 1.4, lineCap: .round))
+                    .rotationEffect(.degrees(-38))
+                    .frame(width: 92, height: 92)
+
+                if !logoPath.isEmpty {
                 RemoteImage(path: logoPath, icon: "message.fill", mode: .fill)
-                    .frame(width: 86, height: 86)
-                    .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
-                    .shadow(color: Color(hex: 0x1C72F9).opacity(0.20), radius: 18, y: 10)
-            } else {
-                ZStack(alignment: .topTrailing) {
-                    RoundedRectangle(cornerRadius: 25, style: .continuous)
-                        .fill(LinearGradient(colors: [Color(hex: 0x68A0FF),
-                                                      Color(hex: 0x1C72F9),
-                                                      Color(hex: 0x155BD5)],
+                    .frame(width: 76, height: 76)
+                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .stroke(Color.white.opacity(0.16), lineWidth: 0.7)
+                    )
+                } else {
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .fill(LinearGradient(colors: [LoginStyle.jade, LoginStyle.jadeDeep],
                                              startPoint: .topLeading, endPoint: .bottomTrailing))
-                        .frame(width: 78, height: 78)
-                        .shadow(color: Color(hex: 0x1C72F9).opacity(0.20), radius: 18, y: 10)
-                    Text("星")
-                        .font(.system(size: 39, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(width: 78, height: 78)
-                    Circle()
-                        .fill(Color(hex: 0xFFD166))
-                        .frame(width: 14, height: 14)
-                        .overlay(Circle().stroke(Color.white, lineWidth: 2))
-                        .offset(x: -3, y: 5)
+                        .frame(width: 76, height: 76)
+                        .overlay(
+                            Image(systemName: "sparkle")
+                                .font(.system(size: 29, weight: .medium))
+                                .foregroundStyle(Color.white.opacity(0.96))
+                        )
+                        .shadow(color: LoginStyle.jade.opacity(0.22), radius: 20, y: 10)
                 }
-                .frame(width: 86, height: 86)
             }
+            .frame(width: 110, height: 110)
 
             Text(brandName)
-                .font(.system(size: 34, weight: .bold))
-                .foregroundColor(Color(hex: 0x101828))
-                .tracking(3)
-                .padding(.top, 12)
+                .font(.system(size: 32, weight: .bold, design: .rounded))
+                .foregroundStyle(LoginStyle.ink)
+                .tracking(5)
+                .padding(.top, 4)
 
             Text(brandSubtitle)
-                .font(.system(size: 14.5))
-                .foregroundColor(Color(hex: 0x8A94A6))
-                .tracking(0.6)
-                .padding(.top, 9)
+                .font(.system(size: 13.5, weight: .medium))
+                .foregroundStyle(LoginStyle.secondary)
+                .tracking(1.1)
+                .padding(.top, 8)
         }
         .frame(maxWidth: .infinity)
     }
 
     private var phoneFields: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("手机号")
-                .font(.system(size: 13.5, weight: .medium))
-                .foregroundColor(Color(hex: 0x0F1626))
+        VStack(alignment: .leading, spacing: 10) {
+            fieldTitle("手机号")
 
             HStack(spacing: 12) {
                 Text("+86")
-                    .font(.system(size: 16.5, weight: .medium))
-                    .foregroundColor(Color(hex: 0x111827))
-                Rectangle().fill(Color(hex: 0xD7DCE6)).frame(width: 0.7, height: 20)
+                    .font(.system(size: 15.5, weight: .semibold))
+                    .foregroundStyle(LoginStyle.ink)
+                Rectangle().fill(LoginStyle.divider).frame(width: 0.7, height: 20)
                 TextField("请输入手机号", text: $phone)
                     .keyboardType(.numberPad)
                     .focused($focus, equals: .phone)
                     .font(.system(size: 16.5))
-                    .foregroundColor(Color(hex: 0x111827))
-                    .tint(Color(hex: 0x1C72F9))
+                    .foregroundStyle(LoginStyle.ink)
+                    .tint(LoginStyle.jade)
                     .onChange(of: phone) { value in
                         phone = String(value.filter(\.isNumber).prefix(11))
                         message = ""
@@ -182,8 +231,7 @@ struct HarmonyLoginView: View {
             }
             .frame(height: 56)
             .padding(.horizontal, 18)
-            .background(Color(hex: 0xF6F7F9))
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .background(fieldShape.fill(LoginStyle.field))
 
             if codeSent {
                 HStack(spacing: 12) {
@@ -191,8 +239,8 @@ struct HarmonyLoginView: View {
                         .keyboardType(.numberPad)
                         .focused($focus, equals: .code)
                         .font(.system(size: 16.5))
-                        .foregroundColor(Color(hex: 0x111827))
-                        .tint(Color(hex: 0x1C72F9))
+                        .foregroundStyle(LoginStyle.ink)
+                        .tint(LoginStyle.jade)
                         .onChange(of: code) { value in
                             code = String(value.filter(\.isNumber).prefix(6))
                             message = ""
@@ -201,31 +249,38 @@ struct HarmonyLoginView: View {
                         if countdown == 0 { requestCode() }
                     }
                     .font(.system(size: 13.5, weight: .medium))
-                    .foregroundColor(countdown > 0 ? Color(hex: 0xA7AFBE) : Color(hex: 0x1C72F9))
+                    .foregroundStyle(countdown > 0 ? LoginStyle.tertiary : LoginStyle.jade)
                     .disabled(countdown > 0)
                 }
                 .frame(height: 56)
                 .padding(.horizontal, 18)
-                .background(Color(hex: 0xF6F7F9))
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .background(fieldShape.fill(LoginStyle.field))
             }
         }
-        .frame(maxWidth: 332)
+        .frame(maxWidth: .infinity)
     }
 
     private var passwordFields: some View {
-        VStack(spacing: 10) {
-            TextField("账号", text: $user)
-                .textContentType(.username)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                .focused($focus, equals: .user)
-                .font(.system(size: 16.5))
-                .padding(.horizontal, 18)
-                .frame(height: 56)
-                .background(Color(hex: 0xF6F7F9))
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        VStack(alignment: .leading, spacing: 10) {
+            fieldTitle("账号")
+            HStack(spacing: 10) {
+                Image(systemName: "person")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(LoginStyle.tertiary)
+                TextField("账号或手机号", text: $user)
+                    .textContentType(.username)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .focused($focus, equals: .user)
+                    .font(.system(size: 16.5))
+                    .foregroundStyle(LoginStyle.ink)
+                    .tint(LoginStyle.jade)
+            }
+            .padding(.horizontal, 18)
+            .frame(height: 56)
+            .background(fieldShape.fill(LoginStyle.field))
 
+            fieldTitle("密码")
             HStack {
                 Group {
                     if showPassword {
@@ -240,23 +295,24 @@ struct HarmonyLoginView: View {
                 .privacySensitive()
                 .focused($focus, equals: .pass)
                 .font(.system(size: 16.5))
+                .foregroundStyle(LoginStyle.ink)
+                .tint(LoginStyle.jade)
 
                 Button { showPassword.toggle() } label: {
                     Image(systemName: showPassword ? "eye.slash" : "eye")
-                        .foregroundColor(Color(hex: 0xA7AFBE))
+                        .foregroundStyle(LoginStyle.tertiary)
                 }
             }
             .padding(.horizontal, 18)
             .frame(height: 56)
-            .background(Color(hex: 0xF6F7F9))
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .background(fieldShape.fill(LoginStyle.field))
         }
-        .frame(maxWidth: 332)
+        .frame(maxWidth: .infinity)
     }
 
     private var actionArea: some View {
-        VStack(spacing: 10) {
-            HStack(spacing: 14) {
+        VStack(spacing: 14) {
+            HStack(spacing: 18) {
                 Button("找回密码") { showReset = true }
                 Button("自助解封") { showUnban = true }
                 Spacer()
@@ -267,36 +323,39 @@ struct HarmonyLoginView: View {
                     hint = ""
                 }
             }
-            .font(.system(size: 13.5))
-            .foregroundColor(Color(hex: 0x7A8699))
+            .font(.system(size: 12.5, weight: .medium))
+            .foregroundStyle(LoginStyle.secondary)
             .buttonStyle(.plain)
-            .frame(maxWidth: 332)
 
             Button { primaryAction() } label: {
-                Text(primaryTitle)
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 54)
-                    .background(canPrimary ? Color(hex: 0x1C72F9) : Color(hex: 0x92B6FF))
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    .shadow(color: canPrimary ? Color(hex: 0x1C72F9).opacity(0.16) : .clear,
-                            radius: 14, y: 7)
+                HStack(spacing: 8) {
+                    if busy {
+                        ProgressView()
+                            .tint(.white)
+                            .scaleEffect(0.85)
+                    }
+                    Text(primaryTitle)
+                        .font(.system(size: 16, weight: .semibold))
+                    if !busy {
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 12.5, weight: .bold))
+                    }
+                }
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 54)
+                .background(
+                    RoundedRectangle(cornerRadius: 17, style: .continuous)
+                        .fill(canPrimary
+                              ? AnyShapeStyle(LinearGradient(colors: [LoginStyle.jadeDeep, LoginStyle.jade],
+                                                             startPoint: .topLeading, endPoint: .bottomTrailing))
+                              : AnyShapeStyle(LoginStyle.jade.opacity(0.34)))
+                )
+                .shadow(color: canPrimary ? LoginStyle.jade.opacity(0.22) : .clear,
+                        radius: 16, y: 8)
             }
             .buttonStyle(.plain)
-            .frame(maxWidth: 332)
-
-            if !message.isEmpty {
-                Text(message)
-                    .font(.system(size: 12.5))
-                    .foregroundColor(Color(hex: 0xE5484D))
-                    .frame(maxWidth: 332, alignment: .leading)
-            } else if !hint.isEmpty {
-                Text(hint)
-                    .font(.system(size: 12.5))
-                    .foregroundColor(Color(hex: 0x6F7D91))
-                    .frame(maxWidth: 332, alignment: .leading)
-            }
+            .disabled(busy)
         }
     }
 
@@ -305,13 +364,13 @@ struct HarmonyLoginView: View {
             Button { agreed.toggle() } label: {
                 ZStack {
                     Circle()
-                        .fill(agreed ? Color(hex: 0x1C72F9) : Color.white)
-                        .overlay(Circle().stroke(agreed ? Color(hex: 0x1C72F9)
-                                                        : Color(hex: 0xB9C1CE), lineWidth: 1.3))
+                        .fill(agreed ? LoginStyle.jade : LoginStyle.surface)
+                        .overlay(Circle().stroke(agreed ? LoginStyle.jade
+                                                        : LoginStyle.tertiary, lineWidth: 1.1))
                     if agreed {
                         Image(systemName: "checkmark")
                             .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                     }
                 }
                 .frame(width: 18, height: 18)
@@ -320,8 +379,8 @@ struct HarmonyLoginView: View {
 
             Text(.init("我已阅读并同意 [《用户协议》](terms://0) 和 [《隐私政策》](terms://1)"))
                 .font(.system(size: 12.2))
-                .foregroundColor(Color(hex: 0x7A8699))
-                .tint(Color(hex: 0x4C7DD8))
+                .foregroundStyle(LoginStyle.secondary)
+                .tint(LoginStyle.jade)
                 .environment(\.openURL, OpenURLAction { url in
                     if url.scheme == "terms" {
                         termsKind = Int(url.host ?? "0") ?? 0
@@ -330,7 +389,19 @@ struct HarmonyLoginView: View {
                     return .handled
                 })
         }
-        .frame(maxWidth: 332, alignment: .leading)
+        .frame(maxWidth: 364, alignment: .leading)
+    }
+
+    private var fieldShape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: 17, style: .continuous)
+    }
+
+    private func fieldTitle(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 11.5, weight: .semibold))
+            .foregroundStyle(LoginStyle.secondary)
+            .tracking(0.5)
+            .padding(.leading, 2)
     }
 
     private func loadBranding() {

@@ -4,10 +4,10 @@
 <dict>
   <key>CFBundleDevelopmentRegion</key><string>zh_CN</string>
   <key>CFBundleExecutable</key><string>CHRIS</string>
-  <key>CFBundleIdentifier</key><string>com.chris.chatnative.uipreview</string>
+  <key>CFBundleIdentifier</key><string>com.chris.chatnative</string>
   <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
   <key>CFBundleName</key><string>Luchat</string>
-  <key>CFBundleDisplayName</key><string>星言 UI 预览</string>
+  <key>CFBundleDisplayName</key><string>星言·星轨预览</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>1.0</string>
   <key>CFBundleVersion</key><string>1</string>

@@ -378,9 +378,16 @@ struct MomentsView: View {
     @State private var showGroupPage = false
 
     @State private var showNoticeList = false
+    @State private var avatarRevision = 0
 
     private var owner: User? { target ?? app.me }
     private var cover: String { owner?.momentCover ?? "" }
+    private var ownerAvatarPath: String {
+        let path = owner?.avatarPath ?? ""
+        guard !path.isEmpty, !path.hasPrefix("data:") else { return path }
+        let separator = path.contains("?") ? "&" : "?"
+        return path + separator + "v=" + String(avatarRevision)
+    }
 
     private var signature: String? {
         let s = (owner?.bio ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
@@ -397,7 +404,7 @@ struct MomentsView: View {
     var body: some View {
         ZStack(alignment: .top) {
 
-            Color.dyn(0xFFFFFF, 0x191919).ignoresSafeArea()
+            OrbitStyle.canvas.ignoresSafeArea()
 
             ScrollView {
                 VStack(spacing: 0) {
@@ -546,6 +553,7 @@ struct MomentsView: View {
             solid = false
         }
         .task {
+            avatarRevision = Int(Date().timeIntervalSince1970)
 
             if moments.isEmpty, target == nil, !mineOnly {
                 let cached = LocalStore.cachedMoments()
@@ -553,6 +561,10 @@ struct MomentsView: View {
                     moments = cached
                     rebuildFoldRows(cached)
                 }
+            }
+            if coverEditable, let fresh = try? await API.shared.me() {
+                app.me = fresh
+                avatarRevision = Int(Date().timeIntervalSince1970)
             }
             await reload()
         }
@@ -758,7 +770,7 @@ struct MomentsView: View {
                 }
                 .padding(.bottom, 24)
                 VStack(spacing: 4) {
-                    Avatar(path: owner?.avatarPath ?? "", size: L.coverAvatar, radius: 8)
+                    Avatar(path: ownerAvatarPath, size: L.coverAvatar, radius: 16)
                         .shadow(color: Color.black.opacity(0.28), radius: 5, x: 0, y: 2)
                     if let sign = signature {
 
@@ -824,12 +836,15 @@ struct MomentsView: View {
     private func dayHeader(_ t: String) -> some View {
         HStack {
             Text(t)
-                .font(pf(13))
-                .foregroundColor(C.subLabel)
+                .font(.system(size: 11.5, weight: .semibold))
+                .foregroundStyle(OrbitStyle.secondary)
+                .padding(.horizontal, 9)
+                .frame(height: 24)
+                .background(Capsule().fill(OrbitStyle.field))
             Spacer(minLength: 0)
         }
-        .padding(.top, 14)
-        .padding(.bottom, 2)
+        .padding(.top, 8)
+        .padding(.bottom, 0)
     }
 
     private struct FoldRow: Identifiable {
@@ -880,15 +895,17 @@ struct MomentsView: View {
         } label: {
             HStack(spacing: 6) {
                 Text(Tr("余下") + " \(row.rest.count) " + Tr("条"))
-                    .font(pf(14))
-                    .foregroundColor(Color(hex: 0x576B95))
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(OrbitStyle.jade)
                 Image(systemName: "chevron.down")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(Color(hex: 0x576B95))
+                    .foregroundStyle(OrbitStyle.jade)
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 16)
-            .frame(height: 40)
+            .padding(.horizontal, 14)
+            .frame(height: 38)
+            .background(RoundedRectangle(cornerRadius: 13, style: .continuous)
+                .fill(OrbitStyle.jadeSoft))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -896,7 +913,7 @@ struct MomentsView: View {
 
     private var momentList: some View {
 
-        LazyVStack(spacing: 0) {
+        LazyVStack(spacing: 10) {
 
             Color.clear
                 .frame(height: 1)
@@ -911,11 +928,22 @@ struct MomentsView: View {
 
             let pinnedOnes = moments.filter { $0.pinned == true }
 
-            let divInset = UIConfig.num("momentDividerInset", 12)
-            let divTrail = UIConfig.num("momentDividerTrail", 12)
+            HStack(alignment: .firstTextBaseline, spacing: 9) {
+                Text(Tr("生活圈"))
+                    .font(.system(size: 27, weight: .bold))
+                    .foregroundStyle(OrbitStyle.ink)
+                Text(String(momentTotal > 0 ? momentTotal : moments.count))
+                    .font(.system(size: 10.5, weight: .bold))
+                    .foregroundStyle(OrbitStyle.jade)
+                    .padding(.horizontal, 7)
+                    .frame(height: 20)
+                    .background(Capsule().fill(OrbitStyle.jadeSoft))
+                Spacer(minLength: 0)
+            }
+            .padding(.bottom, 2)
+
             ForEach(pinnedOnes) { moment in
                 momentRow(moment)
-                HairLine(inset: divInset, trailingInset: divTrail)
             }
 
             ForEach(Array(foldRows.enumerated()), id: \.element.id) { i, row in
@@ -929,9 +957,6 @@ struct MomentsView: View {
                     packedRow(row)
                 }
 
-                if i < foldRows.count - 1 {
-                    HairLine(inset: divInset, trailingInset: divTrail)
-                }
             }
 
             if hasMoreMoments {
@@ -944,11 +969,11 @@ struct MomentsView: View {
                         Task { await loadMoreMoments() }
                     }
             } else if momentTotal > 0 {
-                Text(Tr("没有更多了"))
-                    .font(pf(13))
-                    .foregroundColor(C.subLabel)
+                Text(Tr("已经看到这里"))
+                    .font(.system(size: 12.5, weight: .medium))
+                    .foregroundStyle(OrbitStyle.tertiary)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
+                    .padding(.vertical, 20)
             }
 
             if !mineOnly, !(feedUserId ?? "").isEmpty, (feedUserId ?? "") != (app.me?.id ?? ""),
@@ -961,11 +986,11 @@ struct MomentsView: View {
                     .padding(.vertical, 16)
             }
         }
-        .padding(.top, 60)
+        .padding(.top, 54)
         .padding(.horizontal, L.momentPadH)
         .padding(.bottom, 40)
         .frame(maxWidth: .infinity)
-        .background(Color.dyn(0xFFFFFF, 0x191919))
+        .background(OrbitStyle.canvas)
         .offset(y: 0)
         .zIndex(0)
     }
@@ -974,31 +999,36 @@ struct MomentsView: View {
         ZStack {
 
             if solid {
-                Text(Tr("朋友圈"))
-                    .font(pf(UIConfig.num("navTitle", 17)))
-                    .foregroundColor(C.label)
+                Text(Tr("生活圈"))
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(OrbitStyle.ink)
             }
 
             HStack(spacing: 0) {
 
                 Button { dismiss() } label: {
                     FlexIcon(custom: IconOverrides.custom("nav.back"),
-                             size: 20, color: solid ? C.label : .white,
+                             size: 18, color: solid ? OrbitStyle.ink : .white,
                              symbol: "chevron.left", weight: .medium)
-                        .frame(width: 56, height: L.navH)
-                        .shadow(color: solid ? .clear : Color.black.opacity(0.55), radius: 2, x: 0, y: 1)
+                        .frame(width: 36, height: 36)
+                        .background(Circle().fill(solid ? OrbitStyle.field : Color.black.opacity(0.28)))
+                        .overlay(Circle().stroke(solid ? OrbitStyle.divider : Color.white.opacity(0.18),
+                                                 lineWidth: 0.6))
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .padding(.leading, 10)
 
                 Spacer(minLength: 0)
 
                 ZStack(alignment: .topTrailing) {
                     Button { showNoticeList = true } label: {
                         FlexIcon(custom: IconOverrides.custom("nav.momentsBell"), size: 21,
-                                 color: solid ? C.label : .white, symbol: "bell", weight: .medium)
-                            .frame(width: 40, height: 44)
-                            .shadow(color: solid ? .clear : Color.black.opacity(0.55), radius: 2, x: 0, y: 1)
+                                 color: solid ? OrbitStyle.ink : .white, symbol: "bell", weight: .medium)
+                            .frame(width: 36, height: 36)
+                            .background(Circle().fill(solid ? OrbitStyle.field : Color.black.opacity(0.28)))
+                            .overlay(Circle().stroke(solid ? OrbitStyle.divider : Color.white.opacity(0.18),
+                                                     lineWidth: 0.6))
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -1009,23 +1039,25 @@ struct MomentsView: View {
                     }
                 }
 
-                SVGIcon(markup: I.camera, size: 26, color: solid ? C.label : .white)
-                    .frame(width: 44, height: 44)
-                    .shadow(color: solid ? .clear : Color.black.opacity(0.55), radius: 2, x: 0, y: 1)
+                SVGIcon(markup: I.camera, size: 21, color: solid ? OrbitStyle.ink : .white)
+                    .frame(width: 36, height: 36)
+                    .background(Circle().fill(solid ? OrbitStyle.field : Color.black.opacity(0.28)))
+                    .overlay(Circle().stroke(solid ? OrbitStyle.divider : Color.white.opacity(0.18),
+                                             lineWidth: 0.6))
                     .contentShape(Rectangle())
                     .onTapGesture { openComposer() }
                     .onLongPressGesture(minimumDuration: 0.45, maximumDistance: 26) {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         showVideoShoot = true
                     }
-                .padding(.trailing, 6)
+                .padding(.trailing, 10)
                 .contentShape(Rectangle())
             }
         }
         .frame(height: L.navH)
 
         .background { TopGlassBar(scrolled: solid ? 999 : 0,
-                                  fallback: Color.dyn(0xFFFFFF, 0x191919)) }
+                                  fallback: OrbitStyle.canvas) }
         .zIndex(25)
         .allowsHitTesting(true)
     }
@@ -1746,47 +1778,84 @@ struct MomentRow: View {
 
     private var images: [String] { moment.images ?? [] }
     var body: some View {
-        HStack(alignment: .top, spacing: 9) {
-            Avatar(path: moment.author?.avatarPath ?? "", size: L.momentAvatar, radius: 5)
+        HStack(alignment: .top, spacing: 12) {
+            Avatar(path: moment.author?.avatarPath ?? "", size: 42, radius: 14)
                 .contentShape(Rectangle())
                 .onTapGesture { if let u = moment.author { onOpenAvatar?(u) } }
 
             VStack(alignment: .leading, spacing: 0) {
-                Text(moment.author?.name ?? "")
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(moment.author?.name ?? "")
+                        .font(.system(size: 15.5, weight: .semibold))
+                        .foregroundStyle(OrbitStyle.ink)
+                        .lineLimit(1)
 
-                    .font(pf(17.3, .medium))
-                    .foregroundColor(C.link)
+                    if moment.pinned == true {
+                        HStack(spacing: 3) {
+                            Image(systemName: "pin.fill").font(.system(size: 8.5))
+                            Text(Tr("置顶")).font(.system(size: 9.5, weight: .semibold))
+                        }
+                        .foregroundStyle(OrbitStyle.gold)
+                        .padding(.horizontal, 6)
+                        .frame(height: 19)
+                        .background(Capsule().fill(OrbitStyle.gold.opacity(0.12)))
+                    }
+
+                    Spacer(minLength: 4)
+                    Text(TimeFmt.ago(moment.createdAt))
+                        .font(.system(size: 10.5, weight: .medium))
+                        .foregroundStyle(OrbitStyle.tertiary)
+                }
 
                 if let content = moment.content, !content.isEmpty {
 
                     Text(RichText.linkified(content))
 
-                        .font(pf(17.3))
-                        .foregroundColor(C.label)
-                        .lineSpacing(1)
+                        .font(.system(size: 15.5))
+                        .foregroundStyle(OrbitStyle.ink)
+                        .lineSpacing(4)
                         .fixedSize(horizontal: false, vertical: true)
-                        .padding(.top, 6)
-                }
-
-                if moment.pinned == true {
-                    HStack(spacing: 3) {
-                        Image(systemName: "pin.fill").font(.system(size: 10))
-                        Text(Tr("置顶")).font(pf(12.5))
-                    }
-                    .foregroundColor(C.subLabel)
-                    .padding(.top, 6)
+                        .padding(.top, 8)
                 }
 
                 if !images.isEmpty || !(moment.video ?? "").isEmpty {
                     grid
-                        .padding(.top, 13)
+                        .padding(.top, 12)
                 }
 
-                HStack(spacing: 14) {
-                    Text(TimeFmt.ago(moment.createdAt))
-                        .font(pf(14.5))
+                HStack(spacing: 10) {
+                    Button {
+                        burstHeart()
+                        onLike?()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: moment.likedByMe == true ? "heart.fill" : "heart")
+                                .font(.system(size: 11, weight: .semibold))
+                            Text(moment.likedByMe == true ? Tr("已赞") : Tr("赞"))
+                                .font(.system(size: 11.5, weight: .medium))
+                        }
+                        .foregroundStyle(moment.likedByMe == true ? OrbitStyle.jade : OrbitStyle.secondary)
+                        .padding(.horizontal, 9)
+                        .frame(height: 27)
+                        .background(Capsule().fill(OrbitStyle.field))
+                    }
+                    .buttonStyle(.plain)
 
-                        .foregroundColor(Color.dyn(0xB2B2B2, 0x8A8A8E))
+                    Button {
+                        onComment?()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "bubble.right")
+                                .font(.system(size: 10.5, weight: .semibold))
+                            Text(Tr("评论"))
+                                .font(.system(size: 11.5, weight: .medium))
+                        }
+                        .foregroundStyle(OrbitStyle.secondary)
+                        .padding(.horizontal, 9)
+                        .frame(height: 27)
+                        .background(Capsule().fill(OrbitStyle.field))
+                    }
+                    .buttonStyle(.plain)
 
                     Spacer()
 
@@ -1796,27 +1865,16 @@ struct MomentRow: View {
                         HStack(spacing: 2.6) {
                             ForEach(0..<3, id: \.self) { _ in
                                 Circle()
-                                    .fill((moment.likedByMe == true) ? Color(hex: 0xFF6B6B) : Color.dyn(0x7F7F7F, 0xD8D8D8))
+                                    .fill(OrbitStyle.secondary)
                                     .frame(width: 3.4, height: 3.4)
                             }
                         }
-                        .frame(width: 28, height: 19)
-
-                        .background {
-                            ZStack {
-                                GlassBackground(shape: RoundedRectangle(cornerRadius: 4, style: .continuous),
-                                                opacity: UIConfig.num("momentBtnGlass", 0.85),
-                                                edgeAlpha: UIConfig.num("momentBtnEdge", 0.40),
-                                                shadow: false,
-                                                seed: 0.70)
-                                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                                    .fill(C.cardBg.opacity(0.32))
-                            }
-                        }
+                        .frame(width: 32, height: 27)
+                        .background(Capsule().fill(OrbitStyle.field))
                     }
                     .buttonStyle(.plain)
                 }
-                .padding(.top, 10)
+                .padding(.top, 11)
 
                 let likes = moment.likes ?? []
                 let comments = moment.comments ?? []
@@ -1827,34 +1885,34 @@ struct MomentRow: View {
                             HStack(alignment: .top, spacing: 4) {
                                 Image(systemName: "heart.fill")
                                     .font(.system(size: 11.5))
-                                    .foregroundColor(Color(hex: 0x9A9A9A))
+                                    .foregroundStyle(OrbitStyle.jade)
                                     .padding(.top, 3)
                                     .overlay {
                                         if heartBurst { HeartBurst() }
                                     }
                                 Text(likes.compactMap { $0.nickname }.joined(separator: "，"))
-                                    .font(pf(16))
-                                    .foregroundColor(C.link)
+                                    .font(.system(size: 13.5, weight: .medium))
+                                    .foregroundStyle(OrbitStyle.jade)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.vertical, 5)
                         }
                         if !likes.isEmpty && !comments.isEmpty {
-                            HairLine(inset: 0)
+                            Rectangle().fill(OrbitStyle.divider).frame(height: 0.5)
                         }
                         ForEach(comments.indices, id: \.self) { i in
                             let c = comments[i]
-                            if i > 0 { HairLine(inset: 0) }
+                            if i > 0 { Rectangle().fill(OrbitStyle.divider).frame(height: 0.5) }
 
                             (Text(c.nickname ?? "")
-                                .foregroundColor(C.link)
+                                .foregroundColor(OrbitStyle.jade)
 
                              + Text((c.replyToName ?? "").isEmpty
                                     ? ("：" + (c.content ?? ""))
                                     : (" 回复 " + (c.replyToName ?? "") + "：" + (c.content ?? "")))
-                                .foregroundColor(C.label))
-                                .font(pf(16))
+                                .foregroundColor(OrbitStyle.ink))
+                                .font(.system(size: 13.5))
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .fixedSize(horizontal: false, vertical: true)
                                 .padding(.vertical, 5)
@@ -1871,17 +1929,26 @@ struct MomentRow: View {
                                }
                         }
                     }
-                    .padding(.horizontal, 8)
-                    .background(RoundedRectangle(cornerRadius: 4, style: .continuous)
-                        .fill(Color.dyn(0xF7F7F7, 0x2A2A2C)))
-                    .padding(.top, 8)
+                    .padding(.horizontal, 11)
+                    .padding(.vertical, 2)
+                    .background(RoundedRectangle(cornerRadius: 13, style: .continuous)
+                        .fill(OrbitStyle.field))
+                    .padding(.top, 10)
                 }
             }
 
             Spacer(minLength: 0)
         }
-        .padding(.top, 15)
-        .padding(.bottom, 12)
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 21, style: .continuous)
+                .fill(OrbitStyle.raised)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 21, style: .continuous)
+                .stroke(OrbitStyle.divider, lineWidth: 0.7)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 21, style: .continuous))
 
         .onChange(of: (moment.likes ?? []).count) { n in
             if n > 0 { burstHeart() }
@@ -1964,7 +2031,7 @@ struct MomentRow: View {
                 }
             }
             .frame(width: size.width, height: size.height)
-            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -1990,14 +2057,14 @@ struct MomentRow: View {
                     Text(moment.likedByMe == true ? Tr("取消赞") : Tr("赞"))
                         .font(pf(14.5))
                 }
-                .foregroundColor(.white)
+                .foregroundStyle(OrbitStyle.ink)
                 .padding(.horizontal, 13)
                 .frame(height: 32)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
 
-            Rectangle().fill(Color.white.opacity(0.22)).frame(width: 0.5, height: 18)
+            Rectangle().fill(OrbitStyle.divider).frame(width: 0.5, height: 18)
 
             Button {
                 withAnimation(.easeOut(duration: 0.12)) { showActions = false }
@@ -2008,7 +2075,7 @@ struct MomentRow: View {
                         .font(.system(size: 12.5))
                     Text(Tr("评论")).font(pf(14.5))
                 }
-                .foregroundColor(.white)
+                .foregroundStyle(OrbitStyle.ink)
                 .padding(.horizontal, 13)
                 .frame(height: 32)
                 .contentShape(Rectangle())
@@ -2016,7 +2083,7 @@ struct MomentRow: View {
             .buttonStyle(.plain)
 
             if moment.mine == true, onDeleteMoment != nil {
-                Rectangle().fill(Color.white.opacity(0.22)).frame(width: 0.5, height: 18)
+                Rectangle().fill(OrbitStyle.divider).frame(width: 0.5, height: 18)
                 Button {
                     withAnimation(.easeOut(duration: 0.12)) { showActions = false }
                     onTogglePin?()
@@ -2026,20 +2093,20 @@ struct MomentRow: View {
                             .font(.system(size: 12.5))
                         Text(moment.pinned == true ? Tr("取消置顶") : Tr("置顶")).font(pf(14.5))
                     }
-                    .foregroundColor(.white)
+                    .foregroundStyle(OrbitStyle.ink)
                     .padding(.horizontal, 13)
                     .frame(height: 32)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                Rectangle().fill(Color.white.opacity(0.22)).frame(width: 0.5, height: 18)
+                Rectangle().fill(OrbitStyle.divider).frame(width: 0.5, height: 18)
                 Button {
                     withAnimation(.easeOut(duration: 0.12)) { showActions = false }
                     onDeleteMoment?()
                 } label: {
                     Image(systemName: "trash")
                         .font(.system(size: 13))
-                        .foregroundColor(.white)
+                        .foregroundStyle(OrbitStyle.ink)
                         .padding(.horizontal, 13)
                         .frame(height: 32)
                         .contentShape(Rectangle())
@@ -2049,17 +2116,14 @@ struct MomentRow: View {
         }
 
         .background {
-            ZStack {
-                GlassBackground(shape: RoundedRectangle(cornerRadius: 5, style: .continuous),
-                                opacity: UIConfig.num("momentBarGlass", 0.9),
-                                edgeAlpha: UIConfig.num("momentBarEdge", 0.35),
-                                shadow: false,
-                                seed: 0.60)
-                RoundedRectangle(cornerRadius: 5, style: .continuous)
-                    .fill(Color.black.opacity(0.58))
-            }
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(OrbitStyle.raised)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(OrbitStyle.divider, lineWidth: 0.7)
+                )
         }
-        .shadow(color: Color.black.opacity(0.18), radius: 6, y: 2)
+        .shadow(color: Color.black.opacity(0.14), radius: 10, y: 4)
     }
 }
 
@@ -2095,7 +2159,7 @@ struct MomentImageGrid: View {
     var onTap: (Int) -> Void
 
     private let gap: CGFloat = 6
-    private let radius: CGFloat = 4
+    private let radius: CGFloat = 14
 
     var body: some View {
         if images.count == 1 {

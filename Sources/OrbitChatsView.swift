@@ -1,7 +1,7 @@
 import SwiftUI
 import UIKit
 
-private enum OrbitStyle {
+enum OrbitStyle {
     static let canvas = Color.dyn(0xF5F4F0, 0x080A09)
     static let raised = Color.dyn(0xFFFFFF, 0x111513)
     static let field = Color.dyn(0xEAE8E2, 0x171B19)
@@ -22,6 +22,7 @@ struct OrbitChatsPage: View {
     @State private var showScanner = false
     @State private var showGroupCreate = false
     @State private var deleteTarget: Chat?
+    @State private var avatarRevision = 0
 
     private let filters = ["全部", "未读", "群聊", "服务"]
 
@@ -54,13 +55,20 @@ struct OrbitChatsPage: View {
         app.chats.reduce(0) { $0 + $1.unreadCount }
     }
 
+    private var myAvatarPath: String {
+        let path = app.me?.avatarPath ?? ""
+        guard !path.isEmpty, !path.hasPrefix("data:") else { return path }
+        let separator = path.contains("?") ? "&" : "?"
+        return path + separator + "v=" + String(avatarRevision)
+    }
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
                 OrbitHeader(
                     name: app.me?.name ?? Tr("星言"),
                     subtitle: app.offline ? Tr("离线") : (unreadTotal > 0 ? "\(unreadTotal) 条未读消息" : Tr("消息已读完")),
-                    avatar: app.me?.avatarPath ?? "",
+                    avatar: myAvatarPath,
                     onAvatar: { showAccounts = true },
                     onScan: { showScanner = true },
                     onAdd: { showGroupCreate = true }
@@ -113,6 +121,12 @@ struct OrbitChatsPage: View {
                 }
             }
             Button(Tr("取消"), role: .cancel) { deleteTarget = nil }
+        }
+        .task {
+            avatarRevision = Int(Date().timeIntervalSince1970)
+            if let fresh = try? await API.shared.me() {
+                app.me = fresh
+            }
         }
     }
 
