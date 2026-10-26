@@ -55,23 +55,12 @@ struct HarmonyLoginView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            C.pageBg.ignoresSafeArea()
-
-            Circle()
-                .fill(C.jadeSoft.opacity(0.42))
-                .frame(width: 300, height: 300)
-                .offset(x: 240, y: -155)
-
-            Circle()
-                .stroke(C.goldSoft.opacity(0.72), lineWidth: 0.6)
-                .frame(width: 210, height: 210)
-                .offset(x: -115, y: 80)
-
+        ZStack {
+            Color(uiColor: .systemGroupedBackground).ignoresSafeArea()
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
                     brandArea
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: 34)
                     modeSwitch
                     Spacer().frame(height: 18)
 
@@ -87,12 +76,12 @@ struct HarmonyLoginView: View {
                     termsArea
                     Spacer(minLength: 36)
                 }
-                .padding(.top, 76)
+                .padding(.top, 82)
                 .padding(.horizontal, 22)
                 .padding(.bottom, max(24, L.safeBottom))
             }
         }
-        .background(C.pageBg.ignoresSafeArea())
+        .background(Color(uiColor: .systemGroupedBackground).ignoresSafeArea())
         .onAppear { loadBranding() }
         .onDisappear { countdownTask?.cancel() }
         .sheet(isPresented: $showSlider) {
@@ -113,85 +102,54 @@ struct HarmonyLoginView: View {
         VStack(spacing: 0) {
             if !accountAvatar.isEmpty {
                 RemoteImage(path: accountAvatar, icon: "person.fill", mode: .fill)
-                    .frame(width: 82, height: 82)
-                    .clipShape(Circle())
-                    .overlay(Circle().stroke(C.jadeSoft, lineWidth: 4))
+                    .frame(width: 78, height: 78)
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             } else if !logoPath.isEmpty {
                 RemoteImage(path: logoPath, icon: "message.fill", mode: .fill)
-                    .frame(width: 82, height: 82)
-                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                    .frame(width: 78, height: 78)
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            } else if let icon = AppIconImage.image {
+                Image(uiImage: icon)
+                    .resizable()
+                    .frame(width: 78, height: 78)
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             } else {
-                ZStack(alignment: .topTrailing) {
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                ZStack {
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
                         .fill(C.green)
-                        .frame(width: 76, height: 76)
-                        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous)
-                            .stroke(Color.white.opacity(0.12), lineWidth: 0.8))
+                        .frame(width: 78, height: 78)
                     Text("星")
-                        .font(.system(size: 38, weight: .semibold))
+                        .font(.system(size: 38, weight: .medium))
                         .foregroundColor(.white)
-                        .frame(width: 76, height: 76)
-                    Circle()
-                        .fill(Color.dyn(0xC58C32, 0xE2B35F))
-                        .frame(width: 13, height: 13)
-                        .overlay(Circle().stroke(C.pageBg, lineWidth: 2))
-                        .offset(x: -2, y: 4)
+                        .frame(width: 78, height: 78)
                 }
-                .frame(width: 82, height: 82)
             }
 
-            Text("STAR ORBIT · XINGYAN")
-                .font(pf(9.5, .semibold))
-                .foregroundColor(C.green)
-                .tracking(1.5)
-                .padding(.top, 16)
-
             Text(brandName)
-                .font(pf(32, .bold))
-                .foregroundColor(C.label)
-                .tracking(2.4)
-                .padding(.top, 7)
+                .font(.system(size: 32, weight: .bold))
+                .foregroundStyle(.primary)
+                .padding(.top, 18)
 
             Text(brandSubtitle)
-                .font(pf(13.5))
-                .foregroundColor(C.subLabel)
-                .tracking(0.4)
-                .padding(.top, 7)
+                .font(.system(size: 15))
+                .foregroundStyle(.secondary)
+                .padding(.top, 8)
         }
         .frame(maxWidth: .infinity)
     }
 
     private var modeSwitch: some View {
-        HStack(spacing: 4) {
-            modeButton(.phone, title: "验证码登录")
-            modeButton(.password, title: "密码登录")
+        Picker("", selection: $mode) {
+            Text("验证码登录").tag(Mode.phone)
+            Text("密码登录").tag(Mode.password)
         }
-        .padding(4)
+        .pickerStyle(.segmented)
         .frame(maxWidth: 340)
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(C.fieldBg))
-    }
-
-    private func modeButton(_ value: Mode, title: String) -> some View {
-        Button {
-            withAnimation(.easeOut(duration: 0.16)) {
-                mode = value
-                sliderTicket = ""
-                message = ""
-                hint = ""
-            }
-        } label: {
-            Text(title)
-                .font(pf(13.5, mode == value ? .semibold : .regular))
-                .foregroundColor(mode == value ? C.green : C.subLabel)
-                .frame(maxWidth: .infinity)
-                .frame(height: 36)
-                .background {
-                    if mode == value {
-                        RoundedRectangle(cornerRadius: 11, style: .continuous).fill(C.raisedBg)
-                    }
-                }
+        .onChange(of: mode) { _ in
+            sliderTicket = ""
+            message = ""
+            hint = ""
         }
-        .buttonStyle(.plain)
     }
 
     private var phoneFields: some View {
@@ -219,10 +177,8 @@ struct HarmonyLoginView: View {
             }
             .frame(height: 54)
             .padding(.horizontal, 16)
-            .background(C.raisedBg)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(C.hairline, lineWidth: 0.5))
+            .background(Color(uiColor: .secondarySystemGroupedBackground),
+                        in: RoundedRectangle(cornerRadius: 14, style: .continuous))
 
             if codeSent {
                 HStack(spacing: 12) {
@@ -245,10 +201,8 @@ struct HarmonyLoginView: View {
                 }
                 .frame(height: 54)
                 .padding(.horizontal, 16)
-                .background(C.raisedBg)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(C.hairline, lineWidth: 0.5))
+                .background(Color(uiColor: .secondarySystemGroupedBackground),
+                            in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
         }
         .frame(maxWidth: 340)
@@ -265,10 +219,8 @@ struct HarmonyLoginView: View {
                 .foregroundColor(C.label)
                 .padding(.horizontal, 16)
                 .frame(height: 54)
-                .background(C.raisedBg)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(C.hairline, lineWidth: 0.5))
+                .background(Color(uiColor: .secondarySystemGroupedBackground),
+                            in: RoundedRectangle(cornerRadius: 14, style: .continuous))
 
             HStack {
                 Group {
@@ -293,10 +245,8 @@ struct HarmonyLoginView: View {
             }
             .padding(.horizontal, 16)
             .frame(height: 54)
-            .background(C.raisedBg)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(C.hairline, lineWidth: 0.5))
+            .background(Color(uiColor: .secondarySystemGroupedBackground),
+                        in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .frame(maxWidth: 340)
     }
@@ -322,10 +272,8 @@ struct HarmonyLoginView: View {
                 .foregroundColor(canPrimary ? .white : C.subLabel)
                 .frame(maxWidth: .infinity)
                 .frame(height: 52)
-                .background {
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(canPrimary ? C.green : C.fieldBg)
-                }
+                .background(canPrimary ? C.green : Color(uiColor: .tertiarySystemFill),
+                            in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
             .buttonStyle(.plain)
             .disabled(busy)

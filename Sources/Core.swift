@@ -338,10 +338,8 @@ func colorDyn(_ raw: String?, light: UInt32, dark: UInt32) -> Color {
 }
 
 enum C {
-    /// 星轨总开关。关闭后，所有原有页面和旧 UIConfig 覆盖原样生效。
-    static var xingjiOn: Bool {
-        !UserDefaults.standard.bool(forKey: XingjiNativePages.legacyMainKey)
-    }
+    /// iOS 使用固定的星言品牌色，不再读取旧页面配置。
+    static let xingjiOn = true
 
     static var pageBg      : Color { xingjiOn ? Color.dyn(0xF3F1EC, 0x000000) : UIConfig.color("pageBg", 0xEDEDED, 0x0B0B0D) }
     static var navBg       : Color { xingjiOn ? Color.dyn(0xF7F7F7, 0x090B0C) : UIConfig.color("navBg", 0xEDEDED, 0x18181A) }

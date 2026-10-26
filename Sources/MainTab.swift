@@ -5,7 +5,6 @@ struct MainTabView: View {
     @EnvironmentObject var app: AppState
     @State private var tab = 0
     @State private var shownCrash = false
-    @AppStorage(XingjiNativePages.legacyMainKey) private var legacyMainPages = false
 
     @ObservedObject private var lang = LangStore.shared
 
@@ -29,17 +28,7 @@ struct MainTabView: View {
         ZStack(alignment: .bottom) {
 
             ZStack {
-                if !legacyMainPages {
-                    XingjiNativePageHost(tab: $tab)
-                } else if tab == 0 {
-                    ChatsView()
-                } else if tab == 1 {
-                    ContactsView()
-                } else if tab == 2 {
-                    DiscoverView()
-                } else {
-                    MeView()
-                }
+                AppleNativePageHost(tab: $tab)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
