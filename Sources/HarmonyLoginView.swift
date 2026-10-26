@@ -6,7 +6,7 @@ struct HarmonyLoginView: View {
     @FocusState private var focus: Field?
 
     private enum Field: Hashable { case phone, code, user, pass }
-    private enum Mode { case phone, password }
+    private enum Mode: Hashable { case phone, password }
 
     @State private var mode: Mode = .phone
     @State private var phone = UserDefaults.standard.string(forKey: "chris.lastPhone") ?? ""
