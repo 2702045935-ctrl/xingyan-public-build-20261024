@@ -33,16 +33,166 @@ struct MeView: View {
         return abs(r - r.rounded()) < 0.001 ? String(Int(r)) : String(format: "%.1f", r)
     }
 
+    private var orbitMeTop: some View {
+        VStack(spacing: 13) {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("我的")
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundStyle(OrbitTheme.ink)
+                    Text(Tr("把生活留在这里"))
+                        .font(.system(size: 10.5, weight: .medium))
+                        .foregroundStyle(OrbitTheme.secondary)
+                }
+
+                Spacer(minLength: 8)
+
+                Button { showMyQR = true } label: {
+                    Image(systemName: "qrcode")
+                        .font(.system(size: 15.5, weight: .semibold))
+                        .foregroundStyle(OrbitTheme.ink)
+                        .frame(width: 36, height: 36)
+                        .background(Circle().fill(OrbitTheme.field))
+                        .overlay(Circle().stroke(OrbitTheme.divider, lineWidth: 0.6))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Tr("我的二维码"))
+
+                Button { path.append("settings") } label: {
+                    Image(systemName: "gearshape.fill")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(OrbitTheme.ink)
+                        .frame(width: 36, height: 36)
+                        .background(Circle().fill(OrbitTheme.field))
+                        .overlay(Circle().stroke(OrbitTheme.divider, lineWidth: 0.6))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Tr("设置"))
+            }
+            .padding(.horizontal, 4)
+
+            VStack(spacing: 0) {
+                Button { path.append("profile") } label: {
+                    HStack(spacing: 14) {
+                        Avatar(path: app.me?.avatarPath ?? "", size: 66, radius: 22,
+                               level: growth.shownLevel)
+
+                        VStack(alignment: .leading, spacing: 5) {
+                            HStack(spacing: 6) {
+                                if teenOn {
+                                    UmbrellaIcon(color: Color(hex: 0x3E9BF0), size: 15)
+                                }
+                                Text(app.me?.name ?? Tr("星言用户"))
+                                    .font(.system(size: 21, weight: .bold))
+                                    .foregroundStyle(OrbitTheme.ink)
+                                    .lineLimit(1)
+                                if growthShow {
+                                    QQLevelBadge(level: growth.shownLevel, size: 14, maxIcons: 3)
+                                        .fixedSize()
+                                }
+                                MemberBadge(tier: app.me?.memberTier,
+                                            short: app.me?.memberShort,
+                                            color: app.me?.memberColor,
+                                            color2: app.me?.memberColor2,
+                                            height: 13)
+                                    .fixedSize()
+                            }
+
+                            Text(Tr("星言号") + "：" + (app.me?.username ?? "-"))
+                                .font(.system(size: 11.5, weight: .medium))
+                                .foregroundStyle(OrbitTheme.secondary)
+                                .lineLimit(1)
+                                .copyOnLongPress(app.me?.username ?? "") { app.show($0) }
+
+                            let note = ((app.me?.bio ?? "").trimmingCharacters(in: .whitespacesAndNewlines))
+                            Text(note.isEmpty ? Tr("点击编辑个人资料") : note)
+                                .font(.system(size: 12))
+                                .foregroundStyle(OrbitTheme.tertiary)
+                                .lineLimit(1)
+                        }
+
+                        Spacer(minLength: 4)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(OrbitTheme.tertiary)
+                    }
+                    .padding(15)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+
+                Rectangle().fill(OrbitTheme.divider).frame(height: 0.5)
+
+                HStack(spacing: 0) {
+                    orbitMeStat(value: "\(friendCount)", title: Tr("朋友")) {
+                        statusPanel = .friends
+                    }
+                    orbitMeDivider
+                    orbitMeStat(value: daysText, title: Tr("活跃天")) {
+                        path.append("level")
+                    }
+                    orbitMeDivider
+                    orbitMeStat(value: "\(app.me?.momentCount ?? 0)", title: Tr("动态")) {
+                        path.append("moments")
+                    }
+                }
+                .padding(.vertical, 12)
+
+                Rectangle().fill(OrbitTheme.divider).frame(height: 0.5)
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        memberPill
+                        statusChip
+                        friendsStatusChip
+                        if app.me?.ops == true {
+                            manageChip
+                        }
+                    }
+                    .padding(.horizontal, 14)
+                }
+                .frame(height: 48)
+            }
+            .background(OrbitTheme.cardBackground())
+        }
+        .padding(.top, L.safeTop + 10)
+        .padding(.horizontal, 12)
+        .padding(.bottom, 4)
+    }
+
+    private func orbitMeStat(value: String, title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 3) {
+                Text(value)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(OrbitTheme.ink)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                Text(title)
+                    .font(.system(size: 10.5, weight: .medium))
+                    .foregroundStyle(OrbitTheme.tertiary)
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var orbitMeDivider: some View {
+        Rectangle()
+            .fill(OrbitTheme.divider)
+            .frame(width: 0.5, height: 28)
+    }
+
     var body: some View {
         NavigationStack(path: $path) {
             ScrollView {
                 VStack(spacing: 0) {
-                    meTop
+                    orbitMeTop
                     meGap
 
                     ForEach(grouped.indices, id: \.self) { gi in
 
-                        GroupCard(glass: UIConfig.num("meGlass", 1) > 0, bg: C.meCardBg) {
+                        VStack(spacing: 0) {
                             ForEach(grouped[gi].indices, id: \.self) { ri in
                                 let item = grouped[gi][ri]
                                 if ri > 0 { rowLine }
@@ -59,14 +209,16 @@ struct MeView: View {
                             }
                             if UIConfig.num("showPromo", 0) > 0 && gi == grouped.count - 1 {
                                 rowLine
-                                promoRow
+                                    promoRow
                             }
                         }
+                        .background(OrbitTheme.cardBackground())
+                        .padding(.horizontal, 12)
                         meGap
                     }
 
                     if app.me?.ops == true {
-                        GroupCard(glass: UIConfig.num("meGlass", 1) > 0, bg: C.meCardBg) {
+                        VStack(spacing: 0) {
                             MenuRow(icon: I.star,
                                     iconColor: Color(hex: 0x4A90D9),
                                     title: Tr("管理"),
@@ -85,13 +237,15 @@ struct MeView: View {
                                     iconTile: true,
                                     sf: "face.smiling")
                         }
+                        .background(OrbitTheme.cardBackground())
+                        .padding(.horizontal, 12)
                         meGap
                     }
 
                     Spacer().frame(height: 24)
                 }
             }
-            .background(C.pageBg)
+            .background(OrbitTheme.canvas)
             .ignoresSafeArea(edges: .top)
             .toolbar(.hidden, for: .navigationBar)
 
@@ -303,15 +457,18 @@ struct MeView: View {
     }
 
     private var gap: some View {
-        Rectangle().fill(C.pageBg).frame(height: L.groupGap)
+        Rectangle().fill(OrbitTheme.canvas).frame(height: 10)
     }
 
     private var meGap: some View {
-        Rectangle().fill(C.pageBg).frame(height: L.groupGap)
+        Color.clear.frame(height: 10)
     }
 
     private var rowLine: some View {
-        HairLine(inset: L.menuLineInset)
+        Rectangle()
+            .fill(OrbitTheme.divider)
+            .frame(height: 0.5)
+            .padding(.leading, L.menuLineInset)
     }
 
     private var growthShow: Bool { UIConfig.num("growthShow", 1) > 0 }

@@ -23,14 +23,64 @@ struct DiscoverView: View {
         return ""
     }
 
+    private var discoverTopHeader: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("世界")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(OrbitTheme.ink)
+                Text(app.moments.isEmpty ? Tr("去发现、聊天、生活")
+                                         : "\(app.moments.count) 条新动态")
+                    .font(.system(size: 10.5, weight: .medium))
+                    .foregroundStyle(OrbitTheme.secondary)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 8)
+
+            Button {
+                path.append("search")
+            } label: {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 15.5, weight: .semibold))
+                    .foregroundStyle(OrbitTheme.ink)
+                    .frame(width: 36, height: 36)
+                    .background(Circle().fill(OrbitTheme.field))
+                    .overlay(Circle().stroke(OrbitTheme.divider, lineWidth: 0.6))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Tr("搜索"))
+
+            Button {
+                showScan = true
+            } label: {
+                Image(systemName: "qrcode.viewfinder")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 36, height: 36)
+                    .background(
+                        Circle().fill(
+                            LinearGradient(colors: [OrbitTheme.jadeDeep, OrbitTheme.jade],
+                                           startPoint: .topLeading,
+                                           endPoint: .bottomTrailing)
+                        )
+                    )
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Tr("扫一扫"))
+        }
+        .padding(.horizontal, 16)
+        .frame(height: L.navH)
+    }
+
     var body: some View {
         NavigationStack(path: $path) {
             VStack(spacing: 0) {
 
-                NavBar(title: C.tabText2, floating: true)
+                discoverTopHeader
                     .measure("discover.nav")
 
-                    .background { TopGlassBar(scrolled: navScrolled, fallback: C.discoverBg, always: true) }
+                    .background { TopGlassBar(scrolled: navScrolled, fallback: OrbitTheme.canvas, always: true) }
                     .overlay(alignment: .bottom) { TopGlassLine(scrolled: navScrolled) }
                     .zIndex(1)
                 ScrollView {
@@ -42,7 +92,7 @@ struct DiscoverView: View {
 
                         ForEach(grouped.indices, id: \.self) { gi in
 
-                            GroupCard(bg: C.discoverCardBg) {
+                            VStack(spacing: 0) {
                                 ForEach(grouped[gi].indices, id: \.self) { ri in
                                     let item = grouped[gi][ri]
                                     if ri > 0 { rowLine }
@@ -60,7 +110,10 @@ struct DiscoverView: View {
                                             sf: RowIcon.sf(action: item.action, label: item.label))
                                 }
                             }
-                            GroupGap(bg: C.discoverBg)
+                            .background(OrbitTheme.cardBackground())
+                            .padding(.horizontal, 12)
+                            .padding(.top, 3)
+                            .padding(.bottom, 9)
                         }
 
                         Spacer().frame(height: 20)
@@ -69,11 +122,11 @@ struct DiscoverView: View {
                 }
 
                 .padding(.top, -L.navH)
-                .background(C.discoverBg)
+                .background(OrbitTheme.canvas)
             }
-            .background(C.discoverBg.ignoresSafeArea(edges: .bottom))
+            .background(OrbitTheme.canvas.ignoresSafeArea(edges: .bottom))
 
-            .background(C.discoverBg.ignoresSafeArea(edges: .top))
+            .background(OrbitTheme.canvas.ignoresSafeArea(edges: .top))
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: String.self) { key in
                 if key == "moments" {
@@ -177,7 +230,10 @@ struct DiscoverView: View {
     }
 
     private var rowLine: some View {
-        HairLine(inset: L.menuLineInset)
+        Rectangle()
+            .fill(OrbitTheme.divider)
+            .frame(height: 0.5)
+            .padding(.leading, L.menuLineInset)
     }
 }
 

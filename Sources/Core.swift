@@ -438,8 +438,8 @@ enum C {
 
     static var tabTitle0: String { UIConfig.text("tabTitle0", "聊天") }
     static var tabTitle1: String { UIConfig.text("tabTitle1", "通讯录") }
-    static var tabTitle2: String { UIConfig.text("tabTitle2", "发现") }
-    static var tabTitle3: String { UIConfig.text("tabTitle3", "我") }
+    static var tabTitle2: String { UIConfig.text("tabTitleWorld", "世界") }
+    static var tabTitle3: String { UIConfig.text("tabTitleMe", "我的") }
 
     static let loginBg     = Color(hex: 0x111111)
     static let loginCard   = Color(hex: 0x191919)
