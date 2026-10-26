@@ -813,6 +813,90 @@ struct ChatsView: View {
 
     private var unreadTotal: Int { app.chats.reduce(0) { $0 + ($1.unread ?? 0) } }
 
+    private var chatTopHeader: some View {
+        HStack(spacing: 11) {
+            Button {
+                showAccounts = true
+            } label: {
+                Avatar(path: app.me?.avatarPath ?? "", size: 38, radius: 13)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 13, style: .continuous)
+                            .stroke(OrbitTheme.jade.opacity(0.42), lineWidth: 1)
+                    )
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Tr("切换账号"))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("星言")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundStyle(OrbitTheme.ink)
+                    .lineLimit(1)
+                Text(app.offline ? Tr("离线")
+                     : (unreadTotal > 0 ? "\(unreadTotal) 条未读消息" : Tr("消息已读完")))
+                    .font(.system(size: 10.5, weight: .medium))
+                    .foregroundStyle(OrbitTheme.secondary)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 6)
+
+            if UIConfig.num("navEyesVisible", 0) > 0, eyes.navEyesOn {
+                Button {
+                    if let bot = app.chats.first(where: { $0.botRank == 0 }) {
+                        botChat = bot
+                    } else {
+                        Task {
+                            await app.loadChats()
+                            if let b = app.chats.first(where: { $0.botRank == 0 }) {
+                                botChat = b
+                            }
+                        }
+                    }
+                } label: {
+                    JarvisEyesAvatar(size: 26, tint: eyesTint)
+                        .frame(width: 34, height: 34)
+                }
+                .buttonStyle(.plain)
+            }
+
+            Button {
+                showSearch = true
+            } label: {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 15.5, weight: .semibold))
+                    .foregroundStyle(OrbitTheme.ink)
+                    .frame(width: 36, height: 36)
+                    .background(Circle().fill(OrbitTheme.field))
+                    .overlay(Circle().stroke(OrbitTheme.divider, lineWidth: 0.6))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Tr("搜索"))
+
+            Button {
+                withAnimation(.spring(response: 0.32, dampingFraction: 0.62)) {
+                    plusMenu = true
+                }
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 16.5, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 36, height: 36)
+                    .background(
+                        Circle().fill(
+                            LinearGradient(colors: [OrbitTheme.jadeDeep, OrbitTheme.jade],
+                                           startPoint: .topLeading,
+                                           endPoint: .bottomTrailing)
+                        )
+                    )
+            }
+            .buttonStyle(NavPlusPressStyle())
+            .accessibilityLabel(Tr("更多"))
+        }
+        .padding(.horizontal, 16)
+        .frame(height: L.navH)
+    }
+
     private var pullDots: some View {
         let p = floorUp ? 100 : pullDown
         return HStack(spacing: 7) {
@@ -1407,98 +1491,7 @@ struct ChatsView: View {
                 }
 
                 VStack(spacing: 0) {
-                    NavBar(title: navTitle,
-
-                           titleView: AnyView(
-                               HStack(spacing: 10) {
-                                   Button {
-                                       showAccounts = true
-                                   } label: {
-                                       Avatar(path: app.me?.avatarPath ?? "",
-                                              size: 37, radius: 13)
-                                           .overlay(
-                                               RoundedRectangle(cornerRadius: 13, style: .continuous)
-                                                   .stroke(OrbitTheme.jade.opacity(0.42),
-                                                           lineWidth: 1)
-                                           )
-                                   }
-                                   .buttonStyle(.plain)
-                                   .accessibilityLabel(Tr("切换账号"))
-
-                                   VStack(alignment: .leading, spacing: 1) {
-                                       Text(app.me?.name ?? C.tabText0)
-                                           .font(.system(size: 20, weight: .bold))
-                                           .foregroundStyle(OrbitTheme.ink)
-                                           .lineLimit(1)
-                                       Text(app.offline ? Tr("离线")
-                                            : (unreadTotal > 0 ? "\(unreadTotal) 条未读消息"
-                                                               : Tr("消息已读完")))
-                                           .font(.system(size: 10.5, weight: .medium))
-                                           .foregroundStyle(OrbitTheme.secondary)
-                                           .lineLimit(1)
-                                   }
-                               }
-                           ),
-
-                           leftExtra: floorUp ? nil : AnyView(
-
-                            HStack(spacing: 8) {
-
-                                if UIConfig.num("navEyesVisible", 0) > 0, eyes.navEyesOn {
-                                    Button {
-                                        if let bot = app.chats.first(where: { $0.botRank == 0 }) {
-                                            botChat = bot
-                                        } else {
-                                            Task { await app.loadChats()
-                                                if let b = app.chats.first(where: { $0.botRank == 0 }) { botChat = b } }
-                                        }
-                                    } label: {
-                                        JarvisEyesAvatar(size: 28, tint: eyesTint)
-                                            .frame(width: 36, height: 36)
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-
-                                Button {
-                                    showSearch = true
-                                } label: {
-                                    Image(systemName: "magnifyingglass")
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(OrbitTheme.ink)
-                                        .frame(width: 36, height: 36)
-                                        .background(Circle().fill(OrbitTheme.field))
-                                        .overlay(Circle().stroke(OrbitTheme.divider, lineWidth: 0.6))
-                                }
-                                .buttonStyle(.plain)
-
-                            }
-                            .padding(.leading, 4)
-                           ),
-
-                           floating: true,
-                           leftExtraGlass: false,
-                           rightGlass: false) {
-                        Button {
-
-                            withAnimation(.spring(response: 0.32, dampingFraction: 0.62)) { plusMenu = true }
-                        } label: {
-                            FlexIcon(custom: IconOverrides.custom("nav.plus"),
-                                     size: UIConfig.num("navPlusSize", 20),
-                                     color: .white,
-                                     symbol: "plus")
-                                .frame(width: UIConfig.num("navPlusW", 42),
-                                       height: UIConfig.num("navPlusH", 42))
-                                .background(
-                                    Circle().fill(
-                                        LinearGradient(colors: [OrbitTheme.jadeDeep, OrbitTheme.jade],
-                                                       startPoint: .topLeading,
-                                                       endPoint: .bottomTrailing)
-                                    )
-                                )
-                        }
-
-                        .buttonStyle(NavPlusPressStyle())
-                    }
+                    chatTopHeader
 
                     .background {
                         ZStack {

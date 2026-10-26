@@ -36,11 +36,11 @@ jobs:
       - name: 下载 WebRTC 框架
         run: |
           set -e
-          if ! curl -L --fail --retry 2 --retry-delay 2 --connect-timeout 15 --max-time 180 -o /tmp/webrtc.zip \
-              https://aa.x8iu.com/webrtc/WebRTC-M153.xcframework.zip; then
-            echo "自家镜像拿不到，回退 GitHub 官方"
-            curl -L --fail --retry 5 --retry-delay 3 --connect-timeout 15 --max-time 900 -o /tmp/webrtc.zip \
-              https://github.com/stasel/WebRTC/releases/download/153.0.0/WebRTC-M153.xcframework.zip
+          if ! curl -L --fail --retry 3 --retry-delay 2 --connect-timeout 15 --max-time 300 -o /tmp/webrtc.zip \
+              https://github.com/stasel/WebRTC/releases/download/153.0.0/WebRTC-M153.xcframework.zip; then
+            echo "GitHub 下载失败，回退自家镜像"
+            curl -L --fail --retry 2 --retry-delay 2 --connect-timeout 15 --max-time 600 -o /tmp/webrtc.zip \
+              https://aa.x8iu.com/webrtc/WebRTC-M153.xcframework.zip
           fi
           ls -lh /tmp/webrtc.zip
           rm -rf WebRTCKit && mkdir -p WebRTCKit
@@ -83,7 +83,7 @@ jobs:
         run: |
           set -e
           BUILDDATE="$(TZ=Asia/Shanghai date '+%m-%d %H:%M')"
-          BUILDNO=300016
+          BUILDNO=300017
           echo "构建号 = $BUILDNO"
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILDNO" Info.plist || true
           /usr/libexec/PlistBuddy -c "Add :BuildDate string $BUILDDATE" Info.plist \

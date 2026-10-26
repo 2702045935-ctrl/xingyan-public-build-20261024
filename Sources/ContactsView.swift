@@ -126,49 +126,52 @@ private var funcs: [(String, String, Color, String)] {
         }.map { ContactSection(letter: $0, users: map[$0] ?? []) }
     }
 
+    private var contactsTopHeader: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(C.tabText1)
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(OrbitTheme.ink)
+                Text("\(filtered.count) 位联系人")
+                    .font(.system(size: 10.5, weight: .medium))
+                    .foregroundStyle(OrbitTheme.secondary)
+            }
+
+            Spacer(minLength: 8)
+
+            Button {
+                withAnimation(.spring(response: 0.32, dampingFraction: 0.62)) {
+                    plusMenu = true
+                }
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 16.5, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 36, height: 36)
+                    .background(
+                        Circle().fill(
+                            LinearGradient(colors: [OrbitTheme.jadeDeep, OrbitTheme.jade],
+                                           startPoint: .topLeading,
+                                           endPoint: .bottomTrailing)
+                        )
+                    )
+            }
+            .buttonStyle(NavPlusPressStyle())
+            .accessibilityLabel(Tr("更多"))
+        }
+        .padding(.horizontal, 16)
+        .frame(height: L.navH)
+    }
+
     var body: some View {
         NavigationStack(path: $path) {
             VStack(spacing: 0) {
 
                 VStack(spacing: 0) {
 
-                NavBar(title: C.tabText1,
-                       titleView: AnyView(
-                           VStack(alignment: .leading, spacing: 1) {
-                               Text(C.tabText1)
-                                   .font(.system(size: 22, weight: .bold))
-                                   .foregroundStyle(OrbitTheme.ink)
-                               Text("\(filtered.count) 位联系人")
-                                   .font(.system(size: 10.5, weight: .medium))
-                                   .foregroundStyle(OrbitTheme.secondary)
-                           }
-                       ),
-                       floating: true,
-                       leftExtraGlass: false,
-                       rightGlass: false) {
-                    Button {
+                    contactsTopHeader
 
-                        withAnimation(.spring(response: 0.32, dampingFraction: 0.62)) { plusMenu = true }
-                    } label: {
-                        Image(systemName: "plus")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(width: UIConfig.num("navPlusW", 42),
-                                   height: UIConfig.num("navPlusH", 42))
-                            .background(
-                                Circle().fill(
-                                    LinearGradient(colors: [OrbitTheme.jadeDeep, OrbitTheme.jade],
-                                                   startPoint: .topLeading,
-                                                   endPoint: .bottomTrailing)
-                                )
-                            )
-                    }
-
-                    .buttonStyle(NavPlusPressStyle())
-                }
-
-                .background { TopGlassBar(scrolled: navScrolled, fallback: OrbitTheme.canvas, always: true) }
-                .offset(y: -7)
+                    .background { TopGlassBar(scrolled: navScrolled, fallback: OrbitTheme.canvas, always: true) }
 
                 }
                 .zIndex(1)
