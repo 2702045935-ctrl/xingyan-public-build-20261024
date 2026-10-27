@@ -402,6 +402,9 @@ struct NewFriendsView: View {
         .onChange(of: realtime.event) { ev in
             if ev.type == "friend" { Task { await load() } }
         }
+        .onChange(of: app.localOutgoingFriendRequests) { _ in
+            mergeLocalOutgoing()
+        }
     }
 
     private var addFriendRow: some View {
@@ -517,10 +520,21 @@ struct NewFriendsView: View {
                 mergedAdded.insert(user, at: 0)
             }
             added = mergedAdded
+            mergeLocalOutgoing()
             app.contacts = d.friends
             app.friendRequests = incoming.count
         }
         loading = false
+    }
+
+    private func mergeLocalOutgoing() {
+        let friendIds = Set(app.contacts.map(\.id))
+        var merged = outgoing
+        for user in app.localOutgoingFriendRequests
+            where !friendIds.contains(user.id) && !merged.contains(where: { $0.id == user.id }) {
+            merged.insert(user, at: 0)
+        }
+        outgoing = merged
     }
 
     private func respond(_ user: User, _ accept: Bool) {
@@ -901,6 +915,7 @@ struct FriendApplySheet: View {
                     await app.loadChats()
                     app.show(Tr("你们已经是好友了"))
                 } else {
+                    app.noteFriendRequestSent(user, note: trimmed)
                     app.show(Tr("好友申请已发出"))
                 }
                 onSent()

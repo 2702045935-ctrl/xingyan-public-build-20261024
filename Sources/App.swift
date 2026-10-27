@@ -51,6 +51,7 @@ final class AppState: ObservableObject {
     @Published var accounts: [SavedAccount] = AccountStore.load()
 
     @Published var friendRequests = 0
+    @Published var localOutgoingFriendRequests: [User] = []
 
     @Published var badges: [String: String] = [:]
 
@@ -957,6 +958,13 @@ final class AppState: ObservableObject {
             LocalStore.saveChatList(chats, userId: userId)
         }
         syncIconBadge()
+    }
+
+    func noteFriendRequestSent(_ user: User, note: String) {
+        var row = user
+        row.requestMessage = note
+        localOutgoingFriendRequests.removeAll { $0.id == user.id }
+        localOutgoingFriendRequests.insert(row, at: 0)
     }
 
     private func previewText(for message: Message) -> String {

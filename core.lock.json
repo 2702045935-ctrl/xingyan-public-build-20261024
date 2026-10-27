@@ -2,7 +2,7 @@
   "version": "B669",
   "files": [
     { "path": "Sources/API.swift", "size": 194905, "sha256": "b75fad32ddccc0e7d3ed89780cab06f467df6ebdd5137b5dad218ac593cd1c45" },
-    { "path": "Sources/App.swift", "size": 129368, "sha256": "9aa478fcbc0b4af68ba6f5b172db2ad3dcb74129475a9794623605707ee05cf6" },
+    { "path": "Sources/App.swift", "size": 129675, "sha256": "4b28255699126087a91950d7a9e1619402e20cbd141fe4b48517e3f86dda41ec" },
     { "path": "Sources/Realtime.swift", "size": 17014, "sha256": "d2817130819a128dc67711348c8d0479916ffee62ce88043da5483805576e6e1" },
     { "path": "Sources/CallAudio.swift", "size": 26757, "sha256": "40948fb750ccef12892e3beb775f6896291a24578b3c6c0be59c74ac34a9fad8" },
     { "path": "Sources/CallCenter.swift", "size": 68118, "sha256": "9a28297930f238a9538020bc82fddaf04181fa6953dd1cab1ec67ee947cb12ff" },
