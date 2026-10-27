@@ -264,22 +264,16 @@ struct AppearanceView: View {
     var body: some View {
         List {
             Section {
-                ForEach(opts.indices, id: \.self) { i in
-                    Button {
-                        app.setAppearance(opts[i].0)
-                    } label: {
-                        HStack {
-                            Text(Tr(opts[i].1))
-                                .foregroundStyle(.primary)
-                            Spacer()
-                            if app.appearance == opts[i].0 {
-                                Image(systemName: "checkmark")
-                                    .foregroundStyle(.tint)
-                            }
-                        }
+                Picker("", selection: Binding(
+                    get: { app.appearance },
+                    set: { app.setAppearance($0) }
+                )) {
+                    ForEach(opts, id: \.0) { option in
+                        Text(Tr(option.1)).tag(option.0)
                     }
-                    .buttonStyle(.plain)
                 }
+                .pickerStyle(.inline)
+                .labelsHidden()
             }
         }
         .listStyle(.insetGrouped)
@@ -297,24 +291,20 @@ struct LanguageView: View {
     var body: some View {
         List {
             Section {
-                ForEach(opts.indices, id: \.self) { i in
-                    Button {
-                        Lang.code = opts[i].0
-                        app.show(opts[i].0 == "en" ? "Language switched to English"
-                                                   : "界面语言已切成中文")
-                    } label: {
-                        HStack {
-                            Text(opts[i].1)
-                                .foregroundStyle(.primary)
-                            Spacer()
-                            if Lang.code == opts[i].0 {
-                                Image(systemName: "checkmark")
-                                    .foregroundStyle(.tint)
-                            }
-                        }
+                Picker("", selection: Binding(
+                    get: { Lang.code },
+                    set: { code in
+                        Lang.code = code
+                        app.show(code == "en" ? "Language switched to English"
+                                              : "界面语言已切成中文")
                     }
-                    .buttonStyle(.plain)
+                )) {
+                    ForEach(opts, id: \.0) { option in
+                        Text(option.1).tag(option.0)
+                    }
                 }
+                .pickerStyle(.inline)
+                .labelsHidden()
             } footer: {
                 Text(Tr("换完语言把 App 从后台划掉重开，全部界面文字才是新语言。"))
             }
