@@ -834,6 +834,9 @@ struct NavBar<Right: View>: View {
                             }
                     }
                     .buttonStyle(.plain)
+                    .contentShape(Rectangle())
+                    .frame(width: 44, height: 44)
+                    .accessibilityLabel(Tr("返回"))
                     .padding(.leading, useFloating ? 10 : 0)
                 }
                 if let leftExtra = leftExtra {
@@ -869,6 +872,8 @@ struct NavBar<Right: View>: View {
             }
         }
         .frame(height: L.navH)
+        .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
     }
 
     private var titleText: some View {
