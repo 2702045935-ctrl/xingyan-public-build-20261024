@@ -1330,6 +1330,8 @@ struct ContactCardView: View {
                     if let n = res.pending { app.friendRequests = n }
                     await app.loadContacts()
                     await app.loadChats()
+                    app.wantChatsTab = true
+                    dismiss()
                     await load()
                 } else {
                     relationOverride = nil

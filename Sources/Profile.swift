@@ -666,6 +666,10 @@ struct NewFriendsView: View {
 
             await app.loadContacts()
             await app.loadChats()
+            if accept {
+                app.wantChatsTab = true
+                dismiss()
+            }
 
             await load()
         }
@@ -913,7 +917,8 @@ struct AddFriendView: View {
             app.show(Tr("已添加到通讯录"))
             await app.loadContacts()
             await app.loadChats()
-            search()
+            app.wantChatsTab = true
+            dismiss()
         }
     }
 }
@@ -1006,7 +1011,9 @@ struct FriendApplySheet: View {
                 if result.accepted {
                     app.applyFriendAccepted(result.friend ?? user)
                     await app.loadChats()
+                    app.wantChatsTab = true
                     app.show(Tr("你们已经是好友了"))
+                    dismiss()
                 } else {
                     app.noteFriendRequestSent(user, note: trimmed)
                     app.show(Tr("好友申请已发出"))

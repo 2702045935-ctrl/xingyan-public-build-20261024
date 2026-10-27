@@ -105,6 +105,7 @@ struct RowSwipeCatcher: UIViewRepresentable {
 
 struct ChatRow: View {
     let chat: Chat
+    @EnvironmentObject private var app: AppState
 
     var onTapAvatar: (() -> Void)? = nil
 
@@ -136,7 +137,7 @@ struct ChatRow: View {
     private var textColumn: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 5) {
-                Text(chat.name)
+                Text(displayTitle)
                     .font(.system(size: 15.5, weight: .semibold))
                     .foregroundStyle(OrbitTheme.ink)
                     .lineLimit(1)
@@ -261,7 +262,7 @@ struct ChatRow: View {
                                   memberIds: chat.memberIds ?? [],
                                   size: L.avatar, radius: 16)
             } else {
-                Avatar(path: chat.avatar ?? "", size: L.avatar, radius: 16,
+                Avatar(path: displayAvatar, size: L.avatar, radius: 16,
                        group: chat.type == "group" || (chat.memberCount ?? 0) > 2,
                        level: chat.qqLevel ?? 0)
             }
@@ -433,6 +434,30 @@ struct SwipeChatRow: View {
                 collapse()
             }
         }
+    }
+
+    private var peer: User? {
+        guard chat.type != "group" else { return nil }
+        let sender = chat.lastMessage?.senderId
+        let peerId = (chat.memberIds ?? []).first { $0 != app.me?.id }
+            ?? (sender != app.me?.id ? sender : nil)
+        guard let peerId, !peerId.isEmpty else { return nil }
+        return app.contact(for: peerId)
+    }
+
+    private var displayTitle: String {
+        let raw = (chat.title ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if !raw.isEmpty, raw != "未知用户" { return raw }
+        if let peer { return peer.name }
+        let sender = (chat.lastMessage?.senderName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if !sender.isEmpty, sender != "未知用户" { return sender }
+        return raw.isEmpty ? "会话" : raw
+    }
+
+    private var displayAvatar: String {
+        let raw = (chat.avatar ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if !raw.isEmpty { return raw }
+        return peer?.avatarPath ?? ""
     }
 
     private func collapse() {

@@ -5663,6 +5663,8 @@ const chatsOf = (userId) => db.chats.filter((c) => {
   if (c.type === 'direct') {
     const peerId = c.memberIds.find((id) => id !== userId);
     const peer = peerId ? findUser(peerId) : null;
+    /* 对端账号已经不存在时，不把一条“未知用户”空壳留在会话列表。 */
+    if (!peer) return false;
     /* ⚠ 公众号也算 service（为了不被"给所有人建会话"的循环抓走），
        但它们**必须**出现在会话列表里（订阅了就该看到）——所以这里排除掉。 */
     if (peer && peer.service && !peer.oaId && !peer.oaDigest) return false;
@@ -16422,6 +16424,8 @@ async function handleApi(req, res, pathname, query) {
       saveFriendMeta();
     }
     sendTo(user.id, { type: 'friend', action: 'removed', userId: target.id });
+    /* 对端也立即刷新，不再等客户端每 10 秒拉通讯录。 */
+    sendTo(target.id, { type: 'friend', action: 'removed', userId: user.id });
     ok(res, { removed: true });
     return;
   }
