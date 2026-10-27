@@ -716,7 +716,7 @@ struct ChatDetailView: View {
         showChatInfo = false
         app.pendingPushChatId = nil
         dismiss()
-        DispatchQueue.main.async {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
             app.openChat = nil
             app.wantChatsTab = true
         }

@@ -178,6 +178,12 @@ async function main() {
     assert.equal(response.status, 200, JSON.stringify(response.data));
     assert.ok(!(response.data.chats || []).some((chat) => chat.id === directId),
       '删除后会话仍立即出现在列表里');
+    for (let i = 0; i < 6; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      response = await call(base, bob.cookie, 'GET', '/api/chats');
+      assert.ok(!(response.data.chats || []).some((chat) => chat.id === directId),
+        '删除后会话在刷新周期内回流');
+    }
 
     response = await call(base, alice.cookie, 'POST', '/api/chats/group', {
       name: '接口烟测群',
@@ -192,10 +198,13 @@ async function main() {
     assert.equal(response.data.dismissed, true);
 
     for (const account of [alice, bob]) {
-      response = await call(base, account.cookie, 'GET', '/api/chats');
-      assert.equal(response.status, 200, JSON.stringify(response.data));
-      assert.ok(!(response.data.chats || []).some((chat) => chat.id === groupId),
-        '解散后群会话仍立即出现在列表里');
+      for (let i = 0; i < 6; i++) {
+        response = await call(base, account.cookie, 'GET', '/api/chats');
+        assert.equal(response.status, 200, JSON.stringify(response.data));
+        assert.ok(!(response.data.chats || []).some((chat) => chat.id === groupId),
+          '解散后群会话在刷新周期内回流');
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      }
     }
 
     response = await call(base, alice.cookie, 'POST', '/api/friends/remove', {
