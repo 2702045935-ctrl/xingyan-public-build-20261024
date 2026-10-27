@@ -1,7 +1,7 @@
 {
   "version": "B669",
   "files": [
-    { "path": "Sources/API.swift", "size": 195514, "sha256": "d4066b8570f7221e82415613e66ec079a566245c5d03fb0cc07b0b9994421a5e" },
+    { "path": "Sources/API.swift", "size": 195934, "sha256": "bf462ef73a0e1a749e411fd49bb85194bc7bfa400990fcb0e01ca40afd4378ef" },
     { "path": "Sources/App.swift", "size": 134948, "sha256": "0805df305f91f72999ffffd98e7f42ec772ec208cb84826b23a684b069af229e" },
     { "path": "Sources/Realtime.swift", "size": 17643, "sha256": "b27ab76bbea52e0c2dbad5db69bdb52bd5efea5566cd7d3b4edf6404d58b77ee" },
     { "path": "Sources/CallAudio.swift", "size": 26757, "sha256": "40948fb750ccef12892e3beb775f6896291a24578b3c6c0be59c74ac34a9fad8" },
@@ -15,7 +15,7 @@
     { "path": "Sources/MsgFrameKey.swift", "size": 651, "sha256": "fdf3a779255614d9915d9bcf528868ac2517b5feafbfa1180956cd162403993a" },
     { "path": "Sources/PushCenter.swift", "size": 7780, "sha256": "c49cf8ca8275a8a177ae1da719bcff894fdffc8fd8b873f1377eac48107b4c0f" },
     { "path": "Sources/ChatDetailView.swift", "size": 214416, "sha256": "e842c8be971d146feb3653dd36ad62c043072c20819cfcf0b9649ea72d5219b4" },
-    { "path": "Sources/GroupInfoView.swift", "size": 67328, "sha256": "42830d50310513769e5478b4b9788c12af561bba453b6bf4eeb732b2e060c3ae" },
+    { "path": "Sources/GroupInfoView.swift", "size": 67856, "sha256": "0f7145fca7852bb1a21b1976b47a1278de09f45dffb7839d8fa6de7b3fa0177c" },
     { "path": "Sources/OtherLogin.swift", "size": 3452, "sha256": "5aff74e52ce2e023cb57d226ddacc182fb9a0d508b9ffaba93022ccfbc1f1785" },
     { "path": "Sources/InAppBrowser.swift", "size": 19550, "sha256": "fba42899ab859302146782666fee510daa70246f67080722648d1ff6d8423b78" },
     { "path": "Sources/MallWebPage.swift", "size": 4138, "sha256": "60cc98e6196efc8ef73aa4685db9b2fb55cb8a22138597abdb50cbc8ab5088c3" },

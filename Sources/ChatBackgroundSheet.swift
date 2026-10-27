@@ -22,6 +22,14 @@ final class ChatBgStore: ObservableObject {
         }
         version += 1
     }
+
+    func clearAll() {
+        let prefix = "chris.chatBg."
+        for key in UserDefaults.standard.dictionaryRepresentation().keys where key.hasPrefix(prefix) {
+            UserDefaults.standard.removeObject(forKey: key)
+        }
+        version += 1
+    }
 }
 
 struct ChatBackgroundSheet: View {
@@ -216,11 +224,23 @@ struct ChatBackgroundSheet: View {
             me.chatBackground = path
             app.me = me
         }
+        let oldUser = app.me
         Task {
             busy = true
-            await API.shared.changeBackground(path)
-            if path == "auto" {
+            let saved = await API.shared.changeBackground(path)
+            let reset = path == "auto" ? await API.shared.resetChatBackgrounds() : true
+            if saved && reset {
+                if path == "auto" {
+                    store.clearAll()
+                    if var me = app.me {
+                        me.chatBackgrounds = [:]
+                        app.me = me
+                    }
+                }
                 app.show(Tr("已恢复默认背景"))
+            } else {
+                app.me = oldUser
+                app.show(Tr("背景没保存上，检查网络"))
             }
             busy = false
         }
@@ -240,12 +260,17 @@ struct ChatBackgroundSheet: View {
                         app.show(Tr("图片上传失败，换一张再试"))
                     }
                 } else {
+                    let oldUser = app.me
                     if var me = app.me {
                         me.chatBackground = url
                         app.me = me
                     }
-                    await API.shared.changeBackground(url)
-                    app.show(Tr("聊天背景换好了"))
+                    if await API.shared.changeBackground(url) {
+                        app.show(Tr("聊天背景换好了"))
+                    } else {
+                        app.me = oldUser
+                        app.show(Tr("背景没保存上，检查网络"))
+                    }
                 }
             } else {
                 app.show(Tr("图片上传失败，换一张再试"))

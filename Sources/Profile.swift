@@ -324,7 +324,15 @@ struct NewFriendsView: View {
             || (u.username ?? "").localizedCaseInsensitiveContains(query)
             || (u.requestMessage ?? "").localizedCaseInsensitiveContains(query)
     }
-    private var shownIncoming: [User] { incoming.filter(hit) }
+    private var effectiveIncoming: [User] {
+        var rows = incoming
+        for user in locallyAccepted.values
+            where !rows.contains(where: { $0.id == user.id }) {
+            rows.insert(user, at: 0)
+        }
+        return rows
+    }
+    private var shownIncoming: [User] { effectiveIncoming.filter(hit) }
     private var shownOutgoing: [User] { outgoing.filter(hit) }
     private var shownAdded: [User] { added.filter(hit) }
 
@@ -528,23 +536,29 @@ struct NewFriendsView: View {
                 Text(noteOf(user)).font(pf(13)).foregroundColor(C.subLabel).lineLimit(1)
             }
             Spacer(minLength: 8)
-            Button { respond(user, true) } label: {
-                Text(Tr("接受"))
+            if locallyAccepted[user.id] != nil {
+                Text(Tr("已添加"))
                     .font(pf(14, .medium))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 13)
-                    .frame(height: 28)
-                    .background(RoundedRectangle(cornerRadius: 5, style: .continuous).fill(C.green))
-            }
-            .buttonStyle(MenuPressStyle())
-            .disabled(busy.contains(user.id))
+                    .foregroundColor(C.green)
+            } else if busy.contains(user.id) {
+                ProgressView().scaleEffect(0.72)
+            } else {
+                Button { respond(user, true) } label: {
+                    Text(Tr("接受"))
+                        .font(pf(14, .medium))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 13)
+                        .frame(height: 28)
+                        .background(RoundedRectangle(cornerRadius: 5, style: .continuous).fill(C.green))
+                }
+                .buttonStyle(MenuPressStyle())
 
-            Button { respond(user, false) } label: {
-                Text(Tr("拒绝")).font(pf(14)).foregroundColor(C.subLabel)
+                Button { respond(user, false) } label: {
+                    Text(Tr("拒绝")).font(pf(14)).foregroundColor(C.subLabel)
+                }
+                .buttonStyle(.plain)
+                .padding(.leading, 8)
             }
-            .buttonStyle(.plain)
-            .padding(.leading, 8)
-            .disabled(busy.contains(user.id))
         }
         .padding(.leading, L.ctPadL)
         .padding(.trailing, 16)
@@ -600,9 +614,7 @@ struct NewFriendsView: View {
             }
             outgoing = d.outgoing
             var mergedAdded = d.added
-            for user in locallyAccepted.values where !mergedAdded.contains(where: { $0.id == user.id }) {
-                mergedAdded.insert(user, at: 0)
-            }
+            mergedAdded.removeAll { localIds.contains($0.id) }
             added = mergedAdded
             mergeLocalOutgoing()
             app.contacts = d.friends
@@ -631,9 +643,6 @@ struct NewFriendsView: View {
         if accept { app.applyFriendAccepted(user) }
         withAnimation(.easeOut(duration: 0.18)) {
             incoming.removeAll { $0.id == user.id }
-            if accept, !added.contains(where: { $0.id == user.id }) {
-                added.insert(user, at: 0)
-            }
         }
         app.friendRequests = incoming.count
         Task {

@@ -4733,8 +4733,14 @@ private struct StarredPayload: Decodable {
         return ((any as? [String: Any])?["phone"] as? String) ?? ""
     }
 
-    func changeBackground(_ path: String) async {
-        await updateMe(["chatBackground": path])
+    @discardableResult
+    func changeBackground(_ path: String) async -> Bool {
+        do {
+            _ = try await updateMeChecked(["chatBackground": path])
+            return true
+        } catch {
+            return false
+        }
     }
 
     @discardableResult
@@ -4743,6 +4749,13 @@ private struct StarredPayload: Decodable {
         guard let p: P = try? await post("/api/me/chat-background",
                                            ["chatId": chatId, "path": path], as: P.self) else { return nil }
         return p.chatBackgrounds ?? [:]
+    }
+
+    @discardableResult
+    func resetChatBackgrounds() async -> Bool {
+        struct P: Decodable { var chatBackgrounds: [String: String]? }
+        return (try? await post("/api/me/chat-background",
+                                ["resetAll": true], as: P.self)) != nil
     }
 
     func chatBackgrounds() async -> ChatBgPayload? {

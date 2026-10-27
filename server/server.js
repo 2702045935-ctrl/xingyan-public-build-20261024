@@ -919,11 +919,37 @@ function safeImageRef(v) {
   if (!s) return '';
   if (s === 'auto') return 'auto';
   if (/^\/uploads\/[A-Za-z0-9._-]+(\?[^\s"']*)?$/.test(s)) return s.split('?')[0];
+  /* 客户端内置/后台下发的聊天壁纸。只允许扁平文件名，不接受目录穿越。 */
+  if (/^\/bg\/[A-Za-z0-9._-]+$/.test(s) && s.indexOf('..') < 0) return s;
   /* 表情商店的表情图（本站 /emoji/ 那套公开图库）：也允许当图片消息发出去。
      只认本站路径 + 安全字符，带 .. 的一律不收。 */
   if (/^\/emoji\/[A-Za-z0-9._\/-]+$/.test(s) && s.indexOf('..') < 0) return s;
   if (/^data:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=]{1,1500}$/i.test(s)) return s;
   return null;
+}
+
+function safeChatBackgroundRef(v) {
+  const direct = safeImageRef(v);
+  if (direct !== null) return direct;
+  const s = String(v == null ? '' : v).trim();
+  if (!s) return '';
+  const cfg = db.chatBg || normalizeChatBg(null);
+  if (s === String(cfg.default || '')) return s;
+  if ((cfg.presets || []).some((item) => String(item && item.path || '') === s)) return s;
+  return null;
+}
+
+function selfChatBackgrounds(user) {
+  const src = user && user.chatBackgrounds;
+  if (!src || typeof src !== 'object' || Array.isArray(src)) return {};
+  const out = {};
+  for (const [chatId, raw] of Object.entries(src)) {
+    if (!/^[A-Za-z0-9_-]{1,80}$/.test(chatId)) continue;
+    const path = safeChatBackgroundRef(raw);
+    if (path && path !== 'auto') out[chatId] = path;
+    if (Object.keys(out).length >= 500) break;
+  }
+  return out;
 }
 
 /* ------------------------------------------------------------------
@@ -1058,6 +1084,7 @@ function publicUser(u) {
     momentCover: u.momentCover || '',
     momentCoverPos: u.momentCoverPos === undefined ? 50 : u.momentCoverPos,
     chatBackground: u.chatBackground || '',
+    chatBackgrounds: selfChatBackgrounds(u),
     birthday: u.birthday || '',
     createdAt: u.createdAt,
     alipayQr: u.alipayQr || '',          // 支付宝收款码图片（谁都能看，方便付款）
@@ -6009,7 +6036,7 @@ function pendingFriendRequests(userId) {
   let n = 0;
   for (let i = 0; i < db.friendships.length; i += 1) {
     const f = db.friendships[i];
-    if (f.toId === userId && f.status === 'pending') n += 1;
+    if (f.toId === userId && f.status === 'pending' && findUser(f.fromId)) n += 1;
   }
   return n;
 }
@@ -15714,6 +15741,48 @@ async function handleApi(req, res, pathname, query) {
     return;
   }
 
+  /* 单个会话的背景。空 chatId + resetAll 会清掉全部会话覆盖，回到全局默认。 */
+  if (parts[0] === 'me' && parts[1] === 'chat-background' && method === 'POST') {
+    const body = await readBody(req);
+    if (body.resetAll === true) {
+      user.chatBackgrounds = {};
+      saveUsers();
+      friendIds(user.id).forEach((fid) => sendTo(fid, { type: 'profile', user: publicUser(user) }));
+      sendTo(user.id, { type: 'profile', user: publicUser(user) });
+      ok(res, { chatBackgrounds: {} });
+      return;
+    }
+
+    const chatId = str(body.chatId, 80);
+    if (!chatId) return fail(res, 422, '缺少会话');
+    const belongs = db.chats.some((chat) =>
+      String(chat.id || '') === chatId && Array.isArray(chat.memberIds) && chat.memberIds.includes(user.id)
+    );
+    if (!belongs) return fail(res, 404, '会话不存在');
+
+    const rawPath = str(body.path, 2000);
+    if (!user.chatBackgrounds || typeof user.chatBackgrounds !== 'object' || Array.isArray(user.chatBackgrounds)) {
+      user.chatBackgrounds = {};
+    }
+    if (!rawPath || rawPath === 'auto') {
+      delete user.chatBackgrounds[chatId];
+    } else {
+      const safePath = safeChatBackgroundRef(rawPath);
+      if (safePath === null || safePath === 'auto') return fail(res, 422, '聊天背景只能用内置壁纸或 App 上传的图片');
+      user.chatBackgrounds[chatId] = safePath;
+      const keys = Object.keys(user.chatBackgrounds);
+      if (keys.length > 500) {
+        delete user.chatBackgrounds[keys[0]];
+      }
+    }
+    saveUsers();
+    const map = selfChatBackgrounds(user);
+    friendIds(user.id).forEach((fid) => sendTo(fid, { type: 'profile', user: publicUser(user) }));
+    sendTo(user.id, { type: 'profile', user: publicUser(user) });
+    ok(res, { chatBackgrounds: map });
+    return;
+  }
+
   if (parts[0] === 'me' && parts[1] === 'status' && method === 'POST') {
     const body = await readBody(req);
     const st = str(body.status, 12);
@@ -15828,7 +15897,7 @@ async function handleApi(req, res, pathname, query) {
       user.momentCoverPos = isFinite(p) ? Math.min(100, Math.max(0, Math.round(p))) : 50;
     }
     if (body.chatBackground !== undefined) {
-      const v = safeImageRef(str(body.chatBackground, 2000));
+      const v = safeChatBackgroundRef(str(body.chatBackground, 2000));
       if (v === null) return fail(res, 422, '聊天背景只能用 App 上传的图片');
       user.chatBackground = v === 'auto' ? 'auto' : v;
     }
@@ -16192,11 +16261,13 @@ async function handleApi(req, res, pathname, query) {
     const incoming = db.friendships
       .filter((f) => f.toId === user.id && f.status === 'pending')
       .map((f) => Object.assign({ requestId: f.id, createdAt: f.createdAt, requestMessage: f.note || '' },
-        publicUserBrief(findUser(f.fromId), user.id)));
+        publicUserBrief(findUser(f.fromId), user.id)))
+      .filter((u) => u && u.id);
     const outgoing = db.friendships
       .filter((f) => f.fromId === user.id && f.status === 'pending')
       .map((f) => Object.assign({ requestId: f.id, createdAt: f.createdAt, requestMessage: f.note || '' },
-        publicUserBrief(findUser(f.toId), user.id)));
+        publicUserBrief(findUser(f.toId), user.id)))
+      .filter((u) => u && u.id);
     /* 刚通过的那几个人：微信上会留在「新的朋友」里显示「已添加」，保留 3 天。
        ⚠ 必须**两侧都算**：以前只查 f.toId === user.id（别人加我、我同意的），
        结果「我加了别人、对方同意了」这种情况在我这边根本不出现 ——

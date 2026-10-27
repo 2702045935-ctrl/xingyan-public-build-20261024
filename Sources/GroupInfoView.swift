@@ -426,15 +426,22 @@ struct GroupInfoView: View {
     }
 
     private func quitGroup() {
+        let wasOwner = isOwner
+        let previousChat = app.openChat
+        app.hideChatLocally(chat.id)
+        dismiss()
+        app.openChat = nil
         Task {
-            let err = isOwner ? await API.shared.dismissGroup(chatId: chat.id)
-                              : await API.shared.leaveGroup(chatId: chat.id)
+            let err = wasOwner ? await API.shared.dismissGroup(chatId: chat.id)
+                               : await API.shared.leaveGroup(chatId: chat.id)
             if let err = err {
+                app.revealChatLocally(chat.id)
+                await app.loadChats()
+                app.openChat = previousChat
                 app.show(err)
             } else {
                 await app.loadChats()
-                dismiss()
-                app.show(isOwner ? "群已解散" : "已退出群聊")
+                app.show(wasOwner ? "群已解散" : "已退出群聊")
             }
         }
     }
@@ -1502,13 +1509,20 @@ struct DirectChatInfoView: View {
     }
 
     private func deleteChat() {
+        let previousChat = app.openChat
+        app.hideChatLocally(chat.id)
+        dismiss()
+        app.openChat = nil
+        app.show(Tr("正在删除…"))
         Task {
             if let err = await API.shared.hideChat(chatId: chat.id) {
+                app.revealChatLocally(chat.id)
+                await app.loadChats()
+                app.openChat = previousChat
                 app.show(err)
                 return
             }
             await app.loadChats()
-            dismiss()
             app.show(Tr("已删除该聊天"))
         }
     }

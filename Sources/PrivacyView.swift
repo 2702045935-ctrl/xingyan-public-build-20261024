@@ -213,7 +213,17 @@ struct GeneralView: View {
     }
 
     private func link(_ title: String, _ value: String, key: String) -> some View {
-        NavigationLink(value: key) {
+        NavigationLink {
+            switch key {
+            case "g.theme": AppearanceView()
+            case "g.lang": LanguageView()
+            case "g.chatbg": ChatBackgroundSheet()
+            case "g.storage": StorageView()
+            case "g.history": ChatHistoryView()
+            case "g.voice": VoiceChangerView()
+            default: EmptyView()
+            }
+        } label: {
             LabeledContent {
                 Text(value)
                     .foregroundStyle(.secondary)
