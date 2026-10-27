@@ -762,17 +762,36 @@ function ffprobeExe() {
   return '/usr/bin/ffprobe';
 }
 
-/** 视频轨的码率（bps）；读不出来返回 0。
-    用来判断"客户端说自己压过了"到底压得够不够小 —— iPhone 直出 720p 还有 3.4Mbps 的。 */
-function videoBitrateOf(file) {
+/** 客户端已导出的聊天视频是否能直接落盘。
+    只放行常见的手机聊天规格，避免为了省一次转码把高码率/超长视频放进来。 */
+function videoCanSkipServerShrink(file, size) {
+  if (size <= 0 || size > 8 * 1024 * 1024) return false;
   try {
     const out = require('child_process').execFileSync(ffprobeExe(), [
-      '-v', 'error', '-select_streams', 'v:0',
-      '-show_entries', 'stream=bit_rate', '-of', 'default=nw=1:nk=1', file
+      '-v', 'error',
+      '-show_entries', 'stream=codec_type,codec_name,width,height,bit_rate:format=duration,bit_rate',
+      '-of', 'json', file
     ], { timeout: 20000, stdio: ['ignore', 'pipe', 'ignore'] });
-    const n = Number(String(out || '').trim());
-    return Number.isFinite(n) && n > 0 ? n : 0;
-  } catch (e) { return 0; }
+    const info = JSON.parse(String(out || '{}'));
+    const streams = Array.isArray(info.streams) ? info.streams : [];
+    const video = streams.find((stream) => stream.codec_type === 'video');
+    if (!video) return false;
+    const audio = streams.filter((stream) => stream.codec_type === 'audio');
+    const duration = Number(info.format && info.format.duration);
+    const width = Number(video.width);
+    const height = Number(video.height);
+    const streamRate = Number(video.bit_rate);
+    const formatRate = Number(info.format && info.format.bit_rate);
+    const bitrate = Number.isFinite(streamRate) && streamRate > 0 ? streamRate : formatRate;
+    return String(video.codec_name || '').toLowerCase() === 'h264'
+      && audio.every((stream) => String(stream.codec_name || '').toLowerCase() === 'aac')
+      && Number.isFinite(duration) && duration > 0 && duration <= 60.5
+      && Number.isFinite(width) && Number.isFinite(height)
+      && width > 0 && height > 0 && Math.max(width, height) <= 1280
+      && Number.isFinite(bitrate) && bitrate > 0 && bitrate <= 2200000;
+  } catch (e) {
+    return false;
+  }
 }
 
 /** 头像字段 → ffmpeg 能读的输入：/uploads 本地文件、data:URL 落成临时文件、http 网址原样 */
@@ -17985,11 +18004,11 @@ async function handleApi(req, res, pathname, query) {
     /* App 端已经自己压好的视频（带 x-chris-compressed: 1）就别再压一遍：
        服务端再压一遍 = 用户白等十几秒 + 画质再掉一层。2026-09-25 */
     const clientCompressed = String(req.headers['x-chris-compressed'] || '').trim() === '1';
-    /* 客户端说自己压过了也不能全信：iPhone 直出的 .mov 仍有 3.4Mbps / 7.6MB 的，
-       弱网下 AVPlayer 得把整个文件下完才出画面，用户看到的就是「点开一片黑 / 卡住」。
-       所以再看一眼实际码率：超过 1.6Mbps 或文件超过 3MB，就按视频号那套重压一遍。 */
-    const videoTooBig = ctype.indexOf('video/') === 0 && size > 2 * 1024 * 1024 &&
-      (!clientCompressed || size > 3 * 1024 * 1024 || videoBitrateOf(outPath) > 1600000);
+    /* 客户端已导出且规格安全的聊天视频直接落盘，避免每次发送都阻塞在 ffmpeg。
+       高码率、超长或尺寸过大的视频仍走原来的转码兜底。 */
+    const video = ctype.indexOf('video/') === 0;
+    const videoCanPass = clientCompressed && videoCanSkipServerShrink(outPath, size);
+    const videoTooBig = video && size > 2 * 1024 * 1024 && !videoCanPass;
     if (videoTooBig) {
       const before = size;
       try {
