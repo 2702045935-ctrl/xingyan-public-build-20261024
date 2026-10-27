@@ -271,6 +271,8 @@ struct ChatDetailView: View {
     @Environment(\.colorScheme) private var scheme
 
     @State private var messages: [Message] = []
+    @State private var senderAvatarCache: [String: String] = [:]
+    @State private var groupSenderProfilesLoaded = false
 
     @State private var hiddenMessageIds: Set<String> = []
 
@@ -1401,6 +1403,7 @@ struct ChatDetailView: View {
             loadDeletedMessageIds()
             loadOutbox()
             await load(initial: true)
+            await loadGroupSenderProfilesIfNeeded()
             await refreshPeerRelation()
             await flushOutbox()
             await API.shared.markRead(chatId: chat.id)
@@ -1481,7 +1484,10 @@ struct ChatDetailView: View {
             }
         }
 
-        .onChange(of: messages) { _ in schedulePersist() }
+        .onChange(of: messages) { _ in
+            rememberSenderAvatars(messages)
+            schedulePersist()
+        }
         .onChange(of: realtime.connected) { connected in
             if connected { Task { await load(initial: false) } }
         }
@@ -1919,7 +1925,7 @@ struct ChatDetailView: View {
                    mine: mineFor(message),
                    myId: myId,
                    senderName: senderNameFor(message),
-                   senderAvatarPath: app.contact(for: message.senderId ?? "")?.avatarPath ?? "",
+                   senderAvatarPath: senderAvatarFor(message),
                    senderQQLevel: app.contact(for: message.senderId ?? "")?.qqLevel ?? 0,
                    currentNickname: app.me?.nickname ?? "",
                    currentUsername: app.me?.username ?? "",
@@ -2070,6 +2076,38 @@ struct ChatDetailView: View {
     private func senderNameFor(_ message: Message) -> String {
         guard isGroup, message.senderId != myId else { return "" }
         return isRunStart(message) ? displayName(message) : ""
+    }
+
+    private func senderAvatarFor(_ message: Message) -> String {
+        if let path = message.senderAvatar, !path.isEmpty { return path }
+        let senderId = message.senderId ?? ""
+        if let path = app.contact(for: senderId)?.avatarPath, !path.isEmpty { return path }
+        return senderAvatarCache[senderId] ?? ""
+    }
+
+    private func rememberSenderAvatars(_ rows: [Message]) {
+        guard isGroup else { return }
+        for message in rows {
+            guard let senderId = message.senderId, !senderId.isEmpty,
+                  let path = message.senderAvatar, !path.isEmpty,
+                  senderAvatarCache[senderId] != path else { continue }
+            senderAvatarCache[senderId] = path
+        }
+    }
+
+    private func loadGroupSenderProfilesIfNeeded() async {
+        guard isGroup, !groupSenderProfilesLoaded else { return }
+        groupSenderProfilesLoaded = true
+        guard let result = try? await API.shared.chatMembers(chatId: chat.id) else {
+            groupSenderProfilesLoaded = false
+            return
+        }
+        var resolved: [String: String] = [:]
+        for member in result.members where !member.id.isEmpty && !member.avatarPath.isEmpty {
+            resolved[member.id] = member.avatarPath
+        }
+        senderAvatarCache.merge(resolved) { _, newer in newer }
+        rememberSenderAvatars(messages)
     }
 
     private func gapAfter(_ message: Message) -> CGFloat {
