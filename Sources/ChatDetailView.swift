@@ -4038,9 +4038,11 @@ struct ChatDetailView: View {
         do {
             let batch = try await API.shared.allMessages(chatId: chat.id, limit: maxMessageWindow)
             guard !Task.isCancelled else { return }
-            for message in batch.messages { olderById[message.id] = message }
-            reachedStart = !batch.hasMore
-            loadedInOnePass = true
+            if !batch.hasMore || batch.messages.count > 100 {
+                for message in batch.messages { olderById[message.id] = message }
+                reachedStart = !batch.hasMore
+                loadedInOnePass = true
+            }
         } catch {
             loadedInOnePass = false
         }
