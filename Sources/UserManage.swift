@@ -107,7 +107,7 @@ struct UserManageView: View {
                             gameIcons
                         }
                         HairLine(inset: 52)
-                        linkRow(icon: "bolt.fill", tint: Color(hex: 0xF59A1E),
+                        linkRow(icon: "bolt.fill", tint: C.green,
                                 title: Tr("聊天快捷"),
                                 sub: Tr("输入框上面那排按钮、「＋」按钮的外观")) {
                             ChatQuickAdminSection().environmentObject(app)

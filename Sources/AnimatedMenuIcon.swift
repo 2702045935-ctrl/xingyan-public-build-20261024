@@ -10,21 +10,21 @@ enum MenuIconKind: String {
     var colors: (Color, Color) {
         switch self {
         case .service:   return (Color(hex: 0x5ED07F), Color(hex: 0x2FA85C))
-        case .favorites: return (Color(hex: 0xFFC94B), Color(hex: 0xF0A020))
+        case .favorites: return (Color(hex: 0x5ED07F), Color(hex: 0x2FA85C))
         case .moments:   return (Color(hex: 0x4EC3A6), Color(hex: 0x22997E))
         case .works:     return (Color(hex: 0x5AA0F2), Color(hex: 0x2C6FD1))
-        case .stickers:  return (Color(hex: 0xFFD75E), Color(hex: 0xF5A623))
+        case .stickers:  return (Color(hex: 0x4EC3A6), Color(hex: 0x22997E))
         case .settings:  return (Color(hex: 0x8E9AA8), Color(hex: 0x5B6673))
-        case .channels:  return (Color(hex: 0xFF8A5C), Color(hex: 0xE0652A))
+        case .channels:  return (Color(hex: 0x2FA88A), Color(hex: 0x176A57))
         case .live:      return (Color(hex: 0xFF6B6B), Color(hex: 0xD93A3A))
         case .shake:     return (Color(hex: 0x5AA0F2), Color(hex: 0x2C6FD1))
         case .nearby:    return (Color(hex: 0x4EC97A), Color(hex: 0x22995A))
         case .starworld: return (Color(hex: 0x6B7BFF), Color(hex: 0x3B4CE0))
         case .game:      return (Color(hex: 0xA96BF6), Color(hex: 0x7A3ED6))
         case .scan:      return (Color(hex: 0x5AA0F2), Color(hex: 0x2C6FD1))
-        case .look:      return (Color(hex: 0xFFB74A), Color(hex: 0xE08A10))
+        case .look:      return (Color(hex: 0x46B08E), Color(hex: 0x1A7D62))
         case .searchrow: return (Color(hex: 0x8E9AA8), Color(hex: 0x5B6673))
-        case .shop:      return (Color(hex: 0xFFC24B), Color(hex: 0xE08A22))
+        case .shop:      return (Color(hex: 0x5ED07F), Color(hex: 0x2FA85C))
         case .plugins:   return (Color(hex: 0x8E9AA8), Color(hex: 0x5B6673))
         }
     }

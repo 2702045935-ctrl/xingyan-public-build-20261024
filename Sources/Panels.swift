@@ -486,7 +486,7 @@ struct PlusPanel: View {
 
     private func tileColors(_ action: String?) -> [Color] {
         switch (action ?? "").lowercased() {
-        case "photo":                    return [Color(hex: 0xFFB627), Color(hex: 0xF08600)]
+        case "photo":                    return [C.green, C.green.opacity(0.78)]
         case "camera":                   return [C.green, C.green.opacity(0.78)]
         case "video", "videocall":       return [Color(hex: 0xFF8A73), Color(hex: 0xE2432E)]
         case "voice", "voicecall":       return [Color(hex: 0x64B5F6), Color(hex: 0x2A6BC4)]

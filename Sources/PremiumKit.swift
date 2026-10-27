@@ -128,7 +128,7 @@ enum PanelTint {
     static let green: [Color] = [C.green, C.green.opacity(0.78)]
     static let blue: [Color] = [Color(hex: 0x64B5F6), Color(hex: 0x2A6BC4)]
     static let purple: [Color] = [Color(hex: 0xB98CFF), Color(hex: 0x7A45D6)]
-    static let orange: [Color] = [Color(hex: 0xFFB627), Color(hex: 0xF08600)]
+    static let orange: [Color] = [C.green, C.green.opacity(0.78)]
     static let red: [Color] = [Color(hex: 0xFF7A6B), Color(hex: 0xDE2F1F)]
     static let teal: [Color] = [Color(hex: 0x38D6C4), Color(hex: 0x0E9A8C)]
     static let gray: [Color] = [Color(hex: 0xA9B2BA), Color(hex: 0x6E7780)]

@@ -82,7 +82,7 @@ struct ContactsView: View {
 
 private var funcs: [(String, String, Color, String)] {
     [
-        (Tr("新的朋友"), I.newFriends, Color(hex: 0xF5A23D), "newFriends"),
+        (Tr("新的朋友"), I.newFriends, C.green, "newFriends"),
         (Tr("群聊"), I.groups, Color(hex: 0x22AC8B), "groups"),
         (Tr("仅聊天的朋友"), I.chatOnly, Color(hex: 0x8E8E99), "chatOnly"),
         (Tr("标签"), I.tag, Color(hex: 0x4C93DD), "tags"),
@@ -336,7 +336,7 @@ private var funcs: [(String, String, Color, String)] {
             NavPlusItem(title: Tr("添加朋友"), symbol: "person.badge.plus",
                         colors: [Color(hex: 0x64B5F6), Color(hex: 0x2A6BC4)]) { path.append("addFriend") },
             NavPlusItem(title: Tr("扫一扫"), symbol: "qrcode.viewfinder",
-                        colors: [Color(hex: 0xFFB627), Color(hex: 0xF08600)]) { showScan = true }
+                        colors: [C.green, C.green.opacity(0.78)]) { showScan = true }
         ])
         .fullScreenCover(isPresented: $showScan) {
             ScannerView { text in handleScanned(text, app: app) }

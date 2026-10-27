@@ -22,7 +22,7 @@ struct LoginWaysSheet: View {
         var a: [Way] = [Way(id: "face", title: Tr("人脸识别登录"), sub: Tr("用面容直接进"), symbol: "faceid",
                             color: C.green),
                         Way(id: "voice", title: Tr("声音锁登录"), sub: Tr("读出屏幕上的数字"), symbol: "waveform",
-                            color: Color(hex: 0xF59A1E)),
+                            color: C.green),
                         Way(id: "phone", title: Tr("手机号登录"), sub: Tr("短信验证码"), symbol: "phone.fill",
                             color: Color(hex: 0x3D83E7)),
                         Way(id: "pass", title: Tr("账号密码登录"), sub: Tr("用用户名和密码"), symbol: "key.fill",

@@ -243,7 +243,7 @@ struct MeView: View {
                     NavigationLink(value: "faces") {
                         nativeSettingsIconRow(Tr("人脸比对"),
                                               symbol: "face.smiling",
-                                              color: .orange)
+                                              color: C.green)
                     }
                 }
             }

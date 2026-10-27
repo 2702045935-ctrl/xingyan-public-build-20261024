@@ -1154,11 +1154,11 @@ enum DDColor {
         startPoint: .topLeading, endPoint: .bottomTrailing)
 
     static let gradBtn = LinearGradient(
-        colors: [Color(hex: 0xFFAB2E), Color(hex: 0xFF5F00), Color(hex: 0xF43C0A)],
+        colors: [C.green, C.green.opacity(0.78)],
         startPoint: .leading, endPoint: .trailing)
 
     static let gradBtnSoft = LinearGradient(
-        colors: [Color(hex: 0xFF8B3D), Color(hex: 0xF5361C)],
+        colors: [C.green, OrbitTheme.jadeDeep],
         startPoint: .leading, endPoint: .trailing)
 
     static let gradThumb = LinearGradient(
@@ -3841,7 +3841,7 @@ struct DDDetailView: View {
                         group = false
                         showOrder = true
                     } label: {
-                        buyButton(Tr("单独购买"), "¥" + moneyFmt(product.orig), Color(hex: 0xFF8B3D))
+                        buyButton(Tr("单独购买"), "¥" + moneyFmt(product.orig), C.green)
                     }
                     .buttonStyle(.plain)
                     Button {
@@ -3854,7 +3854,7 @@ struct DDDetailView: View {
                 } else {
 
                     Button { addToCart() } label: {
-                        buyButton(Tr("加入购物车"), "", Color(hex: 0xFF8B3D))
+                        buyButton(Tr("加入购物车"), "", C.green)
                     }
                     .buttonStyle(.plain)
                     Button {

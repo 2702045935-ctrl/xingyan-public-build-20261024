@@ -232,7 +232,7 @@ struct FavoritesView: View {
                                 Label((item["pinned"] as? Bool) == true ? Tr("取消置顶") : Tr("置顶"),
                                       systemImage: (item["pinned"] as? Bool) == true ? "pin.slash" : "pin")
                             }
-                            .tint(C.orange)
+                            .tint(C.green)
                         }
                     }
 

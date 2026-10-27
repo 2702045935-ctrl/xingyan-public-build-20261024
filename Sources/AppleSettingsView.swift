@@ -66,7 +66,7 @@ struct AppleSettingsView: View {
                     PayPasswordView()
                 } label: {
                     settingsRow(Tr("支付密码"), symbol: "key.fill",
-                                color: .orange)
+                                color: C.green)
                 }
             }
 
@@ -142,7 +142,7 @@ struct AppleSettingsView: View {
                     ChatHistoryView()
                 } label: {
                     settingsRow(Tr("聊天记录管理"), symbol: "clock.arrow.circlepath",
-                                color: .orange)
+                                color: C.green)
                 }
             }
 
@@ -157,7 +157,7 @@ struct AppleSettingsView: View {
                     CareModeView()
                 } label: {
                     settingsRow(Tr("关怀模式"), symbol: "textformat.size",
-                                color: .orange)
+                                color: C.green)
                 }
                 NavigationLink {
                     SelfPermView()
@@ -212,7 +212,7 @@ struct AppleSettingsView: View {
                         FaceReviewView()
                     } label: {
                         settingsRow(Tr("人脸比对"), symbol: "face.smiling",
-                                    color: .orange)
+                                    color: C.green)
                     }
                 }
             }

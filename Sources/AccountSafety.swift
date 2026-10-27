@@ -253,7 +253,7 @@ struct AccountOpsSection: View {
             }
 
             HStack(spacing: 8) {
-                actBtn(Tr("冻结"), "freeze", C.orange)
+                actBtn(Tr("冻结"), "freeze", C.red)
                 actBtn(Tr("解冻"), "unfreeze", C.green)
                 actBtn(Tr("封禁"), "ban", C.red)
                 actBtn(Tr("解封"), "unban", C.green)

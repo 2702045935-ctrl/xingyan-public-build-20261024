@@ -1615,7 +1615,7 @@ struct ChatsView: View {
             NavPlusItem(title: Tr("添加朋友"), symbol: "person.badge.plus",
                         colors: [Color(hex: 0x64B5F6), Color(hex: 0x2A6BC4)]) { path.append("addFriend") },
             NavPlusItem(title: Tr("扫一扫"), symbol: "qrcode.viewfinder",
-                        colors: [Color(hex: 0xFFB627), Color(hex: 0xF08600)]) { showScan = true },
+                        colors: [C.green, C.green.opacity(0.78)]) { showScan = true },
             NavPlusItem(title: Tr("收付款"), symbol: "creditcard.fill",
                         colors: [Color(hex: 0xB98CFF), Color(hex: 0x7A45D6)]) { showPayCode = true }
         ])
