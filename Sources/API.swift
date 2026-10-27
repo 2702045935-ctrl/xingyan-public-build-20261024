@@ -2374,7 +2374,7 @@ final class API {
     func opsAccount(userId: String, action: String, reason: String = "",
                     banType: String = "permanent", durationDays: Int = 0) async -> Bool {
         struct P: Decodable { var user: U?; struct U: Decodable { var id: String? } }
-        return (try? await post("/api/ops/account",
+        return (try? await post("/api/appmanage/account",
                                 ["userId": userId, "action": action, "reason": reason,
                                  "banType": banType, "durationDays": durationDays], as: P.self)) != nil
     }

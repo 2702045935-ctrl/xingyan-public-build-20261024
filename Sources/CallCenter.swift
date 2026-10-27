@@ -946,13 +946,17 @@ final class CallCenter: NSObject, ObservableObject {
             return
         }
         if ev.type == "ready" {
-            if phase != .idle, ev.callActive == false { finish(tip: "通话已结束") }
+            if phase != .idle, phase != .active, ev.callActive == false {
+                finish(tip: "通话已结束")
+            }
             return
         }
         if ev.type == "call-error" {
             if !ev.callError.isEmpty { errorText = ev.callError }
 
-            if ev.callId == callId { failLater(ev.callError) }
+            if ev.callId == callId, phase != .active {
+                failLater(ev.callError)
+            }
             return
         }
         let action = ev.callAction
