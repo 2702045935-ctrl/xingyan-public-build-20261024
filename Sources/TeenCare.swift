@@ -65,25 +65,25 @@ struct TeenModeView: View {
     private var payAllowed: Bool { ((cfg?.scopes ?? [:])["pay"] ?? 0) != 0 }
 
     var body: some View {
-        VStack(spacing: 0) {
-            NavBar(title: Tr("未成年人模式"), back: { dismiss() })
+        Form {
             if loading {
-                ProgressView().padding(.top, 60)
-                Spacer(minLength: 0)
-            } else {
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 0) {
-                        if on { onPage } else { offPage }
-                        Color.clear.frame(height: 30)
+                Section {
+                    HStack {
+                        Spacer()
+                        ProgressView()
+                        Spacer()
                     }
+                    .padding(.vertical, 36)
                 }
-                .background(C.pageBg)
+            } else {
+                if on { onPage } else { offPage }
             }
         }
-        .background(C.pageBg.ignoresSafeArea(edges: .bottom))
-        .background(C.pageBg.ignoresSafeArea(edges: .top))
-        .toolbar(.hidden, for: .navigationBar)
-        .swipeBack { dismiss() }
+        .scrollContentBackground(.hidden)
+        .background(Color(uiColor: .systemGroupedBackground))
+        .navigationTitle(Tr("未成年人模式"))
+        .navigationBarTitleDisplayMode(.large)
+        .toolbar(.visible, for: .navigationBar)
         .hidesTabBar()
         .task { await load() }
 
@@ -105,127 +105,108 @@ struct TeenModeView: View {
         }
     }
 
+    @ViewBuilder
     private var offPage: some View {
-        VStack(spacing: 0) {
+        Section {
             VStack(spacing: 12) {
                 UmbrellaIcon(color: Color(hex: 0x3E9BF0), size: 58)
                 Text(Tr("未成年人模式"))
-                    .font(pf(20, .semibold)).foregroundColor(C.label)
+                    .font(.title3.weight(.semibold))
                 Text(Tr("开启后，视频号、直播、游戏、附近的人、摇一摇、搜一搜将不可访问；\n微信支付、公众号、小程序可以按需要调整。"))
-                    .font(pf(13.5)).foregroundColor(C.subLabel)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .lineSpacing(4)
             }
             .frame(maxWidth: .infinity)
-            .padding(.horizontal, 28)
-            .padding(.top, 34)
-            .padding(.bottom, 26)
+            .padding(.vertical, 12)
+        }
 
-            GroupCard {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(Tr("开启流程")).font(pf(15, .medium)).foregroundColor(C.label)
-                    Text(Tr("① 阅读并同意使用条款\n② 设置一个 4 位独立密码（之后开关都要它）\n③ 邀请家长账号作为监护人"))
-                        .font(pf(13.5)).foregroundColor(C.subLabel)
-                        .lineSpacing(5)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 14)
-            }
-            .padding(.horizontal, 12)
+        Section {
+            LabeledContent(Tr("使用条款"), value: Tr("阅读并同意"))
+            LabeledContent(Tr("独立密码"), value: Tr("4 位数字"))
+            LabeledContent(Tr("监护人"), value: Tr("选填"))
+        } header: {
+            Text(Tr("开启流程"))
+        }
 
-            Button { showSetup = true } label: {
+        Section {
+            Button {
+                showSetup = true
+            } label: {
                 Text(Tr("开启未成年人模式"))
-                    .font(pf(17, .medium)).foregroundColor(.white)
-                    .frame(maxWidth: .infinity).frame(height: 48)
-                    .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(C.green))
+                    .font(.body.weight(.semibold))
+                    .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.plain)
-            .padding(.horizontal, 16)
-            .padding(.top, 22)
-
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+        } footer: {
             Text(Tr("忘了独立密码：可以让监护人在「监护人」里帮你重置。"))
-                .font(pf(12.5)).foregroundColor(C.subLabel)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 28).padding(.top, 14)
         }
     }
 
+    @ViewBuilder
     private var onPage: some View {
-        VStack(spacing: 0) {
+        Section {
             VStack(spacing: 10) {
                 UmbrellaIcon(color: Color(hex: 0x3E9BF0), size: 44)
                 Text(Tr("未成年人模式已开启"))
-                    .font(pf(18, .semibold)).foregroundColor(C.label)
+                    .font(.headline)
                 Text(Tr("「我」页会显示一把小雨伞"))
-                    .font(pf(12.5)).foregroundColor(C.subLabel)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 22)
+            .padding(.vertical, 8)
+        }
 
-            GroupCard {
-                row(Tr("监护人"),
-                    (cfg?.guardianPhone?.isEmpty == false) ? (cfg!.guardianPhone!) : Tr("未设置"),
-                    chevron: true) {
-                    askPin(.guardian)
+        Section {
+            Button { askPin(.guardian) } label: {
+                HStack {
+                    Text(Tr("监护人"))
+                    Spacer()
+                    Text((cfg?.guardianPhone?.isEmpty == false) ? cfg!.guardianPhone! : Tr("未设置"))
+                        .foregroundStyle(.secondary)
+                    Image(systemName: "chevron.right")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.tertiary)
                 }
-                HairLine(inset: 16)
-                row(Tr("使用时长"), Tr("每天 40 分钟"), chevron: false) { }
-                HairLine(inset: 16)
-                row(Tr("宵禁"), Tr("22:00 - 次日 6:00 需监护人授权"), chevron: false) { }
-            }
-            .padding(.horizontal, 12)
-
-            VStack(alignment: .leading, spacing: 0) {
-                Text(Tr("不可访问"))
-                    .font(pf(13)).foregroundColor(C.subLabel)
-                    .padding(.horizontal, 8).padding(.top, 16).padding(.bottom, 6)
-                GroupCard {
-                    ForEach(Array(blocked.enumerated()), id: \.offset) { idx, it in
-                        if idx > 0 { HairLine(inset: 16) }
-                        HStack {
-                            Text(Tr(it.1)).font(pf(16)).foregroundColor(C.label)
-                            Spacer(minLength: 8)
-                            Text(Tr("已限制")).font(pf(14)).foregroundColor(C.subLabel)
-                        }
-                        .padding(.horizontal, 16).frame(height: 50)
-                    }
-                }
-            }
-            .padding(.horizontal, 12)
-
-            VStack(alignment: .leading, spacing: 0) {
-                Text(Tr("可以按需要调整"))
-                    .font(pf(13)).foregroundColor(C.subLabel)
-                    .padding(.horizontal, 8).padding(.top, 16).padding(.bottom, 6)
-                GroupCard {
-                    HStack {
-                        Text(Tr("微信支付")).font(pf(16)).foregroundColor(C.label)
-                        Spacer(minLength: 8)
-                        Toggle("", isOn: Binding(
-                            get: { payAllowed },
-                            set: { v in askPin(.pay(v)) }
-                        )).labelsHidden().tint(C.green)
-                    }
-                    .padding(.horizontal, 16).frame(height: 54)
-                }
-            }
-            .padding(.horizontal, 12)
-
-            Button { askPin(.close) } label: {
-                Text(Tr("关闭未成年人模式"))
-                    .font(pf(16)).foregroundColor(C.red)
-                    .frame(maxWidth: .infinity).frame(height: 50)
             }
             .buttonStyle(.plain)
-            .padding(.horizontal, 12)
-            .padding(.top, 22)
+            LabeledContent(Tr("使用时长"), value: Tr("每天 40 分钟"))
+            LabeledContent(Tr("宵禁"), value: Tr("22:00 - 次日 6:00"))
+        }
 
+        Section {
+            ForEach(Array(blocked.enumerated()), id: \.offset) { _, it in
+                HStack {
+                    Text(Tr(it.1))
+                    Spacer()
+                    Text(Tr("已限制"))
+                        .foregroundStyle(.secondary)
+                }
+            }
+        } header: {
+            Text(Tr("不可访问"))
+        }
+
+        Section {
+            Toggle(Tr("微信支付"), isOn: Binding(
+                get: { payAllowed },
+                set: { v in askPin(.pay(v)) }
+            ))
+            .tint(C.green)
+        } header: {
+            Text(Tr("可以按需要调整"))
+        }
+
+        Section {
+            Button(role: .destructive) { askPin(.close) } label: {
+                Text(Tr("关闭未成年人模式"))
+                    .frame(maxWidth: .infinity)
+            }
+        } footer: {
             Text(Tr("关闭、改设置、换监护人都要独立密码；忘了可以让监护人在后台重置。"))
-                .font(pf(12.5)).foregroundColor(C.subLabel)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 28).padding(.top, 10)
         }
     }
 
@@ -355,148 +336,140 @@ struct TeenSetupWizard: View {
     """
 
     var body: some View {
-        VStack(spacing: 0) {
-            NavBar(title: Tr("未成年人模式"), back: { dismiss() }) {
-                Button { dismiss() } label: {
-                    Text(Tr("取消")).font(pf(16)).foregroundColor(C.label).padding(.trailing, 16)
-                }
-                .buttonStyle(.plain)
-            }
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 0) {
-                    switch step {
-                    case 0: termsStep
-                    case 1: pinStep
-                    default: guardianStep
-                    }
-                    Color.clear.frame(height: 24)
+        NavigationStack {
+            Form {
+                switch step {
+                case 0: termsStep
+                case 1: pinStep
+                default: guardianStep
                 }
             }
-            .background(C.pageBg)
+            .scrollContentBackground(.hidden)
+            .background(Color(uiColor: .systemGroupedBackground))
+            .navigationTitle(Tr("未成年人模式"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(Tr("取消")) { dismiss() }
+                        .disabled(busy)
+                }
+            }
+            .interactiveDismissDisabled(busy)
         }
-        .background(C.pageBg.ignoresSafeArea())
-        .toolbar(.hidden, for: .navigationBar)
     }
 
+    @ViewBuilder
     private var termsStep: some View {
-        VStack(spacing: 0) {
+        Section {
             VStack(spacing: 10) {
                 UmbrellaIcon(color: Color(hex: 0x3E9BF0), size: 48)
-                Text(Tr("请先阅读并同意使用条款")).font(pf(16, .medium)).foregroundColor(C.label)
+                Text(Tr("请先阅读并同意使用条款"))
+                    .font(.headline)
             }
-            .padding(.top, 20).padding(.bottom, 14)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
 
             Text(terms)
-                .font(pf(13.5)).foregroundColor(C.label)
-                .lineSpacing(5)
+                .font(.footnote)
+                .lineSpacing(4)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(16)
-                .background { CardGlassBox(radius: 14) }
-                .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
-                .padding(.horizontal, 14)
+        }
 
-            Button { agreed.toggle() } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: agreed ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: 19))
-                        .foregroundColor(agreed ? C.green : C.subLabel)
-                    Text(Tr("我已阅读并同意《未成年人模式使用条款》"))
-                        .font(pf(14)).foregroundColor(C.label)
-                    Spacer(minLength: 0)
-                }
-                .contentShape(Rectangle())
+        Section {
+            Toggle(isOn: $agreed) {
+                Text(Tr("我已阅读并同意《未成年人模式使用条款》"))
             }
-            .buttonStyle(.plain)
-            .padding(.horizontal, 16).padding(.top, 16)
+            .tint(C.green)
+        }
 
-            bigButton(Tr("下一步"), enabled: agreed) { step = 1 }
-                .padding(.horizontal, 16).padding(.top, 18)
+        Section {
+            Button(Tr("下一步")) { step = 1 }
+                .frame(maxWidth: .infinity)
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .disabled(!agreed)
         }
     }
 
+    @ViewBuilder
     private var pinStep: some View {
-        VStack(spacing: 0) {
+        Section {
+            LabeledContent(Tr("密码")) {
+                secureField($pin)
+            }
+            LabeledContent(Tr("确认密码")) {
+                secureField($pin2)
+            }
+        } header: {
             Text(Tr("设置独立密码"))
-                .font(pf(16, .medium)).foregroundColor(C.label)
-                .padding(.top, 22).padding(.bottom, 4)
+        } footer: {
             Text(Tr("之后关闭未成年人模式、改设置都要输这个密码"))
-                .font(pf(13)).foregroundColor(C.subLabel)
-                .padding(.bottom, 14)
+        }
 
-            GroupCard {
-                HStack {
-                    Text(Tr("密码")).font(pf(16)).foregroundColor(C.label)
-                    Spacer(minLength: 8)
-                    secureField($pin)
-                }
-                .padding(.horizontal, 16).frame(height: 54)
-                HairLine(inset: 16)
-                HStack {
-                    Text(Tr("确认密码")).font(pf(16)).foregroundColor(C.label)
-                    Spacer(minLength: 8)
-                    secureField($pin2)
-                }
-                .padding(.horizontal, 16).frame(height: 54)
+        if !error.isEmpty {
+            Section {
+                Text(error)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
             }
-            .padding(.horizontal, 12)
+        }
 
-            if !error.isEmpty {
-                Text(error).font(pf(13)).foregroundColor(C.red)
-                    .padding(.top, 10)
-            }
-
-            bigButton(Tr("下一步"), enabled: pin.count == 4 && pin2.count == 4) {
+        Section {
+            Button(Tr("下一步")) {
                 guard pin == pin2 else { error = Tr("两次输入的密码不一样"); return }
                 error = ""
                 step = 2
             }
-            .padding(.horizontal, 16).padding(.top, 18)
+            .frame(maxWidth: .infinity)
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .disabled(pin.count != 4 || pin2.count != 4)
         }
     }
 
+    @ViewBuilder
     private var guardianStep: some View {
-        VStack(spacing: 0) {
+        Section {
+            LabeledContent(Tr("监护人手机号")) {
+                TextField(Tr("选填"), text: $phone)
+                    .multilineTextAlignment(.trailing)
+                    .keyboardType(.numberPad)
+            }
+        } header: {
             Text(Tr("邀请家长作为监护人"))
-                .font(pf(16, .medium)).foregroundColor(C.label)
-                .padding(.top, 22).padding(.bottom, 4)
-            Text(Tr("填家长的手机号；家长可以帮你重置独立密码"))
-                .font(pf(13)).foregroundColor(C.subLabel)
-                .padding(.bottom, 14)
+        } footer: {
+            Text(Tr("家长可以帮你重置独立密码。"))
+        }
 
-            GroupCard {
-                HStack {
-                    Text(Tr("监护人手机号")).font(pf(16)).foregroundColor(C.label)
-                    Spacer(minLength: 8)
-                    TextField(Tr("选填"), text: $phone)
-                        .font(pf(16)).multilineTextAlignment(.trailing)
-                        .keyboardType(.numberPad)
-                }
-                .padding(.horizontal, 16).frame(height: 54)
+        if !error.isEmpty {
+            Section {
+                Text(error)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
             }
-            .padding(.horizontal, 12)
+        }
 
-            if !error.isEmpty {
-                Text(error).font(pf(13)).foregroundColor(C.red).padding(.top, 10)
-            }
-
-            bigButton(busy ? Tr("开启中…") : Tr("完成并开启"), enabled: !busy) {
+        Section {
+            Button(busy ? Tr("开启中…") : Tr("完成并开启")) {
                 Task { await finish() }
             }
-            .padding(.horizontal, 16).padding(.top, 18)
+            .frame(maxWidth: .infinity)
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .disabled(busy)
 
-            Button { phone = ""; Task { await finish() } } label: {
-                Text(Tr("先跳过，稍后再邀请"))
-                    .font(pf(14.5)).foregroundColor(C.subLabel)
-                    .frame(maxWidth: .infinity).frame(height: 44)
+            Button(Tr("先跳过，稍后再邀请")) {
+                phone = ""
+                Task { await finish() }
             }
-            .buttonStyle(.plain)
-            .padding(.top, 6)
+            .frame(maxWidth: .infinity)
+            .disabled(busy)
         }
     }
 
     private func secureField(_ b: Binding<String>) -> some View {
         SecureField(Tr("4 位数字"), text: b)
-            .font(pf(16)).multilineTextAlignment(.trailing)
+            .multilineTextAlignment(.trailing)
             .keyboardType(.numberPad)
             .frame(width: 110)
     }
@@ -542,109 +515,82 @@ struct CareModeView: View {
     @State private var confirm = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            NavBar(title: Tr("关怀模式"), back: { dismiss() })
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 0) {
-
-                    VStack(spacing: 12) {
-                        Image(systemName: "figure.wave")
-                            .font(.system(size: 48))
-                            .foregroundColor(C.green)
-                        Text(Tr("关怀模式"))
-                            .font(pf(19, .semibold)).foregroundColor(C.label)
-                        HStack(spacing: 14) {
-                            perk("textformat.size", Tr("文字更大"))
-                            perk("paintpalette.fill", Tr("色彩更强"))
-                            perk("hand.tap.fill", Tr("按钮更大"))
-                        }
+        Form {
+            Section {
+                VStack(spacing: 12) {
+                    Image(systemName: "figure.wave")
+                        .font(.system(size: 44))
+                        .foregroundStyle(C.green)
+                    Text(Tr("关怀模式"))
+                        .font(.title3.weight(.semibold))
+                    HStack(spacing: 18) {
+                        perk("textformat.size", Tr("文字更大"))
+                        perk("paintpalette.fill", Tr("色彩更强"))
+                        perk("hand.tap.fill", Tr("按钮更大"))
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 22)
-
-                    GroupCard {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(Tr("开启关怀模式")).font(pf(16)).foregroundColor(C.label)
-                                Text(on ? Tr("已开启") : Tr("未开启"))
-                                    .font(pf(12.5)).foregroundColor(C.subLabel)
-                            }
-                            Spacer(minLength: 8)
-                            Toggle("", isOn: Binding(
-                                get: { on },
-                                set: { v in confirm = true; pending = v }
-                            )).labelsHidden().tint(C.green)
-                        }
-                        .padding(.horizontal, 16).frame(height: 54)
-                    }
-                    .padding(.horizontal, 12)
-
-                    VStack(spacing: 10) {
-                        Text(Tr("效果预览")).font(pf(13)).foregroundColor(C.subLabel)
-                        HStack(spacing: 10) {
-                            Avatar(path: app.me?.avatarPath ?? "", size: on ? 34 : 30, radius: 5)
-                            Text(Tr("这条消息开了关怀模式会更大"))
-                                .font(on ? .system(size: 19) : .system(size: 16))
-                                .foregroundColor(C.label)
-                                .padding(.horizontal, 12).padding(.vertical, 8)
-                                .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(C.bubbleOther))
-                            Spacer(minLength: 0)
-                        }
-                        HStack {
-                            Text(Tr("通讯录"))
-                                .font(on ? .system(size: 18) : .system(size: 15))
-                                .foregroundColor(C.label)
-                            Spacer(minLength: 0)
-                            Text(Tr("星标朋友"))
-                                .font(on ? .system(size: 14) : .system(size: 12))
-                                .foregroundColor(C.subLabel)
-                        }
-                        .padding(.top, 4)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(16)
-                    .background { CardGlassBox(radius: 14) }
-                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
-                    .padding(.horizontal, 12).padding(.top, 12)
-
-                    GroupCard {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(Tr("听文字消息")).font(pf(16)).foregroundColor(C.label)
-                                Text(Tr("开启后，点一下聊天里的文字消息就会读出来"))
-                                    .font(pf(12.5)).foregroundColor(C.subLabel)
-                            }
-                            Spacer(minLength: 8)
-                            Toggle("", isOn: Binding(
-                                get: { speak },
-                                set: { v in
-                                    speak = v
-                                    CareMode.setSpeak(v)
-                                    if v && !on { app.show(Tr("建议把关怀模式一起打开")) }
-                                }
-                            )).labelsHidden().tint(C.green)
-                        }
-                        .padding(.horizontal, 16)
-                        .frame(height: 64)
-                    }
-                    .padding(.horizontal, 12).padding(.top, 12)
-
-                    VStack(spacing: 6) {
-                        Text(Tr("只改这台手机上的显示，不影响别人；关掉就恢复原来的字号。"))
-                        Text(Tr("关怀模式由微信首创的适老化设计：文字更大、色彩更强、按钮更大。"))
-                    }
-                    .font(pf(12.5)).foregroundColor(C.subLabel)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 24).padding(.top, 14)
-                    Color.clear.frame(height: 26)
                 }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
             }
-            .background(C.pageBg)
+
+            Section {
+                Toggle(Tr("开启关怀模式"), isOn: Binding(
+                    get: { on },
+                    set: { v in confirm = true; pending = v }
+                ))
+                .tint(C.green)
+            } footer: {
+                Text(Tr("只改这台手机上的显示，不影响别人；关掉就恢复原来的字号。"))
+            }
+
+            Section {
+                HStack(spacing: 10) {
+                    Avatar(path: app.me?.avatarPath ?? "", size: on ? 34 : 30, radius: 5)
+                    Text(Tr("这条消息开了关怀模式会更大"))
+                        .font(on ? .system(size: 19) : .system(size: 16))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                .fill(Color(uiColor: .secondarySystemGroupedBackground))
+                        )
+                    Spacer(minLength: 0)
+                }
+                HStack {
+                    Text(Tr("通讯录"))
+                    Spacer()
+                    Text(Tr("星标朋友"))
+                        .foregroundStyle(.secondary)
+                }
+            } header: {
+                Text(Tr("效果预览"))
+            }
+
+            Section {
+                Toggle(Tr("听文字消息"), isOn: Binding(
+                    get: { speak },
+                    set: { v in
+                        speak = v
+                        CareMode.setSpeak(v)
+                        if v && !on { app.show(Tr("建议把关怀模式一起打开")) }
+                    }
+                ))
+                .tint(C.green)
+            } footer: {
+                Text(Tr("开启后，点一下聊天里的文字消息就会读出来。"))
+            }
+
+            Section {
+                Text(Tr("关怀模式由微信首创的适老化设计：文字更大、色彩更强、按钮更大。"))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
         }
-        .background(C.pageBg.ignoresSafeArea(edges: .bottom))
-        .background(C.pageBg.ignoresSafeArea(edges: .top))
-        .toolbar(.hidden, for: .navigationBar)
-        .swipeBack { dismiss() }
+        .scrollContentBackground(.hidden)
+        .background(Color(uiColor: .systemGroupedBackground))
+        .navigationTitle(Tr("关怀模式"))
+        .navigationBarTitleDisplayMode(.large)
+        .toolbar(.visible, for: .navigationBar)
         .hidesTabBar()
 
         .alert(on ? Tr("关闭关怀模式？") : Tr("开启关怀模式？"), isPresented: $confirm) {
@@ -666,8 +612,10 @@ struct CareModeView: View {
         VStack(spacing: 5) {
             Image(systemName: icon)
                 .font(.system(size: 17, weight: .medium))
-                .foregroundColor(C.green)
-            Text(title).font(pf(12)).foregroundColor(C.subLabel)
+                .foregroundStyle(C.green)
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 }

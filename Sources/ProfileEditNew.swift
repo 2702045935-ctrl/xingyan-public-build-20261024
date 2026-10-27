@@ -32,74 +32,93 @@ struct ProfileEditView: View {
     private let gold = Color(hex: 0xF0C24B)
 
     var body: some View {
-        VStack(spacing: 0) {
-            NavBar(title: Tr("个人信息"), back: { dismiss() }) {
-                Button { save() } label: {
-                    Text(busy ? Tr("保存中…") : Tr("保存"))
-                        .font(pf(14.5, .medium))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 15)
-                        .frame(height: 32)
-                        .background(
-                            Capsule().fill(busy
-                                ? AnyShapeStyle(Color.dyn(0xEDEDED, 0x2C2C2E))
-                                : AnyShapeStyle(LinearGradient(colors: [C.green, C.green.opacity(0.78)],
-                                                               startPoint: .topLeading, endPoint: .bottomTrailing)))
-                        )
-                        .padding(.trailing, 14)
+        Form {
+            Section {
+                Button { showPhoto = true } label: {
+                    HStack(spacing: 12) {
+                        Text(Tr("头像"))
+                            .foregroundStyle(.primary)
+                        Spacer(minLength: 12)
+                        Avatar(path: app.me?.avatarPath ?? "", size: 44, radius: 8,
+                               circle: false, level: growth.shownLevel)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.tertiary)
+                    }
                 }
                 .buttonStyle(.plain)
-                .disabled(busy)
             }
 
-            ScrollView(showsIndicators: false) {
-
-                VStack(spacing: 0) {
-                    avatarRow
-                    divider
-                    field(Tr("昵称"), $nickname)
-                    divider
-
-                    Button { showUsername = true } label: {
-                        linkLabel(Tr("星言号"),
-                                  (app.me?.username?.isEmpty == false) ? (app.me?.username ?? "—") : "—")
-                    }.buttonStyle(.plain)
-                    divider
-                    tapRow(Tr("性别"), gender == "female" ? Tr("女") : Tr("男")) { showGender = true }
-                    divider
-
-                    Button { showRegion = true } label: {
-                        linkLabel(Tr("地区"), region.isEmpty ? Tr("未设置") : region)
-                    }.buttonStyle(.plain)
-                    divider
-                    Button { showBirthday = true } label: {
-                        linkLabel(Tr("生日"), birthday.isEmpty ? Tr("未设置") : birthday)
-                    }.buttonStyle(.plain)
-                    divider
-                    patRow
-                    divider
-                    field(Tr("个性签名"), $bio)
-                    divider
-                    Button { showPhone = true } label: {
-                        linkLabel(Tr("手机号"), phone.isEmpty ? Tr("未绑定") : maskPhone(phone))
-                    }.buttonStyle(.plain)
-                    divider
-                    Button { showRingtone = true } label: {
-                        linkLabel(Tr("来电铃声"), ring.currentName)
-                    }.buttonStyle(.plain)
+            Section {
+                LabeledContent(Tr("昵称")) {
+                    TextField("", text: $nickname)
+                        .multilineTextAlignment(.trailing)
+                        .textInputAutocapitalization(.never)
                 }
 
-                .background(C.cardBg)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .padding(.horizontal, 14)
-                .padding(.top, 10)
-                .padding(.bottom, 30)
+                nativeValueRow(Tr("星言号"),
+                               (app.me?.username?.isEmpty == false) ? (app.me?.username ?? "—") : "—") {
+                    showUsername = true
+                }
+                nativeValueRow(Tr("性别"), gender == "female" ? Tr("女") : Tr("男")) {
+                    showGender = true
+                }
+                nativeValueRow(Tr("地区"), region.isEmpty ? Tr("未设置") : region) {
+                    showRegion = true
+                }
+                nativeValueRow(Tr("生日"), birthday.isEmpty ? Tr("未设置") : birthday) {
+                    showBirthday = true
+                }
+            } header: {
+                Text(Tr("基本资料"))
+            } footer: {
+                Text(Tr("昵称最多 16 个字符；星言号一年最多修改 2 次。"))
             }
-            .background(C.pageBg)
+
+            Section {
+                LabeledContent(Tr("拍一拍")) {
+                    HStack(spacing: 4) {
+                        Text(Tr("朋友拍了拍我的"))
+                            .foregroundStyle(.secondary)
+                        TextField(Tr("后缀"), text: $patText)
+                            .multilineTextAlignment(.trailing)
+                            .frame(maxWidth: 96)
+                            .onChange(of: patText) { v in
+                                if v.count > 10 { patText = String(v.prefix(10)) }
+                            }
+                    }
+                }
+
+                LabeledContent(Tr("个性签名")) {
+                    TextField(Tr("写一句介绍自己"), text: $bio)
+                        .multilineTextAlignment(.trailing)
+                }
+            } header: {
+                Text(Tr("个人介绍"))
+            } footer: {
+                Text(Tr("拍一拍最多 10 个字；留空就是「拍了拍我」。"))
+            }
+
+            Section {
+                nativeValueRow(Tr("手机号"), phone.isEmpty ? Tr("未绑定") : maskPhone(phone)) {
+                    showPhone = true
+                }
+                nativeValueRow(Tr("来电铃声"), ring.currentName) {
+                    showRingtone = true
+                }
+            }
         }
-        .background(C.pageBg.ignoresSafeArea(edges: .top))
-        .toolbar(.hidden, for: .navigationBar)
-        .swipeBack { dismiss() }
+        .scrollContentBackground(.hidden)
+        .background(Color(uiColor: .systemGroupedBackground))
+        .navigationTitle(Tr("个人信息"))
+        .navigationBarTitleDisplayMode(.large)
+        .toolbar(.visible, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(busy ? Tr("保存中…") : Tr("保存")) { save() }
+                    .disabled(busy)
+            }
+        }
         .hidesTabBar()
         .onAppear { fillFromMe() }
 
@@ -146,6 +165,24 @@ struct ProfileEditView: View {
         .onChange(of: birthday) { v in
             if v != (app.me?.birthday ?? "") { saveNow(["birthday": v]) }
         }
+    }
+
+    private func nativeValueRow(_ title: String, _ value: String,
+                                action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Text(title)
+                    .foregroundStyle(.primary)
+                Spacer(minLength: 12)
+                Text(value)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .buttonStyle(.plain)
     }
 
     private func fillFromMe() {

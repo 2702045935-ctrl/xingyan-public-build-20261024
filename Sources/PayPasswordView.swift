@@ -17,9 +17,6 @@ struct PayPasswordView: View {
     @State private var busy = false
     @FocusState private var focus: Bool
 
-    private var pwdW: CGFloat { L.payPwdW }
-    private var pwdH: CGFloat { L.payPwdH }
-
     private var title: String {
         switch step {
         case .old:  return "请输入原支付密码"
@@ -29,68 +26,66 @@ struct PayPasswordView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            NavBar(title: Tr("支付密码"), back: { dismiss() })
+        Form {
+            Section {
+                VStack(spacing: 16) {
+                    Text(title)
+                        .font(.headline)
 
-            VStack(spacing: 0) {
-                Text(title)
-                    .font(pf(16))
-                    .foregroundColor(C.label)
-                    .padding(.top, 34)
+                    cells
 
-                cells
-                    .padding(.top, 22)
-
-                if let hint = hint {
-                    Text(hint)
-                        .font(pf(13.5))
-                        .foregroundColor(Color(hex: 0xE5484D))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 30)
-                        .padding(.top, 14)
-                } else {
-                    Text(Tr("支付密码是 6 位数字，转账付款时要输它确认"))
-                        .font(pf(13))
-                        .foregroundColor(C.subLabel)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 30)
-                        .padding(.top, 14)
-                }
-
-                TextField("", text: $input)
-                    .keyboardType(.numberPad)
-                    .focused($focus)
-                    .frame(width: 1, height: 1)
-                    .opacity(0.01)
-                    .onChange(of: input) { v in
-                        let clean = String(v.filter { $0 >= "0" && $0 <= "9" }.prefix(6))
-                        if clean != v { input = clean; return }
-                        hint = nil
-                        if clean.count == 6 { advance() }
+                    if let hint = hint {
+                        Text(hint)
+                            .font(.footnote)
+                            .foregroundStyle(Color(hex: 0xE5484D))
+                            .multilineTextAlignment(.center)
+                    } else {
+                        Text(Tr("支付密码是 6 位数字，转账付款时要输它确认"))
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
                     }
-                    .onAppear { focusSoon() }
 
-                Spacer(minLength: 0)
-
-                GroupCard {
-                    infoRow(hasPwd ? "当前状态" : "当前状态", hasPwd ? "已设置支付密码" : "还没有设置支付密码")
+                    TextField("", text: $input)
+                        .keyboardType(.numberPad)
+                        .focused($focus)
+                        .frame(width: 1, height: 1)
+                        .opacity(0.01)
+                        .onChange(of: input) { v in
+                            let clean = String(v.filter { $0 >= "0" && $0 <= "9" }.prefix(6))
+                            if clean != v { input = clean; return }
+                            hint = nil
+                            if clean.count == 6 { advance() }
+                        }
+                        .onAppear { focusSoon() }
                 }
-                .padding(.bottom, 26)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
             }
-            .frame(maxWidth: .infinity)
-            .background(C.pageBg)
+
+            Section {
+                LabeledContent(Tr("当前状态"),
+                               value: hasPwd ? Tr("已设置支付密码") : Tr("还没有设置支付密码"))
+            } footer: {
+                Text(Tr("支付密码只用于转账和付款确认，不会作为登录密码。"))
+            }
         }
-        .background(C.pageBg.ignoresSafeArea(edges: .bottom))
-        .background(C.pageBg.ignoresSafeArea(edges: .top))
-        .toolbar(.hidden, for: .navigationBar)
-        .swipeBack { dismiss() }
+        .scrollContentBackground(.hidden)
+        .background(Color(uiColor: .systemGroupedBackground))
+        .navigationTitle(Tr("支付密码"))
+        .navigationBarTitleDisplayMode(.large)
+        .toolbar(.visible, for: .navigationBar)
         .hidesTabBar()
         .overlay {
             if busy {
                 ZStack {
                     Color.black.opacity(0.12).ignoresSafeArea()
-                    ProgressView().padding(18)
-                        .background { CardGlassBox(radius: 10) }
+                    ProgressView()
+                        .padding(18)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(.regularMaterial)
+                        )
                 }
             }
         }
@@ -103,21 +98,10 @@ struct PayPasswordView: View {
     }
 
     private var cells: some View {
-
         PayDotField(count: input.count, shake: shake ? -6 : 0,
                     busy: busy, height: 48)
             .contentShape(Rectangle())
             .onTapGesture { focus = true }
-    }
-
-    private func infoRow(_ k: String, _ v: String) -> some View {
-        HStack {
-            Text(k).font(pf(15)).foregroundColor(C.subLabel)
-            Spacer(minLength: 0)
-            Text(v).font(pf(15)).foregroundColor(C.label)
-        }
-        .padding(.horizontal, 16)
-        .frame(height: 52)
     }
 
     private func focusSoon() {
