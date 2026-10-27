@@ -3953,12 +3953,12 @@ struct ChatDetailView: View {
             var olderIds = Set<String>()
             var more = true
             let target = isGroup ? 300 : 200
-            let pages = isGroup ? 3 : 2
-            for _ in 0..<pages {
+            for _ in 0..<3 {
                 let page = try await API.shared.messages(
                     chatId: chat.id,
-                    limit: 100,
-                    before: cursor
+                    limit: target,
+                    before: cursor,
+                    all: true
                 )
                 if page.messages.isEmpty {
                     more = false
