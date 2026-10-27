@@ -77,14 +77,26 @@ struct NativeTabBar: UIViewRepresentable {
     }
 
     private func applyColors(_ bar: UITabBar) {
-        bar.tintColor = UIColor(C.green)
-        bar.unselectedItemTintColor = UIColor(C.subLabel)
+        bar.tintColor = UIColor(OrbitTheme.jade)
+        bar.unselectedItemTintColor = UIColor(OrbitTheme.secondary)
 
         let appearance = UITabBarAppearance()
         appearance.configureWithDefaultBackground()
         if scheme == .dark {
-            appearance.backgroundColor = UIColor(white: 0.008, alpha: 0.90)
+            appearance.backgroundEffect = UIBlurEffect(style: .systemUltraThinMaterialDark)
+            appearance.backgroundColor = UIColor(red: 0.043,
+                                                 green: 0.105,
+                                                 blue: 0.082,
+                                                 alpha: 0.93)
         }
+        appearance.stackedLayoutAppearance.normal.iconColor = UIColor(OrbitTheme.secondary)
+        appearance.stackedLayoutAppearance.normal.titleTextAttributes = [
+            .foregroundColor: UIColor(OrbitTheme.secondary)
+        ]
+        appearance.stackedLayoutAppearance.selected.iconColor = UIColor(OrbitTheme.jade)
+        appearance.stackedLayoutAppearance.selected.titleTextAttributes = [
+            .foregroundColor: UIColor(OrbitTheme.jade)
+        ]
         bar.standardAppearance = appearance
         bar.scrollEdgeAppearance = appearance
     }
