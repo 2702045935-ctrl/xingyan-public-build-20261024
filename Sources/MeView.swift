@@ -187,7 +187,7 @@ struct MeView: View {
         List {
             Section {
                 HStack(spacing: 8) {
-                    Button { path.append("profile") } label: {
+                    NavigationLink(value: "profile") {
                         HStack(spacing: 12) {
                             Avatar(path: app.me?.avatarPath ?? "", size: 58, radius: 18,
                                    level: growth.shownLevel)
@@ -215,7 +215,7 @@ struct MeView: View {
                             }
                         }
                     }
-                    .buttonStyle(.borderless)
+                    .buttonStyle(.plain)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                     compactStatusActions
@@ -310,7 +310,7 @@ struct MeView: View {
                             .stroke(moodOn ? Color.white.opacity(0.30) : C.hairline, lineWidth: 0.6)
                     }
             }
-            .buttonStyle(.borderless)
+            .buttonStyle(.plain)
             .accessibilityLabel(Tr("当前状态"))
 
             Button {
@@ -329,7 +329,7 @@ struct MeView: View {
                             .stroke(C.hairline, lineWidth: 0.6)
                     }
             }
-            .buttonStyle(.borderless)
+            .buttonStyle(.plain)
             .accessibilityLabel(Tr("朋友的状态"))
         }
         .fixedSize()
