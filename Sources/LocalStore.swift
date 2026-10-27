@@ -94,20 +94,23 @@ enum LocalStore {
         try? FileManager.default.removeItem(at: chatFile(chatId))
     }
 
-    private static var momentCacheFile: URL? {
-        guard let dir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first else { return nil }
-        return dir.appendingPathComponent("moments-cache.json")
+    private static func momentCacheFile(_ userId: String) -> URL? {
+        guard !userId.isEmpty,
+              let dir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first else {
+            return nil
+        }
+        return dir.appendingPathComponent("moments-cache-" + sanitize(userId) + ".json")
     }
 
-    static func saveMoments(_ list: [Moment]) {
-        guard !list.isEmpty, let f = momentCacheFile else { return }
+    static func saveMoments(_ list: [Moment], userId: String) {
+        guard !list.isEmpty, let f = momentCacheFile(userId) else { return }
         let tail = Array(list.prefix(60))
         guard let d = try? JSONEncoder().encode(tail) else { return }
         try? d.write(to: f, options: .atomic)
     }
 
-    static func cachedMoments() -> [Moment] {
-        guard let f = momentCacheFile, let d = try? Data(contentsOf: f) else { return [] }
+    static func cachedMoments(userId: String) -> [Moment] {
+        guard let f = momentCacheFile(userId), let d = try? Data(contentsOf: f) else { return [] }
         return (try? JSONDecoder().decode([Moment].self, from: d)) ?? []
     }
 

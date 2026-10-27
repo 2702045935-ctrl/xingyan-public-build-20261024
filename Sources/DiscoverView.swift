@@ -613,7 +613,7 @@ struct MomentsView: View {
         .task {
 
             if moments.isEmpty, target == nil, !mineOnly {
-                let cached = LocalStore.cachedMoments()
+                let cached = LocalStore.cachedMoments(userId: app.me?.id ?? "")
                 if !cached.isEmpty {
                     moments = cached
                     rebuildFoldRows(cached)
@@ -1559,10 +1559,12 @@ struct MomentsView: View {
             feedRange = feed.range
             app.momentNoticeUnread = feed.noticeUnread
 
-            if target == nil && !mineOnly { LocalStore.saveMoments(moments) }
+            if target == nil && !mineOnly {
+                LocalStore.saveMoments(moments, userId: app.me?.id ?? "")
+            }
         } else {
 
-            let cached = LocalStore.cachedMoments()
+            let cached = LocalStore.cachedMoments(userId: app.me?.id ?? "")
             moments = cached.isEmpty ? app.moments : cached
             hasMoreMoments = false
         }

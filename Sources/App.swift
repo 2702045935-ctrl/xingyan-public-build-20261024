@@ -262,6 +262,8 @@ final class AppState: ObservableObject {
     @Published var loadError: String?
 
     @Published var uiVersion = 0
+    /// 登录成功时单独推进根视图身份，避免依赖回到前台后的配置刷新。
+    @Published private(set) var authVersion = 0
 
     @Published var tabBarDepth = 0
 
@@ -278,6 +280,7 @@ final class AppState: ObservableObject {
     }
     private var lastUIConfig = ""
     private var refreshTask: Task<Void, Never>?
+    private var accountEpoch = 0
 
     private var uiRetryScheduled = false
 
@@ -294,9 +297,55 @@ final class AppState: ObservableObject {
         }
     }
 
-    func handle(_ ev: PushEvent) {
+    /// 切号时先清掉账号作用域的数据和旧任务，避免旧账号响应落到新账号界面。
+    private func beginAccountTransition() {
+        accountEpoch += 1
+        refreshTask?.cancel()
+        refreshTask = nil
+        syncInFlight = false
+        syncing = false
+        syncText = ""
+        loadingChats = false
+        loadError = nil
+        optimisticChats.removeAll()
+        optimisticAt.removeAll()
+        locallyHiddenChats.removeAll()
+        prefetched.removeAll()
+        chats = []
+        contacts = []
+        moments = []
+        momentsUnread = 0
+        momentNoticeUnread = 0
+        friendRequests = 0
+        localOutgoingFriendRequests = []
+        openChat = nil
+        pendingPushChatId = nil
+        wantChatsTab = false
+        resumeChatAfterMiniApp = nil
+        openMiniApp = nil
+        scanCardUser = nil
+        scanWebURL = nil
+        scanTextResult = nil
+        payScan = nil
+        payScanText = ""
+        tabBarDepth = 0
+        floorFull = false
+        OtherLogin.shared.reset()
+        CallCenter.shared.resetForAccountChange()
+        GrowthStore.shared.stop()
+        Realtime.shared.stop()
+        KeepAlive.shared.stop()
+        syncIconBadge()
+    }
 
-        if let u = ev.user, u.id == me?.id || me == nil {
+    private func isCurrentAccount(_ epoch: Int) -> Bool {
+        epoch == accountEpoch && me != nil && !API.shared.token.isEmpty
+    }
+
+    func handle(_ ev: PushEvent) {
+        guard me != nil else { return }
+
+        if let u = ev.user, u.id == me?.id {
             me = u
             coalesce { [weak self] in
                 await self?.loadChats()
@@ -433,7 +482,10 @@ final class AppState: ObservableObject {
         CrashCatcher.note("启动", "3 boot 开始")
         // 本地已有账号时先放行到上次账号页，网络校验放到后台完成。
         applyCachedUIConfig()
-        let savedUser = AppState.cachedUser()
+        let activeName = UserDefaults.standard.string(forKey: "chris.activeUsername") ?? ""
+        let savedUser = activeName.isEmpty
+            ? AppState.cachedUser()
+            : AppState.cachedUser(username: activeName)
         if !API.shared.token.isEmpty, savedUser != nil {
             me = savedUser
             showSavedLogin = false
@@ -497,8 +549,14 @@ final class AppState: ObservableObject {
         booting = false
     }
 
-    static func cachedUser() -> User? {
-        guard let s = UserDefaults.standard.string(forKey: "chris.lastUserJSON"),
+    static func cachedUser(username: String? = nil) -> User? {
+        let key: String
+        if let username, !username.isEmpty {
+            key = "chris.lastUserJSON." + username.lowercased()
+        } else {
+            key = "chris.lastUserJSON"
+        }
+        guard let s = UserDefaults.standard.string(forKey: key),
               let d = s.data(using: .utf8) else { return nil }
         return try? JSONDecoder().decode(User.self, from: d)
     }
@@ -572,7 +630,9 @@ final class AppState: ObservableObject {
     }
 
     func login(username: String, password: String) async throws {
-        me = try await API.shared.login(username: username, password: password, sliderTicket: "")
+        let user = try await API.shared.login(username: username, password: password, sliderTicket: "")
+        beginAccountTransition()
+        me = user
         finishLoginTransition()
         rememberLastUser()
         Realtime.shared.start()
@@ -580,7 +640,9 @@ final class AppState: ObservableObject {
     }
 
     func login(username: String, password: String, sliderTicket: String) async throws {
-        me = try await API.shared.login(username: username, password: password, sliderTicket: sliderTicket)
+        let user = try await API.shared.login(username: username, password: password, sliderTicket: sliderTicket)
+        beginAccountTransition()
+        me = user
         finishLoginTransition()
         rememberLastUser()
         Realtime.shared.start()
@@ -588,6 +650,7 @@ final class AppState: ObservableObject {
     }
 
     func adoptRegistered(_ user: User) async {
+        beginAccountTransition()
         me = user
         finishLoginTransition()
         rememberLastUser()
@@ -604,7 +667,9 @@ final class AppState: ObservableObject {
     }
 
     func login(phone: String, code: String) async throws {
-        me = try await API.shared.loginPhone(phone: phone, code: code)
+        let user = try await API.shared.loginPhone(phone: phone, code: code)
+        beginAccountTransition()
+        me = user
         finishLoginTransition()
         rememberLastUser()
         Realtime.shared.start()
@@ -612,6 +677,7 @@ final class AppState: ObservableObject {
     }
 
     func finishLogin(_ user: User) async {
+        beginAccountTransition()
         me = user
         finishLoginTransition()
         rememberLastUser()
@@ -623,6 +689,9 @@ final class AppState: ObservableObject {
         booting = false
         needConfirmLogin = false
         showSavedLogin = false
+        if me != nil {
+            authVersion += 1
+        }
     }
 
     private var didInitialBoot = false
@@ -638,7 +707,9 @@ final class AppState: ObservableObject {
         }
     }
     func refreshDotCounts() async {
-        guard me != nil, let d = await API.shared.badgeCounts() else { return }
+        let epoch = accountEpoch
+        guard isCurrentAccount(epoch), let d = await API.shared.badgeCounts() else { return }
+        guard isCurrentAccount(epoch) else { return }
         if d.friendRequests != friendRequests {
             friendRequests = d.friendRequests
             await loadContacts()
@@ -655,6 +726,10 @@ final class AppState: ObservableObject {
 
         if let d = try? JSONEncoder().encode(me), let s = String(data: d, encoding: .utf8) {
             UserDefaults.standard.set(s, forKey: "chris.lastUserJSON")
+            if let username = me.username, !username.isEmpty {
+                UserDefaults.standard.set(s, forKey: "chris.lastUserJSON." + username.lowercased())
+                UserDefaults.standard.set(username, forKey: "chris.activeUsername")
+            }
         }
 
         if let u = me.username, !u.isEmpty, !API.shared.token.isEmpty {
@@ -666,6 +741,8 @@ final class AppState: ObservableObject {
     }
 
     func refreshAll() async {
+        let epoch = accountEpoch
+        guard isCurrentAccount(epoch) else { return }
         CrashCatcher.install()
         LocalNotify.prepare()
         PushCenter.shared.start()
@@ -677,6 +754,7 @@ final class AppState: ObservableObject {
 
         Task {
             try? await Task.sleep(nanoseconds: 2_000_000_000)
+            guard self.accountEpoch == epoch else { return }
             await EyesStore.shared.refresh()
         }
 
@@ -686,6 +764,7 @@ final class AppState: ObservableObject {
     }
 
     private func loadHomeDataParallel() async {
+        let epoch = accountEpoch
         loadingChats = true
         async let chatsRequest = API.shared.chats()
         async let contactsRequest = API.shared.contactsFull()
@@ -693,6 +772,7 @@ final class AppState: ObservableObject {
 
         do {
             let fresh = try await chatsRequest
+            guard isCurrentAccount(epoch) else { return }
             let merged = mergeServerChats(fresh)
             if !AppState.sameChats(chats, merged) { chats = merged }
             loadError = nil
@@ -701,6 +781,7 @@ final class AppState: ObservableObject {
         }
 
         if let r = try? await contactsRequest {
+            guard isCurrentAccount(epoch) else { return }
             let friends = applyLocalRemarksToContacts(r.friends)
             let sameOrder = contacts.map { $0.id } == friends.map { $0.id }
             let sameLook = contacts.count == friends.count
@@ -710,6 +791,7 @@ final class AppState: ObservableObject {
         }
 
         if let feed = try? await momentsRequest {
+            guard isCurrentAccount(epoch) else { return }
             moments = feed.moments
             momentsUnread = feed.unread
             momentNoticeUnread = feed.noticeUnread
@@ -736,6 +818,8 @@ final class AppState: ObservableObject {
 
     func syncRecentMessages(chatCount: Int = 20, limit: Int = 50) async {
         guard !syncInFlight else { return }
+        let epoch = accountEpoch
+        guard isCurrentAccount(epoch) else { return }
         syncInFlight = true
         let showHint = !UserDefaults.standard.bool(forKey: syncHintKey)
         var completed = false
@@ -746,15 +830,18 @@ final class AppState: ObservableObject {
             syncText = "正在同步最近的聊天记录…"
         }
         defer {
-            syncInFlight = false
-            syncing = false
-            syncText = ""
-            if completed && showHint {
-                UserDefaults.standard.set(true, forKey: syncHintKey)
+            if epoch == accountEpoch {
+                syncInFlight = false
+                syncing = false
+                syncText = ""
+                if completed && showHint {
+                    UserDefaults.standard.set(true, forKey: syncHintKey)
+                }
             }
         }
         do {
             let r = try await API.shared.chatsWithRecentMessages(chats: chatCount, limit: limit)
+            guard isCurrentAccount(epoch) else { return }
             let merged = mergeServerChats(r.chats)
             if !AppState.sameChats(chats, merged) { chats = merged }
             var total = 0
@@ -778,16 +865,16 @@ final class AppState: ObservableObject {
     }
 
     func loadChats() async {
+        let epoch = accountEpoch
         loadingChats = true
-        defer { loadingChats = false }
+        defer { if epoch == accountEpoch { loadingChats = false } }
         do {
             let fresh = try await API.shared.chats()
+            guard let userId = me?.id, !userId.isEmpty, isCurrentAccount(epoch) else { return }
             let merged = mergeServerChats(fresh)
 
             if !AppState.sameChats(chats, merged) { chats = merged }
-            if let userId = me?.id, !userId.isEmpty {
-                LocalStore.saveChatList(chats, userId: userId)
-            }
+            LocalStore.saveChatList(chats, userId: userId)
             loadError = nil
         } catch {
             loadError = (error as? APIError)?.errorDescription ?? "加载失败"
@@ -936,6 +1023,10 @@ final class AppState: ObservableObject {
     /// 从联系人发出第一条消息时，服务端会话摘要可能比消息接口晚一拍。
     /// 先在本地补上会话，列表才不会短暂或长期漏掉新聊天。
     func ensureChatVisible(_ chat: Chat, latest: Message? = nil) {
+        guard let myId = me?.id, !myId.isEmpty else { return }
+        if let members = chat.memberIds, !members.isEmpty, !members.contains(myId) {
+            return
+        }
         locallyHiddenChats.remove(chat.id)
         var row = chats.first(where: { $0.id == chat.id }) ?? chat
         if let latest {
@@ -1011,7 +1102,7 @@ final class AppState: ObservableObject {
         } else {
             remarks[userId] = stored
         }
-        UserDefaults.standard.set(remarks, forKey: Self.localFriendRemarksKey)
+        UserDefaults.standard.set(remarks, forKey: localFriendRemarksKey)
         for i in contacts.indices where contacts[i].id == userId {
             if (contacts[i].realNickname ?? "").isEmpty {
                 contacts[i].realNickname = contacts[i].nickname
@@ -1025,10 +1116,12 @@ final class AppState: ObservableObject {
         }
     }
 
-    private static let localFriendRemarksKey = "chris.localFriendRemarks.v1"
+    private var localFriendRemarksKey: String {
+        "chris.localFriendRemarks.v1." + (me?.id ?? "guest")
+    }
 
     private var localFriendRemarkMap: [String: String] {
-        let raw = UserDefaults.standard.dictionary(forKey: Self.localFriendRemarksKey) ?? [:]
+        let raw = UserDefaults.standard.dictionary(forKey: localFriendRemarksKey) ?? [:]
         return raw.reduce(into: [:]) { out, pair in
             if let value = pair.value as? String, !value.isEmpty { out[pair.key] = value }
         }
@@ -1268,7 +1361,9 @@ final class AppState: ObservableObject {
     }
 
     func loadContacts() async {
+        let epoch = accountEpoch
         if let r = try? await API.shared.contactsFull() {
+            guard isCurrentAccount(epoch) else { return }
 
             let friends = applyLocalRemarksToContacts(r.friends)
             let sameOrder = contacts.map { $0.id } == friends.map { $0.id }
@@ -1283,7 +1378,9 @@ final class AppState: ObservableObject {
     }
 
     func loadMoments() async {
+        let epoch = accountEpoch
         if let feed = try? await API.shared.momentsFeed() {
+            guard isCurrentAccount(epoch) else { return }
             moments = feed.moments
             momentsUnread = feed.unread
             momentNoticeUnread = feed.noticeUnread
@@ -1300,6 +1397,7 @@ final class AppState: ObservableObject {
         if let userId = me?.id, !userId.isEmpty {
             UserDefaults.standard.removeObject(forKey: "chris.syncHintShown." + userId)
         }
+        beginAccountTransition()
 
         KeepAlive.shared.stop()
         OtherLogin.shared.reset()
@@ -1333,16 +1431,29 @@ final class AppState: ObservableObject {
         syncIconBadge()
     }
 
-    func quickLogin(token: String? = nil) async -> Bool {
-        if let t = token, !t.isEmpty, t != API.shared.token {
-            CallCenter.shared.resetForAccountChange()
-            Realtime.shared.stop()
+    func quickLogin(token: String? = nil, username: String? = nil,
+                    switchingAccount: Bool = false) async -> Bool {
+        let nextToken = token?.trimmingCharacters(in: .whitespacesAndNewlines) ?? API.shared.token
+        guard !nextToken.isEmpty else { return false }
+        if switchingAccount {
+            guard let token, !token.isEmpty else { return false }
         }
-        if let t = token, !t.isEmpty { API.shared.setToken(t) }
+        beginAccountTransition()
+        if let username, !username.isEmpty {
+            UserDefaults.standard.set(username, forKey: "chris.activeUsername")
+        }
+        API.shared.setToken(nextToken)
         guard !API.shared.token.isEmpty else { return false }
+        let epoch = accountEpoch
         do {
             let s = try await API.shared.session()
+            guard epoch == accountEpoch else { return false }
             guard s.ok, let user = s.user else {
+                API.shared.clearToken()
+                return false
+            }
+            if let username, !username.isEmpty,
+               user.username?.caseInsensitiveCompare(username) != .orderedSame {
                 API.shared.clearToken()
                 return false
             }
@@ -1351,7 +1462,10 @@ final class AppState: ObservableObject {
             if !cachedChats.isEmpty { chats = cachedChats }
         } catch {
             /* 网络短暂失败不能删登录令牌，否则用户会被错误地要求重新输账号密码。 */
-            guard let cached = AppState.cachedUser() else { return false }
+            guard epoch == accountEpoch,
+                  let cached = AppState.cachedUser(username: username) else { return false }
+            if let username, !username.isEmpty,
+               cached.username?.caseInsensitiveCompare(username) != .orderedSame { return false }
             me = cached
         }
         finishLoginTransition()
@@ -1456,17 +1570,21 @@ struct SavedLoginConfirm: View {
     @State private var appear = false
     @State private var busy = false
 
-    private var savedToken: String {
-
+    private var savedAccount: SavedAccount? {
         if let a = app.accounts.first(where: { $0.avatar == app.lastAvatar }) {
             let t = AccountStore.token(for: a.username)
-            if !t.isEmpty { return t }
+            if !t.isEmpty { return a }
         }
         for a in app.accounts {
             let t = AccountStore.token(for: a.username)
-            if !t.isEmpty { return t }
+            if !t.isEmpty { return a }
         }
-        return ""
+        return nil
+    }
+
+    private var savedToken: String {
+        guard let account = savedAccount else { return "" }
+        return AccountStore.token(for: account.username)
     }
 
     var body: some View {
@@ -1543,7 +1661,9 @@ struct SavedLoginConfirm: View {
         guard !busy else { return }
         busy = true
         Task {
-            let ok = await app.quickLogin(token: savedToken)
+            let ok = await app.quickLogin(token: savedToken,
+                                          username: savedAccount?.username,
+                                          switchingAccount: savedAccount != nil)
             busy = false
             if ok {
                 app.showSavedLogin = false
@@ -1593,7 +1713,7 @@ struct RootView: View {
                     .allowsHitTesting(false)
                 }
             }
-            .id(app.uiVersion)
+            .id("\(app.uiVersion)-\(app.authVersion)")
 
             .background(C.pageBg.ignoresSafeArea())
             .onAppear { L.width = geo.size.width }
@@ -2438,7 +2558,9 @@ struct LoginView: View {
         error = nil
         Task {
             let saved = account.map { AccountStore.token(for: $0.username) } ?? ""
-            let ok = await app.quickLogin(token: saved.isEmpty ? nil : saved)
+            let ok = await app.quickLogin(token: saved.isEmpty ? nil : saved,
+                                          username: account?.username,
+                                          switchingAccount: account != nil)
             quickBusy = false
             if !ok { error = "登录状态已过期，请重新输入密码登录" }
         }

@@ -192,7 +192,12 @@ final class Realtime: ObservableObject {
 
                         if let self = self {
                             let t = text
-                            Task { @MainActor in self.handle(t) }
+                            let expectedToken = currentToken
+                            Task { @MainActor in
+                                guard self.socketToken == expectedToken,
+                                      API.shared.token == expectedToken else { return }
+                                self.handle(t)
+                            }
                         }
                     } else {
                         clock.touch()
@@ -269,6 +274,13 @@ final class Realtime: ObservableObject {
         heartbeat = nil
         loop?.cancel()
         loop = nil
+        publishTask?.cancel()
+        publishTask = nil
+        pending = nil
+        ackTask?.cancel()
+        ackTask = nil
+        ackPending.removeAll()
+        event = PushEvent()
         socket?.cancel(with: .goingAway, reason: nil)
         socket = nil
         connected = false

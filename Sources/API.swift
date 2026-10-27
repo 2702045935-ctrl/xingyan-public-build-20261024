@@ -1918,9 +1918,10 @@ final class API {
     }
 
     private func get<T: Decodable>(_ path: String, as type: T.Type) async throws -> T {
+        let scope = API.offlineScope()
         do {
             let any = try await request("GET", path)
-            API.saveOffline(path, any)
+            API.saveOffline(path, any, scope: scope)
             return try decode(any, as: T.self)
         } catch {
 
@@ -1936,11 +1937,25 @@ final class API {
     private static var offlineMemo: [String: Any] = [:]
     private static let offlineLock = NSLock()
 
+    private static func offlineScope() -> String {
+        let token = API.shared.token
+        if token.isEmpty { return "guest" }
+        var hash: UInt64 = 0xcbf29ce484222325
+        for byte in token.utf8 {
+            hash = (hash ^ UInt64(byte)) &* 0x100000001b3
+        }
+        return String(format: "%016llx", hash)
+    }
+
+    private static func offlineCacheKey(_ path: String) -> String {
+        offlineScope() + "|" + path
+    }
+
     private static func offlineCacheable(_ path: String) -> Bool {
         offlinePrefixes.contains { path.hasPrefix($0) }
     }
 
-    private static func offlineFile(_ path: String) -> URL? {
+    private static func offlineFile(_ key: String) -> URL? {
         let fm = FileManager.default
         guard let dir = try? fm.url(for: .applicationSupportDirectory,
                                     in: .userDomainMask,
@@ -1949,31 +1964,33 @@ final class API {
         if !fm.fileExists(atPath: folder.path) {
             try? fm.createDirectory(at: folder, withIntermediateDirectories: true)
         }
-        let safe = String(path.map { $0.isLetter || $0.isNumber ? $0 : "_" })
+        let safe = String(key.map { $0.isLetter || $0.isNumber ? $0 : "_" })
         return folder.appendingPathComponent(safe + ".json")
     }
 
-    static func saveOffline(_ path: String, _ data: Any) {
+    static func saveOffline(_ path: String, _ data: Any, scope: String? = nil) {
         guard offlineCacheable(path), JSONSerialization.isValidJSONObject(data) else { return }
+        let key = (scope ?? offlineScope()) + "|" + path
         offlineLock.lock()
-        offlineMemo[path] = data
+        offlineMemo[key] = data
         offlineLock.unlock()
-        guard let url = offlineFile(path),
+        guard let url = offlineFile(key),
               let raw = try? JSONSerialization.data(withJSONObject: data) else { return }
         try? raw.write(to: url, options: .atomic)
     }
 
     static func cachedOffline(_ path: String) -> Any? {
         guard offlineCacheable(path) else { return nil }
+        let key = offlineCacheKey(path)
         offlineLock.lock()
-        let hit = offlineMemo[path]
+        let hit = offlineMemo[key]
         offlineLock.unlock()
         if let hit = hit { return hit }
-        guard let url = offlineFile(path),
+        guard let url = offlineFile(key),
               let raw = try? Data(contentsOf: url),
               let obj = try? JSONSerialization.jsonObject(with: raw) else { return nil }
         offlineLock.lock()
-        offlineMemo[path] = obj
+        offlineMemo[key] = obj
         offlineLock.unlock()
         return obj
     }

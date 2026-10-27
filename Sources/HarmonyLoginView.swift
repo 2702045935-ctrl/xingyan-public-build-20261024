@@ -426,7 +426,6 @@ struct HarmonyLoginView: View {
                         throw APIError.message("请输入手机号和 6 位验证码")
                     }
                     try await app.login(phone: phone, code: code)
-                    app.finishLoginTransition()
                     UserDefaults.standard.set(phone, forKey: "chris.lastPhone")
                 } else {
                     let account = user.trimmingCharacters(in: .whitespaces)
@@ -434,7 +433,6 @@ struct HarmonyLoginView: View {
                         throw APIError.message("账号和密码都要填")
                     }
                     try await app.login(username: account, password: pass, sliderTicket: sliderTicket)
-                    app.finishLoginTransition()
                 }
                 entered = true
             } catch APIError.needSlider {

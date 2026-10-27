@@ -163,7 +163,15 @@ struct SwitchAccountView: View {
         busy = a.username
         Task {
             let saved = AccountStore.token(for: a.username)
-            let ok = await app.quickLogin(token: saved.isEmpty ? nil : saved)
+            guard !saved.isEmpty else {
+                busy = ""
+                note = Tr("这个账号的登录状态过期了，重新输一次密码就行")
+                adding = true
+                return
+            }
+            let ok = await app.quickLogin(token: saved,
+                                          username: a.username,
+                                          switchingAccount: true)
             busy = ""
             if ok {
                 dismiss()

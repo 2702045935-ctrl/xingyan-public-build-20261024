@@ -751,7 +751,6 @@ struct RemoteImage: View {
     var onLoaded: ((UIImage) -> Void)? = nil
 
     @State private var image: UIImage?
-    @State private var started = false
 
     var body: some View {
         GeometryReader { geo in
@@ -773,31 +772,36 @@ struct RemoteImage: View {
             .frame(width: geo.size.width, height: geo.size.height)
             .clipped()
         }
-        .onAppear { if !started { started = true; Task { await load() } } }
-
-        .onChange(of: path) { _ in
+        .task(id: path) {
             image = nil
-            started = true
-            Task { await load() }
+            await load()
         }
     }
 
     private func load() async {
         if path.isEmpty { return }
+        let requestedPath = path
 
-        if let hit = ImageStore.shared.get(path) { image = hit; onLoaded?(hit); return }
+        if let hit = ImageStore.shared.get(requestedPath) {
+            guard !Task.isCancelled, path == requestedPath else { return }
+            image = hit
+            onLoaded?(hit)
+            return
+        }
 
         let side = max(64, maxSide)
 
         let diskBytes: Data? = await Task.detached(priority: .userInitiated) { () -> Data? in
-            ImageStore.shared.diskRead(path)
+            ImageStore.shared.diskRead(requestedPath)
         }.value
+        guard !Task.isCancelled, path == requestedPath else { return }
         if let diskBytes = diskBytes {
             let diskImg: UIImage? = await Task.detached(priority: .userInitiated) { () -> UIImage? in
                 RemoteImage.downsampled(diskBytes, maxSide: side)
             }.value
+            guard !Task.isCancelled, path == requestedPath else { return }
             if let diskImg = diskImg {
-                ImageStore.shared.put(path, diskImg)
+                ImageStore.shared.put(requestedPath, diskImg)
                 image = diskImg
                 onLoaded?(diskImg)
                 return
@@ -811,22 +815,34 @@ struct RemoteImage: View {
                                options: .ignoreUnknownCharacters) else { return }
             data = d
         } else {
-            guard let url = API.shared.assetURL(path) else { return }
-            do { data = try await API.shared.imageData(url) } catch { return }
+            guard let url = API.shared.assetURL(requestedPath) else { return }
+            var remote: Data?
+            for attempt in 0..<2 {
+                do {
+                    remote = try await API.shared.imageData(url)
+                    break
+                } catch {
+                    guard attempt == 0 else { return }
+                    try? await Task.sleep(nanoseconds: 350_000_000)
+                    guard !Task.isCancelled, path == requestedPath else { return }
+                }
+            }
+            guard let remote else { return }
+            data = remote
         }
 
         let img = await Task.detached(priority: .userInitiated) {
             RemoteImage.downsampled(data, maxSide: side)
         }.value
-        guard let img = img else { return }
-        ImageStore.shared.put(path, img)
+        guard !Task.isCancelled, path == requestedPath, let img = img else { return }
+        ImageStore.shared.put(requestedPath, img)
         image = img
         onLoaded?(img)
 
-        Task.detached(priority: .background) { ImageStore.shared.diskWrite(path, data) }
+        Task.detached(priority: .background) { ImageStore.shared.diskWrite(requestedPath, data) }
 
-        if path.hasPrefix("/uploads/") || path.hasPrefix("/emoji/") {
-            Task.detached(priority: .background) { LocalStore.keep(path, data: data) }
+        if requestedPath.hasPrefix("/uploads/") || requestedPath.hasPrefix("/emoji/") {
+            Task.detached(priority: .background) { LocalStore.keep(requestedPath, data: data) }
         }
     }
 

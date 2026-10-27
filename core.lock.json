@@ -1,9 +1,9 @@
 {
   "version": "B669",
   "files": [
-    { "path": "Sources/API.swift", "size": 194905, "sha256": "b75fad32ddccc0e7d3ed89780cab06f467df6ebdd5137b5dad218ac593cd1c45" },
-    { "path": "Sources/App.swift", "size": 129917, "sha256": "4c4c745bbe42327a1189dae3965355f80e71448e57c49aa9ff3cae8fce6eb220" },
-    { "path": "Sources/Realtime.swift", "size": 17176, "sha256": "a5fc7be9c4cdbf2556ec7582ff8cd8d26e8c34f54d2e0c7d33c07ea3fdbfb12d" },
+    { "path": "Sources/API.swift", "size": 195514, "sha256": "d4066b8570f7221e82415613e66ec079a566245c5d03fb0cc07b0b9994421a5e" },
+    { "path": "Sources/App.swift", "size": 134948, "sha256": "0805df305f91f72999ffffd98e7f42ec772ec208cb84826b23a684b069af229e" },
+    { "path": "Sources/Realtime.swift", "size": 17643, "sha256": "b27ab76bbea52e0c2dbad5db69bdb52bd5efea5566cd7d3b4edf6404d58b77ee" },
     { "path": "Sources/CallAudio.swift", "size": 26757, "sha256": "40948fb750ccef12892e3beb775f6896291a24578b3c6c0be59c74ac34a9fad8" },
     { "path": "Sources/CallCenter.swift", "size": 71262, "sha256": "4c8f52eb6763d3b586ea580416d9baa72003b5c9d69b0b1da6a8438ef5dc6840" },
     { "path": "Sources/CallView.swift", "size": 44835, "sha256": "f2ce2ed344bb869fb37bdac1f08e0652b73df96f0dd0958da7e6250a65ee2d0a" },
@@ -11,7 +11,7 @@
     { "path": "Sources/TRTCBridge.swift", "size": 18872, "sha256": "d57eb7ac673aeec37f8b6ba00f9a2ec46d62d9b2ab53402b306db83922321f31" },
     { "path": "Sources/StreamPlayback.swift", "size": 10724, "sha256": "18cf6e93d83cdb349e7d3d8ac35f1e59f19b149cb8dd297ad5c0dc69bd334ce4" },
     { "path": "Sources/Keychain.swift", "size": 1566, "sha256": "eb7ee8dc834acee01af28933156e2a6218bb0ecdea3c85fba7e9503c54a2e451" },
-    { "path": "Sources/LocalStore.swift", "size": 21381, "sha256": "9818df5013a5b9d60c550d623761536949fac9bf766ef9c25a75ad383bd27d64" },
+    { "path": "Sources/LocalStore.swift", "size": 21524, "sha256": "de36470552229e89baa53e62860be3092f81b151a7978f579e6c0f6dd242f599" },
     { "path": "Sources/MsgFrameKey.swift", "size": 651, "sha256": "fdf3a779255614d9915d9bcf528868ac2517b5feafbfa1180956cd162403993a" },
     { "path": "Sources/PushCenter.swift", "size": 7780, "sha256": "c49cf8ca8275a8a177ae1da719bcff894fdffc8fd8b873f1377eac48107b4c0f" },
     { "path": "Sources/ChatDetailView.swift", "size": 214416, "sha256": "e842c8be971d146feb3653dd36ad62c043072c20819cfcf0b9649ea72d5219b4" },

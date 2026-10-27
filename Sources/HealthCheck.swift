@@ -247,7 +247,7 @@ struct HealthCheckView: View {
 
     private func checkMoments() async {
         var lines: [String] = []
-        let cached = LocalStore.cachedMoments().count
+        let cached = LocalStore.cachedMoments(userId: app.me?.id ?? "").count
         lines.append("本机朋友圈缓存 " + String(cached) + " 条")
         let r = await API.shared.healthProbe("/api/moments")
         lines.append("服务器 → " + r.note)
