@@ -134,31 +134,21 @@ struct HarmonyLoginView: View {
 
     private var brandArea: some View {
         VStack(spacing: 0) {
-            if !logoPath.isEmpty {
-                RemoteImage(path: logoPath, icon: "message.fill", mode: .fill)
+            if let icon = AppIconImage.image {
+                Image(uiImage: icon)
+                    .resizable()
+                    .interpolation(.high)
                     .frame(width: 86, height: 86)
                     .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
-                    .shadow(color: Color(hex: 0x1C72F9).opacity(0.20), radius: 18, y: 10)
+                    .shadow(color: Color.black.opacity(0.14), radius: 18, y: 10)
             } else {
-                ZStack(alignment: .topTrailing) {
-                    RoundedRectangle(cornerRadius: 25, style: .continuous)
-                        .fill(LinearGradient(colors: [Color(hex: 0x68A0FF),
-                                                      Color(hex: 0x1C72F9),
-                                                      Color(hex: 0x155BD5)],
-                                             startPoint: .topLeading, endPoint: .bottomTrailing))
-                        .frame(width: 78, height: 78)
-                        .shadow(color: Color(hex: 0x1C72F9).opacity(0.20), radius: 18, y: 10)
-                    Text("星")
-                        .font(.system(size: 39, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(width: 78, height: 78)
-                    Circle()
-                        .fill(Color(hex: 0xFFD166))
-                        .frame(width: 14, height: 14)
-                        .overlay(Circle().stroke(Color.white, lineWidth: 2))
-                        .offset(x: -3, y: 5)
-                }
-                .frame(width: 86, height: 86)
+                Image(systemName: "message.fill")
+                    .font(.system(size: 34, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 86, height: 86)
+                    .background(Color(hex: 0x1C72F9))
+                    .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
+                    .frame(width: 86, height: 86)
             }
 
             Text(brandName)
