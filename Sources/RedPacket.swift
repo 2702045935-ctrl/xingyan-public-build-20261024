@@ -547,7 +547,9 @@ struct RedPacketSendView: View {
         }
 
         .sheet(isPresented: $showSetPay) {
-            PayPasswordView().environmentObject(app)
+            NavigationStack {
+                PayPasswordView().environmentObject(app)
+            }
         }
     }
 
