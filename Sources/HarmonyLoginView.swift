@@ -348,6 +348,8 @@ struct HarmonyLoginView: View {
                     }
                 }
                 .frame(width: 18, height: 18)
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
 
@@ -427,6 +429,7 @@ struct HarmonyLoginView: View {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),
                                         to: nil, from: nil, for: nil)
         Task { @MainActor in
+            var entered = false
             do {
                 if mode == .phone {
                     guard validPhone, code.count == 6 else {
@@ -443,6 +446,7 @@ struct HarmonyLoginView: View {
                     try await app.login(username: account, password: pass, sliderTicket: sliderTicket)
                     app.finishLoginTransition()
                 }
+                entered = true
             } catch APIError.needSlider {
                 sliderTicket = ""
                 sliderSeed += 1
@@ -450,7 +454,8 @@ struct HarmonyLoginView: View {
             } catch {
                 message = (error as? APIError)?.errorDescription ?? "登录失败"
             }
-            busy = false
+            /* 成功后保持遮罩，直到 RootView 已经切到主页；避免切页前还能重复点击。 */
+            if !entered { busy = false }
         }
     }
 

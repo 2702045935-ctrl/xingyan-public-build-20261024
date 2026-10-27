@@ -19,7 +19,7 @@ private enum ChatTheme {
     static let timeBg = Color.dyn(0xE5E5E5, 0x22252A)
     static let quoteBg = Color.dyn(0xE9E9EB, 0x282C31)
     static let quoteBgMine = Color.dyn(0xE9E9EB, 0x06483C)
-    static let quoteInk = Color.dyn(0x999999, 0x92979F)
+    static let quoteInk = Color.dyn(0x4F555C, 0xD3D7DE)
     static let composerBg = Color.dyn(0xFFFFFF, 0x23262C)
     static let separator = Color.dyn(0xE5E5E5, 0x2F3238)
     static var link: Color { UIConfig.color("linkColor", 0x576B95, 0xA3D0FF) }
@@ -2354,7 +2354,7 @@ struct ChatDetailView: View {
                             .foregroundColor(C.green)
                         Text(quoteComposerSummary(q))
                             .font(pf(12.5))
-                            .foregroundColor(C.subLabel)
+                            .foregroundColor(ChatTheme.quoteInk)
                             .lineLimit(1)
                     }
                     Spacer(minLength: 0)
@@ -4486,12 +4486,12 @@ struct MessageRow: View {
                         if !q.sender.isEmpty {
                             Text(q.sender)
                                 .font(pf(12, .medium))
-                                .foregroundColor(mine ? ChatTheme.secondaryOnMine : ChatTheme.quoteInk)
+                                .foregroundColor(ChatTheme.quoteInk)
                                 .lineLimit(1)
                         }
                         Text(q.summary.isEmpty ? Tr("[引用]") : q.summary)
                             .font(pf(12.5))
-                            .foregroundColor(mine ? ChatTheme.secondaryOnMine : ChatTheme.quoteInk)
+                            .foregroundColor(ChatTheme.quoteInk)
                             .lineLimit(3)
                             .multilineTextAlignment(.leading)
                     }
@@ -4512,7 +4512,7 @@ struct MessageRow: View {
                         .fill(.ultraThinMaterial)
                     RoundedRectangle(cornerRadius: 4, style: .continuous)
                         .fill(mine ? ChatTheme.quoteBgMine : ChatTheme.quoteBg)
-                        .opacity(0.24)
+                        .opacity(0.72)
                 }
             }
             .overlay {
