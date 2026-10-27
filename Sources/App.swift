@@ -932,6 +932,50 @@ final class AppState: ObservableObject {
         locallyHiddenChats.remove(chatId)
     }
 
+    /// 从联系人发出第一条消息时，服务端会话摘要可能比消息接口晚一拍。
+    /// 先在本地补上会话，列表才不会短暂或长期漏掉新聊天。
+    func ensureChatVisible(_ chat: Chat, latest: Message? = nil) {
+        locallyHiddenChats.remove(chat.id)
+        var row = chats.first(where: { $0.id == chat.id }) ?? chat
+        if let latest {
+            row.lastMessage = LastMessage(
+                id: latest.id,
+                senderId: latest.senderId,
+                senderName: latest.senderName,
+                kind: latest.kind,
+                preview: previewText(for: latest),
+                createdAt: latest.createdAt,
+                mentionMe: false
+            )
+            row.updatedAt = latest.createdAt ?? row.updatedAt
+        }
+        row.unread = 0
+        chats.removeAll { $0.id == chat.id }
+        let firstUnpinned = chats.firstIndex { $0.pinned != true } ?? chats.count
+        chats.insert(row, at: firstUnpinned)
+        if let userId = me?.id, !userId.isEmpty {
+            LocalStore.saveChatList(chats, userId: userId)
+        }
+        syncIconBadge()
+    }
+
+    private func previewText(for message: Message) -> String {
+        switch message.kindName {
+        case "text": return message.body
+        case "image", "images": return "[图片]"
+        case "video", "livephoto": return "[视频]"
+        case "audio", "voice": return "[语音]"
+        case "file": return "[文件]"
+        case "location": return "[位置]"
+        case "card": return "[名片]"
+        case "transfer": return "[转账]"
+        case "redpacket": return "[红包]"
+        case "call", "voicecall": return "[语音通话]"
+        case "videocall": return "[视频通话]"
+        default: return message.body.isEmpty ? "[消息]" : message.body
+        }
+    }
+
     func applyPinnedLocally(chatId: String, pinned: Bool) {
         guard let i = chats.firstIndex(where: { $0.id == chatId }) else { return }
         chats[i].pinned = pinned

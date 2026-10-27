@@ -1342,6 +1342,8 @@ struct ContactCardView: View {
         busy = true
         Task {
             if let chat = try? await API.shared.openDirect(userId: u.id) {
+                app.revealChatLocally(chat.id)
+                app.ensureChatVisible(chat)
                 onOpenChat(chat)
                 after?()
             } else {

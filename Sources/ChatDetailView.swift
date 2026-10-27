@@ -1479,6 +1479,11 @@ struct ChatDetailView: View {
             pinTask?.cancel()
             pinTask = nil
             LocalStore.saveChat(chat.id, messages)
+            let latest = messages.last
+            Task { @MainActor in
+                await app.loadChats()
+                app.ensureChatVisible(chat, latest: latest)
+            }
         }
     }
 
@@ -3062,6 +3067,7 @@ struct ChatDetailView: View {
                                                            mentions: p.mentions, clientId: p.id,
                                                            quote: Self.quoteDict(p.quoteJSON)) {
                     appendVisibleMessage(message)
+                    app.ensureChatVisible(chat, latest: message)
                 }
                 outbox.removeAll { $0.id == p.id }
             } catch {
