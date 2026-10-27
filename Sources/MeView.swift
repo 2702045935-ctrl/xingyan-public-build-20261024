@@ -223,6 +223,11 @@ struct MeView: View {
                 }
             }
 
+            compactStatusActions
+                .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+
             Section {
                 HStack(spacing: 0) {
                     nativeStat(value: "\(friendCount)", title: Tr("朋友")) {
@@ -243,16 +248,6 @@ struct MeView: View {
                 }
                 .padding(.vertical, 4)
 
-                Button {
-                    statusPanel = .status
-                } label: {
-                    Label(Tr("当前状态"), systemImage: "face.smiling")
-                }
-                Button {
-                    statusPanel = .friends
-                } label: {
-                    Label(Tr("朋友的状态"), systemImage: "person.2.wave.2")
-                }
                 NavigationLink(value: "member") {
                     Label(Tr("会员中心"), systemImage: "crown")
                 }
@@ -321,6 +316,54 @@ struct MeView: View {
             .frame(maxWidth: .infinity)
         }
         .buttonStyle(.plain)
+    }
+
+    private var compactStatusActions: some View {
+        HStack(spacing: 9) {
+            Button {
+                statusPanel = .status
+            } label: {
+                Image(systemName: "face.smiling")
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundStyle(moodOn ? Color.white : .primary)
+                    .frame(width: 38, height: 38)
+                    .background {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(moodOn
+                                  ? AnyShapeStyle(LinearGradient(
+                                      colors: [Color(hexString: moodC1), Color(hexString: moodC2)],
+                                      startPoint: .topLeading, endPoint: .bottomTrailing))
+                                  : AnyShapeStyle(.thinMaterial))
+                    }
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(moodOn ? Color.white.opacity(0.30) : C.hairline, lineWidth: 0.6)
+                    }
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Tr("当前状态"))
+
+            Button {
+                statusPanel = .friends
+            } label: {
+                Image(systemName: "person.2.wave.2")
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundStyle(.primary)
+                    .frame(width: 38, height: 38)
+                    .background {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(.thinMaterial)
+                    }
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(C.hairline, lineWidth: 0.6)
+                    }
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Tr("朋友的状态"))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.leading, 20)
     }
 
     private func nativeMeItemRow(_ item: DiscoverItem) -> some View {
