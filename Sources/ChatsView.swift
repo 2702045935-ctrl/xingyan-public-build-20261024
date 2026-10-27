@@ -447,12 +447,6 @@ struct SwipeChatRow: View {
                         haptic.impactOccurred(intensity: nowCrossed ? 0.55 : 0.35)
                     }
 
-                    if -x > fullW + 34 && mode == .none {
-                        mode = .hideConfirm
-                        haptic.impactOccurred(intensity: 0.7)
-                    } else if -x < fullW - 9 && mode == .hideConfirm {
-                        mode = .none
-                    }
                 },
                 onEnded: { _, vx in
                     dragging = false
@@ -491,14 +485,12 @@ struct SwipeChatRow: View {
                     close()
                 }
                 bar("不显示", "eye.slash.fill", yellowBg, btnW, sep: true) {
-                    mode = .hideConfirm
-                    haptic.impactOccurred()
-                    withAnimation(swipeSpring) { offset = -fullW }
+                    onHide(false)
+                    close()
                 }
                 bar("删除", "trash.fill", redBg, btnW, sep: true) {
-                    mode = .delConfirm
-                    haptic.impactOccurred()
-                    withAnimation(swipeSpring) { offset = -fullW }
+                    onDelete()
+                    close()
                 }
             case .hideConfirm:
 
@@ -1768,7 +1760,6 @@ struct ChatsView: View {
             if clear { app.forgetChatHistory(chat.id) }
             app.dropOptimisticSummary(chat.id)
             await app.loadChats()
-            app.revealChatLocally(chat.id)
         }
     }
 
@@ -1787,7 +1778,6 @@ struct ChatsView: View {
             LocalStore.clearChat(chat.id)
             app.dropOptimisticSummary(chat.id)
             await app.loadChats()
-            app.revealChatLocally(chat.id)
         }
     }
 
