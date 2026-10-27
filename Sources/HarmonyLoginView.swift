@@ -92,6 +92,27 @@ struct HarmonyLoginView: View {
             }
         }
         .background(Color.white.ignoresSafeArea())
+        .overlay {
+            if busy {
+                ZStack {
+                    Color.black.opacity(0.08)
+                        .ignoresSafeArea()
+                    VStack(spacing: 10) {
+                        ProgressView()
+                            .tint(Color(hex: 0x1C72F9))
+                        Text("正在进入星言…")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(Color(hex: 0x4B5565))
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 18)
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                }
+                .allowsHitTesting(true)
+                .transition(.opacity)
+            }
+        }
         .onAppear { loadBranding() }
         .onDisappear { countdownTask?.cancel() }
         .sheet(isPresented: $showSlider) {
@@ -277,18 +298,26 @@ struct HarmonyLoginView: View {
             .frame(maxWidth: 332)
 
             Button { primaryAction() } label: {
-                Text(primaryTitle)
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 54)
-                    .background(canPrimary ? Color(hex: 0x1C72F9) : Color(hex: 0x92B6FF))
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    .shadow(color: canPrimary ? Color(hex: 0x1C72F9).opacity(0.16) : .clear,
-                            radius: 14, y: 7)
+                HStack(spacing: 8) {
+                    if busy {
+                        ProgressView()
+                            .tint(.white)
+                            .scaleEffect(0.82)
+                    }
+                    Text(primaryTitle)
+                        .font(.system(size: 17, weight: .medium))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 54)
+                .background(canPrimary ? Color(hex: 0x1C72F9) : Color(hex: 0x92B6FF))
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .shadow(color: canPrimary ? Color(hex: 0x1C72F9).opacity(0.16) : .clear,
+                        radius: 14, y: 7)
             }
             .buttonStyle(.plain)
             .frame(maxWidth: 332)
+            .disabled(busy)
 
             if !message.isEmpty {
                 Text(message)
@@ -391,19 +420,20 @@ struct HarmonyLoginView: View {
     }
 
     private func login() {
-        guard canPrimary || busy == false else { return }
+        guard canPrimary, !busy else { return }
         busy = true
         message = ""
         focus = nil
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),
                                         to: nil, from: nil, for: nil)
-        Task {
+        Task { @MainActor in
             do {
                 if mode == .phone {
                     guard validPhone, code.count == 6 else {
                         throw APIError.message("请输入手机号和 6 位验证码")
                     }
                     try await app.login(phone: phone, code: code)
+                    app.finishLoginTransition()
                     UserDefaults.standard.set(phone, forKey: "chris.lastPhone")
                 } else {
                     let account = user.trimmingCharacters(in: .whitespaces)
@@ -411,6 +441,7 @@ struct HarmonyLoginView: View {
                         throw APIError.message("账号和密码都要填")
                     }
                     try await app.login(username: account, password: pass, sliderTicket: sliderTicket)
+                    app.finishLoginTransition()
                 }
             } catch APIError.needSlider {
                 sliderTicket = ""

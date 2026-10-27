@@ -148,13 +148,19 @@ private var funcs: [(String, String, Color, String)] {
                     .font(.system(size: 16.5, weight: .semibold))
                     .foregroundStyle(.white)
                     .frame(width: 36, height: 36)
-                    .background(
-                        Circle().fill(
-                            LinearGradient(colors: [OrbitTheme.jadeDeep, OrbitTheme.jade],
-                                           startPoint: .topLeading,
-                                           endPoint: .bottomTrailing)
-                        )
-                    )
+                    .background {
+                        ZStack {
+                            Circle().fill(.ultraThinMaterial)
+                            Circle().fill(
+                                LinearGradient(colors: [OrbitTheme.jadeDeep, OrbitTheme.jade],
+                                               startPoint: .topLeading,
+                                               endPoint: .bottomTrailing)
+                            )
+                            .opacity(0.76)
+                        }
+                    }
+                    .overlay(Circle().stroke(OrbitTheme.divider, lineWidth: 0.7))
+                    .shadow(color: Color.black.opacity(0.10), radius: 8, y: 4)
             }
             .buttonStyle(NavPlusPressStyle())
             .accessibilityLabel(Tr("更多"))
