@@ -3569,9 +3569,11 @@ private struct StarredPayload: Decodable {
         return chat
     }
 
-    func messages(chatId: String, limit: Int = 40, before: Int? = nil) async throws -> (chat: Chat?, messages: [Message], hasMore: Bool) {
+    func messages(chatId: String, limit: Int = 40, before: Int? = nil,
+                  all: Bool = false) async throws -> (chat: Chat?, messages: [Message], hasMore: Bool) {
         var path = "/api/chats/\(chatId)/messages?limit=\(limit)"
         if let before = before { path += "&before=\(before)" }
+        if all { path += "&all=1" }
         let payload: MessagesPayload = try await get(path, as: MessagesPayload.self)
         return (payload.chat, payload.messages, payload.hasMore ?? false)
     }
@@ -3583,11 +3585,9 @@ private struct StarredPayload: Decodable {
         return (payload.chat, payload.messages, payload.hasMore ?? false)
     }
 
-    func allMessages(chatId: String, limit: Int = 20_000)
+    func allMessages(chatId: String, limit: Int = 20_000, before: Int? = nil)
         async throws -> (chat: Chat?, messages: [Message], hasMore: Bool) {
-        let path = "/api/chats/\(chatId)/messages?all=1&limit=\(limit)"
-        let payload: MessagesPayload = try await get(path, as: MessagesPayload.self)
-        return (payload.chat, payload.messages, payload.hasMore ?? false)
+        try await messages(chatId: chatId, limit: limit, before: before, all: true)
     }
 
     func send(chatId: String, text: String) async throws -> Message? {

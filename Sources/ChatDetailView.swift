@@ -4033,49 +4033,42 @@ struct ChatDetailView: View {
 
         var olderById: [String: Message] = [:]
         var reachedStart = false
-        var loadedInOnePass = false
-
-        do {
-            let batch = try await API.shared.allMessages(chatId: chat.id, limit: maxMessageWindow)
-            guard !Task.isCancelled else { return }
-            if !batch.hasMore || batch.messages.count > 100 {
-                for message in batch.messages { olderById[message.id] = message }
-                reachedStart = !batch.hasMore
-                loadedInOnePass = true
-            }
-        } catch {
-            loadedInOnePass = false
-        }
-
-        if !loadedInOnePass {
-            var before = messages.first?.seq ?? 0
-            var pages = 0
-            var consecutiveFailures = 0
-            while hasOlder, pages < 1000, !Task.isCancelled, before > 0,
-                  messages.count + olderById.count < maxMessageWindow,
-                  consecutiveFailures < 5 {
-                do {
-                    let page = try await API.shared.messages(chatId: chat.id, limit: 100, before: before)
-                    consecutiveFailures = 0
-                    if page.messages.isEmpty {
-                        reachedStart = true
-                        break
-                    }
-                    for message in page.messages { olderById[message.id] = message }
-                    let next = page.messages.compactMap(\.seq).min() ?? 0
-                    if !page.hasMore {
-                        reachedStart = true
-                        break
-                    }
-                    if next <= 0 || next >= before { break }
-                    before = next
-                    pages += 1
-                    if pages % 8 == 0 { await Task.yield() }
-                } catch {
-                    consecutiveFailures += 1
-                    if consecutiveFailures >= 5 { break }
-                    try? await Task.sleep(nanoseconds: 700_000_000)
+        var before = messages.first?.seq ?? 0
+        var pages = 0
+        var consecutiveFailures = 0
+        /* 全量一次请求在公网大响应上会被管道背压拖到十几秒。
+           每页 5000 条能先走完最近一页，再链式向前补；服务端仍设
+           20000 条安全窗口，因此这是有限内存下的分块补齐。 */
+        let pageSize = 5_000
+        while hasOlder, pages < 64, !Task.isCancelled, before > 0,
+              messages.count + olderById.count < maxMessageWindow,
+              consecutiveFailures < 5 {
+            do {
+                let page = try await API.shared.messages(
+                    chatId: chat.id,
+                    limit: pageSize,
+                    before: before,
+                    all: true
+                )
+                consecutiveFailures = 0
+                if page.messages.isEmpty {
+                    reachedStart = true
+                    break
                 }
+                for message in page.messages { olderById[message.id] = message }
+                let next = page.messages.compactMap(\.seq).min() ?? 0
+                if !page.hasMore {
+                    reachedStart = true
+                    break
+                }
+                if next <= 0 || next >= before { break }
+                before = next
+                pages += 1
+                await Task.yield()
+            } catch {
+                consecutiveFailures += 1
+                if consecutiveFailures >= 5 { break }
+                try? await Task.sleep(nanoseconds: 700_000_000)
             }
         }
 
