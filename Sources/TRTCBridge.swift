@@ -37,6 +37,8 @@ final class TRTCBridge: NSObject, ObservableObject {
 
     @Published private(set) var lastError = ""
 
+    @Published private(set) var microphoneWarning = false
+
     @Published private(set) var userId = ""
 
     @Published private(set) var audioQualityLabel = "50kbps"
@@ -96,6 +98,7 @@ final class TRTCBridge: NSObject, ObservableObject {
         self.roomSeed = roomSeed
         isVideo = video
         lastError = ""
+        microphoneWarning = false
         resetWeakNetworkState()
 
         let cfg: API.TRTCSig
@@ -149,6 +152,7 @@ final class TRTCBridge: NSObject, ObservableObject {
         guard let c = cloud, joined, !active else { return }
         active = true
         micReady = false
+        microphoneWarning = false
         c.startLocalAudio(audioQuality)
         c.muteLocalAudio(false)
         applyAudioRoute()
@@ -244,6 +248,7 @@ final class TRTCBridge: NSObject, ObservableObject {
         peerInRoom = false
         peerUserId = ""
         active = false
+        microphoneWarning = false
         resetWeakNetworkState()
         remoteView = nil
         localView = nil
@@ -252,6 +257,27 @@ final class TRTCBridge: NSObject, ObservableObject {
     func setMuted(_ mute: Bool) {
         muted = mute
         cloud?.muteLocalAudio(mute)
+        if mute { microphoneWarning = false }
+    }
+
+    func retryMicrophone() {
+        guard joined, active, let c = cloud else { return }
+        micWatchTask?.cancel()
+        micWatchTask = nil
+        microphoneWarning = false
+        micReady = false
+        micRecoveryCount = 0
+        lastError = ""
+        c.stopLocalAudio()
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            guard let self = self, !Task.isCancelled,
+                  self.active, self.cloud === c else { return }
+            c.startLocalAudio(self.audioQuality)
+            c.muteLocalAudio(self.muted)
+            self.applyAudioRoute()
+            self.scheduleMicRecoveryWatch()
+        }
     }
 
     func setCameraOff(_ off: Bool) {
@@ -284,6 +310,7 @@ final class TRTCBridge: NSObject, ObservableObject {
             guard let self = self, !Task.isCancelled,
                   self.joined, self.active, let c = self.cloud else { return }
             self.micReady = false
+            self.microphoneWarning = false
             self.micRecoveryCount = 0
             self.lastError = "网络切换，正在恢复通话音频"
             c.stopLocalAudio()
@@ -309,6 +336,7 @@ final class TRTCBridge: NSObject, ObservableObject {
         networkQuality = 0
         muted = false
         micReady = false
+        microphoneWarning = false
         micRecoveryCount = 0
         lastLocalAudioBitrate = 0
         lastRemoteAudioBitrate = 0
@@ -364,6 +392,7 @@ final class TRTCBridge: NSObject, ObservableObject {
             guard self.micRecoveryCount < 1 else { return }
             self.micRecoveryCount += 1
             self.lastError = "TRTC 麦克风未确认，已自动重试"
+            self.microphoneWarning = true
             self.cloud?.stopLocalAudio()
             try? await Task.sleep(nanoseconds: 300_000_000)
             guard let c = self.cloud, self.active, !Task.isCancelled else { return }
@@ -498,6 +527,7 @@ extension TRTCBridge: TRTCCloudDelegate {
     nonisolated func onMicDidReady() {
         Task { @MainActor in
             self.micReady = true
+            self.microphoneWarning = false
             self.micWatchTask?.cancel()
             self.micWatchTask = nil
             if self.lastError.contains("麦克风未确认") {
@@ -524,6 +554,10 @@ extension TRTCBridge: TRTCCloudDelegate {
     nonisolated func onError(_ errCode: Int, errMsg: String?, extInfo: [String: Any]?) {
         Task { @MainActor in
             self.lastError = "TRTC 错误 \(errCode)：" + (errMsg ?? "")
+            let text = String(errMsg || "").lowercased()
+            if text.contains("microphone") || text.contains("mic") || text.contains("麦克") {
+                self.microphoneWarning = true
+            }
         }
     }
 }

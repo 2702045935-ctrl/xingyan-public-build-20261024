@@ -1402,6 +1402,7 @@ struct ChatDetailView: View {
         }
         .task(id: chat.id) {
             HitchWatch.shared.start("聊天页")
+            app.markChatReadLocally(chat.id)
             loadDeletedMessageIds()
             loadOutbox()
             await load(initial: true)
@@ -1415,6 +1416,7 @@ struct ChatDetailView: View {
             await refreshPeerRelation()
             await flushOutbox()
             await API.shared.markRead(chatId: chat.id)
+            app.markChatReadLocally(chat.id)
 
             LocalNotify.clearChat(chat.id)
             await app.loadChats()
@@ -1721,9 +1723,11 @@ struct ChatDetailView: View {
         let now = Date()
         guard now.timeIntervalSince(lastReadSyncAt) > 1.5 else { return }
         lastReadSyncAt = now
+        app.markChatReadLocally(chat.id)
         Task {
             await API.shared.markRead(chatId: chat.id)
             await app.loadChats()
+            app.markChatReadLocally(chat.id)
         }
     }
 

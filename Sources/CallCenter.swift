@@ -281,11 +281,17 @@ final class CallCenter: NSObject, ObservableObject {
         _ = NotificationCenter.default.addObserver(forName: UIApplication.didBecomeActiveNotification,
                                                    object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in
-                guard let self = self, self.micBlocked, self.phase != .idle else { return }
+                guard let self = self, self.phase != .idle else { return }
+                let trtcWarning = self.usingTRTC && TRTCBridge.shared.microphoneWarning
+                guard self.micBlocked || trtcWarning else { return }
                 if await Permission.ask(.audio) {
                     self.micBlocked = false
                     self.errorText = nil
-                    CallAudioPipe.shared.repairAudioNow()
+                    if self.usingTRTC {
+                        TRTCBridge.shared.retryMicrophone()
+                    } else {
+                        CallAudioPipe.shared.repairAudioNow()
+                    }
                     self.note("麦克风权限已开，重新抢麦")
                 }
             }
@@ -300,7 +306,11 @@ final class CallCenter: NSObject, ObservableObject {
     func retryMic() {
         micBlocked = false
         errorText = nil
-        CallAudioPipe.shared.repairAudioNow()
+        if usingTRTC {
+            TRTCBridge.shared.retryMicrophone()
+        } else {
+            CallAudioPipe.shared.repairAudioNow()
+        }
     }
 
     func start(peerId: String, name: String, avatar: String, video: Bool) {

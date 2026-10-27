@@ -99,6 +99,7 @@ struct CallView: View {
 
     @State private var audioDevices: [CallAudioRoute] = []
     @State private var showAudioDevices = false
+    @State private var showMicAlert = false
 
     private var blurRadius: CGFloat { UIConfig.num("callBackdropBlur", 60) }
     private var tint: CGFloat { UIConfig.num("callGlassTint", 0.45) }
@@ -130,7 +131,7 @@ struct CallView: View {
                 if let b = msgBanner { msgBannerView(b) }
                 Spacer(minLength: 0)
 
-                if call.micBlocked { micBanner }
+                if micUnavailable { micBanner }
                 bottomBar
             }
         }
@@ -154,6 +155,15 @@ struct CallView: View {
             }
             Button(Tr("取消"), role: .cancel) { }
         }
+        .alert(Tr("麦克风没有开启"), isPresented: $showMicAlert) {
+            Button(Tr("去设置")) { call.openMicSettings() }
+            Button(Tr("继续通话"), role: .cancel) { }
+        } message: {
+            Text(Tr("对方现在听不到你的声音。请在系统设置里允许麦克风，或检查是否被其他通话占用。"))
+        }
+        .onChange(of: micUnavailable) { blocked in
+            if blocked, call.phase != .idle { showMicAlert = true }
+        }
 
         .task(id: call.callId) {
 
@@ -172,8 +182,15 @@ struct CallView: View {
                     #selector(UIResponder.resignFirstResponder),
                     to: nil, from: nil, for: nil
                 )
+                if micUnavailable, call.phase != .idle { showMicAlert = true }
             }
         }
+    }
+
+    private var micUnavailable: Bool {
+        guard !call.muted else { return false }
+        if call.micBlocked { return true }
+        return call.usingTRTC && trtc.microphoneWarning
     }
 
     private func scanNewMessages() {
