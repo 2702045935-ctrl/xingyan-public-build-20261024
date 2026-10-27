@@ -92,7 +92,7 @@ struct MainTabView: View {
                         }
                     }
 
-                    .offset(y: UIConfig.num("tabBarDrop", 0) + 8)
+                    .offset(y: UIConfig.num("tabBarDrop", 0) + (L.compactPhone ? 2 : 8))
                     .transition(.move(edge: .bottom))
             }
         }

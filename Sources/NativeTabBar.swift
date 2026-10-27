@@ -81,13 +81,23 @@ struct NativeTabBar: UIViewRepresentable {
         bar.unselectedItemTintColor = UIColor(OrbitTheme.secondary)
 
         let appearance = UITabBarAppearance()
-        appearance.configureWithDefaultBackground()
-        if scheme == .dark {
-            appearance.backgroundEffect = UIBlurEffect(style: .systemUltraThinMaterialDark)
-            appearance.backgroundColor = UIColor(red: 0.043,
-                                                 green: 0.105,
-                                                 blue: 0.082,
-                                                 alpha: 0.93)
+        if L.iOS27OrLater {
+            appearance.configureWithDefaultBackground()
+            if scheme == .dark {
+                appearance.backgroundEffect = UIBlurEffect(style: .systemUltraThinMaterialDark)
+                appearance.backgroundColor = UIColor(red: 0.043,
+                                                     green: 0.105,
+                                                     blue: 0.082,
+                                                     alpha: 0.93)
+            }
+        } else {
+            appearance.configureWithTransparentBackground()
+            appearance.backgroundEffect = UIBlurEffect(
+                style: scheme == .dark ? .systemThinMaterialDark : .systemThinMaterialLight
+            )
+            appearance.backgroundColor = scheme == .dark
+                ? UIColor(red: 0.043, green: 0.105, blue: 0.082, alpha: 0.82)
+                : UIColor.white.withAlphaComponent(0.76)
         }
         appearance.stackedLayoutAppearance.normal.iconColor = UIColor(OrbitTheme.secondary)
         appearance.stackedLayoutAppearance.normal.titleTextAttributes = [

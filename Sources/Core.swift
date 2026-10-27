@@ -184,6 +184,20 @@ enum L {
         return UIScreen.main.bounds.width
     }()
 
+    static var height: CGFloat {
+        if let h = (UIApplication.shared.connectedScenes.first as? UIWindowScene)?
+            .windows.first?.bounds.height, h > 0 { return h }
+        return UIScreen.main.bounds.height
+    }
+
+    static var compactPhone: Bool { width <= 375 || height <= 700 }
+
+    static var iOS27OrLater: Bool {
+        ProcessInfo.processInfo.isOperatingSystemAtLeast(
+            OperatingSystemVersion(majorVersion: 27, minorVersion: 0, patchVersion: 0)
+        )
+    }
+
     static func v(_ lo: CGFloat, _ vw: CGFloat, _ hi: CGFloat) -> CGFloat {
         min(max(lo, width * vw / 100), hi)
     }
@@ -200,13 +214,14 @@ enum L {
     }
 
     static var navH: CGFloat {
-        let def: CGFloat = (width >= 398 && width <= 425) ? 48 : v(42, 11.4, 50)
+        let def: CGFloat = compactPhone ? 42
+            : ((width >= 398 && width <= 425) ? 48 : v(42, 11.4, 50))
         return o("navH", def)
     }
-    static var tabH: CGFloat { o("tabH", 56) }
-    static var tabIcon: CGFloat { o("tabIcon", 23) }
-    static var tabIconBox: CGFloat { o("tabIconBox", 24) }
-    static var tabLabel: CGFloat { o("tabLabel", 11) }
+    static var tabH: CGFloat { o("tabH", compactPhone ? 50 : 56) }
+    static var tabIcon: CGFloat { o("tabIcon", compactPhone ? 21 : 23) }
+    static var tabIconBox: CGFloat { o("tabIconBox", compactPhone ? 22 : 24) }
+    static var tabLabel: CGFloat { o("tabLabel", compactPhone ? 10 : 11) }
 
     static var rowH: CGFloat { o("chatRowH", 72) }
     static var avatar: CGFloat { o("chatAvatar", v(44, 12.3, 48)) }
