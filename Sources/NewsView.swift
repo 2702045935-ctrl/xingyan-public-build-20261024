@@ -34,17 +34,7 @@ struct NewsFeedView: View {
     private var accent: Color { C.green }
 
     var body: some View {
-        Group {
-            if compact {
-                VStack(spacing: 0) {
-                    tabs
-                    content
-                }
-                .background(C.cardBg)
-            } else {
-                premiumFeed
-            }
-        }
+        premiumFeed
         .task {
             if tab.isEmpty { tab = initialSource }
             if let only = onlyTabs { channels = only }
