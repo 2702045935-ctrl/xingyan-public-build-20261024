@@ -92,6 +92,7 @@ final class Realtime: ObservableObject {
     @Published private(set) var connected = false
 
     private var socket: URLSessionWebSocketTask?
+    private var socketToken = ""
     private var loop: Task<Void, Never>?
     private var tick = 0
 
@@ -149,9 +150,11 @@ final class Realtime: ObservableObject {
     func start() {
         ensurePathMonitor()
 
-        if socket != nil, connected { return }
+        let currentToken = API.shared.token
+        if socket != nil, connected, socketToken == currentToken { return }
         stop()
-        guard !API.shared.token.isEmpty else { return }
+        guard !currentToken.isEmpty else { return }
+        socketToken = currentToken
 
         let host = API.shared.server
 
@@ -261,6 +264,7 @@ final class Realtime: ObservableObject {
     }
 
     func stop() {
+        socketToken = ""
         heartbeat?.cancel()
         heartbeat = nil
         loop?.cancel()

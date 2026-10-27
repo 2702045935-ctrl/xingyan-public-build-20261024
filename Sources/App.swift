@@ -1318,6 +1318,8 @@ final class AppState: ObservableObject {
             return
         }
 
+        CallCenter.shared.resetForAccountChange()
+        Realtime.shared.stop()
         await API.shared.unregisterPushToken(PushCenter.shared.token)
         await API.shared.logout()
         Realtime.shared.stop()
@@ -1332,6 +1334,10 @@ final class AppState: ObservableObject {
     }
 
     func quickLogin(token: String? = nil) async -> Bool {
+        if let t = token, !t.isEmpty, t != API.shared.token {
+            CallCenter.shared.resetForAccountChange()
+            Realtime.shared.stop()
+        }
         if let t = token, !t.isEmpty { API.shared.setToken(t) }
         guard !API.shared.token.isEmpty else { return false }
         do {

@@ -215,6 +215,7 @@ final class CallCenter: NSObject, ObservableObject {
     private var pc: RTCPeerConnection?
 
     private(set) var callId = ""
+    private var accountToken = ""
 
     private(set) var peerId = ""
     private var iAmCaller = false
@@ -307,6 +308,7 @@ final class CallCenter: NSObject, ObservableObject {
         dismissDialog()
         minimized = false
         self.peerId = peerId
+        accountToken = API.shared.token
         peerName = name
         peerAvatar = avatar
         isVideo = video
@@ -421,6 +423,26 @@ final class CallCenter: NSObject, ObservableObject {
             sendCall(["action": started ? "hangup" : (iAmCaller ? "cancel" : "reject")])
         }
         finish(tip: started ? "通话结束" : "已取消")
+    }
+
+    /// 账号切换前结束旧账号的通话，禁止旧信令和媒体状态带进新账号。
+    func resetForAccountChange() {
+        pendingPushTask?.cancel()
+        pendingPushTask = nil
+        pendingPushCallId = ""
+        pendingPushAnswer = false
+        dialogTask?.cancel()
+        dialogTask = nil
+        dialog = nil
+        let oldCallKey = isGroupCall ? roomId : callId
+        if phase.isBusy {
+            hangup()
+        }
+        if !oldCallKey.isEmpty {
+            LocalNotify.clearCall(callId: oldCallKey)
+        }
+        accountToken = ""
+        minimized = false
     }
 
     func toggleMute() {
@@ -600,6 +622,7 @@ final class CallCenter: NSObject, ObservableObject {
             return
         }
         isGroupCall = true
+        accountToken = API.shared.token
         isVideo = video
         groupChatId = chatId
         groupTitle = title
@@ -882,6 +905,10 @@ final class CallCenter: NSObject, ObservableObject {
 
     private func handle(_ ev: PushEvent) {
 
+        if !accountToken.isEmpty, accountToken != API.shared.token {
+            resetForAccountChange()
+            return
+        }
         if ev.type == "ready" {
             if phase != .idle, ev.callActive == false { finish(tip: "通话已结束") }
             return
@@ -905,6 +932,7 @@ final class CallCenter: NSObject, ObservableObject {
                 Realtime.shared.sendJSON(["type": "call", "action": "reject", "callId": ev.callId])
                 return
             }
+            accountToken = API.shared.token
             callId = ev.callId
             peerId = ev.callPeerId
             peerName = ev.callPeerName.isEmpty ? "对方" : ev.callPeerName
@@ -964,6 +992,7 @@ final class CallCenter: NSObject, ObservableObject {
         case "group-incoming":
 
             guard phase == .idle else { return }
+            accountToken = API.shared.token
             isGroupCall = true
             isVideo = ev.callPeerVideo
             roomId = ev.callRoomId
