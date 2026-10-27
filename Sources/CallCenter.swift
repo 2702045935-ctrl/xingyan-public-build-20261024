@@ -328,7 +328,7 @@ final class CallCenter: NSObject, ObservableObject {
         Ringtone.shared.startRingback()
         Task { await beginMedia() }
 
-        if video { Task { await startTRTCIfPossible() } }
+        Task { await startTRTCIfPossible() }
     }
 
     func accept(asAudio: Bool = false) {
@@ -974,6 +974,7 @@ final class CallCenter: NSObject, ObservableObject {
             tip = isVideo ? "邀请你视频通话…" : "邀请你语音通话…"
             phase = .incoming
             startRingTimeout()
+            Task { await startTRTCIfPossible() }
 
             if UIApplication.shared.applicationState != .active {
                 LocalNotify.incomingCall(callId: callId, peerName: peerName, video: isVideo)
@@ -1089,6 +1090,7 @@ final class CallCenter: NSObject, ObservableObject {
             } else {
 
                 if !serverAudioOn { startServerAudioIfVoice() }
+                scheduleAudioTRTCTakeover()
                 if phase != .active {
                     phase = .active
                     tip = "通话中"
@@ -1285,6 +1287,7 @@ final class CallCenter: NSObject, ObservableObject {
                 self.sendCall(["action": "audio", "data": data.base64EncodedString()])
             }
             CallAudioPipe.shared.start()
+            scheduleAudioTRTCTakeover()
             if iAmCaller {
 
                 sendCall(["action": "invite", "toUserId": peerId, "media": "audio"])
@@ -1734,7 +1737,14 @@ extension CallCenter: RTCPeerConnectionDelegate {
             guard let self = self else { return }
             guard inRoom else { return }
             guard self.phase != .idle, !self.callId.isEmpty else { return }
-            if self.trtcJoined { self.switchMediaToTRTC() }
+            if self.phase == .incoming { return }
+            if self.trtcJoined {
+                if self.isVideo {
+                    self.switchMediaToTRTC()
+                } else {
+                    self.scheduleAudioTRTCTakeover()
+                }
+            }
             if self.phase != .active {
                 Ringtone.shared.stop()
                 self.phase = .active
@@ -1775,6 +1785,18 @@ extension CallCenter: RTCPeerConnectionDelegate {
                 guard let self = self, !self.usingTRTC, !Task.isCancelled else { return }
                 self.note("对端没进 TRTC 房间（可能是旧版本）→ 继续走服务器转发/WebRTC")
             }
+        }
+    }
+
+    private func scheduleAudioTRTCTakeover() {
+        guard !isVideo, !usingTRTC, serverAudioOn, trtcJoined,
+              TRTCBridge.shared.peerInRoom, phase != .incoming else { return }
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 600_000_000)
+            guard let self = self, !Task.isCancelled, !self.isVideo,
+                  !self.usingTRTC, self.serverAudioOn, self.trtcJoined,
+                  TRTCBridge.shared.peerInRoom, self.phase != .incoming else { return }
+            self.switchMediaToTRTC()
         }
     }
 
