@@ -736,42 +736,61 @@ struct ChatsView: View {
     }
 
     private func chatFilterBar(unreadCounts: [ChatFilter: Int]) -> some View {
-        HStack(spacing: 18) {
-            ForEach(ChatFilter.allCases) { item in
-                Button {
-                    chooseFilter(item)
-                } label: {
-                    VStack(spacing: 5) {
-                        HStack(spacing: 4) {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(ChatFilter.allCases) { item in
+                    Button {
+                        chooseFilter(item)
+                    } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: item.symbol)
+                                .font(.system(size: 10.5, weight: .semibold))
                             Text(Tr(item.rawValue))
-                                .font(.system(size: 12.5,
-                                              weight: chatFilter == item ? .semibold : .regular))
+                                .font(.system(size: 12,
+                                              weight: chatFilter == item ? .semibold : .medium))
                                 .lineLimit(1)
-                        }
-                        .foregroundStyle(chatFilter == item ? OrbitTheme.ink : OrbitTheme.tertiary)
-
-                        Group {
-                            if chatFilter == item {
-                                Capsule()
-                                    .fill(OrbitTheme.jade)
-                                    .frame(width: 18, height: 2)
-                                    .matchedGeometryEffect(id: "chatFilterSelection",
-                                                           in: filterSelectionNS)
-                            } else {
-                                Color.clear.frame(width: 18, height: 2)
+                            let count = unreadCounts[item, default: 0]
+                            if count > 0 {
+                                Text(count > 99 ? "99+" : "\(count)")
+                                    .font(.system(size: 8.5, weight: .bold))
+                                    .padding(.horizontal, count > 9 ? 4 : 3)
+                                    .frame(height: 15)
+                                    .background(
+                                        Capsule().fill(
+                                            chatFilter == item
+                                            ? OrbitTheme.jade
+                                            : OrbitTheme.fieldRaised
+                                        )
+                                    )
+                                    .foregroundStyle(chatFilter == item
+                                                     ? Color.white
+                                                     : OrbitTheme.tertiary)
                             }
                         }
+                        .foregroundStyle(chatFilter == item
+                                         ? OrbitTheme.jade
+                                         : OrbitTheme.secondary)
+                        .padding(.horizontal, 10)
+                        .frame(height: 31)
+                        .background {
+                            if chatFilter == item {
+                                Capsule()
+                                    .fill(OrbitTheme.jadeSoft)
+                                    .overlay(
+                                        Capsule().stroke(OrbitTheme.jade.opacity(0.24),
+                                                         lineWidth: 0.7)
+                                    )
+                                    .matchedGeometryEffect(id: "chatFilterSelection",
+                                                           in: filterSelectionNS)
+                            }
+                        }
+                        .contentShape(Capsule())
                     }
-                    .frame(height: 34)
-                    .overlay(alignment: .topTrailing) {
-                        filterReminder(item, count: unreadCounts[item, default: 0])
-                    }
-                    .contentShape(Rectangle())
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
+            .padding(.horizontal, 12)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
         .simultaneousGesture(
             DragGesture(minimumDistance: 18)
                 .onEnded { g in
@@ -780,9 +799,8 @@ struct ChatsView: View {
                     moveFilter(dx < 0 ? 1 : -1)
                 }
         )
-        .padding(.horizontal, 12)
         .padding(.top, 7)
-        .padding(.bottom, 4)
+        .padding(.bottom, 5)
         .frame(height: chatFilterH)
         .background(OrbitTheme.canvas)
         .overlay(alignment: .bottom) {
