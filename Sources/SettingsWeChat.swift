@@ -54,44 +54,34 @@ struct SelfPermView: View {
     @State private var showMallAuth = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            NavBar(title: Tr("个人信息与权限"), back: { dismiss() })
-            ScrollView {
-                VStack(spacing: 0) {
-                    GroupCard {
-                        SettingRowLink(title: Tr("个人资料"), key: "profile")
-                        HairLine(inset: 16)
-
-                        SettingRowButton(title: Tr("系统权限管理"), value: Tr("相册 / 相机 / 麦克风")) {
-                            if let url = URL(string: UIApplication.openSettingsURLString) {
-                                UIApplication.shared.open(url)
-                            }
-                        }
-                        HairLine(inset: 16)
-
-                        SettingRowButton(title: Tr("授权管理"),
-                                         value: mallAuth.grantedTo.isEmpty ? Tr("无") : Tr("商城")) {
-                            showMallAuth = true
-                        }
-                        HairLine(inset: 16)
-                        SettingRowLink(title: Tr("隐私"), key: "privacy")
-                    }
-                    .padding(.top, 8)
-
-                    Text(Tr("App 只在你同意之后才会用相册、相机、麦克风、位置这些权限，随时可以在 iOS 设置里改。"))
-                        .font(pf(12))
-                        .foregroundColor(C.subLabel)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 22)
-                        .padding(.top, 10)
-                    Spacer().frame(height: 30)
+        List {
+            Section {
+                NavigationLink(value: "profile") {
+                    Text(Tr("个人资料"))
                 }
+                Button {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
+                } label: {
+                    LabeledContent(Tr("系统权限管理"),
+                                   value: Tr("相册 / 相机 / 麦克风"))
+                }
+                Button {
+                    showMallAuth = true
+                } label: {
+                    LabeledContent(Tr("授权管理"),
+                                   value: mallAuth.grantedTo.isEmpty ? Tr("无") : Tr("商城"))
+                }
+                NavigationLink(value: "privacy") {
+                    Text(Tr("隐私"))
+                }
+            } footer: {
+                Text(Tr("App 只在你同意之后才会用相册、相机、麦克风、位置这些权限，随时可以在 iOS 设置里改。"))
             }
-            .background(C.pageBg)
         }
-        .background(C.pageBg.ignoresSafeArea())
-        .toolbar(.hidden, for: .navigationBar)
-        .swipeBack { dismiss() }
+        .listStyle(.insetGrouped)
+        .navigationTitle(Tr("个人信息与权限"))
         .hidesTabBar()
         .sheet(isPresented: $showMallAuth) { MallAuthManageSheet() }
     }
@@ -103,52 +93,57 @@ struct MallAuthManageSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack(spacing: 0) {
-            NavBar(title: Tr("授权管理"), back: { dismiss() })
-            ScrollView {
-                VStack(spacing: 0) {
-                    if auth.grantedTo.isEmpty {
+        NavigationStack {
+            List {
+                if auth.grantedTo.isEmpty {
+                    VStack(spacing: 10) {
+                        Image(systemName: "checkmark.shield")
+                            .font(.system(size: 30))
+                            .foregroundStyle(.secondary)
                         Text(Tr("还没有授权任何应用"))
-                            .font(pf(14.5)).foregroundColor(C.subLabel)
-                            .padding(.top, 60)
-                    } else {
-                        GroupCard {
-                            HStack(spacing: 12) {
-                                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .fill(DDColor.gradBtn)
-                                    .frame(width: 44, height: 44)
-                                    .overlay(Image(systemName: "bag.fill")
-                                        .font(.system(size: 20, weight: .semibold))
-                                        .foregroundColor(.white))
-                                VStack(alignment: .leading, spacing: 3) {
-                                    Text(store.mallName).font(pf(16)).foregroundColor(C.label)
-                                    Text(Tr("获取你的公开信息（昵称、头像、星言号）"))
-                                        .font(pf(12)).foregroundColor(C.subLabel)
-                                }
-                                Spacer(minLength: 0)
-                                Button {
-                                    auth.revoke()
-                                } label: {
-                                    Text(Tr("解除授权"))
-                                        .font(pf(14)).foregroundColor(Color(hex: 0xFA5151))
-                                }
-                                .buttonStyle(.plain)
-                            }
-                            .padding(.horizontal, 14)
-                            .frame(height: 66)
-                        }
-                        .padding(.top, 8)
+                            .foregroundStyle(.secondary)
                     }
-                    Text(Tr("解除授权后，下次进商城会重新问一次。"))
-                        .font(pf(12)).foregroundColor(C.subLabel)
-                        .padding(.horizontal, 22).padding(.top, 10)
-                    Spacer().frame(height: 30)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 36)
+                        .listRowBackground(Color.clear)
+                } else {
+                    Section {
+                        HStack(spacing: 12) {
+                            Image(systemName: "bag.fill")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .frame(width: 42, height: 42)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .fill(DDColor.gradBtn)
+                                )
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(store.mallName)
+                                Text(Tr("获取你的公开信息（昵称、头像、星言号）"))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                        }
+                        Button(role: .destructive) {
+                            auth.revoke()
+                        } label: {
+                            Text(Tr("解除授权"))
+                        }
+                    } footer: {
+                        Text(Tr("解除授权后，下次进商城会重新问一次。"))
+                    }
                 }
             }
-            .background(C.pageBg)
+            .listStyle(.insetGrouped)
+            .navigationTitle(Tr("授权管理"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(Tr("完成")) { dismiss() }
+                }
+            }
         }
-        .background(C.pageBg.ignoresSafeArea())
-        .toolbar(.hidden, for: .navigationBar)
         .hidesTabBar()
     }
 }
@@ -205,35 +200,18 @@ struct ChatSettingsView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack(spacing: 0) {
-            NavBar(title: Tr("聊天"), back: { dismiss() })
-            ScrollView {
-                VStack(spacing: 0) {
-                    GroupCard {
-                        SettingRowLink(title: Tr("聊天背景"), key: "g.chatbg")
-                        HairLine(inset: 16)
-                        SettingRowLink(title: Tr("语音变声"), key: "g.voice")
-                        HairLine(inset: 16)
-                        SettingRowLink(title: Tr("聊天记录管理"), key: "g.history")
-                        HairLine(inset: 16)
-                        SettingRowLink(title: Tr("存储空间"), key: "g.storage")
-                    }
-                    .padding(.top, 8)
-
-                    Text(Tr("聊天记录只存在这台手机上，也能在「存储空间」里按会话清理。"))
-                        .font(pf(12))
-                        .foregroundColor(C.subLabel)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 22)
-                        .padding(.top, 10)
-                    Spacer().frame(height: 30)
-                }
+        List {
+            Section {
+                NavigationLink(value: "g.chatbg") { Text(Tr("聊天背景")) }
+                NavigationLink(value: "g.voice") { Text(Tr("语音变声")) }
+                NavigationLink(value: "g.history") { Text(Tr("聊天记录管理")) }
+                NavigationLink(value: "g.storage") { Text(Tr("存储空间")) }
+            } footer: {
+                Text(Tr("聊天记录只存在这台手机上，也能在「存储空间」里按会话清理。"))
             }
-            .background(C.pageBg)
         }
-        .background(C.pageBg.ignoresSafeArea())
-        .toolbar(.hidden, for: .navigationBar)
-        .swipeBack { dismiss() }
+        .listStyle(.insetGrouped)
+        .navigationTitle(Tr("聊天"))
         .hidesTabBar()
     }
 }
@@ -249,56 +227,33 @@ struct CallSettingsView: View {
     @State private var pickBeauty = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            NavBar(title: Tr("音视频通话"), back: { dismiss() })
-            ScrollView {
-                VStack(spacing: 0) {
-                    GroupCard {
-                        SettingRowLink(title: Tr("新消息通知"), key: "notify")
-                        HairLine(inset: 16)
-                        SettingRowLink(title: Tr("语音变声"), key: "g.voice")
-                        HairLine(inset: 16)
-
-                        Button { pickQuality = true } label: {
-                            SettingRowLabel(title: Tr("视频清晰度"), value: Tr(CallPrefs.qualityName))
-                        }
-                        .buttonStyle(MenuPressStyle())
-                        HairLine(inset: 16)
-
-                        HStack(spacing: 12) {
-                            Text(Tr("本地画面镜像")).font(pf(17)).foregroundColor(C.label)
-                            Spacer(minLength: 0)
-                            Toggle("", isOn: Binding(
-                                get: { mirror },
-                                set: { v in mirror = v; CallPrefs.mirror = v }))
-                                .labelsHidden().tint(C.green)
-                        }
-                        .padding(.horizontal, 16).frame(height: 56)
-                        HairLine(inset: 16)
-
-                        Button { pickBeauty = true } label: {
-                            SettingRowLabel(title: Tr("视频美颜"), value: Tr(CallPrefs.beautyName))
-                        }
-                        .buttonStyle(MenuPressStyle())
-                        HairLine(inset: 16)
-                        SettingRowLink(title: Tr("登录设备管理"), key: "devices")
-                    }
-                    .padding(.top, 8)
-
-                    Text(Tr("语音通话默认走听筒，通话中点一下扬声器就外放；视频通话默认外放。清晰度、镜像、美颜改完，正在进行的通话会立刻生效。"))
-                        .font(pf(12))
-                        .foregroundColor(C.subLabel)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 22)
-                        .padding(.top, 10)
-                    Spacer().frame(height: 30)
+        List {
+            Section {
+                NavigationLink(value: "notify") { Text(Tr("新消息通知")) }
+                NavigationLink(value: "g.voice") { Text(Tr("语音变声")) }
+                Button {
+                    pickQuality = true
+                } label: {
+                    LabeledContent(Tr("视频清晰度"),
+                                   value: Tr(CallPrefs.qualityName))
                 }
+                Toggle(Tr("本地画面镜像"), isOn: Binding(
+                    get: { mirror },
+                    set: { v in mirror = v; CallPrefs.mirror = v }
+                ))
+                Button {
+                    pickBeauty = true
+                } label: {
+                    LabeledContent(Tr("视频美颜"),
+                                   value: Tr(CallPrefs.beautyName))
+                }
+                NavigationLink(value: "devices") { Text(Tr("登录设备管理")) }
+            } footer: {
+                Text(Tr("语音通话默认走听筒，通话中点一下扬声器就外放；视频通话默认外放。清晰度、镜像、美颜改完，正在进行的通话会立刻生效。"))
             }
-            .background(C.pageBg)
         }
-        .background(C.pageBg.ignoresSafeArea())
-        .toolbar(.hidden, for: .navigationBar)
-        .swipeBack { dismiss() }
+        .listStyle(.insetGrouped)
+        .navigationTitle(Tr("音视频通话"))
         .hidesTabBar()
         .confirmationDialog(Tr("视频清晰度"), isPresented: $pickQuality, titleVisibility: .visible) {
             Button(Tr("标清（省流量）")) { quality = 0; CallPrefs.quality = 0 }

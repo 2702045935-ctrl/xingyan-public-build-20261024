@@ -23,103 +23,68 @@ struct AccountSecurityView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            NavBar(title: Tr("账号与安全"), back: { dismiss() })
-
-            ScrollView {
-                VStack(spacing: 0) {
-                    GroupCard {
-                        NavigationLink(value: "profile") {
-                            row(Tr("个人信息"), me?.name ?? "", chevron: true)
-                        }
-                        .buttonStyle(.plain)
-                        HairLine(inset: 16)
-                        Button { app.show(Tr("账号一年只能改一次，需要的话联系客服")) } label: {
-                            row(Tr("账号"), usernameText, chevron: true)
-                        }
-                        .buttonStyle(.plain)
-                        HairLine(inset: 16)
-                        Button { app.show(Tr("手机号在注册或找回密码时绑定，需要换号联系客服")) } label: {
-                            row(Tr("手机号"), phoneText, chevron: true)
-                        }
-                        .buttonStyle(.plain)
-                        HairLine(inset: 16)
-
-                        Button { showSafety = true } label: {
-                            row(Tr("安全中心"), Tr("冻结 / 解冻 / 自助解封"), chevron: true)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .padding(.top, 8)
-
-                    Spacer().frame(height: 8)
-
-                    GroupCard {
-
-                        NavigationLink(value: "changepwd") {
-                            row(Tr("修改登录密码"), "", chevron: true)
-                        }
-                        .buttonStyle(.plain)
-                        HairLine(inset: 16)
-                        NavigationLink(value: "realname") {
-                            row(Tr("实名认证"), realNameText, chevron: true)
-                        }
-                        .buttonStyle(.plain)
-                        HairLine(inset: 16)
-                        NavigationLink(value: "paypwd") {
-                            row(Tr("支付密码"), hasPay ? Tr("已设置") : Tr("未设置"), chevron: true)
-                        }
-                        .buttonStyle(.plain)
-                        HairLine(inset: 16)
-                        NavigationLink(value: "gesture") {
-                            row(Tr("安全锁（手势密码）"),
-                                GestureStore.enabled ? Tr("已开启") : Tr("未开启"), chevron: true)
-                        }
-                        .buttonStyle(.plain)
-                        HairLine(inset: 16)
-
-                        NavigationLink(value: "voicelock") {
-                            row(Tr("声音锁"),
-                                VoiceLockStore.enabled ? Tr("已开启") : Tr("未开启"), chevron: true)
-                        }
-                        .buttonStyle(.plain)
-                        HairLine(inset: 16)
-                        NavigationLink(value: "score") {
-                            row(Tr("安全分"), "", chevron: true)
-                        }
-                        .buttonStyle(.plain)
-                    }
-
-                    Spacer().frame(height: 8)
-
-                    GroupCard {
-
-                        NavigationLink(value: "devices") {
-                            row(Tr("登录设备管理"), "", chevron: true)
-                        }
-                        .buttonStyle(.plain)
-                        HairLine(inset: 16)
-                        Button { confirmLogoutOthers = true } label: {
-                            row(Tr("退出其他设备"), "", chevron: true)
-                        }
-                        .buttonStyle(.plain)
-                    }
-
-                    Text(Tr("退出其他设备以后，别的手机上登录的这个账号会被踢下线，需要重新登录。"))
-                        .font(pf(12.5))
-                        .foregroundColor(C.subLabel)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 22)
-                        .padding(.top, 10)
-                    Spacer().frame(height: 30)
+        List {
+            Section {
+                NavigationLink(value: "profile") {
+                    LabeledContent(Tr("个人信息"), value: me?.name ?? "")
+                }
+                Button {
+                    app.show(Tr("账号一年只能改一次，需要的话联系客服"))
+                } label: {
+                    LabeledContent(Tr("账号"), value: usernameText)
+                }
+                Button {
+                    app.show(Tr("手机号在注册或找回密码时绑定，需要换号联系客服"))
+                } label: {
+                    LabeledContent(Tr("手机号"), value: phoneText)
+                }
+                Button {
+                    showSafety = true
+                } label: {
+                    LabeledContent(Tr("安全中心"),
+                                   value: Tr("冻结 / 解冻 / 自助解封"))
                 }
             }
-            .background(C.pageBg)
+
+            Section {
+                NavigationLink(value: "changepwd") {
+                    Text(Tr("修改登录密码"))
+                }
+                NavigationLink(value: "realname") {
+                    LabeledContent(Tr("实名认证"), value: realNameText)
+                }
+                NavigationLink(value: "paypwd") {
+                    LabeledContent(Tr("支付密码"),
+                                   value: hasPay ? Tr("已设置") : Tr("未设置"))
+                }
+                NavigationLink(value: "gesture") {
+                    LabeledContent(Tr("安全锁（手势密码）"),
+                                   value: GestureStore.enabled ? Tr("已开启") : Tr("未开启"))
+                }
+                NavigationLink(value: "voicelock") {
+                    LabeledContent(Tr("声音锁"),
+                                   value: VoiceLockStore.enabled ? Tr("已开启") : Tr("未开启"))
+                }
+                NavigationLink(value: "score") {
+                    Text(Tr("安全分"))
+                }
+            }
+
+            Section {
+                NavigationLink(value: "devices") {
+                    Text(Tr("登录设备管理"))
+                }
+                Button(role: .destructive) {
+                    confirmLogoutOthers = true
+                } label: {
+                    Text(Tr("退出其他设备"))
+                }
+            } footer: {
+                Text(Tr("退出其他设备以后，别的手机上登录的这个账号会被踢下线，需要重新登录。"))
+            }
         }
-        .background(C.pageBg.ignoresSafeArea(edges: .bottom))
-        .background(C.pageBg.ignoresSafeArea(edges: .top))
-        .toolbar(.hidden, for: .navigationBar)
-        .swipeBack { dismiss() }
+        .listStyle(.insetGrouped)
+        .navigationTitle(Tr("账号与安全"))
         .hidesTabBar()
 
         .sheet(isPresented: $showSafety) {
@@ -174,67 +139,44 @@ struct ChangePasswordSheet: View {
     @State private var errorText = ""
 
     var body: some View {
-        VStack(spacing: 0) {
-            NavBar(title: Tr("修改登录密码"), back: { dismiss() }) {
-                Button { save() } label: {
-                    Text(busy ? Tr("保存中…") : Tr("完成"))
-                        .font(pf(17))
-                        .foregroundColor(canSave ? C.green : C.subLabel)
-                        .frame(height: L.navH)
-                        .padding(.trailing, 16)
+        List {
+            Section {
+                field(Tr("当前密码"), $current)
+                field(Tr("新密码（至少 6 位）"), $next)
+                field(Tr("再输一遍新密码"), $again)
+            } footer: {
+                if !errorText.isEmpty {
+                    Text(errorText)
+                        .foregroundStyle(.red)
+                } else {
+                    Text(Tr("改完密码以后，其他手机上登录的这个账号会被踢下线。"))
                 }
-                .buttonStyle(.plain)
+            }
+        }
+        .listStyle(.insetGrouped)
+        .navigationTitle(Tr("修改登录密码"))
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button(busy ? Tr("保存中…") : Tr("完成")) {
+                    save()
+                }
                 .disabled(!canSave)
             }
-
-            GroupCard {
-                field(Tr("当前密码"), $current)
-                HairLine(inset: 16)
-                field(Tr("新密码（至少 6 位）"), $next)
-                HairLine(inset: 16)
-                field(Tr("再输一遍新密码"), $again)
-            }
-            .padding(.top, 12)
-
-            if !errorText.isEmpty {
-                Text(errorText)
-                    .font(pf(13))
-                    .foregroundColor(C.red)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 22)
-                    .padding(.top, 10)
-            }
-
-            Text(Tr("改完密码以后，其他手机上登录的这个账号会被踢下线。"))
-                .font(pf(12.5))
-                .foregroundColor(C.subLabel)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 22)
-                .padding(.top, 12)
-            Spacer()
         }
-        .background(C.pageBg.ignoresSafeArea(edges: .bottom))
-        .background(C.pageBg.ignoresSafeArea(edges: .top))
-        .toolbar(.hidden, for: .navigationBar)
         .hidesTabBar()
-
-        .swipeBack { dismiss() }
     }
 
     private var canSave: Bool { !busy && !current.isEmpty && next.count >= 6 && next == again }
 
     private func field(_ title: String, _ text: Binding<String>) -> some View {
-        HStack(spacing: 12) {
-            Text(title).font(pf(16)).foregroundColor(C.label)
-            Spacer(minLength: 8)
+        HStack(spacing: 8) {
+            Text(title)
+                .foregroundStyle(.primary)
+            Spacer(minLength: 12)
             SecureField("", text: text)
-                .font(pf(16))
-                .foregroundColor(C.label)
+                .foregroundStyle(.primary)
                 .multilineTextAlignment(.trailing)
-                .frame(maxWidth: 170)
         }
-        .padding(.horizontal, 16)
-        .frame(height: 54)
     }
 
     private func save() {

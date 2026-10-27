@@ -8,58 +8,37 @@ struct PrivacyView: View {
     @State private var showRange = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            NavBar(title: Tr("隐私"), back: { dismiss() })
-            ScrollView {
-                VStack(spacing: 8) {
-                    GroupCard {
-                        row(Tr("加我为朋友时需要验证"), $p.needVerify, "needVerify")
-                        HairLine(inset: 16)
-                        row(Tr("允许陌生人查看朋友圈"), $p.strangerMoments, "strangerMoments")
-                        HairLine(inset: 16)
-
-                        Button { showRange = true } label: {
-                            HStack(spacing: 10) {
-                                Text(Tr("朋友圈可见范围")).font(pf(16)).foregroundColor(C.label)
-                                Spacer(minLength: 8)
-                                Text(rangeLabel).font(pf(15)).foregroundColor(C.subLabel)
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(C.subLabel)
-                            }
-                            .padding(.horizontal, 16)
-                            .frame(height: 50)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
+        List {
+            Section {
+                row(Tr("加我为朋友时需要验证"), $p.needVerify, "needVerify")
+                row(Tr("允许陌生人查看朋友圈"), $p.strangerMoments, "strangerMoments")
+                Button {
+                    showRange = true
+                } label: {
+                    HStack {
+                        Text(Tr("朋友圈可见范围"))
+                            .foregroundStyle(.primary)
+                        Spacer()
+                        Text(rangeLabel)
+                            .foregroundStyle(.secondary)
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.tertiary)
                     }
-                    .padding(.top, 8)
-
-                    Text(Tr("添加我的方式")).font(pf(13)).foregroundColor(C.subLabel)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 22).padding(.top, 12)
-                    GroupCard {
-                        row(Tr("账号"), $p.addByWx, "addByWx")
-                        HairLine(inset: 16)
-                        row(Tr("手机号"), $p.addByPhone, "addByPhone")
-                        HairLine(inset: 16)
-                        row(Tr("群聊"), $p.addByGroup, "addByGroup")
-                        HairLine(inset: 16)
-                        row(Tr("二维码"), $p.addByQR, "addByQR")
-                    }
-
-                    Text(Tr("关掉之后，别人就不能用这个方式找到你、加你好友。"))
-                        .font(pf(12)).foregroundColor(C.subLabel)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 22).padding(.top, 10)
-                    Spacer().frame(height: 30)
+                    .contentShape(Rectangle())
                 }
             }
-            .background(C.pageBg)
+
+            Section(header: Text(Tr("添加我的方式")),
+                    footer: Text(Tr("关掉之后，别人就不能用这个方式找到你、加你好友。"))) {
+                row(Tr("账号"), $p.addByWx, "addByWx")
+                row(Tr("手机号"), $p.addByPhone, "addByPhone")
+                row(Tr("群聊"), $p.addByGroup, "addByGroup")
+                row(Tr("二维码"), $p.addByQR, "addByQR")
+            }
         }
-        .background(C.pageBg.ignoresSafeArea())
-        .toolbar(.hidden, for: .navigationBar)
-        .swipeBack { dismiss() }
+        .listStyle(.insetGrouped)
+        .navigationTitle(Tr("隐私"))
         .hidesTabBar()
         .task { p = await API.shared.privacy() }
         .confirmationDialog(Tr("朋友圈可见范围"), isPresented: $showRange, titleVisibility: .visible) {
@@ -84,19 +63,15 @@ struct PrivacyView: View {
     }
 
     private func row(_ title: String, _ value: Binding<Bool>, _ key: String) -> some View {
-        HStack(spacing: 10) {
-            Text(title).font(pf(16)).foregroundColor(C.label)
-            Spacer(minLength: 8)
-            Toggle("", isOn: Binding(
+        Toggle(isOn: Binding(
                 get: { value.wrappedValue },
                 set: { v in
                     value.wrappedValue = v
                     Task { await API.shared.setPrivacy(key, v) }
                 }
-            ))
-            .labelsHidden().tint(C.green)
-        }
-        .padding(.horizontal, 16).frame(height: 50)
+            )) {
+                Text(title)
+            }
     }
 }
 
@@ -111,89 +86,58 @@ struct NotifyView: View {
     private var sysText: String { push.authorized ? Tr("已开启") : Tr("已关闭") }
 
     var body: some View {
-        VStack(spacing: 0) {
-            NavBar(title: Tr("新消息通知"), back: { dismiss() })
-            ScrollView {
-                VStack(spacing: 8) {
-
-                    GroupCard {
-                        Button {
-                            if let url = URL(string: UIApplication.openSettingsURLString) {
-                                UIApplication.shared.open(url)
-                            }
-                        } label: {
-                            HStack(spacing: 10) {
-                                Text(Tr("接收新消息通知")).font(pf(16)).foregroundColor(C.label)
-                                Spacer(minLength: 8)
-                                Text(sysText)
-                                    .font(pf(15))
-                                    .foregroundColor(push.authorized ? C.subLabel : C.red)
-                                Chevron(size: 9, line: 1.6).padding(.trailing, 3)
-                            }
-                            .padding(.horizontal, 16)
-                            .frame(height: 50)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
+        List {
+            Section {
+                Button {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
                     }
-                    .padding(.top, 8)
-
-                    if !push.authorized {
-                        Text(Tr("系统通知还没开：点上面那行去 iOS 设置里打开「允许通知」，不然 App 在后台收不到提醒。"))
-                            .font(pf(12.5))
-                            .foregroundColor(C.subLabel)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 22)
+                } label: {
+                    HStack {
+                        Text(Tr("接收新消息通知"))
+                            .foregroundStyle(.primary)
+                        Spacer()
+                        Text(sysText)
+                            .foregroundStyle(push.authorized ? .secondary : .red)
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.tertiary)
                     }
-
-                    GroupCard {
-                        row(Tr("App 内提醒"), $n.on, "on")
-                        HairLine(inset: 16)
-                        row(Tr("声音"), $n.sound, "sound")
-                        HairLine(inset: 16)
-                        row(Tr("振动"), $n.vibrate, "vibrate")
-                        HairLine(inset: 16)
-                        row(Tr("通知显示消息详情"), $n.showDetail, "showDetail")
-                    }
-                    .padding(.top, 8)
-
-                    GroupCard {
-                        HStack(spacing: 10) {
-                            Text(Tr("免打扰")).font(pf(16)).foregroundColor(C.label)
-                            Spacer(minLength: 8)
-                            Toggle("", isOn: $muteOn).labelsHidden().tint(C.green)
-                        }
-                        .padding(.horizontal, 16).frame(height: 50)
-                        if muteOn {
-                            HairLine(inset: 16)
-                            HStack(spacing: 10) {
-                                DatePicker("", selection: Binding(
-                                    get: { Self.time(n.muteStart, 22, 0) },
-                                    set: { n.muteStart = Self.hhmm($0) }), displayedComponents: .hourAndMinute)
-                                    .labelsHidden()
-                                Text("—").foregroundColor(C.subLabel)
-                                DatePicker("", selection: Binding(
-                                    get: { Self.time(n.muteEnd, 7, 0) },
-                                    set: { n.muteEnd = Self.hhmm($0) }), displayedComponents: .hourAndMinute)
-                                    .labelsHidden()
-                                Spacer(minLength: 0)
-                            }
-                            .padding(.horizontal, 16).frame(height: 50)
-                        }
-                    }
-
-                    Text(Tr("免打扰时段里收到消息不响不震，进 App 还是能看到小红点。"))
-                        .font(pf(12)).foregroundColor(C.subLabel)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 22).padding(.top, 10)
-                    Spacer().frame(height: 30)
+                    .contentShape(Rectangle())
                 }
             }
-            .background(C.pageBg)
+
+            Section {
+                row(Tr("App 内提醒"), $n.on, "on")
+                row(Tr("声音"), $n.sound, "sound")
+                row(Tr("振动"), $n.vibrate, "vibrate")
+                row(Tr("通知显示消息详情"), $n.showDetail, "showDetail")
+            } footer: {
+                if !push.authorized {
+                    Text(Tr("系统通知还没开：点上面那行去 iOS 设置里打开「允许通知」，不然 App 在后台收不到提醒。"))
+                }
+            }
+
+            Section {
+                Toggle(Tr("免打扰"), isOn: $muteOn)
+                if muteOn {
+                    DatePicker(Tr("开始"),
+                               selection: Binding(
+                                get: { Self.time(n.muteStart, 22, 0) },
+                                set: { n.muteStart = Self.hhmm($0) }),
+                               displayedComponents: .hourAndMinute)
+                    DatePicker(Tr("结束"),
+                               selection: Binding(
+                                get: { Self.time(n.muteEnd, 7, 0) },
+                                set: { n.muteEnd = Self.hhmm($0) }),
+                               displayedComponents: .hourAndMinute)
+                }
+            } footer: {
+                Text(Tr("免打扰时段里收到消息不响不震，进 App 还是能看到小红点。"))
+            }
         }
-        .background(C.pageBg.ignoresSafeArea())
-        .toolbar(.hidden, for: .navigationBar)
-        .swipeBack { dismiss() }
+        .listStyle(.insetGrouped)
+        .navigationTitle(Tr("通知"))
         .hidesTabBar()
         .task {
             n = await API.shared.notifySettings()
@@ -209,19 +153,15 @@ struct NotifyView: View {
     }
 
     private func row(_ title: String, _ value: Binding<Bool>, _ key: String) -> some View {
-        HStack(spacing: 10) {
-            Text(title).font(pf(16)).foregroundColor(C.label)
-            Spacer(minLength: 8)
-            Toggle("", isOn: Binding(
+        Toggle(isOn: Binding(
                 get: { value.wrappedValue },
                 set: { v in
                     value.wrappedValue = v
                     Task { await API.shared.setNotify([key: v]) }
                 }
-            ))
-            .labelsHidden().tint(C.green)
-        }
-        .padding(.horizontal, 16).frame(height: 50)
+            )) {
+                Text(title)
+            }
     }
 
     static func hhmm(_ d: Date) -> String {
@@ -250,71 +190,51 @@ struct GeneralView: View {
     @ObservedObject private var voiceStore = VoiceChangerStore.shared
 
     var body: some View {
-        VStack(spacing: 0) {
-            NavBar(title: Tr("通用"), back: { dismiss() })
-            ScrollView {
-                VStack(spacing: 0) {
-                    GroupCard {
-
-                        link(Tr("外观"),
-                             app.appearance == "dark" ? Tr("深色")
-                                 : (app.appearance == "light" ? Tr("浅色") : Tr("跟随系统")),
-                             key: "g.theme")
-                        HairLine(inset: 16)
-                        link(Tr("界面语言"), Lang.name, key: "g.lang")
-                        HairLine(inset: 16)
-                        link(Tr("聊天背景"),
-                             (app.me?.chatBackground ?? "auto") == "auto" ? Tr("恢复默认") : Tr("自定义"),
-                             key: "g.chatbg")
-                        HairLine(inset: 16)
-
-                        link(Tr("存储空间"), "", key: "g.storage")
-                        HairLine(inset: 16)
-                        link(Tr("聊天记录管理"), "", key: "g.history")
-                        HairLine(inset: 16)
-
-                        link(Tr("语音变声"), voiceStore.current.name, key: "g.voice")
-                    }
-                    .padding(.top, 8)
-                    Spacer().frame(height: 30)
-                }
+        List {
+            Section {
+                link(Tr("外观"),
+                     app.appearance == "dark" ? Tr("深色")
+                         : (app.appearance == "light" ? Tr("浅色") : Tr("跟随系统")),
+                     key: "g.theme")
+                link(Tr("界面语言"), Lang.name, key: "g.lang")
+                link(Tr("聊天背景"),
+                     (app.me?.chatBackground ?? "auto") == "auto" ? Tr("恢复默认") : Tr("自定义"),
+                     key: "g.chatbg")
             }
-            .background(C.pageBg)
+            Section {
+                link(Tr("存储空间"), "", key: "g.storage")
+                link(Tr("聊天记录管理"), "", key: "g.history")
+                link(Tr("语音变声"), voiceStore.current.name, key: "g.voice")
+            }
         }
-        .background(C.pageBg.ignoresSafeArea())
-        .toolbar(.hidden, for: .navigationBar)
-        .swipeBack { dismiss() }
+        .listStyle(.insetGrouped)
+        .navigationTitle(Tr("通用"))
         .hidesTabBar()
     }
 
     private func link(_ title: String, _ value: String, key: String) -> some View {
         NavigationLink(value: key) {
-            HStack(spacing: 12) {
-                Text(title).font(pf(17)).foregroundColor(C.label)
-                Spacer(minLength: 8)
-                Text(value).font(pf(15)).foregroundColor(C.subLabel)
-                Chevron(size: 9, line: 1.6).padding(.trailing, 3)
+            LabeledContent {
+                Text(value)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            } label: {
+                Text(title)
+                    .foregroundStyle(.primary)
             }
-            .padding(.horizontal, 16)
-            .frame(height: 52)
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
     }
 
     private func row(_ title: String, _ value: String, _ tap: @escaping () -> Void) -> some View {
         Button(action: tap) {
-            HStack(spacing: 12) {
-                Text(title).font(pf(17)).foregroundColor(C.label)
-                Spacer(minLength: 8)
-                Text(value).font(pf(15)).foregroundColor(C.subLabel)
-                Chevron(size: 9, line: 1.6).padding(.trailing, 3)
+            LabeledContent {
+                Text(value)
+                    .foregroundStyle(.secondary)
+            } label: {
+                Text(title)
+                    .foregroundStyle(.primary)
             }
-            .padding(.horizontal, 16)
-            .frame(height: 52)
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
     }
 
     private func setLang(_ code: String) {
@@ -338,45 +258,32 @@ struct GeneralView: View {
 struct AppearanceView: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
-    @Environment(\.dismiss) private var dismiss
 
     private let opts: [(String, String)] = [("auto", "跟随系统"), ("light", "浅色"), ("dark", "深色")]
 
     var body: some View {
-        VStack(spacing: 0) {
-            NavBar(title: Tr("外观"), back: { dismiss() })
-            ScrollView {
-                VStack(spacing: 0) {
-                    GroupCard {
-                        ForEach(opts.indices, id: \.self) { i in
-                            if i > 0 { HairLine(inset: 16) }
-                            Button { app.setAppearance(opts[i].0) } label: {
-                                HStack(spacing: 12) {
-                                    Text(Tr(opts[i].1)).font(pf(17)).foregroundColor(C.label)
-                                    Spacer(minLength: 8)
-                                    if app.appearance == opts[i].0 {
-                                        Image(systemName: "checkmark")
-                                            .font(.system(size: 15, weight: .semibold))
-                                            .foregroundColor(C.green)
-                                    }
-                                }
-                                .padding(.horizontal, 16)
-                                .frame(height: 54)
-                                .background(C.cardBg)
-                                .contentShape(Rectangle())
+        List {
+            Section {
+                ForEach(opts.indices, id: \.self) { i in
+                    Button {
+                        app.setAppearance(opts[i].0)
+                    } label: {
+                        HStack {
+                            Text(Tr(opts[i].1))
+                                .foregroundStyle(.primary)
+                            Spacer()
+                            if app.appearance == opts[i].0 {
+                                Image(systemName: "checkmark")
+                                    .foregroundStyle(.tint)
                             }
-                            .buttonStyle(.plain)
                         }
                     }
-                    .padding(.top, 8)
-                    Spacer().frame(height: 30)
+                    .buttonStyle(.plain)
                 }
             }
-            .background(C.pageBg)
         }
-        .background(C.pageBg.ignoresSafeArea())
-        .toolbar(.hidden, for: .navigationBar)
-        .swipeBack { dismiss() }
+        .listStyle(.insetGrouped)
+        .navigationTitle(Tr("外观"))
         .hidesTabBar()
     }
 }
@@ -384,55 +291,36 @@ struct AppearanceView: View {
 struct LanguageView: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
-    @Environment(\.dismiss) private var dismiss
 
     private let opts: [(String, String)] = [("zh", "简体中文"), ("en", "English")]
 
     var body: some View {
-        VStack(spacing: 0) {
-            NavBar(title: Tr("界面语言"), back: { dismiss() })
-            ScrollView {
-                VStack(spacing: 0) {
-                    GroupCard {
-                        ForEach(opts.indices, id: \.self) { i in
-                            if i > 0 { HairLine(inset: 16) }
-                            Button {
-                                Lang.code = opts[i].0
-                                app.show(opts[i].0 == "en" ? "Language switched to English"
-                                                           : "界面语言已切成中文")
-                            } label: {
-                                HStack(spacing: 12) {
-                                    Text(opts[i].1).font(pf(17)).foregroundColor(C.label)
-                                    Spacer(minLength: 8)
-                                    if Lang.code == opts[i].0 {
-                                        Image(systemName: "checkmark")
-                                            .font(.system(size: 15, weight: .semibold))
-                                            .foregroundColor(C.green)
-                                    }
-                                }
-                                .padding(.horizontal, 16)
-                                .frame(height: 54)
-                                .background(C.cardBg)
-                                .contentShape(Rectangle())
+        List {
+            Section {
+                ForEach(opts.indices, id: \.self) { i in
+                    Button {
+                        Lang.code = opts[i].0
+                        app.show(opts[i].0 == "en" ? "Language switched to English"
+                                                   : "界面语言已切成中文")
+                    } label: {
+                        HStack {
+                            Text(opts[i].1)
+                                .foregroundStyle(.primary)
+                            Spacer()
+                            if Lang.code == opts[i].0 {
+                                Image(systemName: "checkmark")
+                                    .foregroundStyle(.tint)
                             }
-                            .buttonStyle(.plain)
                         }
                     }
-                    .padding(.top, 8)
-                    Text(Tr("换完语言把 App 从后台划掉重开，全部界面文字才是新语言。"))
-                        .font(pf(12.5))
-                        .foregroundColor(C.subLabel)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 22)
-                        .padding(.top, 10)
-                    Spacer().frame(height: 30)
+                    .buttonStyle(.plain)
                 }
+            } footer: {
+                Text(Tr("换完语言把 App 从后台划掉重开，全部界面文字才是新语言。"))
             }
-            .background(C.pageBg)
         }
-        .background(C.pageBg.ignoresSafeArea())
-        .toolbar(.hidden, for: .navigationBar)
-        .swipeBack { dismiss() }
+        .listStyle(.insetGrouped)
+        .navigationTitle(Tr("界面语言"))
         .hidesTabBar()
     }
 }

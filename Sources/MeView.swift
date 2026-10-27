@@ -183,71 +183,183 @@ struct MeView: View {
             .frame(width: 0.5, height: 28)
     }
 
-    var body: some View {
-        NavigationStack(path: $path) {
-            ScrollView {
-                VStack(spacing: 0) {
-                    orbitMeTop
-                    meGap
+    private var nativeMeList: some View {
+        List {
+            Section {
+                NavigationLink(value: "profile") {
+                    HStack(spacing: 14) {
+                        Avatar(path: app.me?.avatarPath ?? "", size: 62, radius: 19,
+                               level: growth.shownLevel)
 
-                    ForEach(grouped.indices, id: \.self) { gi in
-
-                        VStack(spacing: 0) {
-                            ForEach(grouped[gi].indices, id: \.self) { ri in
-                                let item = grouped[gi][ri]
-                                if ri > 0 { rowLine }
-                                MenuRow(icon: (item.svg?.isEmpty == false) ? item.svg! : I.star,
-                                        iconColor: Color(hexString: item.color ?? "#4A90D9", fallback: 0x4A90D9),
-                title: Tr(item.label),
-                                        showArrow: false,
-                                        onTap: { open(item) },
-                                        clearBg: true,
-
-                                        iconTile: true,
-
-                                        sf: RowIcon.sf(action: item.action, label: item.label))
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack(spacing: 6) {
+                                Text(app.me?.name ?? Tr("星言用户"))
+                                    .font(.title3.bold())
+                                    .foregroundStyle(.primary)
+                                    .lineLimit(1)
+                                if growthShow {
+                                    QQLevelBadge(level: growth.shownLevel, size: 14, maxIcons: 3)
+                                        .fixedSize()
+                                }
+                                MemberBadge(tier: app.me?.memberTier,
+                                            short: app.me?.memberShort,
+                                            color: app.me?.memberColor,
+                                            color2: app.me?.memberColor2,
+                                            height: 13)
+                                    .fixedSize()
                             }
-                            if UIConfig.num("showPromo", 0) > 0 && gi == grouped.count - 1 {
-                                rowLine
-                                    promoRow
-                            }
+                            Text(Tr("星言号") + "：" + (app.me?.username ?? "-"))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                            let bio = (app.me?.bio ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                            Text(bio.isEmpty ? Tr("点击编辑个人资料") : bio)
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                                .lineLimit(1)
                         }
-                        .background(OrbitTheme.cardBackground())
-                        .padding(.horizontal, 12)
-                        meGap
                     }
-
-                    if app.me?.ops == true {
-                        VStack(spacing: 0) {
-                            MenuRow(icon: I.star,
-                                    iconColor: Color(hex: 0x4A90D9),
-                                    title: Tr("管理"),
-                                    showArrow: false,
-                                    onTap: { path.append("manage") },
-                                    clearBg: true,
-                                    iconTile: true,
-                                    sf: "wrench.and.screwdriver.fill")
-                            rowLine
-                            MenuRow(icon: I.star,
-                                    iconColor: Color(hex: 0x5B8FF9),
-                                    title: Tr("人脸比对"),
-                                    showArrow: false,
-                                    onTap: { path.append("faces") },
-                                    clearBg: true,
-                                    iconTile: true,
-                                    sf: "face.smiling")
-                        }
-                        .background(OrbitTheme.cardBackground())
-                        .padding(.horizontal, 12)
-                        meGap
-                    }
-
-                    Spacer().frame(height: 24)
+                    .padding(.vertical, 5)
                 }
             }
-            .background(OrbitTheme.canvas)
-            .ignoresSafeArea(edges: .top)
-            .toolbar(.hidden, for: .navigationBar)
+
+            Section {
+                HStack(spacing: 0) {
+                    nativeStat(value: "\(friendCount)", title: Tr("朋友")) {
+                        statusPanel = .friends
+                    }
+                    Rectangle()
+                        .fill(Color(uiColor: .separator))
+                        .frame(width: 0.5, height: 34)
+                    nativeStat(value: daysText, title: Tr("活跃天")) {
+                        path.append("level")
+                    }
+                    Rectangle()
+                        .fill(Color(uiColor: .separator))
+                        .frame(width: 0.5, height: 34)
+                    nativeStat(value: "\(app.me?.momentCount ?? 0)", title: Tr("动态")) {
+                        path.append("moments")
+                    }
+                }
+                .padding(.vertical, 4)
+
+                Button {
+                    statusPanel = .status
+                } label: {
+                    Label(Tr("当前状态"), systemImage: "face.smiling")
+                }
+                Button {
+                    statusPanel = .friends
+                } label: {
+                    Label(Tr("朋友的状态"), systemImage: "person.2.wave.2")
+                }
+                NavigationLink(value: "member") {
+                    Label(Tr("会员中心"), systemImage: "crown")
+                }
+            }
+
+            ForEach(grouped.indices, id: \.self) { gi in
+                Section {
+                    ForEach(grouped[gi]) { item in
+                        NavigationLink(value: routeKey(for: item)) {
+                            nativeMeItemRow(item)
+                        }
+                    }
+                }
+            }
+
+            if app.me?.ops == true {
+                Section(header: Text(Tr("管理"))) {
+                    NavigationLink(value: "manage") {
+                        nativeSettingsIconRow(Tr("用户管理"),
+                                              symbol: "person.2.badge.gearshape.fill",
+                                              color: .indigo)
+                    }
+                    NavigationLink(value: "faces") {
+                        nativeSettingsIconRow(Tr("人脸比对"),
+                                              symbol: "face.smiling",
+                                              color: .orange)
+                    }
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .navigationTitle(Tr("我的"))
+        .navigationBarTitleDisplayMode(.large)
+        .refreshable {
+            app.me = try? await API.shared.me()
+            await app.loadContacts()
+            await MemberStore.shared.refresh()
+        }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button { showMyQR = true } label: {
+                    Image(systemName: "qrcode")
+                }
+                .accessibilityLabel(Tr("我的二维码"))
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button { path.append("settings") } label: {
+                    Image(systemName: "gearshape")
+                }
+                .accessibilityLabel(Tr("设置"))
+            }
+        }
+    }
+
+    private func nativeStat(value: String, title: String,
+                            action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 3) {
+                Text(value)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                Text(title)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func nativeMeItemRow(_ item: DiscoverItem) -> some View {
+        let symbol = RowIcon.sf(action: item.action, label: item.label)
+        let color = Color(hexString: item.color ?? "#4A90D9", fallback: 0x4A90D9)
+        return nativeSettingsIconRow(Tr(item.label), symbol: symbol, color: color)
+    }
+
+    private func nativeSettingsIconRow(_ title: String, symbol: String,
+                                       color: Color) -> some View {
+        Label {
+            Text(title)
+                .foregroundStyle(.primary)
+        } icon: {
+            Image(systemName: symbol)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 28, height: 28)
+                .background(
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(color)
+                )
+        }
+    }
+
+    private func routeKey(for item: DiscoverItem) -> String {
+        let action = item.action ?? "soon"
+        switch action {
+        case "cards", "shop", "service", "favorites", "moments", "works",
+             "stickers", "settings", "channels", "plugins":
+            return action
+        default:
+            return "soon:" + item.label
+        }
+    }
+
+    var body: some View {
+        NavigationStack(path: $path) {
+            nativeMeList
 
             .sheet(isPresented: $showMyQR) { MyQRView() }
 
