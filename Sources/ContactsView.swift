@@ -1427,19 +1427,33 @@ struct ContactCardView: View {
 
     private func toggleStar() {
         let next = !(meta?.star == true)
+        let previous = meta
+        var optimistic = meta ?? API.FriendMeta()
+        optimistic.star = next
+        meta = optimistic
         Task {
-            await API.shared.setFriendMeta(userId: u.id, star: next)
-            await load()
-            app.show(next ? Tr("已设为星标朋友") : Tr("已取消星标"))
+            if await API.shared.setFriendMeta(userId: u.id, star: next) {
+                app.show(next ? Tr("已设为星标朋友") : Tr("已取消星标"))
+            } else {
+                meta = previous
+                app.show(Tr("没保存上，再试一次"))
+            }
         }
     }
 
     private func toggleBlock() {
         let next = !(meta?.block == true)
+        let previous = meta
+        var optimistic = meta ?? API.FriendMeta()
+        optimistic.block = next
+        meta = optimistic
         Task {
-            await API.shared.setFriendMeta(userId: u.id, block: next)
-            await load()
-            app.show(next ? Tr("已加入黑名单，他发不了消息给你") : Tr("已移出黑名单"))
+            if await API.shared.setFriendMeta(userId: u.id, block: next) {
+                app.show(next ? Tr("已加入黑名单，他发不了消息给你") : Tr("已移出黑名单"))
+            } else {
+                meta = previous
+                app.show(Tr("没保存上，再试一次"))
+            }
         }
     }
 
