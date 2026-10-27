@@ -54,6 +54,7 @@ struct PendingMsg: Identifiable, Hashable {
     var quoteJSON: String?
     var sending = false
     var failed = false
+    var failureReason: String? = nil
     var at = Date()
 
     var preview: String {
@@ -710,6 +711,14 @@ struct ChatDetailView: View {
         selectMode ? nil : { dismiss() }
     }
 
+    private func exitChatNow() {
+        showGroupInfo = false
+        showChatInfo = false
+        app.pendingPushChatId = nil
+        app.openChat = nil
+        app.wantChatsTab = true
+    }
+
     private func reportTyping() {
         guard Date().timeIntervalSince(lastTypingSent) > 2.0 else { return }
         lastTypingSent = Date()
@@ -1143,7 +1152,7 @@ struct ChatDetailView: View {
 
         .sheet(isPresented: $showChatInfo) {
             NavigationStack {
-                DirectChatInfoView(chat: chat)
+                DirectChatInfoView(chat: chat, onExitChat: exitChatNow)
                     .environmentObject(app)
             }
         }
@@ -1279,7 +1288,7 @@ struct ChatDetailView: View {
 
         .sheet(isPresented: $showGroupInfo) {
             NavigationStack {
-                GroupInfoView(chat: chat)
+                GroupInfoView(chat: chat, onExitChat: exitChatNow)
                     .environmentObject(app)
             }
         }
@@ -1715,29 +1724,39 @@ struct ChatDetailView: View {
     private var atBottomNow: Bool { wasAtBottom || atBottom }
 
     private func pendingBubble(_ p: PendingMsg) -> some View {
-        HStack(alignment: .center, spacing: 7) {
-            Spacer(minLength: 0)
-            if p.sending {
-                ProgressView().scaleEffect(0.72)
-            } else if p.failed {
-                Button {
-                    Task { await flushOutbox() }
-                } label: {
-                    Image(systemName: "exclamationmark.circle.fill")
-                        .font(.system(size: 18))
-                        .foregroundColor(C.red)
+        VStack(alignment: .trailing, spacing: 3) {
+            HStack(alignment: .center, spacing: 7) {
+                Spacer(minLength: 0)
+                if p.sending {
+                    ProgressView().scaleEffect(0.72)
+                } else if p.failed {
+                    Button {
+                        Task { await flushOutbox() }
+                    } label: {
+                        Image(systemName: "exclamationmark.circle.fill")
+                            .font(.system(size: 18))
+                            .foregroundColor(C.red)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
+                Text(p.preview)
+                    .font(pf(16))
+                    .foregroundColor(ChatTheme.ink)
+                    .lineLimit(6)
+                    .multilineTextAlignment(.leading)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 9)
+                    .background(BubbleFill(mine: true, tail: false))
+                    .opacity(p.failed ? 0.9 : 1)
             }
-            Text(p.preview)
-                .font(pf(16))
-                .foregroundColor(ChatTheme.ink)
-                .lineLimit(6)
-                .multilineTextAlignment(.leading)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 9)
-                .background(BubbleFill(mine: true, tail: false))
-                .opacity(p.failed ? 0.9 : 1)
+            if p.failed, let reason = p.failureReason, !reason.isEmpty {
+                Text(reason)
+                    .font(pf(11.5))
+                    .foregroundColor(C.red.opacity(0.88))
+                    .lineLimit(2)
+                    .multilineTextAlignment(.trailing)
+                    .padding(.trailing, 3)
+            }
         }
         .padding(.vertical, 4)
         .id(p.id)
@@ -1748,6 +1767,7 @@ struct ChatDetailView: View {
             var d: [String: Any] = ["id": p.id, "kind": p.kind, "content": p.content,
                                     "at": p.at.timeIntervalSince1970]
             if let q = p.quoteJSON { d["quote"] = q }
+            if let reason = p.failureReason, !reason.isEmpty { d["failureReason"] = reason }
             return d
         }
         UserDefaults.standard.set(arr, forKey: "chris.outbox." + chat.id)
@@ -1760,7 +1780,9 @@ struct ChatDetailView: View {
                   let kind = d["kind"] as? String,
                   let content = d["content"] as? String else { return nil }
             return PendingMsg(id: id, kind: kind, content: content,
-                              quoteJSON: d["quote"] as? String)
+                              quoteJSON: d["quote"] as? String,
+                              failed: (d["failureReason"] as? String)?.isEmpty == false,
+                              failureReason: d["failureReason"] as? String)
         }
     }
 
@@ -3086,6 +3108,7 @@ struct ChatDetailView: View {
             guard let idx = outbox.firstIndex(where: { $0.id == p.id }) else { continue }
             outbox[idx].sending = true
             outbox[idx].failed = false
+            outbox[idx].failureReason = nil
             do {
                 if let message = try await API.shared.send(chatId: chat.id, kind: p.kind, content: p.content,
                                                            mentions: p.mentions, clientId: p.id,
@@ -3104,6 +3127,7 @@ struct ChatDetailView: View {
                 } else if let i2 = outbox.firstIndex(where: { $0.id == p.id }) {
                     outbox[i2].sending = false
                     outbox[i2].failed = true
+                    outbox[i2].failureReason = reason
                 }
             }
         }

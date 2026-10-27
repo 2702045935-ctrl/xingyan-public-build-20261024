@@ -618,6 +618,7 @@ private struct MessagePayload: Decodable { var message: Message? }
 private struct AddFriendPayload: Decodable {
     var accepted: Bool?
     var friend: User?
+    var chat: Chat?
 }
 private struct CreditScorePayload: Decodable { var score: CreditScore }
 
@@ -2703,21 +2704,21 @@ final class API {
     }
 
     @discardableResult
-    func addFriend(username: String, note: String) async throws -> (accepted: Bool, friend: User?) {
+    func addFriend(username: String, note: String) async throws -> (accepted: Bool, friend: User?, chat: Chat?) {
         var body: [String: Any] = ["username": username]
         if !note.isEmpty { body["message"] = note }
         let any = try await request("POST", "/api/friends/request", body: body)
         let payload = try decode(any, as: AddFriendPayload.self)
-        return (payload.accepted == true, payload.friend)
+        return (payload.accepted == true, payload.friend, payload.chat)
     }
 
     @discardableResult
-    func addFriend(userId: String, note: String = "") async throws -> (accepted: Bool, friend: User?) {
+    func addFriend(userId: String, note: String = "") async throws -> (accepted: Bool, friend: User?, chat: Chat?) {
         var body: [String: Any] = ["userId": userId]
         if !note.isEmpty { body["message"] = note }
         let any = try await request("POST", "/api/friends/request", body: body)
         let payload = try decode(any, as: AddFriendPayload.self)
-        return (payload.accepted == true, payload.friend)
+        return (payload.accepted == true, payload.friend, payload.chat)
     }
 
     struct FriendMeta: Decodable {
@@ -4602,15 +4603,15 @@ private struct StarredPayload: Decodable {
 
     @discardableResult
     func respondFriend(requestId: String = "", userId: String = "",
-                       accept: Bool) async -> (ok: Bool, pending: Int?) {
-        struct RespondPayload: Decodable { var pending: Int? }
+                       accept: Bool) async -> (ok: Bool, pending: Int?, chat: Chat?) {
+        struct RespondPayload: Decodable { var pending: Int?; var chat: Chat? }
         var body: [String: Any] = ["accept": accept]
         if !requestId.isEmpty { body["requestId"] = requestId }
         if !userId.isEmpty { body["userId"] = userId }
         guard let p = try? await post("/api/friends/respond", body, as: RespondPayload.self) else {
-            return (false, nil)
+            return (false, nil, nil)
         }
-        return (true, p.pending)
+        return (true, p.pending, p.chat)
     }
 
     func createGroup(name: String, memberIds: [String]) async throws -> Chat? {

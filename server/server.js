@@ -16320,7 +16320,8 @@ async function handleApi(req, res, pathname, query) {
       sendTo(target.id, { type: 'friend', action: 'accepted', user: publicUser(user) });
       sendTo(exist.fromId, { type: 'chat', chatId: c2 ? c2.id : '' });
       sendTo(exist.toId, { type: 'chat', chatId: c2 ? c2.id : '' });
-      return ok(res, { accepted: true, friend: publicUser(target) });
+      return ok(res, { accepted: true, friend: publicUser(target),
+        chat: chatSummary(c2, user.id) });
     }
     /* 对方关了「加我为朋友时需要验证」→ 直接变成好友，不再等他点同意 */
     if (!tp.needVerify) {
@@ -16333,7 +16334,8 @@ async function handleApi(req, res, pathname, query) {
       sendTo(target.id, { type: 'friend', action: 'accepted', user: publicUser(user) });
       sendTo(user.id, { type: 'chat', chatId: c0 ? c0.id : '' });
       sendTo(target.id, { type: 'chat', chatId: c0 ? c0.id : '' });
-      return ok(res, { accepted: true, friend: publicUser(target) });
+      return ok(res, { accepted: true, friend: publicUser(target),
+        chat: chatSummary(c0, user.id) });
     }
     /* 微信那套：申请里那句「我是XXX」要留着，「新的朋友」页上要显示出来 */
     const f = { id: uid('f'), fromId: user.id, toId: target.id, status: 'pending', createdAt: now(),
@@ -16414,6 +16416,13 @@ async function handleApi(req, res, pathname, query) {
     if (chat) {
       if (!Array.isArray(chat.hiddenFor)) chat.hiddenFor = [];
       if (!chat.hiddenFor.includes(user.id)) chat.hiddenFor.push(user.id);
+      const messages = loadMessages(chat.id);
+      const clearedSeq = messages.length ? messages[messages.length - 1].seq : 0;
+      if (!db.cleared[user.id]) db.cleared[user.id] = {};
+      db.cleared[user.id][chat.id] = clearedSeq;
+      if (!db.reads[user.id]) db.reads[user.id] = {};
+      db.reads[user.id][chat.id] = clearedSeq;
+      saveReads();
       chatsDirty = true;
       sendTo(user.id, { type: 'chat', action: 'deleted', chatId: chat.id });
     }
@@ -16464,7 +16473,8 @@ async function handleApi(req, res, pathname, query) {
       sendTo(f.fromId, { type: 'friend', action: 'accepted', user: publicUser(user) });
       sendTo(f.fromId, { type: 'chat', chatId: newChat ? newChat.id : '' });
       sendTo(f.toId, { type: 'chat', chatId: newChat ? newChat.id : '' });
-      ok(res, { accepted: true, friend: publicUser(findUser(f.fromId)), pending: pendingLeft() });
+      ok(res, { accepted: true, friend: publicUser(findUser(f.fromId)), pending: pendingLeft(),
+        chat: newChat ? chatSummary(newChat, user.id) : null });
     } else {
       db.friendships = db.friendships.filter((x) => x.id !== f.id);
       saveFriendships();
@@ -16663,7 +16673,7 @@ async function handleApi(req, res, pathname, query) {
     return;
   }
 
-  // 删除会话：只从自己的列表里移除（对齐 QQ 的右键删除），对方不受影响
+  // 删除会话：只从自己的列表里移除（对齐微信的删除聊天），对方不受影响
   if (parts[0] === 'chats' && parts.length === 2 && method === 'DELETE') {
     const chat = db.chats.find((c) => c.id === parts[1]);
     if (!chat) return fail(res, 404, '会话不存在');
@@ -16689,11 +16699,13 @@ async function handleApi(req, res, pathname, query) {
       chat.hiddenFor = Array.from(new Set((chat.hiddenFor || []).concat([user.id])));
       chat.pinnedFor = (chat.pinnedFor || []).filter((id) => id !== user.id);
       saveChats();
+      sendTo(user.id, { type: 'chat', action: 'removed', chatId: chat.id });
       ok(res, { hidden: true, chatId: chat.id, bot: true, cleared: clearedSeq });
       return;
     }
     chat.hiddenFor = Array.from(new Set((chat.hiddenFor || []).concat([user.id])));
     saveChats();
+    sendTo(user.id, { type: 'chat', action: 'removed', chatId: chat.id });
     ok(res, { hidden: true, chatId: chat.id, cleared: clearedSeq });
     return;
   }
@@ -17436,11 +17448,11 @@ async function handleApi(req, res, pathname, query) {
     if (chat.ownerId !== user.id) return fail(res, 403, '只有群主能解散群聊');
     const members = chat.memberIds.slice();
     const sys = pushSystemMessage(chat, '群主解散了该群聊');
-    members.forEach((id) => sendTo(id, { type: 'message', message: sys, chat: chatSummary(chat, id), clientId: null }));
     chat.memberIds = [];
     chat.dismissed = true;
     saveChats();
     members.forEach((id) => sendTo(id, { type: 'chat', action: 'removed', chatId: chat.id }));
+    members.forEach((id) => sendTo(id, { type: 'message', message: sys, chat: chatSummary(chat, id), clientId: null }));
     ok(res, { dismissed: true });
     return;
   }
@@ -21706,11 +21718,11 @@ async function handleOps(req, res, parts, query) {
     if (!chat) return fail(res, 404, '群不存在');
     const members = chat.memberIds.slice();
     const sys = pushSystemMessage(chat, '管理员解散了该群聊');
-    members.forEach((id) => sendTo(id, { type: 'message', message: sys, chat: chatSummary(chat, id), clientId: null }));
     chat.memberIds = [];
     chat.dismissed = true;
     saveChats();
     members.forEach((id) => sendTo(id, { type: 'chat', action: 'removed', chatId: chat.id }));
+    members.forEach((id) => sendTo(id, { type: 'message', message: sys, chat: chatSummary(chat, id), clientId: null }));
     audit(req, admin, '后台解散群聊', chat.id, chat.name + ' · 原 ' + members.length + ' 人');
     ok(res, { dismissed: true });
     return;

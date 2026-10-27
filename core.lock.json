@@ -1,7 +1,7 @@
 {
   "version": "B669",
   "files": [
-    { "path": "Sources/API.swift", "size": 196089, "sha256": "c63c6c979425060136dc112816da1c015e5384e93733c824fc0e9a5ed8a785f4" },
+    { "path": "Sources/API.swift", "size": 196206, "sha256": "952526733f7a6e9cfc6eeb5bf4464b44bbc21e7ce88292bb9740e33258948c2e" },
     { "path": "Sources/App.swift", "size": 135020, "sha256": "f1cdbf06df581f67cc27cb7eab3741678f4d0730eb82b32d0dfd0807d73f4bb5" },
     { "path": "Sources/Realtime.swift", "size": 17643, "sha256": "b27ab76bbea52e0c2dbad5db69bdb52bd5efea5566cd7d3b4edf6404d58b77ee" },
     { "path": "Sources/CallAudio.swift", "size": 26757, "sha256": "40948fb750ccef12892e3beb775f6896291a24578b3c6c0be59c74ac34a9fad8" },
@@ -14,8 +14,8 @@
     { "path": "Sources/LocalStore.swift", "size": 21524, "sha256": "de36470552229e89baa53e62860be3092f81b151a7978f579e6c0f6dd242f599" },
     { "path": "Sources/MsgFrameKey.swift", "size": 651, "sha256": "fdf3a779255614d9915d9bcf528868ac2517b5feafbfa1180956cd162403993a" },
     { "path": "Sources/PushCenter.swift", "size": 7780, "sha256": "c49cf8ca8275a8a177ae1da719bcff894fdffc8fd8b873f1377eac48107b4c0f" },
-    { "path": "Sources/ChatDetailView.swift", "size": 214416, "sha256": "e842c8be971d146feb3653dd36ad62c043072c20819cfcf0b9649ea72d5219b4" },
-    { "path": "Sources/GroupInfoView.swift", "size": 67856, "sha256": "0f7145fca7852bb1a21b1976b47a1278de09f45dffb7839d8fa6de7b3fa0177c" },
+    { "path": "Sources/ChatDetailView.swift", "size": 215552, "sha256": "115a781bb897626a0a993df4b652315dd138987a57ab49d7e3219ac6cebaa4ff" },
+    { "path": "Sources/GroupInfoView.swift", "size": 68162, "sha256": "7412a0dd2305eacb93f3fdb1419d0461f49f2ea27c9dea90244532073952d479" },
     { "path": "Sources/OtherLogin.swift", "size": 3452, "sha256": "5aff74e52ce2e023cb57d226ddacc182fb9a0d508b9ffaba93022ccfbc1f1785" },
     { "path": "Sources/InAppBrowser.swift", "size": 19550, "sha256": "fba42899ab859302146782666fee510daa70246f67080722648d1ff6d8423b78" },
     { "path": "Sources/MallWebPage.swift", "size": 4138, "sha256": "60cc98e6196efc8ef73aa4685db9b2fb55cb8a22138597abdb50cbc8ab5088c3" },

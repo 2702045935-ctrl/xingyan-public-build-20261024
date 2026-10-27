@@ -3,6 +3,7 @@ import SwiftUI
 struct GroupInfoView: View {
     @ObservedObject private var lang = LangStore.shared
     let chat: Chat
+    var onExitChat: () -> Void = {}
 
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -429,8 +430,8 @@ struct GroupInfoView: View {
         let wasOwner = isOwner
         let previousChat = app.openChat
         app.hideChatLocally(chat.id)
-        dismiss()
-        app.openChat = nil
+        onExitChat()
+        app.show(wasOwner ? Tr("正在解散群聊…") : Tr("正在退出群聊…"))
         Task {
             let err = wasOwner ? await API.shared.dismissGroup(chatId: chat.id)
                                : await API.shared.leaveGroup(chatId: chat.id)
@@ -443,6 +444,25 @@ struct GroupInfoView: View {
                 await app.loadChats()
                 app.show(wasOwner ? "群已解散" : "已退出群聊")
             }
+        }
+    }
+
+    private func deleteChat() {
+        let previousChat = app.openChat
+        app.hideChatLocally(chat.id)
+        onExitChat()
+        app.show(Tr("正在删除…"))
+        Task {
+            if let err = await API.shared.deleteChat(chatId: chat.id) {
+                app.revealChatLocally(chat.id)
+                await app.loadChats()
+                app.openChat = previousChat
+                app.show(err)
+                return
+            }
+            app.forgetChatHistory(chat.id)
+            await app.loadChats()
+            app.show(Tr("已删除该聊天"))
         }
     }
 
@@ -786,20 +806,7 @@ struct GroupInfoView: View {
         PanelCard(solid: true) {
             PanelDangerRow(symbol: "eraser.fill", title: Tr("清空聊天记录")) { confirmClear = true }
             PanelDivider()
-            PanelDangerRow(symbol: "trash.fill", title: Tr("删除该聊天")) {
-                Task {
-                    saving = true
-                    if let err = await API.shared.hideChat(chatId: chat.id) {
-                        app.show(err)
-                        saving = false
-                        return
-                    }
-                    await app.loadChats()
-                    saving = false
-                    dismiss()
-                    app.show(Tr("已删除该聊天"))
-                }
-            }
+            PanelDangerRow(symbol: "trash.fill", title: Tr("删除该聊天")) { deleteChat() }
             PanelDivider()
 
             PanelDangerRow(symbol: "rectangle.portrait.and.arrow.right",
@@ -1120,6 +1127,7 @@ struct GroupAnnounceView: View {
 struct DirectChatInfoView: View {
     @ObservedObject private var lang = LangStore.shared
     let chat: Chat
+    var onExitChat: () -> Void = {}
 
     @State private var faceForBurn = false
 
@@ -1511,17 +1519,17 @@ struct DirectChatInfoView: View {
     private func deleteChat() {
         let previousChat = app.openChat
         app.hideChatLocally(chat.id)
-        dismiss()
-        app.openChat = nil
+        onExitChat()
         app.show(Tr("正在删除…"))
         Task {
-            if let err = await API.shared.hideChat(chatId: chat.id) {
+            if let err = await API.shared.deleteChat(chatId: chat.id) {
                 app.revealChatLocally(chat.id)
                 await app.loadChats()
                 app.openChat = previousChat
                 app.show(err)
                 return
             }
+            app.forgetChatHistory(chat.id)
             await app.loadChats()
             app.show(Tr("已删除该聊天"))
         }

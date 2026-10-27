@@ -1330,7 +1330,12 @@ struct ContactCardView: View {
                     if let n = res.pending { app.friendRequests = n }
                     await app.loadContacts()
                     await app.loadChats()
-                    app.wantChatsTab = true
+                    if let chat = res.chat {
+                        app.ensureChatVisible(chat)
+                        app.openChat = chat
+                    } else {
+                        app.wantChatsTab = true
+                    }
                     dismiss()
                     await load()
                 } else {
@@ -1461,6 +1466,9 @@ struct ContactCardView: View {
 
     private func removeFriend() {
         let userId = u.id
+        let removedChatIds = app.chats.filter {
+            ($0.type ?? "direct") == "direct" && ($0.memberIds ?? []).contains(userId)
+        }.map(\.id)
         app.applyFriendRemoved(userId: userId)
         app.openChat = nil
         app.wantChatsTab = true
@@ -1469,11 +1477,13 @@ struct ContactCardView: View {
         Task {
             if let err = await API.shared.removeFriend(userId: userId) {
                 app.show(Tr("删除失败，已恢复：") + err)
+                for chatId in removedChatIds { app.revealChatLocally(chatId) }
                 await app.loadContacts()
                 await app.loadChats()
                 return
             }
 
+            for chatId in removedChatIds { app.forgetChatHistory(chatId, notify: false) }
             await app.loadContacts()
             await app.loadChats()
         }

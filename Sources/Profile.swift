@@ -564,6 +564,9 @@ struct NewFriendsView: View {
         .padding(.trailing, 16)
         .frame(height: 68)
         .contentShape(Rectangle())
+        .onTapGesture {
+            if locallyAccepted[user.id] != nil { openChat(user) }
+        }
     }
 
     private func doneRow(_ user: User) -> some View {
@@ -580,6 +583,7 @@ struct NewFriendsView: View {
         .padding(.trailing, 16)
         .frame(height: 68)
         .contentShape(Rectangle())
+        .onTapGesture { openChat(user) }
     }
 
     private func waitingRow(_ user: User) -> some View {
@@ -604,6 +608,19 @@ struct NewFriendsView: View {
     private func noteOf(_ user: User) -> String {
         let n = (user.requestMessage ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         return n.isEmpty ? Tr("请求加你为好友") : n
+    }
+
+    private func openChat(_ user: User) {
+        Task {
+            guard let chat = try? await API.shared.openDirect(userId: user.id) else {
+                app.show(Tr("打不开聊天"))
+                return
+            }
+            app.revealChatLocally(chat.id)
+            app.ensureChatVisible(chat)
+            app.openChat = chat
+            dismiss()
+        }
     }
 
     private func load() async {
@@ -646,7 +663,7 @@ struct NewFriendsView: View {
         }
         app.friendRequests = incoming.count
         Task {
-            let res: (ok: Bool, pending: Int?) = (user.requestId ?? "").isEmpty
+            let res: (ok: Bool, pending: Int?, chat: Chat?) = (user.requestId ?? "").isEmpty
                 ? await API.shared.respondFriend(userId: user.id, accept: accept)
                 : await API.shared.respondFriend(requestId: user.requestId ?? "", accept: accept)
             busy.remove(user.id)
@@ -667,8 +684,14 @@ struct NewFriendsView: View {
             await app.loadContacts()
             await app.loadChats()
             if accept {
-                app.wantChatsTab = true
+                if let chat = res.chat {
+                    app.ensureChatVisible(chat)
+                    app.openChat = chat
+                } else {
+                    app.wantChatsTab = true
+                }
                 dismiss()
+                return
             }
 
             await load()
@@ -917,7 +940,12 @@ struct AddFriendView: View {
             app.show(Tr("已添加到通讯录"))
             await app.loadContacts()
             await app.loadChats()
-            app.wantChatsTab = true
+            if let chat = res.chat {
+                app.ensureChatVisible(chat)
+                app.openChat = chat
+            } else {
+                app.wantChatsTab = true
+            }
             dismiss()
         }
     }
@@ -1002,7 +1030,7 @@ struct FriendApplySheet: View {
         sending = true
         Task {
             do {
-                let result: (accepted: Bool, friend: User?)
+                let result: (accepted: Bool, friend: User?, chat: Chat?)
                 if let un = user.username, !un.isEmpty {
                     result = try await API.shared.addFriend(username: un, note: trimmed)
                 } else {
@@ -1011,8 +1039,13 @@ struct FriendApplySheet: View {
                 if result.accepted {
                     app.applyFriendAccepted(result.friend ?? user)
                     await app.loadChats()
-                    app.wantChatsTab = true
                     app.show(Tr("你们已经是好友了"))
+                    if let chat = result.chat {
+                        app.ensureChatVisible(chat)
+                        app.openChat = chat
+                    } else {
+                        app.wantChatsTab = true
+                    }
                     dismiss()
                 } else {
                     app.noteFriendRequestSent(user, note: trimmed)
@@ -1199,9 +1232,19 @@ struct FriendPermSheet: View {
     }
 
     private func save() {
+        let oldNoMoments = noMoments
+        let oldHideMine = hideMine
+        let oldBlocked = blocked
         Task {
-            await API.shared.setFriendMeta(userId: user.id, block: blocked,
-                                           noMoments: noMoments, hideMyMoments: hideMine)
+            let saved = await API.shared.setFriendMeta(userId: user.id, block: blocked,
+                                                       noMoments: noMoments, hideMyMoments: hideMine)
+            guard saved else {
+                noMoments = oldNoMoments
+                hideMine = oldHideMine
+                blocked = oldBlocked
+                app.show(Tr("没保存上，再试一次"))
+                return
+            }
             await onSaved()
             app.show(Tr("已保存"))
         }
