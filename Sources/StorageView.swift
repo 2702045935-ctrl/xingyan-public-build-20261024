@@ -19,147 +19,75 @@ struct StorageView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            NavBar(title: Tr("存储空间"), back: { dismiss() })
-
-            ScrollView {
-                VStack(spacing: 0) {
-                    VStack(spacing: 6) {
-                        Text(loading ? "…" : mb((info?.total ?? 0) + cacheBytes))
-                            .font(pfMoney(34, .medium))
-                            .foregroundColor(C.label)
-                        Text(Tr("已用空间（聊天记录 + 缓存）"))
-                            .font(pf(13)).foregroundColor(C.subLabel)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 26)
-                    .background(C.cardBg)
-
-                    Spacer().frame(height: 8)
-
+        List {
+            Section {
+                VStack(spacing: 10) {
+                    Text(loading ? "…" : mb((info?.total ?? 0) + cacheBytes))
+                        .font(.system(size: 34, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.primary)
+                    Text(Tr("已用空间（聊天记录 + 缓存）"))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                     storageBar
-                        .padding(.horizontal, 16)
-                        .padding(.top, 16)
                     legend
-                        .padding(.top, 12)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+            }
 
-                    Text(Tr("存储管理"))
-                        .font(pf(13, .medium))
-                        .foregroundColor(C.subLabel)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 16)
-                        .padding(.top, 20)
-                        .padding(.bottom, 6)
-
-                    GroupCard {
-                        NavigationLink(value: "g.history") {
-                            HStack(spacing: 12) {
-                                storageIcon("clock.arrow.circlepath", color: C.green)
-                                VStack(alignment: .leading, spacing: 3) {
-                                    Text(Tr("聊天记录管理"))
-                                        .font(pf(16))
-                                        .foregroundColor(C.label)
-                                    Text(Tr("导出、导入备份，或按会话清理"))
-                                        .font(pf(12.5))
-                                        .foregroundColor(C.subLabel)
-                                        .lineLimit(1)
-                                }
-                                Spacer(minLength: 8)
-                                Text("\((info?.chats ?? []).count) " + Tr("个会话"))
-                                    .font(pf(13))
-                                    .foregroundColor(C.subLabel)
-                                Chevron(size: 8, line: 1.5)
-                            }
-                            .padding(.horizontal, 16)
-                            .frame(height: 66)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-
-                        HairLine(inset: 16)
-
-                        Button { clearCache() } label: {
-                            HStack(spacing: 12) {
-                                storageIcon("internaldrive", color: Color(hex: 0x4A90D9))
-                                VStack(alignment: .leading, spacing: 3) {
-                                    Text(Tr("缓存"))
-                                        .font(pf(16))
-                                        .foregroundColor(C.label)
-                                    Text(Tr("图片缓存和网络缓存，清理不影响聊天记录"))
-                                        .font(pf(12.5))
-                                        .foregroundColor(C.subLabel)
-                                        .lineLimit(1)
-                                }
-                                Spacer(minLength: 8)
-                                Text(mb(cacheBytes))
-                                    .font(pf(13))
-                                    .foregroundColor(C.subLabel)
-                                Text(clearing ? Tr("清理中…") : Tr("去清理"))
-                                    .font(pf(12.5, .medium))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 11)
-                                    .frame(height: 26)
-                                    .background(Capsule().fill(C.green))
-                            }
-                            .padding(.horizontal, 16)
-                            .frame(height: 66)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(clearing || cacheBytes == 0)
-                        .opacity(cacheBytes == 0 ? 0.55 : 1)
+            Section(header: Text(Tr("存储管理"))) {
+                NavigationLink(value: "g.history") {
+                    LabeledContent {
+                        Text("\((info?.chats ?? []).count) " + Tr("个会话"))
+                            .foregroundStyle(.secondary)
+                    } label: {
+                        Label(Tr("聊天记录管理"), systemImage: "clock.arrow.circlepath")
                     }
-                    .padding(.horizontal, 12)
-
-                    Text(Tr("清理缓存只删手机上的图片缓存，不会删除聊天记录，也不影响服务器上的任何东西。"))
-                        .font(pf(12.5))
-                        .foregroundColor(C.subLabel)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 18)
-                        .padding(.top, 8)
-
+                }
+                Button {
+                    clearCache()
+                } label: {
                     HStack {
-                        Text(Tr("聊天记录占用"))
-                            .font(pf(13)).foregroundColor(C.subLabel)
+                        Label(Tr("缓存"), systemImage: "internaldrive")
                         Spacer()
-                        Text(Tr("点一个可以清空它的记录"))
-                            .font(pf(12)).foregroundColor(C.subLabel)
+                        Text(clearing ? Tr("清理中…") : mb(cacheBytes))
+                            .foregroundStyle(.secondary)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 18)
-                    .padding(.bottom, 6)
+                }
+                .disabled(clearing || cacheBytes == 0)
+            } footer: {
+                Text(Tr("清理缓存只删手机上的图片缓存，不会删除聊天记录，也不影响服务器上的任何东西。"))
+            }
 
-                    GroupCard {
-                        ForEach((info?.chats ?? []).indices, id: \.self) { i in
-                            let c = (info?.chats ?? [])[i]
-                            if i > 0 { HairLine(inset: 68) }
-                            Button { confirmChat = c } label: {
-                                HStack(spacing: 12) {
-                                    Avatar(path: c.avatar ?? "", size: 44, radius: 6)
-                                    VStack(alignment: .leading, spacing: 3) {
-                                        Text(c.title).font(pf(16)).foregroundColor(C.label).lineLimit(1)
-                                        Text("\(c.messages) " + Tr("条消息"))
-                                            .font(pf(12.5)).foregroundColor(C.subLabel)
-                                    }
-                                    Spacer(minLength: 8)
-                                    Text(mb(c.bytes)).font(pf(14)).foregroundColor(C.subLabel)
-                                }
-                                .padding(.horizontal, 16)
-                                .frame(height: 64)
-                                .contentShape(Rectangle())
+            Section(header: Text(Tr("聊天记录占用")),
+                    footer: Text(Tr("点一个会话可以清空它的本机记录。"))) {
+                ForEach((info?.chats ?? []).indices, id: \.self) { i in
+                    let chat = (info?.chats ?? [])[i]
+                    Button {
+                        confirmChat = chat
+                    } label: {
+                        HStack(spacing: 12) {
+                            Avatar(path: chat.avatar ?? "", size: 42, radius: 12)
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(chat.title)
+                                    .foregroundStyle(.primary)
+                                    .lineLimit(1)
+                                Text("\(chat.messages) " + Tr("条消息"))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
                             }
-                            .buttonStyle(.plain)
+                            Spacer()
+                            Text(mb(chat.bytes))
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
                         }
                     }
-                    Spacer().frame(height: 30)
+                    .buttonStyle(.plain)
                 }
             }
-            .background(C.pageBg)
         }
-        .background(C.pageBg.ignoresSafeArea(edges: .bottom))
-        .background(C.pageBg.ignoresSafeArea(edges: .top))
-        .toolbar(.hidden, for: .navigationBar)
-        .swipeBack { dismiss() }
+        .listStyle(.insetGrouped)
+        .navigationTitle(Tr("存储空间"))
         .hidesTabBar()
         .task { await load() }
         .confirmationDialog(Tr("清空这个会话的聊天记录？"),

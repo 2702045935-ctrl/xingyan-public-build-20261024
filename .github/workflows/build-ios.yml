@@ -83,7 +83,7 @@ jobs:
         run: |
           set -e
           BUILDDATE="$(TZ=Asia/Shanghai date '+%m-%d %H:%M')"
-          BUILDNO=300021
+          BUILDNO=300022
           echo "构建号 = $BUILDNO"
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILDNO" Info.plist || true
           /usr/libexec/PlistBuddy -c "Add :BuildDate string $BUILDDATE" Info.plist \
