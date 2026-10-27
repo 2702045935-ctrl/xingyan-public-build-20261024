@@ -344,6 +344,8 @@ struct ChatDetailView: View {
 
     @State private var showApply = false
     @State private var applyNote = ""
+    @State private var peerRelationChecked = false
+    @State private var serverPeerRelation: String?
 
     @State private var announcePage = ""
     @State private var showAnnouncePage = false
@@ -1387,6 +1389,7 @@ struct ChatDetailView: View {
             loadDeletedMessageIds()
             loadOutbox()
             await load(initial: true)
+            await refreshPeerRelation()
             await flushOutbox()
             await API.shared.markRead(chatId: chat.id)
 
@@ -2251,7 +2254,28 @@ struct ChatDetailView: View {
         guard !isGroup, !peerId.isEmpty else { return true }
         if (chat.bot ?? "").isEmpty == false || (chat.oaId ?? "").isEmpty == false { return true }
         if app.contacts.isEmpty { return true }
-        return app.contacts.contains { $0.id == peerId }
+        if app.contacts.contains(where: { $0.id == peerId }) { return true }
+        if serverPeerRelation == "friend" || serverPeerRelation == "self" { return true }
+        return !peerRelationChecked
+    }
+
+    private func refreshPeerRelation() async {
+        guard !isGroup,
+              !peerId.isEmpty,
+              (chat.bot ?? "").isEmpty,
+              (chat.oaId ?? "").isEmpty else {
+            peerRelationChecked = true
+            return
+        }
+        guard let user = try? await API.shared.user(id: peerId) else {
+            peerRelationChecked = true
+            return
+        }
+        serverPeerRelation = user.relation
+        if user.relation == "friend" {
+            app.applyFriendAccepted(user)
+        }
+        peerRelationChecked = true
     }
 
     private var verifyComposer: some View {
