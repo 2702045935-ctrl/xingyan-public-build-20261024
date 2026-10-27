@@ -554,7 +554,7 @@ extension TRTCBridge: TRTCCloudDelegate {
     nonisolated func onError(_ errCode: Int, errMsg: String?, extInfo: [String: Any]?) {
         Task { @MainActor in
             self.lastError = "TRTC 错误 \(errCode)：" + (errMsg ?? "")
-            let text = String(errMsg || "").lowercased()
+            let text = String(errMsg ?? "").lowercased()
             if text.contains("microphone") || text.contains("mic") || text.contains("麦克") {
                 self.microphoneWarning = true
             }
