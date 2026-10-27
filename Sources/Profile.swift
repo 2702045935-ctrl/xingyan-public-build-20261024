@@ -318,9 +318,11 @@ struct NewFriendsView: View {
 
     private func hit(_ u: User) -> Bool {
         if keyword.isEmpty { return true }
-        return u.name.contains(keyword)
-            || (u.username ?? "").contains(keyword)
-            || (u.requestMessage ?? "").contains(keyword)
+        let query = keyword.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return true }
+        return u.name.localizedCaseInsensitiveContains(query)
+            || (u.username ?? "").localizedCaseInsensitiveContains(query)
+            || (u.requestMessage ?? "").localizedCaseInsensitiveContains(query)
     }
     private var shownIncoming: [User] { incoming.filter(hit) }
     private var shownOutgoing: [User] { outgoing.filter(hit) }
@@ -329,63 +331,66 @@ struct NewFriendsView: View {
     var body: some View {
         VStack(spacing: 0) {
             NavBar(title: Tr("新的朋友"), back: { dismiss() })
-            SearchBoxCenter(text: $keyword).padding(L.searchPad)
-                .background(C.pageBg)
 
             ScrollView {
-                LazyVStack(spacing: 0) {
+                LazyVStack(spacing: 10) {
+                    orbitHeader
+                        .padding(.horizontal, 12)
+
                     NavigationLink(value: "addFriend") { addFriendRow }
                         .buttonStyle(MenuPressStyle())
+                        .padding(.horizontal, 12)
 
                     if loading && incoming.isEmpty && outgoing.isEmpty && added.isEmpty {
                         HStack { Spacer(); ProgressView(); Spacer() }
-                            .frame(height: 76).background(C.cardBg)
+                            .frame(height: 76)
+                            .background(OrbitTheme.cardBackground())
+                            .padding(.horizontal, 12)
                     } else if !loading && shownIncoming.isEmpty && shownOutgoing.isEmpty && shownAdded.isEmpty {
-                        Text(Tr("还没有好友申请"))
+                        Text(Tr("没有匹配的申请记录"))
                             .font(pf(15))
                             .foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 36)
-                            .background(C.cardBg)
+                            .background(OrbitTheme.cardBackground())
+                            .padding(.horizontal, 12)
                     }
 
                     if !shownIncoming.isEmpty {
-                        sectionHeader(Tr("好友申请"))
+                        sectionHeader(Tr("好友申请"), count: shownIncoming.count)
+                            .padding(.horizontal, 16)
                         ForEach(shownIncoming) { user in
-                            VStack(spacing: 0) {
-                                HairLine(inset: 68)
-                                requestRow(user)
-                            }
-                            .background(C.cardBg)
+                            requestRow(user)
+                                .background(OrbitTheme.cardBackground())
+                                .padding(.horizontal, 12)
                         }
                     }
                     if !shownAdded.isEmpty {
-                        sectionHeader(Tr("已添加"))
+                        sectionHeader(Tr("已添加"), count: shownAdded.count)
+                            .padding(.horizontal, 16)
                         ForEach(shownAdded) { user in
-                            VStack(spacing: 0) {
-                                HairLine(inset: 68)
-                                doneRow(user)
-                            }
-                            .background(C.cardBg)
+                            doneRow(user)
+                                .background(OrbitTheme.cardBackground())
+                                .padding(.horizontal, 12)
                         }
                     }
                     if !shownOutgoing.isEmpty {
-                        sectionHeader(Tr("我添加的"))
+                        sectionHeader(Tr("我添加的"), count: shownOutgoing.count)
+                            .padding(.horizontal, 16)
                         ForEach(shownOutgoing) { user in
-                            VStack(spacing: 0) {
-                                HairLine(inset: 68)
-                                waitingRow(user)
-                            }
-                            .background(C.cardBg)
+                            waitingRow(user)
+                                .background(OrbitTheme.cardBackground())
+                                .padding(.horizontal, 12)
                         }
                     }
                 }
+                .padding(.top, 10)
                 .padding(.bottom, 30)
             }
             .refreshable { await load() }
         }
-        .background(C.pageBg.ignoresSafeArea(edges: .bottom))
-        .background(C.pageBg.ignoresSafeArea(edges: .top))
+        .background(OrbitTheme.canvas.ignoresSafeArea(edges: .bottom))
+        .background(OrbitTheme.canvas.ignoresSafeArea(edges: .top))
         .toolbar(.hidden, for: .navigationBar)
         .swipeBack { dismiss() }
         .hidesTabBar()
@@ -407,6 +412,90 @@ struct NewFriendsView: View {
         }
     }
 
+    private var orbitHeader: some View {
+        ZStack(alignment: .leading) {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(LinearGradient(
+                    colors: [OrbitTheme.jadeDeep, OrbitTheme.jade.opacity(0.72), .black],
+                    startPoint: .topLeading, endPoint: .bottomTrailing))
+
+            Circle()
+                .stroke(Color.white.opacity(0.13), lineWidth: 1)
+                .frame(width: 150, height: 150)
+                .offset(x: 244, y: -48)
+            Circle()
+                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                .frame(width: 104, height: 104)
+                .offset(x: 267, y: -25)
+            Image(systemName: "sparkle")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(OrbitTheme.gold)
+                .offset(x: 272, y: -33)
+            Circle()
+                .fill(Color.white.opacity(0.72))
+                .frame(width: 5, height: 5)
+                .offset(x: 318, y: 34)
+            Circle()
+                .fill(OrbitTheme.gold)
+                .frame(width: 4, height: 4)
+                .offset(x: 224, y: 91)
+
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 8) {
+                    Image(systemName: "point.3.connected.trianglepath.dotted")
+                        .font(.system(size: 12, weight: .semibold))
+                    Text("RELATION ORBIT")
+                        .font(.system(size: 9, weight: .bold))
+                        .tracking(1.2)
+                }
+                .foregroundStyle(Color.white.opacity(0.72))
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(Tr("新的朋友"))
+                        .font(.system(size: 23, weight: .bold))
+                        .foregroundStyle(.white)
+                    Text("\(incoming.count) " + Tr("个待确认")
+                         + "  ·  \(outgoing.count) " + Tr("个已发出"))
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.white.opacity(0.70))
+                }
+
+                HStack(spacing: 9) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(.secondary)
+                    TextField(Tr("搜索昵称、星言号或验证消息"), text: $keyword)
+                        .font(.system(size: 14.5))
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                    if !keyword.isEmpty {
+                        Button { keyword = "" } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 12)
+                .frame(height: 42)
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(Color.white.opacity(0.20), lineWidth: 0.6)
+                }
+                .accessibilityElement(children: .contain)
+            }
+            .padding(17)
+        }
+        .frame(height: 174)
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(Color.white.opacity(0.10), lineWidth: 0.7)
+        }
+    }
+
     private var addFriendRow: some View {
         HStack(spacing: L.ctGap) {
             ZStack {
@@ -421,18 +510,14 @@ struct NewFriendsView: View {
         .padding(.leading, L.ctPadL)
         .padding(.trailing, 16)
         .frame(height: L.ctRowH)
-        .background(C.cardBg)
+        .background(OrbitTheme.cardBackground())
+        .clipShape(OrbitTheme.card)
         .contentShape(Rectangle())
     }
 
-    private func sectionHeader(_ t: String) -> some View {
-        HStack(spacing: 0) {
-            Text(t).font(pf(13)).foregroundColor(C.subLabel)
-            Spacer(minLength: 0)
-        }
-        .padding(.leading, 16)
+    private func sectionHeader(_ t: String, count: Int? = nil) -> some View {
+        OrbitSectionLabel(text: t, count: count)
         .frame(height: 30)
-        .background(C.pageBg)
     }
 
     private func requestRow(_ user: User) -> some View {
