@@ -35,7 +35,7 @@ struct StorageView: View {
                 .padding(.vertical, 10)
             }
 
-            Section(header: Text(Tr("存储管理"))) {
+            Section {
                 NavigationLink(value: "g.history") {
                     LabeledContent {
                         Text("\((info?.chats ?? []).count) " + Tr("个会话"))
@@ -55,12 +55,13 @@ struct StorageView: View {
                     }
                 }
                 .disabled(clearing || cacheBytes == 0)
+            } header: {
+                Text(Tr("存储管理"))
             } footer: {
                 Text(Tr("清理缓存只删手机上的图片缓存，不会删除聊天记录，也不影响服务器上的任何东西。"))
             }
 
-            Section(header: Text(Tr("聊天记录占用")),
-                    footer: Text(Tr("点一个会话可以清空它的本机记录。"))) {
+            Section {
                 ForEach((info?.chats ?? []).indices, id: \.self) { i in
                     let chat = (info?.chats ?? [])[i]
                     Button {
@@ -84,6 +85,10 @@ struct StorageView: View {
                     }
                     .buttonStyle(.plain)
                 }
+            } header: {
+                Text(Tr("聊天记录占用"))
+            } footer: {
+                Text(Tr("点一个会话可以清空它的本机记录。"))
             }
         }
         .listStyle(.insetGrouped)

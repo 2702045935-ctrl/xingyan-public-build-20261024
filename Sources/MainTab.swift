@@ -87,7 +87,8 @@ struct MainTabView: View {
                     .background {
 
                         if UIConfig.num("tabBarOpaqueBg", 0) > 0 {
-                            OrbitTheme.raised.ignoresSafeArea(edges: .bottom)
+                            Color.dyn(0xFFFFFF, 0x0B1813)
+                                .ignoresSafeArea(edges: .bottom)
                         }
                     }
 
@@ -388,7 +389,7 @@ struct TabBar: View {
     }
 
     private var selColor: Color { UIConfig.color("tabOrbitSelColor", 0x17201C, 0xDDF7ED) }
-    private var unselColor: Color { UIConfig.color("tabOrbitUnselColor", 0x626B66, 0x85938D) }
+    private var unselColor: Color { UIConfig.color("tabOrbitUnselColor", 0x626B66, 0x8AA79C) }
 
     private func tabIconFont(_ i: Int, on: Bool) -> Font {
         let base = UIConfig.num("tabIcon\(i)", (i == 0 || i == 1) ? L.tabIcon - 2 : L.tabIcon)
@@ -443,14 +444,14 @@ struct TabBar: View {
                 Rectangle().fill(.ultraThinMaterial)
                     .opacity(0.78)
                 LinearGradient(
-                    colors: [Color(hex: 0x121A17).opacity(0.82),
-                             Color(hex: 0x090B0A).opacity(0.94)],
+                    colors: [Color(hex: 0x10251D).opacity(0.90),
+                             Color(hex: 0x08130F).opacity(0.96)],
                     startPoint: .top, endPoint: .bottom
                 )
-                OrbitTheme.jade.opacity(0.035)
+                OrbitTheme.jade.opacity(0.085)
                 VStack(spacing: 0) {
                     Rectangle()
-                        .fill(OrbitTheme.divider.opacity(0.85))
+                        .fill(OrbitTheme.jade.opacity(0.20))
                         .frame(height: 0.5)
                     Spacer(minLength: 0)
                 }
