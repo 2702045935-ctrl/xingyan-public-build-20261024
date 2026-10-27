@@ -140,7 +140,8 @@ struct ChatBackgroundSheet: View {
                             .frame(height: 52)
                             .contentShape(Rectangle())
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.borderless)
+                        .disabled(busy)
 
                         HairLine(inset: 16)
 
@@ -156,7 +157,8 @@ struct ChatBackgroundSheet: View {
                             .frame(height: 52)
                             .contentShape(Rectangle())
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.borderless)
+                        .disabled(busy)
                     }
                     .background(C.cardBg)
 
@@ -217,6 +219,9 @@ struct ChatBackgroundSheet: View {
         Task {
             busy = true
             await API.shared.changeBackground(path)
+            if path == "auto" {
+                app.show(Tr("已恢复默认背景"))
+            }
             busy = false
         }
     }
