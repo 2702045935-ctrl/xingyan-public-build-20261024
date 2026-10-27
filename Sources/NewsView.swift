@@ -20,6 +20,7 @@ struct NewsFeedView: View {
 
     @State private var offset = 0
     @State private var total = 0
+    @State private var updatedAt: Double = 0
     @State private var web: WebURL?
 
     static let builtinChannels: [NewsChannel] = [
@@ -33,11 +34,17 @@ struct NewsFeedView: View {
     private var accent: Color { C.green }
 
     var body: some View {
-        VStack(spacing: 0) {
-            tabs
-            content
+        Group {
+            if compact {
+                VStack(spacing: 0) {
+                    tabs
+                    content
+                }
+                .background(C.cardBg)
+            } else {
+                premiumFeed
+            }
         }
-        .background(C.cardBg)
         .task {
             if tab.isEmpty { tab = initialSource }
             if let only = onlyTabs { channels = only }
@@ -72,6 +79,328 @@ struct NewsFeedView: View {
         }
         .background(C.navBg)
         .overlay(alignment: .bottom) { HairLine() }
+    }
+
+    private var premiumFeed: some View {
+        ScrollView {
+            LazyVStack(spacing: 16, pinnedViews: [.sectionHeaders]) {
+                Section {
+                    if items.isEmpty && loading {
+                        premiumLoading
+                    } else if items.isEmpty {
+                        premiumEmpty
+                    } else if isBoard {
+                        premiumBoard
+                    } else {
+                        premiumEditorial
+                    }
+                } header: {
+                    premiumChannelBar
+                }
+            }
+            .padding(.bottom, 34)
+        }
+        .background(Color(uiColor: .systemGroupedBackground))
+        .refreshable { await load(tab) }
+    }
+
+    private var premiumChannelBar: some View {
+        VStack(spacing: 7) {
+            if channels.count > 1 {
+                Picker("", selection: Binding(
+                    get: { tab },
+                    set: { select($0) }
+                )) {
+                    ForEach(channels) { channel in
+                        Text(Tr(channel.label)).tag(channel.id)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .padding(.horizontal, 16)
+            }
+            HStack(spacing: 5) {
+                Image(systemName: "clock")
+                    .font(.caption2.weight(.semibold))
+                Text(updatedAt > 0
+                     ? Tr("更新于") + " " + timeText(updatedAt)
+                     : Tr("实时热点"))
+                Spacer(minLength: 0)
+                Text(Tr("下拉刷新"))
+            }
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 18)
+        }
+        .padding(.vertical, 8)
+        .background(.bar)
+        .overlay(alignment: .bottom) { HairLine() }
+    }
+
+    private var premiumLoading: some View {
+        VStack(spacing: 12) {
+            ProgressView()
+                .tint(accent)
+            Text(Tr("正在整理最新内容…"))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 74)
+    }
+
+    private var premiumEmpty: some View {
+        VStack(spacing: 14) {
+            Image(systemName: failed ? "wifi.exclamationmark" : "newspaper")
+                .font(.system(size: 32, weight: .light))
+                .foregroundStyle(.secondary)
+            Text(failed ? Tr("暂时没有取到内容") : Tr("这里还没有新闻"))
+                .font(.headline)
+            Text(failed ? Tr("检查网络后再试一次") : Tr("稍后下拉刷新"))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            Button(Tr("重新加载")) { Task { await load(tab) } }
+                .buttonStyle(.bordered)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 64)
+    }
+
+    private var premiumEditorial: some View {
+        let rows = Array(items)
+        return VStack(spacing: 15) {
+            if let first = rows.first {
+                premiumSectionTitle(Tr("今日焦点"), trailing: first.src)
+                premiumHero(first)
+            }
+            if rows.count > 1 {
+                premiumSectionTitle(Tr("最新"), trailing: "\(rows.count - 1) " + Tr("条"))
+                VStack(spacing: 0) {
+                    ForEach(Array(rows.dropFirst())) { item in
+                        Button { open(item) } label: {
+                            premiumArticleRow(item)
+                        }
+                        .buttonStyle(.plain)
+                        if item.id != rows.last?.id {
+                            HairLine(inset: 15)
+                        }
+                    }
+                }
+                .background(Color(uiColor: .secondarySystemGroupedBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(C.hairline, lineWidth: 0.5)
+                }
+            }
+            premiumFooter
+        }
+        .padding(.horizontal, 16)
+    }
+
+    private func premiumSectionTitle(_ title: String, trailing: String) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(title)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(.primary)
+            Spacer(minLength: 8)
+            Text(trailing)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+        }
+        .padding(.top, 4)
+    }
+
+    private func premiumHero(_ item: NewsItem) -> some View {
+        Button { open(item) } label: {
+            Group {
+                if item.cover.isEmpty {
+                    VStack(alignment: .leading, spacing: 12) {
+                        premiumTag(item)
+                        Text(item.title)
+                            .font(.system(size: 22, weight: .semibold))
+                            .foregroundStyle(.primary)
+                            .multilineTextAlignment(.leading)
+                            .lineLimit(3)
+                        if let summary = item.summary, !summary.isEmpty {
+                            Text(summary)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(2)
+                        }
+                        premiumMeta(item, onDark: false)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(18)
+                    .background(Color(uiColor: .secondarySystemGroupedBackground))
+                } else {
+                    ZStack(alignment: .bottomLeading) {
+                        RemoteImage(path: item.cover, mode: .fill, maxSide: 1600)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 226)
+                            .clipped()
+                        LinearGradient(colors: [.clear, .black.opacity(0.20),
+                                                .black.opacity(0.86)],
+                                       startPoint: .top, endPoint: .bottom)
+                        VStack(alignment: .leading, spacing: 9) {
+                            premiumTag(item, dark: true)
+                            Text(item.title)
+                                .font(.system(size: 22, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .multilineTextAlignment(.leading)
+                                .lineLimit(3)
+                            premiumMeta(item, onDark: true)
+                        }
+                        .padding(17)
+                    }
+                    .frame(height: 226)
+                }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .stroke(C.hairline, lineWidth: 0.5)
+            }
+            .shadow(color: Color.black.opacity(0.08), radius: 14, y: 5)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func premiumArticleRow(_ item: NewsItem) -> some View {
+        HStack(alignment: .top, spacing: 13) {
+            VStack(alignment: .leading, spacing: 7) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(item.title)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.primary)
+                        .multilineTextAlignment(.leading)
+                        .lineLimit(2)
+                    if !item.tagText.isEmpty { tagChip(item.tagText) }
+                }
+                if let summary = item.summary, !summary.isEmpty {
+                    Text(summary)
+                        .font(.system(size: 13.5))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
+                premiumMeta(item, onDark: false)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            if !item.cover.isEmpty {
+                RemoteImage(path: item.cover, mode: .fill, maxSide: 700)
+                    .frame(width: 104, height: 78)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+        }
+        .padding(.horizontal, 15)
+        .padding(.vertical, 14)
+        .contentShape(Rectangle())
+    }
+
+    @ViewBuilder
+    private func premiumTag(_ item: NewsItem, dark: Bool = false) -> some View {
+        if !item.tagText.isEmpty {
+            Text(item.tagText)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(dark ? .white : C.red)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(
+                    Capsule().fill(dark ? Color.white.opacity(0.18)
+                                       : C.red.opacity(0.10))
+                )
+        }
+    }
+
+    private func premiumMeta(_ item: NewsItem, onDark: Bool) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: "newspaper.fill")
+                .font(.system(size: 10, weight: .semibold))
+            Text(item.src)
+            let t = timeText(item.at)
+            if !t.isEmpty {
+                Text("·")
+                Text(t)
+            }
+            if item.hotValue > 0 {
+                Text("·")
+                Image(systemName: "flame.fill")
+                    .font(.system(size: 10, weight: .semibold))
+                Text(hotText(item.hotValue))
+            }
+        }
+        .font(.caption)
+        .foregroundStyle(onDark ? Color.white.opacity(0.78) : C.subLabel)
+        .lineLimit(1)
+    }
+
+    private var premiumBoard: some View {
+        let rows = Array(items.enumerated())
+        return VStack(spacing: 15) {
+            premiumSectionTitle(Tr("实时热榜"), trailing: "\(items.count) " + Tr("条"))
+            VStack(spacing: 0) {
+                ForEach(rows, id: \.element.id) { row in
+                    Button { open(row.element) } label: {
+                        premiumBoardRow(row.element, index: row.offset)
+                    }
+                    .buttonStyle(.plain)
+                    if row.offset < rows.count - 1 {
+                        HairLine(inset: 54)
+                    }
+                }
+            }
+            .background(Color(uiColor: .secondarySystemGroupedBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(C.hairline, lineWidth: 0.5)
+            }
+            premiumFooter
+        }
+        .padding(.horizontal, 16)
+    }
+
+    private func premiumBoardRow(_ item: NewsItem, index: Int) -> some View {
+        let number = item.order > 0 ? item.order : index + 1
+        return HStack(alignment: .top, spacing: 13) {
+            Text("\(number)")
+                .font(.system(size: number <= 3 ? 18 : 16,
+                              weight: number <= 3 ? .bold : .semibold))
+                .monospacedDigit()
+                .foregroundStyle(number <= 3 ? C.red : C.subLabel)
+                .frame(width: 28, alignment: .leading)
+                .padding(.top, 1)
+            VStack(alignment: .leading, spacing: 7) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(item.title)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(.primary)
+                        .multilineTextAlignment(.leading)
+                        .lineLimit(2)
+                    if !item.tagText.isEmpty { tagChip(item.tagText) }
+                }
+                premiumMeta(item, onDark: false)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.horizontal, 15)
+        .padding(.vertical, 14)
+        .contentShape(Rectangle())
+    }
+
+    private var premiumFooter: some View {
+        HStack {
+            Spacer()
+            Button { nextBatch() } label: {
+                Label(Tr("换一批"), systemImage: "arrow.clockwise")
+                    .font(.subheadline.weight(.medium))
+            }
+            .buttonStyle(.bordered)
+            .disabled(loading)
+            Spacer()
+        }
+        .padding(.top, 2)
     }
 
     private func nextBatch() {
@@ -312,6 +641,7 @@ struct NewsFeedView: View {
             guard source == tab else { loadingTab = ""; return }
             if onlyTabs == nil, !feed.tabs.isEmpty { channels = feed.tabs }
             if let t = feed.total, t > 0 { total = t }
+            updatedAt = feed.updatedAt ?? 0
             var seen = Set<String>()
             items = feed.items.filter { seen.insert($0.id).inserted }
             failed = items.isEmpty
@@ -357,47 +687,21 @@ struct NewsFeedView: View {
 }
 
 struct NewsView: View {
-    @Environment(\.dismiss) private var dismiss
     @State private var refreshToken = 0
 
     var body: some View {
-        VStack(spacing: 0) {
-            nav
-            NewsFeedView(refreshToken: refreshToken)
-        }
-        .background(C.cardBg.ignoresSafeArea(edges: .bottom))
-        .background(C.navBg.ignoresSafeArea(edges: .top))
-        .navigationBarBackButtonHidden(true)
-        .toolbar(.hidden, for: .navigationBar)
-        .swipeBack { dismiss() }
-        .hidesTabBar()
-    }
-
-    private var nav: some View {
-        ZStack {
-            Text(Tr("星联世界"))
-                .font(pf(17, .semibold))
-                .foregroundColor(C.label)
-            HStack(spacing: 0) {
-                Button { dismiss() } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 19, weight: .medium))
-                        .foregroundColor(C.label)
-                        .frame(width: 44, height: L.navH)
-                }
-                .buttonStyle(.plain)
-                Spacer(minLength: 0)
+        NewsFeedView(refreshToken: refreshToken)
+        .background(Color(uiColor: .systemGroupedBackground).ignoresSafeArea())
+        .navigationTitle(Tr("时刻新闻"))
+        .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
                 Button { refreshToken += 1 } label: {
                     Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 17, weight: .medium))
-                        .foregroundColor(C.label)
-                        .frame(width: 44, height: L.navH)
                 }
-                .buttonStyle(.plain)
+                .accessibilityLabel(Tr("刷新"))
             }
         }
-        .frame(height: L.navH)
-        .background(C.navBg)
-        .overlay(alignment: .bottom) { HairLine() }
+        .hidesTabBar()
     }
 }
