@@ -4058,7 +4058,12 @@ struct ChatDetailView: View {
                 messages = Array(visibleMessages(merged).suffix(maxMessageWindow))
                 hasOlder = true
                 rebuildIndex()
-                if !followBottom, let keepAnchor, let scroller {
+                if followBottom, let scroller {
+                    ChatScrollHandle.shared.allowAutomaticPinning()
+                    DispatchQueue.main.async {
+                        scroller.scrollTo("__bottom", anchor: .bottom)
+                    }
+                } else if let keepAnchor, let scroller {
                     holdScroll = true
                     DispatchQueue.main.async { scroller.scrollTo(keepAnchor, anchor: .top) }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {

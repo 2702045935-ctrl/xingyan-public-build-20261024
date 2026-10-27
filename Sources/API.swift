@@ -2371,10 +2371,12 @@ final class API {
     }
 
     @discardableResult
-    func opsAccount(userId: String, action: String, reason: String = "") async -> Bool {
+    func opsAccount(userId: String, action: String, reason: String = "",
+                    banType: String = "permanent", durationDays: Int = 0) async -> Bool {
         struct P: Decodable { var user: U?; struct U: Decodable { var id: String? } }
         return (try? await post("/api/ops/account",
-                                ["userId": userId, "action": action, "reason": reason], as: P.self)) != nil
+                                ["userId": userId, "action": action, "reason": reason,
+                                 "banType": banType, "durationDays": durationDays], as: P.self)) != nil
     }
 
     struct APIBottle: Decodable, Identifiable, Hashable {

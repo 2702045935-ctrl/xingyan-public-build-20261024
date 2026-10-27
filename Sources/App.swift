@@ -2633,8 +2633,6 @@ struct AccountLoginSheet: View {
     @State private var busy = false
     @State private var error: String?
     @State private var showReg = false
-    @State private var showUnban = false
-
     @State private var showUnfreeze = false
     @State private var showReset = false
 
@@ -2703,11 +2701,11 @@ struct AccountLoginSheet: View {
 
                     if isBanned {
                         Button {
-                            showUnban = true
+                            app.show(error ?? Tr("该账号已被限制登录，请通过客服提交申诉"))
                         } label: {
                             HStack(spacing: 6) {
-                                Image(systemName: "person.text.rectangle")
-                                Text(Tr("账号被禁用了？用身份证自助解封"))
+                                Image(systemName: "exclamationmark.shield.fill")
+                                Text(Tr("账号已被限制登录 · 查看处罚说明"))
                             }
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.white)
@@ -2777,10 +2775,6 @@ struct AccountLoginSheet: View {
                 })
             }
             .sheet(isPresented: $showReset) { ResetPasswordSheet() }
-        .sheet(isPresented: $showUnban) {
-                UnbanSheet(preUser: username, prePass: password)
-            }
-
             .sheet(isPresented: $showUnfreeze) {
                 UnfreezeSheet().environmentObject(app)
             }

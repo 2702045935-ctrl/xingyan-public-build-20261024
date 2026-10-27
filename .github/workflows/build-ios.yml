@@ -102,6 +102,7 @@ jobs:
           cp AppIcon60x60@3x.png "$APP/"
           cp splash.jpg "$APP/"
           cp moments-cover.jpg "$APP/"
+          cp PrivacyInfo.xcprivacy "$APP/PrivacyInfo.xcprivacy"
           cp levelicons/*.png "$APP/"
           mkdir -p Assets.xcassets/LaunchBg.colorset
           cat > Assets.xcassets/Contents.json <<'JSON'

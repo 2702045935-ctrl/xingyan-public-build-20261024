@@ -6,7 +6,6 @@ struct AccountSafetyCenterView: View {
 
     @State private var showFreeze = false
     @State private var showUnfreeze = false
-    @State private var showUnban = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -14,7 +13,7 @@ struct AccountSafetyCenterView: View {
             NavBar(title: Tr("安全中心"), back: { dismiss() })
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
-                    Text(Tr("账号冻结、解冻、被封后的自助解封都在这一页。冻结/解封只影响登录，聊天记录和好友都保留。"))
+                    Text(Tr("冻结可以由本人解冻；违规封禁只能由管理员审核解封，请通过客服提交申诉。"))
                         .font(pf(13))
                         .foregroundColor(C.subLabel)
                         .fixedSize(horizontal: false, vertical: true)
@@ -33,11 +32,6 @@ struct AccountSafetyCenterView: View {
                             safetyRow(Tr("解冻账号"), Tr("账号 + 登录密码"), danger: false)
                         }
                         .buttonStyle(.plain)
-                        HairLine(inset: 16)
-                        Button { showUnban = true } label: {
-                            safetyRow(Tr("账号被禁用？自助解封"), Tr("需要实名身份证号"), danger: false)
-                        }
-                        .buttonStyle(.plain)
                     }
                     .padding(.horizontal, 12)
 
@@ -53,7 +47,6 @@ struct AccountSafetyCenterView: View {
         .hidesTabBar()
         .sheet(isPresented: $showFreeze) { FreezeAccountSheet().environmentObject(app) }
         .sheet(isPresented: $showUnfreeze) { UnfreezeSheet().environmentObject(app) }
-        .sheet(isPresented: $showUnban) { UnbanSheet(preUser: "", prePass: "") }
     }
 
     private func safetyRow(_ title: String, _ right: String, danger: Bool) -> some View {
@@ -213,12 +206,14 @@ struct AccountOpsSection: View {
     @State private var banned = false
     @State private var frozen = false
     @State private var busy = false
+    @State private var banType = "permanent"
+    @State private var durationDays = 7
 
     var body: some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(Tr("账号状态（冻结 / 解冻 / 封禁 / 解封）")).font(pf(16)).foregroundColor(C.label)
-                Text(Tr("输入星言号或手机号，先查状态再操作；冻结=临时锁（本人可自助解冻），封禁=处罚（要身份证自助解封）"))
+                Text(Tr("输入星言号或手机号，先查状态再操作；冻结可本人解冻，封禁必须由管理员审核解封"))
                     .font(pf(12)).foregroundColor(C.subLabel)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -245,6 +240,21 @@ struct AccountOpsSection: View {
                 .padding(.horizontal, 12).frame(height: 44)
                 .background(RoundedRectangle(cornerRadius: 10).fill(C.fieldBg))
                 .padding(.horizontal, 16).padding(.top, 8)
+
+            Picker(Tr("处罚类型"), selection: $banType) {
+                Text(Tr("永久封禁")).tag("permanent")
+                Text(Tr("临时封禁")).tag("temporary")
+                Text(Tr("风险限制")).tag("risk")
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, 16).padding(.top, 8)
+
+            if banType != "permanent" {
+                Stepper(Tr("处罚天数：") + "\(durationDays)",
+                        value: $durationDays, in: 1...365)
+                    .font(pf(14))
+                    .padding(.horizontal, 16).padding(.top, 4)
+            }
 
             if !stateText.isEmpty {
                 Text(stateText).font(pf(13)).foregroundColor(C.subLabel)
@@ -299,7 +309,9 @@ struct AccountOpsSection: View {
 
         let uid = await resolveUserId(n) ?? n
         let ok = await API.shared.opsAccount(userId: uid, action: action,
-                                             reason: reason.trimmingCharacters(in: .whitespaces))
+                                             reason: reason.trimmingCharacters(in: .whitespaces),
+                                             banType: banType,
+                                             durationDays: durationDays)
         busy = false
         app.show(ok ? (Tr("已执行：") + action) : Tr("操作失败（可能没权限或没这个人）"))
         await look()
