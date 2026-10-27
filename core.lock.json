@@ -2,10 +2,10 @@
   "version": "B669",
   "files": [
     { "path": "Sources/API.swift", "size": 194905, "sha256": "b75fad32ddccc0e7d3ed89780cab06f467df6ebdd5137b5dad218ac593cd1c45" },
-    { "path": "Sources/App.swift", "size": 129675, "sha256": "4b28255699126087a91950d7a9e1619402e20cbd141fe4b48517e3f86dda41ec" },
-    { "path": "Sources/Realtime.swift", "size": 17014, "sha256": "d2817130819a128dc67711348c8d0479916ffee62ce88043da5483805576e6e1" },
+    { "path": "Sources/App.swift", "size": 129917, "sha256": "4c4c745bbe42327a1189dae3965355f80e71448e57c49aa9ff3cae8fce6eb220" },
+    { "path": "Sources/Realtime.swift", "size": 17176, "sha256": "a5fc7be9c4cdbf2556ec7582ff8cd8d26e8c34f54d2e0c7d33c07ea3fdbfb12d" },
     { "path": "Sources/CallAudio.swift", "size": 26757, "sha256": "40948fb750ccef12892e3beb775f6896291a24578b3c6c0be59c74ac34a9fad8" },
-    { "path": "Sources/CallCenter.swift", "size": 68118, "sha256": "9a28297930f238a9538020bc82fddaf04181fa6953dd1cab1ec67ee947cb12ff" },
+    { "path": "Sources/CallCenter.swift", "size": 70357, "sha256": "6ceb60310f3407b6654680bc8c1d85df41c2becb5a6de441ee31282814114de1" },
     { "path": "Sources/CallView.swift", "size": 44835, "sha256": "f2ce2ed344bb869fb37bdac1f08e0652b73df96f0dd0958da7e6250a65ee2d0a" },
     { "path": "Sources/AICall.swift", "size": 13957, "sha256": "4def7b26547c9ee4b3cfc7bcc7890204df186bb76c5a67535eaab6b3a53bf117" },
     { "path": "Sources/TRTCBridge.swift", "size": 18872, "sha256": "d57eb7ac673aeec37f8b6ba00f9a2ec46d62d9b2ab53402b306db83922321f31" },
