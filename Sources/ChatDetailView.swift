@@ -684,9 +684,7 @@ struct ChatDetailView: View {
         return false
     }
 
-    private var isFamilyGroupLoadAll: Bool {
-        isGroup && chat.name.contains("家人")
-    }
+    private var shouldLoadCompleteGroupHistory: Bool { isGroup }
 
     private let initialMessageWindow = 300
     private let maxMessageWindow = 20_000
@@ -1417,6 +1415,7 @@ struct ChatDetailView: View {
             await loadMyStickers()
 
             await StickerCatalog.shared.loadIfNeeded()
+            await loadAllGroupHistory()
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 60_000_000_000)
                 if Task.isCancelled { break }
@@ -1653,7 +1652,7 @@ struct ChatDetailView: View {
     }
 
     private func autoLoadOlder() {
-        guard hasOlder, !loadingOlder, !loading else { return }
+        guard hasOlder, !loadingOlder, !loadingAllGroupHistory, !loading else { return }
         guard Date().timeIntervalSince(lastOlderLoad) > 0.08 else { return }
         lastOlderLoad = Date()
         Task { await loadOlder() }
@@ -3947,7 +3946,8 @@ struct ChatDetailView: View {
     }
 
     private func loadOlder() async {
-        guard !loadingOlder, let first = messages.first, let seq = first.seq else { return }
+        guard !loadingOlder, !loadingAllGroupHistory,
+              let first = messages.first, let seq = first.seq else { return }
         loadingOlder = true
         lastOlderLoad = Date()
         defer { loadingOlder = false }
@@ -4018,7 +4018,7 @@ struct ChatDetailView: View {
     }
 
     private func loadAllGroupHistory() async {
-        guard isFamilyGroupLoadAll, !loadingAllGroupHistory else { return }
+        guard shouldLoadCompleteGroupHistory, hasOlder, !loadingAllGroupHistory else { return }
         loadingAllGroupHistory = true
         defer { loadingAllGroupHistory = false }
 
@@ -4026,7 +4026,8 @@ struct ChatDetailView: View {
         var before = messages.first?.seq ?? 0
         var reachedStart = false
         var pages = 0
-        while hasOlder, pages < 1000, !Task.isCancelled, before > 0 {
+        while hasOlder, pages < 1000, !Task.isCancelled, before > 0,
+              messages.count + olderById.count < maxMessageWindow {
             do {
                 let page = try await API.shared.messages(chatId: chat.id, limit: 100, before: before)
                 if page.messages.isEmpty {
@@ -4059,7 +4060,8 @@ struct ChatDetailView: View {
         var mergedById = Dictionary(uniqueKeysWithValues: messages.map { ($0.id, $0) })
         for (id, message) in olderById { mergedById[id] = message }
         let merged = mergedById.values.sorted(by: messageSortsBefore)
-        messages = visibleMessages(merged)
+        let visible = visibleMessages(merged)
+        messages = Array(visible.suffix(maxMessageWindow))
         hasOlder = !reachedStart
         rebuildIndex()
 
