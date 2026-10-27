@@ -124,6 +124,30 @@ struct ChatRow: View {
 
     private var avatarTop: CGFloat { max(0, (L.rowH - L.avatar) / 2) }
 
+    private var peer: User? {
+        guard chat.type != "group" else { return nil }
+        let sender = chat.lastMessage?.senderId
+        let peerId = (chat.memberIds ?? []).first { $0 != app.me?.id }
+            ?? (sender != app.me?.id ? sender : nil)
+        guard let peerId, !peerId.isEmpty else { return nil }
+        return app.contact(for: peerId)
+    }
+
+    private var displayTitle: String {
+        let raw = (chat.title ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if !raw.isEmpty, raw != "未知用户" { return raw }
+        if let peer { return peer.name }
+        let sender = (chat.lastMessage?.senderName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if !sender.isEmpty, sender != "未知用户" { return sender }
+        return raw.isEmpty ? "会话" : raw
+    }
+
+    private var displayAvatar: String {
+        let raw = (chat.avatar ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if !raw.isEmpty { return raw }
+        return peer?.avatarPath ?? ""
+    }
+
     private var avatarBlock: some View {
         Group {
             if let tap = onTapAvatar {
@@ -434,30 +458,6 @@ struct SwipeChatRow: View {
                 collapse()
             }
         }
-    }
-
-    private var peer: User? {
-        guard chat.type != "group" else { return nil }
-        let sender = chat.lastMessage?.senderId
-        let peerId = (chat.memberIds ?? []).first { $0 != app.me?.id }
-            ?? (sender != app.me?.id ? sender : nil)
-        guard let peerId, !peerId.isEmpty else { return nil }
-        return app.contact(for: peerId)
-    }
-
-    private var displayTitle: String {
-        let raw = (chat.title ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        if !raw.isEmpty, raw != "未知用户" { return raw }
-        if let peer { return peer.name }
-        let sender = (chat.lastMessage?.senderName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        if !sender.isEmpty, sender != "未知用户" { return sender }
-        return raw.isEmpty ? "会话" : raw
-    }
-
-    private var displayAvatar: String {
-        let raw = (chat.avatar ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        if !raw.isEmpty { return raw }
-        return peer?.avatarPath ?? ""
     }
 
     private func collapse() {
