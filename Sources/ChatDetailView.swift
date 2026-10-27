@@ -688,7 +688,9 @@ struct ChatDetailView: View {
     private var shouldLoadCompleteGroupHistory: Bool { isGroup }
 
     private let initialMessageWindow = 300
-    private let maxMessageWindow = 20_000
+    /* 低内存设备安全窗口：首屏先给 300 条，后台只自动补到最近 5000 条。
+       更早历史由用户继续上滑按页加载，避免一次把所有消息常驻内存。 */
+    private let maxMessageWindow = 5_000
 
     private var navTitle: String {
         guard isGroup else {
@@ -4023,9 +4025,8 @@ struct ChatDetailView: View {
         var before = messages.first?.seq ?? 0
         var pages = 0
         var consecutiveFailures = 0
-        /* 全量一次请求在公网大响应上会被管道背压拖到十几秒。
-           每页 5000 条能先走完最近一页，再链式向前补；服务端仍设
-           20000 条安全窗口，因此这是有限内存下的分块补齐。 */
+        /* 每页 5000 条，并且客户端只保留最近 5000 条。这样后台同步
+           只有一个完整批次，低内存机型不会继续累积到两万条。 */
         let pageSize = 5_000
         while hasOlder, pages < 64, !Task.isCancelled, before > 0,
               messages.count < maxMessageWindow,
