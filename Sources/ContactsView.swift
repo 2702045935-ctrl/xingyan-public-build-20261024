@@ -1462,16 +1462,18 @@ struct ContactCardView: View {
     private func removeFriend() {
         let userId = u.id
         app.applyFriendRemoved(userId: userId)
+        app.openChat = nil
+        app.wantChatsTab = true
         dismiss()
+        app.show(Tr("已删除好友"))
         Task {
             if let err = await API.shared.removeFriend(userId: userId) {
-                app.show(err)
+                app.show(Tr("删除失败，已恢复：") + err)
                 await app.loadContacts()
                 await app.loadChats()
                 return
             }
 
-            app.show(Tr("已删除好友"))
             await app.loadContacts()
             await app.loadChats()
         }

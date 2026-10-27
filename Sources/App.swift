@@ -1223,6 +1223,7 @@ final class AppState: ObservableObject {
 
     /// WebSocket 已带会话摘要时先更新预览与红点，再等后台全量校准。
     private func applyRealtimeChat(_ incoming: Chat) {
+        guard !locallyHiddenChats.contains(incoming.id) else { return }
         var rows = chats
         if let index = rows.firstIndex(where: { $0.id == incoming.id }) {
             let current = rows[index]
