@@ -1489,7 +1489,7 @@ struct ChatDetailView: View {
 
     private var messageList: some View {
 
-        let nearTopIds = hasOlder ? Set(messages.prefix(12).map { $0.id }) : Set<String>()
+        let nearTopIds = hasOlder ? Set(messages.prefix(24).map { $0.id }) : Set<String>()
         return ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(spacing: 0) {
@@ -1633,7 +1633,7 @@ struct ChatDetailView: View {
 
     private func autoLoadOlder() {
         guard hasOlder, !loadingOlder, !loading else { return }
-        guard Date().timeIntervalSince(lastOlderLoad) > 0.25 else { return }
+        guard Date().timeIntervalSince(lastOlderLoad) > 0.08 else { return }
         lastOlderLoad = Date()
         Task { await loadOlder() }
     }
@@ -3760,7 +3760,32 @@ struct ChatDetailView: View {
                 }
                 result = (latestChat, incoming, more)
             } else {
-                result = try await API.shared.messages(chatId: chat.id, limit: 40)
+                var incoming: [Message] = []
+                var incomingIds = Set<String>()
+                var latestChat: Chat? = nil
+                var more = true
+                var before = 0
+                for _ in 0..<3 {
+                    let page = try await API.shared.messages(
+                        chatId: chat.id,
+                        limit: 100,
+                        before: before > 0 ? before : nil
+                    )
+                    if let c = page.chat { latestChat = c }
+                    if page.messages.isEmpty {
+                        more = false
+                        break
+                    }
+                    for message in page.messages where incomingIds.insert(message.id).inserted {
+                        incoming.append(message)
+                    }
+                    more = page.hasMore
+                    let next = page.messages.compactMap(\.seq).min() ?? 0
+                    if !more || next <= 0 || (before > 0 && next >= before) { break }
+                    before = next
+                    if incoming.count >= initialMessageWindow { break }
+                }
+                result = (latestChat, incoming, more)
             }
 
             var mergedById: [String: Message] = [:]
@@ -3838,14 +3863,37 @@ struct ChatDetailView: View {
         lastOlderLoad = Date()
         defer { loadingOlder = false }
         do {
+            var cursor = seq
+            var older: [Message] = []
+            var olderIds = Set<String>()
+            var more = true
+            let target = isGroup ? 300 : 200
+            let pages = isGroup ? 3 : 2
+            for _ in 0..<pages {
+                let page = try await API.shared.messages(
+                    chatId: chat.id,
+                    limit: 100,
+                    before: cursor
+                )
+                if page.messages.isEmpty {
+                    more = false
+                    break
+                }
+                for message in page.messages where olderIds.insert(message.id).inserted {
+                    older.append(message)
+                }
+                more = page.hasMore
+                let next = page.messages.compactMap(\.seq).min() ?? 0
+                if !more || next <= 0 || next >= cursor { break }
+                cursor = next
+                if older.count >= target { break }
+            }
+            hasOlder = more
 
-            let r = try await API.shared.messages(chatId: chat.id, limit: 60, before: seq)
-            hasOlder = r.hasMore
-
-            guard !r.messages.isEmpty else { hasOlder = false; return }
+            guard !older.isEmpty else { hasOlder = false; return }
             let keep = first.id
             holdScroll = true
-            let merged = visibleMessages(r.messages + messages)
+            let merged = visibleMessages(older + messages)
             messages = Array(merged.suffix(maxMessageWindow))
             if merged.count > messages.count { hasOlder = true }
             rebuildIndex()
