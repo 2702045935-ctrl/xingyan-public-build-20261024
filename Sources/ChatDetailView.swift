@@ -3818,29 +3818,8 @@ struct ChatDetailView: View {
 
             let cachedLastSeq = messages.compactMap { $0.seq }.max() ?? 0
             let result: (chat: Chat?, messages: [Message], hasMore: Bool)
-            if initial && !messages.isEmpty {
-
-                var incoming: [Message] = []
-                var incomingIds = Set<String>()
-                var latestChat: Chat? = nil
-                var more = false
-                var before = 0
-                for _ in 0..<2 {
-                    let page = try await API.shared.messages(chatId: chat.id, limit: 100,
-                                                             before: before > 0 ? before : nil)
-                    if let c = page.chat { latestChat = c }
-                    let rows = page.messages
-                    if rows.isEmpty { break }
-                    for m in rows where incomingIds.insert(m.id).inserted {
-                        incoming.append(m)
-                    }
-                    more = page.hasMore
-                    let next = rows.compactMap { $0.seq }.min() ?? 0
-                    if !more || next <= 0 || (before > 0 && next >= before) { break }
-                    before = next
-                    if incoming.count >= 200 { break }
-                }
-                result = (latestChat, incoming, more)
+            if initial {
+                result = try await initialMessageBatch()
             } else if cachedLastSeq > 0 {
                 var incoming: [Message] = []
                 var latestChat: Chat? = nil
@@ -3857,32 +3836,7 @@ struct ChatDetailView: View {
                 }
                 result = (latestChat, incoming, more)
             } else {
-                var incoming: [Message] = []
-                var incomingIds = Set<String>()
-                var latestChat: Chat? = nil
-                var more = true
-                var before = 0
-                for _ in 0..<3 {
-                    let page = try await API.shared.messages(
-                        chatId: chat.id,
-                        limit: 100,
-                        before: before > 0 ? before : nil
-                    )
-                    if let c = page.chat { latestChat = c }
-                    if page.messages.isEmpty {
-                        more = false
-                        break
-                    }
-                    for message in page.messages where incomingIds.insert(message.id).inserted {
-                        incoming.append(message)
-                    }
-                    more = page.hasMore
-                    let next = page.messages.compactMap(\.seq).min() ?? 0
-                    if !more || next <= 0 || (before > 0 && next >= before) { break }
-                    before = next
-                    if incoming.count >= initialMessageWindow { break }
-                }
-                result = (latestChat, incoming, more)
+                result = try await initialMessageBatch()
             }
 
             var mergedById: [String: Message] = [:]
@@ -3932,6 +3886,39 @@ struct ChatDetailView: View {
                 if !gone.isEmpty { burnAway(gone) }
             }
         }
+    }
+
+    /// 首屏优先一次拿 300 条，避免连续三次独立网络往返。
+    /// 旧服务器不认识 all=1 时只回 100 条，这里会自动续拉剩余两页。
+    private func initialMessageBatch() async throws
+        -> (chat: Chat?, messages: [Message], hasMore: Bool) {
+        var incoming: [Message] = []
+        var incomingIds = Set<String>()
+        var latestChat: Chat?
+        var more = false
+        var before = 0
+        for _ in 0..<3 {
+            let page = try await API.shared.messages(
+                chatId: chat.id,
+                limit: initialMessageWindow,
+                before: before > 0 ? before : nil,
+                all: true
+            )
+            if let c = page.chat { latestChat = c }
+            if page.messages.isEmpty {
+                more = false
+                break
+            }
+            for message in page.messages where incomingIds.insert(message.id).inserted {
+                incoming.append(message)
+            }
+            more = page.hasMore
+            if incoming.count >= initialMessageWindow { break }
+            let next = page.messages.compactMap(\.seq).min() ?? 0
+            if !more || next <= 0 || (before > 0 && next >= before) { break }
+            before = next
+        }
+        return (latestChat, incoming, more)
     }
 
     private func burnCountText(_ deadline: Date, now: Date) -> String {
@@ -4041,7 +4028,7 @@ struct ChatDetailView: View {
            20000 条安全窗口，因此这是有限内存下的分块补齐。 */
         let pageSize = 5_000
         while hasOlder, pages < 64, !Task.isCancelled, before > 0,
-              messages.count + olderById.count < maxMessageWindow,
+              messages.count < maxMessageWindow,
               consecutiveFailures < 5 {
             do {
                 let page = try await API.shared.messages(
@@ -4056,6 +4043,23 @@ struct ChatDetailView: View {
                     break
                 }
                 for message in page.messages { olderById[message.id] = message }
+                /* 每拿到一页就先并入当前会话，用户能马上看到新增的
+                   更早消息，而不是等所有页拉完才一次性“跳出来”。 */
+                let followBottom = atBottomNow
+                let keepAnchor = messages.first?.id
+                var mergedById = Dictionary(uniqueKeysWithValues: messages.map { ($0.id, $0) })
+                for (id, message) in olderById { mergedById[id] = message }
+                let merged = mergedById.values.sorted(by: messageSortsBefore)
+                messages = Array(visibleMessages(merged).suffix(maxMessageWindow))
+                hasOlder = true
+                rebuildIndex()
+                if !followBottom, let keepAnchor, let scroller {
+                    holdScroll = true
+                    DispatchQueue.main.async { scroller.scrollTo(keepAnchor, anchor: .top) }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                        holdScroll = false
+                    }
+                }
                 let next = page.messages.compactMap(\.seq).min() ?? 0
                 if !page.hasMore {
                     reachedStart = true
