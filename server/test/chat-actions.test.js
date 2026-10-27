@@ -143,6 +143,7 @@ async function main() {
     });
     assert.equal(response.status, 200, JSON.stringify(response.data));
     assert.ok(response.data.chat && response.data.chat.id, '同意好友后未返回会话');
+    assert.equal(response.data.chat.title, 'Alice');
     const directId = response.data.chat.id;
 
     response = await call(base, bob.cookie, 'POST',

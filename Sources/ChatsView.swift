@@ -106,6 +106,7 @@ struct RowSwipeCatcher: UIViewRepresentable {
 struct ChatRow: View {
     let chat: Chat
     @EnvironmentObject private var app: AppState
+    @State private var fetchedPeer: User?
 
     var onTapAvatar: (() -> Void)? = nil
 
@@ -120,17 +121,21 @@ struct ChatRow: View {
         .padding(.horizontal, 14)
         .frame(height: L.rowH)
         .contentShape(Rectangle())
+        .task { await loadPeerIfNeeded() }
     }
 
     private var avatarTop: CGFloat { max(0, (L.rowH - L.avatar) / 2) }
 
-    private var peer: User? {
+    private var peerId: String? {
         guard chat.type != "group" else { return nil }
         let sender = chat.lastMessage?.senderId
-        let peerId = (chat.memberIds ?? []).first { $0 != app.me?.id }
+        return (chat.memberIds ?? []).first { $0 != app.me?.id }
             ?? (sender != app.me?.id ? sender : nil)
+    }
+
+    private var peer: User? {
         guard let peerId, !peerId.isEmpty else { return nil }
-        return app.contact(for: peerId)
+        return app.contact(for: peerId) ?? fetchedPeer
     }
 
     private var displayTitle: String {
@@ -138,7 +143,8 @@ struct ChatRow: View {
         if !raw.isEmpty, raw != "未知用户" { return raw }
         if let peer { return peer.name }
         let sender = (chat.lastMessage?.senderName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        if !sender.isEmpty, sender != "未知用户" { return sender }
+        if chat.lastMessage?.senderId == peerId,
+           !sender.isEmpty, sender != "未知用户" { return sender }
         return raw.isEmpty ? "会话" : raw
     }
 
@@ -146,6 +152,12 @@ struct ChatRow: View {
         let raw = (chat.avatar ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         if !raw.isEmpty { return raw }
         return peer?.avatarPath ?? ""
+    }
+
+    private func loadPeerIfNeeded() async {
+        guard let peerId, !peerId.isEmpty,
+              app.contact(for: peerId) == nil else { return }
+        fetchedPeer = try? await API.shared.user(id: peerId)
     }
 
     private var avatarBlock: some View {

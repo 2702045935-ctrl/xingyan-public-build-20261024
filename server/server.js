@@ -5513,6 +5513,7 @@ function createDirectChat(aId, bId) {
     id: uid('c'), type: 'direct', name: '', avatar: '',
     memberIds: [aId, bId], ownerId: aId, seq: 0, createdAt: now()
   };
+  rememberDirectPeerProfiles(chat);
   db.chats.push(chat);
   saveChats();
   return chat;
@@ -5642,6 +5643,18 @@ function directChatBetween(a, b) {
     c.memberIds.includes(a) && c.memberIds.includes(b)) || null;
 }
 
+function rememberDirectPeerProfiles(chat) {
+  if (!chat || chat.type !== 'direct') return;
+  chat.memberNames = {};
+  chat.memberAvatars = {};
+  chat.memberIds.forEach((id) => {
+    const peer = findUser(id);
+    if (!peer) return;
+    chat.memberNames[id] = peer.nickname || peer.username || '';
+    chat.memberAvatars[id] = peer.avatar || '';
+  });
+}
+
 /* 通过好友以后用：给这两个人开一个会话（已有就直接用），返回那个会话。
    —— 新加的好友会立刻出现在「微信」首页，不用等谁先发第一条消息。 */
 function openChatForFriendship(aId, bId) {
@@ -5649,6 +5662,7 @@ function openChatForFriendship(aId, bId) {
   if (exist) {
     exist.hiddenFor = (exist.hiddenFor || []).filter((id) => id !== aId && id !== bId);
     exist.dismissed = false;
+    rememberDirectPeerProfiles(exist);
     chatsDirty = true;
     return exist;
   }
@@ -5797,8 +5811,10 @@ function chatSummary(chat, forUserId, lastHint) {
   if (chat.type === 'direct') {
     const otherId = chat.memberIds.find((id) => id !== forUserId) || chat.memberIds[0];
     const other = findUser(otherId);
-    title = other ? displayNameFor(forUserId, other) : '未知用户';
-    avatar = other ? other.avatar : '';
+    title = other ? displayNameFor(forUserId, other)
+      : ((chat.memberNames && chat.memberNames[otherId]) || chat.name || '未知用户');
+    avatar = other ? other.avatar
+      : ((chat.memberAvatars && chat.memberAvatars[otherId]) || chat.avatar || '');
     if (other && moodAlive(other)) {
       moodIcon = other.moodIcon || '';
       moodText = other.moodCaption || other.moodLabel || other.moodText || '';
