@@ -185,72 +185,42 @@ struct MeView: View {
 
     private var nativeMeList: some View {
         List {
-            compactStatusActions
-                .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 2, trailing: 0))
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-
             Section {
-                NavigationLink(value: "profile") {
-                    HStack(spacing: 14) {
-                        Avatar(path: app.me?.avatarPath ?? "", size: 62, radius: 19,
-                               level: growth.shownLevel)
+                HStack(spacing: 8) {
+                    NavigationLink(value: "profile") {
+                        HStack(spacing: 12) {
+                            Avatar(path: app.me?.avatarPath ?? "", size: 58, radius: 18,
+                                   level: growth.shownLevel)
 
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack(spacing: 6) {
-                                Text(app.me?.name ?? Tr("星言用户"))
-                                    .font(.title3.bold())
-                                    .foregroundStyle(.primary)
-                                    .lineLimit(1)
-                                if growthShow {
-                                    QQLevelBadge(level: growth.shownLevel, size: 14, maxIcons: 3)
-                                        .fixedSize()
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack(spacing: 6) {
+                                    Text(app.me?.name ?? Tr("星言用户"))
+                                        .font(.headline)
+                                        .foregroundStyle(.primary)
+                                        .lineLimit(1)
+                                    if growthShow {
+                                        QQLevelBadge(level: growth.shownLevel, size: 14, maxIcons: 2)
+                                            .fixedSize()
+                                    }
                                 }
-                                MemberBadge(tier: app.me?.memberTier,
-                                            short: app.me?.memberShort,
-                                            color: app.me?.memberColor,
-                                            color2: app.me?.memberColor2,
-                                            height: 13)
-                                    .fixedSize()
+                                Text(Tr("星言号") + "：" + (app.me?.username ?? "-"))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                                let bio = (app.me?.bio ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                                Text(bio.isEmpty ? Tr("点击编辑个人资料") : bio)
+                                    .font(.caption)
+                                    .foregroundStyle(.tertiary)
+                                    .lineLimit(1)
                             }
-                            Text(Tr("星言号") + "：" + (app.me?.username ?? "-"))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                            let bio = (app.me?.bio ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-                            Text(bio.isEmpty ? Tr("点击编辑个人资料") : bio)
-                                .font(.caption)
-                                .foregroundStyle(.tertiary)
-                                .lineLimit(1)
                         }
                     }
-                    .padding(.vertical, 5)
-                }
-            }
+                    .buttonStyle(.plain)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-            Section {
-                HStack(spacing: 0) {
-                    nativeStat(value: "\(friendCount)", title: Tr("朋友")) {
-                        statusPanel = .friends
-                    }
-                    Rectangle()
-                        .fill(Color(uiColor: .separator))
-                        .frame(width: 0.5, height: 34)
-                    nativeStat(value: daysText, title: Tr("活跃天")) {
-                        path.append("level")
-                    }
-                    Rectangle()
-                        .fill(Color(uiColor: .separator))
-                        .frame(width: 0.5, height: 34)
-                    nativeStat(value: "\(app.me?.momentCount ?? 0)", title: Tr("动态")) {
-                        path.append("moments")
-                    }
+                    compactStatusActions
                 }
-                .padding(.vertical, 4)
-
-                NavigationLink(value: "member") {
-                    Label(Tr("会员中心"), systemImage: "crown")
-                }
+                .padding(.vertical, 3)
             }
 
             ForEach(grouped.indices, id: \.self) { gi in
@@ -362,8 +332,7 @@ struct MeView: View {
             .buttonStyle(.plain)
             .accessibilityLabel(Tr("朋友的状态"))
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.leading, 20)
+        .fixedSize()
     }
 
     private func nativeMeItemRow(_ item: DiscoverItem) -> some View {
