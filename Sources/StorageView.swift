@@ -62,8 +62,9 @@ struct StorageView: View {
             }
 
             Section {
-                ForEach((info?.chats ?? []).indices, id: \.self) { i in
-                    let chat = (info?.chats ?? [])[i]
+                let chats = info?.chats ?? []
+                ForEach(chats.indices, id: \.self) { i in
+                    let chat = chats[i]
                     Button {
                         confirmChat = chat
                     } label: {
