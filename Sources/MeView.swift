@@ -185,6 +185,11 @@ struct MeView: View {
 
     private var nativeMeList: some View {
         List {
+            compactStatusActions
+                .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 2, trailing: 0))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+
             Section {
                 NavigationLink(value: "profile") {
                     HStack(spacing: 14) {
@@ -222,11 +227,6 @@ struct MeView: View {
                     .padding(.vertical, 5)
                 }
             }
-
-            compactStatusActions
-                .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
 
             Section {
                 HStack(spacing: 0) {
