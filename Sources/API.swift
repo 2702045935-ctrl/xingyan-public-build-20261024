@@ -3583,6 +3583,13 @@ private struct StarredPayload: Decodable {
         return (payload.chat, payload.messages, payload.hasMore ?? false)
     }
 
+    func allMessages(chatId: String, limit: Int = 20_000)
+        async throws -> (chat: Chat?, messages: [Message], hasMore: Bool) {
+        let path = "/api/chats/\(chatId)/messages?all=1&limit=\(limit)"
+        let payload: MessagesPayload = try await get(path, as: MessagesPayload.self)
+        return (payload.chat, payload.messages, payload.hasMore ?? false)
+    }
+
     func send(chatId: String, text: String) async throws -> Message? {
         let payload: MessagePayload = try await post("/api/chats/\(chatId)/messages",
                                                      ["kind": "text", "content": text],

@@ -273,6 +273,7 @@ struct ChatDetailView: View {
     @State private var messages: [Message] = []
     @State private var senderAvatarCache: [String: String] = [:]
     @State private var groupSenderProfilesLoaded = false
+    @State private var historySyncTask: Task<Void, Never>?
 
     @State private var hiddenMessageIds: Set<String> = []
 
@@ -703,6 +704,7 @@ struct ChatDetailView: View {
 
     private var navTitleShown: String {
         if selectMode { return Tr("已选择") + " \(selected.count) " + Tr("项") }
+        if loadingAllGroupHistory { return Tr("正在同步全部消息…") }
         guard !peerTyping.isEmpty else { return navTitle }
         return isGroup ? "有人正在输入…" : "对方正在输入…"
     }
@@ -1401,6 +1403,12 @@ struct ChatDetailView: View {
             loadDeletedMessageIds()
             loadOutbox()
             await load(initial: true)
+            historySyncTask?.cancel()
+            if shouldLoadCompleteGroupHistory {
+                historySyncTask = Task { @MainActor in
+                    await loadAllGroupHistory()
+                }
+            }
             await loadGroupSenderProfilesIfNeeded()
             await refreshPeerRelation()
             await flushOutbox()
@@ -1415,7 +1423,6 @@ struct ChatDetailView: View {
             await loadMyStickers()
 
             await StickerCatalog.shared.loadIfNeeded()
-            await loadAllGroupHistory()
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 60_000_000_000)
                 if Task.isCancelled { break }
@@ -1492,6 +1499,8 @@ struct ChatDetailView: View {
         }
 
         .onDisappear {
+            historySyncTask?.cancel()
+            historySyncTask = nil
             persistTask?.cancel()
             persistTask = nil
             settleTask?.cancel()
@@ -4023,30 +4032,48 @@ struct ChatDetailView: View {
         defer { loadingAllGroupHistory = false }
 
         var olderById: [String: Message] = [:]
-        var before = messages.first?.seq ?? 0
         var reachedStart = false
-        var pages = 0
-        while hasOlder, pages < 1000, !Task.isCancelled, before > 0,
-              messages.count + olderById.count < maxMessageWindow {
-            do {
-                let page = try await API.shared.messages(chatId: chat.id, limit: 100, before: before)
-                if page.messages.isEmpty {
-                    reachedStart = true
-                    break
+        var loadedInOnePass = false
+
+        do {
+            let batch = try await API.shared.allMessages(chatId: chat.id, limit: maxMessageWindow)
+            guard !Task.isCancelled else { return }
+            for message in batch.messages { olderById[message.id] = message }
+            reachedStart = !batch.hasMore
+            loadedInOnePass = true
+        } catch {
+            loadedInOnePass = false
+        }
+
+        if !loadedInOnePass {
+            var before = messages.first?.seq ?? 0
+            var pages = 0
+            var consecutiveFailures = 0
+            while hasOlder, pages < 1000, !Task.isCancelled, before > 0,
+                  messages.count + olderById.count < maxMessageWindow,
+                  consecutiveFailures < 5 {
+                do {
+                    let page = try await API.shared.messages(chatId: chat.id, limit: 100, before: before)
+                    consecutiveFailures = 0
+                    if page.messages.isEmpty {
+                        reachedStart = true
+                        break
+                    }
+                    for message in page.messages { olderById[message.id] = message }
+                    let next = page.messages.compactMap(\.seq).min() ?? 0
+                    if !page.hasMore {
+                        reachedStart = true
+                        break
+                    }
+                    if next <= 0 || next >= before { break }
+                    before = next
+                    pages += 1
+                    if pages % 8 == 0 { await Task.yield() }
+                } catch {
+                    consecutiveFailures += 1
+                    if consecutiveFailures >= 5 { break }
+                    try? await Task.sleep(nanoseconds: 700_000_000)
                 }
-                for message in page.messages { olderById[message.id] = message }
-                let next = page.messages.compactMap(\.seq).min() ?? 0
-                if !page.hasMore {
-                    reachedStart = true
-                    break
-                }
-                if next <= 0 || next >= before { break }
-                before = next
-                pages += 1
-                if pages % 8 == 0 { await Task.yield() }
-            } catch {
-                reachedStart = false
-                break
             }
         }
 
