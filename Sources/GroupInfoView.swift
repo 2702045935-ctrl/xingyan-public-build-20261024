@@ -430,6 +430,7 @@ struct GroupInfoView: View {
         let wasOwner = isOwner
         let previousChat = app.openChat
         app.hideChatLocally(chat.id)
+        dismiss()
         onExitChat()
         app.show(wasOwner ? Tr("正在解散群聊…") : Tr("正在退出群聊…"))
         Task {
@@ -450,6 +451,7 @@ struct GroupInfoView: View {
     private func deleteChat() {
         let previousChat = app.openChat
         app.hideChatLocally(chat.id)
+        dismiss()
         onExitChat()
         app.show(Tr("正在删除…"))
         Task {
@@ -1519,6 +1521,7 @@ struct DirectChatInfoView: View {
     private func deleteChat() {
         let previousChat = app.openChat
         app.hideChatLocally(chat.id)
+        dismiss()
         onExitChat()
         app.show(Tr("正在删除…"))
         Task {

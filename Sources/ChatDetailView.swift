@@ -715,8 +715,11 @@ struct ChatDetailView: View {
         showGroupInfo = false
         showChatInfo = false
         app.pendingPushChatId = nil
-        app.openChat = nil
-        app.wantChatsTab = true
+        dismiss()
+        DispatchQueue.main.async {
+            app.openChat = nil
+            app.wantChatsTab = true
+        }
     }
 
     private func reportTyping() {
