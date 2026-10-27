@@ -1210,11 +1210,27 @@ struct GroupCreateView: View {
         busy = true
         Task {
             do {
-                if let chat = try await API.shared.createGroup(name: groupName, memberIds: Array(picked)) {
+                let ids = Array(picked.prefix(499))
+                let first = Array(ids.prefix(99))
+                if let chat = try await API.shared.createGroup(name: groupName, memberIds: first) {
+                    let rest = Array(ids.dropFirst(first.count))
+                    if !rest.isEmpty {
+                        for start in stride(from: 0, to: rest.count, by: 50) {
+                            let end = min(rest.count, start + 50)
+                            _ = await API.shared.addGroupMembers(
+                                chatId: chat.id,
+                                userIds: Array(rest[start..<end])
+                            )
+                        }
+                    }
                     await app.loadChats()
                     onCreated(chat)
                     dismiss()
+                    if picked.count > 499 {
+                        app.show(Tr("群人数上限为 500 人，已加入前 499 位好友"))
+                    } else {
                     app.show(Tr("群建好了"))
+                    }
                 }
             } catch {
                 app.show((error as? APIError)?.errorDescription ?? "创建失败")

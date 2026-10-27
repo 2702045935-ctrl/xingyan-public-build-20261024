@@ -1593,15 +1593,36 @@ struct GroupAddMembersView: View {
     private func submit() {
         guard !picked.isEmpty, !busy else { return }
         busy = true
-        let ids = Array(picked)
+        let capacity = max(0, 500 - (chat.memberCount ?? chat.memberIds?.count ?? 0))
+        let ids = Array(picked.prefix(capacity))
         Task {
-            let r = await API.shared.addGroupMembers(chatId: chat.id, userIds: ids)
+            var added: [String] = []
+            var memberCount = chat.memberCount ?? 0
+            var error: String?
+            for start in stride(from: 0, to: ids.count, by: 50) {
+                let end = min(ids.count, start + 50)
+                let result = await API.shared.addGroupMembers(
+                    chatId: chat.id,
+                    userIds: Array(ids[start..<end])
+                )
+                added.append(contentsOf: result.added)
+                memberCount = result.memberCount
+                if let message = result.error {
+                    error = message
+                    break
+                }
+            }
             busy = false
-            if let err = r.error {
+            if let err = error, added.isEmpty {
                 app.show(err)
                 return
             }
-            onDone(r.added)
+            if let err = error {
+                app.show(err)
+            } else if picked.count > capacity {
+                app.show(Tr("群人数上限为 500 人"))
+            }
+            onDone(added)
             dismiss()
         }
     }
