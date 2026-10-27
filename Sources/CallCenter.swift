@@ -175,6 +175,8 @@ final class CallCenter: NSObject, ObservableObject {
         dialogTask?.cancel()
         dialogTask = nil
         dialog = nil
+        rosterHydrationTask?.cancel()
+        rosterHydrationTask = nil
     }
 
     func showDialog(_ title: String, detail: String = "", auto: Double = 0) {
@@ -227,6 +229,7 @@ final class CallCenter: NSObject, ObservableObject {
     private var pendingPushCallId = ""
     private var pendingPushAnswer = false
     private var pendingPushTask: Task<Void, Never>?
+    private var rosterHydrationTask: Task<Void, Never>?
 
     private var blurDelegate: BlurCapturer?
 
@@ -682,7 +685,30 @@ final class CallCenter: NSObject, ObservableObject {
         }
     }
 
+    private func hydrateGroupRoster() {
+        rosterHydrationTask?.cancel()
+        let chatId = groupChatId
+        let token = accountToken
+        guard !chatId.isEmpty, !token.isEmpty else { return }
+        rosterHydrationTask = Task { @MainActor [weak self] in
+            guard let result = try? await API.shared.chatMembers(chatId: chatId) else { return }
+            guard let self = self, !Task.isCancelled,
+                  self.accountToken == token, self.groupChatId == chatId else { return }
+            var profiles: [String: User] = [:]
+            for user in result.members { profiles[user.id] = user }
+            self.roster = self.roster.map { member in
+                guard let user = profiles[member.userId] else { return member }
+                var fixed = member
+                if fixed.name.isEmpty { fixed.name = user.groupName }
+                if fixed.avatar.isEmpty { fixed.avatar = user.avatarPath }
+                return fixed
+            }
+        }
+    }
+
     func leaveGroupCall() {
+        rosterHydrationTask?.cancel()
+        rosterHydrationTask = nil
         if !roomId.isEmpty {
             Realtime.shared.sendJSON(["type": "call", "action": "group-leave", "roomId": roomId])
         }
@@ -1001,6 +1027,7 @@ final class CallCenter: NSObject, ObservableObject {
             peerName = groupTitle
             peerAvatar = ev.callPeerAvatar
             roster = ev.callRoster
+            hydrateGroupRoster()
             muted = false
             cameraOff = false
             seconds = 0
@@ -1026,6 +1053,7 @@ final class CallCenter: NSObject, ObservableObject {
             roomId = ev.callRoomId.isEmpty ? roomId : ev.callRoomId
             groupChatId = ev.callChatId.isEmpty ? groupChatId : ev.callChatId
             if !ev.callRoster.isEmpty { roster = ev.callRoster }
+            hydrateGroupRoster()
             Ringtone.shared.stop()
             ringTimer?.invalidate(); ringTimer = nil
             connectTimer?.invalidate(); connectTimer = nil
@@ -1040,6 +1068,7 @@ final class CallCenter: NSObject, ObservableObject {
         case "group-joined", "group-left":
             guard isGroupCall, ev.callRoomId == roomId else { return }
             roster = ev.callRoster
+            hydrateGroupRoster()
 
             startLevelReporting()
             if action == "group-joined", !ev.callPeerName.isEmpty {
