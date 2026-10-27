@@ -18,6 +18,8 @@ final class AppState: ObservableObject {
     private var optimisticAt: [String: Date] = [:]
     /// 左滑隐藏/删除请求还没落库时，先挡住轮询把旧会话行加回来。
     private var locallyHiddenChats: Set<String> = []
+    private var locallyHiddenAt: [String: Date] = [:]
+    private var suspiciousChatDropCount = 0
 
     init() {
 
@@ -310,6 +312,8 @@ final class AppState: ObservableObject {
         optimisticChats.removeAll()
         optimisticAt.removeAll()
         locallyHiddenChats.removeAll()
+        locallyHiddenAt.removeAll()
+        suspiciousChatDropCount = 0
         prefetched.removeAll()
         chats = []
         contacts = []
@@ -872,6 +876,18 @@ final class AppState: ObservableObject {
             let fresh = try await API.shared.chats()
             guard let userId = me?.id, !userId.isEmpty, isCurrentAccount(epoch) else { return }
             let merged = mergeServerChats(fresh)
+            let suspiciousDrop = !chats.isEmpty
+                && (merged.isEmpty || merged.count < max(1, chats.count / 2))
+            if suspiciousDrop {
+                suspiciousChatDropCount += 1
+                if suspiciousChatDropCount < 2 {
+                    loadError = nil
+                    syncIconBadge()
+                    return
+                }
+            } else {
+                suspiciousChatDropCount = 0
+            }
 
             if !AppState.sameChats(chats, merged) { chats = merged }
             LocalStore.saveChatList(chats, userId: userId)
@@ -884,6 +900,12 @@ final class AppState: ObservableObject {
 
     private func mergeServerChats(_ fresh: [Chat]) -> [Chat] {
         let now = Date()
+        Array(locallyHiddenAt.keys).forEach { id in
+            if now.timeIntervalSince(locallyHiddenAt[id] ?? .distantPast) > 3 {
+                locallyHiddenAt[id] = nil
+                locallyHiddenChats.remove(id)
+            }
+        }
         let visibleFresh = fresh.filter { !locallyHiddenChats.contains($0.id) }
         var current: [String: Chat] = [:]
         for chat in chats { current[chat.id] = chat }
@@ -1010,6 +1032,7 @@ final class AppState: ObservableObject {
 
     func hideChatLocally(_ chatId: String) {
         locallyHiddenChats.insert(chatId)
+        locallyHiddenAt[chatId] = Date()
         optimisticChats[chatId] = nil
         optimisticAt[chatId] = nil
         chats.removeAll { $0.id == chatId }
@@ -1018,6 +1041,7 @@ final class AppState: ObservableObject {
 
     func revealChatLocally(_ chatId: String) {
         locallyHiddenChats.remove(chatId)
+        locallyHiddenAt.removeValue(forKey: chatId)
     }
 
     /// 从联系人发出第一条消息时，服务端会话摘要可能比消息接口晚一拍。
@@ -1223,7 +1247,8 @@ final class AppState: ObservableObject {
 
     /// WebSocket 已带会话摘要时先更新预览与红点，再等后台全量校准。
     private func applyRealtimeChat(_ incoming: Chat) {
-        guard !locallyHiddenChats.contains(incoming.id) else { return }
+        locallyHiddenChats.remove(incoming.id)
+        locallyHiddenAt.removeValue(forKey: incoming.id)
         var rows = chats
         if let index = rows.firstIndex(where: { $0.id == incoming.id }) {
             let current = rows[index]
