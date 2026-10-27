@@ -220,11 +220,11 @@ struct ChatBackgroundSheet: View {
             }
             return
         }
+        let oldUser = app.me
         if var me = app.me {
             me.chatBackground = path
             app.me = me
         }
-        let oldUser = app.me
         Task {
             busy = true
             let saved = await API.shared.changeBackground(path)

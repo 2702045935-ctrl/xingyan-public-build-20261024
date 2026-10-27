@@ -1829,6 +1829,7 @@ final class API {
         guard let url = URL(string: base + path) else {
             throw APIError.message("服务器地址不正确")
         }
+        let requestToken = token
         var req = URLRequest(url: url)
         req.httpMethod = method
         req.timeoutInterval = 12
@@ -1867,6 +1868,9 @@ final class API {
         }
         let data = result.0
         let response = result.1
+        if !requestToken.isEmpty, token != requestToken {
+            throw APIError.message("账号已切换")
+        }
 
         if let http = response as? HTTPURLResponse,
            let raw = http.value(forHTTPHeaderField: "Set-Cookie"),
