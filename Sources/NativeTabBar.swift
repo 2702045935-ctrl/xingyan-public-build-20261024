@@ -152,13 +152,16 @@ struct NativeTabBar: UIViewRepresentable {
                 applyAvatar(cached, to: item)
                 return
             }
-            Task { @MainActor [weak self] in
-                guard let self = self, self.avatarKey == path,
+            Task { @MainActor [weak self, weak bar] in
+                guard let self = self, let bar = bar, bar.window != nil,
+                      self.avatarKey == path,
                       let data = try? await API.shared.assetData(url),
                       let image = UIImage(data: data) else { return }
+                guard bar.window != nil, self.avatarKey == path,
+                      let currentItem = bar.items?[safe: 3] else { return }
                 ImageStore.shared.put(path, image)
                 ImageStore.shared.diskWrite(path, data)
-                self.applyAvatar(image, to: item)
+                self.applyAvatar(image, to: currentItem)
             }
         }
 
