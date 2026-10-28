@@ -13,22 +13,24 @@ final class StatusBarStyle: ObservableObject {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             if want {
-                guard self.window == nil else { return }
-                guard let scene = UIApplication.shared.connectedScenes
-                    .compactMap({ $0 as? UIWindowScene })
-                    .first(where: { $0.activationState == .foregroundActive })
-                    ?? UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first
-                else { return }
-                let w = UIWindow(windowScene: scene)
-                w.windowLevel = .statusBar
-                w.backgroundColor = .clear
-                w.isUserInteractionEnabled = false
-                w.rootViewController = LightStatusVC()
-                w.isHidden = false
-                self.window = w
+                if self.window == nil {
+                    guard let scene = UIApplication.shared.connectedScenes
+                        .compactMap({ $0 as? UIWindowScene })
+                        .first(where: { $0.activationState == .foregroundActive })
+                        ?? UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first
+                    else { return }
+                    let w = UIWindow(windowScene: scene)
+                    w.windowLevel = .statusBar
+                    w.backgroundColor = .clear
+                    w.isUserInteractionEnabled = false
+                    w.rootViewController = LightStatusVC()
+                    self.window = w
+                }
+                self.window?.isHidden = false
+                self.window?.rootViewController?.setNeedsStatusBarAppearanceUpdate()
             } else {
                 self.window?.isHidden = true
-                self.window = nil
+                self.window?.rootViewController?.setNeedsStatusBarAppearanceUpdate()
             }
         }
     }

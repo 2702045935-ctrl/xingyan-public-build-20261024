@@ -1600,15 +1600,8 @@ struct ChatsView: View {
 
             .onChange(of: floorUp) { v in
                 withAnimation(.easeOut(duration: 0.2)) { app.floorFull = v }
-
-                StatusBarStyle.shared.set(light: skyStatusLight)
             }
 
-            .onChange(of: pullDown > 8) { _ in
-                StatusBarStyle.shared.set(light: skyStatusLight)
-            }
-
-            .onDisappear { StatusBarStyle.shared.set(light: false) }
             .navigationDestination(for: Chat.self) { chat in
                 chatDest(chat)
             }
