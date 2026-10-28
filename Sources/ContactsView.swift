@@ -1139,39 +1139,43 @@ struct ContactCardView: View {
     private var hero: some View {
 
         PanelHeroCard(glow: Color(hex: 0xF0C24B)) {
-            HStack(alignment: .top, spacing: L.cdHeroGap) {
-                avatarHead
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 8) {
+            ZStack(alignment: .topTrailing) {
+                StarOrbitProfileAccent()
 
-                        Text(displayName)
-                            .font(pf(L.cdNameSize, .semibold))
-                            .foregroundColor(.white)
-                            .lineLimit(1)
-                            .layoutPriority(1)
+                HStack(alignment: .top, spacing: L.cdHeroGap) {
+                    avatarHead
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(spacing: 8) {
 
-                        if (u.qqLevel ?? 0) > 0, GrowthFlags.showInProfile != false {
-                            QQLevelBadge(level: u.qqLevel ?? 0, size: L.v(15, 4.2, 17), maxIcons: 4)
-                                .fixedSize()
+                            Text(displayName)
+                                .font(pf(L.cdNameSize, .semibold))
+                                .foregroundColor(.white)
+                                .lineLimit(1)
+                                .layoutPriority(1)
+
+                            if (u.qqLevel ?? 0) > 0, GrowthFlags.showInProfile != false {
+                                QQLevelBadge(level: u.qqLevel ?? 0, size: L.v(15, 4.2, 17), maxIcons: 4)
+                                    .fixedSize()
+                            }
+
+                            GenderMark(gender: u.gender, size: max(15, L.cdGender))
+                            Spacer(minLength: 0)
                         }
 
-                        GenderMark(gender: u.gender, size: max(15, L.cdGender))
-                        Spacer(minLength: 0)
-                    }
+                        if statusAlive { statusChip }
 
-                    if statusAlive { statusChip }
-
-                    VStack(alignment: .leading, spacing: 5) {
-                        heroLine("昵称：" + ((u.realNickname?.isEmpty == false) ? u.realNickname! : u.name))
-                        heroLine("账号：" + ((u.username?.isEmpty == false) ? u.username! : "—"))
-                        if isBot {
-                            heroLine("简介：" + ((u.bio?.isEmpty == false) ? u.bio! : "您的私人助理"))
-                        } else {
-                            heroLine("地区：" + ((u.region?.isEmpty == false) ? u.region! : "未知"))
+                        VStack(alignment: .leading, spacing: 5) {
+                            heroLine("昵称：" + ((u.realNickname?.isEmpty == false) ? u.realNickname! : u.name))
+                            heroLine("账号：" + ((u.username?.isEmpty == false) ? u.username! : "—"))
+                            if isBot {
+                                heroLine("简介：" + ((u.bio?.isEmpty == false) ? u.bio! : "您的私人助理"))
+                            } else {
+                                heroLine("地区：" + ((u.region?.isEmpty == false) ? u.region! : "未知"))
+                            }
                         }
                     }
+                    Spacer(minLength: 0)
                 }
-                Spacer(minLength: 0)
             }
         }
     }

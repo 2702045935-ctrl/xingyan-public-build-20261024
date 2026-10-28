@@ -366,6 +366,34 @@ struct StarStatusRail: View {
     }
 }
 
+struct StarOrbitProfileAccent: View {
+    var body: some View {
+        GeometryReader { geo in
+            ZStack {
+                Circle()
+                    .trim(from: 0.08, to: 0.78)
+                    .stroke(
+                        Color.white.opacity(0.13),
+                        style: StrokeStyle(lineWidth: 0.8, dash: [3, 6])
+                    )
+                    .frame(width: 168, height: 168)
+                    .position(x: geo.size.width - 4, y: -4)
+
+                Circle()
+                    .fill(OrbitTheme.gold.opacity(0.62))
+                    .frame(width: 4, height: 4)
+                    .position(x: geo.size.width - 82, y: 22)
+
+                Circle()
+                    .fill(Color.white.opacity(0.38))
+                    .frame(width: 2.5, height: 2.5)
+                    .position(x: geo.size.width - 16, y: 63)
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}
+
 struct StarOrbitCard<Content: View>: View {
     let content: Content
 
