@@ -1023,19 +1023,26 @@ struct MenuRow: View {
             HStack(spacing: L.menuGap) {
 
                 if iconTile {
-
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
-                            .fill(iconColor)
-                        if !sf.isEmpty {
-                            Image(systemName: sf)
-                                .font(.system(size: L.menuIcon * 0.60, weight: .semibold))
-                                .foregroundColor(.white)
-                        } else {
-                            SVGIcon(markup: icon, size: L.menuIcon * 0.78, color: .white)
+                    if icon.hasPrefix("world:") {
+                        StarOrbitWorldIcon(
+                            action: String(icon.dropFirst(6)),
+                            label: title,
+                            size: L.menuIcon
+                        )
+                    } else {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                .fill(iconColor)
+                            if !sf.isEmpty {
+                                Image(systemName: sf)
+                                    .font(.system(size: L.menuIcon * 0.60, weight: .semibold))
+                                    .foregroundColor(.white)
+                            } else {
+                                SVGIcon(markup: icon, size: L.menuIcon * 0.78, color: .white)
+                            }
                         }
+                        .frame(width: L.menuIcon, height: L.menuIcon)
                     }
-                    .frame(width: L.menuIcon, height: L.menuIcon)
                 } else if !sf.isEmpty {
                     Image(systemName: sf)
                         .font(.system(size: L.menuIcon * 0.82, weight: .regular))

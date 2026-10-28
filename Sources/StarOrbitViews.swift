@@ -140,6 +140,181 @@ struct StarOrbitTrailingPill: View {
     }
 }
 
+enum StarOrbitContactKind: String {
+    case newFriends
+    case groups
+    case tags
+    case official = "officialAccounts"
+    case service
+
+    var accent: Color {
+        switch self {
+        case .newFriends: return OrbitTheme.jade
+        case .groups: return Color.dyn(0x315E78, 0x78AFC8)
+        case .tags: return OrbitTheme.gold
+        case .official, .service: return Color.dyn(0x5E6579, 0xAAB4D0)
+        }
+    }
+}
+
+struct StarOrbitContactIcon: View {
+    let kind: StarOrbitContactKind
+    var size: CGFloat = 45
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: size * 0.29, style: .continuous)
+                .fill(kind.accent.opacity(0.16))
+            RoundedRectangle(cornerRadius: size * 0.29, style: .continuous)
+                .stroke(kind.accent.opacity(0.34), lineWidth: 0.8)
+
+            Canvas { context, canvas in
+                let line = GraphicsContext.Shading.color(.white.opacity(0.92))
+                let soft = GraphicsContext.Shading.color(.white.opacity(0.42))
+                let stroke = max(1.15, size * 0.033)
+
+                func dotPath(_ x: CGFloat, _ y: CGFloat, _ radius: CGFloat) -> Path {
+                    let rect = CGRect(
+                        x: canvas.width * x - radius,
+                        y: canvas.height * y - radius,
+                        width: radius * 2,
+                        height: radius * 2
+                    )
+                    return Path(ellipseIn: rect)
+                }
+
+                switch kind {
+                case .newFriends:
+                    var link = Path()
+                    link.move(to: CGPoint(x: canvas.width * 0.31, y: canvas.height * 0.60))
+                    link.addLine(to: CGPoint(x: canvas.width * 0.61, y: canvas.height * 0.39))
+                    context.stroke(link, with: soft,
+                                   style: StrokeStyle(lineWidth: stroke, lineCap: .round))
+                    context.fill(dotPath(0.31, 0.60, size * 0.095),
+                                 with: .color(.white.opacity(0.94)))
+                    context.fill(dotPath(0.61, 0.39, size * 0.085),
+                                 with: .color(.white.opacity(0.94)))
+                    var plus = Path()
+                    plus.move(to: CGPoint(x: canvas.width * 0.73, y: canvas.height * 0.57))
+                    plus.addLine(to: CGPoint(x: canvas.width * 0.73, y: canvas.height * 0.78))
+                    plus.move(to: CGPoint(x: canvas.width * 0.625, y: canvas.height * 0.675))
+                    plus.addLine(to: CGPoint(x: canvas.width * 0.835, y: canvas.height * 0.675))
+                    context.stroke(plus, with: line,
+                                   style: StrokeStyle(lineWidth: stroke * 1.2, lineCap: .round))
+
+                case .groups:
+                    let points = [
+                        CGPoint(x: canvas.width * 0.50, y: canvas.height * 0.28),
+                        CGPoint(x: canvas.width * 0.30, y: canvas.height * 0.70),
+                        CGPoint(x: canvas.width * 0.70, y: canvas.height * 0.70)
+                    ]
+                    var link = Path()
+                    link.move(to: points[0])
+                    link.addLine(to: points[1])
+                    link.addLine(to: points[2])
+                    link.closeSubpath()
+                    context.stroke(link, with: soft,
+                                   style: StrokeStyle(lineWidth: stroke, lineJoin: .round))
+                    context.fill(dotPath(0.50, 0.28, size * 0.083),
+                                 with: .color(.white.opacity(0.94)))
+                    context.fill(dotPath(0.30, 0.70, size * 0.073),
+                                 with: .color(.white.opacity(0.94)))
+                    context.fill(dotPath(0.70, 0.70, size * 0.073),
+                                 with: .color(.white.opacity(0.94)))
+
+                case .tags:
+                    var tag = Path()
+                    tag.move(to: CGPoint(x: canvas.width * 0.25, y: canvas.height * 0.43))
+                    tag.addLine(to: CGPoint(x: canvas.width * 0.43, y: canvas.height * 0.25))
+                    tag.addLine(to: CGPoint(x: canvas.width * 0.72, y: canvas.height * 0.25))
+                    tag.addQuadCurve(
+                        to: CGPoint(x: canvas.width * 0.79, y: canvas.height * 0.32),
+                        control: CGPoint(x: canvas.width * 0.79, y: canvas.height * 0.25)
+                    )
+                    tag.addLine(to: CGPoint(x: canvas.width * 0.79, y: canvas.height * 0.52))
+                    tag.addLine(to: CGPoint(x: canvas.width * 0.52, y: canvas.height * 0.79))
+                    tag.addQuadCurve(
+                        to: CGPoint(x: canvas.width * 0.43, y: canvas.height * 0.79),
+                        control: CGPoint(x: canvas.width * 0.47, y: canvas.height * 0.83)
+                    )
+                    tag.addLine(to: CGPoint(x: canvas.width * 0.21, y: canvas.height * 0.57))
+                    tag.addQuadCurve(
+                        to: CGPoint(x: canvas.width * 0.21, y: canvas.height * 0.48),
+                        control: CGPoint(x: canvas.width * 0.17, y: canvas.height * 0.53)
+                    )
+                    tag.closeSubpath()
+                    context.stroke(tag, with: line,
+                                   style: StrokeStyle(lineWidth: stroke, lineJoin: .round))
+                    context.fill(dotPath(0.64, 0.40, size * 0.055),
+                                 with: .color(.white.opacity(0.94)))
+
+                case .official, .service:
+                    context.fill(dotPath(0.50, 0.52, size * 0.055),
+                                 with: .color(.white.opacity(0.94)))
+                    for radius in [size * 0.18, size * 0.30] {
+                        var arc = Path()
+                        arc.addArc(center: CGPoint(x: canvas.width * 0.50,
+                                                   y: canvas.height * 0.52),
+                                   radius: radius,
+                                   startAngle: .degrees(205),
+                                   endAngle: .degrees(335),
+                                   clockwise: false)
+                        context.stroke(arc, with: radius > size * 0.2 ? soft : line,
+                                       style: StrokeStyle(lineWidth: stroke, lineCap: .round))
+                    }
+                    context.fill(dotPath(0.50, 0.22, size * 0.038),
+                                 with: .color(.white.opacity(0.94)))
+                }
+            }
+            .padding(size * 0.08)
+        }
+        .frame(width: size, height: size)
+        .overlay {
+            RoundedRectangle(cornerRadius: size * 0.29, style: .continuous)
+                .stroke(Color.black.opacity(0.06), lineWidth: 0.5)
+        }
+    }
+}
+
+struct StarOrbitWorldIcon: View {
+    let action: String
+    let label: String
+    var size: CGFloat = 40
+
+    private var accent: Color {
+        switch action {
+        case "moments": return OrbitTheme.jade
+        case "channels", "miniapps": return Color.dyn(0x486E80, 0x82B1C5)
+        case "live", "scan": return Color.dyn(0x2F7D68, 0x6CC8AC)
+        case "look", "bottle", "shake": return Color.dyn(0x6C6F88, 0xB6BBD8)
+        case "search", "nearby": return Color.dyn(0xA07638, 0xE0B667)
+        case "games": return Color.dyn(0x546A62, 0x9BB9AC)
+        default: return OrbitTheme.jadeDeep
+        }
+    }
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
+                .fill(accent.opacity(0.14))
+            RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
+                .stroke(accent.opacity(0.32), lineWidth: 0.8)
+
+            Circle()
+                .trim(from: 0.04, to: 0.70)
+                .stroke(Color.white.opacity(0.18),
+                        style: StrokeStyle(lineWidth: 0.8, dash: [2, 4]))
+                .frame(width: size * 0.74, height: size * 0.74)
+                .offset(x: size * 0.16, y: -size * 0.16)
+
+            Image(systemName: RowIcon.sf(action: action, label: label))
+                .font(.system(size: size * 0.42, weight: .medium))
+                .foregroundStyle(accent)
+        }
+        .frame(width: size, height: size)
+    }
+}
+
 struct StarOrbitCard<Content: View>: View {
     let content: Content
 

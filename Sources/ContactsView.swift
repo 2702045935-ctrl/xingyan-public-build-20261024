@@ -477,7 +477,7 @@ private var funcs: [(String, String, Color, String)] {
         return HStack(spacing: 13) {
             ZStack {
                 if !item.1.isEmpty {
-                    FuncIcon(markup: item.1, bg: item.2, size: 32, iconSize: 18)
+                    funcIcon(item, size: 32)
                 } else {
                     ZStack {
                         RoundedRectangle(cornerRadius: 8, style: .continuous).fill(item.2)
@@ -566,7 +566,7 @@ private var funcs: [(String, String, Color, String)] {
         } label: {
             VStack(spacing: 8) {
                 ZStack(alignment: .topTrailing) {
-                    FuncIcon(markup: item.1, bg: item.2, size: 45)
+                    funcIcon(item, size: 45)
 
                     if item.3 == "newFriends" && app.showDot("newFriends", auto: app.friendRequests > 0) {
                         Text(app.friendRequests > 99 ? "99+" : "\(app.friendRequests)")
@@ -618,7 +618,7 @@ private var funcs: [(String, String, Color, String)] {
             }
         } label: {
             HStack(spacing: L.ctGap) {
-                FuncIcon(markup: item.1, bg: item.2, size: L.ctIcon)
+                funcIcon(item, size: L.ctIcon)
                 Text(item.0)
                     .font(pf(L.ctNameSize))
                     .foregroundColor(C.label)
@@ -640,6 +640,16 @@ private var funcs: [(String, String, Color, String)] {
             .contentShape(Rectangle())
         }
         .buttonStyle(MenuPressStyle())
+    }
+
+    @ViewBuilder
+    private func funcIcon(_ item: (String, String, Color, String), size: CGFloat) -> some View {
+        if let kind = StarOrbitContactKind(rawValue: item.3) {
+            StarOrbitContactIcon(kind: kind, size: size)
+        } else {
+            FuncIcon(markup: item.1, bg: item.2, size: size,
+                     iconSize: size * 0.44)
+        }
     }
 
     private func contactRow(_ user: User) -> some View {
