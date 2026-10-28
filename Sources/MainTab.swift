@@ -456,16 +456,16 @@ struct TabBar: View {
         if scheme == .dark {
             return AnyView(ZStack {
                 Rectangle().fill(.ultraThinMaterial)
-                    .opacity(0.78)
+                    .opacity(0.84)
                 LinearGradient(
-                    colors: [Color(hex: 0x10251D).opacity(0.90),
-                             Color(hex: 0x08130F).opacity(0.96)],
+                    colors: [Color(hex: 0xD8EEE5).opacity(0.28),
+                             Color(hex: 0x83B29F).opacity(0.18)],
                     startPoint: .top, endPoint: .bottom
                 )
-                OrbitTheme.jade.opacity(0.085)
+                OrbitTheme.jade.opacity(0.07)
                 VStack(spacing: 0) {
                     Rectangle()
-                        .fill(OrbitTheme.jade.opacity(0.20))
+                        .fill(Color(hex: 0xD8EEE5).opacity(0.34))
                         .frame(height: 0.5)
                     Spacer(minLength: 0)
                 }
