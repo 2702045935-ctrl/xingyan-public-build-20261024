@@ -74,7 +74,7 @@
     {
       "path": "Sources/GroupInfoView.swift",
       "size": 69067,
-      "sha256": "eb6c638e8c69a951b6cf28abf8f4cc86b77ab7b77f30c1dbe62d2d818198b466"
+      "sha256": "ba2266fffdae7612ef8f4d582d0239d9397dceec390980058d38add33a3bb7e9"
     },
     {
       "path": "Sources/OtherLogin.swift",
@@ -84,7 +84,7 @@
     {
       "path": "Sources/InAppBrowser.swift",
       "size": 19550,
-      "sha256": "fba42899ab859302146782666fee510daa70246f67080722648d1ff6d8423b78"
+      "sha256": "c026271036243c67799aac1e3ec32257a71ec62a485764ff5195ce9efb9b601a"
     },
     {
       "path": "Sources/MallWebPage.swift",
