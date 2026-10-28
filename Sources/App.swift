@@ -1245,6 +1245,29 @@ final class AppState: ObservableObject {
         rememberLastUser()
     }
 
+    /// 资料保存后以服务端返回值作为唯一真源，避免只改本地状态、
+    /// 下一次轮询又从旧用户行覆盖回来。
+    func applyMyProfileUser(_ user: User) {
+        guard var merged = me else {
+            me = user
+            rememberLastUser()
+            return
+        }
+        merged.nickname = user.nickname ?? merged.nickname
+        merged.bio = user.bio ?? merged.bio
+        merged.region = user.region ?? merged.region
+        merged.gender = user.gender ?? merged.gender
+        merged.birthday = user.birthday ?? merged.birthday
+        merged.patText = user.patText ?? merged.patText
+        merged.phone = user.phone ?? merged.phone
+        merged.username = user.username ?? merged.username
+        merged.avatar = user.avatar ?? merged.avatar
+        merged.momentCover = user.momentCover ?? merged.momentCover
+        merged.chatBackground = user.chatBackground ?? merged.chatBackground
+        me = merged
+        rememberLastUser()
+    }
+
     /// WebSocket 已带会话摘要时先更新预览与红点，再等后台全量校准。
     private func applyRealtimeChat(_ incoming: Chat) {
         locallyHiddenChats.remove(incoming.id)
@@ -3079,7 +3102,7 @@ struct RegisterSheet: View {
                 sliderSeed += 1
                 showSlider = true
             } catch {
-                error = (error as? APIError)?.errorDescription ?? "验证码没发出去"
+                self.error = (error as? APIError)?.errorDescription ?? "验证码没发出去"
             }
             busy = false
         }

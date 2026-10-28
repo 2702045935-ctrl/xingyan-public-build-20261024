@@ -200,8 +200,11 @@ struct ProfileEditView: View {
     private func saveNow(_ fields: [String: Any]) {
         Task {
             do {
-                try await API.shared.updateMeChecked(fields)
-                app.applyMyProfileFields(fields)
+                if let updated = try await API.shared.updateMeChecked(fields) {
+                    app.applyMyProfileUser(updated)
+                } else {
+                    app.applyMyProfileFields(fields)
+                }
                 filledProfile = true
             } catch {
                 app.show(error.localizedDescription)
@@ -499,8 +502,12 @@ struct ProfileEditView: View {
             if let url = try? await API.shared.upload(image: image) {
                 cacheUploadedImage(image, path: url)
                 do {
-                    try await API.shared.updateMeChecked(["avatar": url])
-                    app.applyMyProfileFields(["avatar": url])
+                    let fields: [String: Any] = ["avatar": url]
+                    if let updated = try await API.shared.updateMeChecked(fields) {
+                        app.applyMyProfileUser(updated)
+                    } else {
+                        app.applyMyProfileFields(fields)
+                    }
                 } catch {
                     busy = false
                     app.show(Tr("头像上传失败，再试一次"))
@@ -528,14 +535,18 @@ struct ProfileEditView: View {
             ]
             if !phone.isEmpty && phone != (app.me?.phone ?? "") { fields["phone"] = phone }
             do {
-                try await API.shared.updateMeChecked(fields)
+                let updated = try await API.shared.updateMeChecked(fields)
+                if let updated {
+                    app.applyMyProfileUser(updated)
+                } else {
+                    app.applyMyProfileFields(fields)
+                }
             } catch {
 
                 busy = false
                 app.show(error.localizedDescription)
                 return
             }
-            app.applyMyProfileFields(fields)
             await app.loadContacts()
             busy = false
             app.show(Tr("已保存"))
@@ -630,8 +641,12 @@ struct UsernameChangeSheet: View {
         err = ""
         Task {
             do {
-                try await API.shared.updateMeChecked(["username": want])
-                app.applyMyProfileFields(["username": want])
+                let fields: [String: Any] = ["username": want]
+                if let updated = try await API.shared.updateMeChecked(fields) {
+                    app.applyMyProfileUser(updated)
+                } else {
+                    app.applyMyProfileFields(fields)
+                }
                 busy = false
                 app.show(Tr("星言号已更新"))
                 dismiss()

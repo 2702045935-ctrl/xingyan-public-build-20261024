@@ -5245,8 +5245,10 @@ private struct StarredPayload: Decodable {
         _ = try? await request("PATCH", "/api/me", body: fields)
     }
 
-    func updateMeChecked(_ fields: [String: Any]) async throws {
-        _ = try await request("PATCH", "/api/me", body: fields)
+    @discardableResult
+    func updateMeChecked(_ fields: [String: Any]) async throws -> User? {
+        let any = try await request("PATCH", "/api/me", body: fields)
+        return (try? decode(any, as: LoginPayload.self))?.user
     }
 
     func completeOnboarding(avatar: String, interests: [String]) async throws -> User {
