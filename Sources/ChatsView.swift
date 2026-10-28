@@ -631,6 +631,9 @@ struct ChatsView: View {
     private var chatsCardStyle: Bool { UIConfig.num("chatsOrbitCard", 1) > 0 }
     private var chatsCardInset: CGFloat { max(8, UIConfig.num("chatsOrbitInset", 12)) }
     private var chatsCardRadius: CGFloat { max(16, UIConfig.num("chatsOrbitRadius", 22)) }
+    private var chatsPageFill: Color {
+        OrbitTheme.raised
+    }
 
     @State private var scrolled: CGFloat = 0
 
@@ -1583,12 +1586,12 @@ struct ChatsView: View {
                 .zIndex(3)
             }
 
-            .background(OrbitTheme.canvas.ignoresSafeArea(edges: .bottom))
+            .background(chatsPageFill.ignoresSafeArea(edges: .bottom))
             .sheet(isPresented: $showSearch) {
                 SearchPage(onOpenChat: { c in path.append(c) })
                     .environmentObject(app)
             }
-            .background(OrbitTheme.canvas.ignoresSafeArea(edges: .top))
+            .background(chatsPageFill.ignoresSafeArea(edges: .top))
             .toolbar(.hidden, for: .navigationBar)
 
             .onChange(of: path.count) { n in
