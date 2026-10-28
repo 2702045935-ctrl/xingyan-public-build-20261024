@@ -498,9 +498,11 @@ struct ProfileEditView: View {
 
     private func changeAvatar(_ image: UIImage) {
         busy = true
+        let previousAvatar = app.me?.avatarPath ?? ""
         Task {
             if let url = try? await API.shared.upload(image: image) {
                 cacheUploadedImage(image, path: url)
+                app.applyMyProfileFields(["avatar": url])
                 do {
                     let fields: [String: Any] = ["avatar": url]
                     if let updated = try await API.shared.updateMeChecked(fields) {
@@ -509,6 +511,7 @@ struct ProfileEditView: View {
                         app.applyMyProfileFields(fields)
                     }
                 } catch {
+                    app.applyMyProfileFields(["avatar": previousAvatar])
                     busy = false
                     app.show(Tr("头像上传失败，再试一次"))
                     return
