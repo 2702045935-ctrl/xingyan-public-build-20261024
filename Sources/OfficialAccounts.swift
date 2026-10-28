@@ -61,28 +61,59 @@ struct OfficialAccountsView: View {
         VStack(spacing: 0) {
             NavBar(title: Tr("公众号"), back: { dismiss() })
             ScrollView {
-                LazyVStack(spacing: 0) {
+                LazyVStack(spacing: 10) {
+                    StarOrbitHero(
+                        kicker: "信号星轨",
+                        title: Tr("公众号"),
+                        subtitle: Tr("稳定接收重要信号，不被无关内容打断"),
+                        symbol: "dot.radiowaves.left.and.right",
+                        accent: OrbitTheme.jadeDeep,
+                        metrics: [
+                            StarOrbitMetric(value: "\(followed.count)", label: Tr("已关注")),
+                            StarOrbitMetric(value: "\(accounts.count)", label: Tr("个账号"))
+                        ]
+                    )
+                    .padding(.horizontal, 12)
+
                     if loading && accounts.isEmpty {
-                        ProgressView().padding(.top, 60)
+                        HStack {
+                            Spacer()
+                            ProgressView()
+                            Spacer()
+                        }
+                        .frame(height: 90)
+                        .background(OrbitTheme.cardBackground())
+                        .clipShape(OrbitTheme.card)
+                        .padding(.horizontal, 12)
                     } else if accounts.isEmpty {
-                        Text(Tr("还没有公众号")).font(pf(15)).foregroundColor(C.subLabel)
-                            .frame(maxWidth: .infinity).padding(.vertical, 50)
+                        emptyState
                     } else {
                         if !followed.isEmpty {
-                            sectionHead(Tr("我关注的"))
-                            ForEach(followed) { a in row(a) }
+                            OrbitSectionLabel(text: Tr("我关注的"), count: followed.count)
+                                .padding(.horizontal, 17)
+                                .padding(.top, 2)
+                            ForEach(followed) { a in
+                                row(a)
+                                    .padding(.horizontal, 12)
+                            }
                         }
                         if !others.isEmpty {
-                            sectionHead(Tr("全部公众号"))
-                            ForEach(others) { a in row(a) }
+                            OrbitSectionLabel(text: Tr("全部公众号"), count: others.count)
+                                .padding(.horizontal, 17)
+                                .padding(.top, 4)
+                            ForEach(others) { a in
+                                row(a)
+                                    .padding(.horizontal, 12)
+                            }
                         }
                     }
                     Spacer().frame(height: 30)
                 }
+                .padding(.top, 10)
             }
             .refreshable { await load() }
         }
-        .background(C.pageBg.ignoresSafeArea())
+        .background(OrbitTheme.canvas.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .swipeBack { dismiss() }
         .hidesTabBar()
@@ -92,56 +123,78 @@ struct OfficialAccountsView: View {
         }
     }
 
-    private func sectionHead(_ t: String) -> some View {
-        Text(t)
-            .font(pf(13))
-            .foregroundColor(C.subLabel)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 18)
-            .padding(.top, 18)
-            .padding(.bottom, 7)
-    }
-
     private func row(_ a: OAAccount) -> some View {
         Button { openAccountId = a.id; showAccount = true } label: {
-            HStack(spacing: 12) {
-                Avatar(path: a.avatarPath, size: 46, radius: 10, circle: false)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .stroke(C.hairline, lineWidth: 0.5)
-                    )
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 6) {
-                        Text(a.name).font(pf(16, .medium)).foregroundColor(C.label).lineLimit(1)
-                        OfficialMark()
-                        typeChip(a)
+            StarOrbitCard {
+                HStack(spacing: 13) {
+                    Avatar(path: a.avatarPath, size: 46, radius: 13, circle: false)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 13, style: .continuous)
+                                .stroke(OrbitTheme.divider, lineWidth: 0.6)
+                        )
+                    VStack(alignment: .leading, spacing: 5) {
+                        HStack(spacing: 6) {
+                            Text(a.name)
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundStyle(OrbitTheme.ink)
+                                .lineLimit(1)
+                            OfficialMark()
+                            typeChip(a)
+                        }
+                        Text(a.about.isEmpty ? Tr("还没有简介") : a.about)
+                            .font(.system(size: 12.5))
+                            .foregroundStyle(OrbitTheme.secondary)
+                            .lineLimit(1)
                     }
-                    Text(a.about.isEmpty ? Tr("还没有简介") : a.about)
-                        .font(pf(13)).foregroundColor(C.subLabel).lineLimit(1)
+                    Spacer(minLength: 8)
+                    if a.followed {
+                        StarOrbitTrailingPill(text: Tr("已关注"), accent: OrbitTheme.jade)
+                    } else if a.count > 0 {
+                        StarOrbitTrailingPill(text: "\(a.count) " + Tr("篇"), accent: OrbitTheme.tertiary)
+                    }
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(OrbitTheme.tertiary)
                 }
-                Spacer(minLength: 8)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(C.subLabel)
+                .padding(.horizontal, 15)
+                .frame(height: 72)
+                .contentShape(Rectangle())
             }
-            .padding(.horizontal, 18)
-            .frame(height: 72)
-            .background(C.cardBg)
         }
         .buttonStyle(.plain)
-        .overlay(alignment: .bottom) { HairLine(inset: 76) }
     }
 
     private func typeChip(_ a: OAAccount) -> some View {
         Text(a.typeLabel)
-            .font(pf(10.5, .medium))
-            .foregroundColor(a.isService ? .white : C.subLabel)
+            .font(.system(size: 10, weight: .medium))
+            .foregroundColor(a.isService ? OrbitTheme.jade : OrbitTheme.tertiary)
             .padding(.horizontal, 5)
             .padding(.vertical, 1.5)
             .background(
                 RoundedRectangle(cornerRadius: 3.5, style: .continuous)
-                    .fill(a.isService ? Color(hex: 0x2C7BE5) : C.hairline)
+                    .fill(a.isService ? OrbitTheme.jadeSoft : OrbitTheme.field)
             )
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 12) {
+            StarOrbitIconBadge(
+                symbol: "dot.radiowaves.left.and.right",
+                accent: OrbitTheme.jadeDeep,
+                size: 54
+            )
+            Text(Tr("还没有公众号"))
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(OrbitTheme.ink)
+            Text(Tr("关注的信号会在这里形成稳定的内容轨道"))
+                .font(.system(size: 13))
+                .foregroundStyle(OrbitTheme.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 42)
+        .background(OrbitTheme.cardBackground())
+        .clipShape(OrbitTheme.card)
+        .padding(.horizontal, 12)
     }
 
     private func load() async {

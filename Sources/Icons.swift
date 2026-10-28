@@ -247,16 +247,16 @@ enum I {
     """
 
     static let newFriends = """
-    <svg data-key="i.newFriends" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.4" cy="8.6" r="3.4"/><path d="M4.4 19c0-3 2.7-5 6-5s6 2 6 5"/><path d="M18.4 8.4v4.6M16.1 10.7h4.6"/></svg>
+    <svg data-key="i.newFriends" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round"><path d="M3.7 12.2a8.3 8.3 0 0 1 14.1-6.1"/><path d="M20.3 11.8a8.3 8.3 0 0 1-14.1 6.1"/><circle cx="9.2" cy="9.5" r="2.6"/><path d="M5.1 18c.5-2.6 2.2-4 4.2-4 1.2 0 2.3.5 3.1 1.5"/><path d="M18.2 14.6v5M15.7 17.1h5"/><circle cx="20.2" cy="5.7" r="1.05" fill="#fff" stroke="none"/></svg>
     """
     static let chatOnly = """
     <svg data-key="i.chatOnly" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19.6 12c0 3.4-3.4 6.2-7.6 6.2-.8 0-1.6-.1-2.4-.3l-3.7 1.7 1.1-3.1C5.6 15.2 4.4 13.7 4.4 12c0-3.4 3.4-6.2 7.6-6.2s7.6 2.8 7.6 6.2z"/></svg>
     """
     static let tag = """
-    <svg data-key="i.tag" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11.4 4.4h6.2a2 2 0 0 1 2 2v6.2l-8.4 8.4a2 2 0 0 1-2.8 0L4 16.6a2 2 0 0 1 0-2.8z"/><circle cx="15.4" cy="8.6" r="1.3" fill="#fff" stroke="none"/></svg>
+    <svg data-key="i.tag" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 4.3h7.1a2.1 2.1 0 0 1 2.1 2.1v7.1l-6.7 6.7a2.1 2.1 0 0 1-3 0l-6.3-6.3a2.1 2.1 0 0 1 0-3z"/><path d="M6.3 12.1c2.8-5.1 7.8-6.3 12.1-3.1"/><circle cx="16.1" cy="8.2" r="1.25" fill="#fff" stroke="none"/><circle cx="18.1" cy="17.6" r=".9" fill="#fff" stroke="none"/></svg>
     """
     static let service = """
-    <svg data-key="i.service" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.4"/><path d="M8.6 12.6l2.4 2.4 4.6-5"/></svg>
+    <svg data-key="i.service" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.15"/><path d="M8.1 8.1a5.5 5.5 0 0 0 0 7.8M15.9 8.1a5.5 5.5 0 0 1 0 7.8"/><path d="M5.2 5.2a9.6 9.6 0 0 0 0 13.6M18.8 5.2a9.6 9.6 0 0 1 0 13.6"/><circle cx="12" cy="3.8" r=".9" fill="#fff" stroke="none"/></svg>
     """
     static let workMate = """
     <svg data-key="i.workMate" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9.4" r="3.4"/><path d="M5.6 19.4c0-3.2 2.9-5.4 6.4-5.4s6.4 2.2 6.4 5.4"/></svg>
@@ -265,7 +265,7 @@ enum I {
     <svg data-key="i.myWork" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.4" y="8.4" width="15.2" height="10.4" rx="2.2"/><path d="M9.4 8.4V6.6h5.2v1.8M12 11.6v3.6M10.2 13.4h3.6"/></svg>
     """
     static let groups = """
-    <svg data-key="i.groups" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.2" cy="8.2" r="3.2"/><path d="M3.4 19c0-3 2.6-5.2 5.8-5.2s5.8 2.2 5.8 5.2"/><path d="M15.6 5.5a3.2 3.2 0 0 1 0 5.5"/><path d="M17.2 14c2.2.6 3.6 2.3 3.6 4.5"/></svg>
+    <svg data-key="i.groups" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round"><path d="M5.2 8.6a7.7 7.7 0 0 1 13.6 0M5.2 15.4a7.7 7.7 0 0 0 13.6 0"/><circle cx="12" cy="12" r="2.25"/><circle cx="4.7" cy="12" r="1.25" fill="#fff" stroke="none"/><circle cx="19.3" cy="12" r="1.25" fill="#fff" stroke="none"/><path d="M9.1 18.1c.5 1.2 1.5 2 2.9 2s2.4-.8 2.9-2"/></svg>
     """
 
     static let moments = """

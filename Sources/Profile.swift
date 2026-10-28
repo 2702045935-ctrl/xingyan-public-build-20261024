@@ -421,86 +421,23 @@ struct NewFriendsView: View {
     }
 
     private var orbitHeader: some View {
-        ZStack(alignment: .leading) {
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(LinearGradient(
-                    colors: [OrbitTheme.jadeDeep, OrbitTheme.jade.opacity(0.72), .black],
-                    startPoint: .topLeading, endPoint: .bottomTrailing))
+        VStack(spacing: 10) {
+            StarOrbitHero(
+                kicker: "关系星轨",
+                title: Tr("新的朋友"),
+                subtitle: Tr("每一次连接，都是星轨上的一次靠近"),
+                symbol: "person.2.fill",
+                accent: OrbitTheme.jade,
+                metrics: [
+                    StarOrbitMetric(value: "\(incoming.count)", label: Tr("待确认")),
+                    StarOrbitMetric(value: "\(outgoing.count)", label: Tr("已发出"))
+                ]
+            )
 
-            Circle()
-                .stroke(Color.white.opacity(0.13), lineWidth: 1)
-                .frame(width: 150, height: 150)
-                .offset(x: 244, y: -48)
-            Circle()
-                .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                .frame(width: 104, height: 104)
-                .offset(x: 267, y: -25)
-            Image(systemName: "sparkle")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(OrbitTheme.gold)
-                .offset(x: 272, y: -33)
-            Circle()
-                .fill(Color.white.opacity(0.72))
-                .frame(width: 5, height: 5)
-                .offset(x: 318, y: 34)
-            Circle()
-                .fill(OrbitTheme.gold)
-                .frame(width: 4, height: 4)
-                .offset(x: 224, y: 91)
-
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 8) {
-                    Image(systemName: "point.3.connected.trianglepath.dotted")
-                        .font(.system(size: 12, weight: .semibold))
-                    Text("RELATION ORBIT")
-                        .font(.system(size: 9, weight: .bold))
-                        .tracking(1.2)
-                }
-                .foregroundStyle(Color.white.opacity(0.72))
-
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(Tr("新的朋友"))
-                        .font(.system(size: 23, weight: .bold))
-                        .foregroundStyle(.white)
-                    Text("\(incoming.count) " + Tr("个待确认")
-                         + "  ·  \(outgoing.count) " + Tr("个已发出"))
-                        .font(.system(size: 12))
-                        .foregroundStyle(Color.white.opacity(0.70))
-                }
-
-                HStack(spacing: 9) {
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(.secondary)
-                    TextField(Tr("搜索昵称、星言号或验证消息"), text: $keyword)
-                        .font(.system(size: 14.5))
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                    if !keyword.isEmpty {
-                        Button { keyword = "" } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundStyle(.secondary)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.horizontal, 12)
-                .frame(height: 42)
-                .background(.ultraThinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .stroke(Color.white.opacity(0.20), lineWidth: 0.6)
-                }
-                .accessibilityElement(children: .contain)
-            }
-            .padding(17)
-        }
-        .frame(height: 174)
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(Color.white.opacity(0.10), lineWidth: 0.7)
+            StarOrbitSearchField(
+                placeholder: Tr("搜索昵称、星言号或验证消息"),
+                text: $keyword
+            )
         }
     }
 

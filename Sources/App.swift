@@ -1739,7 +1739,10 @@ struct RootView: View {
                     .allowsHitTesting(false)
                 }
             }
-            .id("\(app.uiVersion)-\(app.authVersion)")
+            // UI 配置刷新只应重绘界面，不能重建主 Tab 容器；否则当前 Tab、
+            // 导航栈和滚动位置都会被重置。账号登录完成仍可通过 authVersion
+            // 重建一次根视图，确保新账号从干净的首页开始。
+            .id(app.authVersion)
 
             .background(C.pageBg.ignoresSafeArea())
             .onAppear { L.width = geo.size.width }
@@ -2942,100 +2945,175 @@ struct RegisterSheet: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
 
-    @State private var username = ""
-    @State private var nickname = ""
-    @State private var password = ""
-    @State private var cap = ""
-    @State private var capId = ""
-    @State private var capSvg = ""
-    @State private var capRequired = true
+    private enum Field: Hashable { case phone, code }
+
+    @State private var phone = UserDefaults.standard.string(forKey: "chris.lastPhone") ?? ""
+    @State private var code = ""
+    @State private var countdown = 0
+    @State private var codeSent = false
     @State private var busy = false
     @State private var error: String?
+    @State private var sliderTicket = ""
+    @State private var sliderSeed = 0
+    @State private var showSlider = false
+    @State private var countdownTask: Task<Void, Never>?
+    @FocusState private var focus: Field?
+
+    private var validPhone: Bool {
+        phone.range(of: #"^1[3-9]\d{9}$"#, options: .regularExpression) != nil
+    }
+
+    private var canSubmit: Bool {
+        validPhone && codeSent && code.count == 6 && !busy
+    }
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("注册只支持手机号验证码")
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundColor(C.label)
+                    Text("验证后自动生成星言号。星言号可在个人资料里修改，之后登录统一使用绑定手机号。")
+                        .font(.system(size: 13))
+                        .foregroundColor(C.subLabel)
 
-                TextField("昵称", text: $nickname).frame(height: 54).padding(.horizontal, 14)
-                HairLine(color: C.navLine)
-                SecureField("密码（至少 6 位）", text: $password)
-                    .autocorrectionDisabled(true)
-                    .textInputAutocapitalization(.never)
-                    .privacySensitive()
-                    .frame(height: 54).padding(.horizontal, 14)
-                if capRequired {
-                    HairLine(color: C.navLine)
-                    HStack(spacing: 10) {
-                        TextField("4 位数字验证码", text: $cap)
-                            .autocorrectionDisabled(true)
-                            .keyboardType(.numberPad)
-                        CaptchaView(svg: capSvg)
-                            .frame(width: 96, height: 36)
-                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(C.navLine, lineWidth: 0.5))
-                            .onTapGesture { loadCaptcha() }
-                    }
-                    .font(.system(size: 15))
-                    .frame(height: 54).padding(.horizontal, 14)
-                }
+                    VStack(spacing: 0) {
+                        TextField("手机号", text: $phone)
+                            .keyboardType(.phonePad)
+                            .textContentType(.telephoneNumber)
+                            .focused($focus, equals: .phone)
+                            .font(.system(size: 16.5))
+                            .padding(.horizontal, 14)
+                            .frame(height: 54)
+                            .onChange(of: phone) { value in
+                                phone = String(value.filter(\.isNumber).prefix(11))
+                                error = nil
+                            }
 
-                if let e = error {
-                    Text(e).font(.system(size: 13)).foregroundColor(C.red)
-                        .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 12)
-                }
-                Button { submit() } label: {
-                    HStack(spacing: 8) {
-                        if busy { ProgressView().progressViewStyle(.circular).tint(.white) }
-                        Text(busy ? "请稍候…" : "注 册").font(.system(size: 16, weight: .medium))
+                        HairLine(color: C.navLine)
+
+                        HStack(spacing: 10) {
+                            TextField("6 位短信验证码", text: $code)
+                                .keyboardType(.numberPad)
+                                .textContentType(.oneTimeCode)
+                                .focused($focus, equals: .code)
+                                .font(.system(size: 16.5))
+                                .onChange(of: code) { value in
+                                    code = String(value.filter(\.isNumber).prefix(6))
+                                    error = nil
+                                }
+                            Button(countdown > 0 ? "\(countdown) 秒" : (codeSent ? "重新获取" : "获取验证码")) {
+                                requestCode()
+                            }
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(canRequestCode ? C.green : C.subLabel)
+                            .disabled(!canRequestCode)
+                        }
+                        .padding(.horizontal, 14)
+                        .frame(height: 54)
                     }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity, minHeight: 52)
-                    .background(LoginTheme.accent).cornerRadius(16)
+                    .background(C.cardBg)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(C.navLine, lineWidth: 0.6))
+
+                    if let e = error {
+                        Text(e)
+                            .font(.system(size: 13))
+                            .foregroundColor(C.red)
+                    }
+
+                    Button { submit() } label: {
+                        HStack(spacing: 8) {
+                            if busy { ProgressView().tint(.white).scaleEffect(0.85) }
+                            Text(busy ? "请稍候…" : "注册并登录")
+                                .font(.system(size: 16, weight: .medium))
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity, minHeight: 52)
+                        .background(canSubmit ? LoginTheme.accent : LoginTheme.disabledGray)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(!canSubmit)
                 }
-                .disabled(busy)
-                .padding(.top, 20)
-                Spacer()
+                .padding(20)
             }
             .background(Color(.systemBackground).ignoresSafeArea())
-            .navigationTitle(Tr("注册"))
+            .navigationTitle(Tr("手机号注册"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .navigationBarLeading) { Button(Tr("取消")) { dismiss() } } }
         }
-        .onAppear { loadCaptcha() }
-    }
-
-    private func loadCaptcha() {
-        Task {
-            if let c = try? await API.shared.captcha() {
-                capId = c.id
-                capSvg = c.svg
-                capRequired = c.required
-                if !c.required { cap = "" }
+        .sheet(isPresented: $showSlider) {
+            SliderSheet(freshKey: sliderSeed) { ticket in
+                sliderTicket = ticket
+                showSlider = false
+                requestCode()
             }
         }
+        .onDisappear { countdownTask?.cancel() }
     }
-    private func submit() {
-        if password.count < 6 { error = "密码至少 6 位"; return }
-        if capRequired && cap.isEmpty { error = "请填写图形验证码"; return }
-        busy = true; error = nil
+
+    private var canRequestCode: Bool {
+        validPhone && countdown == 0 && !busy
+    }
+
+    private func requestCode() {
+        guard canRequestCode else { return }
+        busy = true
+        error = nil
         Task {
             do {
+                let dev = try await API.shared.phoneCode(phone: phone,
+                                                          sliderTicket: sliderTicket)
+                sliderTicket = ""
+                codeSent = true
+                startCountdown()
+                if let dev, !dev.isEmpty {
+                    code = dev
+                    focus = .code
+                }
+            } catch APIError.needSlider {
+                sliderTicket = ""
+                sliderSeed += 1
+                showSlider = true
+            } catch {
+                error = (error as? APIError)?.errorDescription ?? "验证码没发出去"
+            }
+            busy = false
+        }
+    }
 
-                let u = try await API.shared.register(username: "",
-                                                     nickname: nickname.isEmpty ? "新用户" : nickname,
-                                                     password: password, captchaId: capId, captcha: cap)
-
-                await app.adoptRegistered(u)
+    private func submit() {
+        guard canSubmit else {
+            if !codeSent { requestCode() }
+            return
+        }
+        busy = true
+        error = nil
+        Task { @MainActor in
+            do {
+                try await app.login(phone: phone, code: code)
+                UserDefaults.standard.set(phone, forKey: "chris.lastPhone")
                 app.show(Tr("注册成功"))
                 dismiss()
             } catch {
-                let message = (error as? APIError)?.errorDescription ?? "注册失败"
-                self.error = message.contains("这台设备已经注册过账号")
-                    ? "这台设备 24 小时内最多注册 2 个账号。请直接登录已有账号，或 24 小时后再试。"
-                    : message
-                loadCaptcha()
+                self.error = (error as? APIError)?.errorDescription ?? "注册失败"
             }
             busy = false
+        }
+    }
+
+    private func startCountdown() {
+        countdownTask?.cancel()
+        countdown = 60
+        countdownTask = Task { @MainActor in
+            while countdown > 0, !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                if Task.isCancelled { return }
+                countdown -= 1
+            }
         }
     }
 }
@@ -3249,6 +3327,9 @@ struct PhoneLoginView: View {
     @State private var busy = false
     @State private var showTerms = false
     @State private var termsKind = 0
+    @State private var sliderTicket = ""
+    @State private var sliderSeed = 0
+    @State private var showSlider = false
     @FocusState private var focused: Bool
 
     @State private var showCountryPicker = false
@@ -3379,6 +3460,13 @@ struct PhoneLoginView: View {
         }
         .sheet(isPresented: $showTerms) { TermsSheet(kind: termsKind) }
         .sheet(isPresented: $showCountryPicker) { CountryPickerView(index: $dialIdx) }
+        .sheet(isPresented: $showSlider) {
+            SliderSheet(freshKey: sliderSeed) { ticket in
+                sliderTicket = ticket
+                showSlider = false
+                sendCode()
+            }
+        }
         .onDisappear {
             timer?.invalidate()
         }
@@ -3392,12 +3480,19 @@ struct PhoneLoginView: View {
         error = nil
         Task {
             do {
-                if let dev = try await API.shared.phoneCode(phone: fullPhone) {
+                let dev = try await API.shared.phoneCode(phone: fullPhone,
+                                                          sliderTicket: sliderTicket)
+                sliderTicket = ""
+                if let dev {
                     code = dev
                     app.show("验证码：\(dev)")
                 } else {
                     app.show(Tr("验证码已发送"))
                 }
+            } catch APIError.needSlider {
+                sliderTicket = ""
+                sliderSeed += 1
+                showSlider = true
             } catch {
                 self.error = (error as? APIError)?.errorDescription ?? "发送失败"
             }

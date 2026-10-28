@@ -2442,9 +2442,11 @@ final class API {
         return p?.ids ?? []
     }
 
-    func phoneCode(phone: String) async throws -> String? {
+    func phoneCode(phone: String, sliderTicket: String = "") async throws -> String? {
+        var body: [String: Any] = ["phone": phone]
+        if !sliderTicket.isEmpty { body["sliderTicket"] = sliderTicket }
         let payload: PhoneCodePayload = try await post("/api/login/phone-code",
-                                                       ["phone": phone],
+                                                       body,
                                                        as: PhoneCodePayload.self)
         return payload.devCode
     }
@@ -2452,18 +2454,6 @@ final class API {
     func captcha() async throws -> (id: String, svg: String, required: Bool) {
         let payload: CaptchaPayload = try await get("/api/captcha", as: CaptchaPayload.self)
         return (payload.id ?? "", payload.svg ?? "", payload.required ?? true)
-    }
-
-    func register(username: String, nickname: String, password: String, captchaId: String, captcha: String) async throws -> User {
-        let payload: LoginPayload = try await post("/api/register", [
-            "username": username,
-            "nickname": nickname,
-            "password": password,
-            "captchaId": captchaId,
-            "captcha": captcha
-        ], as: LoginPayload.self)
-        guard let user = payload.user else { throw APIError.message("注册失败") }
-        return user
     }
 
     func pairStart(device: String = "") async throws -> (code: String, expiresIn: Int) {

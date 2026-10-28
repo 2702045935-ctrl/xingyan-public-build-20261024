@@ -84,11 +84,11 @@ struct ContactsView: View {
 
 private var funcs: [(String, String, Color, String)] {
     [
-        (Tr("新的朋友"), I.newFriends, C.green, "newFriends"),
-        (Tr("群聊"), I.groups, Color(hex: 0x22AC8B), "groups"),
+        (Tr("新的朋友"), I.newFriends, Color(hex: 0x2C6E5E), "newFriends"),
+        (Tr("群聊"), I.groups, Color(hex: 0x315E78), "groups"),
         (Tr("仅聊天的朋友"), I.chatOnly, Color(hex: 0x8E8E99), "chatOnly"),
-        (Tr("标签"), I.tag, Color(hex: 0x4C93DD), "tags"),
-        (Tr("公众号"), I.service, Color(hex: 0x4C93DD), "officialAccounts")
+        (Tr("标签"), I.tag, Color(hex: 0xB27C37), "tags"),
+        (Tr("公众号"), I.service, Color(hex: 0x5E6579), "officialAccounts")
     ]
 }
 
@@ -328,6 +328,9 @@ private var funcs: [(String, String, Color, String)] {
                     MyQRView()
                 } else if key == "groupList" {
                     GroupListView(onOpenChat: { chat in path.append(chat) })
+                } else if key == "starTags" {
+                    StarOrbitTagsView()
+                        .environmentObject(app)
                 } else if key == "officialAccounts" {
                     OfficialAccountsView()
                 } else {
@@ -592,7 +595,7 @@ private var funcs: [(String, String, Color, String)] {
         case "newFriends": path.append("newFriends")
         case "groups": path.append("groupList")
         case "chatOnly": app.show(Tr("仅聊天的朋友：只有聊天记录、没加好友的人会出现在这里"))
-        case "tags": app.show(Tr("标签：还没建过标签"))
+        case "tags": path.append("starTags")
         case "officialAccounts": path.append("officialAccounts")
         case "service": path.append("officialAccounts")
         case "work": app.show(Tr("企业联系人：还没绑定企业"))
@@ -606,7 +609,7 @@ private var funcs: [(String, String, Color, String)] {
             case "newFriends": path.append("newFriends")
             case "groups": path.append("groupList")
             case "chatOnly": app.show(Tr("仅聊天的朋友：只有聊天记录、没加好友的人会出现在这里"))
-            case "tags": app.show(Tr("标签：还没建过标签"))
+            case "tags": path.append("starTags")
 
             case "officialAccounts": path.append("officialAccounts")
             case "service": path.append("officialAccounts")

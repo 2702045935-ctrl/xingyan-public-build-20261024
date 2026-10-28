@@ -1000,46 +1000,85 @@ struct GroupAvatarMosaic: View {
     }
 
     private var gap: CGFloat {
-        size >= 76 ? 2 : 1
+        size >= 76 ? 3 : 1.5
     }
 
     private func tileBox(index: Int, count: Int)
         -> (x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat,
             midX: CGFloat, midY: CGFloat) {
-        if count == 1 {
-            return (0, 0, size, size, size / 2, size / 2)
-        }
-        let half = (size - gap) / 2
-        if count == 2 {
-            let x = index == 0 ? 0 : half + gap
-            return (x, 0, half, size, x + half / 2, size / 2)
-        }
-        if count == 3 {
-            let block = half * 2 + gap
-            let top = (size - block) / 2
-            if index == 0 {
-                let x = (size - half) / 2
-                return (x, top, half, half, x + half / 2, top + half / 2)
-            }
-            let x = index == 1 ? 0 : half + gap
-            let y = top + half + gap
-            return (x, y, half, half, x + half / 2, y + half / 2)
-        }
-        if count == 4 {
-            let x = index % 2 == 0 ? 0 : half + gap
-            let y = index < 2 ? 0 : half + gap
-            return (x, y, half, half, x + half / 2, y + half / 2)
-        }
+        let boxes = normalizedBoxes(count)
+        let box = boxes[min(max(0, index), boxes.count - 1)]
+        let x = box.minX * size + (box.minX > 0 ? gap / 2 : 0)
+        let y = box.minY * size + (box.minY > 0 ? gap / 2 : 0)
+        let right = box.maxX * size - (box.maxX < 1 ? gap / 2 : 0)
+        let bottom = box.maxY * size - (box.maxY < 1 ? gap / 2 : 0)
+        let width = max(1, right - x)
+        let height = max(1, bottom - y)
+        return (x, y, width, height, x + width / 2, y + height / 2)
+    }
 
-        let cell = (size - gap * 2) / 3
-        let row = index / 3
-        let rows = Int(ceil(Double(count) / 3.0))
-        let rowCount = min(3, count - row * 3)
-        let x = (size - (CGFloat(rowCount) * cell + CGFloat(max(0, rowCount - 1)) * gap)) / 2
-            + CGFloat(index % 3) * (cell + gap)
-        let y = (size - (CGFloat(rows) * cell + CGFloat(max(0, rows - 1)) * gap)) / 2
-            + CGFloat(row) * (cell + gap)
-        return (x, y, cell, cell, x + cell / 2, y + cell / 2)
+    /// 与服务端群头像同一套自适应拼图：铺满画布，不在末行留下空格。
+    private func normalizedBoxes(_ count: Int) -> [CGRect] {
+        let n = max(1, min(9, count))
+        let third = CGFloat(1) / 3
+        switch n {
+        case 1:
+            return [CGRect(x: 0, y: 0, width: 1, height: 1)]
+        case 2:
+            return [
+                CGRect(x: 0, y: 0, width: 0.5, height: 1),
+                CGRect(x: 0.5, y: 0, width: 0.5, height: 1)
+            ]
+        case 3:
+            return [
+                CGRect(x: 0, y: 0, width: 0.64, height: 1),
+                CGRect(x: 0.64, y: 0, width: 0.36, height: 0.5),
+                CGRect(x: 0.64, y: 0.5, width: 0.36, height: 0.5)
+            ]
+        case 4:
+            return [
+                CGRect(x: 0, y: 0, width: 0.5, height: 0.5),
+                CGRect(x: 0.5, y: 0, width: 0.5, height: 0.5),
+                CGRect(x: 0, y: 0.5, width: 0.5, height: 0.5),
+                CGRect(x: 0.5, y: 0.5, width: 0.5, height: 0.5)
+            ]
+        case 5:
+            return [
+                CGRect(x: 0, y: 0, width: 0.5, height: 0.5),
+                CGRect(x: 0.5, y: 0, width: 0.5, height: 0.5),
+                CGRect(x: 0, y: 0.5, width: third, height: 0.5),
+                CGRect(x: third, y: 0.5, width: third, height: 0.5),
+                CGRect(x: third * 2, y: 0.5, width: third, height: 0.5)
+            ]
+        case 6:
+            return (0..<6).map { index in
+                CGRect(x: CGFloat(index % 3) * third,
+                       y: CGFloat(index / 3) * 0.5,
+                       width: third, height: 0.5)
+            }
+        case 7:
+            return [CGRect(x: 0, y: 0, width: 1, height: 0.4)]
+                + (0..<6).map { index in
+                    CGRect(x: CGFloat(index % 3) * third,
+                           y: 0.4 + CGFloat(index / 3) * 0.3,
+                           width: third, height: 0.3)
+                }
+        case 8:
+            return [
+                CGRect(x: 0, y: 0, width: 0.5, height: 0.4),
+                CGRect(x: 0.5, y: 0, width: 0.5, height: 0.4)
+            ] + (0..<6).map { index in
+                CGRect(x: CGFloat(index % 3) * third,
+                       y: 0.4 + CGFloat(index / 3) * 0.3,
+                       width: third, height: 0.3)
+            }
+        default:
+            return (0..<9).map { index in
+                CGRect(x: CGFloat(index % 3) * third,
+                       y: CGFloat(index / 3) * third,
+                       width: third, height: third)
+            }
+        }
     }
 
     @ViewBuilder

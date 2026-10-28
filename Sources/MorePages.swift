@@ -10,58 +10,106 @@ struct GroupListView: View {
             .sorted { ($0.updatedAt ?? "") > ($1.updatedAt ?? "") }
     }
 
+    private var memberConnections: Int {
+        groups.reduce(0) { $0 + ($1.memberCount ?? 0) }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             NavBar(title: Tr("群聊"), back: { dismiss() })
             ScrollView {
-                VStack(spacing: 0) {
-                    if groups.isEmpty {
-                        Text(Tr("还没有群聊，在「＋ → 发起群聊」里建一个"))
-                            .font(pf(13.5))
-                            .foregroundColor(C.subLabel)
-                            .frame(maxWidth: .infinity)
-                            .padding(.top, 40)
-                    } else {
-                        GroupCard {
-                            ForEach(Array(groups.enumerated()), id: \.element.id) { idx, chat in
-                                Button {
+                LazyVStack(spacing: 10) {
+                    StarOrbitHero(
+                        kicker: "群星轨道",
+                        title: Tr("群聊"),
+                        subtitle: Tr("每个群，都是同一条轨道上的共同空间"),
+                        symbol: "person.3.fill",
+                        accent: OrbitTheme.jade,
+                        metrics: [
+                            StarOrbitMetric(value: "\(groups.count)", label: Tr("个群聊")),
+                            StarOrbitMetric(value: "\(memberConnections)", label: Tr("位成员连接"))
+                        ]
+                    )
+                    .padding(.horizontal, 12)
 
-                                    onOpenChat(chat)
-                                } label: {
-                                    HStack(spacing: 12) {
-                                        Avatar(path: chat.avatar ?? "", size: 44, radius: 6)
-                                        VStack(alignment: .leading, spacing: 3) {
-                                            Text(chat.name)
-                                                .font(pf(16.5))
-                                                .foregroundColor(C.label)
-                                                .lineLimit(1)
-                                            Text("\(chat.memberCount ?? 0) 位成员")
-                                                .font(pf(12.5))
-                                                .foregroundColor(C.subLabel)
-                                        }
-                                        Spacer(minLength: 0)
-                                        Chevron(size: 9, line: 1.6).padding(.trailing, 3)
-                                    }
-                                    .padding(.horizontal, 16)
-                                    .frame(height: 62)
-                                    .contentShape(Rectangle())
-                                }
-                                .buttonStyle(.plain)
-                                if idx < groups.count - 1 { HairLine(inset: 72) }
+                    if groups.isEmpty {
+                        emptyState
+                    } else {
+                        OrbitSectionLabel(text: Tr("我的群聊"), count: groups.count)
+                            .padding(.horizontal, 17)
+                            .padding(.top, 2)
+
+                        ForEach(groups) { chat in
+                            Button { onOpenChat(chat) } label: {
+                                groupCard(chat)
                             }
+                            .buttonStyle(MenuPressStyle())
+                            .padding(.horizontal, 12)
                         }
-                        .padding(.top, 8)
                     }
                     Spacer().frame(height: 30)
                 }
+                .padding(.top, 10)
             }
-            .background(C.pageBg)
+            .refreshable { await app.loadChats() }
         }
-        .background(C.pageBg.ignoresSafeArea())
+        .background(OrbitTheme.canvas.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .swipeBack { dismiss() }
         .hidesTabBar()
         .task { await app.loadChats() }
+    }
+
+    private func groupCard(_ chat: Chat) -> some View {
+        StarOrbitCard {
+            HStack(spacing: 13) {
+                if (chat.avatar ?? "").isEmpty {
+                    GroupAvatarMosaic(
+                        chatId: chat.id,
+                        memberIds: chat.memberIds ?? [],
+                        size: 46,
+                        radius: 13
+                    )
+                } else {
+                    Avatar(path: chat.avatar ?? "", size: 46, radius: 13, group: true)
+                }
+
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(chat.name)
+                        .font(.system(size: 16.5, weight: .medium))
+                        .foregroundStyle(OrbitTheme.ink)
+                        .lineLimit(1)
+                    Text("\(chat.memberCount ?? 0) " + Tr("位成员"))
+                        .font(.system(size: 12.5))
+                        .foregroundStyle(OrbitTheme.secondary)
+                }
+                Spacer(minLength: 8)
+                StarOrbitTrailingPill(text: "\(chat.memberCount ?? 0)", accent: OrbitTheme.jade)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(OrbitTheme.tertiary)
+            }
+            .padding(.horizontal, 15)
+            .frame(height: 72)
+            .contentShape(Rectangle())
+        }
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 12) {
+            StarOrbitIconBadge(symbol: "person.3.fill", accent: OrbitTheme.jade, size: 54)
+            Text(Tr("还没有群聊"))
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(OrbitTheme.ink)
+            Text(Tr("在「＋ → 发起群聊」里建立第一条群轨道"))
+                .font(.system(size: 13))
+                .foregroundStyle(OrbitTheme.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 42)
+        .background(OrbitTheme.cardBackground())
+        .clipShape(OrbitTheme.card)
+        .padding(.horizontal, 12)
     }
 }
 

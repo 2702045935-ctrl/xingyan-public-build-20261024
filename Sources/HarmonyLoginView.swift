@@ -275,7 +275,7 @@ struct HarmonyLoginView: View {
                 Button("自助解封") { showUnban = true }
                 Button("注册") { showRegister = true }
                 Spacer()
-                Button(mode == .phone ? "密码登录 ›" : "验证码登录 ›") {
+                Button(mode == .phone ? "账号密码登录 ›" : "手机号登录 ›") {
                     mode = mode == .phone ? .password : .phone
                     sliderTicket = ""
                     message = ""
@@ -383,7 +383,9 @@ struct HarmonyLoginView: View {
         hint = ""
         Task {
             do {
-                let dev = try await API.shared.phoneCode(phone: phone)
+                let dev = try await API.shared.phoneCode(phone: phone,
+                                                          sliderTicket: sliderTicket)
+                sliderTicket = ""
                 codeSent = true
                 startCountdown()
                 if let dev, !dev.isEmpty {
@@ -392,6 +394,10 @@ struct HarmonyLoginView: View {
                 } else {
                     hint = "验证码已发送，5 分钟内有效"
                 }
+            } catch APIError.needSlider {
+                sliderTicket = ""
+                sliderSeed += 1
+                showSlider = true
             } catch {
                 message = (error as? APIError)?.errorDescription ?? "验证码没发出去"
             }
