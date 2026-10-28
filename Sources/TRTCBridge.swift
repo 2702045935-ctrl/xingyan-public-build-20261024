@@ -35,6 +35,8 @@ final class TRTCBridge: NSObject, ObservableObject {
 
     @Published private(set) var peerInRoom = false
 
+    @Published private(set) var remoteAudioReady = false
+
     @Published private(set) var lastError = ""
 
     @Published private(set) var microphoneWarning = false
@@ -47,6 +49,7 @@ final class TRTCBridge: NSObject, ObservableObject {
 
     var onJoined: ((Bool) -> Void)?
     var onPeerChanged: ((Bool) -> Void)?
+    var onRemoteAudioReady: (() -> Void)?
 
     private var cloud: TRTCCloud?
     private var roomSeed = ""
@@ -71,6 +74,8 @@ final class TRTCBridge: NSObject, ObservableObject {
     private var lastUpLoss: UInt32 = 0
     private var lastDownLoss: UInt32 = 0
     private var micRecoveryCount = 0
+    private var activationAt: Date?
+    private var firstRemoteAudioAt: Date?
     private var audioQuality: TRTCAudioQuality = .default
     private var pendingQuality: TRTCAudioQuality?
     private var qualityTask: Task<Void, Never>?
@@ -82,9 +87,16 @@ final class TRTCBridge: NSObject, ObservableObject {
     private override init() { super.init() }
 
     var diagSummary: String {
-        "TRTC 档位=\(audioQualityLabel) 网络=\(networkQuality) "
+        let firstAudio: String
+        if let start = activationAt, let first = firstRemoteAudioAt {
+            firstAudio = "\(Int(first.timeIntervalSince(start) * 1000))ms"
+        } else {
+            firstAudio = "未就绪"
+        }
+        return "TRTC 档位=\(audioQualityLabel) 网络=\(networkQuality) "
             + "RTT=\(lastRTT)ms 上行丢包=\(lastUpLoss)% 下行丢包=\(lastDownLoss)% "
             + "本地音频=\(lastLocalAudioBitrate)kbps 远端音频=\(lastRemoteAudioBitrate)kbps "
+            + "首音=\(firstAudio) "
             + "音频丢包=\(lastAudioPacketLoss)% 抖动缓存=\(lastJitterBuffer)ms "
             + "路径延迟=\(lastPointToPointDelay)ms 卡顿率=\(lastAudioBlockRate)% "
             + "麦克风就绪=\(micReady ? "是" : "否") 重试=\(micRecoveryCount)次"
@@ -99,6 +111,9 @@ final class TRTCBridge: NSObject, ObservableObject {
         isVideo = video
         lastError = ""
         microphoneWarning = false
+        remoteAudioReady = false
+        activationAt = nil
+        firstRemoteAudioAt = nil
         resetWeakNetworkState()
 
         let cfg: API.TRTCSig
@@ -151,6 +166,7 @@ final class TRTCBridge: NSObject, ObservableObject {
     func activate() {
         guard let c = cloud, joined, !active else { return }
         active = true
+        if activationAt == nil { activationAt = Date() }
         micReady = false
         microphoneWarning = false
         c.startLocalAudio(audioQuality)
@@ -246,8 +262,11 @@ final class TRTCBridge: NSObject, ObservableObject {
         TRTCCloud.destroySharedInstance()
         joined = false
         peerInRoom = false
+        remoteAudioReady = false
         peerUserId = ""
         active = false
+        activationAt = nil
+        firstRemoteAudioAt = nil
         microphoneWarning = false
         resetWeakNetworkState()
         remoteView = nil
@@ -421,6 +440,7 @@ extension TRTCBridge: TRTCCloudDelegate {
         Task { @MainActor in
             self.joined = false
             self.peerInRoom = false
+            self.remoteAudioReady = false
             self.onJoined?(false)
         }
     }
@@ -436,6 +456,7 @@ extension TRTCBridge: TRTCCloudDelegate {
     nonisolated func onRemoteUserLeaveRoom(_ userId: String, reason: Int) {
         Task { @MainActor in
             self.peerInRoom = false
+            self.remoteAudioReady = false
             self.onPeerChanged?(false)
         }
     }
@@ -461,9 +482,13 @@ extension TRTCBridge: TRTCCloudDelegate {
 
     nonisolated func onUserAudioAvailable(_ userId: String, available: Bool) {
         Task { @MainActor in
-            guard available else { return }
+            guard available else {
+                self.remoteAudioReady = false
+                return
+            }
             self.peerUserId = userId
             self.peerInRoom = true
+            self.markRemoteAudioReady()
             self.onPeerChanged?(true)
         }
     }
@@ -498,6 +523,7 @@ extension TRTCBridge: TRTCCloudDelegate {
             }
             guard let remote = statistics.remoteStatistics.first else { return }
             self.lastRemoteAudioBitrate = remote.audioBitrate
+            if remote.audioBitrate > 0 { self.markRemoteAudioReady() }
             self.lastAudioPacketLoss = remote.audioPacketLoss
             self.lastJitterBuffer = remote.jitterBufferDelay
             self.lastPointToPointDelay = remote.point2PointDelay
@@ -534,6 +560,13 @@ extension TRTCBridge: TRTCCloudDelegate {
                 self.lastError = ""
             }
         }
+    }
+
+    private func markRemoteAudioReady() {
+        guard !remoteAudioReady else { return }
+        remoteAudioReady = true
+        if firstRemoteAudioAt == nil { firstRemoteAudioAt = Date() }
+        onRemoteAudioReady?()
     }
 
     nonisolated func onConnectionLost() {

@@ -1573,6 +1573,10 @@ final class API {
 
     private(set) var offline = false
 
+    func markOnline() {
+        if offline { offline = false }
+    }
+
     private init() {
         let cfg = URLSessionConfiguration.default
         cfg.timeoutIntervalForRequest = 12
@@ -2791,6 +2795,19 @@ private struct StarredPayload: Decodable {
             return nil
         } catch {
             return (error as? APIError)?.errorDescription ?? "删除失败"
+        }
+    }
+
+    private struct ClearFriendsPayload: Decodable {
+        var removed: Int?
+    }
+
+    func clearAddedFriends() async -> (removed: Int, error: String?) {
+        do {
+            let payload = try await post("/api/friends/clear", [:], as: ClearFriendsPayload.self)
+            return (payload.removed ?? 0, nil)
+        } catch {
+            return (0, (error as? APIError)?.errorDescription ?? "清除失败")
         }
     }
 

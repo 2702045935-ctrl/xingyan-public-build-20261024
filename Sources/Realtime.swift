@@ -33,6 +33,7 @@ struct PushEvent: Equatable {
     var callAction = ""
     var callMedia = ""
     var callPeerId = ""
+    var callOwnerId = ""
     var callPeerName = ""
     var callPeerAvatar = ""
     var callError = ""
@@ -212,6 +213,7 @@ final class Realtime: ObservableObject {
             }
         }
         connected = true
+        API.shared.markOnline()
         rxClock.touch()
 
         heartbeat?.cancel()
@@ -331,6 +333,7 @@ final class Realtime: ObservableObject {
               let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
         var ev = PushEvent()
         ev.type = (obj["type"] as? String) ?? ""
+        if ev.type == "ready" { API.shared.markOnline() }
         ev.action = (obj["action"] as? String) ?? ""
         ev.userId = (obj["userId"] as? String) ?? ""
         ev.chatId = (obj["chatId"] as? String) ?? ""
@@ -402,6 +405,7 @@ final class Realtime: ObservableObject {
         ev.callAction = (obj["action"] as? String) ?? ""
         ev.callMedia = (obj["media"] as? String) ?? ""
         ev.callPeerId = (obj["peerId"] as? String) ?? ""
+        ev.callOwnerId = (obj["ownerId"] as? String) ?? ""
         ev.callPeerName = (obj["peerName"] as? String) ?? ""
         ev.callPeerAvatar = (obj["peerAvatar"] as? String) ?? ""
         ev.callError = (obj["error"] as? String) ?? ""

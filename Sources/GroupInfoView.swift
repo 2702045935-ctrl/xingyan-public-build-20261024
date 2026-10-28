@@ -27,6 +27,8 @@ struct GroupInfoView: View {
     @State private var nameDraft = ""
     @State private var showSearch = false
     @State private var membersExpanded = false
+    @State private var visibleMemberLimit = 20
+    @State private var expandingMembers = false
     @State private var showComplaint = false
 
     @State private var showGroupBg = false
@@ -526,10 +528,8 @@ struct GroupInfoView: View {
     }
 
     private var visibleMembers: [User] {
-        if membersExpanded || members.count <= 20 {
-            return members
-        }
-        return Array(members.prefix(20))
+        let limit = membersExpanded ? visibleMemberLimit : min(20, members.count)
+        return Array(members.prefix(min(limit, members.count)))
     }
 
     private var memberCard: some View {
@@ -607,9 +607,8 @@ struct GroupInfoView: View {
                     if members.count > 20 && !membersExpanded {
                         VStack(spacing: 6) {
                             Button {
-                                withAnimation(.easeOut(duration: 0.18)) {
-                                    membersExpanded = true
-                                }
+                                membersExpanded = true
+                                visibleMemberLimit = min(60, members.count)
                             } label: {
                                 ZStack {
                                     RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -648,6 +647,12 @@ struct GroupInfoView: View {
                 .padding(.horizontal, 12)
                 .padding(.top, 16)
                 .padding(.bottom, 16)
+            }
+            if membersExpanded && visibleMemberLimit < members.count {
+                ProgressView()
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .onAppear { loadNextMemberBatch() }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -801,6 +806,20 @@ struct GroupInfoView: View {
                      value: Tr("违法违规、诈骗或骚扰")) {
                 showComplaint = true
             }
+        }
+    }
+
+    private func loadNextMemberBatch() {
+        guard membersExpanded, !expandingMembers, visibleMemberLimit < members.count else { return }
+        expandingMembers = true
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 40_000_000)
+            guard membersExpanded else {
+                expandingMembers = false
+                return
+            }
+            visibleMemberLimit = min(members.count, visibleMemberLimit + 60)
+            expandingMembers = false
         }
     }
 

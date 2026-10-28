@@ -4,6 +4,7 @@ import UIKit
 struct MainTabView: View {
     @EnvironmentObject var app: AppState
     @State private var tab = 0
+    @State private var loadedTabs: Set<Int> = [0]
     @State private var shownCrash = false
 
     @ObservedObject private var lang = LangStore.shared
@@ -28,14 +29,21 @@ struct MainTabView: View {
         ZStack(alignment: .bottom) {
 
             ZStack {
-                if tab == 0 {
-                    ChatsView()
-                } else if tab == 1 {
-                    ContactsView()
-                } else if tab == 2 {
-                    DiscoverView()
-                } else {
-                    MeView()
+                if loadedTabs.contains(0) {
+                    ChatsView().opacity(tab == 0 ? 1 : 0)
+                        .allowsHitTesting(tab == 0).accessibilityHidden(tab != 0)
+                }
+                if loadedTabs.contains(1) {
+                    ContactsView().opacity(tab == 1 ? 1 : 0)
+                        .allowsHitTesting(tab == 1).accessibilityHidden(tab != 1)
+                }
+                if loadedTabs.contains(2) {
+                    DiscoverView().opacity(tab == 2 ? 1 : 0)
+                        .allowsHitTesting(tab == 2).accessibilityHidden(tab != 2)
+                }
+                if loadedTabs.contains(3) {
+                    MeView().opacity(tab == 3 ? 1 : 0)
+                        .allowsHitTesting(tab == 3).accessibilityHidden(tab != 3)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -234,6 +242,12 @@ struct MainTabView: View {
 
         .onChange(of: app.wantChatsTab) { v in
             if v { tab = 0; app.wantChatsTab = false }
+        }
+        .onChange(of: tab) { value in
+            loadedTabs.insert(value)
+        }
+        .onChange(of: app.me?.id) { _ in
+            loadedTabs = [tab]
         }
 
         .onReceive(NotificationCenter.default.publisher(for: .chrisOpenPair)) { note in

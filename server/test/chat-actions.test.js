@@ -216,6 +216,31 @@ async function main() {
     assert.ok(!(response.data.friends || []).some((friend) => friend.id === bob.user.id),
       '删除好友后联系人仍立即存在');
 
+    response = await call(base, alice.cookie, 'POST', '/api/friends/request', {
+      username: 'bob_smoke',
+      message: '一键清除回归'
+    });
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    response = await call(base, bob.cookie, 'GET', '/api/contacts');
+    const clearRequest = (response.data.incoming || []).find((item) => item.requestId);
+    assert.ok(clearRequest && clearRequest.requestId, '一键清除前置好友申请缺失');
+    response = await call(base, bob.cookie, 'POST', '/api/friends/respond', {
+      requestId: clearRequest.requestId,
+      accept: true
+    });
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+
+    response = await call(base, alice.cookie, 'POST', '/api/friends/clear', {});
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    assert.ok(response.data.removed >= 1, '一键清除没有删除好友关系');
+    for (const account of [alice, bob]) {
+      response = await call(base, account.cookie, 'GET', '/api/contacts');
+      assert.equal(response.status, 200, JSON.stringify(response.data));
+      const absentId = account === alice ? bob.user.id : alice.user.id;
+      assert.ok(!(response.data.friends || []).some((friend) => friend.id === absentId),
+        '一键清除后双方通讯录仍保留好友');
+    }
+
     console.log('chat-actions: passed');
   } finally {
     if (child && child.exitCode === null) child.kill();

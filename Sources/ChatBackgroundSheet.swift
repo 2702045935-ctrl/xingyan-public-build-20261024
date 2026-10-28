@@ -227,7 +227,8 @@ struct ChatBackgroundSheet: View {
         }
         Task {
             busy = true
-            let saved = await API.shared.changeBackground(path)
+            // 恢复默认必须由一个请求原子完成，拆成两次写在多分片下会被旧行覆盖。
+            let saved = path == "auto" ? true : await API.shared.changeBackground(path)
             let reset = path == "auto" ? await API.shared.resetChatBackgrounds() : true
             if saved && reset {
                 if path == "auto" {

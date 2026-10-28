@@ -218,6 +218,7 @@ final class CallCenter: NSObject, ObservableObject {
 
     private(set) var callId = ""
     private var accountToken = ""
+    private var callOwnerId = ""
 
     private(set) var peerId = ""
     private var iAmCaller = false
@@ -256,6 +257,7 @@ final class CallCenter: NSObject, ObservableObject {
     private var ringTimer: Timer?
 
     private var connectTimer: Timer?
+    private var pendingGroupInviteUserId = ""
     private var sub: AnyCancellable?
 
     private var iceServers: [RTCIceServer] = [
@@ -333,6 +335,7 @@ final class CallCenter: NSObject, ObservableObject {
         seconds = 0
         tip = video ? "正在等待对方接受邀请…" : "正在呼叫…"
         callId = "call" + String(Int(Date().timeIntervalSince1970 * 1000)) + String(UUID().uuidString.prefix(4))
+        callOwnerId = AppState.cachedUser()?.id ?? ""
         phase = .outgoing
         startRingTimeout()
         Ringtone.shared.startRingback()
@@ -392,7 +395,11 @@ final class CallCenter: NSObject, ObservableObject {
         guard !userId.isEmpty else { return }
 
         guard !roomId.isEmpty else {
-            showDialog("这个通话还没建好", detail: "再等几秒，等通话连上以后再邀请（房间号还没回来）。")
+            // group-ready 可能比重连后的首帧晚到。先记住这次邀请，
+            // 房间号一回执就自动发出，避免误报“还没建好”。
+            pendingGroupInviteUserId = userId
+            tip = "正在建立群通话…"
+            note("群通话房间未就绪，邀请已排队")
             return
         }
 
@@ -636,6 +643,7 @@ final class CallCenter: NSObject, ObservableObject {
         }
         isGroupCall = true
         accountToken = API.shared.token
+        callOwnerId = ""
         isVideo = video
         groupChatId = chatId
         groupTitle = title
@@ -733,6 +741,7 @@ final class CallCenter: NSObject, ObservableObject {
         isGroupCall = false
         roomId = ""
         groupChatId = ""
+        pendingGroupInviteUserId = ""
         roster = []
         finish(tip: "通话结束")
     }
@@ -741,6 +750,26 @@ final class CallCenter: NSObject, ObservableObject {
         guard !serverAudioOn else { return }
         serverAudioOn = true
         audioTrack?.isEnabled = false
+
+        // 群语音以前绕过了单聊的权限申请，全新安装后会直接把
+        // AVCaptureSession 启动失败误报成“麦克风没开”。先等权限结果，
+        // 再启动采集；音频帧处理本身不变。
+        Task { @MainActor [weak self] in
+            guard let self = self else { return }
+            let granted = await Permission.ask(.audio)
+            guard self.isGroupCall, self.phase != .idle, self.serverAudioOn else { return }
+            guard granted else {
+                self.micBlocked = true
+                self.tip = "麦克风权限没开：设置 → 本 App → 麦克风"
+                self.note("群语音麦克风权限没开")
+                return
+            }
+            self.micBlocked = false
+            self.beginGroupAudioCapture()
+        }
+    }
+
+    private func beginGroupAudioCapture() {
         CallAudioPipe.shared.onFrame = { [weak self] data in
             guard let self = self, !self.muted, !self.roomId.isEmpty else { return }
             Realtime.shared.sendJSON(["type": "call", "action": "group-audio",
@@ -748,6 +777,7 @@ final class CallCenter: NSObject, ObservableObject {
                                       "data": data.base64EncodedString()])
         }
         CallAudioPipe.shared.start()
+        reportMicState(prefix: "群语音麦克风")
     }
 
     func invite(userId: String, name: String) async -> String {
@@ -869,6 +899,9 @@ final class CallCenter: NSObject, ObservableObject {
 
     private func sendCall(_ body: [String: Any]) {
         var msg: [String: Any] = ["type": "call", "callId": callId]
+        if !isGroupCall, !callOwnerId.isEmpty {
+            msg["ownerId"] = callOwnerId
+        }
         body.forEach { msg[$0.key] = $0.value }
         Realtime.shared.sendJSON(msg)
     }
@@ -975,6 +1008,7 @@ final class CallCenter: NSObject, ObservableObject {
             accountToken = API.shared.token
             callId = ev.callId
             peerId = ev.callPeerId
+            callOwnerId = ev.callOwnerId.isEmpty ? ev.callPeerId : ev.callOwnerId
             peerName = ev.callPeerName.isEmpty ? "对方" : ev.callPeerName
             peerAvatar = ev.callPeerAvatar
             isVideo = (ev.callMedia == "video")
@@ -1079,6 +1113,13 @@ final class CallCenter: NSObject, ObservableObject {
             }
 
             if isVideo, !trtcJoined { Task { await joinGroupTRTC() } }
+            if !pendingGroupInviteUserId.isEmpty {
+                let target = pendingGroupInviteUserId
+                pendingGroupInviteUserId = ""
+                Realtime.shared.sendJSON(["type": "call", "action": "group-invite",
+                                          "roomId": roomId, "toUserId": target])
+                note("群通话房间就绪，补发邀请 " + target)
+            }
 
         case "group-joined", "group-left":
             guard isGroupCall, ev.callRoomId == roomId else { return }
@@ -1489,6 +1530,7 @@ final class CallCenter: NSObject, ObservableObject {
         ringTimer = nil
         connectTimer?.invalidate()
         connectTimer = nil
+        pendingGroupInviteUserId = ""
 
         if !wasIdle || seconds > 0 { diag.append(CallAudioPipe.shared.playDiag) }
         CallAudioPipe.shared.onFrame = nil
@@ -1505,6 +1547,7 @@ final class CallCenter: NSObject, ObservableObject {
 
         TRTCBridge.shared.onJoined = nil
         TRTCBridge.shared.onPeerChanged = nil
+        TRTCBridge.shared.onRemoteAudioReady = nil
         usingTRTC = false
         trtcJoined = false
         stopMedia()
@@ -1516,6 +1559,7 @@ final class CallCenter: NSObject, ObservableObject {
             Task { await API.shared.callDiag(line) }
         }
         callId = ""
+        callOwnerId = ""
         peerId = ""
         remoteOfferSDP = nil
         pendingIce.removeAll()
@@ -1770,6 +1814,10 @@ extension CallCenter: RTCPeerConnectionDelegate {
                 self.startTimer()
             }
         }
+        bridge.onRemoteAudioReady = { [weak self] in
+            guard let self = self, self.phase != .idle, !self.callId.isEmpty else { return }
+            self.note("TRTC 首音已就绪")
+        }
         let ok = await bridge.start(roomSeed: callId, video: isVideo)
         if !ok {
             note("TRTC 用不了：" + bridge.lastError + "（继续走老路）")
@@ -1806,7 +1854,9 @@ extension CallCenter: RTCPeerConnectionDelegate {
         guard !isVideo, !usingTRTC, serverAudioOn, trtcJoined,
               TRTCBridge.shared.peerInRoom, phase != .incoming else { return }
         Task { @MainActor [weak self] in
-            try? await Task.sleep(nanoseconds: 600_000_000)
+            /* 对端进房后给 TRTC 媒体路由一个稳定窗口。PCM 继续兜底，
+               但不在远端音轨未就绪时立刻拆掉可听的通道。 */
+            try? await Task.sleep(nanoseconds: 1_200_000_000)
             guard let self = self, !Task.isCancelled, !self.isVideo,
                   !self.usingTRTC, self.serverAudioOn, self.trtcJoined,
                   TRTCBridge.shared.peerInRoom, self.phase != .incoming else { return }
@@ -1826,22 +1876,11 @@ extension CallCenter: RTCPeerConnectionDelegate {
         localVideoTrack?.isEnabled = false
         capturer?.stopCapture()
 
-        let waitNs: UInt64 = isVideo ? 0 : 300_000_000
-        Task { @MainActor [weak self] in
-            if waitNs > 0 { try? await Task.sleep(nanoseconds: waitNs) }
-            guard let self = self, self.usingTRTC,
-                  self.phase != .idle, !self.callId.isEmpty else { return }
-
-            if !self.isVideo {
-                let t0 = Date()
-                while CallAudioPipe.shared.isRunning, Date().timeIntervalSince(t0) < 2.0 {
-                    try? await Task.sleep(nanoseconds: 100_000_000)
-                }
-            }
-            TRTCBridge.shared.activate()
-            TRTCBridge.shared.setMuted(self.muted)
-            TRTCBridge.shared.setSpeaker(self.speakerOn)
-        }
+        /* handOverToTRTC 返回时 PCM 已同步停止，立即拉起 TRTC；
+           不再额外等待 300ms，也不再轮询最长 2 秒。 */
+        TRTCBridge.shared.activate()
+        TRTCBridge.shared.setMuted(muted)
+        TRTCBridge.shared.setSpeaker(speakerOn)
         if phase != .active {
             Ringtone.shared.stop()
             phase = .active

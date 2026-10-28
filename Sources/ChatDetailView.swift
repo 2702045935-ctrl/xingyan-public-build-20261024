@@ -280,6 +280,7 @@ struct ChatDetailView: View {
     @State private var persistTask: Task<Void, Never>?
     @State private var input = ""
     @State private var loading = true
+    @State private var initialRetryTask: Task<Void, Never>?
     @State private var panel: PanelKind = .none
     @State private var plusItems: [PlusItem] = []
 
@@ -3757,7 +3758,7 @@ struct ChatDetailView: View {
                 cursor = next
             } catch {
                 lastOlderLoad = Date.distantPast
-                app.show(Tr("聊天记录加载失败"))
+                ChatScrollDiag.shared.note("聊天记录加载失败，保留当前内容并等待重试")
                 return
             }
         }
@@ -3878,7 +3879,19 @@ struct ChatDetailView: View {
                 }
             }
         } catch {
-            if initial { app.show(Tr("聊天记录加载失败")) }
+            ChatScrollDiag.shared.note("聊天记录加载失败，静默重试")
+            if initial, messages.isEmpty {
+                initialRetryTask?.cancel()
+                initialRetryTask = Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 2_000_000_000)
+                    guard !Task.isCancelled, messages.isEmpty else { return }
+                    await load(initial: true)
+                }
+            }
+        }
+        if initial, !messages.isEmpty {
+            initialRetryTask?.cancel()
+            initialRetryTask = nil
         }
         rebuildIndex()
         loading = false
@@ -3997,7 +4010,7 @@ struct ChatDetailView: View {
         } catch {
 
             lastOlderLoad = Date.distantPast
-            app.show(Tr("聊天记录加载失败"))
+            ChatScrollDiag.shared.note("上翻历史加载失败，保留当前位置")
         }
     }
 

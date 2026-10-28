@@ -68,6 +68,8 @@ struct ContactsView: View {
     @State private var bubbleTask: Task<Void, Never>?
     @State private var plusMenu = false
     @State private var showScan = false
+    @State private var confirmClearFriends = false
+    @State private var clearingFriends = false
 
     @State private var showSearch = false
     @ObservedObject private var realtime = Realtime.shared
@@ -102,6 +104,10 @@ private var funcs: [(String, String, Color, String)] {
             .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
         guard !keyword.isEmpty else { return sorted }
         return sorted.filter { $0.name.contains(keyword) || ($0.username ?? "").contains(keyword) }
+    }
+
+    private var clearableFriends: [User] {
+        app.contacts.filter { $0.bot != true && $0.relation != "self" }
     }
 
     private var starUsers: [User] {
@@ -336,7 +342,15 @@ private var funcs: [(String, String, Color, String)] {
             NavPlusItem(title: Tr("添加朋友"), symbol: "person.badge.plus",
                         colors: [Color(hex: 0x64B5F6), Color(hex: 0x2A6BC4)]) { path.append("addFriend") },
             NavPlusItem(title: Tr("扫一扫"), symbol: "qrcode.viewfinder",
-                        colors: [C.green, C.green.opacity(0.78)]) { showScan = true }
+                        colors: [C.green, C.green.opacity(0.78)]) { showScan = true },
+            NavPlusItem(title: Tr("清除已添加好友"), symbol: "person.badge.minus",
+                        colors: [Color(hex: 0xE35D55), Color(hex: 0xB63832)]) {
+                if clearableFriends.isEmpty {
+                    app.show(Tr("没有可清除的好友"))
+                } else {
+                    confirmClearFriends = true
+                }
+            }
         ])
         .fullScreenCover(isPresented: $showScan) {
             ScannerView { text in handleScanned(text, app: app) }
@@ -348,6 +362,16 @@ private var funcs: [(String, String, Color, String)] {
 
                        voiceBall: true)
                 .environmentObject(app)
+        }
+        .confirmationDialog(Tr("清除所有已添加好友？"),
+                            isPresented: $confirmClearFriends,
+                            titleVisibility: .visible) {
+            Button(Tr("清除") + " \(clearableFriends.count) " + Tr("位好友"), role: .destructive) {
+                clearAllAddedFriends()
+            }
+            Button(Tr("取消"), role: .cancel) { }
+        } message: {
+            Text(Tr("将解除双方好友关系，并从当前账号移除单聊入口和本机记录。机器人、系统号和群聊会保留，此操作不可撤销。"))
         }
         .task {
             await app.loadContacts()
@@ -374,6 +398,24 @@ private var funcs: [(String, String, Color, String)] {
         bubbleTask = Task {
             try? await Task.sleep(nanoseconds: 700_000_000)
             if !Task.isCancelled { bubble = nil }
+        }
+    }
+
+    private func clearAllAddedFriends() {
+        guard !clearingFriends else { return }
+        clearingFriends = true
+        app.show(Tr("正在清除好友…"))
+        Task { @MainActor in
+            let result = await API.shared.clearAddedFriends()
+            await app.loadContacts()
+            await app.loadChats()
+            starIds = starIds.filter { id in app.contacts.contains { $0.id == id } }
+            clearingFriends = false
+            if let error = result.error {
+                app.show(Tr("清除失败：") + error)
+            } else {
+                app.show(Tr("已清除") + " \(result.removed) " + Tr("位好友"))
+            }
         }
     }
 

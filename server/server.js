@@ -7127,6 +7127,10 @@ function handleClientMessage(user, socket, raw) {
       const target = findUser(str(msg.toUserId, 40));
       if (!target) return ws.sendText(socket, JSON.stringify({ type: 'call-error', callId, error: '用户不存在' }));
       if (target.id === user.id) return ws.sendText(socket, JSON.stringify({ type: 'call-error', callId, error: '不能给自己打电话' }));
+      if (blockedPair(user.id, target.id)) {
+        callTrace('invite-blocked ' + user.id + ' -> ' + target.id);
+        return ws.sendText(socket, JSON.stringify({ type: 'call-error', callId, error: '暂时无法呼叫对方' }));
+      }
       if (!friendIds(user.id).includes(target.id)) {
         /* 排障用：把「谁想打给谁、两边的好友关系到底什么样」写进 call-trace，
            免得只看到用户说"明明是好友"。 */
@@ -7251,6 +7255,10 @@ function handleClientMessage(user, socket, raw) {
         if (!room) return;
         const ch = db.chats.find((c) => c.id === room.chatId);
         if (!ch || !ch.memberIds.includes(user.id)) return;
+        if (blockedPair(user.id, room.hostId)) {
+          callTrace('群通话加入被黑名单阻断 room=' + room.id + ' user=' + user.id);
+          return;
+        }
       }
       if (findRoomOf(user.id)) return;                 // 我已经在一个房里了
       /* 微信的规矩：一个通话最多 9 方（第 10 个人进不来）。
@@ -7268,6 +7276,7 @@ function handleClientMessage(user, socket, raw) {
         others.forEach((uid) => {
           const u2 = findUser(uid);
           if (!u2) return;
+          if (blockedPair(user.id, uid)) return;
           callSend(u2, { type: 'call', action: 'group-incoming', roomId: room.id,
                          chatId: room.chatId, media: room.media,
                          video: room.media === 'video',
@@ -7313,6 +7322,10 @@ function handleClientMessage(user, socket, raw) {
       if (!ch || !ch.memberIds.includes(user.id)) return;
       const target = findUser(str(msg.toUserId, 40));
       if (!target || !ch.memberIds.includes(target.id)) return;
+      if (blockedPair(user.id, target.id)) {
+        callTrace('群通话邀请被黑名单阻断 ' + user.id + ' -> ' + target.id);
+        return;
+      }
       const delivered = callSend(target, {
         type: 'call', action: 'group-incoming', roomId: room.id, chatId: room.chatId,
         media: room.media, video: room.media === 'video',
@@ -16414,6 +16427,64 @@ async function handleApi(req, res, pathname, query) {
       source: f && f.fromId === user.id ? 'me' : (f ? 'them' : ''),
       blockedMe: blockedByUser(target.id, user.id)
     });
+    return;
+  }
+
+  /* 一键清除“已添加好友”：只清已通过的真实用户，机器人/系统号保留。
+     一次请求内保存好友关系和本机会话状态，避免客户端逐个删除时删到一半。 */
+  if (parts[0] === 'friends' && parts[1] === 'clear' && method === 'POST') {
+    const removeIds = new Set();
+    const kept = [];
+    db.friendships.forEach((f) => {
+      if (!f || f.status !== 'accepted') {
+        kept.push(f);
+        return;
+      }
+      const otherId = f.fromId === user.id ? f.toId : (f.toId === user.id ? f.fromId : '');
+      if (!otherId || otherId === user.id) {
+        kept.push(f);
+        return;
+      }
+      const other = findUser(otherId);
+      if (other && other.bot) {
+        kept.push(f);
+        return;
+      }
+      removeIds.add(otherId);
+    });
+    db.friendships = kept;
+    if (removeIds.size) saveFriendships();
+    let metaChanged = false;
+    let dbm = null;
+    if (removeIds.size) {
+      dbm = readFriendMeta();
+      removeIds.forEach((targetId) => {
+        forgetFriendSetCache(user.id, targetId);
+        if (dbm.byOwner[user.id] && dbm.byOwner[user.id][targetId]) {
+          delete dbm.byOwner[user.id][targetId];
+          metaChanged = true;
+        }
+        const chat = db.chats.find((c) => c.type === 'direct'
+          && c.memberIds.includes(user.id) && c.memberIds.includes(targetId));
+        if (chat) {
+          if (!Array.isArray(chat.hiddenFor)) chat.hiddenFor = [];
+          if (!chat.hiddenFor.includes(user.id)) chat.hiddenFor.push(user.id);
+          const messages = loadMessages(chat.id);
+          const clearedSeq = messages.length ? messages[messages.length - 1].seq : 0;
+          if (!db.cleared[user.id]) db.cleared[user.id] = {};
+          db.cleared[user.id][chat.id] = clearedSeq;
+          if (!db.reads[user.id]) db.reads[user.id] = {};
+          db.reads[user.id][chat.id] = clearedSeq;
+          chatsDirty = true;
+          sendTo(user.id, { type: 'chat', action: 'deleted', chatId: chat.id });
+        }
+        sendTo(user.id, { type: 'friend', action: 'removed', userId: targetId });
+        sendTo(targetId, { type: 'friend', action: 'removed', userId: user.id });
+      });
+      saveReads();
+      if (metaChanged) saveFriendMeta();
+    }
+    ok(res, { removed: removeIds.size });
     return;
   }
 
