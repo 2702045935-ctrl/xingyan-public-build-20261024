@@ -1433,7 +1433,7 @@ struct DirectChatInfoView: View {
             sysQuickButton(symbol: "lock.shield.fill",
                            title: Tr("安全中心"),
                            sub: Tr("冻结 · 解冻 · 解封"),
-                           color: Color(hex: 0xE59A2F)) { sysPage = .safety }
+                           color: Color(hex: 0xB27C37)) { sysPage = .safety }
             sysQuickButton(symbol: "bubble.left.and.text.bubble.right.fill",
                            title: Tr("意见反馈"),
                            sub: Tr("提交问题 · 看回复"),

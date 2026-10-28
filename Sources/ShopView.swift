@@ -188,8 +188,8 @@ struct ShopView: View {
             errText = ""
             DiagLog.shared.note("小店：拉到 \(items.count) 件商品 / \(orders.count) 个订单")
         } catch {
-            errText = (error as? LocalizedError)?.errorDescription ?? "加载失败"
-            DiagLog.shared.note("小店：加载失败 \(errText)")
+            errText = "暂时没准备好，稍后再试"
+            DiagLog.shared.note("小店：暂时没准备好")
         }
         loading = false
     }

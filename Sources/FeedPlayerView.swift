@@ -606,7 +606,7 @@ private struct PlayerPage: View {
             Image(systemName: "wifi.exclamationmark")
                 .font(.system(size: 26, weight: .medium))
                 .foregroundColor(.white.opacity(0.9))
-            Text(Tr("这条没加载出来"))
+            Text(Tr("内容暂时不可用"))
                 .font(.system(size: 14.5))
                 .foregroundColor(.white.opacity(0.92))
             Button {

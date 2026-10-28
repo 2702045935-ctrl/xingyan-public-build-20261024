@@ -781,7 +781,7 @@ final class AppState: ObservableObject {
             if !AppState.sameChats(chats, merged) { chats = merged }
             loadError = nil
         } catch {
-            loadError = (error as? APIError)?.errorDescription ?? "加载失败"
+            loadError = nil
         }
 
         if let r = try? await contactsRequest {
@@ -893,7 +893,7 @@ final class AppState: ObservableObject {
             LocalStore.saveChatList(chats, userId: userId)
             loadError = nil
         } catch {
-            loadError = (error as? APIError)?.errorDescription ?? "加载失败"
+            loadError = nil
         }
         syncIconBadge()
     }

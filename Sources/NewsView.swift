@@ -432,7 +432,7 @@ struct NewsFeedView: View {
 
     private var emptyView: some View {
         VStack(spacing: 14) {
-            Text(failed ? Tr("没有取到新闻，等会儿再试") : Tr("正在加载…"))
+            Text(failed ? Tr("稍后再看看") : Tr("正在加载…"))
                 .font(pf(14))
                 .foregroundColor(C.subLabel)
             Button { Task { await load(tab) } } label: {

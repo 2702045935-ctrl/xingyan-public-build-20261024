@@ -499,7 +499,7 @@ struct NearbyPageView: View {
             wider = r.wider
             tip = ""
         } catch {
-            tip = (error as? APIError)?.errorDescription ?? "加载失败"
+            tip = "网络有点忙，稍后再试"
         }
     }
 

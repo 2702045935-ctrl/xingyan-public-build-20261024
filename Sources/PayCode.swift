@@ -132,7 +132,7 @@ struct PayCodePage: View {
                     Image(systemName: "exclamationmark.triangle")
                         .font(.system(size: 26))
                         .foregroundColor(Color(hex: 0xE5A54D))
-                    Text(failed.isEmpty ? Tr("付款码加载失败，点上面「刷新」再来一次") : failed)
+                    Text(failed.isEmpty ? Tr("付款码暂时没准备好，点上面「刷新」再试一次") : failed)
                         .font(pf(14))
                         .foregroundColor(C.subLabel)
                         .multilineTextAlignment(.center)
@@ -176,7 +176,7 @@ struct PayCodePage: View {
             left = max(1, got.seconds ?? 60)
             failed = ""
         } catch {
-            if info == nil { failed = (error as? APIError)?.errorDescription ?? Tr("付款码加载失败") }
+            if info == nil { failed = Tr("付款码暂时没准备好，稍后再试") }
         }
         loading = false
     }
@@ -303,7 +303,7 @@ struct ReceiveCodePage: View {
         do {
             info = try await API.shared.receiveCode(amount: amount)
         } catch {
-            app.show((error as? APIError)?.errorDescription ?? Tr("收款码加载失败"))
+            app.show(Tr("收款码暂时没准备好，稍后再试"))
         }
     }
 }

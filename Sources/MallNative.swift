@@ -1124,7 +1124,7 @@ enum DDColor {
     static let red      = Color(hex: 0xE02F24)
     static let redDeep  = Color(hex: 0xC81E14)
     static let redLight = Color(hex: 0xFFF1EF)
-    static let orange   = Color(hex: 0xFF7A1A)
+    static let orange   = Color(hex: 0x176A57)
 
     static let blue     = Color(hex: 0x007DFF)
     static let blueDeep = Color(hex: 0x2F6FED)
@@ -1506,7 +1506,7 @@ struct MallNativeView: View {
                 Capsule().fill(Color.white.opacity(0.34))
                     .frame(width: track, height: 2)
                 Capsule()
-                    .fill(LinearGradient(colors: [DDColor.orange, Color(hex: 0xFFB35C)],
+                    .fill(LinearGradient(colors: [DDColor.orange, Color(hex: 0x0F4F41)],
                                          startPoint: .leading, endPoint: .trailing))
                     .frame(width: max(2, track * prog), height: 2)
                 ForEach(0..<3, id: \.self) { i in

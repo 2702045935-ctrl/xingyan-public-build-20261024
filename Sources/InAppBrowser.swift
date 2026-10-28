@@ -100,7 +100,7 @@ struct InAppBrowserView: View {
                         Image(systemName: "wifi.exclamationmark")
                             .font(.system(size: 30))
                             .foregroundColor(C.subLabel)
-                        Text(Tr("网页没有加载出来"))
+                        Text(Tr("网页暂时没准备好"))
                             .font(pf(17, .semibold))
                             .foregroundColor(C.label)
                         Text(loadError)

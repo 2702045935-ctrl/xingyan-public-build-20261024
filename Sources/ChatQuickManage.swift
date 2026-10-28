@@ -24,7 +24,7 @@ struct ChatQuickAdminSection: View {
 
     @State private var filePickerSystem = UIConfig.num("filePickerSystem", 0) > 0
 
-    private let presetColors = ["", "#07C160", "#576B95", "#FA5151", "#FF9500", "#333333"]
+    private let presetColors = ["", "#176A57", "#315E78", "#FA5151", "#B27C37", "#333333"]
 
     var body: some View {
         VStack(spacing: 0) {

@@ -22,7 +22,7 @@ struct FaceReviewRow: Decodable, Identifiable, Hashable {
     }
     var avatarColor: Color {
         guard let d = avatarDist, d > 0 else { return C.subLabel }
-        return d < 0.9 ? Color(hex: 0x1CA36B) : (d < 1.05 ? Color(hex: 0xFA9D3B) : Color(hex: 0xE24C3F))
+        return d < 0.9 ? Color(hex: 0x1CA36B) : (d < 1.05 ? Color(hex: 0xB27C37) : Color(hex: 0xE24C3F))
     }
 
     var statusText: String {

@@ -1179,7 +1179,7 @@ struct WalletStyle: Decodable, Hashable {
         if v == "#1A1A1A" { return C.label }
         return Color(hexString: v, fallback: 0x1A1A1A)
     }
-    var noteColorV: Color { Color(hexString: noteColor ?? "#FA9D3B", fallback: 0xFA9D3B) }
+    var noteColorV: Color { Color(hexString: noteColor ?? "#B27C37", fallback: 0xB27C37) }
     var footerColorV: Color { Color(hexString: footerColor ?? "#576B95", fallback: 0x576B95) }
 
     var mask: Bool { maskAmount ?? true }

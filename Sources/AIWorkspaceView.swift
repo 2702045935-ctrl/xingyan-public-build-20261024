@@ -206,7 +206,7 @@ struct AIWorkspaceView: View {
                         if !voiceCallAvailable {
                             Image(systemName: "lock.fill")
                                 .font(.system(size: 8, weight: .bold))
-                                .foregroundColor(Color(hex: 0xE59A2F))
+                                .foregroundColor(Color(hex: 0xB27C37))
                                 .offset(x: 1, y: -1)
                         }
                     }

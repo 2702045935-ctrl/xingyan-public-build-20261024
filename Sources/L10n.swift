@@ -270,7 +270,6 @@ enum L10n {
         "录音读不到，再录一次": "Could not read the recording — try again",
         "读不到这个文件": "Cannot read this file",
         "已举报，管理员会处理": "Reported. An admin will review it",
-        "聊天记录加载失败": "Failed to load chat history",
         "这条语音找不到了": "This voice message is missing",
         "聊天": "Chat",
         "重试": "Retry",

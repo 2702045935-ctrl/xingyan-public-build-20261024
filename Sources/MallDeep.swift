@@ -112,7 +112,7 @@ struct DDStars: View {
             ForEach(0..<5, id: \.self) { i in
                 Image(systemName: Double(i) + 0.5 < value ? "star.fill" : "star")
                     .font(.system(size: size))
-                    .foregroundColor(Double(i) + 0.5 < value ? Color(hex: 0xFF9500) : DDColor.sub.opacity(0.5))
+                    .foregroundColor(Double(i) + 0.5 < value ? Color(hex: 0xB27C37) : DDColor.sub.opacity(0.5))
             }
         }
     }
@@ -127,7 +127,7 @@ struct DDStarPicker: View {
                 Button { value = i } label: {
                     Image(systemName: i <= value ? "star.fill" : "star")
                         .font(.system(size: size))
-                        .foregroundColor(i <= value ? Color(hex: 0xFF9500) : DDColor.sub.opacity(0.5))
+                        .foregroundColor(i <= value ? Color(hex: 0xB27C37) : DDColor.sub.opacity(0.5))
                 }
                 .buttonStyle(.plain)
             }
@@ -156,7 +156,7 @@ struct DDReviewSection: View {
                 Text(Tr("商品评价")).font(pf(15, .semibold)).foregroundColor(DDColor.ink)
                 if !list.isEmpty {
                     Text(String(format: "%.1f", avg))
-                        .font(pf(14, .semibold)).foregroundColor(Color(hex: 0xFF9500))
+                        .font(pf(14, .semibold)).foregroundColor(Color(hex: 0xB27C37))
                     DDStars(value: avg, size: 11)
                     Text(Tr("好评 ") + String(good) + "%").font(pf(12)).foregroundColor(DDColor.sub)
                 }

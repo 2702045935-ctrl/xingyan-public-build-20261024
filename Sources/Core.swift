@@ -415,7 +415,7 @@ enum C {
 
     static var green       : Color { UIConfig.color("greenColor", 0x07C160, 0x07C160) }
     static var red         : Color { UIConfig.color("redColor", 0xFA5151, 0xFA5151) }
-    static var orange      : Color { UIConfig.color("orangeColor", 0xFF9500, 0xFF9500) }
+    static var orange      : Color { UIConfig.color("orangeColor", 0xB27C37, 0xE3B464) }
     static var tabInk      : Color { UIConfig.color("tabInkColor", 0x191919, 0xB5B5B5) }
 
     static var chatsTopBg  : Color { UIConfig.color("chatsTopBg", 0xF7F7F7, 0x18181A) }

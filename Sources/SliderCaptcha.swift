@@ -160,7 +160,7 @@ struct SliderCaptchaView: View {
             challenge = try await API.shared.sliderChallenge()
         } catch {
             challenge = nil
-            note = "验证加载失败，点一下重试"
+            note = "验证暂时没准备好，点一下重试"
         }
     }
 

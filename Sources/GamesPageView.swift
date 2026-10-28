@@ -130,7 +130,7 @@ struct GamesPageView: View {
                     }
                     .frame(maxWidth: .infinity).padding(.top, 30)
                 } else if list.isEmpty {
-                    Text(Tr("游戏加载失败，检查一下网络"))
+                    Text(Tr("游戏暂时没准备好，点一下再试"))
                         .font(pf(14)).foregroundColor(subInk)
                         .frame(maxWidth: .infinity).padding(.top, 30)
                 }
