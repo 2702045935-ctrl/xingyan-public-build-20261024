@@ -30,6 +30,7 @@ where Item.ID: Hashable {
         collection.backgroundColor = .clear
         collection.alwaysBounceVertical = true
         collection.alwaysBounceHorizontal = false
+        collection.isDirectionalLockEnabled = true
         collection.showsVerticalScrollIndicator = false
         collection.contentInsetAdjustmentBehavior = .never
         collection.keyboardDismissMode = .interactive

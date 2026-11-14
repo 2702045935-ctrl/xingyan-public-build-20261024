@@ -1107,9 +1107,8 @@ struct ChatsView: View {
     private var chatsSearchH: CGFloat { 48 }
     private var chatFilterVisible: Bool { UIConfig.num("chatsOrbitFilter", 0) > 0 }
     private var chatFilterOffset: CGFloat { chatFilterVisible ? chatFilterH : 0 }
-    /* 原生列表先保留为可切换实现；默认使用稳定滚动链路，避免 UICollectionView
-       与每行左右滑手势同时识别时破坏纵向惯性。 */
-    private var nativeChatListEnabled: Bool { UIConfig.num("chatsNativeList", 0) > 0 }
+    /* 原生列表是正式实现；SwiftUI 分支只保留为紧急开关，不再作为默认回退。 */
+    private var nativeChatListEnabled: Bool { UIConfig.num("chatsNativeList", 1) > 0 }
     private var chatsCardStyle: Bool { false }
     private var chatsCardInset: CGFloat { max(8, UIConfig.num("chatsOrbitInset", 12)) }
     private var chatsCardRadius: CGFloat { max(16, UIConfig.num("chatsOrbitRadius", 22)) }
