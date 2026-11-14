@@ -11,7 +11,9 @@ struct NativeChatRowConfiguration {
     var rowBackground: UIColor
     var dividerColor: UIColor
     var badgeRing: UIColor
+    var chatId: String
     var avatarPaths: [String]
+    var groupMemberIds: [String]
     var avatarIsGroup: Bool
     var showOnline: Bool
     var moodIcon: String
@@ -151,6 +153,8 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         memberLabel.text = configuration.memberText
         memberLabel.backgroundColor = configuration.memberColor
         avatarView.configure(paths: configuration.avatarPaths,
+                             chatId: configuration.chatId,
+                             memberIds: configuration.groupMemberIds,
                              group: configuration.avatarIsGroup,
                              online: configuration.showOnline,
                              mood: configuration.moodIcon)
@@ -512,10 +516,32 @@ private final class NativeChatAvatarView: UIView {
         onlineDot.isHidden = true
     }
 
-    func configure(paths: [String], group: Bool, online: Bool, mood: String) {
+    func configure(paths: [String],
+                   chatId: String,
+                   memberIds: [String],
+                   group: Bool,
+                   online: Bool,
+                   mood: String) {
         token = UUID()
         let requestToken = token
         let shown = group ? Array(paths.prefix(4)) : Array(paths.prefix(1))
+        apply(paths: shown)
+        if group, shown.filter({ !$0.isEmpty }).count < max(1, min(4, memberIds.count)) {
+            NativeGroupAvatarCache.shared.paths(chatId: chatId, memberIds: memberIds) { [weak self] resolved in
+                guard let self, self.token == requestToken else { return }
+                self.apply(paths: Array(resolved.prefix(4)))
+                self.setNeedsLayout()
+            }
+        }
+        onlineDot.isHidden = !online
+        moodLabel.isHidden = online || mood.isEmpty
+        moodLabel.text = mood
+        setNeedsLayout()
+    }
+
+    private func apply(paths: [String]) {
+        let requestToken = token
+        let shown = Array(paths.prefix(4))
         for (index, imageView) in tileViews.enumerated() {
             imageView.isHidden = index >= max(1, shown.count)
             imageView.image = nil
@@ -527,10 +553,6 @@ private final class NativeChatAvatarView: UIView {
                 imageView.image = image
             }
         }
-        onlineDot.isHidden = !online
-        moodLabel.isHidden = online || mood.isEmpty
-        moodLabel.text = mood
-        setNeedsLayout()
     }
 
     private func load(path: String, completion: @escaping (UIImage?) -> Void) {
@@ -560,6 +582,47 @@ private final class NativeChatAvatarView: UIView {
                 }
             }
             await MainActor.run { completion(image) }
+        }
+    }
+}
+
+@MainActor
+private final class NativeGroupAvatarCache {
+    static let shared = NativeGroupAvatarCache()
+    private var cached: [String: [String]] = [:]
+    private var running: [String: Task<[String], Never>] = [:]
+
+    func paths(chatId: String,
+               memberIds: [String],
+               completion: @escaping @MainActor ([String]) -> Void) {
+        if let hit = cached[chatId] {
+            completion(hit)
+            return
+        }
+        if let task = running[chatId] {
+            Task {
+                let paths = await task.value
+                completion(paths)
+            }
+            return
+        }
+        let ids = Array(memberIds.prefix(4))
+        let task = Task { () -> [String] in
+            guard let result = try? await API.shared.chatMembers(chatId: chatId) else {
+                return ids.map { _ in "" }
+            }
+            let byId = Dictionary(uniqueKeysWithValues: result.members.map { ($0.id, $0) })
+            let ordered = ids.count >= 4
+                ? ids
+                : Array(result.members.prefix(4)).map(\.id)
+            return ordered.map { byId[$0]?.avatarPath ?? "" }
+        }
+        running[chatId] = task
+        Task {
+            let paths = await task.value
+            cached[chatId] = paths
+            running[chatId] = nil
+            completion(paths)
         }
     }
 }
