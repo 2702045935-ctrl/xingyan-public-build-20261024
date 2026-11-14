@@ -34,6 +34,8 @@ where Item.ID: Hashable {
         collection.showsVerticalScrollIndicator = false
         collection.contentInsetAdjustmentBehavior = .never
         collection.keyboardDismissMode = .interactive
+        collection.delaysContentTouches = false
+        collection.canCancelContentTouches = true
         collection.scrollsToTop = true
         collection.isPrefetchingEnabled = true
         collection.allowsSelection = false
@@ -143,7 +145,10 @@ where Item.ID: Hashable {
             collection.collectionViewLayout.invalidateLayout()
             dataSource.apply(snapshot, animatingDifferences: animated) {
                 guard generation == self.applyGeneration,
-                      self.collection === collection else { return }
+                      self.collection === collection,
+                      !collection.isTracking,
+                      !collection.isDragging,
+                      !collection.isDecelerating else { return }
                 let minimumY = -collection.adjustedContentInset.top
                 let maximumY = max(
                     minimumY,
@@ -187,6 +192,11 @@ where Item.ID: Hashable {
             DispatchQueue.main.async { [weak self] in
                 self?.onZoneChange(zone)
             }
+        }
+
+        func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+            /* 让正在等待的异步布局完成回调失效，不能把用户的拖动位置写回旧值。 */
+            applyGeneration += 1
         }
 
         func scrollViewDidEndDragging(_ scrollView: UIScrollView,
