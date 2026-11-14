@@ -5684,8 +5684,12 @@ struct ChatDetailView: View {
             let keep = first.id
             holdScroll = true
             let merged = visibleMessages(older + messages)
-            messages = Array(merged.suffix(maxMessageWindow))
-            if merged.count > messages.count { hasOlder = true }
+            /* 用户是在向旧历史翻页，窗口满时淘汰底部较新的消息，
+               保留刚补进来的旧页；否则第 3,000 条会把自己挤掉，永远翻不到更早。 */
+            messages = merged.count > maxMessageWindow
+                ? Array(merged.prefix(maxMessageWindow))
+                : merged
+            if merged.count > messages.count || more { hasOlder = true }
             rebuildIndex()
 
             if let proxy = scroller {
