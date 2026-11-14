@@ -29,17 +29,12 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
     }
 
     func makeUIViewController(context: Context) -> UICollectionViewController {
-        let itemSize = NSCollectionLayoutSize(
-            widthDimension: .fractionalWidth(1),
-            heightDimension: .estimated(360)
-        )
-        let item = NSCollectionLayoutItem(layoutSize: itemSize)
-        let group = NSCollectionLayoutGroup.vertical(layoutSize: itemSize, subitems: [item])
-        let section = NSCollectionLayoutSection(group: group)
-        section.contentInsets = .zero
-        section.interGroupSpacing = 0
-        let layout = UICollectionViewCompositionalLayout(section: section)
-        layout.configuration.interSectionSpacing = 0
+        let layout = UICollectionViewFlowLayout()
+        layout.scrollDirection = .vertical
+        layout.minimumLineSpacing = 0
+        layout.minimumInteritemSpacing = 0
+        layout.estimatedItemSize = .zero
+        layout.sectionInset = .zero
 
         let controller = UICollectionViewController(collectionViewLayout: layout)
         controller.view.backgroundColor = .clear
@@ -95,7 +90,7 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
         context.coordinator.apply(items, animated: false)
     }
 
-    final class Coordinator: NSObject, UICollectionViewDelegate {
+    final class Coordinator: NSObject, UICollectionViewDelegateFlowLayout {
         var lookup: [String: NativeMomentFeedItem] = [:]
         var row: (NativeMomentFeedItem) -> Row
         var onScrollOffset: (CGFloat) -> Void
@@ -108,6 +103,8 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
         private var applyGeneration = 0
         private var lastOffset: CGFloat = .greatestFiniteMagnitude
         private var nearEndArmed = true
+        private var heights: [String: CGFloat] = [:]
+        private var measuredWidth: CGFloat = 0
 
         init(onScrollOffset: @escaping (CGFloat) -> Void,
              onScrollActivity: @escaping (Bool) -> Void,
@@ -132,9 +129,20 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
                 pendingItems = nil
                 return
             }
+            let width = collection.bounds.width
+            if abs(width - measuredWidth) > 0.5 {
+                measuredWidth = width
+                heights.removeAll(keepingCapacity: true)
+            }
             let reload = next.compactMap { item -> String? in
                 guard let old = lookup[item.id] else { return nil }
                 return old == item ? nil : item.id
+            }
+            for id in nextOrder where lookup[id] == nil {
+                heights[id] = nil
+            }
+            for id in reload {
+                heights[id] = nil
             }
             let previousOffset = collection.contentOffset
             applyGeneration += 1
@@ -149,6 +157,7 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
             }
             order = nextOrder
             pendingItems = nil
+            collection.collectionViewLayout.invalidateLayout()
             dataSource.apply(snapshot, animatingDifferences: animated) {
                 guard generation == self.applyGeneration,
                       self.collection === collection,
@@ -164,6 +173,44 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
                 target.y = min(max(target.y, -collection.adjustedContentInset.top), maximumY)
                 collection.setContentOffset(target, animated: false)
             }
+        }
+
+        func collectionView(_ collectionView: UICollectionView,
+                            layout collectionViewLayout: UICollectionViewLayout,
+                            sizeForItemAt indexPath: IndexPath) -> CGSize {
+            let resolvedId = dataSource?.itemIdentifier(for: indexPath)
+            let fallbackId = indexPath.item >= 0 && indexPath.item < order.count
+                ? order[indexPath.item] : nil
+            guard let id = resolvedId ?? fallbackId,
+                  let item = lookup[id] else { return .zero }
+            let width = max(1, collectionView.bounds.width)
+            if abs(width - measuredWidth) > 0.5 {
+                measuredWidth = width
+                heights.removeAll(keepingCapacity: true)
+            }
+            let height = heights[id] ?? measuredHeight(item, width: width)
+            heights[id] = height
+            return CGSize(width: width, height: height)
+        }
+
+        private func measuredHeight(_ item: NativeMomentFeedItem,
+                                    width: CGFloat) -> CGFloat {
+            let hosted = UIHostingController(
+                rootView: AnyView(
+                    row(item)
+                        .frame(width: width)
+                )
+            )
+            hosted.view.backgroundColor = .clear
+            hosted.view.frame = CGRect(x: 0, y: 0, width: width, height: 1)
+            hosted.view.setNeedsLayout()
+            hosted.view.layoutIfNeeded()
+            let size = hosted.view.systemLayoutSizeFitting(
+                CGSize(width: width, height: UIView.layoutFittingCompressedSize.height),
+                withHorizontalFittingPriority: .required,
+                verticalFittingPriority: .fittingSizeLevel
+            )
+            return max(1, ceil(size.height))
         }
 
         func scrollViewDidScroll(_ scrollView: UIScrollView) {
