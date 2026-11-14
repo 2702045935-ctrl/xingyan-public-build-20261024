@@ -99,6 +99,8 @@ where Item.ID: Hashable {
         var dataSource: UICollectionViewDiffableDataSource<Int, Item.ID>?
         private var order: [Item.ID] = []
         private var lastZone = -1
+        private var pendingItems: [Item]?
+        private var applyGeneration = 0
 
         init(onZoneChange: @escaping (Int) -> Void,
              onRefresh: @escaping () -> Void,
@@ -111,9 +113,19 @@ where Item.ID: Hashable {
 
         func apply(_ next: [Item], animated: Bool) {
             guard let dataSource, let collection else { return }
+            /*
+             * Diffable apply 会异步重排 cell。滚动过程中继续换快照，系统会把当前
+             * 视口推进到错误位置，表现就是会话页突然往下掉。用户手指还在屏幕上时
+             * 只记下最新数据，等滚动结束再一次性合并。
+             */
+            if !order.isEmpty && (collection.isDragging || collection.isDecelerating) {
+                pendingItems = next
+                return
+            }
             let nextLookup = Dictionary(uniqueKeysWithValues: next.map { ($0.id, $0) })
             let nextOrder = next.map(\.id)
             if nextOrder == order && next.allSatisfy({ lookup[$0.id] == $0 }) {
+                pendingItems = nil
                 return
             }
             let reload = next.compactMap { item -> Item.ID? in
@@ -121,6 +133,8 @@ where Item.ID: Hashable {
                 return old == item ? nil : item.id
             }
             let previousOffset = collection.contentOffset
+            applyGeneration += 1
+            let generation = applyGeneration
             lookup = nextLookup
 
             var snapshot = NSDiffableDataSourceSnapshot<Int, Item.ID>()
@@ -129,9 +143,21 @@ where Item.ID: Hashable {
             if !reload.isEmpty {
                 snapshot.reloadItems(reload)
             }
-            dataSource.apply(snapshot, animatingDifferences: animated)
-            collection.setContentOffset(previousOffset, animated: false)
             order = nextOrder
+            pendingItems = nil
+            dataSource.apply(snapshot, animatingDifferences: animated) {
+                guard generation == self.applyGeneration,
+                      self.collection === collection else { return }
+                let minimumY = -collection.adjustedContentInset.top
+                let maximumY = max(
+                    minimumY,
+                    collection.contentSize.height - collection.bounds.height
+                        + collection.adjustedContentInset.bottom
+                )
+                var target = previousOffset
+                target.y = min(max(target.y, minimumY), maximumY)
+                collection.setContentOffset(target, animated: false)
+            }
         }
 
         @objc func refreshPulled(_ sender: UIRefreshControl) {
@@ -153,6 +179,21 @@ where Item.ID: Hashable {
             DispatchQueue.main.async { [weak self] in
                 self?.onZoneChange(zone)
             }
+        }
+
+        func scrollViewDidEndDragging(_ scrollView: UIScrollView,
+                                      willDecelerate decelerate: Bool) {
+            if !decelerate { flushPendingItems() }
+        }
+
+        func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+            flushPendingItems()
+        }
+
+        private func flushPendingItems() {
+            guard let pendingItems else { return }
+            self.pendingItems = nil
+            apply(pendingItems, animated: false)
         }
     }
 }
