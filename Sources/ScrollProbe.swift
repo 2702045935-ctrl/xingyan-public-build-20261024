@@ -7,6 +7,7 @@ final class ChatScrollHandle {
     /// 用户刚滑动过的短暂保护期：列表预渲染/图片解码触发的“补底”
     /// 不能在这一小段时间里抢走滚动位置。
     private var lastUserMotionAt = Date.distantPast
+    private var pendingPrepend: (height: CGFloat, offset: CGPoint)?
 
     func noteUserMotion() {
         lastUserMotionAt = Date()
@@ -15,6 +16,30 @@ final class ChatScrollHandle {
     /// 用户点输入框/键盘弹出时允许立即回到最新消息。
     func allowAutomaticPinning() {
         lastUserMotionAt = .distantPast
+    }
+
+    /// 在向聊天顶部插入旧消息前记录当前内容高度与位置。
+    /// 下一次 contentSize 更新时直接补偿差值，避免先跳动再 scrollTo。
+    func prepareForPrepend() {
+        guard let sv = scroll, sv.window != nil else { return }
+        pendingPrepend = (sv.contentSize.height, sv.contentOffset)
+    }
+
+    @discardableResult
+    func compensatePendingPrepend() -> Bool {
+        guard let sv = scroll, sv.window != nil,
+              let pending = pendingPrepend else { return false }
+        let delta = sv.contentSize.height - pending.height
+        guard abs(delta) > 0.5 else { return false }
+        pendingPrepend = nil
+        let minimumY = -sv.adjustedContentInset.top
+        let maximumY = max(
+            minimumY,
+            sv.contentSize.height - sv.bounds.height + sv.adjustedContentInset.bottom
+        )
+        let targetY = min(max(pending.offset.y + delta, minimumY), maximumY)
+        sv.setContentOffset(CGPoint(x: pending.offset.x, y: targetY), animated: false)
+        return true
     }
 
     @discardableResult
