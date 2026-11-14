@@ -1626,7 +1626,7 @@ struct GroupCreateView: View {
                         }
                         .buttonStyle(.plain)
                         .listRowInsets(EdgeInsets())
-                        .listRowSeparatorTint(C.hairline)
+                        .listRowSeparator(.hidden)
                         .listRowBackground(C.pageBg)
                     }
                 }
@@ -1753,6 +1753,12 @@ struct GroupCreateView: View {
         .padding(.vertical, 10)
         .frame(minHeight: 68)
         .contentShape(Rectangle())
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(C.hairline)
+                .frame(height: 0.5)
+                .padding(.leading, 77)
+        }
     }
 
     private var groupDetails: some View {
