@@ -220,6 +220,7 @@ where Item.ID: Hashable {
         func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
             /* 让正在等待的异步布局完成回调失效，不能把用户的拖动位置写回旧值。 */
             applyGeneration += 1
+            NotificationCenter.default.post(name: .chrisRowSwipe, object: nil)
         }
 
         func scrollViewDidEndDragging(_ scrollView: UIScrollView,

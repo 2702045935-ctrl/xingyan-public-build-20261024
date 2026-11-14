@@ -46,6 +46,8 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
     private var configuration: NativeChatRowConfiguration?
     private var offset: CGFloat = 0
     private var startOffset: CGFloat = 0
+    private var latestRawOffset: CGFloat = 0
+    private var dragDirection: CGFloat = 0
     private weak var frozenScroll: UIScrollView?
 
     private let rowLeading: CGFloat = 16
@@ -61,10 +63,18 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         super.init(frame: frame)
         setupViews()
         setupGestures()
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(handleSwipeElsewhere(_:)),
+                                               name: .chrisRowSwipe,
+                                               object: nil)
     }
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
 
     override func prepareForReuse() {
@@ -73,6 +83,8 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         foreground.transform = .identity
         offset = 0
         startOffset = 0
+        latestRawOffset = 0
+        dragDirection = 0
         frozenScroll?.isScrollEnabled = true
         frozenScroll = nil
         avatarView.reset()
@@ -307,26 +319,20 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         let pan = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
         pan.delegate = self
         pan.cancelsTouchesInView = false
+        pan.maximumNumberOfTouches = 1
         foreground.addGestureRecognizer(pan)
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
         tap.cancelsTouchesInView = false
         foreground.addGestureRecognizer(tap)
-        let leftSwipe = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipe(_:)))
-        leftSwipe.direction = .left
-        leftSwipe.delegate = self
-        leftSwipe.cancelsTouchesInView = false
-        foreground.addGestureRecognizer(leftSwipe)
-        let rightSwipe = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipe(_:)))
-        rightSwipe.direction = .right
-        rightSwipe.delegate = self
-        rightSwipe.cancelsTouchesInView = false
-        foreground.addGestureRecognizer(rightSwipe)
     }
 
     @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
         guard offset == 0 else {
             closeActions()
             return
+        }
+        if let chatId = configuration?.chatId {
+            NotificationCenter.default.post(name: .chrisRowSwipe, object: chatId)
         }
         let point = gesture.location(in: foreground)
         if point.x <= rowLeading + avatarSize + 10, let onAvatar = configuration?.onAvatar {
@@ -343,11 +349,24 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         switch gesture.state {
         case .began:
             startOffset = offset
+            latestRawOffset = offset
+            dragDirection = offset < 0 ? -1 : (offset > 0 ? 1 : 0)
             frozenScroll = enclosingScrollView()
             frozenScroll?.isScrollEnabled = false
-            NotificationCenter.default.post(name: .chrisRowSwipe, object: nil)
+            if let chatId = configuration.chatId {
+                NotificationCenter.default.post(name: .chrisRowSwipe, object: chatId)
+            }
         case .changed:
-            let raw = startOffset + translation
+            var raw = startOffset + translation
+            if dragDirection == 0, abs(translation) >= 2 {
+                dragDirection = translation < 0 ? -1 : 1
+            }
+            if dragDirection < 0 {
+                raw = min(0, raw)
+            } else if dragDirection > 0 {
+                raw = max(0, raw)
+            }
+            latestRawOffset = raw
             offset = resisted(raw)
             foreground.transform = CGAffineTransform(translationX: offset, y: 0)
             pinActions.isHidden = offset <= 0
@@ -355,17 +374,22 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         case .ended, .cancelled, .failed:
             frozenScroll?.isScrollEnabled = true
             frozenScroll = nil
-            let projected = offset + velocity * 0.14
-            if projected > actionInset + actionWidth * 0.34 {
-                open(offset: actionInset + actionWidth, animated: true)
-            } else if projected < -(actionInset + actionWidth * 3 + actionGap * 2) * 0.34 {
-                open(offset: -(actionInset + actionWidth * 3 + actionGap * 2), animated: true)
+            let raw = latestRawOffset
+            let projected = raw + velocity * 0.10
+            let pinBase = actionInset + actionWidth
+            let leftBase = actionInset + actionWidth * 3 + actionGap * 2
+            let pinCommit = max(40, pinBase * 0.72)
+            let leftCommit = max(68, min(leftBase * 0.58, bounds.width * 0.24))
+            if dragDirection > 0, projected >= pinCommit {
+                open(offset: pinBase, animated: true)
+            } else if dragDirection < 0, projected <= -leftCommit {
+                open(offset: -leftBase, animated: true)
             } else {
                 closeActions()
             }
-            if -offset > bounds.width * 0.72 {
+            if gesture.state == .ended, dragDirection < 0, -raw > bounds.width * 0.72 {
                 configuration.onDelete()
-            } else if offset > bounds.width * 0.72 {
+            } else if gesture.state == .ended, dragDirection > 0, raw > bounds.width * 0.72 {
                 configuration.onPin(!configuration.isPinned)
             }
         default:
@@ -408,13 +432,12 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         open(offset: 0, animated: true)
     }
 
-    @objc private func handleSwipe(_ gesture: UISwipeGestureRecognizer) {
-        NotificationCenter.default.post(name: .chrisRowSwipe, object: nil)
-        if gesture.direction == .left {
-            open(offset: -(actionInset + actionWidth * 3 + actionGap * 2), animated: true)
-        } else if gesture.direction == .right {
-            open(offset: actionInset + actionWidth, animated: true)
+    @objc private func handleSwipeElsewhere(_ note: Notification) {
+        if let chatId = note.object as? String, chatId == configuration?.chatId {
+            return
         }
+        guard offset != 0 else { return }
+        closeActions()
     }
 
     private func enclosingScrollView() -> UIScrollView? {
@@ -434,8 +457,9 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
 
     override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
         guard let pan = gestureRecognizer as? UIPanGestureRecognizer else { return true }
-        let velocity = pan.velocity(in: foreground)
-        return abs(velocity.x) >= 18 && abs(velocity.x) >= abs(velocity.y) * 1.12
+        let translation = pan.translation(in: foreground)
+        return abs(translation.x) >= 3
+            && abs(translation.x) >= abs(translation.y) * 1.15
     }
 
     func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
