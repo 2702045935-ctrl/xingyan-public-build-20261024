@@ -1712,6 +1712,23 @@ enum L10n {
         "驾驶播放": "Driving playback",
         "驾驶模式": "Driving mode",
         "切换后立即生效，已经打开的页面会在返回时刷新。": "Takes effect immediately. Open pages refresh when you return.",
+        "群聊详情": "Group details",
+        "面对面建群": "Join group nearby",
+        "和附近的人输入同一个数字": "Join people nearby with the same code",
+        "没有找到联系人": "No contacts found",
+        "群名称": "Group name",
+        "输入群名称": "Enter group name",
+        "群名称创建后仍可修改": "You can change the group name later",
+        "群成员": "Group members",
+        "创建群聊": "Create group",
+        "创建中…": "Creating…",
+        "创建失败": "Couldn't create the group",
+        "和附近的人一起进群": "Join people nearby",
+        "输入同样的 4 位数字": "Enter the same 4-digit code",
+        "数字 3 分钟内有效": "The code is valid for 3 minutes",
+        "进入群聊": "Join group",
+        "正在进入…": "Joining…",
+        "没进去，再试一次": "Couldn't join. Try again",
 
     ]
 }

@@ -1488,95 +1488,71 @@ struct FriendPermSheet: View {
 }
 
 struct GroupCreateView: View {
+    private enum Step: Equatable { case participants, details }
+
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
     var onCreated: (Chat) -> Void
 
+    @State private var step: Step = .participants
     @State private var name = ""
     @State private var picked: Set<String> = []
+    @State private var keyword = ""
     @State private var busy = false
-
     @State private var showFace = false
+    @FocusState private var nameFocused: Bool
+
+    private var selectedContacts: [User] {
+        app.contacts.filter { picked.contains($0.id) }
+    }
+
+    private var filteredContacts: [User] {
+        let query = keyword.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return app.contacts }
+        return app.contacts.filter { user in
+            [user.name, user.username ?? "", user.phone ?? "", user.bio ?? ""]
+                .contains { $0.localizedCaseInsensitiveContains(query) }
+        }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
-            NavBar(title: Tr("发起群聊"), back: { dismiss() }) {
-                Button {
-                    create()
-                } label: {
-                    Text(busy ? "创建中…" : "完成")
-                        .font(pf(17))
-                        .foregroundColor(picked.isEmpty ? C.subLabel : C.green)
-                        .frame(height: L.navH)
-                        .padding(.trailing, 16)
+            NavBar(title: step == .participants ? Tr("发起群聊") : Tr("群聊详情"),
+                  back: { goBack() }) {
+                Button { primaryAction() } label: {
+                    ZStack {
+                        Circle()
+                            .fill(canContinue ? C.green : C.subLabel.opacity(0.22))
+                        if busy {
+                            ProgressView()
+                                .tint(.white)
+                                .scaleEffect(0.72)
+                        } else {
+                            Image(systemName: step == .participants ? "arrow.right" : "checkmark")
+                                .font(.system(size: 15, weight: .bold))
+                                .foregroundColor(.white)
+                        }
+                    }
+                    .frame(width: 34, height: 34)
                 }
                 .buttonStyle(.plain)
+                .disabled(!canContinue || busy)
+                .accessibilityLabel(step == .participants ? Tr("下一步") : Tr("完成"))
+                .padding(.trailing, 14)
             }
 
-            Button { showFace = true } label: {
-                HStack(spacing: 12) {
-                    Image(systemName: "person.3.sequence.fill")
-                        .font(.system(size: 17, weight: .medium))
-                        .foregroundColor(C.green)
-                        .frame(width: 26)
-                    Text(Tr("面对面建群")).font(pf(16)).foregroundColor(C.label)
-                    Spacer(minLength: 0)
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(C.subLabel)
-                }
-                .padding(.horizontal, 16)
-                .frame(height: 52)
-                .background(C.cardBg)
-                .contentShape(Rectangle())
+            if step == .participants {
+                participantPicker
+                    .transition(.opacity)
+            } else {
+                groupDetails
+                    .transition(.opacity)
             }
-            .buttonStyle(.plain)
-            .padding(.top, 8)
-
-            HStack(spacing: 8) {
-                TextField("群名称", text: $name)
-                    .font(pf(16))
-                    .foregroundColor(C.label)
-            }
-            .padding(.horizontal, 12)
-            .frame(height: 44)
-            .background(C.searchBg)
-            .padding(12)
-
-            List {
-                ForEach(app.contacts) { user in
-                    Button {
-                        if picked.contains(user.id) { picked.remove(user.id) }
-                        else { picked.insert(user.id) }
-                    } label: {
-                        HStack(spacing: 12) {
-                            Avatar(path: user.avatarPath, size: 40, radius: 6)
-                            Text(user.name).font(pf(17)).foregroundColor(C.label)
-                            Spacer()
-                            Image(systemName: picked.contains(user.id) ? "checkmark.circle.fill" : "circle")
-                                .foregroundColor(picked.contains(user.id) ? C.green : C.subLabel)
-                        }
-                        .padding(.horizontal, 16)
-                        .frame(height: 56)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .listRowInsets(EdgeInsets())
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(C.cardBg)
-                }
-            }
-            .listStyle(.plain)
-            .environment(\.defaultMinListRowHeight, 0)
-            .scrollContentBackground(.hidden)
-            .background(C.cardBg)
         }
-        .background(C.pageBg.ignoresSafeArea(edges: .bottom))
-        .background(C.pageBg.ignoresSafeArea(edges: .top))
+        .background(C.pageBg.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
-        .swipeBack { dismiss() }
+        .swipeBack { goBack() }
         .hidesTabBar()
-
         .sheet(isPresented: $showFace) {
             FaceGroupView { chat in
                 dismiss()
@@ -1584,15 +1560,322 @@ struct GroupCreateView: View {
                     onCreated(chat)
                 }
             }
-                .environmentObject(app)
+            .environmentObject(app)
         }
     }
 
+    private var canContinue: Bool {
+        if step == .participants { return !picked.isEmpty }
+        return !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var participantPicker: some View {
+        VStack(spacing: 0) {
+            Button { showFace = true } label: {
+                HStack(spacing: 13) {
+                    ZStack {
+                        Circle().fill(C.green)
+                        Image(systemName: "person.3.sequence.fill")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                    }
+                    .frame(width: 38, height: 38)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(Tr("面对面建群"))
+                            .font(pf(16, .medium))
+                            .foregroundColor(C.label)
+                        Text(Tr("和附近的人输入同一个数字"))
+                            .font(pf(13))
+                            .foregroundColor(C.subLabel)
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(C.subLabel)
+                }
+                .padding(.horizontal, 16)
+                .frame(height: 62)
+                .background(C.cardBg)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 8)
+
+            if !selectedContacts.isEmpty {
+                selectedParticipants
+            }
+
+            contactSearch
+
+            if filteredContacts.isEmpty {
+                VStack(spacing: 10) {
+                    Image(systemName: "person.crop.circle.badge.questionmark")
+                        .font(.system(size: 30, weight: .light))
+                        .foregroundColor(C.subLabel)
+                    Text(Tr("没有找到联系人"))
+                        .font(pf(15))
+                        .foregroundColor(C.subLabel)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                List {
+                    ForEach(filteredContacts) { user in
+                        Button { toggle(user.id) } label: {
+                            contactRow(user)
+                        }
+                        .buttonStyle(.plain)
+                        .listRowInsets(EdgeInsets())
+                        .listRowSeparatorTint(C.hairline)
+                        .listRowBackground(C.pageBg)
+                    }
+                }
+                .listStyle(.plain)
+                .environment(\.defaultMinListRowHeight, 0)
+                .scrollContentBackground(.hidden)
+                .background(C.pageBg)
+            }
+        }
+    }
+
+    private var selectedParticipants: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            HStack(spacing: 7) {
+                Text(Tr("已选择"))
+                    .font(pf(12, .semibold))
+                    .foregroundColor(C.green)
+                Text("\(picked.count)")
+                    .font(pf(10, .bold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 6)
+                    .frame(minWidth: 20, minHeight: 20)
+                    .background(Capsule().fill(C.green))
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 16)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(selectedContacts) { user in
+                        Button { toggle(user.id) } label: {
+                            HStack(spacing: 7) {
+                                Avatar(path: user.avatarPath, size: 32, circle: true)
+                                Text(user.name)
+                                    .font(pf(13, .medium))
+                                    .foregroundColor(C.label)
+                                    .lineLimit(1)
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundColor(C.subLabel)
+                            }
+                            .padding(.leading, 4)
+                            .padding(.trailing, 10)
+                            .frame(height: 40)
+                            .background(Capsule().fill(Color.dyn(0xF0F2F5, 0x2A2A2C)))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 16)
+            }
+        }
+        .padding(.top, 13)
+        .padding(.bottom, 12)
+        .background(C.pageBg)
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(C.hairline).frame(height: 0.5)
+        }
+    }
+
+    private var contactSearch: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(C.subLabel)
+            TextField(Tr("搜索姓名或号码"), text: $keyword)
+                .font(pf(16))
+                .foregroundColor(C.label)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+            if !keyword.isEmpty {
+                Button { keyword = "" } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(C.subLabel.opacity(0.72))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 12)
+        .frame(height: 42)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.dyn(0xF0F2F5, 0x1C1C1E))
+        )
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+    }
+
+    private func contactRow(_ user: User) -> some View {
+        let selected = picked.contains(user.id)
+        let detail = (user.bio ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        return HStack(spacing: 13) {
+            Avatar(path: user.avatarPath, size: 48, circle: true)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(user.name)
+                    .font(pf(16.5, .medium))
+                    .foregroundColor(C.label)
+                    .lineLimit(1)
+                if !detail.isEmpty {
+                    Text(detail)
+                        .font(pf(13))
+                        .foregroundColor(C.subLabel)
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer(minLength: 8)
+
+            ZStack {
+                Circle()
+                    .fill(selected ? C.green : Color.clear)
+                Circle()
+                    .stroke(selected ? C.green : C.subLabel.opacity(0.46), lineWidth: 1.5)
+                if selected {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(.white)
+                }
+            }
+            .frame(width: 24, height: 24)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .frame(minHeight: 68)
+        .contentShape(Rectangle())
+    }
+
+    private var groupDetails: some View {
+        ScrollView {
+            VStack(spacing: 24) {
+                GroupCreationAvatar(users: selectedContacts, size: 112)
+                    .padding(.top, 30)
+
+                VStack(alignment: .leading, spacing: 9) {
+                    HStack(spacing: 10) {
+                        Text(Tr("群名称"))
+                            .font(pf(16))
+                            .foregroundColor(C.label)
+                        TextField(Tr("输入群名称"), text: $name)
+                            .font(pf(16))
+                            .foregroundColor(C.label)
+                            .focused($nameFocused)
+                            .submitLabel(.done)
+                            .onSubmit { nameFocused = false }
+                    }
+                    .padding(.horizontal, 16)
+                    .frame(height: 54)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(C.cardBg)
+                    )
+
+                    Text(Tr("群名称创建后仍可修改"))
+                        .font(pf(12.5))
+                        .foregroundColor(C.subLabel)
+                        .padding(.horizontal, 4)
+                }
+                .padding(.horizontal, 18)
+
+                Button {
+                    withAnimation(.easeOut(duration: 0.2)) { step = .participants }
+                } label: {
+                    HStack(spacing: 13) {
+                        Text(Tr("群成员"))
+                            .font(pf(16))
+                            .foregroundColor(C.label)
+                        AvatarStack(users: selectedContacts)
+                        Spacer(minLength: 0)
+                        Text("\(selectedContacts.count)")
+                            .font(pf(14))
+                            .foregroundColor(C.subLabel)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(C.subLabel)
+                    }
+                    .padding(.horizontal, 16)
+                    .frame(height: 64)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(C.cardBg)
+                    )
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 18)
+
+                Button { create() } label: {
+                    HStack(spacing: 9) {
+                        if busy {
+                            ProgressView().tint(.white).scaleEffect(0.8)
+                        } else {
+                            Image(systemName: "person.3.fill")
+                                .font(.system(size: 16, weight: .semibold))
+                        }
+                        Text(busy ? Tr("创建中…") : Tr("创建群聊"))
+                            .font(pf(17, .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(canContinue ? C.green : C.subLabel.opacity(0.28))
+                    )
+                }
+                .buttonStyle(.plain)
+                .disabled(!canContinue || busy)
+                .padding(.horizontal, 18)
+                .padding(.top, 4)
+            }
+            .padding(.bottom, max(24, L.safeBottom + 20))
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                nameFocused = true
+            }
+        }
+    }
+
+    private func primaryAction() {
+        if step == .participants {
+            guard !picked.isEmpty else { app.show(Tr("至少选一个好友")); return }
+            withAnimation(.easeOut(duration: 0.2)) { step = .details }
+        } else {
+            create()
+        }
+    }
+
+    private func goBack() {
+        if step == .details {
+            nameFocused = false
+            withAnimation(.easeOut(duration: 0.2)) { step = .participants }
+        } else {
+            dismiss()
+        }
+    }
+
+    private func toggle(_ id: String) {
+        if picked.contains(id) { picked.remove(id) }
+        else { picked.insert(id) }
+    }
+
     private func create() {
-        let groupName = name.trimmingCharacters(in: .whitespaces)
+        let groupName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         if groupName.isEmpty { app.show(Tr("先填个群名称")); return }
         if picked.isEmpty { app.show(Tr("至少选一个好友")); return }
         busy = true
+        nameFocused = false
         Task {
             do {
                 if let chat = try await API.shared.createGroup(name: groupName, memberIds: Array(picked)) {
@@ -1602,9 +1885,77 @@ struct GroupCreateView: View {
                     app.show(Tr("群建好了"))
                 }
             } catch {
-                app.show((error as? APIError)?.errorDescription ?? "创建失败")
+                app.show((error as? APIError)?.errorDescription ?? Tr("创建失败"))
             }
             busy = false
+        }
+    }
+}
+
+private struct GroupCreationAvatar: View {
+    let users: [User]
+    let size: CGFloat
+
+    var body: some View {
+        GeometryReader { geo in
+            let gap: CGFloat = 1.5
+            let halfW = (geo.size.width - gap) / 2
+            let halfH = (geo.size.height - gap) / 2
+            if users.count <= 1 {
+                tile(0, width: geo.size.width, height: geo.size.height)
+            } else if users.count == 2 {
+                HStack(spacing: gap) {
+                    tile(0, width: halfW, height: geo.size.height)
+                    tile(1, width: halfW, height: geo.size.height)
+                }
+            } else {
+                VStack(spacing: gap) {
+                    HStack(spacing: gap) {
+                        tile(0, width: halfW, height: halfH)
+                        tile(1, width: halfW, height: halfH)
+                    }
+                    HStack(spacing: gap) {
+                        tile(2, width: halfW, height: halfH)
+                        tile(3, width: halfW, height: halfH)
+                    }
+                }
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(Circle())
+        .overlay(Circle().stroke(C.hairline, lineWidth: 0.6))
+    }
+
+    @ViewBuilder
+    private func tile(_ index: Int, width: CGFloat, height: CGFloat) -> some View {
+        Group {
+            if index < users.count, !users[index].avatarPath.isEmpty {
+                RemoteImage(path: users[index].avatarPath, icon: "person.fill",
+                            maxSide: max(120, size * 2))
+                    .frame(width: width, height: height)
+                    .clipped()
+            } else {
+                ZStack {
+                    Color.dyn(0xEDEDED, 0x2C2C2E)
+                    Image(systemName: "person.fill")
+                        .font(.system(size: 22, weight: .regular))
+                        .foregroundColor(C.subLabel)
+                }
+                .frame(width: width, height: height)
+            }
+        }
+    }
+}
+
+private struct AvatarStack: View {
+    let users: [User]
+
+    var body: some View {
+        HStack(spacing: -8) {
+            ForEach(Array(users.prefix(3))) { user in
+                Avatar(path: user.avatarPath, size: 30, circle: true)
+                    .overlay(Circle().stroke(C.cardBg, lineWidth: 1.5))
+            }
         }
     }
 }
@@ -1618,63 +1969,62 @@ struct FaceGroupView: View {
     @State private var digits = ""
     @State private var busy = false
     @State private var tip = ""
+    private let keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "⌫"]
 
     var body: some View {
         VStack(spacing: 0) {
             NavBar(title: Tr("面对面建群"), back: { dismiss() }) { EmptyView() }
 
-            VStack(spacing: 8) {
-                Text(Tr("和身边的朋友输入同样的四个数字，进入同一个群聊"))
-                    .font(pf(14))
-                    .foregroundColor(C.subLabel)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 30)
-                Text(Tr("数字 3 分钟内有效"))
-                    .font(pf(12))
-                    .foregroundColor(C.subLabel.opacity(0.75))
+            ScrollView {
+                VStack(spacing: 22) {
+                    hero
+                    codeEntry
 
-                HStack(spacing: 10) {
-                    ForEach(0..<4, id: \.self) { i in
-                        let on = digits.count > i
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(C.searchBg)
-                            .frame(width: 46, height: 56)
-                            .overlay(
-                                Text(on ? String(Array(digits)[i]) : "")
-                                    .font(pf(24, .semibold))
-                                    .foregroundColor(C.label)
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                    .stroke(digits.count == i ? C.green : Color.clear, lineWidth: 1.6)
-                            )
+                    if !tip.isEmpty {
+                        HStack(spacing: 7) {
+                            Image(systemName: "exclamationmark.circle.fill")
+                            Text(tip)
+                        }
+                        .font(pf(13, .medium))
+                        .foregroundColor(C.red)
+                        .padding(.horizontal, 13)
+                        .frame(minHeight: 36)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .fill(C.red.opacity(0.10))
+                        )
+                        .transition(.opacity)
                     }
-                }
-                .padding(.top, 10)
 
-                if !tip.isEmpty {
-                    Text(tip).font(pf(13)).foregroundColor(C.red)
-                }
-
-                Button { enter() } label: {
-                    Text(busy ? Tr("进入中…") : Tr("进入群聊"))
-                        .font(pf(17, .medium))
+                    Button { enter() } label: {
+                        HStack(spacing: 8) {
+                            if busy {
+                                ProgressView().tint(.white).scaleEffect(0.8)
+                            }
+                            Text(busy ? Tr("正在进入…") : Tr("进入群聊"))
+                                .font(pf(17, .semibold))
+                        }
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 48)
-                        .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(digits.count == 4 ? C.green : C.green.opacity(0.35)))
-                }
-                .buttonStyle(.plain)
-                .disabled(digits.count != 4 || busy)
-                .padding(.horizontal, 24)
-                .padding(.top, 6)
-            }
-            .padding(.top, 24)
+                        .frame(height: 50)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .fill(digits.count == 4 ? C.green : C.subLabel.opacity(0.28))
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(digits.count != 4 || busy)
 
-            Spacer(minLength: 10)
-            keypad
-            Color.clear.frame(height: L.safeBottom)
+                    keypad
+                        .padding(.top, 2)
+                        .allowsHitTesting(!busy)
+                        .opacity(busy ? 0.6 : 1)
+                }
+                .padding(.horizontal, 22)
+                .padding(.top, 14)
+                .padding(.bottom, max(22, L.safeBottom + 14))
+            }
+            .scrollIndicators(.hidden)
         }
         .background(C.pageBg.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
@@ -1682,46 +2032,104 @@ struct FaceGroupView: View {
         .hidesTabBar()
     }
 
-    private var keypad: some View {
-        VStack(spacing: 1) {
-            ForEach(0..<4, id: \.self) { r in
-                HStack(spacing: 1) {
-                    ForEach(0..<3, id: \.self) { c in
-                        let i = r * 3 + c
-                        let label = i == 9 ? "" : (i == 10 ? "0" : (i == 11 ? "⌫" : String(i + 1)))
-                        key(label)
-                    }
-                }
+    private var hero: some View {
+        VStack(spacing: 11) {
+            ZStack {
+                Circle()
+                    .fill(C.green.opacity(0.12))
+                    .frame(width: 92, height: 92)
+                Circle()
+                    .stroke(C.green.opacity(0.20), lineWidth: 8)
+                    .frame(width: 68, height: 68)
+                Image(systemName: "person.3.fill")
+                    .font(.system(size: 28, weight: .semibold))
+                    .foregroundColor(C.green)
             }
+
+            Text(Tr("和附近的人一起进群"))
+                .font(pf(22, .semibold))
+                .foregroundColor(C.label)
+                .multilineTextAlignment(.center)
+
+            Text(Tr("输入同样的 4 位数字"))
+                .font(pf(14.5))
+                .foregroundColor(C.subLabel)
+                .multilineTextAlignment(.center)
         }
-        .background(C.hairline)
+        .padding(.top, 8)
     }
 
-    @ViewBuilder
-    private func key(_ k: String) -> some View {
-        if k.isEmpty {
-            Color.clear.frame(maxWidth: .infinity).frame(height: 56).background(C.cardBg)
-        } else {
-            Button {
-                if k == "⌫" {
-                    if !digits.isEmpty { digits.removeLast() }
-                    return
+    private var codeEntry: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 11) {
+                ForEach(0..<4, id: \.self) { i in
+                    let chars = Array(digits)
+                    RoundedRectangle(cornerRadius: 13, style: .continuous)
+                        .fill(Color.dyn(0xF0F2F5, 0x1C1C1E))
+                        .frame(width: 58, height: 66)
+                        .overlay {
+                            Text(i < chars.count ? String(chars[i]) : "")
+                                .font(pf(28, .semibold))
+                                .foregroundColor(C.label)
+                        }
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 13, style: .continuous)
+                                .stroke(i == digits.count && digits.count < 4
+                                        ? C.green : C.hairline.opacity(0.72),
+                                        lineWidth: i == digits.count && digits.count < 4 ? 1.7 : 0.8)
+                        }
                 }
-                guard digits.count < 4 else { return }
-                digits += k
-
-                if digits.count == 4 { enter() }
-            } label: {
-                Text(k)
-                    .font(pf(k == "⌫" ? 20 : 24))
-                    .foregroundColor(C.label)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(C.cardBg)
-                    .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+
+            Label(Tr("数字 3 分钟内有效"), systemImage: "clock")
+                .font(pf(12.5))
+                .foregroundColor(C.subLabel)
         }
+    }
+
+    private var keypad: some View {
+        LazyVGrid(
+            columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3),
+            spacing: 8
+        ) {
+            ForEach(keys, id: \.self) { key in
+                if key.isEmpty {
+                    Color.clear.frame(height: 52)
+                } else {
+                    Button { press(key) } label: {
+                        Group {
+                            if key == "⌫" {
+                                Image(systemName: "delete.left")
+                                    .font(.system(size: 20, weight: .regular))
+                            } else {
+                                Text(key)
+                                    .font(pf(23, .medium))
+                            }
+                        }
+                        .foregroundColor(C.label)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                        .background(
+                            RoundedRectangle(cornerRadius: 13, style: .continuous)
+                                .fill(Color.dyn(0xF5F5F5, 0x1C1C1E))
+                        )
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    private func press(_ key: String) {
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        if key == "⌫" {
+            if !digits.isEmpty { digits.removeLast() }
+            return
+        }
+        guard digits.count < 4 else { return }
+        digits += key
+        tip = ""
     }
 
     private func enter() {
