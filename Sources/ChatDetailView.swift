@@ -5654,8 +5654,11 @@ struct ChatDetailView: View {
             var older: [Message] = []
             var olderIds = Set<String>()
             var more = true
-            let target = isGroup ? 300 : 200
-            for _ in 0..<3 {
+            /* 大群按微信式小页补历史：每次只取一页 100 条，
+               避免用户刚上滑就同步三段历史和触发行高/内存突增。 */
+            let target = isGroup ? 100 : 200
+            let maxPages = isGroup ? 1 : 3
+            for _ in 0..<maxPages {
                 let page = try await API.shared.messages(
                     chatId: chat.id,
                     limit: target,
