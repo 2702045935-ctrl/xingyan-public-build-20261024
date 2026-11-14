@@ -163,7 +163,6 @@ where Item.ID: Hashable {
             }
             order = nextOrder
             pendingItems = nil
-            collection.collectionViewLayout.invalidateLayout()
             dataSource.apply(snapshot, animatingDifferences: animated) {
                 guard generation == self.applyGeneration,
                       self.collection === collection,
@@ -185,7 +184,10 @@ where Item.ID: Hashable {
         func collectionView(_ collectionView: UICollectionView,
                             layout collectionViewLayout: UICollectionViewLayout,
                             sizeForItemAt indexPath: IndexPath) -> CGSize {
-            guard let id = dataSource?.itemIdentifier(for: indexPath),
+            let resolvedId = dataSource?.itemIdentifier(for: indexPath)
+            let fallbackId = indexPath.item >= 0 && indexPath.item < order.count
+                ? order[indexPath.item] : nil
+            guard let id = resolvedId ?? fallbackId,
                   let item = lookup[id] else { return .zero }
             let width = max(0,
                             collectionView.bounds.width
