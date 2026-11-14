@@ -412,6 +412,11 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         let velocity = pan.velocity(in: foreground)
         return abs(velocity.x) >= 18 && abs(velocity.x) >= abs(velocity.y) * 1.12
     }
+
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
+                           shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
+        return true
+    }
 }
 
 private final class PaddingLabel: UILabel {
