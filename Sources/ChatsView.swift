@@ -1186,7 +1186,8 @@ struct ChatsView: View {
     }
 
     private func chatSnapshot() -> ChatFilterSnapshot {
-        let base = app.chats.filter { c in
+        let source = ChatStressFixture.isActive ? ChatStressFixture.chats : app.chats
+        let base = source.filter { c in
             guard c.botRank != 0,
                   !c.id.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             else { return false }
@@ -2578,7 +2579,7 @@ struct ChatsView: View {
         return NavigationStack(path: $path) {
 
             ZStack(alignment: .top) {
-                if app.chats.isEmpty {
+                if (ChatStressFixture.isActive ? ChatStressFixture.chats : app.chats).isEmpty {
                     VStack(spacing: 0) {
                         Color.clear.frame(height: L.safeTop + chatsHeaderH
                                           + chatFilterOffset)
