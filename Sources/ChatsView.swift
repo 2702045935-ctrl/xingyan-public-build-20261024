@@ -1107,8 +1107,6 @@ struct ChatsView: View {
     private var chatsSearchH: CGFloat { 48 }
     private var chatFilterVisible: Bool { UIConfig.num("chatsOrbitFilter", 0) > 0 }
     private var chatFilterOffset: CGFloat { chatFilterVisible ? chatFilterH : 0 }
-    /* 原生列表是正式实现；SwiftUI 分支只保留为紧急开关，不再作为默认回退。 */
-    private var nativeChatListEnabled: Bool { UIConfig.num("chatsNativeList", 1) > 0 }
     private var chatsCardStyle: Bool { false }
     private var chatsCardInset: CGFloat { max(8, UIConfig.num("chatsOrbitInset", 12)) }
     private var chatsCardRadius: CGFloat { max(16, UIConfig.num("chatsOrbitRadius", 22)) }
@@ -2459,7 +2457,7 @@ struct ChatsView: View {
 
         let isDark = scheme == .dark
         let titleColor: UIColor = chat.showsOfficialMark
-            ? UIColor(OfficialAccountVisual.name)
+            ? UIColor(hex: 0x25D366)
             : (isDark ? UIColor(hex: 0xE9EDEF) : UIColor(hex: 0x1A1A1A))
         let previewColor: UIColor
         if !draft.isEmpty {
@@ -2592,7 +2590,7 @@ struct ChatsView: View {
                         emptyView
                         Spacer(minLength: 0)
                     }
-                } else if nativeChatListEnabled {
+                } else {
                     NativeChatList(
                         items: nativeChatEntries(snapshot),
                         height: { entry in
@@ -2614,24 +2612,6 @@ struct ChatsView: View {
                     .id(chatFilter)
                     .ignoresSafeArea(edges: .top)
                     .background(Color.clear)
-                } else {
-                    ScrollView(.vertical, showsIndicators: false) {
-                        LazyVStack(spacing: 0) {
-                            ForEach(nativeChatEntries(snapshot)) { entry in
-                                nativeChatEntry(entry)
-                                    .frame(height: nativeChatHeight(entry))
-                            }
-                        }
-                        .background(
-                            ConversationScrollFeel { zone in
-                                handleScrollZone(zone)
-                            }
-                        )
-                    }
-                    .id(chatFilter)
-                    .ignoresSafeArea(edges: .top)
-                    .background(Color.clear)
-                    .refreshable { await app.loadChats() }
                 }
 
                 if pullDown > 0.5 || floorUp {

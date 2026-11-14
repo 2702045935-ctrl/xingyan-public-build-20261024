@@ -407,7 +407,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         return zh
     }
 
-    func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+    override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
         guard let pan = gestureRecognizer as? UIPanGestureRecognizer else { return true }
         let velocity = pan.velocity(in: foreground)
         return abs(velocity.x) >= 18 && abs(velocity.x) >= abs(velocity.y) * 1.12
