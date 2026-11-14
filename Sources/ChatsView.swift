@@ -2302,7 +2302,7 @@ struct ChatsView: View {
                 NativeChatEntry(
                     id: "chat:\(chat.id)",
                     kind: .chat,
-                    signature: "\(appearance)-\(app.contactVisualRevision)",
+                    signature: "\(appearance)-\(chatContactVisualSignature(chat))",
                     chat: chat
                 )
             })
@@ -2319,6 +2319,24 @@ struct ChatsView: View {
             signature: "\(L.tabH)-\(L.safeBottom)"
         ))
         return entries
+    }
+
+    private func chatContactVisualSignature(_ chat: Chat) -> String {
+        if chat.type == "group" || (chat.memberCount ?? 0) > 2 {
+            return "group:\((chat.memberIds ?? []).joined(separator: ","))"
+        }
+        let sender = chat.lastMessage?.senderId
+        let peerId = (chat.memberIds ?? []).first { $0 != app.me?.id }
+            ?? (sender != app.me?.id ? sender : nil)
+            ?? ""
+        guard !peerId.isEmpty else { return "peer:" }
+        let peer = app.contact(for: peerId)
+        return [
+            peerId,
+            peer?.name ?? "",
+            peer?.avatarPath ?? "",
+            peer?.online == true ? "1" : "0"
+        ].joined(separator: "|")
     }
 
     @ViewBuilder
