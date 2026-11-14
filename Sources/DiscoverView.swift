@@ -1430,56 +1430,35 @@ struct MomentsView: View {
 
             C.pageBg.ignoresSafeArea()
 
-            ScrollView {
-                VStack(spacing: 0) {
-
-                    Color.clear
-                        .frame(height: 1)
-                        .background(
-                            GeometryReader { g in
-                                Color.clear.preference(key: OffsetKey.self,
-                                                       value: g.frame(in: .global).minY)
-                            }
-                        )
-
-                    GeometryReader { g in
-                        let measured = max(0, g.frame(in: .named("momentsScroll")).minY - 1)
-                        let extra = coverLocked ? coverLockPull : measured
-                        coverView(extra)
-                            .offset(y: coverLocked ? 0 : -extra)
-                            .onAppear { coverPullBox.value = measured }
-                            .onChange(of: measured) { value in
-                                let quantized = (value / 4).rounded() * 4
-                                if abs(quantized - coverPullBox.value) >= 4 {
-                                    coverPullBox.value = quantized
-                                }
-                            }
-                    }
-                    .frame(height: L.coverH + (coverLocked ? coverLockPull : 0))
-                    .zIndex(1)
-                    momentList
-                }
-            }
-            .coordinateSpace(name: "momentsScroll")
-            .onPreferenceChange(OffsetKey.self) { y in
-                if scrollMetrics.baseTop == nil { scrollMetrics.baseTop = y }
-                scrollMetrics.topY = y
-                updateSolidState()
-            }
-
-            .simultaneousGesture(
-                DragGesture(minimumDistance: 6)
-                    .onChanged { _ in
+            NativeMomentList(
+                items: nativeMomentFeedItems,
+                onScrollOffset: { y in
+                    scrollMetrics.topY = -y
+                    if scrollMetrics.baseTop == nil { scrollMetrics.baseTop = 0 }
+                    sentinelGone = y > 1
+                    updateSolidState()
+                    coverPullBox.value = max(0, y)
+                },
+                onScrollActivity: { active in
+                    if active {
                         guard !scrollGateActive else { return }
                         scrollGateActive = true
                         ScrollGate.shared.setScrolling(true)
-                    }
-                    .onEnded { _ in
+                    } else {
                         tapLockUntil = Date().addingTimeInterval(0.35)
                         scrollGateActive = false
                         ScrollGate.shared.setScrolling(false)
                     }
-            )
+                },
+                onNearEnd: {
+                    guard hasMoreMoments, !loadingMore else { return }
+                    Task { await loadMoreMoments() }
+                }
+            ) { entry in
+                nativeMomentFeedRow(entry)
+                    .environmentObject(app)
+                    .environment(\.colorScheme, scheme)
+            }
             .simultaneousGesture(
                     DragGesture(minimumDistance: 8)
                     .onChanged { v in
@@ -1997,39 +1976,80 @@ struct MomentsView: View {
         .buttonStyle(.plain)
     }
 
-    private var momentList: some View {
-        return LazyVStack(spacing: 0) {
-            Color.clear
-                .frame(height: 1)
-                .onAppear {
-                    sentinelGone = false
-                    updateSolidState()
-                }
-                .onDisappear {
-                    sentinelGone = true
-                    updateSolidState()
-                }
+    private var nativeMomentFeedItems: [NativeMomentFeedItem] {
+        var items = [
+            NativeMomentFeedItem(
+                id: "cover",
+                kind: .cover,
+                moment: nil,
+                day: "\(cover)|\(owner?.name ?? "")|\(owner?.avatarPath ?? "")|\(signature ?? "")|\(coverLocked)-\(Int(coverLockPull))"
+            )
+        ]
 
-            ForEach(Array(moments.enumerated()), id: \.element.id) { index, moment in
-                let day = mineOnly ? fullDateLabel(moment.createdAt) : dayLabel(moment.createdAt)
-                let previous = index > 0
-                    ? (mineOnly ? fullDateLabel(moments[index - 1].createdAt)
-                                : dayLabel(moments[index - 1].createdAt))
-                    : ""
-                if index == 0 || day != previous {
-                    dayHeader(day)
-                        .padding(.horizontal, L.momentPadH)
+        var previousDay = ""
+        for moment in moments {
+            let day = mineOnly ? fullDateLabel(moment.createdAt) : dayLabel(moment.createdAt)
+            let changed = day != previousDay
+            items.append(NativeMomentFeedItem(
+                id: "moment:\(moment.id)",
+                kind: .moment,
+                moment: moment,
+                day: changed ? day : nil
+            ))
+            previousDay = day
+        }
+
+        let footer = [
+            hasMoreMoments ? "more:\(loadingMore)" : "end:\(momentTotal)",
+            mineOnly ? "mine" : "public",
+            feedUserId ?? "",
+            feedRange
+        ].joined(separator: "|")
+        items.append(NativeMomentFeedItem(
+            id: "footer",
+            kind: .footer,
+            moment: nil,
+            day: footer
+        ))
+        return items
+    }
+
+    @ViewBuilder
+    private func nativeMomentFeedRow(_ item: NativeMomentFeedItem) -> some View {
+        switch item.kind {
+        case .cover:
+            coverView(coverLocked ? coverLockPull : 0)
+                .frame(height: L.coverH + (coverLocked ? coverLockPull : 0))
+                .zIndex(1)
+
+        case .moment:
+            if let moment = item.moment {
+                VStack(spacing: 0) {
+                    if let day = item.day, !day.isEmpty {
+                        dayHeader(day)
+                            .padding(.horizontal, L.momentPadH)
+                    }
+                    momentRow(moment)
                 }
-                momentRow(moment)
+                .padding(.top, item.day == nil ? 0 : 18)
+                .background(C.pageBg)
             }
 
+        case .footer:
+            nativeMomentFooter
+        }
+    }
+
+    private var nativeMomentFooter: some View {
+        VStack(spacing: 0) {
             if hasMoreMoments {
-                Text(loadingMore ? "正在加载…" : " ")
+                Text(loadingMore ? Tr("正在加载…") : " ")
                     .font(pf(14))
                     .foregroundColor(C.subLabel)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 18)
                     .onAppear {
+                        guard !loadingMore else { return }
                         Task { await loadMoreMoments() }
                     }
             } else if momentTotal > 0 {
@@ -2054,8 +2074,6 @@ struct MomentsView: View {
         .padding(.bottom, max(42, L.safeBottom + 20))
         .frame(maxWidth: .infinity)
         .background(C.pageBg)
-        .offset(y: 0)
-        .zIndex(0)
     }
 
     private var navBar: some View {
