@@ -2561,6 +2561,12 @@ struct ChatDetailView: View {
                         }
                     }, onScrollStateChange: { scrolling in
                         if scrolling {
+                            if !initialScrollReady {
+                                initialScrollTask?.cancel()
+                                initialScrollTask = nil
+                                initialScrollReady = true
+                                allowSettledBottom = false
+                            }
                             ScrollGate.shared.setScrolling(true)
                             followOwnSendUntil = Date.distantPast
                         } else {
@@ -2678,6 +2684,7 @@ struct ChatDetailView: View {
                     try? await Task.sleep(nanoseconds: UInt64(delay) * 1_000_000)
                 }
                 if Task.isCancelled { return }
+                if ChatScrollHandle.shared.moving { return }
                 proxy.scrollTo("__bottom", anchor: .bottom)
             }
             if Task.isCancelled { return }
@@ -2705,6 +2712,7 @@ struct ChatDetailView: View {
         pinTask = Task { @MainActor in
             try? await Task.sleep(nanoseconds: force ? 120_000_000 : 280_000_000)
             if Task.isCancelled { return }
+            guard atBottomNow, !holdScroll, !ChatScrollHandle.shared.moving else { return }
             atBottom = true
             if force {
                 ChatScrollHandle.shared.allowAutomaticPinning()
