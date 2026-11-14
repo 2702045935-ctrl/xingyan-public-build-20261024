@@ -5,6 +5,7 @@ struct NativeChatList<Item: Identifiable & Equatable, Row: View>: UIViewControll
 where Item.ID: Hashable {
     let items: [Item]
     let height: (Item) -> CGFloat
+    let nativeRow: ((Item) -> NativeChatRowConfiguration?)?
     let onZoneChange: (Int) -> Void
     let onRefresh: () -> Void
     @ViewBuilder let row: (Item) -> Row
@@ -13,6 +14,7 @@ where Item.ID: Hashable {
         Coordinator(onZoneChange: onZoneChange,
                     onRefresh: onRefresh,
                     height: height,
+                    nativeRow: nativeRow,
                     row: row)
     }
 
@@ -53,11 +55,26 @@ where Item.ID: Hashable {
             cell.backgroundConfiguration = .clear()
             cell.clipsToBounds = true
         }
+        let nativeRegistration = UICollectionView.CellRegistration<NativeChatRowCell, Item.ID> {
+            cell, _, _ in
+            cell.backgroundConfiguration = .clear()
+            cell.backgroundColor = .clear
+        }
 
         let dataSource = UICollectionViewDiffableDataSource<Int, Item.ID>(
             collectionView: collection
         ) { collectionView, indexPath, id in
-            collectionView.dequeueConfiguredReusableCell(
+            if let entry = context.coordinator.lookup[id],
+               let configuration = context.coordinator.nativeRow?(entry) {
+                let cell = collectionView.dequeueConfiguredReusableCell(
+                    using: nativeRegistration,
+                    for: indexPath,
+                    item: id
+                )
+                cell.configure(configuration)
+                return cell
+            }
+            return collectionView.dequeueConfiguredReusableCell(
                 using: registration,
                 for: indexPath,
                 item: id
@@ -79,6 +96,7 @@ where Item.ID: Hashable {
                                 context: Context) {
         context.coordinator.row = row
         context.coordinator.height = height
+        context.coordinator.nativeRow = nativeRow
         context.coordinator.onZoneChange = onZoneChange
         context.coordinator.onRefresh = onRefresh
         context.coordinator.apply(items, animated: false)
@@ -88,6 +106,7 @@ where Item.ID: Hashable {
         var lookup: [Item.ID: Item] = [:]
         var row: (Item) -> Row
         var height: (Item) -> CGFloat
+        var nativeRow: ((Item) -> NativeChatRowConfiguration?)?
         var onZoneChange: (Int) -> Void
         var onRefresh: () -> Void
         weak var collection: UICollectionView?
@@ -100,10 +119,12 @@ where Item.ID: Hashable {
         init(onZoneChange: @escaping (Int) -> Void,
              onRefresh: @escaping () -> Void,
              height: @escaping (Item) -> CGFloat,
+             nativeRow: ((Item) -> NativeChatRowConfiguration?)?,
              row: @escaping (Item) -> Row) {
             self.onZoneChange = onZoneChange
             self.onRefresh = onRefresh
             self.height = height
+            self.nativeRow = nativeRow
             self.row = row
             super.init()
         }

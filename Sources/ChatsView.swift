@@ -2396,6 +2396,183 @@ struct ChatsView: View {
         }
     }
 
+    private func nativeChatRowConfiguration(_ chat: Chat) -> NativeChatRowConfiguration {
+        let sender = chat.lastMessage?.senderId
+        let peerId = (chat.memberIds ?? []).first { $0 != app.me?.id }
+            ?? (sender != app.me?.id ? sender : nil)
+        let peer = peerId.flatMap { app.contact(for: $0) }
+        let rawTitle = (chat.title ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let displayTitle = rawTitle.isEmpty || rawTitle == "未知用户"
+            ? (peer?.name ?? "会话")
+            : rawTitle
+        let isGroup = chat.type == "group" || (chat.memberCount ?? 0) > 2
+        let groupHasOnline = isGroup && (
+            (chat.onlineMemberIds?.isEmpty == false)
+            || (chat.memberIds ?? []).contains { id in
+                id != app.me?.id && app.contact(for: id)?.online == true
+            }
+        )
+        let rawAvatar = (chat.avatar ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let displayAvatar = rawAvatar.isEmpty ? (peer?.avatarPath ?? "") : rawAvatar
+        let mosaic = isGroup && (rawAvatar.isEmpty || rawAvatar.contains("/uploads/group-"))
+        let avatarPaths: [String]
+        if mosaic {
+            avatarPaths = Array((chat.memberIds ?? []).prefix(4)).map { id in
+                app.contact(for: id)?.avatarPath ?? ""
+            }
+        } else {
+            avatarPaths = [displayAvatar]
+        }
+
+        let draft = ChatDraftStore.shared.text(for: chat.id)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let rawPreview = (chat.lastMessage?.preview ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let kind = chat.lastMessage?.kind ?? ""
+        var preview = rawPreview
+        var mentionPrefix = ""
+        for prefix in ["[有人@我]", "[Mentioned you]", "[Упомянули вас]"] {
+            guard preview.hasPrefix(prefix) else { continue }
+            mentionPrefix = sessionCopy(zh: "[有人@我] ",
+                                        en: "[Mentioned you] ",
+                                        ru: "[Упомянули вас] ")
+            preview = String(preview.dropFirst(prefix.count))
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            break
+        }
+        if !draft.isEmpty {
+            preview = sessionCopy(zh: "草稿：", en: "Draft: ", ru: "Черновик: ") + draft
+        } else if preview.isEmpty, isGroup {
+            let count = chat.memberCount ?? chat.memberIds?.count ?? 0
+            if count > 0 {
+                preview = sessionCopy(zh: "\(count)人星友连接",
+                                      en: "\(count) Xingyan friends connected",
+                                      ru: "\(count) подключений Xingyan")
+            }
+        }
+        preview = nativeLocalizedPreview(preview, kind: kind)
+        if chat.lastMessage?.mentionMe == true, chat.unreadCount > 0, mentionPrefix.isEmpty {
+            mentionPrefix = sessionCopy(zh: "[有人@我] ",
+                                        en: "[Mentioned you] ",
+                                        ru: "[Упомянули вас] ")
+        }
+
+        let isDark = scheme == .dark
+        let titleColor: UIColor = chat.showsOfficialMark
+            ? UIColor(OfficialAccountVisual.name)
+            : (isDark ? UIColor(hex: 0xE9EDEF) : UIColor(hex: 0x1A1A1A))
+        let previewColor: UIColor
+        if !draft.isEmpty {
+            previewColor = .systemRed
+        } else {
+            switch kind {
+            case "transfer", "redpacket", "gift":
+                previewColor = isDark ? UIColor(hex: 0xF4B44C) : UIColor(hex: 0xB06B00)
+            case "call", "voicecall", "videocall":
+                previewColor = isDark ? UIColor(hex: 0x58D49B) : UIColor(hex: 0x18835F)
+            case "file", "music", "location", "card", "miniapp", "mini", "mall":
+                previewColor = isDark ? UIColor(hex: 0x74B7FF) : UIColor(hex: 0x2C73C9)
+            case "channels", "channel", "feed", "shortvideo":
+                previewColor = isDark ? UIColor(hex: 0xAD9CFF) : UIColor(hex: 0x6B5BCB)
+            case "pat":
+                previewColor = isDark ? UIColor(hex: 0x52D6C7) : UIColor(hex: 0x0C7A70)
+            default:
+                previewColor = isDark ? UIColor(hex: 0x8696A0) : UIColor(hex: 0xB2B2B2)
+            }
+        }
+        let memberColor = nativePeerColor(chat.memberColor)
+        let rowBg: UIColor = isDark ? UIColor(hex: 0x000000) : UIColor.white
+        let timeColor = isDark ? UIColor(hex: 0x8696A0) : UIColor(hex: 0xCCCCCC)
+        let levelText = (chat.qqLevel ?? 0) > 1 && GrowthFlags.showInChats == true
+            ? "Lv\(chat.qqLevel ?? 0)" : ""
+
+        return NativeChatRowConfiguration(
+            title: displayTitle,
+            titleColor: titleColor,
+            preview: preview,
+            mentionPrefix: mentionPrefix,
+            previewColor: previewColor,
+            time: TimeFmt.listApple(chat.lastMessage?.createdAt ?? chat.updatedAt),
+            timeColor: timeColor,
+            rowBackground: rowBg,
+            dividerColor: isDark ? .clear : UIColor(hex: 0xE9EDEF),
+            badgeRing: isDark ? .black : .white,
+            avatarPaths: avatarPaths,
+            avatarIsGroup: mosaic,
+            showOnline: !isGroup && peer?.online == true || groupHasOnline,
+            moodIcon: chat.moodIcon ?? "",
+            unread: chat.unreadCount,
+            unreadMuted: chat.muted == true || chat.flagged == true,
+            levelText: levelText,
+            memberText: chat.memberShort ?? "",
+            memberColor: memberColor,
+            onOpen: { openRow(chat) },
+            onAvatar: (chat.botRank ?? 9) < 9 ? { botCardChat = chat } : nil,
+            onUnread: { markUnread(chat) },
+            onHide: { hide(chat, clear: false) },
+            onDelete: { remove(chat) },
+            onPin: { pinned in togglePin(chat, pinned: pinned) },
+            isPinned: chat.pinned == true
+        )
+    }
+
+    private func sessionCopy(zh: String, en: String, ru: String) -> String {
+        if Lang.isRussian { return ru }
+        if Lang.isEnglish { return en }
+        return zh
+    }
+
+    private func nativeLocalizedPreview(_ input: String, kind: String) -> String {
+        guard Lang.isEnglish || Lang.isRussian else { return input }
+        let translations: [String: (String, String)] = [
+            "[图片]": ("[Photo]", "[Фото]"),
+            "[视频]": ("[Video]", "[Видео]"),
+            "[语音]": ("[Voice]", "[Голос]"),
+            "[文件]": ("[File]", "[Файл]"),
+            "[链接]": ("[Link]", "[Ссылка]"),
+            "[音乐]": ("[Music]", "[Музыка]"),
+            "[位置]": ("[Location]", "[Место]"),
+            "[名片]": ("[Contact]", "[Контакт]"),
+            "[转账]": ("[Transfer]", "[Перевод]"),
+            "[红包]": ("[Red Packet]", "[Красный конверт]"),
+            "[礼物]": ("[Gift]", "[Подарок]"),
+            "[小程序]": ("[Mini Program]", "[Мини-программа]"),
+            "[视频号]": ("[Channels]", "[Каналы]"),
+            "[语音通话]": ("[Voice Call]", "[Голосовой вызов]"),
+            "[视频通话]": ("[Video Call]", "[Видеовызов]"),
+            "[消息]": ("[Message]", "[Сообщение]"),
+            "[文章]": ("[Article]", "[Статья]"),
+            "[笔记]": ("[Note]", "[Заметка]"),
+            "[实况]": ("[Live Photo]", "[Живое фото]"),
+            "[消息已撤回]": ("[Message recalled]", "[Сообщение отозвано]")
+        ]
+        if let hit = translations[input] {
+            return sessionCopy(zh: input, en: hit.0, ru: hit.1)
+        }
+        for (source, target) in translations where input.hasPrefix(source + " ") {
+            return sessionCopy(zh: source, en: target.0, ru: target.1)
+                + String(input.dropFirst(source.count))
+        }
+        if input.isEmpty {
+            switch kind {
+            case "image", "images": return sessionCopy(zh: "[图片]", en: "[Photo]", ru: "[Фото]")
+            case "video", "livephoto": return sessionCopy(zh: "[视频]", en: "[Video]", ru: "[Видео]")
+            case "audio", "voice": return sessionCopy(zh: "[语音]", en: "[Voice]", ru: "[Голос]")
+            case "file": return sessionCopy(zh: "[文件]", en: "[File]", ru: "[Файл]")
+            default: return sessionCopy(zh: "新的会话", en: "New conversation", ru: "Новый чат")
+            }
+        }
+        return input
+    }
+
+    private func nativePeerColor(_ value: String?) -> UIColor? {
+        guard var raw = value?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !raw.isEmpty else { return nil }
+        raw = raw.replacingOccurrences(of: "#", with: "")
+        if raw.count == 8 { raw.removeFirst(2) }
+        return UInt32(raw, radix: 16).map { UIColor(hex: $0) }
+    }
+
     var body: some View {
         let snapshot = cachedSnapshot
         return NavigationStack(path: $path) {
@@ -2420,6 +2597,10 @@ struct ChatsView: View {
                         items: nativeChatEntries(snapshot),
                         height: { entry in
                             nativeChatHeight(entry)
+                        },
+                        nativeRow: { entry in
+                            guard entry.kind == .chat, let chat = entry.chat else { return nil }
+                            return nativeChatRowConfiguration(chat)
                         },
                         onZoneChange: { zone in
                             handleScrollZone(zone)
