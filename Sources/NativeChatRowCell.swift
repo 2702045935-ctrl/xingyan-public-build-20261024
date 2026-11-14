@@ -353,9 +353,8 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
             dragDirection = offset < 0 ? -1 : (offset > 0 ? 1 : 0)
             frozenScroll = enclosingScrollView()
             frozenScroll?.isScrollEnabled = false
-            if let chatId = configuration.chatId {
-                NotificationCenter.default.post(name: .chrisRowSwipe, object: chatId)
-            }
+            NotificationCenter.default.post(name: .chrisRowSwipe,
+                                            object: configuration.chatId)
         case .changed:
             var raw = startOffset + translation
             if dragDirection == 0, abs(translation) >= 2 {
