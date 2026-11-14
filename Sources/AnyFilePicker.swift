@@ -2,8 +2,8 @@ import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
 
-/// 微信式“所有文件”选择器。直接回传安全作用域 URL，上传时流式读取，
-/// 避免大文件在开始上传前先被完整复制一份。
+/// 微信式“所有文件”选择器。先让 Files/iCloud 交付可读副本，
+/// 上传阶段再用 URLSession 从文件流式发送，不把整份文件读进内存。
 struct AnyFilePicker: UIViewControllerRepresentable {
     var allowsMultipleSelection = true
     let onPick: ([URL]) -> Void
@@ -16,7 +16,7 @@ struct AnyFilePicker: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
         let picker = UIDocumentPickerViewController(
             forOpeningContentTypes: [.item],
-            asCopy: false
+            asCopy: true
         )
         picker.delegate = context.coordinator
         picker.allowsMultipleSelection = allowsMultipleSelection
