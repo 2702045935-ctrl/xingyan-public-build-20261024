@@ -443,6 +443,7 @@ private final class PaddingLabel: UILabel {
 }
 
 private final class NativeChatAvatarView: UIView {
+    private let tileContainer = UIView()
     private let tileViews = (0..<4).map { _ in UIImageView() }
     private let moodLabel = UILabel()
     private let onlineDot = UIView()
@@ -450,15 +451,17 @@ private final class NativeChatAvatarView: UIView {
 
     override init(frame: CGRect) {
         super.init(frame: frame)
-        clipsToBounds = true
-        layer.cornerRadius = 25
-        layer.cornerCurve = .continuous
-        backgroundColor = UIColor.secondarySystemFill
+        clipsToBounds = false
+        tileContainer.clipsToBounds = true
+        tileContainer.layer.cornerRadius = 25
+        tileContainer.layer.cornerCurve = .continuous
+        tileContainer.backgroundColor = UIColor.secondarySystemFill
+        addSubview(tileContainer)
         tileViews.forEach {
             $0.contentMode = .scaleAspectFill
             $0.clipsToBounds = true
             $0.backgroundColor = UIColor.tertiarySystemFill
-            addSubview($0)
+            tileContainer.addSubview($0)
         }
         moodLabel.font = .systemFont(ofSize: 9)
         moodLabel.textAlignment = .center
@@ -468,8 +471,6 @@ private final class NativeChatAvatarView: UIView {
         addSubview(moodLabel)
         onlineDot.backgroundColor = UIColor(hex: 0x4FD229)
         onlineDot.layer.cornerRadius = 7
-        onlineDot.layer.borderColor = UIColor.systemBackground.cgColor
-        onlineDot.layer.borderWidth = 1.5
         addSubview(onlineDot)
     }
 
@@ -479,6 +480,8 @@ private final class NativeChatAvatarView: UIView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
+        tileContainer.frame = bounds
+        tileContainer.layer.cornerRadius = min(bounds.width, bounds.height) / 2
         let gap: CGFloat = 1.2
         let visibleCount = tileViews.filter { !$0.isHidden }.count
         if visibleCount <= 1 {
@@ -496,7 +499,7 @@ private final class NativeChatAvatarView: UIView {
             tileViews[3].frame = CGRect(x: halfW + gap, y: halfH + gap, width: halfW, height: halfH)
         }
         moodLabel.frame = CGRect(x: bounds.width - 16, y: bounds.height - 16, width: 17, height: 17)
-        onlineDot.frame = CGRect(x: bounds.width - 16, y: bounds.height - 16, width: 14, height: 14)
+        onlineDot.frame = CGRect(x: bounds.width - 14, y: bounds.height - 14, width: 14, height: 14)
     }
 
     func reset() {
@@ -525,7 +528,6 @@ private final class NativeChatAvatarView: UIView {
             }
         }
         onlineDot.isHidden = !online
-        onlineDot.layer.borderColor = UIColor.secondarySystemBackground.cgColor
         moodLabel.isHidden = online || mood.isEmpty
         moodLabel.text = mood
         setNeedsLayout()
