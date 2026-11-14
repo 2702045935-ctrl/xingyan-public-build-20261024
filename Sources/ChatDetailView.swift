@@ -1039,7 +1039,7 @@ struct ChatDetailView: View {
     private let initialMessageWindow = 200
     /* 首屏只放最近 200 条，更早历史由用户继续上滑按页加载。
        这能避免进群时一次合并数千条消息造成明显掉帧。 */
-    private let maxMessageWindow = 5_000
+    private let maxMessageWindow = 3_000
 
     private var navTitle: String {
         guard isGroup else {

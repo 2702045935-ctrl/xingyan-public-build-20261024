@@ -103,15 +103,21 @@ enum LocalStore {
 
     static func saveChat(_ chatId: String, _ messages: [Message]) {
         guard !messages.isEmpty else { return }
-        let tail = messages.count > 20000 ? Array(messages.suffix(20000)) : messages
+        let tail = messages.count > 5000 ? Array(messages.suffix(5000)) : messages
         guard !tail.isEmpty else { return }
         guard let d = try? JSONEncoder().encode(tail) else { return }
         try? d.write(to: chatFile(chatId), options: .atomic)
     }
 
     static func cachedChat(_ chatId: String) -> [Message] {
-        guard let d = try? Data(contentsOf: chatFile(chatId)) else { return [] }
-        return (try? JSONDecoder().decode([Message].self, from: d)) ?? []
+        let file = chatFile(chatId)
+        guard let values = try? file.resourceValues(forKeys: [.fileSizeKey]),
+              let bytes = values.fileSize,
+              bytes <= 20 * 1024 * 1024,
+              let d = try? Data(contentsOf: file) else { return [] }
+        return autoreleasepool {
+            (try? JSONDecoder().decode([Message].self, from: d)) ?? []
+        }
     }
 
     private static func chatListFile(_ userId: String) -> URL? {

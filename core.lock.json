@@ -58,8 +58,8 @@
     },
     {
       "path": "Sources/LocalStore.swift",
-      "size": 23665,
-      "sha256": "d357cda09a3497f80b0fb57fe8215f4ae64d55b3624f8f02a63c1eb1d72d3bbd"
+      "size": 23889,
+      "sha256": "5b905bfba141b8e8066032e7f1ed393a5d2ae6cae49a305f2e3270aa69c90c34"
     },
     {
       "path": "Sources/MsgFrameKey.swift",
@@ -74,7 +74,7 @@
     {
       "path": "Sources/ChatDetailView.swift",
       "size": 308903,
-      "sha256": "483b0064af453e65ce38bd495e693665c8b4fb7b63e5a7921dd5df5c4e489a0b"
+      "sha256": "23691008340c68aaf9c2d21f8c4288666fc90a76be73456d35b6f31b1bf8208f"
     },
     {
       "path": "Sources/GroupInfoView.swift",
