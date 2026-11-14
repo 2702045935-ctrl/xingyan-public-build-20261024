@@ -278,6 +278,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         config.cornerStyle = .capsule
         config.contentInsets = NSDirectionalEdgeInsets(top: 13, leading: 13, bottom: 13, trailing: 13)
         button.configuration = config
+        button.accessibilityLabel = title
         button.addAction(UIAction { _ in action() }, for: .touchUpInside)
         button.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(button)
@@ -290,6 +291,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         container.addSubview(label)
         NSLayoutConstraint.activate([
             container.widthAnchor.constraint(equalToConstant: actionWidth),
+            container.heightAnchor.constraint(equalToConstant: 64),
             button.centerXAnchor.constraint(equalTo: container.centerXAnchor),
             button.centerYAnchor.constraint(equalTo: container.centerYAnchor, constant: -7),
             button.widthAnchor.constraint(equalToConstant: actionWidth),

@@ -1216,7 +1216,6 @@ final class AppState: ObservableObject {
             optimisticChats[id] = nil
             optimisticAt[id] = nil
         }
-        // 刷新只更新原行内容，保持当前屏幕上的行顺序，避免会话互相换位。
         var byId: [String: Chat] = [:]
         for row in merged { byId[row.id] = row }
         var ordered: [Chat] = []
@@ -1229,7 +1228,23 @@ final class AppState: ObservableObject {
         for row in merged where seen.insert(row.id).inserted {
             ordered.append(row)
         }
-        return applyLocalRemarksToChats(ordered.isEmpty ? merged : ordered)
+        return applyLocalRemarksToChats(orderedChatsForList(ordered.isEmpty ? merged : ordered))
+    }
+
+    /// 微信式会话排序：置顶区保持原顺序，普通会话按最新消息时间从新到旧。
+    /// 列表数据在滚动期间由 NativeChatList 暂存，手指离开后才真正换位。
+    private func orderedChatsForList(_ rows: [Chat]) -> [Chat] {
+        let pinned = rows.filter { $0.pinned == true }
+        let normal = rows.filter { $0.pinned != true }.sorted {
+            let ra = $0.botRank ?? 9
+            let rb = $1.botRank ?? 9
+            if ra != rb { return ra < rb }
+            let ta = TimeFmt.date($0.lastMessage?.createdAt ?? $0.updatedAt) ?? .distantPast
+            let tb = TimeFmt.date($1.lastMessage?.createdAt ?? $1.updatedAt) ?? .distantPast
+            if ta != tb { return ta > tb }
+            return $0.id < $1.id
+        }
+        return pinned + normal
     }
 
     private func mergeServerChat(_ server: Chat, local: Chat) -> Chat {
@@ -1371,9 +1386,9 @@ final class AppState: ObservableObject {
         if let index = chats.firstIndex(where: { $0.id == chat.id }) {
             chats[index] = row
         } else {
-            let firstUnpinned = chats.firstIndex { $0.pinned != true } ?? chats.count
-            chats.insert(row, at: firstUnpinned)
+            chats.append(row)
         }
+        chats = orderedChatsForList(chats)
         if let userId = me?.id, !userId.isEmpty {
             LocalStore.saveChatList(chats, userId: userId)
         }
@@ -1409,15 +1424,7 @@ final class AppState: ObservableObject {
     func applyPinnedLocally(chatId: String, pinned: Bool) {
         guard let i = chats.firstIndex(where: { $0.id == chatId }) else { return }
         chats[i].pinned = pinned
-        let top = chats.filter { $0.pinned == true }
-        let rest = chats.filter { $0.pinned != true }.sorted {
-            let ra = $0.botRank ?? 9, rb = $1.botRank ?? 9
-            if ra != rb { return ra < rb }
-            let ta = TimeFmt.date($0.lastMessage?.createdAt ?? $0.updatedAt) ?? .distantPast
-            let tb = TimeFmt.date($1.lastMessage?.createdAt ?? $1.updatedAt) ?? .distantPast
-            return ta > tb
-        }
-        chats = top + rest
+        chats = orderedChatsForList(chats)
     }
 
     func applyMutedLocally(chatId: String, muted: Bool) {
@@ -1660,7 +1667,7 @@ final class AppState: ObservableObject {
                 optimisticAt[incoming.id] = Date()
             }
         }
-        chats = rows
+        chats = orderedChatsForList(rows)
         syncIconBadge()
     }
 
@@ -1707,7 +1714,7 @@ final class AppState: ObservableObject {
         row.updatedAt = message.createdAt ?? row.updatedAt
         var rows = chats
         rows[index] = row
-        chats = rows
+        chats = orderedChatsForList(rows)
         optimisticChats[id] = row
         optimisticAt[id] = Date()
         syncIconBadge()
