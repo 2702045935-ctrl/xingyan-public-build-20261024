@@ -48,7 +48,6 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
     private var startOffset: CGFloat = 0
     private var latestRawOffset: CGFloat = 0
     private var dragDirection: CGFloat = 0
-    private weak var frozenScroll: UIScrollView?
 
     private let rowLeading: CGFloat = 16
     private let avatarSize: CGFloat = 50
@@ -85,8 +84,10 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         startOffset = 0
         latestRawOffset = 0
         dragDirection = 0
-        frozenScroll?.isScrollEnabled = true
-        frozenScroll = nil
+        pinActions.alpha = 1
+        pinActions.transform = .identity
+        leftActions.alpha = 1
+        leftActions.transform = .identity
         avatarView.reset()
     }
 
@@ -351,8 +352,6 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
             startOffset = offset
             latestRawOffset = offset
             dragDirection = offset < 0 ? -1 : (offset > 0 ? 1 : 0)
-            frozenScroll = enclosingScrollView()
-            frozenScroll?.isScrollEnabled = false
             NotificationCenter.default.post(name: .chrisRowSwipe,
                                             object: configuration.chatId)
         case .changed:
@@ -370,9 +369,18 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
             foreground.transform = CGAffineTransform(translationX: offset, y: 0)
             pinActions.isHidden = offset <= 0
             leftActions.isHidden = offset >= 0
+            let base = offset < 0
+                ? actionInset + actionWidth * 3 + actionGap * 2
+                : actionInset + actionWidth
+            let progress = min(1, abs(offset) / max(1, base))
+            let actions = offset < 0 ? leftActions : pinActions
+            let direction: CGFloat = offset < 0 ? 1 : -1
+            actions.alpha = 0.45 + progress * 0.55
+            actions.transform = CGAffineTransform(
+                translationX: direction * (1 - progress) * 10,
+                y: 0
+            )
         case .ended, .cancelled, .failed:
-            frozenScroll?.isScrollEnabled = true
-            frozenScroll = nil
             let raw = latestRawOffset
             let projected = raw + velocity * 0.10
             let pinBase = actionInset + actionWidth
@@ -411,17 +419,29 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
     }
 
     private func open(offset target: CGFloat, animated: Bool) {
+        let velocity = target - offset
         offset = target
         pinActions.isHidden = target <= 0
         leftActions.isHidden = target >= 0
-        let updates = { self.foreground.transform = CGAffineTransform(translationX: target, y: 0) }
+        let updates = {
+            self.foreground.transform = CGAffineTransform(translationX: target, y: 0)
+            self.pinActions.alpha = target > 0 ? 1 : 0
+            self.pinActions.transform = .identity
+            self.leftActions.alpha = target < 0 ? 1 : 0
+            self.leftActions.transform = .identity
+        }
         if animated {
-            UIView.animate(withDuration: 0.26,
-                           delay: 0,
-                           usingSpringWithDamping: 0.86,
-                           initialSpringVelocity: 0.5,
-                           options: [.allowUserInteraction, .beginFromCurrentState],
-                           animations: updates)
+            let velocityVector = CGVector(
+                dx: max(-1, min(1, velocity / 900)),
+                dy: 0
+            )
+            let timing = UISpringTimingParameters(
+                dampingRatio: 0.86,
+                initialVelocity: velocityVector
+            )
+            let animator = UIViewPropertyAnimator(duration: 0.32, timingParameters: timing)
+            animator.addAnimations(updates)
+            animator.startAnimation()
         } else {
             updates()
         }
@@ -437,15 +457,6 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         }
         guard offset != 0 else { return }
         closeActions()
-    }
-
-    private func enclosingScrollView() -> UIScrollView? {
-        var view: UIView? = superview
-        while let current = view {
-            if let scroll = current as? UIScrollView { return scroll }
-            view = current.superview
-        }
-        return nil
     }
 
     private func localized(_ zh: String, _ en: String, _ ru: String) -> String {
