@@ -4,6 +4,7 @@ import UIKit
 struct NativeChatList<Item: Identifiable & Equatable, Row: View>: UIViewControllerRepresentable
 where Item.ID: Hashable {
     let items: [Item]
+    let height: (Item) -> CGFloat
     let onZoneChange: (Int) -> Void
     let onRefresh: () -> Void
     @ViewBuilder let row: (Item) -> Row
@@ -11,28 +12,17 @@ where Item.ID: Hashable {
     func makeCoordinator() -> Coordinator {
         Coordinator(onZoneChange: onZoneChange,
                     onRefresh: onRefresh,
+                    height: height,
                     row: row)
     }
 
     func makeUIViewController(context: Context) -> UICollectionViewController {
-        let item = NSCollectionLayoutItem(
-            layoutSize: NSCollectionLayoutSize(
-                widthDimension: .fractionalWidth(1),
-                heightDimension: .estimated(72)
-            )
-        )
-        let group = NSCollectionLayoutGroup.vertical(
-            layoutSize: NSCollectionLayoutSize(
-                widthDimension: .fractionalWidth(1),
-                heightDimension: .estimated(72)
-            ),
-            subitems: [item]
-        )
-        group.interItemSpacing = .fixed(0)
-        let section = NSCollectionLayoutSection(group: group)
-        section.contentInsets = .zero
-        section.interGroupSpacing = 0
-        let layout = UICollectionViewCompositionalLayout(section: section)
+        let layout = UICollectionViewFlowLayout()
+        layout.scrollDirection = .vertical
+        layout.minimumLineSpacing = 0
+        layout.minimumInteritemSpacing = 0
+        layout.sectionInset = .zero
+        layout.estimatedItemSize = .zero
 
         let controller = UICollectionViewController(collectionViewLayout: layout)
         controller.view.backgroundColor = .clear
@@ -85,14 +75,16 @@ where Item.ID: Hashable {
     func updateUIViewController(_ controller: UICollectionViewController,
                                 context: Context) {
         context.coordinator.row = row
+        context.coordinator.height = height
         context.coordinator.onZoneChange = onZoneChange
         context.coordinator.onRefresh = onRefresh
         context.coordinator.apply(items, animated: false)
     }
 
-    final class Coordinator: NSObject, UICollectionViewDelegate {
+    final class Coordinator: NSObject, UICollectionViewDelegateFlowLayout {
         var lookup: [Item.ID: Item] = [:]
         var row: (Item) -> Row
+        var height: (Item) -> CGFloat
         var onZoneChange: (Int) -> Void
         var onRefresh: () -> Void
         weak var collection: UICollectionView?
@@ -104,9 +96,11 @@ where Item.ID: Hashable {
 
         init(onZoneChange: @escaping (Int) -> Void,
              onRefresh: @escaping () -> Void,
+             height: @escaping (Item) -> CGFloat,
              row: @escaping (Item) -> Row) {
             self.onZoneChange = onZoneChange
             self.onRefresh = onRefresh
+            self.height = height
             self.row = row
             super.init()
         }
@@ -145,6 +139,7 @@ where Item.ID: Hashable {
             }
             order = nextOrder
             pendingItems = nil
+            collection.collectionViewLayout.invalidateLayout()
             dataSource.apply(snapshot, animatingDifferences: animated) {
                 guard generation == self.applyGeneration,
                       self.collection === collection else { return }
@@ -158,6 +153,18 @@ where Item.ID: Hashable {
                 target.y = min(max(target.y, minimumY), maximumY)
                 collection.setContentOffset(target, animated: false)
             }
+        }
+
+        func collectionView(_ collectionView: UICollectionView,
+                            layout collectionViewLayout: UICollectionViewLayout,
+                            sizeForItemAt indexPath: IndexPath) -> CGSize {
+            guard let id = dataSource?.itemIdentifier(for: indexPath),
+                  let item = lookup[id] else { return .zero }
+            let width = max(0,
+                            collectionView.bounds.width
+                            - collectionView.adjustedContentInset.left
+                            - collectionView.adjustedContentInset.right)
+            return CGSize(width: width, height: max(1, height(item)))
         }
 
         @objc func refreshPulled(_ sender: UIRefreshControl) {

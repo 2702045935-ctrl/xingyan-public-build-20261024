@@ -2361,6 +2361,21 @@ struct ChatsView: View {
         }
     }
 
+    private func nativeChatHeight(_ entry: NativeChatEntry) -> CGFloat {
+        switch entry.kind {
+        case .top:
+            return L.safeTop + chatsHeaderH + chatFilterOffset
+        case .search:
+            return chatsSearchH
+        case .official, .pay, .chat, .weather:
+            return ChatListVisual.rowHeight
+        case .empty:
+            return 126
+        case .bottom:
+            return L.tabH + L.safeBottom + 10
+        }
+    }
+
     var body: some View {
         let snapshot = cachedSnapshot
         return NavigationStack(path: $path) {
@@ -2383,6 +2398,9 @@ struct ChatsView: View {
                 } else {
                     NativeChatList(
                         items: nativeChatEntries(snapshot),
+                        height: { entry in
+                            nativeChatHeight(entry)
+                        },
                         onZoneChange: { zone in
                             handleScrollZone(zone)
                         },
