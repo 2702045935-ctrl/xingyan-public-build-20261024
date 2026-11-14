@@ -309,6 +309,16 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
         tap.cancelsTouchesInView = false
         foreground.addGestureRecognizer(tap)
+        let leftSwipe = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipe(_:)))
+        leftSwipe.direction = .left
+        leftSwipe.delegate = self
+        leftSwipe.cancelsTouchesInView = false
+        foreground.addGestureRecognizer(leftSwipe)
+        let rightSwipe = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipe(_:)))
+        rightSwipe.direction = .right
+        rightSwipe.delegate = self
+        rightSwipe.cancelsTouchesInView = false
+        foreground.addGestureRecognizer(rightSwipe)
     }
 
     @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
@@ -394,6 +404,15 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
 
     private func closeActions() {
         open(offset: 0, animated: true)
+    }
+
+    @objc private func handleSwipe(_ gesture: UISwipeGestureRecognizer) {
+        NotificationCenter.default.post(name: .chrisRowSwipe, object: nil)
+        if gesture.direction == .left {
+            open(offset: -(actionInset + actionWidth * 3 + actionGap * 2), animated: true)
+        } else if gesture.direction == .right {
+            open(offset: actionInset + actionWidth, animated: true)
+        }
     }
 
     private func enclosingScrollView() -> UIScrollView? {
