@@ -86,6 +86,7 @@ where Item.ID: Hashable {
         private var heights: [Item.ID: CGFloat] = [:]
         private var width: CGFloat = 0
         private var pending: [Item]?
+        private var applyGeneration = 0
 
         init(signature: @escaping (Item) -> String,
              row: @escaping (Item) -> Row) {
@@ -118,12 +119,30 @@ where Item.ID: Hashable {
             order = nextOrder
             pending = nil
             premeasure(nextOrder)
+            let previousOffset = collection.contentOffset
+            applyGeneration += 1
+            let generation = applyGeneration
             var snapshot = NSDiffableDataSourceSnapshot<Int, Item.ID>()
             snapshot.appendSections([0])
             snapshot.appendItems(nextOrder)
             if !changed.isEmpty { snapshot.reloadItems(changed) }
             collection.collectionViewLayout.invalidateLayout()
-            dataSource.apply(snapshot, animatingDifferences: animated)
+            dataSource.apply(snapshot, animatingDifferences: animated) {
+                guard generation == self.applyGeneration,
+                      self.collection === collection,
+                      !collection.isTracking,
+                      !collection.isDragging,
+                      !collection.isDecelerating else { return }
+                let minimumY = -collection.adjustedContentInset.top
+                let maximumY = max(
+                    minimumY,
+                    collection.contentSize.height - collection.bounds.height
+                        + collection.adjustedContentInset.bottom
+                )
+                var target = previousOffset
+                target.y = min(max(target.y, minimumY), maximumY)
+                collection.setContentOffset(target, animated: false)
+            }
         }
 
         func collectionView(_ collectionView: UICollectionView,
