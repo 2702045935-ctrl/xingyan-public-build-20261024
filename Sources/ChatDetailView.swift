@@ -451,10 +451,19 @@ private struct ComposerIconButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .background {
-                Circle()
-                    .fill((active || configuration.isPressed)
-                          ? ink.opacity(configuration.isPressed ? 0.14 : 0.09)
-                          : Color.clear)
+                ZStack {
+                    GlassBackground(
+                        shape: Circle(),
+                        opacity: 0.86,
+                        edgeAlpha: 0.16,
+                        seed: 0.19,
+                        native: true
+                    )
+                    Circle()
+                        .fill((active || configuration.isPressed)
+                              ? ink.opacity(configuration.isPressed ? 0.13 : 0.08)
+                              : Color.clear)
+                }
             }
             .scaleEffect(configuration.isPressed ? 0.90 : 1)
             .opacity(configuration.isPressed ? 0.70 : 1)
@@ -4413,12 +4422,6 @@ struct ChatDetailView: View {
         min(21, composerInputHeight / 2)
     }
 
-    private var composerFieldFill: Color {
-        composerUsesLightInk
-            ? Color(hex: 0x2A3942)
-            : .white
-    }
-
     private var composerFieldBorder: Color {
         composerUsesLightInk
             ? Color.clear
@@ -4838,13 +4841,27 @@ struct ChatDetailView: View {
                 .padding(.horizontal, 8)
                 .frame(height: composerInputHeight)
                 .background {
-                    RoundedRectangle(cornerRadius: composerFieldRadius,
-                                     style: .continuous)
-                        .fill(recorder.recording
-                              ? (recorder.willCancel
-                                 ? Color.dyn(0xFFF1F1, 0x3A2A2A)
-                                 : Color.dyn(0xF2F2F2, 0x242427))
-                              : composerFieldFill)
+                    let fieldShape = RoundedRectangle(cornerRadius: composerFieldRadius,
+                                                      style: .continuous)
+                    ZStack {
+                        GlassBackground(
+                            shape: fieldShape,
+                            opacity: 0.90,
+                            edgeAlpha: 0.22,
+                            seed: 0.23,
+                            native: true,
+                            tint: composerUsesLightInk
+                                ? Color.black.opacity(0.24)
+                                : Color.clear
+                        )
+                        if recorder.recording {
+                            fieldShape.fill(
+                                recorder.willCancel
+                                    ? Color.red.opacity(0.12)
+                                    : Color.white.opacity(0.08)
+                            )
+                        }
+                    }
                 }
                 .overlay {
                     RoundedRectangle(cornerRadius: composerFieldRadius,
