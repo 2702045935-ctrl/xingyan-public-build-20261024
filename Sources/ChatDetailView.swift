@@ -3637,6 +3637,7 @@ struct ChatDetailView: View {
                    wallpaperTint: wallpaperBottomTint,
                    senderAvatarPath: senderAvatarFor(message),
                    senderQQLevel: app.contact(for: message.senderId ?? "")?.qqLevel ?? 0,
+                   senderOnline: senderIsOnline(message),
                    avatarSize: isGroup ? 34 : L.chatAvatar,
                    showsAvatar: !isGroup || mineFor(message) || isRunStart(message),
                    reservesAvatarSpace: !isGroup || !mineFor(message),
@@ -3823,6 +3824,16 @@ struct ChatDetailView: View {
         let senderId = message.senderId ?? ""
         if let path = app.contact(for: senderId)?.avatarPath, !path.isEmpty { return path }
         return senderAvatarCache[senderId] ?? ""
+    }
+
+    private func senderIsOnline(_ message: Message) -> Bool {
+        guard !mineFor(message) else { return false }
+        let senderId = message.senderId ?? ""
+        guard !senderId.isEmpty else { return false }
+        if isGroup {
+            return liveChat.onlineMemberIds?.contains(senderId) == true
+        }
+        return app.contact(for: senderId)?.online == true
     }
 
     private func rememberSenderAvatars(_ rows: [Message]) {
@@ -6654,6 +6665,7 @@ struct MessageRow: View {
 
     var senderAvatarPath: String = ""
     var senderQQLevel: Int = 0
+    var senderOnline: Bool = false
     var avatarSize: CGFloat = L.chatAvatar
     var showsAvatar: Bool = true
     var reservesAvatarSpace: Bool = true
@@ -6746,6 +6758,20 @@ struct MessageRow: View {
             : senderQQLevel
         return Avatar(path: avatarPath, size: avatarSize,
                       radius: avatarSize / 2, level: lv)
+            .overlay(alignment: .bottomTrailing) {
+                if senderOnline {
+                    Circle()
+                        .fill(Color(hex: 0x4FD229))
+                        .frame(width: max(9, avatarSize * 0.27),
+                               height: max(9, avatarSize * 0.27))
+                        .overlay {
+                            Circle()
+                                .stroke(Color.dyn(0xFFFFFF, 0x000000), lineWidth: 1.7)
+                        }
+                        .offset(x: 1, y: 1)
+                        .accessibilityHidden(true)
+                }
+            }
             .scaleEffect(patPulse ? 1.10 : 1)
             .shadow(color: C.green.opacity(patPulse ? 0.30 : 0),
                     radius: patPulse ? 9 : 0)
@@ -8082,6 +8108,7 @@ extension MessageRow: Equatable {
             && lhs.wallpaperTint == rhs.wallpaperTint
             && lhs.senderAvatarPath == rhs.senderAvatarPath
             && lhs.senderQQLevel == rhs.senderQQLevel
+            && lhs.senderOnline == rhs.senderOnline
             && lhs.avatarSize == rhs.avatarSize
             && lhs.showsAvatar == rhs.showsAvatar
             && lhs.reservesAvatarSpace == rhs.reservesAvatarSpace
