@@ -7,29 +7,31 @@ struct NativeStaticItem: Identifiable, Equatable {
 }
 
 private final class NativeStaticHostCell: UICollectionViewCell {
-    private weak var hostedView: UIView?
+    private var host: UIHostingController<AnyView>?
     private var hostedID = ""
 
     override func prepareForReuse() {
         super.prepareForReuse()
-        hostedView?.removeFromSuperview()
-        hostedView = nil
-        hostedID = ""
     }
 
-    func setHostedView(_ view: UIView, id: String) {
-        if hostedID != id || hostedView !== view {
-            hostedView?.removeFromSuperview()
-            contentView.addSubview(view)
-            hostedView = view
-            hostedID = id
+    func setRootView(_ rootView: AnyView, id: String) {
+        if host == nil {
+            let next = UIHostingController(rootView: rootView)
+            next.view.backgroundColor = .clear
+            contentView.addSubview(next.view)
+            host = next
+        } else if hostedID != id {
+            host?.rootView = rootView
+        } else {
+            host?.rootView = rootView
         }
-        view.frame = contentView.bounds
+        hostedID = id
+        host?.view.frame = contentView.bounds
     }
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        hostedView?.frame = contentView.bounds
+        host?.view.frame = contentView.bounds
     }
 }
 
@@ -103,8 +105,8 @@ where Item.ID: Hashable {
             [weak coordinator = context.coordinator] cell, _, id in
             guard let coordinator,
                   let item = coordinator.lookup[id],
-                  let hostView = coordinator.hostView(for: item) else { return }
-            cell.setHostedView(hostView, id: String(describing: id))
+                  let rootView = coordinator.rootView(for: item) else { return }
+            cell.setRootView(rootView, id: String(describing: id))
             cell.backgroundConfiguration = .clear()
             cell.backgroundColor = .clear
             cell.clipsToBounds = true
@@ -144,7 +146,6 @@ where Item.ID: Hashable {
         private var order: [Item.ID] = []
         private var signatures: [Item.ID: String] = [:]
         private var heights: [Item.ID: CGFloat] = [:]
-        private var hosts: [String: UIHostingController<AnyView>] = [:]
         private var width: CGFloat = 0
         private var pending: [Item]?
         private var applyGeneration = 0
@@ -288,20 +289,11 @@ where Item.ID: Hashable {
             return max(1, ceil(size.height.isFinite ? size.height : 240))
         }
 
-        func hostView(for item: Item) -> UIView? {
-            let key = String(describing: item.id)
-            let root = AnyView(
+        func rootView(for item: Item) -> AnyView? {
+            AnyView(
                 row(item)
                     .frame(maxWidth: .infinity, alignment: .top)
             )
-            if let host = hosts[key] {
-                host.rootView = root
-                return host.view
-            }
-            let host = UIHostingController(rootView: root)
-            host.view.backgroundColor = .clear
-            hosts[key] = host
-            return host.view
         }
 
         private func flush() {
