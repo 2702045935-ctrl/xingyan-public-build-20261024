@@ -3692,9 +3692,9 @@ struct ChatDetailView: View {
                    senderAvatarPath: senderAvatarFor(message),
                    senderQQLevel: app.contact(for: message.senderId ?? "")?.qqLevel ?? 0,
                    senderOnline: senderIsOnline(message),
-                   avatarSize: isGroup ? 30 : L.chatAvatar,
-                   showsAvatar: !isGroup || (!mineFor(message) && isRunStart(message)),
-                   reservesAvatarSpace: !isGroup || !mineFor(message),
+                   avatarSize: isGroup ? 34 : L.chatAvatar,
+                   showsAvatar: true,
+                   reservesAvatarSpace: true,
                    currentNickname: app.me?.nickname ?? "",
                    currentUsername: app.me?.username ?? "",
                    showTail: isRunStart(message),
@@ -3876,6 +3876,10 @@ struct ChatDetailView: View {
     private func senderAvatarFor(_ message: Message) -> String {
         if let path = message.senderAvatar, !path.isEmpty { return path }
         let senderId = message.senderId ?? ""
+        if senderId == app.me?.id {
+            let mine = (app.me?.avatarPath ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            if !mine.isEmpty { return mine }
+        }
         if let path = app.contact(for: senderId)?.avatarPath, !path.isEmpty { return path }
         return senderAvatarCache[senderId] ?? ""
     }
