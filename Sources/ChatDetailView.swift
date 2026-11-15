@@ -454,8 +454,8 @@ private struct ComposerIconButtonStyle: ButtonStyle {
                 ZStack {
                     GlassBackground(
                         shape: Circle(),
-                        opacity: 0.86,
-                        edgeAlpha: 0.16,
+                        opacity: 0.92,
+                        edgeAlpha: 0,
                         seed: 0.19,
                         native: true
                     )
