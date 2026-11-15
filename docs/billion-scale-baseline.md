@@ -161,3 +161,14 @@ The planner preserves every existing assignment except the deterministic
 subset needed to fill newly added shards. It reports movement percentage,
 before/after shard counts, maximum deviation, assignment hash, and a stable
 move digest. It only writes planning artifacts and never executes a migration.
+
+The isolated fault drill covers lease expiry, old-writer fencing, transient and
+persistent event-bus outages, duplicate repair, reconciliation, and restart
+verification:
+
+```powershell
+node server/tools/shard-fault-drill.js --out SHARD_FAULT_DRILL.json
+```
+
+The drill always creates its own temporary directory and has no option for a
+live shard path.
