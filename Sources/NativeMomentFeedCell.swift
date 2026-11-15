@@ -660,7 +660,7 @@ private actor NativeMomentImageGate {
     }
 }
 
-private final class NativeMomentImage: UIImageView {
+final class NativeMomentImage: UIImageView {
     private var token = UUID()
 
     override init(frame: CGRect) {

@@ -21,6 +21,7 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
     let onScrollOffset: (CGFloat) -> Void
     let onScrollActivity: (Bool) -> Void
     let onNearEnd: () -> Void
+    let nativeCover: ((NativeMomentFeedItem, CGFloat) -> NativeMomentCoverConfiguration?)?
     let nativeRow: ((NativeMomentFeedItem, CGFloat) -> NativeMomentRowConfiguration?)?
     @ViewBuilder let row: (NativeMomentFeedItem) -> Row
 
@@ -29,6 +30,7 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
                     onScrollActivity: onScrollActivity,
                     onNearEnd: onNearEnd,
                     onRefresh: onRefresh,
+                    nativeCover: nativeCover,
                     nativeRow: nativeRow,
                     row: row)
     }
@@ -83,6 +85,11 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
             cell.backgroundConfiguration = .clear()
             cell.backgroundColor = .clear
         }
+        let coverRegistration = UICollectionView.CellRegistration<NativeMomentCoverCell, String> {
+            cell, _, _ in
+            cell.backgroundConfiguration = .clear()
+            cell.backgroundColor = .clear
+        }
 
         let dataSource = UICollectionViewDiffableDataSource<Int, String>(
             collectionView: collection
@@ -90,6 +97,16 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
             let width = collectionView.bounds.width > 1
                 ? collectionView.bounds.width
                 : UIScreen.main.bounds.width
+            if let entry = context.coordinator.lookup[id],
+               let configuration = context.coordinator.nativeCover?(entry, width) {
+                let cell = collectionView.dequeueConfiguredReusableCell(
+                    using: coverRegistration,
+                    for: indexPath,
+                    item: id
+                )
+                cell.configure(configuration)
+                return cell
+            }
             if let entry = context.coordinator.lookup[id],
                let configuration = context.coordinator.nativeRow?(
                    entry, width
@@ -121,6 +138,7 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
         context.coordinator.onScrollOffset = onScrollOffset
         context.coordinator.onScrollActivity = onScrollActivity
         context.coordinator.onNearEnd = onNearEnd
+        context.coordinator.nativeCover = nativeCover
         context.coordinator.nativeRow = nativeRow
         context.coordinator.setRefreshing(refreshing)
         context.coordinator.apply(items, animated: false)
@@ -133,6 +151,7 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
         var onScrollActivity: (Bool) -> Void
         var onNearEnd: () -> Void
         var onRefresh: () -> Void
+        var nativeCover: ((NativeMomentFeedItem, CGFloat) -> NativeMomentCoverConfiguration?)?
         var nativeRow: ((NativeMomentFeedItem, CGFloat) -> NativeMomentRowConfiguration?)?
         weak var collection: UICollectionView?
         weak var refreshControl: UIRefreshControl?
@@ -149,12 +168,14 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
              onScrollActivity: @escaping (Bool) -> Void,
              onNearEnd: @escaping () -> Void,
              onRefresh: @escaping () -> Void,
+             nativeCover: ((NativeMomentFeedItem, CGFloat) -> NativeMomentCoverConfiguration?)?,
              nativeRow: ((NativeMomentFeedItem, CGFloat) -> NativeMomentRowConfiguration?)?,
              row: @escaping (NativeMomentFeedItem) -> Row) {
             self.onScrollOffset = onScrollOffset
             self.onScrollActivity = onScrollActivity
             self.onNearEnd = onNearEnd
             self.onRefresh = onRefresh
+            self.nativeCover = nativeCover
             self.nativeRow = nativeRow
             self.row = row
             super.init()
@@ -244,6 +265,11 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
             if let height = heights[id], height > 0 {
                 return CGSize(width: width, height: height)
             }
+            if let configuration = nativeCover?(item, width) {
+                let height = NativeMomentCoverCell.preferredHeight(configuration)
+                heights[id] = height
+                return CGSize(width: width, height: height)
+            }
             if let configuration = nativeRow?(item, width) {
                 let height = NativeMomentFeedCell.preferredHeight(configuration)
                 heights[id] = height
@@ -275,6 +301,10 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
         private func prepareHeights(_ ids: [String], width: CGFloat) {
             for id in ids where heights[id] == nil {
                 guard let item = lookup[id] else { continue }
+                if let configuration = nativeCover?(item, width) {
+                    heights[id] = NativeMomentCoverCell.preferredHeight(configuration)
+                    continue
+                }
                 if let configuration = nativeRow?(item, width) {
                     heights[id] = NativeMomentFeedCell.preferredHeight(configuration)
                     continue

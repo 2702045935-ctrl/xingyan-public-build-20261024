@@ -1463,6 +1463,23 @@ struct MomentsView: View {
                     guard hasMoreMoments, !loadingMore else { return }
                     Task { await loadMoreMoments() }
                 },
+                nativeCover: { entry, width in
+                    guard entry.kind == .cover else { return nil }
+                    return NativeMomentCoverConfiguration(
+                        width: width,
+                        height: L.coverH + (coverLocked ? coverLockPull : 0),
+                        coverPath: cover,
+                        showsSetup: coverEditable,
+                        showsChange: coverEditable,
+                        ownerName: owner?.name ?? "",
+                        avatarPath: owner?.avatarPath ?? "",
+                        signature: signature,
+                        isDark: scheme == .dark,
+                        onToggleLock: { toggleCoverLock() },
+                        onSetCover: { coverMenu = true },
+                        onChangeCover: { coverMenu = true }
+                    )
+                },
                 nativeRow: { entry, width in
                     guard entry.kind == .moment, let moment = entry.moment else { return nil }
                     return nativeMomentRowConfiguration(entry, moment: moment, width: width)
