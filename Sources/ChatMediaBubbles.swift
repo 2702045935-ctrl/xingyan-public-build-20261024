@@ -445,9 +445,6 @@ struct VideoPlayerSheet: View {
                     }
                     .padding(.horizontal, 24)
                     .padding(.vertical, 12)
-                    .background {
-                        GlassBackground(shape: Capsule(style: .continuous), shadow: true)
-                    }
                     .padding(.bottom, 30)
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
                 }
@@ -610,6 +607,7 @@ struct VideoPlayerSheet: View {
                     .font(.system(size: 20, weight: .medium))
                     .foregroundColor(.white)
                     .frame(width: 46, height: 46)
+                    .background { NativeGlassCircleBackground() }
                 Text(Tr(title))
                     .font(pf(12))
                     .foregroundColor(.white.opacity(0.92))

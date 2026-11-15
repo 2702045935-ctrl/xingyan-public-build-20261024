@@ -2670,8 +2670,14 @@ struct PhotoPager: View {
                         .foregroundColor(.white.opacity(0.92))
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
-                        .background(Color.black.opacity(0.34),
-                                    in: Capsule(style: .continuous))
+                        .background {
+                            GlassBackground(
+                                shape: Capsule(style: .continuous),
+                                edgeAlpha: 0.18,
+                                seed: 0.29,
+                                native: true
+                            )
+                        }
                         .padding(.bottom, showActions ? max(16, L.safeBottom + 6) : 26)
                         .transition(.opacity.combined(with: .scale(scale: 0.94)))
                 }
