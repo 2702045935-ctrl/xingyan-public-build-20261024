@@ -1294,6 +1294,8 @@ private final class MomentDragClock {
 }
 
 struct MomentsView: View {
+    private static let momentPageSize = 30
+
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -1313,6 +1315,11 @@ struct MomentsView: View {
 
     @State private var solid = false
     @State private var moments: [Moment] = []
+    @State private var stressLoadedCount = 30
+    @State private var prefetchedMoments: [Moment] = []
+    @State private var prefetchedHasMore = false
+    @State private var prefetchingMoments = false
+    @State private var momentPrefetchTask: Task<Void, Never>?
 
     @State private var confirmDiscard = false
     @State private var showPhoto = false
@@ -1595,6 +1602,7 @@ struct MomentsView: View {
             }
         }
         .onDisappear {
+            momentPrefetchTask?.cancel()
             guard scrollGateActive else { return }
             scrollGateActive = false
             ScrollGate.shared.setScrolling(false)
@@ -1611,8 +1619,9 @@ struct MomentsView: View {
             if moments.isEmpty, target == nil, !mineOnly {
                 let cached = LocalStore.cachedMoments(userId: app.me?.id ?? "")
                 if !cached.isEmpty {
-                    moments = cached
-                    rebuildFoldRows(cached)
+                    let page = Array(cached.prefix(Self.momentPageSize))
+                    moments = page
+                    rebuildFoldRows(page)
                 }
             }
             await reload()
@@ -1629,7 +1638,7 @@ struct MomentsView: View {
 
             let t = realtime.event.type.lowercased()
             guard t.contains("moment") || t.contains("like") || t.contains("comment") else { return }
-            Task { await reload() }
+            Task { await pollNewMoments() }
         }
         .task {
             if liveTarget == nil { liveTarget = target }
@@ -1637,7 +1646,7 @@ struct MomentsView: View {
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 8_000_000_000)
                 if Task.isCancelled { break }
-                await reload()
+                await pollNewMoments()
             }
         }
 
@@ -1997,6 +2006,12 @@ struct MomentsView: View {
         .buttonStyle(.plain)
     }
 
+    private var displayedMoments: [Moment] {
+        MomentStressFixture.isActive
+            ? Array(MomentStressFixture.moments.prefix(stressLoadedCount))
+            : moments
+    }
+
     private var momentList: some View {
         return LazyVStack(spacing: 0) {
             Color.clear
@@ -2010,11 +2025,12 @@ struct MomentsView: View {
                     updateSolidState()
                 }
 
-            ForEach(Array(moments.enumerated()), id: \.element.id) { index, moment in
+            let source = displayedMoments
+            ForEach(Array(source.enumerated()), id: \.element.id) { index, moment in
                 let day = mineOnly ? fullDateLabel(moment.createdAt) : dayLabel(moment.createdAt)
                 let previous = index > 0
-                    ? (mineOnly ? fullDateLabel(moments[index - 1].createdAt)
-                                : dayLabel(moments[index - 1].createdAt))
+                    ? (mineOnly ? fullDateLabel(source[index - 1].createdAt)
+                                : dayLabel(source[index - 1].createdAt))
                     : ""
                 if index == 0 || day != previous {
                     dayHeader(day)
@@ -2502,12 +2518,45 @@ struct MomentsView: View {
     }
 
     private func reload() async {
-        if let feed = try? await API.shared.momentsFeed(limit: 30, userId: feedUserId) {
-            moments = feed.moments
-            hasMoreMoments = feed.hasMore
+        momentPrefetchTask?.cancel()
+        prefetchedMoments.removeAll(keepingCapacity: true)
+        prefetchedHasMore = false
+
+        if MomentStressFixture.isActive {
+            stressLoadedCount = min(
+                MomentStressFixture.count,
+                max(Self.momentPageSize, stressLoadedCount)
+            )
+            momentTotal = MomentStressFixture.count
+            hasMoreMoments = stressLoadedCount < MomentStressFixture.count
+            return
+        }
+
+        if let feed = try? await API.shared.momentsFeed(
+            limit: Self.momentPageSize,
+            userId: feedUserId
+        ) {
+            var merged = moments
+            if merged.isEmpty {
+                merged = feed.moments
+            } else {
+                let known = Set(merged.map(\.id))
+                let fresh = feed.moments.filter { !known.contains($0.id) }
+                if !fresh.isEmpty {
+                    merged.insert(contentsOf: fresh, at: 0)
+                }
+                let updates = Dictionary(uniqueKeysWithValues: feed.moments.map { ($0.id, $0) })
+                for index in merged.indices {
+                    if let update = updates[merged[index].id], update != merged[index] {
+                        merged[index] = update
+                    }
+                }
+            }
+            if merged != moments { moments = merged }
             momentTotal = feed.total
             feedRange = feed.range
             app.momentNoticeUnread = feed.noticeUnread
+            hasMoreMoments = moments.count < feed.total || feed.hasMore
 
             if target == nil && !mineOnly {
                 LocalStore.saveMoments(moments, userId: app.me?.id ?? "")
@@ -2515,20 +2564,49 @@ struct MomentsView: View {
         } else {
 
             let cached = LocalStore.cachedMoments(userId: app.me?.id ?? "")
-            moments = cached.isEmpty ? app.moments : cached
-            hasMoreMoments = false
+            let fallback = cached.isEmpty ? app.moments : cached
+            moments = Array(fallback.prefix(Self.momentPageSize))
+            hasMoreMoments = fallback.count > Self.momentPageSize
         }
 
         if target == nil {
             await API.shared.markMomentsSeen()
             app.momentsUnread = 0
         }
+        scheduleMomentPrefetch()
     }
 
     private func loadMoreMoments() async {
+        if MomentStressFixture.isActive {
+            guard hasMoreMoments, !loadingMore else { return }
+            loadingMore = true
+            stressLoadedCount = min(
+                MomentStressFixture.count,
+                stressLoadedCount + Self.momentPageSize
+            )
+            momentTotal = MomentStressFixture.count
+            hasMoreMoments = stressLoadedCount < MomentStressFixture.count
+            loadingMore = false
+            return
+        }
+        if prefetchingMoments, let momentPrefetchTask {
+            await momentPrefetchTask.value
+        }
+        if !prefetchedMoments.isEmpty {
+            loadingMore = true
+            let known = Set(moments.map(\.id))
+            let page = prefetchedMoments.filter { !known.contains($0.id) }
+            prefetchedMoments.removeAll(keepingCapacity: true)
+            moments.append(contentsOf: page)
+            hasMoreMoments = prefetchedHasMore
+            prefetchedHasMore = false
+            loadingMore = false
+            scheduleMomentPrefetch()
+            return
+        }
         guard hasMoreMoments, !loadingMore, let last = moments.last else { return }
         loadingMore = true
-        if let feed = try? await API.shared.momentsFeed(limit: 30, before: last.createdAt, beforeId: last.id,
+        if let feed = try? await API.shared.momentsFeed(limit: Self.momentPageSize, before: last.createdAt, beforeId: last.id,
                                                         userId: feedUserId) {
             let known = Set(moments.map { $0.id })
             moments.append(contentsOf: feed.moments.filter { !known.contains($0.id) })
@@ -2537,15 +2615,64 @@ struct MomentsView: View {
             hasMoreMoments = false
         }
         loadingMore = false
+        scheduleMomentPrefetch()
     }
 
     private func pollNewMoments() async {
-        guard let feed = try? await API.shared.momentsFeed(limit: 30, userId: feedUserId) else { return }
-        let known = Set(moments.map { $0.id })
+        guard !MomentStressFixture.isActive else { return }
+        guard let feed = try? await API.shared.momentsFeed(
+            limit: Self.momentPageSize,
+            userId: feedUserId
+        ) else { return }
+        var merged = moments
+        if merged.isEmpty { merged = feed.moments }
+        let known = Set(merged.map { $0.id })
         let fresh = feed.moments.filter { !known.contains($0.id) }
-        if !fresh.isEmpty { moments.insert(contentsOf: fresh, at: 0) }
+        if !fresh.isEmpty { merged.insert(contentsOf: fresh, at: 0) }
+        let updates = Dictionary(uniqueKeysWithValues: feed.moments.map { ($0.id, $0) })
+        for index in merged.indices {
+            if let update = updates[merged[index].id], update != merged[index] {
+                merged[index] = update
+            }
+        }
+        if merged != moments { moments = merged }
         momentTotal = feed.total
-        if moments.count <= 30 { hasMoreMoments = feed.hasMore }
+        hasMoreMoments = moments.count < feed.total || feed.hasMore
+        scheduleMomentPrefetch()
+    }
+
+    private func scheduleMomentPrefetch() {
+        guard !MomentStressFixture.isActive,
+              hasMoreMoments,
+              prefetchedMoments.isEmpty,
+              !prefetchingMoments,
+              let last = moments.last else { return }
+        momentPrefetchTask?.cancel()
+        momentPrefetchTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 120_000_000)
+            if Task.isCancelled { return }
+            await prefetchNextMomentsPage()
+        }
+    }
+
+    private func prefetchNextMomentsPage() async {
+        guard !MomentStressFixture.isActive,
+              hasMoreMoments,
+              !prefetchingMoments,
+              prefetchedMoments.isEmpty,
+              let last = moments.last else { return }
+        prefetchingMoments = true
+        defer { prefetchingMoments = false }
+        guard let feed = try? await API.shared.momentsFeed(
+            limit: Self.momentPageSize,
+            before: last.createdAt,
+            beforeId: last.id,
+            userId: feedUserId
+        ) else { return }
+        guard moments.last?.id == last.id else { return }
+        let known = Set(moments.map(\.id))
+        prefetchedMoments = feed.moments.filter { !known.contains($0.id) }
+        prefetchedHasMore = feed.hasMore && !prefetchedMoments.isEmpty
     }
 
     private func publish() {
