@@ -2452,12 +2452,11 @@ struct ChatsView: View {
             .trimmingCharacters(in: .whitespacesAndNewlines)
         let kind = chat.lastMessage?.kind ?? ""
         var preview = rawPreview
+        var mentioned = false
         var mentionPrefix = ""
         for prefix in ["[有人@我]", "[Mentioned you]", "[Упомянули вас]"] {
             guard preview.hasPrefix(prefix) else { continue }
-            mentionPrefix = sessionCopy(zh: "[有人@我] ",
-                                        en: "[Mentioned you] ",
-                                        ru: "[Упомянули вас] ")
+            mentioned = true
             preview = String(preview.dropFirst(prefix.count))
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             break
@@ -2476,7 +2475,7 @@ struct ChatsView: View {
         if preview.isEmpty {
             preview = nativeEmptyPreview(chat)
         }
-        if chat.lastMessage?.mentionMe == true, chat.unreadCount > 0, mentionPrefix.isEmpty {
+        if chat.unreadCount > 0, mentioned || chat.lastMessage?.mentionMe == true {
             mentionPrefix = sessionCopy(zh: "[有人@我] ",
                                         en: "[Mentioned you] ",
                                         ru: "[Упомянули вас] ")
