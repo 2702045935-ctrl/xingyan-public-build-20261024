@@ -3645,7 +3645,7 @@ struct ChatDetailView: View {
                    senderAvatarPath: senderAvatarFor(message),
                    senderQQLevel: app.contact(for: message.senderId ?? "")?.qqLevel ?? 0,
                    avatarSize: isGroup ? 34 : L.chatAvatar,
-                   showsAvatar: !isGroup || (!mineFor(message) && isRunStart(message)),
+                   showsAvatar: !isGroup || mineFor(message) || isRunStart(message),
                    reservesAvatarSpace: !isGroup || !mineFor(message),
                    currentNickname: app.me?.nickname ?? "",
                    currentUsername: app.me?.username ?? "",
