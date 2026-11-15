@@ -41,6 +41,11 @@ where Item.ID: Hashable {
         collection.scrollsToTop = true
         collection.isPrefetchingEnabled = true
         collection.allowsSelection = false
+        if #available(iOS 26.0, *) {
+            collection.topEdgeEffect.style = .soft
+            collection.topEdgeEffect.isHidden = false
+            collection.bottomEdgeEffect.isHidden = true
+        }
         collection.delegate = context.coordinator
 
         let registration = UICollectionView.CellRegistration<UICollectionViewCell, Item.ID> {

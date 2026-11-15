@@ -1934,13 +1934,17 @@ struct ChatsView: View {
     }
 
     @ViewBuilder private func chatsNavGlass(_ scrolled: CGFloat) -> some View {
-        TopGlassBar(scrolled: scrolled,
-                    fallback: scheme == .dark ? C.navBg : chatsPageFill,
-                    offset: 9,
-                    always: true,
-                    matchDarkBackground: true)
-        .ignoresSafeArea(edges: .top)
-        .allowsHitTesting(false)
+        if #available(iOS 26.0, *) {
+            EmptyView()
+        } else {
+            TopGlassBar(scrolled: scrolled,
+                        fallback: scheme == .dark ? C.navBg : chatsPageFill,
+                        offset: 9,
+                        always: true,
+                        matchDarkBackground: true)
+                .ignoresSafeArea(edges: .top)
+                .allowsHitTesting(false)
+        }
     }
 
     @ViewBuilder private var chatsCardBackground: some View {
