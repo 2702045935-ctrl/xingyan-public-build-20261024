@@ -1516,52 +1516,39 @@ struct GroupCreateView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            NavBar(title: step == .participants ? Tr("发起群聊") : Tr("群聊详情"),
-                  back: { goBack() }) {
-                Button { primaryAction() } label: {
-                    ZStack {
-                        Circle()
-                            .fill(canContinue ? C.green : C.subLabel.opacity(0.22))
-                        if busy {
-                            ProgressView()
-                                .tint(.white)
-                                .scaleEffect(0.72)
-                        } else {
-                            Image(systemName: step == .participants ? "arrow.right" : "checkmark")
-                                .font(.system(size: 15, weight: .bold))
-                                .foregroundColor(.white)
-                        }
+            NavBar(title: Tr("发起群聊"), back: { dismiss() }) {
+                Text("\(picked.count)")
+                    .font(pf(12, .semibold))
+                    .foregroundColor(picked.isEmpty ? C.subLabel : C.green)
+                    .padding(.horizontal, 10)
+                    .frame(height: 28)
+                    .background {
+                        GlassBackground(shape: Capsule(style: .continuous),
+                                        edgeAlpha: 0.18,
+                                        seed: 0.17,
+                                        native: true)
                     }
-                    .frame(width: 34, height: 34)
-                }
-                .buttonStyle(.plain)
-                .disabled(!canContinue || busy)
-                .accessibilityLabel(step == .participants ? Tr("下一步") : Tr("完成"))
-                .padding(.trailing, 14)
+                    .padding(.trailing, 14)
             }
 
-            if step == .participants {
-                participantPicker
-                    .transition(.opacity)
-            } else {
-                groupDetails
-                    .transition(.opacity)
-            }
+            participantPicker
         }
         .background(C.pageBg.ignoresSafeArea())
+        .safeAreaInset(edge: .bottom, spacing: 0) { createDock }
         .toolbar(.hidden, for: .navigationBar)
-        .swipeBack { goBack() }
+        .swipeBack { dismiss() }
         .hidesTabBar()
     }
 
     private var canContinue: Bool {
-        if step == .participants { return !picked.isEmpty }
-        return !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        !picked.isEmpty
+            && !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private var participantPicker: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
+                identityCard
                 selectionSummary
                 contactSearch
 
@@ -1590,10 +1577,15 @@ struct GroupCreateView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 42)
-                    .background(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .fill(C.cardBg)
-                    )
+                    .background {
+                        GlassBackground(
+                            shape: RoundedRectangle(cornerRadius: 20, style: .continuous),
+                            opacity: 0.88,
+                            edgeAlpha: 0.20,
+                            seed: 0.27,
+                            native: true
+                        )
+                    }
                 } else {
                     LazyVStack(spacing: 0) {
                         ForEach(Array(filteredContacts.enumerated()), id: \.element.id) { index, user in
@@ -1609,10 +1601,15 @@ struct GroupCreateView: View {
                             }
                         }
                     }
-                    .background(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .fill(C.cardBg)
-                    )
+                    .background {
+                        GlassBackground(
+                            shape: RoundedRectangle(cornerRadius: 20, style: .continuous),
+                            opacity: 0.88,
+                            edgeAlpha: 0.20,
+                            seed: 0.29,
+                            native: true
+                        )
+                    }
                     .overlay {
                         RoundedRectangle(cornerRadius: 20, style: .continuous)
                             .stroke(C.hairline, lineWidth: 0.6)
@@ -1621,9 +1618,124 @@ struct GroupCreateView: View {
             }
             .padding(.horizontal, 16)
             .padding(.top, 14)
-            .padding(.bottom, max(30, L.safeBottom + 24))
+            .padding(.bottom, 24)
         }
         .scrollDismissesKeyboard(.interactively)
+    }
+
+    private var identityCard: some View {
+        HStack(spacing: 15) {
+            GroupCreationAvatar(users: selectedContacts, size: 64)
+                .overlay(Circle().stroke(Color.primary.opacity(0.08), lineWidth: 0.7))
+                .shadow(color: Color.black.opacity(0.10), radius: 8, y: 3)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(Tr("群名称"))
+                    .font(pf(12.5, .semibold))
+                    .foregroundColor(C.subLabel)
+
+                HStack(spacing: 7) {
+                    TextField(Tr("输入群名称"), text: $name)
+                        .font(pf(18, .semibold))
+                        .foregroundColor(C.label)
+                        .focused($nameFocused)
+                        .submitLabel(.done)
+                        .onSubmit { nameFocused = false }
+
+                    if !name.isEmpty {
+                        Button {
+                            name = ""
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 16))
+                                .foregroundColor(C.subLabel.opacity(0.72))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+                Text("\(picked.count) " + Tr("群成员"))
+                    .font(pf(12))
+                    .foregroundColor(picked.isEmpty ? C.subLabel.opacity(0.78) : C.green)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(16)
+        .background {
+            GlassBackground(
+                shape: RoundedRectangle(cornerRadius: 22, style: .continuous),
+                opacity: 0.90,
+                edgeAlpha: 0.22,
+                seed: 0.23,
+                native: true
+            )
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(Color.primary.opacity(0.055), lineWidth: 0.7)
+        }
+    }
+
+    private var createDock: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(canContinue ? Tr("群聊详情") : Tr("选择联系人"))
+                    .font(pf(13.5, .semibold))
+                    .foregroundColor(C.label)
+                Text("\(picked.count) · \(name.isEmpty ? Tr("群名称") : name)")
+                    .font(pf(11.5))
+                    .foregroundColor(C.subLabel)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 0)
+
+            Button(action: create) {
+                HStack(spacing: 7) {
+                    if busy {
+                        ProgressView().tint(.white).scaleEffect(0.72)
+                    } else {
+                        Image(systemName: "person.3.fill")
+                            .font(.system(size: 14, weight: .semibold))
+                    }
+                    Text(busy ? Tr("创建中…") : Tr("创建群聊"))
+                        .font(pf(15, .semibold))
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 17)
+                .frame(height: 44)
+                .background(
+                    LinearGradient(
+                        colors: canContinue
+                            ? [Color(hex: 0x45D483), C.green]
+                            : [C.subLabel.opacity(0.42), C.subLabel.opacity(0.30)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    in: Capsule(style: .continuous)
+                )
+            }
+            .buttonStyle(.plain)
+            .disabled(!canContinue || busy)
+        }
+        .padding(.horizontal, 15)
+        .padding(.vertical, 11)
+        .background {
+            GlassBackground(
+                shape: RoundedRectangle(cornerRadius: 22, style: .continuous),
+                opacity: 0.92,
+                edgeAlpha: 0.24,
+                seed: 0.31,
+                native: true
+            )
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(Color.primary.opacity(0.06), lineWidth: 0.7)
+        }
+        .padding(.horizontal, 14)
+        .padding(.bottom, max(8, L.safeBottom))
     }
 
     private var selectionSummary: some View {
@@ -1696,10 +1808,15 @@ struct GroupCreateView: View {
             }
         }
         .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(C.cardBg)
-        )
+        .background {
+            GlassBackground(
+                shape: RoundedRectangle(cornerRadius: 20, style: .continuous),
+                opacity: 0.88,
+                edgeAlpha: 0.20,
+                seed: 0.19,
+                native: true
+            )
+        }
         .overlay {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .stroke(C.hairline, lineWidth: 0.6)
@@ -1726,10 +1843,15 @@ struct GroupCreateView: View {
         }
         .padding(.horizontal, 12)
         .frame(height: 44)
-        .background(
-            RoundedRectangle(cornerRadius: 13, style: .continuous)
-                .fill(Color.dyn(0xF2F2F7, 0x1C1C1E))
-        )
+        .background {
+            GlassBackground(
+                shape: RoundedRectangle(cornerRadius: 13, style: .continuous),
+                opacity: 0.84,
+                edgeAlpha: 0.18,
+                seed: 0.11,
+                native: true
+            )
+        }
     }
 
     private func contactRow(_ user: User) -> some View {
