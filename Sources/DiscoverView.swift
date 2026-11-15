@@ -1713,7 +1713,10 @@ struct MomentsView: View {
                     Button(m.pinned == true ? Tr("取消置顶") : Tr("置顶")) {
                         togglePin(m)
                     }
-                    Button(Tr("删除"), role: .destructive) { remove(m) }
+                    Button(Tr("删除"), role: .destructive) {
+                        actionMoment = nil
+                        remove(m)
+                    }
                 }
             }
             Button(Tr("取消"), role: .cancel) { actionMoment = nil }
