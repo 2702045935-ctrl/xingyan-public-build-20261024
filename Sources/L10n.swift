@@ -1714,6 +1714,8 @@ enum L10n {
         "切换后立即生效，已经打开的页面会在返回时刷新。": "Takes effect immediately. Open pages refresh when you return.",
         "群聊详情": "Group details",
         "面对面建群": "Join group nearby",
+        "正在删除动态…": "Deleting post…",
+        "动态已删除": "Post deleted",
         "编辑群公告": "Edit group notice",
         "写公告给全群成员": "Write an announcement for the group",
         "发布后所有群成员会收到提示": "Everyone in the group will be notified after publishing",

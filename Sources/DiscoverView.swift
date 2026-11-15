@@ -1331,6 +1331,7 @@ struct MomentsView: View {
     @State private var prefetchedMoments: [Moment] = []
     @State private var prefetchedHasMore = false
     @State private var prefetchingMoments = false
+    @State private var locallyDeletedMomentIds: Set<String> = []
     @State private var momentPrefetchTask: Task<Void, Never>?
 
     @State private var confirmDiscard = false
@@ -2553,23 +2554,7 @@ struct MomentsView: View {
             limit: Self.momentPageSize,
             userId: feedUserId
         ) {
-            var merged = moments
-            if merged.isEmpty {
-                merged = feed.moments
-            } else {
-                let known = Set(merged.map(\.id))
-                let fresh = feed.moments.filter { !known.contains($0.id) }
-                if !fresh.isEmpty {
-                    merged.insert(contentsOf: fresh, at: 0)
-                }
-                let updates = Dictionary(uniqueKeysWithValues: feed.moments.map { ($0.id, $0) })
-                for index in merged.indices {
-                    if let update = updates[merged[index].id], update != merged[index] {
-                        merged[index] = update
-                    }
-                }
-            }
-            if merged != moments { setMomentsWithoutAnimation(merged) }
+            applyNewestMomentPage(feed.moments)
             momentTotal = feed.total
             feedRange = feed.range
             app.momentNoticeUnread = feed.noticeUnread
@@ -2627,7 +2612,9 @@ struct MomentsView: View {
                                                         userId: feedUserId) {
             let known = Set(moments.map { $0.id })
             setMomentsWithoutAnimation(
-                moments + feed.moments.filter { !known.contains($0.id) }
+                moments + feed.moments.filter {
+                    !known.contains($0.id) && !locallyDeletedMomentIds.contains($0.id)
+                }
             )
             hasMoreMoments = feed.hasMore && !feed.moments.isEmpty
         } else {
@@ -2643,18 +2630,7 @@ struct MomentsView: View {
             limit: Self.momentPageSize,
             userId: feedUserId
         ) else { return }
-        var merged = moments
-        if merged.isEmpty { merged = feed.moments }
-        let known = Set(merged.map { $0.id })
-        let fresh = feed.moments.filter { !known.contains($0.id) }
-        if !fresh.isEmpty { merged.insert(contentsOf: fresh, at: 0) }
-        let updates = Dictionary(uniqueKeysWithValues: feed.moments.map { ($0.id, $0) })
-        for index in merged.indices {
-            if let update = updates[merged[index].id], update != merged[index] {
-                merged[index] = update
-            }
-        }
-        if merged != moments { setMomentsWithoutAnimation(merged) }
+        applyNewestMomentPage(feed.moments)
         momentTotal = feed.total
         hasMoreMoments = moments.count < feed.total || feed.hasMore
         scheduleMomentPrefetch()
@@ -2690,8 +2666,25 @@ struct MomentsView: View {
         ) else { return }
         guard moments.last?.id == last.id else { return }
         let known = Set(moments.map(\.id))
-        prefetchedMoments = feed.moments.filter { !known.contains($0.id) }
+        prefetchedMoments = feed.moments.filter {
+            !known.contains($0.id) && !locallyDeletedMomentIds.contains($0.id)
+        }
         prefetchedHasMore = feed.hasMore && !prefetchedMoments.isEmpty
+    }
+
+    private func applyNewestMomentPage(_ page: [Moment]) {
+        let cleanPage = page.filter { !locallyDeletedMomentIds.contains($0.id) }
+        var merged = cleanPage
+        if moments.count > Self.momentPageSize {
+            let pageIds = Set(cleanPage.map(\.id))
+            let older = moments.dropFirst(Self.momentPageSize).filter {
+                !pageIds.contains($0.id) && !locallyDeletedMomentIds.contains($0.id)
+            }
+            merged.append(contentsOf: older)
+        }
+        if merged != moments {
+            setMomentsWithoutAnimation(merged)
+        }
     }
 
     private func setMomentsWithoutAnimation(_ next: [Moment]) {
@@ -2970,12 +2963,23 @@ struct MomentsView: View {
     }
 
     private func remove(_ moment: Moment) {
+        let id = moment.id
+        guard !id.isEmpty else { return }
+        locallyDeletedMomentIds.insert(id)
+        momentPrefetchTask?.cancel()
+        prefetchedMoments.removeAll { $0.id == id }
+        setMomentsWithoutAnimation(moments.filter { $0.id != id })
+        momentTotal = max(0, momentTotal - 1)
+        app.moments.removeAll { $0.id == id }
+        app.show(Tr("正在删除动态…"))
         Task {
-            if let err = await API.shared.deleteMoment(id: moment.id) {
+            if let err = await API.shared.deleteMoment(id: id) {
+                locallyDeletedMomentIds.remove(id)
+                await reload()
                 app.show(err)
             } else {
-                await reload()
                 await app.loadMoments()
+                app.show(Tr("动态已删除"))
             }
         }
     }
