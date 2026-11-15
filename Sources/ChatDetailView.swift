@@ -1067,7 +1067,7 @@ struct ChatDetailView: View {
         }
         if isGroup {
             let count = liveChat.memberCount ?? (liveChat.memberIds?.count ?? 0)
-            return count > 0 ? "\(count)人星友连接" : ""
+            return count > 0 ? "\(count) 位成员" : ""
         }
         if let peer = peerUserId, let user = app.contact(for: peer) {
             return user.online == true ? "在线" : "离线"
@@ -1176,7 +1176,21 @@ struct ChatDetailView: View {
                 Spacer(minLength: 6)
 
                 Button {
-                    showCallChoice = true
+                    startRealCall(video: true)
+                } label: {
+                    Image(systemName: "video.fill")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 32, height: 32)
+                        .background(Circle().fill(Color(hex: 0x0A84FF)))
+                        .frame(width: 38, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Tr("视频通话"))
+
+                Button {
+                    startRealCall(video: false)
                 } label: {
                     Image(systemName: "phone.fill")
                         .font(.system(size: 15, weight: .semibold))
@@ -3134,9 +3148,13 @@ struct ChatDetailView: View {
                    myId: myId,
                    senderName: senderNameFor(message),
                    senderNameUsesLightInk: senderNameUsesLightInk,
+                   senderNameColor: groupSenderNameColor(message),
                    wallpaperTint: wallpaperBottomTint,
                    senderAvatarPath: senderAvatarFor(message),
                    senderQQLevel: app.contact(for: message.senderId ?? "")?.qqLevel ?? 0,
+                   avatarSize: isGroup ? 34 : L.chatAvatar,
+                   showsAvatar: !isGroup || (!mineFor(message) && isRunStart(message)),
+                   reservesAvatarSpace: !isGroup || !mineFor(message),
                    currentNickname: app.me?.nickname ?? "",
                    currentUsername: app.me?.username ?? "",
                    showTail: isRunStart(message),
@@ -3300,6 +3318,19 @@ struct ChatDetailView: View {
     private func senderNameFor(_ message: Message) -> String {
         guard isGroup, message.senderId != myId else { return "" }
         return isRunStart(message) ? displayName(message) : ""
+    }
+
+    private func groupSenderNameColor(_ message: Message) -> Color {
+        let id = message.senderId ?? ""
+        let seed = id.utf8.reduce(0) { ($0 &* 31) &+ Int($1) }
+        let colors: [Color] = senderNameUsesLightInk
+            ? [Color(hex: 0x86E4A3), Color(hex: 0x86CBFF),
+               Color(hex: 0xD8B7FF), Color(hex: 0xFFD479),
+               Color(hex: 0xFFA9AE), Color(hex: 0x88E2DC)]
+            : [Color(hex: 0x0E8A61), Color(hex: 0x0A72C2),
+               Color(hex: 0x7A4BC2), Color(hex: 0xA95E00),
+               Color(hex: 0xB52E49), Color(hex: 0x087F7B)]
+        return colors[abs(seed) % colors.count]
     }
 
     private func senderAvatarFor(_ message: Message) -> String {
@@ -6097,10 +6128,14 @@ struct MessageRow: View {
     var myId: String = ""
     var senderName: String = ""
     var senderNameUsesLightInk: Bool = false
+    var senderNameColor: Color? = nil
     var wallpaperTint: Color? = nil
 
     var senderAvatarPath: String = ""
     var senderQQLevel: Int = 0
+    var avatarSize: CGFloat = L.chatAvatar
+    var showsAvatar: Bool = true
+    var reservesAvatarSpace: Bool = true
     var currentNickname: String = ""
     var currentUsername: String = ""
 
@@ -6159,15 +6194,21 @@ struct MessageRow: View {
             if mine { Spacer(minLength: 0) }
 
             if !mine {
-                avatarView
+                if showsAvatar {
+                    avatarView
+                } else if reservesAvatarSpace {
+                    Color.clear.frame(width: avatarSize, height: avatarSize)
+                }
                 Spacer().frame(width: L.chatGapMsg)
             }
 
             bubbleColumn
 
             if mine {
-                Spacer().frame(width: L.chatGapMsg)
-                avatarView
+                if showsAvatar {
+                    Spacer().frame(width: L.chatGapMsg)
+                    avatarView
+                }
             }
 
             if !mine { Spacer(minLength: 0) }
@@ -6182,8 +6223,8 @@ struct MessageRow: View {
         let lv = (message.senderId == myId)
             ? GrowthStore.shared.shownLevel
             : senderQQLevel
-        return Avatar(path: avatarPath, size: L.chatAvatar,
-                      radius: L.chatAvatar / 2, level: lv)
+        return Avatar(path: avatarPath, size: avatarSize,
+                      radius: avatarSize / 2, level: lv)
             .scaleEffect(patPulse ? 1.10 : 1)
             .shadow(color: C.green.opacity(patPulse ? 0.30 : 0),
                     radius: patPulse ? 9 : 0)
@@ -6208,9 +6249,9 @@ struct MessageRow: View {
                 HStack(spacing: 4) {
                     Text(senderName)
                         .font(pf(13, .semibold))
-                        .foregroundColor(senderNameUsesLightInk
+                        .foregroundColor(senderNameColor ?? (senderNameUsesLightInk
                                          ? ChatTheme.groupSenderNameOnDark
-                                         : ChatTheme.groupSenderNameOnLight)
+                                         : ChatTheme.groupSenderNameOnLight))
                         .lineLimit(1)
                     if senderQQLevel > 0,
                        GrowthFlags.showInChats == true {
@@ -7516,9 +7557,13 @@ extension MessageRow: Equatable {
             && lhs.myId == rhs.myId
             && lhs.senderName == rhs.senderName
             && lhs.senderNameUsesLightInk == rhs.senderNameUsesLightInk
+            && lhs.senderNameColor == rhs.senderNameColor
             && lhs.wallpaperTint == rhs.wallpaperTint
             && lhs.senderAvatarPath == rhs.senderAvatarPath
             && lhs.senderQQLevel == rhs.senderQQLevel
+            && lhs.avatarSize == rhs.avatarSize
+            && lhs.showsAvatar == rhs.showsAvatar
+            && lhs.reservesAvatarSpace == rhs.reservesAvatarSpace
             && lhs.currentNickname == rhs.currentNickname
             && lhs.currentUsername == rhs.currentUsername
             && lhs.showTail == rhs.showTail
