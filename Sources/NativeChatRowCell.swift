@@ -116,7 +116,10 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
                                  y: bounds.midY - 20,
                                  width: trailingWidth, height: 18)
         unreadLabel.sizeToFit()
-        let unreadWidth = max(18, unreadLabel.bounds.width)
+        let unread = configuration?.unread ?? 0
+        let unreadWidth: CGFloat = configuration?.unreadMuted == true
+            ? 8
+            : (unread > 99 ? 28 : (unread > 9 ? 23 : 18))
         unreadLabel.frame = CGRect(x: bounds.width - rowTrailing - unreadWidth,
                                    y: bounds.midY + 2,
                                    width: unreadWidth,
@@ -171,7 +174,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
                 unreadLabel.frame.size.width = 8
             } else {
                 unreadLabel.text = configuration.unread > 99 ? "99+" : "\(configuration.unread)"
-                unreadLabel.font = .systemFont(ofSize: 9.5, weight: .bold)
+                unreadLabel.font = .systemFont(ofSize: 10, weight: .bold)
                 unreadLabel.backgroundColor = .systemBlue
                 unreadLabel.textColor = .white
                 unreadLabel.layer.cornerRadius = 9
@@ -246,7 +249,9 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         timeLabel.adjustsFontSizeToFitWidth = true
         timeLabel.minimumScaleFactor = 0.75
         unreadLabel.textAlignment = .center
-        unreadLabel.font = .systemFont(ofSize: 9.5, weight: .bold)
+        unreadLabel.font = .systemFont(ofSize: 10, weight: .bold)
+        unreadLabel.adjustsFontSizeToFitWidth = true
+        unreadLabel.minimumScaleFactor = 0.9
         levelLabel.font = .monospacedDigitSystemFont(ofSize: 8.5, weight: .semibold)
         levelLabel.textColor = .secondaryLabel
         levelLabel.backgroundColor = UIColor.secondarySystemFill

@@ -8406,7 +8406,7 @@ struct FilePreviewSheet: View {
     }
 }
 
-private final class NamedPreviewItem: NSObject, QLPreviewItem {
+final class NamedPreviewItem: NSObject, QLPreviewItem {
     let previewItemURL: URL?
     let previewItemTitle: String?
 
