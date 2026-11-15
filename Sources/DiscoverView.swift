@@ -1999,7 +1999,7 @@ struct MomentsView: View {
         ]
 
         var previousDay = ""
-        for moment in moments {
+        for moment in displayedMoments {
             let day = mineOnly ? fullDateLabel(moment.createdAt) : dayLabel(moment.createdAt)
             let changed = day != previousDay
             items.append(NativeMomentFeedItem(
@@ -2024,6 +2024,10 @@ struct MomentsView: View {
             day: footer
         ))
         return items
+    }
+
+    private var displayedMoments: [Moment] {
+        MomentStressFixture.isActive ? MomentStressFixture.moments : moments
     }
 
     private func nativeMomentRowConfiguration(_ item: NativeMomentFeedItem,
