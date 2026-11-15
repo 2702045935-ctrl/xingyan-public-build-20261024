@@ -19,6 +19,7 @@ struct MomentCommentsSheet: View {
     @State private var commentHeartBurst = ""
     @State private var commentLikeBusy: Set<String> = []
     @State private var deleting: MomentComment?
+    @State private var openCommentSwipeId = ""
     @State private var previewIndex = 0
     @State private var fullViewerIndex: Int?
     @State private var videoURL: URL?
@@ -69,8 +70,20 @@ struct MomentCommentsSheet: View {
                                 .id("moment-comment-empty")
                             } else {
                                 ForEach(Array(comments.enumerated()), id: \.offset) { index, item in
-                                    commentRow(item, index: index)
-                                        .id(commentKey(item, index))
+                                    let key = commentKey(item, index)
+                                    if item.userId == app.me?.id {
+                                        SwipeDeleteCommentRow(
+                                            rowID: key,
+                                            openID: $openCommentSwipeId,
+                                            onDelete: { deleting = item }
+                                        ) {
+                                            commentRow(item, index: index)
+                                        }
+                                        .id(key)
+                                    } else {
+                                        commentRow(item, index: index)
+                                            .id(key)
+                                    }
                                 }
                             }
                         }
@@ -755,6 +768,86 @@ struct MomentCommentsSheet: View {
 
     private static func timeText(_ seconds: Int) -> String {
         String(format: "%02d:%02d", max(0, seconds) / 60, max(0, seconds) % 60)
+    }
+}
+
+private struct SwipeDeleteCommentRow<Content: View>: View {
+    let rowID: String
+    @Binding var openID: String
+    let onDelete: () -> Void
+    @ViewBuilder let content: () -> Content
+
+    @State private var dx: CGFloat = 0
+    @State private var start: CGFloat = 0
+    private let actionWidth: CGFloat = 84
+
+    var body: some View {
+        ZStack(alignment: .trailing) {
+            content()
+                .background(Color.dyn(0xFFFFFF, 0x000000))
+                .offset(x: dx)
+
+            Button {
+                openID = ""
+                close()
+                onDelete()
+            } label: {
+                VStack(spacing: 4) {
+                    Image(systemName: "trash.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                    Text(Tr("删除"))
+                        .font(pf(12, .medium))
+                }
+                .foregroundColor(.white)
+                .frame(width: actionWidth)
+                .frame(maxHeight: .infinity)
+                .background(Color(hex: 0xE5484D))
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .opacity(dx < -4 ? 1 : 0)
+            .allowsHitTesting(dx <= -actionWidth * 0.55)
+        }
+        .clipped()
+        .overlay {
+            RowSwipeCatcher(
+                onTap: { _ in
+                    if dx != 0 { close() }
+                },
+                onBegan: {
+                    if openID != rowID {
+                        openID = rowID
+                        dx = 0
+                    }
+                    start = dx
+                },
+                onChanged: { value in
+                    var next = min(0, start + value)
+                    if next < -actionWidth {
+                        next = -(actionWidth + min(22, (-next - actionWidth) * 0.22))
+                    }
+                    dx = next
+                },
+                onEnded: { _, velocity in
+                    let open = velocity <= -260
+                        || (-dx > actionWidth * 0.45 && velocity < 260)
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.88)) {
+                        dx = open ? -actionWidth : 0
+                    }
+                    openID = open ? rowID : ""
+                }
+            )
+            .frame(width: max(0, L.width + dx))
+        }
+        .onChange(of: openID) { value in
+            if value != rowID, dx != 0 { close() }
+        }
+    }
+
+    private func close() {
+        withAnimation(.spring(response: 0.28, dampingFraction: 0.88)) {
+            dx = 0
+        }
     }
 }
 
