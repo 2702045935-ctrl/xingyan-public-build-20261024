@@ -1818,7 +1818,8 @@ struct MomentsView: View {
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
             .padding(.trailing, 16)
-            .offset(y: 21)
+            .padding(.bottom, 10)
+            .zIndex(6)
             .allowsHitTesting(false)
         }
         .frame(height: L.coverH + extra)
