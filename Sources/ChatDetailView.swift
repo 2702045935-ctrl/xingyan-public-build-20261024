@@ -1729,13 +1729,7 @@ struct ChatDetailView: View {
                 .transaction { $0.animation = nil }
                 .zIndex(0)
 
-            Group {
-                if isGroup {
-                    groupMessageList
-                } else {
-                    messageList
-                }
-            }
+            nativeMessageList
 
                 .contentShape(Rectangle())
                 .simultaneousGesture(TapGesture().onEnded { dismissTyping() })
@@ -2700,8 +2694,8 @@ struct ChatDetailView: View {
         }
     }
 
-    /// 群聊正文使用系统 List（底层复用列表），一对一聊天保持原实现。
-    private var groupMessageList: some View {
+    /// 私聊和群聊统一使用系统原生复用列表承载消息正文。
+    private var nativeMessageList: some View {
         let nearTopIds = hasOlder ? Set(messages.prefix(24).map { $0.id }) : Set<String>()
         return ScrollViewReader { proxy in
             List {
@@ -2809,7 +2803,7 @@ struct ChatDetailView: View {
                     }
                     guard wasAtBottom, !holdScroll else { return }
                     if ChatScrollHandle.shared.moving { return }
-                    ChatScrollDiag.shared.note("群内容变高 → 原生列表贴底")
+                    ChatScrollDiag.shared.note("内容变高 → 原生消息列表贴底")
                     ChatScrollHandle.shared.pinToBottom(animated: false)
                 })
                 .frame(width: 1, height: 1)
@@ -2849,7 +2843,7 @@ struct ChatDetailView: View {
                 scrollToEnd(proxy, animated: false)
             }
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { n in
-                ChatScrollDiag.shared.note("群键盘位置变了")
+                ChatScrollDiag.shared.note("键盘位置变了")
                 pinThroughKeyboardTransition(proxy, notice: n)
             }
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardDidShowNotification)) { _ in
