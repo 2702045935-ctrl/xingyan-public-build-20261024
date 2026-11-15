@@ -1156,6 +1156,7 @@ struct GroupAnnounceEditor: View {
     var onClose: () -> Void
     var onPublish: () -> Void
 
+    @FocusState private var focused: Bool
     private let limit = 500
     private var trimmed: String { text.trimmingCharacters(in: .whitespacesAndNewlines) }
     private var over: Bool { text.count > limit }
@@ -1163,77 +1164,162 @@ struct GroupAnnounceEditor: View {
     var body: some View {
         VStack(spacing: 0) {
             NavBar(title: Tr("编辑群公告"), back: { onClose() }) {
-                if editable {
-                    Button { onPublish() } label: {
-                        Text(Tr("完成"))
-                            .font(pf(14.5, .medium))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 15)
-                            .frame(height: 32)
-                            .background(Capsule().fill(over
-                                ? AnyShapeStyle(C.subLabel.opacity(0.5))
-                                : AnyShapeStyle(LinearGradient(colors: PanelTint.green,
-                                                                startPoint: .topLeading,
-                                                                endPoint: .bottomTrailing))))
-                            .padding(.trailing, 14)
+                EmptyView()
+            }
+
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 16) {
+                    HStack(alignment: .top, spacing: 13) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(C.green.opacity(0.13))
+                            Image(systemName: "megaphone.fill")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(C.green)
+                        }
+                        .frame(width: 42, height: 42)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(Tr(editable ? "写公告给全群成员" : "群公告"))
+                                .font(pf(16, .semibold))
+                                .foregroundColor(C.label)
+                            Text(Tr(editable
+                                    ? "发布后所有群成员会收到提示"
+                                    : "群公告仅群成员可见"))
+                                .font(pf(12.5))
+                                .foregroundColor(C.subLabel)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .padding(16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .fill(C.cardBg)
+                    )
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(C.hairline.opacity(0.7), lineWidth: 0.6)
+                    }
+
+                    VStack(spacing: 0) {
+                        HStack(spacing: 8) {
+                            Text(Tr("正文"))
+                                .font(pf(13, .semibold))
+                                .foregroundColor(C.subLabel)
+                            Spacer(minLength: 0)
+                            Text("\(text.count)/\(limit)")
+                                .font(pf(12, .medium))
+                                .foregroundColor(over ? C.red : C.subLabel)
+                        }
+                        .padding(.horizontal, 16)
+                        .frame(height: 44)
+
+                        HairLine(inset: 16)
+
+                        if editable {
+                            ZStack(alignment: .topLeading) {
+                                if text.isEmpty {
+                                    Text(Tr("写点什么，群里所有人都能看到"))
+                                        .font(pf(16))
+                                        .foregroundColor(C.subLabel.opacity(0.62))
+                                        .padding(.horizontal, 15)
+                                        .padding(.vertical, 15)
+                                        .allowsHitTesting(false)
+                                }
+                                TextEditor(text: $text)
+                                    .font(pf(16))
+                                    .foregroundColor(C.label)
+                                    .scrollContentBackground(.hidden)
+                                    .focused($focused)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 7)
+                                    .frame(minHeight: 280, maxHeight: 380)
+                                    .onChange(of: text) { value in
+                                        if value.count > limit {
+                                            text = String(value.prefix(limit))
+                                        }
+                                    }
+                            }
+                        } else {
+                            Text(text.isEmpty ? Tr("群主还没发公告") : text)
+                                .font(pf(16))
+                                .foregroundColor(C.label)
+                                .lineSpacing(7)
+                                .textSelection(.enabled)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(16)
+                        }
+                    }
+                    .background(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .fill(C.cardBg)
+                    )
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(C.hairline.opacity(0.7), lineWidth: 0.6)
+                    }
+                }
+                .padding(.horizontal, 14)
+                .padding(.top, 12)
+                .padding(.bottom, editable ? 112 : 30)
+            }
+            .scrollDismissesKeyboard(.interactively)
+        }
+        .background(C.pageBg.ignoresSafeArea())
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if editable {
+                VStack(spacing: 10) {
+                    HStack(spacing: 7) {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 9.5, weight: .semibold))
+                        Text(Tr("仅群成员可见"))
+                        Spacer(minLength: 0)
+                        Text(Tr("发布后立即生效"))
+                    }
+                    .font(pf(11.5))
+                    .foregroundColor(C.subLabel)
+
+                    Button {
+                        focused = false
+                        onPublish()
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "paperplane.fill")
+                                .font(.system(size: 14, weight: .semibold))
+                            Text(Tr("发布群公告"))
+                                .font(pf(16, .semibold))
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(
+                            LinearGradient(colors: PanelTint.green,
+                                           startPoint: .topLeading,
+                                           endPoint: .bottomTrailing),
+                            in: RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        )
                     }
                     .buttonStyle(.plain)
                     .disabled(trimmed.isEmpty || over)
+                    .opacity(trimmed.isEmpty || over ? 0.45 : 1)
                 }
+                .padding(.horizontal, 16)
+                .padding(.top, 10)
+                .padding(.bottom, max(10, L.safeBottom))
+                .background(C.pageBg)
+                .overlay(alignment: .top) { HairLine() }
             }
-
-            ZStack(alignment: .topLeading) {
-                if editable {
-                    TextEditor(text: $text)
-                        .font(pf(16.5))
-                        .foregroundColor(C.label)
-                        .scrollContentBackground(.hidden)
-                        .padding(.horizontal, 12)
-                        .padding(.top, 10)
-                        .onChange(of: text) { v in
-                            if v.count > limit { text = String(v.prefix(limit)) }
-                        }
-                    if text.isEmpty {
-                        Text(Tr("写点什么，群里所有人都能看到"))
-                            .font(pf(16.5))
-                            .foregroundColor(C.subLabel.opacity(0.7))
-                            .padding(.horizontal, 17)
-                            .padding(.top, 18)
-                            .allowsHitTesting(false)
-                    }
-                } else {
-
-                    ScrollView(showsIndicators: false) {
-                        VStack(alignment: .leading, spacing: 0) {
-                            Text(text.isEmpty ? Tr("群主还没发公告") : text)
-                                .font(pf(16.5))
-                                .foregroundColor(C.label)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .textSelection(.enabled)
-                            Spacer().frame(height: 30)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.top, 16)
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(C.cardBg)
-
-            HStack(spacing: 8) {
-                Text(editable ? Tr("完成并保存后，群里会收到公告") : Tr("群公告只有群主能改"))
-                    .font(pf(12)).foregroundColor(C.subLabel)
-                Spacer(minLength: 0)
-                Text("\(text.count)/\(limit)")
-                    .font(pf(12)).foregroundColor(over ? C.red : C.subLabel)
-            }
-            .padding(.horizontal, 16).padding(.vertical, 10)
-            .background(C.cardBg)
         }
-        .background(C.pageBg.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .swipeBack { onClose() }
         .hidesTabBar()
+        .onAppear {
+            guard editable else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                focused = true
+            }
+        }
     }
 }
 
@@ -1269,40 +1355,70 @@ struct GroupAnnounceView: View {
                 }
             }
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 14) {
-                    VStack(alignment: .leading, spacing: 0) {
-                        HStack(spacing: 10) {
+                VStack(spacing: 16) {
+                    HStack(spacing: 14) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(
+                                    LinearGradient(colors: PanelTint.green,
+                                                   startPoint: .topLeading,
+                                                   endPoint: .bottomTrailing)
+                                )
                             Image(systemName: "megaphone.fill")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(C.green)
-                                .frame(width: 38, height: 38)
-                                .background(C.green.opacity(0.10))
-                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(trimmed.isEmpty ? Tr("暂无群公告") : Tr("群公告"))
-                                    .font(pf(16.5, .semibold))
-                                    .foregroundColor(C.label)
-                                if !groupName.isEmpty {
-                                    Text(groupName)
-                                        .font(pf(12.5))
-                                        .foregroundColor(C.subLabel)
-                                        .lineLimit(1)
-                                }
+                                .font(.system(size: 22, weight: .semibold))
+                                .foregroundColor(.white)
+                        }
+                        .frame(width: 58, height: 58)
+                        .shadow(color: C.green.opacity(0.22), radius: 9, y: 4)
+
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text(trimmed.isEmpty ? Tr("暂无群公告") : Tr("群公告"))
+                                .font(pf(19, .semibold))
+                                .foregroundColor(C.label)
+                            if !groupName.isEmpty {
+                                Text(groupName)
+                                    .font(pf(13))
+                                    .foregroundColor(C.subLabel)
+                                    .lineLimit(1)
                             }
+                        }
+                        Spacer(minLength: 0)
+
+                        Text(Tr("全员可见"))
+                            .font(pf(11.5, .semibold))
+                            .foregroundColor(C.green)
+                            .padding(.horizontal, 9)
+                            .frame(height: 26)
+                            .background(Capsule().fill(C.green.opacity(0.11)))
+                    }
+                    .padding(18)
+                    .background(
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .fill(C.cardBg)
+                    )
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .stroke(C.hairline.opacity(0.7), lineWidth: 0.6)
+                    }
+
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack {
+                            Text(Tr("公告内容"))
+                                .font(pf(13, .semibold))
+                                .foregroundColor(C.subLabel)
                             Spacer(minLength: 0)
                         }
                         .padding(.horizontal, 18)
-                        .padding(.vertical, 16)
+                        .frame(height: 46)
 
                         HairLine(inset: 18)
-
                         if trimmed.isEmpty {
-                            VStack(spacing: 9) {
+                            VStack(spacing: 10) {
                                 Image(systemName: "text.alignleft")
-                                    .font(.system(size: 25, weight: .light))
+                                    .font(.system(size: 28, weight: .light))
                                     .foregroundColor(C.subLabel.opacity(0.62))
                                 Text(Tr("暂时没有群公告"))
-                                    .font(pf(15, .medium))
+                                    .font(pf(16, .medium))
                                     .foregroundColor(C.label)
                                 Text(editable ? Tr("点右上角“编辑”添加公告") : Tr("群主发布后会显示在这里"))
                                     .font(pf(12.5))
@@ -1310,20 +1426,20 @@ struct GroupAnnounceView: View {
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.horizontal, 18)
-                            .padding(.vertical, 34)
+                            .padding(.vertical, 46)
                         } else {
                             Text(text)
                                 .font(pf(16))
                                 .foregroundColor(C.label)
-                                .lineSpacing(7)
+                                .lineSpacing(8)
                                 .textSelection(.enabled)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.horizontal, 18)
-                                .padding(.vertical, 20)
+                                .padding(.vertical, 22)
                         }
                     }
-                    .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(C.cardBg))
-                    .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(C.cardBg))
+                    .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous)
                         .stroke(C.hairline.opacity(0.72), lineWidth: 0.6))
 
                     HStack(spacing: 6) {
@@ -1335,7 +1451,7 @@ struct GroupAnnounceView: View {
                         .foregroundColor(C.subLabel)
                 }
                 .padding(.horizontal, 14)
-                .padding(.top, 12)
+                .padding(.top, 14)
                 .padding(.bottom, 30)
             }
             .background(C.pageBg)
