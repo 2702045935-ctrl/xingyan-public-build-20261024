@@ -1947,17 +1947,23 @@ struct ChatsView: View {
     }
 
     @ViewBuilder private func chatsNavGlass(_ scrolled: CGFloat) -> some View {
-        if #available(iOS 26.0, *) {
-            EmptyView()
-        } else {
-            TopGlassBar(scrolled: scrolled,
-                        fallback: scheme == .dark ? C.navBg : chatsPageFill,
-                        offset: 9,
-                        always: true,
-                        matchDarkBackground: true)
-                .ignoresSafeArea(edges: .top)
-                .allowsHitTesting(false)
+        let blur = UIConfig.num("chatsNavGlassAlpha", 1)
+        let mask = UIConfig.num("chatsNavMaskAlpha", 0.25)
+
+        Group {
+            if scheme == .dark {
+                HarmonyDarkMask(strength: 0.98)
+            } else {
+                ZStack {
+                    Rectangle().fill(.bar)
+                        .opacity(max(0, min(1, blur)))
+                    (UIConfig.colorIfSet("chatsNavMaskColor") ?? OrbitTheme.canvas)
+                        .opacity(max(0.72, min(1, mask + 0.5)))
+                }
+            }
         }
+        .ignoresSafeArea(edges: .top)
+        .allowsHitTesting(false)
     }
 
     @ViewBuilder private var chatsCardBackground: some View {

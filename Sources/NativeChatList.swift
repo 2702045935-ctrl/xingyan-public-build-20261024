@@ -1,35 +1,6 @@
 import SwiftUI
 import UIKit
 
-final class NativeChatListController: UICollectionViewController {
-    private let topMaterial = UIVisualEffectView(
-        effect: UIBlurEffect(style: .systemChromeMaterial)
-    )
-    private let topFade = CAGradientLayer()
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        topMaterial.isUserInteractionEnabled = false
-        topMaterial.clipsToBounds = true
-        topMaterial.layer.mask = topFade
-        topFade.colors = [
-            UIColor.white.cgColor,
-            UIColor.white.cgColor,
-            UIColor.white.withAlphaComponent(0.72).cgColor,
-            UIColor.clear.cgColor
-        ]
-        topFade.locations = [0, 0.78, 0.92, 1]
-        view.addSubview(topMaterial)
-    }
-
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        let height = max(144, view.safeAreaInsets.top + 120)
-        topMaterial.frame = CGRect(x: 0, y: 0, width: view.bounds.width, height: height)
-        topFade.frame = topMaterial.bounds
-    }
-}
-
 struct NativeChatList<Item: Identifiable & Equatable, Row: View>: UIViewControllerRepresentable
 where Item.ID: Hashable {
     let items: [Item]
@@ -55,7 +26,7 @@ where Item.ID: Hashable {
         layout.sectionInset = .zero
         layout.estimatedItemSize = .zero
 
-        let controller = NativeChatListController(collectionViewLayout: layout)
+        let controller = UICollectionViewController(collectionViewLayout: layout)
         controller.view.backgroundColor = .clear
         let collection = controller.collectionView!
         collection.backgroundColor = .clear
