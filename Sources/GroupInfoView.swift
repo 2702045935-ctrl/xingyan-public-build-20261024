@@ -508,10 +508,9 @@ struct GroupInfoView: View {
             VStack(spacing: 0) {
                 HStack(spacing: 8) {
                     Text(Tr("群成员") + "（\(members.count)）")
-                        .font(pf(12.5, .medium))
+                        .font(pf(13, .semibold))
                         .foregroundColor(C.subLabel)
                     Spacer(minLength: 0)
-                    ChatInfoTextButton(title: Tr("添加")) { showAdd = true }
                     if isOwner {
                         ChatInfoTextButton(title: Tr(removing ? "完成" : "管理"),
                                            color: removing ? C.green : C.subLabel) {
@@ -520,8 +519,8 @@ struct GroupInfoView: View {
                     }
                 }
                 .padding(.horizontal, 6)
-                .padding(.top, 14)
-                .padding(.bottom, 6)
+                .padding(.top, 18)
+                .padding(.bottom, 8)
                 memberCard
             }
             .padding(.horizontal, 14)
@@ -550,32 +549,36 @@ struct GroupInfoView: View {
 
     private var headCard: some View {
         GroupCard {
-            HStack(spacing: 14) {
+            VStack(spacing: 9) {
                 Group {
                     if (chat.avatar ?? "").isEmpty {
                         GroupAvatarMosaic(chatId: chat.id,
                                           memberIds: chat.memberIds ?? members.map(\.id),
-                                          size: 68, radius: 16)
+                                          size: 76, radius: 19)
                     } else {
-                        Avatar(path: chat.avatar ?? "", size: 68, radius: 16, group: true)
+                        Avatar(path: chat.avatar ?? "", size: 76, radius: 19, group: true)
                     }
                 }
-                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .overlay(RoundedRectangle(cornerRadius: 19, style: .continuous)
                     .stroke(Color.white.opacity(0.35), lineWidth: 0.8))
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(chat.name)
-                        .font(pf(18, .semibold))
-                        .foregroundColor(C.label)
-                        .lineLimit(1)
-                    Text(memberLine)
-                        .font(pf(12.5))
-                        .foregroundColor(C.subLabel)
-                        .lineLimit(1)
-                }
-                Spacer(minLength: 0)
+                .shadow(color: Color.black.opacity(0.12), radius: 10, y: 4)
+
+                Text(chat.name)
+                    .font(pf(20, .semibold))
+                    .foregroundColor(C.label)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .padding(.top, 3)
+
+                Text(memberLine)
+                    .font(pf(13))
+                    .foregroundColor(C.subLabel)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 18)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 22)
+            .padding(.vertical, 22)
         }
     }
 
@@ -714,25 +717,33 @@ struct GroupInfoView: View {
 
     private var infoCard: some View {
         GroupCard {
-            ChatInfoTextRow(title: Tr("群聊名称"), value: chat.name) {
+            ChatInfoTextRow(title: Tr("群聊名称"), value: chat.name,
+                            symbol: "person.3.fill",
+                            symbolTint: Color(hex: 0x34C759)) {
                 nameDraft = chat.name
                 if isOwner { showRename = true }
                 else { app.show(Tr("只有群主能改群名称")) }
             }
             ChatInfoDivider()
             ChatInfoTextRow(title: Tr("我在本群的昵称"),
-                            value: myAlias.isEmpty ? Tr("未设置") : myAlias) {
+                            value: myAlias.isEmpty ? Tr("未设置") : myAlias,
+                            symbol: "at",
+                            symbolTint: Color(hex: 0x0A84FF)) {
                 editAlias(nil)
             }
             ChatInfoDivider()
             ChatInfoTextRow(title: Tr("群公告"),
                             subtitle: announce.isEmpty ? nil : announce,
-                            value: announce.isEmpty ? Tr("未设置") : nil) {
+                            value: announce.isEmpty ? Tr("未设置") : nil,
+                            symbol: "megaphone.fill",
+                            symbolTint: Color(hex: 0xFF9F0A)) {
                 announceDraft = announce
                 showAnnounce = true
             }
             ChatInfoDivider()
-            ChatInfoTextRow(title: Tr("群主"), value: ownerName) { }
+            ChatInfoTextRow(title: Tr("群主"), value: ownerName,
+                            symbol: "crown.fill",
+                            symbolTint: Color(hex: 0xFFD60A)) { }
         }
     }
 
@@ -740,7 +751,9 @@ struct GroupInfoView: View {
         GroupCard {
             ChatInfoToggleRow(title: Tr("置顶聊天"),
                               subtitle: pinned ? Tr("已置顶，会排在会话列表最上面") : nil,
-                              isOn: pinned) { v in
+                              isOn: pinned,
+                              symbol: "pin.fill",
+                              symbolTint: Color(hex: 0x0A84FF)) { v in
                 pinned = v
                 app.applyPinnedLocally(chatId: chat.id, pinned: v)
                 Task {
@@ -759,7 +772,9 @@ struct GroupInfoView: View {
                 ChatInfoDivider()
                 ChatInfoToggleRow(title: Tr("全员禁言"),
                                   subtitle: muteAll ? Tr("已开启，群里只有你能发言") : nil,
-                                  isOn: muteAll) { v in
+                                  isOn: muteAll,
+                                  symbol: "speaker.slash.fill",
+                                  symbolTint: Color(hex: 0xFF9F0A)) { v in
                     muteAll = v
                     Task {
                         if let err = await API.shared.setMuteAll(chatId: chat.id, on: v) {
@@ -772,7 +787,9 @@ struct GroupInfoView: View {
             ChatInfoDivider()
             ChatInfoToggleRow(title: Tr("消息免打扰"),
                               subtitle: muted ? Tr("这个群来消息不响也不弹") : nil,
-                              isOn: muted) { v in
+                              isOn: muted,
+                              symbol: "bell.slash.fill",
+                              symbolTint: Color(hex: 0x8E8E93)) { v in
                 muted = v
                 app.applyMutedLocally(chatId: chat.id, muted: v)
                 Task {
@@ -792,28 +809,38 @@ struct GroupInfoView: View {
 
     private var groupToolCard: some View {
         GroupCard {
-            ChatInfoTextRow(title: Tr("群二维码")) { showQR = true }
+            ChatInfoTextRow(title: Tr("群二维码"), symbol: "qrcode",
+                            symbolTint: Color(hex: 0x0A84FF)) { showQR = true }
             ChatInfoDivider()
-            ChatInfoTextRow(title: Tr("查找聊天记录")) { showSearch = true }
+            ChatInfoTextRow(title: Tr("查找聊天记录"), symbol: "magnifyingglass",
+                            symbolTint: Color(hex: 0x0A84FF)) { showSearch = true }
             ChatInfoDivider()
-            ChatInfoTextRow(title: Tr("聊天主题")) { showGroupTheme = true }
+            ChatInfoTextRow(title: Tr("聊天主题"), symbol: "paintpalette.fill",
+                            symbolTint: Color(hex: 0xAF52DE)) { showGroupTheme = true }
             ChatInfoDivider()
-            ChatInfoTextRow(title: Tr("设置当前聊天背景")) { showGroupBg = true }
+            ChatInfoTextRow(title: Tr("设置当前聊天背景"), symbol: "photo.fill",
+                            symbolTint: Color(hex: 0x5E5CE6)) { showGroupBg = true }
             ChatInfoDivider()
             ChatInfoTextRow(title: Tr("群语音通话"),
-                            subtitle: Tr("和群里的人一起语音")) {
+                            subtitle: Tr("和群里的人一起语音"),
+                            symbol: "phone.fill",
+                            symbolTint: Color(hex: 0x34C759)) {
                 CallCenter.shared.startGroupCall(chatId: chat.id, title: chat.name)
                 dismiss()
             }
             ChatInfoDivider()
             ChatInfoTextRow(title: Tr("群视频通话"),
-                            subtitle: Tr("和群里的人一起视频")) {
+                            subtitle: Tr("和群里的人一起视频"),
+                            symbol: "video.fill",
+                            symbolTint: Color(hex: 0x0A84FF)) {
                 CallCenter.shared.startGroupCall(chatId: chat.id, title: chat.name, video: true)
                 dismiss()
             }
             ChatInfoDivider()
             ChatInfoTextRow(title: Tr("投诉群聊"),
-                            subtitle: Tr("违法违规、诈骗或骚扰")) {
+                            subtitle: Tr("违法违规、诈骗或骚扰"),
+                            symbol: "exclamationmark.shield.fill",
+                            symbolTint: Color(hex: 0xFF9F0A)) {
                 showComplaint = true
             }
         }
@@ -822,12 +849,18 @@ struct GroupInfoView: View {
 
     private var dangerCard: some View {
         GroupCard {
-            ChatInfoTextRow(title: Tr("清空聊天记录"), destructive: true) { confirmClear = true }
+            ChatInfoTextRow(title: Tr("清空聊天记录"), destructive: true,
+                            symbol: "trash.fill",
+                            symbolTint: Color(hex: 0xFF3B30)) { confirmClear = true }
             ChatInfoDivider()
-            ChatInfoTextRow(title: Tr("删除该聊天"), destructive: true) { deleteChat() }
+            ChatInfoTextRow(title: Tr("删除该聊天"), destructive: true,
+                            symbol: "bubble.left.and.bubble.right.fill",
+                            symbolTint: Color(hex: 0xFF3B30)) { deleteChat() }
             ChatInfoDivider()
             ChatInfoTextRow(title: isOwner ? "解散并退出群聊" : "退出群聊",
-                            destructive: true) { confirmQuit = true }
+                            destructive: true,
+                            symbol: "rectangle.portrait.and.arrow.right",
+                            symbolTint: Color(hex: 0xFF3B30)) { confirmQuit = true }
         }
     }
 }
@@ -1594,7 +1627,9 @@ struct DirectChatInfoView: View {
         GroupCard {
             ChatInfoToggleRow(title: Tr("置顶聊天"),
                               subtitle: pinned ? Tr("已置顶，会排在会话列表最上面") : nil,
-                              isOn: pinned) { v in
+                              isOn: pinned,
+                              symbol: "pin.fill",
+                              symbolTint: Color(hex: 0x0A84FF)) { v in
                 pinned = v
                 app.applyPinnedLocally(chatId: chat.id, pinned: v)
                 Task {
@@ -1612,7 +1647,9 @@ struct DirectChatInfoView: View {
             ChatInfoDivider()
             ChatInfoToggleRow(title: Tr("消息免打扰"),
                               subtitle: muted ? Tr("这个人来消息不响也不弹") : nil,
-                              isOn: muted) { v in
+                              isOn: muted,
+                              symbol: "bell.slash.fill",
+                              symbolTint: Color(hex: 0x8E8E93)) { v in
                 muted = v
                 app.applyMutedLocally(chatId: chat.id, muted: v)
                 Task {
@@ -1717,15 +1754,20 @@ struct DirectChatInfoView: View {
 
     private var toolCard: some View {
         GroupCard {
-            ChatInfoTextRow(title: Tr("语音通话")) { start(video: false) }
+            ChatInfoTextRow(title: Tr("语音通话"), symbol: "phone.fill",
+                            symbolTint: Color(hex: 0x34C759)) { start(video: false) }
             ChatInfoDivider()
-            ChatInfoTextRow(title: Tr("视频通话")) { start(video: true) }
+            ChatInfoTextRow(title: Tr("视频通话"), symbol: "video.fill",
+                            symbolTint: Color(hex: 0x0A84FF)) { start(video: true) }
             ChatInfoDivider()
-            ChatInfoTextRow(title: Tr("查找聊天记录")) { showSearch = true }
+            ChatInfoTextRow(title: Tr("查找聊天记录"), symbol: "magnifyingglass",
+                            symbolTint: Color(hex: 0x0A84FF)) { showSearch = true }
             ChatInfoDivider()
-            ChatInfoTextRow(title: Tr("聊天主题")) { showChatTheme = true }
+            ChatInfoTextRow(title: Tr("聊天主题"), symbol: "paintpalette.fill",
+                            symbolTint: Color(hex: 0xAF52DE)) { showChatTheme = true }
             ChatInfoDivider()
-            ChatInfoTextRow(title: Tr("设置当前聊天背景")) {
+            ChatInfoTextRow(title: Tr("设置当前聊天背景"), symbol: "photo.fill",
+                            symbolTint: Color(hex: 0x5E5CE6)) {
                 showChatBg = true
             }
         }
@@ -1761,9 +1803,13 @@ struct DirectChatInfoView: View {
                     }
                     ChatInfoDivider()
                 }
-                ChatInfoTextRow(title: Tr("清空聊天记录"), destructive: true) { confirmClear = true }
+                ChatInfoTextRow(title: Tr("清空聊天记录"), destructive: true,
+                                symbol: "trash.fill",
+                                symbolTint: Color(hex: 0xFF3B30)) { confirmClear = true }
                 ChatInfoDivider()
-                ChatInfoTextRow(title: Tr("删除该聊天"), destructive: true) { confirmDelete = true }
+                ChatInfoTextRow(title: Tr("删除该聊天"), destructive: true,
+                                symbol: "bubble.left.and.bubble.right.fill",
+                                symbolTint: Color(hex: 0xFF3B30)) { confirmDelete = true }
             }
             Text(Tr("危险操作会立即影响你和对方的联系。删除聊天只会移除本地会话，不会删除对方的好友关系。"))
                 .font(pf(12))
@@ -2011,8 +2057,8 @@ private struct ChatInfoSectionTitle: View {
             .foregroundColor(C.subLabel)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 4)
-            .padding(.top, 20)
-            .padding(.bottom, 8)
+            .padding(.top, 22)
+            .padding(.bottom, 9)
     }
 }
 
@@ -2021,14 +2067,26 @@ private struct ChatInfoTextRow: View {
     var subtitle: String? = nil
     var value: String? = nil
     var destructive = false
+    var symbol: String? = nil
+    var symbolTint: Color = C.green
     var tap: () -> Void
 
     var body: some View {
         Button(action: tap) {
             HStack(spacing: 12) {
+                if let symbol {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            .fill(symbolTint.opacity(destructive ? 0.12 : 0.13))
+                        Image(systemName: symbol)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(destructive ? C.red : symbolTint)
+                    }
+                    .frame(width: 31, height: 31)
+                }
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title)
-                        .font(pf(16))
+                        .font(pf(15.5, .medium))
                         .foregroundColor(destructive
                             ? Color.dyn(0xE03A3A, 0xFF6B6B)
                             : C.label)
@@ -2050,7 +2108,7 @@ private struct ChatInfoTextRow: View {
                 }
             }
             .padding(.horizontal, 16)
-            .frame(minHeight: 56)
+            .frame(minHeight: 58)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -2061,13 +2119,25 @@ private struct ChatInfoToggleRow: View {
     let title: String
     var subtitle: String? = nil
     let isOn: Bool
+    var symbol: String? = nil
+    var symbolTint: Color = C.green
     let onChange: (Bool) -> Void
 
     var body: some View {
         HStack(spacing: 12) {
+            if let symbol {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .fill(symbolTint.opacity(0.13))
+                    Image(systemName: symbol)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(symbolTint)
+                }
+                .frame(width: 31, height: 31)
+            }
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                    .font(pf(16))
+                    .font(pf(15.5, .medium))
                     .foregroundColor(C.label)
                 if let subtitle, !subtitle.isEmpty {
                     Text(subtitle)
@@ -2082,7 +2152,7 @@ private struct ChatInfoToggleRow: View {
                 .tint(C.green)
         }
         .padding(.horizontal, 16)
-        .frame(minHeight: 56)
+        .frame(minHeight: 58)
     }
 }
 
