@@ -1289,10 +1289,6 @@ private final class MomentScrollMetrics {
     var baseTop: CGFloat? = nil
 }
 
-private final class MomentDragClock {
-    var lastDragAt = Date(timeIntervalSince1970: 0)
-}
-
 struct MomentsView: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
@@ -1381,12 +1377,9 @@ struct MomentsView: View {
     @State private var loadingMore = false
     @State private var momentTotal = 0
 
-    @State private var pullY: CGFloat = 0
     @State private var pulling = false
-    @State private var spin: Double = 0
-    @State private var spinTask: Task<Void, Never>?
+    @State private var refreshTask: Task<Void, Never>?
 
-    @State private var dragClock = MomentDragClock()
     @State private var scrollGateActive = false
     @ObservedObject private var realtime = Realtime.shared
 
@@ -1434,6 +1427,10 @@ struct MomentsView: View {
 
             NativeMomentList(
                 items: nativeMomentFeedItems,
+                refreshing: pulling,
+                onRefresh: {
+                    if !pulling { startPullRefresh() }
+                },
                 onScrollOffset: { y in
                     scrollMetrics.topY = -y
                     if scrollMetrics.baseTop == nil { scrollMetrics.baseTop = 0 }
@@ -1465,63 +1462,9 @@ struct MomentsView: View {
                     .environmentObject(app)
                     .environment(\.colorScheme, scheme)
             }
-            .simultaneousGesture(
-                    DragGesture(minimumDistance: 8)
-                    .onChanged { v in
-                        dragClock.lastDragAt = Date()
-                        guard !sentinelGone else { return }
-                        let dy = v.translation.height
-                        if dy > 0 {
-                            let next = min(140, dy)
-                            if abs(next - pullY) >= 0.25 {
-                                pullY = next
-                            }
-                            if !pulling { spin = Double(pullY) * 3.2 }
-                        } else if pullY > 0 && !pulling {
-                            pullY = 0
-                        }
-                    }
-                    .onEnded { _ in
-                        dragClock.lastDragAt = Date()
-                        if pullY > 60 && !pulling { startPullRefresh() }
-                        if !pulling { pullY = 0 }
-                    }
-            )
             .ignoresSafeArea(edges: .top)
 
-            .task(id: pullY > 0 || pulling) {
-                while !Task.isCancelled {
-                    try? await Task.sleep(nanoseconds: 300_000_000)
-                    if Task.isCancelled { return }
-                    if pulling {
-
-                        if Date().timeIntervalSince(dragClock.lastDragAt) > 10 {
-                            CrashCatcher.note("朋友圈", "下拉刷新超过 10 秒没回来，先收球")
-                            pulling = false
-                            pullY = 0
-                            spin = 0
-                        }
-                        continue
-                    }
-                    if pullY > 0 && Date().timeIntervalSince(dragClock.lastDragAt) > 0.4 {
-                        pullY = 0
-                        spin = 0
-                        return
-                    }
-                    if pullY <= 0 { return }
-                }
-            }
-
             navBar
-
-            if pullY > 0 || pulling {
-                ColorBall(size: 34, spin: spin)
-                    .scaleEffect(0.72 + min(1, pullY / 90) * 0.28)
-                    .offset(y: min(96, pullY * 0.8) + L.safeTop + 6)
-                    .animation(.easeOut(duration: 0.12), value: pullY)
-                    .allowsHitTesting(false)
-                    .zIndex(30)
-            }
 
             if let i = viewerIndex, !viewerPaths.isEmpty {
 
@@ -1586,6 +1529,7 @@ struct MomentsView: View {
             }
         }
         .onDisappear {
+            refreshTask?.cancel()
             guard scrollGateActive else { return }
             scrollGateActive = false
             ScrollGate.shared.setScrolling(false)
@@ -2577,27 +2521,18 @@ struct MomentsView: View {
     }
 
     private func startPullRefresh() {
+        guard !pulling else { return }
         pulling = true
-        spinTask?.cancel()
-        spinTask = Task { @MainActor in
-            var angle = spin
-            let started = Date()
-            while !Task.isCancelled {
-                angle += 14
-                spin = angle
-                try? await Task.sleep(nanoseconds: 16_000_000)
-                if Date().timeIntervalSince(started) > 1.0 { break }
-            }
-
+        refreshTask?.cancel()
+        refreshTask = Task { @MainActor in
             let finished = await withPullTimeout(seconds: 6) {
                 if self.coverEditable { self.app.me = try? await API.shared.me() }
                 await self.reload()
             }
             if !finished {
-                CrashCatcher.note("朋友圈", "下拉刷新的网络请求超 6 秒，先把彩球收掉")
+                CrashCatcher.note("朋友圈", "下拉刷新的网络请求超 6 秒，先结束刷新状态")
             }
-            pullY = 0
-            spin = 0
+            guard !Task.isCancelled else { return }
             pulling = false
         }
     }

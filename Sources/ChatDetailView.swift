@@ -2582,6 +2582,8 @@ struct ChatDetailView: View {
                         }
                     }, onScrollStateChange: { scrolling in
                         if scrolling {
+                            atBottom = false
+                            wasAtBottom = false
                             if !initialScrollReady {
                                 initialScrollTask?.cancel()
                                 initialScrollTask = nil
@@ -2591,6 +2593,10 @@ struct ChatDetailView: View {
                             ScrollGate.shared.setScrolling(true)
                             followOwnSendUntil = Date.distantPast
                         } else {
+                            if let gap = ChatScrollHandle.shared.gap {
+                                atBottom = gap <= 16
+                                wasAtBottom = gap <= 16
+                            }
                             ScrollGate.shared.setScrolling(false)
                             frameCaptureTick &+= 1
                         }
@@ -2603,7 +2609,7 @@ struct ChatDetailView: View {
                             }
                         }
 
-                        guard wasAtBottom, !holdScroll else { return }
+                        guard atBottomNow, !holdScroll else { return }
                         if ChatScrollHandle.shared.moving { return }
                         ChatScrollDiag.shared.note("内容变高 → 哨兵贴底")
                         ChatScrollHandle.shared.pinToBottom(animated: false)
@@ -2787,19 +2793,25 @@ struct ChatDetailView: View {
                         let next = g <= 16
                         if wasAtBottom != next { wasAtBottom = next }
                     }
-                }, onScrollStateChange: { scrolling in
-                    if scrolling {
-                        if !initialScrollReady {
-                            initialScrollTask?.cancel()
-                            initialScrollTask = nil
+                    }, onScrollStateChange: { scrolling in
+                        if scrolling {
+                            atBottom = false
+                            wasAtBottom = false
+                            if !initialScrollReady {
+                                initialScrollTask?.cancel()
+                                initialScrollTask = nil
                             initialScrollReady = true
                             allowSettledBottom = false
                         }
-                        ScrollGate.shared.setScrolling(true)
-                        followOwnSendUntil = Date.distantPast
-                    } else {
-                        ScrollGate.shared.setScrolling(false)
-                        frameCaptureTick &+= 1
+                            ScrollGate.shared.setScrolling(true)
+                            followOwnSendUntil = Date.distantPast
+                        } else {
+                            if let gap = ChatScrollHandle.shared.gap {
+                                atBottom = gap <= 16
+                                wasAtBottom = gap <= 16
+                            }
+                            ScrollGate.shared.setScrolling(false)
+                            frameCaptureTick &+= 1
                     }
                 }, onSizeChange: {
                     let compensated = ChatScrollHandle.shared.compensatePendingPrepend()
@@ -2807,7 +2819,7 @@ struct ChatDetailView: View {
                         needsPrependTrim = false
                         DispatchQueue.main.async { trimMessageWindowForOlderPage() }
                     }
-                    guard wasAtBottom, !holdScroll else { return }
+                    guard atBottomNow, !holdScroll else { return }
                     if ChatScrollHandle.shared.moving { return }
                     ChatScrollDiag.shared.note("内容变高 → 原生消息列表贴底")
                     ChatScrollHandle.shared.pinToBottom(animated: false)

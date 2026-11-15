@@ -6,6 +6,33 @@ struct NativeStaticItem: Identifiable, Equatable {
     let signature: String
 }
 
+private final class NativeStaticHostCell: UICollectionViewCell {
+    private weak var hostedView: UIView?
+    private var hostedID = ""
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        hostedView?.removeFromSuperview()
+        hostedView = nil
+        hostedID = ""
+    }
+
+    func setHostedView(_ view: UIView, id: String) {
+        if hostedID != id || hostedView !== view {
+            hostedView?.removeFromSuperview()
+            contentView.addSubview(view)
+            hostedView = view
+            hostedID = id
+        }
+        view.frame = contentView.bounds
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        hostedView?.frame = contentView.bounds
+    }
+}
+
 struct NativeStaticList<Item: Identifiable & Equatable, Row: View>: UIViewControllerRepresentable
 where Item.ID: Hashable {
     let items: [Item]
@@ -36,18 +63,15 @@ where Item.ID: Hashable {
         collection.delaysContentTouches = false
         collection.canCancelContentTouches = true
         collection.scrollsToTop = true
-        collection.isPrefetchingEnabled = false
+        collection.isPrefetchingEnabled = true
         collection.delegate = context.coordinator
 
-        let registration = UICollectionView.CellRegistration<UICollectionViewCell, Item.ID> {
+        let registration = UICollectionView.CellRegistration<NativeStaticHostCell, Item.ID> {
             [weak coordinator = context.coordinator] cell, _, id in
-            guard let coordinator, let item = coordinator.lookup[id] else { return }
-            cell.contentConfiguration = UIHostingConfiguration {
-                coordinator.row(item)
-                    .frame(maxWidth: .infinity, alignment: .top)
-            }
-            .margins(.all, 0)
-            .background(.clear)
+            guard let coordinator,
+                  let item = coordinator.lookup[id],
+                  let hostView = coordinator.hostView(for: item) else { return }
+            cell.setHostedView(hostView, id: String(describing: id))
             cell.backgroundConfiguration = .clear()
             cell.backgroundColor = .clear
             cell.clipsToBounds = true
@@ -84,6 +108,7 @@ where Item.ID: Hashable {
         private var order: [Item.ID] = []
         private var signatures: [Item.ID: String] = [:]
         private var heights: [Item.ID: CGFloat] = [:]
+        private var hosts: [String: UIHostingController<AnyView>] = [:]
         private var width: CGFloat = 0
         private var pending: [Item]?
         private var applyGeneration = 0
@@ -188,6 +213,22 @@ where Item.ID: Hashable {
                 in: CGSize(width: width, height: .greatestFiniteMagnitude)
             )
             return max(1, ceil(size.height.isFinite ? size.height : 240))
+        }
+
+        func hostView(for item: Item) -> UIView? {
+            let key = String(describing: item.id)
+            let root = AnyView(
+                row(item)
+                    .frame(maxWidth: .infinity, alignment: .top)
+            )
+            if let host = hosts[key] {
+                host.rootView = root
+                return host.view
+            }
+            let host = UIHostingController(rootView: root)
+            host.view.backgroundColor = .clear
+            hosts[key] = host
+            return host.view
         }
 
         private func flush() {

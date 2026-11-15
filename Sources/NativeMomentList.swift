@@ -16,6 +16,8 @@ struct NativeMomentFeedItem: Identifiable, Equatable {
 
 struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
     let items: [NativeMomentFeedItem]
+    let refreshing: Bool
+    let onRefresh: () -> Void
     let onScrollOffset: (CGFloat) -> Void
     let onScrollActivity: (Bool) -> Void
     let onNearEnd: () -> Void
@@ -26,6 +28,7 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
         Coordinator(onScrollOffset: onScrollOffset,
                     onScrollActivity: onScrollActivity,
                     onNearEnd: onNearEnd,
+                    onRefresh: onRefresh,
                     nativeRow: nativeRow,
                     row: row)
     }
@@ -53,6 +56,14 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
         collection.scrollsToTop = true
         collection.isPrefetchingEnabled = true
         collection.delegate = context.coordinator
+        let refreshControl = UIRefreshControl()
+        refreshControl.tintColor = UIColor(C.green)
+        refreshControl.addTarget(context.coordinator,
+                                 action: #selector(Coordinator.refreshRequested),
+                                 for: .valueChanged)
+        collection.refreshControl = refreshControl
+        context.coordinator.refreshControl = refreshControl
+        context.coordinator.setRefreshing(refreshing)
 
         let registration = UICollectionView.CellRegistration<UICollectionViewCell, String> {
             [weak coordinator = context.coordinator] cell, _, id in
@@ -106,10 +117,12 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
     func updateUIViewController(_ controller: UICollectionViewController,
                                 context: Context) {
         context.coordinator.row = row
+        context.coordinator.onRefresh = onRefresh
         context.coordinator.onScrollOffset = onScrollOffset
         context.coordinator.onScrollActivity = onScrollActivity
         context.coordinator.onNearEnd = onNearEnd
         context.coordinator.nativeRow = nativeRow
+        context.coordinator.setRefreshing(refreshing)
         context.coordinator.apply(items, animated: false)
     }
 
@@ -119,8 +132,10 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
         var onScrollOffset: (CGFloat) -> Void
         var onScrollActivity: (Bool) -> Void
         var onNearEnd: () -> Void
+        var onRefresh: () -> Void
         var nativeRow: ((NativeMomentFeedItem, CGFloat) -> NativeMomentRowConfiguration?)?
         weak var collection: UICollectionView?
+        weak var refreshControl: UIRefreshControl?
         var dataSource: UICollectionViewDiffableDataSource<Int, String>?
         private var order: [String] = []
         private var pendingItems: [NativeMomentFeedItem]?
@@ -133,11 +148,13 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
         init(onScrollOffset: @escaping (CGFloat) -> Void,
              onScrollActivity: @escaping (Bool) -> Void,
              onNearEnd: @escaping () -> Void,
+             onRefresh: @escaping () -> Void,
              nativeRow: ((NativeMomentFeedItem, CGFloat) -> NativeMomentRowConfiguration?)?,
              row: @escaping (NativeMomentFeedItem) -> Row) {
             self.onScrollOffset = onScrollOffset
             self.onScrollActivity = onScrollActivity
             self.onNearEnd = onNearEnd
+            self.onRefresh = onRefresh
             self.nativeRow = nativeRow
             self.row = row
             super.init()
@@ -217,6 +234,9 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
                 measuredWidth = width
                 heights.removeAll(keepingCapacity: true)
             }
+            if let height = heights[id], height > 0 {
+                return CGSize(width: width, height: height)
+            }
             if let configuration = nativeRow?(item, width) {
                 let height = NativeMomentFeedCell.preferredHeight(configuration)
                 heights[id] = height
@@ -292,6 +312,19 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
         func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
             onScrollActivity(false)
             flushPendingItems()
+        }
+
+        @objc func refreshRequested() {
+            onRefresh()
+        }
+
+        func setRefreshing(_ active: Bool) {
+            guard let refreshControl else { return }
+            if active, !refreshControl.isRefreshing {
+                refreshControl.beginRefreshing()
+            } else if !active, refreshControl.isRefreshing {
+                refreshControl.endRefreshing()
+            }
         }
 
         private func flushPendingItems() {
