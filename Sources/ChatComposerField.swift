@@ -6,6 +6,19 @@ final class ComposerTextView: UITextView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
+        if bounds.height > 1, bounds.width > 1 {
+            layoutManager.ensureLayout(for: textContainer)
+            let used = ceil(layoutManager.usedRect(for: textContainer).height)
+            let verticalInset = max(0, floor((bounds.height - used) / 2))
+            if abs(textContainerInset.top - verticalInset) > 0.5 {
+                textContainerInset = UIEdgeInsets(
+                    top: verticalInset,
+                    left: 0,
+                    bottom: verticalInset,
+                    right: 0
+                )
+            }
+        }
         onLayout?()
     }
 }
