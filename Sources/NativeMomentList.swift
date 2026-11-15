@@ -91,7 +91,7 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
                 cell.configure(configuration)
                 return cell
             }
-            collectionView.dequeueConfiguredReusableCell(
+            return collectionView.dequeueConfiguredReusableCell(
                 using: registration,
                 for: indexPath,
                 item: id
