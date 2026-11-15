@@ -1729,7 +1729,13 @@ struct ChatDetailView: View {
                 .transaction { $0.animation = nil }
                 .zIndex(0)
 
-            nativeMessageList
+            Group {
+                if isGroup {
+                    nativeMessageList
+                } else {
+                    messageList
+                }
+            }
 
                 .contentShape(Rectangle())
                 .simultaneousGesture(TapGesture().onEnded { dismissTyping() })
@@ -2694,7 +2700,7 @@ struct ChatDetailView: View {
         }
     }
 
-    /// 私聊和群聊统一使用系统原生复用列表承载消息正文。
+    /// 群聊正文使用系统原生复用列表；一对一聊天保持原实现。
     private var nativeMessageList: some View {
         let nearTopIds = hasOlder ? Set(messages.prefix(24).map { $0.id }) : Set<String>()
         return ScrollViewReader { proxy in
