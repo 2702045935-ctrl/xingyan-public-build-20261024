@@ -2294,6 +2294,16 @@ struct ChatsView: View {
                 id: "search",
                 kind: .search,
                 signature: "\(appearance)-\(Tr("搜索"))"
+            ),
+            NativeChatEntry(
+                id: "official",
+                kind: .official,
+                signature: "\(appearance)-\(officialRowName)-\(officialRowSubtitle)-\(officialRowAvatar)-\(app.me?.ops == true)"
+            ),
+            NativeChatEntry(
+                id: "pay",
+                kind: .pay,
+                signature: "\(appearance)-\(payOfficialRowName)-\(payOfficialRowSubtitle)-\(payOfficialRowAvatar)-\(app.me?.ops == true)"
             )
         ]
 

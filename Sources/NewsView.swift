@@ -97,18 +97,34 @@ struct NewsFeedView: View {
     @ViewBuilder
     private var premiumChannelBar: some View {
         if channels.count > 1 {
-            Picker("", selection: Binding(
-                get: { tab },
-                set: { select($0) }
-            )) {
-                ForEach(channels) { channel in
-                    Text(Tr(channel.label)).tag(channel.id)
+            HStack {
+                Menu {
+                    ForEach(channels) { channel in
+                        Button {
+                            select(channel.id)
+                        } label: {
+                            if channel.id == tab {
+                                Label(Tr(channel.label), systemImage: "checkmark")
+                            } else {
+                                Text(Tr(channel.label))
+                            }
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 5) {
+                        Text(Tr(channels.first(where: { $0.id == tab })?.label ?? "热点"))
+                            .font(pf(17, .semibold))
+                            .foregroundColor(C.label)
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(C.subLabel)
+                    }
+                    .contentShape(Rectangle())
                 }
+                Spacer(minLength: 0)
             }
-            .pickerStyle(.segmented)
-            .labelsHidden()
             .padding(.horizontal, 16)
-            .padding(.vertical, 6)
+            .frame(height: 40)
             .background(newsPageBg)
             .overlay(alignment: .bottom) { HairLine() }
         }
@@ -722,23 +738,25 @@ struct NewsView: View {
                     .accessibilityLabel(Tr("返回"))
                 }
             }
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Menu {
-                    Button { refreshToken += 1 } label: {
-                        Label(Tr("刷新"), systemImage: "arrow.clockwise")
-                    }
-                    if app.me?.ops == true, official != nil {
-                        Button {
-                            editingOfficial = official
-                        } label: {
-                            Label(Tr("管理时刻新闻"), systemImage: "square.and.pencil")
+            if app.me?.ops == true {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Menu {
+                        Button { refreshToken += 1 } label: {
+                            Label(Tr("刷新"), systemImage: "arrow.clockwise")
                         }
+                        if official != nil {
+                            Button {
+                                editingOfficial = official
+                            } label: {
+                                Label(Tr("管理时刻新闻"), systemImage: "square.and.pencil")
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .font(.system(size: 16, weight: .semibold))
                     }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.system(size: 16, weight: .semibold))
+                    .accessibilityLabel(Tr("更多"))
                 }
-                .accessibilityLabel(Tr("更多"))
             }
         }
         .task {
