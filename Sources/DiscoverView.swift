@@ -1409,6 +1409,7 @@ struct MomentsView: View {
 
     @State private var dragClock = MomentDragClock()
     @State private var scrollGateActive = false
+    @ObservedObject private var realtime = Realtime.shared
     @State private var expandedGroups: Set<String> = []
 
     @State private var foldRowsCache: [FoldRow] = []
@@ -1602,12 +1603,8 @@ struct MomentsView: View {
             .presentationDetents([.fraction(0.72), .large])
             .presentationDragIndicator(.hidden)
         }
-        .sheet(isPresented: $showLikes) {
-            MomentLikesSheet(likes: likesSnapshot)
-                .environmentObject(app)
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.hidden)
-        }
+        .modifier(MomentLikesPresenter(likes: likesSnapshot,
+                                       isPresented: $showLikes))
         .onAppear {
             scrollMetrics.baseTop = nil
             scrollMetrics.topY = 0
@@ -1644,7 +1641,7 @@ struct MomentsView: View {
             await reload()
         }
 
-        .onReceive(Realtime.shared.$event) { event in
+        .onChange(of: realtime.event) { event in
             if event.type == "profile", let user = event.user,
                user.id == target?.id {
                 liveTarget = user

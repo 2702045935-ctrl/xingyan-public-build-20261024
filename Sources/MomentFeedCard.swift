@@ -429,7 +429,7 @@ struct MomentFeedCard: View {
     }
 }
 
-private struct MomentLikesSheet: View {
+struct MomentLikesSheet: View {
     let likes: [MomentLike]
 
     @EnvironmentObject private var app: AppState
@@ -597,6 +597,21 @@ private struct MomentLikesSheet: View {
         }
         .padding(.horizontal, 18)
         .frame(height: 60)
+    }
+}
+
+struct MomentLikesPresenter: ViewModifier {
+    let likes: [MomentLike]
+    @Binding var isPresented: Bool
+    @EnvironmentObject private var app: AppState
+
+    func body(content: Content) -> some View {
+        content.sheet(isPresented: $isPresented) {
+            MomentLikesSheet(likes: likes)
+                .environmentObject(app)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.hidden)
+        }
     }
 }
 

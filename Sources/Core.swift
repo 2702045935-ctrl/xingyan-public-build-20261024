@@ -2197,7 +2197,7 @@ enum RichText {
         "bet", "sex", "xxx", "porn", "av", "jav", "toto", "adult"
     ]
     private static let badHostLabelRegex = try? NSRegularExpression(
-        pattern: #"^(18|91|av|jav)?(av|jav|porn|xxx|sex)\d*$#
+        pattern: #"^(18|91|av|jav)?(av|jav|porn|xxx|sex)\d*$"#
     )
     private static let badPathFragments = [
         "/casino", "/bet", "/poker", "/porn", "/xxx", "/sex", "/adult"
