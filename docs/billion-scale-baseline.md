@@ -144,3 +144,20 @@ node server/tools/message-reliability-probe.js `
 The probe has no option for an existing database path, so it cannot be pointed
 at a live shard. Its report contains a sequence digest and summary by default;
 `--include-sequences` is available only for small diagnostic runs.
+
+Topology expansion can be planned without moving data:
+
+```powershell
+node server/tools/shard-rebalance-plan.js `
+  --route-plan ROUTE_PLAN_6.json `
+  --target-shards 7 `
+  --target-topology server-a-shards-7 `
+  --assignments-out REBALANCED_7_ASSIGNMENTS.json `
+  --moves-out REBALANCE_MOVES.json `
+  --out REBALANCE_PLAN.json
+```
+
+The planner preserves every existing assignment except the deterministic
+subset needed to fill newly added shards. It reports movement percentage,
+before/after shard counts, maximum deviation, assignment hash, and a stable
+move digest. It only writes planning artifacts and never executes a migration.
