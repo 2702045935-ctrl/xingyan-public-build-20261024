@@ -114,6 +114,9 @@ struct ContactsView: View {
     private var contactsRowFill: Color {
         contactsCanvas
     }
+    private var contactAvatarSize: CGFloat {
+        max(42, min(46, L.ctAvatar + 2))
+    }
     private let contactsAccent = Color(hex: 0x25D366)
 
 private var funcs: [(String, String, Color, String)] {
@@ -478,7 +481,7 @@ private var funcs: [(String, String, Color, String)] {
                     Rectangle()
                         .fill(contactsRule)
                         .frame(height: 0.5)
-                        .padding(.leading, 62)
+                        .padding(.leading, 73)
                 }
             }
         }
@@ -503,10 +506,10 @@ private var funcs: [(String, String, Color, String)] {
                     Circle()
                         .fill(contactsAccent)
                     Image(systemName: sym)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.white)
                 }
-                .frame(width: 32, height: 32)
+                .frame(width: contactAvatarSize, height: contactAvatarSize)
 
                 Text(item.0)
                     .font(pfStyled(size: 17, weight: .regular))
@@ -709,8 +712,8 @@ private var funcs: [(String, String, Color, String)] {
         HStack(spacing: 12) {
 
             Avatar(path: user.avatarPath,
-                   size: max(42, min(46, L.ctAvatar + 2)),
-                   radius: 23, circle: true,
+                   size: contactAvatarSize,
+                   radius: contactAvatarSize / 2, circle: true,
                    level: (user.qqLevel ?? 0) > 1 ? (user.qqLevel ?? 0) : 0)
             VStack(alignment: .leading, spacing: scheme == .dark ? 3 : 2) {
                 HStack(spacing: 5) {
