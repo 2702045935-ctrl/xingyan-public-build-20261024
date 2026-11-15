@@ -1110,6 +1110,14 @@ struct ChatDetailView: View {
         return (user.avatarPath ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    private var navAvatarOnline: Bool {
+        if isGroup {
+            return liveChat.onlineMemberIds?.isEmpty == false
+        }
+        guard let peer = peerUserId else { return false }
+        return app.contact(for: peer)?.online == true
+    }
+
     private var whatsAppChatAvatar: some View {
         Group {
             if isGroup,
@@ -1123,7 +1131,19 @@ struct ChatDetailView: View {
             }
         }
         .frame(width: 38, height: 38)
-        .clipShape(Circle())
+        .overlay(alignment: .bottomTrailing) {
+            if navAvatarOnline {
+                Circle()
+                    .fill(Color(hex: 0x4FD229))
+                    .frame(width: 13, height: 13)
+                    .overlay {
+                        Circle()
+                            .stroke(Color.dyn(0xFFFFFF, 0x000000), lineWidth: 2)
+                    }
+                    .offset(x: 1.5, y: 1.5)
+                    .accessibilityHidden(true)
+            }
+        }
     }
 
     private var whatsAppChatHeader: some View {
