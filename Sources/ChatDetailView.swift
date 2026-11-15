@@ -4604,43 +4604,68 @@ struct ChatDetailView: View {
                 HStack(spacing: 0) {
                     if voiceMode {
 
-                        HStack(spacing: 9) {
+                        Group {
                             if recorder.recording {
-                                Circle()
-                                    .fill(recorder.willCancel ? C.red : C.green)
-                                    .frame(width: 8, height: 8)
-                                InlineVoiceWave(level: recorder.level,
-                                                active: !recorder.willCancel)
-                                    .frame(width: 76, height: 22)
-                                Text(String(format: "%d:%02d",
-                                            recorder.seconds / 60,
-                                            recorder.seconds % 60))
-                                    .font(.system(size: 13, weight: .semibold, design: .monospaced))
-                                    .foregroundStyle(composerTextInk)
-                                    .monospacedDigit()
-                                Spacer(minLength: 0)
-                                Text(recorder.willCancel
-                                     ? Tr("松手取消")
-                                     : (recorder.willTranscribe ? Tr("松手转文字") : Tr("松手发送")))
-                                    .font(pf(12.5, .medium))
-                                    .foregroundStyle(recorder.willCancel ? C.red : C.green)
+                                HStack(spacing: 8) {
+                                    Circle()
+                                        .fill(recorder.willCancel ? C.red : C.green)
+                                        .frame(width: 8, height: 8)
+                                        .scaleEffect(1 + min(0.22, recorder.level * 0.22))
+                                        .animation(.easeOut(duration: 0.10), value: recorder.level)
+
+                                    InlineVoiceWave(level: recorder.level,
+                                                    active: !recorder.willCancel)
+                                        .frame(width: 92, height: 24)
+
+                                    Text(String(format: "%d:%02d",
+                                                recorder.seconds / 60,
+                                                recorder.seconds % 60))
+                                        .font(.system(size: 13.5, weight: .semibold, design: .monospaced))
+                                        .foregroundStyle(composerTextInk)
+                                        .monospacedDigit()
+
+                                    Spacer(minLength: 0)
+
+                                    Text(recorder.willCancel
+                                         ? Tr("上滑取消")
+                                         : (recorder.willTranscribe ? Tr("松手转文字") : Tr("松手发送")))
+                                        .font(pf(12.5, .semibold))
+                                        .foregroundStyle(recorder.willCancel ? C.red : C.green)
+                                        .padding(.horizontal, 9)
+                                        .frame(height: 26)
+                                        .background(
+                                            Capsule().fill(
+                                                (recorder.willCancel ? C.red : C.green).opacity(0.10)
+                                            )
+                                        )
+                                }
                             } else {
-                                Image(systemName: voiceStarting ? "waveform" : "mic.fill")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundStyle(C.green)
-                                Text(voiceStarting ? Tr("正在开始录音…") : Tr("按住 说话"))
-                                    .font(pf(15.5))
-                                    .foregroundColor(composerTextInk)
+                                HStack(spacing: 8) {
+                                    ZStack {
+                                        Circle()
+                                            .fill(C.green.opacity(0.11))
+                                        Image(systemName: voiceStarting ? "waveform" : "mic.fill")
+                                            .font(.system(size: 12.5, weight: .semibold))
+                                            .foregroundStyle(C.green)
+                                    }
+                                    .frame(width: 28, height: 28)
+
+                                    Text(voiceStarting ? Tr("正在开始录音…") : Tr("按住 说话"))
+                                        .font(pf(15.5, .medium))
+                                        .foregroundColor(composerTextInk)
+                                }
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.horizontal, recorder.recording ? 12 : 0)
+                        .padding(.horizontal, recorder.recording ? 11 : 0)
                         .frame(height: composerInputHeight)
                         .background(
                             recorder.recording
-                            ? (recorder.willCancel ? C.red.opacity(0.09) : Color.white.opacity(0.72))
+                            ? (recorder.willCancel
+                               ? C.red.opacity(0.08)
+                               : Color.primary.opacity(0.035))
                             : Color.clear,
-                            in: RoundedRectangle(cornerRadius: 19, style: .continuous)
+                            in: Capsule()
                         )
                         .contentShape(Rectangle())
 
@@ -4663,8 +4688,11 @@ struct ChatDetailView: View {
                                         focused = false
                                         panel = .none
                                         Task {
-                                            _ = await recorder.begin()
+                                            let started = await recorder.begin()
                                             voiceStarting = false
+                                            if started {
+                                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                                            }
                                         }
                                     }
                                 }
