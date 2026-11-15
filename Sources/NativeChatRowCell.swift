@@ -138,8 +138,20 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         foreground.backgroundColor = configuration.rowBackground
         titleLabel.text = configuration.title
         titleLabel.textColor = configuration.titleColor
-        previewLabel.text = configuration.preview
-        previewLabel.textColor = configuration.previewColor
+        let preview = NSMutableAttributedString(
+            string: configuration.mentionPrefix + configuration.preview,
+            attributes: [
+                .font: previewLabel.font as Any,
+                .foregroundColor: configuration.previewColor
+            ]
+        )
+        if !configuration.mentionPrefix.isEmpty {
+            preview.addAttributes([
+                .font: UIFont.systemFont(ofSize: 15, weight: .medium),
+                .foregroundColor: UIColor.systemBlue
+            ], range: NSRange(location: 0, length: (configuration.mentionPrefix as NSString).length))
+        }
+        previewLabel.attributedText = preview
         timeLabel.text = configuration.time
         timeLabel.textColor = configuration.timeColor
         divider.backgroundColor = configuration.dividerColor
