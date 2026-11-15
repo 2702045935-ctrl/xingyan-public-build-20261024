@@ -63,6 +63,7 @@ where Item.ID: Hashable {
     let controller: NativeStaticListController?
     let onScrollViewReady: ((UIScrollView) -> Void)?
     let onScrollStateChange: ((Bool) -> Void)?
+    let onScrollOffset: ((CGFloat) -> Void)?
     let onSizeChange: (() -> Void)?
     let signature: (Item) -> String
     @ViewBuilder let row: (Item) -> Row
@@ -71,6 +72,7 @@ where Item.ID: Hashable {
          controller: NativeStaticListController? = nil,
          onScrollViewReady: ((UIScrollView) -> Void)? = nil,
          onScrollStateChange: ((Bool) -> Void)? = nil,
+         onScrollOffset: ((CGFloat) -> Void)? = nil,
          onSizeChange: (() -> Void)? = nil,
          signature: @escaping (Item) -> String,
          @ViewBuilder row: @escaping (Item) -> Row) {
@@ -78,6 +80,7 @@ where Item.ID: Hashable {
         self.controller = controller
         self.onScrollViewReady = onScrollViewReady
         self.onScrollStateChange = onScrollStateChange
+        self.onScrollOffset = onScrollOffset
         self.onSizeChange = onSizeChange
         self.signature = signature
         self.row = row
@@ -87,6 +90,7 @@ where Item.ID: Hashable {
         Coordinator(controller: controller,
                     onScrollViewReady: onScrollViewReady,
                     onScrollStateChange: onScrollStateChange,
+                    onScrollOffset: onScrollOffset,
                     onSizeChange: onSizeChange,
                     signature: signature,
                     row: row)
@@ -149,6 +153,7 @@ where Item.ID: Hashable {
         context.coordinator.signature = signature
         context.coordinator.onScrollViewReady = onScrollViewReady
         context.coordinator.onScrollStateChange = onScrollStateChange
+        context.coordinator.onScrollOffset = onScrollOffset
         context.coordinator.onSizeChange = onSizeChange
         context.coordinator.attachController()
         if let collection = controller.collectionView {
@@ -166,6 +171,7 @@ where Item.ID: Hashable {
         let controller: NativeStaticListController?
         var onScrollViewReady: ((UIScrollView) -> Void)?
         var onScrollStateChange: ((Bool) -> Void)?
+        var onScrollOffset: ((CGFloat) -> Void)?
         var onSizeChange: (() -> Void)?
         private var sizeObservation: NSKeyValueObservation?
         private var lastScrollState: Bool?
@@ -179,12 +185,14 @@ where Item.ID: Hashable {
         init(controller: NativeStaticListController?,
              onScrollViewReady: ((UIScrollView) -> Void)?,
              onScrollStateChange: ((Bool) -> Void)?,
+             onScrollOffset: ((CGFloat) -> Void)?,
              onSizeChange: (() -> Void)?,
              signature: @escaping (Item) -> String,
              row: @escaping (Item) -> Row) {
             self.controller = controller
             self.onScrollViewReady = onScrollViewReady
             self.onScrollStateChange = onScrollStateChange
+            self.onScrollOffset = onScrollOffset
             self.onSizeChange = onSizeChange
             self.signature = signature
             self.row = row
@@ -253,6 +261,9 @@ where Item.ID: Hashable {
         func apply(_ next: [Item], animated: Bool) {
             guard let collection, let dataSource else { return }
             let nextOrder = next.map(\.id)
+            let isPrepending = order.first.flatMap { first in
+                nextOrder.firstIndex(of: first).map { $0 > 0 }
+            } ?? false
             let nextSignatures = Dictionary(uniqueKeysWithValues: next.map {
                 ($0.id, signature($0))
             })
@@ -268,8 +279,9 @@ where Item.ID: Hashable {
             let nextLookup = Dictionary(uniqueKeysWithValues: next.map { ($0.id, $0) })
             let changed = nextOrder.filter { signatures[$0] != nextSignatures[$0] }
             for id in changed { heights[id] = nil }
-            if collection.bounds.width > 1,
-               abs(collection.bounds.width - width) > 0.5 {
+            let widthChanged = collection.bounds.width > 1
+                && abs(collection.bounds.width - width) > 0.5
+            if widthChanged {
                 width = collection.bounds.width
                 heights.removeAll(keepingCapacity: true)
             }
@@ -285,11 +297,18 @@ where Item.ID: Hashable {
             snapshot.appendSections([0])
             snapshot.appendItems(nextOrder)
             if !changed.isEmpty { snapshot.reloadItems(changed) }
-            collection.collectionViewLayout.invalidateLayout()
+            if widthChanged {
+                collection.collectionViewLayout.invalidateLayout()
+            }
             dataSource.apply(snapshot, animatingDifferences: animated) {
                 guard generation == self.applyGeneration,
-                      self.collection === collection,
-                      !collection.isTracking,
+                      self.collection === collection else { return }
+                collection.layoutIfNeeded()
+                if isPrepending {
+                    _ = ChatScrollHandle.shared.compensatePendingPrepend()
+                    return
+                }
+                guard !collection.isTracking,
                       !collection.isDragging,
                       !collection.isDecelerating else { return }
                 let minimumY = -collection.adjustedContentInset.top
@@ -336,6 +355,7 @@ where Item.ID: Hashable {
             if scrollView.isDragging || scrollView.isTracking || scrollView.isDecelerating {
                 ChatScrollHandle.shared.noteUserMotion()
             }
+            onScrollOffset?(scrollView.contentOffset.y)
             publishScrollState(
                 scrollView.isDragging || scrollView.isTracking || scrollView.isDecelerating
             )

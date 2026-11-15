@@ -2760,6 +2760,11 @@ struct ChatDetailView: View {
                     frameCaptureTick &+= 1
                 }
             },
+            onScrollOffset: { y in
+                if isGroup, y < 900 {
+                    autoLoadOlder()
+                }
+            },
             onSizeChange: {
                 let compensated = ChatScrollHandle.shared.compensatePendingPrepend()
                 if compensated && needsPrependTrim {
@@ -6201,7 +6206,7 @@ struct ChatDetailView: View {
             var more = true
             /* 大群按微信式小页补历史：每次只取一页 100 条，
                避免用户刚上滑就同步三段历史和触发行高/内存突增。 */
-            let target = isGroup ? 100 : 200
+            let target = isGroup ? 40 : 200
             let maxPages = isGroup ? 1 : 3
             for _ in 0..<maxPages {
                 let page = try await API.shared.messages(
