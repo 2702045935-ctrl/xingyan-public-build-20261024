@@ -1756,6 +1756,14 @@ enum L10n {
         "进入群聊": "Join group",
         "正在进入…": "Joining…",
         "没进去，再试一次": "Couldn't join. Try again",
+        "导航": "Navigation",
+        "全屏编辑": "Full-screen editor",
+        "展开编辑": "Expand editor",
+        "草稿会自动保存": "Drafts are saved automatically",
+        "输入消息": "Enter a message",
+        "消息内容": "Message text",
+        "支持多行长文": "Supports long, multi-line messages",
+        "字": "characters",
 
     ]
 }

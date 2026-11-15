@@ -1014,6 +1014,8 @@ struct ChatDetailView: View {
     }
 
     @State private var focused = false
+    @State private var showFullComposer = false
+    @State private var sendAfterFullComposer = false
     @StateObject private var composerBridge = ChatComposerBridge()
     @ObservedObject private var recentPhotos = RecentPhotoStore.shared
     @ObservedObject private var realtime = Realtime.shared
@@ -2256,6 +2258,21 @@ struct ChatDetailView: View {
             BotCardView(chat: chat).environmentObject(app)
         }
         .fullScreenCover(item: $web) { SafariSheet(url: $0.url).ignoresSafeArea() }
+        .fullScreenCover(isPresented: $showFullComposer, onDismiss: {
+            guard sendAfterFullComposer else { return }
+            sendAfterFullComposer = false
+            if draftImages.isEmpty {
+                sendText()
+            } else {
+                sendDraftImages()
+            }
+        }) {
+            FullScreenComposerView(text: $input,
+                                   tint: Color(hex: 0x2F7FD8)) {
+                sendAfterFullComposer = true
+                showFullComposer = false
+            }
+        }
 
         .environment(\.openURL, OpenURLAction { url in
             if url.scheme == "http" || url.scheme == "https" {
@@ -4413,6 +4430,11 @@ struct ChatDetailView: View {
         (voiceMode || recorder.recording) ? 42 : max(42, inputBoxHeight)
     }
 
+    private var composerCanExpand: Bool {
+        !voiceMode && !recorder.recording
+            && !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     private var composerNeedsLightLift: Bool {
         !composerUsesLightInk
             && backgroundPath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -4839,6 +4861,7 @@ struct ChatDetailView: View {
                     }
                 }
                 .padding(.horizontal, 8)
+                .padding(.trailing, composerCanExpand ? 28 : 0)
                 .frame(height: composerInputHeight)
                 .background {
                     let fieldShape = RoundedRectangle(cornerRadius: composerFieldRadius,
@@ -4867,6 +4890,25 @@ struct ChatDetailView: View {
                     RoundedRectangle(cornerRadius: composerFieldRadius,
                                      style: .continuous)
                         .stroke(composerFieldBorder, lineWidth: 0.6)
+                }
+                .overlay(alignment: .trailing) {
+                    if composerCanExpand {
+                        Button {
+                            UISelectionFeedbackGenerator().selectionChanged()
+                            focused = false
+                            panel = .none
+                            showFullComposer = true
+                        } label: {
+                            Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                .font(.system(size: 12.5, weight: .semibold))
+                                .foregroundStyle(composerUtilityInk.opacity(0.78))
+                                .frame(width: 30, height: 32)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.trailing, 4)
+                        .accessibilityLabel(Tr("展开编辑"))
+                    }
                 }
                 if input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && draftImages.isEmpty {
 

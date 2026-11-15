@@ -31,6 +31,108 @@ func chatComposerUIFont(_ size: CGFloat = 17) -> UIFont {
     return .systemFont(ofSize: scaled)
 }
 
+struct FullScreenComposerView: View {
+    @Binding var text: String
+    let tint: Color
+    let onSend: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @FocusState private var focused: Bool
+
+    private var trimmed: String {
+        text.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 12) {
+                Button {
+                    dismiss()
+                } label: {
+                    Text(Tr("关闭"))
+                        .font(pf(16, .medium))
+                        .foregroundStyle(C.label)
+                        .frame(minWidth: 52, minHeight: 44, alignment: .leading)
+                }
+                .buttonStyle(.plain)
+
+                Spacer(minLength: 0)
+
+                VStack(spacing: 2) {
+                    Text(Tr("全屏编辑"))
+                        .font(pf(17, .semibold))
+                        .foregroundStyle(C.label)
+                    Text(Tr("草稿会自动保存"))
+                        .font(pf(11.5))
+                        .foregroundStyle(C.subLabel)
+                }
+
+                Spacer(minLength: 0)
+
+                Button(action: onSend) {
+                    Image(systemName: "paperplane.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 40, height: 40)
+                        .background(C.green, in: Circle())
+                }
+                .buttonStyle(.plain)
+                .disabled(trimmed.isEmpty)
+                .opacity(trimmed.isEmpty ? 0.38 : 1)
+                .accessibilityLabel(Tr("发送"))
+            }
+            .padding(.horizontal, 16)
+            .frame(height: 58)
+
+            Rectangle()
+                .fill(C.hairline)
+                .frame(height: 0.5)
+
+            ZStack(alignment: .topLeading) {
+                if text.isEmpty {
+                    Text(Tr("输入消息"))
+                        .font(pf(18))
+                        .foregroundStyle(C.subLabel.opacity(0.72))
+                        .padding(.top, 18)
+                        .padding(.leading, 21)
+                        .allowsHitTesting(false)
+                }
+
+                TextEditor(text: $text)
+                    .font(pf(18))
+                    .foregroundStyle(C.label)
+                    .tint(tint)
+                    .scrollContentBackground(.hidden)
+                    .focused($focused)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 10)
+                    .scrollDismissesKeyboard(.interactively)
+                    .accessibilityLabel(Tr("消息内容"))
+            }
+
+            Rectangle()
+                .fill(C.hairline)
+                .frame(height: 0.5)
+
+            HStack {
+                Text("\(text.count) \(Tr("字"))")
+                    .font(pf(12, .medium).monospacedDigit())
+                Spacer(minLength: 0)
+                Text(Tr("支持多行长文"))
+                    .font(pf(12))
+            }
+            .foregroundStyle(C.subLabel)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 10)
+        }
+        .background(C.pageBg.ignoresSafeArea())
+        .task {
+            await Task.yield()
+            focused = true
+        }
+    }
+}
+
 @MainActor
 final class ChatComposerBridge: ObservableObject {
     fileprivate weak var textView: UITextView?
