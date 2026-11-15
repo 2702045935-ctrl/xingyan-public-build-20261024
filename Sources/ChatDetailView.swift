@@ -127,6 +127,21 @@ struct PendingMsg: Identifiable, Hashable {
     }
 }
 
+private enum NativeGroupItemKind: Equatable {
+    case older
+    case message(Message)
+    case outbox(PendingMsg)
+    case sendingVideo
+    case sendingFile
+    case bottom
+    case spacer
+}
+
+private struct NativeGroupItem: Identifiable, Equatable {
+    let id: String
+    let kind: NativeGroupItemKind
+}
+
 private struct ChatContentHeightKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
@@ -992,6 +1007,7 @@ struct ChatDetailView: View {
     @State private var wasAtBottom = true
 
     @State private var scroller: ScrollViewProxy?
+    @State private var nativeMessageController = NativeStaticListController()
 
     @State private var lastOlderLoad = Date.distantPast
 
@@ -1778,8 +1794,12 @@ struct ChatDetailView: View {
 
                             if let lastMsg = messages.last?.id {
                                 Button {
-                                    withAnimation(.easeOut(duration: 0.26)) {
-                                        scroller?.scrollTo(lastMsg, anchor: .bottom)
+                                    if isGroup {
+                                        nativeMessageController.scrollToBottom(animated: true)
+                                    } else {
+                                        withAnimation(.easeOut(duration: 0.26)) {
+                                            scroller?.scrollTo(lastMsg, anchor: .bottom)
+                                        }
                                     }
                                     unreadHere = 0
                                 } label: {
@@ -2222,7 +2242,13 @@ struct ChatDetailView: View {
             hiddenMessageIds.removeAll()
             UserDefaults.standard.removeObject(forKey: deletedMessageKey)
             rebuildIndex()
-            DispatchQueue.main.async { scroller?.scrollTo("__bottom", anchor: .bottom) }
+            DispatchQueue.main.async {
+                if isGroup {
+                    nativeMessageController.scrollToBottom(animated: false)
+                } else {
+                    scroller?.scrollTo("__bottom", anchor: .bottom)
+                }
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .chrisChatRecall)) { note in
             guard let info = note.userInfo,
@@ -2706,8 +2732,221 @@ struct ChatDetailView: View {
         }
     }
 
-    /// 群聊正文使用系统原生复用列表；一对一聊天保持原实现。
     private var nativeMessageList: some View {
+        NativeStaticList(
+            items: nativeGroupItems,
+            controller: nativeMessageController,
+            signature: nativeGroupSignature
+        ) { item in
+            nativeGroupRow(item)
+        }
+        .overlay(alignment: .topLeading) {
+            ScrollOffsetProbe(onChange: { _, _ in
+                if ChatScrollHandle.shared.moving, let g = ChatScrollHandle.shared.gap {
+                    let next = g <= 16
+                    if wasAtBottom != next { wasAtBottom = next }
+                }
+            }, onScrollStateChange: { scrolling in
+                if scrolling {
+                    atBottom = false
+                    wasAtBottom = false
+                    if !initialScrollReady {
+                        initialScrollTask?.cancel()
+                        initialScrollTask = nil
+                        initialScrollReady = true
+                        allowSettledBottom = false
+                    }
+                    ScrollGate.shared.setScrolling(true)
+                    followOwnSendUntil = Date.distantPast
+                } else {
+                    if let gap = ChatScrollHandle.shared.gap {
+                        atBottom = gap <= 16
+                        wasAtBottom = gap <= 16
+                    }
+                    ScrollGate.shared.setScrolling(false)
+                    frameCaptureTick &+= 1
+                }
+            }, onSizeChange: {
+                let compensated = ChatScrollHandle.shared.compensatePendingPrepend()
+                if compensated && needsPrependTrim {
+                    needsPrependTrim = false
+                    DispatchQueue.main.async { trimMessageWindowForOlderPage() }
+                }
+                guard atBottomNow, !holdScroll else { return }
+                if ChatScrollHandle.shared.moving { return }
+                ChatScrollDiag.shared.note("内容变高 → 原生消息列表贴底")
+                nativeMessageController.scrollToBottom(animated: false)
+            })
+            .frame(width: 1, height: 1)
+            .allowsHitTesting(false)
+        }
+        .onChange(of: messages.count) { _ in
+            backfillVoiceText()
+            if !initialScrollReady {
+                if !loading { settleInitialNativeScroll() }
+                return
+            }
+            guard !holdScroll else { return }
+            guard atBottomNow || messages.last?.senderId == myId else { return }
+            nativeMessageController.scrollToBottom(animated: false)
+            scheduleSettledBottom()
+            markConversationReadSoon()
+        }
+        .onChange(of: loading) { value in
+            if value {
+                allowSettledBottom = false
+            } else {
+                if !initialScrollReady { settleInitialNativeScroll() }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    allowSettledBottom = true
+                }
+            }
+        }
+        .onChange(of: scrollTick) { _ in
+            atBottom = true
+            wasAtBottom = true
+            nativeMessageController.scrollToBottom(animated: true)
+            markConversationReadSoon()
+        }
+        .onChange(of: pinTick) { _ in
+            nativeMessageController.scrollToBottom(animated: false)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { notice in
+            ChatScrollDiag.shared.note("键盘位置变了")
+            pinThroughKeyboardTransition(notice)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardDidShowNotification)) { _ in
+            pinToBottomImmediately()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            if atBottomNow { nativeMessageController.scrollToBottom(animated: false) }
+        }
+        .onAppear {
+            backfillVoiceText()
+            wasAtBottom = true
+            atBottom = true
+            if initialCacheReady || !loading {
+                settleInitialNativeScroll()
+            } else {
+                initialScrollReady = false
+            }
+        }
+        .onChange(of: initialCacheReady) { ready in
+            if ready {
+                settleInitialNativeScroll()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    allowSettledBottom = true
+                }
+            }
+        }
+    }
+
+    private var nativeGroupItems: [NativeGroupItem] {
+        var items: [NativeGroupItem] = []
+        if hasOlder {
+            items.append(NativeGroupItem(id: "native-older", kind: .older))
+        }
+        for message in messages {
+            items.append(NativeGroupItem(id: "native-message:\(message.id)",
+                                         kind: .message(message)))
+        }
+        for pending in outbox {
+            items.append(NativeGroupItem(id: "native-outbox:\(pending.id)",
+                                         kind: .outbox(pending)))
+        }
+        if !sendingMedia.isEmpty {
+            items.append(NativeGroupItem(id: "native-sending-video", kind: .sendingVideo))
+        }
+        if sendingFileProgress != nil && !sendingFileName.isEmpty {
+            items.append(NativeGroupItem(id: "native-sending-file", kind: .sendingFile))
+        }
+        items.append(NativeGroupItem(id: "__bottom", kind: .bottom))
+        items.append(NativeGroupItem(id: "native-spacer", kind: .spacer))
+        return items
+    }
+
+    private func nativeGroupSignature(_ item: NativeGroupItem) -> String {
+        switch item.kind {
+        case .older:
+            return "older:\(hasOlder)"
+        case .message(let message):
+            return [
+                "message",
+                String(describing: message),
+                asrCache[message.id] ?? "",
+                selected.contains(message.id) ? "selected" : "",
+                senderNameFor(message),
+                senderAvatarFor(message),
+                backgroundPath,
+                Lang.code,
+                usesPlainDefaultChatChrome ? "plain" : "styled"
+            ].joined(separator: "|")
+        case .outbox(let pending):
+            return "outbox:\(String(describing: pending))"
+        case .sendingVideo:
+            return "sending-video:\(sendProgress):\(sendingPreview != nil)"
+        case .sendingFile:
+            return "sending-file:\(sendingFileName):\(sendingFileBytes):\(sendingFileProgress ?? 0)"
+        case .bottom:
+            return "bottom"
+        case .spacer:
+            return "spacer:\(L.msgPad)"
+        }
+    }
+
+    @ViewBuilder
+    private func nativeGroupRow(_ item: NativeGroupItem) -> some View {
+        switch item.kind {
+        case .older:
+            Color.clear
+                .frame(height: 1)
+                .onAppear { autoLoadOlder() }
+
+        case .message(let message):
+            messageBlock(message)
+                .padding(.horizontal, L.msgPad)
+                .onAppear {
+                    if hasOlder, messages.prefix(24).contains(where: { $0.id == message.id }) {
+                        autoLoadOlder()
+                    }
+                    if message.id == messages.last?.id { atBottom = true }
+                }
+
+        case .outbox(let pending):
+            pendingBubble(pending)
+                .padding(.horizontal, L.msgPad)
+
+        case .sendingVideo:
+            HStack(spacing: 8) {
+                Spacer(minLength: 0)
+                SendingVideoBubble(cover: sendingPreview, progress: sendProgress)
+            }
+            .padding(.horizontal, L.msgPad)
+            .padding(.bottom, 12)
+
+        case .sendingFile:
+            HStack(spacing: 8) {
+                Spacer(minLength: 0)
+                SendingFileBubble(name: sendingFileName,
+                                  bytes: sendingFileBytes,
+                                  progress: sendingFileProgress ?? 0)
+            }
+            .padding(.horizontal, L.msgPad)
+            .padding(.bottom, 12)
+
+        case .bottom:
+            Color.clear
+                .frame(height: 1)
+                .onAppear { atBottom = true }
+                .onDisappear { atBottom = false }
+
+        case .spacer:
+            Color.clear.frame(height: 8 + L.msgPad)
+        }
+    }
+
+    /// Kept temporarily for reference while direct chats transition independently.
+    private var legacyNativeMessageList: some View {
         let nearTopIds = hasOlder ? Set(messages.prefix(24).map { $0.id }) : Set<String>()
         return ScrollViewReader { proxy in
             List {
@@ -2913,6 +3152,27 @@ struct ChatDetailView: View {
         }
     }
 
+    private func settleInitialNativeScroll() {
+        guard !initialScrollReady else { return }
+        initialScrollTask?.cancel()
+        ChatScrollHandle.shared.allowAutomaticPinning()
+        initialScrollTask = Task { @MainActor in
+            atBottom = true
+            wasAtBottom = true
+            for delay in [0, 24, 70, 150, 260] {
+                if delay > 0 {
+                    try? await Task.sleep(nanoseconds: UInt64(delay) * 1_000_000)
+                }
+                if Task.isCancelled { return }
+                if ChatScrollHandle.shared.moving { return }
+                nativeMessageController.scrollToBottom(animated: false)
+            }
+            if Task.isCancelled { return }
+            initialScrollReady = true
+            pinTick += 1
+        }
+    }
+
     private func autoLoadOlder() {
         guard hasOlder, !loadingOlder, !loadingAllGroupHistory, !loading else { return }
         guard Date().timeIntervalSince(lastOlderLoad) > 0.08 else { return }
@@ -2936,14 +3196,22 @@ struct ChatDetailView: View {
             atBottom = true
             if force {
                 ChatScrollHandle.shared.allowAutomaticPinning()
-                scroller?.scrollTo("__bottom", anchor: .bottom)
+                if isGroup {
+                    nativeMessageController.scrollToBottom(animated: false)
+                } else {
+                    scroller?.scrollTo("__bottom", anchor: .bottom)
+                }
             }
             pinTick += 1
             if force {
                 try? await Task.sleep(nanoseconds: 320_000_000)
                 if Task.isCancelled { return }
                 ChatScrollHandle.shared.allowAutomaticPinning()
-                scroller?.scrollTo("__bottom", anchor: .bottom)
+                if isGroup {
+                    nativeMessageController.scrollToBottom(animated: false)
+                } else {
+                    scroller?.scrollTo("__bottom", anchor: .bottom)
+                }
             }
         }
     }
@@ -2962,7 +3230,11 @@ struct ChatDetailView: View {
         ChatScrollHandle.shared.allowAutomaticPinning()
         atBottom = true
         wasAtBottom = true
-        scroller?.scrollTo("__bottom", anchor: .bottom)
+        if isGroup {
+            nativeMessageController.scrollToBottom(animated: false)
+        } else {
+            scroller?.scrollTo("__bottom", anchor: .bottom)
+        }
         pinTick += 1
     }
 
@@ -2986,10 +3258,27 @@ struct ChatDetailView: View {
         }
     }
 
+    private func pinThroughKeyboardTransition(_ notice: Notification) {
+        guard atBottomNow else { return }
+        let value = notice.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey]
+            as? Double ?? 0.25
+        pinToBottomImmediately()
+        DispatchQueue.main.async {
+            self.pinToBottomImmediately()
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + value + 0.02) {
+            self.pinToBottomImmediately()
+        }
+    }
+
     private func scrollToEnd(_ proxy: ScrollViewProxy, animated: Bool) {
 
         ChatScrollDiag.shared.note("scrollToEnd anim=\(animated ? 1 : 0)")
         if ChatScrollHandle.shared.pinToBottom(animated: animated) { return }
+        if isGroup {
+            nativeMessageController.scrollToBottom(animated: animated)
+            return
+        }
         let target = "__bottom"
         guard !target.isEmpty else { return }
         if animated {
@@ -5625,7 +5914,11 @@ struct ChatDetailView: View {
     private func jumpToMessage(_ id: String, seq targetSeq: Int? = nil) {
         guard !id.isEmpty else { return }
         if messages.contains(where: { $0.id == id }) {
-            withAnimation(.easeInOut(duration: 0.25)) { scroller?.scrollTo(id, anchor: .center) }
+            if isGroup {
+                nativeMessageController.scrollToID(id, at: .centeredVertically, animated: true)
+            } else {
+                withAnimation(.easeInOut(duration: 0.25)) { scroller?.scrollTo(id, anchor: .center) }
+            }
             return
         }
         Task { @MainActor in
@@ -5644,7 +5937,11 @@ struct ChatDetailView: View {
                 return
             }
             try? await Task.sleep(nanoseconds: 80_000_000)
-            withAnimation(.easeInOut(duration: 0.25)) { scroller?.scrollTo(id, anchor: .center) }
+            if isGroup {
+                nativeMessageController.scrollToID(id, at: .centeredVertically, animated: true)
+            } else {
+                withAnimation(.easeInOut(duration: 0.25)) { scroller?.scrollTo(id, anchor: .center) }
+            }
         }
     }
 
@@ -6040,10 +6337,23 @@ struct ChatDetailView: View {
                 messages = Array(visibleMessages(merged).suffix(maxMessageWindow))
                 hasOlder = true
                 rebuildIndex()
-                if followBottom, let scroller {
+                if followBottom, isGroup {
+                    ChatScrollHandle.shared.allowAutomaticPinning()
+                    DispatchQueue.main.async {
+                        nativeMessageController.scrollToBottom(animated: false)
+                    }
+                } else if followBottom, let scroller {
                     ChatScrollHandle.shared.allowAutomaticPinning()
                     DispatchQueue.main.async {
                         scroller.scrollTo("__bottom", anchor: .bottom)
+                    }
+                } else if let keepAnchor, isGroup {
+                    holdScroll = true
+                    DispatchQueue.main.async {
+                        nativeMessageController.scrollToID(keepAnchor, at: .top, animated: false)
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                        holdScroll = false
                     }
                 } else if let keepAnchor, let scroller {
                     holdScroll = true
@@ -6083,7 +6393,13 @@ struct ChatDetailView: View {
         hasOlder = !reachedStart
         rebuildIndex()
 
-        if !followBottom, let keepAnchor, let scroller {
+        if !followBottom, let keepAnchor, isGroup {
+            holdScroll = true
+            DispatchQueue.main.async {
+                nativeMessageController.scrollToID(keepAnchor, at: .top, animated: false)
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { holdScroll = false }
+        } else if !followBottom, let keepAnchor, let scroller {
             holdScroll = true
             DispatchQueue.main.async { scroller.scrollTo(keepAnchor, anchor: .top) }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { holdScroll = false }

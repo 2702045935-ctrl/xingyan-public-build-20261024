@@ -1290,6 +1290,8 @@ private final class MomentScrollMetrics {
 }
 
 struct MomentsView: View {
+    private static let momentPageSize = 20
+
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -1309,6 +1311,7 @@ struct MomentsView: View {
 
     @State private var solid = false
     @State private var moments: [Moment] = []
+    @State private var stressLoadedCount = 20
 
     @State private var confirmDiscard = false
     @State private var showPhoto = false
@@ -1546,8 +1549,9 @@ struct MomentsView: View {
             if moments.isEmpty, target == nil, !mineOnly {
                 let cached = LocalStore.cachedMoments(userId: app.me?.id ?? "")
                 if !cached.isEmpty {
-                    moments = cached
-                    rebuildFoldRows(cached)
+                    let page = Array(cached.prefix(Self.momentPageSize))
+                    moments = page
+                    rebuildFoldRows(page)
                 }
             }
             await reload()
@@ -1971,7 +1975,9 @@ struct MomentsView: View {
     }
 
     private var displayedMoments: [Moment] {
-        MomentStressFixture.isActive ? MomentStressFixture.moments : moments
+        MomentStressFixture.isActive
+            ? Array(MomentStressFixture.moments.prefix(stressLoadedCount))
+            : moments
     }
 
     private func nativeMomentRowConfiguration(_ item: NativeMomentFeedItem,
@@ -2084,11 +2090,8 @@ struct MomentsView: View {
     private var nativeMomentFooter: some View {
         VStack(spacing: 0) {
             if hasMoreMoments {
-                Text(loadingMore ? Tr("正在加载…") : " ")
-                    .font(pf(14))
-                    .foregroundColor(C.subLabel)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 18)
+                Color.clear
+                    .frame(height: 1)
                     .onAppear {
                         guard !loadingMore else { return }
                         Task { await loadMoreMoments() }
@@ -2552,12 +2555,29 @@ struct MomentsView: View {
     }
 
     private func reload() async {
-        if let feed = try? await API.shared.momentsFeed(limit: 30, userId: feedUserId) {
-            moments = feed.moments
-            hasMoreMoments = feed.hasMore
+        if MomentStressFixture.isActive {
+            stressLoadedCount = max(20, min(stressLoadedCount, MomentStressFixture.count))
+            momentTotal = MomentStressFixture.count
+            hasMoreMoments = stressLoadedCount < MomentStressFixture.count
+            return
+        }
+        if let feed = try? await API.shared.momentsFeed(
+            limit: Self.momentPageSize,
+            userId: feedUserId
+        ) {
+            if moments.isEmpty {
+                moments = feed.moments
+            } else {
+                let known = Set(moments.map(\.id))
+                let fresh = feed.moments.filter { !known.contains($0.id) }
+                if !fresh.isEmpty {
+                    moments.insert(contentsOf: fresh, at: 0)
+                }
+            }
             momentTotal = feed.total
             feedRange = feed.range
             app.momentNoticeUnread = feed.noticeUnread
+            hasMoreMoments = moments.count < feed.total || feed.hasMore
 
             if target == nil && !mineOnly {
                 LocalStore.saveMoments(moments, userId: app.me?.id ?? "")
@@ -2565,7 +2585,8 @@ struct MomentsView: View {
         } else {
 
             let cached = LocalStore.cachedMoments(userId: app.me?.id ?? "")
-            moments = cached.isEmpty ? app.moments : cached
+            let fallback = cached.isEmpty ? app.moments : cached
+            moments = Array(fallback.prefix(Self.momentPageSize))
             hasMoreMoments = false
         }
 
@@ -2576,9 +2597,21 @@ struct MomentsView: View {
     }
 
     private func loadMoreMoments() async {
+        if MomentStressFixture.isActive {
+            guard stressLoadedCount < MomentStressFixture.count, !loadingMore else { return }
+            loadingMore = true
+            stressLoadedCount = min(
+                MomentStressFixture.count,
+                stressLoadedCount + Self.momentPageSize
+            )
+            momentTotal = MomentStressFixture.count
+            hasMoreMoments = stressLoadedCount < MomentStressFixture.count
+            loadingMore = false
+            return
+        }
         guard hasMoreMoments, !loadingMore, let last = moments.last else { return }
         loadingMore = true
-        if let feed = try? await API.shared.momentsFeed(limit: 30, before: last.createdAt, beforeId: last.id,
+        if let feed = try? await API.shared.momentsFeed(limit: Self.momentPageSize, before: last.createdAt, beforeId: last.id,
                                                         userId: feedUserId) {
             let known = Set(moments.map { $0.id })
             moments.append(contentsOf: feed.moments.filter { !known.contains($0.id) })
@@ -2590,12 +2623,13 @@ struct MomentsView: View {
     }
 
     private func pollNewMoments() async {
-        guard let feed = try? await API.shared.momentsFeed(limit: 30, userId: feedUserId) else { return }
+        guard !MomentStressFixture.isActive else { return }
+        guard let feed = try? await API.shared.momentsFeed(limit: Self.momentPageSize, userId: feedUserId) else { return }
         let known = Set(moments.map { $0.id })
         let fresh = feed.moments.filter { !known.contains($0.id) }
         if !fresh.isEmpty { moments.insert(contentsOf: fresh, at: 0) }
         momentTotal = feed.total
-        if moments.count <= 30 { hasMoreMoments = feed.hasMore }
+        hasMoreMoments = moments.count < feed.total || feed.hasMore
     }
 
     private func publish() {

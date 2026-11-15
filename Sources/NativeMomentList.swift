@@ -162,12 +162,16 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
 
         func apply(_ next: [NativeMomentFeedItem], animated: Bool) {
             guard let dataSource, let collection else { return }
-            if !order.isEmpty && (collection.isDragging || collection.isDecelerating) {
-                pendingItems = next
-                return
-            }
             let nextLookup = Dictionary(uniqueKeysWithValues: next.map { ($0.id, $0) })
             let nextOrder = next.map(\.id)
+            if !order.isEmpty && (collection.isDragging || collection.isDecelerating) {
+                let known = Set(order)
+                let commonOrder = nextOrder.filter { known.contains($0) }
+                if commonOrder != order {
+                    pendingItems = next
+                    return
+                }
+            }
             if nextOrder == order && next.allSatisfy({ lookup[$0.id] == $0 }) {
                 pendingItems = nil
                 return
@@ -286,12 +290,12 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
 
             let remaining = scrollView.contentSize.height
                 - scrollView.contentOffset.y - scrollView.bounds.height
-            if remaining < 680 {
+            if remaining < 1200 {
                 if nearEndArmed {
                     nearEndArmed = false
                     onNearEnd()
                 }
-            } else if remaining > 1000 {
+            } else if remaining > 1500 {
                 nearEndArmed = true
             }
         }

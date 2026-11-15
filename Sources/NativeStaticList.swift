@@ -33,14 +33,47 @@ private final class NativeStaticHostCell: UICollectionViewCell {
     }
 }
 
+final class NativeStaticListController {
+    fileprivate var scrollToIDHandler: ((String, UICollectionView.ScrollPosition, Bool) -> Bool)?
+    fileprivate var scrollToBottomHandler: ((Bool) -> Bool)?
+
+    @discardableResult
+    func scrollToID(_ id: String,
+                    at position: UICollectionView.ScrollPosition = .centeredVertically,
+                    animated: Bool = true) -> Bool {
+        scrollToIDHandler?(id, position, animated) ?? false
+    }
+
+    @discardableResult
+    func scrollToBottom(animated: Bool = false) -> Bool {
+        scrollToBottomHandler?(animated) ?? false
+    }
+
+    fileprivate func clear() {
+        scrollToIDHandler = nil
+        scrollToBottomHandler = nil
+    }
+}
+
 struct NativeStaticList<Item: Identifiable & Equatable, Row: View>: UIViewControllerRepresentable
 where Item.ID: Hashable {
     let items: [Item]
+    let controller: NativeStaticListController? = nil
     let signature: (Item) -> String
     @ViewBuilder let row: (Item) -> Row
 
+    init(items: [Item],
+         controller: NativeStaticListController? = nil,
+         signature: @escaping (Item) -> String,
+         @ViewBuilder row: @escaping (Item) -> Row) {
+        self.items = items
+        self.controller = controller
+        self.signature = signature
+        self.row = row
+    }
+
     func makeCoordinator() -> Coordinator {
-        Coordinator(signature: signature, row: row)
+        Coordinator(controller: controller, signature: signature, row: row)
     }
 
     func makeUIViewController(context: Context) -> UICollectionViewController {
@@ -88,6 +121,7 @@ where Item.ID: Hashable {
         }
         context.coordinator.dataSource = dataSource
         context.coordinator.collection = collection
+        context.coordinator.attachController()
         context.coordinator.apply(items, animated: false)
         return controller
     }
@@ -96,6 +130,7 @@ where Item.ID: Hashable {
                                 context: Context) {
         context.coordinator.row = row
         context.coordinator.signature = signature
+        context.coordinator.attachController()
         context.coordinator.apply(items, animated: false)
     }
 
@@ -105,6 +140,7 @@ where Item.ID: Hashable {
         var signature: (Item) -> String
         weak var collection: UICollectionView?
         var dataSource: UICollectionViewDiffableDataSource<Int, Item.ID>?
+        let controller: NativeStaticListController?
         private var order: [Item.ID] = []
         private var signatures: [Item.ID: String] = [:]
         private var heights: [Item.ID: CGFloat] = [:]
@@ -113,11 +149,44 @@ where Item.ID: Hashable {
         private var pending: [Item]?
         private var applyGeneration = 0
 
-        init(signature: @escaping (Item) -> String,
+        init(controller: NativeStaticListController?,
+             signature: @escaping (Item) -> String,
              row: @escaping (Item) -> Row) {
+            self.controller = controller
             self.signature = signature
             self.row = row
             super.init()
+        }
+
+        func attachController() {
+            guard let controller else { return }
+            controller.scrollToIDHandler = { [weak self] id, position, animated in
+                guard let self, let collection = self.collection else { return false }
+                self.flush()
+                collection.layoutIfNeeded()
+                guard let index = self.order.firstIndex(where: {
+                    String(describing: $0) == id
+                }) else { return false }
+                collection.scrollToItem(
+                    at: IndexPath(item: index, section: 0),
+                    at: position,
+                    animated: animated
+                )
+                return true
+            }
+            controller.scrollToBottomHandler = { [weak self] animated in
+                guard let self, let collection = self.collection else { return false }
+                self.flush()
+                collection.layoutIfNeeded()
+                let minimumY = -collection.adjustedContentInset.top
+                let maximumY = max(
+                    minimumY,
+                    collection.contentSize.height - collection.bounds.height
+                        + collection.adjustedContentInset.bottom
+                )
+                collection.setContentOffset(CGPoint(x: 0, y: maximumY), animated: animated)
+                return true
+            }
         }
 
         func apply(_ next: [Item], animated: Bool) {
