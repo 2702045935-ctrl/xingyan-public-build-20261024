@@ -1745,13 +1745,7 @@ struct ChatDetailView: View {
                 .transaction { $0.animation = nil }
                 .zIndex(0)
 
-            Group {
-                if isGroup {
-                    nativeMessageList
-                } else {
-                    messageList
-                }
-            }
+            messageList
 
                 .contentShape(Rectangle())
                 .simultaneousGesture(TapGesture().onEnded { dismissTyping() })
