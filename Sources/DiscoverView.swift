@@ -1289,9 +1289,11 @@ private final class MomentScrollMetrics {
     var baseTop: CGFloat? = nil
 }
 
-struct MomentsView: View {
-    private static let momentPageSize = 20
+private final class MomentDragClock {
+    var lastDragAt = Date(timeIntervalSince1970: 0)
+}
 
+struct MomentsView: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -1311,11 +1313,6 @@ struct MomentsView: View {
 
     @State private var solid = false
     @State private var moments: [Moment] = []
-    @State private var stressLoadedCount = 20
-    @State private var prefetchedMoments: [Moment] = []
-    @State private var prefetchedHasMore = false
-    @State private var prefetchingMoments = false
-    @State private var momentPrefetchTask: Task<Void, Never>?
 
     @State private var confirmDiscard = false
     @State private var showPhoto = false
@@ -1384,9 +1381,12 @@ struct MomentsView: View {
     @State private var loadingMore = false
     @State private var momentTotal = 0
 
+    @State private var pullY: CGFloat = 0
     @State private var pulling = false
-    @State private var refreshTask: Task<Void, Never>?
+    @State private var spin: Double = 0
+    @State private var spinTask: Task<Void, Never>?
 
+    @State private var dragClock = MomentDragClock()
     @State private var scrollGateActive = false
     @ObservedObject private var realtime = Realtime.shared
 
@@ -1398,8 +1398,6 @@ struct MomentsView: View {
     @State private var showGroupPage = false
 
     @State private var showNoticeList = false
-    @State private var likesSheetLikes: [MomentLike] = []
-    @State private var showLikesSheet = false
 
     private var owner: User? {
         if let target {
@@ -1432,66 +1430,113 @@ struct MomentsView: View {
 
             C.pageBg.ignoresSafeArea()
 
-            NativeMomentList(
-                items: nativeMomentFeedItems,
-                refreshing: pulling,
-                onRefresh: {
-                    if !pulling { startPullRefresh() }
-                },
-                onScrollOffset: { y in
-                    scrollMetrics.topY = -y
-                    if scrollMetrics.baseTop == nil { scrollMetrics.baseTop = 0 }
-                    let nextSentinel = y > 1
-                    if sentinelGone != nextSentinel {
-                        sentinelGone = nextSentinel
+            ScrollView {
+                VStack(spacing: 0) {
+
+                    Color.clear
+                        .frame(height: 1)
+                        .background(
+                            GeometryReader { g in
+                                Color.clear.preference(key: OffsetKey.self,
+                                                       value: g.frame(in: .global).minY)
+                            }
+                        )
+
+                    GeometryReader { g in
+                        let measured = max(0, g.frame(in: .named("momentsScroll")).minY - 1)
+                        let extra = coverLocked ? coverLockPull : measured
+                        coverView(extra)
+                            .offset(y: coverLocked ? 0 : -extra)
+                            .onAppear { coverPullBox.value = measured }
+                            .onChange(of: measured) { value in
+                                let quantized = (value / 4).rounded() * 4
+                                if abs(quantized - coverPullBox.value) >= 4 {
+                                    coverPullBox.value = quantized
+                                }
+                            }
                     }
-                    updateSolidState()
-                    coverPullBox.value = max(0, y)
-                },
-                onScrollActivity: { active in
-                    if active {
+                    .frame(height: L.coverH + (coverLocked ? coverLockPull : 0))
+                    .zIndex(1)
+                    momentList
+                }
+            }
+            .coordinateSpace(name: "momentsScroll")
+            .onPreferenceChange(OffsetKey.self) { y in
+                if scrollMetrics.baseTop == nil { scrollMetrics.baseTop = y }
+                scrollMetrics.topY = y
+                updateSolidState()
+            }
+
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 6)
+                    .onChanged { _ in
                         guard !scrollGateActive else { return }
                         scrollGateActive = true
                         ScrollGate.shared.setScrolling(true)
-                    } else {
+                    }
+                    .onEnded { _ in
                         tapLockUntil = Date().addingTimeInterval(0.35)
                         scrollGateActive = false
                         ScrollGate.shared.setScrolling(false)
                     }
-                },
-                onNearEnd: {
-                    guard hasMoreMoments, !loadingMore else { return }
-                    Task { await loadMoreMoments() }
-                },
-                nativeCover: { entry, width in
-                    guard entry.kind == .cover else { return nil }
-                    return NativeMomentCoverConfiguration(
-                        width: width,
-                        height: L.coverH + (coverLocked ? coverLockPull : 0),
-                        coverPath: cover,
-                        showsSetup: coverEditable,
-                        showsChange: coverEditable,
-                        ownerName: owner?.name ?? "",
-                        avatarPath: owner?.avatarPath ?? "",
-                        signature: signature,
-                        isDark: scheme == .dark,
-                        onToggleLock: { toggleCoverLock() },
-                        onSetCover: { coverMenu = true },
-                        onChangeCover: { coverMenu = true }
-                    )
-                },
-                nativeRow: { entry, width in
-                    guard entry.kind == .moment, let moment = entry.moment else { return nil }
-                    return nativeMomentRowConfiguration(entry, moment: moment, width: width)
-                }
-            ) { entry in
-                nativeMomentFeedRow(entry)
-                    .environmentObject(app)
-                    .environment(\.colorScheme, scheme)
-            }
+            )
+            .simultaneousGesture(
+                    DragGesture(minimumDistance: 8)
+                    .onChanged { v in
+                        dragClock.lastDragAt = Date()
+                        guard !sentinelGone else { return }
+                        let dy = v.translation.height
+                        if dy > 0 {
+                            let next = min(140, dy)
+                            if abs(next - pullY) >= 0.25 {
+                                pullY = next
+                            }
+                            if !pulling { spin = Double(pullY) * 3.2 }
+                        } else if pullY > 0 && !pulling {
+                            pullY = 0
+                        }
+                    }
+                    .onEnded { _ in
+                        dragClock.lastDragAt = Date()
+                        if pullY > 60 && !pulling { startPullRefresh() }
+                        if !pulling { pullY = 0 }
+                    }
+            )
             .ignoresSafeArea(edges: .top)
 
+            .task(id: pullY > 0 || pulling) {
+                while !Task.isCancelled {
+                    try? await Task.sleep(nanoseconds: 300_000_000)
+                    if Task.isCancelled { return }
+                    if pulling {
+
+                        if Date().timeIntervalSince(dragClock.lastDragAt) > 10 {
+                            CrashCatcher.note("朋友圈", "下拉刷新超过 10 秒没回来，先收球")
+                            pulling = false
+                            pullY = 0
+                            spin = 0
+                        }
+                        continue
+                    }
+                    if pullY > 0 && Date().timeIntervalSince(dragClock.lastDragAt) > 0.4 {
+                        pullY = 0
+                        spin = 0
+                        return
+                    }
+                    if pullY <= 0 { return }
+                }
+            }
+
             navBar
+
+            if pullY > 0 || pulling {
+                ColorBall(size: 34, spin: spin)
+                    .scaleEffect(0.72 + min(1, pullY / 90) * 0.28)
+                    .offset(y: min(96, pullY * 0.8) + L.safeTop + 6)
+                    .animation(.easeOut(duration: 0.12), value: pullY)
+                    .allowsHitTesting(false)
+                    .zIndex(30)
+            }
 
             if let i = viewerIndex, !viewerPaths.isEmpty {
 
@@ -1538,12 +1583,6 @@ struct MomentsView: View {
             .presentationDetents([.fraction(0.72), .large])
             .presentationDragIndicator(.hidden)
         }
-        .sheet(isPresented: $showLikesSheet) {
-            MomentLikesSheet(likes: likesSheetLikes)
-                .environmentObject(app)
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.hidden)
-        }
         .onAppear {
             scrollMetrics.baseTop = nil
             scrollMetrics.topY = 0
@@ -1556,8 +1595,6 @@ struct MomentsView: View {
             }
         }
         .onDisappear {
-            refreshTask?.cancel()
-            momentPrefetchTask?.cancel()
             guard scrollGateActive else { return }
             scrollGateActive = false
             ScrollGate.shared.setScrolling(false)
@@ -1574,9 +1611,8 @@ struct MomentsView: View {
             if moments.isEmpty, target == nil, !mineOnly {
                 let cached = LocalStore.cachedMoments(userId: app.me?.id ?? "")
                 if !cached.isEmpty {
-                    let page = Array(cached.prefix(Self.momentPageSize))
-                    moments = page
-                    rebuildFoldRows(page)
+                    moments = cached
+                    rebuildFoldRows(cached)
                 }
             }
             await reload()
@@ -1838,8 +1874,7 @@ struct MomentsView: View {
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
             .padding(.trailing, 16)
-            .padding(.bottom, 10)
-            .zIndex(6)
+            .offset(y: 21)
             .allowsHitTesting(false)
         }
         .frame(height: L.coverH + extra)
@@ -1962,164 +1997,39 @@ struct MomentsView: View {
         .buttonStyle(.plain)
     }
 
-    private var nativeMomentFeedItems: [NativeMomentFeedItem] {
-        var items = [
-            NativeMomentFeedItem(
-                id: "cover",
-                kind: .cover,
-                moment: nil,
-                day: "\(cover)|\(owner?.name ?? "")|\(owner?.avatarPath ?? "")|\(signature ?? "")|\(coverLocked)-\(Int(coverLockPull))"
-            )
-        ]
-
-        var previousDay = ""
-        for moment in displayedMoments {
-            let day = mineOnly ? fullDateLabel(moment.createdAt) : dayLabel(moment.createdAt)
-            let changed = day != previousDay
-            items.append(NativeMomentFeedItem(
-                id: "moment:\(moment.id)",
-                kind: .moment,
-                moment: moment,
-                day: changed ? day : nil
-            ))
-            previousDay = day
-        }
-
-        let footer = [
-            hasMoreMoments ? "more:\(loadingMore)" : "end:\(momentTotal)",
-            mineOnly ? "mine" : "public",
-            feedUserId ?? "",
-            feedRange
-        ].joined(separator: "|")
-        items.append(NativeMomentFeedItem(
-            id: "footer",
-            kind: .footer,
-            moment: nil,
-            day: footer
-        ))
-        return items
-    }
-
-    private var displayedMoments: [Moment] {
-        MomentStressFixture.isActive
-            ? Array(MomentStressFixture.moments.prefix(stressLoadedCount))
-            : moments
-    }
-
-    private func nativeMomentRowConfiguration(_ item: NativeMomentFeedItem,
-                                              moment: Moment,
-                                              width: CGFloat) -> NativeMomentRowConfiguration {
-        let likes = nativeOrderedLikes(moment)
-        let comments = moment.comments ?? []
-        let commentLines = comments.prefix(2).map { comment -> String in
-            let name = comment.nickname ?? ""
-            let text = comment.content ?? ""
-            let reply = (comment.replyToName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-            return reply.isEmpty
-                ? "\(name)：\(text)"
-                : "\(name) 回复 \(reply)：\(text)"
-        }
-        let moreText: String? = comments.count > 2
-            ? (Lang.isEnglish
-               ? "View all \(comments.count) comments"
-               : "查看全部 \(comments.count) 条评论")
-            : nil
-        return NativeMomentRowConfiguration(
-            moment: moment,
-            day: item.day,
-            width: width,
-            likeSummary: nativeLikeSummary(moment, likes: likes),
-            likeAvatarPaths: likes.prefix(8).map {
-                app.contact(for: $0.userId ?? "")?.avatarPath ?? ""
-            },
-            commentLines: commentLines,
-            moreCommentsText: moreText,
-            onOpenComments: { commentsSheet = moment },
-            onOpenImage: { index in
-                let paths = moment.images ?? []
-                guard paths.indices.contains(index) else { return }
-                viewerPaths = paths
-                viewerIndex = index
-            },
-            onOpenVideo: { url in momentVideo = url },
-            onOpenAvatar: { user in cardUser = user },
-            onLike: { like(moment) },
-            onMore: { actionMoment = moment },
-            onShowLikes: {
-                likesSheetLikes = likes
-                showLikesSheet = true
-            }
-        )
-    }
-
-    private func nativeOrderedLikes(_ moment: Moment) -> [MomentLike] {
-        var seen = Set<String>()
-        let unique = (moment.likes ?? []).filter { like in
-            let key = like.userId?.isEmpty == false
-                ? like.userId!
-                : (like.nickname ?? UUID().uuidString)
-            return seen.insert(key).inserted
-        }
-        let friends = unique.filter { app.contact(for: $0.userId ?? "") != nil }
-        let others = unique.filter { app.contact(for: $0.userId ?? "") == nil }
-        return friends + others
-    }
-
-    private func nativeLikeSummary(_ moment: Moment, likes: [MomentLike]) -> String {
-        let count = likes.count
-        guard count > 0 else { return "" }
-        let names = likes.compactMap(\.nickname).filter { !$0.isEmpty }
-        if Lang.isEnglish {
-            switch names.count {
-            case 0: return count == 1 ? "1 person likes this" : "\(count) people like this"
-            case 1: return count > 1 ? "\(names[0]) and \(count - 1) others" : names[0]
-            case 2: return count > 2 ? "\(names[0]), \(names[1]) and \(count - 2) others"
-                : "\(names[0]) and \(names[1])"
-            default: return "\(names[0]), \(names[1]) and \(count - 2) others"
-            }
-        }
-        switch names.count {
-        case 0: return "\(count) 人觉得不错"
-        case 1: return count > 1 ? "\(names[0])等 \(count) 人" : names[0]
-        case 2: return count > 2 ? "\(names[0])、\(names[1])等 \(count) 人"
-            : "\(names[0])、\(names[1])"
-        default: return "\(names[0])、\(names[1])等 \(count) 人"
-        }
-    }
-
-    @ViewBuilder
-    private func nativeMomentFeedRow(_ item: NativeMomentFeedItem) -> some View {
-        switch item.kind {
-        case .cover:
-            coverView(coverLocked ? coverLockPull : 0)
-                .frame(height: L.coverH + (coverLocked ? coverLockPull : 0))
-                .zIndex(1)
-
-        case .moment:
-            if let moment = item.moment {
-                VStack(spacing: 0) {
-                    if let day = item.day, !day.isEmpty {
-                        dayHeader(day)
-                            .padding(.horizontal, L.momentPadH)
-                    }
-                    momentRow(moment)
+    private var momentList: some View {
+        return LazyVStack(spacing: 0) {
+            Color.clear
+                .frame(height: 1)
+                .onAppear {
+                    sentinelGone = false
+                    updateSolidState()
                 }
-                .padding(.top, item.day == nil ? 0 : 18)
-                .background(C.pageBg)
+                .onDisappear {
+                    sentinelGone = true
+                    updateSolidState()
+                }
+
+            ForEach(Array(moments.enumerated()), id: \.element.id) { index, moment in
+                let day = mineOnly ? fullDateLabel(moment.createdAt) : dayLabel(moment.createdAt)
+                let previous = index > 0
+                    ? (mineOnly ? fullDateLabel(moments[index - 1].createdAt)
+                                : dayLabel(moments[index - 1].createdAt))
+                    : ""
+                if index == 0 || day != previous {
+                    dayHeader(day)
+                        .padding(.horizontal, L.momentPadH)
+                }
+                momentRow(moment)
             }
 
-        case .footer:
-            nativeMomentFooter
-        }
-    }
-
-    private var nativeMomentFooter: some View {
-        VStack(spacing: 0) {
             if hasMoreMoments {
-                Color.clear
-                    .frame(height: 1)
+                Text(loadingMore ? "正在加载…" : " ")
+                    .font(pf(14))
+                    .foregroundColor(C.subLabel)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 18)
                     .onAppear {
-                        guard !loadingMore else { return }
                         Task { await loadMoreMoments() }
                     }
             } else if momentTotal > 0 {
@@ -2144,6 +2054,8 @@ struct MomentsView: View {
         .padding(.bottom, max(42, L.safeBottom + 20))
         .frame(maxWidth: .infinity)
         .background(C.pageBg)
+        .offset(y: 0)
+        .zIndex(0)
     }
 
     private var navBar: some View {
@@ -2550,18 +2462,27 @@ struct MomentsView: View {
     }
 
     private func startPullRefresh() {
-        guard !pulling else { return }
         pulling = true
-        refreshTask?.cancel()
-        refreshTask = Task { @MainActor in
+        spinTask?.cancel()
+        spinTask = Task { @MainActor in
+            var angle = spin
+            let started = Date()
+            while !Task.isCancelled {
+                angle += 14
+                spin = angle
+                try? await Task.sleep(nanoseconds: 16_000_000)
+                if Date().timeIntervalSince(started) > 1.0 { break }
+            }
+
             let finished = await withPullTimeout(seconds: 6) {
                 if self.coverEditable { self.app.me = try? await API.shared.me() }
                 await self.reload()
             }
             if !finished {
-                CrashCatcher.note("朋友圈", "下拉刷新的网络请求超 6 秒，先结束刷新状态")
+                CrashCatcher.note("朋友圈", "下拉刷新的网络请求超 6 秒，先把彩球收掉")
             }
-            guard !Task.isCancelled else { return }
+            pullY = 0
+            spin = 0
             pulling = false
         }
     }
@@ -2581,29 +2502,12 @@ struct MomentsView: View {
     }
 
     private func reload() async {
-        if MomentStressFixture.isActive {
-            stressLoadedCount = max(20, min(stressLoadedCount, MomentStressFixture.count))
-            momentTotal = MomentStressFixture.count
-            hasMoreMoments = stressLoadedCount < MomentStressFixture.count
-            return
-        }
-        if let feed = try? await API.shared.momentsFeed(
-            limit: Self.momentPageSize,
-            userId: feedUserId
-        ) {
-            if moments.isEmpty {
-                moments = feed.moments
-            } else {
-                let known = Set(moments.map(\.id))
-                let fresh = feed.moments.filter { !known.contains($0.id) }
-                if !fresh.isEmpty {
-                    moments.insert(contentsOf: fresh, at: 0)
-                }
-            }
+        if let feed = try? await API.shared.momentsFeed(limit: 30, userId: feedUserId) {
+            moments = feed.moments
+            hasMoreMoments = feed.hasMore
             momentTotal = feed.total
             feedRange = feed.range
             app.momentNoticeUnread = feed.noticeUnread
-            hasMoreMoments = moments.count < feed.total || feed.hasMore
 
             if target == nil && !mineOnly {
                 LocalStore.saveMoments(moments, userId: app.me?.id ?? "")
@@ -2611,8 +2515,7 @@ struct MomentsView: View {
         } else {
 
             let cached = LocalStore.cachedMoments(userId: app.me?.id ?? "")
-            let fallback = cached.isEmpty ? app.moments : cached
-            moments = Array(fallback.prefix(Self.momentPageSize))
+            moments = cached.isEmpty ? app.moments : cached
             hasMoreMoments = false
         }
 
@@ -2620,40 +2523,12 @@ struct MomentsView: View {
             await API.shared.markMomentsSeen()
             app.momentsUnread = 0
         }
-        scheduleMomentPrefetch()
     }
 
     private func loadMoreMoments() async {
-        if MomentStressFixture.isActive {
-            guard stressLoadedCount < MomentStressFixture.count, !loadingMore else { return }
-            loadingMore = true
-            stressLoadedCount = min(
-                MomentStressFixture.count,
-                stressLoadedCount + Self.momentPageSize
-            )
-            momentTotal = MomentStressFixture.count
-            hasMoreMoments = stressLoadedCount < MomentStressFixture.count
-            loadingMore = false
-            return
-        }
-        if prefetchingMoments, let momentPrefetchTask {
-            await momentPrefetchTask.value
-        }
-        if !prefetchedMoments.isEmpty {
-            loadingMore = true
-            let known = Set(moments.map(\.id))
-            let page = prefetchedMoments.filter { !known.contains($0.id) }
-            prefetchedMoments.removeAll(keepingCapacity: true)
-            moments.append(contentsOf: page)
-            hasMoreMoments = prefetchedHasMore
-            prefetchedHasMore = false
-            loadingMore = false
-            scheduleMomentPrefetch()
-            return
-        }
         guard hasMoreMoments, !loadingMore, let last = moments.last else { return }
         loadingMore = true
-        if let feed = try? await API.shared.momentsFeed(limit: Self.momentPageSize, before: last.createdAt, beforeId: last.id,
+        if let feed = try? await API.shared.momentsFeed(limit: 30, before: last.createdAt, beforeId: last.id,
                                                         userId: feedUserId) {
             let known = Set(moments.map { $0.id })
             moments.append(contentsOf: feed.moments.filter { !known.contains($0.id) })
@@ -2662,51 +2537,15 @@ struct MomentsView: View {
             hasMoreMoments = false
         }
         loadingMore = false
-        scheduleMomentPrefetch()
     }
 
     private func pollNewMoments() async {
-        guard !MomentStressFixture.isActive else { return }
-        guard let feed = try? await API.shared.momentsFeed(limit: Self.momentPageSize, userId: feedUserId) else { return }
+        guard let feed = try? await API.shared.momentsFeed(limit: 30, userId: feedUserId) else { return }
         let known = Set(moments.map { $0.id })
         let fresh = feed.moments.filter { !known.contains($0.id) }
         if !fresh.isEmpty { moments.insert(contentsOf: fresh, at: 0) }
         momentTotal = feed.total
-        hasMoreMoments = moments.count < feed.total || feed.hasMore
-    }
-
-    private func scheduleMomentPrefetch() {
-        guard !MomentStressFixture.isActive,
-              hasMoreMoments,
-              prefetchedMoments.isEmpty,
-              !prefetchingMoments,
-              moments.last != nil else { return }
-        momentPrefetchTask?.cancel()
-        momentPrefetchTask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 120_000_000)
-            if Task.isCancelled { return }
-            await prefetchNextMomentsPage()
-        }
-    }
-
-    private func prefetchNextMomentsPage() async {
-        guard !MomentStressFixture.isActive,
-              hasMoreMoments,
-              !prefetchingMoments,
-              prefetchedMoments.isEmpty,
-              let last = moments.last else { return }
-        prefetchingMoments = true
-        defer { prefetchingMoments = false }
-        guard let feed = try? await API.shared.momentsFeed(
-            limit: Self.momentPageSize,
-            before: last.createdAt,
-            beforeId: last.id,
-            userId: feedUserId
-        ) else { return }
-        guard moments.last?.id == last.id else { return }
-        let known = Set(moments.map(\.id))
-        prefetchedMoments = feed.moments.filter { !known.contains($0.id) }
-        prefetchedHasMore = feed.hasMore && !prefetchedMoments.isEmpty
+        if moments.count <= 30 { hasMoreMoments = feed.hasMore }
     }
 
     private func publish() {

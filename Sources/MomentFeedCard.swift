@@ -436,7 +436,7 @@ struct MomentFeedCard: View {
     }
 }
 
-struct MomentLikesSheet: View {
+private struct MomentLikesSheet: View {
     let likes: [MomentLike]
 
     @EnvironmentObject private var app: AppState
