@@ -12,8 +12,8 @@ private enum ChatListVisual {
     static let dividerLeading: CGFloat = 77
 
     static let ink = Color.dyn(0x1A1A1A, 0xE9EDEF)
-    static let previewInk = Color.dyn(0x667781, 0x8696A0)
-    static let timeInk = Color.dyn(0x667781, 0x8696A0)
+    static let previewInk = Color.dyn(0xB2B2B2, 0x8696A0)
+    static let timeInk = Color.dyn(0xCCCCCC, 0x8696A0)
     static let rule = Color(UIColor { trait in
         trait.userInterfaceStyle == .dark ? .clear : UIColor(hex: 0xE9EDEF)
     })
@@ -2473,14 +2473,12 @@ struct ChatsView: View {
             case "pat":
                 previewColor = isDark ? UIColor(hex: 0x52D6C7) : UIColor(hex: 0x0C7A70)
             default:
-                previewColor = isDark ? UIColor(hex: 0x8696A0) : UIColor(hex: 0x667781)
+                previewColor = isDark ? UIColor(hex: 0x8696A0) : UIColor(hex: 0xB2B2B2)
             }
         }
         let memberColor = nativePeerColor(chat.memberColor)
         let rowBg: UIColor = isDark ? UIColor(hex: 0x000000) : UIColor.white
-        let timeColor = isDark
-            ? UIColor(hex: 0x8696A0)
-            : (chat.unreadCount > 0 ? UIColor(hex: 0x25D366) : UIColor(hex: 0x667781))
+        let timeColor = isDark ? UIColor(hex: 0x8696A0) : UIColor(hex: 0xCCCCCC)
         let levelText = (chat.qqLevel ?? 0) > 1 && GrowthFlags.showInChats == true
             ? "Lv\(chat.qqLevel ?? 0)" : ""
 

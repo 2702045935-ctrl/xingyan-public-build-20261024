@@ -200,10 +200,10 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         titleLabel.text = configuration.title
         titleLabel.textColor = configuration.titleColor
         titleLabel.font = NativeChatRowMetrics.font(17, weight: .semibold, textStyle: .headline)
-        previewLabel.font = NativeChatRowMetrics.font(configuration.isLight ? 14.5 : 15,
+        previewLabel.font = NativeChatRowMetrics.font(15,
                                                      weight: .regular,
                                                      textStyle: .body)
-        timeLabel.font = NativeChatRowMetrics.font(configuration.isLight ? 12 : 13,
+        timeLabel.font = NativeChatRowMetrics.font(13,
                                                   weight: .regular,
                                                   textStyle: .footnote)
         let preview = NSMutableAttributedString(
