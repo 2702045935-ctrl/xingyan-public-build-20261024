@@ -121,3 +121,18 @@ shard, detects client-ID reuse across shards, and verifies the aggregate
 message count. `offlineRoot` is mandatory in the CLI and every shard directory
 and reliability database must resolve inside it. It only reads the configured
 offline copies and refuses any path outside that isolation boundary.
+
+The local reliability probe creates its own operating-system temporary
+database, runs configurable multi-process reservations, and verifies contiguous
+sequences, message count, event count, and durable chat sequence:
+
+```powershell
+node server/tools/message-reliability-probe.js `
+  --workers 8 `
+  --per-worker 500 `
+  --out RELIABILITY_PROBE.json
+```
+
+The probe has no option for an existing database path, so it cannot be pointed
+at a live shard. Its report contains a sequence digest and summary by default;
+`--include-sequences` is available only for small diagnostic runs.
