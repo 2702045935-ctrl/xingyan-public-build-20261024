@@ -431,6 +431,7 @@ final class NativeMomentFeedCell: UICollectionViewCell {
         socialFrames = []
         guard let c = configuration, !c.likeSummary.isEmpty ||
                 !c.commentLines.isEmpty || c.moreCommentsText != nil else { return }
+        let contentWidth = max(1, c.width - L.momentPadH * 2)
         var y: CGFloat = 0
         if !c.likeSummary.isEmpty {
             let heart = UILabel(frame: CGRect(x: 0, y: 3, width: 25, height: 25))
