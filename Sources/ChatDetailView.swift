@@ -1062,6 +1062,10 @@ struct ChatDetailView: View {
     @State private var sendingFileBytes = 0
     @State private var sendingFileProgress: Double? = nil
     @State private var voiceMode = false
+    @ObservedObject private var voicePlayer = VoicePlayer.shared
+    @State private var pendingVoiceURL: URL?
+    @State private var pendingVoiceSeconds = 0
+    @State private var pendingVoiceWaveform: [CGFloat] = []
 
     @State private var mentionMembers: [User] = []
     @State private var mentionQuery = ""
@@ -2445,6 +2449,9 @@ struct ChatDetailView: View {
                     if !gone.isEmpty { burnAway(gone) }
                 }
             }
+        }
+        .onDisappear {
+            if pendingVoiceURL != nil { discardPendingVoice() }
         }
 
         .task(id: backgroundPath) {
@@ -4576,6 +4583,7 @@ struct ChatDetailView: View {
                     if recorder.recording { return }
                     UISelectionFeedbackGenerator().selectionChanged()
                     if voiceMode {
+                        if pendingVoiceURL != nil { discardPendingVoice() }
                         voiceMode = false
                         focused = true
                     } else {
@@ -4612,7 +4620,67 @@ struct ChatDetailView: View {
                     if voiceMode {
 
                         Group {
-                            if recorder.recording {
+                            if let url = pendingVoiceURL {
+                                let previewID = "pending-\(url.lastPathComponent)"
+                                HStack(spacing: 8) {
+                                    Button {
+                                        voicePlayer.toggle(id: previewID, url: url)
+                                    } label: {
+                                        Image(systemName: voicePlayer.playingID == previewID
+                                              ? "stop.fill" : "play.fill")
+                                            .font(.system(size: 13, weight: .bold))
+                                            .foregroundStyle(C.green)
+                                            .frame(width: 30, height: 30)
+                                            .background(Circle().fill(C.green.opacity(0.11)))
+                                    }
+                                    .buttonStyle(ComposerIconButtonStyle(
+                                        ink: C.green,
+                                        active: voicePlayer.playingID == previewID
+                                    ))
+
+                                    PendingVoiceWaveform(
+                                        samples: pendingVoiceWaveform,
+                                        active: voicePlayer.playingID == previewID
+                                    )
+                                    .frame(width: 116, height: 24)
+
+                                    Text(String(format: "%d:%02d",
+                                                pendingVoiceSeconds / 60,
+                                                pendingVoiceSeconds % 60))
+                                        .font(.system(size: 12.5, weight: .semibold,
+                                                     design: .monospaced))
+                                        .foregroundStyle(composerUtilityInk)
+                                        .monospacedDigit()
+
+                                    Spacer(minLength: 0)
+
+                                    Button {
+                                        discardPendingVoice()
+                                    } label: {
+                                        Image(systemName: "xmark")
+                                            .font(.system(size: 12, weight: .bold))
+                                            .foregroundStyle(composerUtilityInk)
+                                            .frame(width: 30, height: 30)
+                                    }
+                                    .buttonStyle(ComposerIconButtonStyle(
+                                        ink: composerUtilityInk,
+                                        active: false
+                                    ))
+                                    .accessibilityLabel(Tr("取消"))
+
+                                    Button {
+                                        sendPendingVoice()
+                                    } label: {
+                                        Image(systemName: "arrow.up")
+                                            .font(.system(size: 15, weight: .bold))
+                                            .foregroundStyle(.white)
+                                            .frame(width: 32, height: 32)
+                                            .background(Circle().fill(C.green))
+                                    }
+                                    .buttonStyle(ComposerSendButtonStyle())
+                                    .accessibilityLabel(Tr("发送"))
+                                }
+                            } else if recorder.recording {
                                 HStack(spacing: 8) {
                                     Circle()
                                         .fill(recorder.willCancel ? C.red : C.green)
@@ -4664,14 +4732,17 @@ struct ChatDetailView: View {
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.horizontal, recorder.recording ? 11 : 0)
+                        .padding(.horizontal,
+                                 (recorder.recording || pendingVoiceURL != nil) ? 11 : 0)
                         .frame(height: composerInputHeight)
                         .background(
-                            recorder.recording
-                            ? (recorder.willCancel
-                               ? C.red.opacity(0.08)
-                               : Color.primary.opacity(0.035))
-                            : Color.clear,
+                            pendingVoiceURL != nil
+                            ? Color.primary.opacity(0.035)
+                            : (recorder.recording
+                               ? (recorder.willCancel
+                                  ? C.red.opacity(0.08)
+                                  : Color.primary.opacity(0.035))
+                               : Color.clear),
                             in: Capsule()
                         )
                         .contentShape(Rectangle())
@@ -4682,6 +4753,7 @@ struct ChatDetailView: View {
                         .simultaneousGesture(
                             DragGesture(minimumDistance: 0)
                                 .onChanged { v in
+                                    guard pendingVoiceURL == nil else { return }
                                     if recorder.recording {
                                         recorder.drag(v.translation.height)
                                         return
@@ -4704,6 +4776,7 @@ struct ChatDetailView: View {
                                     }
                                 }
                                 .onEnded { _ in
+                                    guard pendingVoiceURL == nil else { return }
                                     pressStart = nil
                                     voiceStarting = false
                                     guard recorder.recording else { return }
@@ -5692,7 +5765,33 @@ struct ChatDetailView: View {
 
     private func finishVoice() {
         guard let got = recorder.end() else { return }
-        sendVoice(url: got.url, seconds: got.seconds, waveform: got.waveform)
+        pendingVoiceURL = got.url
+        pendingVoiceSeconds = got.seconds
+        pendingVoiceWaveform = got.waveform
+        voiceMode = true
+        focused = false
+        panel = .none
+    }
+
+    private func discardPendingVoice() {
+        if let url = pendingVoiceURL {
+            let id = "pending-\(url.lastPathComponent)"
+            if voicePlayer.playingID == id { voicePlayer.stop() }
+            try? FileManager.default.removeItem(at: url)
+        }
+        pendingVoiceURL = nil
+        pendingVoiceSeconds = 0
+        pendingVoiceWaveform = []
+    }
+
+    private func sendPendingVoice() {
+        guard let url = pendingVoiceURL else { return }
+        let seconds = pendingVoiceSeconds
+        let waveform = pendingVoiceWaveform
+        pendingVoiceURL = nil
+        pendingVoiceSeconds = 0
+        pendingVoiceWaveform = []
+        sendVoice(url: url, seconds: seconds, waveform: waveform)
     }
 
     private func transcribeMessage(_ m: Message) {
@@ -8584,6 +8683,25 @@ private struct InlineVoiceWave: View {
             }
         }
         .animation(.easeOut(duration: 0.08), value: level)
+        .accessibilityHidden(true)
+    }
+}
+
+private struct PendingVoiceWaveform: View {
+    let samples: [CGFloat]
+    let active: Bool
+
+    var body: some View {
+        let bars = samples.isEmpty ? Array(repeating: CGFloat(0.22), count: 30)
+                                   : Array(samples.suffix(30))
+        HStack(alignment: .center, spacing: 1.8) {
+            ForEach(Array(bars.enumerated()), id: \.offset) { _, value in
+                Capsule(style: .continuous)
+                    .fill(active ? OrbitTheme.jade : C.subLabel.opacity(0.62))
+                    .frame(width: 1.9, height: 4 + min(1, max(0.08, value)) * 16)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityHidden(true)
     }
 }
