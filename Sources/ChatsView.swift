@@ -2294,16 +2294,6 @@ struct ChatsView: View {
                 id: "search",
                 kind: .search,
                 signature: "\(appearance)-\(Tr("搜索"))"
-            ),
-            NativeChatEntry(
-                id: "official",
-                kind: .official,
-                signature: "\(appearance)-\(officialRowName)-\(officialRowSubtitle)-\(officialRowAvatar)-\(app.me?.ops == true)"
-            ),
-            NativeChatEntry(
-                id: "pay",
-                kind: .pay,
-                signature: "\(appearance)-\(payOfficialRowName)-\(payOfficialRowSubtitle)-\(payOfficialRowAvatar)-\(app.me?.ops == true)"
             )
         ]
 
@@ -2467,6 +2457,9 @@ struct ChatsView: View {
             }
         }
         preview = nativeLocalizedPreview(preview, kind: kind)
+        if preview.isEmpty {
+            preview = nativeEmptyPreview(chat)
+        }
         if chat.lastMessage?.mentionMe == true, chat.unreadCount > 0, mentionPrefix.isEmpty {
             mentionPrefix = sessionCopy(zh: "[有人@我] ",
                                         en: "[Mentioned you] ",
@@ -2581,6 +2574,29 @@ struct ChatsView: View {
             }
         }
         return input
+    }
+
+    private func nativeEmptyPreview(_ chat: Chat) -> String {
+        if chat.bot == "qqnews" {
+            return sessionCopy(zh: "看看今天的热点",
+                               en: "See today's trending stories",
+                               ru: "Смотрите сегодняшние тренды")
+        }
+        if chat.type == "group" {
+            let count = chat.memberCount ?? chat.memberIds?.count ?? 0
+            if count > 0 {
+                return sessionCopy(zh: "\(count)人星友连接",
+                                   en: "\(count) Xingyan friends connected",
+                                   ru: "\(count) подключений Xingyan")
+            }
+            return sessionCopy(zh: "群聊", en: "Group chat", ru: "Групповой чат")
+        }
+        if chat.showsOfficialMark {
+            return sessionCopy(zh: "查看官方内容",
+                               en: "View official updates",
+                               ru: "Смотреть официальные обновления")
+        }
+        return sessionCopy(zh: "新的会话", en: "New conversation", ru: "Новый чат")
     }
 
     private func nativePeerColor(_ value: String?) -> UIColor? {
