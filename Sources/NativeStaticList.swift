@@ -191,14 +191,18 @@ where Item.ID: Hashable {
 
         func apply(_ next: [Item], animated: Bool) {
             guard let collection, let dataSource else { return }
-            if !order.isEmpty && (collection.isDragging || collection.isDecelerating) {
-                pending = next
-                return
-            }
             let nextOrder = next.map(\.id)
             let nextSignatures = Dictionary(uniqueKeysWithValues: next.map {
                 ($0.id, signature($0))
             })
+            if !order.isEmpty && (collection.isDragging || collection.isDecelerating) {
+                let known = Set(order)
+                let commonOrder = nextOrder.filter { known.contains($0) }
+                if commonOrder != order {
+                    pending = next
+                    return
+                }
+            }
             if nextOrder == order && nextSignatures == signatures { return }
             let nextLookup = Dictionary(uniqueKeysWithValues: next.map { ($0.id, $0) })
             let changed = nextOrder.filter { signatures[$0] != nextSignatures[$0] }
