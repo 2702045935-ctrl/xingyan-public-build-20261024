@@ -2179,15 +2179,20 @@ struct MomentsView: View {
         }
         .frame(height: L.navH)
 
-        .background {
+        .background(alignment: .top) {
             if solid {
                 ScrollActiveGlassMask(base: C.pageBg, active: momentsScrollActive)
+                    .frame(height: L.navH + momentsGlassHeaderExtension)
+                    .padding(.bottom, -momentsGlassHeaderExtension)
+                    .ignoresSafeArea(edges: .top)
             }
         }
         .animation(.easeOut(duration: 0.18), value: solid)
         .zIndex(25)
         .allowsHitTesting(true)
     }
+
+    private var momentsGlassHeaderExtension: CGFloat { 56 }
 
     private func openPhoto(_ path: String, in moment: Moment) {
         guard Date() >= tapLockUntil else { return }

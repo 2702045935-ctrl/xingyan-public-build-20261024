@@ -181,6 +181,7 @@ where Item.ID: Hashable {
         private var width: CGFloat = 0
         private var pending: [Item]?
         private var applyGeneration = 0
+        private var sizeChangeScheduled = false
 
         init(controller: NativeStaticListController?,
              onScrollViewReady: ((UIScrollView) -> Void)?,
@@ -209,10 +210,12 @@ where Item.ID: Hashable {
                 sizeObservation = scrollView.observe(\.contentSize, options: [.new]) {
                     [weak self] _, _ in
                     guard let self else { return }
-                    if Thread.isMainThread {
+                    guard !self.sizeChangeScheduled else { return }
+                    self.sizeChangeScheduled = true
+                    DispatchQueue.main.async { [weak self] in
+                        guard let self else { return }
+                        self.sizeChangeScheduled = false
                         self.onSizeChange?()
-                    } else {
-                        DispatchQueue.main.async { self.onSizeChange?() }
                     }
                 }
             }

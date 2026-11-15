@@ -739,14 +739,7 @@ struct ChatDetailView: View {
         let contentRect = frameBox.frames[m.id] ?? .zero
         menuRect = contentRect
         actionMessage = m
-        for delay in [0.0, 0.12, 0.30] {
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                guard actionMessage?.id == m.id else { return }
-                if let latest = frameBox.frames[m.id] {
-                    menuRect = latest
-                }
-            }
-        }
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }
 
     private var deletedMessageKey: String { "chris.deleted." + chat.id }
@@ -2035,6 +2028,7 @@ struct ChatDetailView: View {
         .modifier(KeyboardLiftDisable(enabled: UIConfig.num("chatKeyboardManual", 1) > 0))
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { n in
             guard UIConfig.num("chatKeyboardManual", 1) > 0 else { return }
+            actionMessage = nil
             guard let f = n.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
             let screenH = (UIApplication.shared.connectedScenes
                 .compactMap { ($0 as? UIWindowScene)?.screen.bounds.height }.first) ?? UIScreen.main.bounds.height
@@ -2685,6 +2679,7 @@ struct ChatDetailView: View {
                         }
                     }, onScrollStateChange: { scrolling in
                         if scrolling {
+                            actionMessage = nil
                             if !isGroup {
                                 atBottom = false
                                 wasAtBottom = false
@@ -2820,6 +2815,7 @@ struct ChatDetailView: View {
             },
             onScrollStateChange: { scrolling in
                 if scrolling {
+                    actionMessage = nil
                     atBottom = false
                     wasAtBottom = false
                     if !initialScrollReady {
