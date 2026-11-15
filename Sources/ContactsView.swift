@@ -362,6 +362,10 @@ private var funcs: [(String, String, Color, String)] {
                     GroupCreateView { chat in
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { path.append(chat) }
                     }
+                } else if key == "faceGroup" {
+                    FaceGroupView { chat in
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { path.append(chat) }
+                    }
                 } else if key == "myQR" {
                     MyQRView()
                 } else if key == "groupList" {
@@ -380,6 +384,10 @@ private var funcs: [(String, String, Color, String)] {
         .navPlusOverlay($plusMenu, items: [
             NavPlusItem(title: Tr("发起群聊"), symbol: "person.2.fill",
                         colors: [C.green, C.green.opacity(0.78)]) { path.append("newGroup") },
+            NavPlusItem(title: Tr("面对面建群"), symbol: "person.3.sequence.fill",
+                        colors: [Color(hex: 0x5FD38A), Color(hex: 0x178A58)]) {
+                path.append("faceGroup")
+            },
             NavPlusItem(title: Tr("添加朋友"), symbol: "person.badge.plus",
                         colors: [Color(hex: 0x64B5F6), Color(hex: 0x2A6BC4)]) { path.append("addFriend") },
             NavPlusItem(title: Tr("手机联系人"), symbol: "person.text.rectangle",

@@ -2811,6 +2811,10 @@ struct ChatsView: View {
 
                         app.openChatViaList(chat)
                     }
+                } else if key == "faceGroup" {
+                    FaceGroupView { chat in
+                        app.openChatViaList(chat)
+                    }
                 } else if key == "addFriend" {
                     AddFriendView()
                 } else if key == "myQR" {
@@ -2831,6 +2835,10 @@ struct ChatsView: View {
             },
             NavPlusItem(title: Tr("发起群聊"), symbol: "person.2.fill",
                         colors: [C.green, C.green.opacity(0.78)]) { path.append("newGroup") },
+            NavPlusItem(title: Tr("面对面建群"), symbol: "person.3.sequence.fill",
+                        colors: [Color(hex: 0x5FD38A), Color(hex: 0x178A58)]) {
+                path.append("faceGroup")
+            },
             NavPlusItem(title: Tr("添加朋友"), symbol: "person.badge.plus",
                         colors: [Color(hex: 0x64B5F6), Color(hex: 0x2A6BC4)]) { path.append("addFriend") },
             NavPlusItem(title: Tr("扫一扫"), symbol: "qrcode.viewfinder",

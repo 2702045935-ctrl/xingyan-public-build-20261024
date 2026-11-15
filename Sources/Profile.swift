@@ -1499,7 +1499,6 @@ struct GroupCreateView: View {
     @State private var picked: Set<String> = []
     @State private var keyword = ""
     @State private var busy = false
-    @State private var showFace = false
     @FocusState private var nameFocused: Bool
 
     private var selectedContacts: [User] {
@@ -1553,15 +1552,6 @@ struct GroupCreateView: View {
         .toolbar(.hidden, for: .navigationBar)
         .swipeBack { goBack() }
         .hidesTabBar()
-        .sheet(isPresented: $showFace) {
-            FaceGroupView { chat in
-                dismiss()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                    onCreated(chat)
-                }
-            }
-            .environmentObject(app)
-        }
     }
 
     private var canContinue: Bool {
@@ -1570,120 +1560,149 @@ struct GroupCreateView: View {
     }
 
     private var participantPicker: some View {
-        VStack(spacing: 0) {
-            Button { showFace = true } label: {
-                HStack(spacing: 13) {
-                    ZStack {
-                        Circle().fill(C.green)
-                        Image(systemName: "person.3.sequence.fill")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.white)
-                    }
-                    .frame(width: 38, height: 38)
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 16) {
+                selectionSummary
+                contactSearch
 
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(Tr("面对面建群"))
+                HStack {
+                    Text(Tr("联系人"))
+                        .font(pf(13, .semibold))
+                        .foregroundColor(C.subLabel)
+                    Spacer(minLength: 0)
+                    Text("\(filteredContacts.count)")
+                        .font(pf(12, .medium))
+                        .foregroundColor(C.subLabel.opacity(0.8))
+                }
+                .padding(.horizontal, 4)
+
+                if filteredContacts.isEmpty {
+                    VStack(spacing: 12) {
+                        Image(systemName: "person.crop.circle.badge.questionmark")
+                            .font(.system(size: 34, weight: .light))
+                            .foregroundColor(C.subLabel)
+                        Text(Tr("没有找到联系人"))
                             .font(pf(16, .medium))
                             .foregroundColor(C.label)
-                        Text(Tr("和附近的人输入同一个数字"))
+                        Text(Tr("换一个姓名或号码试试"))
                             .font(pf(13))
                             .foregroundColor(C.subLabel)
                     }
-                    Spacer(minLength: 0)
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(C.subLabel)
-                }
-                .padding(.horizontal, 16)
-                .frame(height: 62)
-                .background(C.cardBg)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .padding(.top, 8)
-
-            if !selectedContacts.isEmpty {
-                selectedParticipants
-            }
-
-            contactSearch
-
-            if filteredContacts.isEmpty {
-                VStack(spacing: 10) {
-                    Image(systemName: "person.crop.circle.badge.questionmark")
-                        .font(.system(size: 30, weight: .light))
-                        .foregroundColor(C.subLabel)
-                    Text(Tr("没有找到联系人"))
-                        .font(pf(15))
-                        .foregroundColor(C.subLabel)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                List {
-                    ForEach(filteredContacts) { user in
-                        Button { toggle(user.id) } label: {
-                            contactRow(user)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 42)
+                    .background(
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .fill(C.cardBg)
+                    )
+                } else {
+                    LazyVStack(spacing: 0) {
+                        ForEach(Array(filteredContacts.enumerated()), id: \.element.id) { index, user in
+                            Button { toggle(user.id) } label: {
+                                contactRow(user)
+                            }
+                            .buttonStyle(.plain)
+                            if index < filteredContacts.count - 1 {
+                                Rectangle()
+                                    .fill(C.hairline)
+                                    .frame(height: 0.5)
+                                    .padding(.leading, 74)
+                            }
                         }
-                        .buttonStyle(.plain)
-                        .listRowInsets(EdgeInsets())
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(C.pageBg)
+                    }
+                    .background(
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .fill(C.cardBg)
+                    )
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .stroke(C.hairline, lineWidth: 0.6)
                     }
                 }
-                .listStyle(.plain)
-                .environment(\.defaultMinListRowHeight, 0)
-                .scrollContentBackground(.hidden)
-                .background(C.pageBg)
-            }
-        }
-    }
-
-    private var selectedParticipants: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            HStack(spacing: 7) {
-                Text(Tr("已选择"))
-                    .font(pf(12, .semibold))
-                    .foregroundColor(C.green)
-                Text("\(picked.count)")
-                    .font(pf(10, .bold))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 6)
-                    .frame(minWidth: 20, minHeight: 20)
-                    .background(Capsule().fill(C.green))
-                Spacer(minLength: 0)
             }
             .padding(.horizontal, 16)
+            .padding(.top, 14)
+            .padding(.bottom, max(30, L.safeBottom + 24))
+        }
+        .scrollDismissesKeyboard(.interactively)
+    }
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(selectedContacts) { user in
-                        Button { toggle(user.id) } label: {
-                            HStack(spacing: 7) {
-                                Avatar(path: user.avatarPath, size: 32, circle: true)
-                                Text(user.name)
-                                    .font(pf(13, .medium))
-                                    .foregroundColor(C.label)
-                                    .lineLimit(1)
-                                Image(systemName: "xmark")
-                                    .font(.system(size: 9, weight: .bold))
-                                    .foregroundColor(C.subLabel)
+    private var selectionSummary: some View {
+        VStack(alignment: .leading, spacing: 13) {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 11, style: .continuous)
+                        .fill(C.green.opacity(picked.isEmpty ? 0.11 : 0.17))
+                    Image(systemName: picked.isEmpty ? "person.2.fill" : "checkmark")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(C.green)
+                }
+                .frame(width: 40, height: 40)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(picked.isEmpty
+                         ? Tr("选择联系人")
+                         : String(format: Tr("已选择 %d 位联系人"), picked.count))
+                        .font(pf(16, .semibold))
+                        .foregroundColor(C.label)
+                    Text(picked.isEmpty ? Tr("至少选择一位好友开始群聊") : Tr("可以继续添加或移除联系人"))
+                        .font(pf(12.5))
+                        .foregroundColor(C.subLabel)
+                }
+
+                Spacer(minLength: 8)
+
+                if !picked.isEmpty {
+                    Button {
+                        withAnimation(.easeOut(duration: 0.18)) { picked.removeAll() }
+                    } label: {
+                        Text(Tr("清除"))
+                            .font(pf(13, .semibold))
+                            .foregroundColor(C.green)
+                            .padding(.horizontal, 10)
+                            .frame(height: 30)
+                            .background(Capsule().fill(C.green.opacity(0.1)))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            if !selectedContacts.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(selectedContacts) { user in
+                            Button { toggle(user.id) } label: {
+                                HStack(spacing: 7) {
+                                    Avatar(path: user.avatarPath, size: 30, circle: true)
+                                    Text(user.name)
+                                        .font(pf(13, .medium))
+                                        .foregroundColor(C.label)
+                                        .lineLimit(1)
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 8.5, weight: .bold))
+                                        .foregroundColor(C.subLabel)
+                                }
+                                .padding(.leading, 4)
+                                .padding(.trailing, 10)
+                                .frame(height: 38)
+                                .background(
+                                    Capsule().fill(Color.dyn(0xF2F2F7, 0x2C2C2E))
+                                )
                             }
-                            .padding(.leading, 4)
-                            .padding(.trailing, 10)
-                            .frame(height: 40)
-                            .background(Capsule().fill(Color.dyn(0xF0F2F5, 0x2A2A2C)))
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                     }
                 }
-                .padding(.horizontal, 16)
+                .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
-        .padding(.top, 13)
-        .padding(.bottom, 12)
-        .background(C.pageBg)
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(C.hairline).frame(height: 0.5)
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(C.cardBg)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(C.hairline, lineWidth: 0.6)
         }
     }
 
@@ -1706,13 +1725,11 @@ struct GroupCreateView: View {
             }
         }
         .padding(.horizontal, 12)
-        .frame(height: 42)
+        .frame(height: 44)
         .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.dyn(0xF0F2F5, 0x1C1C1E))
+            RoundedRectangle(cornerRadius: 13, style: .continuous)
+                .fill(Color.dyn(0xF2F2F7, 0x1C1C1E))
         )
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
     }
 
     private func contactRow(_ user: User) -> some View {
@@ -1749,16 +1766,11 @@ struct GroupCreateView: View {
             }
             .frame(width: 24, height: 24)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .frame(minHeight: 68)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 9)
+        .frame(minHeight: 66)
+        .background(selected ? C.green.opacity(0.055) : Color.clear)
         .contentShape(Rectangle())
-        .overlay(alignment: .bottom) {
-            Rectangle()
-                .fill(C.hairline)
-                .frame(height: 0.5)
-                .padding(.leading, 77)
-        }
     }
 
     private var groupDetails: some View {
