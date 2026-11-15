@@ -39,12 +39,12 @@ struct MomentFeedCard: View {
             if let text = moment.content?.trimmingCharacters(in: .whitespacesAndNewlines),
                !text.isEmpty {
                 Text(RichText.linkified(text))
-                    .font(systemTextFont(15.5, .regular, relativeTo: .body))
+                    .font(systemTextFont(16, .regular, relativeTo: .body))
                     .foregroundColor(C.label)
-                    .lineSpacing(5)
+                    .lineSpacing(6)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 13)
+                    .padding(.top, 14)
                     .contentShape(Rectangle())
                     .onTapGesture(perform: onOpenComments)
                     .onLongPressGesture(minimumDuration: 0.45, maximumDistance: 28) {
@@ -54,22 +54,22 @@ struct MomentFeedCard: View {
 
             if !images.isEmpty || isVideo {
                 media
-                    .padding(.top, 13)
+                    .padding(.top, 14)
             }
 
             actionRow
-                .padding(.top, 10)
+                .padding(.top, 12)
 
             socialContext
-                .padding(.top, 9)
+                .padding(.top, 10)
         }
         .padding(.horizontal, L.momentPadH)
-        .padding(.top, 18)
-        .padding(.bottom, 17)
+        .padding(.top, 20)
+        .padding(.bottom, 18)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(C.pageBg)
         .overlay(alignment: .bottom) {
-            HairLine(inset: L.momentPadH)
+            HairLine(inset: L.momentPadH + 55)
         }
         .onChange(of: moment.likedByMe) { _ in
             likedOverride = nil
@@ -79,8 +79,8 @@ struct MomentFeedCard: View {
     private var postHeader: some View {
         HStack(alignment: .center, spacing: 11) {
             Avatar(path: moment.author?.avatarPath ?? "",
-                   size: 42,
-                   radius: 21,
+                   size: 44,
+                   radius: 22,
                    circle: true)
                 .contentShape(Circle())
                 .onTapGesture {
@@ -90,7 +90,7 @@ struct MomentFeedCard: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 5) {
                     Text(moment.author?.name ?? "")
-                        .font(systemTextFont(15.5, .semibold, relativeTo: .headline))
+                        .font(systemTextFont(16, .semibold, relativeTo: .headline))
                         .foregroundColor(C.label)
                         .lineLimit(1)
 
@@ -111,7 +111,7 @@ struct MomentFeedCard: View {
                         Text(location).lineLimit(1)
                     }
                 }
-                .font(systemTextFont(12, .regular, relativeTo: .caption1))
+                .font(systemTextFont(12.5, .regular, relativeTo: .caption1))
                 .foregroundColor(C.subLabel)
             }
             .contentShape(Rectangle())
@@ -125,7 +125,7 @@ struct MomentFeedCard: View {
                 Image(systemName: "ellipsis")
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(C.subLabel)
-                    .frame(width: 38, height: 38)
+                    .frame(width: 40, height: 40)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -205,9 +205,9 @@ struct MomentFeedCard: View {
                 }
             }
             .frame(width: width, height: height)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .stroke(Color.primary.opacity(0.07), lineWidth: 0.5)
             }
             .contentShape(Rectangle())
@@ -216,70 +216,76 @@ struct MomentFeedCard: View {
     }
 
     private var actionRow: some View {
-        HStack(spacing: 20) {
-            Button {
-                if !showingLiked {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                }
-                likedOverride = !showingLiked
-                withAnimation(.spring(response: 0.2, dampingFraction: 0.7)) {
-                    likePulse = true
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
-                    likePulse = false
-                }
-                onLike()
-            } label: {
-                HStack(spacing: 5) {
-                    Image(systemName: showingLiked ? "heart.fill" : "heart")
-                        .font(.system(size: 19, weight: .regular))
-                        .scaleEffect(likePulse ? 1.16 : 1)
-                    if showingLikeCount > 0 {
-                        Text("\(showingLikeCount)")
-                            .font(systemTextFont(12.5, .medium, relativeTo: .caption1))
-                    }
-                }
-                .foregroundColor(showingLiked ? Color(hex: 0xFF3B4D) : C.subLabel)
-                .frame(minWidth: 34, minHeight: 32, alignment: .leading)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(showingLiked ? Tr("取消赞") : Tr("赞"))
-
-            Button(action: onOpenComments) {
-                HStack(spacing: 5) {
-                    Image(systemName: "bubble.right")
-                        .font(.system(size: 18, weight: .regular))
-                    if !comments.isEmpty {
-                        Text("\(comments.count)")
-                            .font(systemTextFont(12.5, .medium, relativeTo: .caption1))
-                    }
-                }
-                .foregroundColor(C.subLabel)
-                .frame(minWidth: 34, minHeight: 32, alignment: .leading)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Tr("评论"))
-
+        HStack {
             Spacer(minLength: 0)
-
-            Button(action: onMore) {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(C.subLabel)
-                    .frame(width: 34, height: 32)
+            HStack(spacing: 2) {
+                Button {
+                    if !showingLiked {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    }
+                    likedOverride = !showingLiked
+                    withAnimation(.spring(response: 0.2, dampingFraction: 0.7)) {
+                        likePulse = true
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
+                        likePulse = false
+                    }
+                    onLike()
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: showingLiked ? "heart.fill" : "heart")
+                            .font(.system(size: 18, weight: .regular))
+                            .scaleEffect(likePulse ? 1.16 : 1)
+                        if showingLikeCount > 0 {
+                            Text("\(showingLikeCount)")
+                                .font(systemTextFont(12.5, .medium, relativeTo: .caption1))
+                        }
+                    }
+                    .foregroundColor(showingLiked ? Color(hex: 0xFF3B4D) : C.subLabel)
+                    .padding(.horizontal, 9)
+                    .frame(height: 32)
                     .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(showingLiked ? Tr("取消赞") : Tr("赞"))
+
+                Button(action: onOpenComments) {
+                    HStack(spacing: 5) {
+                        Image(systemName: "bubble.right")
+                            .font(.system(size: 17.5, weight: .regular))
+                        if !comments.isEmpty {
+                            Text("\(comments.count)")
+                                .font(systemTextFont(12.5, .medium, relativeTo: .caption1))
+                        }
+                    }
+                    .foregroundColor(C.subLabel)
+                    .padding(.horizontal, 9)
+                    .frame(height: 32)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Tr("评论"))
+
+                Button(action: onMore) {
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 16.5, weight: .semibold))
+                        .foregroundColor(C.subLabel)
+                        .frame(width: 34, height: 32)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Tr("更多"))
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Tr("更多"))
+            .padding(.horizontal, 3)
+            .background(Capsule().fill(Color.primary.opacity(0.045)))
+            .overlay(Capsule().stroke(Color.primary.opacity(0.055), lineWidth: 0.6))
         }
     }
 
     @ViewBuilder
     private var socialContext: some View {
         if !likes.isEmpty || !comments.isEmpty {
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: 8) {
                 if !likes.isEmpty {
                     likesSummaryButton
                 }
@@ -293,11 +299,21 @@ struct MomentFeedCard: View {
                         Text(Lang.isEnglish
                              ? "View all \(comments.count) comments"
                              : "查看全部 \(comments.count) 条评论")
-                            .font(systemTextFont(12.5, .medium, relativeTo: .caption1))
-                            .foregroundColor(C.subLabel)
+                            .font(systemTextFont(13, .medium, relativeTo: .caption1))
+                            .foregroundColor(C.label.opacity(0.72))
                     }
                     .buttonStyle(.plain)
                 }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 11)
+            .background(
+                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                    .fill(Color.dyn(0xF7F7F9, 0x121214))
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                    .stroke(Color.primary.opacity(0.055), lineWidth: 0.6)
             }
         }
     }
@@ -339,7 +355,7 @@ struct MomentFeedCard: View {
                 .frame(height: 21)
 
                 Text(localizedLikeSummary)
-                    .font(systemTextFont(12.5, .medium, relativeTo: .caption1))
+                    .font(systemTextFont(13, .medium, relativeTo: .caption1))
                     .foregroundColor(C.label)
                     .lineLimit(1)
 
@@ -416,7 +432,7 @@ struct MomentFeedCard: View {
 
         return Text(line)
             .foregroundColor(C.label)
-            .font(systemTextFont(13, .regular, relativeTo: .caption1))
+            .font(systemTextFont(13.5, .regular, relativeTo: .caption1))
             .lineLimit(2)
             .multilineTextAlignment(.leading)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -644,7 +660,7 @@ private struct MomentFeedImageGrid: View {
         } label: {
             RemoteImage(path: path, icon: "photo", maxSide: 1440)
                 .frame(width: width, height: height)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -666,7 +682,7 @@ private struct MomentFeedImageGrid: View {
                         } label: {
                             RemoteImage(path: images[index], icon: "photo", maxSide: 960)
                                 .frame(width: cell, height: cell)
-                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
