@@ -1326,6 +1326,7 @@ struct MomentsView: View {
     @State private var sentinelGone = false
 
     @State private var solid = false
+    @State private var momentsScrollActive = false
     @State private var moments: [Moment] = []
     @State private var stressLoadedCount = 30
     @State private var prefetchedMoments: [Moment] = []
@@ -1481,6 +1482,16 @@ struct MomentsView: View {
                     .zIndex(1)
                     momentList
                 }
+                .background {
+                    ScrollOffsetProbe(onChange: { _, _ in },
+                                      onDragChange: { _ in },
+                                      onScrollStateChange: { scrolling in
+                        guard momentsScrollActive != scrolling else { return }
+                        withAnimation(.easeOut(duration: scrolling ? 0.12 : 0.20)) {
+                            momentsScrollActive = scrolling
+                        }
+                    })
+                }
             }
             .coordinateSpace(name: "momentsScroll")
             .onPreferenceChange(OffsetKey.self) { y in
@@ -1612,6 +1623,7 @@ struct MomentsView: View {
             scrollMetrics.topY = 0
             sentinelGone = false
             solid = false
+            momentsScrollActive = false
             coverOverride = UserDefaults.standard.string(forKey: coverOverrideKey) ?? ""
             if !coverOverride.isEmpty, !coverOverride.hasPrefix("local-"),
                coverOverride != (owner?.momentCover ?? "") {
@@ -1620,6 +1632,7 @@ struct MomentsView: View {
         }
         .onDisappear {
             momentPrefetchTask?.cancel()
+            momentsScrollActive = false
             guard scrollGateActive else { return }
             scrollGateActive = false
             ScrollGate.shared.setScrolling(false)
@@ -2166,8 +2179,35 @@ struct MomentsView: View {
         }
         .frame(height: L.navH)
 
-        .background(solid ? C.pageBg : Color.clear)
+        .background {
+            if solid {
+                ZStack(alignment: .bottom) {
+                    C.pageBg
+                        .opacity(momentsScrollActive ? 0 : 1)
+
+                    ZStack(alignment: .bottom) {
+                        NativeGlassHeaderMaterial()
+                        C.pageBg
+                            .opacity(scheme == .dark ? 0.28 : 0.22)
+                        LinearGradient(
+                            stops: [
+                                .init(color: .clear, location: 0),
+                                .init(color: .clear, location: 0.80),
+                                .init(color: C.pageBg.opacity(scheme == .dark ? 0.08 : 0.06),
+                                      location: 0.94),
+                                .init(color: C.pageBg.opacity(scheme == .dark ? 0.16 : 0.10),
+                                      location: 1)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom)
+                    }
+                    .opacity(momentsScrollActive ? 1 : 0)
+                }
+            }
+        }
         .animation(.easeOut(duration: 0.18), value: solid)
+        .animation(.easeOut(duration: momentsScrollActive ? 0.12 : 0.20),
+                   value: momentsScrollActive)
         .zIndex(25)
         .allowsHitTesting(true)
     }
