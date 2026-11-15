@@ -109,6 +109,12 @@ final class NativeMomentFeedCell: UICollectionViewCell {
     private let commentButton = UIButton(type: .system)
     private let actionMore = UIButton(type: .system)
     private let socialContainer = UIView()
+    private let socialHeart = UILabel()
+    private let socialSummary = UILabel()
+    private let socialTapButton = UIButton(type: .custom)
+    private let socialAvatars = (0..<8).map { _ in NativeMomentImage() }
+    private let socialComments = [UILabel(), UILabel()]
+    private let moreCommentsButton = UIButton(type: .system)
     private let divider = UIView()
     private var configuration: NativeMomentRowConfiguration?
     private var metrics: NativeMomentMetrics?
@@ -130,7 +136,7 @@ final class NativeMomentFeedCell: UICollectionViewCell {
         configuration = nil
         likedOverride = nil
         mediaContainer.subviews.forEach { $0.removeFromSuperview() }
-        socialContainer.subviews.forEach { $0.removeFromSuperview() }
+        hideSocialPool()
         mediaFrames = []
         socialFrames = []
         avatarImage.reset()
@@ -256,6 +262,8 @@ final class NativeMomentFeedCell: UICollectionViewCell {
         avatarFallback.layer.cornerRadius = 21
         avatarFallback.layer.cornerCurve = .continuous
         avatarFallback.clipsToBounds = true
+        avatarImage.layer.cornerRadius = 21
+        avatarImage.clipsToBounds = true
 
         nameLabel.font = .systemFont(ofSize: 15.5, weight: .semibold)
         nameLabel.textColor = UIColor(C.label)
@@ -309,6 +317,50 @@ final class NativeMomentFeedCell: UICollectionViewCell {
 
         mediaContainer.clipsToBounds = false
         socialContainer.clipsToBounds = true
+        socialHeart.text = "♥"
+        socialHeart.textAlignment = .center
+        socialHeart.textColor = .white
+        socialHeart.font = .systemFont(ofSize: 14, weight: .bold)
+        socialHeart.backgroundColor = UIColor(hex: 0xF33D5E)
+        socialHeart.layer.cornerRadius = 12.5
+        socialHeart.clipsToBounds = true
+
+        socialSummary.font = .systemFont(ofSize: 12.5, weight: .medium)
+        socialSummary.textColor = UIColor(C.label)
+        socialSummary.lineBreakMode = .byTruncatingTail
+
+        socialTapButton.addAction(
+            UIAction { [weak self] _ in self?.configuration?.onShowLikes() },
+            for: .touchUpInside
+        )
+        for avatar in socialAvatars {
+            avatar.layer.cornerRadius = 10.5
+            avatar.layer.borderWidth = 1.2
+            avatar.layer.borderColor = UIColor(C.pageBg).cgColor
+            avatar.clipsToBounds = true
+            socialContainer.addSubview(avatar)
+        }
+        for label in socialComments {
+            label.font = .systemFont(ofSize: 13)
+            label.textColor = UIColor(C.label)
+            label.numberOfLines = 2
+            label.isUserInteractionEnabled = true
+            label.addGestureRecognizer(
+                UITapGestureRecognizer(target: self, action: #selector(openComments))
+            )
+            socialContainer.addSubview(label)
+        }
+        moreCommentsButton.contentHorizontalAlignment = .left
+        moreCommentsButton.titleLabel?.font = .systemFont(ofSize: 12.5, weight: .medium)
+        moreCommentsButton.tintColor = UIColor(C.subLabel)
+        moreCommentsButton.addAction(
+            UIAction { [weak self] _ in self?.configuration?.onOpenComments() },
+            for: .touchUpInside
+        )
+        [socialHeart, socialSummary, socialTapButton, moreCommentsButton].forEach {
+            socialContainer.addSubview($0)
+        }
+        hideSocialPool()
         divider.backgroundColor = UIColor(C.hairline)
     }
 
@@ -321,7 +373,6 @@ final class NativeMomentFeedCell: UICollectionViewCell {
             dayLabel.frame = CGRect(x: pad, y: m.dayY, width: m.contentWidth, height: 17)
         }
         avatarImage.frame = CGRect(x: pad, y: m.headerY, width: 42, height: 42)
-        avatarImage.layer.cornerRadius = 21
         avatarFallback.frame = avatarImage.frame
         let textX = pad + 42 + 11
         pinImage.frame = CGRect(x: cellWidth - pad - 96, y: m.headerY + 7, width: 10, height: 12)
@@ -342,10 +393,8 @@ final class NativeMomentFeedCell: UICollectionViewCell {
             : .zero
         for (view, frame) in mediaFrames { view.frame = frame }
 
-        likeButton.sizeToFit()
         likeButton.frame = CGRect(x: pad, y: m.actionY,
                                   width: max(44, likeButton.bounds.width), height: 32)
-        commentButton.sizeToFit()
         commentButton.frame = CGRect(x: likeButton.frame.maxX + 12, y: m.actionY,
                                      width: max(44, commentButton.bounds.width), height: 32)
         actionMore.frame = CGRect(x: cellWidth - pad - 34, y: m.actionY, width: 34, height: 32)
@@ -429,82 +478,71 @@ final class NativeMomentFeedCell: UICollectionViewCell {
     }
 
     private func rebuildSocial() {
-        socialContainer.subviews.forEach { $0.removeFromSuperview() }
+        hideSocialPool()
         socialFrames = []
         guard let c = configuration, !c.likeSummary.isEmpty ||
                 !c.commentLines.isEmpty || c.moreCommentsText != nil else { return }
         let contentWidth = max(1, c.width - L.momentPadH * 2)
         var y: CGFloat = 0
         if !c.likeSummary.isEmpty {
-            let heart = UILabel(frame: CGRect(x: 0, y: 3, width: 25, height: 25))
-            heart.text = "♥"
-            heart.textAlignment = .center
-            heart.textColor = .white
-            heart.font = .systemFont(ofSize: 14, weight: .bold)
-            heart.backgroundColor = UIColor(hex: 0xF33D5E)
-            heart.layer.cornerRadius = 12.5
-            heart.clipsToBounds = true
-            socialContainer.addSubview(heart)
-            socialFrames.append((heart, heart.frame))
+            socialHeart.isHidden = false
+            socialHeart.frame = CGRect(x: 0, y: 3, width: 25, height: 25)
+            socialFrames.append((socialHeart, socialHeart.frame))
 
             var x: CGFloat = 32
-            for path in c.likeAvatarPaths.prefix(8) {
-                let avatar = NativeMomentImage(frame: CGRect(x: x, y: 5, width: 21, height: 21))
-                avatar.layer.cornerRadius = 10.5
-                avatar.layer.borderWidth = 1.2
-                avatar.layer.borderColor = UIColor(C.pageBg).cgColor
-                avatar.clipsToBounds = true
+            for (index, path) in c.likeAvatarPaths.prefix(socialAvatars.count).enumerated() {
+                let avatar = socialAvatars[index]
+                avatar.isHidden = false
+                avatar.frame = CGRect(x: x, y: 5, width: 21, height: 21)
                 avatar.set(path: path, maxSide: 84)
-                socialContainer.addSubview(avatar)
                 socialFrames.append((avatar, avatar.frame))
                 x += 18
             }
-            let summary = UILabel(frame: CGRect(x: x + 8, y: 2,
-                                                width: max(1, contentWidth - x - 22), height: 27))
-            summary.text = c.likeSummary
-            summary.font = .systemFont(ofSize: 12.5, weight: .medium)
-            summary.textColor = UIColor(C.label)
-            summary.lineBreakMode = .byTruncatingTail
-            socialContainer.addSubview(summary)
-            socialFrames.append((summary, summary.frame))
-            let likeTap = UIButton(type: .custom)
-            likeTap.frame = CGRect(x: 0, y: 0, width: contentWidth, height: 32)
-            likeTap.addAction(UIAction { [weak self] _ in self?.configuration?.onShowLikes() },
-                              for: .touchUpInside)
-            socialContainer.addSubview(likeTap)
-            socialFrames.append((likeTap, likeTap.frame))
+            socialSummary.isHidden = false
+            socialSummary.text = c.likeSummary
+            socialSummary.frame = CGRect(x: x + 8, y: 2,
+                                         width: max(1, contentWidth - x - 22), height: 27)
+            socialFrames.append((socialSummary, socialSummary.frame))
+            socialTapButton.isHidden = false
+            socialTapButton.frame = CGRect(x: 0, y: 0, width: contentWidth, height: 32)
+            socialFrames.append((socialTapButton, socialTapButton.frame))
             y = 32
         }
 
-        for line in c.commentLines.prefix(2) {
+        for (index, line) in c.commentLines.prefix(socialComments.count).enumerated() {
             if y > 0 { y += 5 }
             let h = Self.commentHeight(line, width: contentWidth)
-            let label = UILabel(frame: CGRect(x: 0, y: y, width: contentWidth, height: h))
+            let label = socialComments[index]
+            label.isHidden = false
+            label.frame = CGRect(x: 0, y: y, width: contentWidth, height: h)
             label.text = line
-            label.font = .systemFont(ofSize: 13)
-            label.textColor = UIColor(C.label)
-            label.numberOfLines = 2
-            label.isUserInteractionEnabled = true
-            label.addGestureRecognizer(
-                UITapGestureRecognizer(target: self, action: #selector(openComments))
-            )
-            socialContainer.addSubview(label)
             socialFrames.append((label, label.frame))
             y += h
         }
         if let more = c.moreCommentsText {
             if y > 0 { y += 5 }
-            let button = UIButton(type: .system)
-            button.frame = CGRect(x: 0, y: y, width: contentWidth, height: 18)
-            button.contentHorizontalAlignment = .left
-            button.setTitle(more, for: .normal)
-            button.titleLabel?.font = .systemFont(ofSize: 12.5, weight: .medium)
-            button.tintColor = UIColor(C.subLabel)
-            button.addAction(UIAction { [weak self] _ in self?.configuration?.onOpenComments() },
-                             for: .touchUpInside)
-            socialContainer.addSubview(button)
-            socialFrames.append((button, button.frame))
+            moreCommentsButton.isHidden = false
+            moreCommentsButton.frame = CGRect(x: 0, y: y, width: contentWidth, height: 18)
+            moreCommentsButton.setTitle(more, for: .normal)
+            socialFrames.append((moreCommentsButton, moreCommentsButton.frame))
         }
+    }
+
+    private func hideSocialPool() {
+        socialHeart.isHidden = true
+        socialSummary.isHidden = true
+        socialSummary.text = nil
+        socialTapButton.isHidden = true
+        for avatar in socialAvatars {
+            avatar.isHidden = true
+            avatar.reset()
+        }
+        for label in socialComments {
+            label.isHidden = true
+            label.text = nil
+        }
+        moreCommentsButton.isHidden = true
+        moreCommentsButton.setTitle(nil, for: .normal)
     }
 
     private func likeTapped() {
@@ -539,6 +577,8 @@ final class NativeMomentFeedCell: UICollectionViewCell {
         comment.title = comments > 0 ? "\(comments)" : nil
         comment.contentInsets = .zero
         commentButton.configuration = comment
+        likeButton.sizeToFit()
+        commentButton.sizeToFit()
     }
 
     @objc private func openComments() { configuration?.onOpenComments() }
