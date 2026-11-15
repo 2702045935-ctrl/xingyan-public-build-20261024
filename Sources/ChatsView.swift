@@ -3,7 +3,7 @@ import UIKit
 import Darwin
 
 private enum ChatListVisual {
-    static let rowHeight: CGFloat = 72
+    static var rowHeight: CGFloat { NativeChatRowMetrics.rowHeight }
     static let rowLeading: CGFloat = 16
     static let headerLeading: CGFloat = 12
     static let trailing: CGFloat = 16
@@ -1945,34 +1945,9 @@ struct ChatsView: View {
         }
     }
 
-    @ViewBuilder private func chatsNavGlass(_ scrolled: CGFloat) -> some View {
-        ZStack(alignment: .bottom) {
-            Rectangle()
-                .fill(chatsPageFill)
-                .opacity(chatsScrollActive ? 0 : 1)
-
-            ZStack(alignment: .bottom) {
-                NativeGlassHeaderMaterial()
-                chatsPageFill
-                    .opacity(scheme == .dark ? 0.28 : 0.22)
-                LinearGradient(
-                    stops: [
-                        .init(color: .clear, location: 0),
-                        .init(color: .clear, location: 0.80),
-                        .init(color: chatsPageFill.opacity(scheme == .dark ? 0.08 : 0.06),
-                              location: 0.94),
-                        .init(color: chatsPageFill.opacity(scheme == .dark ? 0.16 : 0.10),
-                              location: 1)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom)
-            }
-            .opacity(chatsScrollActive ? 1 : 0)
-        }
-        .animation(.easeOut(duration: chatsScrollActive ? 0.12 : 0.20),
-                   value: chatsScrollActive)
+    @ViewBuilder private func chatsNavGlass(_: CGFloat) -> some View {
+        ScrollActiveGlassMask(base: chatsPageFill, active: chatsScrollActive)
         .ignoresSafeArea(edges: .top)
-        .allowsHitTesting(false)
     }
 
     @ViewBuilder private var chatsCardBackground: some View {

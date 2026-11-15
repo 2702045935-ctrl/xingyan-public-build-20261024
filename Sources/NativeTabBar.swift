@@ -221,6 +221,7 @@ fileprivate final class TabAvatarLoader: ObservableObject {
 struct NativeTabBar: UIViewRepresentable {
     @Binding var selection: Int
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @StateObject private var avatarLoader = TabAvatarLoader.shared
     let badge: Int
     let contactsDot: Bool
@@ -322,9 +323,19 @@ struct NativeTabBar: UIViewRepresentable {
         bar.unselectedItemTintColor = UIColor(OrbitTheme.secondary)
 
         let appearance = UITabBarAppearance()
-        appearance.configureWithDefaultBackground()
-        bar.isOpaque = false
-        if scheme == .dark {
+        if reduceTransparency {
+            appearance.configureWithOpaqueBackground()
+            appearance.backgroundEffect = nil
+            let themed = UIConfig.colorIfSet("tabBarColor")
+                ?? UIConfig.colorIfSet("tabBg")
+                ?? (scheme == .dark ? C.pageBg : C.tabBg)
+            appearance.backgroundColor = UIColor(themed)
+            bar.isOpaque = true
+        } else {
+            appearance.configureWithDefaultBackground()
+            bar.isOpaque = false
+        }
+        if scheme == .dark && !reduceTransparency {
             // 深色玻璃跟随管理端整套主题，不再固定成一个脱离页面的黑阶。
             appearance.backgroundEffect = UIBlurEffect(style: .systemUltraThinMaterialDark)
             let themed = UIConfig.colorIfSet("tabBarColor")
@@ -373,7 +384,7 @@ struct NativeTabBar: UIViewRepresentable {
         }
         bar.standardAppearance = appearance
         bar.scrollEdgeAppearance = appearance
-        bar.isTranslucent = true
+        bar.isTranslucent = !reduceTransparency
         (bar as? CompactDotTabBar)?.clearsNativeBackdrop = false
     }
 

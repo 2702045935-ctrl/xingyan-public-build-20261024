@@ -2181,33 +2181,10 @@ struct MomentsView: View {
 
         .background {
             if solid {
-                ZStack(alignment: .bottom) {
-                    C.pageBg
-                        .opacity(momentsScrollActive ? 0 : 1)
-
-                    ZStack(alignment: .bottom) {
-                        NativeGlassHeaderMaterial()
-                        C.pageBg
-                            .opacity(scheme == .dark ? 0.28 : 0.22)
-                        LinearGradient(
-                            stops: [
-                                .init(color: .clear, location: 0),
-                                .init(color: .clear, location: 0.80),
-                                .init(color: C.pageBg.opacity(scheme == .dark ? 0.08 : 0.06),
-                                      location: 0.94),
-                                .init(color: C.pageBg.opacity(scheme == .dark ? 0.16 : 0.10),
-                                      location: 1)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom)
-                    }
-                    .opacity(momentsScrollActive ? 1 : 0)
-                }
+                ScrollActiveGlassMask(base: C.pageBg, active: momentsScrollActive)
             }
         }
         .animation(.easeOut(duration: 0.18), value: solid)
-        .animation(.easeOut(duration: momentsScrollActive ? 0.12 : 0.20),
-                   value: momentsScrollActive)
         .zIndex(25)
         .allowsHitTesting(true)
     }

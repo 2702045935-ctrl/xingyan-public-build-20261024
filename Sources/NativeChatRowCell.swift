@@ -1,5 +1,38 @@
 import UIKit
 
+enum NativeChatRowMetrics {
+    private static var cachedDynamicScale: CGFloat?
+
+    static var dynamicScale: CGFloat {
+        if let cachedDynamicScale { return cachedDynamicScale }
+        let base: CGFloat = 17
+        let scaled = UIFontMetrics(forTextStyle: .body).scaledValue(for: base)
+        let resolved = min(1.35, max(1, scaled / base))
+        cachedDynamicScale = resolved
+        return resolved
+    }
+
+    static var combinedScale: CGFloat {
+        dynamicScale * CareMode.scale
+    }
+
+    static var rowHeight: CGFloat {
+        max(72, (72 + (combinedScale - 1) * 34).rounded())
+    }
+
+    static func invalidateScaleCache() {
+        cachedDynamicScale = nil
+    }
+
+    static func font(_ size: CGFloat,
+                     weight: UIFont.Weight,
+                     textStyle: UIFont.TextStyle) -> UIFont {
+        let preferred = size * CareMode.scale
+        let scaled = UIFontMetrics(forTextStyle: textStyle).scaledValue(for: preferred)
+        return .systemFont(ofSize: min(size * combinedScale, scaled), weight: weight)
+    }
+}
+
 struct NativeChatRowConfiguration {
     var title: String
     var titleColor: UIColor
@@ -42,6 +75,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
     private let timeLabel = UILabel()
     private let unreadLabel = PaddingLabel(insets: .zero)
     private let divider = UIView()
+    private let pressOverlay = UIView()
     private let pinActions = UIStackView()
     private let leftActions = UIStackView()
     private var configuration: NativeChatRowConfiguration?
@@ -93,6 +127,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         leftActions.alpha = 1
         leftActions.transform = .identity
         leftActions.isHidden = true
+        pressOverlay.backgroundColor = .clear
         avatarView.reset()
         avatarSignature = ""
     }
@@ -100,6 +135,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
     override func layoutSubviews() {
         super.layoutSubviews()
         foreground.frame = bounds
+        pressOverlay.frame = foreground.bounds
         avatarView.frame = CGRect(x: rowLeading, y: (bounds.height - avatarSize) / 2,
                                   width: avatarSize, height: avatarSize)
         let textX = rowLeading + avatarSize + avatarGap
@@ -107,29 +143,44 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         let measuredTime = ceil((timeText as NSString).size(
             withAttributes: [.font: timeLabel.font as Any]
         ).width)
-        let timeWidth = min(78, max(34, measuredTime + 2))
+        let timeScale = min(1.35, timeLabel.font.pointSize / 13)
+        let timeWidth = min(96, max(34 * timeScale, measuredTime + 2))
         let titleWidth = max(1, bounds.width - textX - rowTrailing - timeWidth - 8)
         let titleHeight: CGFloat = 22
         titleLabel.frame = CGRect(x: 0, y: 0, width: titleWidth, height: titleHeight)
         levelLabel.sizeToFit()
         memberLabel.sizeToFit()
+        let resolvedTitleHeight = max(titleHeight, ceil(titleLabel.font.lineHeight))
+        let previewHeight = max(19, ceil(previewLabel.font.lineHeight))
+        let timeHeight = max(18, ceil(timeLabel.font.lineHeight))
+        let contentHeight = resolvedTitleHeight + 4 + previewHeight
+        let contentTop = max(5, (bounds.height - contentHeight) / 2)
         let unread = configuration?.unread ?? 0
+        let badgeScale = min(1.4, max(1, unreadLabel.font.pointSize / 10))
         let unreadWidth: CGFloat = configuration?.unreadMuted == true
             ? 8
-            : (unread > 99 ? 28 : (unread > 9 ? 23 : 18))
+            : (unread > 99 ? 28 : (unread > 9 ? 23 : 18)) * badgeScale
         let previewReserve = unread > 0 ? unreadWidth + 10 : 0
-        previewLabel.frame = CGRect(x: textX, y: bounds.midY + 4,
+        let unreadHeight = max(18, ceil(unreadLabel.font.lineHeight) + 6)
+        titleLabel.frame = CGRect(x: textX,
+                                  y: contentTop,
+                                  width: titleWidth,
+                                  height: resolvedTitleHeight)
+        previewLabel.frame = CGRect(x: textX,
+                                    y: contentTop + resolvedTitleHeight + 4,
                                     width: max(1, bounds.width - textX - rowTrailing - previewReserve),
-                                    height: 19)
-        titleLabel.frame.origin = CGPoint(x: textX, y: bounds.midY - titleHeight - 1)
+                                    height: previewHeight)
         timeLabel.frame = CGRect(x: bounds.width - rowTrailing - timeWidth,
-                                 y: bounds.midY - 20,
-                                 width: timeWidth, height: 18)
+                                 y: contentTop + (resolvedTitleHeight - timeHeight) / 2,
+                                 width: timeWidth, height: timeHeight)
         unreadLabel.sizeToFit()
         unreadLabel.frame = CGRect(x: bounds.width - rowTrailing - unreadWidth,
-                                   y: bounds.midY + 2,
+                                   y: previewLabel.frame.midY - unreadHeight / 2,
                                    width: unreadWidth,
-                                   height: 18)
+                                   height: unreadHeight)
+        unreadLabel.layer.cornerRadius = configuration?.unreadMuted == true
+            ? min(4, unreadHeight / 2)
+            : unreadHeight / 2
         layoutTitleBadges()
         divider.frame = CGRect(x: dividerLeading, y: bounds.height - 0.5,
                                width: bounds.width - dividerLeading, height: 0.5)
@@ -148,10 +199,13 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         foreground.backgroundColor = configuration.rowBackground
         titleLabel.text = configuration.title
         titleLabel.textColor = configuration.titleColor
-        previewLabel.font = .systemFont(ofSize: configuration.isLight ? 14.5 : 15,
-                                        weight: .regular)
-        timeLabel.font = .systemFont(ofSize: configuration.isLight ? 12 : 13,
-                                     weight: .regular)
+        titleLabel.font = NativeChatRowMetrics.font(17, weight: .semibold, textStyle: .headline)
+        previewLabel.font = NativeChatRowMetrics.font(configuration.isLight ? 14.5 : 15,
+                                                     weight: .regular,
+                                                     textStyle: .body)
+        timeLabel.font = NativeChatRowMetrics.font(configuration.isLight ? 12 : 13,
+                                                  weight: .regular,
+                                                  textStyle: .footnote)
         let preview = NSMutableAttributedString(
             string: configuration.mentionPrefix + configuration.preview,
             attributes: [
@@ -173,14 +227,16 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         if configuration.unread > 0 {
             if configuration.unreadMuted {
                 unreadLabel.text = "●"
-                unreadLabel.font = .systemFont(ofSize: 7, weight: .bold)
+                unreadLabel.font = NativeChatRowMetrics.font(7, weight: .bold,
+                                                             textStyle: .caption2)
                 unreadLabel.backgroundColor = configuration.timeColor
                 unreadLabel.textColor = configuration.timeColor
                 unreadLabel.layer.cornerRadius = 4
                 unreadLabel.frame.size.width = 8
             } else {
                 unreadLabel.text = configuration.unread > 99 ? "99+" : "\(configuration.unread)"
-                unreadLabel.font = .systemFont(ofSize: 10, weight: .bold)
+                unreadLabel.font = NativeChatRowMetrics.font(10, weight: .bold,
+                                                             textStyle: .caption2)
                 unreadLabel.backgroundColor = .systemBlue
                 unreadLabel.textColor = .white
                 unreadLabel.layer.cornerRadius = 9
@@ -192,8 +248,12 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         }
 
         levelLabel.isHidden = configuration.levelText.isEmpty
+        levelLabel.font = NativeChatRowMetrics.font(8.5, weight: .semibold,
+                                                    textStyle: .caption2)
         levelLabel.text = configuration.levelText
         memberLabel.isHidden = configuration.memberText.isEmpty
+        memberLabel.font = NativeChatRowMetrics.font(8.5, weight: .semibold,
+                                                     textStyle: .caption2)
         memberLabel.text = configuration.memberText
         memberLabel.backgroundColor = configuration.memberColor
         let nextAvatarSignature = [
@@ -218,6 +278,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
             actionsSignature = nextActionsSignature
             rebuildActions()
         }
+        configureAccessibility(configuration)
         setNeedsLayout()
     }
 
@@ -245,6 +306,9 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         foreground.addSubview(timeLabel)
         foreground.addSubview(unreadLabel)
         foreground.addSubview(divider)
+        pressOverlay.isUserInteractionEnabled = false
+        pressOverlay.backgroundColor = .clear
+        foreground.addSubview(pressOverlay)
 
         titleLabel.font = .systemFont(ofSize: 17, weight: .semibold)
         titleLabel.lineBreakMode = .byTruncatingTail
@@ -375,6 +439,36 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         foreground.addGestureRecognizer(tap)
     }
 
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesBegan(touches, with: event)
+        setPressed(true)
+    }
+
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesEnded(touches, with: event)
+        setPressed(false)
+    }
+
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesCancelled(touches, with: event)
+        setPressed(false)
+    }
+
+    private func setPressed(_ pressed: Bool) {
+        let color: UIColor
+        if configuration?.isLight == true {
+            color = pressed ? UIColor.black.withAlphaComponent(0.045) : .clear
+        } else {
+            color = pressed ? UIColor.white.withAlphaComponent(0.07) : .clear
+        }
+        let duration = UIAccessibility.isReduceMotionEnabled ? 0 : 0.12
+        UIView.animate(withDuration: duration,
+                       delay: 0,
+                       options: [.beginFromCurrentState, .allowUserInteraction]) {
+            self.pressOverlay.backgroundColor = color
+        }
+    }
+
     @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
         guard offset == 0 else {
             closeActions()
@@ -482,7 +576,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
             self.leftActions.alpha = target < 0 ? 1 : 0
             self.leftActions.transform = .identity
         }
-        if animated {
+        if animated && !UIAccessibility.isReduceMotionEnabled {
             let velocityVector = CGVector(
                 dx: max(-1, min(1, velocity / 900)),
                 dy: 0
@@ -515,6 +609,67 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         if Lang.isRussian { return ru }
         if Lang.isEnglish { return en }
         return zh
+    }
+
+    private func configureAccessibility(_ configuration: NativeChatRowConfiguration) {
+        isAccessibilityElement = true
+        accessibilityTraits = .button
+        let unread = configuration.unread > 0
+            ? localized("\(configuration.unread) 条未读",
+                        "\(configuration.unread) unread",
+                        "\(configuration.unread) непрочитанных")
+            : ""
+        accessibilityLabel = [
+            configuration.title,
+            unread,
+            configuration.time,
+            configuration.mentionPrefix + configuration.preview
+        ]
+        .filter { !$0.isEmpty }
+        .joined(separator: "，")
+        accessibilityHint = localized("打开聊天，更多操作可使用自定义动作",
+                                      "Open chat. More actions are available as custom actions",
+                                      "Открыть чат. Дополнительные действия доступны как пользовательские")
+
+        let pinTitle = configuration.isPinned
+            ? localized("取消置顶", "Unpin", "Открепить")
+            : localized("置顶", "Pin", "Закрепить")
+        let unreadTitle = localized("标为未读", "Mark unread", "Отметить непрочитанным")
+        let hideTitle = localized("不显示", "Hide", "Скрыть")
+        let deleteTitle = localized("删除", "Delete", "Удалить")
+
+        accessibilityCustomActions = [
+            UIAccessibilityCustomAction(name: pinTitle) { [weak self] _ in
+                guard let self, let current = self.configuration else { return false }
+                current.onPin(!current.isPinned)
+                return true
+            },
+            UIAccessibilityCustomAction(name: unreadTitle) { [weak self] _ in
+                guard let action = self?.configuration?.onUnread else { return false }
+                action()
+                return true
+            },
+            UIAccessibilityCustomAction(name: hideTitle) { [weak self] _ in
+                guard let action = self?.configuration?.onHide else { return false }
+                action()
+                return true
+            },
+            UIAccessibilityCustomAction(name: deleteTitle) { [weak self] _ in
+                guard let action = self?.configuration?.onDelete else { return false }
+                action()
+                return true
+            }
+        ]
+    }
+
+    override func accessibilityActivate() -> Bool {
+        guard let configuration else { return false }
+        if offset != 0 {
+            closeActions()
+        } else {
+            configuration.onOpen()
+        }
+        return true
     }
 
     override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {

@@ -41,6 +41,8 @@ where Item.ID: Hashable {
         collection.delaysContentTouches = false
         collection.canCancelContentTouches = true
         collection.scrollsToTop = true
+        collection.allowsFocus = true
+        collection.remembersLastFocusedIndexPath = true
         collection.isPrefetchingEnabled = true
         collection.allowsSelection = false
         if #available(iOS 26.0, *) {
@@ -126,6 +128,7 @@ where Item.ID: Hashable {
         private var lastScrollActive = false
         private var pendingItems: [Item]?
         private var applyGeneration = 0
+        private var layoutObservers: [NSObjectProtocol] = []
 
         init(onScrollStateChange: @escaping (Bool) -> Void,
              onZoneChange: @escaping (Int) -> Void,
@@ -140,6 +143,20 @@ where Item.ID: Hashable {
             self.nativeRow = nativeRow
             self.row = row
             super.init()
+            let center = NotificationCenter.default
+            for name in [UIContentSizeCategory.didChangeNotification,
+                         Notification.Name.chrisUIPrefsChanged] {
+                layoutObservers.append(center.addObserver(forName: name,
+                                                          object: nil,
+                                                          queue: .main) { [weak self] _ in
+                    self?.refreshMetrics()
+                })
+            }
+        }
+
+        deinit {
+            let center = NotificationCenter.default
+            layoutObservers.forEach { center.removeObserver($0) }
         }
 
         func apply(_ next: [Item], animated: Bool) {
@@ -260,11 +277,65 @@ where Item.ID: Hashable {
             flushPendingItems()
         }
 
+        func collectionView(_ collectionView: UICollectionView,
+                            contextMenuConfigurationForItemAt indexPath: IndexPath,
+                            point: CGPoint) -> UIContextMenuConfiguration? {
+            guard let id = dataSource?.itemIdentifier(for: indexPath),
+                  let entry = lookup[id],
+                  let configuration = nativeRow?(entry) else { return nil }
+            return UIContextMenuConfiguration(identifier: "\(id)" as NSString,
+                                              previewProvider: nil) { _ in
+                let pin = UIAction(
+                    title: configuration.isPinned ? Tr("取消置顶") : Tr("置顶"),
+                    image: UIImage(systemName: configuration.isPinned ? "pin.slash" : "pin")
+                ) { _ in configuration.onPin(!configuration.isPinned) }
+                let unread = UIAction(
+                    title: Tr("标为未读"),
+                    image: UIImage(systemName: "envelope.badge")
+                ) { _ in configuration.onUnread() }
+                let hide = UIAction(
+                    title: Tr("不显示"),
+                    image: UIImage(systemName: "eye.slash")
+                ) { _ in configuration.onHide() }
+                let delete = UIAction(
+                    title: Tr("删除"),
+                    image: UIImage(systemName: "trash"),
+                    attributes: .destructive
+                ) { _ in configuration.onDelete() }
+                return UIMenu(children: [pin, unread, hide, delete])
+            }
+        }
+
         private func publishScrollState(_ active: Bool) {
             guard active != lastScrollActive else { return }
             lastScrollActive = active
             DispatchQueue.main.async { [weak self] in
                 self?.onScrollStateChange(active)
+            }
+        }
+
+        private func refreshMetrics() {
+            guard let collection, let dataSource else { return }
+            NativeChatRowMetrics.invalidateScaleCache()
+            let previousOffset = collection.contentOffset
+            collection.collectionViewLayout.invalidateLayout()
+            var snapshot = dataSource.snapshot()
+            guard !snapshot.itemIdentifiers.isEmpty else { return }
+            snapshot.reloadItems(snapshot.itemIdentifiers)
+            dataSource.apply(snapshot, animatingDifferences: false) { [weak collection] in
+                guard let collection,
+                      !collection.isTracking,
+                      !collection.isDragging,
+                      !collection.isDecelerating else { return }
+                let minimumY = -collection.adjustedContentInset.top
+                let maximumY = max(
+                    minimumY,
+                    collection.contentSize.height - collection.bounds.height
+                        + collection.adjustedContentInset.bottom
+                )
+                var target = previousOffset
+                target.y = min(max(target.y, minimumY), maximumY)
+                collection.setContentOffset(target, animated: false)
             }
         }
 

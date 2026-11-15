@@ -56,6 +56,7 @@ struct TopGlassBar: View {
 #if canImport(UIKit)
 struct NativeGlassHeaderMaterial: UIViewRepresentable {
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     final class Coordinator {
         var token = ""
@@ -67,16 +68,29 @@ struct NativeGlassHeaderMaterial: UIViewRepresentable {
         let view = UIVisualEffectView(effect: Self.visualEffect(dark: scheme == .dark))
         view.isUserInteractionEnabled = false
         view.contentView.backgroundColor = .clear
-        view.backgroundColor = .clear
-        context.coordinator.token = Self.effectToken(dark: scheme == .dark)
+        applyReducedTransparency(to: view)
+        context.coordinator.token = Self.effectToken(dark: scheme == .dark,
+                                                     reduced: reduceTransparency)
         return view
     }
 
     func updateUIView(_ view: UIVisualEffectView, context: Context) {
-        let token = Self.effectToken(dark: scheme == .dark)
+        let token = Self.effectToken(dark: scheme == .dark,
+                                     reduced: reduceTransparency)
         guard context.coordinator.token != token else { return }
         context.coordinator.token = token
         view.effect = Self.visualEffect(dark: scheme == .dark)
+        applyReducedTransparency(to: view)
+    }
+
+    private func applyReducedTransparency(to view: UIVisualEffectView) {
+        if reduceTransparency {
+            view.effect = nil
+            view.backgroundColor = .secondarySystemBackground
+        } else {
+            view.effect = Self.visualEffect(dark: scheme == .dark)
+            view.backgroundColor = .clear
+        }
     }
 
     private static func visualEffect(dark: Bool) -> UIVisualEffect {
@@ -91,30 +105,87 @@ struct NativeGlassHeaderMaterial: UIViewRepresentable {
                             : .systemUltraThinMaterialLight)
     }
 
-    private static func effectToken(dark: Bool) -> String {
+    private static func effectToken(dark: Bool, reduced: Bool) -> String {
+        if reduced { return "reduced-\(dark)" }
         if #available(iOS 26.0, *) { return "glass-\(dark)" }
         return "material-\(dark)"
     }
 }
 #endif
 
+struct ScrollActiveGlassMask: View {
+    let base: Color
+    let active: Bool
+
+    @Environment(\.colorScheme) private var scheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            base
+                .opacity(active && !reduceTransparency ? 0 : 1)
+
+            if active && !reduceTransparency {
+                ZStack(alignment: .bottom) {
+                    NativeGlassHeaderMaterial()
+                    base
+                        .opacity(scheme == .dark ? 0.28 : 0.22)
+                    LinearGradient(
+                        stops: [
+                            .init(color: .clear, location: 0),
+                            .init(color: .clear, location: 0.80),
+                            .init(color: base.opacity(scheme == .dark ? 0.08 : 0.06),
+                                  location: 0.94),
+                            .init(color: base.opacity(scheme == .dark ? 0.16 : 0.10),
+                                  location: 1)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom)
+                }
+                .transition(.opacity)
+            }
+        }
+        .animation(reduceMotion ? nil : .easeOut(duration: active ? 0.12 : 0.20),
+                   value: active)
+        .allowsHitTesting(false)
+    }
+}
+
 struct NativeChromeMaterial: View {
     var opacity: Double = 1
     var liquid: Bool = false
 
+    @Environment(\.colorScheme) private var scheme
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
     var body: some View {
         #if compiler(>=6.2)
-        if #available(iOS 26.0, *), liquid {
+        if #available(iOS 26.0, *), liquid, !reduceTransparency {
             Color.clear
                 .glassEffect(.regular, in: Rectangle())
                 .opacity(max(0, min(1, opacity)))
                 .allowsHitTesting(false)
+        } else if reduceTransparency {
+            reducedSurface
         } else {
             fallback
         }
         #else
         fallback
         #endif
+    }
+
+    private var reducedSurface: some View {
+        Rectangle()
+            .fill(UIConfig.fixedDark("glassReducedSurface", 0xFFFFFF, 0x1C1C1E))
+            .overlay {
+                Rectangle()
+                    .stroke(C.hairline.opacity(scheme == .dark ? 0.72 : 0.55),
+                            lineWidth: 0.5)
+            }
+            .opacity(max(0, min(1, opacity)))
+            .allowsHitTesting(false)
     }
 
     private var fallback: some View {
@@ -161,13 +232,26 @@ struct NavPlusGlassBackground: View {
 struct NativeGlassCircleBackground: View {
     private let shape = Circle()
 
+    @Environment(\.colorScheme) private var scheme
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
     var body: some View {
         #if compiler(>=6.2)
-        if #available(iOS 26.0, *) {
+        if #available(iOS 26.0, *), !reduceTransparency {
             Color.clear
                 .glassEffect(.regular, in: shape)
                 .overlay(shape.stroke(Color.white.opacity(0.20), lineWidth: 0.7))
                 .shadow(color: Color.black.opacity(0.10), radius: 7, y: 3)
+                .allowsHitTesting(false)
+        } else if reduceTransparency {
+            shape
+                .fill(UIConfig.fixedDark("glassReducedSurface", 0xFFFFFF, 0x1C1C1E))
+                .overlay {
+                    shape.stroke(C.hairline.opacity(scheme == .dark ? 0.72 : 0.55),
+                                 lineWidth: 0.7)
+                }
+                .shadow(color: Color.black.opacity(scheme == .dark ? 0.24 : 0.08),
+                        radius: 6, y: 3)
                 .allowsHitTesting(false)
         } else {
             fallback

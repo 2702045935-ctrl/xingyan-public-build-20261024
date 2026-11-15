@@ -20,6 +20,7 @@ extension Notification.Name {
 
     static let chrisUIPrefsChanged = Notification.Name("chrisUIPrefsChanged")
     static let chrisChatRead = Notification.Name("chris.chatRead")
+    static let chrisSwitchMainTab = Notification.Name("chris.switchMainTab")
 }
 
 extension View {

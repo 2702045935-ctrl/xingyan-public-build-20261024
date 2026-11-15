@@ -197,7 +197,7 @@ struct MainTabView: View {
                     .zIndex(60)
             }
         }
-        .animation(.easeOut(duration: 0.22), value: musicSheet.open)
+        .systemAnimation(.easeOut(duration: 0.22), value: musicSheet.open)
 
         .fullScreenCover(item: Binding(
             get: { mallSheet.open ? mallSheet.product : nil },
@@ -258,6 +258,13 @@ struct MainTabView: View {
         .onChange(of: tab) { value in
             mountedTabs.insert(value)
             musicDock.setForegroundTab(value)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .chrisSwitchMainTab)) { note in
+            guard let next = note.userInfo?["tab"] as? Int,
+                  (0..<4).contains(next),
+                  next != tab else { return }
+            UISelectionFeedbackGenerator().selectionChanged()
+            tab = next
         }
 
         .onReceive(NotificationCenter.default.publisher(for: .chrisOpenPair)) { note in

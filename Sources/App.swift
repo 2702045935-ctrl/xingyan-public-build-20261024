@@ -2090,7 +2090,7 @@ struct CHRISApp: App {
                     .environmentObject(app)
                     .environmentObject(externalFiles)
                     .preferredColorScheme(app.preferredScheme)
-                    .animation(.easeInOut(duration: 0.38), value: app.appearance)
+                    .systemAnimation(.easeInOut(duration: 0.38), value: app.appearance)
                     .onOpenURL { url in
                         if url.isFileURL { ExternalFileInbox.shared.accept([url]) }
                     }
@@ -2144,6 +2144,34 @@ struct CHRISApp: App {
                         .transition(.opacity)
                         .zIndex(20)
                 }
+            }
+        }
+        .commands {
+            CommandMenu(Tr("导航")) {
+                Button(C.tabText0) {
+                    NotificationCenter.default.post(name: .chrisSwitchMainTab,
+                                                    object: nil,
+                                                    userInfo: ["tab": 0])
+                }
+                .keyboardShortcut("1", modifiers: .command)
+                Button(C.tabText1) {
+                    NotificationCenter.default.post(name: .chrisSwitchMainTab,
+                                                    object: nil,
+                                                    userInfo: ["tab": 1])
+                }
+                .keyboardShortcut("2", modifiers: .command)
+                Button(C.tabText2) {
+                    NotificationCenter.default.post(name: .chrisSwitchMainTab,
+                                                    object: nil,
+                                                    userInfo: ["tab": 2])
+                }
+                .keyboardShortcut("3", modifiers: .command)
+                Button(C.tabText3) {
+                    NotificationCenter.default.post(name: .chrisSwitchMainTab,
+                                                    object: nil,
+                                                    userInfo: ["tab": 3])
+                }
+                .keyboardShortcut("4", modifiers: .command)
             }
         }
     }

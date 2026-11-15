@@ -18,6 +18,7 @@ struct GlassBackground<S: Shape>: View {
 
     var darkEdgeOff: Bool = false
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     private var darkEdgeSuppressed: Bool {
         false
@@ -51,7 +52,7 @@ struct GlassBackground<S: Shape>: View {
     var body: some View {
         #if compiler(>=6.2)
 
-        if #available(iOS 26.0, *), native, !darkEdgeSuppressed,
+        if #available(iOS 26.0, *), native, !darkEdgeSuppressed, !reduceTransparency,
            UIConfig.num("nativeGlass", 1) > 0 {
             Color.clear
 
@@ -65,6 +66,8 @@ struct GlassBackground<S: Shape>: View {
                 .allowsHitTesting(false)
                 .shadow(color: shadow ? Color.black.opacity(scheme == .dark ? 0.35 : 0.12) : .clear,
                         radius: shadow ? 10 : 0, y: shadow ? 5 : 0)
+        } else if reduceTransparency {
+            reducedTransparencySurface
         } else if darkEdgeSuppressed {
             suppressedDarkGlass
         } else {
@@ -73,6 +76,22 @@ struct GlassBackground<S: Shape>: View {
         #else
         fallbackGlass
         #endif
+    }
+
+    private var reducedTransparencySurface: some View {
+        ZStack {
+            shape.fill(UIConfig.fixedDark("glassReducedSurface", 0xFFFFFF, 0x1C1C1E))
+            if let tint {
+                shape.fill(tint.opacity(scheme == .dark ? 0.42 : 0.34))
+            }
+            shape.stroke(C.hairline.opacity(scheme == .dark ? 0.72 : 0.55),
+                         lineWidth: 0.7)
+        }
+        .clipShape(shape)
+        .opacity(opacity)
+        .shadow(color: shadow ? Color.black.opacity(scheme == .dark ? 0.32 : 0.10) : .clear,
+                radius: shadow ? 8 : 0, y: shadow ? 4 : 0)
+        .allowsHitTesting(false)
     }
 
     private var suppressedDarkGlass: some View {
