@@ -129,7 +129,9 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
                 pendingItems = nil
                 return
             }
-            let width = collection.bounds.width
+            let width = collection.bounds.width > 1
+                ? collection.bounds.width
+                : UIScreen.main.bounds.width
             if abs(width - measuredWidth) > 0.5 {
                 measuredWidth = width
                 heights.removeAll(keepingCapacity: true)
@@ -148,6 +150,7 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
             applyGeneration += 1
             let generation = applyGeneration
             lookup = nextLookup
+            prepareHeights(nextOrder, width: width)
 
             var snapshot = NSDiffableDataSourceSnapshot<Int, String>()
             snapshot.appendSections([0])
@@ -202,15 +205,20 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
                 )
             )
             hosted.view.backgroundColor = .clear
-            hosted.view.frame = CGRect(x: 0, y: 0, width: width, height: 1)
+            hosted.view.frame = CGRect(x: 0, y: 0, width: width, height: 360)
             hosted.view.setNeedsLayout()
             hosted.view.layoutIfNeeded()
-            let size = hosted.view.systemLayoutSizeFitting(
-                CGSize(width: width, height: UIView.layoutFittingCompressedSize.height),
-                withHorizontalFittingPriority: .required,
-                verticalFittingPriority: .fittingSizeLevel
+            let fitted = hosted.sizeThatFits(
+                in: CGSize(width: width, height: .greatestFiniteMagnitude)
             )
-            return max(1, ceil(size.height))
+            return max(1, ceil(fitted.height.isFinite ? fitted.height : 360))
+        }
+
+        private func prepareHeights(_ ids: [String], width: CGFloat) {
+            for id in ids where heights[id] == nil {
+                guard let item = lookup[id] else { continue }
+                heights[id] = measuredHeight(item, width: width)
+            }
         }
 
         func scrollViewDidScroll(_ scrollView: UIScrollView) {
