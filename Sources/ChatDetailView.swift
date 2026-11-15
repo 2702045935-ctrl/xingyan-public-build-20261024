@@ -1615,11 +1615,17 @@ struct ChatDetailView: View {
     }
 
     private var adaptiveEmojiInk: Color {
-        composerUsesLightInk ? .white : Color(hex: 0x111111)
+        composerUtilityInk
     }
 
     private var adaptivePlusInk: Color {
-        composerUsesLightInk ? .white : Color(hex: 0x111111)
+        composerUtilityInk
+    }
+
+    private var composerUtilityInk: Color {
+        composerUsesLightInk
+            ? Color.white.opacity(0.72)
+            : Color(hex: 0x54656F)
     }
 
     private var adaptiveComposerSurface: Color {
@@ -1629,7 +1635,7 @@ struct ChatDetailView: View {
     }
 
     private var composerTextInk: Color {
-        composerUsesLightInk ? .white : Color(hex: 0x111111)
+        composerUsesLightInk ? .white : Color(hex: 0x111B21)
     }
 
     private var adaptiveComposerStroke: Color {
@@ -3973,14 +3979,14 @@ struct ChatDetailView: View {
     @ViewBuilder
     private var plusIcon: some View {
         let cfg = app.plusButton
-        let side = cfg.size > 0 ? CGFloat(cfg.size) : L.composerIcon
+        let side = cfg.size > 0 ? CGFloat(cfg.size) : min(24, L.composerIcon)
         Group {
             if !cfg.image.isEmpty {
                 RemoteImage(path: cfg.image, mode: .fit, maxSide: 200)
                     .frame(width: max(20, side - 2), height: max(20, side - 2))
             } else {
                 Image(systemName: "plus")
-                    .font(.system(size: max(21, side - 3), weight: .semibold))
+                    .font(.system(size: max(20, side - 1), weight: .semibold))
                     .foregroundStyle(panel == .plus ? C.green : adaptivePlusInk)
             }
         }
@@ -4357,7 +4363,7 @@ struct ChatDetailView: View {
     }
 
     private var composerInputHeight: CGFloat {
-        (voiceMode || recorder.recording) ? L.inputH : max(L.inputH, inputBoxHeight)
+        (voiceMode || recorder.recording) ? 42 : max(42, inputBoxHeight)
     }
 
     private var composerNeedsLightLift: Bool {
@@ -4366,19 +4372,19 @@ struct ChatDetailView: View {
     }
 
     private var composerFieldRadius: CGFloat {
-        min(19.5, composerInputHeight / 2)
+        min(21, composerInputHeight / 2)
     }
 
     private var composerFieldFill: Color {
         composerUsesLightInk
-            ? Color(hex: 0x202C33).opacity(0.96)
-            : Color.white.opacity(0.96)
+            ? Color(hex: 0x2A3942)
+            : .white
     }
 
     private var composerFieldBorder: Color {
         composerUsesLightInk
-            ? Color.white.opacity(0.07)
-            : Color.black.opacity(0.055)
+            ? Color.clear
+            : Color.black.opacity(0.045)
     }
 
     private var draftImagesBar: some View {
@@ -4529,7 +4535,7 @@ struct ChatDetailView: View {
                 .zIndex(3)
             }
 
-            HStack(spacing: 6) {
+            HStack(spacing: 7) {
 
                 Button {
                     if recorder.recording { return }
@@ -4539,7 +4545,7 @@ struct ChatDetailView: View {
                     } else {
                         focused = false
                         panel = .none
-                        showCamera = true
+                        voiceMode = true
                     }
                 } label: {
                     Group {
@@ -4549,19 +4555,19 @@ struct ChatDetailView: View {
                                 .foregroundStyle(recorder.willCancel ? C.red : C.green)
                         } else if voiceMode {
                             Image(systemName: "keyboard")
-                                .font(.system(size: 18, weight: .medium))
-                                .foregroundStyle(C.green)
+                                .font(.system(size: 20, weight: .medium))
+                                .foregroundStyle(composerUtilityInk)
                         } else {
-                            Image(systemName: "camera.fill")
-                                .font(.system(size: 18, weight: .medium))
-                                .foregroundStyle(adaptiveMicInk)
+                            Image(systemName: "mic")
+                                .font(.system(size: 22, weight: .medium))
+                                .foregroundStyle(composerUtilityInk)
                         }
                     }
-                    .frame(width: 32, height: 40)
+                    .frame(width: 38, height: 42)
                     .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(Tr(voiceMode ? "切换到键盘" : "拍摄"))
+                .accessibilityLabel(Tr(voiceMode ? "切换到键盘" : "切换到语音"))
 
                 HStack(spacing: 0) {
                     if voiceMode {
@@ -4671,7 +4677,6 @@ struct ChatDetailView: View {
                             in: RoundedRectangle(cornerRadius: 19, style: .continuous)
                         )
                     } else {
-                        HStack(spacing: 4) {
                         ChatComposerTextField(text: $input,
                                               focused: $focused,
                                               bridge: composerBridge,
@@ -4689,35 +4694,16 @@ struct ChatDetailView: View {
                                                   }
                                               },
                                               onBeginEditing: { panel = .none })
+                        .onChange(of: input) { v in
+                            reportTyping()
+                            scheduleDraftSave(v)
 
-                            .onChange(of: input) { v in
-                                reportTyping()
-                                scheduleDraftSave(v)
-
-                                if isGroup, justTypedAtSign(from: lastInputSnapshot, to: v) { openMentionPicker() }
-                                lastInputSnapshot = v
-                            }
-
-                            if !voiceMode,
-                               input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                                Button {
-                                    focused = false
-                                    panel = .none
-                                    voiceMode = true
-                                } label: {
-                                    Image(systemName: "mic")
-                                        .font(.system(size: max(19, L.composerIcon - 3), weight: .medium))
-                                        .foregroundColor(adaptiveMicInk)
-                                        .frame(width: 32, height: 40)
-                                        .contentShape(Rectangle())
-                                }
-                                .buttonStyle(.plain)
-                                .accessibilityLabel(Tr("切换到语音"))
-                            }
+                            if isGroup, justTypedAtSign(from: lastInputSnapshot, to: v) { openMentionPicker() }
+                            lastInputSnapshot = v
                         }
                     }
                 }
-                .padding(.horizontal, 6)
+                .padding(.horizontal, 8)
                 .frame(height: composerInputHeight)
                 .background {
                     RoundedRectangle(cornerRadius: composerFieldRadius,
@@ -4741,10 +4727,10 @@ struct ChatDetailView: View {
                             panel = (panel == .emoji) ? .none : .emoji
                         } label: {
                             Image(systemName: "face.smiling")
-                                .font(.system(size: max(19, L.composerIcon - 3), weight: .medium))
+                                .font(.system(size: 24, weight: .medium))
                                 .symbolRenderingMode(.monochrome)
                                 .foregroundStyle(panel == .emoji ? C.green : adaptiveEmojiInk)
-                                .frame(width: 32, height: 40)
+                                .frame(width: 36, height: 42)
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -4782,10 +4768,10 @@ struct ChatDetailView: View {
                                 panel = (panel == .emoji) ? .none : .emoji
                             } label: {
                                 Image(systemName: "face.smiling")
-                                    .font(.system(size: max(19, L.composerIcon - 3), weight: .medium))
+                                    .font(.system(size: 24, weight: .medium))
                                     .symbolRenderingMode(.monochrome)
                                     .foregroundStyle(panel == .emoji ? C.green : adaptiveEmojiInk)
-                                    .frame(width: 32, height: 40)
+                                    .frame(width: 36, height: 42)
                                     .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
@@ -4811,7 +4797,7 @@ struct ChatDetailView: View {
                                     .foregroundStyle(.white)
                                     .offset(x: -0.5, y: 0.5)
                             }
-                                .frame(width: 36, height: 36)
+                                .frame(width: 38, height: 38)
                                 .shadow(color: C.green.opacity(0.22), radius: 7, y: 3)
                         }
                         .buttonStyle(.plain)
@@ -4820,8 +4806,8 @@ struct ChatDetailView: View {
                     }
                 }
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 7)
             .animation(.spring(response: 0.24, dampingFraction: 0.82),
                        value: input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && draftImages.isEmpty)
 
@@ -5735,6 +5721,11 @@ struct ChatDetailView: View {
 
     private func normalizedPlusItems(_ raw: [PlusItem]) -> [PlusItem] {
         var items = raw.filter { $0.enabled != false }
+        if !items.contains(where: { ($0.action ?? "").lowercased() == "camera" }) {
+            let camera = PlusItem(id: "camera-fallback", label: Tr("拍摄"),
+                                  icon: "camera", action: "camera", enabled: true)
+            items.insert(camera, at: 0)
+        }
         if let i = items.firstIndex(where: { $0.action == "file" }) {
             if i >= 8 {
                 let file = items.remove(at: i)
