@@ -48,6 +48,8 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
     private var startOffset: CGFloat = 0
     private var latestRawOffset: CGFloat = 0
     private var dragDirection: CGFloat = 0
+    private var actionsSignature = ""
+    private var avatarSignature = ""
 
     private let rowLeading: CGFloat = 16
     private let avatarSize: CGFloat = 50
@@ -86,9 +88,12 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         dragDirection = 0
         pinActions.alpha = 1
         pinActions.transform = .identity
+        pinActions.isHidden = true
         leftActions.alpha = 1
         leftActions.transform = .identity
+        leftActions.isHidden = true
         avatarView.reset()
+        avatarSignature = ""
     }
 
     override func layoutSubviews() {
@@ -115,7 +120,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
                                    y: bounds.midY + 2,
                                    width: unreadWidth,
                                    height: 18)
-        rebuildTitleRow()
+        layoutTitleBadges()
         divider.frame = CGRect(x: dividerLeading, y: bounds.height - 0.5,
                                width: bounds.width - dividerLeading, height: 0.5)
         pinActions.frame = CGRect(x: actionInset, y: 0,
@@ -165,13 +170,28 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         memberLabel.isHidden = configuration.memberText.isEmpty
         memberLabel.text = configuration.memberText
         memberLabel.backgroundColor = configuration.memberColor
-        avatarView.configure(paths: configuration.avatarPaths,
-                             chatId: configuration.chatId,
-                             memberIds: configuration.groupMemberIds,
-                             group: configuration.avatarIsGroup,
-                             online: configuration.showOnline,
-                             mood: configuration.moodIcon)
-        rebuildActions()
+        let nextAvatarSignature = [
+            configuration.avatarPaths.joined(separator: "\u{1F}"),
+            configuration.groupMemberIds.joined(separator: "\u{1F}"),
+            configuration.chatId,
+            configuration.avatarIsGroup ? "1" : "0",
+            configuration.showOnline ? "1" : "0",
+            configuration.moodIcon
+        ].joined(separator: "\u{1E}")
+        if avatarSignature != nextAvatarSignature {
+            avatarSignature = nextAvatarSignature
+            avatarView.configure(paths: configuration.avatarPaths,
+                                 chatId: configuration.chatId,
+                                 memberIds: configuration.groupMemberIds,
+                                 group: configuration.avatarIsGroup,
+                                 online: configuration.showOnline,
+                                 mood: configuration.moodIcon)
+        }
+        let nextActionsSignature = "\(configuration.isPinned)|\(Lang.code)"
+        if actionsSignature != nextActionsSignature {
+            actionsSignature = nextActionsSignature
+            rebuildActions()
+        }
         setNeedsLayout()
     }
 
@@ -221,8 +241,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         memberLabel.clipsToBounds = true
     }
 
-    private func rebuildTitleRow() {
-        layer.sublayers?.removeAll(where: { $0.name == "title-badges" })
+    private func layoutTitleBadges() {
         let baseWidth = min(titleLabel.intrinsicContentSize.width,
                             max(1, titleLabel.bounds.width))
         var x = titleLabel.frame.maxX - titleLabel.bounds.width + baseWidth + 5
