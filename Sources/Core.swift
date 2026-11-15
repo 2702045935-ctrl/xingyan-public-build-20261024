@@ -2169,6 +2169,40 @@ struct Chevron: View {
 }
 
 enum RichText {
+    private final class CachedLinkText: NSObject {
+        let value: AttributedString
+
+        init(_ value: AttributedString) {
+            self.value = value
+        }
+    }
+
+    private static let linkRegex = try? NSRegularExpression(
+        pattern: "(?:https?://|www\\.)[^\\s，。、）)】」]+"
+            + "|(?:[A-Za-z0-9-]+\\.)+(?:com|cn|net|org|io|cc|me|tv|xyz|top|vip|shop|info|edu|gov|co|app|dev)"
+            + "(?:/[^\\s，。、）)】」]*)?",
+        options: [.caseInsensitive]
+    )
+    private static let linkCache: NSCache<NSString, CachedLinkText> = {
+        let cache = NSCache<NSString, CachedLinkText>()
+        cache.countLimit = 512
+        return cache
+    }()
+    private static let badHostFragments = [
+        "casino", "poker", "baccarat", "roulette", "gambling", "lottery",
+        "jackpot", "porn", "xxx", "hentai", "onlyfans", "escort",
+        "cocaine", "heroin"
+    ]
+    private static let badHostLabels: Set<String> = [
+        "bet", "sex", "xxx", "porn", "av", "jav", "toto", "adult"
+    ]
+    private static let badHostLabelRegex = try? NSRegularExpression(
+        pattern: #"^(18|91|av|jav)?(av|jav|porn|xxx|sex)\d*$#
+    )
+    private static let badPathFragments = [
+        "/casino", "/bet", "/poker", "/porn", "/xxx", "/sex", "/adult"
+    ]
+
     static func looksLikeCode(_ line: String) -> Bool {
         let t = line.trimmingCharacters(in: .whitespaces)
         if t.isEmpty { return false }
@@ -2205,12 +2239,14 @@ enum RichText {
     }
 
     static func linkified(_ s: String) -> AttributedString {
+        if s.isEmpty { return AttributedString() }
+        let cacheKey = s as NSString
+        if let cached = linkCache.object(forKey: cacheKey) {
+            return cached.value
+        }
         var out = AttributedString()
         let src = s as NSString
-        let pattern = "(?:https?://|www\\.)[^\\s，。、）)】」]+"
-            + "|(?:[A-Za-z0-9-]+\\.)+(?:com|cn|net|org|io|cc|me|tv|xyz|top|vip|shop|info|edu|gov|co|app|dev)"
-            + "(?:/[^\\s，。、）)】」]*)?"
-        guard let re = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
+        guard let re = linkRegex else {
             return AttributedString(s)
         }
         var cursor = 0
@@ -2242,23 +2278,23 @@ enum RichText {
             cursor = m.range.location + m.range.length
         }
         if cursor < src.length { out += AttributedString(src.substring(from: cursor)) }
+        linkCache.setObject(CachedLinkText(out), forKey: cacheKey)
         return out
     }
 
     static func looksBadLink(_ url: URL) -> Bool {
         let host = (url.host ?? "").lowercased()
-        let badInHost = ["casino", "poker", "baccarat", "roulette", "gambling", "lottery",
-                         "jackpot", "porn", "xxx", "hentai", "onlyfans", "escort",
-                         "cocaine", "heroin"]
-        for w in badInHost where host.contains(w) { return true }
+        for w in badHostFragments where host.contains(w) { return true }
         for lb in host.split(separator: ".") {
             let s = String(lb)
-            if ["bet", "sex", "xxx", "porn", "av", "jav", "toto", "adult"].contains(s) { return true }
-            if s.range(of: #"^(18|91|av|jav)?(av|jav|porn|xxx|sex)\d*$"#,
-                       options: .regularExpression) != nil { return true }
+            if badHostLabels.contains(s) { return true }
+            if let regex = badHostLabelRegex,
+               regex.firstMatch(in: s, range: NSRange(location: 0, length: (s as NSString).length)) != nil {
+                return true
+            }
         }
         let path = (url.path + "?" + (url.query ?? "")).lowercased()
-        for w in ["/casino", "/bet", "/poker", "/porn", "/xxx", "/sex", "/adult"] where path.contains(w) {
+        for w in badPathFragments where path.contains(w) {
             return true
         }
         return false

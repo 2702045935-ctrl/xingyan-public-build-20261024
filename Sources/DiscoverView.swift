@@ -1295,6 +1295,18 @@ private final class MomentDragClock {
 
 struct MomentsView: View {
     private static let momentPageSize = 30
+    private static let monthDayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.dateFormat = "M月d日"
+        return formatter
+    }()
+    private static let yearMonthDayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.dateFormat = "yyyy年M月d日"
+        return formatter
+    }()
 
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
@@ -1355,6 +1367,8 @@ struct MomentsView: View {
     @State private var picked: [UIImage] = []
     @State private var uploading = false
     @State private var commentsSheet: Moment?
+    @State private var likesSnapshot: [MomentLike] = []
+    @State private var showLikes = false
 
     @State private var actionMoment: Moment?
 
@@ -1395,8 +1409,6 @@ struct MomentsView: View {
 
     @State private var dragClock = MomentDragClock()
     @State private var scrollGateActive = false
-    @ObservedObject private var realtime = Realtime.shared
-
     @State private var expandedGroups: Set<String> = []
 
     @State private var foldRowsCache: [FoldRow] = []
@@ -1590,6 +1602,12 @@ struct MomentsView: View {
             .presentationDetents([.fraction(0.72), .large])
             .presentationDragIndicator(.hidden)
         }
+        .sheet(isPresented: $showLikes) {
+            MomentLikesSheet(likes: likesSnapshot)
+                .environmentObject(app)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.hidden)
+        }
         .onAppear {
             scrollMetrics.baseTop = nil
             scrollMetrics.topY = 0
@@ -1626,13 +1644,13 @@ struct MomentsView: View {
             await reload()
         }
 
-        .onChange(of: realtime.event) { _ in
-            if realtime.event.type == "profile", let user = realtime.event.user,
+        .onReceive(Realtime.shared.$event) { event in
+            if event.type == "profile", let user = event.user,
                user.id == target?.id {
                 liveTarget = user
             }
 
-            let t = realtime.event.type.lowercased()
+            let t = event.type.lowercased()
             guard t.contains("moment") || t.contains("like") || t.contains("comment") else { return }
             Task { await pollNewMoments() }
         }
@@ -1901,6 +1919,12 @@ struct MomentsView: View {
             },
             onOpenVideo: { url in momentVideo = url },
             onOpenAvatar: { user in cardUser = user },
+            onOpenLikes: { likes in
+                likesSnapshot = likes
+                showLikes = true
+            },
+            avatarPathFor: { id in app.contact(for: id)?.avatarPath ?? "" },
+            isFriend: { id in app.contact(for: id) != nil },
             onLike: { like(moment) },
             onMore: { actionMoment = moment }
         )
@@ -1915,18 +1939,14 @@ struct MomentsView: View {
                                       from: cal.startOfDay(for: d),
                                       to: cal.startOfDay(for: Date())).day ?? 99
         if days == 2 { return Tr("前天") }
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "zh_CN")
-        f.dateFormat = cal.isDate(d, equalTo: Date(), toGranularity: .year) ? "M月d日" : "yyyy年M月d日"
-        return f.string(from: d)
+        return cal.isDate(d, equalTo: Date(), toGranularity: .year)
+            ? Self.monthDayFormatter.string(from: d)
+            : Self.yearMonthDayFormatter.string(from: d)
     }
 
     private func fullDateLabel(_ s: String?) -> String {
         guard let d = TimeFmt.date(s) else { return "" }
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "zh_CN")
-        formatter.dateFormat = "yyyy年M月d日"
-        return formatter.string(from: d)
+        return Self.yearMonthDayFormatter.string(from: d)
     }
 
     private func dayHeader(_ t: String) -> some View {

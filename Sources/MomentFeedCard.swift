@@ -10,14 +10,14 @@ struct MomentFeedCard: View {
     let onOpenImage: (Int) -> Void
     let onOpenVideo: (URL) -> Void
     let onOpenAvatar: (User) -> Void
+    let onOpenLikes: ([MomentLike]) -> Void
+    let avatarPathFor: (String) -> String
+    let isFriend: (String) -> Bool
     let onLike: () -> Void
     let onMore: () -> Void
 
-    @EnvironmentObject private var app: AppState
     @State private var likedOverride: Bool?
     @State private var likePulse = false
-    @State private var showLikes = false
-    @State private var likesSnapshot: [MomentLike] = []
 
     private var images: [String] { moment.images ?? [] }
     private var isVideo: Bool { !(moment.video ?? "").isEmpty }
@@ -73,12 +73,6 @@ struct MomentFeedCard: View {
         }
         .onChange(of: moment.likedByMe) { _ in
             likedOverride = nil
-        }
-        .sheet(isPresented: $showLikes) {
-            MomentLikesSheet(likes: likesSnapshot)
-                .environmentObject(app)
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.hidden)
         }
     }
 
@@ -310,8 +304,7 @@ struct MomentFeedCard: View {
 
     private var likesSummaryButton: some View {
         Button {
-            likesSnapshot = stableOrderedLikes
-            showLikes = true
+            onOpenLikes(stableOrderedLikes)
         } label: {
             HStack(spacing: 8) {
                 ZStack {
@@ -367,7 +360,7 @@ struct MomentFeedCard: View {
 
     @ViewBuilder
     private func likeAvatar(_ like: MomentLike, size: CGFloat) -> some View {
-        let path = like.userId.flatMap { app.contact(for: $0)?.avatarPath } ?? ""
+        let path = like.userId.map(avatarPathFor) ?? ""
         if !path.isEmpty {
             Avatar(path: path, size: size, radius: size / 2, circle: true)
         } else {
@@ -385,8 +378,8 @@ struct MomentFeedCard: View {
             let key = like.userId?.isEmpty == false ? like.userId! : (like.nickname ?? UUID().uuidString)
             return seen.insert(key).inserted
         }
-        let friends = unique.filter { app.contact(for: $0.userId ?? "") != nil }
-        let others = unique.filter { app.contact(for: $0.userId ?? "") == nil }
+        let friends = unique.filter { isFriend($0.userId ?? "") }
+        let others = unique.filter { !isFriend($0.userId ?? "") }
         return friends + others
     }
 
