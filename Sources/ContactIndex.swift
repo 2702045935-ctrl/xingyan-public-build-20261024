@@ -9,6 +9,7 @@ struct ContactIndexBar: View {
     var available: Set<String>
     var onPick: (String) -> Void
     var onSearch: () -> Void
+    var onHighlight: (String?) -> Void = { _ in }
 
     private let padV: CGFloat = 4.2
 
@@ -16,8 +17,7 @@ struct ContactIndexBar: View {
     private let searchGap: CGFloat = 6
 
     @State private var active: String? = nil
-
-    @GestureState private var touching = false
+    @State private var clearTask: Task<Void, Never>?
 
     private let haptic = UIImpactFeedbackGenerator(style: .heavy)
 
@@ -30,7 +30,7 @@ struct ContactIndexBar: View {
     private var letters: [String] {
         Self.letters.filter { available.contains($0) }
     }
-    private var shownLetter: String? { touching ? active : nil }
+    private var shownLetter: String? { active }
 
     var body: some View {
         VStack(spacing: searchGap) {
@@ -67,18 +67,22 @@ struct ContactIndexBar: View {
             .contentShape(Rectangle())
             .gesture(
                 DragGesture(minimumDistance: 0)
-                    .updating($touching) { _, state, _ in state = true }
                     .onChanged { value in
                         guard !letters.isEmpty else { return }
+                        clearTask?.cancel()
                         let i = max(0, min(letters.count - 1,
                                            Int(floor(value.location.y / pitch))))
                         pick(letters[i])
                     }
                     .onEnded { _ in
-                        active = nil
+                        scheduleHighlightEnd()
                     }
             )
-            .onDisappear { active = nil }
+            .onDisappear {
+                clearTask?.cancel()
+                active = nil
+                onHighlight(nil)
+            }
             .padding(.vertical, 5)
             .background(
                 Capsule(style: .continuous)
@@ -98,10 +102,21 @@ struct ContactIndexBar: View {
     private func pick(_ letter: String) {
         if active != letter {
             active = letter
+            onHighlight(letter)
             haptic.impactOccurred(intensity: 1.0)
             haptic.prepare()
         }
         onPick(letter)
+    }
+
+    private func scheduleHighlightEnd() {
+        clearTask?.cancel()
+        clearTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 200_000_000)
+            guard !Task.isCancelled else { return }
+            active = nil
+            onHighlight(nil)
+        }
     }
 }
 

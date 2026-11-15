@@ -271,14 +271,18 @@ private var funcs: [(String, String, Color, String)] {
                                     } header: {
 
                                         HStack(spacing: 0) {
-                                            Text(section.letter)
-                                                .font(pfStyled(size: 13, weight: .semibold))
-                                                .foregroundStyle(contactsSecondary)
+                                             Text(section.letter)
+                                                 .font(pfStyled(size: 13, weight: .semibold))
+                                                 .foregroundStyle(idxLetter == section.letter
+                                                                  ? .white
+                                                                  : contactsSecondary)
                                             Spacer(minLength: 0)
                                         }
                                         .padding(.leading, 16)
                                         .frame(height: max(32, L.ctHeadH))
-                                        .background(contactsSectionFill)
+                                                 .background(idxLetter == section.letter
+                                                             ? contactsAccent
+                                                             : contactsSectionFill)
                                         .overlay(alignment: .bottom) {
                                             Rectangle()
                                                 .fill(contactsRule)
@@ -323,10 +327,14 @@ private var funcs: [(String, String, Color, String)] {
                                     }
                                     showBubble(L)
                                 },
-                                onSearch: {
-                                    showSearch = true
-                                }
-                            )
+                                 onSearch: {
+                                     showSearch = true
+                                 },
+                                 onHighlight: { letter in
+                                     let next = letter ?? ""
+                                     if idxLetter != next { idxLetter = next }
+                                 }
+                             )
                             .padding(.trailing, 8)
                             .frame(maxHeight: .infinity, alignment: .center)
                         }
