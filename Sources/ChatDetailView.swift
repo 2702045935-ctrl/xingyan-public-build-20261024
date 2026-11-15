@@ -8115,8 +8115,24 @@ struct FilePreviewSheet: View {
     @State private var showDrop = false
     @State private var showOfficeInfo = false
 
+    private var displayName: String {
+        var value = name
+            .replacingOccurrences(of: "xingyan-upload-[0-9A-Fa-f-]{36}-",
+                                  with: "",
+                                  options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        if value.isEmpty {
+            value = local.lastPathComponent
+                .replacingOccurrences(of: "xingyan-upload-[0-9A-Fa-f-]{36}-",
+                                      with: "",
+                                      options: .regularExpression)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return value.isEmpty ? Tr("文件") : value
+    }
+
     private var officeKind: OfficeDocumentKind? {
-        OfficeDocumentKind(fileName: name)
+        OfficeDocumentKind(fileName: displayName)
     }
 
     private var fileExtension: String {
@@ -8169,12 +8185,12 @@ struct FilePreviewSheet: View {
                 Color(uiColor: .systemGroupedBackground).ignoresSafeArea()
                 VStack(spacing: 10) {
                     if let kind = officeKind {
-                        OfficeDocumentHeader(kind: kind, name: name, local: local)
+                        OfficeDocumentHeader(kind: kind, name: displayName, local: local)
                     } else {
                         fileHero
                     }
 
-                    QuickLookView(url: local)
+                    QuickLookView(url: local, title: displayName)
                         .background(Color(uiColor: .secondarySystemGroupedBackground))
                         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                         .overlay {
@@ -8231,7 +8247,7 @@ struct FilePreviewSheet: View {
             .sheet(isPresented: $showShare) { ShareSheet(items: [local]) }
             .sheet(isPresented: $showOfficeInfo) {
                 if let kind = officeKind {
-                    OfficeDocumentInfoSheet(kind: kind, name: name, local: local)
+                    OfficeDocumentInfoSheet(kind: kind, name: displayName, local: local)
                 }
             }
             .fullScreenCover(isPresented: $showDrop) {
@@ -8262,7 +8278,7 @@ struct FilePreviewSheet: View {
             .shadow(color: fileAccent.opacity(0.22), radius: 8, y: 4)
 
             VStack(alignment: .leading, spacing: 5) {
-                Text(name)
+                Text(displayName)
                     .font(pf(15.5, .semibold))
                     .foregroundStyle(C.label)
                     .lineLimit(2)
@@ -8370,7 +8386,7 @@ struct FilePreviewSheet: View {
         }
         let controller = UIPrintInteractionController.shared
         let info = UIPrintInfo.printInfo()
-        info.jobName = name
+        info.jobName = displayName
         info.outputType = .general
         controller.printInfo = info
         controller.printingItem = local
@@ -8381,7 +8397,7 @@ struct FilePreviewSheet: View {
         favoriting = true
         Task {
             let ok = await API.shared.addFavorite(kind: "text",
-                                                  content: "[文件] " + name,
+                                                  content: "[文件] " + displayName,
                                                   title: favoriteTitle,
                                                   from: favoriteFrom)
             favoriting = false
@@ -8390,8 +8406,19 @@ struct FilePreviewSheet: View {
     }
 }
 
+private final class NamedPreviewItem: NSObject, QLPreviewItem {
+    let previewItemURL: URL?
+    let previewItemTitle: String?
+
+    init(url: URL, title: String) {
+        previewItemURL = url
+        previewItemTitle = title
+    }
+}
+
 struct QuickLookView: UIViewControllerRepresentable {
     let url: URL
+    let title: String
 
     func makeUIViewController(context: Context) -> QLPreviewController {
         let vc = QLPreviewController()
@@ -8401,17 +8428,19 @@ struct QuickLookView: UIViewControllerRepresentable {
 
     func updateUIViewController(_ vc: QLPreviewController, context: Context) { }
 
-    func makeCoordinator() -> Coordinator { Coordinator(url: url) }
+    func makeCoordinator() -> Coordinator { Coordinator(url: url, title: title) }
 
     final class Coordinator: NSObject, QLPreviewControllerDataSource {
-        let url: URL
-        init(url: URL) { self.url = url }
+        let item: NamedPreviewItem
+        init(url: URL, title: String) {
+            item = NamedPreviewItem(url: url, title: title)
+        }
 
         func numberOfPreviewItems(in controller: QLPreviewController) -> Int { 1 }
 
         func previewController(_ controller: QLPreviewController,
                                previewItemAt index: Int) -> QLPreviewItem {
-            url as NSURL
+            item
         }
     }
 }
