@@ -348,6 +348,12 @@ struct NativeTabBar: UIViewRepresentable {
         appearance.stackedLayoutAppearance.normal.titleTextAttributes = normalTitle
         appearance.stackedLayoutAppearance.selected.iconColor = UIColor.systemBlue
         appearance.stackedLayoutAppearance.selected.titleTextAttributes = selectedTitle
+        appearance.stackedLayoutAppearance.normal.badgeBackgroundColor = .systemRed
+        appearance.stackedLayoutAppearance.selected.badgeBackgroundColor = .systemRed
+        appearance.inlineLayoutAppearance.normal.badgeBackgroundColor = .systemRed
+        appearance.inlineLayoutAppearance.selected.badgeBackgroundColor = .systemRed
+        appearance.compactInlineLayoutAppearance.normal.badgeBackgroundColor = .systemRed
+        appearance.compactInlineLayoutAppearance.selected.badgeBackgroundColor = .systemRed
         if let items = bar.items, items.count == 4 {
             // “我的”保持原来的品牌绿，只统一前三个入口的苹果蓝选中色。
             items[3].setTitleTextAttributes(normalTitle, for: .normal)
@@ -373,18 +379,14 @@ struct NativeTabBar: UIViewRepresentable {
 
     private func refresh(_ bar: UITabBar) {
         guard let items = bar.items, items.count == 4 else { return }
-        items[0].badgeValue = nil
-        items[1].badgeValue = nil
-        items[2].badgeValue = nil
-        items[3].badgeValue = nil
+        items[0].badgeValue = badge > 0 ? (badge > 99 ? "99+" : "\(badge)") : nil
+        items[1].badgeValue = contactsDot ? "" : nil
+        items[2].badgeValue = momentsDot ? "" : nil
+        items[3].badgeValue = meDot ? "" : nil
+        items.forEach { $0.badgeColor = .systemRed }
         if let bar = bar as? CompactDotTabBar {
-            bar.badgeCount = badge
-            var dots: Set<Int> = []
-            if contactsDot { dots.insert(1) }
-            if momentsDot { dots.insert(2) }
-            if meDot { dots.insert(3) }
-            guard bar.dotIndexes != dots else { return }
-            bar.dotIndexes = dots
+            bar.badgeCount = 0
+            bar.dotIndexes = []
             bar.setNeedsLayout()
         }
     }
