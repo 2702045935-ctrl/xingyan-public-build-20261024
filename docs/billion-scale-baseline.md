@@ -68,3 +68,21 @@ node server/tools/message-consistency-audit.js `
 An active WAL must be checkpointed by its owner or copied with the shard's
 normal snapshot process. The audit intentionally refuses to guess at
 uncheckpointed data and does not repair any mismatch it finds.
+
+Release readiness can require one audit report per shard:
+
+```powershell
+node server/tools/shard-release-readiness.js `
+  --baseline BASELINE.json `
+  --candidate CANDIDATE.json `
+  --allowlist ALLOWLIST.json `
+  --route-plan ROUTE_PLAN.json `
+  --message-audit SHARD_0_AUDIT.json `
+  --message-audit SHARD_1_AUDIT.json `
+  --require-message-audit `
+  --out RELEASE_READINESS.json
+```
+
+This gate rejects missing reports, writable or incomplete audits, suppressed
+issues, missing fingerprints, and a shard-wide message count that differs from
+the candidate inventory.

@@ -20,6 +20,16 @@ function readRows(file, key) {
   return value && Array.isArray(value[key]) ? value[key] : [];
 }
 
+function repeatedArg(name) {
+  const rows = [];
+  process.argv.forEach((value, index) => {
+    if (value !== '--' + name) return;
+    const next = process.argv[index + 1];
+    if (next && !next.startsWith('--')) rows.push(next);
+  });
+  return rows;
+}
+
 function main() {
   const baselineFile = arg('baseline');
   const candidateFile = arg('candidate');
@@ -28,14 +38,18 @@ function main() {
   if (!baselineFile || !candidateFile || !allowlistFile || !routePlanFile) {
     throw new Error('usage: shard-release-readiness.js --baseline FILE '
       + '--candidate FILE --allowlist FILE --route-plan FILE '
+      + '[--message-audit FILE ...] [--require-message-audit] '
       + '[--data DIR] [--out FILE]');
   }
   const dataDir = arg('data');
+  const messageAudits = repeatedArg('message-audit').map(readJson);
   const report = buildReleaseReadiness({
     baseline: readJson(baselineFile),
     candidate: readJson(candidateFile),
     allowlist: readJson(allowlistFile),
     routePlan: readJson(routePlanFile),
+    messageAudits,
+    requireMessageAudit: process.argv.includes('--require-message-audit'),
     users: dataDir
       ? readRows(path.join(dataDir, 'users.json'), 'users')
       : null,

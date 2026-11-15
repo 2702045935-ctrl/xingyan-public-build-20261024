@@ -23,6 +23,34 @@ function sameJson(left, right) {
   return JSON.stringify(left) === JSON.stringify(right);
 }
 
+function messageAuditGate(reports, candidate) {
+  const rows = Array.isArray(reports)
+    ? reports.filter(Boolean)
+    : (reports ? [reports] : []);
+  const invalidFingerprint = rows.filter((report) =>
+    !/^[a-f0-9]{64}$/i.test(String(report && report.fingerprint || ''))
+  ).length;
+  const messageCount = rows.reduce((sum, report) =>
+    sum + (Number(report && report.counts && report.counts.messages) || 0), 0);
+  return {
+    present: rows.length > 0,
+    readOnly: rows.length > 0 && rows.every((report) => report.readOnly === true),
+    clean: rows.length > 0 && rows.every((report) =>
+      report.ok === true && Number(report.errorCount) === 0
+    ),
+    noSuppressedIssues: rows.length > 0 && rows.every((report) =>
+      Number(report.suppressedIssues) === 0
+    ),
+    fingerprintsValid: rows.length > 0 && invalidFingerprint === 0,
+    sourcesPresent: rows.length > 0 && rows.every((report) =>
+      String(report.sourceId || '').trim().length > 0
+    ),
+    messageCount,
+    expectedMessageCount: Number(candidate && candidate.counts && candidate.counts.messages) || 0,
+    reports: rows.length
+  };
+}
+
 function buildReleaseReadiness(options) {
   const opts = options || {};
   const baseline = opts.baseline || {};
@@ -146,6 +174,27 @@ function buildReleaseReadiness(options) {
       { shardCount: route.shardCount, ports: routePlan.ports || [] });
   }
 
+  const auditGate = messageAuditGate(
+    opts.messageAudits || opts.messageAudit || [],
+    candidate
+  );
+  if (opts.requireMessageAudit === true) {
+    check('message-audit-present', auditGate.present, {
+      reports: auditGate.reports
+    });
+    check('message-audit-read-only', auditGate.readOnly);
+    check('message-audit-clean', auditGate.clean);
+    check('message-audit-no-suppressed-issues', auditGate.noSuppressedIssues);
+    check('message-audit-fingerprints', auditGate.fingerprintsValid);
+    check('message-audit-sources', auditGate.sourcesPresent);
+    check('message-audit-message-count',
+      auditGate.messageCount === auditGate.expectedMessageCount,
+      {
+        reports: auditGate.messageCount,
+        data: auditGate.expectedMessageCount
+      });
+  }
+
   return {
     version: 1,
     ok: failures.length === 0,
@@ -170,6 +219,7 @@ function buildReleaseReadiness(options) {
       hash: route.hash,
       counts: route.counts
     } : null,
+    messageAudit: auditGate,
     checks,
     failures
   };

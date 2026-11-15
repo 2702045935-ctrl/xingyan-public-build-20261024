@@ -110,4 +110,41 @@ const dataBlocked = buildReleaseReadiness(Object.assign({}, baseOptions, {
 assert.strictEqual(dataBlocked.ok, false);
 assert.ok(dataBlocked.failures.some((row) => row.name === 'stable-collection-checksums'));
 
+const messageAudits = [{
+  readOnly: true,
+  ok: true,
+  errorCount: 0,
+  warningCount: 0,
+  suppressedIssues: 0,
+  sourceId: 'baseline',
+  counts: { messages: 3 },
+  fingerprint: 'a'.repeat(64)
+}];
+const auditReady = buildReleaseReadiness(Object.assign({}, baseOptions, {
+  requireMessageAudit: true,
+  messageAudits
+}));
+assert.strictEqual(auditReady.ok, true, JSON.stringify(auditReady.failures));
+assert.strictEqual(auditReady.messageAudit.messageCount, 3);
+
+const dirtyAudit = buildReleaseReadiness(Object.assign({}, baseOptions, {
+  requireMessageAudit: true,
+  messageAudits: [Object.assign({}, messageAudits[0], {
+    ok: false,
+    errorCount: 1
+  })]
+}));
+assert.strictEqual(dirtyAudit.ok, false);
+assert.ok(dirtyAudit.failures.some((row) => row.name === 'message-audit-clean'));
+
+const missingFingerprintAudit = buildReleaseReadiness(Object.assign({}, baseOptions, {
+  requireMessageAudit: true,
+  messageAudits: [Object.assign({}, messageAudits[0], {
+    fingerprint: ''
+  })]
+}));
+assert.strictEqual(missingFingerprintAudit.ok, false);
+assert.ok(missingFingerprintAudit.failures.some((row) =>
+  row.name === 'message-audit-fingerprints'));
+
 console.log('shard-release-readiness: passed');
