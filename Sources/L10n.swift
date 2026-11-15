@@ -722,6 +722,7 @@ enum L10n {
         "朋友仅展示最近半年的朋友圈": "This friend shares posts from the last 6 months.",
         "删除后无法恢复。": "This can't be undone.",
         "删除这条朋友圈？": "Delete this post?",
+        "删除后无法恢复，点赞和评论也会一起移除。": "This can't be undone. Likes and comments will also be removed.",
         "余下": "Remaining",
         "快捷入口": "Shortcuts",
         "最近使用的小程序": "Recently used mini apps",

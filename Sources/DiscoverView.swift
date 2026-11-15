@@ -1372,6 +1372,7 @@ struct MomentsView: View {
     @State private var showLikes = false
 
     @State private var actionMoment: Moment?
+    @State private var pendingDeleteMoment: Moment?
 
     @State private var viewerPaths: [String] = []
     @State private var viewerIndex: Int?
@@ -1715,11 +1716,27 @@ struct MomentsView: View {
                     }
                     Button(Tr("删除"), role: .destructive) {
                         actionMoment = nil
-                        remove(m)
+                        pendingDeleteMoment = m
                     }
                 }
             }
             Button(Tr("取消"), role: .cancel) { actionMoment = nil }
+        }
+        .overlay {
+            if let moment = pendingDeleteMoment {
+                PanelConfirmDialog(
+                    title: Tr("删除这条朋友圈？"),
+                    okText: Tr("删除"),
+                    danger: true,
+                    message: Tr("删除后无法恢复，点赞和评论也会一起移除。"),
+                    symbol: "trash.fill",
+                    onOk: {
+                        pendingDeleteMoment = nil
+                        remove(moment)
+                    },
+                    onCancel: { pendingDeleteMoment = nil }
+                )
+            }
         }
     }
 
