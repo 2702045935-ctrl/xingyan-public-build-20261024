@@ -19,12 +19,14 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
     let onScrollOffset: (CGFloat) -> Void
     let onScrollActivity: (Bool) -> Void
     let onNearEnd: () -> Void
+    let nativeRow: ((NativeMomentFeedItem, CGFloat) -> NativeMomentRowConfiguration?)?
     @ViewBuilder let row: (NativeMomentFeedItem) -> Row
 
     func makeCoordinator() -> Coordinator {
         Coordinator(onScrollOffset: onScrollOffset,
                     onScrollActivity: onScrollActivity,
                     onNearEnd: onNearEnd,
+                    nativeRow: nativeRow,
                     row: row)
     }
 
@@ -65,10 +67,30 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
             cell.backgroundColor = .clear
             cell.clipsToBounds = true
         }
+        let nativeRegistration = UICollectionView.CellRegistration<NativeMomentFeedCell, String> {
+            cell, _, _ in
+            cell.backgroundConfiguration = .clear()
+            cell.backgroundColor = .clear
+        }
 
         let dataSource = UICollectionViewDiffableDataSource<Int, String>(
             collectionView: collection
         ) { collectionView, indexPath, id in
+            let width = collectionView.bounds.width > 1
+                ? collectionView.bounds.width
+                : UIScreen.main.bounds.width
+            if let entry = context.coordinator.lookup[id],
+               let configuration = context.coordinator.nativeRow?(
+                   entry, width
+               ) {
+                let cell = collectionView.dequeueConfiguredReusableCell(
+                    using: nativeRegistration,
+                    for: indexPath,
+                    item: id
+                )
+                cell.configure(configuration)
+                return cell
+            }
             collectionView.dequeueConfiguredReusableCell(
                 using: registration,
                 for: indexPath,
@@ -87,6 +109,7 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
         context.coordinator.onScrollOffset = onScrollOffset
         context.coordinator.onScrollActivity = onScrollActivity
         context.coordinator.onNearEnd = onNearEnd
+        context.coordinator.nativeRow = nativeRow
         context.coordinator.apply(items, animated: false)
     }
 
@@ -96,6 +119,7 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
         var onScrollOffset: (CGFloat) -> Void
         var onScrollActivity: (Bool) -> Void
         var onNearEnd: () -> Void
+        var nativeRow: ((NativeMomentFeedItem, CGFloat) -> NativeMomentRowConfiguration?)?
         weak var collection: UICollectionView?
         var dataSource: UICollectionViewDiffableDataSource<Int, String>?
         private var order: [String] = []
@@ -109,10 +133,12 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
         init(onScrollOffset: @escaping (CGFloat) -> Void,
              onScrollActivity: @escaping (Bool) -> Void,
              onNearEnd: @escaping () -> Void,
+             nativeRow: ((NativeMomentFeedItem, CGFloat) -> NativeMomentRowConfiguration?)?,
              row: @escaping (NativeMomentFeedItem) -> Row) {
             self.onScrollOffset = onScrollOffset
             self.onScrollActivity = onScrollActivity
             self.onNearEnd = onNearEnd
+            self.nativeRow = nativeRow
             self.row = row
             super.init()
         }
@@ -191,6 +217,11 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
                 measuredWidth = width
                 heights.removeAll(keepingCapacity: true)
             }
+            if let configuration = nativeRow?(item, width) {
+                let height = NativeMomentFeedCell.preferredHeight(configuration)
+                heights[id] = height
+                return CGSize(width: width, height: height)
+            }
             let height = heights[id] ?? measuredHeight(item, width: width)
             heights[id] = height
             return CGSize(width: width, height: height)
@@ -217,6 +248,10 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
         private func prepareHeights(_ ids: [String], width: CGFloat) {
             for id in ids where heights[id] == nil {
                 guard let item = lookup[id] else { continue }
+                if let configuration = nativeRow?(item, width) {
+                    heights[id] = NativeMomentFeedCell.preferredHeight(configuration)
+                    continue
+                }
                 heights[id] = measuredHeight(item, width: width)
             }
         }

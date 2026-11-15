@@ -1398,6 +1398,8 @@ struct MomentsView: View {
     @State private var showGroupPage = false
 
     @State private var showNoticeList = false
+    @State private var likesSheetLikes: [MomentLike] = []
+    @State private var showLikesSheet = false
 
     private var owner: User? {
         if let target {
@@ -1453,6 +1455,10 @@ struct MomentsView: View {
                 onNearEnd: {
                     guard hasMoreMoments, !loadingMore else { return }
                     Task { await loadMoreMoments() }
+                },
+                nativeRow: { entry, width in
+                    guard entry.kind == .moment, let moment = entry.moment else { return nil }
+                    return nativeMomentRowConfiguration(entry, moment: moment, width: width)
                 }
             ) { entry in
                 nativeMomentFeedRow(entry)
@@ -1561,6 +1567,12 @@ struct MomentsView: View {
             .environmentObject(app)
             .presentationDetents([.fraction(0.72), .large])
             .presentationDragIndicator(.hidden)
+        }
+        .sheet(isPresented: $showLikesSheet) {
+            MomentLikesSheet(likes: likesSheetLikes)
+                .environmentObject(app)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.hidden)
         }
         .onAppear {
             scrollMetrics.baseTop = nil
@@ -2012,6 +2024,87 @@ struct MomentsView: View {
             day: footer
         ))
         return items
+    }
+
+    private func nativeMomentRowConfiguration(_ item: NativeMomentFeedItem,
+                                              moment: Moment,
+                                              width: CGFloat) -> NativeMomentRowConfiguration {
+        let likes = nativeOrderedLikes(moment)
+        let comments = moment.comments ?? []
+        let commentLines = comments.prefix(2).map { comment -> String in
+            let name = comment.nickname ?? ""
+            let text = comment.content ?? ""
+            let reply = (comment.replyToName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            return reply.isEmpty
+                ? "\(name)：\(text)"
+                : "\(name) 回复 \(reply)：\(text)"
+        }
+        let moreText: String? = comments.count > 2
+            ? (Lang.isEnglish
+               ? "View all \(comments.count) comments"
+               : "查看全部 \(comments.count) 条评论")
+            : nil
+        return NativeMomentRowConfiguration(
+            moment: moment,
+            day: item.day,
+            width: width,
+            likeSummary: nativeLikeSummary(moment, likes: likes),
+            likeAvatarPaths: likes.prefix(8).map {
+                app.contact(for: $0.userId ?? "")?.avatarPath ?? ""
+            },
+            commentLines: commentLines,
+            moreCommentsText: moreText,
+            onOpenComments: { commentsSheet = moment },
+            onOpenImage: { index in
+                let paths = moment.images ?? []
+                guard paths.indices.contains(index) else { return }
+                viewerPaths = paths
+                viewerIndex = index
+            },
+            onOpenVideo: { url in momentVideo = url },
+            onOpenAvatar: { user in cardUser = user },
+            onLike: { like(moment) },
+            onMore: { actionMoment = moment },
+            onShowLikes: {
+                likesSheetLikes = likes
+                showLikesSheet = true
+            }
+        )
+    }
+
+    private func nativeOrderedLikes(_ moment: Moment) -> [MomentLike] {
+        var seen = Set<String>()
+        let unique = (moment.likes ?? []).filter { like in
+            let key = like.userId?.isEmpty == false
+                ? like.userId!
+                : (like.nickname ?? UUID().uuidString)
+            return seen.insert(key).inserted
+        }
+        let friends = unique.filter { app.contact(for: $0.userId ?? "") != nil }
+        let others = unique.filter { app.contact(for: $0.userId ?? "") == nil }
+        return friends + others
+    }
+
+    private func nativeLikeSummary(_ moment: Moment, likes: [MomentLike]) -> String {
+        let count = likes.count
+        guard count > 0 else { return "" }
+        let names = likes.compactMap(\.nickname).filter { !$0.isEmpty }
+        if Lang.isEnglish {
+            switch names.count {
+            case 0: return count == 1 ? "1 person likes this" : "\(count) people like this"
+            case 1: return count > 1 ? "\(names[0]) and \(count - 1) others" : names[0]
+            case 2: return count > 2 ? "\(names[0]), \(names[1]) and \(count - 2) others"
+                : "\(names[0]) and \(names[1])"
+            default: return "\(names[0]), \(names[1]) and \(count - 2) others"
+            }
+        }
+        switch names.count {
+        case 0: return "\(count) 人觉得不错"
+        case 1: return count > 1 ? "\(names[0])等 \(count) 人" : names[0]
+        case 2: return count > 2 ? "\(names[0])、\(names[1])等 \(count) 人"
+            : "\(names[0])、\(names[1])"
+        default: return "\(names[0])、\(names[1])等 \(count) 人"
+        }
     }
 
     @ViewBuilder
