@@ -2096,19 +2096,7 @@ struct ChatsView: View {
             } label: {
                 HStack(spacing: ChatListVisual.avatarGap) {
                     if payOfficialRowAvatar.isEmpty {
-                        Image(systemName: "creditcard.fill")
-                            .font(.system(size: ChatListVisual.avatarSize * 0.39, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .frame(width: ChatListVisual.avatarSize,
-                                   height: ChatListVisual.avatarSize)
-                            .background(
-                                LinearGradient(
-                                    colors: [Color(hex: 0x21C879), Color(hex: 0x0A84FF)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                in: Circle()
-                            )
+                        StarPayAvatar(size: ChatListVisual.avatarSize)
                     } else {
                         Avatar(path: payOfficialRowAvatar, size: ChatListVisual.avatarSize,
                                radius: 14, circle: true)

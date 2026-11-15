@@ -22,6 +22,60 @@ enum PayVisual {
     static var secondaryInk: Color { Color.dyn(0x6C6C70, 0x98989F) }
 }
 
+struct StarPayAvatar: View {
+    let size: CGFloat
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            Color(hex: 0x393A3E),
+                            Color(hex: 0x16171A),
+                            Color(hex: 0x030304)
+                        ],
+                        center: .topLeading,
+                        startRadius: 0,
+                        endRadius: max(1, size * 0.82)
+                    )
+                )
+
+            Circle()
+                .fill(
+                    LinearGradient(
+                        stops: [
+                            .init(color: .white.opacity(0.14), location: 0),
+                            .init(color: .clear, location: 0.34),
+                            .init(color: .white.opacity(0.045), location: 0.78),
+                            .init(color: .clear, location: 1)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .blendMode(.screen)
+
+            Image(systemName: "creditcard.fill")
+                .font(.system(size: size * 0.38, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.96))
+                .shadow(color: Color.black.opacity(0.45), radius: 1.5, y: 1)
+        }
+        .frame(width: size, height: size)
+        .overlay {
+            Circle().stroke(
+                LinearGradient(
+                    colors: [.white.opacity(0.28), .white.opacity(0.055)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                lineWidth: max(0.8, size * 0.02)
+            )
+        }
+        .shadow(color: Color.black.opacity(0.20), radius: max(2, size * 0.09), y: 2)
+    }
+}
+
 struct StarPayPhysicalCardSurface: View {
     var radius: CGFloat = 28
 
@@ -528,15 +582,12 @@ struct PayOfficialView: View {
                 HStack(spacing: 11) {
                     Group {
                         if avatar.isEmpty {
-                            Image(systemName: "star.fill")
-                                .font(.system(size: 17, weight: .bold))
-                                .foregroundStyle(.black)
+                            StarPayAvatar(size: 36)
                         } else {
                             Avatar(path: avatar, size: 36, radius: 18, circle: true)
                         }
                     }
                     .frame(width: 36, height: 36)
-                    .background(.white, in: Circle())
                     .clipShape(Circle())
 
                     VStack(alignment: .leading, spacing: 2) {
@@ -818,19 +869,7 @@ struct PayOfficialView: View {
                 ZStack(alignment: .bottomTrailing) {
                     Group {
                         if avatar.isEmpty {
-                            Circle()
-                                .fill(
-                                    LinearGradient(
-                                        colors: [Color(hex: 0x25B7F4), Color(hex: 0x087CF0)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .overlay {
-                                    Image(systemName: "star.fill")
-                                        .font(.system(size: 15, weight: .bold))
-                                        .foregroundStyle(.white)
-                                }
+                            StarPayAvatar(size: 38)
                         } else {
                             Avatar(path: avatar, size: 38, radius: 19, circle: true)
                         }
