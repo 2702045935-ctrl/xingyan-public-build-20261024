@@ -1621,13 +1621,9 @@ struct MomentsView: View {
                 if !cached.isEmpty {
                     let page = Array(cached.prefix(Self.momentPageSize))
                     moments = page
-                    rebuildFoldRows(page)
                 }
             }
             await reload()
-        }
-        .onChange(of: moments) { fresh in
-            rebuildFoldRows(fresh)
         }
 
         .onChange(of: realtime.event) { _ in
@@ -2038,7 +2034,7 @@ struct MomentsView: View {
                 }
                 momentRow(moment)
                     .onAppear {
-                        guard hasMoreMoments, index >= source.count - 8 else { return }
+                        guard hasMoreMoments, index >= source.count - 12 else { return }
                         Task { await loadMoreMoments() }
                     }
             }
@@ -2556,7 +2552,7 @@ struct MomentsView: View {
                     }
                 }
             }
-            if merged != moments { moments = merged }
+            if merged != moments { setMomentsWithoutAnimation(merged) }
             momentTotal = feed.total
             feedRange = feed.range
             app.momentNoticeUnread = feed.noticeUnread
@@ -2569,7 +2565,7 @@ struct MomentsView: View {
 
             let cached = LocalStore.cachedMoments(userId: app.me?.id ?? "")
             let fallback = cached.isEmpty ? app.moments : cached
-            moments = Array(fallback.prefix(Self.momentPageSize))
+            setMomentsWithoutAnimation(Array(fallback.prefix(Self.momentPageSize)))
             hasMoreMoments = fallback.count > Self.momentPageSize
         }
 
@@ -2601,7 +2597,7 @@ struct MomentsView: View {
             let known = Set(moments.map(\.id))
             let page = prefetchedMoments.filter { !known.contains($0.id) }
             prefetchedMoments.removeAll(keepingCapacity: true)
-            moments.append(contentsOf: page)
+            setMomentsWithoutAnimation(moments + page)
             hasMoreMoments = prefetchedHasMore
             prefetchedHasMore = false
             loadingMore = false
@@ -2613,7 +2609,9 @@ struct MomentsView: View {
         if let feed = try? await API.shared.momentsFeed(limit: Self.momentPageSize, before: last.createdAt, beforeId: last.id,
                                                         userId: feedUserId) {
             let known = Set(moments.map { $0.id })
-            moments.append(contentsOf: feed.moments.filter { !known.contains($0.id) })
+            setMomentsWithoutAnimation(
+                moments + feed.moments.filter { !known.contains($0.id) }
+            )
             hasMoreMoments = feed.hasMore && !feed.moments.isEmpty
         } else {
             hasMoreMoments = false
@@ -2639,7 +2637,7 @@ struct MomentsView: View {
                 merged[index] = update
             }
         }
-        if merged != moments { moments = merged }
+        if merged != moments { setMomentsWithoutAnimation(merged) }
         momentTotal = feed.total
         hasMoreMoments = moments.count < feed.total || feed.hasMore
         scheduleMomentPrefetch()
@@ -2677,6 +2675,14 @@ struct MomentsView: View {
         let known = Set(moments.map(\.id))
         prefetchedMoments = feed.moments.filter { !known.contains($0.id) }
         prefetchedHasMore = feed.hasMore && !prefetchedMoments.isEmpty
+    }
+
+    private func setMomentsWithoutAnimation(_ next: [Moment]) {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            moments = next
+        }
     }
 
     private func publish() {
