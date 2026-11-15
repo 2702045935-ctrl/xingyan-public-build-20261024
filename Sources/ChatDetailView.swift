@@ -3692,8 +3692,8 @@ struct ChatDetailView: View {
                    senderAvatarPath: senderAvatarFor(message),
                    senderQQLevel: app.contact(for: message.senderId ?? "")?.qqLevel ?? 0,
                    senderOnline: senderIsOnline(message),
-                   avatarSize: isGroup ? 34 : L.chatAvatar,
-                   showsAvatar: !isGroup || mineFor(message) || isRunStart(message),
+                   avatarSize: isGroup ? 30 : L.chatAvatar,
+                   showsAvatar: !isGroup || (!mineFor(message) && isRunStart(message)),
                    reservesAvatarSpace: !isGroup || !mineFor(message),
                    currentNickname: app.me?.nickname ?? "",
                    currentUsername: app.me?.username ?? "",
@@ -3924,6 +3924,9 @@ struct ChatDetailView: View {
         if message.kindName == "system" || message.kindName == "pat" || message.isRecalled { return 12 }
         let same = (next.senderId ?? "") == (message.senderId ?? "")
 
+        if isGroup {
+            return same ? 4 : 10
+        }
         return same ? UIConfig.num("msgGapSame", 7) : UIConfig.num("msgGapOther", 15)
     }
 
@@ -6878,12 +6881,12 @@ struct MessageRow: View {
     }
 
     private var bubbleColumn: some View {
-        VStack(alignment: mine ? .trailing : .leading, spacing: 3) {
+        VStack(alignment: mine ? .trailing : .leading, spacing: 2) {
             if !senderName.isEmpty {
 
                 HStack(spacing: 4) {
                     Text(senderName)
-                        .font(pf(13, .semibold))
+                        .font(pf(12.5, .semibold))
                         .foregroundColor(senderNameColor ?? (senderNameUsesLightInk
                                          ? ChatTheme.groupSenderNameOnDark
                                          : ChatTheme.groupSenderNameOnLight))
@@ -6893,6 +6896,7 @@ struct MessageRow: View {
                         QQLevelBadge(level: senderQQLevel, size: 11, maxIcons: 2).fixedSize()
                     }
                 }
+                .padding(.leading, 4)
             }
             content
 
