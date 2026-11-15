@@ -444,6 +444,34 @@ private struct QuickIconButtonStyle: ButtonStyle {
     }
 }
 
+private struct ComposerIconButtonStyle: ButtonStyle {
+    let ink: Color
+    let active: Bool
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background {
+                Circle()
+                    .fill((active || configuration.isPressed)
+                          ? ink.opacity(configuration.isPressed ? 0.14 : 0.09)
+                          : Color.clear)
+            }
+            .scaleEffect(configuration.isPressed ? 0.90 : 1)
+            .opacity(configuration.isPressed ? 0.70 : 1)
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+    }
+}
+
+private struct ComposerSendButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.90 : 1)
+            .brightness(configuration.isPressed ? -0.06 : 0)
+            .animation(.spring(response: 0.18, dampingFraction: 0.76),
+                       value: configuration.isPressed)
+    }
+}
+
 private struct ThreeWaveMicGlyph: View {
     let ink: Color
 
@@ -4539,6 +4567,7 @@ struct ChatDetailView: View {
 
                 Button {
                     if recorder.recording { return }
+                    UISelectionFeedbackGenerator().selectionChanged()
                     if voiceMode {
                         voiceMode = false
                         focused = true
@@ -4566,7 +4595,10 @@ struct ChatDetailView: View {
                     .frame(width: 38, height: 42)
                     .contentShape(Circle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(ComposerIconButtonStyle(
+                    ink: composerUtilityInk,
+                    active: voiceMode || recorder.recording
+                ))
                 .accessibilityLabel(Tr(voiceMode ? "切换到键盘" : "切换到语音"))
 
                 HStack(spacing: 0) {
@@ -4723,6 +4755,7 @@ struct ChatDetailView: View {
 
                     HStack(spacing: 2) {
                         Button {
+                            UISelectionFeedbackGenerator().selectionChanged()
                             focused = false
                             panel = (panel == .emoji) ? .none : .emoji
                         } label: {
@@ -4730,13 +4763,17 @@ struct ChatDetailView: View {
                                 .font(.system(size: 24, weight: .medium))
                                 .symbolRenderingMode(.monochrome)
                                 .foregroundStyle(panel == .emoji ? C.green : adaptiveEmojiInk)
-                                .frame(width: 36, height: 42)
+                                .frame(width: 38, height: 42)
                                 .contentShape(Rectangle())
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(ComposerIconButtonStyle(
+                            ink: panel == .emoji ? C.green : composerUtilityInk,
+                            active: panel == .emoji
+                        ))
                         .accessibilityLabel(Tr("表情"))
 
                         Button {
+                            UISelectionFeedbackGenerator().selectionChanged()
                             focused = false
                             panel = (panel == .plus) ? .none : .plus
                             if panel == .plus && plusItems.isEmpty {
@@ -4754,8 +4791,12 @@ struct ChatDetailView: View {
                             }
                         } label: {
                             plusIcon
+                                .frame(width: 38, height: 42)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(ComposerIconButtonStyle(
+                            ink: panel == .plus ? C.green : composerUtilityInk,
+                            active: panel == .plus
+                        ))
                         .accessibilityLabel(Tr("更多功能"))
                     }
                     .padding(.horizontal, 2)
@@ -4764,6 +4805,7 @@ struct ChatDetailView: View {
                     HStack(spacing: 2) {
                         if !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                             Button {
+                                UISelectionFeedbackGenerator().selectionChanged()
                                 focused = false
                                 panel = (panel == .emoji) ? .none : .emoji
                             } label: {
@@ -4771,10 +4813,13 @@ struct ChatDetailView: View {
                                     .font(.system(size: 24, weight: .medium))
                                     .symbolRenderingMode(.monochrome)
                                     .foregroundStyle(panel == .emoji ? C.green : adaptiveEmojiInk)
-                                    .frame(width: 36, height: 42)
+                                    .frame(width: 38, height: 42)
                                     .contentShape(Rectangle())
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(ComposerIconButtonStyle(
+                                ink: panel == .emoji ? C.green : composerUtilityInk,
+                                active: panel == .emoji
+                            ))
                             .accessibilityLabel(Tr("表情"))
                         }
 
@@ -4797,10 +4842,14 @@ struct ChatDetailView: View {
                                     .foregroundStyle(.white)
                                     .offset(x: -0.5, y: 0.5)
                             }
-                                .frame(width: 38, height: 38)
+                                .frame(width: 40, height: 40)
+                                .overlay {
+                                    Circle()
+                                        .stroke(Color.white.opacity(0.16), lineWidth: 0.7)
+                                }
                                 .shadow(color: C.green.opacity(0.22), radius: 7, y: 3)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(ComposerSendButtonStyle())
                         .accessibilityLabel(Tr("发送"))
                         .transition(.scale(scale: 0.72).combined(with: .opacity))
                     }
