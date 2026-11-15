@@ -60,7 +60,7 @@ final class NativeStaticListController {
 struct NativeStaticList<Item: Identifiable & Equatable, Row: View>: UIViewControllerRepresentable
 where Item.ID: Hashable {
     let items: [Item]
-    let controller: NativeStaticListController? = nil
+    let controller: NativeStaticListController?
     let signature: (Item) -> String
     @ViewBuilder let row: (Item) -> Row
 
