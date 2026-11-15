@@ -102,24 +102,30 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         foreground.frame = bounds
         avatarView.frame = CGRect(x: rowLeading, y: (bounds.height - avatarSize) / 2,
                                   width: avatarSize, height: avatarSize)
-        let trailingWidth: CGFloat = 66
         let textX = rowLeading + avatarSize + avatarGap
-        let textWidth = max(1, bounds.width - textX - rowTrailing - trailingWidth - 8)
+        let timeText = configuration?.time ?? ""
+        let measuredTime = ceil((timeText as NSString).size(
+            withAttributes: [.font: timeLabel.font as Any]
+        ).width)
+        let timeWidth = min(78, max(34, measuredTime + 2))
+        let titleWidth = max(1, bounds.width - textX - rowTrailing - timeWidth - 8)
         let titleHeight: CGFloat = 22
-        titleLabel.frame = CGRect(x: 0, y: 0, width: textWidth, height: titleHeight)
+        titleLabel.frame = CGRect(x: 0, y: 0, width: titleWidth, height: titleHeight)
         levelLabel.sizeToFit()
         memberLabel.sizeToFit()
-        previewLabel.frame = CGRect(x: textX, y: bounds.midY + 4,
-                                    width: textWidth, height: 19)
-        titleLabel.frame.origin = CGPoint(x: textX, y: bounds.midY - titleHeight - 1)
-        timeLabel.frame = CGRect(x: bounds.width - rowTrailing - trailingWidth,
-                                 y: bounds.midY - 20,
-                                 width: trailingWidth, height: 18)
-        unreadLabel.sizeToFit()
         let unread = configuration?.unread ?? 0
         let unreadWidth: CGFloat = configuration?.unreadMuted == true
             ? 8
             : (unread > 99 ? 28 : (unread > 9 ? 23 : 18))
+        let previewReserve = unread > 0 ? unreadWidth + 10 : 0
+        previewLabel.frame = CGRect(x: textX, y: bounds.midY + 4,
+                                    width: max(1, bounds.width - textX - rowTrailing - previewReserve),
+                                    height: 19)
+        titleLabel.frame.origin = CGPoint(x: textX, y: bounds.midY - titleHeight - 1)
+        timeLabel.frame = CGRect(x: bounds.width - rowTrailing - timeWidth,
+                                 y: bounds.midY - 20,
+                                 width: timeWidth, height: 18)
+        unreadLabel.sizeToFit()
         unreadLabel.frame = CGRect(x: bounds.width - rowTrailing - unreadWidth,
                                    y: bounds.midY + 2,
                                    width: unreadWidth,
