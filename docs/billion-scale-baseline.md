@@ -39,3 +39,30 @@ Date: 2026-11-15
 3. Reconcile every shard before any topology cutover.
 4. Keep payment settlement disabled until independent ledger reconciliation is
    clean.
+
+## Read-only message audit
+
+`server/tools/message-consistency-audit.js` compares each message JSONL file
+with the reliability metadata without calling the writable reliability store.
+It uses SQLite `immutable=1`, rejects databases with uncheckpointed WAL/journal
+data, and never creates sidecar files beside the source database.
+
+The report checks duplicate and cross-chat message IDs, duplicate client IDs,
+sequence gaps and ordering, malformed or undecryptable rows, missing or extra
+reliability rows, payload drift, and `chat_sequence.last_seq` mismatches. Issue
+rows are deterministically sorted and the report includes a stable fingerprint
+that excludes timestamps.
+
+Audit a checkpointed offline snapshot:
+
+```powershell
+node server/tools/message-consistency-audit.js `
+  --data DATA_DIR `
+  --secret SECRET_FILE `
+  --source SHARD_ID `
+  --out REPORT.json
+```
+
+An active WAL must be checkpointed by its owner or copied with the shard's
+normal snapshot process. The audit intentionally refuses to guess at
+uncheckpointed data and does not repair any mismatch it finds.
