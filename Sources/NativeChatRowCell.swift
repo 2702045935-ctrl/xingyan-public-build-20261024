@@ -148,7 +148,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         if !configuration.mentionPrefix.isEmpty {
             preview.addAttributes([
                 .font: UIFont.systemFont(ofSize: 15, weight: .medium),
-                .foregroundColor: UIColor.systemBlue
+                .foregroundColor: UIColor.systemRed
             ], range: NSRange(location: 0, length: (configuration.mentionPrefix as NSString).length))
         }
         previewLabel.attributedText = preview
