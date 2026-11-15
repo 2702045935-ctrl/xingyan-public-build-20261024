@@ -1124,6 +1124,7 @@ struct ChatsView: View {
     private var chatsCardFill: Color { chatsPageFill }
 
     @State private var scrolled: CGFloat = 0
+    @State private var chatsScrollActive = false
     @State private var filterHidden = false
 
     @State private var pullDown: CGFloat = 0
@@ -1945,7 +1946,31 @@ struct ChatsView: View {
     }
 
     @ViewBuilder private func chatsNavGlass(_ scrolled: CGFloat) -> some View {
-        Rectangle().fill(chatsPageFill)
+        ZStack(alignment: .bottom) {
+            Rectangle()
+                .fill(chatsPageFill)
+                .opacity(chatsScrollActive ? 0 : 1)
+
+            ZStack(alignment: .bottom) {
+                NativeGlassHeaderMaterial()
+                chatsPageFill
+                    .opacity(scheme == .dark ? 0.28 : 0.22)
+                LinearGradient(
+                    stops: [
+                        .init(color: .clear, location: 0),
+                        .init(color: .clear, location: 0.80),
+                        .init(color: chatsPageFill.opacity(scheme == .dark ? 0.08 : 0.06),
+                              location: 0.94),
+                        .init(color: chatsPageFill.opacity(scheme == .dark ? 0.16 : 0.10),
+                              location: 1)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom)
+            }
+            .opacity(chatsScrollActive ? 1 : 0)
+        }
+        .animation(.easeOut(duration: chatsScrollActive ? 0.12 : 0.20),
+                   value: chatsScrollActive)
         .ignoresSafeArea(edges: .top)
         .allowsHitTesting(false)
     }
@@ -2625,6 +2650,12 @@ struct ChatsView: View {
                         nativeRow: { entry in
                             guard entry.kind == .chat, let chat = entry.chat else { return nil }
                             return nativeChatRowConfiguration(chat)
+                        },
+                        onScrollStateChange: { scrolling in
+                            guard chatsScrollActive != scrolling else { return }
+                            withAnimation(.easeOut(duration: scrolling ? 0.12 : 0.20)) {
+                                chatsScrollActive = scrolling
+                            }
                         },
                         onZoneChange: { zone in
                             handleScrollZone(zone)

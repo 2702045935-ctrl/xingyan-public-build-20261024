@@ -6,12 +6,14 @@ where Item.ID: Hashable {
     let items: [Item]
     let height: (Item) -> CGFloat
     let nativeRow: ((Item) -> NativeChatRowConfiguration?)?
+    let onScrollStateChange: (Bool) -> Void
     let onZoneChange: (Int) -> Void
     let onRefresh: () -> Void
     @ViewBuilder let row: (Item) -> Row
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onZoneChange: onZoneChange,
+        Coordinator(onScrollStateChange: onScrollStateChange,
+                    onZoneChange: onZoneChange,
                     onRefresh: onRefresh,
                     height: height,
                     nativeRow: nativeRow,
@@ -101,6 +103,7 @@ where Item.ID: Hashable {
         context.coordinator.row = row
         context.coordinator.height = height
         context.coordinator.nativeRow = nativeRow
+        context.coordinator.onScrollStateChange = onScrollStateChange
         context.coordinator.onZoneChange = onZoneChange
         context.coordinator.onRefresh = onRefresh
         context.coordinator.apply(items, animated: false)
@@ -111,6 +114,7 @@ where Item.ID: Hashable {
         var row: (Item) -> Row
         var height: (Item) -> CGFloat
         var nativeRow: ((Item) -> NativeChatRowConfiguration?)?
+        var onScrollStateChange: (Bool) -> Void
         var onZoneChange: (Int) -> Void
         var onRefresh: () -> Void
         weak var collection: UICollectionView?
@@ -119,14 +123,17 @@ where Item.ID: Hashable {
         private var lastZone = -1
         private var pendingZone = 0
         private var zoneFlushScheduled = false
+        private var lastScrollActive = false
         private var pendingItems: [Item]?
         private var applyGeneration = 0
 
-        init(onZoneChange: @escaping (Int) -> Void,
+        init(onScrollStateChange: @escaping (Bool) -> Void,
+             onZoneChange: @escaping (Int) -> Void,
              onRefresh: @escaping () -> Void,
              height: @escaping (Item) -> CGFloat,
              nativeRow: ((Item) -> NativeChatRowConfiguration?)?,
              row: @escaping (Item) -> Row) {
+            self.onScrollStateChange = onScrollStateChange
             self.onZoneChange = onZoneChange
             self.onRefresh = onRefresh
             self.height = height
@@ -210,6 +217,9 @@ where Item.ID: Hashable {
         }
 
         func scrollViewDidScroll(_ scrollView: UIScrollView) {
+            publishScrollState(scrollView.isDragging
+                               || scrollView.isTracking
+                               || scrollView.isDecelerating)
             let y = scrollView.contentOffset.y
             let zone: Int
             if y < 1 { zone = 0 }
@@ -229,6 +239,7 @@ where Item.ID: Hashable {
         }
 
         func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+            publishScrollState(true)
             /* 让正在等待的异步布局完成回调失效，不能把用户的拖动位置写回旧值。 */
             applyGeneration += 1
             NotificationCenter.default.post(name: .chrisRowSwipe, object: nil)
@@ -236,11 +247,25 @@ where Item.ID: Hashable {
 
         func scrollViewDidEndDragging(_ scrollView: UIScrollView,
                                       willDecelerate decelerate: Bool) {
-            if !decelerate { flushPendingItems() }
+            if decelerate {
+                publishScrollState(true)
+            } else {
+                publishScrollState(false)
+                flushPendingItems()
+            }
         }
 
         func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+            publishScrollState(false)
             flushPendingItems()
+        }
+
+        private func publishScrollState(_ active: Bool) {
+            guard active != lastScrollActive else { return }
+            lastScrollActive = active
+            DispatchQueue.main.async { [weak self] in
+                self?.onScrollStateChange(active)
+            }
         }
 
         private func flushPendingItems() {
