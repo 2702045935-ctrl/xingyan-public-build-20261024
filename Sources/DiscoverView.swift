@@ -1441,7 +1441,10 @@ struct MomentsView: View {
                 onScrollOffset: { y in
                     scrollMetrics.topY = -y
                     if scrollMetrics.baseTop == nil { scrollMetrics.baseTop = 0 }
-                    sentinelGone = y > 1
+                    let nextSentinel = y > 1
+                    if sentinelGone != nextSentinel {
+                        sentinelGone = nextSentinel
+                    }
                     updateSolidState()
                     coverPullBox.value = max(0, y)
                 },

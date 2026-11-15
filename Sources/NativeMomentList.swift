@@ -282,8 +282,8 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
 
         func scrollViewDidScroll(_ scrollView: UIScrollView) {
             let y = scrollView.contentOffset.y
-            let quantized = (y / 2).rounded() * 2
-            if abs(quantized - lastOffset) >= 2 {
+            let quantized = (y / 4).rounded() * 4
+            if abs(quantized - lastOffset) >= 4 {
                 lastOffset = quantized
                 onScrollOffset(y)
             }
