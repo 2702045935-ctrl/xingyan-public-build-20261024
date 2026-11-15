@@ -361,6 +361,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         let pan = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
         pan.delegate = self
         pan.cancelsTouchesInView = false
+        pan.delaysTouchesBegan = false
         pan.maximumNumberOfTouches = 1
         foreground.addGestureRecognizer(pan)
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
@@ -392,7 +393,9 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         case .began:
             startOffset = offset
             latestRawOffset = offset
-            dragDirection = offset < 0 ? -1 : (offset > 0 ? 1 : 0)
+            if dragDirection == 0 {
+                dragDirection = translation < 0 ? -1 : (translation > 0 ? 1 : 0)
+            }
             NotificationCenter.default.post(name: .chrisRowSwipe,
                                             object: configuration.chatId)
         case .changed:
@@ -423,14 +426,16 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
             )
         case .ended, .cancelled, .failed:
             let raw = latestRawOffset
-            let projected = raw + velocity * 0.10
+            let projected = raw + velocity * 0.14
             let pinBase = actionInset + actionWidth
             let leftBase = actionInset + actionWidth * 3 + actionGap * 2
-            let pinCommit = max(40, pinBase * 0.72)
-            let leftCommit = max(68, min(leftBase * 0.58, bounds.width * 0.24))
+            let pinCommit = max(32, pinBase * 0.44)
+            let leftCommit = max(46, min(leftBase * 0.34, bounds.width * 0.18))
             if dragDirection > 0, projected >= pinCommit {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 open(offset: pinBase, animated: true)
             } else if dragDirection < 0, projected <= -leftCommit {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 open(offset: -leftBase, animated: true)
             } else {
                 closeActions()
@@ -509,8 +514,12 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
     override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
         guard let pan = gestureRecognizer as? UIPanGestureRecognizer else { return true }
         let translation = pan.translation(in: foreground)
-        return abs(translation.x) >= 3
+        let velocity = pan.velocity(in: foreground)
+        let horizontalVelocity = abs(velocity.x) >= 28
+            && abs(velocity.x) >= abs(velocity.y) * 1.10
+        let horizontalTranslation = abs(translation.x) >= 4
             && abs(translation.x) >= abs(translation.y) * 1.15
+        return horizontalVelocity || horizontalTranslation
     }
 
     func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,

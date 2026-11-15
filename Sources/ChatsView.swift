@@ -122,9 +122,12 @@ struct RowSwipeCatcher: UIViewRepresentable {
         func gestureRecognizerShouldBegin(_ g: UIGestureRecognizer) -> Bool {
             guard let pan = g as? UIPanGestureRecognizer else { return true }
             let v = pan.velocity(in: pan.view)
+            let t = pan.translation(in: pan.view)
             // 纵向滚动直接让给 UIScrollView。只有明确的横向意图才接管，
             // 避免每行在纵向滚动时继续逐帧判断侧滑。
-            return abs(v.x) >= 45 && abs(v.x) >= abs(v.y) * 1.12
+            let byVelocity = abs(v.x) >= 32 && abs(v.x) >= abs(v.y) * 1.10
+            let byTranslation = abs(t.x) >= 4 && abs(t.x) >= abs(t.y) * 1.15
+            return byVelocity || byTranslation
         }
     }
 
