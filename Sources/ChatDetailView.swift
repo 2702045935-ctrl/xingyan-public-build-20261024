@@ -2736,17 +2736,10 @@ struct ChatDetailView: View {
         NativeStaticList(
             items: nativeGroupItems,
             controller: nativeMessageController,
-            signature: nativeGroupSignature
-        ) { item in
-            nativeGroupRow(item)
-        }
-        .overlay(alignment: .topLeading) {
-            ScrollOffsetProbe(onChange: { _, _ in
-                if ChatScrollHandle.shared.moving, let g = ChatScrollHandle.shared.gap {
-                    let next = g <= 16
-                    if wasAtBottom != next { wasAtBottom = next }
-                }
-            }, onScrollStateChange: { scrolling in
+            onScrollViewReady: { scrollView in
+                ChatScrollHandle.shared.scroll = scrollView
+            },
+            onScrollStateChange: { scrolling in
                 if scrolling {
                     atBottom = false
                     wasAtBottom = false
@@ -2766,7 +2759,8 @@ struct ChatDetailView: View {
                     ScrollGate.shared.setScrolling(false)
                     frameCaptureTick &+= 1
                 }
-            }, onSizeChange: {
+            },
+            onSizeChange: {
                 let compensated = ChatScrollHandle.shared.compensatePendingPrepend()
                 if compensated && needsPrependTrim {
                     needsPrependTrim = false
@@ -2776,9 +2770,10 @@ struct ChatDetailView: View {
                 if ChatScrollHandle.shared.moving { return }
                 ChatScrollDiag.shared.note("内容变高 → 原生消息列表贴底")
                 nativeMessageController.scrollToBottom(animated: false)
-            })
-            .frame(width: 1, height: 1)
-            .allowsHitTesting(false)
+            },
+            signature: nativeGroupSignature
+        ) { item in
+            nativeGroupRow(item)
         }
         .onChange(of: messages.count) { _ in
             backfillVoiceText()

@@ -61,21 +61,35 @@ struct NativeStaticList<Item: Identifiable & Equatable, Row: View>: UIViewContro
 where Item.ID: Hashable {
     let items: [Item]
     let controller: NativeStaticListController?
+    let onScrollViewReady: ((UIScrollView) -> Void)?
+    let onScrollStateChange: ((Bool) -> Void)?
+    let onSizeChange: (() -> Void)?
     let signature: (Item) -> String
     @ViewBuilder let row: (Item) -> Row
 
     init(items: [Item],
          controller: NativeStaticListController? = nil,
+         onScrollViewReady: ((UIScrollView) -> Void)? = nil,
+         onScrollStateChange: ((Bool) -> Void)? = nil,
+         onSizeChange: (() -> Void)? = nil,
          signature: @escaping (Item) -> String,
          @ViewBuilder row: @escaping (Item) -> Row) {
         self.items = items
         self.controller = controller
+        self.onScrollViewReady = onScrollViewReady
+        self.onScrollStateChange = onScrollStateChange
+        self.onSizeChange = onSizeChange
         self.signature = signature
         self.row = row
     }
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(controller: controller, signature: signature, row: row)
+        Coordinator(controller: controller,
+                    onScrollViewReady: onScrollViewReady,
+                    onScrollStateChange: onScrollStateChange,
+                    onSizeChange: onSizeChange,
+                    signature: signature,
+                    row: row)
     }
 
     func makeUIViewController(context: Context) -> UICollectionViewController {
@@ -92,7 +106,7 @@ where Item.ID: Hashable {
         collection.alwaysBounceVertical = true
         collection.alwaysBounceHorizontal = false
         collection.isDirectionalLockEnabled = true
-        collection.showsVerticalScrollIndicator = false
+        collection.showsVerticalScrollIndicator = true
         collection.contentInsetAdjustmentBehavior = .never
         collection.keyboardDismissMode = .interactive
         collection.delaysContentTouches = false
@@ -124,6 +138,7 @@ where Item.ID: Hashable {
         context.coordinator.dataSource = dataSource
         context.coordinator.collection = collection
         context.coordinator.attachController()
+        context.coordinator.attachScroll(collection)
         context.coordinator.apply(items, animated: false)
         return controller
     }
@@ -132,7 +147,13 @@ where Item.ID: Hashable {
                                 context: Context) {
         context.coordinator.row = row
         context.coordinator.signature = signature
+        context.coordinator.onScrollViewReady = onScrollViewReady
+        context.coordinator.onScrollStateChange = onScrollStateChange
+        context.coordinator.onSizeChange = onSizeChange
         context.coordinator.attachController()
+        if let collection = controller.collectionView {
+            context.coordinator.attachScroll(collection)
+        }
         context.coordinator.apply(items, animated: false)
     }
 
@@ -143,6 +164,11 @@ where Item.ID: Hashable {
         weak var collection: UICollectionView?
         var dataSource: UICollectionViewDiffableDataSource<Int, Item.ID>?
         let controller: NativeStaticListController?
+        var onScrollViewReady: ((UIScrollView) -> Void)?
+        var onScrollStateChange: ((Bool) -> Void)?
+        var onSizeChange: (() -> Void)?
+        private var sizeObservation: NSKeyValueObservation?
+        private var lastScrollState: Bool?
         private var order: [Item.ID] = []
         private var signatures: [Item.ID: String] = [:]
         private var heights: [Item.ID: CGFloat] = [:]
@@ -151,12 +177,46 @@ where Item.ID: Hashable {
         private var applyGeneration = 0
 
         init(controller: NativeStaticListController?,
+             onScrollViewReady: ((UIScrollView) -> Void)?,
+             onScrollStateChange: ((Bool) -> Void)?,
+             onSizeChange: (() -> Void)?,
              signature: @escaping (Item) -> String,
              row: @escaping (Item) -> Row) {
             self.controller = controller
+            self.onScrollViewReady = onScrollViewReady
+            self.onScrollStateChange = onScrollStateChange
+            self.onSizeChange = onSizeChange
             self.signature = signature
             self.row = row
             super.init()
+        }
+
+        deinit {
+            sizeObservation?.invalidate()
+        }
+
+        func attachScroll(_ scrollView: UIScrollView) {
+            onScrollViewReady?(scrollView)
+            if sizeObservation == nil {
+                sizeObservation = scrollView.observe(\.contentSize, options: [.new]) {
+                    [weak self] _, _ in
+                    guard let self else { return }
+                    if Thread.isMainThread {
+                        self.onSizeChange?()
+                    } else {
+                        DispatchQueue.main.async { self.onSizeChange?() }
+                    }
+                }
+            }
+            publishScrollState(
+                scrollView.isDragging || scrollView.isDecelerating || scrollView.isTracking
+            )
+        }
+
+        func publishScrollState(_ active: Bool) {
+            guard lastScrollState != active else { return }
+            lastScrollState = active
+            onScrollStateChange?(active)
         }
 
         func attachController() {
@@ -258,11 +318,27 @@ where Item.ID: Hashable {
 
         func scrollViewDidEndDragging(_ scrollView: UIScrollView,
                                       willDecelerate decelerate: Bool) {
+            publishScrollState(decelerate)
             if !decelerate { flush() }
         }
 
+        func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+            ChatScrollHandle.shared.noteUserMotion()
+            publishScrollState(true)
+        }
+
         func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+            publishScrollState(false)
             flush()
+        }
+
+        func scrollViewDidScroll(_ scrollView: UIScrollView) {
+            if scrollView.isDragging || scrollView.isTracking || scrollView.isDecelerating {
+                ChatScrollHandle.shared.noteUserMotion()
+            }
+            publishScrollState(
+                scrollView.isDragging || scrollView.isTracking || scrollView.isDecelerating
+            )
         }
 
         private func premeasure(_ ids: [Item.ID]) {
