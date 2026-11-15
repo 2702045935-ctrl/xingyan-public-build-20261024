@@ -815,6 +815,7 @@ struct ChatBackgroundSheet: View {
             return
         }
         store.setGlobal(storedPath)
+        ChatThemeStore.shared.clearAll()
         if var me = app.me {
             me.chatBackground = storedPath
             app.me = me
@@ -863,6 +864,7 @@ struct ChatBackgroundSheet: View {
             applyChatBackground(localPath)
         } else {
             ChatBgStore.shared.setGlobal(localPath)
+            ChatThemeStore.shared.clearAll()
             if var me = app.me {
                 me.chatBackground = localPath
                 app.me = me
@@ -940,6 +942,7 @@ struct ChatBackgroundSheet: View {
     }
 
     private func applyChatBackground(_ path: String) {
+        ChatThemeStore.shared.clear(chatId: chatId)
         ChatBgStore.shared.set(chatId, path)
         guard var me = app.me else { return }
         var map = me.chatBackgrounds ?? [:]

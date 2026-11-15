@@ -188,6 +188,27 @@ final class ChatThemeStore: ObservableObject {
         }
         version &+= 1
     }
+
+    /// 用户主动选择壁纸后，必须撤销主题覆盖，否则聊天页会继续优先走主题背景。
+    func clear(chatId: String = "") {
+        let id = chatId.isEmpty ? activeChatId : chatId
+        guard !id.isEmpty else { return }
+        UserDefaults.standard.removeObject(forKey: key(id))
+        if id == activeChatId {
+            currentPreset = .whatsapp
+        }
+        version &+= 1
+    }
+
+    func clearAll() {
+        let defaults = UserDefaults.standard
+        for key in defaults.dictionaryRepresentation().keys
+        where key.hasPrefix("chris.chatTheme.") {
+            defaults.removeObject(forKey: key)
+        }
+        currentPreset = .whatsapp
+        version &+= 1
+    }
 }
 
 struct ChatThemePickerView: View {
