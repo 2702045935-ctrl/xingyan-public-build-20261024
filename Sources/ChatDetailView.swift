@@ -1729,7 +1729,13 @@ struct ChatDetailView: View {
                 .transaction { $0.animation = nil }
                 .zIndex(0)
 
-            messageList
+            Group {
+                if isGroup {
+                    groupMessageList
+                } else {
+                    messageList
+                }
+            }
 
                 .contentShape(Rectangle())
                 .simultaneousGesture(TapGesture().onEnded { dismissTyping() })
@@ -2681,6 +2687,186 @@ struct ChatDetailView: View {
                         "打开 \(chat.id) 条数=\(messages.count) 内容高=\(Int(lastContentHeight))"
                         + " 离底=\(Int(ChatScrollHandle.shared.gap ?? -999))"
                         + " 哨兵=\(atBottom) 跟随=\(wasAtBottom)")
+                }
+            }
+            .onChange(of: initialCacheReady) { ready in
+                if ready {
+                    settleInitialScroll(proxy)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        allowSettledBottom = true
+                    }
+                }
+            }
+        }
+    }
+
+    /// 群聊正文使用系统 List（底层复用列表），一对一聊天保持原实现。
+    private var groupMessageList: some View {
+        let nearTopIds = hasOlder ? Set(messages.prefix(24).map { $0.id }) : Set<String>()
+        return ScrollViewReader { proxy in
+            List {
+                if hasOlder {
+                    Color.clear
+                        .frame(height: 1)
+                        .listRowInsets(EdgeInsets())
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                        .onAppear { autoLoadOlder() }
+                }
+
+                ForEach(messages) { message in
+                    messageBlock(message)
+                        .id(message.id)
+                        .padding(.horizontal, L.msgPad)
+                        .listRowInsets(EdgeInsets())
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                        .onAppear {
+                            if nearTopIds.contains(message.id) { autoLoadOlder() }
+                            if message.id == messages.last?.id { atBottom = true }
+                        }
+                }
+
+                ForEach(outbox) { p in
+                    pendingBubble(p)
+                        .padding(.horizontal, L.msgPad)
+                        .listRowInsets(EdgeInsets())
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                }
+
+                if !sendingMedia.isEmpty {
+                    HStack(spacing: 8) {
+                        Spacer(minLength: 0)
+                        SendingVideoBubble(cover: sendingPreview, progress: sendProgress)
+                    }
+                    .id("__sending")
+                    .padding(.horizontal, L.msgPad)
+                    .padding(.bottom, 12)
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+                }
+
+                if let progress = sendingFileProgress, !sendingFileName.isEmpty {
+                    HStack(spacing: 8) {
+                        Spacer(minLength: 0)
+                        SendingFileBubble(name: sendingFileName,
+                                          bytes: sendingFileBytes,
+                                          progress: progress)
+                    }
+                    .id("__sending-file")
+                    .padding(.horizontal, L.msgPad)
+                    .padding(.bottom, 12)
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+                }
+
+                Color.clear
+                    .frame(height: 1)
+                    .onAppear { atBottom = true }
+                    .onDisappear { atBottom = false }
+                    .id("__bottom")
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+
+                Color.clear
+                    .frame(height: 8 + L.msgPad)
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+            }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .environment(\.defaultMinListRowHeight, 0)
+            .overlay(alignment: .topLeading) {
+                ScrollOffsetProbe(onChange: { _, _ in
+                    if ChatScrollHandle.shared.moving, let g = ChatScrollHandle.shared.gap {
+                        let next = g <= 16
+                        if wasAtBottom != next { wasAtBottom = next }
+                    }
+                }, onScrollStateChange: { scrolling in
+                    if scrolling {
+                        if !initialScrollReady {
+                            initialScrollTask?.cancel()
+                            initialScrollTask = nil
+                            initialScrollReady = true
+                            allowSettledBottom = false
+                        }
+                        ScrollGate.shared.setScrolling(true)
+                        followOwnSendUntil = Date.distantPast
+                    } else {
+                        ScrollGate.shared.setScrolling(false)
+                        frameCaptureTick &+= 1
+                    }
+                }, onSizeChange: {
+                    let compensated = ChatScrollHandle.shared.compensatePendingPrepend()
+                    if compensated && needsPrependTrim {
+                        needsPrependTrim = false
+                        DispatchQueue.main.async { trimMessageWindowForOlderPage() }
+                    }
+                    guard wasAtBottom, !holdScroll else { return }
+                    if ChatScrollHandle.shared.moving { return }
+                    ChatScrollDiag.shared.note("群内容变高 → 原生列表贴底")
+                    ChatScrollHandle.shared.pinToBottom(animated: false)
+                })
+                .frame(width: 1, height: 1)
+                .allowsHitTesting(false)
+            }
+            .coordinateSpace(name: "chatScroll")
+            .scrollDismissesKeyboard(.interactively)
+            .onChange(of: messages.count) { _ in
+                backfillVoiceText()
+                if !initialScrollReady {
+                    if !loading { settleInitialScroll(proxy) }
+                    return
+                }
+                guard !holdScroll else { return }
+                guard atBottomNow || messages.last?.senderId == myId else { return }
+                scrollToEnd(proxy, animated: false)
+                scheduleSettledBottom()
+                markConversationReadSoon()
+            }
+            .onChange(of: loading) { value in
+                if value {
+                    allowSettledBottom = false
+                } else {
+                    if !initialScrollReady { settleInitialScroll(proxy) }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        allowSettledBottom = true
+                    }
+                }
+            }
+            .onChange(of: scrollTick) { _ in
+                atBottom = true
+                wasAtBottom = true
+                scrollToEnd(proxy, animated: true)
+                markConversationReadSoon()
+            }
+            .onChange(of: pinTick) { _ in
+                scrollToEnd(proxy, animated: false)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { n in
+                ChatScrollDiag.shared.note("群键盘位置变了")
+                pinThroughKeyboardTransition(proxy, notice: n)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardDidShowNotification)) { _ in
+                pinToBottomImmediately(proxy)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+                if atBottomNow { scrollToEnd(proxy, animated: false) }
+            }
+            .onAppear {
+                scroller = proxy
+                backfillVoiceText()
+                wasAtBottom = true
+                atBottom = true
+                if initialCacheReady || !loading {
+                    settleInitialScroll(proxy)
+                } else {
+                    initialScrollReady = false
                 }
             }
             .onChange(of: initialCacheReady) { ready in
