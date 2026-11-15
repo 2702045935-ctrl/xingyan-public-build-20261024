@@ -2037,6 +2037,10 @@ struct MomentsView: View {
                         .padding(.horizontal, L.momentPadH)
                 }
                 momentRow(moment)
+                    .onAppear {
+                        guard hasMoreMoments, index >= source.count - 8 else { return }
+                        Task { await loadMoreMoments() }
+                    }
             }
 
             if hasMoreMoments {
@@ -2589,7 +2593,7 @@ struct MomentsView: View {
             loadingMore = false
             return
         }
-        if prefetchingMoments, let momentPrefetchTask {
+        if let momentPrefetchTask {
             await momentPrefetchTask.value
         }
         if !prefetchedMoments.isEmpty {
