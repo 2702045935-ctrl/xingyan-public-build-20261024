@@ -2655,12 +2655,12 @@ struct MomentsView: View {
     }
 
     private func scheduleMomentPrefetch() {
-        momentPrefetchTask?.cancel()
         guard !MomentStressFixture.isActive,
               hasMoreMoments,
               prefetchedMoments.isEmpty,
               !prefetchingMoments,
               moments.last != nil else { return }
+        momentPrefetchTask?.cancel()
         momentPrefetchTask = Task { @MainActor in
             try? await Task.sleep(nanoseconds: 120_000_000)
             if Task.isCancelled { return }
@@ -2682,10 +2682,7 @@ struct MomentsView: View {
             beforeId: last.id,
             userId: feedUserId
         ) else { return }
-        guard moments.last?.id == last.id else {
-            scheduleMomentPrefetch()
-            return
-        }
+        guard moments.last?.id == last.id else { return }
         let known = Set(moments.map(\.id))
         prefetchedMoments = feed.moments.filter { !known.contains($0.id) }
         prefetchedHasMore = feed.hasMore && !prefetchedMoments.isEmpty

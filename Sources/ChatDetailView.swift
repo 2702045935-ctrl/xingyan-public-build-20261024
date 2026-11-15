@@ -2847,7 +2847,7 @@ struct ChatDetailView: View {
             items.append(NativeGroupItem(id: "native-older", kind: .older))
         }
         for message in messages {
-            items.append(NativeGroupItem(id: "native-message:\(message.id)",
+            items.append(NativeGroupItem(id: message.id,
                                          kind: .message(message)))
         }
         for pending in outbox {
