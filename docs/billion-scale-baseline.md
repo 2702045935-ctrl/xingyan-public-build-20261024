@@ -26,6 +26,7 @@ Date: 2026-11-15
 
 - Message reliability, concurrency, and backfill
 - Message cursor/since paging
+- Offline outbox retry, concurrent client-ID deduplication, and restart ordering
 - Chat actions and group presence
 - Shard coverage, placement, routing, runtime, lease, and message repair
 - Shard shadow service and release readiness
@@ -35,7 +36,8 @@ Date: 2026-11-15
 ## Next implementation gates
 
 1. Add production-safe shadow verification and mismatch reporting.
-2. Run client/server duplicate, ordering, reconnect, and offline-outbox tests.
+2. Run the offline-outbox and reconnect contract on physical devices with
+   airplane-mode transitions and forced process termination.
 3. Reconcile every shard before any topology cutover.
 4. Keep payment settlement disabled until independent ledger reconciliation is
    clean.

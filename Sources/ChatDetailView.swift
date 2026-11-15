@@ -3066,6 +3066,7 @@ struct ChatDetailView: View {
         let arr = outbox.map { p -> [String: Any] in
             var d: [String: Any] = ["id": p.id, "kind": p.kind, "content": p.content,
                                     "at": p.at.timeIntervalSince1970]
+            if !p.mentions.isEmpty { d["mentions"] = p.mentions }
             if let q = p.quoteJSON { d["quote"] = q }
             if let reason = p.failureReason, !reason.isEmpty { d["failureReason"] = reason }
             return d
@@ -3079,10 +3080,14 @@ struct ChatDetailView: View {
             guard let id = d["id"] as? String,
                   let kind = d["kind"] as? String,
                   let content = d["content"] as? String else { return nil }
+            let mentions = d["mentions"] as? [String] ?? []
+            let at = (d["at"] as? TimeInterval).map(Date.init(timeIntervalSince1970:)) ?? Date()
             return PendingMsg(id: id, kind: kind, content: content,
+                              mentions: mentions,
                               quoteJSON: d["quote"] as? String,
                               failed: (d["failureReason"] as? String)?.isEmpty == false,
-                              failureReason: d["failureReason"] as? String)
+                              failureReason: d["failureReason"] as? String,
+                              at: at)
         }
     }
 
@@ -4947,6 +4952,11 @@ struct ChatDetailView: View {
                                                            quote: Self.quoteDict(p.quoteJSON)) {
                     appendVisibleMessage(message)
                     app.ensureChatVisible(chat, latest: message)
+                } else if let i2 = outbox.firstIndex(where: { $0.id == p.id }) {
+                    outbox[i2].sending = false
+                    outbox[i2].failed = true
+                    outbox[i2].failureReason = "服务器没有确认这条消息"
+                    break
                 }
                 outbox.removeAll { $0.id == p.id }
             } catch {
@@ -4960,6 +4970,7 @@ struct ChatDetailView: View {
                     outbox[i2].sending = false
                     outbox[i2].failed = true
                     outbox[i2].failureReason = reason
+                    break
                 }
             }
         }
