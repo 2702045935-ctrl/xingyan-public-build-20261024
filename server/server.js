@@ -21593,8 +21593,8 @@ async function handleApi(req, res, pathname, query) {
       chatId: chat.id,
       eventId: 'dismiss:' + chat.id + ':' + now()
     });
-    members.forEach((id) => sendTo(id, { type: 'chat', action: 'removed', chatId: chat.id }));
     members.forEach((id) => sendTo(id, { type: 'message', message: sys, chat: chatSummary(chat, id), clientId: null }));
+    members.forEach((id) => sendTo(id, { type: 'chat', action: 'removed', chatId: chat.id }));
     ok(res, { dismissed: true });
     return;
   }
@@ -26284,8 +26284,8 @@ async function handleOps(req, res, parts, query) {
     chat.memberIds = [];
     chat.dismissed = true;
     saveChats();
-    members.forEach((id) => sendTo(id, { type: 'chat', action: 'removed', chatId: chat.id }));
     members.forEach((id) => sendTo(id, { type: 'message', message: sys, chat: chatSummary(chat, id), clientId: null }));
+    members.forEach((id) => sendTo(id, { type: 'chat', action: 'removed', chatId: chat.id }));
     audit(req, admin, '后台解散群聊', chat.id, chat.name + ' · 原 ' + members.length + ' 人');
     ok(res, { dismissed: true });
     return;

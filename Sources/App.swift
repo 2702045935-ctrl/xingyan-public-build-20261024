@@ -448,6 +448,11 @@ final class AppState: ObservableObject {
             }
 
             if let incoming = ev.chat {
+                if isDismissedGroup(incoming) {
+                    hideChatLocally(incoming.id)
+                    coalesce { [weak self] in await self?.loadChats() }
+                    return
+                }
                 applyRealtimeChat(incoming)
                 if let message = ev.message {
                     collectAdminSticker(from: message)
@@ -1266,7 +1271,9 @@ final class AppState: ObservableObject {
                 locallyReadAt[id] = nil
             }
         }
-        let visibleFresh = fresh.filter { !locallyHiddenChats.contains($0.id) }
+        let visibleFresh = fresh.filter {
+            !locallyHiddenChats.contains($0.id) && !isDismissedGroup($0)
+        }
         var current: [String: Chat] = [:]
         for chat in chats { current[chat.id] = chat }
         var merged = visibleFresh.map { server -> Chat in
@@ -1305,6 +1312,11 @@ final class AppState: ObservableObject {
         let freshIds = Set(visibleFresh.map(\.id))
         var staleOptimisticIds: [String] = []
         for (id, local) in optimisticChats where !freshIds.contains(id) {
+            if isDismissedGroup(local) {
+                optimisticChats[id] = nil
+                optimisticAt[id] = nil
+                continue
+            }
             if let stamp = optimisticAt[id], now.timeIntervalSince(stamp) < 86_400 {
                 if local.unreadCount > 0 { merged.insert(local, at: 0) }
             } else {
@@ -1404,6 +1416,11 @@ final class AppState: ObservableObject {
         syncIconBadge()
     }
 
+    private func isDismissedGroup(_ chat: Chat) -> Bool {
+        chat.type == "group"
+            && ((chat.memberIds ?? []).isEmpty || chat.memberCount == 0)
+    }
+
     func setChatUnreadLocally(_ chatId: String, unread: Int?, flagged: Bool?) {
         guard let index = chats.firstIndex(where: { $0.id == chatId }) else { return }
         if (unread ?? 0) > 0 || flagged == true {
@@ -1464,6 +1481,10 @@ final class AppState: ObservableObject {
     /// 先在本地补上会话，列表才不会短暂或长期漏掉新聊天。
     func ensureChatVisible(_ chat: Chat, latest: Message? = nil) {
         guard let myId = me?.id, !myId.isEmpty else { return }
+        guard !isDismissedGroup(chat) else {
+            hideChatLocally(chat.id)
+            return
+        }
         if let members = chat.memberIds, !members.isEmpty, !members.contains(myId) {
             return
         }
@@ -1739,6 +1760,10 @@ final class AppState: ObservableObject {
 
     /// WebSocket 已带会话摘要时先更新预览与红点，再等后台全量校准。
     private func applyRealtimeChat(_ incoming: Chat) {
+        guard !isDismissedGroup(incoming) else {
+            hideChatLocally(incoming.id)
+            return
+        }
         locallyHiddenChats.remove(incoming.id)
         locallyHiddenAt.removeValue(forKey: incoming.id)
         var rows = chats
