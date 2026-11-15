@@ -179,7 +179,8 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
             let width = collection.bounds.width > 1
                 ? collection.bounds.width
                 : UIScreen.main.bounds.width
-            if abs(width - measuredWidth) > 0.5 {
+            let widthChanged = abs(width - measuredWidth) > 0.5
+            if widthChanged {
                 measuredWidth = width
                 heights.removeAll(keepingCapacity: true)
             }
@@ -207,7 +208,9 @@ struct NativeMomentList<Row: View>: UIViewControllerRepresentable {
             }
             order = nextOrder
             pendingItems = nil
-            collection.collectionViewLayout.invalidateLayout()
+            if widthChanged {
+                collection.collectionViewLayout.invalidateLayout()
+            }
             dataSource.apply(snapshot, animatingDifferences: animated) {
                 guard generation == self.applyGeneration,
                       self.collection === collection,

@@ -557,6 +557,36 @@ private enum NativeMomentType {
     static let comment = UIFont.systemFont(ofSize: 13)
 }
 
+/// Large feeds prefetch many cells at once. Limit image I/O and decoding so
+/// scrolling never competes with dozens of full-size media previews.
+private actor NativeMomentImageGate {
+    static let shared = NativeMomentImageGate(limit: 3)
+
+    private let limit: Int
+    private var active = 0
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+
+    private init(limit: Int) {
+        self.limit = max(1, limit)
+    }
+
+    func acquire() async {
+        if active < limit {
+            active += 1
+            return
+        }
+        await withCheckedContinuation { waiters.append($0) }
+    }
+
+    func release() {
+        if waiters.isEmpty {
+            active = max(0, active - 1)
+        } else {
+            waiters.removeFirst().resume()
+        }
+    }
+}
+
 private final class NativeMomentImage: UIImageView {
     private var token = UUID()
 
@@ -588,18 +618,28 @@ private final class NativeMomentImage: UIImageView {
             image = hit
             return
         }
-        Task {
-            var data = await Task.detached(priority: .userInitiated) {
+        Task { [weak self] in
+            guard let self else { return }
+            await NativeMomentImageGate.shared.acquire()
+            guard self.token == request, !Task.isCancelled else {
+                await NativeMomentImageGate.shared.release()
+                return
+            }
+            var data = await Task.detached(priority: .utility) {
                 ImageStore.shared.diskRead(path)
             }.value
             if data == nil, let url = API.shared.assetURL(path) {
                 data = try? await API.shared.imageData(url)
             }
-            guard let data else { return }
-            let decoded = await Task.detached(priority: .userInitiated) {
+            guard self.token == request, !Task.isCancelled, let data else {
+                await NativeMomentImageGate.shared.release()
+                return
+            }
+            let decoded = await Task.detached(priority: .utility) {
                 RemoteImage.downsampled(data, maxSide: maxSide)
             }.value
-            guard let decoded else { return }
+            await NativeMomentImageGate.shared.release()
+            guard self.token == request, !Task.isCancelled, let decoded else { return }
             ImageStore.shared.put(path + "#\(Int(maxSide))", decoded)
             await MainActor.run {
                 guard self.token == request else { return }
