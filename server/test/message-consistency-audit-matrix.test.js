@@ -56,6 +56,8 @@ async function main() {
     const beforeB = digestTree(shardB);
 
     const clean = await auditMessageShardSet({
+      baseDir: root,
+      offlineRoot: '.',
       shards: [
         { sourceId: 'shard-a', dataDir: shardA },
         { sourceId: 'shard-b', dataDir: shardB }
@@ -72,6 +74,8 @@ async function main() {
     writeMessages(duplicateChat, 'chat-a',
       [message('message-a-other', 'chat-a', 1, 'other shard')]);
     const chatCollision = await auditMessageShardSet({
+      baseDir: root,
+      offlineRoot: '.',
       shards: [
         { sourceId: 'shard-a', dataDir: shardA },
         { sourceId: 'duplicate-chat', dataDir: duplicateChat }
@@ -87,6 +91,8 @@ async function main() {
     writeMessages(duplicateMessage, 'chat-c',
       [message('message-a-1', 'chat-c', 1, 'same id')]);
     const messageCollision = await auditMessageShardSet({
+      baseDir: root,
+      offlineRoot: '.',
       shards: [
         { sourceId: 'shard-a', dataDir: shardA },
         { sourceId: 'duplicate-message', dataDir: duplicateMessage }
@@ -99,6 +105,8 @@ async function main() {
     );
 
     const countMismatch = await auditMessageShardSet({
+      baseDir: root,
+      offlineRoot: '.',
       shards: [
         { sourceId: 'shard-a', dataDir: shardA },
         { sourceId: 'shard-b', dataDir: shardB }
@@ -107,6 +115,12 @@ async function main() {
     });
     assert.strictEqual(countMismatch.ok, false);
     assert.strictEqual(countMismatch.countMatches, false);
+
+    await assert.rejects(() => auditMessageShardSet({
+      baseDir: root,
+      offlineRoot: shardA,
+      shards: [{ sourceId: 'shard-b', dataDir: shardB }]
+    }), /outside offlineRoot/);
 
     console.log('message-consistency-audit-matrix: passed');
   } finally {

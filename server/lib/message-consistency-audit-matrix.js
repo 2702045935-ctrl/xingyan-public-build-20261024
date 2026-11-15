@@ -23,10 +23,22 @@ function sortIssues(left, right) {
     || Number(left.seq || 0) - Number(right.seq || 0);
 }
 
-function normalizeShards(value, baseDir) {
+function isWithin(root, candidate) {
+  const relative = path.relative(root, candidate);
+  return relative === ''
+    || (!relative.startsWith('..' + path.sep)
+      && relative !== '..'
+      && !path.isAbsolute(relative));
+}
+
+function normalizeShards(value, baseDir, offlineRoot) {
   const rows = Array.isArray(value) ? value : [];
   const sourceIds = new Set();
   const dataDirs = new Set();
+  const root = offlineRoot ? path.resolve(baseDir, offlineRoot) : '';
+  if (root && (!fs.existsSync(root) || !fs.statSync(root).isDirectory())) {
+    throw new Error('offlineRoot does not exist: ' + root);
+  }
   return rows.map((input, index) => {
     const row = input || {};
     const sourceId = stableText(row.sourceId).trim();
@@ -42,6 +54,9 @@ function normalizeShards(value, baseDir) {
     const databaseFile = row.databaseFile
       ? path.resolve(baseDir, stableText(row.databaseFile))
       : '';
+    if (root && (!isWithin(root, dataDir) || (databaseFile && !isWithin(root, databaseFile)))) {
+      throw new Error('shard ' + sourceId + ' is outside offlineRoot');
+    }
     const secretFile = row.secretFile
       ? path.resolve(baseDir, stableText(row.secretFile))
       : '';
@@ -56,7 +71,8 @@ function normalizeShards(value, baseDir) {
 
 async function auditMessageShardSet(options) {
   const opts = options || {};
-  const shards = normalizeShards(opts.shards, path.resolve(stableText(opts.baseDir || '.')));
+  const baseDir = path.resolve(stableText(opts.baseDir || '.'));
+  const shards = normalizeShards(opts.shards, baseDir, opts.offlineRoot);
   if (!shards.length) throw new Error('at least one shard is required');
   const sharedIndex = {
     messagesById: new Map(),
@@ -130,5 +146,6 @@ async function auditMessageShardSet(options) {
 
 module.exports = {
   auditMessageShardSet,
+  isWithin,
   normalizeShards
 };

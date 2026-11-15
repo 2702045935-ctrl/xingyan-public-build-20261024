@@ -18,9 +18,14 @@ async function main() {
   }
   const absoluteConfig = path.resolve(configFile);
   const config = JSON.parse(fs.readFileSync(absoluteConfig, 'utf8'));
+  const offlineRoot = arg('offline-root', config.offlineRoot);
+  if (!offlineRoot) {
+    throw new Error('offlineRoot is required; point it at the isolated shard copy root');
+  }
   const expectedArg = arg('expected-messages');
   const report = await auditMessageShardSet({
     baseDir: path.dirname(absoluteConfig),
+    offlineRoot,
     shards: config.shards,
     expectedMessages: expectedArg !== undefined
       ? Number(expectedArg)

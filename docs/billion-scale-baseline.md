@@ -96,6 +96,7 @@ with a shared read-only index:
 
 ```json
 {
+  "offlineRoot": "copies",
   "expectedMessages": 123456,
   "shards": [
     {
@@ -111,9 +112,12 @@ with a shared read-only index:
 ```powershell
 node server/tools/message-consistency-audit-matrix.js `
   --config OFFLINE_SHARDS.json `
+  --offline-root C:\isolated-shard-copies `
   --out SHARD_MATRIX_AUDIT.json
 ```
 
 The matrix detects a conversation or message ID appearing in more than one
 shard, detects client-ID reuse across shards, and verifies the aggregate
-message count. It only reads the configured offline copies.
+message count. `offlineRoot` is mandatory in the CLI and every shard directory
+and reliability database must resolve inside it. It only reads the configured
+offline copies and refuses any path outside that isolation boundary.
