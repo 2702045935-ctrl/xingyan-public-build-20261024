@@ -1764,6 +1764,9 @@ enum L10n {
         "消息内容": "Message text",
         "支持多行长文": "Supports long, multi-line messages",
         "字": "characters",
+        "在线结果暂不可用，先显示本机结果": "Online results are unavailable; showing results on this device",
+        "在线搜索暂不可用": "Online search is temporarily unavailable",
+        "这个会话暂时打不开，请刷新后重试": "This conversation can't be opened right now. Refresh and try again",
 
     ]
 }

@@ -29,6 +29,7 @@ struct SearchPage: View {
     @State private var showDrop = false
     @State private var remote: SearchAllData?
     @State private var searchingRemote = false
+    @State private var remoteFailed = false
     @State private var searchTask: Task<Void, Never>?
     @State private var pickedUser: User?
     @State private var showMoments = false
@@ -103,17 +104,17 @@ struct SearchPage: View {
     }
     private var matchedTools: [OfficialTool] {
         guard !key.isEmpty, scope == "all" else { return [] }
-        let needle = key.lowercased()
         return officialTools.filter {
-            $0.title.lowercased().contains(needle)
-                || $0.subtitle.lowercased().contains(needle)
-                || $0.keywords.lowercased().contains(needle)
+            searchFieldsMatch([$0.title, $0.subtitle, $0.keywords], needle: key)
         }
     }
     private var contacts: [User] {
         if key.isEmpty || !(scope == "all" || scope == "people") { return [] }
-        let needle = key.lowercased()
-        return app.contacts.filter { userMatches($0, needle: needle) }
+        return app.contacts
+            .filter { userMatches($0, needle: key) }
+            .sorted {
+                userSearchScore($0, needle: key) > userSearchScore($1, needle: key)
+            }
     }
     private var remoteMessages: [SearchAllData.ChatHit] {
         remote?.messages ?? []
@@ -132,12 +133,41 @@ struct SearchPage: View {
     private var remoteVideos: [SearchAllData.Video] {
         remote?.videos ?? []
     }
+    private var localMomentHits: [SearchAllData.Post] {
+        guard !key.isEmpty, scope == "all" || scope == "moments" else { return [] }
+        return app.moments.filter { moment in
+            let fields = [
+                moment.content ?? "",
+                moment.author?.name ?? "",
+                moment.author?.username ?? "",
+                moment.location ?? "",
+                pinyinInitial(moment.author?.name ?? "")
+            ]
+            return searchFieldsMatch(fields, needle: key)
+        }
+        .map { moment in
+            SearchAllData.Post(
+                id: moment.id,
+                author: moment.author?.name
+                    ?? (moment.mine == true ? app.me?.name : nil),
+                content: moment.content,
+                images: moment.images,
+                createdAt: moment.createdAt
+            )
+        }
+    }
+    private var allMomentHits: [SearchAllData.Post] {
+        var seen = Set<String>()
+        return (localMomentHits + remoteMoments).filter {
+            seen.insert($0.id).inserted
+        }
+    }
     private var hasResults: Bool {
         resultCount > 0
     }
 
     private func chatMatches(_ chat: Chat, needle: String) -> Bool {
-        let directFields = [
+        var directFields = [
             chat.title ?? "",
             chat.name,
             chat.avatar ?? "",
@@ -146,7 +176,8 @@ struct SearchPage: View {
             chat.lastMessage?.senderName ?? "",
             chat.lastMessage?.preview ?? ""
         ]
-        if directFields.contains(where: { $0.lowercased().contains(needle) }) {
+        directFields.append(pinyinInitial(chatTitle(chat)))
+        if searchFieldsMatch(directFields, needle: needle) {
             return true
         }
         if let peerId = (chat.memberIds ?? []).first(where: { $0 != (app.me?.id ?? "") }),
@@ -175,19 +206,54 @@ struct SearchPage: View {
             user.source ?? ""
         ]
         fields.append(contentsOf: user.tags ?? [])
-        for field in fields where field.lowercased().contains(needle) {
-            return true
-        }
-        return false
+        fields.append(pinyinInitial(user.name))
+        return searchFieldsMatch(fields, needle: needle)
     }
 
     private func chatSearchScore(_ chat: Chat, needle: String) -> Int {
-        let title = chatTitle(chat).lowercased()
-        if title == needle { return 100 }
-        if title.hasPrefix(needle) { return 80 }
-        if title.contains(needle) { return 60 }
-        if let preview = chat.lastMessage?.preview?.lowercased(), preview.contains(needle) { return 40 }
+        let title = normalizedSearch(chatTitle(chat))
+        let query = normalizedSearch(needle)
+        if title == query { return 100 }
+        if title.hasPrefix(query) { return 80 }
+        if title.contains(query) { return 60 }
+        if let preview = chat.lastMessage?.preview,
+           normalizedSearch(preview).contains(query) { return 40 }
         return 20
+    }
+
+    private func userSearchScore(_ user: User, needle: String) -> Int {
+        let query = normalizedSearch(needle)
+        let candidates = [
+            user.name,
+            user.remark ?? "",
+            user.nickname ?? "",
+            user.username ?? "",
+            pinyinInitial(user.name)
+        ]
+        for (index, value) in candidates.enumerated() {
+            let text = normalizedSearch(value)
+            if text == query { return 120 - index * 5 }
+            if text.hasPrefix(query) { return 100 - index * 5 }
+            if text.contains(query) { return 80 - index * 5 }
+        }
+        return 30
+    }
+
+    private func normalizedSearch(_ value: String) -> String {
+        value.folding(options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive],
+                      locale: .current)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func searchFieldsMatch(_ fields: [String], needle: String) -> Bool {
+        let tokens = normalizedSearch(needle)
+            .split(whereSeparator: { $0.isWhitespace })
+            .map(String.init)
+        guard !tokens.isEmpty else { return false }
+        let normalizedFields = fields.map(normalizedSearch)
+        return tokens.allSatisfy { token in
+            normalizedFields.contains { $0.contains(token) }
+        }
     }
 
     private func isAssistantChat(_ chat: Chat) -> Bool {
@@ -466,6 +532,22 @@ struct SearchPage: View {
                     .padding(.horizontal, 16)
                 }
 
+                if remoteFailed {
+                    HStack(spacing: 10) {
+                        Image(systemName: "wifi.exclamationmark")
+                            .foregroundStyle(C.orange)
+                        Text(hasResults ? Tr("在线结果暂不可用，先显示本机结果")
+                                        : Tr("在线搜索暂不可用"))
+                            .font(pfStyled(size: 13))
+                            .foregroundStyle(C.subLabel)
+                        Spacer(minLength: 0)
+                        Button(Tr("重试")) { scheduleRemoteSearch() }
+                            .font(pfStyled(size: 13, weight: .semibold))
+                            .foregroundStyle(xhsRed)
+                    }
+                    .padding(.horizontal, 16)
+                }
+
                 if !matchedTools.isEmpty {
                     xhsResultSection(Tr("官方工具"), count: matchedTools.count) {
                         VStack(spacing: 0) {
@@ -533,9 +615,9 @@ struct SearchPage: View {
                     }
                 }
 
-                if !remoteMoments.isEmpty {
-                    xhsMediaGridSection(Tr("朋友圈"), count: remoteMoments.count) {
-                        ForEach(remoteMoments) { post in
+                if !allMomentHits.isEmpty {
+                    xhsMediaGridSection(Tr("朋友圈"), count: allMomentHits.count) {
+                        ForEach(allMomentHits) { post in
                             xhsMomentCard(post)
                         }
                     }
@@ -549,7 +631,7 @@ struct SearchPage: View {
                     }
                 }
 
-                if !searchingRemote && !hasResults {
+                if !searchingRemote && !hasResults && !remoteFailed {
                     VStack(spacing: 10) {
                         Image(systemName: "magnifyingglass")
                             .font(.system(size: 28, weight: .light))
@@ -780,8 +862,7 @@ struct SearchPage: View {
     private func xhsPersonCard(_ user: User) -> some View {
         Button {
             remember(key)
-            onOpenUser?(user)
-            dismiss()
+            openUser(user)
         } label: {
             HStack(spacing: 12) {
                 Avatar(path: user.avatarPath, size: 46, radius: 23, circle: true)
@@ -851,7 +932,7 @@ struct SearchPage: View {
     private func xhsRemoteGroupCard(_ group: SearchAllData.Group) -> some View {
         Button {
             remember(key)
-            openChat(id: group.id)
+            openChat(id: group.id, isGroup: true)
         } label: {
             HStack(spacing: 12) {
                 Avatar(path: group.avatar ?? "", size: 46, radius: 13, group: true)
@@ -891,7 +972,9 @@ struct SearchPage: View {
 
         return Button {
             remember(key)
-            openChat(id: hit.chatId)
+            openChat(id: hit.chatId,
+                     peerId: hit.peerId,
+                     isGroup: hit.isGroup == true)
         } label: {
             HStack(alignment: .top, spacing: 11) {
                 Avatar(path: avatar, size: 40, radius: 11,
@@ -1314,8 +1397,7 @@ struct SearchPage: View {
     private func nativeContactRow(_ user: User) -> some View {
         Button {
             remember(key)
-            onOpenUser?(user)
-            dismiss()
+            openUser(user)
         } label: {
             HStack(spacing: 12) {
                 Avatar(path: user.avatarPath, size: 40, radius: 10)
@@ -1345,7 +1427,9 @@ struct SearchPage: View {
         let avatar = localChat.map { chatAvatar($0) } ?? ""
         return Button {
             remember(key)
-            openChat(id: hit.chatId)
+            openChat(id: hit.chatId,
+                     peerId: hit.peerId,
+                     isGroup: hit.isGroup == true)
         } label: {
             HStack(spacing: 12) {
                 Avatar(path: avatar, size: 40, radius: (hit.isGroup ?? false) ? 12 : 10)
@@ -1402,7 +1486,7 @@ struct SearchPage: View {
     private func nativeRemoteGroupRow(_ group: SearchAllData.Group) -> some View {
         Button {
             remember(key)
-            openChat(id: group.id)
+            openChat(id: group.id, isGroup: true)
         } label: {
             HStack(spacing: 12) {
                 Avatar(path: group.avatar ?? "", size: 40, radius: 12)
@@ -1475,13 +1559,53 @@ struct SearchPage: View {
         return String(value.prefix(10))
     }
 
-    private func openChat(id: String) {
-        guard let chat = app.chats.first(where: { $0.id == id }) else {
-            app.show(Tr("这个会话不在你的列表里"))
+    private func openChat(id: String,
+                          peerId: String? = nil,
+                          isGroup: Bool = false) {
+        if let chat = app.chats.first(where: { $0.id == id }) {
+            finishOpenChat(chat)
             return
         }
-        onOpenChat?(chat)
+        Task { @MainActor in
+            await app.loadChats()
+            if let chat = app.chats.first(where: { $0.id == id }) {
+                finishOpenChat(chat)
+                return
+            }
+            if !isGroup,
+               let peerId,
+               !peerId.isEmpty,
+               let chat = try? await API.shared.directChat(userId: peerId) {
+                await app.loadChats()
+                finishOpenChat(chat)
+                return
+            }
+            if let result = try? await API.shared.messages(chatId: id, limit: 1),
+               let chat = result.chat {
+                finishOpenChat(chat)
+                return
+            }
+            app.show(Tr("这个会话暂时打不开，请刷新后重试"))
+        }
+    }
+
+    private func finishOpenChat(_ chat: Chat) {
+        if let onOpenChat {
+            onOpenChat(chat)
+        } else {
+            app.openChatViaList(chat)
+        }
         dismiss()
+    }
+
+    private func openUser(_ user: User) {
+        if let onOpenUser {
+            onOpenUser(user)
+            dismiss()
+        } else {
+            focused = false
+            pickedUser = user
+        }
     }
 
     private func scheduleRemoteSearch() {
@@ -1490,19 +1614,31 @@ struct SearchPage: View {
         guard !value.isEmpty else {
             remote = nil
             searchingRemote = false
+            remoteFailed = false
             return
         }
         let selectedScope = scope
         remote = nil
+        remoteFailed = false
         searchingRemote = true
         searchTask = Task {
             try? await Task.sleep(nanoseconds: 260_000_000)
             if Task.isCancelled { return }
-            let result = try? await API.shared.searchAll(value, scope: selectedScope)
-            if Task.isCancelled { return }
-            await MainActor.run {
-                remote = result
-                searchingRemote = false
+            do {
+                let result = try await API.shared.searchAll(value, scope: selectedScope)
+                if Task.isCancelled { return }
+                await MainActor.run {
+                    remote = result
+                    remoteFailed = false
+                    searchingRemote = false
+                }
+            } catch {
+                if Task.isCancelled { return }
+                await MainActor.run {
+                    remote = nil
+                    remoteFailed = true
+                    searchingRemote = false
+                }
             }
         }
     }
@@ -1705,7 +1841,7 @@ struct SearchPage: View {
             + remoteMessages.count
             + remotePeople.count
             + remoteGroups.count
-            + remoteMoments.count
+            + allMomentHits.count
             + remoteVideos.count
     }
 
