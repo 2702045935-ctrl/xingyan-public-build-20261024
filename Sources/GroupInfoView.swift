@@ -73,40 +73,11 @@ struct GroupInfoView: View {
         VStack(spacing: 0) {
             NavBar(title: Tr("聊天信息"), back: { dismiss() })
 
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 0) {
-                    headCard
-
-                    VStack(spacing: 0) {
-                        HStack(spacing: 8) {
-                            Text(Tr("群成员") + "（\(members.count)）")
-                                .font(pf(12.5, .medium))
-                                .foregroundColor(C.subLabel)
-                            Spacer(minLength: 0)
-
-                            ChatInfoTextButton(title: Tr("添加")) { showAdd = true }
-                            if isOwner {
-                                ChatInfoTextButton(title: Tr(removing ? "完成" : "管理"),
-                                                   color: removing ? C.green : C.subLabel) {
-                                    withAnimation(.easeOut(duration: 0.15)) { removing.toggle() }
-                                }
-                            }
-                        }
-                        .padding(.horizontal, 6)
-                        .padding(.top, 14)
-                        .padding(.bottom, 6)
-                        memberCard
-                    }
-                    ChatInfoSectionTitle(text: Tr("群聊设置"))
-                    infoCard
-                    switchCard
-                    groupToolCard
-                    ChatInfoSectionTitle(text: Tr("操作"))
-                    dangerCard
-                }
-                .padding(.horizontal, 14)
-                .padding(.top, 6)
-                .padding(.bottom, 30)
+            NativeStaticList(items: groupInfoNativeItems,
+                             signature: { $0.signature }) { item in
+                groupInfoNativeRow(item)
+                    .environmentObject(app)
+                    .environment(\.chatInfoCardTone, .group)
             }
         }
         .background(C.pageBg.ignoresSafeArea())
@@ -495,6 +466,85 @@ struct GroupInfoView: View {
                 if let r = try? await API.shared.chatMembers(chatId: chat.id) { members = r.members }
                 await app.loadChats()
             }
+        }
+    }
+
+    private var groupInfoNativeItems: [NativeStaticItem] {
+        let memberKey = members.map {
+            "\($0.id):\($0.alias ?? ""):\($0.avatarPath):\($0.qqLevel ?? 0)"
+        }.joined(separator: "|")
+        return [
+            NativeStaticItem(
+                id: "head",
+                signature: "\(chat.name)|\(chat.avatar ?? "")|\(memberKey)|\(createdText)"
+            ),
+            NativeStaticItem(
+                id: "members",
+                signature: "\(loading)-\(removing)-\(isOwner)-\(ownerId)-\(memberKey)"
+            ),
+            NativeStaticItem(id: "settings-title", signature: Tr("群聊设置")),
+            NativeStaticItem(
+                id: "info",
+                signature: "\(chat.name)|\(announce)|\(myAlias)|\(ownerName)"
+            ),
+            NativeStaticItem(
+                id: "switches",
+                signature: "\(pinned)-\(muteAll)-\(muted)-\(isOwner)"
+            ),
+            NativeStaticItem(id: "tools", signature: "\(chat.id)-\(Lang.code)"),
+            NativeStaticItem(id: "actions-title", signature: Tr("操作")),
+            NativeStaticItem(id: "danger", signature: "\(isOwner)")
+        ]
+    }
+
+    @ViewBuilder
+    private func groupInfoNativeRow(_ item: NativeStaticItem) -> some View {
+        switch item.id {
+        case "head":
+            headCard
+                .padding(.horizontal, 14)
+                .padding(.top, 6)
+        case "members":
+            VStack(spacing: 0) {
+                HStack(spacing: 8) {
+                    Text(Tr("群成员") + "（\(members.count)）")
+                        .font(pf(12.5, .medium))
+                        .foregroundColor(C.subLabel)
+                    Spacer(minLength: 0)
+                    ChatInfoTextButton(title: Tr("添加")) { showAdd = true }
+                    if isOwner {
+                        ChatInfoTextButton(title: Tr(removing ? "完成" : "管理"),
+                                           color: removing ? C.green : C.subLabel) {
+                            withAnimation(.easeOut(duration: 0.15)) { removing.toggle() }
+                        }
+                    }
+                }
+                .padding(.horizontal, 6)
+                .padding(.top, 14)
+                .padding(.bottom, 6)
+                memberCard
+            }
+            .padding(.horizontal, 14)
+        case "settings-title":
+            ChatInfoSectionTitle(text: Tr("群聊设置"))
+                .padding(.horizontal, 14)
+        case "info":
+            infoCard.padding(.horizontal, 14)
+        case "switches":
+            switchCard.padding(.horizontal, 14)
+        case "tools":
+            groupToolCard.padding(.horizontal, 14)
+        case "actions-title":
+            ChatInfoSectionTitle(text: Tr("操作"))
+                .padding(.horizontal, 14)
+        case "danger":
+            VStack(spacing: 0) {
+                dangerCard
+                Color.clear.frame(height: 30)
+            }
+            .padding(.horizontal, 14)
+        default:
+            EmptyView()
         }
     }
 
