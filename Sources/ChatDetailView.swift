@@ -8607,7 +8607,16 @@ struct FilePreviewSheet: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 9)
-        .background(.ultraThinMaterial)
+        .background {
+            GlassBackground(
+                shape: Rectangle(),
+                opacity: 0.92,
+                edgeAlpha: 0.18,
+                seed: 0.27,
+                native: true
+            )
+            .ignoresSafeArea(edges: .bottom)
+        }
     }
 
     private func printDocument() {

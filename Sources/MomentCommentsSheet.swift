@@ -635,7 +635,15 @@ struct MomentCommentsSheet: View {
                     .focused($commentFocused)
                     .padding(.horizontal, 14)
                     .frame(height: 44)
-                    .background(Capsule().fill(Color.dyn(0xF2F2F3, 0x1F1F1F)))
+                    .background {
+                        GlassBackground(
+                            shape: Capsule(style: .continuous),
+                            opacity: 0.88,
+                            edgeAlpha: 0.18,
+                            seed: 0.13,
+                            native: true
+                        )
+                    }
                     .submitLabel(.send)
                     .onSubmit { send() }
 
@@ -644,10 +652,18 @@ struct MomentCommentsSheet: View {
                         .font(.system(size: 15, weight: .bold))
                         .foregroundColor(.white)
                         .frame(width: 34, height: 34)
-                        .background(Circle().fill(
-                            text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                            ? Color.dyn(0xC7C7CC, 0x3A3A3C) : C.green
-                        ))
+                        .background {
+                            GlassBackground(
+                                shape: Circle(),
+                                opacity: 0.92,
+                                edgeAlpha: 0.20,
+                                seed: 0.21,
+                                native: true,
+                                tint: text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                    ? Color.black.opacity(0.12)
+                                    : C.green.opacity(0.58)
+                            )
+                        }
                 }
                 .buttonStyle(.plain)
                 .disabled(sending || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -657,7 +673,16 @@ struct MomentCommentsSheet: View {
             .padding(.top, 8)
             .padding(.bottom, max(9, L.safeBottom))
         }
-        .background(sheetSurface)
+        .background {
+            GlassBackground(
+                shape: Rectangle(),
+                opacity: 0.90,
+                edgeAlpha: 0.16,
+                seed: 0.17,
+                native: true
+            )
+            .ignoresSafeArea(edges: .bottom)
+        }
     }
 
     private func send() {
