@@ -2501,18 +2501,21 @@ struct ChatsView: View {
             case "pat":
                 previewColor = isDark ? UIColor(hex: 0x52D6C7) : UIColor(hex: 0x0C7A70)
             default:
-                previewColor = isDark ? UIColor(hex: 0x8696A0) : UIColor(hex: 0xB2B2B2)
+                previewColor = isDark ? UIColor(hex: 0x8696A0) : UIColor(hex: 0x667781)
             }
         }
         let memberColor = nativePeerColor(chat.memberColor)
         let rowBg: UIColor = isDark ? UIColor(hex: 0x000000) : UIColor.white
-        let timeColor = isDark ? UIColor(hex: 0x8696A0) : UIColor(hex: 0xCCCCCC)
+        let timeColor = isDark
+            ? UIColor(hex: 0x8696A0)
+            : (chat.unreadCount > 0 ? UIColor(hex: 0x25D366) : UIColor(hex: 0x667781))
         let levelText = (chat.qqLevel ?? 0) > 1 && GrowthFlags.showInChats == true
             ? "Lv\(chat.qqLevel ?? 0)" : ""
 
         return NativeChatRowConfiguration(
             title: displayTitle,
             titleColor: titleColor,
+            isLight: !isDark,
             preview: preview,
             mentionPrefix: mentionPrefix,
             previewColor: previewColor,

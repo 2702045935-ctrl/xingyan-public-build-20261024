@@ -3,6 +3,7 @@ import UIKit
 struct NativeChatRowConfiguration {
     var title: String
     var titleColor: UIColor
+    var isLight: Bool
     var preview: String
     var mentionPrefix: String
     var previewColor: UIColor
@@ -138,6 +139,10 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         foreground.backgroundColor = configuration.rowBackground
         titleLabel.text = configuration.title
         titleLabel.textColor = configuration.titleColor
+        previewLabel.font = .systemFont(ofSize: configuration.isLight ? 14.5 : 15,
+                                        weight: .regular)
+        timeLabel.font = .systemFont(ofSize: configuration.isLight ? 12 : 13,
+                                     weight: .regular)
         let preview = NSMutableAttributedString(
             string: configuration.mentionPrefix + configuration.preview,
             attributes: [
