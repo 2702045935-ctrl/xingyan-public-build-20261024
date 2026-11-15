@@ -5789,6 +5789,9 @@ struct ChatDetailView: View {
                         sendingFileProgress = value
                     }
                 })
+            await Task.detached(priority: .utility) {
+                LocalStore.keepOriginal(uploadedURL, from: uploadURL)
+            }.value
             let body: [String: Any] = [
                 "url": uploadedURL,
                 "name": name,
