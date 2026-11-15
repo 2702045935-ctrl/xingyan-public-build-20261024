@@ -316,6 +316,7 @@ final class NativeMomentFeedCell: UICollectionViewCell {
         super.layoutSubviews()
         guard let c = configuration, let m = metrics else { return }
         let pad = L.momentPadH
+        let cellWidth = bounds.width
         if c.day != nil {
             dayLabel.frame = CGRect(x: pad, y: m.dayY, width: m.contentWidth, height: 17)
         }
@@ -323,12 +324,13 @@ final class NativeMomentFeedCell: UICollectionViewCell {
         avatarImage.layer.cornerRadius = 21
         avatarFallback.frame = avatarImage.frame
         let textX = pad + 42 + 11
-        pinImage.frame = CGRect(x: width - pad - 96, y: m.headerY + 7, width: 10, height: 12)
+        pinImage.frame = CGRect(x: cellWidth - pad - 96, y: m.headerY + 7, width: 10, height: 12)
         pinImage.isHidden = c.moment.pinned != true
-        nameLabel.frame = CGRect(x: textX, y: m.headerY, width: max(1, width - textX - pad - 44), height: 21)
+        nameLabel.frame = CGRect(x: textX, y: m.headerY,
+                                 width: max(1, cellWidth - textX - pad - 44), height: 21)
         metaLabel.frame = CGRect(x: textX, y: m.headerY + 25,
-                                 width: max(1, width - textX - pad - 36), height: 17)
-        headerMore.frame = CGRect(x: width - pad - 34, y: m.headerY + 2, width: 34, height: 34)
+                                 width: max(1, cellWidth - textX - pad - 36), height: 17)
+        headerMore.frame = CGRect(x: cellWidth - pad - 34, y: m.headerY + 2, width: 34, height: 34)
 
         contentLabel.isHidden = m.textHeight <= 0
         if m.textHeight > 0 {
@@ -346,7 +348,7 @@ final class NativeMomentFeedCell: UICollectionViewCell {
         commentButton.sizeToFit()
         commentButton.frame = CGRect(x: likeButton.frame.maxX + 12, y: m.actionY,
                                      width: max(44, commentButton.bounds.width), height: 32)
-        actionMore.frame = CGRect(x: width - pad - 34, y: m.actionY, width: 34, height: 32)
+        actionMore.frame = CGRect(x: cellWidth - pad - 34, y: m.actionY, width: 34, height: 32)
 
         socialContainer.isHidden = m.socialHeight <= 0
         socialContainer.frame = m.socialHeight > 0
@@ -355,7 +357,7 @@ final class NativeMomentFeedCell: UICollectionViewCell {
         for (view, frame) in socialFrames { view.frame = frame }
 
         divider.frame = CGRect(x: pad, y: max(0, m.totalHeight - 0.5),
-                               width: max(0, width - pad * 2), height: 0.5)
+                               width: max(0, cellWidth - pad * 2), height: 0.5)
     }
 
     private func rebuildMedia() {
@@ -562,6 +564,10 @@ private final class NativeMomentImage: UIImageView {
         super.init(frame: frame)
         contentMode = .scaleAspectFill
         backgroundColor = UIColor.secondarySystemFill
+    }
+
+    convenience init() {
+        self.init(frame: .zero)
     }
 
     required init?(coder: NSCoder) {
