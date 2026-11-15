@@ -2930,10 +2930,7 @@ struct ChatDetailView: View {
             .padding(.bottom, 12)
 
         case .bottom:
-            Color.clear
-                .frame(height: 1)
-                .onAppear { atBottom = true }
-                .onDisappear { atBottom = false }
+            Color.clear.frame(height: 1)
 
         case .spacer:
             Color.clear.frame(height: 8 + L.msgPad)
