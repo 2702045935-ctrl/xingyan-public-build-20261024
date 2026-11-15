@@ -1289,10 +1289,8 @@ final class AppState: ObservableObject {
             if let readAt = locallyReadAt[server.id],
                now.timeIntervalSince(readAt) < 120,
                local.unreadCount == 0,
-               server.lastMessage?.id == local.lastMessage?.id,
-               out.unreadCount > 0 {
-                out.unread = 0
-                out.flagged = false
+               server.lastMessage?.id == local.lastMessage?.id {
+                out = removeReadMentionMarker(from: out)
             }
             /* 实时消息先把未读数加上，随后 400ms 的列表刷新可能拿到尚未追上
                阅读游标的旧快照。短时间内必须保留本地较大的未读数，否则红点会闪一下消失。 */
@@ -1408,12 +1406,28 @@ final class AppState: ObservableObject {
         optimisticAt[chatId] = nil
         locallyReadAt[chatId] = Date()
         if let i = chats.firstIndex(where: { $0.id == chatId }) {
-            var c = chats[i]
-            c.unread = 0
-            c.flagged = false
-            chats[i] = c
+            chats[i] = removeReadMentionMarker(from: chats[i])
         }
         syncIconBadge()
+    }
+
+    private func removeReadMentionMarker(from source: Chat) -> Chat {
+        var row = source
+        row.unread = 0
+        row.flagged = false
+        if var last = row.lastMessage {
+            last.mentionMe = false
+            var preview = last.preview ?? ""
+            for prefix in ["[有人@我]", "[Mentioned you]", "[Упомянули вас]"] {
+                guard preview.hasPrefix(prefix) else { continue }
+                preview = String(preview.dropFirst(prefix.count))
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                break
+            }
+            last.preview = preview
+            row.lastMessage = last
+        }
+        return row
     }
 
     private func isDismissedGroup(_ chat: Chat) -> Bool {
