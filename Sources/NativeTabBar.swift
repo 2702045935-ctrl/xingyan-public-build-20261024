@@ -270,7 +270,7 @@ struct NativeTabBar: UIViewRepresentable {
     }
 
     private static func worldIconWithOrbit() -> UIImage? {
-        guard let safari = UIImage(systemName: "safari")?
+        guard let safari = UIImage(systemName: "safari.fill")?
             .withTintColor(.black, renderingMode: .alwaysOriginal) else { return nil }
         let side: CGFloat = 30
         let size = CGSize(width: side, height: side)
