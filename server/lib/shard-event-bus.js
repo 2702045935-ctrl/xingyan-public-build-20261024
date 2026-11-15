@@ -2,6 +2,14 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
+const { canonical } = require('./shard-snapshot');
+
+function fingerprint(event) {
+  const copy = Object.assign({}, event);
+  delete copy.publishedAt;
+  return crypto.createHash('sha256').update(canonical(copy)).digest('hex');
+}
 
 class ShardEventBus {
   constructor(options) {
@@ -11,6 +19,7 @@ class ShardEventBus {
     this.shardCount = Math.max(1, Math.floor(Number(opts.shardCount) || 1));
     this.topologyId = String(opts.topologyId || 'shards-' + this.shardCount);
     this.fsync = opts.fsync !== false;
+    this.cache = new Map();
   }
 
   shardOf(event) {
@@ -28,6 +37,30 @@ class ShardEventBus {
       'shard-event-bus-' + index + '.jsonl');
   }
 
+  signature(shard) {
+    try {
+      const stat = fs.statSync(this.file(shard), { bigint: true });
+      return String(stat.size) + ':' + String(stat.mtimeNs);
+    } catch (error) {
+      if (error && error.code === 'ENOENT') return '';
+      throw error;
+    }
+  }
+
+  cacheForShard(shard) {
+    const index = Math.floor(Number(shard) || 0);
+    const signature = this.signature(index);
+    const cached = this.cache.get(index);
+    if (cached && cached.signature === signature) return cached;
+    const events = this.read(0, index);
+    const next = {
+      signature: this.signature(index),
+      events: new Map(events.map((event) => [String(event.eventId), event]))
+    };
+    this.cache.set(index, next);
+    return next;
+  }
+
   publish(event) {
     if (!event || !event.eventId) throw new Error('eventId is required');
     const envelope = Object.assign({}, event, {
@@ -42,7 +75,24 @@ class ShardEventBus {
     } finally {
       fs.closeSync(fd);
     }
+    this.cache.delete(this.shardOf(envelope));
     return envelope;
+  }
+
+  publishOnce(event) {
+    if (!event || !event.eventId) throw new Error('eventId is required');
+    const shard = this.shardOf(event);
+    const cached = this.cacheForShard(shard);
+    const existing = cached.events.get(String(event.eventId));
+    if (existing) {
+      if (fingerprint(existing) !== fingerprint(event)) {
+        throw new Error('shard event id conflict: ' + event.eventId);
+      }
+      return { created: false, event: existing };
+    }
+    const envelope = this.publish(event);
+    this.cacheForShard(shard).events.set(String(envelope.eventId), envelope);
+    return { created: true, event: envelope };
   }
 
   read(offset, shard) {
@@ -142,12 +192,14 @@ class ShardEventBus {
     for (let shard = 0; shard < this.shardCount; shard += 1) {
       for (const event of cluster.log(shard).eventsById.values()) {
         if (busIds.has(event.eventId)) continue;
-        this.publish(Object.assign({}, event, {
+        const published = this.publishOnce(Object.assign({}, event, {
           writerShard: shard,
           topologyId: this.topologyId
         }));
-        busIds.add(event.eventId);
-        repaired += 1;
+        if (published.created) {
+          busIds.add(event.eventId);
+          repaired += 1;
+        }
       }
     }
     return { repaired, events: busIds.size };

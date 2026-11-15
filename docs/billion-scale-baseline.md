@@ -42,6 +42,14 @@ Date: 2026-11-15
 4. Keep payment settlement disabled until independent ledger reconciliation is
    clean.
 
+## Durable event publication
+
+Cluster facts are the source of truth. The mutation gateway attempts an
+idempotent event-bus publication after the fact is applied. If publication
+fails, the write remains durable and reports `busPending`; retrying the same
+command repairs the event exactly once without creating a second message or
+event. `syncFromCluster` is the reconciliation fallback for a longer outage.
+
 ## Read-only message audit
 
 `server/tools/message-consistency-audit.js` compares each message JSONL file

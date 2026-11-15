@@ -59,11 +59,31 @@ class ShardMutationGateway {
     if (previous) {
       const same = commandFingerprint(entityType, entityId, operation, payload)
         === commandFingerprint(entityType, entityId, previous.operation, previous.payload);
+      let busPending = false;
+      let busRepaired = false;
+      let busError = '';
+      if (same && this.bus) {
+        try {
+          const published = this.bus.publishOnce
+            ? this.bus.publishOnce(Object.assign({}, previous, {
+              writerShard: ownerShard,
+              topologyId: this.cluster.topologyId
+            }))
+            : { created: false };
+          busRepaired = published.created === true;
+        } catch (error) {
+          busPending = true;
+          busError = String(error && error.message || error);
+        }
+      }
       return {
         status: same ? 'duplicate' : 'idempotency-conflict',
         eventId,
         ownerShard,
-        state: this.cluster.get(entityType, entityId)
+        state: this.cluster.get(entityType, entityId),
+        busPending,
+        busRepaired,
+        busError
       };
     }
 
@@ -94,17 +114,29 @@ class ShardMutationGateway {
       createdAt: input.createdAt || this.now()
     };
     const result = this.cluster.apply(entityType, entityId, event);
+    let busPending = false;
+    let busError = '';
     if (result.status === 'applied' && this.bus) {
-      this.bus.publish(Object.assign({}, event, {
-        writerShard: ownerShard,
-        topologyId: this.cluster.topologyId
-      }));
+      try {
+        const published = this.bus.publishOnce
+          ? this.bus.publishOnce(Object.assign({}, event, {
+            writerShard: ownerShard,
+            topologyId: this.cluster.topologyId
+          }))
+          : { created: true };
+        if (published.created === false) busPending = false;
+      } catch (error) {
+        busPending = true;
+        busError = String(error && error.message || error);
+      }
     }
     return Object.assign({}, result, {
       eventId,
       ownerShard,
       version,
-      fingerprint: commandFingerprint(entityType, entityId, operation, payload)
+      fingerprint: commandFingerprint(entityType, entityId, operation, payload),
+      busPending,
+      busError
     });
   }
 }
