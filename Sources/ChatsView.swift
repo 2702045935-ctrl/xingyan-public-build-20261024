@@ -1420,11 +1420,24 @@ struct ChatsView: View {
 
     private var unreadTotal: Int { app.chats.reduce(0) { $0 + ($1.unread ?? 0) } }
 
+    private var chatTopTitle: String {
+        if Lang.isEnglish { return "Chats" }
+        if Lang.isRussian { return "Чаты" }
+        return "聊天"
+    }
+
     private var chatTopHeader: some View {
         ZStack {
             HStack(spacing: 7) {
-                XingyanMainStarTitle()
-                    .accessibilityLabel(chatListBrandTitle)
+                Image(systemName: "bubble.left.and.bubble.right.fill")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(C.label)
+                    .accessibilityHidden(true)
+
+                Text(chatTopTitle)
+                    .font(pf(22, .bold))
+                    .foregroundStyle(C.label)
+                    .accessibilityLabel(chatTopTitle)
 
                 if unreadTotal > 0 {
                     Text(unreadTotal > 99 ? "99+" : "\(unreadTotal)")
