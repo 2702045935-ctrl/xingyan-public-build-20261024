@@ -1708,7 +1708,7 @@ struct MomentsView: View {
                 Button(Tr("评论")) {
                     commentsSheet = m
                 }
-                if m.mine == true, mineOnly {
+                if mineOnly {
                     Button(m.pinned == true ? Tr("取消置顶") : Tr("置顶")) {
                         togglePin(m)
                     }
