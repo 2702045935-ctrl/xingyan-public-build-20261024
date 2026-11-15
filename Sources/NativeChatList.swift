@@ -146,6 +146,8 @@ where Item.ID: Hashable {
         var dataSource: UICollectionViewDiffableDataSource<Int, Item.ID>?
         private var order: [Item.ID] = []
         private var lastZone = -1
+        private var pendingZone = 0
+        private var zoneFlushScheduled = false
         private var pendingItems: [Item]?
         private var applyGeneration = 0
 
@@ -245,8 +247,13 @@ where Item.ID: Hashable {
             else { zone = 3 }
             guard zone != lastZone else { return }
             lastZone = zone
+            pendingZone = zone
+            guard !zoneFlushScheduled else { return }
+            zoneFlushScheduled = true
             DispatchQueue.main.async { [weak self] in
-                self?.onZoneChange(zone)
+                guard let self else { return }
+                self.zoneFlushScheduled = false
+                self.onZoneChange(self.pendingZone)
             }
         }
 
