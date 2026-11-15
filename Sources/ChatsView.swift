@@ -1429,11 +1429,6 @@ struct ChatsView: View {
     private var chatTopHeader: some View {
         ZStack {
             HStack(spacing: 7) {
-                Image(systemName: "bubble.left.and.bubble.right.fill")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(C.label)
-                    .accessibilityHidden(true)
-
                 Text(chatTopTitle)
                     .font(pf(22, .bold))
                     .foregroundStyle(C.label)
