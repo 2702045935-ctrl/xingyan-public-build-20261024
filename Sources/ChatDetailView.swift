@@ -4553,10 +4553,6 @@ struct ChatDetailView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
 
-            if kbUp {
-                quickBar
-            }
-
             if panel == .plus {
                 ChatRecentPhotoStrip(
                     store: recentPhotos,
