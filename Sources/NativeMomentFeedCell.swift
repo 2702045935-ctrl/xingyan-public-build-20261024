@@ -105,6 +105,11 @@ final class NativeMomentFeedCell: UICollectionViewCell {
     private let headerMore = UIButton(type: .system)
     private let contentLabel = UILabel()
     private let mediaContainer = UIView()
+    private let mediaImages = (0..<9).map { _ in NativeMomentImage() }
+    private let mediaTapButtons = (0..<9).map { _ in UIButton(type: .custom) }
+    private let videoPlay = UIView()
+    private let videoPlayIcon = UIImageView(image: UIImage(systemName: "play.fill"))
+    private let videoTapButton = UIButton(type: .custom)
     private let likeButton = UIButton(type: .system)
     private let commentButton = UIButton(type: .system)
     private let actionMore = UIButton(type: .system)
@@ -135,7 +140,7 @@ final class NativeMomentFeedCell: UICollectionViewCell {
         super.prepareForReuse()
         configuration = nil
         likedOverride = nil
-        mediaContainer.subviews.forEach { $0.removeFromSuperview() }
+        hideMediaPool()
         hideSocialPool()
         mediaFrames = []
         socialFrames = []
@@ -316,6 +321,40 @@ final class NativeMomentFeedCell: UICollectionViewCell {
         }
 
         mediaContainer.clipsToBounds = false
+        for (index, image) in mediaImages.enumerated() {
+            image.layer.cornerCurve = .continuous
+            image.clipsToBounds = true
+            mediaContainer.addSubview(image)
+
+            let button = mediaTapButtons[index]
+            button.tag = index
+            button.addAction(
+                UIAction { [weak self] _ in self?.configuration?.onOpenImage(index) },
+                for: .touchUpInside
+            )
+            mediaContainer.addSubview(button)
+        }
+        videoPlay.backgroundColor = UIColor.black.withAlphaComponent(0.5)
+        videoPlay.layer.cornerRadius = 27
+        videoPlay.isUserInteractionEnabled = false
+        videoPlayIcon.tintColor = .white
+        videoPlayIcon.contentMode = .scaleAspectFit
+        videoPlayIcon.frame = CGRect(x: 19, y: 16, width: 20, height: 22)
+        videoPlay.addSubview(videoPlayIcon)
+        mediaContainer.addSubview(videoPlay)
+        videoTapButton.addAction(
+            UIAction { [weak self] _ in
+                guard let self, let raw = self.configuration?.moment.video else { return }
+                let full = raw.hasPrefix("http") ? raw : API.shared.base + raw
+                if let url = URL(string: full) {
+                    self.configuration?.onOpenVideo(url)
+                }
+            },
+            for: .touchUpInside
+        )
+        mediaContainer.addSubview(videoTapButton)
+        hideMediaPool()
+
         socialContainer.clipsToBounds = true
         socialHeart.text = "♥"
         socialHeart.textAlignment = .center
@@ -410,41 +449,27 @@ final class NativeMomentFeedCell: UICollectionViewCell {
     }
 
     private func rebuildMedia() {
-        mediaContainer.subviews.forEach { $0.removeFromSuperview() }
+        hideMediaPool()
         mediaFrames = []
         guard let c = configuration, let m = metrics else { return }
         let media = c.moment
         if !(media.video ?? "").isEmpty {
-            let image = NativeMomentImage()
+            let image = mediaImages[0]
+            image.isHidden = false
             image.frame = CGRect(origin: .zero, size: CGSize(width: m.contentWidth, height: m.mediaHeight))
             image.layer.cornerRadius = 12
-            image.layer.cornerCurve = .continuous
-            image.clipsToBounds = true
             image.set(path: media.videoCover ?? "", maxSide: 1440)
-            mediaContainer.addSubview(image)
             mediaFrames.append((image, CGRect(x: 0, y: 0, width: m.contentWidth, height: m.mediaHeight)))
 
-            let play = UIView(frame: CGRect(x: (m.contentWidth - 54) / 2,
-                                             y: (m.mediaHeight - 54) / 2, width: 54, height: 54))
-            play.backgroundColor = UIColor.black.withAlphaComponent(0.5)
-            play.layer.cornerRadius = 27
-            let icon = UIImageView(image: UIImage(systemName: "play.fill"))
-            icon.tintColor = .white
-            icon.contentMode = .scaleAspectFit
-            icon.frame = CGRect(x: 19, y: 16, width: 20, height: 22)
-            play.addSubview(icon)
-            mediaContainer.addSubview(play)
-            mediaFrames.append((play, play.frame))
+            videoPlay.isHidden = false
+            videoPlay.frame = CGRect(x: (m.contentWidth - 54) / 2,
+                                     y: (m.mediaHeight - 54) / 2,
+                                     width: 54, height: 54)
+            mediaFrames.append((videoPlay, videoPlay.frame))
 
-            let tap = UIButton(type: .custom)
-            tap.frame = image.frame
-            tap.addAction(UIAction { [weak self] _ in
-                guard let self, let raw = self.configuration?.moment.video else { return }
-                let full = raw.hasPrefix("http") ? raw : API.shared.base + raw
-                if let url = URL(string: full) { self.configuration?.onOpenVideo(url) }
-            }, for: .touchUpInside)
-            mediaContainer.addSubview(tap)
-            mediaFrames.append((tap, tap.frame))
+            videoTapButton.isHidden = false
+            videoTapButton.frame = image.frame
+            mediaFrames.append((videoTapButton, videoTapButton.frame))
             return
         }
 
@@ -460,21 +485,29 @@ final class NativeMomentFeedCell: UICollectionViewCell {
                 width: paths.count == 1 ? m.contentWidth : m.mediaCell,
                 height: paths.count == 1 ? m.mediaHeight : m.mediaCell
             )
-            let image = NativeMomentImage(frame: frame)
+            let image = mediaImages[index]
+            image.isHidden = false
+            image.frame = frame
             image.layer.cornerRadius = paths.count == 1 ? 12 : 8
-            image.layer.cornerCurve = .continuous
-            image.clipsToBounds = true
             image.set(path: path, maxSide: paths.count == 1 ? 1440 : 960)
-            mediaContainer.addSubview(image)
             mediaFrames.append((image, frame))
-            let tap = UIButton(type: .custom)
+            let tap = mediaTapButtons[index]
+            tap.isHidden = false
             tap.frame = frame
-            tap.addAction(UIAction { [weak self] _ in
-                self?.configuration?.onOpenImage(index)
-            }, for: .touchUpInside)
-            mediaContainer.addSubview(tap)
             mediaFrames.append((tap, frame))
         }
+    }
+
+    private func hideMediaPool() {
+        for image in mediaImages {
+            image.isHidden = true
+            image.reset()
+        }
+        for button in mediaTapButtons {
+            button.isHidden = true
+        }
+        videoPlay.isHidden = true
+        videoTapButton.isHidden = true
     }
 
     private func rebuildSocial() {
