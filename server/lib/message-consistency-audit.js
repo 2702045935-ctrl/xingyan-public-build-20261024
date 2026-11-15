@@ -126,7 +126,10 @@ async function scanMessageFile(options) {
   const relativeFile = relativeMessageFile(chatId);
   const addIssue = opts.addIssue;
   const messagesById = opts.messagesById;
+  const globalMessagesById = opts.globalMessagesById
+    || new Map();
   const clientOwners = opts.clientOwners;
+  const sourceId = String(opts.sourceId || '');
   const state = {
     chatId,
     file: relativeFile,
@@ -328,9 +331,10 @@ async function scanMessageFile(options) {
       }
 
       if (messageId) {
-        const existing = messagesById.get(messageId);
-        if (existing) {
-          if (existing.chatId === chatId) {
+        const local = messagesById.get(messageId);
+        const global = globalMessagesById.get(messageId);
+        if (local) {
+          if (local.chatId === chatId) {
             addIssue('message-id-duplicate', 'error', {
               chatId,
               messageId,
@@ -338,7 +342,7 @@ async function scanMessageFile(options) {
               line: lineNumber,
               file: relativeFile,
               detail: 'message id appears more than once',
-              details: { firstLine: existing.line }
+              details: { firstLine: local.line }
             });
           } else {
             addIssue('message-id-cross-chat', 'error', {
@@ -348,11 +352,25 @@ async function scanMessageFile(options) {
               line: lineNumber,
               file: relativeFile,
               detail: 'message id is already assigned to another chat',
-              details: { firstChatId: existing.chatId }
+              details: { firstChatId: local.chatId }
             });
           }
+        } else if (global && global.sourceId !== sourceId) {
+          addIssue('message-id-cross-shard', 'error', {
+            chatId,
+            messageId,
+            seq,
+            line: lineNumber,
+            file: relativeFile,
+            detail: 'message id already exists in another shard snapshot',
+            details: {
+              firstSourceId: global.sourceId,
+              firstChatId: global.chatId
+            }
+          });
         } else {
           messagesById.set(messageId, {
+            sourceId,
             chatId,
             messageId,
             seq,
@@ -363,6 +381,14 @@ async function scanMessageFile(options) {
             payloadHash: hash(message),
             message
           });
+          if (!global) {
+            globalMessagesById.set(messageId, {
+              sourceId,
+              chatId,
+              messageId,
+              seq
+            });
+          }
         }
       }
 
@@ -380,11 +406,19 @@ async function scanMessageFile(options) {
             details: {
               senderId,
               clientId,
-              firstMessageId: owner.messageId
+              firstMessageId: owner.messageId,
+              firstSourceId: owner.sourceId || sourceId
             }
           });
         } else if (!owner) {
-          clientOwners.set(key, { messageId, seq, chatId, senderId, clientId });
+          clientOwners.set(key, {
+            sourceId,
+            messageId,
+            seq,
+            chatId,
+            senderId,
+            clientId
+          });
         }
       }
 
@@ -917,11 +951,26 @@ async function auditMessageConsistency(options) {
   }
 
   const messagesById = new Map();
-  const clientOwners = new Map();
+  const sharedIndex = opts.sharedIndex || {};
+  const sourceId = String(opts.sourceId || '');
+  const globalMessagesById = sharedIndex.messagesById || new Map();
+  const clientOwners = sharedIndex.clientOwners || new Map();
+  const chatOwners = sharedIndex.chatOwners || new Map();
   const fileChats = new Map();
   for (const name of names) {
     const chatId = name.slice(0, -'.jsonl'.length);
     const file = path.join(messagesDir, name);
+    const owner = chatOwners.get(chatId);
+    if (owner && owner !== sourceId) {
+      addIssue('chat-id-cross-shard', 'error', {
+        chatId,
+        file: relativeMessageFile(chatId),
+        detail: 'conversation file exists in more than one shard snapshot',
+        details: { firstSourceId: owner }
+      });
+    } else if (!owner) {
+      chatOwners.set(chatId, sourceId);
+    }
     const state = await scanMessageFile({
       chatId,
       file,
@@ -929,8 +978,10 @@ async function auditMessageConsistency(options) {
       secretAvailable,
       vault,
       requireClientId: opts.requireClientId === true,
+      sourceId,
       addIssue,
       messagesById,
+      globalMessagesById,
       clientOwners
     });
     state.messagesById = messagesById;
@@ -1004,11 +1055,10 @@ async function auditMessageConsistency(options) {
   chatSummaries.sort((left, right) => textCompare(left.chatId, right.chatId));
 
   const issueSummary = collector.finish();
-  const source = String(opts.sourceId || '');
   const deterministic = {
     version: 1,
     audit: 'message-consistency',
-    sourceId: source,
+    sourceId,
     dataDirName: path.basename(dataDir),
     databaseName: path.basename(databaseFile),
     secretAvailable,

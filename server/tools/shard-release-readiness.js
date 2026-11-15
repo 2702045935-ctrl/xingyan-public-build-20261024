@@ -39,10 +39,12 @@ function main() {
     throw new Error('usage: shard-release-readiness.js --baseline FILE '
       + '--candidate FILE --allowlist FILE --route-plan FILE '
       + '[--message-audit FILE ...] [--require-message-audit] '
+      + '[--message-matrix FILE] [--require-message-matrix] '
       + '[--data DIR] [--out FILE]');
   }
   const dataDir = arg('data');
   const messageAudits = repeatedArg('message-audit').map(readJson);
+  const messageMatrixFile = arg('message-matrix');
   const report = buildReleaseReadiness({
     baseline: readJson(baselineFile),
     candidate: readJson(candidateFile),
@@ -50,6 +52,8 @@ function main() {
     routePlan: readJson(routePlanFile),
     messageAudits,
     requireMessageAudit: process.argv.includes('--require-message-audit'),
+    messageMatrix: messageMatrixFile ? readJson(messageMatrixFile) : null,
+    requireMessageMatrix: process.argv.includes('--require-message-matrix'),
     users: dataDir
       ? readRows(path.join(dataDir, 'users.json'), 'users')
       : null,

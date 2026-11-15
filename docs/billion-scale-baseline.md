@@ -80,9 +80,40 @@ node server/tools/shard-release-readiness.js `
   --message-audit SHARD_0_AUDIT.json `
   --message-audit SHARD_1_AUDIT.json `
   --require-message-audit `
+  --message-matrix SHARD_MATRIX_AUDIT.json `
+  --require-message-matrix `
   --out RELEASE_READINESS.json
 ```
 
 This gate rejects missing reports, writable or incomplete audits, suppressed
 issues, missing fingerprints, and a shard-wide message count that differs from
+the candidate inventory. Strict matrix mode also requires the matrix shard
+count to equal the route-plan topology and the aggregate message count to equal
 the candidate inventory.
+
+For an offline copy containing all shard snapshots, run the matrix audit once
+with a shared read-only index:
+
+```json
+{
+  "expectedMessages": 123456,
+  "shards": [
+    {
+      "sourceId": "server-a-shard-0",
+      "dataDir": "copies/server-a/shard-0",
+      "databaseFile": "copies/server-a/shard-0/message-reliability.sqlite3",
+      "secretFile": "secrets/server-a.key"
+    }
+  ]
+}
+```
+
+```powershell
+node server/tools/message-consistency-audit-matrix.js `
+  --config OFFLINE_SHARDS.json `
+  --out SHARD_MATRIX_AUDIT.json
+```
+
+The matrix detects a conversation or message ID appearing in more than one
+shard, detects client-ID reuse across shards, and verifies the aggregate
+message count. It only reads the configured offline copies.

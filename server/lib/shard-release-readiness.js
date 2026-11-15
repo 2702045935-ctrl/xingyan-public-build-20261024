@@ -195,6 +195,29 @@ function buildReleaseReadiness(options) {
       });
   }
 
+  const matrix = opts.messageMatrix || {};
+  if (opts.requireMessageMatrix === true) {
+    check('message-matrix-present', !!opts.messageMatrix);
+    check('message-matrix-read-only', matrix.readOnly === true);
+    check('message-matrix-clean', matrix.ok === true);
+    check('message-matrix-no-suppressed-issues',
+      Number(matrix.suppressedIssues) === 0);
+    check('message-matrix-fingerprint',
+      /^[a-f0-9]{64}$/i.test(String(matrix.fingerprint || '')));
+    check('message-matrix-message-count',
+      Number(matrix.messageCount) === Number(candidate.counts && candidate.counts.messages),
+      {
+        matrix: Number(matrix.messageCount) || 0,
+        data: Number(candidate.counts && candidate.counts.messages) || 0
+      });
+    check('message-matrix-shard-count',
+      route.ok && Number(matrix.shardCount) === route.shardCount,
+      {
+        matrix: Number(matrix.shardCount) || 0,
+        topology: route.ok ? route.shardCount : 0
+      });
+  }
+
   return {
     version: 1,
     ok: failures.length === 0,
@@ -220,6 +243,14 @@ function buildReleaseReadiness(options) {
       counts: route.counts
     } : null,
     messageAudit: auditGate,
+    messageMatrix: opts.requireMessageMatrix === true
+      ? {
+        present: !!opts.messageMatrix,
+        shardCount: Number(matrix.shardCount) || 0,
+        messageCount: Number(matrix.messageCount) || 0,
+        fingerprint: String(matrix.fingerprint || '')
+      }
+      : null,
     checks,
     failures
   };

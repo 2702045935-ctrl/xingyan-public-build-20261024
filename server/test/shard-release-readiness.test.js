@@ -147,4 +147,33 @@ assert.strictEqual(missingFingerprintAudit.ok, false);
 assert.ok(missingFingerprintAudit.failures.some((row) =>
   row.name === 'message-audit-fingerprints'));
 
+const messageMatrix = {
+  readOnly: true,
+  ok: true,
+  suppressedIssues: 0,
+  shardCount: 6,
+  messageCount: 3,
+  fingerprint: 'b'.repeat(64)
+};
+const matrixReady = buildReleaseReadiness(Object.assign({}, baseOptions, {
+  requireMessageAudit: true,
+  messageAudits,
+  requireMessageMatrix: true,
+  messageMatrix
+}));
+assert.strictEqual(matrixReady.ok, true, JSON.stringify(matrixReady.failures));
+assert.strictEqual(matrixReady.messageMatrix.shardCount, 6);
+
+const matrixBlocked = buildReleaseReadiness(Object.assign({}, baseOptions, {
+  requireMessageAudit: true,
+  messageAudits,
+  requireMessageMatrix: true,
+  messageMatrix: Object.assign({}, messageMatrix, {
+    shardCount: 5
+  })
+}));
+assert.strictEqual(matrixBlocked.ok, false);
+assert.ok(matrixBlocked.failures.some((row) =>
+  row.name === 'message-matrix-shard-count'));
+
 console.log('shard-release-readiness: passed');
