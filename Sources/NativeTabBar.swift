@@ -69,12 +69,12 @@ private final class BrandTabBadgeView: UIView {
                 UIColor(red: 0.90, green: 0.13, blue: 0.24, alpha: 1).cgColor,
                 UIColor(red: 0.66, green: 0.03, blue: 0.15, alpha: 1).cgColor
             ]
-            layer.cornerRadius = 5.75
-            layer.borderWidth = 1.3
+            layer.cornerRadius = 5
+            layer.borderWidth = 1.2
             layer.borderColor = ringColor.cgColor
             layer.shadowColor = UIColor(red: 0.90, green: 0.13, blue: 0.24, alpha: 1).cgColor
             layer.shadowOpacity = 0.34
-            layer.shadowRadius = 5
+            layer.shadowRadius = 4
             layer.shadowOffset = CGSize(width: 0, height: 1.5)
         }
         setNeedsLayout()
@@ -136,9 +136,9 @@ private final class CompactDotTabBar: UITabBar {
                 continue
             }
             let isWorld = index == 2 && dotIndexes.contains(index)
-            let side: CGFloat = isWorld ? 11.5 : 8.5
+            let side: CGFloat = isWorld ? 10 : 8.5
             badge.frame = CGRect(x: centerX + (isWorld ? 9 : 10),
-                                 y: isWorld ? 3.5 : 4,
+                                 y: 4,
                                  width: side, height: side)
             badge.apply(kind: isWorld ? .world : .dot,
                         ringColor: UIColor(C.tabBg))
