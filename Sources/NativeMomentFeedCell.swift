@@ -303,7 +303,9 @@ final class NativeMomentFeedCell: UICollectionViewCell {
 
         [dayLabel, avatarImage, avatarFallback, nameLabel, pinImage, metaLabel,
          headerMore, contentLabel, mediaContainer, likeButton, commentButton,
-         actionMore, socialContainer, divider].forEach(contentView.addSubview)
+         actionMore, socialContainer, divider].forEach {
+            contentView.addSubview($0)
+        }
 
         mediaContainer.clipsToBounds = false
         socialContainer.clipsToBounds = true
