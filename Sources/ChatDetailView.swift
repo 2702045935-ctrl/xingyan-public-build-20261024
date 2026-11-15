@@ -1246,11 +1246,9 @@ struct ChatDetailView: View {
                 Button {
                     startRealCall(video: true)
                 } label: {
-                    Image(systemName: "video.fill")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(width: 32, height: 32)
-                        .background(Circle().fill(Color(hex: 0x0A84FF)))
+                    Image(systemName: "video")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(adaptiveTopInk.opacity(0.74))
                         .frame(width: 38, height: 44)
                         .contentShape(Rectangle())
                 }
@@ -1260,12 +1258,10 @@ struct ChatDetailView: View {
                 Button {
                     startRealCall(video: false)
                 } label: {
-                    Image(systemName: "phone.fill")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(width: 32, height: 32)
-                        .background(Circle().fill(C.red))
-                        .frame(width: 42, height: 44)
+                    Image(systemName: "phone")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(adaptiveTopInk.opacity(0.74))
+                        .frame(width: 38, height: 44)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -3956,7 +3952,7 @@ struct ChatDetailView: View {
                     .frame(minWidth: 20, minHeight: 20)
                     .background(
                         Capsule(style: .continuous)
-                            .fill(Color(.systemBlue))
+                            .fill(Color(hex: 0x25D366))
                     )
                     .overlay(
                         Capsule(style: .continuous)
