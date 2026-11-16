@@ -7,7 +7,7 @@ const net = require('net');
 const os = require('os');
 const path = require('path');
 const { spawn } = require('child_process');
-const { routeShard } = require('../lib/shard-route-plan');
+const { buildRoutePlan, resolveRoute } = require('../lib/shard-route-plan');
 const { openMessage } = require('../lib/shard-data-inventory');
 const { SecurityVault } = require('../lib/security-vault');
 
@@ -81,7 +81,14 @@ async function waitHealth(base, child, logs) {
   throw new Error('server start timeout');
 }
 
-async function startShard(dataDir, port, basePort, shardId, shardCount) {
+async function startShard(
+  dataDir,
+  port,
+  basePort,
+  shardId,
+  shardCount,
+  routePlanFile
+) {
   const base = 'http://127.0.0.1:' + port;
   const logs = [];
   const child = spawn(process.execPath, ['server.js'], {
@@ -94,6 +101,7 @@ async function startShard(dataDir, port, basePort, shardId, shardCount) {
       SHARD_COUNT: String(shardCount),
       SHARD_ID: String(shardId),
       SHARD_BASE_PORT: String(basePort),
+      SHARD_ROUTE_PLAN_FILE: routePlanFile,
       CHRIS_LOCAL_ONLY: '1',
       DISABLE_STARTUP_BOT_BACKFILL: '1',
       AML_RUNTIME_ENABLED: '0'
@@ -165,6 +173,22 @@ async function main() {
     const bob = makeUser('u_chat_owner_bob', 'chat_owner_bob');
     const chatId = 'c_chat_owner_routing';
     const extraChatIds = Array.from({ length: 4 }, (_, index) => 'c_owner_multichat_' + index);
+    const allChatIds = [chatId, ...extraChatIds];
+    const ports = Array.from(
+      { length: shardCount },
+      (_, index) => basePort + index * 100
+    );
+    const routePlan = buildRoutePlan({
+      users: [alice, bob],
+      chats: allChatIds.map((id) => ({ id })),
+      shardCount,
+      ports,
+      topologyId: 'chat-owner-routing-7-test',
+      baselineDate: '2026-11-16',
+      createdAt: '2026-11-16T00:00:00Z'
+    });
+    const routePlanFile = path.join(dataDir, 'chat-route-plan.json');
+    fs.writeFileSync(routePlanFile, JSON.stringify(routePlan, null, 2));
     fs.writeFileSync(path.join(dataDir, 'users.json'), JSON.stringify({ users: [alice, bob] }));
     fs.writeFileSync(path.join(dataDir, 'security.json'), JSON.stringify({ sliderLogin: 0 }));
     fs.writeFileSync(path.join(dataDir, 'friendships.json'), JSON.stringify({
@@ -177,7 +201,7 @@ async function main() {
       }]
     }));
     fs.writeFileSync(path.join(dataDir, 'chats.json'), JSON.stringify({
-      chats: [chatId, ...extraChatIds].map((id) => ({
+      chats: allChatIds.map((id) => ({
         id,
         type: 'direct',
         memberIds: [alice.id, bob.id],
@@ -191,11 +215,12 @@ async function main() {
         basePort + shard * 100,
         basePort,
         shard,
-        shardCount
+        shardCount,
+        routePlanFile
       ));
     }
-    const aliceUserShard = routeShard('u:' + alice.id, shardCount);
-    const bobUserShard = routeShard('u:' + bob.id, shardCount);
+    const aliceUserShard = resolveRoute(routePlan, 'user', alice.id);
+    const bobUserShard = resolveRoute(routePlan, 'user', bob.id);
     const aliceLogin = await login(servers[aliceUserShard].base, alice.username);
     const bobLogin = await login(servers[bobUserShard].base, bob.username);
     aliceSocket = await connect(servers[aliceUserShard].base, aliceLogin.cookie);
@@ -257,7 +282,7 @@ async function main() {
         Array.from({ length: 20 }, (_, index) => index + 1)
       );
     }
-    const ownerIndex = routeShard('c:' + chatId, shardCount);
+    const ownerIndex = resolveRoute(routePlan, 'chat', chatId);
     assert.notStrictEqual(ownerIndex, aliceUserShard);
     assert.notStrictEqual(ownerIndex, bobUserShard);
     await stop(servers[ownerIndex].child);
@@ -266,7 +291,8 @@ async function main() {
       basePort + ownerIndex * 100,
       basePort,
       ownerIndex,
-      shardCount
+      shardCount,
+      routePlanFile
     );
     for (let index = 20; index < 30; index += 1) {
       aliceSocket.send(JSON.stringify({
@@ -296,10 +322,16 @@ async function main() {
       (sum, row) => sum + Number(row.chatOwnerForwards || 0),
       0
     );
+    for (const row of healthRows) {
+      assert.strictEqual(row.chatRoutePlanHash, routePlan.hash);
+      assert.strictEqual(row.chatRouteTopologyId, routePlan.topologyId);
+    }
     assert.ok(forwarded >= 1);
     const summary = {
       ok: true,
       shardCount,
+      routePlanHash: routePlan.hash,
+      routeTopologyId: routePlan.topologyId,
       chatId,
       chatOwnerShard: ownerIndex,
       aliceUserShard,

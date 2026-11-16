@@ -25,7 +25,7 @@ const { AmlEngine } = require('./aml');
 const { createShardShadowService } = require('./lib/shard-shadow-service');
 const { resolveTopology } = require('./lib/shard-topology');
 const { loadManifest, assertRunningShard } = require('./lib/shard-runtime-manifest');
-const { routeShard } = require('./lib/shard-route-plan');
+const { loadChatRoutePlan, chatOwnerShard } = require('./lib/chat-route-plan');
 const { MessageReliabilityStore } = require('./lib/message-reliability');
 const { PaymentTokenVault } = require('./lib/payment-token-vault');
 const { PaymentDeviceEnrollment } = require('./lib/payment-device-enrollment');
@@ -158,6 +158,18 @@ function auditShardShadow() {
 }
 
 const PORT = Number(process.env.PORT || 5180);
+let chatRoutePlan = null;
+if (process.env.SHARD_ROUTE_PLAN_FILE) {
+  chatRoutePlan = loadChatRoutePlan(process.env.SHARD_ROUTE_PLAN_FILE, {
+    shardCount: Number(process.env.SHARD_COUNT) || 1,
+    basePort: Number(process.env.SHARD_BASE_PORT) || 5299,
+    shardId: Number(process.env.SHARD_ID),
+    port: PORT
+  });
+  console.log('[聊天路由] topology=' + chatRoutePlan.topologyId
+    + ' hash=' + chatRoutePlan.hash.slice(0, 12)
+    + ' shards=' + chatRoutePlan.shardCount);
+}
 let shardRuntimeIdentity = null;
 if (process.env.SHARD_RUNTIME_MANIFEST) {
   const runtimeManifest = loadManifest(
@@ -168,6 +180,12 @@ if (process.env.SHARD_RUNTIME_MANIFEST) {
     shardId: process.env.SHARD_ID,
     port: PORT
   });
+  if (chatRoutePlan
+      && chatRoutePlan.topologyId !== shardRuntimeIdentity.topologyId) {
+    throw new Error('route plan topology mismatch: plan='
+      + chatRoutePlan.topologyId + ' runtime='
+      + shardRuntimeIdentity.topologyId);
+  }
   console.log('[分片身份] ' + shardRuntimeIdentity.service
     + ' port=' + shardRuntimeIdentity.backendPort
     + ' topology=' + shardRuntimeIdentity.topologyId
@@ -7641,7 +7659,7 @@ function chatOwnerPort(chatId) {
   const count = Math.max(1, Number(process.env.SHARD_COUNT) || 1);
   if (count <= 1) return PORT;
   const base = Number(process.env.SHARD_BASE_PORT) || 5299;
-  return base + routeShard('c:' + String(chatId || ''), count) * 100;
+  return base + chatOwnerShard(chatRoutePlan, chatId, count) * 100;
 }
 
 function forwardChatActionToOwner(actorId, msg, socket) {
@@ -14641,6 +14659,8 @@ async function handleApi(req, res, pathname, query) {
       runtimeManifestHash: shardRuntimeIdentity ? shardRuntimeIdentity.manifestHash : '',
       runtimeTopologyId: shardRuntimeIdentity ? shardRuntimeIdentity.topologyId : '',
       runtimeService: shardRuntimeIdentity ? shardRuntimeIdentity.service : '',
+      chatRoutePlanHash: chatRoutePlan ? chatRoutePlan.hash : '',
+      chatRouteTopologyId: chatRoutePlan ? chatRoutePlan.topologyId : '',
       chatOwnerForwards: chatOwnerForwardCount,
       callSignalPort: CALL_SIGNAL_PORT,
       activeCalls,
