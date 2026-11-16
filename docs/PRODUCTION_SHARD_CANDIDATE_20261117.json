@@ -184,20 +184,25 @@
   },
   "liveValidation": {
     "capacityReport": {
-      "path": "outputs/production-capacity-report-20261117.json",
+      "path": "outputs/physical-live-r2-capacity-report-20261117.json",
       "ok": true,
-      "fingerprint": "18901bbe5ddcf5d28c05c129f39a4b25cbbd056fb5c8fd1fc8c49d087f9177ec",
+      "reportSha256": "b6a693a29207d5e41f0fa6e885d319f0612a3118d7a29eebdf2d4dea2d7deac1",
+      "fingerprint": "8cf78fe6d677babc16731d631d8c7b26e5f717e049dc00432a6dbc03c4c44513",
       "cpuCount": 8,
-      "memoryUsedRatio": 0.38930434304087547,
-      "loadPerCore": 0.10125,
-      "diskUsedRatio": 0.4053047212001917,
-      "inodeUsedRatio": 0.07982991536458334,
-      "shardRssRatio": 0.1785342974053387
+      "memoryUsedRatio": 0.33494361397288597,
+      "loadPerCore": 0.20375,
+      "diskUsedRatio": 0.5272687923927231,
+      "inodeUsedRatio": 0.10901828342013889,
+      "shardRssRatio": 0.14405607943177665
     },
     "physicalBuild": {
-      "report": "outputs/production-physical-build-report-20261117.json",
-      "reportSha256": "511c2d0879e4f137312631d863ff6a0d6c2c9ebbe676ef4e8141646d4866355b",
+      "report": "outputs/physical-live-r2-build-report-20261117.json",
+      "reportSha256": "793b1d759a23bcb7a5d3c808065172339d1caeb98c225357a81ff1e487d0d51a",
       "ok": true,
+      "sourceSnapshot": "/opt/xingyan-mainline/backups/20261117-physical-live-snapshot-r2/data",
+      "snapshotReport": "outputs/physical-live-r2-snapshot-report-20261117.json",
+      "snapshotReportSha256": "996a75e01dc47e65f983873d5bf82888d9077868a100e5eaa3cf006882f134be",
+      "snapshotStableOnFirstAttempt": true,
       "users": 2365,
       "friendships": 24518,
       "chats": 10428,
@@ -205,9 +210,16 @@
       "moments": 2087,
       "momentNotices": 21,
       "messageThreads": 27783,
-      "physicalLayoutHash": "a07222ffc9010950beb1f616125377e0014f8bc2315605a10d320b6b2be42dff",
-      "shadowFingerprint": "7cf21394eb7077fe3275a81495141664812b729940b9232768f3c389d70bd325",
-      "shadowDiffs": 0
+      "checks": 27790,
+      "failedChecks": 0,
+      "physicalLayoutHash": "59906584320e6f63cf790463e3d11f570cefc7086a90531c15b844f9033f01d0",
+      "shadowFingerprint": "a8481f0376546190f5722ca8bb47748978019d276e2dd2add11cada8976a2a40",
+      "shadowDiffs": 0,
+      "shadowSkipped": false,
+      "freshnessReport": "outputs/physical-live-r2-freshness-report-20261117.json",
+      "freshnessReportSha256": "ecef1490b4d3bec366a2c56fff504d033582917cc488d39c57cabdae81a3f898",
+      "freshnessCheckedLive": true,
+      "freshnessDiffs": 0
     },
     "stableServicePids": [
       1281087,
@@ -274,6 +286,8 @@
   },
   "scaleReadiness": {
     "candidateRolloutReadyAfterMaintenanceWindow": true,
+    "currentPhysicalShadowReady": true,
+    "physicalAuthorityActivated": false,
     "billionScaleShardFoundationReady": false,
     "dualCellShadowReady": false,
     "currentDataMode": "shared-data-directory",
