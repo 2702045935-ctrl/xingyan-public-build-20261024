@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "candidateId": "system-complete-v1-a653eb5",
+  "candidateId": "system-complete-v1-86b9c19",
   "sourceBranch": "codex/system-complete-v1",
-  "sourceCommit": "a653eb59143fb2c5bd93d9d66bed87db7792e6c9",
-  "capturedAt": "2026-11-17T06:30:19.6070400+08:00",
+  "sourceCommit": "86b9c198761909a96ba9faee255253736de7a582",
+  "capturedAt": "2026-11-17T06:33:12.5187096+08:00",
   "candidateCode": {
     "serverJsSha256": "53a6643eaaa467c65f69c1ab1fb02a5be8dcd734895b0de7ebdb260f24ab5f4e",
     "chatRoutePlanSha256": "86af4db9399985f41b1103f351f9147b6cc8926271a5f82b1543b01e093b29c4",
@@ -27,7 +27,9 @@
     "singleCellCapacityAuditSha256": "bbfee3d3633bd36cbc7c1dad03415c030ee2239e2508d9e7760be49808bc36c9",
     "singleCellCapacityCollectorSha256": "497d0409f8a6368c66c85d911c842da475a6be9b1b5fc62397c46fcaa4e35bdf",
     "singleCellCapacityCollectorAuditSha256": "f17329c4894cf750e22fab74ef9ad38108ac7920141cbd8d638e8e844bf020c9",
-    "singleCellCapacityRunnerSha256": "624ed48164aaa053b276ddf4cfdab89b60ae2ab20e2c6e7197022a56a38342c3"
+    "singleCellCapacityRunnerSha256": "624ed48164aaa053b276ddf4cfdab89b60ae2ab20e2c6e7197022a56a38342c3",
+    "shardRouteServerPatchSha256": "cce579f8d3c7ad4e4df0d7fcbbd3b9de3053d66e3f8ed16e1b30a64355fa86bb",
+    "shardRoutePatchAuditSha256": "873cd3557a512422a032b8333799b6dfc6d4f946be4b9b8a7da1eca62d9e80f6"
   },
   "productionBaseline": {
     "businessHost": "192.140.179.176",
@@ -58,7 +60,7 @@
   },
   "verification": {
     "shardSuite": {
-      "tests": 29,
+      "tests": 30,
       "failed": 0
     },
     "chatAndMessageSuite": {
@@ -111,7 +113,9 @@
     "singleCellCapacityGate": true,
     "singleCellCapacityLiveCollector": true,
     "capacityEvidenceFreshnessGate": true,
-    "capacityConsoleAutoCollect": true
+    "capacityConsoleAutoCollect": true,
+    "minimalStablePatch": true,
+    "minimalPatchBootVerified": true
   },
   "deployment": {
     "status": "not-deployed",
