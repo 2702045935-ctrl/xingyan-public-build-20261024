@@ -77,6 +77,15 @@
     "onlineServicesChanged": false,
     "onlineDataChanged": false,
     "stableReleaseChanged": false,
-    "reason": "awaiting production maintenance window and read-only route plan file verification"
+    "reason": "awaiting production maintenance window and read-only route plan file verification",
+    "readOnlyObservation": {
+      "checkedAt": "2026-11-17T06:00:11.955+08:00",
+      "publicEntryReachable": true,
+      "publicHealthOk": true,
+      "publicHealthService": "chris-chat",
+      "publicHealthStableShape": true,
+      "candidateRouteFieldsPresent": false,
+      "sshPort22Reachable": false
+    }
   }
 }
