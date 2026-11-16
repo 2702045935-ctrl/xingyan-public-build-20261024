@@ -82,6 +82,7 @@ jobs:
           node server/test/dual-cell-contract.test.js
           node server/test/dual-cell-shadow-probe.test.js
           node server/test/single-cell-capacity.test.js
+          node server/test/single-cell-capacity-collector.test.js
           node server/test/manage-script-syntax.test.js
           node server/test/shard-runtime-health.test.js
           node server/test/message-sequence-audit.test.js

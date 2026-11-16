@@ -12,6 +12,18 @@ node server/tools/single-cell-capacity-audit.js \
 
 输入模板：`docs/SINGLE_CELL_CAPACITY_INPUT.template.json`。
 
+正式机器上可直接只读采集：
+
+```text
+node server/tools/single-cell-capacity-collect.js \
+  --manifest=/opt/xingyan-mainline/app/shard-runtime-production.json \
+  --data-dir=/opt/xingyan-mainline/data \
+  --out=<容量采集与门禁报告>
+```
+
+采集器读取 systemd MainPID、`/proc/<pid>/status`、`/proc/<pid>/fd`、
+`/proc/meminfo`、`/proc/loadavg` 和数据目录 `statfs`。它不修改服务、配置或数据。
+
 ## 默认阈值
 
 | 指标 | 默认上限 |
