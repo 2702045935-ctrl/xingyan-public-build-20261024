@@ -16,7 +16,7 @@ enum ChatStressFixture {
     static func chats(prefix: Int) -> [Chat] {
         guard isActive else { return [] }
         let upper = max(0, min(count, prefix))
-        return (0..<upper).map(chat(at:))
+        return (0..<upper).map { chat(at: $0) }
     }
 
     private static let base = Date()
