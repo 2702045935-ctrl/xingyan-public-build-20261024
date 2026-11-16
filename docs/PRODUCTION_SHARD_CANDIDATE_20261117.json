@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "candidateId": "system-complete-v1-2c3a026",
+  "candidateId": "system-complete-v1-d4e1269",
   "sourceBranch": "codex/system-complete-v1",
-  "sourceCommit": "2c3a026fc0f7e9f38f0099b45084d3bc133e8ca6",
-  "capturedAt": "2026-11-17T06:37:41.9806575+08:00",
+  "sourceCommit": "d4e126904c3b74408d9e916ab86e1793282b08fb",
+  "capturedAt": "2026-11-17T06:39:27.2348547+08:00",
   "candidateCode": {
     "serverJsSha256": "53a6643eaaa467c65f69c1ab1fb02a5be8dcd734895b0de7ebdb260f24ab5f4e",
     "chatRoutePlanSha256": "86af4db9399985f41b1103f351f9147b6cc8926271a5f82b1543b01e093b29c4",
@@ -30,8 +30,8 @@
     "singleCellCapacityRunnerSha256": "624ed48164aaa053b276ddf4cfdab89b60ae2ab20e2c6e7197022a56a38342c3",
     "shardRouteServerPatchSha256": "81d4067ea90fa2cf2a8a894b15ae1f691324020c5fcb933692bc1646792d1126",
     "shardRoutePatchAuditSha256": "873cd3557a512422a032b8333799b6dfc6d4f946be4b9b8a7da1eca62d9e80f6",
-    "shardMinimalReleaseSha256": "da18007c06aa4a19636b8106e95dbaeae2594465d7aea980fffa1ecd5272eab3",
-    "shardMinimalReleaseAuditSha256": "d4eacd436f09e9c28f6ff78e1e93b1b6468a9630ff77fcef0ac3400d602ece77",
+    "shardMinimalReleaseSha256": "1523903d32f2783ebd8a231aabed044b24efe584e2dae3f81bf4e379fdf3ea34",
+    "shardMinimalReleaseAuditSha256": "c3dd7d3d8a35267beaf44be77d0ce93b0caf259835c1a15e6a400d3630044520",
     "standaloneMaintenancePageSha256": "5d792aead199ac2dfb71758b19b2a083d120addfc22a74279f1f450d2a5bb1b1"
   },
   "productionBaseline": {
@@ -156,5 +156,15 @@
       "hot-group-partitioning",
       "multi-zone-failover"
     ]
+  },
+  "previewArtifact": {
+    "path": "outputs/shard-minimal-preview-d4e1269.zip",
+    "productionEligible": false,
+    "fileCount": 26,
+    "serverSha256": "9f60c2c49eab408cbecbc35088089f6ad00e7afd46d3d12c078235f1d53f4529",
+    "releaseContentHash": "a8666b5af3decdae6e547772ba38c9c46cb7900432459c7e20d27ee9482d05fb",
+    "zipBytes": 464231,
+    "zipSha256": "1e4e2746d3bf42bc4df7ff85c79ec4496192e69fad41574dc1abc259cf2fa99f",
+    "warning": "Git stable source is not the approved production server hash; local verification only"
   }
 }
