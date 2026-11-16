@@ -141,6 +141,7 @@
     "dormantOwnerRoutingDisabled": true,
     "physicalBuildPassed": true,
     "physicalShadowParityPassed": true,
+    "allSevenPhysicalShardsBootVerified": true,
     "liveCapacityPassed": true,
     "candidateInstalledInIsolatedRelease": true,
     "candidateSmokeBootPassed": true,
@@ -239,6 +240,18 @@
       "freshnessReportSha256": "ecef1490b4d3bec366a2c56fff504d033582917cc488d39c57cabdae81a3f898",
       "freshnessCheckedLive": true,
       "freshnessDiffs": 0
+    },
+    "physicalBoot": {
+      "report": "outputs/physical-all-shards-boot-report-20261117.json",
+      "reportSha256": "690635b43417195c47ddd671d36d7faabcb475f63b75660ae73c0d894280b742",
+      "candidateRelease": "/opt/xingyan-mainline/releases/20261117-shard-candidate-r4",
+      "bootRoot": "/opt/xingyan-mainline/releases/20261117-physical-live-r2/boot-smoke-r4-all",
+      "ok": true,
+      "shards": 7,
+      "authoritativeFiles": 27832,
+      "networkIsolation": "Linux network namespace",
+      "liveTraffic": false,
+      "liveDataModified": false
     },
     "stableServicePids": [
       1281087,
