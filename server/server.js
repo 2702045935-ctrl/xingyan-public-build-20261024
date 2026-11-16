@@ -25,6 +25,7 @@ const { AmlEngine } = require('./aml');
 const { createShardShadowService } = require('./lib/shard-shadow-service');
 const { resolveTopology } = require('./lib/shard-topology');
 const { loadManifest, assertRunningShard } = require('./lib/shard-runtime-manifest');
+const { routeShard } = require('./lib/shard-route-plan');
 const { MessageReliabilityStore } = require('./lib/message-reliability');
 const { PaymentTokenVault } = require('./lib/payment-token-vault');
 const { PaymentDeviceEnrollment } = require('./lib/payment-device-enrollment');
@@ -7605,6 +7606,9 @@ function shardPorts() {
 }
 
 const callSignalAgent = new http.Agent({ keepAlive: true, maxSockets: 256 });
+const chatOwnerAgent = new http.Agent({ keepAlive: true, maxSockets: 256 });
+const chatOwnerSockets = new Map();
+let chatOwnerForwardCount = 0;
 
 function forwardToCallSignalShard(pathname, payload) {
   if (PORT === CALL_SIGNAL_PORT) return;
@@ -7631,6 +7635,42 @@ function forwardCallToSignalShard(actorId, msg) {
     actorId: String(actorId || ''),
     payload: msg
   });
+}
+
+function chatOwnerPort(chatId) {
+  const count = Math.max(1, Number(process.env.SHARD_COUNT) || 1);
+  if (count <= 1) return PORT;
+  const base = Number(process.env.SHARD_BASE_PORT) || 5299;
+  return base + routeShard('c:' + String(chatId || ''), count) * 100;
+}
+
+function forwardChatActionToOwner(actorId, msg, socket) {
+  const ownerPort = chatOwnerPort(msg.chatId);
+  if (!ownerPort || ownerPort === PORT) return false;
+  chatOwnerForwardCount += 1;
+  const body = JSON.stringify({
+    actorId: String(actorId || ''),
+    deviceId: String(socket && socket.__deviceId || ''),
+    appBuild: String(socket && socket.__appBuild || ''),
+    deviceKind: String(socket && socket.__kind || ''),
+    payload: msg
+  });
+  const request = http.request({
+    host: '127.0.0.1',
+    port: ownerPort,
+    path: '/__shard/chat-action',
+    method: 'POST',
+    agent: chatOwnerAgent,
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(body),
+      'X-Shard-Relay': db.secret || ''
+    }
+  }, (response) => response.resume());
+  request.setTimeout(1800, () => request.destroy());
+  request.on('error', () => {});
+  request.end(body);
+  return true;
 }
 
 function requestCallSignalShard(pathname, payload, timeoutMs) {
@@ -8700,6 +8740,12 @@ function handleClientMessage(user, socket, raw) {
     if (wsFrames.size > 2000) wsFrames.clear();
   }
 
+  const chatScopedType = ['ack', 'typing', 'pat', 'read', 'send', 'shake'].includes(msg.type);
+  if (chatScopedType && msg.chatId && PORT !== chatOwnerPort(msg.chatId)) {
+    forwardChatActionToOwner(user.id, msg, socket);
+    return;
+  }
+
   if (msg.type === 'ping') {
     ws.sendText(socket, JSON.stringify({ type: 'pong', t: Date.now() }));
     return;
@@ -8794,13 +8840,13 @@ function handleClientMessage(user, socket, raw) {
   if (msg.type === 'send') {
     const friendError = directFriendMessageError(user, msg.chatId);
     if (friendError) {
-      ws.sendText(socket, JSON.stringify({ type: 'error', clientId: msg.clientId, error: friendError }));
+      sendTo(user.id, { type: 'error', clientId: msg.clientId, error: friendError });
       return;
     }
     const result = deliverMessage(user, msg.chatId, msg.kind, msg.content, msg.clientId, msg.mentions,
       { imgW: msg.imgW, imgH: msg.imgH, quote: msg.quote });
     if (result.error) {
-      ws.sendText(socket, JSON.stringify({ type: 'error', clientId: msg.clientId, error: result.error }));
+      sendTo(user.id, { type: 'error', clientId: msg.clientId, error: result.error });
     }
     return;
   }
@@ -14595,6 +14641,7 @@ async function handleApi(req, res, pathname, query) {
       runtimeManifestHash: shardRuntimeIdentity ? shardRuntimeIdentity.manifestHash : '',
       runtimeTopologyId: shardRuntimeIdentity ? shardRuntimeIdentity.topologyId : '',
       runtimeService: shardRuntimeIdentity ? shardRuntimeIdentity.service : '',
+      chatOwnerForwards: chatOwnerForwardCount,
       callSignalPort: CALL_SIGNAL_PORT,
       activeCalls,
       ringingCalls,
@@ -23270,6 +23317,35 @@ async function handleHttpRequest(req, res) {
   const parsed = new URL(req.url, 'http://' + (req.headers.host || 'localhost'));
   try {
     /* 分片间实时事件：只允许本机六片用服务端密钥转发，不经过公网鉴权。 */
+    if (parsed.pathname === '/__shard/chat-action') {
+      if (req.method !== 'POST') return fail(res, 405, 'Method Not Allowed');
+      const supplied = String(req.headers['x-shard-relay'] || '');
+      const expected = String(db.secret || '');
+      const a = Buffer.from(supplied);
+      const b = Buffer.from(expected);
+      if (!expected || a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+        return fail(res, 403, '禁止访问');
+      }
+      const body = await readBody(req);
+      const actor = findUser(str(body.actorId, 80));
+      if (!actor || !body.payload || typeof body.payload !== 'object') {
+        return fail(res, 422, '会话操作不完整');
+      }
+      const relayKey = actor.id + '|' + str(body.deviceId, 80);
+      let relaySocket = chatOwnerSockets.get(relayKey);
+      if (!relaySocket) {
+        relaySocket = {
+          __appBuild: str(body.appBuild, 40) || 'shard-chat',
+          __deviceId: str(body.deviceId, 80) || 'shard-chat:' + actor.id,
+          __kind: str(body.deviceKind, 20) || 'phone',
+          encrypted: false,
+          destroy() {}
+        };
+        chatOwnerSockets.set(relayKey, relaySocket);
+      }
+      handleClientMessage(actor, relaySocket, JSON.stringify(body.payload));
+      return ok(res, { accepted: true });
+    }
     if (parsed.pathname === '/__shard/call-signal') {
       if (req.method !== 'POST') return fail(res, 405, 'Method Not Allowed');
       const supplied = String(req.headers['x-shard-relay'] || '');

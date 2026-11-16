@@ -141,6 +141,16 @@
     "report": "/opt/xingyan-mainline/releases/20261116-shard-baseline/shard-fault-drill.json",
     "reportSha256": "26b72edc6f7ec70d7c4e1fa156dfe3a4bbb63941aa6daa5f460d97d34c08f2d0"
   },
+  "chatOwnerRouting": {
+    "status": "passed-candidate-cluster",
+    "shards": 2,
+    "concurrentSenders": 2,
+    "messagesPerSender": 20,
+    "finalMessages": 40,
+    "uniqueSequences": 40,
+    "sequenceRange": "1-40",
+    "crossShardForwardObserved": true
+  },
   "lastRuntimeAudit": {
     "at": "2026-11-16T10:26:56.394Z",
     "ok": true,
