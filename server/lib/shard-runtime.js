@@ -61,6 +61,8 @@ class ShardDirectory {
     this.file = options && options.file ? String(options.file) : '';
     this.readJson = options && options.readJson;
     this.writeJson = options && options.writeJson;
+    this.deferSaves = !!(options && options.deferSaves);
+    this.dirty = false;
     this.assignments = {};
     this.load();
   }
@@ -77,6 +79,7 @@ class ShardDirectory {
     this.assignments = raw && raw.assignments && typeof raw.assignments === 'object'
       ? raw.assignments
       : {};
+    this.dirty = false;
   }
 
   save() {
@@ -88,6 +91,11 @@ class ShardDirectory {
       migratedFrom: this.migratedFrom || '',
       assignments: this.assignments
     });
+    this.dirty = false;
+  }
+
+  flush() {
+    if (this.dirty) this.save();
   }
 
   shardFor(kind, id) {
@@ -100,7 +108,8 @@ class ShardDirectory {
     }
     const shard = stableShard(key, this.shardCount);
     this.assignments[key] = shard;
-    this.save();
+    this.dirty = true;
+    if (!this.deferSaves) this.save();
     return shard;
   }
 
@@ -328,7 +337,8 @@ class ShardCluster {
       topologyId: this.topologyId,
       file: path.join(this.dataDir, 'shard-assignments.json'),
       readJson: opts.readJson || readJsonFile,
-      writeJson: opts.writeJson || writeJsonFile
+      writeJson: opts.writeJson || writeJsonFile,
+      deferSaves: opts.deferAssignmentSaves === true
     });
     this.readJson = opts.readJson;
     this.writeJson = opts.writeJson;
@@ -350,6 +360,11 @@ class ShardCluster {
     /* 资金事实固定落支付分片，不能随社交实体哈希漂移。 */
     if (String(entityType || '') === 'transfer') return 0;
     return this.directory.shardFor(entityType, routingKey(entityType, entityId));
+  }
+
+  flushAssignments() {
+    this.directory.flush();
+    return Object.keys(this.directory.assignments).length;
   }
 
   apply(entityType, entityId, event) {

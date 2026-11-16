@@ -34,6 +34,20 @@
     "filesManifestSha256": "c7bad9614fa7738d4e26d65e189a95aca1e07c19297ca49bb7eea8db55ac5a4a",
     "appendReportSha256": "b1630b8eff4ee78e573bec7e74218ac6f03ab335b8f61c348683db1c319ac399"
   },
+  "shadowPilotAudit": {
+    "status": "passed",
+    "source": "verified-data-backup",
+    "report": "/opt/xingyan-mainline/releases/20261116-shard-baseline/shadow-pilot-report.json",
+    "reportSha256": "3522439e52294b455bf9698b1b3bce005881e10d746218f019b2a184758c4bee",
+    "users": 2365,
+    "friendships": 24518,
+    "chats": 10428,
+    "moments": 2087,
+    "diffCount": 0,
+    "duplicateOwners": 0,
+    "clusterIntegrity": true,
+    "routePlanHash": "839c5a4e64e7aa4feb43d49a71de5eb017b0f93918bd05dbacb215dab02da660"
+  },
   "lastRuntimeAudit": {
     "at": "2026-11-16T10:26:56.394Z",
     "ok": true,

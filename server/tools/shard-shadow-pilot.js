@@ -141,6 +141,7 @@ function runShadowPilot(options) {
     const chatDistribution = distribution(service.cluster, 'chat', chats, (row) => row.id);
     const sourceDuplicates = {
       users: duplicateIds(users, (row) => row.id),
+      friendships: duplicateIds(friendships, (row) => row.id),
       chats: duplicateIds(chats, (row) => row.id),
       moments: duplicateIds(moments, (row) => row.id)
     };
@@ -160,6 +161,7 @@ function runShadowPilot(options) {
     if (userDistribution.invalid.length) failures.push('invalid-user-owner');
     if (chatDistribution.invalid.length) failures.push('invalid-chat-owner');
     if (sourceDuplicates.users.length) failures.push('duplicate-user-id');
+    if (sourceDuplicates.friendships.length) failures.push('duplicate-friendship-id');
     if (sourceDuplicates.chats.length) failures.push('duplicate-chat-id');
     if (sourceDuplicates.moments.length) failures.push('duplicate-moment-id');
     return {

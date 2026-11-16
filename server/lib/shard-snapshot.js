@@ -77,7 +77,8 @@ function buildStoreSets(data) {
   const users = collection(input.users, (row) => row.id, safeUser);
   const friendships = collection(
     input.friendships,
-    (row) => [String(row.fromId || ''), String(row.toId || '')].sort().join('|')
+    (row) => String(row.id || '')
+      || [String(row.fromId || ''), String(row.toId || '')].sort().join('|')
   );
   const chats = collection(input.chats, (row) => row.id);
   const reads = [];

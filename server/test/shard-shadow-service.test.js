@@ -10,6 +10,7 @@ const root = fs.mkdtempSync(path.join(os.tmpdir(), 'xingyan-shard-shadow-service
 let service = null;
 let reopened = null;
 let sevenShardService = null;
+let expiredLeaseService = null;
 
 try {
   const disabled = createShardShadowService({
@@ -217,6 +218,25 @@ try {
   }).status, 'applied');
   assert.strictEqual(sevenShardService.cluster.verify().ok, true);
 
+  expiredLeaseService = createShardShadowService({
+    enabled: '1',
+    dataDir: path.join(root, 'expired-lease'),
+    shardCount: 6,
+    leaseTtlMs: 3000,
+    snapshotStores: true,
+    uid: (prefix) => prefix + '-expired-' + (++uidCounter),
+    now: () => new Date(1700000300000 + (++clock)).toISOString(),
+    legacy: {
+      users: [{ id: 'expired-user', username: 'expired-user' }]
+    }
+  });
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 3500);
+  const captureAfterExpiry = expiredLeaseService.capture(['users'], {
+    users: [{ id: 'expired-user', username: 'expired-user-updated' }]
+  }, { replace: true });
+  assert.strictEqual(captureAfterExpiry.users.status, 'applied',
+    JSON.stringify(captureAfterExpiry));
+
   assert.deepStrictEqual(service.observe('contacts.list', {}), {
     status: 'read-observed',
     routeId: 'contacts.list'
@@ -225,6 +245,9 @@ try {
 
   console.log('shard-shadow-service: passed');
 } finally {
+  if (expiredLeaseService && typeof expiredLeaseService.close === 'function') {
+    expiredLeaseService.close();
+  }
   if (sevenShardService && typeof sevenShardService.close === 'function') sevenShardService.close();
   if (reopened && typeof reopened.close === 'function') reopened.close();
   if (service && typeof service.close === 'function') service.close();

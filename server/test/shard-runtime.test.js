@@ -77,6 +77,37 @@ try {
   assert.strictEqual(reopenedDirectory.userShard('u1'), firstUserShard);
   assert.strictEqual(reopenedDirectory.chatShard('chat1'), firstChatShard);
 
+  let deferredWrites = 0;
+  const deferredMapFile = path.join(dir, 'deferred-assignments.json');
+  const deferredDirectory = new ShardDirectory({
+    shardCount: 6,
+    file: deferredMapFile,
+    readJson,
+    writeJson: (file, value) => {
+      deferredWrites += 1;
+      writeJson(file, value);
+    },
+    deferSaves: true
+  });
+  for (let i = 0; i < 100; i += 1) {
+    deferredDirectory.userShard('deferred-user-' + i);
+  }
+  assert.strictEqual(deferredWrites, 0);
+  deferredDirectory.flush();
+  assert.strictEqual(deferredWrites, 1);
+  const reopenedDeferred = new ShardDirectory({
+    shardCount: 6,
+    file: deferredMapFile,
+    readJson,
+    writeJson
+  });
+  for (let i = 0; i < 100; i += 1) {
+    assert.strictEqual(
+      reopenedDeferred.userShard('deferred-user-' + i),
+      deferredDirectory.userShard('deferred-user-' + i)
+    );
+  }
+
   const log = new VersionedEntityLog({ file: logFile });
   const base = {
     entityType: 'friendship',

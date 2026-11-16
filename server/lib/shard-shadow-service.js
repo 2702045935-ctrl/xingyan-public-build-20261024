@@ -90,7 +90,9 @@ function createShardShadowService(options) {
   leaseManager = new ShardLeaseManager({
     dataDir: topologyDir,
     ownerId,
-    ttlMs: Math.max(3000, Number(options.leaseTtlMs) || 30000)
+    /* 影子全量迁移是同步长任务，事件循环在迁移期间无法定时续租。
+       lease 必须覆盖一次完整迁移窗口，否则后半段写入会被 fencing 拒绝。 */
+    ttlMs: Math.max(3000, Number(options.leaseTtlMs) || 2 * 60 * 60 * 1000)
   });
   try {
     for (let shard = 0; shard < shardCount; shard += 1) {
@@ -108,7 +110,8 @@ function createShardShadowService(options) {
   const cluster = new ShardCluster({
     dataDir: topologyDir,
     shardCount,
-    topologyId
+    topologyId,
+    deferAssignmentSaves: true
   });
   const bus = new ShardEventBus({ dataDir, shardCount, topologyId });
   const busRepair = bus.syncFromCluster(cluster);
@@ -125,8 +128,17 @@ function createShardShadowService(options) {
   const migrate = (legacy) => migrateLegacyState(Object.assign({
     cluster
   }, legacy || {}));
+  const ensureLeases = () => {
+    for (const shard of acquiredShards) {
+      const current = leaseManager.validate(shard);
+      if (!current.ok) leaseManager.acquire(shard);
+    }
+  };
   const migration = migrate(options.legacy || {});
+  ensureLeases();
+  cluster.flushAssignments();
   const capture = (setNames, legacy, options) => {
+    ensureLeases();
     if (!snapshotStores || !Array.isArray(setNames) || !setNames.length) return {};
     const sets = buildStoreSets(legacy || {});
     const results = {};
@@ -136,9 +148,11 @@ function createShardShadowService(options) {
         results[setName] = snapshotMirror.captureSet(setName, sets[setName], captureOptions);
       }
     }
+    cluster.flushAssignments();
     return results;
   };
   if (snapshotStores) snapshotMirror.captureStore(options.legacy || {});
+  cluster.flushAssignments();
   const recorder = new LegacyShadowRecorder({ gateway });
   const adapter = new ShadowAdapter({ recorder });
   const reportFile = path.join(topologyDir, 'shadow-audit.json');
@@ -158,6 +172,7 @@ function createShardShadowService(options) {
     if (closed) return;
     closed = true;
     clearInterval(leaseTimer);
+    cluster.flushAssignments();
     for (const shard of acquiredShards) {
       try { leaseManager.release(shard); } catch (_) { /* best effort */ }
     }
@@ -183,8 +198,11 @@ function createShardShadowService(options) {
       });
     },
     reconcile(legacy) {
+      ensureLeases();
       const result = migrate(legacy || {});
+      ensureLeases();
       if (snapshotStores) snapshotMirror.captureStore(legacy || {});
+      cluster.flushAssignments();
       return result;
     },
     capture(setNames, legacy, options) {
@@ -195,6 +213,7 @@ function createShardShadowService(options) {
       }
     },
     audit(legacy) {
+      cluster.flushAssignments();
       const report = Object.assign({
         at: options.now ? options.now() : new Date().toISOString(),
         migration
