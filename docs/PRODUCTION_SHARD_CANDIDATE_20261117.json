@@ -1,16 +1,17 @@
 {
   "version": 1,
-  "candidateId": "system-complete-v1-587f395",
+  "candidateId": "system-complete-v1-7c12ad6",
   "sourceBranch": "codex/system-complete-v1",
-  "sourceCommit": "587f395eccb3e1771e1d70dfde47af970a5e5091",
-  "capturedAt": "2026-11-17T06:06:37.2267329+08:00",
+  "sourceCommit": "7c12ad6e67e99fe82e1ae965ffc5f31058188244",
+  "capturedAt": "2026-11-17T06:10:17.9759467+08:00",
   "candidateCode": {
-    "serverJsSha256": "84a9f477122ae2cd689b6b3b1d352c9f1d3ca0686811472814400e7dc0571eda",
+    "serverJsSha256": "f5119f24c70a38e637254df8a60f1b10e7a5da0dd1c11902d121366e27bf6d3d",
     "chatRoutePlanSha256": "86af4db9399985f41b1103f351f9147b6cc8926271a5f82b1543b01e093b29c4",
     "shardRuntimeHealthSha256": "9d9f4101c10b21b8b511803540995b33f52671b049ed530928c8029c112f7bc4",
     "shardRuntimeAuditSha256": "93a344e2b00a42b56b982839981b9e428f814755a58f49b525b2b784ee4226f9",
-    "shardMaintenanceSha256": "ddffe601220e9f4197be77e612e1bff0a810131a7c2ad7d0fe94a787159ca3c5",
-    "manageHtmlSha256": "0707215a9233cc216f310c03db3b432e031e45c93350fbf25ee18a7540f09e99"
+    "shardMaintenanceSha256": "7342bb0cc86d3b86679f93e347c382afc43e76239bf33cdff9d82a1b99072224",
+    "shardMaintenanceExecutorSha256": "30f8b20e2a3c7b12412f7ea012d07fdcbb59e4f1ecb9559f51582a34ed0f39f6",
+    "manageHtmlSha256": "f32b5d59c38ea59936c32d343aeac3ca1051e5f4e5da1c7542a80eb885a36fa9"
   },
   "productionBaseline": {
     "businessHost": "192.140.179.176",
@@ -41,7 +42,7 @@
   },
   "verification": {
     "shardSuite": {
-      "tests": 26,
+      "tests": 27,
       "failed": 0
     },
     "chatAndMessageSuite": {
@@ -77,6 +78,8 @@
       "superAdminOnly": true,
       "oneActiveRolloutOnly": true,
       "oneShardPerStep": true,
+      "executionClaimRequired": true,
+      "executionReceiptRequired": true,
       "crossProcessLock": true,
       "passwordGate": true,
       "explicitApproval": true,
@@ -100,5 +103,21 @@
       "sshPort22Reachable": false,
       "entryPortsPubliclyReachable": false
     }
+  },
+  "scaleReadiness": {
+    "candidateRolloutReadyAfterMaintenanceWindow": true,
+    "billionScaleShardFoundationReady": false,
+    "currentDataMode": "shared-data-directory",
+    "assessment": "docs/BILLION_SHARD_READINESS.md",
+    "blockingDomains": [
+      "physical-user-shard",
+      "physical-chat-shard",
+      "physical-moment-shard",
+      "payment-authority-isolation",
+      "object-storage",
+      "multi-node-capacity",
+      "hot-group-partitioning",
+      "multi-zone-failover"
+    ]
   }
 }
