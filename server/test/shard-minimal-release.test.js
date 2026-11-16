@@ -33,6 +33,9 @@ try {
   assert.ok(fs.existsSync(path.join(outDir, 'tools', 'shard-maintenance-executor.js')));
   assert.ok(fs.existsSync(path.join(outDir, 'tools', 'shard-release-install.js')));
   assert.ok(fs.existsSync(path.join(outDir, 'public', 'shard-maintenance.html')));
+  assert.ok(fs.existsSync(path.join(outDir, 'shard-runtime-production.json')));
+  assert.ok(fs.existsSync(path.join(outDir, 'shard-topologies.json')));
+  assert.ok(fs.existsSync(path.join(outDir, 'run-shard-candidate.sh')));
   assert.ok(fs.existsSync(path.join(outDir, 'release-manifest.json')));
   assert.throws(() => buildMinimalRelease({
     serverSource: sourceFile,

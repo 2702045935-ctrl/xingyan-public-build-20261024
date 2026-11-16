@@ -31,7 +31,10 @@ const ENTRY_FILES = [
   'tools/shard-release-install.js'
 ];
 const ADDITIONAL_FILES = [
-  'public/shard-maintenance.html'
+  'public/shard-maintenance.html',
+  'shard-runtime-production.json',
+  'shard-topologies.json',
+  'run-shard-candidate.sh'
 ];
 
 function sha256(buffer) {
@@ -104,11 +107,14 @@ function buildMinimalRelease(options) {
       const target = path.join(temporary, relative);
       fs.mkdirSync(path.dirname(target), { recursive: true });
       fs.copyFileSync(file, target);
+      if (relative.endsWith('.sh')) fs.chmodSync(target, 0o755);
       manifestFiles.push({
         path: relative,
         kind: relative.startsWith('tools/')
           ? 'tool'
-          : relative.startsWith('public/') ? 'page' : 'module',
+          : relative.startsWith('public/') ? 'page'
+            : relative.endsWith('.json') ? 'config'
+              : relative.endsWith('.sh') ? 'launcher' : 'module',
         sha256: sha256(fs.readFileSync(file))
       });
     }

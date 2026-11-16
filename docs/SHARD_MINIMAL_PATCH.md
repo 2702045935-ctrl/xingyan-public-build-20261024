@@ -90,3 +90,13 @@ node server/tools/shard-release-install.js \
 
 原 `/opt/xingyan-mainline/app` 不会被修改。预览包因
 `productionEligible=false` 会被安装器直接拒绝。
+
+正式候选目录还会包含：
+
+- `shard-runtime-production.json`
+- `shard-topologies.json`
+- `run-shard-candidate.sh`
+
+候选启动脚本固定使用正式冻结计划，并设置
+`SHARD_ROUTE_PLAN_ENFORCED=0`。它只用于显式启动候选进程，不会自动替换
+`/opt/xingyan-mainline/run-shard.sh` 或现有 systemd 服务。
