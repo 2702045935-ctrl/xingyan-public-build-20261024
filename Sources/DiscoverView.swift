@@ -1303,6 +1303,8 @@ private final class MomentDragClock {
 
 struct MomentsView: View {
     private static let momentPageSize = 30
+    private static let stressMomentWindow = 120
+    private static let stressMomentPageSize = 20
     private static let monthDayFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "zh_CN")
@@ -1336,7 +1338,8 @@ struct MomentsView: View {
     @State private var solid = false
     @State private var momentsScrollActive = false
     @State private var moments: [Moment] = []
-    @State private var stressLoadedCount = 30
+    @State private var stressLoadedCount = min(MomentStressFixture.count,
+                                               Self.stressMomentWindow)
     @State private var prefetchedMoments: [Moment] = []
     @State private var prefetchedHasMore = false
     @State private var prefetchingMoments = false
@@ -2593,7 +2596,7 @@ struct MomentsView: View {
         if MomentStressFixture.isActive {
             stressLoadedCount = min(
                 MomentStressFixture.count,
-                max(Self.momentPageSize, stressLoadedCount)
+                max(Self.stressMomentWindow, stressLoadedCount)
             )
             momentTotal = MomentStressFixture.count
             hasMoreMoments = stressLoadedCount < MomentStressFixture.count
@@ -2634,7 +2637,7 @@ struct MomentsView: View {
             loadingMore = true
             stressLoadedCount = min(
                 MomentStressFixture.count,
-                stressLoadedCount + Self.momentPageSize
+                stressLoadedCount + Self.stressMomentPageSize
             )
             momentTotal = MomentStressFixture.count
             hasMoreMoments = stressLoadedCount < MomentStressFixture.count
