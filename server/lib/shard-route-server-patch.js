@@ -66,10 +66,9 @@ let chatOwnerForwardCount = 0;
 
 function chatOwnerPort(chatId) {
   const count = Math.max(1, Number(process.env.SHARD_COUNT) || 1);
-  if (count <= 1) return PORT;
+  if (count <= 1 || !chatRoutePlanEnforced) return PORT;
   const base = Number(process.env.SHARD_BASE_PORT) || 5299;
-  const plan = chatRoutePlanEnforced ? chatRoutePlan : null;
-  return base + chatOwnerShard(plan, chatId, count) * 100;
+  return base + chatOwnerShard(chatRoutePlan, chatId, count) * 100;
 }
 
 function chatOwnerRelaySocket(actor, body) {
@@ -167,6 +166,146 @@ function replaceCount(source, marker, replacement, expected, name, changes) {
   return source.split(marker).join(replacement);
 }
 
+function patchProductionServerSource(source, actualSha256, expectedSha256) {
+  const changes = [];
+  source = replaceOnce(
+    source,
+    "const ws = require('./lib/ws');",
+    "const ws = require('./lib/ws');\n"
+      + "const { loadManifest, assertRunningShard } = require('./lib/shard-runtime-manifest');\n"
+      + "const { loadChatRoutePlan, chatOwnerShard } = require('./lib/chat-route-plan');",
+    'requires',
+    changes
+  );
+  source = replaceOnce(
+    source,
+    'const PORT = Number(process.env.PORT || 5180);',
+    'const PORT = Number(process.env.PORT || 5180);\n' + ROUTE_INIT,
+    'route-runtime',
+    changes
+  );
+  source = replaceOnce(
+    source,
+    'function sendBatchToUser(userId, payloads) {',
+    CHAT_OWNER_RUNTIME + '\n\nfunction sendBatchToUser(userId, payloads) {',
+    'chat-owner-runtime',
+    changes
+  );
+  source = replaceOnce(
+    source,
+    "  if (msg.type === 'ping') {",
+    "  const chatScopedType = ['ack', 'typing', 'pat', 'read', 'send', 'shake'].includes(msg.type);\n"
+      + "  if (chatScopedType && msg.chatId && PORT !== chatOwnerPort(msg.chatId)) {\n"
+      + "    forwardChatActionToOwner(user.id, msg, socket);\n"
+      + "    return;\n"
+      + "  }\n\n"
+      + "  if (msg.type === 'ping') {",
+    'client-routing',
+    changes
+  );
+  source = replaceOnce(
+    source,
+    "  if (parts[0] === 'health') { ok(res, { service: 'chris-chat', time: now() }); return; }",
+    `  if (parts[0] === 'health') {
+    ok(res, {
+      service: 'chris-chat',
+      time: now(),
+      port: PORT,
+      shardId: process.env.SHARD_ID || '',
+      runtimeManifestHash: shardRuntimeIdentity ? shardRuntimeIdentity.manifestHash : '',
+      runtimeTopologyId: shardRuntimeIdentity ? shardRuntimeIdentity.topologyId : '',
+      runtimeService: shardRuntimeIdentity ? shardRuntimeIdentity.service : '',
+      chatRoutePlanHash: chatRoutePlan ? chatRoutePlan.hash : '',
+      chatRoutePlanFileHash: chatRoutePlan ? chatRoutePlan.fileHash : '',
+      chatRouteTopologyId: chatRoutePlan ? chatRoutePlan.topologyId : '',
+      chatRoutePlanEnforced,
+      chatOwnerForwards: chatOwnerForwardCount
+    });
+    return;
+  }`,
+    'health-fields',
+    changes
+  );
+  source = replaceCount(
+    source,
+    '/^\\/(index|m|install|admin|admin2|manage|ai|login)\\.html$/i',
+    '/^\\/(index|m|install|admin|admin2|manage|ai|login|shard-maintenance)\\.html$/i',
+    1,
+    'tls-page',
+    changes
+  );
+  source = replaceCount(
+    source,
+    '/^\\/(manage|admin|admin2|ai)\\.html$/i',
+    '/^\\/(manage|admin|admin2|ai|shard-maintenance)\\.html$/i',
+    2,
+    'admin-page-regex',
+    changes
+  );
+  source = replaceCount(
+    source,
+    '/^\\/(manage|admin|admin2|ai|index)\\.html$/i',
+    '/^\\/(manage|admin|admin2|ai|index|shard-maintenance)\\.html$/i',
+    1,
+    'admin-entry-regex',
+    changes
+  );
+  source = replaceCount(
+    source,
+    '/^(index|admin|admin2|manage|ai)\\.html$/i',
+    '/^(index|admin|admin2|manage|ai|shard-maintenance)\\.html$/i',
+    1,
+    'static-page-regex',
+    changes
+  );
+  source = replaceOnce(
+    source,
+    "function isAdminPath(pathname) {\n"
+      + "  return pathname === '/manage.html' || pathname === '/admin.html' || pathname === '/ai.html' ||\n"
+      + "    pathname.indexOf('/api/ops') === 0 || pathname.indexOf('/api/admin') === 0;\n"
+      + '}',
+    "function isAdminPath(pathname) {\n"
+      + "  return pathname === '/manage.html' || pathname === '/admin.html' || pathname === '/ai.html' ||\n"
+      + "    pathname === '/shard-maintenance.html' ||\n"
+      + "    pathname.indexOf('/api/ops') === 0 || pathname.indexOf('/api/admin') === 0;\n"
+      + '}',
+    'admin-path',
+    changes
+  );
+  source = replaceOnce(
+    source,
+    "    if (parsed.pathname === '/api/internal/user-row' && req.method === 'POST') {",
+    CHAT_ACTION_ENDPOINT + "\n    if (parsed.pathname === '/api/internal/user-row' && req.method === 'POST') {",
+    'chat-action-endpoint',
+    changes
+  );
+  return {
+    ok: true,
+    profile: 'production-cb937047',
+    sourceSha256: actualSha256,
+    expectedSha256,
+    outputSha256: hash(Buffer.from(source)),
+    changes,
+    source,
+    helperFiles: helperFileRows()
+  };
+}
+
+function helperFileRows() {
+  return [
+    'lib/shard-route-plan.js',
+    'lib/chat-route-plan.js',
+    'lib/shard-runtime-manifest.js',
+    'lib/shard-topology.js'
+  ].map((relative) => {
+    const file = path.join(SERVER_ROOT, relative);
+    return {
+      path: relative,
+      sha256: hash(fs.readFileSync(file))
+    };
+  });
+}
+
 function patchServerSource(input, options) {
   const opts = options || {};
   const raw = Buffer.isBuffer(input) ? input : Buffer.from(String(input || ''));
@@ -179,6 +318,9 @@ function patchServerSource(input, options) {
   let source = raw.toString('utf8').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   if (source.includes('SHARD_ROUTE_PLAN_FILE')) {
     throw new Error('server source already contains route plan integration');
+  }
+  if (source.includes('const H5_GEN_DIR =') && source.includes('const SHARD_DIR =')) {
+    return patchProductionServerSource(source, actualSha256, expectedSha256);
   }
   const changes = [];
   source = replaceOnce(
@@ -286,26 +428,15 @@ function patchServerSource(input, options) {
     'chat-action-endpoint',
     changes
   );
-  const helperFiles = [
-    'lib/shard-route-plan.js',
-    'lib/chat-route-plan.js',
-    'lib/shard-runtime-manifest.js',
-    'lib/shard-topology.js'
-  ].map((relative) => {
-    const file = path.join(SERVER_ROOT, relative);
-    return {
-      path: relative,
-      sha256: hash(fs.readFileSync(file))
-    };
-  });
   return {
     ok: true,
+    profile: 'git-stable-bc09897',
     sourceSha256: actualSha256,
     expectedSha256,
     outputSha256: hash(Buffer.from(source)),
     changes,
     source,
-    helperFiles
+    helperFiles: helperFileRows()
   };
 }
 

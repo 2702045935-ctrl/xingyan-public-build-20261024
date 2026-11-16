@@ -12,6 +12,41 @@ const { patchServerSource } = require('../lib/shard-route-server-patch');
 const { buildRoutePlan } = require('../lib/shard-route-plan');
 
 async function main() {
+const productionFixture = [
+  "const path=require('path');",
+  "const ws = require('./lib/ws');",
+  "const H5_GEN_DIR = '/tmp/h5';",
+  "const SHARD_DIR = '/tmp/shards';",
+  'const PORT = Number(process.env.PORT || 5180);',
+  'function sendTo(){}',
+  'function sendBatchToUser(userId, payloads) {}',
+  'function handleClientMessage(user, socket, raw) {',
+  "  if (msg.type === 'ping') { return; }",
+  '}',
+  'async function handleApi() {',
+  "  if (parts[0] === 'health') { ok(res, { service: 'chris-chat', time: now() }); return; }",
+  '}',
+  "const a = '/^\\/(index|m|install|admin|admin2|manage|ai|login)\\.html$/i';",
+  "const b = '/^\\/(manage|admin|admin2|ai)\\.html$/i';",
+  "const c = '/^\\/(manage|admin|admin2|ai)\\.html$/i';",
+  "const d = '/^\\/(manage|admin|admin2|ai|index)\\.html$/i';",
+  "const e = '/^(index|admin|admin2|manage|ai)\\.html$/i';",
+  'function isAdminPath(pathname) {',
+  "  return pathname === '/manage.html' || pathname === '/admin.html' || pathname === '/ai.html' ||",
+  "    pathname.indexOf('/api/ops') === 0 || pathname.indexOf('/api/admin') === 0;",
+  '}',
+  'async function handleHttpRequest(req,res) {',
+  "    if (parsed.pathname === '/api/internal/user-row' && req.method === 'POST') {}",
+  '}'
+].join('\n');
+const productionHash = crypto.createHash('sha256').update(productionFixture).digest('hex');
+const productionPatch = patchServerSource(productionFixture, {
+  expectedSha256: productionHash
+});
+assert.strictEqual(productionPatch.profile, 'production-cb937047');
+assert.ok(productionPatch.source.includes('/__shard/chat-action'));
+assert.ok(productionPatch.source.includes('!chatRoutePlanEnforced'));
+
 const stable = execFileSync('git', ['show', 'bc09897:server/server.js'], {
   cwd: path.resolve(__dirname, '..', '..'),
   maxBuffer: 8 * 1024 * 1024

@@ -7681,10 +7681,9 @@ function forwardCallToSignalShard(actorId, msg) {
 
 function chatOwnerPort(chatId) {
   const count = Math.max(1, Number(process.env.SHARD_COUNT) || 1);
-  if (count <= 1) return PORT;
+  if (count <= 1 || !chatRoutePlanEnforced) return PORT;
   const base = Number(process.env.SHARD_BASE_PORT) || 5299;
-  const plan = chatRoutePlanEnforced ? chatRoutePlan : null;
-  return base + chatOwnerShard(plan, chatId, count) * 100;
+  return base + chatOwnerShard(chatRoutePlan, chatId, count) * 100;
 }
 
 function forwardChatActionToOwner(actorId, msg, socket) {
