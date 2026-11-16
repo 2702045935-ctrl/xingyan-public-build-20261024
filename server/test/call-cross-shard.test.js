@@ -200,13 +200,21 @@ async function main() {
   let aliceSocket;
   let bobSocket;
   let charlieSocket;
+  let concurrentSockets = [];
 
   try {
     const aliceUser = user('u_cross_shard_alice', 'cross_shard_alice', 'Alice');
     const bobUser = user('u_cross_shard_bob', 'cross_shard_bob', 'Bob');
     const charlieUser = user('u_cross_shard_charlie', 'cross_shard_charlie', 'Charlie');
+    const concurrentTeams = Array.from({ length: 10 }, (_, index) => ({
+      caller: user('u_cross_shard_caller_' + index, 'cross_shard_caller_' + index,
+        'Caller ' + index),
+      callee: user('u_cross_shard_callee_' + index, 'cross_shard_callee_' + index,
+        'Callee ' + index)
+    }));
     fs.writeFileSync(path.join(dataDir, 'users.json'), JSON.stringify({
-      users: [aliceUser, bobUser, charlieUser]
+      users: [aliceUser, bobUser, charlieUser,
+        ...concurrentTeams.flatMap((team) => [team.caller, team.callee])]
     }));
     fs.writeFileSync(path.join(dataDir, 'security.json'), JSON.stringify({ sliderLogin: 0 }));
     fs.writeFileSync(path.join(dataDir, 'ui.json'), JSON.stringify({ multiDevice: 1 }));
@@ -225,17 +233,33 @@ async function main() {
           toId: charlieUser.id,
           status: 'accepted',
           createdAt: new Date().toISOString()
-        }
+        },
+        ...concurrentTeams.map((team, index) => ({
+          id: 'friend-cross-shard-load-' + index,
+          fromId: team.caller.id,
+          toId: team.callee.id,
+          status: 'accepted',
+          createdAt: new Date().toISOString()
+        }))
       ]
     }));
     fs.writeFileSync(path.join(dataDir, 'chats.json'), JSON.stringify({
-      chats: [{
-        id: 'c_cross_shard',
-        type: 'direct',
-        memberIds: [aliceUser.id, bobUser.id],
-        seq: 0,
-        createdAt: new Date().toISOString()
-      }]
+      chats: [
+        {
+          id: 'c_cross_shard',
+          type: 'direct',
+          memberIds: [aliceUser.id, bobUser.id],
+          seq: 0,
+          createdAt: new Date().toISOString()
+        },
+        ...concurrentTeams.map((team, index) => ({
+          id: 'c_cross_shard_load_' + index,
+          type: 'direct',
+          memberIds: [team.caller.id, team.callee.id],
+          seq: 0,
+          createdAt: new Date().toISOString()
+        }))
+      ]
     }));
 
     shardA = await startShard(dataDir, shardBase, 0, shardBase);
@@ -446,12 +470,108 @@ async function main() {
       assert.ok(values.max < 2000, JSON.stringify(metrics));
     }
 
+    const concurrentLatency = {
+      incoming: [],
+      accept: [],
+      audio: []
+    };
+    const concurrentPairs = await Promise.all(concurrentTeams.map(async (team, index) => {
+      const callerOnA = index % 2 === 0;
+      const callerServer = callerOnA ? shardA : shardB;
+      const calleeServer = callerOnA ? shardB : shardA;
+      const [caller, callee] = await Promise.all([
+        login(callerServer.base, team.caller.username),
+        login(calleeServer.base, team.callee.username)
+      ]);
+      const [callerSocket, calleeSocket] = await Promise.all([
+        connect(callerServer.base, caller.cookie),
+        connect(calleeServer.base, callee.cookie)
+      ]);
+      concurrentSockets.push(callerSocket, calleeSocket);
+      return { index, caller, callee, callerSocket, calleeSocket };
+    }));
+
+    const concurrentStarted = Date.now();
+    concurrentPairs.forEach((pair) => {
+      pair.callId = 'call-cross-shard-concurrent-' + pair.index + '-' + Date.now();
+      pair.callerSocket.socket.send(JSON.stringify({
+        type: 'call',
+        action: 'invite',
+        callId: pair.callId,
+        toUserId: pair.callee.user.id,
+        media: 'audio'
+      }));
+    });
+    await Promise.all(concurrentPairs.map(async (pair) => {
+      await waitEvent(pair.calleeSocket.events, (event) =>
+        event.type === 'call' && event.action === 'incoming' && event.callId === pair.callId,
+      '并发来电');
+      concurrentLatency.incoming.push(Date.now() - concurrentStarted);
+
+      const acceptedAt = Date.now();
+      pair.calleeSocket.socket.send(JSON.stringify({
+        type: 'call',
+        action: 'accept',
+        callId: pair.callId
+      }));
+      await waitEvent(pair.callerSocket.events, (event) =>
+        event.type === 'call' && event.action === 'accepted' && event.callId === pair.callId,
+      '并发接听');
+      concurrentLatency.accept.push(Date.now() - acceptedAt);
+
+      const audioAt = Date.now();
+      pair.callerSocket.socket.send(JSON.stringify({
+        type: 'call',
+        action: 'audio',
+        callId: pair.callId,
+        data: uplink.toString('base64')
+      }));
+      await waitEvent(pair.calleeSocket.events, (event) =>
+        event.type === 'call' && event.action === 'audio' && event.callId === pair.callId,
+      '并发首帧');
+      concurrentLatency.audio.push(Date.now() - audioAt);
+
+      pair.calleeSocket.socket.send(JSON.stringify({
+        type: 'call',
+        action: 'hangup',
+        callId: pair.callId
+      }));
+      await waitEvent(pair.callerSocket.events, (event) =>
+        event.type === 'call' && event.action === 'end' && event.callId === pair.callId,
+      '并发挂断');
+    }));
+
+    const concurrentMetrics = Object.fromEntries(
+      Object.entries(concurrentLatency).map(([name, values]) => [
+        name,
+        {
+          p50: percentile(values, 0.5),
+          p95: percentile(values, 0.95),
+          max: Math.max(...values)
+        }
+      ])
+    );
+    for (const values of Object.values(concurrentMetrics)) {
+      assert.ok(values.p95 < 1500, JSON.stringify(concurrentMetrics));
+      assert.ok(values.max < 2500, JSON.stringify(concurrentMetrics));
+    }
+    const concurrentHealth = await request(shardA.base, '', 'GET', '/api/health');
+    assert.equal(concurrentHealth.data.activeCalls, 0);
+
     console.log('call-cross-shard-metrics=' + JSON.stringify(metrics));
+    console.log('call-cross-shard-concurrent=' + JSON.stringify(concurrentMetrics));
     console.log('call-cross-shard: passed');
   } finally {
     aliceSocket?.socket.close();
     bobSocket?.socket.close();
     charlieSocket?.socket.close();
+    concurrentSockets.forEach((peer) => {
+      try {
+        peer.socket.close();
+      } catch (_) {
+        // Ignore test cleanup errors.
+      }
+    });
     await stopChild(shardA?.child);
     await stopChild(shardB?.child);
     fs.rmSync(dataDir, { recursive: true, force: true });
