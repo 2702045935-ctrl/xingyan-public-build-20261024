@@ -149,7 +149,10 @@
     "finalMessages": 40,
     "uniqueSequences": 40,
     "sequenceRange": "1-40",
-    "crossShardForwardObserved": true
+    "crossShardForwardObserved": true,
+    "chatOwnerForwards": 40,
+    "report": "/opt/xingyan-mainline/releases/20261116-shard-baseline/chat-owner-routing-7shard.json",
+    "reportSha256": "89038898a024911d32017e86bba161657ec3857e85bebfc564e833811eb1fbd9"
   },
   "lastRuntimeAudit": {
     "at": "2026-11-16T10:26:56.394Z",

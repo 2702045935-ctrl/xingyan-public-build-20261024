@@ -229,8 +229,29 @@ async function main() {
       const response = await fetch(server.base + '/api/health');
       return (await response.json()).data;
     }));
-    assert.ok(healthRows.reduce((sum, row) => sum + Number(row.chatOwnerForwards || 0), 0) >= 1);
-    console.log('chat-owner-routing: passed');
+    const forwarded = healthRows.reduce(
+      (sum, row) => sum + Number(row.chatOwnerForwards || 0),
+      0
+    );
+    assert.ok(forwarded >= 1);
+    const summary = {
+      ok: true,
+      shardCount,
+      chatId,
+      chatOwnerShard: routeShard('c:' + chatId, shardCount),
+      aliceUserShard,
+      bobUserShard,
+      messagesPerSender: 20,
+      finalMessages: rows.length,
+      uniqueSequences: new Set(rows.map((row) => row.seq)).size,
+      sequenceMin: Math.min(...rows.map((row) => row.seq)),
+      sequenceMax: Math.max(...rows.map((row) => row.seq)),
+      chatOwnerForwards: forwarded
+    };
+    if (process.env.CHAT_OWNER_REPORT) {
+      fs.writeFileSync(process.env.CHAT_OWNER_REPORT, JSON.stringify(summary, null, 2));
+    }
+    console.log('chat-owner-routing: passed ' + JSON.stringify(summary));
   } finally {
     aliceSocket?.close();
     bobSocket?.close();
