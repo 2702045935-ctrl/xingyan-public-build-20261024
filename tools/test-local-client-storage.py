@@ -8,6 +8,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SWIFT = ROOT / "Sources" / "LocalDatabase.swift"
+STRESS_FIXTURES = (
+    ROOT / "Sources" / "ChatStressFixture.swift",
+    ROOT / "Sources" / "MessageStressFixture.swift",
+)
 
 
 def schema_from_swift() -> str:
@@ -23,6 +27,11 @@ def assert_equal(actual: object, expected: object, label: str) -> None:
 
 
 def main() -> None:
+    for fixture in STRESS_FIXTURES:
+        text = fixture.read_text(encoding="utf-8")
+        if "min(100_000, value)" not in text:
+            raise AssertionError(f"{fixture.name}: stress cap must be 100k")
+
     with tempfile.TemporaryDirectory(prefix="xingyan-local-db-") as directory:
         db = sqlite3.connect(Path(directory) / "state.sqlite3")
         db.execute("PRAGMA journal_mode=WAL")

@@ -102,6 +102,7 @@ enum LocalStore {
     }
 
     static func saveChat(_ chatId: String, _ messages: [Message]) {
+        guard !MessageStressFixture.isStressChat(chatId) else { return }
         guard !messages.isEmpty else { return }
         if !LocalPersistence.saveChat(chatId, messages) {
             let tail = messages.count > 5000 ? Array(messages.suffix(5000)) : messages
@@ -111,6 +112,7 @@ enum LocalStore {
     }
 
     static func cachedChat(_ chatId: String) -> [Message] {
+        guard !MessageStressFixture.isStressChat(chatId) else { return [] }
         let stored = LocalPersistence.loadChat(chatId)
         if !stored.isEmpty { return stored }
         return cachedLegacyChat(chatId)

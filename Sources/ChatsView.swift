@@ -1188,8 +1188,14 @@ struct ChatsView: View {
         UIConfig.colorIfSet("eyesColor") ?? UIConfig.color("navPlusBg", 0x0F5A3C, 0x0F5A3C)
     }
 
+    private var activeChatSource: [Chat] {
+        if MessageStressFixture.isActive { return [MessageStressFixture.chat] }
+        if ChatStressFixture.isActive { return ChatStressFixture.chats }
+        return app.chats
+    }
+
     private func chatSnapshot() -> ChatFilterSnapshot {
-        let source = ChatStressFixture.isActive ? ChatStressFixture.chats : app.chats
+        let source = activeChatSource
         let base = source.filter { c in
             guard c.botRank != 0,
                   !c.id.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -2599,7 +2605,7 @@ struct ChatsView: View {
         return NavigationStack(path: $path) {
 
             ZStack(alignment: .top) {
-                if (ChatStressFixture.isActive ? ChatStressFixture.chats : app.chats).isEmpty {
+                if activeChatSource.isEmpty {
                     VStack(spacing: 0) {
                         Color.clear.frame(height: L.safeTop + chatsHeaderH
                                           + chatFilterOffset)

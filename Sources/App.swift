@@ -25,10 +25,17 @@ final class AppState: ObservableObject {
 
     init() {
 
-        if let cached = Self.cachedUser(), !cached.id.isEmpty {
+        let cached = Self.cachedUser()
+        if let cached, !cached.id.isEmpty {
             chats = LocalStore.cachedChatList(userId: cached.id)
         }
+        installMessageStressFixture(myId: cached?.id ?? "")
         applyCachedUIConfig()
+    }
+
+    private func installMessageStressFixture(myId: String) {
+        guard MessageStressFixture.isActive else { return }
+        prefetched[MessageStressFixture.chatId] = MessageStressFixture.messages(myId: myId)
     }
 
     func checkReachability() async {
@@ -1715,6 +1722,7 @@ final class AppState: ObservableObject {
         guard var merged = me else {
             me = user
             rememberLastUser()
+            installMessageStressFixture(myId: user.id)
             return
         }
         merged.nickname = user.nickname ?? merged.nickname
@@ -1730,6 +1738,7 @@ final class AppState: ObservableObject {
         merged.chatBackground = user.chatBackground ?? merged.chatBackground
         me = merged
         rememberLastUser()
+        installMessageStressFixture(myId: merged.id)
     }
 
     /// 前后台切换或弱网漏掉 WebSocket 事件时，主动从服务端校准自己的资料。
