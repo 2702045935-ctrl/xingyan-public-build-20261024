@@ -26,6 +26,11 @@ const { createShardShadowService } = require('./lib/shard-shadow-service');
 const { resolveTopology } = require('./lib/shard-topology');
 const { loadManifest, assertRunningShard } = require('./lib/shard-runtime-manifest');
 const { loadChatRoutePlan, chatOwnerShard } = require('./lib/chat-route-plan');
+const {
+  FROZEN_TARGET: SHARD_MAINTENANCE_TARGET,
+  READY_CHECKLIST: SHARD_READY_CHECKLIST,
+  ShardMaintenanceStore
+} = require('./lib/shard-maintenance');
 const { MessageReliabilityStore } = require('./lib/message-reliability');
 const { PaymentTokenVault } = require('./lib/payment-token-vault');
 const { PaymentDeviceEnrollment } = require('./lib/payment-device-enrollment');
@@ -24305,6 +24310,9 @@ const DEFAULT_SENSITIVE = ['赌博', '代开发票', '办证', '加微信刷单'
 
 
 const opsStore = { admins: [], sensitive: [], reports: [], violations: [], approvals: [], dualReview: false };
+const shardMaintenanceStore = new ShardMaintenanceStore(
+  path.join(DATA_DIR, 'shard-maintenance.json')
+);
 
 function loadOps() {
   const raw = readJson(path.join(DATA_DIR, OPS_FILE), { admins: null });
@@ -24868,12 +24876,17 @@ const DANGEROUS_OPS = [
   { re: /^POST \/api\/ops\/admins$/, label: '新增后台账号' },
   { re: /^POST \/api\/ops\/admins\/[^/]+\/disable$/, label: '停用 / 启用后台账号' },
   { re: /^POST \/api\/ops\/magic$/, label: '生成免密登录链接' },
+  { re: /^POST \/api\/ops\/shardmaintenance\/ready$/, label: '解锁分片维护发布' },
+  { re: /^POST \/api\/ops\/shardmaintenance\/deploy$/, label: '发布一个分片' },
+  { re: /^POST \/api\/ops\/shardmaintenance\/approve$/, label: '批准进入下一分片' },
+  { re: /^POST \/api\/ops\/shardmaintenance\/rollback$/, label: '停止并回滚分片发布' },
   /* 敏感词库不算高危：它可逆、且日常维护脚本（管控违法内容.js）要反复调用，不设卡 */
 ];
 /* 开了双人复核以后，这些「做完就回不了头」的操作必须别人点头 */
 const DUAL_REVIEW_LABELS = [
   '封禁 / 解封账号', '撤销交易', '处理提现申请', '解散群聊', '清空会话记录',
-  '删除朋友圈动态', '删除视频号作品', '解除好友关系', '新增后台账号', '停用 / 启用后台账号'
+  '删除朋友圈动态', '删除视频号作品', '解除好友关系', '新增后台账号',
+  '停用 / 启用后台账号', '发布一个分片', '批准进入下一分片', '停止并回滚分片发布'
 ];
 function dangerousOpOf(method, pathStr) {
   const key = method + ' ' + pathStr;
@@ -26164,6 +26177,58 @@ async function handleOps(req, res, parts, query) {
       });
     }
     audit(req, admin, '高危操作二次确认通过', danger.label, opPath);
+  }
+
+  /* ---------------- 分片维护中心：一次只放行一个分片 ---------------- */
+  if (sub === 'shardmaintenance') {
+    if (admin.role !== 'super') return fail(res, 403, '分片维护只有超级管理员能操作');
+    if (method === 'GET' && parts.length === 2) {
+      ok(res, {
+        frozen: SHARD_MAINTENANCE_TARGET,
+        checklist: SHARD_READY_CHECKLIST,
+        rollouts: shardMaintenanceStore.list()
+      });
+      return;
+    }
+    if (method === 'POST' && parts.length === 3) {
+      const action = String(parts[2] || '');
+      const body = await readBody(req);
+      const actor = {
+        id: admin.id,
+        username: admin.username,
+        name: admin.name,
+        role: admin.role
+      };
+      try {
+        if (action === 'create') {
+          const rollout = shardMaintenanceStore.create(body, actor);
+          audit(req, admin, '创建分片维护草稿', rollout.id,
+            rollout.phase + ' / ' + rollout.candidate.candidateCommit);
+          ok(res, { rollout, rollouts: shardMaintenanceStore.list() });
+          return;
+        }
+        const id = str(body.id, 80);
+        if (!id) return fail(res, 422, '发布记录 ID 不能为空');
+        const labels = {
+          ready: '进入逐片发布待命',
+          deploy: '请求发布当前分片',
+          health: '登记分片健康证据',
+          approve: '批准进入下一分片',
+          rollback: '停止并回滚分片发布'
+        };
+        if (!labels[action]) return fail(res, 404, '不认识的分片维护操作');
+        const rollout = shardMaintenanceStore.transition(id, action, body, actor);
+        audit(req, admin, labels[action], id,
+          'shard=' + rollout.currentShard + ' status=' + rollout.status);
+        ok(res, { rollout, rollouts: shardMaintenanceStore.list() });
+        return;
+      } catch (error) {
+        audit(req, admin, '分片维护操作被拒绝', action,
+          String(error && error.message || error));
+        return fail(res, 422, String(error && error.message || error));
+      }
+    }
+    return fail(res, 405, 'Method Not Allowed');
   }
 
   /* ---------------- 双人复核工单 ---------------- */

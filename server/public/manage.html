@@ -273,6 +273,42 @@
   body.dark #content { background: #1C1C1E !important; }
   body.dark .panel, body.dark .kpi { background: #242424 !important; border-color: #333333 !important; }
   body.dark #nav button { color: #D8DEE7 !important; }
+
+  /* ---------- 分片维护中心 ---------- */
+  .maint-hero { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .maint-stat { border: 1px solid #EEEEEE; border-radius: 8px; background: #FAFBFC; padding: 14px 16px; }
+  .maint-stat span { display: block; color: #8A8F99; font-size: 12px; margin-bottom: 7px; }
+  .maint-stat b { color: #1F2329; font-size: 18px; font-weight: 650; overflow-wrap: anywhere; }
+  .maint-grid { display: grid; grid-template-columns: minmax(280px, .8fr) minmax(420px, 1.2fr); gap: 14px; }
+  .maint-hash { display: block; padding: 8px 10px; border-radius: 6px; background: #F6F8FA; color: #475467;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px; overflow-wrap: anywhere; }
+  .maint-step { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid #F0F2F5; }
+  .maint-step:last-child { border-bottom: 0; }
+  .maint-step .dot { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    flex: 0 0 26px; background: #EEF2F6; color: #667085; font-size: 12px; font-weight: 700; }
+  .maint-step.done .dot { background: #E8F7EE; color: #0A8F45; }
+  .maint-step.active .dot { background: #E8F0FF; color: #1677ff; box-shadow: 0 0 0 3px rgba(22,119,255,.10); }
+  .maint-step.fail .dot { background: #FFF0F0; color: #D92D20; }
+  .maint-step b { display: block; margin-bottom: 3px; }
+  .maint-lock { display: flex; align-items: center; gap: 8px; padding: 10px 12px; margin-bottom: 12px;
+    border: 1px solid #FFE7BA; border-radius: 6px; background: #FFFBF0; color: #8A5A00; font-size: 12.5px; }
+  .maint-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .maint-actions .btn { margin: 0 !important; }
+  .maint-evidence { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; }
+  .maint-evidence label { display: flex; flex-direction: column; gap: 5px; color: #667085; font-size: 12px; }
+  .maint-evidence input, .maint-evidence select { width: 100%; box-sizing: border-box; }
+  .maint-checks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; margin: 10px 0 14px; }
+  .maint-checks label { display: flex; align-items: center; gap: 7px; font-size: 13px; }
+  body.dark .maint-stat { background: #1E2023; border-color: #333; }
+  body.dark .maint-stat b { color: #F2F4F7; }
+  body.dark .maint-hash { background: #1E2023; color: #B8C0CC; }
+  body.dark .maint-step { border-bottom-color: #303236; }
+  body.dark .maint-step .dot { background: #303236; color: #A6ADB8; }
+  @media (max-width: 980px) {
+    .maint-hero { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .maint-grid { grid-template-columns: 1fr; }
+    .maint-evidence, .maint-checks { grid-template-columns: 1fr; }
+  }
 </style>
 
 <!-- 微信后台那套结构骨架：页面顶部自动加「面包屑 + 大标题」，
@@ -498,6 +534,7 @@ const MENUS = [
   { key: 'roles', icon: '🧩', name: '角色权限配置', perm: 'admins', group: '系统设置' },
   { key: 'alerts', icon: '🚨', name: '告警配置', perm: 'ops', group: '系统设置' },
   { key: 'whitelist', icon: '🧱', name: '访问白名单', perm: 'admins', group: '系统设置' },
+  { key: 'shardmaintenance', icon: '🛡️', name: '分片维护中心', perm: 'system', superOnly: true, group: '系统设置' },
   { key: 'ops', icon: '⚙️', name: '运维 / 系统公告', perm: 'ops', group: '系统设置' },
   { key: 'vault', icon: '🔐', name: '密钥与安全审计', perm: 'admins', superOnly: true, group: '系统设置' },
   { key: 'sms', icon: '📱', name: '短信通道', perm: 'ops', superOnly: true, group: '系统设置' },
@@ -2004,6 +2041,283 @@ async function showTransfer(id) {
 }
 
 /* ---------------- 运维 ---------------- */
+
+PAGES.shardmaintenance = async () => {
+  const d = await api('/shardmaintenance');
+  const statusText = {
+    draft: '草稿',
+    ready: '等待逐片发布',
+    awaiting_health: '等待健康验收',
+    awaiting_approval: '等待人工批准',
+    paused: '已暂停',
+    completed: '已完成',
+    rolled_back: '已回滚'
+  };
+  const shardText = {
+    pending: '未发布',
+    deploying: '已请求发布',
+    healthy: '健康通过',
+    failed: '失败',
+    rolled_back: '已回滚'
+  };
+  const activeStatuses = ['draft', 'ready', 'awaiting_health', 'awaiting_approval', 'paused'];
+  const activeFlow = (d.rollouts || []).find((row) => activeStatuses.indexOf(row.status) >= 0);
+  const requested = (d.rollouts || []).find((row) => row.id === STATE.shardMaintenanceId);
+  const selectedId = (activeFlow && (!requested
+      || requested.status === 'completed'
+      || requested.status === 'rolled_back'))
+    ? activeFlow.id
+    : (requested
+      || activeFlow
+      || (d.rollouts || [])[0]
+      || {}).id || '';
+  const flow = (d.rollouts || []).find((row) => row.id === selectedId) || null;
+  const frozen = d.frozen;
+
+  const history = (d.rollouts || []).length
+    ? '<select id="msHistory" style="min-width:260px">' + d.rollouts.map((row) =>
+      '<option value="' + esc(row.id) + '"' + (row.id === selectedId ? ' selected' : '') + '>'
+      + esc(row.createdAt) + ' · ' + esc(row.phase || '') + ' · ' + esc(statusText[row.status] || row.status)
+      + '</option>').join('') + '</select>'
+    : '<span class="hint">还没有发布记录</span>';
+
+  const createPanel = !activeFlow ? (
+    '<div class="panel"><h3>新建逐片发布</h3>'
+    + '<div class="maint-lock">🔒 创建草稿不会连接服务器。只有完成全部检查、输入确认口令并再次通过管理员密码确认后，才可能进入第一片发布。</div>'
+    + '<div class="maint-evidence">'
+    + '<label>阶段<select id="msPhase"><option value="dormant">休眠加载（不激活计划）</option><option value="enforced">激活计划（仅休眠 7 片完成后）</option></select></label>'
+    + '<label>候选提交号<input id="msCommit" placeholder="例如 d80705d"></label>'
+    + '<label>候选代码 SHA256<input id="msCodeHash" placeholder="server.js 的 64 位 SHA256"></label>'
+    + '<label>候选目录绝对路径<input id="msArtifact" value="/opt/xingyan-mainline/releases/"></label>'
+    + '<label>回滚备份绝对路径<input id="msBackup" value="/opt/xingyan-mainline/backups/"></label>'
+    + '</div><div class="maint-actions"><button class="btn main" id="msCreate">创建草稿</button></div>'
+    + '</div>'
+  ) : '';
+
+  let actionPanel = '';
+  if (flow && flow.status === 'draft') {
+    actionPanel =
+      '<div class="panel"><h3>发布前检查</h3>'
+      + '<div class="hint">以下五项必须全部确认。这里只保存控制状态，不执行发布。</div>'
+      + '<div class="maint-checks">'
+      + '<label><input type="checkbox" data-ms-check="artifactVerified"> 候选代码哈希与候选目录一致</label>'
+      + '<label><input type="checkbox" data-ms-check="backupVerified"> 稳定版本与数据回滚点已核验</label>'
+      + '<label><input type="checkbox" data-ms-check="routePlanVerified"> 路由计划内部哈希和文件 SHA256 一致</label>'
+      + '<label><input type="checkbox" data-ms-check="sevenShardPreflight"> 7 片只读预检全部通过</label>'
+      + '<label><input type="checkbox" data-ms-check="maintenanceWindowConfirmed"> 已进入维护窗口且客服在线</label>'
+      + '</div>'
+      + '<div class="kv"><b>确认口令</b><span><input id="msReadyPhrase" placeholder="输入：只逐片发布" style="width:280px"></span></div>'
+      + '<div class="maint-actions"><button class="btn main" id="msReady">完成检查，进入待发布</button></div>'
+      + '</div>';
+  } else if (flow && flow.status === 'ready') {
+    const shard = flow.shards[flow.currentShard];
+    actionPanel =
+      '<div class="panel"><h3>当前只允许发布第 ' + shard.id + ' 片</h3>'
+      + '<div class="maint-lock">🛑 一次只允许一个分片。发布请求本身不会自动继续第 '
+      + (shard.id + 1) + ' 片。</div>'
+      + '<div class="kv"><b>服务</b><span>' + esc(shard.service) + '</span></div>'
+      + '<div class="kv"><b>后端端口</b><span>' + shard.backendPort + '</span></div>'
+      + '<div class="kv"><b>入口端口</b><span>' + shard.entryPort + '</span></div>'
+      + '<div class="maint-actions"><button class="btn red" id="msDeploy" data-shard="' + shard.id + '">只发布第 ' + shard.id + ' 片</button></div>'
+      + '</div>';
+  } else if (flow && flow.status === 'awaiting_health') {
+    const shard = flow.shards[flow.currentShard];
+    actionPanel =
+      '<div class="panel"><h3>第 ' + shard.id + ' 片健康验收</h3>'
+      + '<div class="hint">证据必须与冻结路由计划、运行 manifest、拓扑和端口完全一致。任一项不符，后端会拒绝记录。</div>'
+      + '<div class="maint-evidence">'
+      + '<label>分片 ID<input id="msHealthShard" value="' + shard.id + '" disabled></label>'
+      + '<label>服务<input id="msHealthService" value="' + esc(shard.service) + '" disabled></label>'
+      + '<label>后端端口<input id="msHealthPort" value="' + shard.backendPort + '" disabled></label>'
+      + '<label>运行 manifest<input id="msHealthManifest" value="' + frozen.runtimeManifestHash + '"></label>'
+      + '<label>运行拓扑<input id="msHealthTopology" value="' + frozen.topologyId + '"></label>'
+      + '<label>计划内部哈希<input id="msHealthPlan" value="' + frozen.routePlanHash + '"></label>'
+      + '<label>计划文件 SHA256<input id="msHealthPlanFile" value="' + frozen.routePlanFileSha256 + '"></label>'
+      + '<label>激活状态<input id="msHealthEnforced" value="' + (flow.phase === 'enforced' ? '已激活' : '休眠') + '" disabled></label>'
+      + (flow.phase === 'enforced'
+        ? '<label>activeCalls<input id="msHealthActiveCalls" type="number" value="0"></label>'
+          + '<label>ringingCalls<input id="msHealthRingingCalls" type="number" value="0"></label>'
+        : '')
+      + '</div>'
+      + '<div class="maint-actions">'
+      + '<button class="btn main" id="msHealthPass">记录健康通过</button>'
+      + '<button class="btn red" id="msHealthFail">记录失败并暂停</button>'
+      + '</div></div>';
+  } else if (flow && flow.status === 'awaiting_approval') {
+    const shard = flow.shards[flow.currentShard];
+    const phrase = '确认第' + shard.id + '片健康';
+    actionPanel =
+      '<div class="panel"><h3>第 ' + shard.id + ' 片已通过，等待人工放行</h3>'
+      + '<div class="kv"><b>健康证据</b><span class="maint-hash">' + esc(shard.health && shard.health.evidenceHash || '') + '</span></div>'
+      + '<div class="hint">系统不会自动进入下一片。需要再次输入确认口令和你的后台密码。</div>'
+      + '<div class="kv"><b>确认口令</b><span><input id="msApprovePhrase" placeholder="输入：' + phrase + '" style="width:280px"></span></div>'
+      + '<div class="maint-actions"><button class="btn main" id="msApprove">'
+      + (shard.id === flow.shards.length - 1 ? '确认完成最后一片' : '批准进入第 ' + (shard.id + 1) + ' 片')
+      + '</button></div></div>';
+  } else if (flow && flow.status === 'paused') {
+    actionPanel =
+      '<div class="panel"><h3>发布已暂停</h3>'
+      + '<div class="maint-lock">当前停在分片 ' + flow.currentShard + '。不会自动重试，也不会自动进入下一片。</div>'
+      + '<div class="kv"><b>原因</b><span>' + esc((flow.shards[flow.currentShard] && flow.shards[flow.currentShard].failure) || '') + '</span></div>'
+      + '<div class="maint-actions"><button class="btn red" id="msRollback">停止并回滚</button></div></div>';
+  } else if (flow && (flow.status === 'completed' || flow.status === 'rolled_back')) {
+    actionPanel =
+      '<div class="panel"><h3>发布已结束</h3><div class="kv"><b>最终状态</b><span>'
+      + esc(statusText[flow.status] || flow.status) + '</span></div>'
+      + '<div class="kv"><b>原因</b><span>' + esc(flow.rollbackReason || '—') + '</span></div></div>';
+  }
+
+  const flowPanel = flow ? (
+    '<div class="panel"><h3>7 分片放行轨迹</h3>'
+    + flow.shards.map((shard) => {
+      const stateClass = shard.status === 'healthy'
+        ? 'done'
+        : shard.id === flow.currentShard && activeStatuses.indexOf(flow.status) >= 0
+          ? 'active'
+          : shard.status === 'failed' || shard.status === 'rolled_back'
+            ? 'fail'
+            : '';
+      return '<div class="maint-step ' + stateClass + '">'
+        + '<span class="dot">' + shard.id + '</span><div>'
+        + '<b>' + esc(shard.service) + ' · ' + esc(shardText[shard.status] || shard.status) + '</b>'
+        + '<span class="hint">后端 ' + shard.backendPort + ' · 入口 ' + shard.entryPort
+        + (shard.health && shard.health.evidenceHash
+          ? ' · 证据 ' + esc(shard.health.evidenceHash.slice(0, 16)) + '…' : '')
+        + '</span></div></div>';
+    }).join('')
+    + '</div>'
+  ) : '';
+
+  const targetPanel =
+    '<div class="panel"><h3>冻结发布目标</h3>'
+    + '<div class="kv"><b>运行拓扑</b><span>' + esc(frozen.topologyId) + '</span></div>'
+    + '<div class="kv"><b>运行 manifest</b><span class="maint-hash">' + frozen.runtimeManifestHash + '</span></div>'
+    + '<div class="kv"><b>路由计划哈希</b><span class="maint-hash">' + frozen.routePlanHash + '</span></div>'
+    + '<div class="kv"><b>计划文件 SHA</b><span class="maint-hash">' + frozen.routePlanFileSha256 + '</span></div>'
+    + '<div class="kv"><b>稳定代码 SHA</b><span class="maint-hash">' + frozen.stableCodeSha256 + '</span></div>'
+    + '</div>';
+
+  const currentShard = flow ? flow.shards[flow.currentShard] : null;
+  $('content').innerHTML =
+    '<div class="maint-hero">'
+    + '<div class="maint-stat"><span>当前状态</span><b>' + esc(flow ? (statusText[flow.status] || flow.status) : '未开始') + '</b></div>'
+    + '<div class="maint-stat"><span>发布阶段</span><b>' + esc(flow ? flow.phase : '—') + '</b></div>'
+    + '<div class="maint-stat"><span>当前分片</span><b>' + (currentShard ? currentShard.id + ' / 6' : '—') + '</b></div>'
+    + '<div class="maint-stat"><span>已健康</span><b>' + (flow ? flow.shards.filter((s) => s.status === 'healthy').length : 0) + ' / 7</b></div>'
+    + '</div>'
+    + '<div class="panel"><div class="row" style="margin:0;justify-content:space-between">'
+    + '<div><b>发布记录</b><div class="hint">历史只追加，不提供删除入口</div></div>'
+    + '<div>' + history + '</div></div></div>'
+    + '<div class="maint-grid"><div>' + targetPanel + '</div><div>' + (flowPanel || '<div class="panel"><h3>尚无发布草稿</h3><div class="hint">先在下方创建草稿，本页面不会自动部署。</div></div>') + '</div></div>'
+    + createPanel + actionPanel;
+
+  const historySelect = $('msHistory');
+  if (historySelect) historySelect.addEventListener('change', () => {
+    STATE.shardMaintenanceId = historySelect.value;
+    PAGES.shardmaintenance();
+  });
+  const create = $('msCreate');
+  if (create) create.addEventListener('click', async () => {
+    try {
+      const data = await api('/shardmaintenance/create', { method: 'POST', body: {
+        phase: $('msPhase').value,
+        candidateCommit: $('msCommit').value.trim(),
+        candidateCodeSha256: $('msCodeHash').value.trim(),
+        artifactPath: $('msArtifact').value.trim(),
+        backupRoot: $('msBackup').value.trim()
+      } });
+      STATE.shardMaintenanceId = data.rollout.id;
+      toast('草稿已创建，尚未部署');
+      PAGES.shardmaintenance();
+    } catch (e) { toast(e.message, true); }
+  });
+  const ready = $('msReady');
+  if (ready) ready.addEventListener('click', async () => {
+    try {
+      const checklist = {};
+      document.querySelectorAll('[data-ms-check]').forEach((el) => {
+        checklist[el.getAttribute('data-ms-check')] = el.checked;
+      });
+      await api('/shardmaintenance/ready', { method: 'POST', body: {
+        id: flow.id,
+        checklist,
+        confirmation: $('msReadyPhrase').value
+      } });
+      toast('已进入逐片发布待命');
+      PAGES.shardmaintenance();
+    } catch (e) { toast(e.message, true); }
+  });
+  const deploy = $('msDeploy');
+  if (deploy) deploy.addEventListener('click', async () => {
+    const id = Number(deploy.getAttribute('data-shard'));
+    if (!window.confirm('现在只发布第 ' + id + ' 片，其他分片保持不动。继续？')) return;
+    try {
+      await api('/shardmaintenance/deploy', { method: 'POST', body: { id: flow.id } });
+      toast('已记录第 ' + id + ' 片发布请求');
+      PAGES.shardmaintenance();
+    } catch (e) { toast(e.message, true); }
+  });
+  const healthPass = $('msHealthPass');
+  if (healthPass) healthPass.addEventListener('click', async () => {
+    if (!window.confirm('确认这些证据来自当前分片的只读健康审计？')) return;
+    const shard = flow.shards[flow.currentShard];
+    const evidence = {
+      shardId: shard.id,
+      service: shard.service,
+      backendPort: shard.backendPort,
+      runtimeManifestHash: $('msHealthManifest').value.trim(),
+      runtimeTopologyId: $('msHealthTopology').value.trim(),
+      chatRoutePlanHash: $('msHealthPlan').value.trim(),
+      chatRoutePlanFileHash: $('msHealthPlanFile').value.trim(),
+      chatRoutePlanEnforced: flow.phase === 'enforced',
+      activeCalls: flow.phase === 'enforced' ? Number($('msHealthActiveCalls').value) : 0,
+      ringingCalls: flow.phase === 'enforced' ? Number($('msHealthRingingCalls').value) : 0
+    };
+    try {
+      await api('/shardmaintenance/health', { method: 'POST', body: {
+        id: flow.id, shardId: shard.id, ok: true, evidence
+      } });
+      toast('第 ' + shard.id + ' 片健康证据已记录');
+      PAGES.shardmaintenance();
+    } catch (e) { toast(e.message, true); }
+  });
+  const healthFail = $('msHealthFail');
+  if (healthFail) healthFail.addEventListener('click', async () => {
+    const reason = window.prompt('记录失败原因', '健康检查失败，暂停发布');
+    if (reason === null) return;
+    try {
+      await api('/shardmaintenance/health', { method: 'POST', body: {
+        id: flow.id, shardId: flow.currentShard, ok: false, reason, evidence: {}
+      } });
+      toast('发布已暂停');
+      PAGES.shardmaintenance();
+    } catch (e) { toast(e.message, true); }
+  });
+  const approve = $('msApprove');
+  if (approve) approve.addEventListener('click', async () => {
+    try {
+      await api('/shardmaintenance/approve', { method: 'POST', body: {
+        id: flow.id,
+        confirmation: $('msApprovePhrase').value
+      } });
+      toast('已批准，只解锁下一片');
+      PAGES.shardmaintenance();
+    } catch (e) { toast(e.message, true); }
+  });
+  const rollback = $('msRollback');
+  if (rollback) rollback.addEventListener('click', async () => {
+    const phrase = window.prompt('输入「停止并回滚」');
+    if (phrase === null) return;
+    const reason = window.prompt('回滚原因', '维护窗口人工停止') || '';
+    try {
+      await api('/shardmaintenance/rollback', { method: 'POST', body: {
+        id: flow.id, confirmation: phrase, reason
+      } });
+      toast('已记录回滚');
+      PAGES.shardmaintenance();
+    } catch (e) { toast(e.message, true); }
+  });
+};
 
 PAGES.ops = async () => {
   const d = await api('/system');
