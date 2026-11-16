@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "candidateId": "system-complete-v1-86b9c19",
+  "candidateId": "system-complete-v1-d0a777d",
   "sourceBranch": "codex/system-complete-v1",
-  "sourceCommit": "86b9c198761909a96ba9faee255253736de7a582",
-  "capturedAt": "2026-11-17T06:33:12.5187096+08:00",
+  "sourceCommit": "d0a777d69867b40fac2554e8e7ed4e89c60c3891",
+  "capturedAt": "2026-11-17T06:34:56.8738978+08:00",
   "candidateCode": {
     "serverJsSha256": "53a6643eaaa467c65f69c1ab1fb02a5be8dcd734895b0de7ebdb260f24ab5f4e",
     "chatRoutePlanSha256": "86af4db9399985f41b1103f351f9147b6cc8926271a5f82b1543b01e093b29c4",
@@ -29,7 +29,9 @@
     "singleCellCapacityCollectorAuditSha256": "f17329c4894cf750e22fab74ef9ad38108ac7920141cbd8d638e8e844bf020c9",
     "singleCellCapacityRunnerSha256": "624ed48164aaa053b276ddf4cfdab89b60ae2ab20e2c6e7197022a56a38342c3",
     "shardRouteServerPatchSha256": "cce579f8d3c7ad4e4df0d7fcbbd3b9de3053d66e3f8ed16e1b30a64355fa86bb",
-    "shardRoutePatchAuditSha256": "873cd3557a512422a032b8333799b6dfc6d4f946be4b9b8a7da1eca62d9e80f6"
+    "shardRoutePatchAuditSha256": "873cd3557a512422a032b8333799b6dfc6d4f946be4b9b8a7da1eca62d9e80f6",
+    "shardMinimalReleaseSha256": "f09ecbb0cc3724e9e2c418c90a3d8663701da7fcaeddb93cdda0959b004a0225",
+    "shardMinimalReleaseAuditSha256": "d4eacd436f09e9c28f6ff78e1e93b1b6468a9630ff77fcef0ac3400d602ece77"
   },
   "productionBaseline": {
     "businessHost": "192.140.179.176",
@@ -60,7 +62,7 @@
   },
   "verification": {
     "shardSuite": {
-      "tests": 30,
+      "tests": 31,
       "failed": 0
     },
     "chatAndMessageSuite": {
@@ -115,7 +117,9 @@
     "capacityEvidenceFreshnessGate": true,
     "capacityConsoleAutoCollect": true,
     "minimalStablePatch": true,
-    "minimalPatchBootVerified": true
+    "minimalPatchBootVerified": true,
+    "minimalReleaseAssembler": true,
+    "releaseManifestGenerated": true
   },
   "deployment": {
     "status": "not-deployed",
