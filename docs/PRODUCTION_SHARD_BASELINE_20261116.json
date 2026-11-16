@@ -124,6 +124,15 @@
       "73 missing media references require explicit quarantine or restore approval"
     ]
   },
+  "writerFencingDrill": {
+    "status": "passed",
+    "topologyId": "drill-shards-7",
+    "ownerShard": 4,
+    "leaseEpoch": 2,
+    "failures": [],
+    "report": "/opt/xingyan-mainline/releases/20261116-shard-baseline/shard-fault-drill.json",
+    "reportSha256": "26b72edc6f7ec70d7c4e1fa156dfe3a4bbb63941aa6daa5f460d97d34c08f2d0"
+  },
   "lastRuntimeAudit": {
     "at": "2026-11-16T10:26:56.394Z",
     "ok": true,
