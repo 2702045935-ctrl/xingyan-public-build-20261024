@@ -3,7 +3,10 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const { patchServerSource } = require('./shard-route-server-patch');
+const {
+  STABLE_SERVER_SHA256,
+  patchServerSource
+} = require('./shard-route-server-patch');
 
 const SERVER_ROOT = path.resolve(__dirname, '..');
 const ENTRY_FILES = [
@@ -107,6 +110,16 @@ function buildMinimalRelease(options) {
         sha256: sha256(fs.readFileSync(file))
       });
     }
+    const productionEligible = patched.sourceSha256 === STABLE_SERVER_SHA256;
+    if (!productionEligible) {
+      fs.writeFileSync(
+        path.join(temporary, 'NONPRODUCTION.txt'),
+        'NON-PRODUCTION PREVIEW\n\n'
+          + 'The source server.js does not match the approved production stable SHA256.\n'
+          + 'This package is for local verification only and must not be deployed.\n',
+        'utf8'
+      );
+    }
     manifestFiles.sort((left, right) => left.path.localeCompare(right.path));
     const manifest = {
       version: 1,
@@ -114,6 +127,8 @@ function buildMinimalRelease(options) {
       sourceFile,
       sourceSha256: patched.sourceSha256,
       expectedSourceSha256: patched.expectedSha256,
+      approvedProductionSourceSha256: STABLE_SERVER_SHA256,
+      productionEligible,
       serverSha256: patched.outputSha256,
       patchChanges: patched.changes,
       entryFiles: ENTRY_FILES,

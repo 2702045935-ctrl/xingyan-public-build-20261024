@@ -26,6 +26,7 @@ function main() {
   console.log(JSON.stringify({
     ok: true,
     outDir: path.resolve(outDir),
+    productionEligible: manifest.productionEligible,
     serverSha256: manifest.serverSha256,
     fileCount: manifest.fileCount,
     contentHash: manifest.contentHash

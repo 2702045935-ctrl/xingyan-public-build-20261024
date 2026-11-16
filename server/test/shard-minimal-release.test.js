@@ -25,6 +25,8 @@ try {
   });
   assert.strictEqual(manifest.fileCount >= 10, true);
   assert.strictEqual(manifest.patchChanges.length, 11);
+  assert.strictEqual(manifest.productionEligible, false);
+  assert.ok(fs.existsSync(path.join(outDir, 'NONPRODUCTION.txt')));
   assert.ok(fs.existsSync(path.join(outDir, 'server.js')));
   assert.ok(fs.existsSync(path.join(outDir, 'lib', 'chat-route-plan.js')));
   assert.ok(fs.existsSync(path.join(outDir, 'lib', 'shard-maintenance.js')));
