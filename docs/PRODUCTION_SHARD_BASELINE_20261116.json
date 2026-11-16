@@ -71,8 +71,8 @@
   },
   "placementRehearsal": {
     "status": "passed",
-    "report": "/opt/xingyan-mainline/releases/20261116-shard-baseline/placement-rehearsal-report.json",
-    "reportSha256": "f7e7d9b784c8047df25f767c31c04379815895f2751f71b0e8abfd8cde8ceae2",
+    "report": "/opt/xingyan-mainline/releases/20261116-shard-baseline/placement-rehearsal-full-report.json",
+    "reportSha256": "f89146843e7589aec3227429d8d09ebe3c4d93ea7128d017a3a0a0ba79634da5",
     "failures": [],
     "counts": {
       "users": 2365,
@@ -81,7 +81,7 @@
       "reads": 9596,
       "moments": 2087,
       "momentNotices": 21,
-      "messageThreads": 500
+      "messageThreads": 27783
     }
   },
   "lastRuntimeAudit": {
