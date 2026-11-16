@@ -9,7 +9,10 @@
 - 程序目录：`/opt/xingyan-mainline/app`
 - 启动脚本：`/opt/xingyan-mainline/run-shard.sh`
 - 数据目录：`/opt/xingyan-mainline/data`
-- 拓扑名称：`server-b-shards-7`
+- 逻辑拓扑名称：`server-b-shards-7`
+- 正式运行拓扑：`server-b-mainline-shards-7`
+- 冻结路由计划哈希：`839c5a4e64e7aa4feb43d49a71de5eb017b0f93918bd05dbacb215dab02da660`
+- 冻结路由计划文件 SHA256：`c02d3ccb14304371044aad4096cc9501d072566c232fb51700d8e228e68d519c`
 - 43 本机还有独立的 `chris-shard@0-5` 服务组，不得与上面的 mainline 七片混为一组操作。
 
 任何操作都必须同时写明逻辑分片 ID、服务名、入口隧道端口、后端端口和目标机器。
@@ -51,6 +54,10 @@
 2. 七片代码哈希一致后，确认 `activeCalls=0`、`ringingCalls=0`。
 3. 通过共享功能开关一次性启用统一通话所有者。
 4. 若任一健康、接通或音频检查失败，关闭开关并恢复旧行为。
+
+聊天唯一 owner 路由使用同一套两阶段发布规则，详细放行单见
+`docs/SHARD_DORMANT_ROLLOUT.md`。计划文件未加载、计划哈希不一致、端口映射不一致、
+拓扑不一致或 `SHARD_ROUTE_PLAN_ENFORCED` 取值非法时，进程必须拒绝启动。
 
 ## 通话分片约束
 

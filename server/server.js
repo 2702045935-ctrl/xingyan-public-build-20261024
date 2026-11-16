@@ -159,6 +159,7 @@ function auditShardShadow() {
 
 const PORT = Number(process.env.PORT || 5180);
 let chatRoutePlan = null;
+let chatRoutePlanEnforced = false;
 if (process.env.SHARD_ROUTE_PLAN_FILE) {
   chatRoutePlan = loadChatRoutePlan(process.env.SHARD_ROUTE_PLAN_FILE, {
     shardCount: Number(process.env.SHARD_COUNT) || 1,
@@ -169,6 +170,17 @@ if (process.env.SHARD_ROUTE_PLAN_FILE) {
   console.log('[聊天路由] topology=' + chatRoutePlan.topologyId
     + ' hash=' + chatRoutePlan.hash.slice(0, 12)
     + ' shards=' + chatRoutePlan.shardCount);
+}
+const routePlanFlag = String(process.env.SHARD_ROUTE_PLAN_ENFORCED || '').trim();
+if (routePlanFlag && routePlanFlag !== '0' && routePlanFlag !== '1') {
+  throw new Error('SHARD_ROUTE_PLAN_ENFORCED must be 0 or 1');
+}
+chatRoutePlanEnforced = routePlanFlag === '1';
+if (chatRoutePlanEnforced && !chatRoutePlan) {
+  throw new Error('SHARD_ROUTE_PLAN_ENFORCED requires SHARD_ROUTE_PLAN_FILE');
+}
+if (chatRoutePlan) {
+  console.log('[聊天路由] mode=' + (chatRoutePlanEnforced ? 'enforced' : 'dormant'));
 }
 let shardRuntimeIdentity = null;
 if (process.env.SHARD_RUNTIME_MANIFEST) {
@@ -7659,7 +7671,8 @@ function chatOwnerPort(chatId) {
   const count = Math.max(1, Number(process.env.SHARD_COUNT) || 1);
   if (count <= 1) return PORT;
   const base = Number(process.env.SHARD_BASE_PORT) || 5299;
-  return base + chatOwnerShard(chatRoutePlan, chatId, count) * 100;
+  const plan = chatRoutePlanEnforced ? chatRoutePlan : null;
+  return base + chatOwnerShard(plan, chatId, count) * 100;
 }
 
 function forwardChatActionToOwner(actorId, msg, socket) {
@@ -14661,6 +14674,7 @@ async function handleApi(req, res, pathname, query) {
       runtimeService: shardRuntimeIdentity ? shardRuntimeIdentity.service : '',
       chatRoutePlanHash: chatRoutePlan ? chatRoutePlan.hash : '',
       chatRouteTopologyId: chatRoutePlan ? chatRoutePlan.topologyId : '',
+      chatRoutePlanEnforced,
       chatOwnerForwards: chatOwnerForwardCount,
       callSignalPort: CALL_SIGNAL_PORT,
       activeCalls,

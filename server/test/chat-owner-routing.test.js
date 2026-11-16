@@ -87,7 +87,8 @@ async function startShard(
   basePort,
   shardId,
   shardCount,
-  routePlanFile
+  routePlanFile,
+  routePlanEnforced
 ) {
   const base = 'http://127.0.0.1:' + port;
   const logs = [];
@@ -102,6 +103,7 @@ async function startShard(
       SHARD_ID: String(shardId),
       SHARD_BASE_PORT: String(basePort),
       SHARD_ROUTE_PLAN_FILE: routePlanFile,
+      SHARD_ROUTE_PLAN_ENFORCED: routePlanEnforced ? '1' : '0',
       CHRIS_LOCAL_ONLY: '1',
       DISABLE_STARTUP_BOT_BACKFILL: '1',
       AML_RUNTIME_ENABLED: '0'
@@ -216,7 +218,30 @@ async function main() {
         basePort,
         shard,
         shardCount,
-        routePlanFile
+        routePlanFile,
+        false
+      ));
+    }
+    const dormantHealth = await Promise.all(servers.map(async (server) => {
+      const response = await fetch(server.base + '/api/health');
+      return (await response.json()).data;
+    }));
+    for (const row of dormantHealth) {
+      assert.strictEqual(row.chatRoutePlanHash, routePlan.hash);
+      assert.strictEqual(row.chatRouteTopologyId, routePlan.topologyId);
+      assert.strictEqual(row.chatRoutePlanEnforced, false);
+    }
+    for (const server of servers) await stop(server.child);
+    servers.length = 0;
+    for (let shard = 0; shard < shardCount; shard += 1) {
+      servers.push(await startShard(
+        dataDir,
+        basePort + shard * 100,
+        basePort,
+        shard,
+        shardCount,
+        routePlanFile,
+        true
       ));
     }
     const aliceUserShard = resolveRoute(routePlan, 'user', alice.id);
@@ -292,7 +317,8 @@ async function main() {
       basePort,
       ownerIndex,
       shardCount,
-      routePlanFile
+      routePlanFile,
+      true
     );
     for (let index = 20; index < 30; index += 1) {
       aliceSocket.send(JSON.stringify({
@@ -325,6 +351,7 @@ async function main() {
     for (const row of healthRows) {
       assert.strictEqual(row.chatRoutePlanHash, routePlan.hash);
       assert.strictEqual(row.chatRouteTopologyId, routePlan.topologyId);
+      assert.strictEqual(row.chatRoutePlanEnforced, true);
     }
     assert.ok(forwarded >= 1);
     const summary = {
@@ -332,6 +359,7 @@ async function main() {
       shardCount,
       routePlanHash: routePlan.hash,
       routeTopologyId: routePlan.topologyId,
+      dormantInstancesChecked: dormantHealth.length,
       chatId,
       chatOwnerShard: ownerIndex,
       aliceUserShard,
