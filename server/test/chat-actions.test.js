@@ -294,6 +294,25 @@ async function main() {
     assert.ok(clearRequest && clearRequest.requestId, '一键清除前置好友申请缺失');
     response = await call(base, bob.cookie, 'POST', '/api/friends/respond', {
       requestId: clearRequest.requestId,
+      accept: false
+    });
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    for (const account of [alice, bob]) {
+      response = await call(base, account.cookie, 'GET', '/api/contacts');
+      assert.equal(response.status, 200, JSON.stringify(response.data));
+      assert.equal((response.data.friends || []).length, friendCounts[account.user.id],
+        '拒绝好友申请后好友数量发生变化');
+    }
+    response = await call(base, alice.cookie, 'POST', '/api/friends/request', {
+      username: 'bob_smoke',
+      message: '拒绝后重新添加'
+    });
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    response = await call(base, bob.cookie, 'GET', '/api/contacts');
+    const acceptedRequest = (response.data.incoming || []).find((item) => item.requestId);
+    assert.ok(acceptedRequest && acceptedRequest.requestId, '重新添加好友申请缺失');
+    response = await call(base, bob.cookie, 'POST', '/api/friends/respond', {
+      requestId: acceptedRequest.requestId,
       accept: true
     });
     assert.equal(response.status, 200, JSON.stringify(response.data));
