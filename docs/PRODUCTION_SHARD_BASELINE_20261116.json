@@ -46,6 +46,13 @@
       "moment-shard"
     ]
   },
+  "foundationRegression": {
+    "at": "2026-11-16T10:33:00Z",
+    "ok": true,
+    "suite": "server/test/shard-*.test.js",
+    "tests": 20,
+    "failed": []
+  },
   "shards": [
     {
       "id": 0,
