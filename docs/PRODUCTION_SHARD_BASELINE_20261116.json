@@ -84,6 +84,36 @@
       "messageThreads": 27783
     }
   },
+  "messageIntegrity": {
+    "status": "sequence-repair-rehearsed-open-media-items",
+    "fullInventory": {
+      "report": "/opt/xingyan-mainline/releases/20261116-shard-baseline/full-data-inventory.json",
+      "sha256": "ab79a4de98f837ec3290a0f0b72727424c99fc5e5c0bb6deb2de60d476ec2c40",
+      "errors": 779,
+      "warnings": 29525,
+      "messageSeqDuplicates": 706,
+      "missingUploadReferences": 73,
+      "ledgerIntegrity": true
+    },
+    "sequenceRepair": {
+      "status": "passed-in-candidate",
+      "conflictReport": "/opt/xingyan-mainline/releases/20261116-shard-baseline/message-sequence-conflicts.json",
+      "conflictReportSha256": "f7fef317e7932dad51d27d72c281460fc4fb924521362c16dd10213cb48e15a1",
+      "repairPlanSha256": "2ae3d5d56d49ad1ce9ee1f3d707c06d7a45e81d1250b8c3b72efc29c15528b7c",
+      "applyReportSha256": "4543e5c682bdba586ede44c19c0789cd3bd3a07e5e79aa562bb398f5bc61cfeb",
+      "repairedAuditSha256": "f51898d8bae83f8820dad0515cde013ad5ca3328e1b95ccb47d69907247948b5",
+      "affectedChats": 53,
+      "duplicateGroups": 387,
+      "duplicateMessages": 706,
+      "rewrittenMessages": 11416,
+      "changedReadCursors": 33,
+      "changedDeliveredCursors": 29,
+      "remainingDuplicateGroups": 0
+    },
+    "remainingBlockers": [
+      "73 active messages reference missing media files"
+    ]
+  },
   "lastRuntimeAudit": {
     "at": "2026-11-16T10:26:56.394Z",
     "ok": true,
