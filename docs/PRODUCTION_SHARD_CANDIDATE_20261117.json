@@ -1,17 +1,17 @@
 {
   "version": 1,
-  "candidateId": "system-complete-v1-cf5bf7b",
+  "candidateId": "system-complete-v1-53b229e",
   "sourceBranch": "codex/system-complete-v1",
-  "sourceCommit": "cf5bf7b7fb2ef03cedc9797c6fcdbbce06945593",
-  "capturedAt": "2026-11-17T06:22:27.1411016+08:00",
+  "sourceCommit": "53b229e3d32c9d9934cbb9a6f8c5597724cc8b03",
+  "capturedAt": "2026-11-17T06:24:47.7949338+08:00",
   "candidateCode": {
     "serverJsSha256": "f5119f24c70a38e637254df8a60f1b10e7a5da0dd1c11902d121366e27bf6d3d",
     "chatRoutePlanSha256": "86af4db9399985f41b1103f351f9147b6cc8926271a5f82b1543b01e093b29c4",
     "shardRuntimeHealthSha256": "9d9f4101c10b21b8b511803540995b33f52671b049ed530928c8029c112f7bc4",
     "shardRuntimeAuditSha256": "93a344e2b00a42b56b982839981b9e428f814755a58f49b525b2b784ee4226f9",
-    "shardMaintenanceSha256": "7342bb0cc86d3b86679f93e347c382afc43e76239bf33cdff9d82a1b99072224",
+    "shardMaintenanceSha256": "d2dbd5309b342b79e0410dd31bf1d1d1bf08407ccec8e71520fb4b8513ef5866",
     "shardMaintenanceExecutorSha256": "30f8b20e2a3c7b12412f7ea012d07fdcbb59e4f1ecb9559f51582a34ed0f39f6",
-    "manageHtmlSha256": "f32b5d59c38ea59936c32d343aeac3ca1051e5f4e5da1c7542a80eb885a36fa9",
+    "manageHtmlSha256": "41ae542c94cd77b9c7e3f3f6af2aef38ae685011013fbfaed59b798231c3d952",
     "shardPhysicalLayoutSha256": "5a5d6384f1e75d16801360f712ced66f8f8d9bf9c57c7769b353bb6a76e37fcf",
     "shardPhysicalLayoutAuditSha256": "9f8ce4d890f16ecb12aa8d1ce2ba7fc5fbc8ee3d55e2b20a34e6693a5a93c656",
     "shardShadowReadSha256": "666f36365f4f733118c2787c12a7e3b8368a172f402fbf277a26ac4ba8f968e1",
@@ -22,7 +22,9 @@
     "dualCellContractSha256": "de50363e0929dd43f7a2791370286e3ffbb4530fba8ddff73dc1292710f46af0",
     "dualCellContractAuditSha256": "47c3f811119d7dbd0aed9d90056eba8cb9f117bb6436a4b1073e399baea8765c",
     "dualCellProbeSha256": "d0abe776b67bf494734bd978a3a50d97d4f3d05c7f280728ca3f04cd2095edbf",
-    "dualCellProbeAuditSha256": "66c1fc125758b37b04786cc5e51efce4064d9a57be5db14a3145d3f6c7a1f731"
+    "dualCellProbeAuditSha256": "66c1fc125758b37b04786cc5e51efce4064d9a57be5db14a3145d3f6c7a1f731",
+    "singleCellCapacitySha256": "34e77bfc772d3229cb694c3f16ceadfdedebb5d60566ad5b975c3fa890b3d4c2",
+    "singleCellCapacityAuditSha256": "bbfee3d3633bd36cbc7c1dad03415c030ee2239e2508d9e7760be49808bc36c9"
   },
   "productionBaseline": {
     "businessHost": "192.140.179.176",
@@ -102,7 +104,8 @@
     "shadowReadParityGate": true,
     "dualCellAdmissionContract": true,
     "dualCellReadOnlyProbe": true,
-    "dualCellShadowActive": false
+    "dualCellShadowActive": false,
+    "singleCellCapacityGate": true
   },
   "deployment": {
     "status": "not-deployed",
