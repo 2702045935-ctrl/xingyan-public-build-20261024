@@ -65,6 +65,7 @@ jobs:
           print('L10n keys =', len(keys), ' duplicates =', dups)
           sys.exit(1 if dups else 0)
           PY
+          python3 tools/verify-no-tencent-media.py
 
       - name: 聊天接口回归
         run: |
