@@ -716,9 +716,8 @@ struct SwipeChatRow: View {
     @State private var dragVelocity: CGFloat = 0
     @State private var fullSwipeArmed = false
 
-    private var swipeSpring: Animation {
-
-        swipeSpringFor(velocity: dragVelocity)
+    private var swipeSpring: Animation? {
+        UIAccessibility.isReduceMotionEnabled ? nil : swipeSpringFor(velocity: dragVelocity)
     }
 
     private func swipeSpringFor(velocity vx: CGFloat) -> Animation {

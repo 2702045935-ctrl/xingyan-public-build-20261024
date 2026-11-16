@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 private struct SystemAnimationModifier<Value: Equatable>: ViewModifier {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -16,4 +17,11 @@ extension View {
                                            value: Value) -> some View {
         modifier(SystemAnimationModifier(animation: animation, value: value))
     }
+}
+
+@MainActor
+@discardableResult
+func withSystemAnimation<Result>(_ animation: Animation? = .default,
+                                 _ body: () throws -> Result) rethrows -> Result {
+    try withAnimation(UIAccessibility.isReduceMotionEnabled ? nil : animation, body)
 }

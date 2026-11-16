@@ -13,8 +13,8 @@
     },
     {
       "path": "Sources/ContactsView.swift",
-      "size": 69548,
-      "sha256": "4e650ab6cf7f916aeda380c8f32f3ff23034ea4613f98a269f59590e05a81809"
+      "size": 69480,
+      "sha256": "270d1042abebef7ea826bb45086d9d927726397c66cbbc74484509b0b452ae1f"
     },
     {
       "path": "Sources/ScrollProbe.swift",

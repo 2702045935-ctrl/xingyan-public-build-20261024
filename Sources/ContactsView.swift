@@ -68,7 +68,6 @@ struct ContactsView: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
     @Environment(\.colorScheme) private var scheme
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var keyword = ""
     @State private var path = NavigationPath()
@@ -200,7 +199,7 @@ private var funcs: [(String, String, Color, String)] {
             Spacer(minLength: 8)
 
             Button {
-                withAnimation(.spring(response: 0.32, dampingFraction: 0.62)) {
+                withSystemAnimation(.spring(response: 0.32, dampingFraction: 0.62)) {
                     plusMenu = true
                 }
             } label: {
@@ -331,7 +330,7 @@ private var funcs: [(String, String, Color, String)] {
                             ContactIndexBar(
                                 available: Set(sections.map { $0.letter }),
                                 onPick: { L in
-                                    withAnimation(reduceMotion ? nil : .easeOut(duration: 0.12)) {
+                                    withSystemAnimation(.easeOut(duration: 0.12)) {
                                         proxy.scrollTo("letter-\(L)", anchor: .top)
                                     }
                                     showBubble(L)
@@ -795,7 +794,7 @@ private var funcs: [(String, String, Color, String)] {
         return VStack(spacing: 0) {
             ForEach(sections) { section in
                 Button {
-                    withAnimation(.easeOut(duration: 0.18)) {
+                    withSystemAnimation(.easeOut(duration: 0.18)) {
                         proxy.scrollTo("letter-\(section.letter)", anchor: .top)
                     }
                 } label: {
@@ -1117,7 +1116,7 @@ struct ContactCardView: View {
             }
             .background(sheetBg.ignoresSafeArea())
         }
-        .onAppear { withAnimation(.easeOut(duration: 0.30)) { cardIn = true } }
+        .onAppear { withSystemAnimation(.easeOut(duration: 0.30)) { cardIn = true } }
     }
 
     private var morePanel: some View {

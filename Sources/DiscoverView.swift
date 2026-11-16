@@ -1495,7 +1495,7 @@ struct MomentsView: View {
                                       onDragChange: { _ in },
                                       onScrollStateChange: { scrolling in
                         guard momentsScrollActive != scrolling else { return }
-                        withAnimation(.easeOut(duration: scrolling ? 0.12 : 0.20)) {
+                        withSystemAnimation(.easeOut(duration: scrolling ? 0.12 : 0.20)) {
                             momentsScrollActive = scrolling
                         }
                     })
@@ -1763,7 +1763,7 @@ struct MomentsView: View {
 
     private func toggleCoverLock() {
         guard coverEditable else { return }
-        withAnimation(.easeOut(duration: 0.3)) {
+        withSystemAnimation(.easeOut(duration: 0.3)) {
             if coverLocked {
                 coverLocked = false
                 coverLockPull = 0
@@ -3197,7 +3197,7 @@ struct MomentRow: View {
             DragGesture(minimumDistance: 10)
                 .onChanged { _ in
                     if showActions {
-                        withAnimation(.easeOut(duration: 0.12)) { showActions = false }
+                        withSystemAnimation(.easeOut(duration: 0.12)) { showActions = false }
                     }
                 }
         )
@@ -3264,7 +3264,7 @@ struct MomentRow: View {
                 } else if let onMore {
                     onMore()
                 } else {
-                    withAnimation(.easeOut(duration: 0.14)) { showActions.toggle() }
+                    withSystemAnimation(.easeOut(duration: 0.14)) { showActions.toggle() }
                 }
             } label: {
                 HStack(spacing: 2.6) {
@@ -3412,7 +3412,7 @@ struct MomentRow: View {
     private var actionBar: some View {
         HStack(spacing: 0) {
             Button {
-                withAnimation(.easeOut(duration: 0.12)) { showActions = false }
+                withSystemAnimation(.easeOut(duration: 0.12)) { showActions = false }
                 if moment.likedByMe != true { burstHeart() }
                 onLike?()
             } label: {
@@ -3435,7 +3435,7 @@ struct MomentRow: View {
             Rectangle().fill(Color.white.opacity(0.22)).frame(width: 0.5, height: 18)
 
             Button {
-                withAnimation(.easeOut(duration: 0.12)) { showActions = false }
+                withSystemAnimation(.easeOut(duration: 0.12)) { showActions = false }
                 onComment?()
             } label: {
                 HStack(spacing: 5) {
@@ -3453,7 +3453,7 @@ struct MomentRow: View {
             if moment.mine == true, onDeleteMoment != nil {
                 Rectangle().fill(Color.white.opacity(0.22)).frame(width: 0.5, height: 18)
                 Button {
-                    withAnimation(.easeOut(duration: 0.12)) { showActions = false }
+                    withSystemAnimation(.easeOut(duration: 0.12)) { showActions = false }
                     onTogglePin?()
                 } label: {
                     HStack(spacing: 5) {
@@ -3469,7 +3469,7 @@ struct MomentRow: View {
                 .buttonStyle(.plain)
                 Rectangle().fill(Color.white.opacity(0.22)).frame(width: 0.5, height: 18)
                 Button {
-                    withAnimation(.easeOut(duration: 0.12)) { showActions = false }
+                    withSystemAnimation(.easeOut(duration: 0.12)) { showActions = false }
                     onDeleteMoment?()
                 } label: {
                     Image(systemName: "trash")
@@ -3649,7 +3649,7 @@ struct MomentGridDrop: DropDelegate {
     func dropEntered(info: DropInfo) {
         guard let from = dragIndex, from != index,
               items.indices.contains(from), items.indices.contains(index) else { return }
-        withAnimation(.easeInOut(duration: 0.16)) {
+        withSystemAnimation(.easeInOut(duration: 0.16)) {
             items.move(fromOffsets: IndexSet(integer: from), toOffset: index > from ? index + 1 : index)
         }
         dragIndex = index
