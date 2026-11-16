@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { resolveTopology } = require('../lib/shard-topology');
+const { loadManifest } = require('../lib/shard-runtime-manifest');
 
 const ROOT = path.resolve(__dirname, '..');
 const ENTRY = path.join(ROOT, 'server.js');
@@ -55,6 +56,14 @@ const registry = JSON.parse(fs.readFileSync(topologyFile, 'utf8'));
 for (const topologyId of Object.keys(registry.topologies || {})) {
   resolveTopology(topologyFile, topologyId);
 }
+const manifestFile = path.join(ROOT, 'shard-runtime-production.json');
+const runtimeManifest = loadManifest(manifestFile, { topologyFile });
+if (!runtimeManifest.ok) {
+  missing.push({
+    from: 'shard-runtime-production.json',
+    request: JSON.stringify(runtimeManifest.failures)
+  });
+}
 
 if (missing.length) {
   console.error(JSON.stringify({ ok: false, missing }, null, 2));
@@ -64,6 +73,7 @@ if (missing.length) {
     ok: true,
     entry: path.relative(ROOT, ENTRY).replace(/\\/g, '/'),
     localModules: visited.size,
-    topologies: Object.keys(registry.topologies || {})
+    topologies: Object.keys(registry.topologies || {}),
+    runtimeManifest: runtimeManifest.hash
   }, null, 2));
 }

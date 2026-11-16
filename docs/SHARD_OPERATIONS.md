@@ -16,6 +16,8 @@
 
 ## 唯一分片清单
 
+机器可读清单：`server/shard-runtime-production.json`。
+
 每个分片必须登记以下字段：
 
 | 字段 | 含义 |

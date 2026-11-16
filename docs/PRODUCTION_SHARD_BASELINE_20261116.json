@@ -1,0 +1,77 @@
+{
+  "capturedAt": "2026-11-16T10:18:24Z",
+  "entryHost": "43.242.194.89",
+  "entryPort": 5443,
+  "businessHost": "192.140.179.176",
+  "programDir": "/opt/xingyan-mainline/app",
+  "dataDir": "/opt/xingyan-mainline/data",
+  "codeSha256": "cb937047456b6c6bf4aa1b174b4d1edb397e54c1e47ff60f6ca0341b4215007c",
+  "topologyId": "server-b-shards-7",
+  "runtimeTopologyId": "server-b-mainline-shards-7",
+  "runtimeManifestHash": "f7afcdef3bd1d51ef7b50f58650009693397686faaaa31da6738ed96aa4f0f44",
+  "lastRuntimeAudit": {
+    "at": "2026-11-16T10:26:56.394Z",
+    "ok": true,
+    "frozenCodeOk": true,
+    "activeShards": 7,
+    "healthyShards": 7
+  },
+  "shards": [
+    {
+      "id": 0,
+      "service": "xingyan-mainline-shard@0.service",
+      "entryPort": 15299,
+      "backendPort": 7080,
+      "pid": 1281087,
+      "state": "active"
+    },
+    {
+      "id": 1,
+      "service": "xingyan-mainline-shard@1.service",
+      "entryPort": 15399,
+      "backendPort": 7180,
+      "pid": 1281094,
+      "state": "active"
+    },
+    {
+      "id": 2,
+      "service": "xingyan-mainline-shard@2.service",
+      "entryPort": 15499,
+      "backendPort": 7280,
+      "pid": 1281101,
+      "state": "active"
+    },
+    {
+      "id": 3,
+      "service": "xingyan-mainline-shard@3.service",
+      "entryPort": 15599,
+      "backendPort": 7380,
+      "pid": 1281108,
+      "state": "active"
+    },
+    {
+      "id": 4,
+      "service": "xingyan-mainline-shard@4.service",
+      "entryPort": 15699,
+      "backendPort": 7480,
+      "pid": 1281115,
+      "state": "active"
+    },
+    {
+      "id": 5,
+      "service": "xingyan-mainline-shard@5.service",
+      "entryPort": 15799,
+      "backendPort": 7580,
+      "pid": 1281124,
+      "state": "active"
+    },
+    {
+      "id": 6,
+      "service": "xingyan-mainline-shard@6.service",
+      "entryPort": 15899,
+      "backendPort": 7680,
+      "pid": 1281131,
+      "state": "active"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "environment": "production",
+  "topologyId": "server-b-mainline-shards-7",
+  "host": "192.140.179.176",
+  "entryHost": "43.242.194.89",
+  "programDir": "/opt/xingyan-mainline/app",
+  "dataDir": "/opt/xingyan-mainline/data",
+  "serviceTemplate": "xingyan-mainline-shard@{id}.service",
+  "shardCount": 7,
+  "backendBasePort": 7080,
+  "entryBasePort": 15299,
+  "portStep": 100,
+  "frozenDate": "2026-11-16",
+  "frozenCodeHash": "cb937047456b6c6bf4aa1b174b4d1edb397e54c1e47ff60f6ca0341b4215007c"
+}
