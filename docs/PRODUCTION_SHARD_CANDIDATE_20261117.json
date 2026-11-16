@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "candidateId": "system-complete-v1-3deb0ec-live-r2",
+  "candidateId": "system-complete-v1-3deb0ec-dormant-r2",
   "sourceBranch": "codex/system-complete-v1",
   "sourceCommit": "3deb0ec82cf730c2e22c8f006b1bba0392d1d016",
   "capturedAt": "2026-11-17T06:57:59.8407362+08:00",
@@ -133,14 +133,18 @@
     "physicalShadowParityPassed": true,
     "liveCapacityPassed": true,
     "candidateInstalledInIsolatedRelease": true,
-    "candidateSmokeBootPassed": true
+    "candidateSmokeBootPassed": true,
+    "dormantAllSevenShardsActive": true,
+    "dormantSoakPassed": true
   },
   "deployment": {
-    "status": "staged-not-activated",
-    "onlineServicesChanged": false,
-    "onlineDataChanged": false,
+    "status": "dormant-active-all-7",
+    "onlineServicesChanged": true,
+    "onlineDataSchemaChanged": false,
+    "onlineDataDirChanged": false,
+    "onlineOwnerRoutingEnabled": false,
     "stableReleaseChanged": false,
-    "reason": "candidate is staged in an isolated release; one-shard maintenance activation has not started",
+    "reason": "all seven candidate shards are active in dormant mode; owner enforcement remains disabled",
     "readOnlyObservation": {
       "checkedAt": "2026-11-17T06:57:59.8407362+08:00",
       "publicEntryReachable": true,
@@ -206,7 +210,30 @@
       1281115,
       1281124,
       1281131
-    ]
+    ],
+    "dormantRollout": {
+      "report": "outputs/dormant-rollout-report-20261117.json",
+      "reportSha256": "2d5653298e99b49ec3fe13fc186d3c50f9c990fcc46dde0d7659c8368af3ce4c",
+      "ok": true,
+      "soakRounds": 10,
+      "candidatePids": [
+        1747811,
+        1748138,
+        1748172,
+        1748218,
+        1748254,
+        1748289,
+        1748327
+      ],
+      "allEnforcedFalse": true,
+      "allOwnerForwardsZero": true
+    }
+  },
+  "usbVerification": {
+    "status": "pending-device",
+    "appleDeviceDetected": false,
+    "checkedAt": "2026-11-17T06:59:00+08:00",
+    "requiredAction": "connect iPhone by USB, unlock and trust this computer"
   },
   "scaleReadiness": {
     "candidateRolloutReadyAfterMaintenanceWindow": true,
