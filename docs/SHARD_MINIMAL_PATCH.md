@@ -15,7 +15,7 @@ node server/tools/shard-route-patch.js \
 cb937047456b6c6bf4aa1b174b4d1edb397e54c1e47ff60f6ca0341b4215007c
 ```
 
-补丁只注入六处：
+补丁只注入七处：
 
 1. 路由和运行身份模块引用。
 2. 路由计划及运行 manifest 启动校验。
@@ -23,6 +23,7 @@ cb937047456b6c6bf4aa1b174b4d1edb397e54c1e47ff60f6ca0341b4215007c
 4. 客户端聊天操作的 owner 转发闸门。
 5. 健康接口的分片、计划和转发字段。
 6. `/__shard/chat-action` 内部转发接口。
+7. `/__shard/owner-routing` 七片原子开关接口。
 
 以下任一情况直接失败：
 

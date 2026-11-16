@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "candidateId": "system-complete-v1-3deb0ec-dormant-r2",
+  "candidateId": "system-complete-v1-c6b5189-dormant-r3",
   "sourceBranch": "codex/system-complete-v1",
-  "sourceCommit": "3deb0ec82cf730c2e22c8f006b1bba0392d1d016",
-  "capturedAt": "2026-11-17T06:57:59.8407362+08:00",
+  "sourceCommit": "c6b51899ba2fb3298d184472ce9b375bb9640da9",
+  "capturedAt": "2026-11-17T07:38:00+08:00",
   "candidateCode": {
-    "serverJsSha256": "0ec140aba3f4c8b601d9ab7d1a01fdfc1ad35b667a9da5e3fcf6c5fcdca592d3",
+    "serverJsSha256": "c84983531e6a6ff55070a0f36d961c8e61000353b26c1c996331ea57a0819c5d",
     "chatRoutePlanSha256": "86af4db9399985f41b1103f351f9147b6cc8926271a5f82b1543b01e093b29c4",
     "shardRuntimeHealthSha256": "9d9f4101c10b21b8b511803540995b33f52671b049ed530928c8029c112f7bc4",
     "shardRuntimeAuditSha256": "93a344e2b00a42b56b982839981b9e428f814755a58f49b525b2b784ee4226f9",
@@ -28,14 +28,16 @@
     "singleCellCapacityCollectorSha256": "497d0409f8a6368c66c85d911c842da475a6be9b1b5fc62397c46fcaa4e35bdf",
     "singleCellCapacityCollectorAuditSha256": "f17329c4894cf750e22fab74ef9ad38108ac7920141cbd8d638e8e844bf020c9",
     "singleCellCapacityRunnerSha256": "624ed48164aaa053b276ddf4cfdab89b60ae2ab20e2c6e7197022a56a38342c3",
-    "shardRouteServerPatchSha256": "b1f848e93d48c6e7f83c0d4b1e2716f8dcccd7667f2d0dcf12e09d76071eb3bf",
+    "shardRouteServerPatchSha256": "862829e3276bb643141f4c819f54cb50bf460364121b88e93152e375f6f76830",
     "shardRoutePatchAuditSha256": "873cd3557a512422a032b8333799b6dfc6d4f946be4b9b8a7da1eca62d9e80f6",
-    "shardMinimalReleaseSha256": "89ea3a3eeaf7a85d6195fa1a7d74829ee54d5f44c528c6d28f0e173402cee355",
+    "shardMinimalReleaseSha256": "ae33a48b215e6f8a32cc9fb15c0cf596e4d0ddc6f43f2775431711385ccd1317",
     "shardMinimalReleaseAuditSha256": "c3dd7d3d8a35267beaf44be77d0ce93b0caf259835c1a15e6a400d3630044520",
     "standaloneMaintenancePageSha256": "5d792aead199ac2dfb71758b19b2a083d120addfc22a74279f1f450d2a5bb1b1",
     "runShardCandidateSha256": "916df79cd0572d109c955142ab7d1c8fac8dd0390bc3c16067b60662f8df145d",
-    "shardReleaseInstallSha256": "a3125e9402d7e87ea89876eab5ca2477e41964190e790abb714b88d104da2923",
-    "shardReleaseInstallAuditSha256": "46d5c77dbd44a7d15d48c72be0b450c30872fff8e206710b242fa5aeaaf30726"
+    "shardReleaseInstallSha256": "50f44037cadd03412bb32968819c2fa04940304f338cdb8de03ae5c49097a8f1",
+    "shardReleaseInstallAuditSha256": "46d5c77dbd44a7d15d48c72be0b450c30872fff8e206710b242fa5aeaaf30726",
+    "shardOwnerSwitchSha256": "ef5e7a73da37d1c828cceab22821f3cce9549afdb224919a62acb5d28300e16a",
+    "shardOwnerSwitchToolSha256": "cbe7444d396d5f29ca7e3ec7bc25cb04993d5499ab9e90fe96f58c741e0e0d48"
   },
   "productionBaseline": {
     "businessHost": "192.140.179.176",
@@ -128,6 +130,9 @@
     "stagedInstaller": true,
     "nonproductionPreviewRejected": true,
     "productionPatchProfileVerified": true,
+    "atomicSevenShardOwnerSwitchVerified": true,
+    "ownerSwitchFailureRollbackVerified": true,
+    "installerExecutableBitVerified": true,
     "dormantOwnerRoutingDisabled": true,
     "physicalBuildPassed": true,
     "physicalShadowParityPassed": true,
@@ -138,20 +143,20 @@
     "dormantSoakPassed": true
   },
   "deployment": {
-    "status": "dormant-active-all-7",
+    "status": "dormant-active-all-7-r3",
     "onlineServicesChanged": true,
     "onlineDataSchemaChanged": false,
     "onlineDataDirChanged": false,
     "onlineOwnerRoutingEnabled": false,
     "stableReleaseChanged": false,
-    "reason": "all seven candidate shards are active in dormant mode; owner enforcement remains disabled",
+    "reason": "all seven r3 candidate shards are active in dormant mode; owner enforcement remains disabled",
     "readOnlyObservation": {
-      "checkedAt": "2026-11-17T06:57:59.8407362+08:00",
+      "checkedAt": "2026-11-17T07:38:00+08:00",
       "publicEntryReachable": true,
       "publicHealthOk": true,
       "publicHealthService": "chris-chat",
       "publicHealthStableShape": true,
-      "candidateRouteFieldsPresent": false,
+      "candidateRouteFieldsPresent": true,
       "sshPort22Reachable": true,
       "productionStableCodeSha256": "cb937047456b6c6bf4aa1b174b4d1edb397e54c1e47ff60f6ca0341b4215007c",
       "routePlanFileSha256": "c02d3ccb14304371044aad4096cc9501d072566c232fb51700d8e228e68d519c",
@@ -162,16 +167,16 @@
     }
   },
   "productionArtifact": {
-    "path": "outputs/shard-minimal-production-3deb0ec.zip",
+    "path": "outputs/shard-minimal-production-c6b5189.zip",
     "productionEligible": true,
-    "fileCount": 32,
+    "fileCount": 34,
     "baseServerSha256": "cb937047456b6c6bf4aa1b174b4d1edb397e54c1e47ff60f6ca0341b4215007c",
-    "patchedServerSha256": "8b949309145b33f076e8b6a1d724bdafe80bd45e5b817881338d230a9307e140",
-    "releaseContentHash": "39b5e84546f3083576b4f8b60d2b80cefe73b4d38345e822c58203814e738fca",
-    "zipBytes": 574105,
-    "zipSha256": "ab1c2bba5dd67cff17069d02cf0c9420d0a7cdf24ae385bb32ed50085c1f2570",
-    "stagedOnHost": "/opt/xingyan-mainline/releases/20261117-shard-candidate-r2",
-    "stagedFileCount": 32,
+    "patchedServerSha256": "5e1e60586a2548ebb4f144c9e22b464b8f1d3c83d1a7e0499cf70689e4f43020",
+    "releaseContentHash": "a617bce8cba8b6ab09db7597be4d3668034cd1e1e5760e0eeb23027495b65379",
+    "zipBytes": 570708,
+    "zipSha256": "48dd879fda09e7fa4310cb90082869c2836d4f79134aa9babd8d258824cb612f",
+    "stagedOnHost": "/opt/xingyan-mainline/releases/20261117-shard-candidate-r3",
+    "stagedFileCount": 34,
     "stagedInstallVerified": true,
     "smokeBootVerified": true
   },
@@ -212,28 +217,58 @@
       1281131
     ],
     "dormantRollout": {
-      "report": "outputs/dormant-rollout-report-20261117.json",
-      "reportSha256": "2d5653298e99b49ec3fe13fc186d3c50f9c990fcc46dde0d7659c8368af3ce4c",
+      "report": "outputs/r3-dormant-rollout-20261117.json",
+      "reportSha256": "5443b59a98cb7c3c6eb10772cbd7ed43ac8be571b4a1dbc8f50463e85eb4b40f",
       "ok": true,
-      "soakRounds": 10,
+      "soakRounds": 7,
       "candidatePids": [
-        1747811,
-        1748138,
-        1748172,
-        1748218,
-        1748254,
-        1748289,
-        1748327
+        1754847,
+        1754865,
+        1754885,
+        1754901,
+        1754918,
+        1754937,
+        1754958
       ],
+      "soakReport": "outputs/r3-dormant-soak-20261117.json",
+      "soakReportSha256": "6c1b33894dff69ff664d8430adbb00201ad8366c4a1c1fda940eb11a838b494f",
+      "soakDurationSeconds": 60,
       "allEnforcedFalse": true,
       "allOwnerForwardsZero": true
     }
   },
   "usbVerification": {
-    "status": "pending-device",
-    "appleDeviceDetected": false,
-    "checkedAt": "2026-11-17T06:59:00+08:00",
-    "requiredAction": "connect iPhone by USB, unlock and trust this computer"
+    "status": "passed-key-flows",
+    "appleDeviceDetected": true,
+    "checkedAt": "2026-11-17T07:38:00+08:00",
+    "device": {
+      "productType": "iPhone18,4",
+      "productVersion": "27.0.1",
+      "udid": "00008150-00191CC40C42401C",
+      "bundleId": "com.chris.chatnative",
+      "refreshRateHz": 120
+    },
+    "verifiedFlows": [
+      "conversation-list",
+      "contacts",
+      "world",
+      "moments",
+      "music-player",
+      "games",
+      "profile",
+      "family-group-chat",
+      "chat-history-scroll"
+    ],
+    "sentRealMessages": false,
+    "evidence": [
+      "outputs/iphone-r3-world-clean.png",
+      "outputs/iphone-r3-moments.png",
+      "outputs/iphone-r3-music.png",
+      "outputs/iphone-r3-contacts.png",
+      "outputs/iphone-r3-me.png",
+      "outputs/iphone-r3-chat-open.png",
+      "outputs/iphone-r3-chat-scroll-older.png"
+    ]
   },
   "scaleReadiness": {
     "candidateRolloutReadyAfterMaintenanceWindow": true,
