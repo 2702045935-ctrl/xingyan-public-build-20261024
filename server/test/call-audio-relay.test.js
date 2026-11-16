@@ -138,6 +138,7 @@ async function startServer(dataDir, port, turnPort) {
     env: Object.assign({}, process.env, {
       DATA_DIR: dataDir,
       PORT: String(port),
+      CALL_SIGNAL_PORT: String(port),
       TURN_PORT: String(turnPort),
       CHRIS_LOCAL_ONLY: '1',
       AML_RUNTIME_ENABLED: '0',

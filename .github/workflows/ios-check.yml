@@ -30,21 +30,6 @@ jobs:
           rm -rf WebRTCKit && mkdir -p WebRTCKit
           unzip -q /tmp/webrtc.zip -d WebRTCKit
 
-      - name: Download TRTC
-        run: |
-          set -e
-          curl -L --fail --retry 3 --retry-delay 3 --connect-timeout 15 --max-time 900 \
-            -o /tmp/trtc.zip \
-            https://liteav.sdk.qcloud.com/download/latest/TXLiteAVSDK_TRTC_iOS_latest.zip
-          rm -rf /tmp/trtc-x TRTCKit
-          mkdir -p /tmp/trtc-x TRTCKit
-          unzip -q /tmp/trtc.zip -d /tmp/trtc-x
-          for NAME in TXLiteAVSDK_TRTC TXFFmpeg TXSoundTouch; do
-            FW="$(find /tmp/trtc-x -type d -name "$NAME.framework" -path '*ios-arm64_armv7*' | head -1)"
-            test -n "$FW"
-            cp -R "$FW" TRTCKit/
-          done
-
       - name: Swift typecheck only
         run: |
           set -o pipefail
@@ -57,7 +42,6 @@ jobs:
             -typecheck \
             -F "$SDK/System/Library/Frameworks" \
             -F WebRTCKit/WebRTC.xcframework/ios-arm64 \
-            -F TRTCKit \
             Sources/*.swift 2>&1 | tee /tmp/ios-typecheck.log
           ! grep -q "error:" /tmp/ios-typecheck.log
 

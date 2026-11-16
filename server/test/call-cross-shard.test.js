@@ -95,6 +95,7 @@ async function startShard(dataDir, port, shardId, shardBase) {
       SHARD_COUNT: '2',
       SHARD_ID: String(shardId),
       SHARD_BASE_PORT: String(shardBase),
+      CALL_SIGNAL_PORT: String(shardBase),
       CHRIS_LOCAL_ONLY: '1',
       AML_RUNTIME_ENABLED: '0',
       DISABLE_STARTUP_BOT_BACKFILL: '1'
@@ -198,23 +199,34 @@ async function main() {
   let shardB;
   let aliceSocket;
   let bobSocket;
+  let charlieSocket;
 
   try {
     const aliceUser = user('u_cross_shard_alice', 'cross_shard_alice', 'Alice');
     const bobUser = user('u_cross_shard_bob', 'cross_shard_bob', 'Bob');
+    const charlieUser = user('u_cross_shard_charlie', 'cross_shard_charlie', 'Charlie');
     fs.writeFileSync(path.join(dataDir, 'users.json'), JSON.stringify({
-      users: [aliceUser, bobUser]
+      users: [aliceUser, bobUser, charlieUser]
     }));
     fs.writeFileSync(path.join(dataDir, 'security.json'), JSON.stringify({ sliderLogin: 0 }));
     fs.writeFileSync(path.join(dataDir, 'ui.json'), JSON.stringify({ multiDevice: 1 }));
     fs.writeFileSync(path.join(dataDir, 'friendships.json'), JSON.stringify({
-      friendships: [{
-        id: 'friend-cross-shard',
-        fromId: aliceUser.id,
-        toId: bobUser.id,
-        status: 'accepted',
-        createdAt: new Date().toISOString()
-      }]
+      friendships: [
+        {
+          id: 'friend-cross-shard',
+          fromId: aliceUser.id,
+          toId: bobUser.id,
+          status: 'accepted',
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: 'friend-cross-shard-busy',
+          fromId: aliceUser.id,
+          toId: charlieUser.id,
+          status: 'accepted',
+          createdAt: new Date().toISOString()
+        }
+      ]
     }));
     fs.writeFileSync(path.join(dataDir, 'chats.json'), JSON.stringify({
       chats: [{
@@ -260,9 +272,36 @@ async function main() {
       action: 'accept',
       callId
     }));
+    bobSocket.socket.send(JSON.stringify({
+      type: 'call',
+      action: 'accept',
+      callId
+    }));
     await waitEvent(aliceSocket.events, (event) =>
       event.type === 'call' && event.action === 'accepted' && event.callId === callId,
     '接通同步');
+
+    bobSocket.socket.close();
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    bobSocket = await connect(shardB.base, bob.cookie);
+    const reconnected = await waitEvent(bobSocket.events, (event) => event.type === 'ready',
+      '通话中重连');
+    assert.equal(reconnected.callActive, true);
+
+    const charlie = await login(shardB.base, charlieUser.username);
+    charlieSocket = await connect(shardB.base, charlie.cookie);
+    const busyCallId = 'call-cross-shard-busy-' + Date.now();
+    charlieSocket.socket.send(JSON.stringify({
+      type: 'call',
+      action: 'invite',
+      callId: busyCallId,
+      toUserId: alice.user.id,
+      media: 'audio'
+    }));
+    const busy = await waitEvent(charlieSocket.events, (event) =>
+      event.type === 'call-error' && event.callId === busyCallId,
+    '全局忙线');
+    assert.match(busy.error, /正在通话中/);
 
     const uplink = Buffer.alloc(1282);
     uplink[0] = 0x45;
@@ -313,6 +352,7 @@ async function main() {
   } finally {
     aliceSocket?.socket.close();
     bobSocket?.socket.close();
+    charlieSocket?.socket.close();
     await stopChild(shardA?.child);
     await stopChild(shardB?.child);
     fs.rmSync(dataDir, { recursive: true, force: true });

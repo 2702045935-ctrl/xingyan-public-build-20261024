@@ -7588,10 +7588,75 @@ function shardPorts() {
   return Array.from({ length: count }, (_, index) => base + index * 100);
 }
 
-function relayToShardPeers(userId, payload) {
+const callSignalAgent = new http.Agent({ keepAlive: true, maxSockets: 256 });
+
+function forwardToCallSignalShard(pathname, payload) {
+  if (PORT === CALL_SIGNAL_PORT) return;
+  const body = JSON.stringify(payload || {});
+  const request = http.request({
+    host: '127.0.0.1',
+    port: CALL_SIGNAL_PORT,
+    path: pathname,
+    method: 'POST',
+    agent: callSignalAgent,
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(body),
+      'X-Shard-Relay': db.secret || ''
+    }
+  }, (response) => response.resume());
+  request.setTimeout(1800, () => request.destroy());
+  request.on('error', () => {});
+  request.end(body);
+}
+
+function forwardCallToSignalShard(actorId, msg) {
+  forwardToCallSignalShard('/__shard/call-signal', {
+    actorId: String(actorId || ''),
+    payload: msg
+  });
+}
+
+function requestCallSignalShard(pathname, payload, timeoutMs) {
+  return new Promise((resolve) => {
+    if (PORT === CALL_SIGNAL_PORT) {
+      resolve(null);
+      return;
+    }
+    const body = JSON.stringify(payload || {});
+    const request = http.request({
+      host: '127.0.0.1',
+      port: CALL_SIGNAL_PORT,
+      path: pathname,
+      method: 'POST',
+      agent: callSignalAgent,
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+        'X-Shard-Relay': db.secret || ''
+      }
+    }, (response) => {
+      const chunks = [];
+      response.on('data', (chunk) => chunks.push(chunk));
+      response.on('end', () => {
+        try {
+          const parsed = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+          resolve(parsed && parsed.ok ? parsed.data : null);
+        } catch (_) {
+          resolve(null);
+        }
+      });
+    });
+    request.setTimeout(Number(timeoutMs) || 1800, () => request.destroy());
+    request.on('error', () => resolve(null));
+    request.end(body);
+  });
+}
+
+function relayToShardPorts(userId, payload, ports) {
   if (!userId || !payload) return;
   const body = JSON.stringify({ userId: String(userId), payload });
-  shardPorts().forEach((port) => {
+  Array.from(new Set(ports || [])).forEach((port) => {
     if (port === PORT) return;
     const relay = http.request({
       host: '127.0.0.1',
@@ -7608,6 +7673,10 @@ function relayToShardPeers(userId, payload) {
     relay.on('error', () => {});
     relay.end(body);
   });
+}
+
+function relayToShardPeers(userId, payload) {
+  relayToShardPorts(userId, payload, shardPorts());
 }
 
 function sendTo(userId, payload) {
@@ -7631,6 +7700,15 @@ function onlinePresenceSet() {
   const out = new Set(localOnlineIds());
   peerOnlineCache.forEach((set) => set.forEach((id) => out.add(id)));
   return out;
+}
+
+function onlineShardPorts(userId) {
+  const ports = [];
+  if (connections.has(userId)) ports.push(PORT);
+  peerOnlineCache.forEach((set, port) => {
+    if (set.has(userId)) ports.push(port);
+  });
+  return ports;
 }
 
 function broadcastPresenceToPeers(userId, online) {
@@ -8227,6 +8305,31 @@ function momentsHiddenFrom(ownerId, viewerId) {
 
 // 进行中的通话：callId -> { id, from, to, state, startedAt, timer }
 const calls = new Map();
+/* 微信式通话归属：所有一对一通话信令和 PCM 帧统一进同一个通话分片，
+   通话状态、忙线判断和音频转发都只在这里维护，其他分片只负责转发，
+   避免不同分片各自保存一半状态造成“接到了但一侧不显示已接通”。 */
+const CALL_SIGNAL_PORT = Number(process.env.CALL_SIGNAL_PORT) || 5299;
+const callSignalSockets = new Map();
+const shardCallDirectory = new Map();
+
+function pendingCallFor(userId) {
+  let found = null;
+  calls.forEach((call) => {
+    if (found || call.state !== 'ringing' || call.to !== userId) return;
+    const peer = findUser(call.from);
+    if (!peer) return;
+    found = {
+      callId: call.id,
+      media: call.media === 'video' ? 'video' : 'audio',
+      peerId: peer.id,
+      peerName: peer.nickname || peer.username || '',
+      peerAvatar: peer.avatar || '',
+      sdp: call.sdp || null,
+      startedAt: Number(call.startedAt) || 0
+    };
+  });
+  return found;
+}
 
 /** 设备确认登录的登录码：6 位数字、3 分钟有效、一次性 */
 const pairCodes = new Map();
@@ -8407,7 +8510,15 @@ function checkCaptcha(id, answer) {
   return String(answer || '').trim().toUpperCase() === rec.text;
 }
 
-function callSend(userId, payload) { return sendTo(userId, payload); }
+function callSend(userId, payload) {
+  const sent = sendToLocal(userId, payload);
+  const ports = onlineShardPorts(userId);
+  /* 通话事件只发到对端当前在线的那一片，避免 PCM 帧被无意义地广播到
+     全部聊天分片。presence 还没同步到时才退回广播，宁可多一次，不能丢。 */
+  if (ports.length) relayToShardPorts(userId, payload, ports);
+  else relayToShardPeers(userId, payload);
+  return sent;
+}
 
 function publishReadCursor(chat, user, seq) {
   const value = Math.max(0, Math.floor(Number(seq) || 0));
@@ -8505,6 +8616,14 @@ function callEnd(call, reason, extra) {
   /* 宽限期定时器要清掉：不然通话都结束了它还会再结束一次（日志里会出现重复的 end） */
   if (call.dcTimer) { clearTimeout(call.dcTimer); call.dcTimer = null; }
   calls.delete(call.id);
+  shardCallDirectory.delete(call.id);
+  [call.from, call.to].forEach((userId) => {
+    const relaySocket = callSignalSockets.get(userId);
+    if (relaySocket && relaySocket.__appBuild === 'shard-call') {
+      wsFrames.delete(relaySocket);
+      callSignalSockets.delete(userId);
+    }
+  });
   callTrace('end ' + call.from + ' -> ' + call.to + ' reason=' + reason
     + ' media=' + (call.media || 'audio') + ' state=' + call.state
     /* 这通电话两边各发了多少帧语音：0 = 那边的麦克风没起来（听不到就是这么来的） */
@@ -8513,7 +8632,12 @@ function callEnd(call, reason, extra) {
     + ' | 到达间隔 主叫最大=' + (((call.audioMaxGap || {})[call.from]) || 0) + 'ms'
     + ' 被叫最大=' + (((call.audioMaxGap || {})[call.to]) || 0) + 'ms'
     + ' 卡顿(>150ms) 主叫=' + (((call.audioBigGap || {})[call.from]) || 0)
-    + ' 被叫=' + (((call.audioBigGap || {})[call.to]) || 0));
+    + ' 被叫=' + (((call.audioBigGap || {})[call.to]) || 0)
+    + ' 接通耗时=' + (call.acceptedAt ? Math.max(0, call.acceptedAt - (call.inviteAt || call.acceptedAt)) + 'ms' : '未接通')
+    + ' 接通到首帧 主叫=' + (call.firstAudioAt && call.firstAudioAt[call.from]
+      ? Math.max(0, call.firstAudioAt[call.from] - (call.acceptedAt || call.firstAudioAt[call.from])) + 'ms' : '无')
+    + ' 被叫=' + (call.firstAudioAt && call.firstAudioAt[call.to]
+      ? Math.max(0, call.firstAudioAt[call.to] - (call.acceptedAt || call.firstAudioAt[call.to])) + 'ms' : '无'));
   const other = { from: call.to, to: call.from, callId: call.id, reason, media: call.media || 'audio' };
   callSend(call.from, Object.assign({ type: 'call', action: 'end' }, other, extra || {}, { peerId: call.to }));
   callSend(call.to, Object.assign({ type: 'call', action: 'end' }, other, extra || {}, { peerId: call.from }));
@@ -8696,6 +8820,10 @@ function handleClientMessage(user, socket, raw) {
   if (msg.type === 'call') {
     const action = String(msg.action || '');
     const callId = str(msg.callId, 60);
+    if (action !== 'net' && PORT !== CALL_SIGNAL_PORT) {
+      forwardCallToSignalShard(user.id, msg);
+      return;
+    }
 
     /* 通话排查：凡是带 SDP 的消息（invite / answer / sdp）都记一行候选摘要 ——
        网页版把候选打包在 SDP 里发，光看 ice 消息是看不到它带了什么的。 */
@@ -8729,11 +8857,11 @@ function handleClientMessage(user, socket, raw) {
 
     if (action === 'invite') {
       const target = findUser(str(msg.toUserId, 40));
-      if (!target) return ws.sendText(socket, JSON.stringify({ type: 'call-error', callId, error: '用户不存在' }));
-      if (target.id === user.id) return ws.sendText(socket, JSON.stringify({ type: 'call-error', callId, error: '不能给自己打电话' }));
+      if (!target) return callSend(user.id, { type: 'call-error', callId, error: '用户不存在' });
+      if (target.id === user.id) return callSend(user.id, { type: 'call-error', callId, error: '不能给自己打电话' });
       if (chatBlockedBetween(user.id, target.id)) {
         callTrace('invite-blocked ' + user.id + ' -> ' + target.id);
-        return ws.sendText(socket, JSON.stringify({ type: 'call-error', callId, error: '暂时无法呼叫对方' }));
+        return callSend(user.id, { type: 'call-error', callId, error: '暂时无法呼叫对方' });
       }
       if (!friendIds(user.id).includes(target.id)) {
         /* 排障用：把「谁想打给谁、两边的好友关系到底什么样」写进 call-trace，
@@ -8745,10 +8873,11 @@ function handleClientMessage(user, socket, raw) {
             + target.id + '(' + (target.username || '') + ') 好友记录='
             + (rel.length ? rel.map((x) => x.fromId + '->' + x.toId + ':' + x.status).join(',') : '无'));
         } catch (err) { }
-        return ws.sendText(socket, JSON.stringify({ type: 'call-error', callId, error: '先加为好友才能通话' }));
+        return callSend(user.id, { type: 'call-error', callId, error: '先加为好友才能通话' });
       }
+      const targetOnline = onlinePresenceSet().has(target.id);
       callTrace('invite ' + user.id + ' -> ' + target.id + ' media=' + (msg.media === 'video' ? 'video' : 'audio')
-        + ' 对方在线=' + connections.has(target.id)
+        + ' 对方在线=' + targetOnline
         + ' 主叫版本=' + (socket.__appBuild || '?')
         + ' 被叫版本=' + (peerBuildOf(target.id) || '?'));
       const busy = Array.from(calls.values()).find((c) => c.state !== 'ended' && (c.from === target.id || c.to === target.id));
@@ -8769,10 +8898,19 @@ function handleClientMessage(user, socket, raw) {
             chat.memberIds.forEach((id) => sendTo(id, { type: 'message', message: auto, chat: chatSummary(chat, id), clientId: null }));
           }
         } catch (e) { }
-        return ws.sendText(socket, JSON.stringify({ type: 'call-error', callId, error: target.nickname + ' 正在通话中' }));
+        return callSend(user.id, { type: 'call-error', callId, error: target.nickname + ' 正在通话中' });
       }
       const media = msg.media === 'video' ? 'video' : 'audio';
-      const call = { id: callId, from: user.id, to: target.id, state: 'ringing', startedAt: Date.now(), timer: null, media };
+      const call = {
+        id: callId,
+        from: user.id,
+        to: target.id,
+        state: 'ringing',
+        startedAt: Date.now(),
+        inviteAt: Date.now(),
+        timer: null,
+        media
+      };
       /* 先记住 invite 里的 SDP：对方待会儿才上线时，可以原样再送一遍 */
       call.sdp = msg.sdp || null;
       call.timer = setTimeout(() => {
@@ -8780,11 +8918,11 @@ function handleClientMessage(user, socket, raw) {
         if (cur && cur.state === 'ringing') callEnd(cur, 'timeout');
       }, CALL_RING_MS);
       calls.set(callId, call);
-      const delivered = callSend(target.id, {
+      callSend(target.id, {
         type: 'call', action: 'incoming', callId, media,
         peerId: user.id, peerName: user.nickname, peerAvatar: user.avatar || '', sdp: msg.sdp || null
       });
-      if (!delivered) {
+      if (!targetOnline) {
         /* 对方手机没连着（在后台 / 被杀掉）→ 推一条通知，至少让 TA 看到有人打过电话 */
         pushToUser(target.id, {
           kind: 'call',
@@ -8794,13 +8932,13 @@ function handleClientMessage(user, socket, raw) {
         /* 微信那样：推送叫醒对方，但**先别挂断** —— 继续响铃 45 秒。
            对方点通知/打开 App 上线后，我们会把这次 invite 再送一遍（见 WS 连接处），就能接上；
            45 秒还没接才结束，并记一条「对方无应答」。 */
-        return ws.sendText(socket, JSON.stringify({
+        return callSend(user.id, {
           type: 'call', action: 'ringing', callId, media,
           peerId: target.id, peerName: target.nickname, peerAvatar: target.avatar || '',
           offline: true
-        }));
+        });
       }
-      ws.sendText(socket, JSON.stringify({ type: 'call', action: 'ringing', callId, media, peerId: target.id, peerName: target.nickname, peerAvatar: target.avatar || '' }));
+      callSend(user.id, { type: 'call', action: 'ringing', callId, media, peerId: target.id, peerName: target.nickname, peerAvatar: target.avatar || '' });
       return;
     }
 
@@ -8812,7 +8950,7 @@ function handleClientMessage(user, socket, raw) {
        以前只校验了 accept —— 别人只要猜到 callId，就能掐断你的通话（reject/cancel/hangup），
        或者往你的通话里塞 SDP/ICE（劫持媒体）。callId 是 "call+毫秒+4位随机"，是能撞出来的。 */
     if (call.from !== user.id && call.to !== user.id) {
-      ws.sendText(socket, JSON.stringify({ type: 'call-error', callId, error: '这通电话跟你没关系' }));
+      callSend(user.id, { type: 'call-error', callId, error: '这通电话跟你没关系' });
       return;
     }
     const peer = call.from === user.id ? call.to : call.from;
@@ -8975,7 +9113,13 @@ function handleClientMessage(user, socket, raw) {
 
     if (action === 'accept') {
       if (call.to !== user.id) return;
-      callTrace('accept ' + user.id + ' callId=' + callId);
+      if (call.state === 'active') {
+        callTrace('accept-duplicate ' + user.id + ' callId=' + callId);
+        return;
+      }
+      call.acceptedAt = call.acceptedAt || Date.now();
+      const callInfo = ' 接通耗时=' + Math.max(0, call.acceptedAt - (call.inviteAt || call.acceptedAt)) + 'ms';
+      callTrace('accept ' + user.id + ' callId=' + callId + callInfo);
       call.state = 'active';
       call.startedAt = Date.now();
       if (call.timer) { clearTimeout(call.timer); call.timer = null; }
@@ -9072,6 +9216,12 @@ function handleClientMessage(user, socket, raw) {
       }
       call.audioLast[user.id] = nowMs;
       call.audioSeen[user.id] = (call.audioSeen[user.id] || 0) + 1;
+      if (!call.firstAudioAt) call.firstAudioAt = {};
+      if (!call.firstAudioAt[user.id]) {
+        call.firstAudioAt[user.id] = nowMs;
+        callTrace('首帧音频 ' + user.id + ' callId=' + callId
+          + ' 接听到首帧=' + Math.max(0, nowMs - (call.acceptedAt || nowMs)) + 'ms');
+      }
       if (call.audioSeen[user.id] === 1 || call.audioSeen[user.id] % 200 === 0) {
         const other = findUser(call.from === user.id ? call.to : call.from);
         callTrace('audio ' + (user.username || user.id) + ' → ' + ((other && (other.username || other.id)) || '?')
@@ -9201,6 +9351,9 @@ function handleSocket(user, socket) {
        客户端重连（从后台回来/切网）时用它校对 —— 没有了就把本地的通话页收掉，
        不然会出现「对方早挂了、我这边还显示着」。 */
     callActive: Array.from(calls.values()).some((c) => c.state !== 'ended' && (c.from === user.id || c.to === user.id))
+      || Array.from(shardCallDirectory.values()).some((c) =>
+        c.state !== 'ended' && Array.isArray(c.participants) && c.participants.includes(user.id)
+      )
   }));
 
   ws.attach(socket, {
@@ -14771,21 +14924,9 @@ async function handleApi(req, res, pathname, query) {
   if (parts[0] === 'call' && parts[1] === 'pending' && method === 'GET') {
     const user = currentUser(req);
     if (!user) return fail(res, 401, '请先登录');
-    let found = null;
-    calls.forEach((call) => {
-      if (found || call.state !== 'ringing' || call.to !== user.id) return;
-      const peer = findUser(call.from);
-      if (!peer) return;
-      found = {
-        callId: call.id,
-        media: call.media === 'video' ? 'video' : 'audio',
-        peerId: peer.id,
-        peerName: peer.nickname || peer.username || '',
-        peerAvatar: peer.avatar || '',
-        sdp: call.sdp || null,
-        startedAt: Number(call.startedAt) || 0
-      };
-    });
+    const found = PORT === CALL_SIGNAL_PORT
+      ? pendingCallFor(user.id)
+      : (await requestCallSignalShard('/__shard/call-pending', { userId: user.id }, 1800))?.call || null;
     ok(res, { call: found });
     return;
   }
@@ -23093,6 +23234,45 @@ async function handleHttpRequest(req, res) {
   const parsed = new URL(req.url, 'http://' + (req.headers.host || 'localhost'));
   try {
     /* 分片间实时事件：只允许本机六片用服务端密钥转发，不经过公网鉴权。 */
+    if (parsed.pathname === '/__shard/call-signal') {
+      if (req.method !== 'POST') return fail(res, 405, 'Method Not Allowed');
+      const supplied = String(req.headers['x-shard-relay'] || '');
+      const expected = String(db.secret || '');
+      const a = Buffer.from(supplied);
+      const b = Buffer.from(expected);
+      if (!expected || a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+        return fail(res, 403, '禁止访问');
+      }
+      const body = await readBody(req);
+      const actor = findUser(str(body.actorId, 80));
+      if (!actor || !body.payload || typeof body.payload !== 'object') {
+        return fail(res, 422, '通话信令不完整');
+      }
+      let relaySocket = callSignalSockets.get(actor.id);
+      if (!relaySocket) {
+        relaySocket = {
+          __appBuild: 'shard-call',
+          __deviceId: '',
+          encrypted: false,
+          destroy() {}
+        };
+        callSignalSockets.set(actor.id, relaySocket);
+      }
+      handleClientMessage(actor, relaySocket, JSON.stringify(body.payload));
+      return ok(res, { accepted: true });
+    }
+    if (parsed.pathname === '/__shard/call-pending') {
+      if (req.method !== 'POST') return fail(res, 405, 'Method Not Allowed');
+      const supplied = String(req.headers['x-shard-relay'] || '');
+      const expected = String(db.secret || '');
+      const a = Buffer.from(supplied);
+      const b = Buffer.from(expected);
+      if (!expected || a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+        return fail(res, 403, '禁止访问');
+      }
+      const body = await readBody(req);
+      return ok(res, { call: pendingCallFor(str(body.userId, 80)) });
+    }
     if (parsed.pathname === '/__shard/relay') {
       if (req.method !== 'POST') return fail(res, 405, 'Method Not Allowed');
       const supplied = String(req.headers['x-shard-relay'] || '');
@@ -23114,44 +23294,20 @@ async function handleHttpRequest(req, res) {
       const relayCallId = relayType === 'call' ? str(body.payload.callId, 60) : '';
       if (relayCallId) {
         const callAction = String(body.payload.action || '');
-        /* 通话的主状态由主叫所在分片持有。来电跨片后，被叫分片必须有同一通
-           电话的镜像；否则被叫点接听时 `calls.get(callId)` 为空，accept 和
-           后续音频都会被静默丢掉，主叫界面就会一直停在正在呼叫。 */
-        if (callAction === 'incoming') {
-          const current = calls.get(relayCallId);
-          if (!current) {
-            const media = body.payload.media === 'video' ? 'video' : 'audio';
-            calls.set(relayCallId, {
-              id: relayCallId,
-              from: str(body.payload.peerId, 40),
-              to: userId,
-              state: 'ringing',
-              startedAt: Date.now(),
-              timer: null,
-              media,
-              sdp: body.payload.sdp || null,
-              shadow: true
-            });
-            callTrace('跨片来电镜像 ' + relayCallId + ' ' + body.payload.peerId
-              + ' -> ' + userId + ' port=' + PORT);
-          }
-        } else if (callAction === 'accepted') {
-          const current = calls.get(relayCallId);
-          if (current && current.state === 'ringing') {
-            current.state = 'active';
-            current.startedAt = Date.now();
-            if (current.timer) clearTimeout(current.timer);
-            current.timer = null;
-            callTrace('跨片接通同步 ' + relayCallId + ' port=' + PORT);
-          }
-        } else if (callAction === 'end') {
-          const current = calls.get(relayCallId);
-          if (current) {
-            if (current.timer) clearTimeout(current.timer);
-            if (current.dcTimer) clearTimeout(current.dcTimer);
-            calls.delete(relayCallId);
-            callTrace('跨片结束同步 ' + relayCallId + ' port=' + PORT);
-          }
+        if (callAction === 'end') {
+          shardCallDirectory.delete(relayCallId);
+        } else {
+          const current = shardCallDirectory.get(relayCallId) || {};
+          const participants = new Set(current.participants || []);
+          participants.add(userId);
+          if (body.payload.peerId) participants.add(String(body.payload.peerId));
+          shardCallDirectory.set(relayCallId, {
+            callId: relayCallId,
+            state: callAction === 'incoming' || callAction === 'ringing' ? 'ringing' : 'active',
+            participants: Array.from(participants),
+            media: body.payload.media === 'video' ? 'video' : 'audio',
+            updatedAt: Date.now()
+          });
         }
       }
       if (relayChatId && ['message', 'transfer', 'redpacket', 'recall', 'burn'].includes(relayType)) {
@@ -23181,6 +23337,31 @@ async function handleHttpRequest(req, res) {
         const set = peerOnlineSet(port);
         if (body.online) set.add(uid);
         else set.delete(uid);
+        if (PORT === CALL_SIGNAL_PORT && uid) {
+          calls.forEach((call) => {
+            if (call.from !== uid && call.to !== uid) return;
+            if (body.online) {
+              if (call.dcTimer) {
+                clearTimeout(call.dcTimer);
+                call.dcTimer = null;
+                callTrace('通话对端重连，恢复 ' + call.id + ' user=' + uid);
+              }
+              return;
+            }
+            if (call.state === 'ringing' && call.from === uid) {
+              callEnd(call, 'cancel');
+              return;
+            }
+            if (call.state === 'active' && !call.dcTimer) {
+              callTrace('通话对端断线，20 秒宽限 ' + call.id + ' user=' + uid);
+              call.dcTimer = setTimeout(() => {
+                const current = calls.get(call.id);
+                if (!current) return;
+                callEnd(current, 'disconnected');
+              }, 20000);
+            }
+          });
+        }
       }
       return ok(res, { updated: !!uid });
     }
