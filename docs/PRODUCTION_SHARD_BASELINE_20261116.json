@@ -108,20 +108,28 @@
       "rewrittenMessages": 11416,
       "changedReadCursors": 33,
       "changedDeliveredCursors": 29,
-      "remainingDuplicateGroups": 0
+      "remainingDuplicateGroups": 0,
+      "finalAudit": "/opt/xingyan-mainline/releases/20261116-shard-baseline/message-sequence-repaired-final-audit.json",
+      "finalAuditSha256": "ebb055460d4e8c6eb6cd016cb30bc3777afe000b3e295a1ceb95e5e4b21915fe"
     },
     "missingMedia": {
-      "status": "awaiting-decision",
+      "status": "quarantine-candidate-passed",
       "plan": "/opt/xingyan-mainline/releases/20261116-shard-baseline/upload-reference-repair-plan.json",
       "planSha256": "8bd81ef390e00ed3b36730ea7c017ca0ab452c05d1572ce3f8dd754f1ab62de0",
+      "applyReport": "/opt/xingyan-mainline/releases/20261116-shard-baseline/upload-reference-quarantine-report.json",
+      "applyReportSha256": "19bd3178d646b14cc0227dfdef76ae49d15ec7e774666b3f23e2fad66c2f63b5",
+      "finalVerification": "/opt/xingyan-mainline/releases/20261116-shard-baseline/upload-reference-final-verify.json",
+      "finalVerificationSha256": "4c17336f04c76451806b8e38643368792be83554d55f38e3049f00fff1ca5de0",
       "missing": 73,
       "recoverable": 0,
-      "quarantine": 73,
+      "quarantinedMessages": 72,
+      "recoveryPendingMessages": 1,
+      "remainingMissingReferences": 1,
       "stressTestImages": 72,
       "familyGroupAudio": 1
     },
     "remainingBlockers": [
-      "73 missing media references require explicit quarantine or restore approval"
+      "family-group x.mp3 remains marked for recovery; sharding structure is unaffected"
     ]
   },
   "writerFencingDrill": {
