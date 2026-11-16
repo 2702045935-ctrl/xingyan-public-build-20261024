@@ -19,6 +19,21 @@
     "total": 12793,
     "byShard": [1840, 1794, 1815, 1869, 1886, 1731, 1858]
   },
+  "dataBackup": {
+    "verifiedAt": "2026-11-16T11:26:31Z",
+    "status": "passed",
+    "root": "/opt/xingyan-mainline/backups/20261116-shard-baseline-data",
+    "dataDir": "/opt/xingyan-mainline/backups/20261116-shard-baseline-data/data",
+    "sourceFiles": 236032,
+    "backupFiles": 236032,
+    "sourceBytes": 5097214383,
+    "backupBytes": 5097302538,
+    "stableChecksumChanges": 0,
+    "appendOnlyFilesChecked": 217757,
+    "appendOnlyFailures": 0,
+    "filesManifestSha256": "c7bad9614fa7738d4e26d65e189a95aca1e07c19297ca49bb7eea8db55ac5a4a",
+    "appendReportSha256": "b1630b8eff4ee78e573bec7e74218ac6f03ab335b8f61c348683db1c319ac399"
+  },
   "lastRuntimeAudit": {
     "at": "2026-11-16T10:26:56.394Z",
     "ok": true,
