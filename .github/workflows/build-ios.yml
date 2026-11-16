@@ -55,21 +55,6 @@ jobs:
           ls WebRTCKit/WebRTC.xcframework
           ls WebRTCKit/WebRTC.xcframework/ios-arm64/WebRTC.framework
 
-      - name: 下载 TRTC 音视频 SDK
-        run: |
-          set -e
-          curl -L --fail -o /tmp/trtc.zip \
-            https://liteav.sdk.qcloud.com/download/latest/TXLiteAVSDK_TRTC_iOS_latest.zip
-          rm -rf /tmp/trtc-x TRTCKit && mkdir -p /tmp/trtc-x TRTCKit
-          unzip -q /tmp/trtc.zip -d /tmp/trtc-x
-          for NAME in TXLiteAVSDK_TRTC TXFFmpeg TXSoundTouch; do
-            FW="$(find /tmp/trtc-x -type d -name "$NAME.framework" -path '*ios-arm64_armv7*' | head -1)"
-            if [ -z "$FW" ]; then echo "没找到 $NAME 的设备片"; exit 1; fi
-            cp -R "$FW" TRTCKit/
-            lipo -info "TRTCKit/$NAME.framework/$NAME" || true
-          done
-          ls -la TRTCKit
-
       - name: 检查英文词典有没有重复 key
         run: |
           python3 - <<'PY'
@@ -85,7 +70,6 @@ jobs:
         run: |
           node server/test/security-vault.test.js
           node server/test/chat-actions.test.js
-          node server/test/call-media-policy.test.js
           node server/test/payment-ledger.test.js
           node server/test/payment-database.test.js
           node server/test/payment-database-concurrency.test.js
@@ -149,16 +133,6 @@ jobs:
           ls -lh "$APP/default.metallib"
           mkdir -p "$APP/Frameworks"
           cp -R WebRTCKit/WebRTC.xcframework/ios-arm64/WebRTC.framework "$APP/Frameworks/WebRTC.framework"
-          for NAME in TXLiteAVSDK_TRTC TXFFmpeg TXSoundTouch; do
-            cp -R "TRTCKit/$NAME.framework" "$APP/Frameworks/$NAME.framework"
-            lipo -thin arm64 "$APP/Frameworks/$NAME.framework/$NAME" \
-              -output "$APP/Frameworks/$NAME.framework/$NAME.arm64" || true
-            if [ -f "$APP/Frameworks/$NAME.framework/$NAME.arm64" ]; then
-              mv "$APP/Frameworks/$NAME.framework/$NAME.arm64" "$APP/Frameworks/$NAME.framework/$NAME"
-            fi
-            rm -rf "$APP/Frameworks/$NAME.framework/_CodeSignature"
-            ls -lh "$APP/Frameworks/$NAME.framework/$NAME"
-          done
           xcrun --sdk iphoneos swiftc \
             -sdk "$SDK" \
             -target arm64-apple-ios16.0 \
@@ -168,13 +142,11 @@ jobs:
             -whole-module-optimization \
             -F "$SDK/System/Library/Frameworks" \
             -F WebRTCKit/WebRTC.xcframework/ios-arm64 \
-            -F TRTCKit \
             -o "$APP/CHRIS" \
             Sources/*.swift \
             -framework SwiftUI -framework UIKit -framework Foundation \
             -framework LocalAuthentication -framework AVFoundation \
             -framework WebRTC \
-            -framework TXLiteAVSDK_TRTC \
             -framework AudioToolbox -framework CoreTelephony -framework CoreMedia \
             -framework MediaPlayer -framework MessageUI -framework CarPlay \
             -framework CoreVideo -framework VideoToolbox -framework MetalKit -framework Metal \
@@ -210,13 +182,13 @@ jobs:
           if [ "$MISSING" != "0" ]; then echo "自检没通过：包里的动态库不全"; exit 1; fi
           echo "自检通过：包里所有 @rpath 依赖都在"
 
-          for NAME in WebRTC TXLiteAVSDK_TRTC TXFFmpeg TXSoundTouch; do
+          for NAME in WebRTC; do
             rm -rf "$APP/Frameworks/$NAME.framework/Headers" \
                    "$APP/Frameworks/$NAME.framework/Modules" \
                    "$APP/Frameworks/$NAME.framework/PrivateHeaders"
           done
           strip -x -S "$APP/CHRIS" || true
-          for NAME in WebRTC TXLiteAVSDK_TRTC TXFFmpeg TXSoundTouch; do
+          for NAME in WebRTC; do
             [ -f "$APP/Frameworks/$NAME.framework/$NAME" ] && strip -x -S "$APP/Frameworks/$NAME.framework/$NAME" || true
           done
           echo "瘦身后："

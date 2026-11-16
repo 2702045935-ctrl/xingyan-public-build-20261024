@@ -1,15 +1,11 @@
 import Foundation
 import AVFoundation
 import SwiftUI
-import TXLiteAVSDK_TRTC
 
 struct VoiceEffect: Identifiable, Equatable {
     let id: String
     let name: String
     let hint: String
-
-    let trtcChange: Int
-    let trtcReverb: Int
 
     let speed: Float
     let pitch: Float
@@ -24,35 +20,27 @@ final class VoiceChangerStore: ObservableObject {
 
     static let all: [VoiceEffect] = [
         VoiceEffect(id: "origin", name: "原声", hint: "不做任何处理",
-                    trtcChange: 0, trtcReverb: 0,
                     speed: 1.0, pitch: 0, lowGain: 0, highGain: 0, wet: 0),
 
         VoiceEffect(id: "girl", name: "温柔女声", hint: "真女声的嗓子（不是小孩音那种假声）",
-                    trtcChange: 2, trtcReverb: 0,
                     speed: 1.19, pitch: 0, lowGain: -3, highGain: 2.5, wet: 0),
 
         VoiceEffect(id: "uncle", name: "磁性男声", hint: "低沉、有厚度，成熟男人的嗓子",
-                    trtcChange: 3, trtcReverb: 7,
                     speed: 0.88, pitch: 0, lowGain: 3.5, highGain: -2.5, wet: 0),
 
         VoiceEffect(id: "boy", name: "清亮少年", hint: "年轻、干净，像二十来岁的小伙子",
-                    trtcChange: 0, trtcReverb: 9,
                     speed: 1.10, pitch: 0, lowGain: -1.5, highGain: 1.6, wet: 0),
 
         VoiceEffect(id: "kidboy", name: "小男孩", hint: "童声，像七八岁的小男孩",
-                    trtcChange: 1, trtcReverb: 0,
                     speed: 1.30, pitch: 0, lowGain: -2, highGain: 1.2, wet: 0),
 
         VoiceEffect(id: "kidgirl", name: "小女孩", hint: "童声，像七八岁的小女孩",
-                    trtcChange: 2, trtcReverb: 0,
                     speed: 1.40, pitch: 0, lowGain: -3, highGain: 2.0, wet: 0),
 
         VoiceEffect(id: "radio", name: "电台主播", hint: "贴耳的低沉嗓 + 录音棚质感",
-                    trtcChange: 0, trtcReverb: 9,
                     speed: 0.94, pitch: 0, lowGain: 2.5, highGain: 1.5, wet: 8),
 
         VoiceEffect(id: "ethereal", name: "空灵嗓", hint: "轻、软、带一点空间感（还是真人嗓）",
-                    trtcChange: 11, trtcReverb: 8,
                     speed: 1.09, pitch: 0, lowGain: -1.5, highGain: 1.5, wet: 16),
     ]
 
@@ -71,8 +59,6 @@ final class VoiceChangerStore: ObservableObject {
         guard VoiceChangerStore.all.contains(where: { $0.id == id }) else { return }
         presetId = id
         UserDefaults.standard.set(id, forKey: "chris.voiceEffect")
-
-        TRTCBridge.shared.applyVoiceEffect()
     }
 }
 

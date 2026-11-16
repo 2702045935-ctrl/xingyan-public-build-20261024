@@ -831,7 +831,6 @@ struct BrandInfo: Decodable, Hashable {
     var accentColor: String?
 
     var iceServers: String?
-    var callMediaPolicy: String?
 
     var login: LoginBrand?
 
@@ -2538,21 +2537,6 @@ final class API {
         let payload: LoginPayload = try await post("/api/register", body, as: LoginPayload.self)
         guard let user = payload.user else { throw APIError.message("注册失败") }
         return user
-    }
-
-    struct TRTCSig: Decodable {
-        var sdkAppId: Int
-        var userId: String
-        var userSig: String
-        var roomId: Int
-        var roomStr: String?
-        var expire: Int?
-    }
-
-    func trtcSig(room: String, media: String = "video") async throws -> TRTCSig {
-        try await get("/api/trtc/sig?room=" + (room.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? room)
-                      + "&media=" + media,
-                      as: TRTCSig.self)
     }
 
     struct SliderChallenge: Decodable {

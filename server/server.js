@@ -2574,7 +2574,6 @@ const DEFAULT_BRANDING = {
   accentColor: '',
   textColor: '',
   iceServers: '',
-  callMediaPolicy: 'auto',
   icons: { chats: '', contacts: '', groups: '', moments: '', account: '' },
   updatedAt: ''
 };
@@ -2771,9 +2770,6 @@ function loadStore() {
       icons: Object.assign({}, DEFAULT_BRANDING.icons, branding.branding.icons || {})
     })
     : JSON.parse(JSON.stringify(DEFAULT_BRANDING));
-  if (!['auto', 'self_hosted', 'tencent'].includes(db.branding.callMediaPolicy)) {
-    db.branding.callMediaPolicy = DEFAULT_BRANDING.callMediaPolicy;
-  }
   const badgeCfg = readJson(path.join(DATA_DIR, 'badges.json'), { badges: null });
   db.badges = Object.assign({
     chats: 'auto', contacts: 'auto', discover: 'auto', me: 'off', newFriends: 'auto', momentsRow: 'auto'
@@ -12526,10 +12522,6 @@ async function handleAdmin(req, res, parts, query) {
     if (body.accentColor !== undefined) next.accentColor = hexColor(body.accentColor);
     if (body.textColor !== undefined) next.textColor = hexColor(body.textColor);
     if (body.iceServers !== undefined) next.iceServers = str(body.iceServers, 4000);
-    if (body.callMediaPolicy !== undefined) {
-      next.callMediaPolicy = ['auto', 'self_hosted', 'tencent'].includes(body.callMediaPolicy)
-        ? body.callMediaPolicy : DEFAULT_BRANDING.callMediaPolicy;
-    }
     if (body.icons && typeof body.icons === 'object') {
       next.icons = Object.assign({}, db.branding.icons);
       Object.keys(DEFAULT_BRANDING.icons).forEach(function (key) {

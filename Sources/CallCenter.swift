@@ -15,12 +15,6 @@ struct GroupCallMember: Identifiable, Equatable {
     var id: String { userId }
 }
 
-enum CallMediaPolicy: String {
-    case auto
-    case selfHosted = "self_hosted"
-    case tencent
-}
-
 struct CallLiveDiag: Equatable {
     var channel = "-"
     var ice = "-"
@@ -33,7 +27,6 @@ struct CallLiveDiag: Equatable {
     var bytesReceived = 0
     var packetsLost = 0
     var jitter = 0.0
-    var trtcPeerInRoom = false
     var wsOK = false
     var updatedAt = ""
 }
@@ -118,14 +111,9 @@ final class CallCenter: NSObject, ObservableObject {
 
     private func refreshLiveDiag() {
         var d = CallLiveDiag()
-        d.channel = usingTRTC
-            ? "TRTC（腾讯）"
-            : (callMediaPolicy == .selfHosted
-                ? (serverAudioOn ? "自研媒体（PCM中继）" : "自研媒体（WebRTC/TURN）")
-                : (serverAudioOn ? "服务器转发" : "WebRTC"))
+        d.channel = serverAudioOn ? "自研语音中继" : "自研媒体（WebRTC/TURN）"
         d.ice = pc.map { String(describing: $0.iceConnectionState) } ?? "-"
         d.audioEnabled = audioTrack?.isEnabled ?? false
-        d.trtcPeerInRoom = trtcPeerInRoom
         d.wsOK = Realtime.shared.connected
         let s = AVAudioSession.sharedInstance()
         switch s.recordPermission {
@@ -172,19 +160,6 @@ final class CallCenter: NSObject, ObservableObject {
     }
 
     private var serverAudioOn = false
-    private var callMediaPolicy: CallMediaPolicy = {
-        let raw = UserDefaults.standard.string(forKey: "chris.callMediaPolicy") ?? ""
-        return CallMediaPolicy(rawValue: raw) ?? .auto
-    }()
-
-    @Published private(set) var usingTRTC = false
-
-    private var trtcJoined = false
-
-    var trtcRemoteView: UIView? { TRTCBridge.shared.remoteView }
-    var trtcLocalView: UIView? { TRTCBridge.shared.localView }
-
-    var trtcPeerInRoom: Bool { TRTCBridge.shared.peerInRoom }
 
     func dismissDialog() {
         dialogTask?.cancel()
@@ -280,12 +255,7 @@ final class CallCenter: NSObject, ObservableObject {
     private var pendingGroupInviteUserId = ""
     private var sub: AnyCancellable?
 
-    private var iceServers: [RTCIceServer] = [
-        RTCIceServer(urlStrings: ["stun:stun.miwifi.com:3478", "stun:stun.cloudflare.com:3478"]),
-        RTCIceServer(urlStrings: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"]),
-        RTCIceServer(urlStrings: ["turn:openrelay.metered.ca:80", "turn:openrelay.metered.ca:443"],
-                     username: "openrelayproject", credential: "openrelayproject")
-    ]
+    private var iceServers: [RTCIceServer] = []
 
     private override init() {
         super.init()
@@ -304,16 +274,11 @@ final class CallCenter: NSObject, ObservableObject {
                                                    object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in
                 guard let self = self, self.phase != .idle else { return }
-                let trtcWarning = self.usingTRTC && TRTCBridge.shared.microphoneWarning
-                guard self.micBlocked || trtcWarning else { return }
+                guard self.micBlocked else { return }
                 if await Permission.ask(.audio) {
                     self.micBlocked = false
                     self.errorText = nil
-                    if self.usingTRTC {
-                        TRTCBridge.shared.retryMicrophone()
-                    } else {
-                        self.voicePipeRepair()
-                    }
+                    self.voicePipeRepair()
                     self.note("麦克风权限已开，重新抢麦")
                 }
             }
@@ -328,11 +293,7 @@ final class CallCenter: NSObject, ObservableObject {
     func retryMic() {
         micBlocked = false
         errorText = nil
-        if usingTRTC {
-            TRTCBridge.shared.retryMicrophone()
-        } else {
-            voicePipeRepair()
-        }
+        voicePipeRepair()
     }
 
     func start(peerId: String, name: String, avatar: String, video: Bool) {
@@ -362,8 +323,6 @@ final class CallCenter: NSObject, ObservableObject {
         Ringtone.shared.startRingback()
         Realtime.shared.start()
         Task { await beginMedia() }
-
-        Task { await startTRTCIfPossible() }
     }
 
     func accept(asAudio: Bool = false) {
@@ -380,7 +339,6 @@ final class CallCenter: NSObject, ObservableObject {
         phase = .connecting
         tip = "正在接通…"
         Task { await beginMedia() }
-        Task { await startTRTCIfPossible() }
         startConnectWatch()
 
     }
@@ -410,7 +368,6 @@ final class CallCenter: NSObject, ObservableObject {
         isVideo = true
         sendCall(["action": "media", "media": "video"])
         note("切到视频通话")
-        Task { await startTRTCIfPossible() }
     }
 
     func requestScreenShare(peerId: String, name: String, avatar: String) {
@@ -473,10 +430,7 @@ final class CallCenter: NSObject, ObservableObject {
     private func startScreenSharingNow() {
         guard phase != .idle, isVideo, !screenSharing else { return }
         screenSharePending = false
-        if usingTRTC {
-            screenSharing = TRTCBridge.shared.startInAppScreenShare()
-            tip = screenSharing ? "正在共享屏幕" : "屏幕共享没启动"
-        } else if let source = videoSource {
+        if let source = videoSource {
             capturer?.stopCapture()
             screenCapturer.start(source: source) { [weak self] error in
                 guard let self else { return }
@@ -499,9 +453,7 @@ final class CallCenter: NSObject, ObservableObject {
         guard screenSharing || screenSharePending else { return }
         screenSharePending = false
         screenCapturer.stop()
-        if usingTRTC {
-            TRTCBridge.shared.stopInAppScreenShare()
-        } else if let source = videoSource {
+        if let source = videoSource {
             capturer?.stopCapture()
             startCapture(source)
         }
@@ -597,7 +549,6 @@ final class CallCenter: NSObject, ObservableObject {
         Task { @MainActor in
             await Task.yield()
             audioTrack?.isEnabled = !next
-            if usingTRTC { TRTCBridge.shared.setMuted(next) }
             sendCall(["action": "state", "muted": next, "camOff": cameraOff])
         }
     }
@@ -606,7 +557,6 @@ final class CallCenter: NSObject, ObservableObject {
         guard isVideo else { return }
         cameraOff.toggle()
         localVideoTrack?.isEnabled = !cameraOff
-        if usingTRTC { TRTCBridge.shared.setCameraOff(cameraOff) }
         sendCall(["action": "state", "muted": muted, "camOff": cameraOff])
     }
 
@@ -617,14 +567,10 @@ final class CallCenter: NSObject, ObservableObject {
         sendCall(["action": "media", "media": isVideo ? "video" : "audio"])
         if isVideo {
             stopProximity()
-            Task {
-                await beginMedia()
-                await startTRTCIfPossible()
-            }
+            Task { await beginMedia() }
             tip = "正在切换为视频通话…"
         } else {
             localVideoTrack?.isEnabled = false
-            if usingTRTC { TRTCBridge.shared.setCameraOff(true) }
             tip = "已切换为语音通话"
         }
     }
@@ -636,7 +582,6 @@ final class CallCenter: NSObject, ObservableObject {
         Task { @MainActor in
             await Task.yield()
             applySpeaker()
-            if usingTRTC { TRTCBridge.shared.setSpeaker(next) }
         }
     }
 
@@ -765,9 +710,9 @@ final class CallCenter: NSObject, ObservableObject {
             Task { await API.shared.callDiag("群通话被挡：phase=\(phase)") }
             return
         }
-        if video && callMediaPolicy == .selfHosted {
-            errorText = "自研群视频媒体服务正在接入，暂不进入腾讯通道"
-            Task { await API.shared.callDiag("群视频被自研媒体策略阻止：缺少自研 SFU") }
+        if video {
+            errorText = "自研群视频 SFU 正在接入，当前版本暂不开放群视频"
+            Task { await API.shared.callDiag("群视频被阻止：自研 SFU 尚未接入") }
             return
         }
         isGroupCall = true
@@ -787,7 +732,7 @@ final class CallCenter: NSObject, ObservableObject {
         phase = .outgoing
         iAmCaller = true
 
-        if !video { startGroupAudio() }
+        startGroupAudio()
         Realtime.shared.sendJSON(["type": "call", "action": "group-start", "chatId": chatId,
                                   "media": video ? "video" : "audio"])
         startConnectWatch()
@@ -795,45 +740,21 @@ final class CallCenter: NSObject, ObservableObject {
 
     func acceptGroupCall() {
         guard phase == .incoming || phase == .outgoing else { return }
+        if isVideo {
+            errorText = "自研群视频 SFU 正在接入，当前版本暂不开放群视频"
+            leaveGroupCall()
+            return
+        }
         Ringtone.shared.stop()
         muted = false
         micBlocked = false
         tip = "正在接通…"
         phase = .connecting
         iAmCaller = false
-        if isVideo {
-
-        } else {
-            startGroupAudio()
-        }
+        startGroupAudio()
         Realtime.shared.sendJSON(["type": "call", "action": "group-join",
-                                  "roomId": roomId, "media": isVideo ? "video" : "audio"])
-        if isVideo { Task { await joinGroupTRTC() } }
+                                  "roomId": roomId, "media": "audio"])
         startConnectWatch()
-    }
-
-    private func joinGroupTRTC() async {
-        if callMediaPolicy == .selfHosted {
-            note("自研媒体策略：拒绝进入腾讯群视频")
-            return
-        }
-        guard isGroupCall, isVideo, !roomId.isEmpty, !trtcJoined, !usingTRTC else { return }
-        let bridge = TRTCBridge.shared
-        bridge.onJoined = { [weak self] ok in
-            guard let self = self, ok else { return }
-            guard self.phase != .idle else { return }
-            self.trtcJoined = true
-            self.usingTRTC = true
-
-            bridge.activate()
-            self.note("群视频：TRTC 已进房并开始采集")
-        }
-        if await bridge.start(roomSeed: roomId, video: true) {
-            note("群视频：正在进 TRTC 房间")
-        } else {
-            note("群视频：TRTC 进不去，退回语音转发")
-            if !serverAudioOn { startGroupAudio() }
-        }
     }
 
     private func hydrateGroupRoster() {
@@ -864,10 +785,6 @@ final class CallCenter: NSObject, ObservableObject {
             Realtime.shared.sendJSON(["type": "call", "action": "group-leave", "roomId": roomId])
         }
 
-        if isVideo || TRTCBridge.shared.joined {
-            TRTCBridge.shared.stopMeetingViews()
-            TRTCBridge.shared.stop()
-        }
         GroupAudioPipe.shared.onFrame = nil
         GroupAudioPipe.shared.stop()
         serverAudioOn = false
@@ -925,7 +842,6 @@ final class CallCenter: NSObject, ObservableObject {
     }
 
     private func applySpeaker() {
-        if usingTRTC { return }
         let s = AVAudioSession.sharedInstance()
 
         try? s.overrideOutputAudioPort((speakerOn && !proximityNear) ? .speaker : .none)
@@ -968,17 +884,14 @@ final class CallCenter: NSObject, ObservableObject {
         case "speaker":
             speakerOn = true
             try? s.overrideOutputAudioPort(.speaker)
-            if usingTRTC { TRTCBridge.shared.setSpeaker(true) }
         case "receiver":
             speakerOn = false
             try? s.overrideOutputAudioPort(.none)
-            if usingTRTC { TRTCBridge.shared.setSpeaker(false) }
         default:
             if let p = (s.availableInputs ?? []).first(where: { $0.uid == r.id }) {
                 try? s.setPreferredInput(p)
                 speakerOn = false
                 try? s.overrideOutputAudioPort(.none)
-                if usingTRTC { TRTCBridge.shared.setSpeaker(false) }
             }
         }
     }
@@ -1007,13 +920,11 @@ final class CallCenter: NSObject, ObservableObject {
         guard phase.isBusy, !isVideo else { return }
         proximityNear = UIDevice.current.proximityState
         applySpeaker()
-        if usingTRTC { TRTCBridge.shared.setSpeaker(speakerOn && !proximityNear) }
     }
 
     func setBlurBackground(_ on: Bool) {
         VideoBlur.shared.enabled = on
         blurBackground = on
-        TRTCBridge.shared.setBackgroundBlur(on)
     }
 
     func toggleBlurBackground() {
@@ -1021,7 +932,6 @@ final class CallCenter: NSObject, ObservableObject {
     }
 
     func flipCamera() {
-        if usingTRTC { TRTCBridge.shared.flipCamera(); return }
         guard isVideo, let capturer = capturer else { return }
         let front = capturer.captureSession.isRunning
         let devices = RTCCameraVideoCapturer.captureDevices()
@@ -1080,7 +990,6 @@ final class CallCenter: NSObject, ObservableObject {
 
     private func startServerAudioIfVoice() {
         guard !isVideo else { return }
-        guard !usingTRTC else { return }
         guard !serverAudioOn else { return }
         serverAudioOn = true
         audioTrack?.isEnabled = false
@@ -1120,7 +1029,6 @@ final class CallCenter: NSObject, ObservableObject {
 
     private func micReported(_ ok: Bool, prefix: String) {
 
-        if usingTRTC || CallAudioPipe.shared.hasHandedOver { return }
         let reason = CallAudioPipe.shared.lastError
         Task { await API.shared.callDiag(prefix + " 采集=" + (ok ? "ok" : "失败")
             + (ok ? "" : " 原因: " + reason)) }
@@ -1227,7 +1135,7 @@ final class CallCenter: NSObject, ObservableObject {
             if ev.callPeerVideo != isVideo {
                 isVideo = ev.callPeerVideo
                 tip = isVideo ? "对方切换成了视频通话" : "对方切换成了语音通话"
-                if isVideo { Task { await startTRTCIfPossible() } }
+                if isVideo { Task { await beginMedia() } }
             }
 
         case "media":
@@ -1237,13 +1145,9 @@ final class CallCenter: NSObject, ObservableObject {
                 isVideo = wantVideo
                 tip = wantVideo ? "对方切换成了视频通话" : "对方切换成了语音通话"
                 if wantVideo {
-                    Task {
-                        await beginMedia()
-                        await startTRTCIfPossible()
-                    }
+                    Task { await beginMedia() }
                 } else {
                     localVideoTrack?.isEnabled = false
-                    if usingTRTC { TRTCBridge.shared.setCameraOff(true) }
                 }
             }
 
@@ -1295,7 +1199,6 @@ final class CallCenter: NSObject, ObservableObject {
                 startTimer()
             }
 
-            if isVideo, !trtcJoined { Task { await joinGroupTRTC() } }
             if !pendingGroupInviteUserId.isEmpty {
                 let target = pendingGroupInviteUserId
                 pendingGroupInviteUserId = ""
@@ -1329,7 +1232,6 @@ final class CallCenter: NSObject, ObservableObject {
             } else {
 
                 if !serverAudioOn { startServerAudioIfVoice() }
-                scheduleAudioTRTCTakeover()
                 if phase != .active {
                     phase = .active
                     tip = "通话中"
@@ -1340,12 +1242,10 @@ final class CallCenter: NSObject, ObservableObject {
                     startTimer()
                 }
                 reportMicState(prefix: "App 语音走服务器转发（对方已接）")
-                Task { await startTRTCIfPossible() }
             }
 
         case "audio":
 
-            guard !usingTRTC else { return }
             guard let b64 = ev.callAudioData, let d = Data(base64Encoded: b64) else { return }
             CallAudioPipe.shared.play(d)
 
@@ -1398,17 +1298,8 @@ final class CallCenter: NSObject, ObservableObject {
             : RTCIceServer(urlStrings: ["turn:\(hostOnly):3478?transport=tcp",
                                         "turn:\(hostOnly):3478?transport=udp"],
                            username: "chris", credential: "chris1234")
-        if !hostOnly.isEmpty {
-            iceServers.insert(hostTurn!, at: 0)
-        }
+        iceServers = hostTurn.map { [$0] } ?? []
         let b = await API.shared.branding()
-        callMediaPolicy = CallMediaPolicy(rawValue: b?.callMediaPolicy ?? "") ?? .auto
-        UserDefaults.standard.set(callMediaPolicy.rawValue, forKey: "chris.callMediaPolicy")
-        if callMediaPolicy == .selfHosted {
-            /* 自研模式不允许悄悄落到公共 OpenRelay。只保留本服务器 TURN，
-               后台配置的其它 TURN/STUN 会在下面追加。 */
-            iceServers = hostTurn.map { [$0] } ?? []
-        }
         guard let raw = b?.iceServers?.trimmingCharacters(in: .whitespacesAndNewlines),
               !raw.isEmpty else { return }
 
@@ -1425,7 +1316,7 @@ final class CallCenter: NSObject, ObservableObject {
                                         credential: it["credential"] as? String))
             }
             if !out.isEmpty {
-                if callMediaPolicy == .selfHosted, let hostTurn {
+                if let hostTurn {
                     out.insert(hostTurn, at: 0)
                 }
                 iceServers = out
@@ -1437,7 +1328,7 @@ final class CallCenter: NSObject, ObservableObject {
             .filter { !$0.isEmpty }
         if !list.isEmpty {
             var out = list.map { RTCIceServer(urlStrings: [$0]) }
-            if callMediaPolicy == .selfHosted, let hostTurn {
+            if let hostTurn {
                 out.insert(hostTurn, at: 0)
             }
             iceServers = out
@@ -1472,24 +1363,13 @@ final class CallCenter: NSObject, ObservableObject {
                 self.note("网络切换（" + (path.status == .satisfied ? routeText : "断开") + "）→ 自动重连")
                 self.weakNet = true
                 if self.tip != "通话中" && self.tip != "视频通话中" { self.tip = "网络切换，正在重连…" }
-                if self.usingTRTC {
-                    TRTCBridge.shared.recoverAudioAfterNetworkChange()
-                } else {
-                    await self.startTRTCIfPossible()
-                }
-                if !self.usingTRTC {
-                    try? await Task.sleep(nanoseconds: 600_000_000)
-                    guard self.phase == .active else { return }
-                    if self.usingTRTC {
-                        TRTCBridge.shared.recoverAudioAfterNetworkChange()
-                    } else {
-                        self.voicePipeRepair()
-                    }
-                }
+                try? await Task.sleep(nanoseconds: 600_000_000)
+                guard self.phase == .active else { return }
+                self.voicePipeRepair()
                 Task { @MainActor [weak self] in
                     try? await Task.sleep(nanoseconds: 3_000_000_000)
                     guard let self = self, self.phase == .active else { return }
-                    if self.usingTRTC || self.pc?.connectionState == .connected
+                    if self.pc?.connectionState == .connected
                         || (self.pc == nil && Realtime.shared.connected) {
                         self.weakNet = false
                         if self.tip == "网络切换，正在重连…" { self.tip = "通话中" }
@@ -1509,8 +1389,6 @@ final class CallCenter: NSObject, ObservableObject {
     }
 
     private func beginMedia() async {
-        CallAudioPipe.shared.resetHandOver()
-
         CallAudioPipe.shared.prepareForNewCall()
         let mic = await Permission.ask(.audio)
 
@@ -1551,7 +1429,6 @@ final class CallCenter: NSObject, ObservableObject {
                 self.sendCall(["action": "audio", "data": data.base64EncodedString()])
             }
             CallAudioPipe.shared.start()
-            scheduleAudioTRTCTakeover()
             if iAmCaller {
 
                 sendCall(["action": "invite", "toUserId": peerId, "media": "audio"])
@@ -1693,8 +1570,7 @@ final class CallCenter: NSObject, ObservableObject {
 
     func resetIfStale() {
         guard phase != .idle else { return }
-        let busy = (pc != nil) || usingTRTC || TRTCBridge.shared.joined
-            || CallAudioPipe.shared.isRunning || !callId.isEmpty
+        let busy = (pc != nil) || CallAudioPipe.shared.isRunning || !callId.isEmpty
         if busy { return }
         phase = .idle
         tip = ""
@@ -1756,16 +1632,6 @@ final class CallCenter: NSObject, ObservableObject {
         stopProximity()
         if blurBackground { setBlurBackground(false) }
 
-        if usingTRTC || TRTCBridge.shared.joined {
-            diag.append(TRTCBridge.shared.diagSummary)
-            TRTCBridge.shared.stop()
-        }
-
-        TRTCBridge.shared.onJoined = nil
-        TRTCBridge.shared.onPeerChanged = nil
-        TRTCBridge.shared.onRemoteAudioReady = nil
-        usingTRTC = false
-        trtcJoined = false
         stopMedia()
         resetInviteRetry()
 
@@ -1862,7 +1728,7 @@ final class CallCenter: NSObject, ObservableObject {
     }
 
     private func checkMicAlive() {
-        guard phase != .idle, !isVideo, !usingTRTC else { return }
+        guard phase != .idle, !isVideo else { return }
         let running = isGroupCall ? GroupAudioPipe.shared.isRunning : CallAudioPipe.shared.isRunning
         if running {
             micDownTicks = 0
@@ -1973,17 +1839,13 @@ extension CallCenter: RTCPeerConnectionDelegate {
                 if !self.isVideo {
                     self.weakNet = true
                     if self.tip != "通话中" { self.tip = "网络不太稳定，正在重连…" }
-                    self.note("WebRTC failed（语音走转发通道，通话继续）")
-                    CallAudioPipe.shared.resetHandOver()
+                    self.note("WebRTC failed（语音继续走自研中继）")
                 } else {
                     self.weakNet = true
                     if self.tip != "视频通话中" { self.tip = "网络不太稳定，正在重连…" }
-                    self.note(self.callMediaPolicy == .selfHosted
-                        ? "WebRTC failed（自研模式，禁止切腾讯）"
-                        : "WebRTC failed → 兜底切 TRTC")
-                    if !self.usingTRTC { await self.startTRTCIfPossible() }
+                    self.note("WebRTC failed（等待自研中继/网络恢复）")
                     try? await Task.sleep(nanoseconds: 5_000_000_000)
-                    if self.phase == .active && !self.usingTRTC && self.pc?.connectionState == .failed {
+                    if self.phase == .active && self.pc?.connectionState == .failed {
                         self.failLater("通话连接失败，可能是网络挡住了", hold: 5)
                     }
                 }
@@ -1993,14 +1855,7 @@ extension CallCenter: RTCPeerConnectionDelegate {
                 if self.tip != "通话中" && self.tip != "视频通话中" { self.tip = "网络不太稳定，正在重连…" }
                 try? await Task.sleep(nanoseconds: 8_000_000_000)
                 if self.phase == .active && self.pc?.connectionState == .disconnected {
-                    if self.isVideo && !self.usingTRTC {
-                        self.note(self.callMediaPolicy == .selfHosted
-                            ? "视频断线 8 秒（自研模式，禁止切腾讯）"
-                            : "视频断线 8 秒 → 兜底切 TRTC")
-                        await self.startTRTCIfPossible()
-                        try? await Task.sleep(nanoseconds: 3_000_000_000)
-                    }
-                    if self.phase == .active && !self.usingTRTC && self.pc?.connectionState == .disconnected {
+                    if self.phase == .active && self.pc?.connectionState == .disconnected {
                         self.finish(tip: "通话已断开")
                     }
                 }
@@ -2010,143 +1865,6 @@ extension CallCenter: RTCPeerConnectionDelegate {
         }
     }
 
-    private func startTRTCIfPossible() async {
-        if callMediaPolicy == .selfHosted {
-            note("自研媒体策略：禁止自动切腾讯 TRTC")
-            return
-        }
-
-        // 被叫必须停在响铃页，等用户明确接听后才能进媒体房间。
-        // 提前进房会让双方被 onPeerChanged 误判成“已接通”，接听按钮随之消失。
-        guard phase != .incoming, !trtcJoined, !usingTRTC, !callId.isEmpty else { return }
-        let bridge = TRTCBridge.shared
-        bridge.onJoined = { [weak self] ok in
-            guard let self = self else { return }
-            guard ok else { return }
-
-            guard self.phase != .idle, self.phase != .incoming, !self.callId.isEmpty else { return }
-            self.trtcJoined = true
-            self.note("TRTC 已进房（等对端）")
-
-            if TRTCBridge.shared.peerInRoom { self.switchMediaToTRTC() }
-        }
-        bridge.onPeerChanged = { [weak self] inRoom in
-            guard let self = self else { return }
-            guard inRoom else { return }
-            guard self.phase != .idle, !self.callId.isEmpty else { return }
-            if self.phase == .incoming { return }
-            if self.trtcJoined {
-                if self.isVideo {
-                    self.switchMediaToTRTC()
-                } else {
-                    self.scheduleAudioTRTCTakeover()
-                }
-            }
-            if self.phase != .active {
-                Ringtone.shared.stop()
-                self.phase = .active
-                self.tip = "通话中"
-                self.ringTimer?.invalidate()
-                self.ringTimer = nil
-                self.connectTimer?.invalidate()
-                self.connectTimer = nil
-                self.startTimer()
-                if self.screenSharePending { self.startScreenSharingNow() }
-            }
-        }
-        bridge.onRemoteAudioReady = { [weak self] in
-            guard let self = self, self.phase != .idle, !self.callId.isEmpty else { return }
-            self.note("TRTC 首音已就绪")
-            if !self.isVideo {
-                self.scheduleAudioTRTCTakeover()
-            }
-        }
-        let ok = await bridge.start(roomSeed: callId, video: isVideo)
-        if !ok {
-            note("TRTC 用不了：" + bridge.lastError + "（继续走老路）")
-        } else {
-            note("TRTC 已请求进房（room=" + callId + "）")
-
-            TRTCBridge.shared.standByForLocalMedia()
-
-            let b = TRTCBridge.shared
-            Task { await API.shared.callDiag("TRTC 进房 room=" + self.callId
-                + " 我方ID=" + b.userId
-                + " 对端在房里=" + (b.peerInRoom ? "是" : "否")
-                + (b.lastError.isEmpty ? "" : " 错误=" + b.lastError)) }
-
-            if isVideo {
-                Task { @MainActor [weak self] in
-                    try? await Task.sleep(nanoseconds: 6_000_000_000)
-                    guard let self = self, self.trtcJoined, !self.usingTRTC,
-                          self.phase != .idle, !self.callId.isEmpty else { return }
-                    self.note("6 秒没等到对端进房，直接切 TRTC（对端可能是旧版本）")
-                    self.switchMediaToTRTC()
-                }
-            }
-
-            Task { @MainActor [weak self] in
-                try? await Task.sleep(nanoseconds: 8_000_000_000)
-                guard let self = self, !self.usingTRTC, !Task.isCancelled else { return }
-                self.note("对端没进 TRTC 房间（可能是旧版本）→ 继续走服务器转发/WebRTC")
-            }
-        }
-    }
-
-    private func scheduleAudioTRTCTakeover() {
-        guard !isVideo, !usingTRTC, serverAudioOn, trtcJoined,
-              TRTCBridge.shared.peerInRoom,
-              TRTCBridge.shared.remoteAudioReady,
-              phase != .incoming else { return }
-        Task { @MainActor [weak self] in
-            /* 只有确认收到 TRTC 首个远端音频后才切换。PCM 继续兜底，
-               绝不能在远端音轨未就绪时拆掉已经可听的通道。 */
-            try? await Task.sleep(nanoseconds: 1_200_000_000)
-            guard let self = self, !Task.isCancelled, !self.isVideo,
-                  !self.usingTRTC, self.serverAudioOn, self.trtcJoined,
-                  TRTCBridge.shared.peerInRoom,
-                  TRTCBridge.shared.remoteAudioReady,
-                  self.phase != .incoming else { return }
-            self.switchMediaToTRTC()
-        }
-    }
-
-    private func switchMediaToTRTC() {
-        guard callMediaPolicy != .selfHosted else {
-            note("自研媒体策略：拒绝媒体切到腾讯 TRTC")
-            return
-        }
-        guard !usingTRTC, phase != .idle, phase != .incoming, !callId.isEmpty else { return }
-        usingTRTC = true
-        note(isVideo ? "对端也在腾讯云房间里 → 媒体切到 TRTC ✓"
-                     : "对端也在腾讯云房间里 → 语音切到 TRTC ✓")
-
-        CallAudioPipe.shared.handOverToTRTC()
-        serverAudioOn = false
-        audioTrack?.isEnabled = false
-        localVideoTrack?.isEnabled = false
-        capturer?.stopCapture()
-        if screenSharing {
-            screenCapturer.stop()
-            _ = TRTCBridge.shared.startInAppScreenShare()
-        }
-
-        /* handOverToTRTC 返回时 PCM 已同步停止，立即拉起 TRTC；
-           不再额外等待 300ms，也不再轮询最长 2 秒。 */
-        TRTCBridge.shared.activate()
-        TRTCBridge.shared.setMuted(muted)
-        TRTCBridge.shared.setSpeaker(speakerOn)
-        if phase != .active {
-            Ringtone.shared.stop()
-            phase = .active
-            tip = "通话中"
-            ringTimer?.invalidate()
-            ringTimer = nil
-            connectTimer?.invalidate()
-            connectTimer = nil
-            startTimer()
-        }
-    }
 }
 
 enum Permission {

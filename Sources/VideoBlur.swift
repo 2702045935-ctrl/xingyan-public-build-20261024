@@ -4,9 +4,8 @@ import CoreImage
 import Vision
 import AVFoundation
 import WebRTC
-import TXLiteAVSDK_TRTC
 
-final class VideoBlur: NSObject, TRTCVideoFrameDelegate {
+final class VideoBlur: NSObject {
     static let shared = VideoBlur()
 
     var enabled = false
@@ -105,11 +104,6 @@ final class VideoBlur: NSObject, TRTCVideoFrameDelegate {
         return r == kCVReturnSuccess ? buf : nil
     }
 
-    func onProcessVideoFrame(_ srcFrame: TRTCVideoFrame, dstFrame: TRTCVideoFrame) -> UInt32 {
-        guard enabled, let src = srcFrame.pixelBuffer, let out = process(src) else { return 0 }
-        dstFrame.pixelBuffer = out
-        return 0
-    }
 }
 
 final class BlurCapturer: NSObject, RTCVideoCapturerDelegate {

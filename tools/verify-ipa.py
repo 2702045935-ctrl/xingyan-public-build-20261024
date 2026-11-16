@@ -23,9 +23,6 @@ REQUIRED = {
     APP + "emoji/star-orbit/shou-dao.gif",
     APP + "emoji/star-orbit/xiang-ni.gif",
     APP + "Frameworks/WebRTC.framework/WebRTC",
-    APP + "Frameworks/TXLiteAVSDK_TRTC.framework/TXLiteAVSDK_TRTC",
-    APP + "Frameworks/TXFFmpeg.framework/TXFFmpeg",
-    APP + "Frameworks/TXSoundTouch.framework/TXSoundTouch",
 }
 
 

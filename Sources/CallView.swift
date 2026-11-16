@@ -77,7 +77,6 @@ struct CallDialogOverlay: View {
 struct CallView: View {
     @ObservedObject private var call = CallCenter.shared
 
-    @ObservedObject private var trtc = TRTCBridge.shared
     @EnvironmentObject var app: AppState
 
     private struct CallMsgBanner: Equatable {
@@ -118,8 +117,7 @@ struct CallView: View {
             backdrop
 
             if call.isGroupCall {
-
-                if call.isVideo { groupVideoLayer } else { groupLayer }
+                groupLayer
             } else if call.isVideo && call.phase == .active {
                 videoLayer
             } else {
@@ -189,8 +187,7 @@ struct CallView: View {
 
     private var micUnavailable: Bool {
         guard !call.muted else { return false }
-        if call.micBlocked { return true }
-        return call.usingTRTC && trtc.microphoneWarning
+        return call.micBlocked
     }
 
     private func scanNewMessages() {
@@ -312,14 +309,9 @@ struct CallView: View {
     private var videoLayer: some View {
         ZStack {
 
-            if call.usingTRTC {
-                TRTCVideoView(view: trtc.remoteView)
-                    .ignoresSafeArea()
-            } else {
-                VideoSurface(track: call.remoteVideo)
-                    .ignoresSafeArea()
-            }
-            if call.usingTRTC ? (trtc.remoteView == nil) : (call.remoteVideo == nil) {
+            VideoSurface(track: call.remoteVideo)
+                .ignoresSafeArea()
+            if call.remoteVideo == nil {
                 VStack(spacing: 10) {
                     ProgressView().tint(.white)
                     Text(Tr("正在连接画面…"))
@@ -390,13 +382,7 @@ struct CallView: View {
     }
 
     private func pipBody(w: CGFloat, h: CGFloat) -> some View {
-        Group {
-            if call.usingTRTC {
-                TRTCVideoView(view: trtc.localView)
-            } else {
-                VideoSurface(track: call.localVideo)
-            }
-        }
+        VideoSurface(track: call.localVideo)
         .frame(width: w, height: h)
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 10)
@@ -427,47 +413,6 @@ struct CallView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(hint))
-    }
-
-    private var groupVideoLayer: some View {
-        ZStack(alignment: .bottomTrailing) {
-            ScrollView(showsIndicators: false) {
-                LazyVGrid(columns: [GridItem(.flexible(), spacing: 8),
-                                    GridItem(.flexible(), spacing: 8)], spacing: 8) {
-                    ForEach(call.roster.filter { $0.userId != app.me?.id }) { m in
-                        VStack(spacing: 4) {
-                            TRTCVideoView(view: TRTCBridge.shared.meetingView(for: m.userId))
-                                .frame(height: 152)
-                                .background(Color.black)
-                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                            HStack(spacing: 4) {
-                                if m.muted {
-                                    Image(systemName: "mic.slash.fill")
-                                        .font(.system(size: 10, weight: .semibold))
-                                        .foregroundColor(.white.opacity(0.8))
-                                }
-                                Text(m.name.isEmpty ? Tr("成员") : m.name)
-                                    .font(pf(12.5))
-                                    .foregroundColor(.white.opacity(0.88))
-                                    .lineLimit(1)
-                            }
-                        }
-                    }
-                }
-                .padding(.horizontal, 10)
-                .padding(.top, 6)
-                .padding(.bottom, 140)
-            }
-
-            TRTCVideoView(view: TRTCBridge.shared.localView)
-                .frame(width: 96, height: 130)
-                .background(Color.black)
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(Color.white.opacity(0.22), lineWidth: 1))
-                .padding(.trailing, 14)
-                .padding(.bottom, 96)
-        }
     }
 
     private var groupLayer: some View {
@@ -918,7 +863,6 @@ struct CallView: View {
 
 struct CallMiniWindow: View {
     @ObservedObject private var call = CallCenter.shared
-    @ObservedObject private var trtc = TRTCBridge.shared
 
     @State private var miniX: CGFloat? = nil
     @State private var miniY: CGFloat? = nil
@@ -959,12 +903,8 @@ struct CallMiniWindow: View {
             Group {
                 if call.isVideo {
                     ZStack {
-                        if call.usingTRTC {
-                            TRTCVideoView(view: trtc.remoteView)
-                        } else {
-                            VideoSurface(track: call.remoteVideo)
-                        }
-                        if call.usingTRTC ? (trtc.remoteView == nil) : (call.remoteVideo == nil) {
+                        VideoSurface(track: call.remoteVideo)
+                        if call.remoteVideo == nil {
                             Avatar(path: call.peerAvatar, size: 44, radius: 8)
                         }
                     }

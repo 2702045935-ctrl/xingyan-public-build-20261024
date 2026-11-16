@@ -3,8 +3,8 @@
   "files": [
     {
       "path": "Sources/API.swift",
-      "size": 217852,
-      "sha256": "10da54dbce98950019b65420e983fd99f0132ecd72d499c365b56ca469d33212"
+      "size": 217325,
+      "sha256": "d8fc8fb1ffa507c8f5bc811c256d957cd6255400ed35005b16aa28677f4dc8d6"
     },
     {
       "path": "Sources/App.swift",
@@ -18,13 +18,13 @@
     },
     {
       "path": "Sources/CallAudio.swift",
-      "size": 27068,
-      "sha256": "465a5d360f4a66aa8bf34d5e0c0570186c30e9d40ef134d5e6e4b498fd02e40a"
+      "size": 25983,
+      "sha256": "8495cee865e9a91f398761ac2bb7b249f9ac0eb15f78f635f6f02204f4aafbcf"
     },
     {
       "path": "Sources/CallCenter.swift",
-      "size": 83346,
-      "sha256": "e95efac61ee482079db944d5ad05725af1e1d35bf51e45ca198e435356a64ea4"
+      "size": 70893,
+      "sha256": "0a0b21fa6896d11db960c9dc30bdce4dbfc55857c7b99623aafa8693c96449ad"
     },
     {
       "path": "Sources/GroupAudioPipe.swift",
@@ -33,18 +33,13 @@
     },
     {
       "path": "Sources/CallView.swift",
-      "size": 45675,
-      "sha256": "960e0ce306b8a652c8765a0a9d95d76e54b81d77def7fe174637409ce5b61b1a"
+      "size": 42818,
+      "sha256": "3ee87cbf86dadaacbcb2fc8f895aa8f2660215b1fb7b9fa2a91b85fe57d2a1d4"
     },
     {
       "path": "Sources/AICall.swift",
       "size": 14115,
       "sha256": "f4c0b979abe61126f33409638ec904148ce66e4b99c3fc8c7cc2867068f77e31"
-    },
-    {
-      "path": "Sources/TRTCBridge.swift",
-      "size": 21910,
-      "sha256": "9c4c3df4f305d20034b1bd6a2e6acb6fd5867734f469ccb156d25ba708e2a667"
     },
     {
       "path": "Sources/StreamPlayback.swift",

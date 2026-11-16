@@ -241,42 +241,6 @@ final class CallAudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegat
         cleanupAudioResources()
     }
 
-    func handOverToTRTC() {
-        handedOver = true
-        onFrame = nil
-        onStateChange = nil
-        finishStart(false)
-        startTask?.cancel()
-        startTask = nil
-        for o in observers { NotificationCenter.default.removeObserver(o) }
-        observers.removeAll()
-        watchdog?.cancel()
-        watchdog = nil
-
-        captureQueue.sync {
-            if capture.isRunning { capture.stopRunning() }
-            capture.stopRunning()
-        }
-        playQueue.sync {
-            playerNode.stop()
-            player.stop()
-            player.reset()
-            playerNode.reset()
-            if wired {
-                player.disconnectNodeOutput(playerNode)
-                player.detach(playerNode)
-                wired = false
-            }
-            playerReady = false
-            queuedUntil = Date.distantPast
-            pendingFrames.removeAll()
-            framesInFlight = 0
-        }
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
-    }
-
-    func resetHandOver() { handedOver = false }
-
     private func startWatchdog() {
         guard watchdog == nil else { return }
         let t = DispatchSource.makeTimerSource(queue: playQueue)
