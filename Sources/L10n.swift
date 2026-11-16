@@ -1767,6 +1767,8 @@ enum L10n {
         "在线结果暂不可用，先显示本机结果": "Online results are unavailable; showing results on this device",
         "在线搜索暂不可用": "Online search is temporarily unavailable",
         "这个会话暂时打不开，请刷新后重试": "This conversation can't be opened right now. Refresh and try again",
+        "联系人索引": "Contact index",
+        "上下轻扫切换字母": "Swipe up or down to change the letter",
 
     ]
 }

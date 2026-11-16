@@ -65,6 +65,23 @@ struct ContactIndexBar: View {
                 }
             }
             .contentShape(Rectangle())
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Tr("联系人索引"))
+            .accessibilityValue(shownLetter ?? "")
+            .accessibilityHint(Tr("上下轻扫切换字母"))
+            .accessibilityAdjustableAction { direction in
+                guard !letters.isEmpty else { return }
+                let current = active.flatMap { letters.firstIndex(of: $0) } ?? 0
+                switch direction {
+                case .increment:
+                    pick(letters[min(letters.count - 1, current + 1)])
+                case .decrement:
+                    pick(letters[max(0, current - 1)])
+                @unknown default:
+                    return
+                }
+                scheduleHighlightEnd()
+            }
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in

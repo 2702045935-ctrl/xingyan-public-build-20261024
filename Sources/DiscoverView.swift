@@ -277,11 +277,12 @@ struct DiscoverView: View {
         HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 1) {
                 Text(Tr("世界"))
-                    .font(pfStyled(size: 26, weight: .bold))
+                    .font(systemTextFont(26, .bold, relativeTo: .largeTitle))
                     .foregroundStyle(OrbitTheme.ink)
+                    .accessibilityAddTraits(.isHeader)
                 Text(app.moments.isEmpty ? Tr("去发现、聊天、生活")
                                          : momentCountText)
-                    .font(pfStyled(size: 12, weight: .regular))
+                    .font(systemTextFont(12, .regular, relativeTo: .caption1))
                     .foregroundStyle(OrbitTheme.secondary)
                     .lineLimit(1)
             }
@@ -313,7 +314,14 @@ struct DiscoverView: View {
             .accessibilityLabel(Tr("扫一扫"))
         }
         .padding(.horizontal, 16)
-        .frame(height: L.navH)
+        .frame(height: discoverHeaderHeight)
+    }
+
+    private var discoverHeaderHeight: CGFloat {
+        let preferred = 26 * fontScale * CareMode.scale
+        let titleHeight = UIFontMetrics(forTextStyle: .largeTitle)
+            .scaledValue(for: preferred)
+        return max(L.navH, ceil(titleHeight + 14))
     }
 
     private var worldCanvas: Color {
@@ -524,7 +532,7 @@ struct DiscoverView: View {
                         TopScrollProbe(space: "discoverScroll")
                             .frame(height: 0)
 
-                        Color.clear.frame(height: L.navH)
+                        Color.clear.frame(height: discoverHeaderHeight)
 
                         if let hero = worldHeroItem {
                             worldSectionHeader(Tr("动态"))
@@ -580,7 +588,7 @@ struct DiscoverView: View {
                         .transition(.opacity)
                 }
             }
-            .animation(.easeInOut(duration: 0.2), value: app.offline)
+            .systemAnimation(.easeInOut(duration: 0.2), value: app.offline)
             .navigationDestination(for: String.self) { key in
                 if key == "moments" {
                     MomentsView()
@@ -1566,7 +1574,7 @@ struct MomentsView: View {
                 ColorBall(size: 34, spin: spin)
                     .scaleEffect(0.72 + min(1, pullY / 90) * 0.28)
                     .offset(y: min(96, pullY * 0.8) + L.safeTop + 6)
-                    .animation(.easeOut(duration: 0.12), value: pullY)
+                    .systemAnimation(.easeOut(duration: 0.12), value: pullY)
                     .allowsHitTesting(false)
                     .zIndex(30)
             }

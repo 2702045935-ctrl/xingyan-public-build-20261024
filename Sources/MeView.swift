@@ -1612,7 +1612,7 @@ struct SettingsView: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
         .background(C.pageBg)
-        .animation(.easeOut(duration: 0.16), value: searchActive)
+        .systemAnimation(.easeOut(duration: 0.16), value: searchActive)
         .onChange(of: searchFocus) { f in searchActive = f }
     }
 

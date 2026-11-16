@@ -68,6 +68,7 @@ struct ContactsView: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var keyword = ""
     @State private var path = NavigationPath()
@@ -88,7 +89,13 @@ struct ContactsView: View {
 
     @State private var starIds: [String] = []
 
-    private var listHeadH: CGFloat { max(0, L.navH - 7) }
+    private var contactsHeaderHeight: CGFloat {
+        let preferred = 26 * fontScale * CareMode.scale
+        let titleHeight = UIFontMetrics(forTextStyle: .largeTitle)
+            .scaledValue(for: preferred)
+        return max(L.navH, ceil(titleHeight + 14))
+    }
+    private var listHeadH: CGFloat { max(0, contactsHeaderHeight - 7) }
     private var contactsCanvas: Color {
         scheme == .dark ? C.contactsBg
             : (UIConfig.colorIfSet("contactsBg") ?? .white)
@@ -182,10 +189,11 @@ private var funcs: [(String, String, Color, String)] {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 1) {
                 Text(C.tabText1)
-                    .font(pfStyled(size: 26, weight: .bold))
+                    .font(systemTextFont(26, .bold, relativeTo: .largeTitle))
                     .foregroundStyle(contactsLabel)
+                    .accessibilityAddTraits(.isHeader)
                 Text(contactCountText)
-                    .font(pfStyled(size: 12.5, weight: .regular))
+                    .font(systemTextFont(12.5, .regular, relativeTo: .caption1))
                     .foregroundStyle(contactsSecondary)
             }
 
@@ -206,7 +214,7 @@ private var funcs: [(String, String, Color, String)] {
             .accessibilityLabel(Tr("添加"))
         }
         .padding(.horizontal, 16)
-        .frame(height: L.navH)
+        .frame(height: contactsHeaderHeight)
     }
 
     var body: some View {
@@ -276,6 +284,7 @@ private var funcs: [(String, String, Color, String)] {
                                                  .foregroundStyle(idxLetter == section.letter
                                                                   ? .white
                                                                   : contactsSecondary)
+                                                 .accessibilityAddTraits(.isHeader)
                                             Spacer(minLength: 0)
                                         }
                                         .padding(.leading, 16)
@@ -322,7 +331,7 @@ private var funcs: [(String, String, Color, String)] {
                             ContactIndexBar(
                                 available: Set(sections.map { $0.letter }),
                                 onPick: { L in
-                                    withAnimation(.easeOut(duration: 0.12)) {
+                                    withAnimation(reduceMotion ? nil : .easeOut(duration: 0.12)) {
                                         proxy.scrollTo("letter-\(L)", anchor: .top)
                                     }
                                     showBubble(L)
@@ -923,7 +932,7 @@ struct ContactCardView: View {
 
             if showMore { morePanel.transition(.opacity) }
         }
-        .animation(.easeOut(duration: 0.18), value: showMore)
+        .systemAnimation(.easeOut(duration: 0.18), value: showMore)
         .toolbar(.hidden, for: .navigationBar)
         .swipeBack { dismiss() }
         .hidesTabBar()
