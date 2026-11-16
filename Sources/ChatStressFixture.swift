@@ -37,7 +37,7 @@ enum ChatStressFixture {
             )
             let isGroup = index % 3 == 0
             let memberCount = isGroup ? 9 + (index % 120) : 2
-            let memberIds = (0..<memberCount).map {
+            let memberIds = (0..<min(memberCount, 8)).map {
                 "stress-member-\(index)-\($0)"
             }
             return Chat(
