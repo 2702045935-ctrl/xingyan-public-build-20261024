@@ -14,14 +14,16 @@ const valid = {
       host: '10.0.0.10',
       role: 'primary',
       failureDomain: 'az-a',
-      dataRoot: '/data/cell-a'
+      dataRoot: '/data/cell-a',
+      baseUrl: 'https://10.0.0.10:5443'
     },
     b: {
       id: 'cn-b',
       host: '10.0.0.20',
       role: 'shadow',
       failureDomain: 'az-b',
-      dataRoot: '/data/cell-b'
+      dataRoot: '/data/cell-b',
+      baseUrl: 'https://10.0.0.20:5443'
     }
   },
   traffic: {

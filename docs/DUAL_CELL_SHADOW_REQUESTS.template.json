@@ -1,0 +1,22 @@
+{
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/api/health"
+    },
+    {
+      "method": "GET",
+      "path": "/api/chats",
+      "ignorePaths": [
+        "/data/time"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/moments",
+      "ignorePaths": [
+        "/data/time"
+      ]
+    }
+  ]
+}

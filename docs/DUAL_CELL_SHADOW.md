@@ -53,3 +53,33 @@ node server/tools/dual-cell-contract.js \
 6. 差异为零且样本量达标后，才讨论故障切换。
 
 契约通过不等于可以切流。切流还必须单独通过容量、延迟、故障和回滚演练。
+
+## 只读流量探针
+
+请求清单模板：`docs/DUAL_CELL_SHADOW_REQUESTS.template.json`。
+
+鉴权头不要写进计划文件，分别放在两个环境变量里：
+
+```text
+CELL_A_HEADERS='{"Cookie":"..."}'
+CELL_B_HEADERS='{"Cookie":"..."}'
+
+node server/tools/dual-cell-shadow-probe.js \
+  --plan=<双 Cell 计划> \
+  --requests=<只读请求清单> \
+  --headers-a-env=CELL_A_HEADERS \
+  --headers-b-env=CELL_B_HEADERS \
+  --out=<探针报告>
+```
+
+探针只允许 `GET` 和 `HEAD`。除这两个方法外的请求会在发往任何 Cell 前整批拒绝。
+Cell B 连续三次连接失败或超时后熔断，停止继续请求 B，Cell A 结果不受影响。
+
+报告只有在以下条件全部满足时才为通过：
+
+- 已完成样本数达到计划中的 `requiredSamples`。
+- Cell A/B 状态码和规范化响应完全一致。
+- 没有 Cell B 超时、连接错误或熔断。
+- 报告稳定指纹格式正确。
+
+探针通过只代表只读流量一致，不代表可以切写流量或故障切换。

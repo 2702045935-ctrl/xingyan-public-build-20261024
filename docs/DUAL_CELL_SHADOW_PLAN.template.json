@@ -9,14 +9,16 @@
       "host": "REPLACE_WITH_CELL_A_HOST",
       "role": "primary",
       "failureDomain": "REPLACE_WITH_A_FAILURE_DOMAIN",
-      "dataRoot": "/srv/xingyan/cell-a"
+      "dataRoot": "/srv/xingyan/cell-a",
+      "baseUrl": "https://REPLACE_WITH_CELL_A_HOST:5443"
     },
     "b": {
       "id": "cell-b",
       "host": "REPLACE_WITH_CELL_B_HOST",
       "role": "shadow",
       "failureDomain": "REPLACE_WITH_B_FAILURE_DOMAIN",
-      "dataRoot": "/srv/xingyan/cell-b"
+      "dataRoot": "/srv/xingyan/cell-b",
+      "baseUrl": "https://REPLACE_WITH_CELL_B_HOST:5443"
     }
   },
   "traffic": {

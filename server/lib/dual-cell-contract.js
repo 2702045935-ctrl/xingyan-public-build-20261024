@@ -28,6 +28,16 @@ function pathContains(parent, child) {
   return child === parent || child.startsWith(parent + '/');
 }
 
+function baseUrlOf(value) {
+  try {
+    const url = new URL(String(value || ''));
+    if (url.username || url.password) return null;
+    return url;
+  } catch (_) {
+    return null;
+  }
+}
+
 function validateDualCellPlan(plan) {
   const input = plan || {};
   const failures = [];
@@ -56,6 +66,8 @@ function validateDualCellPlan(plan) {
   const bRoot = normalizeRoot(text(b.dataRoot, 500));
   const aDomain = text(a.failureDomain, 120);
   const bDomain = text(b.failureDomain, 120);
+  const aUrl = baseUrlOf(a.baseUrl);
+  const bUrl = baseUrlOf(b.baseUrl);
   if (!aId || !bId) fail('cell-id');
   if (aId && aId === bId) fail('cell-id-duplicate', { id: aId });
   if (!aHost || !bHost) fail('cell-host');
@@ -71,6 +83,22 @@ function validateDualCellPlan(plan) {
   }
   if (text(a.role, 20) !== 'primary') fail('cell-a-role');
   if (text(b.role, 20) !== 'shadow') fail('cell-b-role');
+  if (!aUrl || !bUrl) fail('cell-base-url');
+  if (aUrl && aUrl.hostname.toLowerCase() !== aHost) {
+    fail('cell-a-base-url-host', { host: aHost, urlHost: aUrl.hostname });
+  }
+  if (bUrl && bUrl.hostname.toLowerCase() !== bHost) {
+    fail('cell-b-base-url-host', { host: bHost, urlHost: bUrl.hostname });
+  }
+  if (aUrl && bUrl && aUrl.origin === bUrl.origin) {
+    fail('cell-origin-shared', { origin: aUrl.origin });
+  }
+  for (const [id, url] of [['a', aUrl], ['b', bUrl]]) {
+    const local = url && /^(127\.0\.0\.1|::1|localhost)$/i.test(url.hostname);
+    if (url && url.protocol !== 'https:' && !local) {
+      fail('cell-' + id + '-insecure-transport', { protocol: url.protocol });
+    }
+  }
 
   const traffic = input.traffic || {};
   const sampleRate = Number(traffic.sampleRate);
@@ -112,14 +140,16 @@ function validateDualCellPlan(plan) {
         host: aHost,
         role: text(a.role, 20),
         failureDomain: aDomain,
-        dataRoot: aRoot
+        dataRoot: aRoot,
+        baseUrl: aUrl ? aUrl.toString().replace(/\/+$/, '') : ''
       },
       b: {
         id: bId,
         host: bHost,
         role: text(b.role, 20),
         failureDomain: bDomain,
-        dataRoot: bRoot
+        dataRoot: bRoot,
+        baseUrl: bUrl ? bUrl.toString().replace(/\/+$/, '') : ''
       }
     },
     traffic: {
