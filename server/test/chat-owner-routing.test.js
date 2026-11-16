@@ -6,7 +6,7 @@ const fs = require('fs');
 const net = require('net');
 const os = require('os');
 const path = require('path');
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const { buildRoutePlan, resolveRoute } = require('../lib/shard-route-plan');
 const { openMessage } = require('../lib/shard-data-inventory');
 const { SecurityVault } = require('../lib/security-vault');
@@ -88,7 +88,9 @@ async function startShard(
   shardId,
   shardCount,
   routePlanFile,
-  routePlanEnforced
+  routePlanEnforced,
+  runtimeManifestFile,
+  topologyFile
 ) {
   const base = 'http://127.0.0.1:' + port;
   const logs = [];
@@ -104,6 +106,8 @@ async function startShard(
       SHARD_BASE_PORT: String(basePort),
       SHARD_ROUTE_PLAN_FILE: routePlanFile,
       SHARD_ROUTE_PLAN_ENFORCED: routePlanEnforced ? '1' : '0',
+      SHARD_RUNTIME_MANIFEST: runtimeManifestFile,
+      SHARD_TOPOLOGY_FILE: topologyFile,
       CHRIS_LOCAL_ONLY: '1',
       DISABLE_STARTUP_BOT_BACKFILL: '1',
       AML_RUNTIME_ENABLED: '0'
@@ -191,6 +195,33 @@ async function main() {
     });
     const routePlanFile = path.join(dataDir, 'chat-route-plan.json');
     fs.writeFileSync(routePlanFile, JSON.stringify(routePlan, null, 2));
+    const topologyFile = path.join(dataDir, 'test-topologies.json');
+    fs.writeFileSync(topologyFile, JSON.stringify({
+      version: 1,
+      topologies: {
+        [routePlan.topologyId]: {
+          shardCount,
+          ports
+        }
+      }
+    }, null, 2));
+    const runtimeManifestFile = path.join(dataDir, 'runtime-manifest.json');
+    fs.writeFileSync(runtimeManifestFile, JSON.stringify({
+      version: 1,
+      environment: 'test',
+      topologyId: routePlan.topologyId,
+      host: '127.0.0.1',
+      entryHost: '127.0.0.1',
+      programDir: '/tmp/chat-owner-routing-app',
+      dataDir: '/tmp/chat-owner-routing-data',
+      serviceTemplate: 'chat-owner-routing-shard@{id}.service',
+      shardCount,
+      backendBasePort: basePort,
+      entryBasePort: basePort + 1000,
+      portStep: 100,
+      frozenDate: '2026-11-16',
+      frozenCodeHash: 'b'.repeat(64)
+    }, null, 2));
     fs.writeFileSync(path.join(dataDir, 'users.json'), JSON.stringify({ users: [alice, bob] }));
     fs.writeFileSync(path.join(dataDir, 'security.json'), JSON.stringify({ sliderLogin: 0 }));
     fs.writeFileSync(path.join(dataDir, 'friendships.json'), JSON.stringify({
@@ -219,7 +250,9 @@ async function main() {
         shard,
         shardCount,
         routePlanFile,
-        false
+        false,
+        runtimeManifestFile,
+        topologyFile
       ));
     }
     const dormantHealth = await Promise.all(servers.map(async (server) => {
@@ -231,6 +264,36 @@ async function main() {
       assert.strictEqual(row.chatRouteTopologyId, routePlan.topologyId);
       assert.strictEqual(row.chatRoutePlanEnforced, false);
     }
+    const auditTool = path.join(SERVER_DIR, 'tools', 'shard-runtime-audit.js');
+    const dormantAudit = spawnSync(process.execPath, [
+      auditTool,
+      '--manifest=' + runtimeManifestFile,
+      '--topology=' + topologyFile,
+      '--route-plan=' + routePlanFile,
+      '--require-route-dormant',
+      '--no-systemd',
+      '--no-code'
+    ], { encoding: 'utf8', windowsHide: true });
+    assert.strictEqual(dormantAudit.status, 0,
+      dormantAudit.stderr || dormantAudit.stdout);
+    const dormantAuditReport = JSON.parse(dormantAudit.stdout);
+    assert.strictEqual(dormantAuditReport.ok, true);
+    assert.strictEqual(dormantAuditReport.routePlan.requiredMode, 'dormant');
+    const wrongModeAudit = spawnSync(process.execPath, [
+      auditTool,
+      '--manifest=' + runtimeManifestFile,
+      '--topology=' + topologyFile,
+      '--route-plan=' + routePlanFile,
+      '--require-route-enforced',
+      '--no-systemd',
+      '--no-code'
+    ], { encoding: 'utf8', windowsHide: true });
+    assert.strictEqual(wrongModeAudit.status, 1);
+    const wrongModeReport = JSON.parse(wrongModeAudit.stdout);
+    assert.strictEqual(wrongModeReport.ok, false);
+    assert.ok(wrongModeReport.shards.every((row) =>
+      row.failures.includes('chat-route-plan-not-enforced')
+    ));
     for (const server of servers) await stop(server.child);
     servers.length = 0;
     for (let shard = 0; shard < shardCount; shard += 1) {
@@ -241,7 +304,9 @@ async function main() {
         shard,
         shardCount,
         routePlanFile,
-        true
+        true,
+        runtimeManifestFile,
+        topologyFile
       ));
     }
     const aliceUserShard = resolveRoute(routePlan, 'user', alice.id);
@@ -318,7 +383,9 @@ async function main() {
       ownerIndex,
       shardCount,
       routePlanFile,
-      true
+      true,
+      runtimeManifestFile,
+      topologyFile
     );
     for (let index = 20; index < 30; index += 1) {
       aliceSocket.send(JSON.stringify({
@@ -353,6 +420,20 @@ async function main() {
       assert.strictEqual(row.chatRouteTopologyId, routePlan.topologyId);
       assert.strictEqual(row.chatRoutePlanEnforced, true);
     }
+    const enforcedAudit = spawnSync(process.execPath, [
+      auditTool,
+      '--manifest=' + runtimeManifestFile,
+      '--topology=' + topologyFile,
+      '--route-plan=' + routePlanFile,
+      '--require-route-enforced',
+      '--no-systemd',
+      '--no-code'
+    ], { encoding: 'utf8', windowsHide: true });
+    assert.strictEqual(enforcedAudit.status, 0,
+      enforcedAudit.stderr || enforcedAudit.stdout);
+    const enforcedAuditReport = JSON.parse(enforcedAudit.stdout);
+    assert.strictEqual(enforcedAuditReport.ok, true);
+    assert.strictEqual(enforcedAuditReport.routePlan.requiredMode, 'enforced');
     assert.ok(forwarded >= 1);
     const summary = {
       ok: true,
@@ -360,6 +441,9 @@ async function main() {
       routePlanHash: routePlan.hash,
       routeTopologyId: routePlan.topologyId,
       dormantInstancesChecked: dormantHealth.length,
+      dormantAudit: dormantAuditReport.ok,
+      modeMismatchRejected: wrongModeReport.ok === false,
+      enforcedAudit: enforcedAuditReport.ok,
       chatId,
       chatOwnerShard: ownerIndex,
       aliceUserShard,

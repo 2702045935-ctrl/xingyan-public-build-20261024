@@ -184,9 +184,12 @@ if (chatRoutePlan) {
 }
 let shardRuntimeIdentity = null;
 if (process.env.SHARD_RUNTIME_MANIFEST) {
+  const shardTopologyFile = process.env.SHARD_TOPOLOGY_FILE
+    ? path.resolve(process.env.SHARD_TOPOLOGY_FILE)
+    : path.join(ROOT, 'shard-topologies.json');
   const runtimeManifest = loadManifest(
     path.resolve(process.env.SHARD_RUNTIME_MANIFEST),
-    { topologyFile: path.join(ROOT, 'shard-topologies.json') }
+    { topologyFile: shardTopologyFile }
   );
   shardRuntimeIdentity = assertRunningShard(runtimeManifest, {
     shardId: process.env.SHARD_ID,

@@ -74,6 +74,7 @@ jobs:
           node server/test/chat-actions.test.js
           node server/test/chat-route-plan.test.js
           node server/test/chat-owner-routing.test.js
+          node server/test/shard-runtime-health.test.js
           node server/test/message-sequence-audit.test.js
           node server/test/message-sequence-repair-plan.test.js
           node server/test/message-sequence-repair-apply.test.js
