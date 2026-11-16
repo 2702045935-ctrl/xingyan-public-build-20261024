@@ -26,6 +26,7 @@ const READY_CHECKLIST = [
   'backupVerified',
   'routePlanVerified',
   'sevenShardPreflight',
+  'capacityHeadroomVerified',
   'maintenanceWindowConfirmed'
 ];
 

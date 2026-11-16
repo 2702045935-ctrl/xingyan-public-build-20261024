@@ -2103,12 +2103,13 @@ PAGES.shardmaintenance = async () => {
   if (flow && flow.status === 'draft') {
     actionPanel =
       '<div class="panel"><h3>发布前检查</h3>'
-      + '<div class="hint">以下五项必须全部确认。这里只保存控制状态，不执行发布。</div>'
+      + '<div class="hint">以下六项必须全部确认。这里只保存控制状态，不执行发布。</div>'
       + '<div class="maint-checks">'
       + '<label><input type="checkbox" data-ms-check="artifactVerified"> 候选代码哈希与候选目录一致</label>'
       + '<label><input type="checkbox" data-ms-check="backupVerified"> 稳定版本与数据回滚点已核验</label>'
       + '<label><input type="checkbox" data-ms-check="routePlanVerified"> 路由计划内部哈希和文件 SHA256 一致</label>'
       + '<label><input type="checkbox" data-ms-check="sevenShardPreflight"> 7 片只读预检全部通过</label>'
+      + '<label><input type="checkbox" data-ms-check="capacityHeadroomVerified"> CPU、内存、磁盘和 inode 余量通过</label>'
       + '<label><input type="checkbox" data-ms-check="maintenanceWindowConfirmed"> 已进入维护窗口且客服在线</label>'
       + '</div>'
       + '<div class="kv"><b>确认口令</b><span><input id="msReadyPhrase" placeholder="输入：只逐片发布" style="width:280px"></span></div>'

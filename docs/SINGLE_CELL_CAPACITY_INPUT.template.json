@@ -1,0 +1,23 @@
+{
+  "host": {
+    "cpuCount": 8,
+    "totalMemoryBytes": 8589934592,
+    "freeMemoryBytes": 3221225472,
+    "load1": 2.4,
+    "disk": {
+      "totalBytes": 107374182400,
+      "freeBytes": 42949672960,
+      "inodesTotal": 1000000,
+      "inodesFree": 600000
+    }
+  },
+  "shards": [
+    { "id": 0, "pid": 1001, "rssBytes": 367001600, "fdCount": 1200 },
+    { "id": 1, "pid": 1002, "rssBytes": 367001600, "fdCount": 1200 },
+    { "id": 2, "pid": 1003, "rssBytes": 367001600, "fdCount": 1200 },
+    { "id": 3, "pid": 1004, "rssBytes": 367001600, "fdCount": 1200 },
+    { "id": 4, "pid": 1005, "rssBytes": 367001600, "fdCount": 1200 },
+    { "id": 5, "pid": 1006, "rssBytes": 367001600, "fdCount": 1200 },
+    { "id": 6, "pid": 1007, "rssBytes": 367001600, "fdCount": 1200 }
+  ]
+}
