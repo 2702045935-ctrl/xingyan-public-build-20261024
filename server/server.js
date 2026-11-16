@@ -165,7 +165,8 @@ if (process.env.SHARD_ROUTE_PLAN_FILE) {
     shardCount: Number(process.env.SHARD_COUNT) || 1,
     basePort: Number(process.env.SHARD_BASE_PORT) || 5299,
     shardId: Number(process.env.SHARD_ID),
-    port: PORT
+    port: PORT,
+    fileSha256: process.env.SHARD_ROUTE_PLAN_FILE_SHA256
   });
   console.log('[聊天路由] topology=' + chatRoutePlan.topologyId
     + ' hash=' + chatRoutePlan.hash.slice(0, 12)
@@ -14676,6 +14677,7 @@ async function handleApi(req, res, pathname, query) {
       runtimeTopologyId: shardRuntimeIdentity ? shardRuntimeIdentity.topologyId : '',
       runtimeService: shardRuntimeIdentity ? shardRuntimeIdentity.service : '',
       chatRoutePlanHash: chatRoutePlan ? chatRoutePlan.hash : '',
+      chatRoutePlanFileHash: chatRoutePlan ? chatRoutePlan.fileHash : '',
       chatRouteTopologyId: chatRoutePlan ? chatRoutePlan.topologyId : '',
       chatRoutePlanEnforced,
       chatOwnerForwards: chatOwnerForwardCount,

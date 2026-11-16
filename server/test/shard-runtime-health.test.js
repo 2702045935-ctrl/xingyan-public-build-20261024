@@ -31,6 +31,7 @@ const expected = {
   runtimeManifestHash: 'manifest-hash',
   runtimeTopologyId: manifest.topologyId,
   routePlan,
+  routePlanFileHash: 'route-plan-file-hash',
   requireRouteDormant: true
 };
 const body = {
@@ -42,6 +43,7 @@ const body = {
     runtimeManifestHash: 'manifest-hash',
     runtimeTopologyId: manifest.topologyId,
     chatRoutePlanHash: routePlan.hash,
+    chatRoutePlanFileHash: 'route-plan-file-hash',
     chatRouteTopologyId: routePlan.topologyId,
     chatRoutePlanEnforced: false
   }
@@ -60,6 +62,12 @@ const wrongPlan = JSON.parse(JSON.stringify(body));
 wrongPlan.data.chatRoutePlanHash = 'wrong';
 assert.ok(evaluateShardHealth(wrongPlan, expected).failures.some(
   (row) => row.code === 'chat-route-plan-hash-mismatch'
+));
+
+const wrongPlanFile = JSON.parse(JSON.stringify(body));
+wrongPlanFile.data.chatRoutePlanFileHash = 'wrong';
+assert.ok(evaluateShardHealth(wrongPlanFile, expected).failures.some(
+  (row) => row.code === 'chat-route-plan-file-hash-mismatch'
 ));
 
 const enforced = JSON.parse(JSON.stringify(body));

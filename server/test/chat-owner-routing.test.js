@@ -88,6 +88,7 @@ async function startShard(
   shardId,
   shardCount,
   routePlanFile,
+  routePlanFileHash,
   routePlanEnforced,
   runtimeManifestFile,
   topologyFile
@@ -105,6 +106,7 @@ async function startShard(
       SHARD_ID: String(shardId),
       SHARD_BASE_PORT: String(basePort),
       SHARD_ROUTE_PLAN_FILE: routePlanFile,
+      SHARD_ROUTE_PLAN_FILE_SHA256: routePlanFileHash,
       SHARD_ROUTE_PLAN_ENFORCED: routePlanEnforced ? '1' : '0',
       SHARD_RUNTIME_MANIFEST: runtimeManifestFile,
       SHARD_TOPOLOGY_FILE: topologyFile,
@@ -195,6 +197,9 @@ async function main() {
     });
     const routePlanFile = path.join(dataDir, 'chat-route-plan.json');
     fs.writeFileSync(routePlanFile, JSON.stringify(routePlan, null, 2));
+    const routePlanFileHash = crypto.createHash('sha256')
+      .update(fs.readFileSync(routePlanFile))
+      .digest('hex');
     const topologyFile = path.join(dataDir, 'test-topologies.json');
     fs.writeFileSync(topologyFile, JSON.stringify({
       version: 1,
@@ -250,6 +255,7 @@ async function main() {
         shard,
         shardCount,
         routePlanFile,
+        routePlanFileHash,
         false,
         runtimeManifestFile,
         topologyFile
@@ -261,6 +267,7 @@ async function main() {
     }));
     for (const row of dormantHealth) {
       assert.strictEqual(row.chatRoutePlanHash, routePlan.hash);
+      assert.strictEqual(row.chatRoutePlanFileHash, routePlanFileHash);
       assert.strictEqual(row.chatRouteTopologyId, routePlan.topologyId);
       assert.strictEqual(row.chatRoutePlanEnforced, false);
     }
@@ -270,6 +277,7 @@ async function main() {
       '--manifest=' + runtimeManifestFile,
       '--topology=' + topologyFile,
       '--route-plan=' + routePlanFile,
+      '--route-plan-file-sha256=' + routePlanFileHash,
       '--require-route-dormant',
       '--no-systemd',
       '--no-code'
@@ -284,6 +292,7 @@ async function main() {
       '--manifest=' + runtimeManifestFile,
       '--topology=' + topologyFile,
       '--route-plan=' + routePlanFile,
+      '--route-plan-file-sha256=' + routePlanFileHash,
       '--require-route-enforced',
       '--no-systemd',
       '--no-code'
@@ -304,6 +313,7 @@ async function main() {
         shard,
         shardCount,
         routePlanFile,
+        routePlanFileHash,
         true,
         runtimeManifestFile,
         topologyFile
@@ -383,6 +393,7 @@ async function main() {
       ownerIndex,
       shardCount,
       routePlanFile,
+      routePlanFileHash,
       true,
       runtimeManifestFile,
       topologyFile
@@ -417,6 +428,7 @@ async function main() {
     );
     for (const row of healthRows) {
       assert.strictEqual(row.chatRoutePlanHash, routePlan.hash);
+      assert.strictEqual(row.chatRoutePlanFileHash, routePlanFileHash);
       assert.strictEqual(row.chatRouteTopologyId, routePlan.topologyId);
       assert.strictEqual(row.chatRoutePlanEnforced, true);
     }
@@ -425,6 +437,7 @@ async function main() {
       '--manifest=' + runtimeManifestFile,
       '--topology=' + topologyFile,
       '--route-plan=' + routePlanFile,
+      '--route-plan-file-sha256=' + routePlanFileHash,
       '--require-route-enforced',
       '--no-systemd',
       '--no-code'
@@ -439,6 +452,7 @@ async function main() {
       ok: true,
       shardCount,
       routePlanHash: routePlan.hash,
+      routePlanFileHash,
       routeTopologyId: routePlan.topologyId,
       dormantInstancesChecked: dormantHealth.length,
       dormantAudit: dormantAuditReport.ok,

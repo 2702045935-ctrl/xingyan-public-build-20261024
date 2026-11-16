@@ -94,6 +94,13 @@ function evaluateShardHealth(responseBody, expected) {
         actual: String(data.chatRoutePlanHash || '')
       });
     }
+    if (opts.routePlanFileHash
+        && String(data.chatRoutePlanFileHash || '') !== String(opts.routePlanFileHash)) {
+      fail('chat-route-plan-file-hash-mismatch', {
+        expected: String(opts.routePlanFileHash),
+        actual: String(data.chatRoutePlanFileHash || '')
+      });
+    }
     if (String(data.chatRouteTopologyId || '') !== String(opts.routePlan.topologyId || '')) {
       fail('chat-route-topology-mismatch', {
         expected: String(opts.routePlan.topologyId || ''),

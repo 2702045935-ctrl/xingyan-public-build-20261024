@@ -70,6 +70,7 @@ node server/test/shard-*.test.js
 
 ```text
 SHARD_ROUTE_PLAN_FILE=<冻结计划文件的绝对路径>
+SHARD_ROUTE_PLAN_FILE_SHA256=c02d3ccb14304371044aad4096cc9501d072566c232fb51700d8e228e68d519c
 SHARD_ROUTE_PLAN_ENFORCED=0
 ```
 
@@ -77,13 +78,25 @@ SHARD_ROUTE_PLAN_ENFORCED=0
 
 ```text
 chatRoutePlanHash   = 839c5a4e64e7aa4feb43d49a71de5eb017b0f93918bd05dbacb215dab02da660
+chatRoutePlanFileHash = c02d3ccb14304371044aad4096cc9501d072566c232fb51700d8e228e68d519c
 chatRouteTopologyId = server-b-mainline-shards-7
 chatRoutePlanEnforced = false
 runtimeManifestHash = f7afcdef3bd1d51ef7b50f58650009693397686faaaa31da6738ed96aa4f0f44
 ```
 
-任一进程启动失败、计划哈希不一致、拓扑不一致、端口不等于
+任一进程启动失败、计划哈希或计划文件 SHA256 不一致、拓扑不一致、端口不等于
 `SHARD_BASE_PORT + SHARD_ID * 100` 或 7 片字段不一致，立即全部回滚到稳定版本。
+
+7 片休眠验收命令：
+
+```text
+node server/tools/shard-runtime-audit.js \
+  --manifest=/opt/xingyan-mainline/app/shard-runtime-production.json \
+  --topology=/opt/xingyan-mainline/app/shard-topologies.json \
+  --route-plan=<冻结计划文件的绝对路径> \
+  --route-plan-file-sha256=c02d3ccb14304371044aad4096cc9501d072566c232fb51700d8e228e68d519c \
+  --require-route-dormant
+```
 
 休眠阶段还要确认：
 
@@ -104,6 +117,8 @@ runtimeManifestHash = f7afcdef3bd1d51ef7b50f58650009693397686faaaa31da6738ed96aa
 5. 7 片健康响应中的 `chatRoutePlanEnforced` 必须全部为 `true`。
 6. 连续发送、并发发送、owner 重启和跨片转发复测通过后，才结束维护窗口。
 
+激活后把休眠验收命令的最后一项改为 `--require-route-enforced`，再次全部通过才允许结束维护窗口。
+
 ## 回滚
 
 回滚只做三件事：
@@ -119,6 +134,7 @@ runtimeManifestHash = f7afcdef3bd1d51ef7b50f58650009693397686faaaa31da6738ed96aa
 - 在休眠验证未通过时直接激活。
 - 同时进行代码发布、数据迁移、分片扩容和支付账本变更。
 - 用启动参数临时绕开计划哈希、拓扑或端口校验。
+- 忽略计划文件字节 SHA256 不一致，只核对计划内部哈希。
 - 为某一分片单独生成不同的路由计划。
 - 用候选数据目录替换 `/opt/xingyan-mainline/data`。
 - 把稳定版 `B2611151628 / bc09897` 当作本次候选代码继续改写。

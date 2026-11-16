@@ -1,5 +1,6 @@
 'use strict';
 
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { resolveRoute, verifyRoutePlan } = require('./shard-route-plan');
@@ -16,6 +17,7 @@ function loadChatRoutePlan(file, options) {
   const basePort = Number(opts.basePort);
   const shardId = Number(opts.shardId);
   const port = Number(opts.port);
+  const expectedFileHash = String(opts.fileSha256 || '').trim().toLowerCase();
   if (!file) return null;
   if (!Number.isInteger(shardCount) || shardCount < 2) {
     throw new Error('SHARD_COUNT is invalid');
@@ -29,8 +31,17 @@ function loadChatRoutePlan(file, options) {
   if (!Number.isInteger(port) || port <= 0) {
     throw new Error('PORT is invalid');
   }
+  if (!/^[a-f0-9]{64}$/.test(expectedFileHash)) {
+    throw new Error('SHARD_ROUTE_PLAN_FILE_SHA256 is invalid');
+  }
   const resolved = path.resolve(String(file));
-  const plan = JSON.parse(fs.readFileSync(resolved, 'utf8'));
+  const raw = fs.readFileSync(resolved);
+  const fileHash = crypto.createHash('sha256').update(raw).digest('hex');
+  if (fileHash !== expectedFileHash) {
+    throw new Error('route plan file hash mismatch: expected='
+      + expectedFileHash + ' actual=' + fileHash);
+  }
+  const plan = JSON.parse(raw.toString('utf8'));
   const verification = verifyRoutePlan(plan);
   if (!verification.ok) {
     throw new Error('route plan verification failed: '
@@ -56,6 +67,7 @@ function loadChatRoutePlan(file, options) {
   }
   return {
     file: resolved,
+    fileHash,
     plan,
     hash: String(plan.hash || ''),
     topologyId,

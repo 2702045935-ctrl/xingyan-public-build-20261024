@@ -15,17 +15,27 @@ const args = process.argv.slice(2);
 const manifestArg = args.find((value) => value.startsWith('--manifest='));
 const topologyArg = args.find((value) => value.startsWith('--topology='));
 const routePlanArg = args.find((value) => value.startsWith('--route-plan='));
+const routePlanFileShaArg = args.find((value) =>
+  value.startsWith('--route-plan-file-sha256=')
+);
 const manifestFile = manifestArg
   ? path.resolve(manifestArg.slice('--manifest='.length))
   : path.join(ROOT, 'shard-runtime-production.json');
 const topologyFile = topologyArg
   ? path.resolve(topologyArg.slice('--topology='.length))
   : path.join(ROOT, 'shard-topologies.json');
-const routePlan = routePlanArg
-  ? JSON.parse(fs.readFileSync(
-    path.resolve(routePlanArg.slice('--route-plan='.length)),
-    'utf8'
-  ))
+const routePlanFile = routePlanArg
+  ? path.resolve(routePlanArg.slice('--route-plan='.length))
+  : '';
+const routePlanRaw = routePlanFile ? fs.readFileSync(routePlanFile) : null;
+const routePlanFileHash = routePlanRaw
+  ? crypto.createHash('sha256').update(routePlanRaw).digest('hex')
+  : '';
+const expectedRoutePlanFileHash = routePlanFileShaArg
+  ? routePlanFileShaArg.slice('--route-plan-file-sha256='.length).toLowerCase()
+  : '';
+const routePlan = routePlanRaw
+  ? JSON.parse(routePlanRaw.toString('utf8'))
   : null;
 const checkSystemd = !args.includes('--no-systemd');
 const checkCode = !args.includes('--no-code');
@@ -37,10 +47,35 @@ if (requireRouteEnforced && requireRouteDormant) {
 if ((requireRouteEnforced || requireRouteDormant) && !routePlan) {
   throw new Error('route enforcement checks require --route-plan=FILE');
 }
+if (routePlanFileShaArg && !routePlan) {
+  throw new Error('--route-plan-file-sha256 requires --route-plan=FILE');
+}
+if (!expectedRoutePlanFileHash
+    && (requireRouteEnforced || requireRouteDormant)) {
+  throw new Error('route mode checks require --route-plan-file-sha256=SHA256');
+}
+if (expectedRoutePlanFileHash
+    && !/^[a-f0-9]{64}$/.test(expectedRoutePlanFileHash)) {
+  throw new Error('--route-plan-file-sha256 must be a SHA256 hex digest');
+}
 const loaded = loadManifest(manifestFile, { topologyFile });
-const routePlanAudit = routePlan
+const routePlanContentAudit = routePlan
   ? validateRoutePlan(routePlan, loaded.manifest)
   : { ok: true, failures: [] };
+const routePlanFileOk = !expectedRoutePlanFileHash
+  || routePlanFileHash === expectedRoutePlanFileHash;
+const routePlanFailures = [
+  ...routePlanContentAudit.failures,
+  ...(routePlanFileOk ? [] : [{
+    code: 'route-plan-file-hash-mismatch',
+    expected: expectedRoutePlanFileHash,
+    actual: routePlanFileHash
+  }])
+];
+const routePlanAudit = {
+  ok: routePlanContentAudit.ok && routePlanFileOk,
+  failures: routePlanFailures
+};
 
 function run(command, commandArgs) {
   const result = spawnSync(command, commandArgs, {
@@ -98,6 +133,7 @@ async function main() {
       runtimeManifestHash: loaded.hash,
       runtimeTopologyId: loaded.manifest.topologyId,
       routePlan,
+      routePlanFileHash: expectedRoutePlanFileHash || routePlanFileHash,
       requireRouteEnforced,
       requireRouteDormant
     });
@@ -130,8 +166,11 @@ async function main() {
     actualCodeHash,
     frozenCodeOk,
     routePlan: routePlan ? {
-      file: path.resolve(routePlanArg.slice('--route-plan='.length)),
+      file: routePlanFile,
       hash: routePlan.hash || '',
+      fileSha256: routePlanFileHash,
+      expectedFileSha256: expectedRoutePlanFileHash,
+      fileSha256Ok: routePlanFileOk,
       topologyId: routePlan.topologyId || '',
       requiredMode: requireRouteEnforced
         ? 'enforced'
