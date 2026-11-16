@@ -2658,7 +2658,8 @@ struct ChatsView: View {
                         },
                         onRefresh: {
                             Task { await app.loadChats() }
-                        }
+                        },
+                        allowInsertionDuringScroll: ChatStressFixture.isActive
                     ) { entry in
                         nativeChatEntry(entry)
                     }

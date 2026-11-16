@@ -10,6 +10,7 @@ where Item.ID: Hashable {
     let onZoneChange: (Int) -> Void
     let onApproachingEnd: () -> Void
     let onRefresh: () -> Void
+    let allowInsertionDuringScroll: Bool
     @ViewBuilder let row: (Item) -> Row
 
     func makeCoordinator() -> Coordinator {
@@ -17,6 +18,7 @@ where Item.ID: Hashable {
                     onZoneChange: onZoneChange,
                     onApproachingEnd: onApproachingEnd,
                     onRefresh: onRefresh,
+                    allowInsertionDuringScroll: allowInsertionDuringScroll,
                     height: height,
                     nativeRow: nativeRow,
                     row: row)
@@ -111,6 +113,7 @@ where Item.ID: Hashable {
         context.coordinator.onZoneChange = onZoneChange
         context.coordinator.onApproachingEnd = onApproachingEnd
         context.coordinator.onRefresh = onRefresh
+        context.coordinator.allowInsertionDuringScroll = allowInsertionDuringScroll
         context.coordinator.apply(items, animated: false)
     }
 
@@ -123,6 +126,7 @@ where Item.ID: Hashable {
         var onZoneChange: (Int) -> Void
         var onApproachingEnd: () -> Void
         var onRefresh: () -> Void
+        var allowInsertionDuringScroll: Bool
         weak var collection: UICollectionView?
         var dataSource: UICollectionViewDiffableDataSource<Int, Item.ID>?
         private var order: [Item.ID] = []
@@ -140,6 +144,7 @@ where Item.ID: Hashable {
              onZoneChange: @escaping (Int) -> Void,
              onApproachingEnd: @escaping () -> Void,
              onRefresh: @escaping () -> Void,
+             allowInsertionDuringScroll: Bool,
              height: @escaping (Item) -> CGFloat,
              nativeRow: ((Item) -> NativeChatRowConfiguration?)?,
              row: @escaping (Item) -> Row) {
@@ -147,6 +152,7 @@ where Item.ID: Hashable {
             self.onZoneChange = onZoneChange
             self.onApproachingEnd = onApproachingEnd
             self.onRefresh = onRefresh
+            self.allowInsertionDuringScroll = allowInsertionDuringScroll
             self.height = height
             self.nativeRow = nativeRow
             self.row = row
@@ -176,8 +182,11 @@ where Item.ID: Hashable {
              */
             let isPureAppend = next.count > order.count
                 && next.prefix(order.count).allSatisfy { lookup[$0.id] == $0 }
+            let isStableInsertion = allowInsertionDuringScroll
+                && isInsertionOnly(next)
             if !order.isEmpty,
                !isPureAppend,
+               !isStableInsertion,
                collection.isDragging || collection.isDecelerating {
                 pendingItems = next
                 return
@@ -374,6 +383,21 @@ where Item.ID: Hashable {
             guard let pendingItems else { return }
             self.pendingItems = nil
             apply(pendingItems, animated: false)
+        }
+
+        private func isInsertionOnly(_ next: [Item]) -> Bool {
+            guard next.count > order.count else { return false }
+            var cursor = 0
+            for id in order {
+                while cursor < next.count, next[cursor].id != id {
+                    cursor += 1
+                }
+                guard cursor < next.count, lookup[id] == next[cursor] else {
+                    return false
+                }
+                cursor += 1
+            }
+            return true
         }
     }
 }
