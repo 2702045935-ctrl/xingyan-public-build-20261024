@@ -85,7 +85,8 @@
       "publicHealthService": "chris-chat",
       "publicHealthStableShape": true,
       "candidateRouteFieldsPresent": false,
-      "sshPort22Reachable": false
+      "sshPort22Reachable": false,
+      "entryPortsPubliclyReachable": false
     }
   }
 }
