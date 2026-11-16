@@ -16,6 +16,26 @@
     "activeShards": 7,
     "healthyShards": 7
   },
+  "lastDataPlacementAudit": {
+    "at": "2026-11-16T10:27:00Z",
+    "ok": true,
+    "mode": "shared-data-directory",
+    "shallowFiles": 331,
+    "shallowBytes": 165777765,
+    "unclassified": 0,
+    "placements": [
+      "global-replicated",
+      "archive",
+      "secret-authority",
+      "global-log",
+      "user-shard",
+      "payment-authority",
+      "chat-shard",
+      "object-store",
+      "derived-rebuild",
+      "moment-shard"
+    ]
+  },
   "shards": [
     {
       "id": 0,
