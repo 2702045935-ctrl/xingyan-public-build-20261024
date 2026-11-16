@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "candidateId": "system-complete-v1-d27af68",
+  "candidateId": "system-complete-v1-eae3015",
   "sourceBranch": "codex/system-complete-v1",
-  "sourceCommit": "d27af684b904d3377174f41d2b35bb7671370a47",
-  "capturedAt": "2026-11-17T06:17:14.8906408+08:00",
+  "sourceCommit": "eae30153e4f1779036b4921649c1b9ee5f939651",
+  "capturedAt": "2026-11-17T06:19:40.4446329+08:00",
   "candidateCode": {
     "serverJsSha256": "f5119f24c70a38e637254df8a60f1b10e7a5da0dd1c11902d121366e27bf6d3d",
     "chatRoutePlanSha256": "86af4db9399985f41b1103f351f9147b6cc8926271a5f82b1543b01e093b29c4",
@@ -18,7 +18,9 @@
     "shardShadowReadAuditSha256": "9b9df9f9cee21b1dc9ce379b43cb38b90e8ca13fdd3435fd613c75ad5645db31",
     "shardReleaseReadinessSha256": "d9deb616a4cf5118d5af453f1a2a45e616ceed4e2a9afac5d67531429d757b64",
     "shardReleaseReadinessAuditSha256": "4cd8a995f228536f32fc34bb12889caaf902d4f6231aee3945d908d649884391",
-    "shardPlacementRehearsalSha256": "985b46346657c9502ac06a28d1daf2e4a1257cbf5ab314920583f8ff05537e12"
+    "shardPlacementRehearsalSha256": "985b46346657c9502ac06a28d1daf2e4a1257cbf5ab314920583f8ff05537e12",
+    "dualCellContractSha256": "cf5a67711e39ef404b7d8e515fffe043b73d84c94cfd8a163b2ebfe9e21dac41",
+    "dualCellContractAuditSha256": "47c3f811119d7dbd0aed9d90056eba8cb9f117bb6436a4b1073e399baea8765c"
   },
   "productionBaseline": {
     "businessHost": "192.140.179.176",
@@ -95,7 +97,9 @@
     },
     "physicalLayoutContractVerified": true,
     "physicalLayoutDefaultOff": true,
-    "shadowReadParityGate": true
+    "shadowReadParityGate": true,
+    "dualCellAdmissionContract": true,
+    "dualCellShadowActive": false
   },
   "deployment": {
     "status": "not-deployed",
@@ -117,6 +121,7 @@
   "scaleReadiness": {
     "candidateRolloutReadyAfterMaintenanceWindow": true,
     "billionScaleShardFoundationReady": false,
+    "dualCellShadowReady": false,
     "currentDataMode": "shared-data-directory",
     "assessment": "docs/BILLION_SHARD_READINESS.md",
     "blockingDomains": [
