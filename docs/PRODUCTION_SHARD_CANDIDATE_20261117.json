@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "candidateId": "system-complete-v1-d49be16",
+  "candidateId": "system-complete-v1-d27af68",
   "sourceBranch": "codex/system-complete-v1",
-  "sourceCommit": "d49be16f5be221462cdaf01ffb775de7111b4c63",
-  "capturedAt": "2026-11-17T06:16:11.6642394+08:00",
+  "sourceCommit": "d27af684b904d3377174f41d2b35bb7671370a47",
+  "capturedAt": "2026-11-17T06:17:14.8906408+08:00",
   "candidateCode": {
     "serverJsSha256": "f5119f24c70a38e637254df8a60f1b10e7a5da0dd1c11902d121366e27bf6d3d",
     "chatRoutePlanSha256": "86af4db9399985f41b1103f351f9147b6cc8926271a5f82b1543b01e093b29c4",
@@ -17,7 +17,8 @@
     "shardShadowReadSha256": "666f36365f4f733118c2787c12a7e3b8368a172f402fbf277a26ac4ba8f968e1",
     "shardShadowReadAuditSha256": "9b9df9f9cee21b1dc9ce379b43cb38b90e8ca13fdd3435fd613c75ad5645db31",
     "shardReleaseReadinessSha256": "d9deb616a4cf5118d5af453f1a2a45e616ceed4e2a9afac5d67531429d757b64",
-    "shardReleaseReadinessAuditSha256": "4cd8a995f228536f32fc34bb12889caaf902d4f6231aee3945d908d649884391"
+    "shardReleaseReadinessAuditSha256": "4cd8a995f228536f32fc34bb12889caaf902d4f6231aee3945d908d649884391",
+    "shardPlacementRehearsalSha256": "985b46346657c9502ac06a28d1daf2e4a1257cbf5ab314920583f8ff05537e12"
   },
   "productionBaseline": {
     "businessHost": "192.140.179.176",
