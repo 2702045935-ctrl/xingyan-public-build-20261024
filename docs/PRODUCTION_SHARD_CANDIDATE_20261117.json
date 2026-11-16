@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "candidateId": "system-complete-v1-7c12ad6",
+  "candidateId": "system-complete-v1-6b2ed47",
   "sourceBranch": "codex/system-complete-v1",
-  "sourceCommit": "7c12ad6e67e99fe82e1ae965ffc5f31058188244",
-  "capturedAt": "2026-11-17T06:10:17.9759467+08:00",
+  "sourceCommit": "6b2ed472b0bbc9ace460d328165f0569837f7f24",
+  "capturedAt": "2026-11-17T06:14:35.6830237+08:00",
   "candidateCode": {
     "serverJsSha256": "f5119f24c70a38e637254df8a60f1b10e7a5da0dd1c11902d121366e27bf6d3d",
     "chatRoutePlanSha256": "86af4db9399985f41b1103f351f9147b6cc8926271a5f82b1543b01e093b29c4",
@@ -11,7 +11,9 @@
     "shardRuntimeAuditSha256": "93a344e2b00a42b56b982839981b9e428f814755a58f49b525b2b784ee4226f9",
     "shardMaintenanceSha256": "7342bb0cc86d3b86679f93e347c382afc43e76239bf33cdff9d82a1b99072224",
     "shardMaintenanceExecutorSha256": "30f8b20e2a3c7b12412f7ea012d07fdcbb59e4f1ecb9559f51582a34ed0f39f6",
-    "manageHtmlSha256": "f32b5d59c38ea59936c32d343aeac3ca1051e5f4e5da1c7542a80eb885a36fa9"
+    "manageHtmlSha256": "f32b5d59c38ea59936c32d343aeac3ca1051e5f4e5da1c7542a80eb885a36fa9",
+    "shardPhysicalLayoutSha256": "5a5d6384f1e75d16801360f712ced66f8f8d9bf9c57c7769b353bb6a76e37fcf",
+    "shardPhysicalLayoutAuditSha256": "9f8ce4d890f16ecb12aa8d1ce2ba7fc5fbc8ee3d55e2b20a34e6693a5a93c656"
   },
   "productionBaseline": {
     "businessHost": "192.140.179.176",
@@ -42,7 +44,7 @@
   },
   "verification": {
     "shardSuite": {
-      "tests": 27,
+      "tests": 28,
       "failed": 0
     },
     "chatAndMessageSuite": {
@@ -85,7 +87,9 @@
       "explicitApproval": true,
       "automaticBulkDeploy": false,
       "actualSystemctlExecution": false
-    }
+    },
+    "physicalLayoutContractVerified": true,
+    "physicalLayoutDefaultOff": true
   },
   "deployment": {
     "status": "not-deployed",
