@@ -2,7 +2,12 @@
 
 const assert = require('assert');
 const path = require('path');
-const { normalizeManifest, loadManifest, manifestHash } = require('../lib/shard-runtime-manifest');
+const {
+  normalizeManifest,
+  loadManifest,
+  manifestHash,
+  assertRunningShard
+} = require('../lib/shard-runtime-manifest');
 
 const root = path.resolve(__dirname, '..');
 const topologyFile = path.join(root, 'shard-topologies.json');
@@ -23,6 +28,18 @@ assert.deepStrictEqual(
   [15299, 15399, 15499, 15599, 15699, 15799, 15899]
 );
 assert.strictEqual(loaded.hash, manifestHash(loaded.manifest));
+const identity = assertRunningShard(loaded, { shardId: 3, port: 7380 });
+assert.strictEqual(identity.service, 'xingyan-mainline-shard@3.service');
+assert.strictEqual(identity.entryPort, 15599);
+assert.strictEqual(identity.frozenCodeHash, loaded.manifest.frozenCodeHash);
+assert.throws(
+  () => assertRunningShard(loaded, { shardId: 3, port: 7080 }),
+  /runtime port mismatch/
+);
+assert.throws(
+  () => assertRunningShard(loaded, { shardId: 8, port: 8180 }),
+  /not in the runtime manifest/
+);
 
 const wrongPort = normalizeManifest({
   version: 1,

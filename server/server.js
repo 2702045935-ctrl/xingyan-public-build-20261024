@@ -24,6 +24,7 @@ const { PaymentLedger, cents: ledgerCents, money: ledgerMoney } = require('./pay
 const { AmlEngine } = require('./aml');
 const { createShardShadowService } = require('./lib/shard-shadow-service');
 const { resolveTopology } = require('./lib/shard-topology');
+const { loadManifest, assertRunningShard } = require('./lib/shard-runtime-manifest');
 const { MessageReliabilityStore } = require('./lib/message-reliability');
 const { PaymentTokenVault } = require('./lib/payment-token-vault');
 const { PaymentDeviceEnrollment } = require('./lib/payment-device-enrollment');
@@ -156,6 +157,21 @@ function auditShardShadow() {
 }
 
 const PORT = Number(process.env.PORT || 5180);
+let shardRuntimeIdentity = null;
+if (process.env.SHARD_RUNTIME_MANIFEST) {
+  const runtimeManifest = loadManifest(
+    path.resolve(process.env.SHARD_RUNTIME_MANIFEST),
+    { topologyFile: path.join(ROOT, 'shard-topologies.json') }
+  );
+  shardRuntimeIdentity = assertRunningShard(runtimeManifest, {
+    shardId: process.env.SHARD_ID,
+    port: PORT
+  });
+  console.log('[分片身份] ' + shardRuntimeIdentity.service
+    + ' port=' + shardRuntimeIdentity.backendPort
+    + ' topology=' + shardRuntimeIdentity.topologyId
+    + ' manifest=' + shardRuntimeIdentity.manifestHash.slice(0, 12));
+}
 /* 内置 TURN（通话中转）的端口和账号：局域网内部用，保持简单 */
 const TURN_PORT_NUM = Number(process.env.TURN_PORT || 3478);
 const TURN_USER = process.env.TURN_USER || 'chris';
@@ -14576,6 +14592,9 @@ async function handleApi(req, res, pathname, query) {
       role: PORT === CALL_SIGNAL_PORT ? 'call-signal' : 'chat-shard',
       port: PORT,
       shardId: process.env.SHARD_ID || '',
+      runtimeManifestHash: shardRuntimeIdentity ? shardRuntimeIdentity.manifestHash : '',
+      runtimeTopologyId: shardRuntimeIdentity ? shardRuntimeIdentity.topologyId : '',
+      runtimeService: shardRuntimeIdentity ? shardRuntimeIdentity.service : '',
       callSignalPort: CALL_SIGNAL_PORT,
       activeCalls,
       ringingCalls,

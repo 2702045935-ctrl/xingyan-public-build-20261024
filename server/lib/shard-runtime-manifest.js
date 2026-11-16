@@ -159,9 +159,36 @@ function loadManifest(file, options) {
   }, normalizeManifest(raw, options));
 }
 
+function assertRunningShard(manifestResult, options) {
+  if (!manifestResult || manifestResult.ok !== true || !manifestResult.manifest) {
+    throw new Error('shard runtime manifest is invalid');
+  }
+  const shardId = Number(options && options.shardId);
+  const port = Number(options && options.port);
+  if (!Number.isInteger(shardId)) throw new Error('SHARD_ID must be an integer');
+  if (!Number.isInteger(port) || port <= 0) throw new Error('PORT must be a positive integer');
+  const shard = manifestResult.manifest.shards.find((row) => row.id === shardId);
+  if (!shard) throw new Error('SHARD_ID ' + shardId + ' is not in the runtime manifest');
+  if (shard.backendPort !== port) {
+    throw new Error('runtime port mismatch: shard=' + shardId
+      + ' expected=' + shard.backendPort + ' actual=' + port);
+  }
+  return {
+    manifestHash: manifestResult.hash,
+    environment: manifestResult.manifest.environment,
+    topologyId: manifestResult.manifest.topologyId,
+    shardId,
+    service: shard.service,
+    backendPort: shard.backendPort,
+    entryPort: shard.entryPort,
+    frozenCodeHash: manifestResult.manifest.frozenCodeHash
+  };
+}
+
 module.exports = {
   canonical,
   manifestHash,
   normalizeManifest,
-  loadManifest
+  loadManifest,
+  assertRunningShard
 };
