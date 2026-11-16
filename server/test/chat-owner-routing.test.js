@@ -164,6 +164,7 @@ async function main() {
     const alice = makeUser('u_chat_owner_alice', 'chat_owner_alice');
     const bob = makeUser('u_chat_owner_bob', 'chat_owner_bob');
     const chatId = 'c_chat_owner_routing';
+    const extraChatIds = Array.from({ length: 4 }, (_, index) => 'c_owner_multichat_' + index);
     fs.writeFileSync(path.join(dataDir, 'users.json'), JSON.stringify({ users: [alice, bob] }));
     fs.writeFileSync(path.join(dataDir, 'security.json'), JSON.stringify({ sliderLogin: 0 }));
     fs.writeFileSync(path.join(dataDir, 'friendships.json'), JSON.stringify({
@@ -176,13 +177,13 @@ async function main() {
       }]
     }));
     fs.writeFileSync(path.join(dataDir, 'chats.json'), JSON.stringify({
-      chats: [{
-        id: chatId,
+      chats: [chatId, ...extraChatIds].map((id) => ({
+        id,
         type: 'direct',
         memberIds: [alice.id, bob.id],
         seq: 0,
         createdAt: new Date().toISOString()
-      }]
+      }))
     }));
     for (let shard = 0; shard < shardCount; shard += 1) {
       servers.push(await startShard(
@@ -225,6 +226,68 @@ async function main() {
       rows.map((row) => row.seq).sort((left, right) => left - right),
       Array.from({ length: 40 }, (_, index) => index + 1)
     );
+    const readChatRows = async (id, expected) => {
+      const file = path.join(dataDir, 'messages', id + '.jsonl');
+      await waitFor(() => fs.existsSync(file)
+        && fs.readFileSync(file, 'utf8').split('\n').filter(Boolean).length >= expected, 10000);
+      return fs.readFileSync(file, 'utf8').split('\n').filter(Boolean)
+        .map((line) => openMessage(secret, id, line, vault));
+    };
+    for (let chatIndex = 0; chatIndex < extraChatIds.length; chatIndex += 1) {
+      const id = extraChatIds[chatIndex];
+      for (let index = 0; index < 10; index += 1) {
+        aliceSocket.send(JSON.stringify({
+          type: 'send', chatId: id, kind: 'text',
+          content: 'multi-alice-' + chatIndex + '-' + index,
+          clientId: 'multi-alice-' + chatIndex + '-' + index
+        }));
+        bobSocket.send(JSON.stringify({
+          type: 'send', chatId: id, kind: 'text',
+          content: 'multi-bob-' + chatIndex + '-' + index,
+          clientId: 'multi-bob-' + chatIndex + '-' + index
+        }));
+      }
+    }
+    for (const id of extraChatIds) {
+      const chatRows = await readChatRows(id, 20);
+      assert.strictEqual(chatRows.length, 20);
+      assert.strictEqual(new Set(chatRows.map((row) => row.seq)).size, 20);
+      assert.deepStrictEqual(
+        chatRows.map((row) => row.seq).sort((left, right) => left - right),
+        Array.from({ length: 20 }, (_, index) => index + 1)
+      );
+    }
+    const ownerIndex = routeShard('c:' + chatId, shardCount);
+    assert.notStrictEqual(ownerIndex, aliceUserShard);
+    assert.notStrictEqual(ownerIndex, bobUserShard);
+    await stop(servers[ownerIndex].child);
+    servers[ownerIndex] = await startShard(
+      dataDir,
+      basePort + ownerIndex * 100,
+      basePort,
+      ownerIndex,
+      shardCount
+    );
+    for (let index = 20; index < 30; index += 1) {
+      aliceSocket.send(JSON.stringify({
+        type: 'send', chatId, kind: 'text',
+        content: 'alice-post-restart-' + index,
+        clientId: 'alice-post-restart-' + index
+      }));
+      bobSocket.send(JSON.stringify({
+        type: 'send', chatId, kind: 'text',
+        content: 'bob-post-restart-' + index,
+        clientId: 'bob-post-restart-' + index
+      }));
+    }
+    const finalRows = await readChatRows(chatId, 60);
+    assert.strictEqual(finalRows.length, 60);
+    assert.strictEqual(new Set(finalRows.map((row) => row.id)).size, 60);
+    assert.strictEqual(new Set(finalRows.map((row) => row.seq)).size, 60);
+    assert.deepStrictEqual(
+      finalRows.map((row) => row.seq).sort((left, right) => left - right),
+      Array.from({ length: 60 }, (_, index) => index + 1)
+    );
     const healthRows = await Promise.all(servers.map(async (server) => {
       const response = await fetch(server.base + '/api/health');
       return (await response.json()).data;
@@ -238,14 +301,16 @@ async function main() {
       ok: true,
       shardCount,
       chatId,
-      chatOwnerShard: routeShard('c:' + chatId, shardCount),
+      chatOwnerShard: ownerIndex,
       aliceUserShard,
       bobUserShard,
-      messagesPerSender: 20,
-      finalMessages: rows.length,
-      uniqueSequences: new Set(rows.map((row) => row.seq)).size,
-      sequenceMin: Math.min(...rows.map((row) => row.seq)),
-      sequenceMax: Math.max(...rows.map((row) => row.seq)),
+      multiChatCount: 1 + extraChatIds.length,
+      ownerRestarted: true,
+      messagesPerSender: 30,
+      finalMessages: finalRows.length,
+      uniqueSequences: new Set(finalRows.map((row) => row.seq)).size,
+      sequenceMin: Math.min(...finalRows.map((row) => row.seq)),
+      sequenceMax: Math.max(...finalRows.map((row) => row.seq)),
       chatOwnerForwards: forwarded
     };
     if (process.env.CHAT_OWNER_REPORT) {

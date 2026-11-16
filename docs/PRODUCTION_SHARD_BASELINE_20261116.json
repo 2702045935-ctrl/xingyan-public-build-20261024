@@ -145,14 +145,16 @@
     "status": "passed-candidate-cluster",
     "shards": 7,
     "concurrentSenders": 2,
-    "messagesPerSender": 20,
-    "finalMessages": 40,
-    "uniqueSequences": 40,
-    "sequenceRange": "1-40",
+    "multiChatCount": 5,
+    "ownerRestarted": true,
+    "messagesPerSender": 30,
+    "finalMessages": 60,
+    "uniqueSequences": 60,
+    "sequenceRange": "1-60",
     "crossShardForwardObserved": true,
-    "chatOwnerForwards": 40,
-    "report": "/opt/xingyan-mainline/releases/20261116-shard-baseline/chat-owner-routing-7shard.json",
-    "reportSha256": "89038898a024911d32017e86bba161657ec3857e85bebfc564e833811eb1fbd9"
+    "chatOwnerForwards": 120,
+    "report": "/opt/xingyan-mainline/releases/20261116-shard-baseline/chat-owner-routing-7shard-stress.json",
+    "reportSha256": "8025ed2f6eea59fe8f6b45ac71e5589cf177ec4ba33ea6862f351959a06000f1"
   },
   "lastRuntimeAudit": {
     "at": "2026-11-16T10:26:56.394Z",
