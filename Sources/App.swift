@@ -1088,7 +1088,7 @@ final class AppState: ObservableObject {
         defer { deviceSyncInFlight = false }
 
         let cursorKey = "chris.deviceSyncCursor.\(userId).\(AppInfo.deviceId)"
-        var cursor = UserDefaults.standard.string(forKey: cursorKey)
+        var cursor = LocalPersistence.syncValue(cursorKey)
         var pendingAcks: [DeviceSyncItem] = []
 
         func flushAcks() async {
@@ -1165,9 +1165,9 @@ final class AppState: ObservableObject {
             await flushAcks()
             guard isCurrentAccount(epoch) else { return }
             if let cursor, !cursor.isEmpty {
-                UserDefaults.standard.set(cursor, forKey: cursorKey)
+                LocalPersistence.setSyncValue(cursor, for: cursorKey)
             } else {
-                UserDefaults.standard.removeObject(forKey: cursorKey)
+                LocalPersistence.setSyncValue(nil, for: cursorKey)
             }
         } catch {
             await flushAcks()
@@ -1181,7 +1181,7 @@ final class AppState: ObservableObject {
               !API.shared.token.isEmpty, !messageEventsInFlight else { return }
         let epoch = accountEpoch
         let key = "chris.messageEvents." + userId
-        var cursor = UserDefaults.standard.integer(forKey: key)
+        var cursor = Int(LocalPersistence.syncValue(key) ?? "") ?? 0
         messageEventsInFlight = true
         defer { messageEventsInFlight = false }
 
@@ -1214,7 +1214,7 @@ final class AppState: ObservableObject {
                 }
                 if page.sequence > cursor {
                     cursor = page.sequence
-                    UserDefaults.standard.set(cursor, forKey: key)
+                    LocalPersistence.setSyncValue(String(cursor), for: key)
                 }
                 if !page.hasMore { break }
             }

@@ -90,6 +90,9 @@ jobs:
           node server/test/payment-database-concurrency.test.js
           node server/test/payment-provider-server.test.js
 
+      - name: 客户端本地事务库测试
+        run: python3 tools/test-local-client-storage.py
+
       - name: 校验核心模块
         run: bash tools/verify-core.sh
 

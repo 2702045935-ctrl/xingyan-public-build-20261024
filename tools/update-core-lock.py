@@ -12,6 +12,11 @@ ROOT = Path(__file__).resolve().parents[1]
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--lock", default="core.lock.json")
+    parser.add_argument(
+        "--allow-new",
+        action="store_true",
+        help="Add repository-relative paths that are not already tracked",
+    )
     parser.add_argument("paths", nargs="+", help="Repository-relative paths to refresh")
     args = parser.parse_args()
 
@@ -20,7 +25,11 @@ def main() -> None:
     entries = {item["path"]: item for item in data["files"]}
     for relative in args.paths:
         if relative not in entries:
-            raise SystemExit(f"not tracked in core lock: {relative}")
+            if not args.allow_new:
+                raise SystemExit(f"not tracked in core lock: {relative}")
+            entry = {"path": relative}
+            entries[relative] = entry
+            data["files"].append(entry)
         content = (ROOT / relative).read_bytes()
         content = content.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
         entries[relative]["size"] = len(content)

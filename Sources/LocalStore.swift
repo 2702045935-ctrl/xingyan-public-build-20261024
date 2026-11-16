@@ -103,13 +103,20 @@ enum LocalStore {
 
     static func saveChat(_ chatId: String, _ messages: [Message]) {
         guard !messages.isEmpty else { return }
-        let tail = messages.count > 5000 ? Array(messages.suffix(5000)) : messages
-        guard !tail.isEmpty else { return }
-        guard let d = try? JSONEncoder().encode(tail) else { return }
-        try? d.write(to: chatFile(chatId), options: .atomic)
+        if !LocalPersistence.saveChat(chatId, messages) {
+            let tail = messages.count > 5000 ? Array(messages.suffix(5000)) : messages
+            guard !tail.isEmpty, let data = try? JSONEncoder().encode(tail) else { return }
+            try? data.write(to: chatFile(chatId), options: .atomic)
+        }
     }
 
     static func cachedChat(_ chatId: String) -> [Message] {
+        let stored = LocalPersistence.loadChat(chatId)
+        if !stored.isEmpty { return stored }
+        return cachedLegacyChat(chatId)
+    }
+
+    static func cachedLegacyChat(_ chatId: String) -> [Message] {
         let file = chatFile(chatId)
         guard let values = try? file.resourceValues(forKeys: [.fileSizeKey]),
               let bytes = values.fileSize,
@@ -143,6 +150,7 @@ enum LocalStore {
     }
 
     static func clearChat(_ chatId: String) {
+        LocalPersistence.clearChat(chatId)
         try? FileManager.default.removeItem(at: chatFile(chatId))
     }
 
