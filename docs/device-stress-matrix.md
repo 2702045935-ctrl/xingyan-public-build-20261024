@@ -25,7 +25,7 @@ normal chat cache.
 | `XINGYAN_CHAT_STRESS` | Alias for a conversation-list count |
 | `XINGYAN_MESSAGE_STRESS` | Alias for a total message count |
 | `XINGYAN_MOMENT_STRESS` | Alias for a Moments count |
-| `XINGYAN_STRESS_GROUPS` | Message stress group count, default 20, maximum 50 |
+| `XINGYAN_STRESS_GROUPS` | Message stress group count, default 20, maximum 500 |
 | `XINGYAN_STRESS_MEMBERS` | Members in each synthetic group, default 1,000, maximum 5,000 |
 | `XINGYAN_STRESS_AUTO_OPEN` | `1` opens the first message-stress group automatically |
 

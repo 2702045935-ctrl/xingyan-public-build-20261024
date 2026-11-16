@@ -42,6 +42,8 @@ def main() -> None:
             raise AssertionError(f"missing stress switch: {key}")
     if "min(100_000, number)" not in config_text:
         raise AssertionError("stress cap must be 100k")
+    if "min(500, raw)" not in config_text:
+        raise AssertionError("multi-group cap must be 500")
     for filename, marker in STRESS_FIXTURES.items():
         text = (ROOT / "Sources" / filename).read_text(encoding="utf-8")
         if marker not in text:
