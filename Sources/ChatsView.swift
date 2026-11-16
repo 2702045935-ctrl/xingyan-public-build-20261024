@@ -1155,6 +1155,7 @@ struct ChatsView: View {
     }
     @State private var path = NavigationPath()
     @State private var stressAutoOpened = false
+    @State private var stressLoadedCount = ChatStressFixture.initialWindow
 
     @State private var oaOpenId = ""
     @State private var showOA = false
@@ -1191,8 +1192,18 @@ struct ChatsView: View {
 
     private var activeChatSource: [Chat] {
         if MessageStressFixture.isActive { return MessageStressFixture.chats }
-        if ChatStressFixture.isActive { return ChatStressFixture.chats }
+        if ChatStressFixture.isActive {
+            return ChatStressFixture.chats(prefix: stressLoadedCount)
+        }
         return app.chats
+    }
+
+    private func loadMoreStressChatsIfNeeded() {
+        guard ChatStressFixture.isActive else { return }
+        let next = min(ChatStressFixture.count,
+                       stressLoadedCount + ChatStressFixture.pageSize)
+        guard next > stressLoadedCount else { return }
+        stressLoadedCount = next
     }
 
     private func chatSnapshot() -> ChatFilterSnapshot {
@@ -2639,6 +2650,9 @@ struct ChatsView: View {
                         onZoneChange: { zone in
                             handleScrollZone(zone)
                         },
+                        onApproachingEnd: {
+                            loadMoreStressChatsIfNeeded()
+                        },
                         onRefresh: {
                             Task { await app.loadChats() }
                         }
@@ -2761,6 +2775,7 @@ struct ChatsView: View {
             .onChange(of: app.chats) { _ in cachedSnapshot = chatSnapshot() }
             .onChange(of: chatFilter) { _ in cachedSnapshot = chatSnapshot() }
             .onChange(of: keyword) { _ in cachedSnapshot = chatSnapshot() }
+            .onChange(of: stressLoadedCount) { _ in cachedSnapshot = chatSnapshot() }
 
             .onChange(of: floorUp) { v in
                 withAnimation(.easeOut(duration: 0.2)) { app.floorFull = v }

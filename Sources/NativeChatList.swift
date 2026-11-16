@@ -8,12 +8,14 @@ where Item.ID: Hashable {
     let nativeRow: ((Item) -> NativeChatRowConfiguration?)?
     let onScrollStateChange: (Bool) -> Void
     let onZoneChange: (Int) -> Void
+    let onApproachingEnd: () -> Void
     let onRefresh: () -> Void
     @ViewBuilder let row: (Item) -> Row
 
     func makeCoordinator() -> Coordinator {
         Coordinator(onScrollStateChange: onScrollStateChange,
                     onZoneChange: onZoneChange,
+                    onApproachingEnd: onApproachingEnd,
                     onRefresh: onRefresh,
                     height: height,
                     nativeRow: nativeRow,
@@ -107,6 +109,7 @@ where Item.ID: Hashable {
         context.coordinator.nativeRow = nativeRow
         context.coordinator.onScrollStateChange = onScrollStateChange
         context.coordinator.onZoneChange = onZoneChange
+        context.coordinator.onApproachingEnd = onApproachingEnd
         context.coordinator.onRefresh = onRefresh
         context.coordinator.apply(items, animated: false)
     }
@@ -118,6 +121,7 @@ where Item.ID: Hashable {
         var nativeRow: ((Item) -> NativeChatRowConfiguration?)?
         var onScrollStateChange: (Bool) -> Void
         var onZoneChange: (Int) -> Void
+        var onApproachingEnd: () -> Void
         var onRefresh: () -> Void
         weak var collection: UICollectionView?
         var dataSource: UICollectionViewDiffableDataSource<Int, Item.ID>?
@@ -128,16 +132,20 @@ where Item.ID: Hashable {
         private var lastScrollActive = false
         private var pendingItems: [Item]?
         private var applyGeneration = 0
+        private var endRequestInFlight = false
+        private var appliedItemCount = 0
         private var layoutObservers: [NSObjectProtocol] = []
 
         init(onScrollStateChange: @escaping (Bool) -> Void,
              onZoneChange: @escaping (Int) -> Void,
+             onApproachingEnd: @escaping () -> Void,
              onRefresh: @escaping () -> Void,
              height: @escaping (Item) -> CGFloat,
              nativeRow: ((Item) -> NativeChatRowConfiguration?)?,
              row: @escaping (Item) -> Row) {
             self.onScrollStateChange = onScrollStateChange
             self.onZoneChange = onZoneChange
+            self.onApproachingEnd = onApproachingEnd
             self.onRefresh = onRefresh
             self.height = height
             self.nativeRow = nativeRow
@@ -166,7 +174,11 @@ where Item.ID: Hashable {
              * 视口推进到错误位置，表现就是会话页突然往下掉。用户手指还在屏幕上时
              * 只记下最新数据，等滚动结束再一次性合并。
              */
-            if !order.isEmpty && (collection.isDragging || collection.isDecelerating) {
+            let isPureAppend = next.count > order.count
+                && next.prefix(order.count).allSatisfy { lookup[$0.id] == $0 }
+            if !order.isEmpty,
+               !isPureAppend,
+               collection.isDragging || collection.isDecelerating {
                 pendingItems = next
                 return
             }
@@ -192,6 +204,10 @@ where Item.ID: Hashable {
                 snapshot.reloadItems(reload)
             }
             order = nextOrder
+            if appliedItemCount != nextOrder.count {
+                appliedItemCount = nextOrder.count
+                endRequestInFlight = false
+            }
             pendingItems = nil
             dataSource.apply(snapshot, animatingDifferences: animated) {
                 guard generation == self.applyGeneration,
@@ -239,6 +255,19 @@ where Item.ID: Hashable {
                                || scrollView.isTracking
                                || scrollView.isDecelerating)
             let y = scrollView.contentOffset.y
+            let remaining = scrollView.contentSize.height
+                - scrollView.bounds.height
+                - y
+                + scrollView.adjustedContentInset.bottom
+            if !endRequestInFlight,
+               !order.isEmpty,
+               (scrollView.isDragging || scrollView.isDecelerating),
+               remaining < 900 {
+                endRequestInFlight = true
+                DispatchQueue.main.async { [weak self] in
+                    self?.onApproachingEnd()
+                }
+            }
             let zone: Int
             if y < 1 { zone = 0 }
             else if y <= 8 { zone = 1 }
