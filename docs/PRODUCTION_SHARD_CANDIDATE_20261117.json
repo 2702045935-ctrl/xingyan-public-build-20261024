@@ -1,8 +1,10 @@
 {
   "version": 1,
-  "candidateId": "system-complete-v1-c6b5189-dormant-r3",
+  "candidateId": "system-complete-v1-1f5175a-dormant-r3",
   "sourceBranch": "codex/system-complete-v1",
-  "sourceCommit": "c6b51899ba2fb3298d184472ce9b375bb9640da9",
+  "sourceCommit": "1f5175a2163703f07691f240497d17be4d41bf8d",
+  "artifactBuildCommit": "c6b51899ba2fb3298d184472ce9b375bb9640da9",
+  "postBuildOperationalFixCommit": "1f5175a2163703f07691f240497d17be4d41bf8d",
   "capturedAt": "2026-11-17T07:38:00+08:00",
   "candidateCode": {
     "serverJsSha256": "c84983531e6a6ff55070a0f36d961c8e61000353b26c1c996331ea57a0819c5d",
