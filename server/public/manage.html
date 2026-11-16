@@ -2112,6 +2112,7 @@ PAGES.shardmaintenance = async () => {
       + '<label><input type="checkbox" data-ms-check="capacityHeadroomVerified"> CPU、内存、磁盘和 inode 余量通过</label>'
       + '<label><input type="checkbox" data-ms-check="maintenanceWindowConfirmed"> 已进入维护窗口且客服在线</label>'
       + '</div>'
+      + '<div class="maint-actions"><button class="btn" id="msCollectCapacity">读取实时容量</button></div>'
       + '<div class="kv"><b>容量报告</b><span><textarea id="msCapacityReport" placeholder="粘贴 single-cell-capacity-collect.js 生成的 JSON 报告" style="width:100%;height:110px;font-family:ui-monospace,Menlo,monospace;font-size:11px"></textarea></span></div>'
       + '<div class="kv"><b>确认口令</b><span><input id="msReadyPhrase" placeholder="输入：只逐片发布" style="width:280px"></span></div>'
       + '<div class="maint-actions"><button class="btn main" id="msReady">完成检查，进入待发布</button></div>'
@@ -2252,6 +2253,22 @@ PAGES.shardmaintenance = async () => {
       toast('草稿已创建，尚未部署');
       PAGES.shardmaintenance();
     } catch (e) { toast(e.message, true); }
+  });
+  const collectCapacity = $('msCollectCapacity');
+  if (collectCapacity) collectCapacity.addEventListener('click', async () => {
+    try {
+      collectCapacity.disabled = true;
+      collectCapacity.textContent = '正在采集…';
+      const data = await api('/shardmaintenance/capacity', { method: 'POST', body: {} });
+      $('msCapacityReport').value = JSON.stringify(data.report, null, 2);
+      const capacityOk = !!(data.report && data.report.ok);
+      toast(capacityOk ? '容量报告通过' : '容量报告未通过，请查看 JSON 失败项', !capacityOk);
+    } catch (e) {
+      toast(e.message, true);
+    } finally {
+      collectCapacity.disabled = false;
+      collectCapacity.textContent = '读取实时容量';
+    }
   });
   const ready = $('msReady');
   if (ready) ready.addEventListener('click', async () => {

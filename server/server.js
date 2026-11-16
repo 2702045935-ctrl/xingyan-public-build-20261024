@@ -31,6 +31,9 @@ const {
   READY_CHECKLIST: SHARD_READY_CHECKLIST,
   ShardMaintenanceStore
 } = require('./lib/shard-maintenance');
+const {
+  runSingleCellCapacityCollector
+} = require('./lib/single-cell-capacity-runner');
 const { MessageReliabilityStore } = require('./lib/message-reliability');
 const { PaymentTokenVault } = require('./lib/payment-token-vault');
 const { PaymentDeviceEnrollment } = require('./lib/payment-device-enrollment');
@@ -24313,6 +24316,8 @@ const opsStore = { admins: [], sensitive: [], reports: [], violations: [], appro
 const shardMaintenanceStore = new ShardMaintenanceStore(
   path.join(DATA_DIR, 'shard-maintenance.json')
 );
+let shardCapacityCollectionRunning = false;
+let shardCapacityLastCollectedAt = 0;
 
 function loadOps() {
   const raw = readJson(path.join(DATA_DIR, OPS_FILE), { admins: null });
@@ -26200,6 +26205,41 @@ async function handleOps(req, res, parts, query) {
         role: admin.role
       };
       try {
+        if (action === 'capacity') {
+          if (shardCapacityCollectionRunning) {
+            return fail(res, 429, '容量采集正在进行');
+          }
+          if (Date.now() - shardCapacityLastCollectedAt < 30000) {
+            return fail(res, 429, '容量采集 30 秒内只能执行一次');
+          }
+          shardCapacityCollectionRunning = true;
+          try {
+            const manifest = process.env.SHARD_RUNTIME_MANIFEST
+              || path.join(ROOT, 'shard-runtime-production.json');
+            const out = path.join(
+              os.tmpdir(),
+              'xingyan-capacity-' + process.pid + '-' + Date.now() + '.json'
+            );
+            const collected = await runSingleCellCapacityCollector({
+              tool: path.join(ROOT, 'tools', 'single-cell-capacity-collect.js'),
+              manifest,
+              dataDir: DATA_DIR,
+              out
+            });
+            shardCapacityLastCollectedAt = Date.now();
+            audit(req, admin, '采集单 Cell 容量报告', collected.report.audit
+              && collected.report.audit.fingerprint || '',
+            'ok=' + !!(collected.report && collected.report.ok)
+              + ' exit=' + collected.code);
+            ok(res, {
+              report: collected.report,
+              collectorExitCode: collected.code
+            });
+            return;
+          } finally {
+            shardCapacityCollectionRunning = false;
+          }
+        }
         if (action === 'create') {
           const rollout = shardMaintenanceStore.create(body, actor);
           audit(req, admin, '创建分片维护草稿', rollout.id,

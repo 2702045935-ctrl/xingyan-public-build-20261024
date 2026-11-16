@@ -102,6 +102,11 @@ async function main() {
       FROZEN_TARGET.routePlanHash);
     assert.deepStrictEqual(response.payload.data.checklist, READY_CHECKLIST);
 
+    response = await call(base, cookie, 'POST', '/api/ops/shardmaintenance/capacity', {});
+    assert.strictEqual(response.status, 200, JSON.stringify(response.payload));
+    assert.strictEqual(response.payload.data.report.readOnly, true);
+    assert.match(response.payload.data.report.audit.fingerprint, /^[a-f0-9]{64}$/);
+
     const candidateCodeSha256 = 'a'.repeat(64);
     response = await call(base, cookie, 'POST', '/api/ops/shardmaintenance/create', {
       phase: 'dormant',

@@ -24,6 +24,9 @@ node server/tools/single-cell-capacity-collect.js \
 采集器读取 systemd MainPID、`/proc/<pid>/status`、`/proc/<pid>/fd`、
 `/proc/meminfo`、`/proc/loadavg` 和数据目录 `statfs`。它不修改服务、配置或数据。
 
+维护中心也提供“读取实时容量”按钮。该按钮由服务端执行同一固定采集器，
+不接受任意命令或任意输出路径，并把报告直接填入发布表单。
+
 ## 默认阈值
 
 | 指标 | 默认上限 |
