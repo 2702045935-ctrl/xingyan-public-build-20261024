@@ -50,6 +50,18 @@ def main() -> None:
         if marker not in text:
             raise AssertionError(f"{filename}: does not use shared stress configuration")
 
+    lazy_markers = {
+        "ChatStressFixture.swift": "static func chats(prefix: Int)",
+        "MessageStressFixture.swift": "static func page(",
+        "MomentStressFixture.swift": "static func moments(prefix: Int)",
+    }
+    for filename, marker in lazy_markers.items():
+        text = (ROOT / "Sources" / filename).read_text(encoding="utf-8")
+        if marker not in text:
+            raise AssertionError(f"{filename}: stress fixture is not windowed")
+        if "cachedMessages" in text:
+            raise AssertionError(f"{filename}: stress fixture materializes its full message history")
+
     chat_detail = CHAT_DETAIL.read_text(encoding="utf-8")
     if "LocalPersistence.saveOutbox(chat.id, outbox)" not in chat_detail:
         raise AssertionError("chat send outbox is not persisted through SQLite")
