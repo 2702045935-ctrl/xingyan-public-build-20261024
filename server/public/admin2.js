@@ -323,9 +323,19 @@
       if (page === 'ice') {
         c.innerHTML = '<div class="cmf-panel"><div class="cmf-panel-title">通话服务器（ICE / TURN）</div>' +
           '<p class="cmf-hint">语音 / 视频通话用的 STUN、TURN，一行一个。跨网络打不通时在后台填 TURN。</p>' +
+          '<label class="cmf-field"><span>媒体通道</span><select id="icePolicy">' +
+          '<option value="auto"' + ((b.callMediaPolicy || 'auto') === 'auto' ? ' selected' : '') + '>自动（WebRTC / 服务器转发，失败可用腾讯兜底）</option>' +
+          '<option value="self_hosted"' + (b.callMediaPolicy === 'self_hosted' ? ' selected' : '') + '>只使用自研媒体（禁止自动切腾讯；群视频待自研 SFU）</option>' +
+          '<option value="tencent"' + (b.callMediaPolicy === 'tencent' ? ' selected' : '') + '>优先进腾讯 TRTC</option>' +
+          '</select></label>' +
           '<textarea id="iceText" class="cmf-textarea" rows="7">' + esc(b.iceServers || '') + '</textarea>' +
           '<div class="cmf-filter"><button class="cmf-btn" id="iceSave">保存</button></div></div>';
-        $('iceSave').onclick = function () { saveBranding({ iceServers: $('iceText').value.trim() }); };
+        $('iceSave').onclick = function () {
+          saveBranding({
+            iceServers: $('iceText').value.trim(),
+            callMediaPolicy: $('icePolicy').value
+          });
+        };
         return;
       }
       if (page === 'system') {

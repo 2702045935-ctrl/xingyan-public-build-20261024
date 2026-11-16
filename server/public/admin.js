@@ -445,6 +445,7 @@
     if (!state.draft.icons) state.draft.icons = {};
     $('brandName').value = state.draft.appName || '';
     if ($('iceServers')) $('iceServers').value = state.draft.iceServers || '';
+    if ($('callMediaPolicy')) $('callMediaPolicy').value = state.draft.callMediaPolicy || 'auto';
     var logoBox = $('iconPreview-logo');
     if (logoBox) logoBox.innerHTML = previewInner(state.draft.logo);
     var bgBox = $('iconPreview-chatbg');
@@ -1068,6 +1069,7 @@
       btn.disabled = true;
       state.draft.appName = $('brandName').value.trim() || 'CHRIS Chat';
       if ($('iceServers')) state.draft.iceServers = $('iceServers').value.trim();
+      if ($('callMediaPolicy')) state.draft.callMediaPolicy = $('callMediaPolicy').value;
       var customScale = parseFloat($('fontScaleCustom').value);
       var scale = isFinite(customScale) ? customScale : parseFloat($('fontScale').value);
       if (!isFinite(scale)) scale = 1;
@@ -1088,7 +1090,7 @@
       state.draft = {
         appName: 'CHRIS Chat', logo: '', chatBackground: '',
         fontFamily: '', fontName: '', fontUrl: '',
-        fontScale: 1, accentColor: '', textColor: '', iceServers: '',
+        fontScale: 1, accentColor: '', textColor: '', iceServers: '', callMediaPolicy: 'auto',
         icons: { chats: '', contacts: '', groups: '', moments: '', account: '' }
       };
       renderBranding();

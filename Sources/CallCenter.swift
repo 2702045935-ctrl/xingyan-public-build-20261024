@@ -15,6 +15,12 @@ struct GroupCallMember: Identifiable, Equatable {
     var id: String { userId }
 }
 
+enum CallMediaPolicy: String {
+    case auto
+    case selfHosted = "self_hosted"
+    case tencent
+}
+
 struct CallLiveDiag: Equatable {
     var channel = "-"
     var ice = "-"
@@ -112,7 +118,11 @@ final class CallCenter: NSObject, ObservableObject {
 
     private func refreshLiveDiag() {
         var d = CallLiveDiag()
-        d.channel = usingTRTC ? "TRTC（腾讯）" : (serverAudioOn ? "服务器转发" : "WebRTC")
+        d.channel = usingTRTC
+            ? "TRTC（腾讯）"
+            : (callMediaPolicy == .selfHosted
+                ? (serverAudioOn ? "自研媒体（PCM中继）" : "自研媒体（WebRTC/TURN）")
+                : (serverAudioOn ? "服务器转发" : "WebRTC"))
         d.ice = pc.map { String(describing: $0.iceConnectionState) } ?? "-"
         d.audioEnabled = audioTrack?.isEnabled ?? false
         d.trtcPeerInRoom = trtcPeerInRoom
@@ -162,6 +172,10 @@ final class CallCenter: NSObject, ObservableObject {
     }
 
     private var serverAudioOn = false
+    private var callMediaPolicy: CallMediaPolicy = {
+        let raw = UserDefaults.standard.string(forKey: "chris.callMediaPolicy") ?? ""
+        return CallMediaPolicy(rawValue: raw) ?? .auto
+    }()
 
     @Published private(set) var usingTRTC = false
 
@@ -751,6 +765,11 @@ final class CallCenter: NSObject, ObservableObject {
             Task { await API.shared.callDiag("群通话被挡：phase=\(phase)") }
             return
         }
+        if video && callMediaPolicy == .selfHosted {
+            errorText = "自研群视频媒体服务正在接入，暂不进入腾讯通道"
+            Task { await API.shared.callDiag("群视频被自研媒体策略阻止：缺少自研 SFU") }
+            return
+        }
         isGroupCall = true
         accountToken = API.shared.token
         callOwnerId = ""
@@ -794,6 +813,10 @@ final class CallCenter: NSObject, ObservableObject {
     }
 
     private func joinGroupTRTC() async {
+        if callMediaPolicy == .selfHosted {
+            note("自研媒体策略：拒绝进入腾讯群视频")
+            return
+        }
         guard isGroupCall, isVideo, !roomId.isEmpty, !trtcJoined, !usingTRTC else { return }
         let bridge = TRTCBridge.shared
         bridge.onJoined = { [weak self] ok in
@@ -1371,14 +1394,22 @@ final class CallCenter: NSObject, ObservableObject {
     private func loadIce() async {
 
         let hostOnly = API.shared.server.split(separator: ":").first.map(String.init) ?? ""
+        let hostTurn: RTCIceServer? = hostOnly.isEmpty ? nil
+            : RTCIceServer(urlStrings: ["turn:\(hostOnly):3478?transport=tcp",
+                                        "turn:\(hostOnly):3478?transport=udp"],
+                           username: "chris", credential: "chris1234")
         if !hostOnly.isEmpty {
-
-            iceServers.insert(RTCIceServer(urlStrings: ["turn:\(hostOnly):3478?transport=tcp",
-                                                       "turn:\(hostOnly):3478?transport=udp"],
-                                           username: "chris", credential: "chris1234"), at: 0)
+            iceServers.insert(hostTurn!, at: 0)
         }
-        guard let b = await API.shared.branding(),
-              let raw = b.iceServers?.trimmingCharacters(in: .whitespacesAndNewlines),
+        let b = await API.shared.branding()
+        callMediaPolicy = CallMediaPolicy(rawValue: b?.callMediaPolicy ?? "") ?? .auto
+        UserDefaults.standard.set(callMediaPolicy.rawValue, forKey: "chris.callMediaPolicy")
+        if callMediaPolicy == .selfHosted {
+            /* 自研模式不允许悄悄落到公共 OpenRelay。只保留本服务器 TURN，
+               后台配置的其它 TURN/STUN 会在下面追加。 */
+            iceServers = hostTurn.map { [$0] } ?? []
+        }
+        guard let raw = b?.iceServers?.trimmingCharacters(in: .whitespacesAndNewlines),
               !raw.isEmpty else { return }
 
         if let data = raw.data(using: .utf8),
@@ -1393,13 +1424,24 @@ final class CallCenter: NSObject, ObservableObject {
                                         username: it["username"] as? String,
                                         credential: it["credential"] as? String))
             }
-            if !out.isEmpty { iceServers = out }
+            if !out.isEmpty {
+                if callMediaPolicy == .selfHosted, let hostTurn {
+                    out.insert(hostTurn, at: 0)
+                }
+                iceServers = out
+            }
             return
         }
         let list = raw.split(whereSeparator: { $0 == "," || $0 == "\n" })
             .map { String($0).trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
-        if !list.isEmpty { iceServers = list.map { RTCIceServer(urlStrings: [$0]) } }
+        if !list.isEmpty {
+            var out = list.map { RTCIceServer(urlStrings: [$0]) }
+            if callMediaPolicy == .selfHosted, let hostTurn {
+                out.insert(hostTurn, at: 0)
+            }
+            iceServers = out
+        }
     }
 
     private let pathMonitor = NWPathMonitor()
@@ -1936,7 +1978,9 @@ extension CallCenter: RTCPeerConnectionDelegate {
                 } else {
                     self.weakNet = true
                     if self.tip != "视频通话中" { self.tip = "网络不太稳定，正在重连…" }
-                    self.note("WebRTC failed → 兜底切 TRTC")
+                    self.note(self.callMediaPolicy == .selfHosted
+                        ? "WebRTC failed（自研模式，禁止切腾讯）"
+                        : "WebRTC failed → 兜底切 TRTC")
                     if !self.usingTRTC { await self.startTRTCIfPossible() }
                     try? await Task.sleep(nanoseconds: 5_000_000_000)
                     if self.phase == .active && !self.usingTRTC && self.pc?.connectionState == .failed {
@@ -1950,7 +1994,9 @@ extension CallCenter: RTCPeerConnectionDelegate {
                 try? await Task.sleep(nanoseconds: 8_000_000_000)
                 if self.phase == .active && self.pc?.connectionState == .disconnected {
                     if self.isVideo && !self.usingTRTC {
-                        self.note("视频断线 8 秒 → 兜底切 TRTC")
+                        self.note(self.callMediaPolicy == .selfHosted
+                            ? "视频断线 8 秒（自研模式，禁止切腾讯）"
+                            : "视频断线 8 秒 → 兜底切 TRTC")
                         await self.startTRTCIfPossible()
                         try? await Task.sleep(nanoseconds: 3_000_000_000)
                     }
@@ -1965,6 +2011,10 @@ extension CallCenter: RTCPeerConnectionDelegate {
     }
 
     private func startTRTCIfPossible() async {
+        if callMediaPolicy == .selfHosted {
+            note("自研媒体策略：禁止自动切腾讯 TRTC")
+            return
+        }
 
         // 被叫必须停在响铃页，等用户明确接听后才能进媒体房间。
         // 提前进房会让双方被 onPeerChanged 误判成“已接通”，接听按钮随之消失。
@@ -2062,6 +2112,10 @@ extension CallCenter: RTCPeerConnectionDelegate {
     }
 
     private func switchMediaToTRTC() {
+        guard callMediaPolicy != .selfHosted else {
+            note("自研媒体策略：拒绝媒体切到腾讯 TRTC")
+            return
+        }
         guard !usingTRTC, phase != .idle, phase != .incoming, !callId.isEmpty else { return }
         usingTRTC = true
         note(isVideo ? "对端也在腾讯云房间里 → 媒体切到 TRTC ✓"

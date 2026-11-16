@@ -831,6 +831,7 @@ struct BrandInfo: Decodable, Hashable {
     var accentColor: String?
 
     var iceServers: String?
+    var callMediaPolicy: String?
 
     var login: LoginBrand?
 

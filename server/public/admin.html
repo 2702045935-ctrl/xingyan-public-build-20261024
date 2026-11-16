@@ -239,6 +239,14 @@
 
       <h3 class="sub-title">语音通话（ICE 服务器）</h3>
       <label class="field">
+        <span class="field-label">媒体通道</span>
+        <select id="callMediaPolicy">
+          <option value="auto">自动（WebRTC / 服务器转发，失败可用腾讯兜底）</option>
+          <option value="self_hosted">只使用自研媒体（禁止自动切腾讯；群视频待自研 SFU）</option>
+          <option value="tencent">优先进腾讯 TRTC</option>
+        </select>
+      </label>
+      <label class="field">
         <span class="field-label">留空就用默认的公共 STUN；跨网络通话连不上时，在这里填自己的 TURN</span>
         <textarea id="iceServers" rows="3" placeholder="每行一个，例如：stun:stun.l.google.com:19302 / turn:turn.example.com:3478，也可以直接粘 JSON"></textarea>
       </label>
