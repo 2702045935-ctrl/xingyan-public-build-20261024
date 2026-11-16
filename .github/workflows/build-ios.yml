@@ -66,6 +66,7 @@ jobs:
           sys.exit(1 if dups else 0)
           PY
           python3 tools/verify-no-tencent-media.py
+          node server/tools/server-boot-preflight.js
 
       - name: 聊天接口回归
         run: |

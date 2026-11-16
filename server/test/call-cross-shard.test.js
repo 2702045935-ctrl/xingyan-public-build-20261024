@@ -240,6 +240,12 @@ async function main() {
 
     shardA = await startShard(dataDir, shardBase, 0, shardBase);
     shardB = await startShard(dataDir, shardBase + 100, 1, shardBase);
+    const healthA = await request(shardA.base, '', 'GET', '/api/health');
+    const healthB = await request(shardB.base, '', 'GET', '/api/health');
+    assert.equal(healthA.data.role, 'call-signal');
+    assert.equal(healthB.data.role, 'chat-shard');
+    assert.equal(healthA.data.callSignalPort, shardBase);
+    assert.equal(healthB.data.callSignalPort, shardBase);
     const alice = await login(shardA.base, aliceUser.username);
     const bob = await login(shardB.base, bobUser.username);
     aliceSocket = await connect(shardA.base, alice.cookie);
@@ -280,6 +286,11 @@ async function main() {
     await waitEvent(aliceSocket.events, (event) =>
       event.type === 'call' && event.action === 'accepted' && event.callId === callId,
     '接通同步');
+    const activeHealthA = await request(shardA.base, '', 'GET', '/api/health');
+    const activeHealthB = await request(shardB.base, '', 'GET', '/api/health');
+    assert.equal(activeHealthA.data.activeCalls, 1);
+    assert.equal(activeHealthB.data.activeCalls, 0);
+    assert.equal(activeHealthB.data.directoryCalls, 1);
 
     bobSocket.socket.close();
     await new Promise((resolve) => setTimeout(resolve, 700));
@@ -347,6 +358,10 @@ async function main() {
       event.type === 'call' && event.action === 'end' && event.callId === callId,
     '挂断同步');
     assert.equal(ended.reason, 'hangup');
+    const endedHealthA = await request(shardA.base, '', 'GET', '/api/health');
+    const endedHealthB = await request(shardB.base, '', 'GET', '/api/health');
+    assert.equal(endedHealthA.data.activeCalls, 0);
+    assert.equal(endedHealthB.data.directoryCalls, 0);
 
     console.log('call-cross-shard: passed');
   } finally {

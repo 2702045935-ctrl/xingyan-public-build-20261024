@@ -45,6 +45,8 @@
 - 通话事件按在线用户所在分片定向转发；只有 presence 尚未同步时才允许短暂广播兜底。
 - `invite`、`accept`、重复 `accept`、`audio`、`hangup`、`timeout` 必须幂等。
 - 通话分片不可用时必须显式返回“通话服务暂不可用”，不能静默丢帧或让界面永久停在呼叫中。
+- `/api/health` 必须明确返回 `role=call-signal|chat-shard`、`port`、`shardId`、
+  `callSignalPort`、`activeCalls`、`ringingCalls` 和 `directoryCalls`，运维不再靠猜。
 
 ## 大厂级量化门槛
 

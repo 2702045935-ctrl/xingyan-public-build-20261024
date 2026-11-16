@@ -14565,7 +14565,22 @@ async function handleApi(req, res, pathname, query) {
     }
   }
 
-  if (parts[0] === 'health') { ok(res, { service: 'chris-chat', time: now() }); return; }
+  if (parts[0] === 'health') {
+    const activeCalls = Array.from(calls.values()).filter((call) => call.state === 'active').length;
+    const ringingCalls = Array.from(calls.values()).filter((call) => call.state === 'ringing').length;
+    ok(res, {
+      service: 'chris-chat',
+      time: now(),
+      role: PORT === CALL_SIGNAL_PORT ? 'call-signal' : 'chat-shard',
+      port: PORT,
+      shardId: process.env.SHARD_ID || '',
+      callSignalPort: CALL_SIGNAL_PORT,
+      activeCalls,
+      ringingCalls,
+      directoryCalls: shardCallDirectory.size
+    });
+    return;
+  }
 
   /* App 崩溃上报：写进 data/client-errors.jsonl（手机上崩了，电脑这边能看到调用栈） */
   if (parts[0] === 'clientlog' && method === 'POST') {
