@@ -78,6 +78,7 @@ jobs:
           node server/test/shard-maintenance-api.test.js
           node server/test/shard-maintenance-executor.test.js
           node server/test/shard-physical-layout.test.js
+          node server/test/shard-shadow-read.test.js
           node server/test/manage-script-syntax.test.js
           node server/test/shard-runtime-health.test.js
           node server/test/message-sequence-audit.test.js

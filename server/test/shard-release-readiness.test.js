@@ -176,4 +176,34 @@ assert.strictEqual(matrixBlocked.ok, false);
 assert.ok(matrixBlocked.failures.some((row) =>
   row.name === 'message-matrix-shard-count'));
 
+const shadowRead = {
+  readOnly: true,
+  ok: true,
+  physicalLayoutOk: true,
+  routePlanHash: routePlan.hash,
+  fingerprint: 'c'.repeat(64),
+  checked: {
+    users: 2,
+    chats: 2,
+    moments: 1,
+    messages: 3
+  },
+  diffs: []
+};
+const shadowReady = buildReleaseReadiness(Object.assign({}, baseOptions, {
+  requireShadowRead: true,
+  shadowRead
+}));
+assert.strictEqual(shadowReady.ok, true, JSON.stringify(shadowReady.failures));
+
+const shadowBlocked = buildReleaseReadiness(Object.assign({}, baseOptions, {
+  requireShadowRead: true,
+  shadowRead: Object.assign({}, shadowRead, {
+    ok: false,
+    diffs: [{ kind: 'chat', id: 'c1' }]
+  })
+}));
+assert.strictEqual(shadowBlocked.ok, false);
+assert.ok(shadowBlocked.failures.some((row) => row.name === 'shadow-read-clean'));
+
 console.log('shard-release-readiness: passed');

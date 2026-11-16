@@ -40,11 +40,13 @@ function main() {
       + '--candidate FILE --allowlist FILE --route-plan FILE '
       + '[--message-audit FILE ...] [--require-message-audit] '
       + '[--message-matrix FILE] [--require-message-matrix] '
+      + '[--shadow-read FILE] [--require-shadow-read] '
       + '[--data DIR] [--out FILE]');
   }
   const dataDir = arg('data');
   const messageAudits = repeatedArg('message-audit').map(readJson);
   const messageMatrixFile = arg('message-matrix');
+  const shadowReadFile = arg('shadow-read');
   const report = buildReleaseReadiness({
     baseline: readJson(baselineFile),
     candidate: readJson(candidateFile),
@@ -54,6 +56,8 @@ function main() {
     requireMessageAudit: process.argv.includes('--require-message-audit'),
     messageMatrix: messageMatrixFile ? readJson(messageMatrixFile) : null,
     requireMessageMatrix: process.argv.includes('--require-message-matrix'),
+    shadowRead: shadowReadFile ? readJson(shadowReadFile) : null,
+    requireShadowRead: process.argv.includes('--require-shadow-read'),
     users: dataDir
       ? readRows(path.join(dataDir, 'users.json'), 'users')
       : null,

@@ -218,6 +218,31 @@ function buildReleaseReadiness(options) {
       });
   }
 
+  const shadowRead = opts.shadowRead || null;
+  if (opts.requireShadowRead === true) {
+    const checked = shadowRead && shadowRead.checked || {};
+    check('shadow-read-present', !!shadowRead);
+    check('shadow-read-only', shadowRead && shadowRead.readOnly === true);
+    check('shadow-read-clean',
+      shadowRead && shadowRead.ok === true
+        && Array.isArray(shadowRead.diffs)
+        && shadowRead.diffs.length === 0);
+    check('shadow-read-fingerprint',
+      /^[a-f0-9]{64}$/i.test(String(shadowRead && shadowRead.fingerprint || '')));
+    check('shadow-read-layout',
+      shadowRead && shadowRead.physicalLayoutOk === true);
+    check('shadow-read-route-plan',
+      shadowRead && shadowRead.routePlanHash === (route.ok && route.hash));
+    check('shadow-read-users',
+      Number(checked.users) === Number(candidate.counts && candidate.counts.users));
+    check('shadow-read-chats',
+      Number(checked.chats) === Number(candidate.counts && candidate.counts.chats));
+    check('shadow-read-moments',
+      Number(checked.moments) === Number(candidate.counts && candidate.counts.moments));
+    check('shadow-read-messages',
+      Number(checked.messages) === Number(candidate.counts && candidate.counts.messages));
+  }
+
   return {
     version: 1,
     ok: failures.length === 0,
@@ -251,6 +276,13 @@ function buildReleaseReadiness(options) {
         fingerprint: String(matrix.fingerprint || '')
       }
       : null,
+    shadowRead: opts.requireShadowRead === true ? {
+      present: !!shadowRead,
+      ok: !!(shadowRead && shadowRead.ok),
+      fingerprint: String(shadowRead && shadowRead.fingerprint || ''),
+      checked: shadowRead && shadowRead.checked || {},
+      diffs: Number(shadowRead && shadowRead.diffs && shadowRead.diffs.length) || 0
+    } : null,
     checks,
     failures
   };

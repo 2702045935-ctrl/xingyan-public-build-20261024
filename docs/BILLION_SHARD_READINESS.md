@@ -68,6 +68,34 @@ node server/tools/shard-physical-layout-audit.js \
 moments/moment-notices/messages`，拒绝共享根目录中的权威文件、重复 owner、
 消息线程错片、符号链接和混入聊天分片的媒体对象。
 
+## 影子只读对账
+
+物理副本必须和共享数据副本逐对象比较，不执行任何写入：
+
+```text
+node server/tools/shard-shadow-read-audit.js \
+  --source=<共享数据只读副本> \
+  --physical-root=<物理 7 片候选> \
+  --route-plan=<冻结计划文件> \
+  --out=<影子对账报告>
+```
+
+发布总门禁使用：
+
+```text
+node server/tools/shard-release-readiness.js \
+  --baseline=<基线> \
+  --candidate=<候选> \
+  --allowlist=<允许缺失媒体> \
+  --route-plan=<冻结计划> \
+  --shadow-read=<影子对账报告> \
+  --require-shadow-read \
+  --out=<发布就绪报告>
+```
+
+影子报告必须只读、零差异、物理目录契约通过，并且用户、会话、朋友圈和消息数量
+与候选清单完全一致。
+
 ## 接下来不能做什么
 
 - 不能直接把候选 `server.js` 整文件覆盖线上稳定版本，因为稳定版与当前分支之间
