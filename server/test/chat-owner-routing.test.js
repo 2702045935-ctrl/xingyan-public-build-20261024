@@ -14,11 +14,12 @@ const { SecurityVault } = require('../lib/security-vault');
 const SERVER_DIR = path.resolve(__dirname, '..');
 const PASSWORD = 'test123456';
 
-async function freePair() {
+async function freeBase(count) {
   for (let base = 26000; base < 50000; base += 1) {
     const sockets = [];
     let ok = true;
-    for (const port of [base, base + 100]) {
+    for (let index = 0; index < count; index += 1) {
+      const port = base + index * 100;
       try {
         await new Promise((resolve, reject) => {
           const server = net.createServer();
@@ -80,7 +81,7 @@ async function waitHealth(base, child, logs) {
   throw new Error('server start timeout');
 }
 
-async function startShard(dataDir, port, basePort, shardId) {
+async function startShard(dataDir, port, basePort, shardId, shardCount) {
   const base = 'http://127.0.0.1:' + port;
   const logs = [];
   const child = spawn(process.execPath, ['server.js'], {
@@ -90,7 +91,7 @@ async function startShard(dataDir, port, basePort, shardId) {
       PORT: String(port),
       HTTPS_PORT: String(await freePort()),
       TURN_PORT: String(await freePort()),
-      SHARD_COUNT: '2',
+      SHARD_COUNT: String(shardCount),
       SHARD_ID: String(shardId),
       SHARD_BASE_PORT: String(basePort),
       CHRIS_LOCAL_ONLY: '1',
@@ -154,9 +155,9 @@ async function stop(child) {
 
 async function main() {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xingyan-chat-owner-'));
-  const basePort = await freePair();
-  let a;
-  let b;
+  const shardCount = 7;
+  const basePort = await freeBase(shardCount);
+  const servers = [];
   let aliceSocket;
   let bobSocket;
   try {
@@ -183,12 +184,21 @@ async function main() {
         createdAt: new Date().toISOString()
       }]
     }));
-    a = await startShard(dataDir, basePort, basePort, 0);
-    b = await startShard(dataDir, basePort + 100, basePort, 1);
-    const aliceLogin = await login(a.base, alice.username);
-    const bobLogin = await login(b.base, bob.username);
-    aliceSocket = await connect(a.base, aliceLogin.cookie);
-    bobSocket = await connect(b.base, bobLogin.cookie);
+    for (let shard = 0; shard < shardCount; shard += 1) {
+      servers.push(await startShard(
+        dataDir,
+        basePort + shard * 100,
+        basePort,
+        shard,
+        shardCount
+      ));
+    }
+    const aliceUserShard = routeShard('u:' + alice.id, shardCount);
+    const bobUserShard = routeShard('u:' + bob.id, shardCount);
+    const aliceLogin = await login(servers[aliceUserShard].base, alice.username);
+    const bobLogin = await login(servers[bobUserShard].base, bob.username);
+    aliceSocket = await connect(servers[aliceUserShard].base, aliceLogin.cookie);
+    bobSocket = await connect(servers[bobUserShard].base, bobLogin.cookie);
     for (let index = 0; index < 20; index += 1) {
       aliceSocket.send(JSON.stringify({
         type: 'send', chatId, kind: 'text',
@@ -215,19 +225,16 @@ async function main() {
       rows.map((row) => row.seq).sort((left, right) => left - right),
       Array.from({ length: 40 }, (_, index) => index + 1)
     );
-    const ownerIndex = routeShard('c:' + chatId, 2);
-    const owner = ownerIndex === 0 ? a : b;
-    const other = ownerIndex === 0 ? b : a;
-    const ownerHealth = await (await fetch(owner.base + '/api/health')).json();
-    const otherHealth = await (await fetch(other.base + '/api/health')).json();
-    assert.ok(ownerHealth.data.chatOwnerForwards >= 0);
-    assert.ok(otherHealth.data.chatOwnerForwards >= 1);
+    const healthRows = await Promise.all(servers.map(async (server) => {
+      const response = await fetch(server.base + '/api/health');
+      return (await response.json()).data;
+    }));
+    assert.ok(healthRows.reduce((sum, row) => sum + Number(row.chatOwnerForwards || 0), 0) >= 1);
     console.log('chat-owner-routing: passed');
   } finally {
     aliceSocket?.close();
     bobSocket?.close();
-    await stop(a?.child);
-    await stop(b?.child);
+    for (const server of servers) await stop(server.child);
     fs.rmSync(dataDir, { recursive: true, force: true });
   }
 }

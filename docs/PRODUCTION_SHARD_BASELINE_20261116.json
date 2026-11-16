@@ -143,7 +143,7 @@
   },
   "chatOwnerRouting": {
     "status": "passed-candidate-cluster",
-    "shards": 2,
+    "shards": 7,
     "concurrentSenders": 2,
     "messagesPerSender": 20,
     "finalMessages": 40,
