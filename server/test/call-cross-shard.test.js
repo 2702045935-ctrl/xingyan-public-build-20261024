@@ -363,6 +363,90 @@ async function main() {
     assert.equal(endedHealthA.data.activeCalls, 0);
     assert.equal(endedHealthB.data.directoryCalls, 0);
 
+    const latency = {
+      incoming: [],
+      accept: [],
+      callerAudio: [],
+      calleeAudio: []
+    };
+    for (let round = 0; round < 20; round += 1) {
+      const repeatedId = 'call-cross-shard-load-' + round + '-' + Date.now();
+      const inviteStarted = Date.now();
+      aliceSocket.socket.send(JSON.stringify({
+        type: 'call',
+        action: 'invite',
+        callId: repeatedId,
+        toUserId: bob.user.id,
+        media: 'audio'
+      }));
+      await waitEvent(bobSocket.events, (event) =>
+        event.type === 'call' && event.action === 'incoming' && event.callId === repeatedId,
+      '压力来电');
+      latency.incoming.push(Date.now() - inviteStarted);
+
+      const acceptStarted = Date.now();
+      bobSocket.socket.send(JSON.stringify({
+        type: 'call',
+        action: 'accept',
+        callId: repeatedId
+      }));
+      await waitEvent(aliceSocket.events, (event) =>
+        event.type === 'call' && event.action === 'accepted' && event.callId === repeatedId,
+      '压力接听');
+      latency.accept.push(Date.now() - acceptStarted);
+
+      const callerAudioStarted = Date.now();
+      aliceSocket.socket.send(JSON.stringify({
+        type: 'call',
+        action: 'audio',
+        callId: repeatedId,
+        data: uplink.toString('base64')
+      }));
+      await waitEvent(bobSocket.events, (event) =>
+        event.type === 'call' && event.action === 'audio' && event.callId === repeatedId,
+      '压力主叫首帧');
+      latency.callerAudio.push(Date.now() - callerAudioStarted);
+
+      const calleeAudioStarted = Date.now();
+      bobSocket.socket.send(JSON.stringify({
+        type: 'call',
+        action: 'audio',
+        callId: repeatedId,
+        data: reply.toString('base64')
+      }));
+      await waitEvent(aliceSocket.events, (event) =>
+        event.type === 'call' && event.action === 'audio' && event.callId === repeatedId,
+      '压力被叫首帧');
+      latency.calleeAudio.push(Date.now() - calleeAudioStarted);
+
+      bobSocket.socket.send(JSON.stringify({
+        type: 'call',
+        action: 'hangup',
+        callId: repeatedId
+      }));
+      await waitEvent(aliceSocket.events, (event) =>
+        event.type === 'call' && event.action === 'end' && event.callId === repeatedId,
+      '压力挂断');
+    }
+
+    const percentile = (values, ratio) => {
+      const sorted = values.slice().sort((a, b) => a - b);
+      return sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * ratio))];
+    };
+    const metrics = Object.fromEntries(Object.entries(latency).map(([name, values]) => [
+      name,
+      {
+        p50: percentile(values, 0.5),
+        p95: percentile(values, 0.95),
+        max: Math.max(...values)
+      }
+    ]));
+    for (const values of Object.values(metrics)) {
+      assert.ok(values.p95 < 1000, JSON.stringify(metrics));
+      assert.ok(values.max < 2000, JSON.stringify(metrics));
+    }
+
+    console.log('call-cross-shard-metrics=' + JSON.stringify(metrics));
     console.log('call-cross-shard: passed');
   } finally {
     aliceSocket?.socket.close();
