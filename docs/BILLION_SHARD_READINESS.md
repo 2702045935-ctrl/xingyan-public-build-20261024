@@ -53,6 +53,21 @@
 4. 7 片全部健康、版本和计划哈希一致后，再讨论是否激活聊天 owner。
 5. 数据迁移、物理分片、支付迁移和媒体迁移继续保持关闭。
 
+## 物理目录契约
+
+物理分片候选必须通过：
+
+```text
+node server/tools/shard-physical-layout-audit.js \
+  --root=<物理候选根目录> \
+  --route-plan=<冻结计划文件> \
+  --out=<审计报告>
+```
+
+验收器要求每个分片只包含自己的 `users/friendships/chats/reads/friendmeta/
+moments/moment-notices/messages`，拒绝共享根目录中的权威文件、重复 owner、
+消息线程错片、符号链接和混入聊天分片的媒体对象。
+
 ## 接下来不能做什么
 
 - 不能直接把候选 `server.js` 整文件覆盖线上稳定版本，因为稳定版与当前分支之间

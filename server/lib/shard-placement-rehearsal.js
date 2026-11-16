@@ -6,6 +6,7 @@ const path = require('path');
 const { canonical, hash } = require('./shard-snapshot');
 const { ownerFor } = require('./shard-placement-plan');
 const { pairKey } = require('./shard-domain');
+const { verifyPhysicalLayout } = require('./shard-physical-layout');
 
 function readJson(file, fallback) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); }
@@ -134,6 +135,7 @@ function rehearseShardPlacement(options) {
   for (let shard = 0; shard < shardCount; shard += 1) {
     const dir = path.join(stageDir, 'shards', String(shard));
     const data = shardData[shard];
+    fs.mkdirSync(path.join(dir, 'messages'), { recursive: true });
     writeJson(path.join(dir, 'users.json'), { users: data.users });
     writeJson(path.join(dir, 'friendships.json'), { friendships: data.friendships });
     writeJson(path.join(dir, 'chats.json'), { chats: data.chats });
@@ -221,9 +223,15 @@ function rehearseShardPlacement(options) {
     const file = path.join(rehydrateDir, 'messages', name);
     checks['message:' + name] = fs.existsSync(file) && fileHash(file) === expected.sha256;
   }
+  const physicalLayout = verifyPhysicalLayout({
+    root: stageDir,
+    routePlan
+  });
+  const failures = Object.keys(checks).filter((name) => !checks[name])
+    .concat(physicalLayout.failures.map((row) => 'physical:' + row.code));
   return {
     version: 1,
-    ok: Object.values(checks).every(Boolean),
+    ok: failures.length === 0,
     sourceDir,
     stageDir,
     rehydrateDir,
@@ -238,8 +246,14 @@ function rehearseShardPlacement(options) {
       messageThreads: threads.length
     },
     messageHashes,
+    physicalLayout: {
+      ok: physicalLayout.ok,
+      hash: physicalLayout.hash,
+      counts: physicalLayout.counts,
+      failures: physicalLayout.failures
+    },
     checks,
-    failures: Object.keys(checks).filter((name) => !checks[name])
+    failures
   };
 }
 
