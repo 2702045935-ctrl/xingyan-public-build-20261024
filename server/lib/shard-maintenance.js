@@ -29,6 +29,7 @@ const READY_CHECKLIST = [
   'capacityHeadroomVerified',
   'maintenanceWindowConfirmed'
 ];
+const CAPACITY_REPORT_MAX_AGE_MS = 30 * 60 * 1000;
 
 const TERMINAL_STATES = new Set(['completed', 'rolled_back']);
 
@@ -137,6 +138,45 @@ function createRollout(input, options) {
   return rollout;
 }
 
+function validateCapacityReport(report, now) {
+  const source = report || {};
+  const audit = source.audit || source;
+  const input = source.input || {};
+  const collectedAt = Date.parse(String(input.collectedAt || source.collectedAt || ''));
+  if (!(collectedAt > 0) || now - collectedAt > CAPACITY_REPORT_MAX_AGE_MS) {
+    throw new Error('容量报告已过期或缺少采集时间');
+  }
+  if (source.ok !== true || audit.ok !== true) {
+    throw new Error('容量报告没有通过');
+  }
+  if (Array.isArray(source.failures) && source.failures.length) {
+    throw new Error('容量采集存在失败项');
+  }
+  if (!isHash(audit.fingerprint)) throw new Error('容量报告指纹无效');
+  const shards = Array.isArray(input.shards) ? input.shards : audit.shards;
+  if (!Array.isArray(shards) || shards.length !== FROZEN_TARGET.shards.length) {
+    throw new Error('容量报告分片数量不是 7');
+  }
+  const ids = shards.map((row) => Number(row && row.id)).sort((a, b) => a - b);
+  if (ids.join(',') !== FROZEN_TARGET.shards.map((row) => row.id).join(',')) {
+    throw new Error('容量报告分片 ID 不完整');
+  }
+  if (Array.isArray(audit.failures) && audit.failures.length) {
+    throw new Error('容量门禁仍有失败项');
+  }
+  return {
+    collectedAt: new Date(collectedAt).toISOString(),
+    fingerprint: audit.fingerprint,
+    host: audit.host || {},
+    shards: shards.map((row) => ({
+      id: Number(row.id),
+      pid: Number(row.pid),
+      rssBytes: Number(row.rssBytes),
+      fdCount: Number(row.fdCount)
+    }))
+  };
+}
+
 function markReady(rollout, input, options) {
   const body = input || {};
   const opts = options || {};
@@ -148,11 +188,14 @@ function markReady(rollout, input, options) {
   if (text(body.confirmation, 40) !== '只逐片发布') {
     throw new Error('请输入确认口令「只逐片发布」');
   }
+  const now = opts.now || new Date().toISOString();
+  rollout.capacity = validateCapacityReport(body.capacityReport, Date.parse(now));
   rollout.status = 'ready';
-  rollout.updatedAt = opts.now || new Date().toISOString();
+  rollout.updatedAt = now;
   rollout.readyAt = rollout.updatedAt;
   appendEvent(rollout, 'ready', opts.actor, rollout.updatedAt, {
-    checklist: clone(rollout.checklist)
+    checklist: clone(rollout.checklist),
+    capacityFingerprint: rollout.capacity.fingerprint
   });
   return rollout;
 }
@@ -496,6 +539,8 @@ class ShardMaintenanceStore {
 module.exports = {
   FROZEN_TARGET,
   READY_CHECKLIST,
+  CAPACITY_REPORT_MAX_AGE_MS,
+  validateCapacityReport,
   createRollout,
   markReady,
   deployCurrent,

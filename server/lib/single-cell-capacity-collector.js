@@ -125,6 +125,7 @@ function collectSingleCellCapacity(options) {
   };
   const audit = evaluateSingleCellCapacity(input, opts.policy || {});
   return {
+    readOnly: true,
     ok: failures.length === 0 && audit.ok,
     failures,
     input,

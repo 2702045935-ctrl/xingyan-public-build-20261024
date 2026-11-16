@@ -15,6 +15,25 @@ const file = path.join(root, 'state.json');
 const tool = path.resolve(__dirname, '..', 'tools', 'shard-maintenance-executor.js');
 const actor = { id: 'ops_test', username: 'operator', name: '测试运维', role: 'super' };
 const candidateCodeSha256 = 'a'.repeat(64);
+const capacityReport = {
+  readOnly: true,
+  ok: true,
+  input: {
+    collectedAt: new Date().toISOString(),
+    shards: Array.from({ length: 7 }, (_, id) => ({
+      id,
+      pid: 2000 + id,
+      rssBytes: 300 * 1024 * 1024,
+      fdCount: 800
+    }))
+  },
+  audit: {
+    ok: true,
+    fingerprint: 'f'.repeat(64),
+    failures: []
+  },
+  failures: []
+};
 
 function run(args) {
   const result = spawnSync(process.execPath, [tool].concat(args), {
@@ -36,7 +55,8 @@ try {
   }, actor);
   store.transition(created.id, 'ready', {
     checklist: Object.fromEntries(READY_CHECKLIST.map((key) => [key, true])),
-    confirmation: '只逐片发布'
+    confirmation: '只逐片发布',
+    capacityReport
   }, actor);
   store.transition(created.id, 'deploy', {}, actor);
 

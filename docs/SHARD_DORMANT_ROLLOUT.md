@@ -91,6 +91,7 @@ node server/test/shard-*.test.js
 7. 使用 `docs/SINGLE_CELL_CAPACITY.md` 生成 7 片容量余量报告。
 
 任一服务异常、PID 缺失、端口错位、数据目录不足或计划无法校验时，不进入复制阶段。
+容量报告必须为只读采集结果，采集时间距发布待命不超过 30 分钟，并且 `ok=true`。
 
 ## 阶段 2：候选副本
 

@@ -7,6 +7,7 @@ const path = require('path');
 const {
   FROZEN_TARGET,
   READY_CHECKLIST,
+  validateCapacityReport,
   createRollout,
   markReady,
   deployCurrent,
@@ -47,7 +48,35 @@ assert.throws(() => markReady(rollout, {
 }, { now: clock(), actor }), /发布前检查未完成/);
 
 const checklist = Object.fromEntries(READY_CHECKLIST.map((key) => [key, true]));
-markReady(rollout, { checklist, confirmation: '只逐片发布' }, { now: clock(), actor });
+const capacityReport = {
+  readOnly: true,
+  ok: true,
+  input: {
+    collectedAt: '2026-11-17T00:00:00.000Z',
+    shards: FROZEN_TARGET.shards.map((shard) => ({
+      id: shard.id,
+      pid: 1000 + shard.id,
+      rssBytes: 300 * 1024 * 1024,
+      fdCount: 1000
+    }))
+  },
+  audit: {
+    ok: true,
+    fingerprint: 'd'.repeat(64),
+    failures: []
+  },
+  failures: []
+};
+assert.throws(() => validateCapacityReport(Object.assign({}, capacityReport, {
+  input: Object.assign({}, capacityReport.input, {
+    collectedAt: '2026-11-16T20:00:00.000Z'
+  })
+}), Date.parse('2026-11-17T00:31:00Z')), /容量报告已过期/);
+markReady(rollout, {
+  checklist,
+  confirmation: '只逐片发布',
+  capacityReport
+}, { now: clock(), actor });
 assert.strictEqual(rollout.status, 'ready');
 deployCurrent(rollout, { now: clock(), actor });
 assert.strictEqual(rollout.status, 'awaiting_execution');
@@ -150,7 +179,8 @@ try {
   fs.unlinkSync(file + '.lock');
   store.transition(created.id, 'ready', {
     checklist,
-    confirmation: '只逐片发布'
+    confirmation: '只逐片发布',
+    capacityReport
   }, actor);
   const reloaded = new ShardMaintenanceStore(file);
   assert.strictEqual(reloaded.list()[0].status, 'ready');

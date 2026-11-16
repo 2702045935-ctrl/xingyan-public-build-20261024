@@ -115,10 +115,30 @@ async function main() {
     assert.strictEqual(response.payload.data.rollout.status, 'draft');
 
     const checklist = Object.fromEntries(READY_CHECKLIST.map((key) => [key, true]));
+    const capacityReport = {
+      readOnly: true,
+      ok: true,
+      input: {
+        collectedAt: new Date().toISOString(),
+        shards: FROZEN_TARGET.shards.map((shard) => ({
+          id: shard.id,
+          pid: 5000 + shard.id,
+          rssBytes: 300 * 1024 * 1024,
+          fdCount: 900
+        }))
+      },
+      audit: {
+        ok: true,
+        fingerprint: 'e'.repeat(64),
+        failures: []
+      },
+      failures: []
+    };
     response = await call(base, cookie, 'POST', '/api/ops/shardmaintenance/ready', {
       id: rolloutId,
       checklist,
-      confirmation: '只逐片发布'
+      confirmation: '只逐片发布',
+      capacityReport
     });
     assert.strictEqual(response.status, 428, JSON.stringify(response.payload));
 
@@ -126,6 +146,7 @@ async function main() {
       id: rolloutId,
       checklist,
       confirmation: '只逐片发布',
+      capacityReport,
       confirmPassword: ADMIN_PASSWORD
     });
     assert.strictEqual(response.status, 200, JSON.stringify(response.payload));
