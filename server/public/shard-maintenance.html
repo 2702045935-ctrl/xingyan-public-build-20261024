@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>分片维护中心</title>
+<style>
+  :root { --bg:#f5f7fa; --card:#fff; --ink:#1d2129; --sub:#667085; --line:#e6e8ec; --blue:#1677ff; --red:#d92d20; --green:#079455; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.5 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif; }
+  header { position:sticky; top:0; z-index:2; display:flex; align-items:center; justify-content:space-between; padding:14px 22px; background:rgba(255,255,255,.94); border-bottom:1px solid var(--line); backdrop-filter:blur(18px); }
+  header b { font-size:16px; } header span { color:var(--sub); font-size:12px; }
+  main { max-width:1180px; margin:0 auto; padding:22px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:18px; margin-bottom:14px; }
+  h2 { margin:0 0 12px; font-size:15px; } h3 { margin:0 0 10px; font-size:14px; }
+  .hero { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px; }
+  .stat { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; }
+  .stat small { display:block; color:var(--sub); margin-bottom:6px; } .stat b { font-size:18px; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  button { border:1px solid #d0d5dd; background:#fff; color:var(--ink); border-radius:7px; padding:8px 13px; cursor:pointer; font:inherit; }
+  button.primary { background:var(--blue); border-color:var(--blue); color:#fff; }
+  button.danger { background:var(--red); border-color:var(--red); color:#fff; }
+  button:disabled { opacity:.5; cursor:default; }
+  input,select,textarea { width:100%; border:1px solid #d0d5dd; border-radius:7px; padding:8px 10px; font:inherit; background:#fff; }
+  label { display:block; color:var(--sub); font-size:12px; margin-bottom:8px; } label input,label select,label textarea { margin-top:4px; color:var(--ink); }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .checks { display:grid; grid-template-columns:1fr 1fr; gap:6px 14px; margin:10px 0; }
+  .checks label { display:flex; align-items:center; gap:7px; color:var(--ink); font-size:13px; margin:0; }
+  .checks input { width:auto; }
+  .steps { border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+  .step { display:grid; grid-template-columns:32px 1fr auto; gap:10px; padding:11px 12px; border-bottom:1px solid #f0f1f3; align-items:center; }
+  .step:last-child { border:0; } .step i { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#eef2f6; font-style:normal; font-size:12px; }
+  .step.healthy i { background:#e8f7ee; color:var(--green); } .step.failed i,.step.rolled_back i { background:#fff0f0; color:var(--red); }
+  .mono { font:11px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; overflow-wrap:anywhere; color:#475467; }
+  .note { padding:10px 12px; border:1px solid #ffe7ba; background:#fffbf0; color:#8a5a00; border-radius:7px; margin-bottom:12px; }
+  .error { color:var(--red); min-height:20px; }
+  #login { position:fixed; inset:0; background:rgba(16,24,40,.55); display:none; align-items:center; justify-content:center; padding:20px; z-index:5; }
+  #login .card { width:360px; margin:0; }
+  @media(max-width:850px){ .grid,.two,.hero { grid-template-columns:1fr; } main{padding:12px;} }
+</style>
+</head>
+<body>
+<header><div><b>分片维护中心</b><br><span>单 Cell 受控发布 · 一次只放行一个分片</span></div><div class="row"><span id="who"></span><button id="logout">退出</button></div></header>
+<main id="app"><div class="card">登录状态检查中…</div></main>
+<div id="login"><div class="card"><h2>超级管理员登录</h2><label>账号<input id="username" value="admin"></label><label>密码<input id="password" type="password"></label><div class="row"><button class="primary" id="doLogin">登录</button></div><div class="error" id="loginError"></div></div></div>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (value) => String(value == null ? '' : value).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let DATA = null;
+let FLOW_ID = '';
+
+async function api(path, options, retried) {
+  const opts = Object.assign({ headers: {} }, options || {});
+  if (opts.body && typeof opts.body !== 'string') {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(opts.body);
+  }
+  const response = await fetch('/api/ops' + path, opts);
+  let payload = null;
+  try { payload = await response.json(); } catch (_) { payload = null; }
+  if (response.status === 401) {
+    $('login').style.display = 'flex';
+    throw new Error('请先登录');
+  }
+  if (response.status === 428 && !retried) {
+    const password = prompt((payload && payload.error || '高危操作') + '\n请输入当前管理员密码');
+    if (!password) throw new Error('已取消');
+    const body = Object.assign({}, options && options.body || {}, { confirmPassword: password });
+    return api(path, Object.assign({}, options, { body }), 1);
+  }
+  if (!payload || payload.ok !== true) throw new Error(payload && payload.error || ('请求失败 ' + response.status));
+  return payload.data;
+}
+
+async function login() {
+  $('loginError').textContent = '';
+  try {
+    await api('/login', { method:'POST', body:{ username:$('username').value.trim(), password:$('password').value } });
+    $('login').style.display = 'none';
+    await load();
+  } catch (error) { $('loginError').textContent = error.message; }
+}
+
+async function load() {
+  DATA = await api('/shardmaintenance');
+  render();
+}
+
+function statusText(status) {
+  return ({draft:'草稿',ready:'等待逐片发布',awaiting_execution:'等待执行器领取',deploying:'执行器执行中',awaiting_health:'等待健康验收',awaiting_approval:'等待人工批准',paused:'已暂停',completed:'已完成',rolled_back:'已回滚'})[status] || status;
+}
+function shardText(status) {
+  return ({pending:'未发布',queued:'等待执行',deploying:'执行中',deployed:'执行完成',healthy:'健康通过',failed:'失败',rolled_back:'已回滚'})[status] || status;
+}
+
+function render() {
+  const active = (DATA.rollouts || []).find((row) => ['draft','ready','awaiting_execution','deploying','awaiting_health','awaiting_approval','paused'].includes(row.status));
+  const flow = active || (DATA.rollouts || [])[0] || null;
+  if (flow && !FLOW_ID) FLOW_ID = flow.id;
+  if (flow && FLOW_ID !== flow.id && active) FLOW_ID = flow.id;
+  const selected = (DATA.rollouts || []).find((row) => row.id === FLOW_ID) || flow;
+  const current = selected ? selected.shards[selected.currentShard] : null;
+  const frozen = DATA.frozen;
+  let controls = '';
+  if (!active) {
+    controls += '<div class="card"><h2>新建逐片发布</h2><div class="note">创建草稿不会连接服务器。</div><div class="two"><label>阶段<select id="phase"><option value="dormant">休眠加载</option><option value="enforced">激活计划</option></select></label><label>候选提交号<input id="commit" placeholder="d80705d"></label><label>候选 server.js SHA256<input id="codeHash"></label><label>候选目录<input id="artifact" value="/opt/xingyan-mainline/releases/"></label><label>回滚目录<input id="backup" value="/opt/xingyan-mainline/backups/"></label></div><div class="row" style="margin-top:10px"><button class="primary" id="createFlow">创建草稿</button></div></div>';
+  }
+  if (selected && selected.status === 'draft') {
+    controls += '<div class="card"><h2>发布前检查</h2><div class="checks">'
+      + '<label><input type="checkbox" data-check="artifactVerified">候选代码哈希一致</label>'
+      + '<label><input type="checkbox" data-check="backupVerified">回滚点已核验</label>'
+      + '<label><input type="checkbox" data-check="routePlanVerified">路由计划校验通过</label>'
+      + '<label><input type="checkbox" data-check="sevenShardPreflight">7 片只读预检通过</label>'
+      + '<label><input type="checkbox" data-check="capacityHeadroomVerified">容量余量通过</label>'
+      + '<label><input type="checkbox" data-check="maintenanceWindowConfirmed">维护窗口已确认</label></div>'
+      + '<div class="row"><button id="collectCapacity">读取实时容量</button></div>'
+      + '<label>容量报告 JSON<textarea id="capacityReport" style="height:140px" class="mono"></textarea></label>'
+      + '<label>确认口令<input id="readyPhrase" placeholder="只逐片发布"></label>'
+      + '<div class="row"><button class="primary" id="readyFlow">进入待发布</button></div></div>';
+  }
+  if (selected && selected.status === 'ready') {
+    controls += '<div class="card"><h2>当前只允许第 ' + current.id + ' 片</h2><div class="note">不会自动继续下一片。</div><div class="mono">' + esc(current.service) + ' · 后端 ' + current.backendPort + '</div><div class="row" style="margin-top:10px"><button class="danger" id="deployFlow">生成第 ' + current.id + ' 片执行请求</button></div></div>';
+  } else if (selected && selected.status === 'awaiting_execution') {
+    controls += '<div class="card"><h2>等待执行器</h2><div class="note">执行器领取前尚未改动服务器。</div><div class="row"><button class="danger" id="rollbackFlow">撤销请求并回滚</button></div></div>';
+  } else if (selected && selected.status === 'deploying') {
+    controls += '<div class="card"><h2>执行器执行中</h2><div class="note">收到真实代码哈希、PID 和 active 回执后才允许健康验收。</div><div class="row"><button class="danger" id="rollbackFlow">停止并回滚</button></div></div>';
+  } else if (selected && selected.status === 'awaiting_health') {
+    controls += '<div class="card"><h2>第 ' + current.id + ' 片健康验收</h2><div class="two"><label>运行 manifest<input id="healthManifest" value="' + frozen.runtimeManifestHash + '"></label><label>运行拓扑<input id="healthTopology" value="' + frozen.topologyId + '"></label><label>计划内部哈希<input id="healthPlan" value="' + frozen.routePlanHash + '"></label><label>计划文件 SHA256<input id="healthPlanFile" value="' + frozen.routePlanFileSha256 + '"></label><label>activeCalls<input id="healthActive" type="number" value="0"></label><label>ringingCalls<input id="healthRinging" type="number" value="0"></label></div><div class="row" style="margin-top:10px"><button class="primary" id="healthPass">记录健康通过</button><button class="danger" id="healthFail">记录失败并暂停</button></div></div>';
+  } else if (selected && selected.status === 'awaiting_approval') {
+    controls += '<div class="card"><h2>第 ' + current.id + ' 片健康通过</h2><div class="mono">证据 ' + esc(current.health && current.health.evidenceHash || '') + '</div><label>确认口令<input id="approvePhrase" placeholder="确认第' + current.id + '片健康"></label><div class="row"><button class="primary" id="approveFlow">' + (current.id === 6 ? '确认完成' : '批准进入第 ' + (current.id + 1) + ' 片') + '</button></div></div>';
+  } else if (selected && selected.status === 'paused') {
+    controls += '<div class="card"><h2>发布已暂停</h2><div class="note">' + esc(current && current.failure || '已停止') + '</div><div class="row"><button class="danger" id="rollbackFlow">停止并回滚</button></div></div>';
+  }
+
+  const steps = selected ? '<div class="card"><h2>放行轨迹</h2><div class="steps">' + selected.shards.map((shard) => '<div class="step ' + esc(shard.status) + '"><i>' + shard.id + '</i><div><b>' + esc(shard.service) + '</b><div class="mono">' + esc(shardText(shard.status)) + ' · ' + shard.backendPort + '</div></div></div>').join('') + '</div></div>' : '';
+  const target = '<div class="card"><h2>冻结目标</h2><div class="mono">manifest ' + frozen.runtimeManifestHash + '<br>plan ' + frozen.routePlanHash + '<br>file ' + frozen.routePlanFileSha256 + '</div></div>';
+  $('app').innerHTML = '<div class="hero"><div class="stat"><small>状态</small><b>' + esc(selected ? statusText(selected.status) : '未开始') + '</b></div><div class="stat"><small>阶段</small><b>' + esc(selected ? selected.phase : '—') + '</b></div><div class="stat"><small>当前分片</small><b>' + (current ? current.id + ' / 6' : '—') + '</b></div><div class="stat"><small>已健康</small><b>' + (selected ? selected.shards.filter((s) => s.status === 'healthy').length : 0) + ' / 7</b></div></div>' + controls + '<div class="grid"><div>' + target + '</div><div>' + steps + '</div></div>';
+  bind(selected);
+}
+
+async function action(path, body) {
+  try {
+    const data = await api('/shardmaintenance/' + path, { method:'POST', body });
+    DATA = { frozen: DATA.frozen, checklist: DATA.checklist, rollouts: data.rollouts || DATA.rollouts };
+    FLOW_ID = data.rollout ? data.rollout.id : FLOW_ID;
+    render();
+    return data;
+  } catch (error) { alert(error.message); throw error; }
+}
+
+function bind(flow) {
+  const create = $('createFlow'); if (create) create.onclick = () => action('create', { phase:$('phase').value, candidateCommit:$('commit').value.trim(), candidateCodeSha256:$('codeHash').value.trim(), artifactPath:$('artifact').value.trim(), backupRoot:$('backup').value.trim() });
+  const collect = $('collectCapacity'); if (collect) collect.onclick = async () => { collect.disabled = true; try { const data = await api('/shardmaintenance/capacity', { method:'POST', body:{} }); $('capacityReport').value = JSON.stringify(data.report, null, 2); alert(data.report.ok ? '容量报告通过' : '容量报告未通过'); } catch (e) { alert(e.message); } collect.disabled = false; };
+  const ready = $('readyFlow'); if (ready) ready.onclick = () => { try { const checklist = {}; document.querySelectorAll('[data-check]').forEach((el) => checklist[el.getAttribute('data-check')] = el.checked); action('ready', { id:flow.id, checklist, confirmation:$('readyPhrase').value, capacityReport:JSON.parse($('capacityReport').value) }); } catch (e) { alert('容量报告必须是完整 JSON'); } };
+  const deploy = $('deployFlow'); if (deploy) deploy.onclick = () => { if (confirm('只发布当前第 ' + flow.currentShard + ' 片？')) action('deploy', { id:flow.id }); };
+  const pass = $('healthPass'); if (pass) pass.onclick = () => { const shard = flow.shards[flow.currentShard]; action('health', { id:flow.id, shardId:shard.id, ok:true, evidence:{ shardId:shard.id, service:shard.service, backendPort:shard.backendPort, runtimeManifestHash:$('healthManifest').value.trim(), runtimeTopologyId:$('healthTopology').value.trim(), chatRoutePlanHash:$('healthPlan').value.trim(), chatRoutePlanFileHash:$('healthPlanFile').value.trim(), chatRoutePlanEnforced:flow.phase==='enforced', activeCalls:Number($('healthActive').value), ringingCalls:Number($('healthRinging').value) } }); };
+  const fail = $('healthFail'); if (fail) fail.onclick = () => { const reason = prompt('失败原因', '健康检查失败'); if (reason !== null) action('health', { id:flow.id, shardId:flow.currentShard, ok:false, reason, evidence:{} }); };
+  const approve = $('approveFlow'); if (approve) approve.onclick = () => action('approve', { id:flow.id, confirmation:$('approvePhrase').value });
+  const rollback = $('rollbackFlow'); if (rollback) rollback.onclick = () => { const confirmation = prompt('输入「停止并回滚」'); if (confirmation !== null) action('rollback', { id:flow.id, confirmation, reason:prompt('回滚原因','维护窗口人工停止') || '' }); };
+}
+
+$('doLogin').onclick = login;
+$('password').addEventListener('keydown', (event) => { if (event.key === 'Enter') login(); });
+$('logout').onclick = async () => { try { await api('/logout', { method:'POST' }); } catch (_) {} location.reload(); };
+load().catch(() => { $('login').style.display = 'flex'; });
+</script>
+</body>
+</html>

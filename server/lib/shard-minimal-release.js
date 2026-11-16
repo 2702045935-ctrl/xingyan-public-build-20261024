@@ -25,6 +25,9 @@ const ENTRY_FILES = [
   'tools/shard-release-readiness.js',
   'tools/shard-placement-rehearsal.js'
 ];
+const ADDITIONAL_FILES = [
+  'public/shard-maintenance.html'
+];
 
 function sha256(buffer) {
   return crypto.createHash('sha256').update(buffer).digest('hex');
@@ -75,6 +78,12 @@ function buildMinimalRelease(options) {
     expectedSha256: expectedSha256 || undefined
   });
   const files = dependencyClosure(root, ENTRY_FILES);
+  const additional = ADDITIONAL_FILES.map((relative) => path.resolve(root, relative));
+  for (const file of additional) {
+    if (!fs.existsSync(file) || !fs.statSync(file).isFile()) {
+      throw new Error('missing release file: ' + file);
+    }
+  }
   const temporary = outDir + '.tmp-' + process.pid;
   if (fs.existsSync(temporary)) throw new Error('temporary output already exists');
   try {
@@ -85,14 +94,16 @@ function buildMinimalRelease(options) {
       kind: 'patched-server',
       sha256: sha256(Buffer.from(patched.source))
     }];
-    for (const file of files) {
+    for (const file of files.concat(additional)) {
       const relative = path.relative(root, file).replace(/\\/g, '/');
       const target = path.join(temporary, relative);
       fs.mkdirSync(path.dirname(target), { recursive: true });
       fs.copyFileSync(file, target);
       manifestFiles.push({
         path: relative,
-        kind: relative.startsWith('tools/') ? 'tool' : 'module',
+        kind: relative.startsWith('tools/')
+          ? 'tool'
+          : relative.startsWith('public/') ? 'page' : 'module',
         sha256: sha256(fs.readFileSync(file))
       });
     }
@@ -125,6 +136,7 @@ function buildMinimalRelease(options) {
 
 module.exports = {
   ENTRY_FILES,
+  ADDITIONAL_FILES,
   localDependencies,
   dependencyClosure,
   buildMinimalRelease

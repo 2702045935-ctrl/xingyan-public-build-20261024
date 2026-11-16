@@ -24,11 +24,12 @@ try {
     expectedSha256: expected
   });
   assert.strictEqual(manifest.fileCount >= 10, true);
-  assert.strictEqual(manifest.patchChanges.length, 6);
+  assert.strictEqual(manifest.patchChanges.length, 11);
   assert.ok(fs.existsSync(path.join(outDir, 'server.js')));
   assert.ok(fs.existsSync(path.join(outDir, 'lib', 'chat-route-plan.js')));
   assert.ok(fs.existsSync(path.join(outDir, 'lib', 'shard-maintenance.js')));
   assert.ok(fs.existsSync(path.join(outDir, 'tools', 'shard-maintenance-executor.js')));
+  assert.ok(fs.existsSync(path.join(outDir, 'public', 'shard-maintenance.html')));
   assert.ok(fs.existsSync(path.join(outDir, 'release-manifest.json')));
   assert.throws(() => buildMinimalRelease({
     serverSource: sourceFile,

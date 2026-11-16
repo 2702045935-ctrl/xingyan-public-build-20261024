@@ -158,6 +158,15 @@ function replaceOnce(source, marker, replacement, name, changes) {
   return source.replace(marker, replacement);
 }
 
+function replaceCount(source, marker, replacement, expected, name, changes) {
+  const count = source.split(marker).length - 1;
+  if (count !== expected) {
+    throw new Error(name + ' anchor count=' + count + ' (expected ' + expected + ')');
+  }
+  changes.push(name);
+  return source.split(marker).join(replacement);
+}
+
 function patchServerSource(input, options) {
   const opts = options || {};
   const raw = Buffer.isBuffer(input) ? input : Buffer.from(String(input || ''));
@@ -228,6 +237,46 @@ function patchServerSource(input, options) {
     return;
   }`,
     'health-fields',
+    changes
+  );
+  source = replaceCount(
+    source,
+    '/^\\/(index|m|install|admin|admin2|manage|ai|login)\\.html$/i',
+    '/^\\/(index|m|install|admin|admin2|manage|ai|login|shard-maintenance)\\.html$/i',
+    1,
+    'tls-page',
+    changes
+  );
+  source = replaceCount(
+    source,
+    '/^\\/(manage|admin|admin2|ai)\\.html$/i',
+    '/^\\/(manage|admin|admin2|ai|shard-maintenance)\\.html$/i',
+    2,
+    'admin-page-regex',
+    changes
+  );
+  source = replaceCount(
+    source,
+    '/^\\/(manage|admin|admin2|ai|index)\\.html$/i',
+    '/^\\/(manage|admin|admin2|ai|index|shard-maintenance)\\.html$/i',
+    1,
+    'admin-entry-regex',
+    changes
+  );
+  source = replaceCount(
+    source,
+    '/^(index|admin|admin2|manage|ai)\\.html$/i',
+    '/^(index|admin|admin2|manage|ai|shard-maintenance)\\.html$/i',
+    1,
+    'static-page-regex',
+    changes
+  );
+  source = replaceOnce(
+    source,
+    "    pathname === '/ai.html' || pathname === '/mall-admin.html' ||",
+    "    pathname === '/ai.html' || pathname === '/mall-admin.html' ||\n"
+      + "    pathname === '/shard-maintenance.html' ||",
+    'admin-path',
     changes
   );
   source = replaceOnce(

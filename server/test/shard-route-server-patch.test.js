@@ -25,6 +25,11 @@ assert.deepStrictEqual(result.changes, [
   'chat-owner-runtime',
   'client-routing',
   'health-fields',
+  'tls-page',
+  'admin-page-regex',
+  'admin-entry-regex',
+  'static-page-regex',
+  'admin-path',
   'chat-action-endpoint'
 ]);
 assert.ok(result.source.includes('SHARD_ROUTE_PLAN_FILE'));
