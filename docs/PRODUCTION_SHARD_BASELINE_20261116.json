@@ -110,8 +110,18 @@
       "changedDeliveredCursors": 29,
       "remainingDuplicateGroups": 0
     },
+    "missingMedia": {
+      "status": "awaiting-decision",
+      "plan": "/opt/xingyan-mainline/releases/20261116-shard-baseline/upload-reference-repair-plan.json",
+      "planSha256": "8bd81ef390e00ed3b36730ea7c017ca0ab452c05d1572ce3f8dd754f1ab62de0",
+      "missing": 73,
+      "recoverable": 0,
+      "quarantine": 73,
+      "stressTestImages": 72,
+      "familyGroupAudio": 1
+    },
     "remainingBlockers": [
-      "73 active messages reference missing media files"
+      "73 missing media references require explicit quarantine or restore approval"
     ]
   },
   "lastRuntimeAudit": {
