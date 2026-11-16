@@ -63,6 +63,9 @@ const CHAT_OWNER_RUNTIME = `
 const chatOwnerAgent = new http.Agent({ keepAlive: true, maxSockets: 256 });
 const chatOwnerSockets = new Map();
 let chatOwnerForwardCount = 0;
+let shardWriteFrozen = false;
+let shardFenceEpoch = 0;
+let shardWriteFreezeReason = '';
 
 function chatOwnerPort(chatId) {
   const count = Math.max(1, Number(process.env.SHARD_COUNT) || 1);
@@ -174,6 +177,55 @@ const OWNER_ROUTING_ENDPOINT = `
     }
 `.trimEnd();
 
+const WRITE_FREEZE_ENDPOINT = `
+    if (parsed.pathname === '/__shard/write-freeze') {
+      if (req.method !== 'POST') return fail(res, 405, 'Method Not Allowed');
+      const supplied = String(req.headers['x-shard-relay'] || '');
+      const expected = String(db.secret || '');
+      const suppliedBuffer = Buffer.from(supplied);
+      const expectedBuffer = Buffer.from(expected);
+      if (!expected || suppliedBuffer.length !== expectedBuffer.length
+          || !crypto.timingSafeEqual(suppliedBuffer, expectedBuffer)) {
+        return fail(res, 403, '禁止访问');
+      }
+      const body = await readBody(req);
+      if (!chatRoutePlan) return fail(res, 409, '聊天路由计划尚未加载');
+      if (String(body.planHash || '') !== chatRoutePlan.hash
+          || String(body.fileSha256 || '') !== chatRoutePlan.fileHash) {
+        return fail(res, 409, '聊天路由计划哈希不一致');
+      }
+      const frozen = body.frozen === true;
+      const epoch = Number(body.epoch);
+      if (!Number.isInteger(epoch) || epoch <= 0) {
+        return fail(res, 422, 'fencing epoch 无效');
+      }
+      if (epoch !== shardFenceEpoch + 1) {
+        return fail(res, 409, 'fencing epoch 已过期');
+      }
+      shardWriteFrozen = frozen;
+      shardFenceEpoch = epoch;
+      shardWriteFreezeReason = frozen
+        ? String(body.reason || 'physical-shard-cutover').slice(0, 120)
+        : '';
+      return ok(res, {
+        frozen: shardWriteFrozen,
+        fenceEpoch: shardFenceEpoch,
+        reason: shardWriteFreezeReason,
+        planHash: chatRoutePlan.hash,
+        fileSha256: chatRoutePlan.fileHash
+      });
+    }
+`.trimEnd();
+
+const WRITE_FREEZE_GATE = `
+  const readOnlyHttpMethod = req.method === 'GET' || req.method === 'HEAD'
+    || req.method === 'OPTIONS';
+  if (shardWriteFrozen && parsed.pathname !== '/__shard/write-freeze'
+      && !readOnlyHttpMethod) {
+    return fail(res, 503, '正在切换数据分片，请稍后重试');
+  }
+`.trimEnd();
+
 function hash(value) {
   return crypto.createHash('sha256').update(value).digest('hex');
 }
@@ -216,6 +268,14 @@ function patchProductionServerSource(source, actualSha256, expectedSha256) {
   );
   source = replaceOnce(
     source,
+    "  const parsed = new URL(req.url, 'http://' + (req.headers.host || 'localhost'));",
+    "  const parsed = new URL(req.url, 'http://' + (req.headers.host || 'localhost'));\n"
+      + WRITE_FREEZE_GATE,
+    'write-freeze-gate',
+    changes
+  );
+  source = replaceOnce(
+    source,
     'function sendBatchToUser(userId, payloads) {',
     CHAT_OWNER_RUNTIME + '\n\nfunction sendBatchToUser(userId, payloads) {',
     'chat-owner-runtime',
@@ -224,7 +284,13 @@ function patchProductionServerSource(source, actualSha256, expectedSha256) {
   source = replaceOnce(
     source,
     "  if (msg.type === 'ping') {",
-    "  const chatScopedType = ['ack', 'typing', 'pat', 'read', 'send', 'shake'].includes(msg.type);\n"
+    "  if (shardWriteFrozen && !['ping', 'call', 'live'].includes(msg.type)) {\n"
+      + "    ws.sendText(socket, JSON.stringify({ type: 'error', error: "
+      + "'正在切换数据分片，请稍后重试', code: 'SHARD_WRITE_FROZEN',"
+      + " fenceEpoch: shardFenceEpoch }));\n"
+      + "    return;\n"
+      + "  }\n"
+      + "  const chatScopedType = ['ack', 'typing', 'pat', 'read', 'send', 'shake'].includes(msg.type);\n"
       + "  if (chatScopedType && msg.chatId && PORT !== chatOwnerPort(msg.chatId)) {\n"
       + "    forwardChatActionToOwner(user.id, msg, socket);\n"
       + "    return;\n"
@@ -249,7 +315,10 @@ function patchProductionServerSource(source, actualSha256, expectedSha256) {
       chatRoutePlanFileHash: chatRoutePlan ? chatRoutePlan.fileHash : '',
       chatRouteTopologyId: chatRoutePlan ? chatRoutePlan.topologyId : '',
       chatRoutePlanEnforced,
-      chatOwnerForwards: chatOwnerForwardCount
+      chatOwnerForwards: chatOwnerForwardCount,
+      writeFrozen: shardWriteFrozen,
+      fenceEpoch: shardFenceEpoch,
+      writeFreezeReason: shardWriteFreezeReason
     });
     return;
   }`,
@@ -305,7 +374,7 @@ function patchProductionServerSource(source, actualSha256, expectedSha256) {
   source = replaceOnce(
     source,
     "    if (parsed.pathname === '/api/internal/user-row' && req.method === 'POST') {",
-    OWNER_ROUTING_ENDPOINT + "\n" + CHAT_ACTION_ENDPOINT
+    OWNER_ROUTING_ENDPOINT + "\n" + WRITE_FREEZE_ENDPOINT + "\n" + CHAT_ACTION_ENDPOINT
       + "\n    if (parsed.pathname === '/api/internal/user-row' && req.method === 'POST') {",
     'chat-action-endpoint',
     changes
@@ -372,6 +441,14 @@ function patchServerSource(input, options) {
   );
   source = replaceOnce(
     source,
+    "  const parsed = new URL(req.url, 'http://' + (req.headers.host || 'localhost'));",
+    "  const parsed = new URL(req.url, 'http://' + (req.headers.host || 'localhost'));\n"
+      + WRITE_FREEZE_GATE,
+    'write-freeze-gate',
+    changes
+  );
+  source = replaceOnce(
+    source,
     'function peerOnlineSet(port) {',
     CHAT_OWNER_RUNTIME + '\n\nfunction peerOnlineSet(port) {',
     'chat-owner-runtime',
@@ -380,7 +457,13 @@ function patchServerSource(input, options) {
   source = replaceOnce(
     source,
     "  if (msg.type === 'ping') {",
-    "  const chatScopedType = ['ack', 'typing', 'pat', 'read', 'send', 'shake'].includes(msg.type);\n"
+    "  if (shardWriteFrozen && !['ping', 'call', 'live'].includes(msg.type)) {\n"
+      + "    ws.sendText(socket, JSON.stringify({ type: 'error', error: "
+      + "'正在切换数据分片，请稍后重试', code: 'SHARD_WRITE_FROZEN',"
+      + " fenceEpoch: shardFenceEpoch }));\n"
+      + "    return;\n"
+      + "  }\n"
+      + "  const chatScopedType = ['ack', 'typing', 'pat', 'read', 'send', 'shake'].includes(msg.type);\n"
       + "  if (chatScopedType && msg.chatId && PORT !== chatOwnerPort(msg.chatId)) {\n"
       + "    forwardChatActionToOwner(user.id, msg, socket);\n"
       + "    return;\n"
@@ -405,7 +488,10 @@ function patchServerSource(input, options) {
       chatRoutePlanFileHash: chatRoutePlan ? chatRoutePlan.fileHash : '',
       chatRouteTopologyId: chatRoutePlan ? chatRoutePlan.topologyId : '',
       chatRoutePlanEnforced,
-      chatOwnerForwards: chatOwnerForwardCount
+      chatOwnerForwards: chatOwnerForwardCount,
+      writeFrozen: shardWriteFrozen,
+      fenceEpoch: shardFenceEpoch,
+      writeFreezeReason: shardWriteFreezeReason
     });
     return;
   }`,
@@ -455,7 +541,7 @@ function patchServerSource(input, options) {
   source = replaceOnce(
     source,
     "    if (parsed.pathname === '/__shard/relay') {",
-    OWNER_ROUTING_ENDPOINT + "\n" + CHAT_ACTION_ENDPOINT
+    OWNER_ROUTING_ENDPOINT + "\n" + WRITE_FREEZE_ENDPOINT + "\n" + CHAT_ACTION_ENDPOINT
       + "\n    if (parsed.pathname === '/__shard/relay') {",
     'chat-action-endpoint',
     changes

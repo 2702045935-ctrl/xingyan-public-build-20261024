@@ -7651,6 +7651,9 @@ const callSignalAgent = new http.Agent({ keepAlive: true, maxSockets: 256 });
 const chatOwnerAgent = new http.Agent({ keepAlive: true, maxSockets: 256 });
 const chatOwnerSockets = new Map();
 let chatOwnerForwardCount = 0;
+let shardWriteFrozen = false;
+let shardFenceEpoch = 0;
+let shardWriteFreezeReason = '';
 
 function forwardToCallSignalShard(pathname, payload) {
   if (PORT === CALL_SIGNAL_PORT) return;
@@ -8767,6 +8770,15 @@ function handleClientMessage(user, socket, raw) {
   let msg;
   try { msg = JSON.parse(raw); } catch (err) { return; }
   if (!msg || typeof msg.type !== 'string') return;
+  if (shardWriteFrozen && !['ping', 'call', 'live'].includes(msg.type)) {
+    ws.sendText(socket, JSON.stringify({
+      type: 'error',
+      error: '正在切换数据分片，请稍后重试',
+      code: 'SHARD_WRITE_FROZEN',
+      fenceEpoch: shardFenceEpoch
+    }));
+    return;
+  }
 
   /* 单条连接的信令频率限制：正常聊天/通话每秒撑死几十条，
      有人拿一条连接猛刷（比如穷举 callId、刷屏）就直接断开。 */
@@ -14688,6 +14700,9 @@ async function handleApi(req, res, pathname, query) {
       chatRouteTopologyId: chatRoutePlan ? chatRoutePlan.topologyId : '',
       chatRoutePlanEnforced,
       chatOwnerForwards: chatOwnerForwardCount,
+      writeFrozen: shardWriteFrozen,
+      fenceEpoch: shardFenceEpoch,
+      writeFreezeReason: shardWriteFreezeReason,
       callSignalPort: CALL_SIGNAL_PORT,
       activeCalls,
       ringingCalls,
@@ -23361,6 +23376,53 @@ if (process.env.DISABLE_STARTUP_BOT_BACKFILL === '1') {
 async function handleHttpRequest(req, res) {
   res.__req = req;      // sendJson 里判断客户端要不要 gzip 用（别的地方不用管）
   const parsed = new URL(req.url, 'http://' + (req.headers.host || 'localhost'));
+  const readOnlyHttpMethod = req.method === 'GET' || req.method === 'HEAD'
+    || req.method === 'OPTIONS';
+  if (shardWriteFrozen && parsed.pathname !== '/__shard/write-freeze'
+      && !readOnlyHttpMethod) {
+    return fail(res, 503, '正在切换数据分片，请稍后重试');
+  }
+  if (parsed.pathname === '/__shard/write-freeze') {
+    try {
+    if (req.method !== 'POST') return fail(res, 405, 'Method Not Allowed');
+    const supplied = String(req.headers['x-shard-relay'] || '');
+    const expected = String(db.secret || '');
+    const suppliedBuffer = Buffer.from(supplied);
+    const expectedBuffer = Buffer.from(expected);
+    if (!expected || suppliedBuffer.length !== expectedBuffer.length
+        || !crypto.timingSafeEqual(suppliedBuffer, expectedBuffer)) {
+      return fail(res, 403, '禁止访问');
+    }
+    const body = await readBody(req);
+    if (!chatRoutePlan) return fail(res, 409, '聊天路由计划尚未加载');
+    if (String(body.planHash || '') !== chatRoutePlan.hash
+        || String(body.fileSha256 || '') !== chatRoutePlan.fileHash) {
+      return fail(res, 409, '聊天路由计划哈希不一致');
+    }
+    const frozen = body.frozen === true;
+    const epoch = Number(body.epoch);
+    if (!Number.isInteger(epoch) || epoch <= 0) {
+      return fail(res, 422, 'fencing epoch 无效');
+    }
+    if (epoch !== shardFenceEpoch + 1) {
+      return fail(res, 409, 'fencing epoch 已过期');
+    }
+    shardWriteFrozen = frozen;
+    shardFenceEpoch = epoch;
+    shardWriteFreezeReason = frozen
+      ? String(body.reason || 'physical-shard-cutover').slice(0, 120)
+      : '';
+    return ok(res, {
+      frozen: shardWriteFrozen,
+      fenceEpoch: shardFenceEpoch,
+      reason: shardWriteFreezeReason,
+      planHash: chatRoutePlan.hash,
+      fileSha256: chatRoutePlan.fileHash
+    });
+    } catch (error) {
+      return fail(res, 400, '写冻结请求无效');
+    }
+  }
   try {
     /* 分片间实时事件：只允许本机六片用服务端密钥转发，不经过公网鉴权。 */
     if (parsed.pathname === '/__shard/owner-routing') {

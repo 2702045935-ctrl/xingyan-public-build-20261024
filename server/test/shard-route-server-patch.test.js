@@ -36,6 +36,7 @@ const productionFixture = [
   "    pathname.indexOf('/api/ops') === 0 || pathname.indexOf('/api/admin') === 0;",
   '}',
   'async function handleHttpRequest(req,res) {',
+  "  const parsed = new URL(req.url, 'http://' + (req.headers.host || 'localhost'));",
   "    if (parsed.pathname === '/api/internal/user-row' && req.method === 'POST') {}",
   '}'
 ].join('\n');
@@ -46,6 +47,7 @@ const productionPatch = patchServerSource(productionFixture, {
 assert.strictEqual(productionPatch.profile, 'production-cb937047');
 assert.ok(productionPatch.source.includes('/__shard/chat-action'));
 assert.ok(productionPatch.source.includes('/__shard/owner-routing'));
+assert.ok(productionPatch.source.includes('/__shard/write-freeze'));
 assert.ok(productionPatch.source.includes('!chatRoutePlanEnforced'));
 
 const stable = execFileSync('git', ['show', 'bc09897:server/server.js'], {
@@ -58,6 +60,7 @@ assert.strictEqual(result.ok, true);
 assert.deepStrictEqual(result.changes, [
   'requires',
   'route-runtime',
+  'write-freeze-gate',
   'chat-owner-runtime',
   'client-routing',
   'health-fields',
@@ -71,6 +74,8 @@ assert.deepStrictEqual(result.changes, [
 assert.ok(result.source.includes('SHARD_ROUTE_PLAN_FILE'));
 assert.ok(result.source.includes('/__shard/chat-action'));
 assert.ok(result.source.includes('/__shard/owner-routing'));
+assert.ok(result.source.includes('/__shard/write-freeze'));
+assert.ok(result.source.includes('shardWriteFrozen'));
 assert.ok(result.source.includes('chatOwnerPort(msg.chatId)'));
 assert.ok(result.source.includes('chatRoutePlanFileHash'));
 assert.throws(() => patchServerSource(stable, {
@@ -138,6 +143,53 @@ try {
     assert.strictEqual(health.chatRoutePlanFileHash, planHash);
     assert.strictEqual(health.chatRouteTopologyId, plan.topologyId);
     assert.strictEqual(health.chatRoutePlanEnforced, false);
+    assert.strictEqual(health.writeFrozen, false);
+    assert.strictEqual(health.fenceEpoch, 0);
+    const secret = fs.readFileSync(path.join(dataDir, 'secret.key'), 'utf8').trim();
+    const freezeBody = {
+      frozen: true,
+      epoch: 1,
+      reason: 'route-patch-test',
+      planHash: plan.hash,
+      fileSha256: planHash
+    };
+    let response = await fetch('http://127.0.0.1:' + basePort + '/__shard/write-freeze', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Shard-Relay': secret
+      },
+      body: JSON.stringify(freezeBody)
+    });
+    assert.strictEqual(response.status, 200);
+    let payload = await response.json();
+    assert.strictEqual(payload.data.frozen, true);
+    assert.strictEqual(payload.data.fenceEpoch, 1);
+    response = await fetch('http://127.0.0.1:' + basePort + '/api/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}'
+    });
+    assert.strictEqual(response.status, 503);
+    const frozenHealth = await waitHealth('http://127.0.0.1:' + basePort, child, logs);
+    assert.strictEqual(frozenHealth.writeFrozen, true);
+    assert.strictEqual(frozenHealth.fenceEpoch, 1);
+    response = await fetch('http://127.0.0.1:' + basePort + '/__shard/write-freeze', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Shard-Relay': secret
+      },
+      body: JSON.stringify(Object.assign({}, freezeBody, {
+        frozen: false,
+        epoch: 2,
+        reason: ''
+      }))
+    });
+    assert.strictEqual(response.status, 200);
+    payload = await response.json();
+    assert.strictEqual(payload.data.frozen, false);
+    assert.strictEqual(payload.data.fenceEpoch, 2);
   } finally {
     if (child.exitCode === null) {
       child.kill();
