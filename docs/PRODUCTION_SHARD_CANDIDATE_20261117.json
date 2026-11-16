@@ -134,6 +134,9 @@
     "productionPatchProfileVerified": true,
     "atomicSevenShardOwnerSwitchVerified": true,
     "ownerSwitchFailureRollbackVerified": true,
+    "atomicSevenShardWriteFreezeVerified": true,
+    "writeFreezeFailureRollbackVerified": true,
+    "writeFenceEpochReplayRejected": true,
     "installerExecutableBitVerified": true,
     "dormantOwnerRoutingDisabled": true,
     "physicalBuildPassed": true,
@@ -181,6 +184,22 @@
     "stagedFileCount": 34,
     "stagedInstallVerified": true,
     "smokeBootVerified": true
+  },
+  "nextCandidateArtifact": {
+    "path": "outputs/shard-minimal-production-bd9eeda.zip",
+    "productionEligible": true,
+    "fileCount": 36,
+    "baseServerSha256": "cb937047456b6c6bf4aa1b174b4d1edb397e54c1e47ff60f6ca0341b4215007c",
+    "patchedServerSha256": "90ca208515668407da0ae03afc83c0689d8d860b096bbafb9c61331623f86756",
+    "releaseContentHash": "30553b1a01a51b8ec87be111fc61913957e042d242f87a251532a11909e31a18",
+    "zipBytes": 574562,
+    "zipSha256": "5e4cd2f13dfe8086b299eda5344db9174b15f2180b64e61d91a9e6b2842c45aa",
+    "stagedOnHost": "/opt/xingyan-mainline/releases/20261117-shard-candidate-r4",
+    "stagedFileCount": 36,
+    "stagedInstallVerified": true,
+    "launcherMode": "755",
+    "isolatedSmokeVerified": true,
+    "online": false
   },
   "liveValidation": {
     "capacityReport": {
