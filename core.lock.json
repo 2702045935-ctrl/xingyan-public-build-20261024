@@ -118,8 +118,8 @@
     },
     {
       "path": "Sources/MessageStressFixture.swift",
-      "size": 7361,
-      "sha256": "0a46bb44c78c2c0b5af53b5d8198a7dddf911544d2f51e4396c33ba89e4728b5"
+      "size": 7415,
+      "sha256": "7b1ce270815283a11320b2d472a9679202c4b91870a3a588f7fe735ca9245f66"
     },
     {
       "path": "Sources/MomentStressFixture.swift",

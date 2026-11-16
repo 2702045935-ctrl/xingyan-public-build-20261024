@@ -9,6 +9,7 @@ enum MessageStressFixture {
     static let autoOpen = StressTestConfiguration.autoOpenMessageChat
 
     private static let prefix = "stress-message-chat-"
+    private static let stamp = "2026-11-16T00:00:00Z"
     private static let lock = NSRecursiveLock()
     private static var cachedUserID = ""
 
