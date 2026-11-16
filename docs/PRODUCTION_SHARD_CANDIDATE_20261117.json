@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "candidateId": "system-complete-v1-53b229e",
+  "candidateId": "system-complete-v1-c37ed36",
   "sourceBranch": "codex/system-complete-v1",
-  "sourceCommit": "53b229e3d32c9d9934cbb9a6f8c5597724cc8b03",
-  "capturedAt": "2026-11-17T06:24:47.7949338+08:00",
+  "sourceCommit": "c37ed366168dcb90dc69d648b0ed53272b561cd3",
+  "capturedAt": "2026-11-17T06:27:03.2857673+08:00",
   "candidateCode": {
     "serverJsSha256": "f5119f24c70a38e637254df8a60f1b10e7a5da0dd1c11902d121366e27bf6d3d",
     "chatRoutePlanSha256": "86af4db9399985f41b1103f351f9147b6cc8926271a5f82b1543b01e093b29c4",
@@ -24,7 +24,9 @@
     "dualCellProbeSha256": "d0abe776b67bf494734bd978a3a50d97d4f3d05c7f280728ca3f04cd2095edbf",
     "dualCellProbeAuditSha256": "66c1fc125758b37b04786cc5e51efce4064d9a57be5db14a3145d3f6c7a1f731",
     "singleCellCapacitySha256": "34e77bfc772d3229cb694c3f16ceadfdedebb5d60566ad5b975c3fa890b3d4c2",
-    "singleCellCapacityAuditSha256": "bbfee3d3633bd36cbc7c1dad03415c030ee2239e2508d9e7760be49808bc36c9"
+    "singleCellCapacityAuditSha256": "bbfee3d3633bd36cbc7c1dad03415c030ee2239e2508d9e7760be49808bc36c9",
+    "singleCellCapacityCollectorSha256": "7e23473777c7e991f1ba0ad917199679a660bfe9c9caff6e9b9e1f3421037ccf",
+    "singleCellCapacityCollectorAuditSha256": "f17329c4894cf750e22fab74ef9ad38108ac7920141cbd8d638e8e844bf020c9"
   },
   "productionBaseline": {
     "businessHost": "192.140.179.176",
@@ -105,7 +107,8 @@
     "dualCellAdmissionContract": true,
     "dualCellReadOnlyProbe": true,
     "dualCellShadowActive": false,
-    "singleCellCapacityGate": true
+    "singleCellCapacityGate": true,
+    "singleCellCapacityLiveCollector": true
   },
   "deployment": {
     "status": "not-deployed",
