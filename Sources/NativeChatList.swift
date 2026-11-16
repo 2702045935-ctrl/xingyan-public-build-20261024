@@ -199,6 +199,7 @@ where Item.ID: Hashable {
                       !collection.isTracking,
                       !collection.isDragging,
                       !collection.isDecelerating else { return }
+                collection.layoutIfNeeded()
                 let minimumY = -collection.adjustedContentInset.top
                 let maximumY = max(
                     minimumY,
@@ -327,6 +328,7 @@ where Item.ID: Hashable {
                       !collection.isTracking,
                       !collection.isDragging,
                       !collection.isDecelerating else { return }
+                collection.layoutIfNeeded()
                 let minimumY = -collection.adjustedContentInset.top
                 let maximumY = max(
                     minimumY,

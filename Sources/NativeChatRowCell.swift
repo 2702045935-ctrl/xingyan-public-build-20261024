@@ -2,6 +2,7 @@ import UIKit
 
 enum NativeChatRowMetrics {
     private static var cachedDynamicScale: CGFloat?
+    private static var cachedCombinedScale: CGFloat?
 
     static var dynamicScale: CGFloat {
         if let cachedDynamicScale { return cachedDynamicScale }
@@ -13,7 +14,10 @@ enum NativeChatRowMetrics {
     }
 
     static var combinedScale: CGFloat {
-        dynamicScale * CareMode.scale
+        if let cachedCombinedScale { return cachedCombinedScale }
+        let resolved = dynamicScale * CareMode.scale
+        cachedCombinedScale = resolved
+        return resolved
     }
 
     static var rowHeight: CGFloat {
@@ -22,6 +26,7 @@ enum NativeChatRowMetrics {
 
     static func invalidateScaleCache() {
         cachedDynamicScale = nil
+        cachedCombinedScale = nil
     }
 
     static func font(_ size: CGFloat,
@@ -85,6 +90,9 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
     private var dragDirection: CGFloat = 0
     private var actionsSignature = ""
     private var avatarSignature = ""
+    private var accessibilitySignature = ""
+    private var cachedTimeSignature = ""
+    private var cachedTimeWidth: CGFloat = 0
 
     private let rowLeading: CGFloat = 16
     private let avatarSize: CGFloat = 50
@@ -130,6 +138,9 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         pressOverlay.backgroundColor = .clear
         avatarView.reset()
         avatarSignature = ""
+        accessibilitySignature = ""
+        cachedTimeSignature = ""
+        cachedTimeWidth = 0
     }
 
     override func layoutSubviews() {
@@ -140,11 +151,16 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
                                   width: avatarSize, height: avatarSize)
         let textX = rowLeading + avatarSize + avatarGap
         let timeText = configuration?.time ?? ""
-        let measuredTime = ceil((timeText as NSString).size(
-            withAttributes: [.font: timeLabel.font as Any]
-        ).width)
-        let timeScale = min(1.35, timeLabel.font.pointSize / 13)
-        let timeWidth = min(96, max(34 * timeScale, measuredTime + 2))
+        let timeSignature = "\(timeText)|\(timeLabel.font.pointSize)"
+        if timeSignature != cachedTimeSignature {
+            let measuredTime = ceil((timeText as NSString).size(
+                withAttributes: [.font: timeLabel.font as Any]
+            ).width)
+            let timeScale = min(1.35, timeLabel.font.pointSize / 13)
+            cachedTimeWidth = min(96, max(34 * timeScale, measuredTime + 2))
+            cachedTimeSignature = timeSignature
+        }
+        let timeWidth = cachedTimeWidth
         let titleWidth = max(1, bounds.width - textX - rowTrailing - timeWidth - 8)
         let titleHeight: CGFloat = 22
         titleLabel.frame = CGRect(x: 0, y: 0, width: titleWidth, height: titleHeight)
@@ -612,6 +628,17 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
     }
 
     private func configureAccessibility(_ configuration: NativeChatRowConfiguration) {
+        let signature = [
+            configuration.title,
+            configuration.preview,
+            configuration.mentionPrefix,
+            configuration.time,
+            String(configuration.unread),
+            configuration.isPinned ? "1" : "0",
+            Lang.code
+        ].joined(separator: "\u{1E}")
+        guard accessibilitySignature != signature else { return }
+        accessibilitySignature = signature
         isAccessibilityElement = true
         accessibilityTraits = .button
         let unread = configuration.unread > 0
