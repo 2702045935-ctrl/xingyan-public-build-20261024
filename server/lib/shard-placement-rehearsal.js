@@ -7,6 +7,7 @@ const { canonical, hash } = require('./shard-snapshot');
 const { ownerFor } = require('./shard-placement-plan');
 const { pairKey } = require('./shard-domain');
 const { verifyPhysicalLayout } = require('./shard-physical-layout');
+const { runShadowReadAudit } = require('./shard-shadow-read');
 
 function readJson(file, fallback) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); }
@@ -227,8 +228,26 @@ function rehearseShardPlacement(options) {
     root: stageDir,
     routePlan
   });
+  const fullMessageSet = threads.length === allThreads.length;
+  const shadowRead = fullMessageSet
+    ? runShadowReadAudit({
+      sourceDir,
+      physicalRoot: stageDir,
+      routePlan
+    })
+    : {
+      readOnly: true,
+      ok: false,
+      skipped: true,
+      reason: 'thread-limit prevents full shadow comparison',
+      diffs: []
+    };
   const failures = Object.keys(checks).filter((name) => !checks[name])
-    .concat(physicalLayout.failures.map((row) => 'physical:' + row.code));
+    .concat(physicalLayout.failures.map((row) => 'physical:' + row.code))
+    .concat(shadowRead.diffs.map((row) =>
+      'shadow:' + row.kind + ':' + String(row.id || '')
+    ));
+  if (!shadowRead.ok) failures.push('shadow-read-incomplete');
   return {
     version: 1,
     ok: failures.length === 0,
@@ -251,6 +270,17 @@ function rehearseShardPlacement(options) {
       hash: physicalLayout.hash,
       counts: physicalLayout.counts,
       failures: physicalLayout.failures
+    },
+    shadowRead: {
+      readOnly: shadowRead.readOnly,
+      ok: shadowRead.ok,
+      skipped: !!shadowRead.skipped,
+      reason: shadowRead.reason || '',
+      checked: shadowRead.checked || {},
+      diffs: (shadowRead.diffs || []).slice(0, 500),
+      fingerprint: shadowRead.fingerprint || '',
+      physicalLayoutHash: shadowRead.physicalLayoutHash || '',
+      physicalLayoutOk: shadowRead.physicalLayoutOk === true
     },
     checks,
     failures

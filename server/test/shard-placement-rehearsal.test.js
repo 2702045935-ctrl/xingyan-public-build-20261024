@@ -55,6 +55,9 @@ try {
   assert.deepStrictEqual(report.failures, []);
   assert.strictEqual(report.counts.users, 2);
   assert.strictEqual(report.counts.messageThreads, 1);
+  assert.strictEqual(report.shadowRead.ok, true);
+  assert.strictEqual(report.shadowRead.readOnly, true);
+  assert.match(report.shadowRead.fingerprint, /^[a-f0-9]{64}$/);
   assert.ok(fs.existsSync(path.join(rehydrate, 'messages', 'c1.jsonl')));
   console.log('shard-placement-rehearsal: passed');
 } finally {
