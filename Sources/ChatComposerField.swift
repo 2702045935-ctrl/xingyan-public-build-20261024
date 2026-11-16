@@ -37,95 +37,194 @@ struct FullScreenComposerView: View {
     let onSend: () -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var scheme
     @FocusState private var focused: Bool
 
     private var trimmed: String {
         text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 12) {
-                Button {
-                    dismiss()
-                } label: {
-                    Text(Tr("关闭"))
-                        .font(pf(16, .medium))
-                        .foregroundStyle(C.label)
-                        .frame(minWidth: 52, minHeight: 44, alignment: .leading)
-                }
-                .buttonStyle(.plain)
+    private var editorShape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: 30, style: .continuous)
+    }
 
-                Spacer(minLength: 0)
-
-                VStack(spacing: 2) {
-                    Text(Tr("全屏编辑"))
-                        .font(pf(17, .semibold))
-                        .foregroundStyle(C.label)
-                    Text(Tr("草稿会自动保存"))
-                        .font(pf(11.5))
-                        .foregroundStyle(C.subLabel)
-                }
-
-                Spacer(minLength: 0)
-
-                Button(action: onSend) {
-                    Image(systemName: "paperplane.fill")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(width: 40, height: 40)
-                        .background(C.green, in: Circle())
-                }
-                .buttonStyle(.plain)
-                .disabled(trimmed.isEmpty)
-                .opacity(trimmed.isEmpty ? 0.38 : 1)
-                .accessibilityLabel(Tr("发送"))
-            }
-            .padding(.horizontal, 16)
-            .frame(height: 58)
-
-            Rectangle()
-                .fill(C.hairline)
-                .frame(height: 0.5)
-
-            ZStack(alignment: .topLeading) {
-                if text.isEmpty {
-                    Text(Tr("输入消息"))
-                        .font(pf(18))
-                        .foregroundStyle(C.subLabel.opacity(0.72))
-                        .padding(.top, 18)
-                        .padding(.leading, 21)
-                        .allowsHitTesting(false)
-                }
-
-                TextEditor(text: $text)
-                    .font(pf(18))
+    private var header: some View {
+        HStack(spacing: 14) {
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(C.label)
-                    .tint(tint)
-                    .scrollContentBackground(.hidden)
-                    .focused($focused)
-                    .padding(.horizontal, 16)
-                    .padding(.top, 10)
-                    .scrollDismissesKeyboard(.interactively)
-                    .accessibilityLabel(Tr("消息内容"))
+                    .frame(width: 42, height: 42)
+                    .background {
+                        GlassBackground(shape: Circle(),
+                                        opacity: scheme == .dark ? 0.82 : 0.92,
+                                        edgeAlpha: scheme == .dark ? 0.12 : 0.22,
+                                        seed: 0.18)
+                    }
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Tr("关闭"))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(Tr("全屏编辑"))
+                    .font(pf(18, .semibold))
+                    .foregroundStyle(C.label)
+                Text(Tr("草稿会自动保存"))
+                    .font(pf(11.5))
+                    .foregroundStyle(C.subLabel)
             }
 
-            Rectangle()
-                .fill(C.hairline)
-                .frame(height: 0.5)
+            Spacer(minLength: 8)
 
-            HStack {
-                Text("\(text.count) \(Tr("字"))")
-                    .font(pf(12, .medium).monospacedDigit())
-                Spacer(minLength: 0)
-                Text(Tr("支持多行长文"))
-                    .font(pf(12))
+            Button(action: onSend) {
+                HStack(spacing: 7) {
+                    Image(systemName: "paperplane.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text(Tr("发送"))
+                        .font(pf(14, .semibold))
+                }
+                .foregroundStyle(.white)
+                .padding(.horizontal, 15)
+                .frame(height: 42)
+                .background {
+                    ZStack {
+                        GlassBackground(shape: Capsule(),
+                                        opacity: 0.96,
+                                        edgeAlpha: 0.22,
+                                        shadow: true,
+                                        seed: 0.61,
+                                        tint: tint.opacity(scheme == .dark ? 0.72 : 0.84))
+                        Capsule().fill(tint.opacity(scheme == .dark ? 0.64 : 0.82))
+                    }
+                }
+                .overlay {
+                    Capsule().stroke(Color.white.opacity(0.20), lineWidth: 0.7)
+                }
             }
-            .foregroundStyle(C.subLabel)
-            .padding(.horizontal, 18)
-            .padding(.vertical, 10)
+            .buttonStyle(.plain)
+            .disabled(trimmed.isEmpty)
+            .opacity(trimmed.isEmpty ? 0.38 : 1)
+            .accessibilityLabel(Tr("发送"))
         }
-        .background(C.pageBg.ignoresSafeArea())
+    }
+
+    private var editor: some View {
+        ZStack(alignment: .topLeading) {
+            if text.isEmpty {
+                Text(Tr("输入消息"))
+                    .font(pf(19))
+                    .foregroundStyle(C.subLabel.opacity(0.72))
+                    .padding(.top, 27)
+                    .padding(.leading, 28)
+                    .allowsHitTesting(false)
+            }
+
+            TextEditor(text: $text)
+                .font(pf(19))
+                .foregroundStyle(C.label)
+                .lineSpacing(6)
+                .tint(tint)
+                .scrollContentBackground(.hidden)
+                .focused($focused)
+                .padding(.horizontal, 22)
+                .padding(.vertical, 18)
+                .scrollDismissesKeyboard(.interactively)
+                .accessibilityLabel(Tr("消息内容"))
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background {
+            editorShape
+                .fill(C.pageBg.opacity(scheme == .dark ? 0.20 : 0.10))
+        }
+        .background {
+            GlassBackground(shape: editorShape,
+                            opacity: scheme == .dark ? 0.90 : 0.96,
+                            edgeAlpha: scheme == .dark ? 0.10 : 0.18,
+                            shadow: true,
+                            seed: 0.42)
+        }
+        .overlay {
+            editorShape.stroke(
+                LinearGradient(
+                    colors: [
+                        Color.white.opacity(scheme == .dark ? 0.12 : 0.50),
+                        Color.white.opacity(0.025),
+                        C.hairline.opacity(scheme == .dark ? 0.42 : 0.28)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                lineWidth: 0.8
+            )
+        }
+        .clipShape(editorShape)
+    }
+
+    private var footer: some View {
+        HStack(spacing: 10) {
+            Text("\(text.count) \(Tr("字"))")
+                .font(pf(12.5, .medium).monospacedDigit())
+            Spacer(minLength: 8)
+            HStack(spacing: 6) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(tint)
+                Text(Tr("支持多行长文"))
+            }
+            .font(pf(12))
+        }
+        .foregroundStyle(C.subLabel)
+        .padding(.horizontal, 16)
+        .frame(height: 42)
+        .background {
+            GlassBackground(shape: Capsule(),
+                            opacity: scheme == .dark ? 0.78 : 0.90,
+                            edgeAlpha: scheme == .dark ? 0.08 : 0.16,
+                            seed: 0.73)
+        }
+        .overlay {
+            Capsule().stroke(C.hairline.opacity(scheme == .dark ? 0.34 : 0.22),
+                             lineWidth: 0.6)
+        }
+    }
+
+    var body: some View {
+        ZStack {
+            C.pageBg.ignoresSafeArea()
+
+            GlassBackground(shape: Rectangle(),
+                            opacity: scheme == .dark ? 0.82 : 0.92,
+                            edgeAlpha: 0.025,
+                            seed: 0.91)
+                .ignoresSafeArea()
+
+            LinearGradient(
+                colors: [
+                    Color.white.opacity(scheme == .dark ? 0.018 : 0.08),
+                    Color.clear,
+                    Color.black.opacity(scheme == .dark ? 0.12 : 0.025)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
+
+            VStack(spacing: 16) {
+                header
+                    .padding(.horizontal, 18)
+                    .padding(.top, 10)
+
+                editor
+                    .padding(.horizontal, 16)
+
+                footer
+                    .padding(.horizontal, 18)
+                    .padding(.bottom, 10)
+            }
+        }
         .task {
             await Task.yield()
             focused = true
