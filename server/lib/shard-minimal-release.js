@@ -19,6 +19,7 @@ const ENTRY_FILES = [
   'lib/shard-shadow-read.js',
   'lib/shard-release-readiness.js',
   'lib/shard-placement-rehearsal.js',
+  'lib/shard-release-install.js',
   'tools/shard-maintenance-executor.js',
   'tools/single-cell-capacity-collect.js',
   'tools/single-cell-capacity-audit.js',
@@ -26,7 +27,8 @@ const ENTRY_FILES = [
   'tools/shard-physical-layout-audit.js',
   'tools/shard-shadow-read-audit.js',
   'tools/shard-release-readiness.js',
-  'tools/shard-placement-rehearsal.js'
+  'tools/shard-placement-rehearsal.js',
+  'tools/shard-release-install.js'
 ];
 const ADDITIONAL_FILES = [
   'public/shard-maintenance.html'

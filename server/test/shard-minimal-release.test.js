@@ -31,6 +31,7 @@ try {
   assert.ok(fs.existsSync(path.join(outDir, 'lib', 'chat-route-plan.js')));
   assert.ok(fs.existsSync(path.join(outDir, 'lib', 'shard-maintenance.js')));
   assert.ok(fs.existsSync(path.join(outDir, 'tools', 'shard-maintenance-executor.js')));
+  assert.ok(fs.existsSync(path.join(outDir, 'tools', 'shard-release-install.js')));
   assert.ok(fs.existsSync(path.join(outDir, 'public', 'shard-maintenance.html')));
   assert.ok(fs.existsSync(path.join(outDir, 'release-manifest.json')));
   assert.throws(() => buildMinimalRelease({
