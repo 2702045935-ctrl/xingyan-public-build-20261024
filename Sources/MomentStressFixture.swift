@@ -5,10 +5,11 @@ enum MomentStressFixture {
     static let count = StressTestConfiguration.momentCount
 
     static let isActive = count > 0
+    private static let base = Date()
 
-    static let moments: [Moment] = {
+    static func moments(prefix: Int) -> [Moment] {
         guard isActive else { return [] }
-        let base = Date()
+        let upper = max(0, min(count, prefix))
         let iso = ISO8601DateFormatter()
         let bodySamples = [
             "生活圈原生滚动压力测试。",
@@ -16,7 +17,7 @@ enum MomentStressFixture {
             "连续多行文本用来检查高度缓存是否稳定。\n第二行继续验证长文本的换行和布局。\n第三行只参与高度测量，不会影响滚动位置。",
             "记录一下今天的测试结果：文字、图片网格、点赞摘要和评论都应该在同一个原生 cell 中稳定复用。"
         ]
-        return (0..<count).map { index in
+        return (0..<upper).map { index in
             let stamp = iso.string(from: base.addingTimeInterval(-Double(index) * 300))
             let author = User(
                 id: "moment-stress-author-\(index % 24)",
@@ -67,5 +68,5 @@ enum MomentStressFixture {
                 mine: false
             )
         }
-    }()
+    }
 }

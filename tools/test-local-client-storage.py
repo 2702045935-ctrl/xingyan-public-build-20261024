@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SWIFT = ROOT / "Sources" / "LocalDatabase.swift"
 STRESS_CONFIG = ROOT / "Sources" / "StressTestConfiguration.swift"
+CHAT_DETAIL = ROOT / "Sources" / "ChatDetailView.swift"
 STRESS_FIXTURES = {
     "ChatStressFixture.swift": "StressTestConfiguration.chatCount",
     "MessageStressFixture.swift": "StressTestConfiguration.messageCount",
@@ -48,6 +49,14 @@ def main() -> None:
         text = (ROOT / "Sources" / filename).read_text(encoding="utf-8")
         if marker not in text:
             raise AssertionError(f"{filename}: does not use shared stress configuration")
+
+    chat_detail = CHAT_DETAIL.read_text(encoding="utf-8")
+    if "LocalPersistence.saveOutbox(chat.id, outbox)" not in chat_detail:
+        raise AssertionError("chat send outbox is not persisted through SQLite")
+    if "LocalPersistence.loadOutbox(chat.id)" not in chat_detail:
+        raise AssertionError("chat send outbox is not restored from SQLite")
+    if "UserDefaults.standard.array(forKey: \"chris.outbox.\"" in chat_detail:
+        raise AssertionError("chat send path still restores pending messages from UserDefaults")
 
     with tempfile.TemporaryDirectory(prefix="xingyan-local-db-") as directory:
         db = sqlite3.connect(Path(directory) / "state.sqlite3")

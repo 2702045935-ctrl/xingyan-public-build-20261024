@@ -138,11 +138,23 @@ async function main() {
     const aliceRenamed = await login(base, 'alice_renamed');
     assert.equal(aliceRenamed.user.username, 'alice_renamed');
 
+    const friendCounts = {};
+    for (const account of [alice, bob]) {
+      response = await call(base, account.cookie, 'GET', '/api/contacts');
+      assert.equal(response.status, 200, JSON.stringify(response.data));
+      friendCounts[account.user.id] = (response.data.friends || []).length;
+    }
+
     response = await call(base, alice.cookie, 'POST', '/api/friends/request', {
       username: 'bob_smoke',
       message: '接口烟测'
     });
     assert.equal(response.status, 200, JSON.stringify(response.data));
+    response = await call(base, alice.cookie, 'POST', '/api/friends/request', {
+      username: 'bob_smoke',
+      message: '重复申请'
+    });
+    assert.equal(response.status, 409, '重复好友申请必须被拒绝：' + JSON.stringify(response.data));
 
     response = await call(base, bob.cookie, 'GET', '/api/contacts');
     assert.equal(response.status, 200, JSON.stringify(response.data));
@@ -158,6 +170,20 @@ async function main() {
     assert.ok(response.data.chat && response.data.chat.id, '同意好友后未返回会话');
     assert.equal(response.data.chat.title, 'Alice');
     const directId = response.data.chat.id;
+    for (const [account, friendId] of [
+      [alice, bob.user.id],
+      [bob, alice.user.id]
+    ]) {
+      response = await call(base, account.cookie, 'GET', '/api/contacts');
+      assert.equal(response.status, 200, JSON.stringify(response.data));
+      const friends = response.data.friends || [];
+      assert.ok(friends.some((friend) => friend.id === friendId),
+        '通过好友后双方通讯录数量或内容不一致：' + JSON.stringify(response.data));
+      assert.equal(new Set(friends.map((friend) => friend.id)).size, friends.length,
+        '通讯录出现重复好友行');
+      assert.equal(friends.length, friendCounts[account.user.id] + 1,
+        '通过好友后好友数量没有各增加 1');
+    }
 
     response = await call(base, bob.cookie, 'POST',
       '/api/chats/' + directId + '/messages',
@@ -235,10 +261,28 @@ async function main() {
     assert.ok([403, 422].includes(response.status),
       '删除好友后普通单聊必须禁止发送：' + JSON.stringify(response.data));
     assert.match(response.data.error || '', /重新添加好友/);
+    response = await call(base, bob.cookie, 'POST',
+      '/api/chats/' + directId + '/messages',
+      { kind: 'text', content: '对方删除好友后也不应还能发送' });
+    assert.ok([403, 422].includes(response.status),
+      '对方删除好友后仍可发送：' + JSON.stringify(response.data));
     response = await call(base, alice.cookie, 'GET', '/api/contacts');
     assert.equal(response.status, 200, JSON.stringify(response.data));
     assert.ok(!(response.data.friends || []).some((friend) => friend.id === bob.user.id),
       '删除好友后联系人仍立即存在');
+    response = await call(base, bob.cookie, 'GET', '/api/contacts');
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    assert.ok(!(response.data.friends || []).some((friend) => friend.id === alice.user.id),
+      '删除好友后对方联系人仍立即存在');
+    for (const [account, removedId] of [
+      [alice, bob.user.id],
+      [bob, alice.user.id]
+    ]) {
+      response = await call(base, account.cookie, 'GET', '/api/contacts');
+      assert.equal(response.status, 200, JSON.stringify(response.data));
+      assert.equal((response.data.friends || []).length, friendCounts[account.user.id],
+        '删除好友后好友数量没有恢复到添加前');
+    }
 
     response = await call(base, alice.cookie, 'POST', '/api/friends/request', {
       username: 'bob_smoke',
@@ -253,6 +297,17 @@ async function main() {
       accept: true
     });
     assert.equal(response.status, 200, JSON.stringify(response.data));
+    for (const [account, friendId] of [
+      [alice, bob.user.id],
+      [bob, alice.user.id]
+    ]) {
+      response = await call(base, account.cookie, 'GET', '/api/contacts');
+      assert.equal(response.status, 200, JSON.stringify(response.data));
+      assert.ok((response.data.friends || []).some((friend) => friend.id === friendId),
+        '重新添加好友后关系没有双向恢复');
+      assert.equal((response.data.friends || []).length, friendCounts[account.user.id] + 1,
+        '重新添加好友后好友数量没有同步恢复');
+    }
 
     response = await call(base, alice.cookie, 'POST', '/api/friends/clear', {});
     assert.equal(response.status, 200, JSON.stringify(response.data));

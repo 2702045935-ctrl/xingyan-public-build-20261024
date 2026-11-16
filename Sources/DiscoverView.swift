@@ -2063,7 +2063,7 @@ struct MomentsView: View {
 
     private var displayedMoments: [Moment] {
         MomentStressFixture.isActive
-            ? Array(MomentStressFixture.moments.prefix(stressLoadedCount))
+            ? MomentStressFixture.moments(prefix: stressLoadedCount)
             : moments
     }
 

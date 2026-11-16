@@ -1191,10 +1191,13 @@ struct ChatsView: View {
     }
 
     private var activeChatSource: [Chat] {
-        if MessageStressFixture.isActive { return MessageStressFixture.chats }
         if ChatStressFixture.isActive {
-            return ChatStressFixture.chats(prefix: stressLoadedCount)
+            let conversations = ChatStressFixture.chats(prefix: stressLoadedCount)
+            return MessageStressFixture.isActive
+                ? MessageStressFixture.chats + conversations
+                : conversations
         }
+        if MessageStressFixture.isActive { return MessageStressFixture.chats }
         return app.chats
     }
 

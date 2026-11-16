@@ -3436,32 +3436,11 @@ struct ChatDetailView: View {
     }
 
     private func saveOutbox() {
-        let arr = outbox.map { p -> [String: Any] in
-            var d: [String: Any] = ["id": p.id, "kind": p.kind, "content": p.content,
-                                    "at": p.at.timeIntervalSince1970]
-            if !p.mentions.isEmpty { d["mentions"] = p.mentions }
-            if let q = p.quoteJSON { d["quote"] = q }
-            if let reason = p.failureReason, !reason.isEmpty { d["failureReason"] = reason }
-            return d
-        }
-        UserDefaults.standard.set(arr, forKey: "chris.outbox." + chat.id)
+        LocalPersistence.saveOutbox(chat.id, outbox)
     }
 
     private func loadOutbox() {
-        let arr = (UserDefaults.standard.array(forKey: "chris.outbox." + chat.id) as? [[String: Any]]) ?? []
-        outbox = arr.compactMap { d in
-            guard let id = d["id"] as? String,
-                  let kind = d["kind"] as? String,
-                  let content = d["content"] as? String else { return nil }
-            let mentions = d["mentions"] as? [String] ?? []
-            let at = (d["at"] as? TimeInterval).map(Date.init(timeIntervalSince1970:)) ?? Date()
-            return PendingMsg(id: id, kind: kind, content: content,
-                              mentions: mentions,
-                              quoteJSON: d["quote"] as? String,
-                              failed: (d["failureReason"] as? String)?.isEmpty == false,
-                              failureReason: d["failureReason"] as? String,
-                              at: at)
-        }
+        outbox = LocalPersistence.loadOutbox(chat.id)
     }
 
     private static func quoteDict(_ json: String?) -> [String: Any]? {

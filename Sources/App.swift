@@ -34,9 +34,19 @@ final class AppState: ObservableObject {
     }
 
     private func installMessageStressFixture(myId: String) {
-        guard MessageStressFixture.isActive, !myId.isEmpty else { return }
-        for (chatId, messages) in MessageStressFixture.messagesByChat(myId: myId) {
-            prefetched[chatId] = messages
+        guard MessageStressFixture.isActive,
+              !myId.isEmpty,
+              let first = MessageStressFixture.firstChat else { return }
+        let page = MessageStressFixture.page(
+            chatId: first.id,
+            limit: 200,
+            before: nil,
+            since: nil,
+            all: false,
+            myId: myId
+        )
+        if !page.messages.isEmpty {
+            prefetched[first.id] = page.messages
         }
     }
 
