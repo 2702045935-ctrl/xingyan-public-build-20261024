@@ -50,6 +50,12 @@ try {
   assert.strictEqual(fs.readFileSync(path.join(outDir, 'stable-only.txt'), 'utf8'), 'keep');
   assert.ok(fs.existsSync(path.join(outDir, 'staged-install-report.json')));
   assert.ok(fs.existsSync(path.join(outDir, 'public', 'shard-maintenance.html')));
+  if (process.platform !== 'win32') {
+    assert.notStrictEqual(
+      fs.statSync(path.join(outDir, 'run-shard-candidate.sh')).mode & 0o111,
+      0
+    );
+  }
   assert.throws(() => installShardRelease({
     overlayDir: release,
     baseAppDir: baseApp,

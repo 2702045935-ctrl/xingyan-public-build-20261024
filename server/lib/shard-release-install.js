@@ -89,6 +89,9 @@ function installShardRelease(options) {
       const target = path.join(temporary, relative);
       fs.mkdirSync(path.dirname(target), { recursive: true });
       fs.copyFileSync(source, target);
+      if (row.kind === 'launcher' || relative.endsWith('.sh')) {
+        fs.chmodSync(target, 0o755);
+      }
     }
     const finalServerSha256 = sha256(path.join(temporary, 'server.js'));
     if (finalServerSha256 !== String(manifest.serverSha256).toLowerCase()) {
