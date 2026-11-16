@@ -6,6 +6,9 @@
 - 公网入口配置：7 片，SSH 隧道端口 `15299-15899`，步长 100
 - 业务落点：`192.140.179.176`，后端端口 `7080-7680`，步长 100
 - 业务服务：`xingyan-mainline-shard@0-6`
+- 程序目录：`/opt/xingyan-mainline/app`
+- 启动脚本：`/opt/xingyan-mainline/run-shard.sh`
+- 数据目录：`/opt/xingyan-mainline/data`
 - 拓扑名称：`server-b-shards-7`
 - 43 本机还有独立的 `chris-shard@0-5` 服务组，不得与上面的 mainline 七片混为一组操作。
 

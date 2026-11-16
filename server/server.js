@@ -8308,7 +8308,9 @@ const calls = new Map();
 /* 微信式通话归属：所有一对一通话信令和 PCM 帧统一进同一个通话分片，
    通话状态、忙线判断和音频转发都只在这里维护，其他分片只负责转发，
    避免不同分片各自保存一半状态造成“接到了但一侧不显示已接通”。 */
-const CALL_SIGNAL_PORT = Number(process.env.CALL_SIGNAL_PORT) || 5299;
+const CALL_SIGNAL_PORT = Number(process.env.CALL_SIGNAL_PORT)
+  || Number(process.env.SHARD_BASE_PORT)
+  || 5299;
 const callSignalSockets = new Map();
 const shardCallDirectory = new Map();
 
