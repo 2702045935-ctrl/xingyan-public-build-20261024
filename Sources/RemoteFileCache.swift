@@ -14,12 +14,47 @@ actor RemoteFileCache {
 
     nonisolated static func localFile(path: String, preferredName: String) -> CachedRemoteFile? {
         let cleanPath = path.split(separator: "?", maxSplits: 1).first.map(String.init) ?? path
+        if let preview = cachedPreviewFile(path: cleanPath, preferredName: preferredName) {
+            return preview
+        }
         guard let local = LocalStore.localURL(cleanPath),
               FileManager.default.fileExists(atPath: local.path),
               let values = try? local.resourceValues(forKeys: [.fileSizeKey]),
               (values.fileSize ?? 0) > 0 else { return nil }
         let localName = preferredName.isEmpty ? local.lastPathComponent : preferredName
         return CachedRemoteFile(name: safeName(localName), local: local)
+    }
+
+    func rememberLocal(path: String,
+                       preferredName: String,
+                       from source: URL) throws -> CachedRemoteFile {
+        let cleanPath = path.split(separator: "?", maxSplits: 1).first.map(String.init) ?? path
+        let key = "local-" + Self.key(cleanPath)
+        let directory = try Self.cacheDirectoryURL()
+        let name = Self.safeName(preferredName)
+        let destination = directory.appendingPathComponent(key + "-" + name)
+        if let existing = Self.cachedFile(key: key, in: directory) {
+            return existing
+        }
+        try FileManager.default.createDirectory(at: directory,
+                                                withIntermediateDirectories: true)
+        let temporary = directory.appendingPathComponent(
+            ".local-" + key + "-" + UUID().uuidString)
+        do {
+            try FileManager.default.copyItem(at: source, to: temporary)
+            if FileManager.default.fileExists(atPath: destination.path) {
+                try FileManager.default.removeItem(at: destination)
+            }
+            try FileManager.default.moveItem(at: temporary, to: destination)
+            try? (destination as NSURL).setResourceValue(
+                URLFileProtection.complete,
+                forKey: .fileProtectionKey
+            )
+            return CachedRemoteFile(name: name, local: destination)
+        } catch {
+            try? FileManager.default.removeItem(at: temporary)
+            throw error
+        }
     }
 
     func file(path: String, preferredName: String) async throws -> CachedRemoteFile {
@@ -96,6 +131,10 @@ actor RemoteFileCache {
     }
 
     private func cacheDirectory() throws -> URL {
+        try Self.cacheDirectoryURL()
+    }
+
+    private static func cacheDirectoryURL() throws -> URL {
         let root = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
         let directory = root.appendingPathComponent("RemoteFilePreview", isDirectory: true)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -103,6 +142,17 @@ actor RemoteFileCache {
     }
 
     private func cachedFile(key: String, in directory: URL) -> CachedRemoteFile? {
+        Self.cachedFile(key: key, in: directory)
+    }
+
+    private nonisolated static func cachedPreviewFile(path: String,
+                                                      preferredName: String) -> CachedRemoteFile? {
+        guard let directory = try? cacheDirectoryURL() else { return nil }
+        return cachedFile(key: "local-" + key(path), in: directory)
+    }
+
+    private nonisolated static func cachedFile(key: String,
+                                               in directory: URL) -> CachedRemoteFile? {
         let files = (try? FileManager.default.contentsOfDirectory(
             at: directory,
             includingPropertiesForKeys: [.fileSizeKey],

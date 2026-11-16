@@ -6041,9 +6041,17 @@ struct ChatDetailView: View {
                         sendingFileProgress = value
                     }
                 })
-            await Task.detached(priority: .utility) {
-                LocalStore.keepOriginal(uploadedURL, from: uploadURL)
-            }.value
+            if let preview = try? await RemoteFileCache.shared.rememberLocal(
+                path: uploadedURL,
+                preferredName: name,
+                from: uploadURL
+            ) {
+                QuickLookPreviewWarmer.warm(preview.local)
+            } else {
+                await Task.detached(priority: .utility) {
+                    LocalStore.keepOriginal(uploadedURL, from: uploadURL)
+                }.value
+            }
             let body: [String: Any] = [
                 "url": uploadedURL,
                 "name": name,
@@ -6087,6 +6095,7 @@ struct ChatDetailView: View {
             do {
                 let file = try await RemoteFileCache.shared.file(path: path,
                                                                  preferredName: name)
+                QuickLookPreviewWarmer.warm(file.local)
                 filePreview = FilePreviewData(name: file.name, local: file.local,
                                               favoriteTitle: chat.name,
                                               favoriteFrom: "聊天文件")
@@ -8680,6 +8689,20 @@ struct FilePreviewSheet: View {
                                                   from: favoriteFrom)
             favoriting = false
             app.show(ok ? Tr("已收藏") : Tr("收藏失败"))
+        }
+    }
+}
+
+enum QuickLookPreviewWarmer {
+    static func warm(_ url: URL) {
+        DispatchQueue.global(qos: .utility).async {
+            let request = QLThumbnailGenerator.Request(
+                fileAt: url,
+                size: CGSize(width: 1024, height: 1024),
+                scale: 2,
+                representationTypes: [.thumbnail, .lowQualityThumbnail]
+            )
+            QLThumbnailGenerator.shared.generateBestRepresentation(for: request) { _, _ in }
         }
     }
 }
