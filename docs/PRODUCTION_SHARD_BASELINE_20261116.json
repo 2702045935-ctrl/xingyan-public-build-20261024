@@ -9,6 +9,16 @@
   "topologyId": "server-b-shards-7",
   "runtimeTopologyId": "server-b-mainline-shards-7",
   "runtimeManifestHash": "f7afcdef3bd1d51ef7b50f58650009693397686faaaa31da6738ed96aa4f0f44",
+  "frozenRelease": "/opt/xingyan-mainline/releases/20261116-shard-baseline",
+  "runtimeArchiveSha256": "d943a73caa1909c634c81013d3501939fe88f6393f758d7961f32c89e557cc23",
+  "routePlan": {
+    "hash": "839c5a4e64e7aa4feb43d49a71de5eb017b0f93918bd05dbacb215dab02da660",
+    "fileSha256": "c02d3ccb14304371044aad4096cc9501d072566c232fb51700d8e228e68d519c",
+    "users": 2365,
+    "chats": 10428,
+    "total": 12793,
+    "byShard": [1840, 1794, 1815, 1869, 1886, 1731, 1858]
+  },
   "lastRuntimeAudit": {
     "at": "2026-11-16T10:26:56.394Z",
     "ok": true,
