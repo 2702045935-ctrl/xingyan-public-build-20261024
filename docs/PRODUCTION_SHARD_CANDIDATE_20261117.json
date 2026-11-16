@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "candidateId": "system-complete-v1-d80705d",
+  "sourceBranch": "codex/system-complete-v1",
+  "sourceCommit": "d80705dc9b7b77149fa2575ec0d450d63171693a",
+  "capturedAt": "2026-11-17T05:59:13.7674907+08:00",
+  "candidateCode": {
+    "serverJsSha256": "9a430a6964cb9fefeae2d404fdf8b6ab45fd83975425944553025f06d0ecd342",
+    "chatRoutePlanSha256": "86af4db9399985f41b1103f351f9147b6cc8926271a5f82b1543b01e093b29c4",
+    "shardRuntimeHealthSha256": "9d9f4101c10b21b8b511803540995b33f52671b049ed530928c8029c112f7bc4",
+    "shardRuntimeAuditSha256": "93a344e2b00a42b56b982839981b9e428f814755a58f49b525b2b784ee4226f9"
+  },
+  "productionBaseline": {
+    "businessHost": "192.140.179.176",
+    "entryHost": "43.242.194.89",
+    "topologyId": "server-b-mainline-shards-7",
+    "runtimeManifestHash": "f7afcdef3bd1d51ef7b50f58650009693397686faaaa31da6738ed96aa4f0f44",
+    "stableCodeSha256": "cb937047456b6c6bf4aa1b174b4d1edb397e54c1e47ff60f6ca0341b4215007c",
+    "dataDir": "/opt/xingyan-mainline/data",
+    "programDir": "/opt/xingyan-mainline/app",
+    "backendPorts": [7080, 7180, 7280, 7380, 7480, 7580, 7680],
+    "entryPorts": [15299, 15399, 15499, 15599, 15699, 15799, 15899]
+  },
+  "routePlan": {
+    "hash": "839c5a4e64e7aa4feb43d49a71de5eb017b0f93918bd05dbacb215dab02da660",
+    "fileSha256": "c02d3ccb14304371044aad4096cc9501d072566c232fb51700d8e228e68d519c",
+    "users": 2365,
+    "chats": 10428,
+    "total": 12793,
+    "requiredInitialMode": "dormant",
+    "activationFlag": "SHARD_ROUTE_PLAN_ENFORCED"
+  },
+  "requiredEnvironment": {
+    "SHARD_ROUTE_PLAN_FILE": "<absolute production route plan path>",
+    "SHARD_ROUTE_PLAN_FILE_SHA256": "c02d3ccb14304371044aad4096cc9501d072566c232fb51700d8e228e68d519c",
+    "SHARD_ROUTE_PLAN_ENFORCED": "0",
+    "SHARD_RUNTIME_MANIFEST": "<absolute production runtime manifest path>",
+    "SHARD_TOPOLOGY_FILE": "<absolute production topology path>"
+  },
+  "verification": {
+    "shardSuite": {
+      "tests": 24,
+      "failed": 0
+    },
+    "chatAndMessageSuite": {
+      "tests": 9,
+      "failed": 0
+    },
+    "chatOwnerRouting": {
+      "shards": 7,
+      "dormantInstancesChecked": 7,
+      "dormantAuditPassed": true,
+      "modeMismatchRejected": true,
+      "enforcedAuditPassed": true,
+      "multiChatCount": 5,
+      "messagesPerSender": 30,
+      "finalMessages": 60,
+      "uniqueSequences": 60,
+      "sequenceRange": "1-60",
+      "chatOwnerForwards": 120,
+      "ownerRestarted": true,
+      "duplicates": 0,
+      "losses": 0
+    },
+    "startupPreflightPassed": true,
+    "coreVerificationPassed": true,
+    "protectedChatVerificationPassed": true,
+    "l10nVerificationPassed": true,
+    "syntaxCheckPassed": true,
+    "routePlanFileHashEnforced": true,
+    "runtimeManifestHashEnforced": true,
+    "runtimeTopologyEnforced": true,
+    "runtimePortMappingEnforced": true
+  },
+  "deployment": {
+    "status": "not-deployed",
+    "onlineServicesChanged": false,
+    "onlineDataChanged": false,
+    "stableReleaseChanged": false,
+    "reason": "awaiting production maintenance window and read-only route plan file verification"
+  }
+}
