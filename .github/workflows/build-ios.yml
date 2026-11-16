@@ -75,6 +75,7 @@ jobs:
           node server/test/chat-route-plan.test.js
           node server/test/shard-route-server-patch.test.js
           node server/test/shard-minimal-release.test.js
+          node server/test/shard-release-install.test.js
           node server/test/chat-owner-routing.test.js
           node server/test/shard-maintenance.test.js
           node server/test/shard-maintenance-api.test.js

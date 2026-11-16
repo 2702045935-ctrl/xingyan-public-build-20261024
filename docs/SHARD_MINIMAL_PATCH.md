@@ -66,3 +66,27 @@ node server/tools/shard-minimal-release.js \
 
 它不会覆盖稳定版 `manage.html`。页面仍受后台 IP 白名单、后台暗号和超级管理员 API
 权限保护，只提供单分片发布、容量采集、健康验收、批准和回滚。
+
+## 安装到新发布目录
+
+```text
+node server/tools/shard-release-install.js \
+  --overlay=<最小发布包目录> \
+  --base-app=/opt/xingyan-mainline/app \
+  --out-dir=/opt/xingyan-mainline/releases/<新版本> \
+  --expected-base-sha256=cb937047456b6c6bf4aa1b174b4d1edb397e54c1e47ff60f6ca0341b4215007c
+```
+
+安装器要求：
+
+1. 基础稳定 `server.js` 哈希完全一致。
+2. 发布包 `productionEligible=true`。
+3. 发布包记录的基础源码哈希与当前基础一致。
+4. 所有发布文件 SHA256 正确。
+5. 输出目录不存在且不与输入目录重叠。
+
+安装时先把基础应用复制到临时目录，再覆盖最小发布文件，最后校验安装后的
+`server.js` 哈希。成功后原子改名并生成 `staged-install-report.json`。
+
+原 `/opt/xingyan-mainline/app` 不会被修改。预览包因
+`productionEligible=false` 会被安装器直接拒绝。
