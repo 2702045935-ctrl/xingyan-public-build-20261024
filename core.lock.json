@@ -58,8 +58,8 @@
     },
     {
       "path": "Sources/LocalStore.swift",
-      "size": 24202,
-      "sha256": "f9f5ad409c01cd9a6cf3456a7d50015f6ca7ae712092d4d7b9b04c29f18a7819"
+      "size": 24665,
+      "sha256": "3068dcccb6a60d9db34247772eae921a79ed3e8b8ffc8b05bdeb51719f1b9dc1"
     },
     {
       "path": "Sources/MsgFrameKey.swift",
@@ -103,8 +103,8 @@
     },
     {
       "path": "Sources/LocalDatabase.swift",
-      "size": 23882,
-      "sha256": "57f9a7d93c3a6eef544a1ba95b44a41e1dde4105228a985051a334331ecbd52b"
+      "size": 24520,
+      "sha256": "abd2a8bb1207f9d83c96f2a16a31e91641bbdfc559d0458b6e86533ba4666089"
     }
   ]
 }

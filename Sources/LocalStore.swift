@@ -181,7 +181,7 @@ enum LocalStore {
         for k in ["video", "image", "voice", "file"] {
             out.append((k, dirSize(root.appendingPathComponent("Media").appendingPathComponent(k))))
         }
-        out.append(("chat", dirSize(root.appendingPathComponent("Chats"))))
+        out.append(("chat", dirSize(root.appendingPathComponent("Chats")) + databaseBytes()))
         return out
     }
 
@@ -190,6 +190,9 @@ enum LocalStore {
     static func clear(_ kind: String) {
         let dir = kind == "chat" ? root.appendingPathComponent("Chats")
                                  : root.appendingPathComponent("Media").appendingPathComponent(kind)
+        if kind == "chat" {
+            LocalPersistence.clearAllMessages()
+        }
         try? FileManager.default.removeItem(at: dir)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
     }
@@ -201,6 +204,14 @@ enum LocalStore {
             n += (try? f.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
         }
         return n
+    }
+
+    private static func databaseBytes() -> Int {
+        ["XingyanState.sqlite3", "XingyanState.sqlite3-wal", "XingyanState.sqlite3-shm"]
+            .reduce(0) { total, name in
+                let file = root.appendingPathComponent(name)
+                return total + ((try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
+            }
     }
 
     private static func sanitize(_ s: String) -> String {

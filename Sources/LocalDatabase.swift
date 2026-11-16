@@ -24,7 +24,7 @@ final class LocalDatabase: @unchecked Sendable {
 
     func loadChat(_ chatId: String) -> [Message] {
         guard !chatId.isEmpty else { return [] }
-        let payloads = read { db in
+        let payloads: [Data] = read { db -> [Data]? in
             let sql = """
                 SELECT payload
                 FROM local_messages
@@ -138,6 +138,19 @@ final class LocalDatabase: @unchecked Sendable {
             defer { sqlite3_finalize(statement) }
             bind(chatId, to: statement, at: 1)
             return sqlite3_step(statement) == SQLITE_DONE
+        }
+    }
+
+    @discardableResult
+    func clearAllMessages() -> Bool {
+        write { db in
+            var error: UnsafeMutablePointer<CChar>?
+            let result = sqlite3_exec(db, "DELETE FROM local_messages", nil, nil, &error)
+            if let error {
+                NSLog("[LocalDB] %@", String(cString: error))
+                sqlite3_free(error)
+            }
+            return result == SQLITE_OK
         }
     }
 
@@ -418,7 +431,7 @@ final class LocalDatabase: @unchecked Sendable {
     }
 
     private func bind(_ value: String, to statement: OpaquePointer, at index: Int32) {
-        value.withCString {
+        _ = value.withCString {
             sqlite3_bind_text(statement, index, $0, -1, localSQLiteTransient)
         }
     }
@@ -436,7 +449,7 @@ final class LocalDatabase: @unchecked Sendable {
     }
 
     private func bind(_ value: Data, to statement: OpaquePointer, at index: Int32) {
-        value.withUnsafeBytes { bytes in
+        _ = value.withUnsafeBytes { bytes in
             sqlite3_bind_blob(statement, index, bytes.baseAddress, Int32(bytes.count),
                               localSQLiteTransient)
         }
@@ -530,6 +543,13 @@ enum LocalPersistence {
         _ = LocalDatabase.shared.clearChat(chatId)
         signatureLock.lock()
         chatSignatures.removeValue(forKey: chatId)
+        signatureLock.unlock()
+    }
+
+    static func clearAllMessages() {
+        _ = LocalDatabase.shared.clearAllMessages()
+        signatureLock.lock()
+        chatSignatures.removeAll()
         signatureLock.unlock()
     }
 
