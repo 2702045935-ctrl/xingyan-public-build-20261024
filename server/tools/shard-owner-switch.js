@@ -1,0 +1,47 @@
+#!/usr/bin/env node
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+const { switchOwnerRouting } = require('../lib/shard-owner-switch');
+
+function arg(name, fallback) {
+  const prefix = '--' + name + '=';
+  const row = process.argv.slice(2).find((value) => value.startsWith(prefix));
+  return row ? row.slice(prefix.length) : fallback;
+}
+
+async function main() {
+  const ports = String(arg('ports', '7080,7180,7280,7380,7480,7580,7680'))
+    .split(',').map(Number);
+  const enable = process.argv.includes('--enable');
+  const disable = process.argv.includes('--disable');
+  if (enable === disable) throw new Error('use exactly one of --enable or --disable');
+  const out = arg('out', '');
+  const report = await switchOwnerRouting({
+    ports,
+    enable,
+    secretFile: arg('secret-file', '/opt/xingyan-mainline/data/secret.key'),
+    planFile: arg('plan-file', '/opt/xingyan-mainline/releases/20261116-shard-baseline/route-plan.json')
+  });
+  const text = JSON.stringify(report, null, 2);
+  if (out) {
+    const file = path.resolve(out);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    const temporary = file + '.' + process.pid + '.tmp';
+    fs.writeFileSync(temporary, text, 'utf8');
+    fs.renameSync(temporary, file);
+  }
+  console.log(JSON.stringify({
+    ok: report.ok,
+    enabled: report.enabled,
+    planHash: report.planHash,
+    ports: report.ports,
+    out: out ? path.resolve(out) : ''
+  }, null, 2));
+}
+
+main().catch((error) => {
+  console.error(error.stack || error);
+  process.exitCode = 1;
+});

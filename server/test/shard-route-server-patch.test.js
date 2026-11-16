@@ -45,6 +45,7 @@ const productionPatch = patchServerSource(productionFixture, {
 });
 assert.strictEqual(productionPatch.profile, 'production-cb937047');
 assert.ok(productionPatch.source.includes('/__shard/chat-action'));
+assert.ok(productionPatch.source.includes('/__shard/owner-routing'));
 assert.ok(productionPatch.source.includes('!chatRoutePlanEnforced'));
 
 const stable = execFileSync('git', ['show', 'bc09897:server/server.js'], {
@@ -69,6 +70,7 @@ assert.deepStrictEqual(result.changes, [
 ]);
 assert.ok(result.source.includes('SHARD_ROUTE_PLAN_FILE'));
 assert.ok(result.source.includes('/__shard/chat-action'));
+assert.ok(result.source.includes('/__shard/owner-routing'));
 assert.ok(result.source.includes('chatOwnerPort(msg.chatId)'));
 assert.ok(result.source.includes('chatRoutePlanFileHash'));
 assert.throws(() => patchServerSource(stable, {

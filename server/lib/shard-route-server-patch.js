@@ -144,6 +144,36 @@ const CHAT_ACTION_ENDPOINT = `
     }
 `.trimEnd();
 
+const OWNER_ROUTING_ENDPOINT = `
+    if (parsed.pathname === '/__shard/owner-routing') {
+      if (req.method !== 'POST') return fail(res, 405, 'Method Not Allowed');
+      const supplied = String(req.headers['x-shard-relay'] || '');
+      const expected = String(db.secret || '');
+      const suppliedBuffer = Buffer.from(supplied);
+      const expectedBuffer = Buffer.from(expected);
+      if (!expected || suppliedBuffer.length !== expectedBuffer.length
+          || !crypto.timingSafeEqual(suppliedBuffer, expectedBuffer)) {
+        return fail(res, 403, '禁止访问');
+      }
+      const body = await readBody(req);
+      const enabled = body.enabled === true;
+      if (enabled) {
+        if (!chatRoutePlan) return fail(res, 409, '聊天路由计划尚未加载');
+        if (String(body.planHash || '') !== chatRoutePlan.hash
+            || String(body.fileSha256 || '') !== chatRoutePlan.fileHash) {
+          return fail(res, 409, '聊天路由计划哈希不一致');
+        }
+      }
+      chatRoutePlanEnforced = enabled;
+      return ok(res, {
+        enabled: chatRoutePlanEnforced,
+        planHash: chatRoutePlan ? chatRoutePlan.hash : '',
+        fileSha256: chatRoutePlan ? chatRoutePlan.fileHash : '',
+        chatOwnerForwards: chatOwnerForwardCount
+      });
+    }
+`.trimEnd();
+
 function hash(value) {
   return crypto.createHash('sha256').update(value).digest('hex');
 }
@@ -275,7 +305,8 @@ function patchProductionServerSource(source, actualSha256, expectedSha256) {
   source = replaceOnce(
     source,
     "    if (parsed.pathname === '/api/internal/user-row' && req.method === 'POST') {",
-    CHAT_ACTION_ENDPOINT + "\n    if (parsed.pathname === '/api/internal/user-row' && req.method === 'POST') {",
+    OWNER_ROUTING_ENDPOINT + "\n" + CHAT_ACTION_ENDPOINT
+      + "\n    if (parsed.pathname === '/api/internal/user-row' && req.method === 'POST') {",
     'chat-action-endpoint',
     changes
   );
@@ -424,7 +455,8 @@ function patchServerSource(input, options) {
   source = replaceOnce(
     source,
     "    if (parsed.pathname === '/__shard/relay') {",
-    CHAT_ACTION_ENDPOINT + "\n    if (parsed.pathname === '/__shard/relay') {",
+    OWNER_ROUTING_ENDPOINT + "\n" + CHAT_ACTION_ENDPOINT
+      + "\n    if (parsed.pathname === '/__shard/relay') {",
     'chat-action-endpoint',
     changes
   );
