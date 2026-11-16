@@ -10,6 +10,9 @@ const {
   createRollout,
   markReady,
   deployCurrent,
+  claimCurrent,
+  completeCurrent,
+  failExecution,
   reportHealth,
   approveNext,
   rollback,
@@ -47,8 +50,32 @@ const checklist = Object.fromEntries(READY_CHECKLIST.map((key) => [key, true]));
 markReady(rollout, { checklist, confirmation: '只逐片发布' }, { now: clock(), actor });
 assert.strictEqual(rollout.status, 'ready');
 deployCurrent(rollout, { now: clock(), actor });
-assert.strictEqual(rollout.status, 'awaiting_health');
+assert.strictEqual(rollout.status, 'awaiting_execution');
 assert.strictEqual(rollout.currentShard, 0);
+assert.strictEqual(rollout.shards[0].status, 'queued');
+assert.throws(() => reportHealth(rollout, {
+  shardId: 0,
+  ok: false,
+  evidence: {}
+}, { now: clock(), actor }), /还没有进入等待验收状态/);
+
+claimCurrent(rollout, { shardId: 0 }, { now: clock(), actor });
+assert.strictEqual(rollout.status, 'deploying');
+assert.strictEqual(rollout.shards[0].status, 'deploying');
+assert.throws(() => completeCurrent(rollout, {
+  shardId: 0,
+  afterCodeSha256: 'b'.repeat(64),
+  afterPid: 1234,
+  systemdActive: true
+}, { now: clock(), actor }), /代码哈希与候选不一致/);
+completeCurrent(rollout, {
+  shardId: 0,
+  afterCodeSha256: input.candidateCodeSha256,
+  afterPid: 1234,
+  systemdActive: true
+}, { now: clock(), actor });
+assert.strictEqual(rollout.status, 'awaiting_health');
+assert.strictEqual(rollout.shards[0].status, 'deployed');
 
 const evidence = {
   shardId: 0,
@@ -86,11 +113,10 @@ assert.strictEqual(rollout.shards[1].status, 'pending');
 assert.strictEqual(rollout.shards[2].status, 'pending');
 
 deployCurrent(rollout, { now: clock(), actor });
-reportHealth(rollout, {
+claimCurrent(rollout, { shardId: 1 }, { now: clock(), actor });
+failExecution(rollout, {
   shardId: 1,
-  ok: false,
-  reason: '健康接口超时',
-  evidence: {}
+  reason: '健康接口超时'
 }, { now: clock(), actor });
 assert.strictEqual(rollout.status, 'paused');
 assert.strictEqual(rollout.shards[1].status, 'failed');

@@ -166,14 +166,95 @@ function deployCurrent(rollout, options) {
   const shard = currentShardOf(rollout);
   if (!shard || shard.status !== 'pending') throw new Error('当前分片状态异常');
   const at = opts.now || new Date().toISOString();
-  shard.status = 'deploying';
+  shard.status = 'queued';
   shard.deployedAt = at;
   shard.deployedBy = actorOf(opts.actor);
-  rollout.status = 'awaiting_health';
+  rollout.status = 'awaiting_execution';
   rollout.updatedAt = at;
-  appendEvent(rollout, 'deploy-requested', opts.actor, at, {
+  appendEvent(rollout, 'execution-requested', opts.actor, at, {
     service: shard.service,
     backendPort: shard.backendPort
+  });
+  return rollout;
+}
+
+function claimCurrent(rollout, input, options) {
+  const body = input || {};
+  const opts = options || {};
+  if (rollout.status !== 'awaiting_execution') {
+    throw new Error('当前没有等待执行的分片');
+  }
+  const shard = currentShardOf(rollout);
+  if (Number(body.shardId) !== shard.id || shard.status !== 'queued') {
+    throw new Error('执行器只能领取当前排队分片');
+  }
+  const at = opts.now || new Date().toISOString();
+  shard.status = 'deploying';
+  shard.executorClaimedAt = at;
+  shard.executorClaimedBy = actorOf(opts.actor);
+  rollout.status = 'deploying';
+  rollout.updatedAt = at;
+  appendEvent(rollout, 'execution-claimed', opts.actor, at, {
+    service: shard.service
+  });
+  return rollout;
+}
+
+function completeCurrent(rollout, input, options) {
+  const body = input || {};
+  const opts = options || {};
+  if (rollout.status !== 'deploying') {
+    throw new Error('当前没有正在执行的分片');
+  }
+  const shard = currentShardOf(rollout);
+  if (Number(body.shardId) !== shard.id || shard.status !== 'deploying') {
+    throw new Error('执行回执与当前分片不一致');
+  }
+  const afterCodeSha256 = text(body.afterCodeSha256, 64).toLowerCase();
+  const afterPid = Number(body.afterPid);
+  if (afterCodeSha256 !== rollout.candidate.candidateCodeSha256) {
+    throw new Error('执行后的代码哈希与候选不一致');
+  }
+  if (!Number.isInteger(afterPid) || afterPid <= 0) {
+    throw new Error('执行后的 PID 无效');
+  }
+  if (body.systemdActive !== true) {
+    throw new Error('执行后服务不是 active');
+  }
+  const at = opts.now || new Date().toISOString();
+  shard.status = 'deployed';
+  shard.executionResult = {
+    completedAt: at,
+    completedBy: actorOf(opts.actor),
+    afterCodeSha256,
+    afterPid
+  };
+  rollout.status = 'awaiting_health';
+  rollout.updatedAt = at;
+  appendEvent(rollout, 'execution-completed', opts.actor, at, {
+    afterCodeSha256,
+    afterPid
+  });
+  return rollout;
+}
+
+function failExecution(rollout, input, options) {
+  const body = input || {};
+  const opts = options || {};
+  if (rollout.status !== 'deploying') {
+    throw new Error('当前没有正在执行的分片');
+  }
+  const shard = currentShardOf(rollout);
+  if (Number(body.shardId) !== shard.id) {
+    throw new Error('执行失败回执与当前分片不一致');
+  }
+  const at = opts.now || new Date().toISOString();
+  shard.status = 'failed';
+  shard.failure = text(body.reason, 500) || '执行器失败';
+  rollout.status = 'paused';
+  rollout.updatedAt = at;
+  appendEvent(rollout, 'execution-failed', opts.actor, at, {
+    reason: shard.failure
   });
   return rollout;
 }
@@ -399,6 +480,9 @@ class ShardMaintenanceStore {
       const options = { now: this.now(), actor };
       if (action === 'ready') markReady(rollout, input, options);
       else if (action === 'deploy') deployCurrent(rollout, options);
+      else if (action === 'claim') claimCurrent(rollout, input, options);
+      else if (action === 'complete') completeCurrent(rollout, input, options);
+      else if (action === 'fail') failExecution(rollout, input, options);
       else if (action === 'health') reportHealth(rollout, input, options);
       else if (action === 'approve') approveNext(rollout, input, options);
       else if (action === 'rollback') rollback(rollout, input, options);
@@ -414,6 +498,9 @@ module.exports = {
   createRollout,
   markReady,
   deployCurrent,
+  claimCurrent,
+  completeCurrent,
+  failExecution,
   reportHealth,
   approveNext,
   rollback,

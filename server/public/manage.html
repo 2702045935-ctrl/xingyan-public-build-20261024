@@ -2047,6 +2047,8 @@ PAGES.shardmaintenance = async () => {
   const statusText = {
     draft: '草稿',
     ready: '等待逐片发布',
+    awaiting_execution: '等待执行器领取',
+    deploying: '执行器执行中',
     awaiting_health: '等待健康验收',
     awaiting_approval: '等待人工批准',
     paused: '已暂停',
@@ -2055,12 +2057,15 @@ PAGES.shardmaintenance = async () => {
   };
   const shardText = {
     pending: '未发布',
+    queued: '已排队等待执行',
     deploying: '已请求发布',
+    deployed: '执行完成',
     healthy: '健康通过',
     failed: '失败',
     rolled_back: '已回滚'
   };
-  const activeStatuses = ['draft', 'ready', 'awaiting_health', 'awaiting_approval', 'paused'];
+  const activeStatuses = ['draft', 'ready', 'awaiting_execution', 'deploying',
+    'awaiting_health', 'awaiting_approval', 'paused'];
   const activeFlow = (d.rollouts || []).find((row) => activeStatuses.indexOf(row.status) >= 0);
   const requested = (d.rollouts || []).find((row) => row.id === STATE.shardMaintenanceId);
   const selectedId = (activeFlow && (!requested
@@ -2118,8 +2123,23 @@ PAGES.shardmaintenance = async () => {
       + '<div class="kv"><b>服务</b><span>' + esc(shard.service) + '</span></div>'
       + '<div class="kv"><b>后端端口</b><span>' + shard.backendPort + '</span></div>'
       + '<div class="kv"><b>入口端口</b><span>' + shard.entryPort + '</span></div>'
-      + '<div class="maint-actions"><button class="btn red" id="msDeploy" data-shard="' + shard.id + '">只发布第 ' + shard.id + ' 片</button></div>'
+      + '<div class="maint-actions"><button class="btn red" id="msDeploy" data-shard="' + shard.id + '">生成第 ' + shard.id + ' 片执行请求</button></div>'
       + '</div>';
+  } else if (flow && flow.status === 'awaiting_execution') {
+    const shard = flow.shards[flow.currentShard];
+    actionPanel =
+      '<div class="panel"><h3>第 ' + shard.id + ' 片等待执行器</h3>'
+      + '<div class="maint-lock">⏸ 已生成执行请求，但尚未改动服务器。执行器领取前不会启动新的分片。</div>'
+      + '<div class="kv"><b>目标服务</b><span>' + esc(shard.service) + '</span></div>'
+      + '<div class="kv"><b>目标端口</b><span>' + shard.backendPort + '</span></div>'
+      + '<div class="maint-actions"><button class="btn red" id="msRollback">撤销请求并回滚</button></div></div>';
+  } else if (flow && flow.status === 'deploying') {
+    const shard = flow.shards[flow.currentShard];
+    actionPanel =
+      '<div class="panel"><h3>第 ' + shard.id + ' 片执行中</h3>'
+      + '<div class="maint-lock">⚙️ 执行器已领取当前分片。执行回执完成前，健康验收按钮不会开放。</div>'
+      + '<div class="kv"><b>执行器</b><span>' + esc(shard.executorClaimedBy && shard.executorClaimedBy.name || '—') + '</span></div>'
+      + '<div class="maint-actions"><button class="btn red" id="msRollback">停止并回滚</button></div></div>';
   } else if (flow && flow.status === 'awaiting_health') {
     const shard = flow.shards[flow.currentShard];
     actionPanel =

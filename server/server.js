@@ -26211,7 +26211,7 @@ async function handleOps(req, res, parts, query) {
         if (!id) return fail(res, 422, '发布记录 ID 不能为空');
         const labels = {
           ready: '进入逐片发布待命',
-          deploy: '请求发布当前分片',
+          deploy: '生成当前分片执行请求',
           health: '登记分片健康证据',
           approve: '批准进入下一分片',
           rollback: '停止并回滚分片发布'

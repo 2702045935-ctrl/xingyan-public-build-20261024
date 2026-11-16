@@ -7,7 +7,11 @@ const net = require('net');
 const os = require('os');
 const path = require('path');
 const { spawn } = require('child_process');
-const { FROZEN_TARGET, READY_CHECKLIST } = require('../lib/shard-maintenance');
+const {
+  FROZEN_TARGET,
+  READY_CHECKLIST,
+  ShardMaintenanceStore
+} = require('../lib/shard-maintenance');
 
 const SERVER_DIR = path.resolve(__dirname, '..');
 const ADMIN_PASSWORD = 'maintenance-api-admin';
@@ -133,7 +137,24 @@ async function main() {
     });
     assert.strictEqual(response.status, 200, JSON.stringify(response.payload));
     assert.strictEqual(response.payload.data.rollout.currentShard, 0);
-    assert.strictEqual(response.payload.data.rollout.status, 'awaiting_health');
+    assert.strictEqual(response.payload.data.rollout.status, 'awaiting_execution');
+
+    const executorStore = new ShardMaintenanceStore(
+      path.join(dataDir, 'shard-maintenance.json')
+    );
+    const executorActor = {
+      id: 'executor_test',
+      username: 'shard-executor',
+      name: '测试执行器',
+      role: 'automation'
+    };
+    executorStore.transition(rolloutId, 'claim', { shardId: 0 }, executorActor);
+    executorStore.transition(rolloutId, 'complete', {
+      shardId: 0,
+      afterCodeSha256: candidateCodeSha256,
+      afterPid: 43210,
+      systemdActive: true
+    }, executorActor);
 
     const evidence = {
       shardId: 0,
@@ -180,7 +201,7 @@ async function main() {
     assert.strictEqual(response.payload.data.rollouts.length, 1);
     assert.ok(fs.existsSync(path.join(dataDir, 'shard-maintenance.json')));
     assert.ok(fs.readFileSync(path.join(dataDir, 'audit.log'), 'utf8')
-      .includes('请求发布当前分片'));
+      .includes('生成当前分片执行请求'));
 
     console.log('shard-maintenance-api: passed ' + JSON.stringify({
       shard0: 'healthy',

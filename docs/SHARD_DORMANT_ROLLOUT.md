@@ -19,6 +19,24 @@
 7. 回滚状态单独记录，不覆盖历史发布记录。
 8. 多个分片进程共享状态文件时使用排他锁，不能同时推进两个分片。
 
+发布按钮只生成执行请求，不会把分片标成已发布。状态必须经过：
+
+```text
+ready -> awaiting_execution -> deploying -> awaiting_health
+```
+
+`server/tools/shard-maintenance-executor.js` 只能领取和回报当前分片：
+
+```text
+--status
+--claim --id=ROLLOUT --shard=N
+--complete --id=ROLLOUT --shard=N --after-code-sha256=SHA256 --after-pid=PID
+--fail --id=ROLLOUT --shard=N --reason=TEXT
+```
+
+执行器本身不启动服务、不复制文件、不自动回滚；实际服务操作必须由受控命令完成，
+再用执行后的真实哈希、PID 和 active 状态回报。
+
 ## 冻结输入
 
 | 项目 | 冻结值 |
