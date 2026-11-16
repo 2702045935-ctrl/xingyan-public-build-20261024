@@ -23111,6 +23111,49 @@ async function handleHttpRequest(req, res) {
       const relayChatId = str(body.payload.chatId
         || (body.payload.message && body.payload.message.chatId)
         || '', 80);
+      const relayCallId = relayType === 'call' ? str(body.payload.callId, 60) : '';
+      if (relayCallId) {
+        const callAction = String(body.payload.action || '');
+        /* 通话的主状态由主叫所在分片持有。来电跨片后，被叫分片必须有同一通
+           电话的镜像；否则被叫点接听时 `calls.get(callId)` 为空，accept 和
+           后续音频都会被静默丢掉，主叫界面就会一直停在正在呼叫。 */
+        if (callAction === 'incoming') {
+          const current = calls.get(relayCallId);
+          if (!current) {
+            const media = body.payload.media === 'video' ? 'video' : 'audio';
+            calls.set(relayCallId, {
+              id: relayCallId,
+              from: str(body.payload.peerId, 40),
+              to: userId,
+              state: 'ringing',
+              startedAt: Date.now(),
+              timer: null,
+              media,
+              sdp: body.payload.sdp || null,
+              shadow: true
+            });
+            callTrace('跨片来电镜像 ' + relayCallId + ' ' + body.payload.peerId
+              + ' -> ' + userId + ' port=' + PORT);
+          }
+        } else if (callAction === 'accepted') {
+          const current = calls.get(relayCallId);
+          if (current && current.state === 'ringing') {
+            current.state = 'active';
+            current.startedAt = Date.now();
+            if (current.timer) clearTimeout(current.timer);
+            current.timer = null;
+            callTrace('跨片接通同步 ' + relayCallId + ' port=' + PORT);
+          }
+        } else if (callAction === 'end') {
+          const current = calls.get(relayCallId);
+          if (current) {
+            if (current.timer) clearTimeout(current.timer);
+            if (current.dcTimer) clearTimeout(current.dcTimer);
+            calls.delete(relayCallId);
+            callTrace('跨片结束同步 ' + relayCallId + ' port=' + PORT);
+          }
+        }
+      }
       if (relayChatId && ['message', 'transfer', 'redpacket', 'recall', 'burn'].includes(relayType)) {
         /* 各分片有独立消息缓存。发送片已经把消息写进共享消息文件，
            接收片必须丢掉旧缓存；否则离线后重进会话时看不到这张卡片，

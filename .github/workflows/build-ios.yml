@@ -72,6 +72,7 @@ jobs:
           node server/test/security-vault.test.js
           node server/test/chat-actions.test.js
           node server/test/call-audio-relay.test.js
+          node server/test/call-cross-shard.test.js
           node server/test/payment-ledger.test.js
           node server/test/payment-database.test.js
           node server/test/payment-database-concurrency.test.js
