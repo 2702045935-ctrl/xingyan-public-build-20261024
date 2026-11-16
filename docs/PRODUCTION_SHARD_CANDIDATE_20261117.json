@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "candidateId": "system-complete-v1-6b2ed47",
+  "candidateId": "system-complete-v1-d49be16",
   "sourceBranch": "codex/system-complete-v1",
-  "sourceCommit": "6b2ed472b0bbc9ace460d328165f0569837f7f24",
-  "capturedAt": "2026-11-17T06:14:35.6830237+08:00",
+  "sourceCommit": "d49be16f5be221462cdaf01ffb775de7111b4c63",
+  "capturedAt": "2026-11-17T06:16:11.6642394+08:00",
   "candidateCode": {
     "serverJsSha256": "f5119f24c70a38e637254df8a60f1b10e7a5da0dd1c11902d121366e27bf6d3d",
     "chatRoutePlanSha256": "86af4db9399985f41b1103f351f9147b6cc8926271a5f82b1543b01e093b29c4",
@@ -13,7 +13,11 @@
     "shardMaintenanceExecutorSha256": "30f8b20e2a3c7b12412f7ea012d07fdcbb59e4f1ecb9559f51582a34ed0f39f6",
     "manageHtmlSha256": "f32b5d59c38ea59936c32d343aeac3ca1051e5f4e5da1c7542a80eb885a36fa9",
     "shardPhysicalLayoutSha256": "5a5d6384f1e75d16801360f712ced66f8f8d9bf9c57c7769b353bb6a76e37fcf",
-    "shardPhysicalLayoutAuditSha256": "9f8ce4d890f16ecb12aa8d1ce2ba7fc5fbc8ee3d55e2b20a34e6693a5a93c656"
+    "shardPhysicalLayoutAuditSha256": "9f8ce4d890f16ecb12aa8d1ce2ba7fc5fbc8ee3d55e2b20a34e6693a5a93c656",
+    "shardShadowReadSha256": "666f36365f4f733118c2787c12a7e3b8368a172f402fbf277a26ac4ba8f968e1",
+    "shardShadowReadAuditSha256": "9b9df9f9cee21b1dc9ce379b43cb38b90e8ca13fdd3435fd613c75ad5645db31",
+    "shardReleaseReadinessSha256": "d9deb616a4cf5118d5af453f1a2a45e616ceed4e2a9afac5d67531429d757b64",
+    "shardReleaseReadinessAuditSha256": "4cd8a995f228536f32fc34bb12889caaf902d4f6231aee3945d908d649884391"
   },
   "productionBaseline": {
     "businessHost": "192.140.179.176",
@@ -44,7 +48,7 @@
   },
   "verification": {
     "shardSuite": {
-      "tests": 28,
+      "tests": 29,
       "failed": 0
     },
     "chatAndMessageSuite": {
@@ -89,7 +93,8 @@
       "actualSystemctlExecution": false
     },
     "physicalLayoutContractVerified": true,
-    "physicalLayoutDefaultOff": true
+    "physicalLayoutDefaultOff": true,
+    "shadowReadParityGate": true
   },
   "deployment": {
     "status": "not-deployed",
