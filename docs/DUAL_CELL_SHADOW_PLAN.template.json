@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "mode": "shadow",
+  "writeMode": "disabled",
+  "routePlanHash": "REPLACE_WITH_64_CHAR_ROUTE_PLAN_HASH",
+  "cells": {
+    "a": {
+      "id": "cell-a",
+      "host": "REPLACE_WITH_CELL_A_HOST",
+      "role": "primary",
+      "failureDomain": "REPLACE_WITH_A_FAILURE_DOMAIN",
+      "dataRoot": "/srv/xingyan/cell-a"
+    },
+    "b": {
+      "id": "cell-b",
+      "host": "REPLACE_WITH_CELL_B_HOST",
+      "role": "shadow",
+      "failureDomain": "REPLACE_WITH_B_FAILURE_DOMAIN",
+      "dataRoot": "/srv/xingyan/cell-b"
+    }
+  },
+  "traffic": {
+    "sampleRate": 0.01,
+    "maxRequestsPerSecond": 50,
+    "readOnly": true,
+    "writeMirror": false
+  },
+  "compare": {
+    "timeoutMs": 800,
+    "requiredSamples": 10000,
+    "ignorePaths": [
+      "/data/time",
+      "/data/requestId"
+    ]
+  }
+}
