@@ -8731,7 +8731,7 @@ function handleClientMessage(user, socket, raw) {
       const target = findUser(str(msg.toUserId, 40));
       if (!target) return ws.sendText(socket, JSON.stringify({ type: 'call-error', callId, error: '用户不存在' }));
       if (target.id === user.id) return ws.sendText(socket, JSON.stringify({ type: 'call-error', callId, error: '不能给自己打电话' }));
-      if (blockedPair(user.id, target.id)) {
+      if (chatBlockedBetween(user.id, target.id)) {
         callTrace('invite-blocked ' + user.id + ' -> ' + target.id);
         return ws.sendText(socket, JSON.stringify({ type: 'call-error', callId, error: '暂时无法呼叫对方' }));
       }
@@ -8859,7 +8859,7 @@ function handleClientMessage(user, socket, raw) {
         if (!room) return;
         const ch = db.chats.find((c) => c.id === room.chatId);
         if (!ch || !ch.memberIds.includes(user.id)) return;
-        if (blockedPair(user.id, room.hostId)) {
+        if (chatBlockedBetween(user.id, room.hostId)) {
           callTrace('群通话加入被黑名单阻断 room=' + room.id + ' user=' + user.id);
           return;
         }
@@ -8880,7 +8880,7 @@ function handleClientMessage(user, socket, raw) {
         others.forEach((uid) => {
           const u2 = findUser(uid);
           if (!u2) return;
-          if (blockedPair(user.id, uid)) return;
+          if (chatBlockedBetween(user.id, uid)) return;
           callSend(u2, { type: 'call', action: 'group-incoming', roomId: room.id,
                          chatId: room.chatId, media: room.media,
                          video: room.media === 'video',
@@ -8926,7 +8926,7 @@ function handleClientMessage(user, socket, raw) {
       if (!ch || !ch.memberIds.includes(user.id)) return;
       const target = findUser(str(msg.toUserId, 40));
       if (!target || !ch.memberIds.includes(target.id)) return;
-      if (blockedPair(user.id, target.id)) {
+      if (chatBlockedBetween(user.id, target.id)) {
         callTrace('群通话邀请被黑名单阻断 ' + user.id + ' -> ' + target.id);
         return;
       }
