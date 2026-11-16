@@ -108,13 +108,13 @@
     },
     {
       "path": "Sources/ChatStressFixture.swift",
-      "size": 2280,
-      "sha256": "14dc88d7ab42edc9f7ac26dba9b7f038fbf14a2c24e75d3a74f8457da862dfd3"
+      "size": 2582,
+      "sha256": "c554e6f6fcb4f1cd98cfd20703d557ce98475b12f2895e37619e7e02f6c2a4af"
     },
     {
       "path": "Sources/ChatsView.swift",
-      "size": 133445,
-      "sha256": "50a6a6466c3f3e581f04a2b8e3d77bb58825949bddb5f0ead125c0ad0538e430"
+      "size": 134102,
+      "sha256": "12847f027c3f2df9c8377f2e336fb9214004467e3eb0e673c60337b0a45c4dab"
     },
     {
       "path": "Sources/MessageStressFixture.swift",
