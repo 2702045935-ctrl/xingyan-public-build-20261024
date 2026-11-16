@@ -48,6 +48,27 @@
     "clusterIntegrity": true,
     "routePlanHash": "839c5a4e64e7aa4feb43d49a71de5eb017b0f93918bd05dbacb215dab02da660"
   },
+  "placementPlan": {
+    "status": "passed",
+    "file": "/opt/xingyan-mainline/releases/20261116-shard-baseline/placement-plan.json",
+    "fileSha256": "e21f68fd9abf673a12ddf7e084ee02788b70bffe00bba94e0b5da0220ecb0dac",
+    "planHash": "f278a31a1bbfa8db776b8f5896af44085713084548646555aed208bae5a01d08",
+    "itemCount": 76843,
+    "failures": 0,
+    "byShard": [9892, 10037, 11814, 11643, 11766, 9914, 11777],
+    "byType": {
+      "user": 2365,
+      "friendship": 24518,
+      "chat": 10428,
+      "read": 9596,
+      "friend_meta": 7,
+      "moment": 2087,
+      "moment_comment": 15,
+      "moment_like": 23,
+      "moment_notice": 21,
+      "message_thread": 27783
+    }
+  },
   "lastRuntimeAudit": {
     "at": "2026-11-16T10:26:56.394Z",
     "ok": true,
