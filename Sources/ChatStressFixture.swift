@@ -6,7 +6,7 @@ enum ChatStressFixture {
     static let count: Int = {
         guard let raw = ProcessInfo.processInfo.environment["XINGYAN_CHAT_STRESS"],
               let value = Int(raw) else { return 0 }
-        return max(0, min(10_000, value))
+        return max(0, min(100_000, value))
     }()
 
     static let isActive = count > 0

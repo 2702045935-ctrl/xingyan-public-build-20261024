@@ -105,6 +105,11 @@
       "path": "Sources/LocalDatabase.swift",
       "size": 24520,
       "sha256": "abd2a8bb1207f9d83c96f2a16a31e91641bbdfc559d0458b6e86533ba4666089"
+    },
+    {
+      "path": "Sources/ChatStressFixture.swift",
+      "size": 2179,
+      "sha256": "6cc7ef0c8177564e6e35ea45fbd3d3ca72f063a5f0de011fe8e55836ef2a6130"
     }
   ]
 }
