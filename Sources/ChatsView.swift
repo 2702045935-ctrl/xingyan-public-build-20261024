@@ -1154,6 +1154,7 @@ struct ChatsView: View {
         return 60 + CGFloat(pow(Double(tail), 0.82)) * 0.62 + tail * 0.38
     }
     @State private var path = NavigationPath()
+    @State private var stressAutoOpened = false
 
     @State private var oaOpenId = ""
     @State private var showOA = false
@@ -1189,7 +1190,7 @@ struct ChatsView: View {
     }
 
     private var activeChatSource: [Chat] {
-        if MessageStressFixture.isActive { return [MessageStressFixture.chat] }
+        if MessageStressFixture.isActive { return MessageStressFixture.chats }
         if ChatStressFixture.isActive { return ChatStressFixture.chats }
         return app.chats
     }
@@ -2747,6 +2748,12 @@ struct ChatsView: View {
 
             .onAppear {
                 cachedSnapshot = chatSnapshot()
+                if MessageStressFixture.autoOpen,
+                   !stressAutoOpened,
+                   let first = MessageStressFixture.firstChat {
+                    stressAutoOpened = true
+                    path.append(first)
+                }
                 localOfficialRowAvatar = UserDefaults.standard.string(forKey: "chris.accountIcon.officialRowAvatar") ?? ""
                 localPayOfficialAvatar = UserDefaults.standard.string(forKey: "chris.accountIcon.payOfficialRowAvatar") ?? ""
                 localWeatherRowAvatar = UserDefaults.standard.string(forKey: "chris.accountIcon.weatherRowAvatar") ?? ""

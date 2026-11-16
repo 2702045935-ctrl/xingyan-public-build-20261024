@@ -2,11 +2,7 @@ import Foundation
 
 /// Local-only Moments feed used by the device scroll stress harness.
 enum MomentStressFixture {
-    static let count: Int = {
-        guard let raw = ProcessInfo.processInfo.environment["XINGYAN_MOMENT_STRESS"],
-              let value = Int(raw) else { return 0 }
-        return max(0, min(10_000, value))
-    }()
+    static let count = StressTestConfiguration.momentCount
 
     static let isActive = count > 0
 

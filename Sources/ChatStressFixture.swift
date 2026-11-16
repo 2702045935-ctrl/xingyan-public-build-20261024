@@ -3,11 +3,7 @@ import Foundation
 /// Local-only conversation fixture used by the device stress harness.
 /// It is enabled only through the launch environment and never touches server data.
 enum ChatStressFixture {
-    static let count: Int = {
-        guard let raw = ProcessInfo.processInfo.environment["XINGYAN_CHAT_STRESS"],
-              let value = Int(raw) else { return 0 }
-        return max(0, min(100_000, value))
-    }()
+    static let count = StressTestConfiguration.chatCount
 
     static let isActive = count > 0
 
@@ -39,17 +35,22 @@ enum ChatStressFixture {
                 createdAt: stamp,
                 mentionMe: index % 53 == 0
             )
+            let isGroup = index % 3 == 0
+            let memberCount = isGroup ? 9 + (index % 120) : 2
+            let memberIds = (0..<memberCount).map {
+                "stress-member-\(index)-\($0)"
+            }
             return Chat(
                 id: "stress-chat-\(index)",
-                type: "direct",
+                type: isGroup ? "group" : "direct",
                 title: String(format: "压力会话 %04d", index + 1),
                 avatar: "",
                 unread: index % 11 == 0 ? (index % 97) + 1 : 0,
                 pinned: false,
                 botRank: 9,
-                memberCount: 2,
-                memberIds: ["stress-self", "stress-peer-\(index)"],
-                onlineMemberIds: [],
+                memberCount: memberCount,
+                memberIds: memberIds,
+                onlineMemberIds: Array(memberIds.prefix(isGroup ? 4 : 1)),
                 lastMessage: last,
                 updatedAt: stamp,
                 muted: index % 17 == 0

@@ -8,10 +8,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SWIFT = ROOT / "Sources" / "LocalDatabase.swift"
-STRESS_FIXTURES = (
-    ROOT / "Sources" / "ChatStressFixture.swift",
-    ROOT / "Sources" / "MessageStressFixture.swift",
-)
+STRESS_CONFIG = ROOT / "Sources" / "StressTestConfiguration.swift"
+STRESS_FIXTURES = {
+    "ChatStressFixture.swift": "StressTestConfiguration.chatCount",
+    "MessageStressFixture.swift": "StressTestConfiguration.messageCount",
+    "MomentStressFixture.swift": "StressTestConfiguration.momentCount",
+}
 
 
 def schema_from_swift() -> str:
@@ -27,10 +29,23 @@ def assert_equal(actual: object, expected: object, label: str) -> None:
 
 
 def main() -> None:
-    for fixture in STRESS_FIXTURES:
-        text = fixture.read_text(encoding="utf-8")
-        if "min(100_000, value)" not in text:
-            raise AssertionError(f"{fixture.name}: stress cap must be 100k")
+    config_text = STRESS_CONFIG.read_text(encoding="utf-8")
+    for key in (
+        "XINGYAN_STRESS_PROFILE",
+        "XINGYAN_CHAT_STRESS",
+        "XINGYAN_MESSAGE_STRESS",
+        "XINGYAN_MOMENT_STRESS",
+        "XINGYAN_STRESS_GROUPS",
+        "XINGYAN_STRESS_MEMBERS",
+    ):
+        if key not in config_text:
+            raise AssertionError(f"missing stress switch: {key}")
+    if "min(100_000, number)" not in config_text:
+        raise AssertionError("stress cap must be 100k")
+    for filename, marker in STRESS_FIXTURES.items():
+        text = (ROOT / "Sources" / filename).read_text(encoding="utf-8")
+        if marker not in text:
+            raise AssertionError(f"{filename}: does not use shared stress configuration")
 
     with tempfile.TemporaryDirectory(prefix="xingyan-local-db-") as directory:
         db = sqlite3.connect(Path(directory) / "state.sqlite3")

@@ -34,8 +34,10 @@ final class AppState: ObservableObject {
     }
 
     private func installMessageStressFixture(myId: String) {
-        guard MessageStressFixture.isActive else { return }
-        prefetched[MessageStressFixture.chatId] = MessageStressFixture.messages(myId: myId)
+        guard MessageStressFixture.isActive, !myId.isEmpty else { return }
+        for (chatId, messages) in MessageStressFixture.messagesByChat(myId: myId) {
+            prefetched[chatId] = messages
+        }
     }
 
     func checkReachability() async {

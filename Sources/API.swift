@@ -3862,6 +3862,15 @@ private struct StarredPayload: Decodable {
 
     func messages(chatId: String, limit: Int = 40, before: Int? = nil,
                   all: Bool = false) async throws -> (chat: Chat?, messages: [Message], hasMore: Bool) {
+        if MessageStressFixture.isStressChat(chatId) {
+            return MessageStressFixture.page(
+                chatId: chatId,
+                limit: limit,
+                before: before,
+                since: nil,
+                all: all
+            )
+        }
         var path = "/api/chats/\(chatId)/messages?limit=\(limit)"
         if let before = before { path += "&before=\(before)" }
         if all { path += "&all=1" }
@@ -3871,6 +3880,15 @@ private struct StarredPayload: Decodable {
 
     func messagesSince(chatId: String, since: Int, limit: Int = 200)
         async throws -> (chat: Chat?, messages: [Message], hasMore: Bool) {
+        if MessageStressFixture.isStressChat(chatId) {
+            return MessageStressFixture.page(
+                chatId: chatId,
+                limit: limit,
+                before: nil,
+                since: since,
+                all: false
+            )
+        }
         let path = "/api/chats/\(chatId)/messages?limit=\(limit)&since=\(max(0, since))"
         let payload: MessagesPayload = try await get(path, as: MessagesPayload.self)
         return (payload.chat, payload.messages, payload.hasMore ?? false)
@@ -3938,6 +3956,13 @@ private struct StarredPayload: Decodable {
     }
 
     func chatMembers(chatId: String) async throws -> (members: [User], ownerId: String, createdAt: String) {
+        if MessageStressFixture.isStressChat(chatId) {
+            return (
+                MessageStressFixture.members,
+                MessageStressFixture.members.first?.id ?? "",
+                "2026-11-16T00:00:00Z"
+            )
+        }
         let p: ChatMembersPayload = try await get("/api/chats/\(chatId)/members", as: ChatMembersPayload.self)
         return (p.members ?? [], p.ownerId ?? "", p.createdAt ?? "")
     }
