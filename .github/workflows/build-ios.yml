@@ -78,6 +78,7 @@ jobs:
           PY
           python3 tools/verify-no-tencent-media.py
           python3 tools/verify-native-chat-swipe.py
+          python3 tools/verify-chat-list-order.py
           node server/tools/server-boot-preflight.js
 
       - name: 聊天接口回归

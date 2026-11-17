@@ -373,7 +373,7 @@ struct ChatRow: View, Equatable {
             .frame(maxWidth: .infinity, alignment: .leading)
 
             VStack(alignment: .trailing, spacing: 2) {
-                Text(TimeFmt.listApple(chat.lastMessage?.createdAt ?? chat.updatedAt))
+                Text(TimeFmt.listApple(chat.listTimestamp))
                     .font(pfStyled(size: 12,
                                    weight: .regular))
                     .foregroundStyle(ChatListVisual.timeInk)
@@ -2523,7 +2523,7 @@ struct ChatsView: View {
             previewKind: draft.isEmpty ? kind : "draft",
             highlightMention: !mentionPrefix.isEmpty,
             previewColor: previewColor,
-            time: TimeFmt.listApple(chat.lastMessage?.createdAt ?? chat.updatedAt),
+            time: TimeFmt.listApple(chat.listTimestamp),
             timeColor: timeColor,
             rowBackground: rowBg,
             dividerColor: isDark ? .clear : UIColor(hex: 0xE9EDEF),

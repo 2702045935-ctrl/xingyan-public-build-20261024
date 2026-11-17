@@ -1367,8 +1367,8 @@ final class AppState: ObservableObject {
             let ra = $0.botRank ?? 9
             let rb = $1.botRank ?? 9
             if ra != rb { return ra < rb }
-            let ta = TimeFmt.date($0.lastMessage?.createdAt ?? $0.updatedAt) ?? .distantPast
-            let tb = TimeFmt.date($1.lastMessage?.createdAt ?? $1.updatedAt) ?? .distantPast
+            let ta = $0.listActivityDate
+            let tb = $1.listActivityDate
             if ta != tb { return ta > tb }
             return $0.id < $1.id
         }

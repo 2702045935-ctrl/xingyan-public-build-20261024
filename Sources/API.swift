@@ -164,6 +164,22 @@ struct Chat: Codable, Identifiable, Hashable {
         return clean.isEmpty ? "会话" : clean
     }
     var unreadCount: Int { unread ?? 0 }
+
+    /// 会话排序和列表时间必须共用同一套容错来源。服务端个别历史消息没有
+    /// createdAt，旧逻辑会直接把它当成 distantPast，导致正常单聊掉到列表底部。
+    var listTimestamp: String? {
+        if let value = lastMessage?.createdAt, TimeFmt.date(value) != nil {
+            return value
+        }
+        if let value = updatedAt, TimeFmt.date(value) != nil {
+            return value
+        }
+        return lastMessage?.createdAt ?? updatedAt
+    }
+
+    var listActivityDate: Date {
+        TimeFmt.date(listTimestamp) ?? .distantPast
+    }
 }
 
 struct AITokenPlan: Decodable, Identifiable, Hashable {

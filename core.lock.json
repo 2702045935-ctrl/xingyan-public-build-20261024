@@ -3,13 +3,13 @@
   "files": [
     {
       "path": "Sources/API.swift",
-      "size": 217325,
-      "sha256": "d8fc8fb1ffa507c8f5bc811c256d957cd6255400ed35005b16aa28677f4dc8d6"
+      "size": 217927,
+      "sha256": "8c1d7859877f240dc7430c73c848f3f00718c1f89b452a92c3b1164ab4e3c463"
     },
     {
       "path": "Sources/App.swift",
-      "size": 179794,
-      "sha256": "d8cb866dfeac88b095b1d0b34aa2e98f615a702561803e958685f1e2168bb7ab"
+      "size": 179690,
+      "sha256": "296409bf68676ee383da50f51dc0d6f4d055701f73d3d216bb840f615c611700"
     },
     {
       "path": "Sources/Realtime.swift",
@@ -108,8 +108,8 @@
     },
     {
       "path": "Sources/ChatsView.swift",
-      "size": 134734,
-      "sha256": "b79c152a81f1be387d7ee76cce450ebf7c522899137a6da7b103d6d8ac0d8bb3"
+      "size": 134680,
+      "sha256": "af7296e3832665216daed2b140dc32f783cf40df2892b6b700995633332aa433"
     },
     {
       "path": "Sources/MessageStressFixture.swift",
