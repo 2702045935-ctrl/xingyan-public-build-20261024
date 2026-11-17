@@ -1987,16 +1987,9 @@ enum TimeFmt {
         ) ?? fallback
         return f
     }
-    private static let fSystemWeekday = systemDateFormatter("EEE", fallback: "EEE")
-    private static let fSystemShortDate: DateFormatter = {
-        let f = DateFormatter()
-        f.locale = Locale.current
-        f.calendar = Calendar.current
-        f.timeZone = TimeZone.current
-        f.dateStyle = .short
-        f.timeStyle = .none
-        return f
-    }()
+    private static let fSystemWeekday = systemDateFormatter("EEEE", fallback: "EEEE")
+    private static let fSystemMonthDay = systemDateFormatter("MMMd", fallback: "M月d日")
+    private static let fSystemYearMonthDay = systemDateFormatter("yMMMd", fallback: "yyyy年M月d日")
     private static let fSystemRelative: RelativeDateTimeFormatter = {
         let f = RelativeDateTimeFormatter()
         f.locale = Locale.current
@@ -2018,7 +2011,9 @@ enum TimeFmt {
                                       from: cal.startOfDay(for: d),
                                       to: cal.startOfDay(for: Date())).day ?? 99
         if days < 7 { return fSystemWeekday.string(from: d) }
-        return fSystemShortDate.string(from: d)
+        return cal.isDate(d, equalTo: Date(), toGranularity: .year)
+            ? fSystemMonthDay.string(from: d)
+            : fSystemYearMonthDay.string(from: d)
     }
 
     static func list(_ s: String?) -> String {
@@ -2038,7 +2033,9 @@ enum TimeFmt {
             return fSystemRelative.localizedString(for: d, relativeTo: Date())
         }
         if days < 7 { return fSystemWeekday.string(from: d) }
-        return fSystemShortDate.string(from: d)
+        return cal.isDate(d, equalTo: Date(), toGranularity: .year)
+            ? fSystemMonthDay.string(from: d)
+            : fSystemYearMonthDay.string(from: d)
     }
 
     static func bubble(_ s: String?) -> String {
