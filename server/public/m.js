@@ -2111,6 +2111,8 @@
 
     function openChat(chatId) {
     S.activeChat = chatId;
+    S.olderArmed = S.olderArmed || {};
+    S.olderArmed[chatId] = false;
     var chat = S.chats.filter(function (c) { return c.id === chatId; })[0] || {};
       /* 群聊标题和微信一样带人数：群名(9)；单聊就是对方名字 */
       $('chatTitle').textContent = chat.type === 'group'
@@ -5294,8 +5296,8 @@
       var el = $(id);
       if (el) el.addEventListener('scroll', markScrolling, { passive: true });
     });
-    /* 聊天页接近顶部时预取上一页。节流 650ms，避免一次插入触发连续翻页；
-       预取成功后由 restoreMessageAnchor 把当前可见消息钉回原位置。 */
+    /* 聊天页接近顶部时预取上一页。先从底部/中段滚过 500px 才重新武装，
+       一次预取后必须再次接近顶部才允许下一页，避免锚点恢复后连续狂拉。 */
     (function bindChatPrefetch() {
       var box = $('messages');
       if (!box) return;
@@ -5303,7 +5305,14 @@
       box.addEventListener('scroll', function () {
         var chatId = S.activeChat;
         if (!chatId || !S.hasOlder || !S.hasOlder[chatId]) return;
+        S.olderArmed = S.olderArmed || {};
+        if (box.scrollTop > 500) {
+          S.olderArmed[chatId] = true;
+          return;
+        }
         if (box.scrollTop > 360) return;
+        if (!S.olderArmed[chatId]) return;
+        S.olderArmed[chatId] = false;
         clearTimeout(timer);
         timer = setTimeout(function () {
           if (!S.activeChat || S.activeChat !== chatId) return;
