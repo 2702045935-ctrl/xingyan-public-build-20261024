@@ -116,6 +116,7 @@ struct NativeGlassHeaderMaterial: UIViewRepresentable {
 struct ScrollActiveGlassMask: View {
     let base: Color
     let active: Bool
+    var activeBaseOpacity: Double? = nil
 
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -130,7 +131,7 @@ struct ScrollActiveGlassMask: View {
                 ZStack(alignment: .bottom) {
                     NativeGlassHeaderMaterial()
                     base
-                        .opacity(scheme == .dark ? 0.28 : 0.22)
+                        .opacity(activeBaseOpacity ?? (scheme == .dark ? 0.28 : 0.22))
                     LinearGradient(
                         stops: [
                             .init(color: .clear, location: 0),

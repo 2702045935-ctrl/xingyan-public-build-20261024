@@ -1440,8 +1440,13 @@ final class AppState: ObservableObject {
         }
 
         if sameMessage {
-            if (server.lastMessage?.preview ?? "").isEmpty,
-               !(localLast.preview ?? "").isEmpty {
+            if recallSummary(localLast),
+               !recallSummary(server.lastMessage) {
+                // 撤回请求成功后，会话快照仍可能短暂返回同一条消息的旧正文。
+                // 已撤回摘要必须压住旧快照，直到服务端追上或出现新的末条消息。
+                out.lastMessage = localLast
+            } else if (server.lastMessage?.preview ?? "").isEmpty,
+                      !(localLast.preview ?? "").isEmpty {
                 out.lastMessage = localLast
             }
         } else if !serverNewer {
@@ -1463,6 +1468,9 @@ final class AppState: ObservableObject {
             return local.lastMessage == nil
         }
         if serverLast.id == localLast.id {
+            if recallSummary(localLast), !recallSummary(serverLast) {
+                return false
+            }
             let serverHasPreview = !(serverLast.preview ?? "").isEmpty
             let localHasPreview = !(localLast.preview ?? "").isEmpty
             return server.unreadCount >= local.unreadCount
@@ -1470,6 +1478,19 @@ final class AppState: ObservableObject {
         }
         return (serverLast.createdAt ?? "") > (localLast.createdAt ?? "")
             && server.unreadCount >= local.unreadCount
+    }
+
+    private func recallSummary(_ message: LastMessage?) -> Bool {
+        guard let raw = message?.preview?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !raw.isEmpty else { return false }
+        let markers = [
+            Tr("你撤回了一条消息"),
+            Tr("对方撤回了一条消息"),
+            Tr("[消息已撤回]")
+        ]
+        if markers.contains(raw) { return true }
+        let groupAction = Tr("撤回了一条消息")
+        return raw == groupAction || raw.hasSuffix(" " + groupAction)
     }
 
     func markChatReadLocally(_ chatId: String) {

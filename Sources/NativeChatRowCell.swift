@@ -51,6 +51,7 @@ struct NativeChatRowConfiguration {
     var timeColor: UIColor
     var rowBackground: UIColor
     var dividerColor: UIColor
+    var showsDivider: Bool = true
     var badgeRing: UIColor
     var chatId: String
     var avatarPaths: [String]
@@ -72,7 +73,7 @@ struct NativeChatRowConfiguration {
     var isPinned: Bool
 }
 
-final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate {
+final class NativeChatRowCell: UICollectionViewCell {
     private let foreground = UIView()
     private let avatarView = NativeChatAvatarView()
     private let titleLabel = UILabel()
@@ -229,6 +230,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         timeLabel.text = configuration.time
         timeLabel.textColor = configuration.timeColor
         divider.backgroundColor = configuration.dividerColor
+        divider.isHidden = !configuration.showsDivider
         unreadLabel.isHidden = configuration.unread <= 0
         if configuration.unread > 0 {
             if configuration.unreadMuted {
@@ -841,21 +843,6 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         return true
     }
 
-    override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-        guard let pan = gestureRecognizer as? UIPanGestureRecognizer else { return true }
-        let translation = pan.translation(in: foreground)
-        let velocity = pan.velocity(in: foreground)
-        let horizontalVelocity = abs(velocity.x) >= 28
-            && abs(velocity.x) >= abs(velocity.y) * 1.10
-        let horizontalTranslation = abs(translation.x) >= 4
-            && abs(translation.x) >= abs(translation.y) * 1.15
-        return horizontalVelocity || horizontalTranslation
-    }
-
-    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
-                           shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
-        return true
-    }
 }
 
 private final class PaddingLabel: UILabel {

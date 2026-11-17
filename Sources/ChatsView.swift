@@ -764,6 +764,9 @@ struct SwipeChatRow: View {
     }
 
     private var rowWidth: CGFloat { max(1, L.width - max(0, horizontalInset) * 2) }
+    private var isDark: Bool {
+        scheme == .dark || app.appearance == "dark"
+    }
     private var pinStretch: CGFloat {
         max(0, offset - fullW)
     }
@@ -772,7 +775,7 @@ struct SwipeChatRow: View {
     }
     private var rowBg: Color {
         if cardStyle { return .clear }
-        if scheme == .dark { return C.chatRowBg }
+        if isDark { return Color(hex: 0x000000) }
         return UIConfig.colorIfSet("chatsRowBg")
             ?? UIConfig.colorIfSet("chatRowBg")
             ?? .white
@@ -832,7 +835,7 @@ struct SwipeChatRow: View {
                 .background(rowBg)
                 .overlay(alignment: .bottom) {
                     Rectangle()
-                        .fill(ChatListVisual.rule)
+                        .fill(isDark ? Color.clear : ChatListVisual.rule)
                         .frame(height: 0.5)
                         .padding(.leading, ChatListVisual.dividerLeading)
                 }
@@ -1141,11 +1144,19 @@ struct ChatsView: View {
     private var chatsCardStyle: Bool { false }
     private var chatsCardInset: CGFloat { max(8, UIConfig.num("chatsOrbitInset", 12)) }
     private var chatsCardRadius: CGFloat { max(16, UIConfig.num("chatsOrbitRadius", 22)) }
+    private var chatsIsDark: Bool {
+        scheme == .dark || app.appearance == "dark"
+    }
     private var chatsPageFill: Color {
-        C.chatsPageBg
+        // WhatsApp / iOS dark hierarchy: the list canvas and native row are
+        // the same true-black surface. Search and cards keep their raised tone.
+        chatsIsDark ? Color(hex: 0x000000) : C.chatsPageBg
+    }
+    private var chatsRule: Color {
+        chatsIsDark ? .clear : ChatListVisual.rule
     }
     private var chatsSearchFill: Color {
-        scheme == .dark
+        chatsIsDark
             ? C.searchBg
             : Color(hex: 0xF0F2F5)
     }
@@ -1995,7 +2006,11 @@ struct ChatsView: View {
     }
 
     @ViewBuilder private func chatsNavGlass(_: CGFloat) -> some View {
-        ScrollActiveGlassMask(base: chatsPageFill, active: chatsScrollActive)
+        ScrollActiveGlassMask(
+            base: chatsPageFill,
+            active: chatsScrollActive,
+            activeBaseOpacity: chatsIsDark ? 0.94 : nil
+        )
         .ignoresSafeArea(edges: .top)
     }
 
@@ -2075,7 +2090,7 @@ struct ChatsView: View {
                 .contentShape(Rectangle())
                 .overlay(alignment: .bottom) {
                     Rectangle()
-                        .fill(ChatListVisual.rule)
+                        .fill(chatsRule)
                         .frame(height: 0.5)
                         .padding(.leading, ChatListVisual.dividerLeading)
                 }
@@ -2186,7 +2201,7 @@ struct ChatsView: View {
                 .contentShape(Rectangle())
                 .overlay(alignment: .bottom) {
                     Rectangle()
-                        .fill(ChatListVisual.rule)
+                        .fill(chatsRule)
                         .frame(height: 0.5)
                         .padding(.leading, ChatListVisual.dividerLeading)
                 }
@@ -2275,7 +2290,7 @@ struct ChatsView: View {
                 .contentShape(Rectangle())
                 .overlay(alignment: .bottom) {
                     Rectangle()
-                        .fill(ChatListVisual.rule)
+                        .fill(chatsRule)
                         .frame(height: 0.5)
                         .padding(.leading, ChatListVisual.dividerLeading)
                 }
@@ -2310,7 +2325,7 @@ struct ChatsView: View {
     }
 
     private func nativeChatEntries(_ snapshot: ChatFilterSnapshot) -> [NativeChatEntry] {
-        let appearance = "\(scheme)-\(Lang.code)-\(UIConfig.text("chatsBackground", ""))"
+        let appearance = "\(chatsIsDark)-\(scheme)-\(Lang.code)-\(UIConfig.text("chatsBackground", ""))"
         var entries: [NativeChatEntry] = [
             NativeChatEntry(
                 id: "top",
@@ -2502,7 +2517,7 @@ struct ChatsView: View {
                                         ru: "[Упомянули вас] ")
         }
 
-        let isDark = scheme == .dark
+        let isDark = chatsIsDark
         let titleColor: UIColor = chat.showsOfficialMark
             ? UIColor(hex: 0x25D366)
             : (isDark ? UIColor(hex: 0xE9EDEF) : UIColor(hex: 0x1A1A1A))
@@ -2527,6 +2542,7 @@ struct ChatsView: View {
             timeColor: timeColor,
             rowBackground: rowBg,
             dividerColor: isDark ? .clear : UIColor(hex: 0xE9EDEF),
+            showsDivider: !isDark,
             badgeRing: isDark ? .black : .white,
             chatId: chat.id,
             avatarPaths: avatarPaths,

@@ -33,6 +33,10 @@ require(
     "custom row pan recognizer must not compete with the collection view",
 )
 require(
+    "gestureRecognizerShouldBegin" not in ROW,
+    "native rows must not veto UICollectionView's system swipe gesture",
+)
+require(
     "contextMenuConfigurationForItemAt" not in LIST,
     "chat rows must not keep the old long-press context menu",
 )
