@@ -316,35 +316,6 @@ where Item.ID: Hashable {
             flushPendingItems()
         }
 
-        func collectionView(_ collectionView: UICollectionView,
-                            contextMenuConfigurationForItemAt indexPath: IndexPath,
-                            point: CGPoint) -> UIContextMenuConfiguration? {
-            guard let id = dataSource?.itemIdentifier(for: indexPath),
-                  let entry = lookup[id],
-                  let configuration = nativeRow?(entry) else { return nil }
-            return UIContextMenuConfiguration(identifier: "\(id)" as NSString,
-                                              previewProvider: nil) { _ in
-                let pin = UIAction(
-                    title: configuration.isPinned ? Tr("取消置顶") : Tr("置顶"),
-                    image: UIImage(systemName: configuration.isPinned ? "pin.slash" : "pin")
-                ) { _ in configuration.onPin(!configuration.isPinned) }
-                let unread = UIAction(
-                    title: Tr("标为未读"),
-                    image: UIImage(systemName: "envelope.badge")
-                ) { _ in configuration.onUnread() }
-                let hide = UIAction(
-                    title: Tr("不显示"),
-                    image: UIImage(systemName: "eye.slash")
-                ) { _ in configuration.onHide() }
-                let delete = UIAction(
-                    title: Tr("删除"),
-                    image: UIImage(systemName: "trash"),
-                    attributes: .destructive
-                ) { _ in configuration.onDelete() }
-                return UIMenu(children: [pin, unread, hide, delete])
-            }
-        }
-
         func collectionView(
             _ collectionView: UICollectionView,
             leadingSwipeActionsConfigurationForItemAt indexPath: IndexPath

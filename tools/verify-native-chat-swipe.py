@@ -32,5 +32,9 @@ require(
     "foreground.addGestureRecognizer(pan)" not in ROW,
     "custom row pan recognizer must not compete with the collection view",
 )
+require(
+    "contextMenuConfigurationForItemAt" not in LIST,
+    "chat rows must not keep the old long-press context menu",
+)
 
 print("native-chat-swipe: passed")
