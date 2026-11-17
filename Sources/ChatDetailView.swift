@@ -618,17 +618,20 @@ private struct StarWhisperLine: View {
     let accent: Color
     let active: Bool
     var plain: Bool = false
+    var wechatGroup: Bool = false
 
     @State private var arrived = false
     @State private var bloom = false
 
     var body: some View {
-        HStack(spacing: 5) {
-            Image(systemName: "sparkles")
-                .font(.system(size: 11.5, weight: .semibold))
-                .foregroundStyle(accent)
+        HStack(spacing: wechatGroup ? 0 : 5) {
+            if !wechatGroup {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 11.5, weight: .semibold))
+                    .foregroundStyle(accent)
+            }
             Text(text)
-                .font(.footnote)
+                .font(wechatGroup ? pf(12, .regular) : .footnote)
                 .foregroundStyle(ink)
                 .multilineTextAlignment(.center)
         }
@@ -3798,7 +3801,8 @@ struct ChatDetailView: View {
                     border: adaptiveSystemBorder,
                     accent: adaptiveMicInk,
                     active: patAnimatingId == message.id,
-                    plain: usesPlainDefaultChatChrome
+                    plain: isGroup || usesPlainDefaultChatChrome,
+                    wechatGroup: isGroup
                 )
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, 40)
@@ -3810,7 +3814,8 @@ struct ChatDetailView: View {
                 } else {
                         SystemLine(message: message,
                                    usesLightInk: senderNameUsesLightInk,
-                                   plain: usesPlainDefaultChatChrome)
+                                   plain: usesPlainDefaultChatChrome,
+                                   wechatGroup: isGroup)
                             .padding(.bottom, gapAfter(message))
 
                             .contentShape(Rectangle())
@@ -3878,7 +3883,7 @@ struct ChatDetailView: View {
 
     @ViewBuilder
     private func timeLine(_ message: Message) -> some View {
-        if usesPlainDefaultChatChrome {
+        if isGroup || usesPlainDefaultChatChrome {
             Text(TimeFmt.bubble(message.createdAt))
                 .font(pf(11.5, .medium))
                 .foregroundColor(adaptiveSystemSecondaryInk.opacity(0.92))
@@ -3911,7 +3916,7 @@ struct ChatDetailView: View {
 
     @ViewBuilder
     private func recallLine(_ message: Message) -> some View {
-        if usesPlainDefaultChatChrome {
+        if isGroup || usesPlainDefaultChatChrome {
             Text(recallText(message))
                 .font(pf(12.5))
                 .foregroundColor(adaptiveSystemSecondaryInk.opacity(0.92))
@@ -3956,7 +3961,8 @@ struct ChatDetailView: View {
                    senderAvatarPath: senderAvatarFor(message),
                    senderQQLevel: app.contact(for: message.senderId ?? "")?.qqLevel ?? 0,
                    senderOnline: senderIsOnline(message),
-                   avatarSize: isGroup ? 34 : L.chatAvatar,
+                   avatarSize: L.chatAvatar,
+                   maxBubbleWidth: isGroup ? min(L.bubbleMaxW, L.width * 0.68) : L.bubbleMaxW,
                    showsAvatar: true,
                    reservesAvatarSpace: true,
                    currentNickname: app.me?.nickname ?? "",
@@ -4125,16 +4131,9 @@ struct ChatDetailView: View {
     }
 
     private func groupSenderNameColor(_ message: Message) -> Color {
-        let id = message.senderId ?? ""
-        let seed = id.utf8.reduce(0) { ($0 &* 31) &+ Int($1) }
-        let colors: [Color] = senderNameUsesLightInk
-            ? [Color(hex: 0x86E4A3), Color(hex: 0x86CBFF),
-               Color(hex: 0xD8B7FF), Color(hex: 0xFFD479),
-               Color(hex: 0xFFA9AE), Color(hex: 0x88E2DC)]
-            : [Color(hex: 0x0E8A61), Color(hex: 0x0A72C2),
-               Color(hex: 0x7A4BC2), Color(hex: 0xA95E00),
-               Color(hex: 0xB52E49), Color(hex: 0x087F7B)]
-        return colors[abs(seed) % colors.count]
+        senderNameUsesLightInk
+            ? Color.white.opacity(0.62)
+            : Color.dyn(0x8A8A8E, 0x8E9296)
     }
 
     private func senderAvatarFor(_ message: Message) -> String {
@@ -4193,7 +4192,7 @@ struct ChatDetailView: View {
         let same = (next.senderId ?? "") == (message.senderId ?? "")
 
         if isGroup {
-            return same ? 4 : 10
+            return same ? 4 : 12
         }
         return same ? UIConfig.num("msgGapSame", 7) : UIConfig.num("msgGapOther", 15)
     }
@@ -6914,8 +6913,26 @@ struct SystemLine: View {
     let message: Message
     var usesLightInk: Bool = false
     var plain: Bool = false
+    var wechatGroup: Bool = false
 
     var body: some View {
+        if wechatGroup {
+            Text(message.body)
+                .font(pf(12, .regular))
+                .foregroundStyle(usesLightInk
+                                 ? Color.white.opacity(0.66)
+                                 : Color.dyn(0x8A8A8E, 0x8E9296))
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 40)
+                .padding(.vertical, 4)
+        } else {
+            cardBody
+        }
+    }
+
+    private var cardBody: some View {
         HStack(alignment: .top, spacing: 9) {
             Image(systemName: promptSymbol)
                 .font(.system(size: 12.5, weight: .semibold))
@@ -7242,6 +7259,7 @@ struct MessageRow: View {
     var senderQQLevel: Int = 0
     var senderOnline: Bool = false
     var avatarSize: CGFloat = L.chatAvatar
+    var maxBubbleWidth: CGFloat = L.bubbleMaxW
     var showsAvatar: Bool = true
     var reservesAvatarSpace: Bool = true
     var currentNickname: String = ""
@@ -7370,7 +7388,7 @@ struct MessageRow: View {
 
                 HStack(spacing: 4) {
                     Text(senderName)
-                        .font(pf(12.5, .semibold))
+                        .font(pf(12, .regular))
                         .foregroundColor(senderNameColor ?? (senderNameUsesLightInk
                                          ? ChatTheme.groupSenderNameOnDark
                                          : ChatTheme.groupSenderNameOnLight))
@@ -7388,7 +7406,7 @@ struct MessageRow: View {
                 asrLine
             }
         }
-        .frame(maxWidth: L.bubbleMaxW, alignment: mine ? .trailing : .leading)
+        .frame(maxWidth: maxBubbleWidth, alignment: mine ? .trailing : .leading)
     }
 
     private var asrLine: some View {
@@ -7493,7 +7511,9 @@ struct MessageRow: View {
     }
 
     private var bubbleMentionInk: Color {
-        mine ? Color(hex: 0xFFD5D0) : ChatTheme.mentionMe
+        mine
+            ? Color.white.opacity(0.96)
+            : Color.dyn(0x576B95, 0x7D90A9)
     }
 
     private var bubbleLinkInk: Color {
@@ -8686,6 +8706,7 @@ extension MessageRow: Equatable {
             && lhs.senderQQLevel == rhs.senderQQLevel
             && lhs.senderOnline == rhs.senderOnline
             && lhs.avatarSize == rhs.avatarSize
+            && lhs.maxBubbleWidth == rhs.maxBubbleWidth
             && lhs.showsAvatar == rhs.showsAvatar
             && lhs.reservesAvatarSpace == rhs.reservesAvatarSpace
             && lhs.currentNickname == rhs.currentNickname
