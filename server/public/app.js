@@ -4110,33 +4110,64 @@
   }
 
   function modalAddFriend() {
-    openModal('添加好友',
-      '<label class="field"><span class="field-label">对方的用户名</span><input id="findUser" placeholder="输入完整用户名" autocomplete="off"></label>' +
-      '<div id="findResult"></div>',
-      '<button class="btn-primary" id="doFind">搜索</button>');
+    var suggestions = (state.friends || []).slice(0, 6).map(function (f) {
+      return '<button type="button" class="af-person" data-suggest="' + esc(f.username || '') + '">' +
+        '<span class="af-avatar">' + (f.avatar ? '<img src="' + esc(f.avatar) + '" alt="">' : esc(initials(f.nickname))) + '</span>' +
+        '<span class="af-copy"><b>' + esc(f.nickname || f.username || '') + '</b><small>' + esc(f.username || '') + '</small></span>' +
+        '<span class="af-chevron">›</span></button>';
+    }).join('');
+    openModal('添加朋友',
+      '<div class="add-friend-page">' +
+        '<label class="af-search"><span>⌕</span><input id="findUser" placeholder="姓名、星言号或手机号" autocomplete="off"></label>' +
+        '<div id="findResult">' +
+          '<div class="af-title">推荐联系人</div>' +
+          (suggestions || '<div class="af-empty">还没有推荐联系人</div>') +
+        '</div>' +
+      '</div>',
+      '');
     var input = $('findUser');
     input.focus();
-    $('doFind').addEventListener('click', doFindUser);
-    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') doFindUser(); });
+    var timer = 0;
+    input.addEventListener('input', function () {
+      clearTimeout(timer);
+      timer = setTimeout(doFindUser, 180);
+    });
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { clearTimeout(timer); doFindUser(); } });
+    $('modalBody').addEventListener('click', function (e) {
+      var suggest = e.target.closest('[data-suggest]');
+      if (!suggest) return;
+      input.value = suggest.getAttribute('data-suggest') || '';
+      doFindUser();
+    });
   }
 
   function doFindUser() {
     var q = $('findUser').value.trim();
-    if (!q) return;
+    if (!q) {
+      $('findResult').innerHTML = '<div class="af-empty">输入姓名、星言号或手机号开始搜索</div>';
+      return;
+    }
+    $('findResult').innerHTML = '<div class="af-loading"><span></span>正在搜索</div>';
     api('/users?q=' + encodeURIComponent(q)).then(function (data) {
       var list = data.users || [];
       if (!list.length) {
-        $('findResult').innerHTML = '<p class="auth-hint">没找到用户，确认用户名是否正确（区分大小写不敏感）。</p>';
+        $('findResult').innerHTML = '<div class="af-empty"><b>没有找到用户</b><span>检查一下姓名、星言号或手机号</span></div>';
         return;
       }
       $('findResult').innerHTML = list.map(function (u) {
-        var action = u.relation === 'friend' ? '<span class="auth-hint">已是好友</span>'
-          : (u.relation === 'requested' ? '<span class="auth-hint">已发送</span>'
-            : '<button class="tiny-btn" data-add="' + esc(u.username) + '">加好友</button>');
-        return '<div class="search-result"><div class="row-avatar js-avatar-link" data-goto-moments="' + esc(u.id) + '" data-moment-name="' + esc(u.nickname) + '" data-moment-avatar="' + esc(u.avatar || '') + '" title="看 TA 的朋友圈">' +
-          (u.avatar ? '<img src="' + esc(u.avatar) + '" alt="">' : esc(initials(u.nickname))) + '</div>' +
-          '<div class="row-main"><div class="row-top"><span class="row-name">' + esc(u.nickname) + '</span></div>' +
-          '<div class="row-bottom"><span class="row-preview">@' + esc(u.username) + '</span></div></div>' +
+        var action = '';
+        if (u.addState === 'friend') action = '<span class="af-state">已是好友</span>';
+        else if (u.addState === 'requested') action = '<span class="af-state">已发送</span>';
+        else if (u.addState === 'incoming') action = '<button class="af-add-btn" data-add="' + esc(u.username) + '">通过</button>';
+        else if (u.addState === 'blocked' || u.addState === 'blocked_by_peer' || u.addState === 'banned') {
+          action = '<span class="af-state is-muted">' + esc(u.addReason || '暂不可添加') + '</span>';
+        } else {
+          action = '<button class="af-add-btn" data-add="' + esc(u.username) + '">添加</button>';
+        }
+        return '<div class="af-person">' +
+          '<button type="button" class="af-avatar js-avatar-link" data-goto-moments="' + esc(u.id) + '" data-moment-name="' + esc(u.nickname) + '" data-moment-avatar="' + esc(u.avatar || '') + '">' +
+          (u.avatar ? '<img src="' + esc(u.avatar) + '" alt="">' : esc(initials(u.nickname))) + '</button>' +
+          '<span class="af-copy"><b>' + esc(u.nickname) + '</b><small>' + esc(u.username || '') + '</small></span>' +
           action + '</div>';
       }).join('');
     }).catch(function (err) { toast(err.message, 'error'); });
@@ -4237,20 +4268,88 @@
 
   function modalCreateGroup() {
     if (!state.friends.length) return toast('先加几个好友才能建群', 'error');
-    var rows = state.friends.map(function (f) {
-      return '<label class="pick-row"><input type="checkbox" value="' + esc(f.id) + '">' +
-        '<div class="row-avatar" data-uid="' + esc(f.id) + '">' + (f.avatar ? '<img src="' + esc(f.avatar) + '" alt="">' : esc(initials(f.nickname))) + '</div>' +
-        '<span>' + esc(f.nickname) + '</span></label>';
-    }).join('');
+    var selected = {};
+    var body =
+      '<div class="group-picker">' +
+        '<label class="gp-search"><span>⌕</span><input id="gpSearch" type="search" autocomplete="off" placeholder="搜索联系人"></label>' +
+        '<div class="gp-selected" id="gpSelected"></div>' +
+        '<div class="gp-name-row"><input id="groupName" maxlength="30" autocomplete="off" placeholder="群聊名称（必填）"><span id="gpCount">已选 0 人</span></div>' +
+        '<div class="gp-list" id="gpList"></div>' +
+      '</div>';
     openModal('发起群聊',
-      '<label class="field"><span class="field-label">群名称</span><input id="groupName" placeholder="例如：项目讨论组"></label>' +
-      '<div class="list-title">选择成员</div>' + rows,
-      '<button class="btn-primary" id="doCreateGroup">创建</button>');
+      body,
+      '<button class="btn-primary" id="doCreateGroup" disabled>创建群聊</button>');
+
+    function letterOf(f) {
+      var name = String(f.nickname || f.name || '#').trim();
+      var ch = (Array.from(name)[0] || '#').toUpperCase();
+      return /^[A-Z]$/.test(ch) ? ch : '#';
+    }
+    function selectedIds() { return Object.keys(selected); }
+    function updateSelected() {
+      var ids = selectedIds();
+      var count = ids.length;
+      $('gpCount').textContent = '已选 ' + count + ' 人';
+      $('gpSelected').innerHTML = count
+        ? ids.map(function (id) {
+          var f = state.friends.filter(function (x) { return x.id === id; })[0];
+          var face = f && f.avatar ? '<img src="' + esc(f.avatar) + '" alt="">' : esc(initials(f ? f.nickname : '?'));
+          return '<button type="button" class="gp-chip" data-remove="' + esc(id) + '" title="移除">' +
+            '<span class="gp-chip-face">' + face + '</span><span>' + esc(f ? f.nickname : '') + '</span><i>×</i></button>';
+        }).join('')
+        : '<span class="gp-selected-empty">选择联系人开始建群</span>';
+      var btn = $('doCreateGroup');
+      if (btn) btn.disabled = count === 0;
+      Array.prototype.forEach.call(document.querySelectorAll('#gpList .gp-row'), function (row) {
+        var on = !!selected[row.getAttribute('data-id')];
+        row.classList.toggle('is-selected', on);
+        row.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+    }
+    function paintList() {
+      var kw = String($('gpSearch').value || '').trim().toLowerCase();
+      var friends = state.friends.filter(function (f) {
+        return !kw || String(f.nickname || f.name || '').toLowerCase().indexOf(kw) >= 0;
+      }).sort(function (a, b) {
+        return String(a.nickname || '').localeCompare(String(b.nickname || ''), 'zh-Hans-CN');
+      });
+      var html = '', lastLetter = '';
+      friends.forEach(function (f) {
+        var L = letterOf(f);
+        if (L !== lastLetter) {
+          html += '<div class="gp-letter">' + esc(L) + '</div>';
+          lastLetter = L;
+        }
+        var on = !!selected[f.id];
+        html += '<button type="button" class="gp-row' + (on ? ' is-selected' : '') +
+          '" data-id="' + esc(f.id) + '" aria-selected="' + (on ? 'true' : 'false') + '">' +
+          '<span class="gp-avatar">' + (f.avatar ? '<img src="' + esc(f.avatar) + '" alt="">' : esc(initials(f.nickname))) + '</span>' +
+          '<span class="gp-name">' + esc(f.nickname || f.username || '') + '</span>' +
+          '<span class="gp-check">✓</span></button>';
+      });
+      $('gpList').innerHTML = html || '<div class="gp-empty">没有找到联系人</div>';
+    }
+
+    paintList();
+    updateSelected();
+    $('gpSearch').addEventListener('input', paintList);
+    $('gpList').addEventListener('click', function (e) {
+      var row = e.target.closest('.gp-row');
+      if (!row) return;
+      var id = row.getAttribute('data-id');
+      if (selected[id]) delete selected[id]; else selected[id] = true;
+      updateSelected();
+    });
+    $('gpSelected').addEventListener('click', function (e) {
+      var chip = e.target.closest('[data-remove]');
+      if (!chip) return;
+      delete selected[chip.getAttribute('data-remove')];
+      updateSelected();
+    });
     $('doCreateGroup').addEventListener('click', function () {
       var name = $('groupName').value.trim();
       if (!name) return toast('请填写群名称', 'error');
-      var ids = Array.prototype.slice.call(document.querySelectorAll('.pick-row input:checked'))
-        .map(function (i) { return i.value; });
+      var ids = selectedIds();
       if (!ids.length) return toast('至少选一个好友', 'error');
       api('/chats/group', { method: 'POST', body: JSON.stringify({ name: name, memberIds: ids }) })
         .then(function (data) {

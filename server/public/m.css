@@ -1832,6 +1832,9 @@ html[data-theme="dark"] .pub-cancel { background: #1c1c1e; }
 .wx-chat { position: fixed; inset: 0; background: var(--wx-bg); display: flex; flex-direction: column; z-index: 50; }
 .wx-messages { flex: 1 1 auto; overflow-y: auto; padding: 12px 12px 16px; -webkit-overflow-scrolling: touch; }
 .wx-msg { display: flex; gap: 9px; margin-bottom: 16px; align-items: flex-start; }
+.wx-msg.is-cont { margin-top: -8px; }
+.wx-msg.is-cont .wx-msg-avatar { visibility: hidden; }
+.wx-msg.is-cont .wx-msg-sender { display: none; }
 .wx-msg.is-me { flex-direction: row-reverse; }
 .wx-msg-avatar { width: 40px; height: 40px; flex: 0 0 40px; border-radius: 5px; overflow: hidden; background: #3a3a3c; display: grid; place-items: center; color: #fff; font-size: 15px; }
 .wx-msg-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }

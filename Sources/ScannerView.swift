@@ -382,6 +382,8 @@ struct ScannerView: View {
 
                 ScanFrame()
                     .frame(width: 250, height: 250)
+                ScannerMask(frameSize: 250)
+                    .allowsHitTesting(false)
 
                 if !useNativeScanner, cameraStatus != .running {
                     VStack(spacing: 10) {
@@ -416,7 +418,7 @@ struct ScannerView: View {
                     .background(RoundedRectangle(cornerRadius: 16).fill(Color.black.opacity(0.28)))
                 }
 
-                VStack {
+                VStack(spacing: 0) {
                     HStack {
                         Button { dismiss() } label: {
                             Image(systemName: "xmark")
@@ -431,87 +433,58 @@ struct ScannerView: View {
                             .font(pf(17, .semibold))
                             .foregroundColor(.white)
                         Spacer()
-                        Button { torch.toggle() } label: {
-                            Image(systemName: torch ? "bolt.fill" : "bolt.slash")
-                                .font(.system(size: 17, weight: .semibold))
-                                .foregroundColor(torch ? Color.yellow : .white)
-                                .frame(width: 40, height: 40)
-                                .background(Circle().fill(Color.black.opacity(0.35)))
-                        }
-                        .buttonStyle(.plain)
+                        Color.clear.frame(width: 40, height: 40)
                     }
                     .padding(.horizontal, 16)
-                    .padding(.top, 8)
+                    .padding(.top, 4)
+                    .padding(.bottom, 12)
+                    .background(
+                        LinearGradient(
+                            colors: [.black.opacity(0.68), .black.opacity(0.2), .clear],
+                            startPoint: .top, endPoint: .bottom
+                        )
+                        .ignoresSafeArea(edges: .top)
+                    )
 
                     Spacer()
 
                     Text(hint)
                         .font(pf(13.5))
                         .foregroundColor(.white.opacity(0.9))
+                        .multilineTextAlignment(.center)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 8)
                         .background(Capsule().fill(Color.black.opacity(0.35)))
-                    Text(mode == 0
-                         ? Tr("群二维码扫了直接进群；网页登录出的 6 位数码扫了就是确认登录")
-                         : Tr("对着要翻译 / 取字的画面按「拍照」，也可以从相册挑一张"))
-                        .font(pf(12))
-                        .foregroundColor(.white.opacity(0.6))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 40)
-                        .padding(.top, 8)
 
-                    HStack(spacing: 14) {
+                    HStack(spacing: 58) {
                         Button { AlbumPicker.present { image in pickPhoto(image) } } label: {
-                            VStack(spacing: 6) {
-                                Image(systemName: "photo.on.rectangle")
-                                    .font(.system(size: 22))
-                                Text(busy || ocrBusy ? Tr("识别中…") : Tr("相册"))
-                                    .font(pf(13))
-                            }
-                            .foregroundColor(.white)
-                            .frame(width: 74, height: 66)
-                            .background(RoundedRectangle(cornerRadius: 12).fill(Color.black.opacity(0.35)))
+                            scannerControl(
+                                symbol: "photo.on.rectangle",
+                                label: busy || ocrBusy ? Tr("识别中…") : Tr("相册")
+                            )
                         }
                         .buttonStyle(.plain)
                         .disabled(busy || ocrBusy)
 
-                        if mode != 0 {
-                            Button { showCamera = true } label: {
-                                VStack(spacing: 6) {
-                                    Image(systemName: "camera.fill").font(.system(size: 22))
-                                    Text(Tr("拍照")).font(pf(13))
-                                }
-                                .foregroundColor(.white)
-                                .frame(width: 74, height: 66)
-                                .background(RoundedRectangle(cornerRadius: 12).fill(Color.black.opacity(0.35)))
-                            }
-                            .buttonStyle(.plain)
-                            .disabled(busy || ocrBusy)
+                        Button { torch.toggle() } label: {
+                            scannerControl(
+                                symbol: torch ? "bolt.fill" : "bolt.slash.fill",
+                                label: Tr("手电"),
+                                active: torch
+                            )
                         }
+                        .buttonStyle(.plain)
                     }
-                    .padding(.top, 16)
-
-                    HStack(spacing: 36) {
-                        ForEach(Array(["扫码", "翻译", "取字"].enumerated()), id: \.offset) { i, t in
-                            Button {
-                                withAnimation(.easeOut(duration: 0.15)) { mode = i }
-                            } label: {
-                                Text(Tr(t))
-                                    .font(pf(15, mode == i ? .semibold : .regular))
-                                    .foregroundColor(mode == i ? .white : .white.opacity(0.55))
-                                    .padding(.bottom, 9)
-                                    .overlay(alignment: .bottom) {
-                                        if mode == i {
-                                            Capsule().fill(Color(hex: 0x3ED37F))
-                                                .frame(width: 18, height: 3)
-                                        }
-                                    }
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                    .padding(.top, 14)
-                    .padding(.bottom, 30)
+                    .padding(.top, 20)
+                    .padding(.bottom, 34)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        LinearGradient(
+                            colors: [.clear, .black.opacity(0.48), .black.opacity(0.72)],
+                            startPoint: .top, endPoint: .bottom
+                        )
+                        .ignoresSafeArea(edges: .bottom)
+                    )
                 }
             }
         }
@@ -599,6 +572,26 @@ struct ScannerView: View {
         }
     }
 
+    private func scannerControl(symbol: String, label: String, active: Bool = false) -> some View {
+        VStack(spacing: 7) {
+            Image(systemName: symbol)
+                .font(.system(size: 22, weight: .medium))
+                .foregroundColor(active ? Color(hex: 0xFFD60A) : .white)
+                .frame(width: 56, height: 56)
+                .background {
+                    Circle()
+                        .fill(.ultraThinMaterial)
+                        .environment(\.colorScheme, .dark)
+                }
+                .overlay {
+                    Circle().stroke(Color.white.opacity(0.18), lineWidth: 0.7)
+                }
+            Text(label)
+                .font(pf(11.5, .medium))
+                .foregroundColor(.white.opacity(0.9))
+        }
+    }
+
     private func resultCard(_ title: String, _ text: String, hot: Bool) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title).font(pf(12.5)).foregroundColor(C.subLabel)
@@ -674,6 +667,27 @@ private struct ScanFrame: View {
         }
         .stroke(Color.white, style: StrokeStyle(lineWidth: lw, lineCap: .round, lineJoin: .round))
         .frame(width: w, height: w)
+    }
+}
+
+private struct ScannerMask: View {
+    let frameSize: CGFloat
+
+    var body: some View {
+        GeometryReader { geo in
+            let rect = CGRect(
+                x: (geo.size.width - frameSize) / 2,
+                y: (geo.size.height - frameSize) / 2,
+                width: frameSize,
+                height: frameSize
+            )
+            Path { path in
+                path.addRect(CGRect(origin: .zero, size: geo.size))
+                path.addRoundedRect(in: rect, cornerSize: CGSize(width: 16, height: 16))
+            }
+            .fill(Color.black.opacity(0.44), style: FillStyle(eoFill: true))
+        }
+        .ignoresSafeArea()
     }
 }
 

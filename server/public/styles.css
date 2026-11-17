@@ -5303,3 +5303,75 @@ body { letter-spacing: 0.15px; }
 .bubble-call { display: inline-flex; align-items: center; gap: 6px; }
 .bubble-call .call-ico { width: 15px; height: 15px; flex: 0 0 15px; display: inline-flex; }
 .bubble-call .call-ico svg { width: 100%; height: 100%; display: block; }
+
+/* 发起群聊：WhatsApp/微信式联系人选择器。 */
+.group-picker { display: flex; flex-direction: column; min-height: 0; }
+.gp-search {
+  display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 11px;
+  border-radius: 8px; background: var(--wx-bg); border: 1px solid var(--wx-line);
+  color: var(--wx-fg-2); flex: 0 0 auto;
+}
+.gp-search span { font-size: 20px; line-height: 1; transform: rotate(-20deg); }
+.gp-search input { flex: 1 1 auto; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--wx-fg-0); font-size: 14px; }
+.gp-selected { min-height: 55px; padding: 9px 0 4px; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; flex: 0 0 auto; }
+.gp-selected::-webkit-scrollbar { display: none; }
+.gp-selected-empty { align-self: center; color: var(--wx-fg-2); font-size: 12.5px; }
+.gp-chip { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 48px; max-width: 68px; padding: 0; border: 0; background: transparent; color: var(--wx-fg-1); font-size: 11.5px; }
+.gp-chip-face { width: 38px; height: 38px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--wx-bg); color: var(--wx-fg-1); font-size: 13px; }
+.gp-chip-face img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gp-chip > span:last-of-type { max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gp-chip i { position: absolute; top: -2px; right: 1px; width: 15px; height: 15px; border-radius: 50%; display: grid; place-items: center; background: #8e8e93; color: #fff; font-size: 11px; font-style: normal; }
+.gp-name-row { display: flex; align-items: center; gap: 10px; padding: 5px 0 7px; border-bottom: 1px solid var(--wx-line); flex: 0 0 auto; }
+.gp-name-row input { flex: 1 1 auto; min-width: 0; height: 34px; border: 0; border-bottom: 1px solid var(--wx-line); outline: 0; background: transparent; color: var(--wx-fg-0); font-size: 14px; }
+.gp-name-row span { flex: 0 0 auto; color: var(--wx-fg-2); font-size: 12px; }
+.gp-list { min-height: 210px; max-height: min(46vh, 380px); overflow-y: auto; overscroll-behavior: contain; padding: 4px 0 2px; }
+.gp-letter { position: sticky; top: 0; z-index: 1; padding: 6px 4px 4px; color: var(--wx-fg-2); background: var(--wx-bg-2); font-size: 11px; font-weight: 600; }
+.gp-row { display: flex; align-items: center; width: 100%; gap: 10px; min-height: 52px; padding: 0 5px; border: 0; border-bottom: 0.5px solid var(--wx-line); background: transparent; text-align: left; color: var(--wx-fg-0); }
+.gp-row:active { background: rgba(127,127,127,.1); }
+.gp-avatar { width: 38px; height: 38px; flex: 0 0 38px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--wx-bg); color: var(--wx-fg-1); font-size: 13px; }
+.gp-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gp-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; }
+.gp-check { width: 23px; height: 23px; flex: 0 0 23px; border-radius: 50%; display: grid; place-items: center; border: 1.5px solid var(--wx-line); color: transparent; font-size: 13px; font-weight: 700; }
+.gp-row.is-selected .gp-check { border-color: var(--wx-brand); background: var(--wx-brand); color: #fff; }
+.gp-row.is-selected .gp-name { font-weight: 500; }
+.gp-empty { padding: 34px 12px; text-align: center; color: var(--wx-fg-2); font-size: 13px; }
+
+/* 添加朋友：WhatsApp 式搜索 + 推荐联系人 + 统一结果行。 */
+.add-friend-page { min-height: 280px; }
+.af-search {
+  display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 11px;
+  border-radius: 8px; background: var(--wx-bg); border: 1px solid var(--wx-line);
+  color: var(--wx-fg-2);
+}
+.af-search span { font-size: 20px; line-height: 1; transform: rotate(-20deg); }
+.af-search input { flex: 1 1 auto; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--wx-fg-0); font-size: 14px; }
+.af-title { padding: 16px 3px 6px; color: var(--wx-fg-2); font-size: 11.5px; font-weight: 600; }
+.af-person {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 58px;
+  padding: 3px 2px; border: 0; border-bottom: 0.5px solid var(--wx-line);
+  background: transparent; color: var(--wx-fg-0); text-align: left;
+}
+button.af-person { cursor: pointer; }
+.af-person:active { background: rgba(127,127,127,.09); }
+.af-avatar {
+  width: 42px; height: 42px; flex: 0 0 42px; padding: 0; border: 0; border-radius: 50%;
+  overflow: hidden; display: grid; place-items: center; background: var(--wx-bg);
+  color: var(--wx-fg-1); font-size: 14px;
+}
+.af-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.af-copy { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.af-copy b { font-size: 15px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.af-copy small { font-size: 12px; color: var(--wx-fg-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.af-chevron { color: var(--wx-fg-2); font-size: 20px; }
+.af-add-btn {
+  flex: 0 0 auto; height: 30px; padding: 0 13px; border: 1px solid var(--wx-brand);
+  border-radius: 15px; background: transparent; color: var(--wx-brand); font-size: 13px; font-weight: 500;
+}
+.af-add-btn:active { background: color-mix(in srgb, var(--wx-brand) 10%, transparent); }
+.af-state { flex: 0 0 auto; color: var(--wx-fg-2); font-size: 12px; }
+.af-state.is-muted { max-width: 92px; text-align: right; line-height: 1.25; }
+.af-empty { min-height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-align: center; color: var(--wx-fg-2); font-size: 13px; }
+.af-empty b { color: var(--wx-fg-1); font-size: 14px; font-weight: 500; }
+.af-loading { min-height: 120px; display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--wx-fg-2); font-size: 13px; }
+.af-loading span { width: 15px; height: 15px; border: 2px solid var(--wx-line); border-top-color: var(--wx-brand); border-radius: 50%; animation: afSpin .7s linear infinite; }
+@keyframes afSpin { to { transform: rotate(360deg); } }

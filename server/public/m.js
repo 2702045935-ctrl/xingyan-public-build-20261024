@@ -2348,7 +2348,7 @@
     var nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 140;
     var curChat = S.chats.filter(function (c) { return c.id === S.activeChat; })[0] || {};
     var isGroup = curChat.type === 'group';
-    var html = '', lastDay = '';
+    var html = '', lastDay = '', lastSender = '', lastAt = 0;
     /* 上面还有更早的记录：顶部给一个入口（服务端支持 before 翻页） */
     if (S.hasOlder && S.hasOlder[S.activeChat]) {
       html += '<div class="wx-msg-time" style="cursor:pointer" onclick="loadOlderWeb()">查看更早的消息</div>';
@@ -2358,6 +2358,8 @@
       var day = new Date(m.createdAt).toDateString();
       if (day !== lastDay) {
         lastDay = day;
+        lastSender = '';
+        lastAt = 0;
         html += '<div class="wx-msg-time"><span>' + esc(dividerTime(m.createdAt)) + '</span></div>';
       }
       var mine = m.senderId === S.me.id;
@@ -2365,6 +2367,8 @@
       if (m.kind === 'system') {
         var relation = relationLine(m);
         if (relation) {
+          lastSender = '';
+          lastAt = 0;
           html += relation;
           return;
         }
@@ -2387,8 +2391,12 @@
               '<span class="wx-call-ico">' + (cVideo ? SYS_VIDEO_ICON : SYS_CALL_ICON) + '</span>' +
               '<span>' + esc(cTxt) + '</span>' +
             '</div></div>';
+          lastSender = '';
+          lastAt = 0;
           return;
         }
+        lastSender = '';
+        lastAt = 0;
         html += systemLine(m);
         return;
       }
@@ -2415,7 +2423,12 @@
       // 群聊：名字放在气泡上方（参考图就是这样）
       if (isGroup && !mine) body = '<div class="wx-msg-body"><div class="wx-msg-sender">' + esc(m.senderName || '') + '</div>' + body + '</div>';
       var faceUid = mine ? ((S.me && S.me.id) || '') : (m.senderId || '');
-      html += '<div class="wx-msg' + (mine ? ' is-me' : '') + '" data-id="' + esc(m.id) + '">' +
+      var at = Date.parse(m.createdAt) || 0;
+      var continued = !!(lastSender === m.senderId && lastAt && at && at - lastAt < 90000);
+      lastSender = m.senderId;
+      lastAt = at || lastAt;
+      html += '<div class="wx-msg' + (mine ? ' is-me' : '') + (continued ? ' is-cont' : '') +
+        '" data-id="' + esc(m.id) + '">' +
         '<div class="wx-msg-avatar"' + (faceUid ? ' data-uid="' + esc(faceUid) + '"' : '') + '>' + face + '</div>' +
         body + '</div>';
     });

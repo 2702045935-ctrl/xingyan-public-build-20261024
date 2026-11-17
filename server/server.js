@@ -20476,7 +20476,8 @@ async function handleApi(req, res, pathname, query) {
   }
 
   if (parts[0] === 'users' && method === 'GET') {
-    const q = str(query.get('q'), 24).toLowerCase();
+    const rawQ = str(query.get('q'), 80).trim();
+    const q = rawQ.toLowerCase();
     if (!q) {
       observeShardShadow('users.search', { userId: user.id, query: q });
       return ok(res, { users: [] });            // 空搜索不再把全站用户吐出来
@@ -20491,6 +20492,7 @@ async function handleApi(req, res, pathname, query) {
     const phoneQ = normalizePhone(q);
     const phoneQuery = /^1[3-9]\d{9}$/.test(phoneQ);
     const exact = (u) => String(u.username || '').toLowerCase() === q
+      || String(u.id || '').toLowerCase() === q
       || (phoneQuery && userPrivacy(u).addByPhone && normalizePhone(u.phone) === phoneQ)
       || String(u.nickname || '').toLowerCase() === q;
     let matched = secCfg().strictSearch
@@ -20503,9 +20505,26 @@ async function handleApi(req, res, pathname, query) {
     }
     const list = matched.slice(0, 20).map((u) => {
         const f = friendshipBetween(user.id, u.id);
+        const blocked = blockedByUser(user.id, u.id);
+        const blockedMe = blockedByUser(u.id, user.id);
+        const relation = !f ? 'none'
+          : (f.status === 'accepted' ? 'friend' : (f.fromId === user.id ? 'requested' : 'incoming'));
+        let addState = 'can_add';
+        let addReason = '';
+        if (u.id === user.id) { addState = 'self'; addReason = '这是你自己'; }
+        else if (u.banned) { addState = 'banned'; addReason = '该账号当前不可添加'; }
+        else if (relation === 'friend') { addState = 'friend'; addReason = '你们已经是好友'; }
+        else if (relation === 'requested') { addState = 'requested'; addReason = '好友申请已发送'; }
+        else if (relation === 'incoming') { addState = 'incoming'; addReason = '对方已申请添加你'; }
+        else if (blocked) { addState = 'blocked'; addReason = '先把对方移出黑名单'; }
+        else if (blockedMe) { addState = 'blocked_by_peer'; addReason = '暂时无法添加'; }
         return Object.assign(publicUserBrief(u, user.id, myFriends), {
-          relation: !f ? 'none' : (f.status === 'accepted' ? 'friend' : (f.fromId === user.id ? 'requested' : 'incoming')),
-          online: online.includes(u.id)
+          relation,
+          online: online.includes(u.id),
+          blocked,
+          blockedMe,
+          addState,
+          addReason
         });
       });
     observeShardShadow('users.search', { userId: user.id, query: q, count: list.length });
@@ -20580,6 +20599,12 @@ async function handleApi(req, res, pathname, query) {
     const target = str(body.username, 24) ? findUserByName(body.username) : findUser(str(body.userId, 40));
     if (!target) return fail(res, 404, '用户不存在');
     if (target.id === user.id) return fail(res, 422, '不能添加自己');
+    if (blockedByUser(user.id, target.id)) {
+      return fail(res, 409, '先把对方移出黑名单再添加');
+    }
+    if (blockedByUser(target.id, user.id)) {
+      return fail(res, 403, '暂时无法添加该用户');
+    }
     /* 风控：被临时限制的账号先挡住；加得太快记一笔（营销号/养号特征） */
     const fReqBlocked = riskBlocked(user);
     if (fReqBlocked) return fail(res, 429, '账号功能被临时限制，还有 ' + fReqBlocked + ' 分钟（如有疑问请联系管理员）');
@@ -20602,6 +20627,8 @@ async function handleApi(req, res, pathname, query) {
       observeShardShadow('friends.request', { friendship: exist, accept: true });
       /* 互相加好友（对方先加过我）：同样立刻在两个人的「微信」首页开出会话 */
       const c2 = openChatForFriendship(exist.fromId, exist.toId);
+      if (c2) pushRelationMessage(c2, '你们已成为好友，现在可以开始聊天了',
+        'friend_added', user.id, target.id);
       sendTo(target.id, { type: 'friend', action: 'accepted', user: publicUser(user) });
       sendTo(exist.fromId, { type: 'chat', chatId: c2 ? c2.id : '' });
       sendTo(exist.toId, { type: 'chat', chatId: c2 ? c2.id : '' });
