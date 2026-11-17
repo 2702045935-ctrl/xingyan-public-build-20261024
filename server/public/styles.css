@@ -5375,3 +5375,74 @@ button.af-person { cursor: pointer; }
 .af-loading { min-height: 120px; display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--wx-fg-2); font-size: 13px; }
 .af-loading span { width: 15px; height: 15px; border: 2px solid var(--wx-line); border-top-color: var(--wx-brand); border-radius: 50%; animation: afSpin .7s linear infinite; }
 @keyframes afSpin { to { transform: rotate(360deg); } }
+
+/* 通讯录：WhatsApp 桌面端节奏，分组 + 纯联系人行。 */
+.contacts-group-title {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  height: 30px;
+  padding: 7px 18px 4px;
+  background: var(--wx-bg);
+  color: var(--wx-fg-2);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 19px;
+  letter-spacing: .25px;
+}
+.contact-row {
+  display: flex;
+  align-items: center;
+  min-height: 65px;
+  padding: 9px 18px;
+  gap: 12px;
+  cursor: pointer;
+  position: relative;
+}
+.contact-row + .contact-row::before {
+  content: "";
+  position: absolute;
+  left: 74px;
+  right: 0;
+  top: 0;
+  height: .5px;
+  background: var(--wx-line);
+}
+.contact-row .row-avatar {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+  border-radius: 50%;
+}
+.contact-copy {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+.contact-copy b {
+  overflow: hidden;
+  color: var(--wx-fg-0);
+  font-size: 15.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.contact-copy small {
+  overflow: hidden;
+  color: var(--wx-fg-2);
+  font-size: 12.5px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.contact-chevron {
+  flex: 0 0 auto;
+  color: var(--wx-fg-2);
+  font-size: 18px;
+  line-height: 1;
+  opacity: .72;
+}
+.contact-row:active { background: rgba(127, 127, 127, .1); }

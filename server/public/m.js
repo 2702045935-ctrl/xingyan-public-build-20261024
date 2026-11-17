@@ -2090,8 +2090,8 @@
       map[L].push(f);
     });
     rows += groups.map(function (L) {
-      // 分组字母不再插在列表中间（只有右侧 A-Z 索引）；data-letter 挂到该组第一行，方便跳转
-      var head = '<div class="ct-head" data-letter="' + esc(L) + '" hidden></div>';
+      // 微信通讯录：分组字母是列表节奏的一部分，右侧索引负责快速跳转。
+      var head = '<div class="ct-head" data-letter="' + esc(L) + '">' + esc(L) + '</div>';
       var body = map[L].map(function (f, idx) {
         var face = f.avatar ? '<img src="' + esc(f.avatar) + '" alt="" loading="lazy" decoding="async">' : esc(initials(f.nickname));
         return '<div class="ct-row" data-friend="' + esc(f.id) + '"' + (idx === 0 ? ' data-letter-row="' + esc(L) + '"' : '') + '>' +

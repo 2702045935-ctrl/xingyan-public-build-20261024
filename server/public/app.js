@@ -1548,24 +1548,32 @@
     if (!list.length) {
       box.innerHTML = '<div class="list-title">' + (kw ? '没有匹配的好友' : '还没有好友，点右上角 ＋ → 「添加好友」搜用户名') + '</div>';
     } else {
-      box.innerHTML = list.map(function (f) {
-        return '<div class="row" data-open-user="' + esc(f.id) + '">' +
-          '<div class="row-avatar js-avatar-link" data-goto-moments="' + esc(f.id) + '" title="看 TA 的朋友圈">' + (f.avatar ? '<img src="' + esc(f.avatar) + '" alt="">' : esc(initials(f.nickname))) +
+      var collator = null;
+      try { collator = new Intl.Collator('zh-Hans-CN', { usage: 'sort' }); } catch (e) { collator = null; }
+      list = list.slice().sort(function (a, b) {
+        return collator ? collator.compare(a.nickname || '', b.nickname || '')
+          : String(a.nickname || '').localeCompare(String(b.nickname || ''));
+      });
+      function desktopLetter(name) {
+        var first = (Array.from(String(name || '').trim())[0] || '#').toUpperCase();
+        return /^[A-Z]$/.test(first) ? first : '#';
+      }
+      var out = '', lastLetter = '';
+      list.forEach(function (f) {
+        var L = desktopLetter(f.nickname || f.username);
+        if (!kw && L !== lastLetter) {
+          out += '<div class="contacts-group-title">' + esc(L) + '</div>';
+          lastLetter = L;
+        }
+        out += '<div class="row contact-row" data-open-user="' + esc(f.id) + '">' +
+          '<div class="row-avatar js-avatar-link" data-goto-moments="' + esc(f.id) + '" title="看 TA 的朋友圈">' +
+            (f.avatar ? '<img src="' + esc(f.avatar) + '" alt="">' : esc(initials(f.nickname))) +
             (statusKey(f.id) !== 'offline' ? '<span class="online-dot"></span>' : '') + '</div>' +
-          (function () {
-        var chat = (state.chats || []).filter(function (c) {
-          return c.type === 'direct' && (c.memberIds || []).indexOf(f.id) >= 0 && (c.memberIds || []).indexOf(state.me.id) >= 0;
-        })[0];
-        var last = chat ? chat.lastMessage : null;
-        var time = last ? '<span class="row-time">' + formatTime(last.createdAt) + '</span>' : '';
-        var prev = last ? ((last.senderId === state.me.id ? '我：' : '') + last.preview) : '';
-        return '<div class="row-main">' +
-          '<div class="row-top"><span class="row-name">' + esc(f.nickname) + '</span>' + time + '</div>' +
-          (prev ? '<div class="row-bottom"><span class="row-preview">' + esc(prev) + '</span></div>' : '<div class="row-bottom"></div>') +
-        '</div>';
-      })() +
-          '</div>';
-      }).join('');
+          '<div class="contact-copy"><b>' + esc(f.nickname || f.username) + '</b>' +
+            '<small>' + esc(f.bio || f.username || '') + '</small></div>' +
+          '<span class="contact-chevron">›</span></div>';
+      });
+      box.innerHTML = out;
     }
 
     var section = $('requestSection');
