@@ -7723,7 +7723,7 @@ let shardWriteFrozen = String(process.env.SHARD_WRITE_FROZEN || '') === '1';
 let shardFenceEpoch = 0;
 let shardWriteFreezeReason = '';
 
-function forwardToCallSignalShard(pathname, payload) {
+function forwardToCallSignalShard(pathname, payload, actorId) {
   if (PORT === CALL_SIGNAL_PORT) return;
   const body = JSON.stringify(payload || {});
   const request = http.request({
@@ -7738,8 +7738,17 @@ function forwardToCallSignalShard(pathname, payload) {
       'X-Shard-Relay': db.secret || ''
     }
   }, (response) => response.resume());
-  request.setTimeout(1800, () => request.destroy());
-  request.on('error', () => {});
+  request.setTimeout(1800, () => request.destroy(new Error('timeout')));
+  request.on('error', () => {
+    const callId = str(payload && payload.payload && payload.payload.callId, 60);
+    if (actorId && callId) {
+      sendToLocal(actorId, {
+        type: 'call-error',
+        callId,
+        error: '通话服务暂时不可用，请稍后重试'
+      });
+    }
+  });
   request.end(body);
 }
 
@@ -7747,7 +7756,7 @@ function forwardCallToSignalShard(actorId, msg) {
   forwardToCallSignalShard('/__shard/call-signal', {
     actorId: String(actorId || ''),
     payload: msg
-  });
+  }, actorId);
 }
 
 function chatOwnerPort(chatId) {
@@ -8481,6 +8490,51 @@ const CALL_SIGNAL_PORT = Number(process.env.CALL_SIGNAL_PORT)
   || 5299;
 const callSignalSockets = new Map();
 const shardCallDirectory = new Map();
+let callSignalProbeOk = PORT === CALL_SIGNAL_PORT;
+let callSignalProbeError = '';
+
+function probeCallSignalPort() {
+  if (PORT === CALL_SIGNAL_PORT) {
+    callSignalProbeOk = true;
+    callSignalProbeError = '';
+    return;
+  }
+  const request = http.get({
+    host: '127.0.0.1',
+    port: CALL_SIGNAL_PORT,
+    path: '/api/health',
+    timeout: 1500
+  }, (response) => {
+    const chunks = [];
+    response.on('data', (chunk) => chunks.push(chunk));
+    response.on('end', () => {
+      try {
+        const parsed = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+        const data = parsed && parsed.data;
+        callSignalProbeOk = response.statusCode === 200
+          && data && data.role === 'call-signal'
+          && Number(data.port) === CALL_SIGNAL_PORT;
+        callSignalProbeError = callSignalProbeOk ? ''
+          : '通话信令端口返回了错误角色或端口';
+      } catch (_) {
+        callSignalProbeOk = false;
+        callSignalProbeError = '通话信令健康响应无法解析';
+      }
+      if (!callSignalProbeOk) {
+        try { callTrace('call-signal 探测失败 port=' + CALL_SIGNAL_PORT + ' ' + callSignalProbeError); } catch (_) { }
+      }
+    });
+  });
+  request.on('timeout', () => request.destroy(new Error('timeout')));
+  request.on('error', (error) => {
+    callSignalProbeOk = false;
+    callSignalProbeError = String(error && error.message || error);
+    try { callTrace('call-signal 不可达 port=' + CALL_SIGNAL_PORT + ' ' + callSignalProbeError); } catch (_) { }
+  });
+}
+
+setTimeout(probeCallSignalPort, 500).unref();
+setInterval(probeCallSignalPort, 15000).unref();
 
 function pendingCallFor(userId) {
   let found = null;
@@ -14771,6 +14825,8 @@ async function handleApi(req, res, pathname, query) {
       fenceEpoch: shardFenceEpoch,
       writeFreezeReason: shardWriteFreezeReason,
       callSignalPort: CALL_SIGNAL_PORT,
+      callSignalReachable: callSignalProbeOk,
+      callSignalProbeError,
       activeCalls,
       ringingCalls,
       directoryCalls: shardCallDirectory.size
