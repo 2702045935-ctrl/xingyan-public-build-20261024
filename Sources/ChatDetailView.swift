@@ -2045,6 +2045,30 @@ struct ChatDetailView: View {
                 Group {
                     if isStarWorld && newsMode {
                         newsMaskColor
+                    } else if isGroup {
+                        ZStack {
+                            ChatImmersiveEdgeMask(path: backgroundPath,
+                                                  edge: .top,
+                                                  tint: wallpaperTopTint,
+                                                  dark: topBarUsesLightInk,
+                                                  effect: backgroundEffect,
+                                                  preset: ChatTheme.preset,
+                                                  themeVersion: chatTheme.version)
+                            NativeGlassHeaderMaterial()
+                                .opacity(0.78)
+                            Rectangle()
+                                .fill(topBarUsesLightInk
+                                      ? Color.black.opacity(0.10)
+                                      : Color.white.opacity(0.07))
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(topBarUsesLightInk ? 0.08 : 0.13),
+                                    Color.clear
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        }
                     } else {
                         ChatImmersiveEdgeMask(path: backgroundPath,
                                               edge: .top,
