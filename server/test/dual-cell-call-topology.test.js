@@ -53,6 +53,14 @@ function main() {
   assert.ok(probe.includes('通话服务暂时不可用'),
     'call forwarding failure must be reported to the client');
 
+  const fileSync = fs.readFileSync(path.join(
+    root, 'deploy', 'dual-cell', 'dual-cell-file-sync.sh'
+  ), 'utf8');
+  assert.ok(fileSync.includes('--checksum'),
+    'replica sync must periodically verify file contents');
+  assert.ok(fileSync.includes('CHECKSUM_MARKER'),
+    'replica sync must limit checksum scans instead of running them every second');
+
   console.log('dual-cell-call-topology: passed');
 }
 
