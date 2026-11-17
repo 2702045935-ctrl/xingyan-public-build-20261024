@@ -171,7 +171,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         let resolvedTitleHeight = max(titleHeight, ceil(titleLabel.font.lineHeight))
         let previewHeight = max(19, ceil(previewLabel.font.lineHeight))
         let timeHeight = max(18, ceil(timeLabel.font.lineHeight))
-        let titlePreviewGap: CGFloat = 1
+        let titlePreviewGap: CGFloat = 3
         let contentHeight = resolvedTitleHeight + titlePreviewGap + previewHeight
         let contentTop = max(5, (bounds.height - contentHeight) / 2)
         let unread = configuration?.unread ?? 0

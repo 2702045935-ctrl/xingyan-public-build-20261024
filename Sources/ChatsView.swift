@@ -339,7 +339,7 @@ struct ChatRow: View, Equatable {
 
     private var textColumn: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
-            VStack(alignment: .leading, spacing: scheme == .dark ? 2 : 1) {
+            VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 5) {
                     Text(displayTitle)
                         .font(pfStyled(size: scheme == .dark ? 16.5 : 17,
