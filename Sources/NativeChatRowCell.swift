@@ -44,6 +44,8 @@ struct NativeChatRowConfiguration {
     var isLight: Bool
     var preview: String
     var mentionPrefix: String
+    var previewKind: String
+    var highlightMention: Bool
     var previewColor: UIColor
     var time: String
     var timeColor: UIColor
@@ -222,20 +224,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         timeLabel.font = NativeChatRowMetrics.font(13,
                                                   weight: .regular,
                                                   textStyle: .footnote)
-        let preview = NSMutableAttributedString(
-            string: configuration.mentionPrefix + configuration.preview,
-            attributes: [
-                .font: previewLabel.font as Any,
-                .foregroundColor: configuration.previewColor
-            ]
-        )
-        if !configuration.mentionPrefix.isEmpty {
-            preview.addAttributes([
-                .font: UIFont.systemFont(ofSize: 15, weight: .medium),
-                .foregroundColor: UIColor.systemRed
-            ], range: NSRange(location: 0, length: (configuration.mentionPrefix as NSString).length))
-        }
-        previewLabel.attributedText = preview
+        previewLabel.attributedText = styledPreview(configuration)
         timeLabel.text = configuration.time
         timeLabel.textColor = configuration.timeColor
         divider.backgroundColor = configuration.dividerColor
@@ -296,6 +285,160 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         }
         configureAccessibility(configuration)
         setNeedsLayout()
+    }
+
+    private func styledPreview(_ configuration: NativeChatRowConfiguration) -> NSAttributedString {
+        let text = configuration.mentionPrefix + configuration.preview
+        let prefixLength = (configuration.mentionPrefix as NSString).length
+        let bodyLength = (configuration.preview as NSString).length
+        let result = NSMutableAttributedString(
+            string: text,
+            attributes: [
+                .font: previewLabel.font as Any,
+                .foregroundColor: configuration.previewColor
+            ]
+        )
+        if prefixLength > 0 {
+            result.addAttributes([
+                .font: UIFont.systemFont(ofSize: 15, weight: .medium),
+                .foregroundColor: UIColor.systemRed
+            ], range: NSRange(location: 0, length: prefixLength))
+        }
+
+        let bodyRange = NSRange(location: prefixLength, length: bodyLength)
+        guard bodyLength > 0 else { return result }
+        let body = configuration.preview
+        let bodyText = body as NSString
+        let kind = configuration.previewKind
+
+        let wholeColor: UIColor?
+        if kind == "draft"
+            || body.contains("草稿")
+            || body.localizedCaseInsensitiveContains("draft") {
+            wholeColor = .systemRed
+        } else if body.contains("已添加")
+            || body.contains("已成为好友")
+            || body.contains("添加了好友")
+            || body.contains("好友验证通过")
+            || body.contains("解冻") {
+            wholeColor = .systemGreen
+        } else if body.contains("删除好友")
+            || body.contains("已删除")
+            || body.contains("解除好友")
+            || body.contains("不再是好友")
+            || body.contains("关系已解除")
+            || body.contains("拉黑")
+            || body.contains("黑名单")
+            || body.contains("拒收") {
+            wholeColor = .systemRed
+        } else if body.contains("封号")
+            || body.contains("封禁")
+            || body.contains("账号")
+            || body.contains("冻结")
+            || body.contains("其他地方登录")
+            || body.contains("已下线") {
+            wholeColor = .systemOrange
+        } else if body.contains("撤回") {
+            wholeColor = .systemRed
+        } else {
+            wholeColor = nil
+        }
+        if let wholeColor {
+            result.addAttribute(.foregroundColor, value: wholeColor, range: bodyRange)
+            return result
+        }
+
+        if let tag = Self.tokenRegex.firstMatch(
+               in: body,
+               range: NSRange(location: 0, length: bodyText.length)
+           ) {
+            let token = bodyText.substring(with: tag.range)
+            if let color = Self.previewTokenColor(token) {
+                result.addAttributes([
+                    .font: UIFont.systemFont(ofSize: 15, weight: .medium),
+                    .foregroundColor: color
+                ], range: NSRange(location: prefixLength + tag.range.location,
+                                  length: tag.range.length))
+            }
+        } else if let color = Self.previewKindColor(kind) {
+            result.addAttribute(.foregroundColor, value: color, range: bodyRange)
+        } else if kind == "pat" || kind == "system" {
+            result.addAttribute(
+                .foregroundColor,
+                value: configuration.isLight
+                    ? UIColor(hex: 0x5C6B73)
+                    : UIColor(hex: 0xA8B5BC),
+                range: bodyRange
+            )
+        }
+
+        if configuration.highlightMention {
+            let range = NSRange(location: 0, length: bodyText.length)
+            for match in Self.mentionRegex.matches(in: body, range: range) {
+                result.addAttributes([
+                    .font: UIFont.systemFont(ofSize: 15, weight: .medium),
+                    .foregroundColor: UIColor.systemRed
+                ], range: NSRange(location: prefixLength + match.range.location,
+                                  length: match.range.length))
+            }
+        }
+        return result
+    }
+
+    private static let mentionRegex = try! NSRegularExpression(
+        pattern: "@[^\\s，。！？、；：:,!?;()\\[\\]{}<>]+"
+    )
+
+    private static let tokenRegex = try! NSRegularExpression(pattern: "\\[[^\\]]+\\]")
+
+    private static func previewTokenColor(_ token: String) -> UIColor? {
+        let value = token.replacingOccurrences(of: "[", with: "")
+            .replacingOccurrences(of: "]", with: "")
+        if value.isEmpty { return nil }
+        if value.contains("转账") || value.contains("红包") || value.contains("礼物")
+            || value.contains("余额") || value.contains("经营账户") {
+            return .systemRed
+        }
+        if value.contains("通话") {
+            return .systemGreen
+        }
+        if value.contains("文件") || value.contains("笔记") {
+            return .systemOrange
+        }
+        if value.contains("位置") || value.contains("名片") || value.contains("链接")
+            || value.contains("文章") || value.contains("群公告") || value.contains("小程序") {
+            return .systemBlue
+        }
+        if value.contains("图片") || value.contains("实况") || value.contains("视频")
+            || value.contains("骰子") || value.contains("转盘")
+            || value.contains("运势") || value.contains("猜拳") {
+            return .systemPurple
+        }
+        if value.contains("语音") || value.contains("音频")
+            || value.contains("音乐") || value.contains("表情") {
+            return .systemGreen
+        }
+        return nil
+    }
+
+    private static func previewKindColor(_ kind: String) -> UIColor? {
+        switch kind {
+        case "transfer", "redpacket", "gift", "balance", "company":
+            return .systemRed
+        case "call", "voicecall", "videocall", "audio", "voice", "sticker":
+            return .systemGreen
+        case "file", "note":
+            return .systemOrange
+        case "location", "card", "link", "oa", "article", "miniapp", "mini", "app", "mall", "announce":
+            return .systemBlue
+        case "image", "images", "livephoto", "video", "channels", "channel", "feed", "shortvideo",
+             "dice", "wheel", "fortune", "rps":
+            return .systemPurple
+        case "music":
+            return .systemPink
+        default:
+            return nil
+        }
     }
 
     private func setupViews() {

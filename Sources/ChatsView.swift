@@ -367,7 +367,6 @@ struct ChatRow: View, Equatable {
                 mentionPreview
                     .font(pfStyled(size: scheme == .dark ? 14 : 15,
                                    weight: .regular))
-                    .foregroundStyle(ChatListVisual.previewInk)
                     .lineLimit(1)
                     .truncationMode(.tail)
             }
@@ -400,14 +399,17 @@ struct ChatRow: View, Equatable {
                     zh: "\(count)人星友连接",
                     en: "\(count) Xingyan friends connected",
                     ru: "\(count) подключений Xingyan"
-                ))
+                )).foregroundColor(ChatListVisual.previewInk)
             }
         }
         let kind = chat.lastMessage?.kind ?? ""
         let preview = localizedPreview(raw: raw, kind: kind)
-        let body = previewInkText(preview.text, kind: kind)
         let mentioned = chat.lastMessage?.mentionMe == true || preview.mentioned
-        guard mentioned, chat.unreadCount > 0 else { return body }
+        let showMention = mentioned && chat.unreadCount > 0
+        let body = previewInkText(preview.text,
+                                  kind: kind,
+                                  highlightMentions: showMention)
+        guard showMention else { return body }
         return Text(sessionCopy(
             zh: "[有人@我] ",
             en: "[Mentioned you] ",
@@ -529,7 +531,9 @@ struct ChatRow: View, Equatable {
         return value
     }
 
-    private func previewInkText(_ preview: String, kind: String = "") -> Text {
+    private func previewInkText(_ preview: String,
+                                kind: String = "",
+                                highlightMentions: Bool = false) -> Text {
         let redPrefixes = [
             "[草稿]", "草稿：", "草稿:", "[未发送]", "[失败]", "发送失败",
             "[Draft]", "Draft:", "[Not sent]", "[Failed]", "Failed to send",
@@ -553,8 +557,40 @@ struct ChatRow: View, Equatable {
         default:
             color = ChatListVisual.previewInk
         }
-        return Text(preview).foregroundColor(color)
+        guard highlightMentions, preview.contains("@") else {
+            return Text(preview).foregroundColor(color)
+        }
+
+        // Keep the sender/system-card colour, but make the actual @ token
+        // red as well as the list-level "[someone mentioned me]" marker.
+        var output = Text(verbatim: "")
+        var cursor = preview.startIndex
+        while let at = preview[cursor...].firstIndex(of: "@") {
+            if cursor < at {
+                output = output + Text(String(preview[cursor..<at]))
+                    .foregroundColor(color)
+            }
+            var end = preview.index(after: at)
+            while end < preview.endIndex,
+                  !preview[end].isWhitespace,
+                  !Self.mentionStopCharacters.contains(preview[end]) {
+                end = preview.index(after: end)
+            }
+            output = output + Text(String(preview[at..<end]))
+                .foregroundColor(Color(.systemRed))
+            cursor = end
+        }
+        if cursor < preview.endIndex {
+            output = output + Text(String(preview[cursor...]))
+                .foregroundColor(color)
+        }
+        return output
     }
+
+    private static let mentionStopCharacters: Set<Character> = [
+        "，", "。", "！", "？", "、", "；", "：",
+        ",", "!", "?", ";", ":", "(", ")", "[", "]", "{", "}", "<", ">"
+    ]
 
     /// 旧服务端或实时推送偶尔只带 kind 不带 preview，列表仍按微信占位。
     private func fallbackPreview(_ kind: String) -> String {
@@ -2470,25 +2506,8 @@ struct ChatsView: View {
         let titleColor: UIColor = chat.showsOfficialMark
             ? UIColor(hex: 0x25D366)
             : (isDark ? UIColor(hex: 0xE9EDEF) : UIColor(hex: 0x1A1A1A))
-        let previewColor: UIColor
-        if !draft.isEmpty {
-            previewColor = .systemRed
-        } else {
-            switch kind {
-            case "transfer", "redpacket", "gift":
-                previewColor = isDark ? UIColor(hex: 0xF4B44C) : UIColor(hex: 0xB06B00)
-            case "call", "voicecall", "videocall":
-                previewColor = isDark ? UIColor(hex: 0x58D49B) : UIColor(hex: 0x18835F)
-            case "file", "music", "location", "card", "miniapp", "mini", "mall":
-                previewColor = isDark ? UIColor(hex: 0x74B7FF) : UIColor(hex: 0x2C73C9)
-            case "channels", "channel", "feed", "shortvideo":
-                previewColor = isDark ? UIColor(hex: 0xAD9CFF) : UIColor(hex: 0x6B5BCB)
-            case "pat":
-                previewColor = isDark ? UIColor(hex: 0x52D6C7) : UIColor(hex: 0x0C7A70)
-            default:
-                previewColor = isDark ? UIColor(hex: 0x8696A0) : UIColor(hex: 0xB2B2B2)
-            }
-        }
+        let previewColor = isDark ? UIColor(hex: 0x8696A0)
+                                  : UIColor(hex: 0xB2B2B2)
         let memberColor = nativePeerColor(chat.memberColor)
         let rowBg: UIColor = isDark ? UIColor(hex: 0x000000) : UIColor.white
         let timeColor = isDark ? UIColor(hex: 0x8696A0) : UIColor(hex: 0xCCCCCC)
@@ -2501,6 +2520,8 @@ struct ChatsView: View {
             isLight: !isDark,
             preview: preview,
             mentionPrefix: mentionPrefix,
+            previewKind: draft.isEmpty ? kind : "draft",
+            highlightMention: !mentionPrefix.isEmpty,
             previewColor: previewColor,
             time: TimeFmt.listApple(chat.lastMessage?.createdAt ?? chat.updatedAt),
             timeColor: timeColor,

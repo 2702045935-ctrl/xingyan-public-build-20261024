@@ -9649,7 +9649,7 @@ function deliverMessage(user, chatId, kind, content, clientId, mentionHint, medi
     if (peerId && chatBlockedBetween(user.id, peerId)) {
       return {
         error: blockedByUser(peerId, user.id)
-          ? '消息已发出，但被对方拒收了'
+          ? '对方已将你加入黑名单，消息未送达（拒收）'
           : '你已经把对方拉黑，先去资料页解除才能发消息'
       };
     }

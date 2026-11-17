@@ -127,6 +127,83 @@ struct PendingMsg: Identifiable, Hashable {
     }
 }
 
+private enum DeliveryFailureAction {
+    case retry
+    case details
+}
+
+private struct DeliveryFailureCopy {
+    var title: String
+    var detail: String
+    var symbol: String
+    var tint: Color
+    var action: DeliveryFailureAction?
+    var actionTitle: String = ""
+
+    static func make(reason: String) -> DeliveryFailureCopy {
+        func copy(_ zh: String, _ en: String, _ ru: String) -> String {
+            if Lang.isRussian { return ru }
+            if Lang.isEnglish { return en }
+            return zh
+        }
+
+        if reason.contains("拒收") {
+            return DeliveryFailureCopy(
+                title: copy("消息未送达", "Message not delivered", "Сообщение не доставлено"),
+                detail: copy(
+                    "对方已将你加入黑名单，当前无法接收你的消息",
+                    "This person has blocked you and cannot receive your messages",
+                    "Этот человек добавил вас в чёрный список и не получает сообщения"
+                ),
+                symbol: "hand.raised.fill",
+                tint: .red,
+                action: .details,
+                actionTitle: copy("查看资料", "View profile", "Профиль")
+            )
+        }
+        if reason.contains("你已经把对方拉黑") || reason.contains("将对方拉黑") {
+            return DeliveryFailureCopy(
+                title: copy("无法发送", "Can't send", "Не удалось отправить"),
+                detail: copy(
+                    "你已将对方加入黑名单，请先在个人资料页解除",
+                    "You blocked this person. Unblock them in the profile first",
+                    "Вы заблокировали этого человека. Сначала разблокируйте его"
+                ),
+                symbol: "hand.raised.slash.fill",
+                tint: .red,
+                action: .details,
+                actionTitle: copy("查看资料", "View profile", "Профиль")
+            )
+        }
+        if reason.contains("禁言") {
+            return DeliveryFailureCopy(
+                title: copy("群聊已禁言", "Chat muted", "Чат ограничен"),
+                detail: reason,
+                symbol: "speaker.slash.fill",
+                tint: .orange,
+                action: nil
+            )
+        }
+        if reason.contains("管理员禁用") || reason.contains("账号") {
+            return DeliveryFailureCopy(
+                title: copy("账号暂受限", "Account restricted", "Аккаунт ограничен"),
+                detail: reason,
+                symbol: "lock.shield.fill",
+                tint: .orange,
+                action: nil
+            )
+        }
+        return DeliveryFailureCopy(
+            title: copy("发送失败", "Failed to send", "Не удалось отправить"),
+            detail: reason,
+            symbol: "exclamationmark.circle.fill",
+            tint: .red,
+            action: .retry,
+            actionTitle: copy("重试", "Retry", "Повторить")
+        )
+    }
+}
+
 private enum NativeGroupItemKind: Equatable {
     case older
     case message(Message)
@@ -3516,16 +3593,65 @@ struct ChatDetailView: View {
                     .opacity(p.failed ? 0.9 : 1)
             }
             if p.failed, let reason = p.failureReason, !reason.isEmpty {
-                Text(reason)
-                    .font(pf(11.5))
-                    .foregroundColor(C.red.opacity(0.88))
-                    .lineLimit(2)
-                    .multilineTextAlignment(.trailing)
-                    .padding(.trailing, 3)
+                deliveryFailureCard(DeliveryFailureCopy.make(reason: reason))
             }
         }
         .padding(.vertical, 4)
         .id(p.id)
+    }
+
+    private func deliveryFailureCard(_ failure: DeliveryFailureCopy) -> some View {
+        HStack(alignment: .top, spacing: 9) {
+            Image(systemName: failure.symbol)
+                .font(.system(size: 12.5, weight: .semibold))
+                .foregroundStyle(failure.tint)
+                .frame(width: 25, height: 25)
+                .background(Circle().fill(failure.tint.opacity(0.12)))
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(failure.title)
+                    .font(pf(12.5, .semibold))
+                    .foregroundStyle(failure.tint)
+                Text(failure.detail)
+                    .font(pf(11))
+                    .foregroundStyle(C.subLabel)
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 4)
+
+            if let action = failure.action {
+                Button {
+                    switch action {
+                    case .retry:
+                        Task { await flushOutbox() }
+                    case .details:
+                        showChatInfo = true
+                    }
+                } label: {
+                    Text(failure.actionTitle)
+                        .font(pf(11.5, .semibold))
+                        .foregroundStyle(failure.tint)
+                        .padding(.horizontal, 8)
+                        .frame(height: 26)
+                        .background(Capsule().fill(failure.tint.opacity(0.10)))
+                        .overlay(Capsule().stroke(failure.tint.opacity(0.22), lineWidth: 0.6))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 9)
+        .frame(maxWidth: min(L.bubbleMaxW, L.width * 0.82), alignment: .leading)
+        .background {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(C.cardBg.opacity(0.96))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(failure.tint.opacity(0.16), lineWidth: 0.7)
+                }
+        }
     }
 
     private func saveOutbox() {
