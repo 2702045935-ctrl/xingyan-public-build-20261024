@@ -130,6 +130,7 @@ struct PendingMsg: Identifiable, Hashable {
 private enum DeliveryFailureAction {
     case retry
     case details
+    case addFriend
 }
 
 private struct DeliveryFailureCopy {
@@ -182,6 +183,34 @@ private struct DeliveryFailureCopy {
                 symbol: "speaker.slash.fill",
                 tint: .orange,
                 action: nil
+            )
+        }
+        if reason.contains("陌生消息最多发送") || reason.contains("还不是他（她）朋友") {
+            return DeliveryFailureCopy(
+                title: copy("陌生消息额度已用完", "Message limit reached", "Лимит сообщений исчерпан"),
+                detail: copy(
+                    "你们还不是好友。发送朋友验证，对方通过后可以继续聊天。",
+                    "You are not friends yet. Send a friend request to continue after approval.",
+                    "Вы ещё не друзья. Отправьте заявку, чтобы продолжить после подтверждения."
+                ),
+                symbol: "person.badge.plus",
+                tint: Color(hex: 0x2C73C9),
+                action: .addFriend,
+                actionTitle: copy("发送朋友验证", "Add friend", "Добавить")
+            )
+        }
+        if reason.contains("你们已经不是好友") || reason.contains("重新添加好友") {
+            return DeliveryFailureCopy(
+                title: copy("好友关系已解除", "No longer friends", "Вы больше не друзья"),
+                detail: copy(
+                    "重新添加对方并通过验证后，才能继续发送消息。",
+                    "Add this person again and wait for approval before messaging.",
+                    "Добавьте этого человека снова и дождитесь подтверждения."
+                ),
+                symbol: "person.crop.circle.badge.plus",
+                tint: Color(hex: 0x2C73C9),
+                action: .addFriend,
+                actionTitle: copy("重新添加", "Add again", "Добавить снова")
             )
         }
         if reason.contains("管理员禁用") || reason.contains("账号") {
@@ -3628,6 +3657,8 @@ struct ChatDetailView: View {
                         Task { await flushOutbox() }
                     case .details:
                         showChatInfo = true
+                    case .addFriend:
+                        showApply = true
                     }
                 } label: {
                     Text(failure.actionTitle)
