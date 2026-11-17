@@ -222,7 +222,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         previewLabel.font = NativeChatRowMetrics.font(15,
                                                      weight: .regular,
                                                      textStyle: .body)
-        timeLabel.font = NativeChatRowMetrics.font(12,
+        timeLabel.font = NativeChatRowMetrics.font(13,
                                                   weight: .regular,
                                                   textStyle: .footnote)
         previewLabel.attributedText = styledPreview(configuration)
