@@ -39,6 +39,7 @@ enum StickerLib {
 
     private static let remoteKey = "sticker.installed.remote"
     private static let bundledStarRemovalKey = "sticker.starOrbit.removed.v2"
+    private static let novaInstallKey = "sticker.novaCourier.autoInstall.v1"
 
     static var remoteIds: [String] {
         get { (UserDefaults.standard.array(forKey: remoteKey) as? [String]) ?? [] }
@@ -61,6 +62,12 @@ enum StickerLib {
         guard !UserDefaults.standard.bool(forKey: bundledStarRemovalKey) else { return }
         removeRemote("star-orbit-daily")
         UserDefaults.standard.set(true, forKey: bundledStarRemovalKey)
+    }
+
+    static func installNovaPackIfNeeded() {
+        guard !UserDefaults.standard.bool(forKey: novaInstallKey) else { return }
+        addRemote("nova-courier-premium")
+        UserDefaults.standard.set(true, forKey: novaInstallKey)
     }
 
 }

@@ -1,0 +1,113 @@
+{
+  "name": "星核邮差",
+  "version": 1,
+  "author": "Xingyan / original in-house artwork",
+  "license": "All rights reserved by the Xingyan project. Generated from code in this repository.",
+  "source": "tools/generate_nova_courier_emojis.py",
+  "canvas": {
+    "width": 320,
+    "height": 320,
+    "frames": 20,
+    "frame_ms": 72,
+    "loop": true
+  },
+  "design": {
+    "mascot": "Nova Courier",
+    "silhouette": "porcelain-faced cobalt comet with an antenna star",
+    "palette": [
+      "midnight cobalt",
+      "porcelain",
+      "signal blue",
+      "coral",
+      "gold"
+    ],
+    "rules": [
+      "one continuous ceramic rim",
+      "one asymmetric face mask",
+      "props stay outside the body silhouette",
+      "no borrowed character or third-party sticker artwork"
+    ]
+  },
+  "items": [
+    {
+      "name": "收到",
+      "file": "shou-dao.gif",
+      "animation": "check"
+    },
+    {
+      "name": "在呢",
+      "file": "zai-ne.gif",
+      "animation": "presence"
+    },
+    {
+      "name": "等等",
+      "file": "deng-deng.gif",
+      "animation": "wait"
+    },
+    {
+      "name": "谢谢",
+      "file": "xie-xie.gif",
+      "animation": "thanks"
+    },
+    {
+      "name": "笑死",
+      "file": "xiao-si.gif",
+      "animation": "laugh"
+    },
+    {
+      "name": "震惊",
+      "file": "zhen-jing.gif",
+      "animation": "shock"
+    },
+    {
+      "name": "无语",
+      "file": "wu-yu.gif",
+      "animation": "speechless"
+    },
+    {
+      "name": "抱抱",
+      "file": "bao-bao.gif",
+      "animation": "hug"
+    },
+    {
+      "name": "晚安",
+      "file": "wan-an.gif",
+      "animation": "night"
+    },
+    {
+      "name": "听歌",
+      "file": "ting-ge.gif",
+      "animation": "music"
+    },
+    {
+      "name": "想你",
+      "file": "xiang-ni.gif",
+      "animation": "miss"
+    },
+    {
+      "name": "赞",
+      "file": "zan.gif",
+      "animation": "like"
+    },
+    {
+      "name": "冲",
+      "file": "chong.gif",
+      "animation": "boost"
+    },
+    {
+      "name": "拒绝",
+      "file": "ju-jue.gif",
+      "animation": "decline"
+    },
+    {
+      "name": "摸鱼",
+      "file": "mo-yu.gif",
+      "animation": "slack"
+    },
+    {
+      "name": "开会",
+      "file": "kai-hui.gif",
+      "animation": "meeting"
+    }
+  ]
+}

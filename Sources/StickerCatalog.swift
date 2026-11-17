@@ -45,11 +45,12 @@ final class StickerCatalog: ObservableObject {
         // production server.
         if let url = Bundle.main.url(forResource: "pack",
                                      withExtension: "json",
-                                     subdirectory: "emoji/star-orbit"),
+                                     subdirectory: "emoji/nova-courier"),
            let data = try? Data(contentsOf: url),
             let payload = try? JSONDecoder().decode(StickerCatalogPayload.self, from: data) {
             merge(payload)
             StickerLib.removeBundledStarPackIfNeeded()
+            StickerLib.installNovaPackIfNeeded()
             didLoad = true
         }
 
@@ -62,7 +63,7 @@ final class StickerCatalog: ObservableObject {
 
         // Keep first-party packs in a separate catalog so deploying them can never
         // overwrite the existing live sticker catalog.
-        if let url = API.shared.assetURL("emoji/star-orbit/pack.json"),
+        if let url = API.shared.assetURL("emoji/nova-courier/pack.json"),
            let data = try? await API.shared.assetData(url),
            let payload = try? JSONDecoder().decode(StickerCatalogPayload.self, from: data) {
             merge(payload)

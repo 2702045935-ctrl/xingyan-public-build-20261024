@@ -19,9 +19,9 @@ REQUIRED = {
     APP + "AppIcon60x60@3x.png",
     APP + "PrivacyInfo.xcprivacy",
     APP + "default.metallib",
-    APP + "emoji/star-orbit/pack.json",
-    APP + "emoji/star-orbit/shou-dao.gif",
-    APP + "emoji/star-orbit/xiang-ni.gif",
+    APP + "emoji/nova-courier/pack.json",
+    APP + "emoji/nova-courier/shou-dao.gif",
+    APP + "emoji/nova-courier/xiang-ni.gif",
     APP + "Frameworks/WebRTC.framework/WebRTC",
 }
 

@@ -1,0 +1,35 @@
+{
+  "categories": [
+    {
+      "id": "xingyan-original",
+      "name": "星言原创"
+    }
+  ],
+  "packs": [
+    {
+      "id": "nova-courier-premium",
+      "name": "星核邮差",
+      "category": "xingyan-original",
+      "dir": "/emoji/nova-courier",
+      "icon": "/emoji/nova-courier/icon.gif",
+      "files": [
+        "shou-dao.gif",
+        "zai-ne.gif",
+        "deng-deng.gif",
+        "xie-xie.gif",
+        "xiao-si.gif",
+        "zhen-jing.gif",
+        "wu-yu.gif",
+        "bao-bao.gif",
+        "wan-an.gif",
+        "ting-ge.gif",
+        "xiang-ni.gif",
+        "zan.gif",
+        "chong.gif",
+        "ju-jue.gif",
+        "mo-yu.gif",
+        "kai-hui.gif"
+      ]
+    }
+  ]
+}

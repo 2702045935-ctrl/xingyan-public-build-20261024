@@ -722,6 +722,23 @@ struct EmojiPanel: View {
                         ForEach(packTabs.indices, id: \.self) { offset in
                             packTabButton(4 + offset, packTabs[offset])
                         }
+                        Button {
+                            onCaptureSticker?()
+                        } label: {
+                            VStack(spacing: 2) {
+                                Image(systemName: "camera.fill")
+                                    .font(.system(size: L.v(18, 5.0, 20), weight: .semibold))
+                                    .frame(width: 32, height: 32)
+                                Capsule()
+                                    .fill(Color.clear)
+                                    .frame(width: 12, height: 2)
+                            }
+                            .foregroundStyle(C.label)
+                            .frame(width: 56, height: 44)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(Tr("拍摄表情"))
                         if let first = singleStickers.first {
                             singleTabButton(singleTabIndex, Tr("我添加的表情"), first)
                         }
