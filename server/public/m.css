@@ -733,6 +733,49 @@ html[data-theme="dark"] .td-v { color: var(--wx-text); }
 .wx-msg .wx-bubble.is-loc .loc-info { padding: clamp(8px, 2.4vw, 10px) clamp(10px, 3vw, 12px); }
 .wx-msg .wx-bubble.is-loc .loc-t1 { font-size: clamp(13.5px, 3.6vw, 15px); color: var(--wx-text); }
 .wx-msg .wx-bubble.is-loc .loc-t2 { margin-top: 2px; font-size: clamp(11px, 3vw, 12px); color: var(--wx-gray); }
+ /* 聊天里的结构化消息卡：视频、多图、音乐、公告、小程序、名片、游戏等。 */
+.wx-msg .wx-bubble.is-special {
+  width: min(260px, 70vw);
+  max-width: 70vw;
+  padding: 10px 11px;
+  white-space: normal;
+  color: var(--wx-text);
+  background: var(--wx-card);
+  overflow: hidden;
+}
+html[data-theme="dark"] .wx-msg .wx-bubble.is-special { background: #242426; }
+.wx-msg.is-me .wx-bubble.is-special { background: var(--wx-card); color: var(--wx-text); }
+.wx-msg .wx-bubble.is-special::after { display: none; }
+.wx-special-main { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.wx-special-icon {
+  width: 34px; height: 34px; flex: 0 0 34px; border-radius: 9px;
+  display: grid; place-items: center; font-size: 18px; font-weight: 700;
+  background: color-mix(in srgb, var(--wx-text) 10%, var(--wx-card));
+  color: var(--wx-text);
+}
+.wx-special-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
+.wx-special-text b { font-size: 14px; font-weight: 600; color: var(--wx-text); }
+.wx-special-text small {
+  margin-top: 2px; font-size: 12px; font-weight: 400; color: var(--wx-gray);
+  white-space: normal; word-break: break-word;
+}
+.wx-special-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 3px; }
+.wx-special-grid img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 5px; }
+.wx-bubble.is-video-card { padding: 0 !important; }
+.wx-bubble.is-video-card video { display: block; width: 100%; max-height: 300px; background: #000; border-radius: 6px; }
+.wx-bubble.is-live-card { position: relative; padding: 0 !important; }
+.wx-bubble.is-live-card img { width: 100%; max-height: 300px; object-fit: cover; border-radius: 6px; }
+.wx-live-badge {
+  position: absolute; left: 8px; bottom: 8px; z-index: 2;
+  padding: 2px 7px; border-radius: 999px; background: rgba(0,0,0,.58);
+  color: #fff; font-size: 11px; font-weight: 500;
+}
+.wx-bubble.is-sticker-card { font-size: 42px; line-height: 1.15; text-align: center; }
+.wx-bubble.is-sticker-card img { max-width: 140px; max-height: 140px; margin: 0 auto; }
+.wx-special-empty { padding: 24px 14px; text-align: center; color: var(--wx-gray); font-size: 13px; }
+.is-game-card .wx-special-icon { background: rgba(175,82,222,.14); color: #af52de; }
+.is-money-card .wx-special-icon { background: rgba(255,59,48,.12); color: #ff3b30; }
+.is-link-card .wx-special-icon, .is-oa-card .wx-special-icon { background: rgba(10,132,255,.12); color: #0a84ff; }
 
 /* ================= 收藏 ================= */
 .fav-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: clamp(8px, 2.6vw, 12px); }
@@ -3332,6 +3375,51 @@ html[data-theme="light"] .wx-page[data-page="chats"] .wx-row-preview,
 html[data-theme="dark"] .wx-page[data-page="chats"] .wx-row-preview {
   color: #8e8e93 !important;
   color: color-mix(in srgb, var(--wx-text) 64%, var(--wx-card)) !important;
+}
+/* 会话预览的类型词：只给提示词着色，正文不跟着染色。 */
+.wx-row-preview .wx-preview-token {
+  font-weight: 500;
+  -webkit-font-smoothing: antialiased;
+}
+.wx-row-preview .wx-preview-token.is-mention,
+.wx-row-preview .wx-preview-token.is-money,
+.wx-row-preview .wx-preview-token.is-recall {
+  color: #ff3b30;
+}
+.wx-row-preview .wx-preview-token.is-link {
+  color: #0a84ff;
+}
+.wx-row-preview .wx-preview-token.is-call {
+  color: #34c759;
+}
+.wx-row-preview .wx-preview-token.is-note {
+  color: #d97706;
+}
+.wx-row-preview .wx-preview-token.is-media,
+.wx-row-preview .wx-preview-token.is-action {
+  color: color-mix(in srgb, var(--wx-text) 76%, var(--wx-card));
+}
+.wx-row-preview .wx-preview-token.is-image,
+.wx-row-preview .wx-preview-token.is-live {
+  color: #0a84ff;
+}
+.wx-row-preview .wx-preview-token.is-video {
+  color: #af52de;
+}
+.wx-row-preview .wx-preview-token.is-audio {
+  color: #34c759;
+}
+.wx-row-preview .wx-preview-token.is-file {
+  color: #ff9f0a;
+}
+.wx-row-preview .wx-preview-token.is-game {
+  color: #af52de;
+}
+.wx-row-preview .wx-preview-token.is-music {
+  color: #ff2d55;
+}
+.wx-row-preview .wx-preview-token.is-sticker {
+  color: #34c759;
 }
 /* ================= 语音 / 视频通话（手机端全屏界面）================= */
 .wx-call {

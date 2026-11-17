@@ -7173,6 +7173,31 @@ function previewTextOf(m) {
     case 'audio': return '[语音]';
     case 'video': return '[视频]';
     case 'livephoto': return '[实况]';
+    case 'sticker': return '[表情]';
+    case 'dice': return '[骰子]';
+    case 'wheel': return '[转盘]';
+    case 'fortune': return '[运势]';
+    case 'rps': return '[猜拳]';
+    case 'balance': return '[转账卡]' + cardMoney(['amount']);
+    case 'company': return '[经营账户]';
+    case 'music': {
+      try {
+        const o = JSON.parse(String(m.content || '{}'));
+        return '[音乐] ' + previewTextSlice(o.title || o.name || '', 30);
+      } catch (err) { return '[音乐]'; }
+    }
+    case 'announce': {
+      try {
+        const o = JSON.parse(String(m.content || '{}'));
+        return '[群公告] ' + previewTextSlice(o.title || o.text || '', 30);
+      } catch (err) { return '[群公告]'; }
+    }
+    case 'miniapp': {
+      try {
+        const o = JSON.parse(String(m.content || '{}'));
+        return '[小程序] ' + previewTextSlice(o.title || o.name || '', 30);
+      } catch (err) { return '[小程序]'; }
+    }
     case 'link': {
       try { const o = JSON.parse(String(m.content || '{}')); return '[' + String(o.title || '链接') + ']'; } catch (err) { return '[链接]'; }
     }

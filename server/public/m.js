@@ -1859,11 +1859,68 @@
     if (!last) return '开始聊天';
     if (!last.preview) return '';   /* 转账不进会话列表：没有别的消息时预览留空，不显示「我：」 */
     var preview = String(last.preview || '');
+    var kindLabels = {
+      dice: '[骰子]', wheel: '[转盘]', fortune: '[运势]', rps: '[猜拳]',
+      balance: '[转账卡]', company: '[经营账户]', music: '[音乐]',
+      announce: '[群公告]', miniapp: '[小程序]', sticker: '[表情]'
+    };
+    if (kindLabels[last.kind] && (!preview || preview === '[' + last.kind + ']')) {
+      preview = kindLabels[last.kind];
+    }
     if (last.kind === 'location' || preview.indexOf('[位置]') >= 0) {
       preview = preview.replace(/^\[有人@我\]\s*/, '').replace(/@/g, '');
     }
     var prefix = last.senderId === S.me.id ? '我：' : '';
     return prefix + preview;
+  }
+
+  var PREVIEW_TOKEN_CLASS = {
+    '[有人@我]': 'is-mention',
+    '[转账]': 'is-money',
+    '[红包]': 'is-money',
+    '[礼物]': 'is-money',
+    '[位置]': 'is-link',
+    '[名片]': 'is-link',
+    '[链接]': 'is-link',
+    '[文章]': 'is-link',
+    '[图片]': 'is-image',
+    '[视频]': 'is-video',
+    '[实况]': 'is-live',
+    '[语音]': 'is-audio',
+    '[文件]': 'is-file',
+    '[笔记]': 'is-note'
+    ,'[骰子]': 'is-game', '[转盘]': 'is-game', '[运势]': 'is-game', '[猜拳]': 'is-game',
+    '[转账卡]': 'is-money', '[经营账户]': 'is-money', '[音乐]': 'is-music',
+    '[群公告]': 'is-link', '[小程序]': 'is-link', '[表情]': 'is-sticker'
+  };
+
+  function previewTokenHtml(token, rest, kind) {
+    var cls = PREVIEW_TOKEN_CLASS[token] || '';
+    if (!cls && /通话/.test(token)) cls = 'is-call';
+    if (!cls && /撤回/.test(rest)) cls = 'is-recall';
+    if (!cls && (kind === 'system' || kind === 'pat')) cls = 'is-action';
+    return (cls ? '<span class="wx-preview-token ' + cls + '">' + esc(token) + '</span>' : esc(token)) +
+      esc(rest);
+  }
+
+  function lastPreviewHtml(c) {
+    var text = lastPreview(c);
+    var kind = c && c.lastMessage && c.lastMessage.kind;
+    if (!text) return '';
+    if (/撤回/.test(text)) {
+      return '<span class="wx-preview-token is-recall">' + esc(text) + '</span>';
+    }
+    /* 群聊是「昵称：[类型] 内容」：只给类型词着色，昵称和正文仍保持可读的次级灰。 */
+    var grouped = text.match(/^([^：]{1,32})：(\[[^\]]+\])([\s\S]*)$/);
+    if (grouped) {
+      return esc(grouped[1]) + '：' + previewTokenHtml(grouped[2], grouped[3], kind);
+    }
+    var token = text.match(/^(\[[^\]]+\])([\s\S]*)$/);
+    if (token) return previewTokenHtml(token[1], token[2], kind);
+    if (kind === 'system' || kind === 'pat') {
+      return '<span class="wx-preview-token is-action">' + esc(text) + '</span>';
+    }
+    return esc(text);
   }
 
   function renderChats() {
@@ -1882,7 +1939,7 @@
             '<div class="wx-row-main">' +
               '<div class="wx-row-top"><span class="wx-row-name">' + esc(c.title) + '</span>' +
               '<span class="wx-row-time">' + esc(chatTime(c.updatedAt || (c.lastMessage && c.lastMessage.createdAt) || '')) + '</span></div>' +
-              '<div class="wx-row-preview">' + esc(lastPreview(c)) + '</div>' +
+              '<div class="wx-row-preview">' + lastPreviewHtml(c) + '</div>' +
             '</div>' +
           '</div>' +
           /* 左滑露出来的三个操作（和微信一致） */
@@ -2301,6 +2358,7 @@
       else if (m.kind === 'transfer') body = transferBubble(m.content, mine);
       else if (m.kind === 'redpacket') body = rpCard(m.content, mine);
       else if (m.kind === 'location') body = locationBubble(m.content);
+      else if (SPECIAL_MESSAGE_KINDS[m.kind]) body = specialBubble(m.kind, m.content);
       else body = '<div class="wx-bubble">' + linkify(m.content) + '</div>';
       // 群聊：名字放在气泡上方（参考图就是这样）
       if (isGroup && !mine) body = '<div class="wx-msg-body"><div class="wx-msg-sender">' + esc(m.senderName || '') + '</div>' + body + '</div>';
@@ -3176,6 +3234,101 @@
       '<div class="loc-thumb"><img src="' + esc(locThumbUrl(o.lat, o.lng, 15)) + '" alt="" loading="lazy" decoding="async"><span class="loc-mark"></span></div>' +
       '<div class="loc-info"><div class="loc-t1">' + esc(name) + '</div>' +
       '<div class="loc-t2">' + esc(addr) + '</div></div></div>';
+  }
+
+  var SPECIAL_MESSAGE_KINDS = {
+    images: true, video: true, livephoto: true, note: true, music: true,
+    announce: true, miniapp: true, card: true, sysnotice: true, link: true,
+    dice: true, wheel: true, fortune: true, rps: true, balance: true,
+    company: true, sticker: true, oa: true
+  };
+
+  function messageObject(content) {
+    try {
+      var value = JSON.parse(String(content || '{}'));
+      return value && typeof value === 'object' ? value : {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function specialCard(icon, title, sub, cls, extra, clickAttr) {
+    return '<div class="wx-bubble is-special ' + (cls || '') + '"' + (clickAttr || '') + '>' +
+      '<div class="wx-special-main">' +
+        '<span class="wx-special-icon">' + esc(icon || '•') + '</span>' +
+        '<span class="wx-special-text"><b>' + esc(title || '') + '</b>' +
+          (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span>' +
+      '</div>' + (extra || '') + '</div>';
+  }
+
+  function specialBubble(kind, content) {
+    var o = messageObject(content);
+    if (kind === 'images') {
+      var paths = Array.isArray(o.paths) ? o.paths : (Array.isArray(content) ? content : []);
+      paths = paths.filter(Boolean).slice(0, 9);
+      if (!paths.length) return specialCard('🖼️', '图片', '点击查看图片', 'is-media-card');
+      return '<div class="wx-bubble is-special is-images-card"><div class="wx-special-grid">' +
+        paths.map(function (src) {
+          return '<img src="' + esc(src) + '" alt="" data-img="' + esc(src) + '" loading="lazy" decoding="async">';
+        }).join('') + '</div></div>';
+    }
+    if (kind === 'video') {
+      var video = String(o.url || o.path || o.src || content || '');
+      return '<div class="wx-bubble is-special is-video-card">' +
+        (video ? '<video src="' + esc(video) + '" controls playsinline preload="metadata"></video>' :
+          '<div class="wx-special-empty">视频消息</div>') + '</div>';
+    }
+    if (kind === 'livephoto') {
+      var live = String(o.url || o.path || o.src || '');
+      return '<div class="wx-bubble is-special is-live-card">' +
+        (live ? '<img src="' + esc(live) + '" alt="实况照片" data-img="' + esc(live) + '" loading="lazy">' : '') +
+        '<span class="wx-live-badge">实况</span></div>';
+    }
+    if (kind === 'note') {
+      return specialCard('📝', '笔记', String(content || '').replace(/\s+/g, ' ').slice(0, 120), 'is-note-card');
+    }
+    if (kind === 'music') {
+      return specialCard('♫', o.title || o.name || '音乐', o.artist || o.singer || '音乐卡片', 'is-music-card');
+    }
+    if (kind === 'announce') {
+      return specialCard('📢', o.title || '群公告', o.text || o.content || '', 'is-announce-card');
+    }
+    if (kind === 'miniapp') {
+      return specialCard('▣', o.title || o.name || '小程序', o.desc || '打开小程序', 'is-miniapp-card');
+    }
+    if (kind === 'card') {
+      return specialCard('👤', o.name || '个人名片', o.username || '点击查看资料', 'is-card-card');
+    }
+    if (kind === 'sysnotice') {
+      return specialCard('🔔', o.title || '通知', o.text || o.content || '', 'is-notice-card');
+    }
+    if (kind === 'link') {
+      return specialCard('↗', o.title || '链接', o.url || o.desc || '', 'is-link-card');
+    }
+    if (kind === 'oa') {
+      return specialCard('📰', o.title || '文章', o.digest || '公众号文章', 'is-oa-card');
+    }
+    if (kind === 'dice' || kind === 'wheel' || kind === 'fortune' || kind === 'rps') {
+      var game = {
+        dice: ['🎲', '骰子'], wheel: ['◉', '转盘'],
+        fortune: ['✦', '运势'], rps: ['✊', '猜拳']
+      }[kind];
+      return specialCard(game[0], game[1], o.result || o.value || o.text || '点开查看结果', 'is-game-card');
+    }
+    if (kind === 'balance') {
+      return specialCard('¥', '转账卡', o.amount != null ? money(Number(o.amount) || 0) : '查看详情', 'is-money-card');
+    }
+    if (kind === 'company') {
+      return specialCard('⌂', o.name || '经营账户', o.company || o.desc || '经营账户', 'is-company-card');
+    }
+    if (kind === 'sticker') {
+      if (/^(https?:|\/uploads|data:)/.test(String(content || ''))) {
+        return '<div class="wx-bubble is-special is-sticker-card"><img src="' +
+          esc(content) + '" alt="表情" loading="lazy"></div>';
+      }
+      return '<div class="wx-bubble is-special is-sticker-card">' + esc(content || '表情') + '</div>';
+    }
+    return specialCard('•', '消息', '', 'is-notice-card');
   }
 
   function favTime(iso) {
