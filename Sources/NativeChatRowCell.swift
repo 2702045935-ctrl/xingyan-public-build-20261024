@@ -588,12 +588,10 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
     }
 
     private func setupGestures() {
-        let pan = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
-        pan.delegate = self
-        pan.cancelsTouchesInView = false
-        pan.delaysTouchesBegan = false
-        pan.maximumNumberOfTouches = 1
-        foreground.addGestureRecognizer(pan)
+        // Swipe left/right is owned by UICollectionView's native
+        // UISwipeActionsConfiguration. Keeping a second UIPanGestureRecognizer
+        // here makes the row fight the list gesture and breaks native bounce,
+        // momentum and auto-close behavior.
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
         tap.cancelsTouchesInView = false
         foreground.addGestureRecognizer(tap)
@@ -798,9 +796,9 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         ]
         .filter { !$0.isEmpty }
         .joined(separator: "，")
-        accessibilityHint = localized("打开聊天，更多操作可使用自定义动作",
-                                      "Open chat. More actions are available as custom actions",
-                                      "Открыть чат. Дополнительные действия доступны как пользовательские")
+        accessibilityHint = localized("打开聊天，向左或向右滑动可查看更多操作",
+                                      "Open chat. Swipe left or right for more actions",
+                                      "Открыть чат. Смахните влево или вправо для дополнительных действий")
 
         let pinTitle = configuration.isPinned
             ? localized("取消置顶", "Unpin", "Открепить")
