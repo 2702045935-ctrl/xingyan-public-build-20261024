@@ -125,6 +125,9 @@ jobs:
       - name: 客户端本地事务库测试
         run: python3 tools/test-local-client-storage.py
 
+      - name: 校验星核邮差表情资产
+        run: python3 tools/verify_nova_emojis.py
+
       - name: 校验核心模块
         run: bash tools/verify-core.sh
 
