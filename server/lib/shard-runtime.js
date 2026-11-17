@@ -332,6 +332,9 @@ class ShardCluster {
     this.topologyId = String(opts.topologyId || 'shards-' + this.shardCount);
     this.dataDir = String(opts.dataDir || '');
     if (!this.dataDir) throw new Error('cluster dataDir is required');
+    this.ownerResolver = typeof opts.ownerResolver === 'function'
+      ? opts.ownerResolver
+      : null;
     this.directory = opts.directory || new ShardDirectory({
       shardCount: this.shardCount,
       topologyId: this.topologyId,
@@ -359,6 +362,20 @@ class ShardCluster {
   ownerShard(entityType, entityId) {
     /* 资金事实固定落支付分片，不能随社交实体哈希漂移。 */
     if (String(entityType || '') === 'transfer') return 0;
+    if (this.ownerResolver) {
+      const resolved = this.ownerResolver(
+        String(entityType || ''),
+        routingKey(entityType, entityId),
+        this
+      );
+      if (resolved != null) {
+        const shard = Number(resolved);
+        if (!Number.isInteger(shard) || shard < 0 || shard >= this.shardCount) {
+          throw new Error('owner resolver returned an invalid shard');
+        }
+        return shard;
+      }
+    }
     return this.directory.shardFor(entityType, routingKey(entityType, entityId));
   }
 

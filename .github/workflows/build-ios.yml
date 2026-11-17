@@ -88,6 +88,9 @@ jobs:
           node server/test/shard-shadow-read.test.js
           node server/test/dual-cell-contract.test.js
           node server/test/dual-cell-shadow-probe.test.js
+          node server/test/dual-cell-active-plan.test.js
+          node server/test/dual-cell-replication.test.js
+          node server/test/dual-cell-failover-drill.test.js
           node server/test/single-cell-capacity.test.js
           node server/test/single-cell-capacity-collector.test.js
           node server/test/single-cell-capacity-runner.test.js

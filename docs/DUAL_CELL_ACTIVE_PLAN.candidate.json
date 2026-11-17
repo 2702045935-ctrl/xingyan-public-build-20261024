@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "mode": "active-active",
+  "topologyId": "server-b-mainline-shards-7",
+  "routePlanHash": "839c5a4e64e7aa4feb43d49a71de5eb017b0f93918bd05dbacb215dab02da660",
+  "shardCount": 7,
+  "activation": {
+    "trafficMode": "dormant",
+    "canaryPercent": 0,
+    "writesEnabled": false
+  },
+  "cells": {
+    "a": {
+      "id": "cell-a-43",
+      "host": "43.242.194.89",
+      "role": "active",
+      "failureDomain": "UNVERIFIED-43-PROVIDER-ZONE",
+      "dataRoot": "/srv/xingyan/dual-cell/cell-a",
+      "baseUrl": "https://43.242.194.89:5443",
+      "ownedShards": [0, 1, 2, 3]
+    },
+    "b": {
+      "id": "cell-b-192",
+      "host": "192.140.179.176",
+      "role": "active",
+      "failureDomain": "UNVERIFIED-192-PROVIDER-ZONE",
+      "dataRoot": "/srv/xingyan/dual-cell/cell-b",
+      "baseUrl": "https://192.140.179.176:7080",
+      "ownedShards": [4, 5, 6]
+    }
+  },
+  "lease": {
+    "authority": "external-consensus",
+    "ttlMs": 30000,
+    "renewalMs": 10000,
+    "fencing": "epoch"
+  },
+  "replication": {
+    "transport": "https",
+    "delivery": "durable-outbox",
+    "standardAck": "owner-durable-outbox",
+    "criticalAck": "peer-durable-outbox",
+    "criticalEntityTypes": ["transfer", "payment", "ledger", "balance"],
+    "batchSize": 200,
+    "peerTimeoutMs": 2000
+  },
+  "gateway": {
+    "writeMode": "lease-owner-only",
+    "readMode": "local-replica",
+    "rejectStaleOwner": true
+  }
+}
