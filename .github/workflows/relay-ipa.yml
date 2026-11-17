@@ -1,0 +1,63 @@
+name: relay-ipa
+
+on:
+  workflow_dispatch:
+    inputs:
+      releaseTag:
+        description: "Existing release tag containing Luchat.ipa.enc"
+        required: true
+      buildNumber:
+        description: "Build number used in the relayed filename"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  relay:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download encrypted release asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.releaseTag }}
+        run: |
+          gh release download "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern Luchat.ipa.enc \
+            --output Luchat.ipa.enc
+
+      - name: Decrypt and verify
+        env:
+          IPA_PASSWORD: ${{ secrets.IPA_PASSWORD }}
+          BUILD_NUMBER: ${{ inputs.buildNumber }}
+        run: |
+          openssl enc -d -aes-256-cbc -pbkdf2 -salt \
+            -in Luchat.ipa.enc -out "xingyan-$BUILD_NUMBER-unsigned.ipa" \
+            -pass env:IPA_PASSWORD
+          python3 - <<'PY'
+          import os
+          import plistlib
+          import zipfile
+
+          name = f"xingyan-{os.environ['BUILD_NUMBER']}-unsigned.ipa"
+          with zipfile.ZipFile(name) as archive:
+              info_name = next(
+                  path for path in archive.namelist()
+                  if path.startswith("Payload/") and path.endswith(".app/Info.plist")
+              )
+              info = plistlib.loads(archive.read(info_name))
+          print("build=", info.get("CFBundleVersion"))
+          print("buildDate=", info.get("BuildDate"))
+          assert info.get("CFBundleVersion") == os.environ["BUILD_NUMBER"]
+          PY
+
+      - name: Relay to Xingyan download host
+        env:
+          BUILD_NUMBER: ${{ inputs.buildNumber }}
+        run: |
+          curl -fS --retry 3 --max-time 600 \
+            -X POST \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary "@xingyan-$BUILD_NUMBER-unsigned.ipa" \
+            "https://aa.x8iu.com/api/mac-build/xy-mac-4f12cded?name=xingyan-$BUILD_NUMBER-unsigned.ipa"
