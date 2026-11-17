@@ -1195,6 +1195,10 @@ struct ChatDetailView: View {
         return false
     }
 
+    private var groupBubbleMaxWidth: CGFloat {
+        max(190, min(L.bubbleMaxW, L.width - (L.msgPad * 2 + L.chatAvatar + L.chatGapMsg + 18)))
+    }
+
     private var usesShortConversationSurface: Bool {
         messages.count + outbox.count <= 12
     }
@@ -3962,7 +3966,7 @@ struct ChatDetailView: View {
                    senderQQLevel: app.contact(for: message.senderId ?? "")?.qqLevel ?? 0,
                    senderOnline: senderIsOnline(message),
                    avatarSize: L.chatAvatar,
-                   maxBubbleWidth: isGroup ? min(L.bubbleMaxW, L.width * 0.68) : L.bubbleMaxW,
+                   maxBubbleWidth: isGroup ? groupBubbleMaxWidth : L.bubbleMaxW,
                    showsAvatar: true,
                    reservesAvatarSpace: true,
                    currentNickname: app.me?.nickname ?? "",
@@ -7393,6 +7397,7 @@ struct MessageRow: View {
                                          ? ChatTheme.groupSenderNameOnDark
                                          : ChatTheme.groupSenderNameOnLight))
                         .lineLimit(1)
+                        .minimumScaleFactor(0.78)
                     if senderQQLevel > 0,
                        GrowthFlags.showInChats == true {
                         QQLevelBadge(level: senderQQLevel, size: 11, maxIcons: 2).fixedSize()
@@ -8015,7 +8020,8 @@ struct MessageRow: View {
             .frame(height: 28)
         }
 
-        .frame(width: UIConfig.num("transferCardW", 240), alignment: .leading)
+        .frame(width: min(maxBubbleWidth, UIConfig.num("transferCardW", 240)),
+               alignment: .leading)
         .background(card)
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
@@ -8049,7 +8055,7 @@ struct MessageRow: View {
             return 0
         }()
         let levels = voiceLevels(o, count: 36)
-        let width = min(286, 196 + CGFloat(secs) * 1.45)
+        let width = min(maxBubbleWidth, min(286, 196 + CGFloat(secs) * 1.45))
         let live = playing || scrubbing
 
         return HStack(spacing: 10) {
@@ -8412,7 +8418,7 @@ struct MessageRow: View {
                 .foregroundColor(ChatTheme.secondary.opacity(0.7))
         }
         .padding(.horizontal, 13)
-        .frame(width: 224, height: 72, alignment: .leading)
+        .frame(width: min(224, maxBubbleWidth), height: 72, alignment: .leading)
         .background {
             RoundedRectangle(cornerRadius: 15, style: .continuous)
                 .fill(.regularMaterial)
