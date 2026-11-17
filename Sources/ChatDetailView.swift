@@ -1086,6 +1086,10 @@ struct ChatDetailView: View {
         return false
     }
 
+    private var usesShortConversationSurface: Bool {
+        messages.count + outbox.count <= 12
+    }
+
     /// 群历史按需分页，不在进群时一次性合并最多 5000 条。
     private var shouldLoadCompleteGroupHistory: Bool { false }
 
@@ -1803,7 +1807,7 @@ struct ChatDetailView: View {
                 .transaction { $0.animation = nil }
                 .zIndex(0)
 
-            messageList
+            conversationSurface
 
                 .contentShape(Rectangle())
                 .simultaneousGesture(TapGesture().onEnded { dismissTyping() })
@@ -2596,6 +2600,95 @@ struct ChatDetailView: View {
             Task { @MainActor in
                 await app.loadChats()
                 app.ensureChatVisible(chat, latest: latest)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var conversationSurface: some View {
+        if usesShortConversationSurface {
+            shortConversationSurface
+        } else {
+            messageList
+        }
+    }
+
+    /* Small conversations do not need the history prefetch/pinning kernel. On
+       content that is only slightly taller (or shorter) than the viewport, the
+       bottom offset can clamp repeatedly while content-size observers try to
+       pin it again. A light ScrollView keeps the same message rows without that
+       feedback path. */
+    private var shortConversationSurface: some View {
+        GeometryReader { geometry in
+            ScrollViewReader { proxy in
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        ForEach(messages) { message in
+                            messageBlock(message)
+                                .id(message.id)
+                                .padding(.horizontal, L.msgPad)
+                        }
+
+                        ForEach(outbox) { pending in
+                            pendingBubble(pending)
+                        }
+
+                        if !sendingMedia.isEmpty {
+                            HStack(spacing: 8) {
+                                Spacer(minLength: 0)
+                                SendingVideoBubble(cover: sendingPreview,
+                                                   progress: sendProgress)
+                            }
+                            .padding(.bottom, 12)
+                            .padding(.trailing, 6)
+                        }
+
+                        if let progress = sendingFileProgress, !sendingFileName.isEmpty {
+                            HStack(spacing: 8) {
+                                Spacer(minLength: 0)
+                                SendingFileBubble(name: sendingFileName,
+                                                  bytes: sendingFileBytes,
+                                                  progress: progress)
+                            }
+                            .padding(.bottom, 12)
+                            .padding(.trailing, 6)
+                        }
+
+                        Color.clear
+                            .frame(height: 8 + L.msgPad)
+                            .id("short-conversation-bottom")
+                    }
+                    .padding(L.msgPad)
+                    .frame(minHeight: geometry.size.height, alignment: .bottom)
+                }
+                .scrollDismissesKeyboard(.interactively)
+                .onAppear {
+                    scrollShortConversationToBottom(proxy, animated: false)
+                }
+                .onChange(of: messages.count) { _ in
+                    scrollShortConversationToBottom(proxy, animated: true)
+                }
+                .onChange(of: outbox.count) { _ in
+                    scrollShortConversationToBottom(proxy, animated: true)
+                }
+                .onReceive(NotificationCenter.default.publisher(
+                    for: UIResponder.keyboardDidShowNotification
+                )) { _ in
+                    scrollShortConversationToBottom(proxy, animated: false)
+                }
+            }
+        }
+    }
+
+    private func scrollShortConversationToBottom(_ proxy: ScrollViewProxy,
+                                                 animated: Bool) {
+        DispatchQueue.main.async {
+            if animated {
+                withAnimation(.easeOut(duration: 0.18)) {
+                    proxy.scrollTo("short-conversation-bottom", anchor: .bottom)
+                }
+            } else {
+                proxy.scrollTo("short-conversation-bottom", anchor: .bottom)
             }
         }
     }
