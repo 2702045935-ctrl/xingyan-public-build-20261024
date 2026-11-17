@@ -750,7 +750,7 @@ html[data-theme="dark"] .td-v { color: var(--wx-text); }
 /* WhatsApp 式关系事件：居中、轻量、短句，不做大卡片。 */
 .wx-relation-tip {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   gap: 5px;
   width: fit-content;
@@ -775,10 +775,19 @@ html[data-theme="dark"] .td-v { color: var(--wx-text); }
   font-weight: 700;
 }
 .wx-relation-tip b { font-weight: 400; }
+.wx-relation-copy { display: flex; flex-direction: column; gap: 1px; text-align: left; }
+.wx-relation-copy b { font-size: 12.5px; font-weight: 600; }
+.wx-relation-copy small { font-size: 11.5px; line-height: 1.35; color: var(--wx-gray); }
 .wx-relation-tip.is-added span { color: #fff; background: var(--semantic-green); }
 .wx-relation-tip.is-removed span { color: #fff; background: var(--semantic-red); }
+.wx-relation-tip.is-blocked span { color: #fff; background: var(--semantic-red); }
+.wx-relation-tip.is-account-event span { color: #fff; background: var(--semantic-orange); }
+.wx-relation-tip.is-banned span { color: #fff; background: var(--semantic-red); }
 .wx-relation-tip.is-added b { color: color-mix(in srgb, var(--semantic-green) 72%, var(--wx-text)); }
 .wx-relation-tip.is-removed b { color: color-mix(in srgb, var(--semantic-red) 72%, var(--wx-text)); }
+.wx-relation-tip.is-blocked b { color: color-mix(in srgb, var(--semantic-red) 72%, var(--wx-text)); }
+.wx-relation-tip.is-account-event b { color: color-mix(in srgb, var(--semantic-orange) 72%, var(--wx-text)); }
+.wx-relation-tip.is-banned b { color: color-mix(in srgb, var(--semantic-red) 72%, var(--wx-text)); }
  /* 聊天里的结构化消息卡：视频、多图、音乐、公告、小程序、名片、游戏等。 */
 .wx-msg .wx-bubble.is-special {
   width: min(260px, 70vw);
@@ -3479,6 +3488,12 @@ html[data-theme="dark"] .wx-page[data-page="chats"] .wx-row-preview {
 }
 .wx-row-preview .wx-preview-token.is-relation-remove {
   color: var(--semantic-red);
+}
+.wx-row-preview .wx-preview-token.is-blocked {
+  color: var(--semantic-red);
+}
+.wx-row-preview .wx-preview-token.is-account-event {
+  color: var(--semantic-orange);
 }
 /* ================= 语音 / 视频通话（手机端全屏界面）================= */
 .wx-call {

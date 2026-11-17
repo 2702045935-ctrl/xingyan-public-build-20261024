@@ -1913,6 +1913,12 @@
     if (kind === 'system' && /(删除好友|已删除|解除好友|不再是好友|关系已解除)/.test(text)) {
       return '<span class="wx-preview-token is-relation-remove">' + esc(text) + '</span>';
     }
+    if (kind === 'system' && /(拉黑|黑名单|拒收)/.test(text)) {
+      return '<span class="wx-preview-token is-blocked">' + esc(text) + '</span>';
+    }
+    if (kind === 'system' && /(封号|封禁|账号.*停用|冻结|解冻|其他地方登录|已下线)/.test(text)) {
+      return '<span class="wx-preview-token is-account-event">' + esc(text) + '</span>';
+    }
     if (/撤回/.test(text)) {
       return '<span class="wx-preview-token is-recall">' + esc(text) + '</span>';
     }
@@ -2305,11 +2311,32 @@
       || /(已添加|已成为好友|添加了好友|好友验证通过)/.test(text);
     var removed = action === 'friend_removed'
       || /(删除好友|已删除|解除好友|不再是好友|关系已解除)/.test(text);
-    if (!added && !removed) return '';
-    var cls = added ? 'is-added' : 'is-removed';
-    var icon = added ? '✓' : '×';
-    return '<div class="wx-relation-tip ' + cls + '"><span>' + icon + '</span><b>' +
-      esc(text) + '</b></div>';
+    var blocked = /(拉黑|黑名单|拒收)/.test(text)
+      || action === 'blocked' || action === 'unblocked';
+    var unblocked = action === 'unblocked' || /(解除拉黑|移出黑名单)/.test(text);
+    var account = /(封号|封禁|账号.*停用|冻结|解冻|其他地方登录|已下线)/.test(text);
+    if (!added && !removed && !blocked && !account) return '';
+    var title = '';
+    var detail = text;
+    var cls = '';
+    var icon = '!';
+    if (added) {
+      cls = 'is-added'; icon = '✓'; title = '已成为好友';
+    } else if (removed) {
+      cls = 'is-removed'; icon = '×'; title = '好友关系已解除';
+    } else if (unblocked) {
+      cls = 'is-added'; icon = '✓'; title = '已解除拉黑';
+    } else if (blocked) {
+      cls = 'is-blocked'; icon = '⊘'; title = '已加入黑名单';
+    } else if (/(冻结|解冻)/.test(text)) {
+      cls = 'is-account-event'; icon = '❄'; title = /解冻/.test(text) ? '账号已解冻' : '账号已冻结';
+    } else if (/(其他地方登录|已下线)/.test(text)) {
+      cls = 'is-account-event'; icon = '↪'; title = '登录状态已变更';
+    } else {
+      cls = 'is-banned'; icon = '!'; title = '账号状态异常';
+    }
+    return '<div class="wx-relation-tip ' + cls + '"><span>' + icon + '</span>' +
+      '<div class="wx-relation-copy"><b>' + esc(title) + '</b><small>' + esc(detail) + '</small></div></div>';
   }
 
   function renderMessages() {
