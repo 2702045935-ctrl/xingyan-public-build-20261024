@@ -53,8 +53,8 @@
     },
     {
       "path": "Sources/LocalStore.swift",
-      "size": 25123,
-      "sha256": "729e99023624954ddf07ac567aec754ab609175948ce0375f50aba79d7528381"
+      "size": 25169,
+      "sha256": "6ce2010e718107e888707c9c538433512635e67db38f618751b9f5db9038d190"
     },
     {
       "path": "Sources/MsgFrameKey.swift",

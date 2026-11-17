@@ -101,14 +101,14 @@ enum LocalStore {
         return dir.appendingPathComponent(sanitize(chatId) + ".json")
     }
 
-    static func clearVersion(_ chatId: String) -> UInt64 {
+    static func clearVersion(_ chatId: String) -> LocalPersistence.ClearVersion {
         LocalPersistence.clearVersion(chatId)
     }
 
     static func saveChat(
         _ chatId: String,
         _ messages: [Message],
-        expectedClearVersion: UInt64? = nil
+        expectedClearVersion: LocalPersistence.ClearVersion? = nil
     ) {
         guard !MessageStressFixture.isStressChat(chatId) else { return }
         guard !messages.isEmpty else { return }
