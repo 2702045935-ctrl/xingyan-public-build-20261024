@@ -32,6 +32,11 @@
 - 文件级同步只复制 owner 分片目录，不复制整个数据根，避免两机同时重写同一份全局 JSON。
 - 启动后及每小时执行一次 `--checksum` 内容校验，其余轮次使用低开销增量同步；
   防止大小、时间戳相同但内容不同的文件被 rsync 误判为已同步。
+- 所有分片必须使用同一份内容密钥域
+  `secret.key=1cedeb62…d64bf4`、`keyring.json=c9706bca…d7d969a`。
+  不能从单个分片复制另一套 `secret.key`，否则旧消息、手机号、实名和上传文件会无法解密。
+- 历史序号修复同时处理 `message-seq-duplicate`、`message-seq-gap`、`message-seq-order`；
+  按 `createdAt + id` 稳定排序后重排为连续序号，并同步迁移已读、送达游标。
 
 这仍是过渡方案，不是最终事件总线：
 

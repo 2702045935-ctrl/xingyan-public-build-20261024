@@ -12,6 +12,14 @@ function arg(name, fallback) {
   return index >= 0 ? process.argv[index + 1] : fallback;
 }
 
+function readJson(file, fallback) {
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch (_) {
+    return fallback;
+  }
+}
+
 function compareMessages(left, right) {
   return String(left.createdAt || '').localeCompare(String(right.createdAt || ''))
     || String(left.id || '').localeCompare(String(right.id || ''));
@@ -37,18 +45,21 @@ function main() {
   const secret = fs.readFileSync(secretFile, 'utf8').trim();
   const inventory = JSON.parse(fs.readFileSync(inventoryFile, 'utf8'));
   const chatIds = Array.from(new Set((inventory.errors || [])
-    .filter((row) => row.kind === 'message-seq-duplicate')
+    .filter((row) => row.kind === 'message-seq-duplicate'
+      || row.kind === 'message-seq-gap'
+      || row.kind === 'message-seq-order')
     .map((row) => String(row.id || '').split(':')[0])
     .filter(Boolean))).sort();
   let vault = null;
   if (fs.existsSync(path.join(dataDir, 'keyring.json'))) {
     vault = new SecurityVault({ dataDir, rootMaterial: secret });
   }
-  const reads = JSON.parse(fs.readFileSync(path.join(dataDir, 'reads.json'), 'utf8')).reads || {};
-  const delivered = JSON.parse(
-    fs.readFileSync(path.join(dataDir, 'delivered.json'), 'utf8')
+  const reads = readJson(path.join(dataDir, 'reads.json'), { reads: {} }).reads || {};
+  const delivered = readJson(
+    path.join(dataDir, 'delivered.json'),
+    { delivered: {} }
   ).delivered || {};
-  const chatsStore = JSON.parse(fs.readFileSync(path.join(dataDir, 'chats.json'), 'utf8'));
+  const chatsStore = readJson(path.join(dataDir, 'chats.json'), { chats: [] });
   const chats = Array.isArray(chatsStore.chats) ? chatsStore.chats : [];
   const chatById = new Map(chats.map((chat) => [chat.id, chat]));
   const plans = [];

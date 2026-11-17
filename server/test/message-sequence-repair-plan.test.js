@@ -17,8 +17,8 @@ fs.mkdirSync(messagesDir, { recursive: true });
 
 try {
   fs.writeFileSync(secretFile, 'repair-secret', 'utf8');
-  const key = crypto.createHmac('sha256', 'repair-secret').update('msg:c1').digest();
-  const makeLine = (message) => {
+  const makeLine = (chatId, message) => {
+    const key = crypto.createHmac('sha256', 'repair-secret').update('msg:' + chatId).digest();
     const iv = crypto.randomBytes(12);
     const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
     const ciphertext = Buffer.concat([
@@ -35,7 +35,11 @@ try {
   fs.writeFileSync(path.join(messagesDir, 'c1.jsonl'), [
     { id: 'm2', seq: 1, createdAt: '2026-11-16T00:00:02Z' },
     { id: 'm1', seq: 1, createdAt: '2026-11-16T00:00:01Z' }
-  ].map(makeLine).join('\n') + '\n');
+  ].map((message) => makeLine('c1', message)).join('\n') + '\n');
+  fs.writeFileSync(path.join(messagesDir, 'c2.jsonl'), [
+    { id: 'm3', seq: 1, createdAt: '2026-11-16T00:00:03Z' },
+    { id: 'm4', seq: 3, createdAt: '2026-11-16T00:00:04Z' }
+  ].map((message) => makeLine('c2', message)).join('\n') + '\n');
   fs.writeFileSync(path.join(dataDir, 'reads.json'), JSON.stringify({
     reads: { u1: { c1: 1 } }
   }));
@@ -43,10 +47,13 @@ try {
     delivered: { u1: { c1: 1 } }
   }));
   fs.writeFileSync(path.join(dataDir, 'chats.json'), JSON.stringify({
-    chats: [{ id: 'c1', seq: 1 }]
+    chats: [{ id: 'c1', seq: 1 }, { id: 'c2', seq: 3 }]
   }));
   fs.writeFileSync(inventoryFile, JSON.stringify({
-    errors: [{ kind: 'message-seq-duplicate', id: 'c1:1' }]
+    errors: [
+      { kind: 'message-seq-duplicate', id: 'c1:1' },
+      { kind: 'message-seq-gap', id: 'c2:2' }
+    ]
   }));
   const result = spawnSync(process.execPath, [
     path.join(__dirname, '..', 'tools', 'message-sequence-repair-plan.js'),
@@ -58,8 +65,8 @@ try {
   assert.strictEqual(result.status, 0, result.stderr || result.stdout);
   const report = JSON.parse(fs.readFileSync(out, 'utf8'));
   assert.strictEqual(report.ok, true);
-  assert.strictEqual(report.plannedChats, 1);
-  assert.strictEqual(report.changedMessages, 1);
+  assert.strictEqual(report.plannedChats, 2);
+  assert.strictEqual(report.changedMessages, 2);
   assert.strictEqual(report.changedReadCursors, 1);
   assert.strictEqual(report.plans[0].rows[0].id, 'm1');
   assert.strictEqual(report.plans[0].rows[0].newSeq, 1);
