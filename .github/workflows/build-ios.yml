@@ -118,6 +118,7 @@ jobs:
           node server/test/call-audio-relay.test.js
           node server/test/call-cross-shard.test.js
           node server/test/dual-cell-call-topology.test.js
+          node server/test/dual-cell-key-domain.test.js
           node server/test/payment-ledger.test.js
           node server/test/payment-database.test.js
           node server/test/payment-database-concurrency.test.js
