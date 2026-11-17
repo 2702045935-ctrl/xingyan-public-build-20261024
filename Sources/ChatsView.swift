@@ -374,7 +374,7 @@ struct ChatRow: View, Equatable {
 
             VStack(alignment: .trailing, spacing: 2) {
                 Text(TimeFmt.listApple(chat.lastMessage?.createdAt ?? chat.updatedAt))
-                    .font(pfStyled(size: scheme == .dark ? 12 : 13,
+                    .font(pfStyled(size: 12,
                                    weight: .regular))
                     .foregroundStyle(ChatListVisual.timeInk)
                     .lineLimit(1)
