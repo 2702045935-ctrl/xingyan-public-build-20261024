@@ -116,6 +116,7 @@ jobs:
           node server/test/upload-reference-repair-plan.test.js
           node server/test/upload-reference-quarantine-apply.test.js
           node server/test/shard-runtime-manifest.test.js
+          node server/test/shard-authority-store.test.js
           node server/test/call-audio-relay.test.js
           node server/test/call-cross-shard.test.js
           node server/test/dual-cell-call-topology.test.js

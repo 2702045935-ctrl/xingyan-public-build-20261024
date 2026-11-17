@@ -12,6 +12,7 @@ const SERVER_ROOT = path.resolve(__dirname, '..');
 const ENTRY_FILES = [
   'lib/chat-route-plan.js',
   'lib/shard-runtime-manifest.js',
+  'lib/shard-authority-store.js',
   'lib/shard-maintenance.js',
   'lib/single-cell-capacity-collector.js',
   'lib/shard-runtime-health.js',
