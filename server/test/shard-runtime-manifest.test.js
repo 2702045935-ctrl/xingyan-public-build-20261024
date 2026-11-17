@@ -32,6 +32,14 @@ const identity = assertRunningShard(loaded, { shardId: 3, port: 7380 });
 assert.strictEqual(identity.service, 'xingyan-mainline-shard@3.service');
 assert.strictEqual(identity.entryPort, 15599);
 assert.strictEqual(identity.frozenCodeHash, loaded.manifest.frozenCodeHash);
+const shiftedIdentity = assertRunningShard(loaded, {
+  shardId: 3,
+  port: 17380,
+  runtimeBasePort: 17080
+});
+assert.strictEqual(shiftedIdentity.backendPort, 7380);
+assert.strictEqual(shiftedIdentity.runtimeBasePort, 17080);
+assert.strictEqual(shiftedIdentity.runtimePort, 17380);
 assert.throws(
   () => assertRunningShard(loaded, { shardId: 3, port: 7080 }),
   /runtime port mismatch/

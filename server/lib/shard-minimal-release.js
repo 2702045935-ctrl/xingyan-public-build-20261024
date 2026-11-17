@@ -47,7 +47,8 @@ const ADDITIONAL_FILES = [
   'public/shard-maintenance.html',
   'shard-runtime-production.json',
   'shard-topologies.json',
-  'run-shard-candidate.sh'
+  'run-shard-candidate.sh',
+  'run-dual-cell-shard.sh'
 ];
 
 function sha256(buffer) {

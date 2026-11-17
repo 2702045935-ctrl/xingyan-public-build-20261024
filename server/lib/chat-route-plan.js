@@ -15,6 +15,7 @@ function loadChatRoutePlan(file, options) {
   const opts = options || {};
   const shardCount = Number(opts.shardCount);
   const basePort = Number(opts.basePort);
+  const runtimeBasePort = Number(opts.runtimeBasePort || opts.basePort);
   const shardId = Number(opts.shardId);
   const port = Number(opts.port);
   const expectedFileHash = String(opts.fileSha256 || '').trim().toLowerCase();
@@ -24,6 +25,9 @@ function loadChatRoutePlan(file, options) {
   }
   if (!Number.isInteger(basePort) || basePort <= 0) {
     throw new Error('SHARD_BASE_PORT is invalid');
+  }
+  if (!Number.isInteger(runtimeBasePort) || runtimeBasePort <= 0) {
+    throw new Error('SHARD_RUNTIME_BASE_PORT is invalid');
   }
   if (!Number.isInteger(shardId) || shardId < 0 || shardId >= shardCount) {
     throw new Error('SHARD_ID is invalid');
@@ -60,7 +64,7 @@ function loadChatRoutePlan(file, options) {
     throw new Error('route plan ports mismatch: plan=' + JSON.stringify(plan.ports)
       + ' runtime=' + JSON.stringify(ports));
   }
-  const expectedPort = basePort + shardId * 100;
+  const expectedPort = runtimeBasePort + shardId * 100;
   if (port !== expectedPort) {
     throw new Error('runtime port mismatch: shard=' + shardId
       + ' expected=' + expectedPort + ' actual=' + port);
@@ -72,7 +76,9 @@ function loadChatRoutePlan(file, options) {
     hash: String(plan.hash || ''),
     topologyId,
     shardCount,
-    ports
+    ports,
+    runtimeBasePort,
+    runtimePort: port
   };
 }
 

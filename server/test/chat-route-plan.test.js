@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { buildRoutePlan, resolveRoute } = require('../lib/shard-route-plan');
+const { buildRoutePlan, resolveRoute, parseOwnerPorts } = require('../lib/shard-route-plan');
 const { loadChatRoutePlan, chatOwnerShard } = require('../lib/chat-route-plan');
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'xingyan-chat-route-plan-'));
@@ -39,12 +39,31 @@ try {
   assert.strictEqual(loaded.fileHash, runtime.fileSha256);
   assert.strictEqual(loaded.topologyId, plan.topologyId);
   assert.strictEqual(chatOwnerShard(loaded, 'c1', 7), resolveRoute(plan, 'chat', 'c1'));
+  const shifted = loadChatRoutePlan(file, Object.assign({}, runtime, {
+    runtimeBasePort: 17080,
+    port: 17080
+  }));
+  assert.strictEqual(shifted.runtimeBasePort, 17080);
+  assert.strictEqual(shifted.runtimePort, 17080);
+  assert.deepStrictEqual(parseOwnerPorts('17080,17180,17280', 3, 17080), [
+    17080, 17180, 17280
+  ]);
+  assert.deepStrictEqual(parseOwnerPorts('', 2, 19000), [19000, 19100]);
+  assert.throws(() => parseOwnerPorts('19000,0', 2, 19000), /one valid port/);
   assert.throws(
     () => loadChatRoutePlan(file, Object.assign({}, runtime, { basePort: 7000 })),
     /ports mismatch/
   );
   assert.throws(
     () => loadChatRoutePlan(file, Object.assign({}, runtime, { port: 7180 })),
+    /runtime port mismatch/
+  );
+  assert.throws(
+    () => loadChatRoutePlan(file, Object.assign({
+      ...runtime,
+      runtimeBasePort: 17080,
+      port: 17080
+    }, { shardId: 1 })),
     /runtime port mismatch/
   );
   assert.throws(

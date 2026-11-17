@@ -14,6 +14,8 @@ if (process.env.SHARD_ROUTE_PLAN_FILE) {
   chatRoutePlan = loadChatRoutePlan(process.env.SHARD_ROUTE_PLAN_FILE, {
     shardCount: Number(process.env.SHARD_COUNT) || 1,
     basePort: Number(process.env.SHARD_BASE_PORT) || 5299,
+    runtimeBasePort: Number(process.env.SHARD_RUNTIME_BASE_PORT
+      || process.env.SHARD_BASE_PORT) || 5299,
     shardId: Number(process.env.SHARD_ID),
     port: PORT,
     fileSha256: process.env.SHARD_ROUTE_PLAN_FILE_SHA256
@@ -44,7 +46,9 @@ if (process.env.SHARD_RUNTIME_MANIFEST) {
   );
   shardRuntimeIdentity = assertRunningShard(runtimeManifest, {
     shardId: process.env.SHARD_ID,
-    port: PORT
+    port: PORT,
+    runtimeBasePort: Number(process.env.SHARD_RUNTIME_BASE_PORT
+      || process.env.SHARD_BASE_PORT)
   });
   if (chatRoutePlan
       && chatRoutePlan.topologyId !== shardRuntimeIdentity.topologyId) {
@@ -63,6 +67,11 @@ const CHAT_OWNER_RUNTIME = `
 const chatOwnerAgent = new http.Agent({ keepAlive: true, maxSockets: 256 });
 const chatOwnerSockets = new Map();
 let chatOwnerForwardCount = 0;
+const chatOwnerPorts = parseOwnerPorts(
+  process.env.SHARD_OWNER_PORTS,
+  Number(process.env.SHARD_COUNT) || 1,
+  Number(process.env.SHARD_RUNTIME_BASE_PORT || process.env.SHARD_BASE_PORT) || 5299
+);
 let shardWriteFrozen = false;
 let shardFenceEpoch = 0;
 let shardWriteFreezeReason = '';
@@ -70,8 +79,7 @@ let shardWriteFreezeReason = '';
 function chatOwnerPort(chatId) {
   const count = Math.max(1, Number(process.env.SHARD_COUNT) || 1);
   if (count <= 1 || !chatRoutePlanEnforced) return PORT;
-  const base = Number(process.env.SHARD_BASE_PORT) || 5299;
-  return base + chatOwnerShard(chatRoutePlan, chatId, count) * 100;
+  return chatOwnerPorts[chatOwnerShard(chatRoutePlan, chatId, count)];
 }
 
 function chatOwnerRelaySocket(actor, body) {
@@ -289,7 +297,7 @@ function patchProductionServerSource(source, actualSha256, expectedSha256) {
     "const ws = require('./lib/ws');\n"
       + "const { loadManifest, assertRunningShard } = require('./lib/shard-runtime-manifest');\n"
       + "const { loadChatRoutePlan, chatOwnerShard } = require('./lib/chat-route-plan');\n"
-      + "const { resolveRoute } = require('./lib/shard-route-plan');",
+      + "const { resolveRoute, parseOwnerPorts } = require('./lib/shard-route-plan');",
     'requires',
     changes
   );
@@ -464,7 +472,7 @@ function patchServerSource(input, options) {
     "const { resolveTopology } = require('./lib/shard-topology');\n"
       + "const { loadManifest, assertRunningShard } = require('./lib/shard-runtime-manifest');\n"
       + "const { loadChatRoutePlan, chatOwnerShard } = require('./lib/chat-route-plan');\n"
-      + "const { resolveRoute } = require('./lib/shard-route-plan');",
+      + "const { resolveRoute, parseOwnerPorts } = require('./lib/shard-route-plan');",
     'requires',
     changes
   );

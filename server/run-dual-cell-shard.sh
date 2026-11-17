@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ID=${1:?shard id required}
+APP="$(cd "$(dirname "$0")" && pwd)"
+CELL_ID=${DUAL_CELL_ID:?DUAL_CELL_ID is required}
+DATA_ROOT=${DUAL_CELL_DATA_ROOT:?DUAL_CELL_DATA_ROOT is required}
+FIRST_PORT=${DUAL_CELL_RUNTIME_BASE_PORT:?DUAL_CELL_RUNTIME_BASE_PORT is required}
+ROUTE_PLAN=${DUAL_CELL_ROUTE_PLAN:?DUAL_CELL_ROUTE_PLAN is required}
+ROUTE_PLAN_SHA256=${DUAL_CELL_ROUTE_PLAN_SHA256:?DUAL_CELL_ROUTE_PLAN_SHA256 is required}
+OWNER_PORTS=${DUAL_CELL_OWNER_PORTS:?DUAL_CELL_OWNER_PORTS is required}
+NODE_BIN=${DUAL_CELL_NODE_BIN:-node}
+
+COUNT=7
+PORT=$((FIRST_PORT + ID * 100))
+export NODE_ENV=production
+export HOST=127.0.0.1
+export PORT
+export HTTPS_PORT=$((PORT + 1000))
+export TURN_PORT=$((PORT + 2000))
+export DATA_DIR="${DATA_ROOT}/shards/${ID}"
+export CHRIS_LOCAL_ONLY=1
+export SHARD_COUNT="$COUNT"
+export SHARD_ID="$ID"
+export SHARD_BASE_PORT=7080
+export SHARD_RUNTIME_BASE_PORT="$FIRST_PORT"
+export SHARD_OWNER_PORTS="$OWNER_PORTS"
+export SHARD_RUNTIME_MANIFEST="$APP/shard-runtime-production.json"
+export SHARD_TOPOLOGY_FILE="$APP/shard-topologies.json"
+export SHARD_ROUTE_PLAN_FILE="$ROUTE_PLAN"
+export SHARD_ROUTE_PLAN_FILE_SHA256="$ROUTE_PLAN_SHA256"
+export SHARD_ROUTE_PLAN_ENFORCED=1
+export BUS_ADDR="${DUAL_CELL_BUS_ADDR:-127.0.0.1:16400}"
+export BUS_ID="dual-$CELL_ID-$ID"
+export WARM_CHATS=0
+export DISABLE_STARTUP_BOT_BACKFILL=1
+export AML_RUNTIME_ENABLED=0
+export FFMPEG_PATH="${FFMPEG_PATH:-/usr/bin/ffmpeg}"
+
+cd "$APP"
+exec "$NODE_BIN" "$APP/server.js"

@@ -1,0 +1,17 @@
+[Unit]
+Description=Xingyan dual-cell B shard %i
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/xingyan-dual-cell/b.env
+ExecStart=/opt/xingyan-dual-cell/release-r1/run-dual-cell-shard.sh %i
+Restart=always
+RestartSec=3
+LimitNOFILE=65535
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

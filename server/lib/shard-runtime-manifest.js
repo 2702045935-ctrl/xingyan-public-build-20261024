@@ -165,13 +165,17 @@ function assertRunningShard(manifestResult, options) {
   }
   const shardId = Number(options && options.shardId);
   const port = Number(options && options.port);
+  const runtimeBasePort = Number(options && options.runtimeBasePort);
   if (!Number.isInteger(shardId)) throw new Error('SHARD_ID must be an integer');
   if (!Number.isInteger(port) || port <= 0) throw new Error('PORT must be a positive integer');
   const shard = manifestResult.manifest.shards.find((row) => row.id === shardId);
   if (!shard) throw new Error('SHARD_ID ' + shardId + ' is not in the runtime manifest');
-  if (shard.backendPort !== port) {
+  const expectedRuntimePort = Number.isInteger(runtimeBasePort) && runtimeBasePort > 0
+    ? runtimeBasePort + shardId * 100
+    : shard.backendPort;
+  if (expectedRuntimePort !== port) {
     throw new Error('runtime port mismatch: shard=' + shardId
-      + ' expected=' + shard.backendPort + ' actual=' + port);
+      + ' expected=' + expectedRuntimePort + ' actual=' + port);
   }
   return {
     manifestHash: manifestResult.hash,
@@ -180,6 +184,10 @@ function assertRunningShard(manifestResult, options) {
     shardId,
     service: shard.service,
     backendPort: shard.backendPort,
+    runtimeBasePort: Number.isInteger(runtimeBasePort) && runtimeBasePort > 0
+      ? runtimeBasePort
+      : null,
+    runtimePort: port,
     entryPort: shard.entryPort,
     frozenCodeHash: manifestResult.manifest.frozenCodeHash
   };

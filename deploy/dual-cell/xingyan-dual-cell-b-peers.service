@@ -1,0 +1,13 @@
+[Unit]
+Description=Xingyan dual-cell B peer tunnels to cell A
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/ssh -NT -o BatchMode=yes -o IdentitiesOnly=yes -o ExitOnForwardFailure=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -o StrictHostKeyChecking=accept-new -i /root/.ssh/xingyan-cluster -L 127.0.0.1:15299:127.0.0.1:17080 -L 127.0.0.1:15399:127.0.0.1:17180 -L 127.0.0.1:15499:127.0.0.1:17280 -L 127.0.0.1:15599:127.0.0.1:17380 root@43.242.194.89
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

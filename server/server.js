@@ -26,7 +26,7 @@ const { createShardShadowService } = require('./lib/shard-shadow-service');
 const { resolveTopology } = require('./lib/shard-topology');
 const { loadManifest, assertRunningShard } = require('./lib/shard-runtime-manifest');
 const { loadChatRoutePlan, chatOwnerShard } = require('./lib/chat-route-plan');
-const { resolveRoute } = require('./lib/shard-route-plan');
+const { resolveRoute, parseOwnerPorts } = require('./lib/shard-route-plan');
 const {
   FROZEN_TARGET: SHARD_MAINTENANCE_TARGET,
   READY_CHECKLIST: SHARD_READY_CHECKLIST,
@@ -173,6 +173,8 @@ if (process.env.SHARD_ROUTE_PLAN_FILE) {
   chatRoutePlan = loadChatRoutePlan(process.env.SHARD_ROUTE_PLAN_FILE, {
     shardCount: Number(process.env.SHARD_COUNT) || 1,
     basePort: Number(process.env.SHARD_BASE_PORT) || 5299,
+    runtimeBasePort: Number(process.env.SHARD_RUNTIME_BASE_PORT
+      || process.env.SHARD_BASE_PORT) || 5299,
     shardId: Number(process.env.SHARD_ID),
     port: PORT,
     fileSha256: process.env.SHARD_ROUTE_PLAN_FILE_SHA256
@@ -203,7 +205,9 @@ if (process.env.SHARD_RUNTIME_MANIFEST) {
   );
   shardRuntimeIdentity = assertRunningShard(runtimeManifest, {
     shardId: process.env.SHARD_ID,
-    port: PORT
+    port: PORT,
+    runtimeBasePort: Number(process.env.SHARD_RUNTIME_BASE_PORT
+      || process.env.SHARD_BASE_PORT)
   });
   if (chatRoutePlan
       && chatRoutePlan.topologyId !== shardRuntimeIdentity.topologyId) {
@@ -7652,6 +7656,11 @@ const callSignalAgent = new http.Agent({ keepAlive: true, maxSockets: 256 });
 const chatOwnerAgent = new http.Agent({ keepAlive: true, maxSockets: 256 });
 const chatOwnerSockets = new Map();
 let chatOwnerForwardCount = 0;
+const chatOwnerPorts = parseOwnerPorts(
+  process.env.SHARD_OWNER_PORTS,
+  Number(process.env.SHARD_COUNT) || 1,
+  Number(process.env.SHARD_RUNTIME_BASE_PORT || process.env.SHARD_BASE_PORT) || 5299
+);
 let shardWriteFrozen = false;
 let shardFenceEpoch = 0;
 let shardWriteFreezeReason = '';
@@ -7686,8 +7695,7 @@ function forwardCallToSignalShard(actorId, msg) {
 function chatOwnerPort(chatId) {
   const count = Math.max(1, Number(process.env.SHARD_COUNT) || 1);
   if (count <= 1 || !chatRoutePlanEnforced) return PORT;
-  const base = Number(process.env.SHARD_BASE_PORT) || 5299;
-  return base + chatOwnerShard(chatRoutePlan, chatId, count) * 100;
+  return chatOwnerPorts[chatOwnerShard(chatRoutePlan, chatId, count)];
 }
 
 function forwardChatActionToOwner(actorId, msg, socket) {

@@ -184,6 +184,21 @@ function resolveRoute(plan, kind, id) {
   return Number.isInteger(assigned) ? assigned : routeShard(key, shardCount);
 }
 
+function parseOwnerPorts(value, shardCount, fallbackBase) {
+  const count = Math.max(1, Math.floor(Number(shardCount) || 1));
+  const base = Math.floor(Number(fallbackBase));
+  const raw = String(value || '').trim();
+  if (!raw) {
+    return Array.from({ length: count }, (_, index) => base + index * 100);
+  }
+  const ports = raw.split(',').map((row) => Number(row.trim()));
+  if (ports.length !== count
+      || ports.some((port) => !Number.isInteger(port) || port <= 0 || port > 65535)) {
+    throw new Error('SHARD_OWNER_PORTS must contain one valid port per shard');
+  }
+  return ports;
+}
+
 module.exports = {
   ALGORITHM,
   stableRouteHash,
@@ -191,5 +206,6 @@ module.exports = {
   routeShard,
   buildRoutePlan,
   verifyRoutePlan,
-  resolveRoute
+  resolveRoute,
+  parseOwnerPorts
 };
