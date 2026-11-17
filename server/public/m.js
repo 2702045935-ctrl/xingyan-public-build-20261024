@@ -1859,7 +1859,9 @@
     if (!last) return '开始聊天';
     if (!last.preview) return '';   /* 转账不进会话列表：没有别的消息时预览留空，不显示「我：」 */
     var preview = String(last.preview || '');
-    if (last.kind === 'location') preview = preview.replace(/^\[有人@我\]\s*/, '');
+    if (last.kind === 'location' || preview.indexOf('[位置]') >= 0) {
+      preview = preview.replace(/^\[有人@我\]\s*/, '').replace(/@/g, '');
+    }
     var prefix = last.senderId === S.me.id ? '我：' : '';
     return prefix + preview;
   }
@@ -2134,28 +2136,70 @@
     }).catch(function (e) { toast(e.message); });
   }
 
-  /* 往上看更早的消息（网页版）：服务端支持 before 翻页，一次 60 条 */
-  window.loadOlderWeb = function () {
+  function messageAnchor(box) {
+    if (!box) return null;
+    var top = box.getBoundingClientRect().top;
+    var nodes = box.querySelectorAll('.wx-msg[data-id]');
+    for (var i = 0; i < nodes.length; i += 1) {
+      var rect = nodes[i].getBoundingClientRect();
+      if (rect.bottom > top) {
+        return { id: nodes[i].getAttribute('data-id'), offset: rect.top - top };
+      }
+    }
+    return null;
+  }
+
+  function restoreMessageAnchor(box, anchor, beforeHeight) {
+    if (!box) return;
+    requestAnimationFrame(function () {
+      if (!anchor) {
+        box.scrollTop = box.scrollHeight - beforeHeight;
+        return;
+      }
+      var nodes = box.querySelectorAll('.wx-msg[data-id]');
+      for (var i = 0; i < nodes.length; i += 1) {
+        if (nodes[i].getAttribute('data-id') !== anchor.id) continue;
+        var top = box.getBoundingClientRect().top;
+        box.scrollTop += nodes[i].getBoundingClientRect().top - top - anchor.offset;
+        return;
+      }
+      box.scrollTop = box.scrollHeight - beforeHeight;
+    });
+  }
+
+  /* 往上看更早的消息（网页版）：服务端支持 before 翻页，一次 60 条。
+     auto=true 时是顶部预取：不显示加载占位，插入后用第一条可见消息做锚点。 */
+  window.loadOlderWeb = function (auto) {
     var chatId = S.activeChat;
     var list = S.messages[chatId] || [];
-    if (!list.length) { return; }
+    if (!list.length || S.olderLoading && S.olderLoading[chatId]) { return; }
+    S.olderLoading = S.olderLoading || {};
+    S.olderLoading[chatId] = true;
     var first = list[0];
     var box = $('messages');
     var beforeH = box ? box.scrollHeight : 0;
+    var anchor = messageAnchor(box);
     api('/chats/' + encodeURIComponent(chatId) + '/messages?limit=60&before=' + (first.seq || 0)).then(function (d) {
       var older = d.messages || [];
       S.hasOlder = S.hasOlder || {};
       S.hasOlder[chatId] = !!d.hasMore;
-      if (!older.length) { renderMessages(); return; }
-      S.messages[chatId] = older.concat(list);
+      S.olderLoading[chatId] = false;
+      if (!older.length) {
+        if (!auto) renderMessages();
+        return;
+      }
+      var known = {};
+      list.forEach(function (m) { known[m.id] = 1; });
+      var fresh = older.filter(function (m) { return !known[m.id]; });
+      if (!fresh.length) return;
+      S.messages[chatId] = fresh.concat(list);
       saveMsgCache();
       renderMessages();
-      if (box) {
-        requestAnimationFrame(function () {
-          box.scrollTop = box.scrollHeight - beforeH;
-        });
-      }
-    }).catch(function (e) { toast(e.message); });
+      restoreMessageAnchor(box, anchor, beforeH);
+    }).catch(function (e) {
+      S.olderLoading[chatId] = false;
+      if (!auto) toast(e.message);
+    });
   };
 
  function closeChat() {
@@ -2961,6 +3005,12 @@
       name: o.name || '位置', addr: o.addr || ''
     };
   }
+
+  function cleanLocationText(value, fallback) {
+    var text = String(value || '').replace(/^@+\s*/, '').replace(/\s*@\s*/g, ' · ')
+      .replace(/\s+/g, ' ').trim();
+    return text || fallback || '';
+  }
   function locLabel() {
     return (locState.lat >= 0 ? '北纬 ' : '南纬 ') + Math.abs(locState.lat).toFixed(5) + '，' +
       (locState.lng >= 0 ? '东经 ' : '西经 ') + Math.abs(locState.lng).toFixed(5);
@@ -3118,10 +3168,12 @@
 
   function locationBubble(content) {
     var o = locInfoOf(content);
+    var name = cleanLocationText(o.name, '位置');
+    var addr = cleanLocationText(o.addr, '点击查看地图');
     return '<div class="wx-bubble is-loc" data-loc="' + o.lat + ',' + o.lng + '" data-locname="' + esc(o.name) + '">' +
       '<div class="loc-thumb"><img src="' + esc(locThumbUrl(o.lat, o.lng, 15)) + '" alt="" loading="lazy" decoding="async"><span class="loc-mark"></span></div>' +
-      '<div class="loc-info"><div class="loc-t1">' + esc(o.name) + '</div>' +
-      '<div class="loc-t2">' + esc(o.addr || '点击查看地图') + '</div></div></div>';
+      '<div class="loc-info"><div class="loc-t1">' + esc(name) + '</div>' +
+      '<div class="loc-t2">' + esc(addr) + '</div></div></div>';
   }
 
   function favTime(iso) {
@@ -5242,6 +5294,24 @@
       var el = $(id);
       if (el) el.addEventListener('scroll', markScrolling, { passive: true });
     });
+    /* 聊天页接近顶部时预取上一页。节流 650ms，避免一次插入触发连续翻页；
+       预取成功后由 restoreMessageAnchor 把当前可见消息钉回原位置。 */
+    (function bindChatPrefetch() {
+      var box = $('messages');
+      if (!box) return;
+      var timer = 0;
+      box.addEventListener('scroll', function () {
+        var chatId = S.activeChat;
+        if (!chatId || !S.hasOlder || !S.hasOlder[chatId]) return;
+        if (box.scrollTop > 360) return;
+        clearTimeout(timer);
+        timer = setTimeout(function () {
+          if (!S.activeChat || S.activeChat !== chatId) return;
+          if (box.scrollTop > 360) return;
+          loadOlderWeb(true);
+        }, 80);
+      }, { passive: true });
+    })();
     /* 打字时不要每敲一个字就整表重排（60 多个会话行全量 innerHTML），
        停 140ms 再画一次，输入就不会顿。 */
     (function () {
