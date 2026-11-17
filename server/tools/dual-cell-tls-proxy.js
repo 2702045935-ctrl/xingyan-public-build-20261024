@@ -90,6 +90,10 @@ function backFor(req, url, body) {
   if (chat && !['direct', 'group', 'face', 'export', 'import'].includes(chat[1])) {
     return OWNER_PORTS[shardFor('chat', decodeURIComponent(chat[1]))];
   }
+  if (/^\/api\/messages\/[^/]+\/recall$/.test(String(url.pathname || ''))) {
+    const chatId = body && typeof body === 'object' ? String(body.chatId || '') : '';
+    if (chatId) return OWNER_PORTS[shardFor('chat', chatId)];
+  }
   try {
     const token = tokenFrom(req, url);
     const body = token ? Buffer.from(token.split('.')[0], 'base64url').toString('utf8') : '';
@@ -139,10 +143,10 @@ function isPaymentPath(pathname) {
     || /^\/api\/(?:me\/wallet|mall\/order|shop\/order)(?:\/|$)/.test(pathname);
 }
 
-function forward(req, res, body, url) {
+function forward(req, res, body, url, parsedBody) {
   const upstream = http.request({
     host: '127.0.0.1',
-    port: backFor(req, url, body),
+    port: backFor(req, url, parsedBody),
     path: req.url,
     method: req.method,
     headers: headers(req)
@@ -173,7 +177,7 @@ const server = https.createServer({
     }));
     return;
   }
-  const bodyPath = /^\/api\/(login|account\/state)/.test(url.pathname)
+  const bodyPath = /^\/api\/(login|account\/state|messages\/[^/]+\/recall)/.test(url.pathname)
     && req.method === 'POST';
   if (bodyPath) {
     const chunks = [];
