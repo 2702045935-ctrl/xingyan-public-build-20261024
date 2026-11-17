@@ -7186,9 +7186,34 @@ function lastReadSeq(userId, chatId) {
   return (per && per[chatId]) || 0;
 }
 
+function clearedSeqFor(userId, chatId) {
+  const local = Number((((db.cleared || {})[userId] || {})[chatId]) || 0);
+  const authoritative = shardAuthorityRuntime
+    && typeof shardAuthorityRuntime.clearCursor === 'function'
+    ? Number(shardAuthorityRuntime.clearCursor(userId, chatId) || 0)
+    : 0;
+  return Math.max(local, authoritative);
+}
+
+function setClearedSeq(userId, chatId, seq) {
+  const value = Math.max(0, Math.floor(Number(seq) || 0));
+  if (shardAuthorityRuntime
+      && typeof shardAuthorityRuntime.setClearCursor === 'function') {
+    const result = shardAuthorityRuntime.setClearCursor(userId, chatId, value);
+    if (result && result.status === 'fenced') {
+      throw new Error('authority writer is fenced');
+    }
+  }
+  if (!db.cleared[userId]) db.cleared[userId] = {};
+  db.cleared[userId][chatId] = value;
+  return value;
+}
+
 function unreadCount(userId, chat) {
-  const last = lastReadSeq(userId, chat.id);
-  const n = loadMessages(chat.id).filter((m) => m.seq > last && m.senderId !== userId && !m.recalled).length;
+  const last = Math.max(lastReadSeq(userId, chat.id), clearedSeqFor(userId, chat.id));
+  const n = loadMessages(chat.id).filter((m) =>
+    m.seq > last && m.senderId !== userId && !m.recalled
+  ).length;
   if (n > 0) return n;
   /* 左滑「标为未读」：最后一条是自己发的也算未读（微信就是这样，只显示一个小红点） */
   return (chat.flaggedUnread || []).includes(userId) ? 1 : 0;
@@ -7339,8 +7364,12 @@ function chatSummary(chat, forUserId, lastHint) {
   let previewSrc = lastHint || null;
   if (!lastHint) {
     const messages = loadMessages(chat.id);
-    last = messages.length ? messages[messages.length - 1] : null;
-    previewSrc = lastPreviewMessage(messages);
+    const clearedSeq = clearedSeqFor(forUserId, chat.id);
+    const visible = clearedSeq
+      ? messages.filter((message) => Number(message.seq || 0) > clearedSeq)
+      : messages;
+    last = visible.length ? visible[visible.length - 1] : null;
+    previewSrc = lastPreviewMessage(visible);
   }
   let title = chat.name;
   let avatar = chat.avatar || '';
@@ -11206,8 +11235,7 @@ async function housekeeperCommand(user, text, chat, bot) {
     }
     const msgs = loadMessages(chat.id);
     const lastSeq = msgs.length ? msgs[msgs.length - 1].seq : 0;
-    if (!db.cleared[user.id]) db.cleared[user.id] = {};
-    db.cleared[user.id][chat.id] = lastSeq;
+    setClearedSeq(user.id, chat.id, lastSeq);
     if (!db.reads[user.id]) db.reads[user.id] = {};
     db.reads[user.id][chat.id] = lastSeq;
     saveReads();
@@ -20895,8 +20923,7 @@ async function handleApi(req, res, pathname, query) {
           chat.friendshipRemovedAt = now();
           const messages = loadMessages(chat.id);
           const clearedSeq = messages.length ? messages[messages.length - 1].seq : 0;
-          if (!db.cleared[user.id]) db.cleared[user.id] = {};
-          db.cleared[user.id][chat.id] = clearedSeq;
+          setClearedSeq(user.id, chat.id, clearedSeq);
           if (!db.reads[user.id]) db.reads[user.id] = {};
           db.reads[user.id][chat.id] = clearedSeq;
           sendTo(user.id, { type: 'chat', action: 'deleted', chatId: chat.id });
@@ -20941,8 +20968,7 @@ async function handleApi(req, res, pathname, query) {
       chat.friendshipRemovedAt = now();
       const messages = loadMessages(chat.id);
       const clearedSeq = messages.length ? messages[messages.length - 1].seq : 0;
-      if (!db.cleared[user.id]) db.cleared[user.id] = {};
-      db.cleared[user.id][chat.id] = clearedSeq;
+      setClearedSeq(user.id, chat.id, clearedSeq);
       if (!db.reads[user.id]) db.reads[user.id] = {};
       db.reads[user.id][chat.id] = clearedSeq;
       saveReads();
@@ -21238,8 +21264,7 @@ async function handleApi(req, res, pathname, query) {
     if (String(query.get('clear') || '') === '1') {
       const messages = loadMessages(chat.id);
       clearedSeq = messages.length ? messages[messages.length - 1].seq : 0;
-      if (!db.cleared[user.id]) db.cleared[user.id] = {};
-      db.cleared[user.id][chat.id] = clearedSeq;
+      setClearedSeq(user.id, chat.id, clearedSeq);
       if (!db.reads[user.id]) db.reads[user.id] = {};
       db.reads[user.id][chat.id] = clearedSeq;
       saveReads();
@@ -21466,7 +21491,7 @@ async function handleApi(req, res, pathname, query) {
       Math.max(1, Number(query.get('limit')) || 30));
     const before = Number(query.get('before')) || Number.MAX_SAFE_INTEGER;
     /* 自己清空过聊天记录：清空点之前的一律不返回（别人不受影响） */
-    const clearedSeq = ((db.cleared || {})[user.id] || {})[chat.id] || 0;
+    const clearedSeq = clearedSeqFor(user.id, chat.id);
     /* ⚠ 超长会话保护（2026-10-11）：一条会话一次最多只给最近 300 条，
        更早的不再返回 —— 客户端往上滑也不会一直往内存里堆（700 条 / 内容高
        4.8 万 pt 会把 App 拖到被系统杀掉，家人群就是这么崩的）。 */
@@ -22109,7 +22134,7 @@ async function handleApi(req, res, pathname, query) {
     if (!chat || !chat.memberIds.includes(user.id)) return fail(res, 404, '会话不存在');
     const q = str(query.get('q'), 40);
     if (!q) return ok(res, { messages: [] });
-    const clearedSeq = ((db.cleared || {})[user.id] || {})[chat.id] || 0;
+    const clearedSeq = clearedSeqFor(user.id, chat.id);
     const kw = q.toLowerCase();
     const hit = loadMessages(chat.id)
       .filter((m) => m.seq > clearedSeq && !m.recalled && m.kind !== 'system'
@@ -22135,8 +22160,7 @@ async function handleApi(req, res, pathname, query) {
     if (!chat || !chat.memberIds.includes(user.id)) return fail(res, 404, '会话不存在');
     const messages = loadMessages(chat.id);
     const lastSeq = messages.length ? messages[messages.length - 1].seq : 0;
-    if (!db.cleared[user.id]) db.cleared[user.id] = {};
-    db.cleared[user.id][chat.id] = lastSeq;
+    setClearedSeq(user.id, chat.id, lastSeq);
     if (!db.reads[user.id]) db.reads[user.id] = {};
     db.reads[user.id][chat.id] = lastSeq;
     saveReads();
@@ -23474,7 +23498,10 @@ if (paymentDatabase) {
 }
 const authorityEnabled = ['1', 'true', 'on'].includes(
   String(process.env.SHARD_AUTHORITY_ENABLED || '0').toLowerCase()
-);
+) && String(process.env.SHARD_AUTHORITY_SHARDS
+  || process.env.SHARD_AUTHORITY_SHARD
+  || '').split(',').map((value) => value.trim())
+  .includes(String(process.env.SHARD_ID || '0'));
 if (authorityEnabled) {
   try {
     const authorityShard = Number(process.env.SHARD_ID || 0);

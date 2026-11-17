@@ -69,6 +69,13 @@ try {
   assert.strictEqual(store.readChat('chat-1').state.title, 'Alice');
   assert.strictEqual(store.readChat('chat-1').seq, 2);
   assert.strictEqual(store.messagesAfter('chat-1', 0, 10).length, 2);
+  result = store.setClearCursor('chat-1', 'user-1', 1);
+  assert.strictEqual(result.status, 'applied');
+  assert.strictEqual(result.clearedSeq, 1);
+  assert.strictEqual(store.clearCursor('chat-1', 'user-1').clearedSeq, 1);
+  result = store.setClearCursor('chat-1', 'user-1', 0);
+  assert.strictEqual(result.status, 'duplicate');
+  assert.strictEqual(store.clearCursor('chat-1', 'user-1').clearedSeq, 1);
   assert.strictEqual(store.verify().ok, true);
 
   const snapshot = [
@@ -118,6 +125,7 @@ try {
     leaseManager: lease
   });
   assert.strictEqual(store.readChat('chat-1').seq, 2);
+  assert.strictEqual(store.clearCursor('chat-1', 'user-1').clearedSeq, 1);
   assert.strictEqual(store.verify().ok, true);
 
   epoch = 8;

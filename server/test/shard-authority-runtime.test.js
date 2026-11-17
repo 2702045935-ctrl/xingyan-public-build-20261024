@@ -44,6 +44,10 @@ try {
   ], { type: 'direct', title: 'Direct' });
   assert.strictEqual(result.status, 'applied');
   assert.strictEqual(runtime.readMessages('direct-1').length, 2);
+  assert.strictEqual(runtime.setClearCursor('u1', 'direct-1', 1).status, 'applied');
+  assert.strictEqual(runtime.clearCursor('u1', 'direct-1'), 1);
+  assert.strictEqual(runtime.setClearCursor('u1', 'group-1', 1).status, 'bypass');
+  assert.strictEqual(runtime.clearCursor('u1', 'group-1'), 0);
   assert.strictEqual(runtime.verify().ok, true);
   runtime.close();
   console.log('shard-authority-runtime: passed');

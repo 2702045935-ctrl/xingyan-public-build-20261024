@@ -50,6 +50,14 @@ class ShardAuthorityStore {
         payload_json TEXT NOT NULL,
         updated_at TEXT NOT NULL
       );
+
+      CREATE TABLE IF NOT EXISTS chat_user_state (
+        chat_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        cleared_seq INTEGER NOT NULL DEFAULT 0,
+        updated_at TEXT NOT NULL,
+        PRIMARY KEY (chat_id, user_id)
+      );
     `);
     const at = new Date().toISOString();
     const current = this.db.prepare(
@@ -357,6 +365,69 @@ class ShardAuthorityStore {
       seq: Number(row.seq) || 0,
       state: JSON.parse(row.payload_json)
     } : null;
+  }
+
+  setClearCursor(chatId, userId, clearedSeq) {
+    const chat = String(chatId || '');
+    const user = String(userId || '');
+    const requested = Number(clearedSeq);
+    if (!chat || !user) throw new Error('chatId and userId are required');
+    if (!Number.isSafeInteger(requested) || requested < 0) {
+      throw new Error('clearedSeq must be a non-negative integer');
+    }
+    const before = this.writerLease();
+    if (!before.ok) return Object.assign({ status: 'fenced' }, before);
+    return this.messages.transaction(() => {
+      const current = this.db.prepare(`
+        SELECT cleared_seq FROM chat_user_state
+        WHERE chat_id = ? AND user_id = ?
+      `).get(chat, user);
+      const previous = current ? Number(current.cleared_seq) || 0 : 0;
+      const next = Math.max(previous, requested);
+      if (next === previous && current) {
+        return {
+          status: 'duplicate',
+          chatId: chat,
+          userId: user,
+          clearedSeq: previous,
+          eventId: ''
+        };
+      }
+      const updatedAt = this.messages.now();
+      this.db.prepare(`
+        INSERT INTO chat_user_state(chat_id, user_id, cleared_seq, updated_at)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(chat_id, user_id) DO UPDATE SET
+          cleared_seq = excluded.cleared_seq,
+          updated_at = excluded.updated_at
+      `).run(chat, user, next, updatedAt);
+      const eventId = this.messages.appendEvent(
+        'chat.cleared',
+        chat + ':' + user,
+        next,
+        { chatId: chat, userId: user, clearedSeq: next },
+        updatedAt
+      );
+      this.assertLease(before.epoch);
+      return {
+        status: 'applied',
+        chatId: chat,
+        userId: user,
+        clearedSeq: next,
+        eventId
+      };
+    });
+  }
+
+  clearCursor(chatId, userId) {
+    const row = this.db.prepare(`
+      SELECT cleared_seq, updated_at FROM chat_user_state
+      WHERE chat_id = ? AND user_id = ?
+    `).get(String(chatId || ''), String(userId || ''));
+    return row ? {
+      clearedSeq: Number(row.cleared_seq) || 0,
+      updatedAt: String(row.updated_at || '')
+    } : { clearedSeq: 0, updatedAt: '' };
   }
 
   messagesAfter(chatId, afterSeq, limit) {

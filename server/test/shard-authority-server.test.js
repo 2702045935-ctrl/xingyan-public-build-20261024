@@ -10,6 +10,7 @@ const { DatabaseSync } = require('node:sqlite');
 const { spawn } = require('child_process');
 
 const SERVER_DIR = path.resolve(__dirname, '..');
+const SERVER_ENTRY = process.env.AUTHORITY_SERVER_ENTRY || 'server.js';
 const PASSWORD = 'test123456';
 
 function freePort() {
@@ -60,7 +61,7 @@ async function waitForHealth(base, child, logs) {
 }
 
 function startServer(dataDir, port, turnPort, logs) {
-  const child = spawn(process.execPath, ['server.js'], {
+  const child = spawn(process.execPath, [SERVER_ENTRY], {
     cwd: SERVER_DIR,
     env: Object.assign({}, process.env, {
       DATA_DIR: dataDir,
@@ -72,6 +73,7 @@ function startServer(dataDir, port, turnPort, logs) {
       SHARD_AUTHORITY_WRITE: '1',
       SHARD_AUTHORITY_DB_FILE: path.join(dataDir, 'shard-authority.sqlite3'),
       SHARD_AUTHORITY_EPOCH: '1',
+      SHARD_AUTHORITY_SHARD: '0',
       SHARD_ID: '0',
       SHARD_TOPOLOGY_ID: 'server-b-mainline-shards-7'
     }),
@@ -146,7 +148,12 @@ async function main() {
 
     child = startServer(dataDir, port, turnPort, logs);
     await waitForHealth(base, child, logs);
-    assert.ok(logs.join('').includes('[分片权威] 已启用'), 'authority mode did not start');
+    const startedLog = logs.join('');
+    assert.ok(
+      startedLog.includes('[分片权威] 已启用')
+        || startedLog.includes('[分片权威] enabled'),
+      'authority mode did not start:\n' + startedLog
+    );
 
     const alice = await login(base, 'authority_alice');
     const bob = await login(base, 'authority_bob');
@@ -196,6 +203,15 @@ async function main() {
       message.content === 'authority-primary-message'
     ), 'authority read path did not survive compatibility file removal');
 
+    response = await call(base, bob.cookie, 'POST',
+      '/api/chats/' + chatId + '/clear', {});
+    assert.strictEqual(response.status, 200, JSON.stringify(response.data));
+    assert.ok(Number(response.data.cleared) >= 1);
+    response = await call(base, bob.cookie, 'GET',
+      '/api/chats/' + chatId + '/messages?all=1');
+    assert.strictEqual(response.status, 200, JSON.stringify(response.data));
+    assert.deepStrictEqual(response.data.messages || [], []);
+
     await stopChild(child);
     child = startServer(dataDir, port, turnPort, logs);
     await waitForHealth(base, child, logs);
@@ -203,9 +219,52 @@ async function main() {
     response = await call(base, bobAgain.cookie, 'GET',
       '/api/chats/' + chatId + '/messages?all=1');
     assert.strictEqual(response.status, 200, JSON.stringify(response.data));
-    assert.ok((response.data.messages || []).some((message) =>
-      message.content === 'authority-primary-message'
-    ), 'authority primary message did not survive restart');
+    assert.deepStrictEqual(
+      response.data.messages || [],
+      [],
+      'cleared authority history reappeared after restart'
+    );
+
+    response = await call(base, bobAgain.cookie, 'POST',
+      '/api/chats/' + chatId + '/messages', {
+        kind: 'text',
+        content: 'authority-after-clear',
+        clientId: 'authority-client-after-clear'
+      });
+    assert.strictEqual(response.status, 200, JSON.stringify(response.data));
+    response = await call(base, bobAgain.cookie, 'GET',
+      '/api/chats/' + chatId + '/messages?all=1');
+    assert.strictEqual(response.status, 200, JSON.stringify(response.data));
+    assert.deepStrictEqual(
+      (response.data.messages || []).map((message) => message.content),
+      ['authority-after-clear']
+    );
+
+    response = await call(base, bobAgain.cookie, 'DELETE',
+      '/api/chats/' + chatId + '?clear=1');
+    assert.strictEqual(response.status, 200, JSON.stringify(response.data));
+    assert.ok(Number(response.data.cleared) >= 2);
+    response = await call(base, bobAgain.cookie, 'GET',
+      '/api/chats/' + chatId + '/messages?all=1');
+    assert.strictEqual(response.status, 200, JSON.stringify(response.data));
+    assert.deepStrictEqual(
+      response.data.messages || [],
+      [],
+      'delete-with-clear did not clear the authority transcript'
+    );
+
+    await stopChild(child);
+    child = startServer(dataDir, port, turnPort, logs);
+    await waitForHealth(base, child, logs);
+    const bobAfterDeleteRestart = await login(base, 'authority_bob');
+    response = await call(base, bobAfterDeleteRestart.cookie, 'GET',
+      '/api/chats/' + chatId + '/messages?all=1');
+    assert.strictEqual(response.status, 200, JSON.stringify(response.data));
+    assert.deepStrictEqual(
+      response.data.messages || [],
+      [],
+      'delete-with-clear cursor did not survive restart'
+    );
     console.log('shard-authority-server: passed');
   } finally {
     await stopChild(child);
