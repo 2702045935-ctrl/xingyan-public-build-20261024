@@ -6079,6 +6079,36 @@ function pushSystemMessage(chat, text) {
   appendChatMessage(chat, msg);
   return msg;
 }
+
+/** 关系事件单独带 relation 元数据，客户端据此画 WhatsApp 式系统条。 */
+function pushRelationMessage(chat, text, action, actorId, targetId) {
+  chat.seq = nextMessageSeq(chat);
+  const msg = {
+    id: uid('m'),
+    chatId: chat.id,
+    seq: chat.seq,
+    senderId: 'system',
+    kind: 'system',
+    content: text,
+    relation: {
+      action: String(action || ''),
+      actorId: String(actorId || ''),
+      targetId: String(targetId || '')
+    },
+    createdAt: now(),
+    recalled: false
+  };
+  appendChatMessage(chat, msg);
+  (chat.memberIds || []).forEach((id) => {
+    sendTo(id, {
+      type: 'message',
+      message: msg,
+      chat: chatSummary(chat, id),
+      clientId: null
+    });
+  });
+  return msg;
+}
 function clearLoginFails(keys) {
   keys.forEach((k) => LOGIN_FAILS.delete(k));
 }
@@ -20589,6 +20619,8 @@ async function handleApi(req, res, pathname, query) {
       clearStrangerMessagesBetween(target.id, user.id);
       observeShardShadow('friends.request', { friendship: auto, accept: true });
       const c0 = openChatForFriendship(target.id, user.id);
+      if (c0) pushRelationMessage(c0, '你们已成为好友，现在可以开始聊天了',
+        'friend_added', target.id, user.id);
       sendTo(target.id, { type: 'friend', action: 'accepted', user: publicUser(user) });
       sendTo(user.id, { type: 'chat', chatId: c0 ? c0.id : '' });
       sendTo(target.id, { type: 'chat', chatId: c0 ? c0.id : '' });
@@ -20772,6 +20804,7 @@ async function handleApi(req, res, pathname, query) {
       db.reads[user.id][chat.id] = clearedSeq;
       saveReads();
       saveChats();
+      pushRelationMessage(chat, '你们已解除好友关系', 'friend_removed', user.id, target.id);
       sendTo(user.id, { type: 'chat', action: 'deleted', chatId: chat.id });
     }
     /* 备注之类的一并清掉 */
@@ -20822,8 +20855,14 @@ async function handleApi(req, res, pathname, query) {
         const fromUser = findUser(f.fromId);
         const toUser = findUser(f.toId);
         if (newChat && fromUser && toUser) {
-          pushSystemMessage(newChat, '你已添加了' + (fromUser.nickname || fromUser.username)
-            + '，现在可以开始聊天了');
+          pushRelationMessage(
+            newChat,
+            (fromUser.nickname || fromUser.username || '对方') + ' 和 '
+              + (toUser.nickname || toUser.username || '你') + ' 已成为好友，现在可以开始聊天了',
+            'friend_added',
+            toUser.id,
+            fromUser.id
+          );
         }
       } catch (e) { /* 提示加不上不影响通过 */ }
       sendTo(f.fromId, { type: 'friend', action: 'accepted', user: publicUser(user) });

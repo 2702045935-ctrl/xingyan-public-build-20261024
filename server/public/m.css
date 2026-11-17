@@ -104,6 +104,13 @@
   --wx-bubble-me: #3eb575;
   --wx-bubble-other: #2c2c2e;
   --wx-red: #fa5151;
+  --semantic-red: #ff453a;
+  --semantic-blue: #0a84ff;
+  --semantic-green: #30d158;
+  --semantic-orange: #ff9f0a;
+  --semantic-purple: #bf5af2;
+  --semantic-pink: #ff375f;
+  --semantic-cyan: #64d2ff;
     --nav-h: 44px;
     --tab-h: 49px;
     --row-h: 65px;
@@ -135,6 +142,13 @@
   --wx-link: #576b95;
   --wx-bubble-me: #95ec69;
   --wx-bubble-other: #ffffff;
+  --semantic-red: #ff3b30;
+  --semantic-blue: #007aff;
+  --semantic-green: #34c759;
+  --semantic-orange: #ff9500;
+  --semantic-purple: #af52de;
+  --semantic-pink: #ff2d55;
+  --semantic-cyan: #32ade6;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -733,6 +747,38 @@ html[data-theme="dark"] .td-v { color: var(--wx-text); }
 .wx-msg .wx-bubble.is-loc .loc-info { padding: clamp(8px, 2.4vw, 10px) clamp(10px, 3vw, 12px); }
 .wx-msg .wx-bubble.is-loc .loc-t1 { font-size: clamp(13.5px, 3.6vw, 15px); color: var(--wx-text); }
 .wx-msg .wx-bubble.is-loc .loc-t2 { margin-top: 2px; font-size: clamp(11px, 3vw, 12px); color: var(--wx-gray); }
+/* WhatsApp 式关系事件：居中、轻量、短句，不做大卡片。 */
+.wx-relation-tip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: fit-content;
+  max-width: 82%;
+  margin: 4px auto 14px;
+  padding: 4px 10px;
+  border-radius: 7px;
+  font-size: 12.5px;
+  line-height: 1.35;
+  text-align: center;
+  color: var(--wx-gray);
+  background: color-mix(in srgb, var(--wx-text) 7%, var(--wx-card));
+}
+.wx-relation-tip span {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 15px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  font-weight: 700;
+}
+.wx-relation-tip b { font-weight: 400; }
+.wx-relation-tip.is-added span { color: #fff; background: var(--semantic-green); }
+.wx-relation-tip.is-removed span { color: #fff; background: var(--semantic-red); }
+.wx-relation-tip.is-added b { color: color-mix(in srgb, var(--semantic-green) 72%, var(--wx-text)); }
+.wx-relation-tip.is-removed b { color: color-mix(in srgb, var(--semantic-red) 72%, var(--wx-text)); }
  /* 聊天里的结构化消息卡：视频、多图、音乐、公告、小程序、名片、游戏等。 */
 .wx-msg .wx-bubble.is-special {
   width: min(260px, 70vw);
@@ -773,9 +819,16 @@ html[data-theme="dark"] .wx-msg .wx-bubble.is-special { background: #242426; }
 .wx-bubble.is-sticker-card { font-size: 42px; line-height: 1.15; text-align: center; }
 .wx-bubble.is-sticker-card img { max-width: 140px; max-height: 140px; margin: 0 auto; }
 .wx-special-empty { padding: 24px 14px; text-align: center; color: var(--wx-gray); font-size: 13px; }
-.is-game-card .wx-special-icon { background: rgba(175,82,222,.14); color: #af52de; }
-.is-money-card .wx-special-icon { background: rgba(255,59,48,.12); color: #ff3b30; }
-.is-link-card .wx-special-icon, .is-oa-card .wx-special-icon { background: rgba(10,132,255,.12); color: #0a84ff; }
+.is-game-card .wx-special-icon { background: rgba(175,82,222,.14); color: var(--semantic-purple); }
+.is-money-card .wx-special-icon { background: rgba(255,59,48,.12); color: var(--semantic-red); }
+.is-link-card .wx-special-icon, .is-oa-card .wx-special-icon { background: rgba(10,132,255,.12); color: var(--semantic-blue); }
+.is-media-card .wx-special-icon { background: rgba(50,173,230,.12); color: var(--semantic-cyan); }
+.is-note-card .wx-special-icon { background: rgba(255,159,10,.13); color: var(--semantic-orange); }
+.is-music-card .wx-special-icon { background: rgba(255,55,95,.13); color: var(--semantic-pink); }
+.is-announce-card .wx-special-icon, .is-miniapp-card .wx-special-icon,
+.is-card-card .wx-special-icon { background: rgba(10,132,255,.12); color: var(--semantic-blue); }
+.is-notice-card .wx-special-icon { background: rgba(142,142,147,.14); color: var(--wx-gray); }
+.is-company-card .wx-special-icon { background: rgba(255,59,48,.12); color: var(--semantic-red); }
 
 /* ================= 收藏 ================= */
 .fav-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: clamp(8px, 2.6vw, 12px); }
@@ -3384,16 +3437,16 @@ html[data-theme="dark"] .wx-page[data-page="chats"] .wx-row-preview {
 .wx-row-preview .wx-preview-token.is-mention,
 .wx-row-preview .wx-preview-token.is-money,
 .wx-row-preview .wx-preview-token.is-recall {
-  color: #ff3b30;
+  color: var(--semantic-red);
 }
 .wx-row-preview .wx-preview-token.is-link {
-  color: #0a84ff;
+  color: var(--semantic-blue);
 }
 .wx-row-preview .wx-preview-token.is-call {
-  color: #34c759;
+  color: var(--semantic-green);
 }
 .wx-row-preview .wx-preview-token.is-note {
-  color: #d97706;
+  color: var(--semantic-orange);
 }
 .wx-row-preview .wx-preview-token.is-media,
 .wx-row-preview .wx-preview-token.is-action {
@@ -3401,25 +3454,31 @@ html[data-theme="dark"] .wx-page[data-page="chats"] .wx-row-preview {
 }
 .wx-row-preview .wx-preview-token.is-image,
 .wx-row-preview .wx-preview-token.is-live {
-  color: #0a84ff;
+  color: var(--semantic-cyan);
 }
 .wx-row-preview .wx-preview-token.is-video {
-  color: #af52de;
+  color: var(--semantic-purple);
 }
 .wx-row-preview .wx-preview-token.is-audio {
-  color: #34c759;
+  color: var(--semantic-green);
 }
 .wx-row-preview .wx-preview-token.is-file {
-  color: #ff9f0a;
+  color: var(--semantic-orange);
 }
 .wx-row-preview .wx-preview-token.is-game {
-  color: #af52de;
+  color: var(--semantic-purple);
 }
 .wx-row-preview .wx-preview-token.is-music {
-  color: #ff2d55;
+  color: var(--semantic-pink);
 }
 .wx-row-preview .wx-preview-token.is-sticker {
-  color: #34c759;
+  color: var(--semantic-green);
+}
+.wx-row-preview .wx-preview-token.is-relation-add {
+  color: var(--semantic-green);
+}
+.wx-row-preview .wx-preview-token.is-relation-remove {
+  color: var(--semantic-red);
 }
 /* ================= 语音 / 视频通话（手机端全屏界面）================= */
 .wx-call {

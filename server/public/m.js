@@ -1907,6 +1907,12 @@
     var text = lastPreview(c);
     var kind = c && c.lastMessage && c.lastMessage.kind;
     if (!text) return '';
+    if (kind === 'system' && /(已添加|已成为好友|添加了好友|好友验证通过)/.test(text)) {
+      return '<span class="wx-preview-token is-relation-add">' + esc(text) + '</span>';
+    }
+    if (kind === 'system' && /(删除好友|已删除|解除好友|不再是好友|关系已解除)/.test(text)) {
+      return '<span class="wx-preview-token is-relation-remove">' + esc(text) + '</span>';
+    }
     if (/撤回/.test(text)) {
       return '<span class="wx-preview-token is-recall">' + esc(text) + '</span>';
     }
@@ -2292,6 +2298,20 @@
     return '<div class="wx-msg-system">' + icon + '<span>' + esc(t) + '</span></div>';
   }
 
+  function relationLine(m) {
+    var text = String(m && m.content || '');
+    var action = m && m.relation && m.relation.action || '';
+    var added = action === 'friend_added'
+      || /(已添加|已成为好友|添加了好友|好友验证通过)/.test(text);
+    var removed = action === 'friend_removed'
+      || /(删除好友|已删除|解除好友|不再是好友|关系已解除)/.test(text);
+    if (!added && !removed) return '';
+    var cls = added ? 'is-added' : 'is-removed';
+    var icon = added ? '✓' : '×';
+    return '<div class="wx-relation-tip ' + cls + '"><span>' + icon + '</span><b>' +
+      esc(text) + '</b></div>';
+  }
+
   function renderMessages() {
     var list = S.messages[S.activeChat] || [];
     var box = $('messages');
@@ -2316,6 +2336,11 @@
       var mine = m.senderId === S.me.id;
       /* 系统消息（通话记录这种）：和 App / 微信一样，居中一行小灰字，前面带电话图标 */
       if (m.kind === 'system') {
+        var relation = relationLine(m);
+        if (relation) {
+          html += relation;
+          return;
+        }
         /* 微信的通话记录是一条气泡：自己打出去的在右边（绿），对方打来的在左边（白）。
            from 是服务端新加的；老记录没有 from，还是退回「居中一行灰字」。 */
         var callFrom = (m.call && m.call.from) ? String(m.call.from) : '';
@@ -5007,7 +5032,43 @@
         if (ids.length > 20) ids.slice(0, ids.length - 20).forEach(function (k) { delete giftLocalIds[k]; });
         return;
       }
-      if (msg.type === 'read' || msg.type === 'presence' || msg.type === 'chat' || msg.type === 'friend') { scheduleChatReload(); loadContacts(); return; }
+      if (msg.type === 'friend') {
+        var relationAction = msg.action === 'removed' ? 'friend_removed'
+          : (msg.action === 'accepted' ? 'friend_added' : '');
+        var relationPeer = msg.action === 'removed' ? msg.userId
+          : (msg.user && msg.user.id || '');
+        var relationChat = relationPeer ? (S.chats || []).filter(function (c) {
+          return c.type === 'direct' && c.memberIds && c.memberIds.indexOf(relationPeer) >= 0;
+        })[0] : null;
+        if (relationAction && relationChat) {
+          var relationText = relationAction === 'friend_added'
+            ? '你们已成为好友，现在可以开始聊天了'
+            : '好友关系已解除';
+          var relationList = S.messages[relationChat.id] = S.messages[relationChat.id] || [];
+          var exists = relationList.slice(-40).some(function (m) {
+            if (m.kind !== 'system') return false;
+            return relationAction === 'friend_added'
+              ? /(已添加|已成为好友|添加了好友|好友验证通过)/.test(String(m.content || ''))
+              : /(删除好友|已删除|解除好友|不再是好友|关系已解除)/.test(String(m.content || ''));
+          });
+          if (!exists) {
+            relationList.push({
+              id: 'local-relation-' + relationAction + '-' + relationPeer,
+              chatId: relationChat.id,
+              senderId: 'system',
+              kind: 'system',
+              content: relationText,
+              relation: { action: relationAction, actorId: '', targetId: relationPeer },
+              createdAt: new Date().toISOString(),
+              recalled: false
+            });
+            saveMsgCache();
+            if (S.activeChat === relationChat.id) renderMessages();
+          }
+        }
+        scheduleChatReload(); loadContacts(); return;
+      }
+      if (msg.type === 'read' || msg.type === 'presence' || msg.type === 'chat') { scheduleChatReload(); loadContacts(); return; }
       /* 直播专场：弹幕 / 在线人数 / 点赞（只在对应房间里处理） */
       if (msg.type === 'live') {
         if (!liveRoom || msg.roomId !== liveRoom.id) return;
