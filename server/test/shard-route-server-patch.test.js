@@ -78,6 +78,7 @@ assert.ok(result.source.includes('/__shard/owner-routing'));
 assert.ok(result.source.includes('/__shard/write-freeze'));
 assert.ok(result.source.includes('/__shard/user-lookup'));
 assert.ok(result.source.includes('shardWriteFrozen'));
+assert.ok(result.source.includes("String(process.env.SHARD_WRITE_FROZEN || '') === '1'"));
 assert.ok(result.source.includes('chatOwnerPort(msg.chatId)'));
 assert.ok(result.source.includes('chatRoutePlanFileHash'));
 assert.throws(() => patchServerSource(stable, {

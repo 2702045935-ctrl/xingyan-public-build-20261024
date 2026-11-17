@@ -72,7 +72,7 @@ const chatOwnerPorts = parseOwnerPorts(
   Number(process.env.SHARD_COUNT) || 1,
   Number(process.env.SHARD_RUNTIME_BASE_PORT || process.env.SHARD_BASE_PORT) || 5299
 );
-let shardWriteFrozen = false;
+let shardWriteFrozen = String(process.env.SHARD_WRITE_FROZEN || '') === '1';
 let shardFenceEpoch = 0;
 let shardWriteFreezeReason = '';
 
