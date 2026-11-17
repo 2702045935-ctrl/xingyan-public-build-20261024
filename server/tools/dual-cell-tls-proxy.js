@@ -1,0 +1,238 @@
+#!/usr/bin/env node
+'use strict';
+
+const crypto = require('crypto');
+const fs = require('fs');
+const http = require('http');
+const https = require('https');
+
+const PORT = Number(process.env.TLS_PORT || 5443);
+const CERT = process.env.TLS_CERT || '/opt/chris/tls/u.crt';
+const KEY = process.env.TLS_KEY || '/opt/chris/tls/u.key';
+const SHARDS = Math.max(1, Number(process.env.SHARD_COUNT || 7));
+const OWNER_PORTS = String(process.env.SHARD_OWNER_PORTS || '')
+  .split(',').map((value) => Number(value.trim()));
+const ROUTE_PLAN_FILE = String(process.env.ROUTE_PLAN_FILE || '');
+const ROUTE_PLAN_FILE_SHA256 = String(process.env.ROUTE_PLAN_FILE_SHA256 || '').toLowerCase();
+const USER_DIRECTORY_FILE = String(process.env.USER_DIRECTORY_FILE || '');
+
+if (OWNER_PORTS.length !== SHARDS
+    || OWNER_PORTS.some((port) => !Number.isInteger(port) || port <= 0 || port > 65535)) {
+  throw new Error('SHARD_OWNER_PORTS must contain one valid port per shard');
+}
+
+function routeHash(value) {
+  let hash = 2166136261;
+  const text = String(value || '');
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+let routePlan = null;
+if (ROUTE_PLAN_FILE) {
+  const raw = fs.readFileSync(ROUTE_PLAN_FILE);
+  if (!/^[a-f0-9]{64}$/.test(ROUTE_PLAN_FILE_SHA256)
+      || crypto.createHash('sha256').update(raw).digest('hex') !== ROUTE_PLAN_FILE_SHA256) {
+    throw new Error('route plan file hash mismatch');
+  }
+  routePlan = JSON.parse(raw.toString('utf8'));
+  if (!routePlan || routePlan.version !== 1 || routePlan.algorithm !== 'fnv1a32'
+      || Number(routePlan.shardCount) !== SHARDS || !routePlan.assignments) {
+    throw new Error('invalid route plan');
+  }
+}
+
+let userDirectory = null;
+if (USER_DIRECTORY_FILE && fs.existsSync(USER_DIRECTORY_FILE)) {
+  const directory = JSON.parse(fs.readFileSync(USER_DIRECTORY_FILE, 'utf8'));
+  if (!directory || directory.kind !== 'user-directory' || !Array.isArray(directory.entries)) {
+    throw new Error('invalid user directory');
+  }
+  const aliases = new Map();
+  directory.entries.forEach((entry) => {
+    for (const [kind, value] of [
+      ['username', entry.username],
+      ['phone', entry.phone],
+      ['email', entry.email]
+    ]) {
+      if (value) aliases.set(kind + ':' + value, entry);
+    }
+  });
+  userDirectory = {
+    byId: (id) => directory.entries.find((entry) => entry.id === String(id || '')) || null,
+    byAlias: (kind, value) => aliases.get(kind + ':' + String(value || '').trim().toLowerCase()) || null
+  };
+}
+
+function shardFor(kind, id) {
+  const key = (kind === 'chat' ? 'c:' : 'u:') + String(id || '');
+  const fixed = routePlan && Number(routePlan.assignments[key]);
+  if (Number.isInteger(fixed) && fixed >= 0 && fixed < SHARDS) return fixed;
+  return routeHash(key) % SHARDS;
+}
+
+function tokenFrom(req, url) {
+  let token = String(req.headers.authorization || '').replace(/^Bearer /i, '');
+  if (!token) token = url.searchParams.get('token') || '';
+  if (!token) {
+    const match = String(req.headers.cookie || '').match(/chris_chat_session=([^;]+)/);
+    if (match) token = decodeURIComponent(match[1]);
+  }
+  return token;
+}
+
+function backFor(req, url, body) {
+  const chat = String(url.pathname || '').match(/^\/api\/chats\/([^/]+)/);
+  if (chat && !['direct', 'group', 'face', 'export', 'import'].includes(chat[1])) {
+    return OWNER_PORTS[shardFor('chat', decodeURIComponent(chat[1]))];
+  }
+  try {
+    const token = tokenFrom(req, url);
+    const body = token ? Buffer.from(token.split('.')[0], 'base64url').toString('utf8') : '';
+    const claims = body ? JSON.parse(body) : null;
+    if (claims && claims.sub) return OWNER_PORTS[shardFor('user', claims.sub)];
+  } catch (_) { /* fall through to shard 0 */ }
+  if (userDirectory) {
+    const candidate = body && typeof body === 'object' ? body : {};
+    const values = [
+      ['username', candidate.username || candidate.account || url.searchParams.get('u')],
+      ['phone', candidate.phone],
+      ['email', candidate.email]
+    ];
+    for (const [kind, value] of values) {
+      const entry = value ? userDirectory.byAlias(kind, value) : null;
+      if (entry && Number.isInteger(entry.shard) && entry.shard < SHARDS) {
+        return OWNER_PORTS[entry.shard];
+      }
+    }
+  }
+  return OWNER_PORTS[0];
+}
+
+function headers(req) {
+  const next = Object.assign({}, req.headers);
+  const ip = req.socket && req.socket.remoteAddress || '';
+  next['x-forwarded-proto'] = 'https';
+  next['x-forwarded-for'] = (req.headers['x-forwarded-for']
+    ? req.headers['x-forwarded-for'] + ','
+    : '') + ip;
+  next['x-real-ip'] = ip;
+  return next;
+}
+
+function safeSocket(socket) {
+  if (!socket || socket.__dualGuarded) return;
+  socket.__dualGuarded = true;
+  socket.on('error', () => {
+    try { socket.destroy(); } catch (_) { /* ignore */ }
+  });
+  if (socket.setNoDelay) socket.setNoDelay(true);
+  if (socket.setKeepAlive) socket.setKeepAlive(true, 30000);
+}
+
+function forward(req, res, body, url) {
+  const upstream = http.request({
+    host: '127.0.0.1',
+    port: backFor(req, url, body),
+    path: req.url,
+    method: req.method,
+    headers: headers(req)
+  }, (response) => {
+    res.writeHead(response.statusCode, response.headers);
+    response.pipe(res);
+  });
+  upstream.on('error', () => {
+    if (!res.headersSent) res.writeHead(502, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('dual-cell backend unavailable');
+  });
+  if (body) upstream.end(body);
+  else req.pipe(upstream);
+}
+
+const server = https.createServer({
+  cert: fs.readFileSync(CERT),
+  key: fs.readFileSync(KEY)
+}, (req, res) => {
+  safeSocket(req.socket);
+  const url = new URL(req.url || '/', 'http://x');
+  const bodyPath = /^\/api\/(login|account\/state)/.test(url.pathname)
+    && req.method === 'POST';
+  if (bodyPath) {
+    const chunks = [];
+    let size = 0;
+    req.on('data', (chunk) => {
+      size += chunk.length;
+      if (size <= 256 * 1024) chunks.push(chunk);
+    });
+    req.on('end', () => {
+      let body = null;
+      try { body = JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch (_) { body = null; }
+      forward(req, res, Buffer.concat(chunks), url, body);
+    });
+    req.on('error', () => {
+      if (!res.headersSent) res.writeHead(400);
+      res.end();
+    });
+    return;
+  }
+  forward(req, res, null, url);
+});
+
+server.on('upgrade', (req, socket, head) => {
+  safeSocket(socket);
+  const upstream = http.request({
+    host: '127.0.0.1',
+    port: backFor(req, new URL(req.url || '/', 'http://x'), null),
+    path: req.url,
+    method: req.method,
+    headers: headers(req)
+  });
+  upstream.on('upgrade', (response, upstreamSocket, upstreamHead) => {
+    safeSocket(upstreamSocket);
+    let raw = 'HTTP/1.1 101 Switching Protocols\r\n';
+    Object.keys(response.headers).forEach((key) => {
+      raw += key + ': ' + response.headers[key] + '\r\n';
+    });
+    socket.write(raw + '\r\n');
+    if (upstreamHead && upstreamHead.length) upstreamSocket.unshift(upstreamHead);
+    if (head && head.length) upstreamSocket.write(head);
+    upstreamSocket.pipe(socket);
+    socket.pipe(upstreamSocket);
+  });
+  upstream.on('response', (response) => {
+    let raw = 'HTTP/1.1 ' + response.statusCode + ' '
+      + (response.statusMessage || '') + '\r\n';
+    Object.keys(response.headers).forEach((key) => {
+      raw += key + ': ' + response.headers[key] + '\r\n';
+    });
+    socket.write(raw + '\r\n');
+    response.pipe(socket);
+  });
+  upstream.on('error', () => {
+    try { socket.destroy(); } catch (_) { /* ignore */ }
+  });
+  upstream.end();
+});
+
+server.on('connection', safeSocket);
+server.on('secureConnection', safeSocket);
+server.on('tlsClientError', (_, socket) => safeSocket(socket));
+server.on('clientError', (_, socket) => safeSocket(socket));
+server.keepAliveTimeout = 65000;
+server.headersTimeout = 70000;
+server.requestTimeout = 0;
+server.timeout = 0;
+server.maxConnections = Number(process.env.TLS_MAX_CONNECTIONS || 20000);
+
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(JSON.stringify({
+    service: 'dual-cell-tls-proxy',
+    port: PORT,
+    shards: SHARDS,
+    ownerPorts: OWNER_PORTS,
+    routePlanHash: routePlan ? routePlan.hash : ''
+  }));
+});

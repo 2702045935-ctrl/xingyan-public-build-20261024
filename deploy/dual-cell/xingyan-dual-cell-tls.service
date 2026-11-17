@@ -1,0 +1,16 @@
+[Unit]
+Description=Xingyan dual-cell TLS entry
+After=network-online.target xingyan-dual-cell-a@0.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/xingyan-dual-cell/gateway.env
+ExecStart=/opt/node24/bin/node /opt/xingyan-dual-cell/release-r1/tools/dual-cell-tls-proxy.js
+Restart=always
+RestartSec=3
+LimitNOFILE=200000
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

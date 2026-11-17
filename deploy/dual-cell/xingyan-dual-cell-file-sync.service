@@ -1,0 +1,13 @@
+[Unit]
+Description=Xingyan dual-cell owner-shard replication
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/flock -n /run/xingyan-dual-cell-file-sync.lock /bin/bash -c 'while true; do /opt/xingyan-dual-cell/deploy/dual-cell-file-sync.sh; sleep 1; done'
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

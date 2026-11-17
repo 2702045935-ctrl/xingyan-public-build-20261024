@@ -5,6 +5,7 @@ ID=${1:?shard id required}
 APP="$(cd "$(dirname "$0")" && pwd)"
 CELL_ID=${DUAL_CELL_ID:?DUAL_CELL_ID is required}
 DATA_ROOT=${DUAL_CELL_DATA_ROOT:?DUAL_CELL_DATA_ROOT is required}
+DATA_LAYOUT=${DUAL_CELL_DATA_LAYOUT:-shards}
 FIRST_PORT=${DUAL_CELL_RUNTIME_BASE_PORT:?DUAL_CELL_RUNTIME_BASE_PORT is required}
 ROUTE_PLAN=${DUAL_CELL_ROUTE_PLAN:?DUAL_CELL_ROUTE_PLAN is required}
 ROUTE_PLAN_SHA256=${DUAL_CELL_ROUTE_PLAN_SHA256:?DUAL_CELL_ROUTE_PLAN_SHA256 is required}
@@ -18,7 +19,11 @@ export HOST=127.0.0.1
 export PORT
 export HTTPS_PORT=$((PORT + 1000))
 export TURN_PORT=$((PORT + 2000))
-export DATA_DIR="${DATA_ROOT}/shards/${ID}"
+if [ "$DATA_LAYOUT" = "full" ]; then
+  export DATA_DIR="$DATA_ROOT"
+else
+  export DATA_DIR="${DATA_ROOT}/shards/${ID}"
+fi
 export CHRIS_LOCAL_ONLY=1
 export SHARD_COUNT="$COUNT"
 export SHARD_ID="$ID"

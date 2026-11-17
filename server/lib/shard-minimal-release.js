@@ -41,7 +41,8 @@ const ENTRY_FILES = [
   'tools/shard-user-directory.js',
   'tools/shard-user-lookup.js',
   'tools/dual-cell-active-plan.js',
-  'tools/dual-cell-failover-drill.js'
+  'tools/dual-cell-failover-drill.js',
+  'tools/dual-cell-tls-proxy.js'
 ];
 const ADDITIONAL_FILES = [
   'public/shard-maintenance.html',
