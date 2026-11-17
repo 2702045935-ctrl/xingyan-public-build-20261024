@@ -6901,33 +6901,112 @@ struct SystemLine: View {
     var plain: Bool = false
 
     var body: some View {
-        HStack(spacing: 4) {
-            displayText
-                .font(.footnote)
-                .multilineTextAlignment(.center)
-            if message.isCallRecord {
-                callIcon(size: 13)
-            }
-        }
+        HStack(alignment: .top, spacing: 9) {
+            Image(systemName: promptSymbol)
+                .font(.system(size: 12.5, weight: .semibold))
+                .foregroundStyle(promptTint)
+                .frame(width: 25, height: 25)
+                .background(Circle().fill(promptTint.opacity(0.12)))
 
-        .padding(.horizontal, plain ? 2 : 10)
-        .padding(.vertical, plain ? 0 : 4)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(promptTitle)
+                    .font(pf(12.5, .semibold))
+                    .foregroundStyle(promptTint)
+                displayText
+                    .font(pf(12.5))
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(nil)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, plain ? 8 : 11)
+        .padding(.vertical, plain ? 7 : 9)
         .background(
             Group {
                 if !plain {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
                             .fill(.ultraThinMaterial)
-                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
                             .fill(usesLightInk
-                                  ? Color.black.opacity(0.40)
-                                  : Color.white.opacity(0.76))
+                                  ? Color.black.opacity(0.42)
+                                  : Color.white.opacity(0.82))
                     }
                 }
             }
         )
+        .overlay {
+            if !plain {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(promptTint.opacity(0.14), lineWidth: 0.6)
+            }
+        }
+        .frame(maxWidth: min(360, L.width * 0.84), alignment: .leading)
         .frame(maxWidth: .infinity)
-        .padding(.horizontal, 40)
+        .padding(.horizontal, 28)
+    }
+
+    private var promptTitle: String {
+        let raw = message.body
+        if raw.contains("已成为好友") {
+            return Tr("好友关系已建立")
+        }
+        if raw.contains("解除好友关系") || raw.contains("删除好友") {
+            return Tr("好友关系已解除")
+        }
+        if raw.contains("拉黑") || raw.contains("黑名单") {
+            return Tr("黑名单状态已更新")
+        }
+        if raw.contains("封禁") || raw.contains("冻结") || raw.contains("账号") {
+            return Tr("账号状态提醒")
+        }
+        if raw.contains("解散") {
+            return Tr("群聊状态提醒")
+        }
+        if raw.contains("禁言") {
+            return Tr("群聊权限提醒")
+        }
+        if raw.contains("邀请") || raw.contains("加入了群聊") {
+            return Tr("群成员变化")
+        }
+        if raw.contains("退出了群聊") || raw.contains("移出群聊") {
+            return Tr("群成员变化")
+        }
+        return Tr("系统提示")
+    }
+
+    private var promptSymbol: String {
+        let raw = message.body
+        if raw.contains("已成为好友") { return "person.crop.circle.badge.checkmark" }
+        if raw.contains("解除好友关系") || raw.contains("删除好友") {
+            return "person.crop.circle.badge.xmark"
+        }
+        if raw.contains("拉黑") || raw.contains("黑名单") { return "hand.raised.fill" }
+        if raw.contains("封禁") || raw.contains("冻结") || raw.contains("账号") {
+            return "lock.shield.fill"
+        }
+        if raw.contains("解散") { return "person.3.fill" }
+        if raw.contains("禁言") { return "speaker.slash.fill" }
+        return "info.circle.fill"
+    }
+
+    private var promptTint: Color {
+        let raw = message.body
+        if raw.contains("已成为好友") { return .green }
+        if raw.contains("解除好友关系") || raw.contains("删除好友")
+            || raw.contains("拉黑") || raw.contains("黑名单")
+            || raw.contains("解散") {
+            return .red
+        }
+        if raw.contains("禁言") || raw.contains("封禁")
+            || raw.contains("冻结") || raw.contains("账号") {
+            return .orange
+        }
+        if raw.contains("邀请") || raw.contains("加入") || raw.contains("退出") {
+            return .blue
+        }
+        return usesLightInk ? Color.white.opacity(0.72) : Color(hex: 0x667781)
     }
 
     @ViewBuilder

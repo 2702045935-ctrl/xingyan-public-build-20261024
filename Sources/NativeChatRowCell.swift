@@ -171,7 +171,8 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         let resolvedTitleHeight = max(titleHeight, ceil(titleLabel.font.lineHeight))
         let previewHeight = max(19, ceil(previewLabel.font.lineHeight))
         let timeHeight = max(18, ceil(timeLabel.font.lineHeight))
-        let contentHeight = resolvedTitleHeight + 4 + previewHeight
+        let titlePreviewGap: CGFloat = 1
+        let contentHeight = resolvedTitleHeight + titlePreviewGap + previewHeight
         let contentTop = max(5, (bounds.height - contentHeight) / 2)
         let unread = configuration?.unread ?? 0
         let badgeScale = min(1.4, max(1, unreadLabel.font.pointSize / 10))
@@ -185,11 +186,11 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
                                   width: titleWidth,
                                   height: resolvedTitleHeight)
         previewLabel.frame = CGRect(x: textX,
-                                    y: contentTop + resolvedTitleHeight + 4,
+                                    y: contentTop + resolvedTitleHeight + titlePreviewGap,
                                     width: max(1, bounds.width - textX - rowTrailing - previewReserve),
                                     height: previewHeight)
         timeLabel.frame = CGRect(x: bounds.width - rowTrailing - timeWidth,
-                                 y: contentTop + (resolvedTitleHeight - timeHeight) / 2,
+                                 y: contentTop + (resolvedTitleHeight - timeHeight) / 2 - 3,
                                  width: timeWidth, height: timeHeight)
         unreadLabel.sizeToFit()
         unreadLabel.frame = CGRect(x: bounds.width - rowTrailing - unreadWidth,
@@ -221,7 +222,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         previewLabel.font = NativeChatRowMetrics.font(15,
                                                      weight: .regular,
                                                      textStyle: .body)
-        timeLabel.font = NativeChatRowMetrics.font(13,
+        timeLabel.font = NativeChatRowMetrics.font(12,
                                                   weight: .regular,
                                                   textStyle: .footnote)
         previewLabel.attributedText = styledPreview(configuration)

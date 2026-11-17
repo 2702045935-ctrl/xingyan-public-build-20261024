@@ -339,7 +339,7 @@ struct ChatRow: View, Equatable {
 
     private var textColumn: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
-            VStack(alignment: .leading, spacing: scheme == .dark ? 4 : 6) {
+            VStack(alignment: .leading, spacing: scheme == .dark ? 2 : 1) {
                 HStack(spacing: 5) {
                     Text(displayTitle)
                         .font(pfStyled(size: scheme == .dark ? 16.5 : 17,
@@ -374,7 +374,7 @@ struct ChatRow: View, Equatable {
 
             VStack(alignment: .trailing, spacing: 2) {
                 Text(TimeFmt.listApple(chat.lastMessage?.createdAt ?? chat.updatedAt))
-                    .font(pfStyled(size: scheme == .dark ? 12 : 13,
+                    .font(pfStyled(size: 12,
                                    weight: .regular))
                     .foregroundStyle(ChatListVisual.timeInk)
                     .lineLimit(1)
