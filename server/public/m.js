@@ -2148,7 +2148,11 @@
       S.messages[chatId] = older.concat(list);
       saveMsgCache();
       renderMessages();
-      if (box) { box.scrollTop = box.scrollHeight - beforeH; }   // 保持原来的视觉位置
+      if (box) {
+        requestAnimationFrame(function () {
+          box.scrollTop = box.scrollHeight - beforeH;
+        });
+      }
     }).catch(function (e) { toast(e.message); });
   };
 
@@ -2299,18 +2303,21 @@
     var input = $('msgInput');
     var text = input.value.trim();
     if (!text || !S.activeChat) return;
+    var chatId = S.activeChat;
     input.value = '';
     updateSendBtn();
     var clientId = 'c' + Date.now() + Math.random().toString(16).slice(2, 6);
-    var list = S.messages[S.activeChat] = S.messages[S.activeChat] || [];
+    var list = S.messages[chatId] = S.messages[chatId] || [];
     list.push({ id: clientId, senderId: S.me.id, senderName: S.me.nickname, senderAvatar: S.me.avatar, kind: 'text', content: text, createdAt: new Date().toISOString(), pending: true });
     renderMessages();
-    var payload = { type: 'send', chatId: S.activeChat, kind: 'text', content: text, clientId: clientId };
+    var payload = { type: 'send', chatId: chatId, kind: 'text', content: text, clientId: clientId };
     var sent = false;
     if (socket && socket.readyState === 1) { try { socket.send(JSON.stringify(payload)); sent = true; } catch (e) { sent = false; } }
     if (!sent) {
-      api('/chats/' + encodeURIComponent(S.activeChat) + '/messages', {
+      api('/chats/' + encodeURIComponent(chatId) + '/messages', {
         method: 'POST', body: JSON.stringify({ kind: 'text', content: text, clientId: clientId })
+      }).then(function (data) {
+        settleLocalMessage(chatId, clientId, data);
       }).catch(function (e) { toast(e.message); });
     }
     loadChats();
@@ -3774,22 +3781,65 @@
     toast('已发送');
   }
 
+  function settleLocalMessage(chatId, clientId, data) {
+    var list = S.messages[chatId] || [];
+    var idx = -1;
+    for (var i = 0; i < list.length; i += 1) {
+      if (list[i].id === clientId || list[i].clientId === clientId) { idx = i; break; }
+    }
+    if (idx < 0) return;
+    if (data && data.message) list[idx] = data.message;
+    else list.splice(idx, 1);
+    saveMsgCache();
+    if (S.activeChat === chatId) renderMessages();
+  }
+
   function sendText(text) {
     if (!S.activeChat || !text) return;
+    var chatId = S.activeChat;
     var clientId = 'c' + Date.now() + Math.random().toString(16).slice(2, 6);
-    var payload = { type: 'send', chatId: S.activeChat, kind: 'text', content: text, clientId: clientId };
+    var list = S.messages[chatId] = S.messages[chatId] || [];
+    list.push({
+      id: clientId,
+      senderId: S.me.id,
+      senderName: S.me.nickname,
+      senderAvatar: S.me.avatar,
+      kind: 'text',
+      content: text,
+      createdAt: new Date().toISOString(),
+      pending: true
+    });
+    renderMessages();
+    var payload = { type: 'send', chatId: chatId, kind: 'text', content: text, clientId: clientId };
     var sent = false;
     if (socket && socket.readyState === 1) { try { socket.send(JSON.stringify(payload)); sent = true; } catch (e) { sent = false; } }
-    if (!sent) api('/chats/' + encodeURIComponent(S.activeChat) + '/messages', { method: 'POST', body: JSON.stringify({ kind: 'text', content: text, clientId: clientId }) }).catch(function (e) { toast(e.message); });
+    if (!sent) api('/chats/' + encodeURIComponent(chatId) + '/messages', { method: 'POST', body: JSON.stringify({ kind: 'text', content: text, clientId: clientId }) })
+      .then(function (data) { settleLocalMessage(chatId, clientId, data); })
+      .catch(function (e) { toast(e.message); });
   }
 
   function sendUploaded(kind, content) {
     if (!S.activeChat || !content) return '';
+    var chatId = S.activeChat;
     var clientId = 'c' + Date.now() + Math.random().toString(16).slice(2, 6);
-    var payload = { type: 'send', chatId: S.activeChat, kind: kind, content: content, clientId: clientId };
+    var list = S.messages[chatId] = S.messages[chatId] || [];
+    list.push({
+      id: clientId,
+      senderId: S.me.id,
+      senderName: S.me.nickname,
+      senderAvatar: S.me.avatar,
+      kind: kind,
+      content: content,
+      createdAt: new Date().toISOString(),
+      pending: true
+    });
+    renderMessages();
+    var payload = { type: 'send', chatId: chatId, kind: kind, content: content, clientId: clientId };
     var sent = false;
     if (socket && socket.readyState === 1) { try { socket.send(JSON.stringify(payload)); sent = true; } catch (e) { sent = false; } }
-    if (!sent) api('/chats/' + encodeURIComponent(S.activeChat) + '/messages', { method: 'POST', body: JSON.stringify({ kind: kind, content: content, clientId: clientId }) }).catch(function (e) { toast(e.message); });
+    if (!sent) api('/chats/' + encodeURIComponent(chatId) + '/messages', { method: 'POST', body: JSON.stringify({ kind: kind, content: content, clientId: clientId }) })
+      .then(function (data) { settleLocalMessage(chatId, clientId, data); })
+      .catch(function (e) { toast(e.message); });
     return clientId;
   }
 
@@ -4665,6 +4715,8 @@
     var last = S.moments[S.moments.length - 1];
     if (!last) return;
     S.momentsLoading = true;
+    var box = $('momentsScroll');
+    var anchorTop = box ? box.scrollTop : 0;
     /* 游标要带上 id：同一毫秒发的几十条如果只按时间戳翻页会被整段跳过 */
     var url = '/moments?limit=30&before=' + encodeURIComponent(last.createdAt) +
       '&beforeId=' + encodeURIComponent(last.id) +
@@ -4672,18 +4724,24 @@
     api(url).then(function (d) {
       var more = d.moments || [];
       var foot = $('mmFoot');
-      if (foot) foot.remove();
       if (more.length) {
         /* 去重：万一翻页期间有人发了新动态，边界上可能重复一条 */
         var have = {};
         S.moments.forEach(function (m) { have[m.id] = 1; });
         var fresh = more.filter(function (m) { return !have[m.id]; });
         S.moments = S.moments.concat(fresh);
-        $('momentList').insertAdjacentHTML('beforeend', fresh.map(momentHtml).join(''));
+        if (foot) foot.insertAdjacentHTML('beforebegin', fresh.map(momentHtml).join(''));
+        else $('momentList').insertAdjacentHTML('beforeend', fresh.map(momentHtml).join(''));
         if (window.mmFitIn) window.mmFitIn($('momentList'));
       }
       S.momentsMore = !!d.hasMore && more.length > 0;
-      $('momentList').insertAdjacentHTML('beforeend', momentsFoot());
+      if (foot) foot.outerHTML = momentsFoot();
+      else $('momentList').insertAdjacentHTML('beforeend', momentsFoot());
+      if (box) {
+        requestAnimationFrame(function () {
+          if (Math.abs(box.scrollTop - anchorTop) > 1) box.scrollTop = anchorTop;
+        });
+      }
     }).catch(function () {
       var foot = $('mmFoot'); if (foot) foot.textContent = '加载失败，稍后再试';
     }).then(function () { S.momentsLoading = false; });
