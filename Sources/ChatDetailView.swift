@@ -6494,8 +6494,10 @@ struct ChatDetailView: View {
             ChatScrollDiag.shared.note("上翻加载完 → 原子补偿当前位置")
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { holdScroll = false }
         } catch {
-
-            lastOlderLoad = Date.distantPast
+            // Continuous scroll events must not turn one failed prefetch into a
+            // request storm. Hold the next automatic retry for a short, silent
+            // backoff; explicit jump-to-message can still retry independently.
+            lastOlderLoad = Date().addingTimeInterval(1.2)
             ChatScrollDiag.shared.note("上翻历史加载失败，保留当前位置")
         }
     }

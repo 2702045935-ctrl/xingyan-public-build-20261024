@@ -264,9 +264,17 @@ where Item.ID: Hashable {
         func apply(_ next: [Item], animated: Bool) {
             guard let collection, let dataSource else { return }
             let nextOrder = next.map(\.id)
-            let isPrepending = order.first.flatMap { first in
-                nextOrder.firstIndex(of: first).map { $0 > 0 }
-            } ?? false
+            // The first item is often a permanent history sentinel. Detect a
+            // prepend from any existing row that moved down, rather than only
+            // checking item zero, otherwise the atomic offset compensation is
+            // skipped and a loaded page can flash in one frame later.
+            let nextPositions = Dictionary(
+                uniqueKeysWithValues: nextOrder.enumerated().map { ($1, $0) }
+            )
+            let isPrepending = order.enumerated().contains { oldPosition, id in
+                guard let nextPosition = nextPositions[id] else { return false }
+                return nextPosition > oldPosition
+            }
             let nextSignatures = Dictionary(uniqueKeysWithValues: next.map {
                 ($0.id, signature($0))
             })
