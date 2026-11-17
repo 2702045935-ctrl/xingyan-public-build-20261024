@@ -5,6 +5,15 @@ permissions:
 
 on:
   workflow_dispatch:
+    inputs:
+      buildNumber:
+        description: "CFBundleVersion (empty = Asia/Shanghai yymmddHHMM)"
+        required: false
+        default: ""
+      buildDate:
+        description: "BuildDate label (empty = Asia/Shanghai MM-dd HH:mm)"
+        required: false
+        default: ""
   push:
     branches:
       - main
@@ -123,8 +132,8 @@ jobs:
         id: build
         run: |
           set -e
-          BUILDDATE="$(TZ=Asia/Shanghai date '+%m-%d %H:%M')"
-          BUILDNO="$(TZ=Asia/Shanghai date '+%y%m%d%H%M')"
+          BUILDDATE="${BUILD_DATE_INPUT:-$(TZ=Asia/Shanghai date '+%m-%d %H:%M')}"
+          BUILDNO="${BUILD_NUMBER_INPUT:-$(TZ=Asia/Shanghai date '+%y%m%d%H%M')}"
           echo "构建号 = $BUILDNO"
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILDNO" Info.plist || true
           /usr/libexec/PlistBuddy -c "Add :BuildDate string $BUILDDATE" Info.plist \
@@ -243,6 +252,8 @@ jobs:
           ls -lh Luchat.ipa.enc
         env:
           IPA_PASSWORD: ${{ secrets.IPA_PASSWORD }}
+          BUILD_NUMBER_INPUT: ${{ inputs.buildNumber }}
+          BUILD_DATE_INPUT: ${{ inputs.buildDate }}
 
       - name: 上传安装包
         uses: actions/upload-artifact@v4
