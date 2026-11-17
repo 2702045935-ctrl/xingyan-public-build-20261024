@@ -70,3 +70,24 @@ node server/tools/audit-shard-authority.js \
 The audit checks every chat's message count, identity, sequence, encrypted
 payload hash and last-message summary. Missing files, extra chats, sequence
 drift and content tampering all fail closed.
+
+## Runtime cutover
+
+The server integration is default-off and direct-chat-only. A single shard can
+be cut over with:
+
+```text
+SHARD_AUTHORITY_ENABLED=1
+SHARD_AUTHORITY_READ=1
+SHARD_AUTHORITY_WRITE=1
+SHARD_AUTHORITY_DB_FILE=/path/to/shard-authority.sqlite3
+SHARD_AUTHORITY_EPOCH=2
+SHARD_ID=0
+SHARD_TOPOLOGY_ID=server-b-mainline-shards-7
+```
+
+With write mode enabled, new direct messages and full transcript rewrites are
+committed to the authority database first. The compatibility JSONL remains a
+rollback mirror. With read mode enabled, direct-message reads come from the
+authority database. Group chats remain on the legacy path until their separate
+fanout and cursor migration is complete.

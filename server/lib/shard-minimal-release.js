@@ -15,6 +15,7 @@ const ENTRY_FILES = [
   'lib/shard-authority-store.js',
   'lib/shard-authority-migration.js',
   'lib/shard-authority-shadow-audit.js',
+  'lib/shard-authority-runtime.js',
   'lib/shard-maintenance.js',
   'lib/single-cell-capacity-collector.js',
   'lib/shard-runtime-health.js',

@@ -363,6 +363,111 @@ class ShardAuthorityStore {
     return this.messages.messagesAfter(chatId, afterSeq, limit);
   }
 
+  allMessages(chatId, limit) {
+    const cap = Math.min(100000, Math.max(1, Number(limit) || 100000));
+    return this.db.prepare(`
+      SELECT payload_json FROM reliable_messages
+      WHERE chat_id = ?
+      ORDER BY seq ASC
+      LIMIT ?
+    `).all(String(chatId || ''), cap).map((row) => JSON.parse(row.payload_json));
+  }
+
+  replaceChatMessages(chatId, messages, chatState) {
+    const chat = String(chatId || '');
+    if (!chat) throw new Error('chatId is required');
+    const rows = (Array.isArray(messages) ? messages : []).map((message) =>
+      Object.assign({}, message || {})
+    );
+    const ids = new Set();
+    const sequences = new Set();
+    for (const message of rows) {
+      const id = String(message.id || '');
+      const seq = Number(message.seq);
+      if (!id || !Number.isSafeInteger(seq) || seq <= 0) {
+        throw new Error('replacement messages require id and positive sequence');
+      }
+      if (ids.has(id)) throw new Error('duplicate replacement message id: ' + id);
+      if (sequences.has(seq)) throw new Error('duplicate replacement sequence');
+      ids.add(id);
+      sequences.add(seq);
+    }
+    rows.sort((left, right) => Number(left.seq) - Number(right.seq));
+    const before = this.writerLease();
+    if (!before.ok) return Object.assign({ status: 'fenced' }, before);
+    return this.messages.transaction(() => {
+      const previous = this.db.prepare(
+        'SELECT payload_json FROM chat_state WHERE chat_id = ?'
+      ).get(chat);
+      const previousState = previous ? JSON.parse(previous.payload_json) : {};
+      this.db.prepare('DELETE FROM reliable_messages WHERE chat_id = ?').run(chat);
+      const insert = this.db.prepare(`
+        INSERT INTO reliable_messages
+          (message_id, chat_id, sender_id, client_id, seq, payload_json, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `);
+      for (const message of rows) {
+        const clientId = String(message.clientId || '').slice(0, 80) || null;
+        insert.run(
+          String(message.id),
+          chat,
+          String(message.senderId || 'unknown'),
+          clientId,
+          Number(message.seq),
+          stableJson(message),
+          String(message.createdAt || this.messages.now())
+        );
+      }
+      const lastSeq = rows.length
+        ? Math.max(...rows.map((message) => Number(message.seq)))
+        : 0;
+      const updatedAt = this.messages.now();
+      if (lastSeq > 0) {
+        this.db.prepare(`
+          INSERT INTO chat_sequence(chat_id, last_seq, updated_at)
+          VALUES (?, ?, ?)
+          ON CONFLICT(chat_id) DO UPDATE SET
+            last_seq = excluded.last_seq,
+            updated_at = excluded.updated_at
+        `).run(chat, lastSeq, updatedAt);
+      } else {
+        this.db.prepare('DELETE FROM chat_sequence WHERE chat_id = ?').run(chat);
+      }
+      const state = Object.assign({}, previousState, chatState || {}, {
+        chatId: chat,
+        seq: lastSeq,
+        updatedAt
+      });
+      this.db.prepare(`
+        INSERT INTO chat_state(chat_id, seq, payload_json, updated_at)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(chat_id) DO UPDATE SET
+          seq = excluded.seq,
+          payload_json = excluded.payload_json,
+          updated_at = excluded.updated_at
+      `).run(chat, lastSeq, stableJson(state), updatedAt);
+      const eventId = this.messages.appendEvent(
+        'chat.transcript_replaced',
+        chat,
+        lastSeq,
+        {
+          chatId: chat,
+          messageIds: rows.map((message) => String(message.id)),
+          state
+        },
+        updatedAt
+      );
+      this.assertLease(before.epoch);
+      return {
+        status: 'applied',
+        messages: rows.length,
+        lastSeq,
+        eventId,
+        chatState: state
+      };
+    });
+  }
+
   verify() {
     const failures = [];
     const rows = this.db.prepare(`

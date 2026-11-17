@@ -36,6 +36,8 @@ const {
   runSingleCellCapacityCollector
 } = require('./lib/single-cell-capacity-runner');
 const { MessageReliabilityStore } = require('./lib/message-reliability');
+const { ShardAuthorityStore } = require('./lib/shard-authority-store');
+const { ShardAuthorityRuntime } = require('./lib/shard-authority-runtime');
 const { PaymentTokenVault } = require('./lib/payment-token-vault');
 const { PaymentDeviceEnrollment } = require('./lib/payment-device-enrollment');
 const { PaymentKeyRing } = require('./lib/payment-keyring');
@@ -59,6 +61,7 @@ const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
 let shardShadow = null;
 let shardShadowAuditTimer = null;
 let messageReliability = null;
+let shardAuthorityRuntime = null;
 let paymentDeviceEnrollment = null;
 let paymentTokenVault = null;
 let paymentIntentEngine = null;
@@ -5502,6 +5505,14 @@ function openMessage(chatId, line) {
 
 /** 整文件重写（撤回、转账状态更新、导入历史都用它） */
 function saveMessagesFile(chatId, list) {
+  const authority = shardAuthorityRuntime;
+  if (authority && authority.appliesTo(chatId)) {
+    const chat = db.chats.find((item) => item.id === chatId);
+    const result = authority.replaceMessages(chatId, list, authorityChatState(chat));
+    if (result.status === 'fenced') {
+      throw new Error('authority writer is fenced');
+    }
+  }
   const body = list.map((m) => sealMessage(chatId, m)).join('\n');
   fs.writeFileSync(messagesFile(chatId), body ? body + '\n' : '', 'utf8');
   captureShardSnapshots(['messageThreads'], {
@@ -5551,6 +5562,9 @@ function migrateMessagesToEncrypted() {
 }
 
 function readMessageFile(chatId) {
+  if (shardAuthorityRuntime && shardAuthorityRuntime.appliesTo(chatId)) {
+    return shardAuthorityRuntime.readMessages(chatId) || [];
+  }
   const file = messagesFile(chatId);
   const list = [];
   if (fs.existsSync(file)) {
@@ -5574,7 +5588,20 @@ function loadMessages(chatId) {
 
 function appendMessage(chatId, message) {
   let duplicate = false;
-  if (messageReliability) {
+  if (shardAuthorityRuntime && shardAuthorityRuntime.appliesTo(chatId)) {
+    const chat = db.chats.find((item) => item.id === chatId);
+    const authoritative = shardAuthorityRuntime.appendMessage(
+      chatId,
+      message,
+      authorityChatState(chat)
+    );
+    if (authoritative.status === 'fenced') {
+      throw new Error('authority writer is fenced');
+    }
+    Object.keys(message).forEach((key) => { delete message[key]; });
+    Object.assign(message, authoritative.message);
+    duplicate = authoritative.status === 'duplicate';
+  } else if (messageReliability) {
     messageReliability.ensureChatSequence(chatId, Math.max(0, Number(message.seq || 0) - 1));
     const reliable = messageReliability.reserveMessage(message);
     Object.keys(message).forEach((key) => { delete message[key]; });
@@ -5664,12 +5691,27 @@ function backfillMessageReliability() {
 function nextMessageSeq(chat) {
   const list = loadMessages(chat.id);
   const last = list.length ? Number(list[list.length - 1].seq || 0) : 0;
-  const durable = messageReliability ? messageReliability.lastSequence(chat.id) : 0;
+  const authority = shardAuthorityRuntime && shardAuthorityRuntime.appliesTo(chat.id)
+    ? shardAuthorityRuntime.lastSequence(chat.id)
+    : 0;
+  const durable = authority
+    || (messageReliability ? messageReliability.lastSequence(chat.id) : 0);
   const baseline = Math.max(Number(chat.seq || 0), last, durable);
   /* 可靠链路里这一版只提供“当前基线”，真正的下一条由 reserveMessage
      在写事务中分配。这样旧 clientId 重试失败时不会把 chat.seq 空推到未来。 */
-  chat.seq = messageReliability ? baseline : baseline + 1;
+  chat.seq = (messageReliability || (shardAuthorityRuntime
+    && shardAuthorityRuntime.appliesTo(chat.id))) ? baseline : baseline + 1;
   return chat.seq;
+}
+
+function authorityChatState(chat) {
+  if (!chat) return {};
+  return {
+    chatId: String(chat.id || ''),
+    type: String(chat.type || 'direct'),
+    title: String(chat.title || ''),
+    memberIds: Array.isArray(chat.memberIds) ? chat.memberIds.slice() : []
+  };
 }
 
 /* ------------------------------------------------------------------ 鉴权 */
@@ -23430,8 +23472,74 @@ if (paymentDatabase) {
   }, 24 * 60 * 60 * 1000);
   paymentBackupTimer.unref();
 }
+const authorityEnabled = ['1', 'true', 'on'].includes(
+  String(process.env.SHARD_AUTHORITY_ENABLED || '0').toLowerCase()
+);
+if (authorityEnabled) {
+  try {
+    const authorityShard = Number(process.env.SHARD_ID || 0);
+    const authorityEpoch = Math.max(
+      1,
+      Number(process.env.SHARD_AUTHORITY_EPOCH || shardFenceEpoch) || 1
+    );
+    const authorityTopology = String(process.env.SHARD_TOPOLOGY_ID
+      || (chatRoutePlan && chatRoutePlan.topologyId)
+      || 'server-b-mainline-shards-7');
+    const authorityDatabase = path.resolve(String(
+      process.env.SHARD_AUTHORITY_DB_FILE
+        || path.join(DATA_DIR, 'shard-authority.sqlite3')
+    ));
+    const authorityLease = {
+      validate(shard) {
+        if (Number(shard) !== authorityShard || shardWriteFrozen) {
+          return { ok: false, reason: shardWriteFrozen ? 'write-frozen' : 'not-owner' };
+        }
+        return {
+          ok: true,
+          lease: {
+            shard: authorityShard,
+            ownerId: String(process.env.DUAL_CELL_ID || ('shard-' + authorityShard)),
+            epoch: authorityEpoch
+          }
+        };
+      }
+    };
+    const authorityStore = new ShardAuthorityStore({
+      shardId: authorityShard,
+      topologyId: authorityTopology,
+      databaseFile: authorityDatabase,
+      leaseManager: authorityLease,
+      now
+    });
+    shardAuthorityRuntime = new ShardAuthorityRuntime({
+      store: authorityStore,
+      readEnabled: ['1', 'true', 'on'].includes(
+        String(process.env.SHARD_AUTHORITY_READ || '1').toLowerCase()
+      ),
+      writeEnabled: ['1', 'true', 'on'].includes(
+        String(process.env.SHARD_AUTHORITY_WRITE || '1').toLowerCase()
+      ),
+      isDirectChat(chatId) {
+        const chat = (db.chats || []).find((item) => item.id === chatId);
+        return !!chat
+          && chat.type !== 'group'
+          && (!Array.isArray(chat.memberIds) || chat.memberIds.length <= 2);
+      }
+    });
+    console.log('[分片权威] 已启用 shard=' + authorityShard
+      + ' topology=' + authorityTopology
+      + ' read=' + shardAuthorityRuntime.readEnabled
+      + ' write=' + shardAuthorityRuntime.writeEnabled
+      + ' db=' + authorityDatabase);
+  } catch (error) {
+    shardAuthorityRuntime = null;
+    console.log('[分片权威] 初始化失败，保持兼容链路：'
+      + String(error && error.message || error));
+  }
+}
 const reliabilityFlag = String(process.env.MESSAGE_RELIABILITY_ENABLED || '0').toLowerCase();
-if (reliabilityFlag === '1' || reliabilityFlag === 'true' || reliabilityFlag === 'on') {
+if (!shardAuthorityRuntime
+    && (reliabilityFlag === '1' || reliabilityFlag === 'true' || reliabilityFlag === 'on')) {
   try {
     messageReliability = new MessageReliabilityStore({
       databaseFile: path.join(DATA_DIR, 'message-reliability.sqlite3'),
