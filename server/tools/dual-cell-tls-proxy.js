@@ -15,6 +15,7 @@ const OWNER_PORTS = String(process.env.SHARD_OWNER_PORTS || '')
 const ROUTE_PLAN_FILE = String(process.env.ROUTE_PLAN_FILE || '');
 const ROUTE_PLAN_FILE_SHA256 = String(process.env.ROUTE_PLAN_FILE_SHA256 || '').toLowerCase();
 const USER_DIRECTORY_FILE = String(process.env.USER_DIRECTORY_FILE || '');
+const PAYMENT_FAIL_CLOSED = process.env.PAYMENT_FAIL_CLOSED !== '0';
 
 if (OWNER_PORTS.length !== SHARDS
     || OWNER_PORTS.some((port) => !Number.isInteger(port) || port <= 0 || port > 65535)) {
@@ -133,6 +134,11 @@ function safeSocket(socket) {
   if (socket.setKeepAlive) socket.setKeepAlive(true, 30000);
 }
 
+function isPaymentPath(pathname) {
+  return /^\/api\/(?:pay|payment|transfers|redpacket|redpackets|wallet|bills|gifts)(?:\/|$)/.test(pathname)
+    || /^\/api\/(?:me\/wallet|mall\/order|shop\/order)(?:\/|$)/.test(pathname);
+}
+
 function forward(req, res, body, url) {
   const upstream = http.request({
     host: '127.0.0.1',
@@ -158,6 +164,15 @@ const server = https.createServer({
 }, (req, res) => {
   safeSocket(req.socket);
   const url = new URL(req.url || '/', 'http://x');
+  if (PAYMENT_FAIL_CLOSED && isPaymentPath(url.pathname)) {
+    res.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({
+      ok: false,
+      error: '支付系统正在切换到独立权威分区，请稍后再试',
+      code: 'DUAL_CELL_PAYMENT_MAINTENANCE'
+    }));
+    return;
+  }
   const bodyPath = /^\/api\/(login|account\/state)/.test(url.pathname)
     && req.method === 'POST';
   if (bodyPath) {
