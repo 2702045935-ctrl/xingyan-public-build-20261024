@@ -1858,8 +1858,10 @@
     var last = c.lastMessage;
     if (!last) return '开始聊天';
     if (!last.preview) return '';   /* 转账不进会话列表：没有别的消息时预览留空，不显示「我：」 */
+    var preview = String(last.preview || '');
+    if (last.kind === 'location') preview = preview.replace(/^\[有人@我\]\s*/, '');
     var prefix = last.senderId === S.me.id ? '我：' : '';
-    return prefix + (last.preview || '');
+    return prefix + preview;
   }
 
   function renderChats() {

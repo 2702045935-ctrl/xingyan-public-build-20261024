@@ -3326,8 +3326,13 @@ html[data-theme="dark"] .wx-page[data-page="chats"] .wx-row::after {
 }
 html[data-theme="light"] .wx-page[data-page="chats"] .wx-row-name { color: #1C1C1E !important; }
 /* 中性灰逐档调浅：#8E8E8E → #9A9A9A → #A6A6A6 → 现在 #B2B2B2 */
-html[data-theme="light"] .wx-page[data-page="chats"] .wx-row-preview { color: #B2B2B2 !important; }
-html[data-theme="dark"] .wx-page[data-page="chats"] .wx-row-preview { color: #B2B2B2 !important; }
+/* 预览是正文信息，不是装饰字：从当前主题的正文色和卡片底色动态混合，
+   浅色/深色都保持清晰，不再依赖某一档固定灰。 */
+html[data-theme="light"] .wx-page[data-page="chats"] .wx-row-preview,
+html[data-theme="dark"] .wx-page[data-page="chats"] .wx-row-preview {
+  color: #8e8e93 !important;
+  color: color-mix(in srgb, var(--wx-text) 64%, var(--wx-card)) !important;
+}
 /* ================= 语音 / 视频通话（手机端全屏界面）================= */
 .wx-call {
   position: fixed; inset: 0; z-index: 120; background: #101012;

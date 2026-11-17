@@ -7317,7 +7317,10 @@ function chatSummary(chat, forUserId, lastHint) {
       }
     }
   }
-  if (mentionMe && preview) preview = '[有人@我] ' + preview;
+  /* 位置/地图预览是独立卡片语义，不要把 @ 提示混进地图地址；只有文字消息才加。 */
+  if (mentionMe && preview && previewSrc && previewSrc.kind === 'text') {
+    preview = '[有人@我] ' + preview;
+  }
   const online = chat.type === 'group' ? onlinePresenceSet() : null;
   return {
     id: chat.id,
