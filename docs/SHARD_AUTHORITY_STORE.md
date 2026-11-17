@@ -55,3 +55,18 @@ node server/tools/import-shard-authority.js \
 
 The importer is direct-chat-only by default. `--all-chats` is reserved for a
 later group migration that has its own fanout and notification validation.
+
+After the writer has checkpointed and closed the candidate database, compare
+the encrypted source snapshot with the authority database before any cutover:
+
+```text
+node server/tools/audit-shard-authority.js \
+  --data /path/to/shard \
+  --secret /path/to/shard/secret.key \
+  --database /path/to/candidate/shard-authority.sqlite3 \
+  --out /path/to/candidate/shadow-audit.json
+```
+
+The audit checks every chat's message count, identity, sequence, encrypted
+payload hash and last-message summary. Missing files, extra chats, sequence
+drift and content tampering all fail closed.
