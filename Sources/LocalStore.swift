@@ -101,14 +101,27 @@ enum LocalStore {
         return dir.appendingPathComponent(sanitize(chatId) + ".json")
     }
 
-    static func saveChat(_ chatId: String, _ messages: [Message]) {
+    static func clearVersion(_ chatId: String) -> UInt64 {
+        LocalPersistence.clearVersion(chatId)
+    }
+
+    static func saveChat(
+        _ chatId: String,
+        _ messages: [Message],
+        expectedClearVersion: UInt64? = nil
+    ) {
         guard !MessageStressFixture.isStressChat(chatId) else { return }
         guard !messages.isEmpty else { return }
-        if !LocalPersistence.saveChat(chatId, messages) {
+        let result = LocalPersistence.saveChat(
+            chatId,
+            messages,
+            expectedClearVersion: expectedClearVersion
+        ) { [chatId] in
             let tail = messages.count > 5000 ? Array(messages.suffix(5000)) : messages
             guard !tail.isEmpty, let data = try? JSONEncoder().encode(tail) else { return }
             try? data.write(to: chatFile(chatId), options: .atomic)
         }
+        _ = result
     }
 
     static func cachedChat(_ chatId: String) -> [Message] {

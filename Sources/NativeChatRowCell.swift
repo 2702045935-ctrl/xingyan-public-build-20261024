@@ -270,7 +270,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
             configuration.showOnline ? "1" : "0",
             configuration.moodIcon
         ].joined(separator: "\u{1E}")
-        if avatarSignature != nextAvatarSignature {
+        if avatarSignature != nextAvatarSignature || !avatarView.hasVisibleImage {
             avatarSignature = nextAvatarSignature
             avatarView.configure(paths: configuration.avatarPaths,
                                  chatId: configuration.chatId,
@@ -888,6 +888,10 @@ private final class NativeChatAvatarView: UIView {
     private let onlineDot = UIView()
     private var token = UUID()
 
+    var hasVisibleImage: Bool {
+        tileViews.contains { !$0.isHidden && $0.image != nil }
+    }
+
     override init(frame: CGRect) {
         super.init(frame: frame)
         clipsToBounds = false
@@ -1000,15 +1004,20 @@ private final class NativeChatAvatarView: UIView {
                 ImageStore.shared.diskRead(path)
             }.value
             var data = diskData
-            if data == nil, let url = API.shared.assetURL(path) {
-                data = try? await API.shared.imageData(url)
+            if let url = API.shared.assetURL(path) {
+                let diskImage = data.flatMap {
+                    RemoteImage.downsampled($0, maxSide: 150)
+                }
+                if diskImage == nil {
+                    data = try? await API.shared.imageData(url)
+                }
             }
             guard let data else {
                 await MainActor.run { completion(nil) }
                 return
             }
             let image = await Task.detached(priority: .userInitiated) {
-                RemoteImage.downsampled(data, maxSide: 150)
+                RemoteImage.downsampled(data, maxSide: 150) ?? UIImage(data: data)
             }.value
             if let image {
                 ImageStore.shared.put(path + "#150", image)

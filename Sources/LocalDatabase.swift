@@ -491,6 +491,28 @@ final class LocalDatabase: @unchecked Sendable {
 enum LocalPersistence {
     private static let signatureLock = NSLock()
     private static var chatSignatures: [String: Int] = [:]
+    private static var clearVersions: [String: UInt64] = [:]
+    private static var clearAllVersion: UInt64 = 0
+
+    struct ClearVersion: Equatable {
+        fileprivate let all: UInt64
+        fileprivate let chat: UInt64
+    }
+
+    enum SaveResult {
+        case saved
+        case rejectedAfterClear
+        case failed
+    }
+
+    static func clearVersion(_ chatId: String) -> ClearVersion {
+        signatureLock.lock()
+        defer { signatureLock.unlock() }
+        return ClearVersion(
+            all: clearAllVersion,
+            chat: clearVersions[chatId] ?? 0
+        )
+    }
 
     static func loadChat(_ chatId: String) -> [Message] {
         let db = LocalDatabase.shared
@@ -508,9 +530,13 @@ enum LocalPersistence {
         return stored.isEmpty ? legacy : stored
     }
 
-    @discardableResult
-    static func saveChat(_ chatId: String, _ messages: [Message]) -> Bool {
-        guard !chatId.isEmpty, !messages.isEmpty else { return false }
+    static func saveChat(
+        _ chatId: String,
+        _ messages: [Message],
+        expectedClearVersion: ClearVersion? = nil,
+        fallback: (() -> Void)? = nil
+    ) -> SaveResult {
+        guard !chatId.isEmpty, !messages.isEmpty else { return .failed }
         let tail = Array(messages.suffix(5000))
         var hasher = Hasher()
         hasher.combine(tail.count)
@@ -523,34 +549,47 @@ enum LocalPersistence {
         }
         let signature = hasher.finalize()
         signatureLock.lock()
+        defer { signatureLock.unlock() }
+        if let expectedClearVersion,
+           clearVersionLocked(chatId) != expectedClearVersion {
+            return .rejectedAfterClear
+        }
         let unchanged = chatSignatures[chatId] == signature
-        signatureLock.unlock()
-        guard !unchanged else { return true }
+        if unchanged { return .saved }
         let saved = LocalDatabase.shared.saveChat(
             chatId,
             messages: tail,
             migrationKey: chatMigrationKey(chatId)
         )
         if saved {
-            signatureLock.lock()
             chatSignatures[chatId] = signature
-            signatureLock.unlock()
+            return .saved
         }
-        return saved
+        fallback?()
+        return .failed
     }
 
     static func clearChat(_ chatId: String) {
-        _ = LocalDatabase.shared.clearChat(chatId)
         signatureLock.lock()
+        defer { signatureLock.unlock() }
+        clearVersions[chatId, default: 0] &+= 1
+        _ = LocalDatabase.shared.clearChat(chatId)
         chatSignatures.removeValue(forKey: chatId)
-        signatureLock.unlock()
     }
 
     static func clearAllMessages() {
-        _ = LocalDatabase.shared.clearAllMessages()
         signatureLock.lock()
+        defer { signatureLock.unlock() }
+        clearAllVersion &+= 1
+        _ = LocalDatabase.shared.clearAllMessages()
         chatSignatures.removeAll()
-        signatureLock.unlock()
+    }
+
+    private static func clearVersionLocked(_ chatId: String) -> ClearVersion {
+        ClearVersion(
+            all: clearAllVersion,
+            chat: clearVersions[chatId] ?? 0
+        )
     }
 
     static func loadOutbox(_ chatId: String) -> [PendingMsg] {

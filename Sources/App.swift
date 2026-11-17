@@ -364,6 +364,7 @@ final class AppState: ObservableObject {
     }
     private var lastUIConfig = ""
     private var refreshTask: Task<Void, Never>?
+    private var avatarPrefetchTask: Task<Void, Never>?
     private var accountEpoch = 0
 
     private var uiRetryScheduled = false
@@ -1270,11 +1271,62 @@ final class AppState: ObservableObject {
 
             if !AppState.sameChats(chats, merged) { chats = merged }
             LocalStore.saveChatList(chats, userId: userId)
+            prefetchChatAvatars(merged)
             loadError = nil
         } catch {
             loadError = nil
         }
         syncIconBadge()
+    }
+
+    private func prefetchChatAvatars(_ rows: [Chat]) {
+        avatarPrefetchTask?.cancel()
+        var paths: [String] = []
+        var seen = Set<String>()
+        for row in rows.prefix(80) {
+            let candidates = [row.avatar ?? ""]
+                + Array((row.memberIds ?? []).prefix(4)).map {
+                    contact(for: $0)?.avatarPath ?? ""
+                }
+            for path in candidates where !path.isEmpty && seen.insert(path).inserted {
+                paths.append(path)
+            }
+        }
+        guard !paths.isEmpty else { return }
+        avatarPrefetchTask = Task.detached(priority: .utility) { [weak self] in
+            var available = false
+            for path in paths {
+                if Task.isCancelled { return }
+                let key = path + "#150"
+                if ImageStore.shared.get(key) != nil {
+                    available = true
+                    continue
+                }
+                if let disk = ImageStore.shared.diskRead(path),
+                   let image = await Task.detached(priority: .utility, operation: {
+                       RemoteImage.downsampled(disk, maxSide: 150) ?? UIImage(data: disk)
+                   }).value {
+                    ImageStore.shared.put(key, image)
+                    available = true
+                    continue
+                }
+                guard let url = API.shared.assetURL(path),
+                      let data = try? await API.shared.imageData(url) else { continue }
+                guard !Task.isCancelled else { return }
+                if let image = await Task.detached(priority: .utility, operation: {
+                    RemoteImage.downsampled(data, maxSide: 150) ?? UIImage(data: data)
+                }).value {
+                    ImageStore.shared.put(key, image)
+                    ImageStore.shared.diskWrite(path, data)
+                    available = true
+                }
+            }
+            guard available, !Task.isCancelled, let self else { return }
+            await MainActor.run {
+                NotificationCenter.default.post(name: .chrisUIPrefsChanged, object: nil)
+                self.syncIconBadge()
+            }
+        }
     }
 
     private func mergeServerChats(_ fresh: [Chat]) -> [Chat] {

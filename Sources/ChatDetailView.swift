@@ -2412,6 +2412,8 @@ struct ChatDetailView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .chrisChatCleared)) { note in
             guard let chatId = note.object as? String, chatId == chat.id else { return }
+            persistTask?.cancel()
+            persistTask = nil
             messages.removeAll()
             outbox.removeAll()
             selected.removeAll()
@@ -2699,8 +2701,13 @@ struct ChatDetailView: View {
             patAnimationTask?.cancel()
             patAnimationTask = nil
             let snapshot = messages
+            let clearVersion = LocalStore.clearVersion(chat.id)
             Task.detached(priority: .utility) {
-                LocalStore.saveChat(chat.id, snapshot)
+                LocalStore.saveChat(
+                    chat.id,
+                    snapshot,
+                    expectedClearVersion: clearVersion
+                )
             }
             let latest = messages.last
             Task { @MainActor in
@@ -6493,13 +6500,18 @@ struct ChatDetailView: View {
 
     private func schedulePersist() {
         persistTask?.cancel()
+        let clearVersion = LocalStore.clearVersion(chat.id)
 
         persistTask = Task { @MainActor [messages, chatId = chat.id] in
             try? await Task.sleep(nanoseconds: 1_200_000_000)
             if Task.isCancelled { return }
             let list = messages
             Task.detached(priority: .utility) {
-                LocalStore.saveChat(chatId, list)
+                LocalStore.saveChat(
+                    chatId,
+                    list,
+                    expectedClearVersion: clearVersion
+                )
             }
         }
     }
