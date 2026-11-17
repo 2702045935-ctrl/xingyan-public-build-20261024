@@ -17,6 +17,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: 选 Node 24（SQLite 支付事务库）
         uses: actions/setup-node@v4

@@ -687,9 +687,9 @@ struct SwipeChatRow: View {
     @ObservedObject private var drafts = ChatDraftStore.shared
     @Environment(\.colorScheme) private var scheme
 
-    private let actionSide: CGFloat = 50
-    private let actionGap: CGFloat = 10
-    private let actionInset: CGFloat = 12
+    private let actionSide: CGFloat = 64
+    private let actionGap: CGFloat = 0
+    private let actionInset: CGFloat = 0
     private var fullW: CGFloat { actionSide + actionInset * 2 }
     private var leadingFullW: CGFloat {
         actionSide * 3 + actionGap * 2 + actionInset
@@ -947,23 +947,16 @@ struct SwipeChatRow: View {
                               width: CGFloat,
                               action: @escaping () -> Void) -> some View {
         return Button(action: action) {
-            Image(systemName: symbol)
-                .font(.system(size: 19, weight: .semibold))
+            VStack(spacing: 4) {
+                Image(systemName: symbol)
+                    .font(.system(size: 17, weight: .semibold))
+                Text(title)
+                    .font(pfStyled(size: 10.5, weight: .medium))
+                    .lineLimit(1)
+            }
                 .foregroundStyle(.white)
-                .frame(width: width, height: actionSide)
-                .background(
-                    LinearGradient(
-                        colors: [background.opacity(0.90), background],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    in: Capsule(style: .continuous)
-                )
-                .overlay {
-                    Capsule(style: .continuous)
-                        .stroke(Color.white.opacity(0.16), lineWidth: 0.7)
-                }
-                .shadow(color: background.opacity(0.24), radius: 7, y: 3)
+                .frame(width: width, height: ChatListVisual.rowHeight)
+                .background(background)
                 .contentShape(Rectangle())
         }
         .buttonStyle(RowSwipeActionButtonStyle())
