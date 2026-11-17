@@ -253,6 +253,17 @@
       "liveTraffic": false,
       "liveDataModified": false
     },
+    "globalUserDirectory": {
+      "path": "outputs/live-user-directory-20261117.json",
+      "fileSha256": "d9c67e57e8a8f45ece0f6ccf28da9422c1075a3e5ae683588aef51f11928523c",
+      "directoryHash": "4e064b9c403d98d5b9a075a28699d22fdc40b4d28543ee7100b4a5a2ead08e12",
+      "ok": true,
+      "users": 2365,
+      "byShard": [359, 330, 327, 319, 371, 335, 324],
+      "duplicateAliases": 0,
+      "ownerMismatches": 0,
+      "integratedIntoServing": false
+    },
     "stableServicePids": [
       1281087,
       1281094,
