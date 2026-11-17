@@ -41,6 +41,12 @@ function main() {
   assert.notStrictEqual(bCall, 7080,
     'cell B must not forward call signals to the non-listening legacy port 7080');
 
+  const aPeers = fs.readFileSync(path.join(
+    root, 'deploy', 'dual-cell', 'xingyan-dual-cell-a-peers.service'
+  ), 'utf8');
+  assert.ok(aPeers.includes('-L 127.0.0.1:16400:127.0.0.1:16400'),
+    'cell A must tunnel to the cell B cross-cell bus');
+
   const probe = fs.readFileSync(path.join(root, 'server', 'server.js'), 'utf8');
   assert.ok(probe.includes('callSignalReachable'),
     'health must expose call-signal reachability');

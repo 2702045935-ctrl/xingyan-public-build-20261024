@@ -5,7 +5,7 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/ssh -NT -o BatchMode=yes -o IdentitiesOnly=yes -o ExitOnForwardFailure=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -o StrictHostKeyChecking=accept-new -i /root/.ssh/replica_sync -L 127.0.0.1:18699:127.0.0.1:19480 -L 127.0.0.1:18799:127.0.0.1:19580 -L 127.0.0.1:18899:127.0.0.1:19680 root@192.140.179.176
+ExecStart=/usr/bin/ssh -NT -o BatchMode=yes -o IdentitiesOnly=yes -o ExitOnForwardFailure=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -o StrictHostKeyChecking=accept-new -i /root/.ssh/replica_sync -L 127.0.0.1:16400:127.0.0.1:16400 -L 127.0.0.1:18699:127.0.0.1:19480 -L 127.0.0.1:18799:127.0.0.1:19580 -L 127.0.0.1:18899:127.0.0.1:19680 root@192.140.179.176
 Restart=always
 RestartSec=3
 
