@@ -23,6 +23,7 @@ const ENTRY_FILES = [
   'lib/shard-owner-switch.js',
   'lib/shard-write-freeze.js',
   'lib/shard-user-directory.js',
+  'lib/shard-user-router.js',
   'tools/shard-maintenance-executor.js',
   'tools/single-cell-capacity-collect.js',
   'tools/single-cell-capacity-audit.js',
@@ -34,7 +35,8 @@ const ENTRY_FILES = [
   'tools/shard-release-install.js',
   'tools/shard-owner-switch.js',
   'tools/shard-write-freeze.js',
-  'tools/shard-user-directory.js'
+  'tools/shard-user-directory.js',
+  'tools/shard-user-lookup.js'
 ];
 const ADDITIONAL_FILES = [
   'public/shard-maintenance.html',

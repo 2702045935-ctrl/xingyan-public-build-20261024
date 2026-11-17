@@ -26,6 +26,7 @@ const { createShardShadowService } = require('./lib/shard-shadow-service');
 const { resolveTopology } = require('./lib/shard-topology');
 const { loadManifest, assertRunningShard } = require('./lib/shard-runtime-manifest');
 const { loadChatRoutePlan, chatOwnerShard } = require('./lib/chat-route-plan');
+const { resolveRoute } = require('./lib/shard-route-plan');
 const {
   FROZEN_TARGET: SHARD_MAINTENANCE_TARGET,
   READY_CHECKLIST: SHARD_READY_CHECKLIST,
@@ -23379,6 +23380,7 @@ async function handleHttpRequest(req, res) {
   const readOnlyHttpMethod = req.method === 'GET' || req.method === 'HEAD'
     || req.method === 'OPTIONS';
   if (shardWriteFrozen && parsed.pathname !== '/__shard/write-freeze'
+      && parsed.pathname !== '/__shard/user-lookup'
       && !readOnlyHttpMethod) {
     return fail(res, 503, '正在切换数据分片，请稍后重试');
   }
@@ -23421,6 +23423,35 @@ async function handleHttpRequest(req, res) {
     });
     } catch (error) {
       return fail(res, 400, '写冻结请求无效');
+    }
+  }
+  if (parsed.pathname === '/__shard/user-lookup') {
+    if (req.method !== 'POST') return fail(res, 405, 'Method Not Allowed');
+    try {
+      const supplied = String(req.headers['x-shard-relay'] || '');
+      const expected = String(db.secret || '');
+      const suppliedBuffer = Buffer.from(supplied);
+      const expectedBuffer = Buffer.from(expected);
+      if (!expected || suppliedBuffer.length !== expectedBuffer.length
+          || !crypto.timingSafeEqual(suppliedBuffer, expectedBuffer)) {
+        return fail(res, 403, '禁止访问');
+      }
+      const body = await readBody(req);
+      if (!chatRoutePlan) return fail(res, 409, '聊天路由计划尚未加载');
+      if (String(body.planHash || '') !== chatRoutePlan.hash
+          || String(body.fileSha256 || '') !== chatRoutePlan.fileHash) {
+        return fail(res, 409, '聊天路由计划哈希不一致');
+      }
+      const userId = String(body.userId || '');
+      const owner = userId ? resolveRoute(chatRoutePlan, 'user', userId) : -1;
+      if (owner !== Number(process.env.SHARD_ID)) {
+        return fail(res, 409, '用户不属于当前分片');
+      }
+      const user = db.users.find((row) => row && row.id === userId);
+      if (!user) return fail(res, 404, '用户不存在');
+      return ok(res, { user, owner });
+    } catch (error) {
+      return fail(res, 400, '用户查询请求无效');
     }
   }
   try {

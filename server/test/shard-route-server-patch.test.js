@@ -48,6 +48,7 @@ assert.strictEqual(productionPatch.profile, 'production-cb937047');
 assert.ok(productionPatch.source.includes('/__shard/chat-action'));
 assert.ok(productionPatch.source.includes('/__shard/owner-routing'));
 assert.ok(productionPatch.source.includes('/__shard/write-freeze'));
+assert.ok(productionPatch.source.includes('/__shard/user-lookup'));
 assert.ok(productionPatch.source.includes('!chatRoutePlanEnforced'));
 
 const stable = execFileSync('git', ['show', 'bc09897:server/server.js'], {
@@ -75,6 +76,7 @@ assert.ok(result.source.includes('SHARD_ROUTE_PLAN_FILE'));
 assert.ok(result.source.includes('/__shard/chat-action'));
 assert.ok(result.source.includes('/__shard/owner-routing'));
 assert.ok(result.source.includes('/__shard/write-freeze'));
+assert.ok(result.source.includes('/__shard/user-lookup'));
 assert.ok(result.source.includes('shardWriteFrozen'));
 assert.ok(result.source.includes('chatOwnerPort(msg.chatId)'));
 assert.ok(result.source.includes('chatRoutePlanFileHash'));
@@ -146,6 +148,12 @@ try {
     assert.strictEqual(health.writeFrozen, false);
     assert.strictEqual(health.fenceEpoch, 0);
     const secret = fs.readFileSync(path.join(dataDir, 'secret.key'), 'utf8').trim();
+    let response = await fetch('http://127.0.0.1:' + basePort + '/__shard/user-lookup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: 'missing-user' })
+    });
+    assert.strictEqual(response.status, 403);
     const freezeBody = {
       frozen: true,
       epoch: 1,
@@ -153,7 +161,7 @@ try {
       planHash: plan.hash,
       fileSha256: planHash
     };
-    let response = await fetch('http://127.0.0.1:' + basePort + '/__shard/write-freeze', {
+    response = await fetch('http://127.0.0.1:' + basePort + '/__shard/write-freeze', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
