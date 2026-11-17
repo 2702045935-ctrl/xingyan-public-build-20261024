@@ -16,6 +16,7 @@ const ROUTE_PLAN_FILE = String(process.env.ROUTE_PLAN_FILE || '');
 const ROUTE_PLAN_FILE_SHA256 = String(process.env.ROUTE_PLAN_FILE_SHA256 || '').toLowerCase();
 const USER_DIRECTORY_FILE = String(process.env.USER_DIRECTORY_FILE || '');
 const PAYMENT_FAIL_CLOSED = process.env.PAYMENT_FAIL_CLOSED !== '0';
+const PAYMENT_UPSTREAM_PORT = Number(process.env.PAYMENT_UPSTREAM_PORT || 0);
 
 if (OWNER_PORTS.length !== SHARDS
     || OWNER_PORTS.some((port) => !Number.isInteger(port) || port <= 0 || port > 65535)) {
@@ -162,12 +163,41 @@ function forward(req, res, body, url, parsedBody) {
   else req.pipe(upstream);
 }
 
+function forwardPayment(req, res) {
+  const upstream = https.request({
+    host: '127.0.0.1',
+    port: PAYMENT_UPSTREAM_PORT,
+    path: req.url,
+    method: req.method,
+    headers: headers(req),
+    rejectUnauthorized: false
+  }, (response) => {
+    res.writeHead(response.statusCode, response.headers);
+    response.pipe(res);
+  });
+  upstream.on('error', () => {
+    if (!res.headersSent) {
+      res.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8' });
+    }
+    res.end(JSON.stringify({
+      ok: false,
+      error: '支付系统暂时不可用，请稍后重试',
+      code: 'PAYMENT_UPSTREAM_UNAVAILABLE'
+    }));
+  });
+  req.pipe(upstream);
+}
+
 const server = https.createServer({
   cert: fs.readFileSync(CERT),
   key: fs.readFileSync(KEY)
 }, (req, res) => {
   safeSocket(req.socket);
   const url = new URL(req.url || '/', 'http://x');
+  if (isPaymentPath(url.pathname) && PAYMENT_UPSTREAM_PORT > 0) {
+    forwardPayment(req, res);
+    return;
+  }
   if (PAYMENT_FAIL_CLOSED && isPaymentPath(url.pathname)) {
     res.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({
