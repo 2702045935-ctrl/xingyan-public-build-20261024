@@ -6889,7 +6889,15 @@ function sessionCookie(token, maxAgeSeconds) {
 
 /* -------------------------------------------------------------- 关系与视图 */
 
-const findUser = (id) => db.users.find((u) => u.id === id) || null;
+const remoteCallUsers = new Map();
+const findUser = (id) => db.users.find((u) => u.id === id)
+  || remoteCallUsers.get(String(id || '')) || null;
+setInterval(() => {
+  const cutoff = Date.now() - 10 * 60 * 1000;
+  remoteCallUsers.forEach((user, id) => {
+    if (Number(user.__remoteAt || 0) < cutoff) remoteCallUsers.delete(id);
+  });
+}, 60 * 1000).unref();
 
 function findUserByName(username) {
   const key = String(username || '').toLowerCase();
@@ -7753,8 +7761,17 @@ function forwardToCallSignalShard(pathname, payload, actorId) {
 }
 
 function forwardCallToSignalShard(actorId, msg) {
+  const actor = findUser(actorId);
   forwardToCallSignalShard('/__shard/call-signal', {
     actorId: String(actorId || ''),
+    actor: actor ? {
+      id: actor.id,
+      username: actor.username || '',
+      nickname: actor.nickname || '',
+      avatar: actor.avatar || '',
+      banned: actor.banned === true,
+      __remoteCall: true
+    } : null,
     payload: msg
   }, actorId);
 }
@@ -9102,7 +9119,8 @@ function handleClientMessage(user, socket, raw) {
         callTrace('invite-blocked ' + user.id + ' -> ' + target.id);
         return callSend(user.id, { type: 'call-error', callId, error: '暂时无法呼叫对方' });
       }
-      if (!friendIds(user.id).includes(target.id)) {
+      if (!user.__remoteCall && !target.__remoteCall
+          && !friendIds(user.id).includes(target.id)) {
         /* 排障用：把「谁想打给谁、两边的好友关系到底什么样」写进 call-trace，
            免得只看到用户说"明明是好友"。 */
         try {
@@ -23680,9 +23698,35 @@ async function handleHttpRequest(req, res) {
         return fail(res, 403, '禁止访问');
       }
       const body = await readBody(req);
-      const actor = findUser(str(body.actorId, 80));
+      const actorId = str(body.actorId, 80);
+      let actor = findUser(actorId);
+      if (!actor && body.actor && String(body.actor.id || '') === actorId) {
+        actor = {
+          id: actorId,
+          username: str(body.actor.username, 40),
+          nickname: str(body.actor.nickname, 40) || str(body.actor.username, 40) || '对方',
+          avatar: str(body.actor.avatar, 300),
+          banned: body.actor.banned === true,
+          __remoteAt: Date.now(),
+          __remoteCall: true
+        };
+        remoteCallUsers.set(actorId, actor);
+      }
       if (!actor || !body.payload || typeof body.payload !== 'object') {
         return fail(res, 422, '通话信令不完整');
+      }
+      if (body.payload.action === 'invite' && body.payload.toUserId) {
+        const targetId = str(body.payload.toUserId, 80);
+        if (!findUser(targetId)) {
+          remoteCallUsers.set(targetId, {
+            id: targetId,
+            username: '',
+            nickname: str(body.payload.peerName, 40) || '对方',
+            avatar: str(body.payload.peerAvatar, 300),
+            __remoteAt: Date.now(),
+            __remoteCall: true
+          });
+        }
       }
       let relaySocket = callSignalSockets.get(actor.id);
       if (!relaySocket) {

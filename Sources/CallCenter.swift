@@ -945,6 +945,12 @@ final class CallCenter: NSObject, ObservableObject {
         if !isGroupCall, !callOwnerId.isEmpty {
             msg["ownerId"] = callOwnerId
         }
+        if !isGroupCall, !peerName.isEmpty {
+            msg["peerName"] = peerName
+        }
+        if !isGroupCall, !peerAvatar.isEmpty {
+            msg["peerAvatar"] = peerAvatar
+        }
         body.forEach { msg[$0.key] = $0.value }
         let action = (body["action"] as? String) ?? ""
         if action == "invite", iAmCaller {
