@@ -244,6 +244,111 @@ class ShardAuthorityStore {
     });
   }
 
+  importChatSnapshot(chatId, messages, chatState) {
+    const chat = String(chatId || '');
+    if (!chat) throw new Error('chatId is required');
+    const rows = (Array.isArray(messages) ? messages : []).map((message) =>
+      Object.assign({}, message || {})
+    );
+    rows.forEach((message, index) => {
+      if (!message.id) throw new Error('snapshot message id is required');
+      if (Number(message.seq) !== index + 1) {
+        throw new Error('snapshot sequence must be contiguous from 1');
+      }
+    });
+    const ids = new Set();
+    const sequence = new Set();
+    for (const message of rows) {
+      const id = String(message.id);
+      if (ids.has(id)) throw new Error('duplicate snapshot message id: ' + id);
+      if (sequence.has(Number(message.seq))) {
+        throw new Error('duplicate snapshot sequence');
+      }
+      ids.add(id);
+      sequence.add(Number(message.seq));
+    }
+
+    const before = this.writerLease();
+    if (!before.ok) return Object.assign({ status: 'fenced' }, before);
+    return this.messages.transaction(() => {
+      const existing = this.db.prepare(
+        'SELECT message_id, seq, payload_json FROM reliable_messages WHERE chat_id = ? ORDER BY seq'
+      ).all(chat);
+      if (existing.length) {
+        const same = existing.length === rows.length
+          && existing.every((row, index) => {
+            const next = rows[index];
+            return String(row.message_id) === String(next.id)
+              && Number(row.seq) === Number(next.seq)
+              && row.payload_json === stableJson(next);
+          });
+        if (same) {
+          return {
+            status: 'duplicate',
+            imported: 0,
+            existing: rows.length,
+            chatState: this.readChat(chat)
+          };
+        }
+        throw new Error('conflicting snapshot for chat ' + chat);
+      }
+
+      const insert = this.db.prepare(`
+        INSERT INTO reliable_messages
+          (message_id, chat_id, sender_id, client_id, seq, payload_json, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `);
+      for (const message of rows) {
+        const clientId = String(message.clientId || '').slice(0, 80) || null;
+        insert.run(
+          String(message.id),
+          chat,
+          String(message.senderId || 'unknown'),
+          clientId,
+          Number(message.seq),
+          stableJson(message),
+          String(message.createdAt || this.messages.now())
+        );
+        this.messages.appendEvent(
+          'message.imported',
+          String(message.id),
+          Number(message.seq),
+          message,
+          String(message.createdAt || this.messages.now())
+        );
+      }
+      const lastSeq = rows.length;
+      const updatedAt = this.messages.now();
+      this.db.prepare(`
+        INSERT INTO chat_sequence(chat_id, last_seq, updated_at)
+        VALUES (?, ?, ?)
+        ON CONFLICT(chat_id) DO UPDATE SET
+          last_seq = excluded.last_seq,
+          updated_at = excluded.updated_at
+      `).run(chat, lastSeq, updatedAt);
+      const state = Object.assign({}, chatState || {}, {
+        chatId: chat,
+        seq: lastSeq,
+        updatedAt
+      });
+      this.db.prepare(`
+        INSERT INTO chat_state(chat_id, seq, payload_json, updated_at)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(chat_id) DO UPDATE SET
+          seq = excluded.seq,
+          payload_json = excluded.payload_json,
+          updated_at = excluded.updated_at
+      `).run(chat, lastSeq, stableJson(state), updatedAt);
+      this.assertLease(before.epoch);
+      return {
+        status: 'applied',
+        imported: rows.length,
+        existing: 0,
+        chatState: state
+      };
+    });
+  }
+
   readChat(chatId) {
     const row = this.db.prepare(
       'SELECT seq, payload_json FROM chat_state WHERE chat_id = ?'

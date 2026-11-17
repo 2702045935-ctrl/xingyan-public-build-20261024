@@ -71,6 +71,44 @@ try {
   assert.strictEqual(store.messagesAfter('chat-1', 0, 10).length, 2);
   assert.strictEqual(store.verify().ok, true);
 
+  const snapshot = [
+    {
+      id: 'snap-1',
+      chatId: 'chat-snapshot',
+      senderId: 'user-1',
+      seq: 1,
+      content: 'first',
+      createdAt: '2026-11-17T00:01:01.000Z'
+    },
+    {
+      id: 'snap-2',
+      chatId: 'chat-snapshot',
+      senderId: 'user-2',
+      seq: 2,
+      content: 'second',
+      createdAt: '2026-11-17T00:01:02.000Z'
+    }
+  ];
+  let imported = store.importChatSnapshot('chat-snapshot', snapshot, {
+    type: 'direct',
+    title: 'Snapshot'
+  });
+  assert.strictEqual(imported.status, 'applied');
+  assert.strictEqual(imported.imported, 2);
+  imported = store.importChatSnapshot('chat-snapshot', snapshot, {
+    type: 'direct',
+    title: 'Snapshot'
+  });
+  assert.strictEqual(imported.status, 'duplicate');
+  assert.throws(() => store.importChatSnapshot('chat-snapshot', [{
+    id: 'snap-conflict',
+    chatId: 'chat-snapshot',
+    senderId: 'user-1',
+    seq: 1,
+    content: 'conflict'
+  }]), /conflicting snapshot/);
+  assert.strictEqual(store.verify().ok, true);
+
   store.checkpoint();
   store.close();
   store = new ShardAuthorityStore({

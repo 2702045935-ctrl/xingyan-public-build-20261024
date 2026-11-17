@@ -36,3 +36,22 @@ The store rejects:
 
 The first real replacement step is a shadow import of one low-risk shard,
 followed by zero-difference reads and a maintenance-window write cutover.
+
+## Snapshot import
+
+The candidate importer walks one shard snapshot, decrypts and validates every
+message, sorts by `createdAt + id`, rebuilds a contiguous conversation
+sequence, and writes direct-chat messages into the authority transaction store:
+
+```text
+node server/tools/import-shard-authority.js \
+  --data /path/to/shard \
+  --secret /path/to/shard/secret.key \
+  --database /path/to/candidate/shard-authority.sqlite3 \
+  --shard-id 0 \
+  --topology-id server-b-mainline-shards-7 \
+  --out /path/to/candidate/import-report.json
+```
+
+The importer is direct-chat-only by default. `--all-chats` is reserved for a
+later group migration that has its own fanout and notification validation.
