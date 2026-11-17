@@ -48,9 +48,7 @@ class ShardAuthorityRuntime {
   }
 
   setClearCursor(userId, chatId, clearedSeq) {
-    if (!this.writeEnabled || !this.appliesTo(chatId)) {
-      return { status: 'bypass' };
-    }
+    if (!this.writeEnabled) return { status: 'bypass' };
     const result = this.store.setClearCursor(chatId, userId, clearedSeq);
     if (result.status === 'applied' || result.status === 'duplicate') {
       const key = String(userId || '') + '|' + String(chatId || '');
@@ -63,7 +61,7 @@ class ShardAuthorityRuntime {
   }
 
   clearCursor(userId, chatId) {
-    if (!this.readEnabled || !this.appliesTo(chatId)) return 0;
+    if (!this.readEnabled) return 0;
     const key = String(userId || '') + '|' + String(chatId || '');
     if (this.clearCursorCache.has(key)) return this.clearCursorCache.get(key);
     const result = this.store.clearCursor(chatId, userId);
