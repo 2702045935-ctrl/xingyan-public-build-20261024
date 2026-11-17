@@ -28,5 +28,13 @@ require(
     "群公告已保存，但群消息发送失败" in INFO,
     "a failed announcement message must report a precise error",
 )
+require(
+    "onDelete" in INFO and "删除公告" in INFO,
+    "group owners must have an announcement deletion action",
+)
+require(
+    "app.applyChatAnnouncementLocally(chatId: chat.id, announce: \"\")" in INFO,
+    "deleting an announcement must clear the live local chat row",
+)
 
 print("group-announce: passed")

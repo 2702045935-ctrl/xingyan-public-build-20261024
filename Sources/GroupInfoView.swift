@@ -213,6 +213,9 @@ struct GroupInfoView: View {
             onSave: { value in
                 announceDraft = value
                 saveAnnounce()
+            },
+            onDelete: {
+                deleteAnnounce()
             }
         )
     }
@@ -390,6 +393,19 @@ struct GroupInfoView: View {
                              ?? Tr("群公告已保存，但群消息发送失败"))
                 }
                 showAnnounce = false
+            }
+        }
+    }
+
+    private func deleteAnnounce() {
+        Task {
+            if let err = await API.shared.updateChatInfo(chatId: chat.id, name: chat.name, announce: "") {
+                app.show(err)
+            } else {
+                announce = ""
+                app.applyChatAnnouncementLocally(chatId: chat.id, announce: "")
+                await app.loadChats()
+                app.show(Tr("群公告已删除"))
             }
         }
     }
@@ -1334,9 +1350,11 @@ struct GroupAnnounceView: View {
     var groupName: String = ""
     var editable: Bool = false
     var onSave: ((String) -> Void)? = nil
+    var onDelete: (() -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
     @State private var editing = false
     @State private var draft = ""
+    @State private var confirmDelete = false
 
     private var trimmed: String {
         text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1448,6 +1466,33 @@ struct GroupAnnounceView: View {
                     .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous)
                         .stroke(C.hairline.opacity(0.72), lineWidth: 0.6))
 
+                    if editable, !trimmed.isEmpty, onDelete != nil {
+                        Button(role: .destructive) {
+                            confirmDelete = true
+                        } label: {
+                            HStack(spacing: 10) {
+                                Image(systemName: "trash")
+                                    .font(.system(size: 15, weight: .semibold))
+                                Text(Tr("删除公告"))
+                                    .font(pf(16, .medium))
+                                Spacer(minLength: 0)
+                            }
+                            .foregroundColor(C.red)
+                            .padding(.horizontal, 18)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 52)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .fill(C.cardBg)
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .stroke(C.hairline.opacity(0.72), lineWidth: 0.6)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+
                     HStack(spacing: 6) {
                         Image(systemName: "lock.fill")
                             .font(.system(size: 9.5, weight: .semibold))
@@ -1466,6 +1511,19 @@ struct GroupAnnounceView: View {
         .toolbar(.hidden, for: .navigationBar)
         .swipeBack { dismiss() }
         .hidesTabBar()
+        .confirmationDialog(
+            Tr("删除群公告？"),
+            isPresented: $confirmDelete,
+            titleVisibility: .visible
+        ) {
+            Button(Tr("删除公告"), role: .destructive) {
+                onDelete?()
+                dismiss()
+            }
+            Button(Tr("取消"), role: .cancel) {}
+        } message: {
+            Text(Tr("删除后群成员将看不到这条公告"))
+        }
         .fullScreenCover(isPresented: $editing) {
             GroupAnnounceEditor(
                 text: $draft,
