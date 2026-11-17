@@ -80,6 +80,7 @@ jobs:
           python3 tools/verify-native-chat-swipe.py
           python3 tools/verify-chats-dark-surface.py
           python3 tools/verify-recall-preview.py
+          python3 tools/verify-group-announce.py
           python3 tools/verify-chat-list-order.py
           node server/tools/server-boot-preflight.js
 

@@ -1653,6 +1653,14 @@ final class AppState: ObservableObject {
         chats = orderedChatsForList(chats)
     }
 
+    func applyChatAnnouncementLocally(chatId: String, announce: String) {
+        guard let index = chats.firstIndex(where: { $0.id == chatId }) else { return }
+        chats[index].announce = announce
+        if let userId = me?.id, !userId.isEmpty {
+            LocalStore.saveChatList(chats, userId: userId)
+        }
+    }
+
     func applyMutedLocally(chatId: String, muted: Bool) {
         guard let i = chats.firstIndex(where: { $0.id == chatId }) else { return }
         chats[i].muted = muted

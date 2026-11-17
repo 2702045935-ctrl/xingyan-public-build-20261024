@@ -379,11 +379,17 @@ struct GroupInfoView: View {
                 app.show(err)
             } else {
                 announce = text
-
-                _ = try? await API.shared.send(chatId: chat.id, kind: "announce", content: text)
-                await app.loadChats()
+                app.applyChatAnnouncementLocally(chatId: chat.id, announce: text)
+                do {
+                    _ = try await API.shared.send(chatId: chat.id, kind: "announce", content: text)
+                    await app.loadChats()
+                    app.show(Tr("群公告已发布"))
+                } catch {
+                    await app.loadChats()
+                    app.show((error as? APIError)?.errorDescription
+                             ?? Tr("群公告已保存，但群消息发送失败"))
+                }
                 showAnnounce = false
-                app.show(Tr("群公告已发布"))
             }
         }
     }

@@ -1729,6 +1729,8 @@ enum L10n {
         "仅群成员可见": "Visible to group members only",
         "发布后立即生效": "Takes effect immediately after publishing",
         "发布群公告": "Publish announcement",
+        "群公告已发布": "Group announcement published",
+        "群公告已保存，但群消息发送失败": "Group announcement was saved, but the announcement message failed to send",
         "全员可见": "Visible to everyone",
         "公告内容": "Announcement",
         "群主还没发公告": "No announcement yet",
