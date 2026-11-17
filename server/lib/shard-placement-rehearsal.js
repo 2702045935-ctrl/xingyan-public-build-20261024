@@ -68,7 +68,12 @@ function rehearseShardPlacement(options) {
     'friendships'
   );
   const chats = rowsOf(readJson(path.join(sourceDir, 'chats.json'), { chats: [] }), 'chats');
-  const reads = readJson(path.join(sourceDir, 'reads.json'), { reads: {} }).reads || {};
+  const sourceReadState = readJson(
+    path.join(sourceDir, 'reads.json'),
+    { reads: {}, cleared: {} }
+  );
+  const reads = sourceReadState.reads || {};
+  const clears = sourceReadState.cleared || {};
   const friendMeta = readJson(path.join(sourceDir, 'friendmeta.json'), { byOwner: {} }).byOwner || {};
   const moments = rowsOf(readJson(path.join(sourceDir, 'moments.json'), { moments: [] }), 'moments');
   const notices = rowsOf(
@@ -88,6 +93,7 @@ function rehearseShardPlacement(options) {
     friendships: [],
     chats: [],
     reads: {},
+    clears: {},
     friendMeta: {},
     moments: [],
     momentNotices: []
@@ -117,6 +123,14 @@ function rehearseShardPlacement(options) {
       });
     }
   }
+  for (const [ownerId, byChat] of Object.entries(clears)) {
+    for (const [chatId, seq] of Object.entries(byChat || {})) {
+      put('clear', 'snapshot_reads', chatId + '|' + ownerId, null, (target) => {
+        if (!target.clears[ownerId]) target.clears[ownerId] = {};
+        target.clears[ownerId][chatId] = seq;
+      });
+    }
+  }
   for (const [ownerId, byFriend] of Object.entries(friendMeta)) {
     for (const [friendId, value] of Object.entries(byFriend || {})) {
       put('friend_meta', 'snapshot_friendMeta', ownerId + '|' + friendId, null, (target) => {
@@ -140,7 +154,10 @@ function rehearseShardPlacement(options) {
     writeJson(path.join(dir, 'users.json'), { users: data.users });
     writeJson(path.join(dir, 'friendships.json'), { friendships: data.friendships });
     writeJson(path.join(dir, 'chats.json'), { chats: data.chats });
-    writeJson(path.join(dir, 'reads.json'), { reads: data.reads, cleared: {} });
+    writeJson(path.join(dir, 'reads.json'), {
+      reads: data.reads,
+      cleared: data.clears
+    });
     writeJson(path.join(dir, 'friendmeta.json'), { byOwner: data.friendMeta });
     writeJson(path.join(dir, 'moments.json'), { moments: data.moments });
     writeJson(path.join(dir, 'moment-notices.json'), { items: data.momentNotices, seen: {} });
@@ -164,6 +181,7 @@ function rehearseShardPlacement(options) {
     friendships: [],
     chats: [],
     reads: {},
+    clears: {},
     friendMeta: {},
     moments: [],
     momentNotices: []
@@ -183,6 +201,14 @@ function rehearseShardPlacement(options) {
       if (!rebuilt.reads[ownerId]) rebuilt.reads[ownerId] = {};
       Object.assign(rebuilt.reads[ownerId], byChat);
     }
+    const shardClears = readJson(
+      path.join(dir, 'reads.json'),
+      { cleared: {} }
+    ).cleared || {};
+    for (const [ownerId, byChat] of Object.entries(shardClears)) {
+      if (!rebuilt.clears[ownerId]) rebuilt.clears[ownerId] = {};
+      Object.assign(rebuilt.clears[ownerId], byChat);
+    }
     const shardMeta = readJson(path.join(dir, 'friendmeta.json'), { byOwner: {} }).byOwner || {};
     for (const [ownerId, byFriend] of Object.entries(shardMeta)) {
       if (!rebuilt.friendMeta[ownerId]) rebuilt.friendMeta[ownerId] = {};
@@ -200,7 +226,10 @@ function rehearseShardPlacement(options) {
   writeJson(path.join(rehydrateDir, 'users.json'), { users: rebuilt.users });
   writeJson(path.join(rehydrateDir, 'friendships.json'), { friendships: rebuilt.friendships });
   writeJson(path.join(rehydrateDir, 'chats.json'), { chats: rebuilt.chats });
-  writeJson(path.join(rehydrateDir, 'reads.json'), { reads: rebuilt.reads, cleared: {} });
+  writeJson(path.join(rehydrateDir, 'reads.json'), {
+    reads: rebuilt.reads,
+    cleared: rebuilt.clears
+  });
   writeJson(path.join(rehydrateDir, 'friendmeta.json'), { byOwner: rebuilt.friendMeta });
   writeJson(path.join(rehydrateDir, 'moments.json'), { moments: rebuilt.moments });
   writeJson(path.join(rehydrateDir, 'moment-notices.json'), {
@@ -214,6 +243,7 @@ function rehearseShardPlacement(options) {
       === hash(stableRows(rebuilt.friendships, (row) => row.id || pairKey(row.fromId, row.toId))),
     chats: hash(stableRows(chats, (row) => row.id)) === hash(stableRows(rebuilt.chats, (row) => row.id)),
     reads: hash(reads) === hash(rebuilt.reads),
+    clears: hash(clears) === hash(rebuilt.clears),
     friendMeta: hash(friendMeta) === hash(rebuilt.friendMeta),
     moments: hash(stableRows(moments, (row) => row.id))
       === hash(stableRows(rebuilt.moments, (row) => row.id)),
@@ -260,6 +290,7 @@ function rehearseShardPlacement(options) {
       friendships: friendships.length,
       chats: chats.length,
       reads: Object.values(reads).reduce((sum, row) => sum + Object.keys(row || {}).length, 0),
+      clears: Object.values(clears).reduce((sum, row) => sum + Object.keys(row || {}).length, 0),
       moments: moments.length,
       momentNotices: notices.length,
       messageThreads: threads.length

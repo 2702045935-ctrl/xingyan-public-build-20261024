@@ -22,7 +22,8 @@ try {
   }));
   fs.writeFileSync(path.join(source, 'chats.json'), JSON.stringify({ chats }));
   fs.writeFileSync(path.join(source, 'reads.json'), JSON.stringify({
-    reads: { u1: { c1: 2 } }
+    reads: { u1: { c1: 2 } },
+    cleared: { u1: { c1: 2 } }
   }));
   fs.writeFileSync(path.join(source, 'friendmeta.json'), JSON.stringify({
     byOwner: { u1: { u2: { remark: 'B' } } }
@@ -54,11 +55,16 @@ try {
   assert.strictEqual(report.ok, true, JSON.stringify(report.failures));
   assert.deepStrictEqual(report.failures, []);
   assert.strictEqual(report.counts.users, 2);
+  assert.strictEqual(report.counts.clears, 1);
   assert.strictEqual(report.counts.messageThreads, 1);
   assert.strictEqual(report.shadowRead.ok, true);
   assert.strictEqual(report.shadowRead.readOnly, true);
   assert.match(report.shadowRead.fingerprint, /^[a-f0-9]{64}$/);
   assert.ok(fs.existsSync(path.join(rehydrate, 'messages', 'c1.jsonl')));
+  assert.deepStrictEqual(
+    JSON.parse(fs.readFileSync(path.join(rehydrate, 'reads.json'), 'utf8')).cleared,
+    { u1: { c1: 2 } }
+  );
   console.log('shard-placement-rehearsal: passed');
 } finally {
   fs.rmSync(root, { recursive: true, force: true });

@@ -2765,7 +2765,10 @@ struct ChatDetailView: View {
                             .id("short-conversation-bottom")
                     }
                     .padding(L.msgPad)
-                    .frame(minHeight: geometry.size.height, alignment: .bottom)
+                    // Short conversations begin directly below the navigation
+                    // bar. Bottom alignment made the oldest bubble float just
+                    // above the composer when there were only a few messages.
+                    .frame(minHeight: geometry.size.height, alignment: .top)
                 }
                 .scrollDismissesKeyboard(.interactively)
                 .onAppear {
