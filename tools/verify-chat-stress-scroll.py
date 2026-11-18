@@ -65,6 +65,13 @@ require(
     "stress conversation lists must defer row insertion until scrolling ends",
 )
 
+NATIVE_CHAT_LIST = (ROOT / "Sources" / "NativeChatList.swift").read_text(encoding="utf-8")
+require(
+    "collection.isDragging || collection.isTracking || collection.isDecelerating" in NATIVE_CHAT_LIST
+    and "pendingItems = next" in NATIVE_CHAT_LIST,
+    "all conversation-list changes, including pure appends, must defer during touch motion",
+)
+
 MOMENTS = (ROOT / "Sources" / "MomentStressFixture.swift").read_text(encoding="utf-8")
 require(
     '"#\\(index + 1) · \\(bodySamples[index % bodySamples.count])"' in MOMENTS,

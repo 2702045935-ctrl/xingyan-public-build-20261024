@@ -180,16 +180,15 @@ where Item.ID: Hashable {
              * 视口推进到错误位置，表现就是会话页突然往下掉。用户手指还在屏幕上时
              * 只记下最新数据，等滚动结束再一次性合并。
              */
-            let isPureAppend = next.count > order.count
-                && next.prefix(order.count).allSatisfy { lookup[$0.id] == $0 }
-            let isStableInsertion = allowInsertionDuringScroll
-                && isInsertionOnly(next)
             if !order.isEmpty,
-               !isPureAppend,
-               !isStableInsertion,
-               collection.isDragging || collection.isDecelerating {
-                pendingItems = next
-                return
+               collection.isDragging || collection.isTracking || collection.isDecelerating {
+                let nextOrder = next.map(\.id)
+                let unchanged = nextOrder == order
+                    && next.allSatisfy { lookup[$0.id] == $0 }
+                if !unchanged {
+                    pendingItems = next
+                    return
+                }
             }
             let nextLookup = Dictionary(uniqueKeysWithValues: next.map { ($0.id, $0) })
             let nextOrder = next.map(\.id)
