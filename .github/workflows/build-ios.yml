@@ -128,6 +128,7 @@ jobs:
           node server/test/media-object-routing.test.js
           node server/test/messages-since.test.js
           node server/test/moment-delete-persistence.test.js
+          node server/test/moment-shard-replication.test.js
           node server/test/login-username.test.js
           node server/test/account-registration-sms.test.js
           node server/test/chat-route-plan.test.js

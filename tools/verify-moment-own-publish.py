@@ -48,5 +48,24 @@ require(
     and "await ensureMomentFriendIndex(user.id);" in SERVER,
     "Moments reads must refresh friends from shard owners before visibility filtering",
 )
+require(
+    "/__shard/moment-replicate" in SERVER
+    and "moment-replication-outbox.json" in SERVER
+    and "JSON.stringify({ op: 'delete', id })" in SERVER
+    and "primeMomentReplicationState();" in SERVER,
+    "moment publishes and tombstones must replicate durably across shards",
+)
+require(
+    "let mergedPage = applyNewestMomentPage(feed.moments)" in VIEW
+    and "LocalStore.saveMoments(mergedPage" in VIEW
+    and "forgetMomentLocally(event.momentId)" in VIEW,
+    "deleted moments must disappear from live state and the local cache immediately",
+)
+require(
+    "guard !list.isEmpty else" in (
+        ROOT / "Sources" / "LocalStore.swift"
+    ).read_text(encoding="utf-8"),
+    "an empty confirmed feed must clear the stale local Moments cache",
+)
 
 print("moment-own-publish: passed")

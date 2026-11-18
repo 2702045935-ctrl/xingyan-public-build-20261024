@@ -180,7 +180,11 @@ enum LocalStore {
     }
 
     static func saveMoments(_ list: [Moment], userId: String) {
-        guard !list.isEmpty, let f = momentCacheFile(userId) else { return }
+        guard let f = momentCacheFile(userId) else { return }
+        guard !list.isEmpty else {
+            try? FileManager.default.removeItem(at: f)
+            return
+        }
         let tail = Array(list.prefix(60))
         guard let d = try? JSONEncoder().encode(tail) else { return }
         try? d.write(to: f, options: .atomic)

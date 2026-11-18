@@ -8,13 +8,13 @@
     },
     {
       "path": "Sources/App.swift",
-      "size": 192432,
-      "sha256": "aeda418457b3dfcfccabddc8e8ca14260a61f16d590be6cab1ffaacd7a152b41"
+      "size": 192872,
+      "sha256": "22761ffafd3bafe18a41cd17f250e4895e8d8ad3f0ac3feeadd0d2815ce312f4"
     },
     {
       "path": "Sources/Realtime.swift",
-      "size": 19595,
-      "sha256": "907680630bc48c4af8f8c40a94fed77f39cc9965a1accfdb41fee0e4a37750f3"
+      "size": 19674,
+      "sha256": "bb6be6358be3d6fd9204a5c44b9abf8e43a45c0fb77b6d55697d4df54413128e"
     },
     {
       "path": "Sources/CallAudio.swift",
@@ -53,8 +53,8 @@
     },
     {
       "path": "Sources/LocalStore.swift",
-      "size": 25169,
-      "sha256": "6ce2010e718107e888707c9c538433512635e67db38f618751b9f5db9038d190"
+      "size": 25273,
+      "sha256": "ac9caa9fda446fd078654ddaeabc5c54ccb79260fa268f131979f1023c68dbfa"
     },
     {
       "path": "Sources/MsgFrameKey.swift",

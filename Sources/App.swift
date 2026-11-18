@@ -543,7 +543,14 @@ final class AppState: ObservableObject {
             }
             coalesce { [weak self] in await self?.loadChats() }
         case "moment":
-            momentsUnread = max(1, momentsUnread)
+            if ev.action == "delete", !ev.momentId.isEmpty {
+                moments.removeAll { $0.id == ev.momentId }
+                if let userId = me?.id, !userId.isEmpty {
+                    LocalStore.saveMoments(moments, userId: userId)
+                }
+            } else {
+                momentsUnread = max(1, momentsUnread)
+            }
             coalesce { [weak self] in await self?.loadMoments() }
         case "moment-notice":
 
@@ -2182,6 +2189,9 @@ final class AppState: ObservableObject {
             moments = feed.moments
             momentsUnread = feed.unread
             momentNoticeUnread = feed.noticeUnread
+            if let userId = me?.id, !userId.isEmpty {
+                LocalStore.saveMoments(feed.moments, userId: userId)
+            }
         }
     }
 

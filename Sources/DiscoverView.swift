@@ -1680,6 +1680,9 @@ struct MomentsView: View {
 
             let t = event.type.lowercased()
             guard t.contains("moment") || t.contains("like") || t.contains("comment") else { return }
+            if event.type == "moment", event.action == "delete", !event.momentId.isEmpty {
+                forgetMomentLocally(event.momentId)
+            }
             Task { await pollNewMoments() }
         }
         .task {
@@ -2656,14 +2659,14 @@ struct MomentsView: View {
             limit: Self.momentPageSize,
             userId: feedUserId
         ) {
-            applyNewestMomentPage(feed.moments)
+            let mergedPage = applyNewestMomentPage(feed.moments)
             momentTotal = feed.total
             feedRange = feed.range
             app.momentNoticeUnread = feed.noticeUnread
-            hasMoreMoments = moments.count < feed.total || feed.hasMore
+            hasMoreMoments = mergedPage.count < feed.total || feed.hasMore
 
             if target == nil && !mineOnly {
-                LocalStore.saveMoments(moments, userId: app.me?.id ?? "")
+                LocalStore.saveMoments(mergedPage, userId: app.me?.id ?? "")
             }
         } else {
 
@@ -2794,9 +2797,13 @@ struct MomentsView: View {
             limit: Self.momentPageSize,
             userId: feedUserId
         ) else { return }
-        applyNewestMomentPage(feed.moments)
+        let mergedPage = applyNewestMomentPage(feed.moments)
         momentTotal = feed.total
-        hasMoreMoments = moments.count < feed.total || feed.hasMore
+        hasMoreMoments = mergedPage.count < feed.total || feed.hasMore
+        if target == nil && !mineOnly {
+            app.moments = mergedPage
+            LocalStore.saveMoments(mergedPage, userId: app.me?.id ?? "")
+        }
         scheduleMomentPrefetch()
     }
 
@@ -2836,7 +2843,8 @@ struct MomentsView: View {
         prefetchedHasMore = feed.hasMore && !prefetchedMoments.isEmpty
     }
 
-    private func applyNewestMomentPage(_ page: [Moment]) {
+    @discardableResult
+    private func applyNewestMomentPage(_ page: [Moment]) -> [Moment] {
         var cleanPage = page.filter { !locallyDeletedMomentIds.contains($0.id) }
         let pageIds = Set(cleanPage.map(\.id))
         locallyPostedMoments = locallyPostedMoments.filter { !pageIds.contains($0.key) }
@@ -2859,6 +2867,7 @@ struct MomentsView: View {
         if merged != moments {
             setMomentsWithoutAnimation(merged)
         }
+        return merged
     }
 
     private func insertLocallyPostedMoment(_ moment: Moment) {
@@ -3186,12 +3195,7 @@ struct MomentsView: View {
     private func remove(_ moment: Moment) {
         let id = moment.id
         guard !id.isEmpty else { return }
-        locallyDeletedMomentIds.insert(id)
-        momentPrefetchTask?.cancel()
-        prefetchedMoments.removeAll { $0.id == id }
-        setMomentsWithoutAnimation(moments.filter { $0.id != id })
-        momentTotal = max(0, momentTotal - 1)
-        app.moments.removeAll { $0.id == id }
+        forgetMomentLocally(id)
         app.show(Tr("正在删除动态…"))
         Task {
             if let err = await API.shared.deleteMoment(id: id) {
@@ -3202,6 +3206,21 @@ struct MomentsView: View {
                 await app.loadMoments()
                 app.show(Tr("动态已删除"))
             }
+        }
+    }
+
+    private func forgetMomentLocally(_ id: String) {
+        guard !id.isEmpty else { return }
+        locallyDeletedMomentIds.insert(id)
+        momentPrefetchTask?.cancel()
+        prefetchedMoments.removeAll { $0.id == id }
+        pendingMomentPage.removeAll { $0.id == id }
+        let next = moments.filter { $0.id != id }
+        setMomentsWithoutAnimation(next)
+        momentTotal = max(0, momentTotal - 1)
+        app.moments.removeAll { $0.id == id }
+        if target == nil && !mineOnly {
+            LocalStore.saveMoments(next, userId: app.me?.id ?? "")
         }
     }
 }

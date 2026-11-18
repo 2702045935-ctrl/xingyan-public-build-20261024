@@ -3105,6 +3105,7 @@ const saveMoments = () => {
   } catch (_) { /* 写失败时 moments.json 仍是权威状态，下次保存再清 */ }
   momentsDiskSignature = momentsStorageSignature();
   captureShardSnapshots(['moments'], { moments: db.moments });
+  queueMomentReplicationDiff();
 };
 const saveMomentViews = () => writeJson(path.join(DATA_DIR, 'moment-views.json'), { views: db.momentViews });
 const saveMomentNotices = () => {
@@ -3210,8 +3211,13 @@ const saveSecurity = () => writeJson(path.join(DATA_DIR, 'logins.json'), { login
    下次开服时把日志并回 moments.json 再清空日志（合并只做一次，不占正常请求）。 */
 const MOMENTS_LOG = 'moments-log.jsonl';
 const momentsLogPath = () => path.join(DATA_DIR, MOMENTS_LOG);
+const MOMENT_REPLICATION_FILE = 'moment-replication-outbox.json';
 let momentsLogCount = 0;
 let momentsDiskSignature = '';
+let momentReplicationState = null;
+let momentReplicationOutbox = null;
+let momentReplicationFlushing = false;
+let momentReplicationRetryTimer = null;
 
 function momentsStorageSignature() {
   const fileSig = (file) => {
@@ -3298,6 +3304,113 @@ function appendMoment(moment) {
   } catch (err) { /* 写不进日志就让下次整体保存兜底 */ }
   db.moments.unshift(moment);
   momentsDiskSignature = momentsStorageSignature();
+  queueMomentReplicationRecords([{ moment }]);
+  if (momentReplicationState != null) {
+    momentReplicationState.set(String(moment.id), JSON.stringify(moment));
+  }
+  flushMomentReplication().catch(() => {});
+}
+
+function momentReplicationMap() {
+  if (momentReplicationOutbox) return momentReplicationOutbox;
+  const raw = readJson(path.join(DATA_DIR, MOMENT_REPLICATION_FILE), { records: [] });
+  momentReplicationOutbox = new Map();
+  (Array.isArray(raw.records) ? raw.records : []).forEach((record) => {
+    const id = String(record && (record.id || (record.moment && record.moment.id)) || '');
+    if (id) momentReplicationOutbox.set(id, record);
+  });
+  return momentReplicationOutbox;
+}
+
+function saveMomentReplicationOutbox() {
+  const records = Array.from(momentReplicationMap().values());
+  if (!records.length) {
+    try { fs.unlinkSync(path.join(DATA_DIR, MOMENT_REPLICATION_FILE)); } catch (_) { }
+    return;
+  }
+  writeJson(path.join(DATA_DIR, MOMENT_REPLICATION_FILE), { records });
+}
+
+function queueMomentReplicationRecords(records) {
+  const outbox = momentReplicationMap();
+  (records || []).forEach((record) => {
+    const id = String(record && (record.id || (record.moment && record.moment.id)) || '');
+    if (id) outbox.set(id, record);
+  });
+  saveMomentReplicationOutbox();
+}
+
+async function flushMomentReplication() {
+  if (momentReplicationFlushing) return;
+  const outbox = momentReplicationMap();
+  if (!outbox.size || !chatRoutePlan || !db.secret) return;
+  const ports = Array.from(new Set(chatOwnerPorts)).filter((port) => port && port !== PORT);
+  if (!ports.length) {
+    outbox.clear();
+    saveMomentReplicationOutbox();
+    return;
+  }
+  momentReplicationFlushing = true;
+  const records = Array.from(outbox.values());
+  let allOk = true;
+  await Promise.all(ports.map(async (port) => {
+    const result = await postShardJson(port, '/__shard/moment-replicate', {
+      planHash: chatRoutePlan.hash,
+      fileSha256: chatRoutePlan.fileHash,
+      records
+    }, 2200);
+    if (!result.payload || !result.payload.ok) allOk = false;
+  }));
+  momentReplicationFlushing = false;
+  if (allOk) {
+    records.forEach((record) => {
+      const id = String(record && (record.id || (record.moment && record.moment.id)) || '');
+      if (id) outbox.delete(id);
+    });
+    saveMomentReplicationOutbox();
+  }
+  if (outbox.size && !momentReplicationRetryTimer) {
+    momentReplicationRetryTimer = setTimeout(() => {
+      momentReplicationRetryTimer = null;
+      flushMomentReplication().catch(() => {});
+    }, 2500);
+    if (momentReplicationRetryTimer.unref) momentReplicationRetryTimer.unref();
+  }
+}
+
+function queueMomentReplicationDiff() {
+  const current = new Map();
+  (db.moments || []).forEach((moment) => {
+    if (!moment || !moment.id) return;
+    current.set(String(moment.id), JSON.stringify(moment));
+  });
+  if (momentReplicationState == null) {
+    momentReplicationState = current;
+    return;
+  }
+  const records = [];
+  current.forEach((signature, id) => {
+    if (momentReplicationState.get(id) !== signature) {
+      const moment = (db.moments || []).find((row) => row && String(row.id) === id);
+      if (moment) records.push({ moment });
+    }
+  });
+  momentReplicationState.forEach((_, id) => {
+    if (!current.has(id)) records.push({ id, deleted: true });
+  });
+  momentReplicationState = current;
+  if (!records.length) return;
+  queueMomentReplicationRecords(records);
+  flushMomentReplication().catch(() => {});
+}
+
+function primeMomentReplicationState() {
+  momentReplicationState = new Map();
+  (db.moments || []).forEach((moment) => {
+    if (moment && moment.id) {
+      momentReplicationState.set(String(moment.id), JSON.stringify(moment));
+    }
+  });
 }
 
 /* --------------------------------------------------- 转账单（待收款 / 24 小时退回）
@@ -23235,6 +23348,7 @@ async function handleApi(req, res, pathname, query) {
       comments: []
     };
     appendMoment(moment);          // 只追加一行日志，不再整体重写 moments.json
+    await flushMomentReplication();
     broadcastMoment(user.id, {
       type: 'moment', action: 'new', authorId: user.id, moment: visibleMoment(moment, user.id)
     });
@@ -23408,6 +23522,7 @@ async function handleApi(req, res, pathname, query) {
     if (db.moments[idx].authorId !== user.id) return fail(res, 403, '只能删除自己发的动态');
     const [removed] = db.moments.splice(idx, 1);
     saveMoments();
+    await flushMomentReplication();
     broadcastMoment(user.id, {
       type: 'moment', action: 'delete', momentId: removed.id, authorId: user.id
     });
@@ -24405,6 +24520,7 @@ async function handleHttpRequest(req, res) {
   if (parsed.pathname === '/__shard/friend-list'
       || parsed.pathname === '/__shard/friend-cache'
       || parsed.pathname === '/__shard/friend-upsert'
+      || parsed.pathname === '/__shard/moment-replicate'
       || parsed.pathname === '/__shard/user-export') {
     if (req.method !== 'POST') return fail(res, 405, 'Method Not Allowed');
     try {
@@ -24459,6 +24575,42 @@ async function handleHttpRequest(req, res) {
         if (body.deleted !== true) db.friendships.push(friendship);
         saveFriendships();
         return ok(res, { stored: body.deleted !== true });
+      }
+      if (parsed.pathname === '/__shard/moment-replicate') {
+        const records = Array.isArray(body.records) ? body.records : [];
+        refreshMomentsFromDisk(false);
+        let changed = 0;
+        records.forEach((record) => {
+          if (!record || typeof record !== 'object') return;
+          if (record.deleted === true) {
+            const id = str(record.id || record.momentId, 80);
+            if (!id) return;
+            const before = db.moments.length;
+            db.moments = db.moments.filter((moment) => moment && String(moment.id) !== id);
+            if (db.moments.length !== before) changed += 1;
+            try {
+              fs.appendFileSync(momentsLogPath(),
+                JSON.stringify({ op: 'delete', id }) + '\n', 'utf8');
+            } catch (_) { }
+            return;
+          }
+          const moment = record.moment;
+          if (!moment || !moment.id || !moment.authorId) return;
+          const index = db.moments.findIndex((row) => row && String(row.id) === String(moment.id));
+          if (index >= 0) db.moments[index] = moment;
+          else db.moments.unshift(moment);
+          changed += 1;
+          try {
+            fs.appendFileSync(momentsLogPath(),
+              JSON.stringify({ op: 'publish', moment }) + '\n', 'utf8');
+          } catch (_) { }
+        });
+        if (changed) {
+          db.moments.sort((a, b) =>
+            String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+          momentsDiskSignature = momentsStorageSignature();
+        }
+        return ok(res, { applied: changed });
       }
       const friendship = body.friendship;
       if (!friendship || !friendship.fromId || !friendship.toId) {
@@ -25406,6 +25558,7 @@ server.listen(PORT, BIND_HOST, () => {
     const replayed = replayMomentsLog();          // 把上次没合并的朋友圈日志并回 moments.json
     if (replayed) console.log('  朋友圈 合并追加日志 ' + replayed + ' 条');
   }
+  primeMomentReplicationState();
   console.log('  前台   http://' + HOST + ':' + PORT + '/');
   console.log('  管理   http://' + HOST + ':' + PORT + '/admin.html');
   if (BIND_HOST === '0.0.0.0') {

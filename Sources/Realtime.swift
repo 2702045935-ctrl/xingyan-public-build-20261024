@@ -19,6 +19,7 @@ struct PushEvent: Equatable {
     var user: User? = nil
 
     var momentUnread: Int? = nil
+    var momentId = ""
 
     var momentNoticeUnread: Int? = nil
 
@@ -434,6 +435,7 @@ final class Realtime: ObservableObject {
         }
         if let ca = obj["callActive"] as? Bool { ev.callActive = ca }
         if let n = obj["momentUnread"] as? Int { ev.momentUnread = n }
+        ev.momentId = (obj["momentId"] as? String) ?? ""
         if let n = obj["momentNoticeUnread"] as? Int { ev.momentNoticeUnread = n }
 
         if let n = obj["notice"] as? [String: Any] { ev.momentNotice = MomentNotice(json: n) }
