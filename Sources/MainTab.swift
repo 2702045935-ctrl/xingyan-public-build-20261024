@@ -122,6 +122,14 @@ struct MainTabView: View {
                 }
             }
 
+            .overlay(alignment: .top) {
+                if rootTabBarVisible {
+                    StatusBarTapScrollTop()
+                        .frame(height: max(20, L.safeTop))
+                        .ignoresSafeArea(edges: .top)
+                }
+            }
+
         }
 
         .background(C.pageBg.ignoresSafeArea())
@@ -279,6 +287,58 @@ struct MainTabView: View {
         }
 
         .onAppear { CrashCatcher.note("启动", "7 主界面出现") }
+    }
+}
+
+private struct StatusBarTapScrollTop: UIViewRepresentable {
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        view.backgroundColor = .clear
+        let tap = UITapGestureRecognizer(target: context.coordinator,
+                                         action: #selector(Coordinator.handleTap(_:)))
+        tap.cancelsTouchesInView = false
+        view.addGestureRecognizer(tap)
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {}
+
+    final class Coordinator: NSObject {
+        @objc func handleTap(_ gesture: UITapGestureRecognizer) {
+            guard gesture.state == .ended,
+                  let window = gesture.view?.window else { return }
+            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+            let viewport = window.bounds
+            let minimumHeight = viewport.height * 0.42
+            var candidates: [(view: UIScrollView, visibleArea: CGFloat)] = []
+
+            func visit(_ view: UIView) {
+                if let scroll = view as? UIScrollView,
+                   scroll.window === window,
+                   !scroll.isHidden,
+                   scroll.alpha > 0.05,
+                   scroll.bounds.height >= minimumHeight,
+                   scroll.contentSize.height > scroll.bounds.height + 16 {
+                    let frame = scroll.convert(scroll.bounds, to: window)
+                    let visible = frame.intersection(viewport)
+                    if !visible.isNull, visible.height > minimumHeight {
+                        candidates.append((scroll, visible.width * visible.height))
+                    }
+                }
+                for child in view.subviews { visit(child) }
+            }
+
+            visit(window)
+            guard let target = candidates.max(by: { $0.visibleArea < $1.visibleArea })?.view else {
+                return
+            }
+            target.setContentOffset(
+                CGPoint(x: 0, y: -target.adjustedContentInset.top),
+                animated: true
+            )
+        }
     }
 }
 

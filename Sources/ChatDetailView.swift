@@ -421,6 +421,123 @@ private enum ChatWallpaperEdge: Equatable {
     case bottom
 }
 
+private struct ChatHeaderGlassGroup<Content: View>: View {
+    let lightInk: Bool
+    private let content: Content
+
+    init(lightInk: Bool, @ViewBuilder content: () -> Content) {
+        self.lightInk = lightInk
+        self.content = content()
+    }
+
+    var body: some View {
+        content
+            .background {
+                ZStack {
+                    NativeGlassHeaderMaterial()
+                    Capsule(style: .continuous)
+                        .fill(lightInk
+                              ? Color.black.opacity(0.18)
+                              : Color.white.opacity(0.30))
+                }
+                .clipShape(Capsule(style: .continuous))
+            }
+            .overlay {
+                Capsule(style: .continuous)
+                    .stroke(
+                        lightInk
+                            ? Color.white.opacity(0.22)
+                            : Color.black.opacity(0.075),
+                        lineWidth: 0.7
+                    )
+            }
+            .shadow(color: Color.black.opacity(lightInk ? 0.20 : 0.08),
+                    radius: 10, x: 0, y: 4)
+    }
+}
+
+private struct MessageReplySwipe<Content: View>: View {
+    let enabled: Bool
+    let onReply: () -> Void
+    private let content: Content
+
+    @State private var offset: CGFloat = 0
+    @State private var armed = false
+    @State private var dragging = false
+
+    init(enabled: Bool, onReply: @escaping () -> Void,
+         @ViewBuilder content: () -> Content) {
+        self.enabled = enabled
+        self.onReply = onReply
+        self.content = content()
+    }
+
+    var body: some View {
+        ZStack(alignment: .leading) {
+            if offset > 3 {
+                Image(systemName: armed
+                      ? "arrowshape.turn.up.left.circle.fill"
+                      : "arrowshape.turn.up.left.circle")
+                    .font(.system(size: armed ? 22 : 20, weight: .semibold))
+                    .foregroundStyle(C.green.opacity(armed ? 1 : 0.72))
+                    .scaleEffect(armed ? 1.06 : 1)
+                    .offset(x: max(10, min(23, offset * 0.42)))
+                    .accessibilityHidden(true)
+            }
+
+            content
+                .offset(x: offset)
+        }
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 10, coordinateSpace: .local)
+                .onChanged { value in
+                    guard enabled, !UIAccessibility.isReduceMotionEnabled else { return }
+                    let horizontal = value.translation.width
+                    let vertical = value.translation.height
+                    guard horizontal > 0,
+                          horizontal > abs(vertical) * 1.18 else {
+                        if dragging {
+                            offset = 0
+                            dragging = false
+                            armed = false
+                        }
+                        return
+                    }
+                    dragging = true
+                    let resisted = min(66, horizontal * 0.74)
+                    offset = resisted
+                    let nextArmed = resisted >= 47
+                    if nextArmed != armed {
+                        armed = nextArmed
+                        if nextArmed {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        }
+                    }
+                }
+                .onEnded { value in
+                    guard enabled, dragging else {
+                        offset = 0
+                        armed = false
+                        dragging = false
+                        return
+                    }
+                    let horizontal = value.translation.width
+                    let vertical = value.translation.height
+                    let shouldReply = armed
+                        && horizontal > abs(vertical) * 1.18
+                        && (value.predictedEndTranslation.width > 38 || horizontal > 54)
+                    if shouldReply { onReply() }
+                    withAnimation(.spring(response: 0.30, dampingFraction: 0.84)) {
+                        offset = 0
+                    }
+                    armed = false
+                    dragging = false
+                }
+        )
+        .animation(.easeOut(duration: 0.12), value: armed)
+    }
+}
+
 private struct ChatImmersiveEdgeMask: View {
     let path: String
     let edge: ChatWallpaperEdge
@@ -1352,143 +1469,158 @@ struct ChatDetailView: View {
     }
 
     private var whatsAppChatHeader: some View {
-        let hideChrome = false
         let title = loadingAllGroupHistory ? Tr("正在同步全部消息…") : navTitle
 
-        return HStack(spacing: 0) {
-            if let back = navBackAction {
-                Button(action: back) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 19, weight: .medium))
-                        .foregroundStyle(adaptiveTopInk)
-                        .frame(width: 42, height: 44)
-                        .contentShape(Rectangle())
+        return ZStack {
+            HStack(spacing: 8) {
+                if let back = navBackAction {
+                    ChatHeaderGlassGroup(lightInk: topBarUsesLightInk) {
+                        HStack(spacing: 2) {
+                            Button(action: back) {
+                                Image(systemName: "chevron.left")
+                                    .font(.system(size: 18.5, weight: .semibold))
+                                    .foregroundStyle(adaptiveTopInk)
+                                    .frame(width: 39, height: 39)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(Tr("返回"))
+
+                            if let badge = leftUnreadBadge {
+                                badge
+                                    .padding(.trailing, 8)
+                            }
+                        }
+                    }
+                } else {
+                    Color.clear.frame(width: 42, height: 42)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Tr("返回"))
+
+                Spacer(minLength: 0)
+
+                ChatHeaderGlassGroup(lightInk: topBarUsesLightInk) {
+                    HStack(spacing: 0) {
+                        Button {
+                            startRealCall(video: true)
+                        } label: {
+                            Image(systemName: "video")
+                                .font(.system(size: 17.5, weight: .medium))
+                                .foregroundStyle(adaptiveTopInk.opacity(0.82))
+                                .frame(width: 38, height: 39)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(Tr("视频通话"))
+
+                        Rectangle()
+                            .fill(adaptiveTopInk.opacity(0.10))
+                            .frame(width: 0.5, height: 18)
+
+                        Button {
+                            startRealCall(video: false)
+                        } label: {
+                            Image(systemName: "phone")
+                                .font(.system(size: 17.5, weight: .medium))
+                                .foregroundStyle(adaptiveTopInk.opacity(0.82))
+                                .frame(width: 38, height: 39)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(Tr("语音通话"))
+
+                        Rectangle()
+                            .fill(adaptiveTopInk.opacity(0.10))
+                            .frame(width: 0.5, height: 18)
+
+                        Menu {
+                            Button {
+                                if isGroup { showGroupInfo = true } else { showChatInfo = true }
+                            } label: {
+                                Label(Tr("会话信息"), systemImage: "info.circle")
+                            }
+
+                            if isGroup && !groupAnnouncement.isEmpty {
+                                Button {
+                                    announcePage = groupAnnouncement
+                                    showAnnouncePage = true
+                                } label: {
+                                    Label(Tr("群公告"), systemImage: "megaphone")
+                                }
+                            }
+
+                            Button {
+                                showChatFavorites = true
+                            } label: {
+                                Label(Tr("收藏"), systemImage: "bookmark")
+                            }
+
+                            if isStarWorld {
+                                Button {
+                                    withAnimation(.easeInOut(duration: 0.18)) {
+                                        newsMode.toggle()
+                                    }
+                                } label: {
+                                    Label(Tr("世界"), systemImage: "globe.asia.australia")
+                                }
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis")
+                                .font(.system(size: 16.5, weight: .semibold))
+                                .foregroundStyle(adaptiveTopInk)
+                                .frame(width: 39, height: 39)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(Tr("更多"))
+                    }
+                }
             }
 
-            if let badge = leftUnreadBadge {
-                badge
-                    .padding(.leading, 3)
-                    .padding(.trailing, 5)
-            }
-
-            if !hideChrome {
+            ChatHeaderGlassGroup(lightInk: topBarUsesLightInk) {
                 Button {
                     if isGroup { showGroupInfo = true } else { showChatInfo = true }
                 } label: {
-                    HStack(spacing: 10) {
+                    HStack(spacing: 7) {
                         whatsAppChatAvatar
+                            .scaleEffect(0.84)
+                            .frame(width: 29, height: 29)
 
-                        VStack(alignment: .leading, spacing: 2) {
+                        VStack(alignment: .leading, spacing: 0.5) {
                             Text(title)
-                                .font(pf(17, .semibold))
+                                .font(pf(15.5, .semibold))
                                 .foregroundStyle(adaptiveTopInk)
                                 .lineLimit(1)
                                 .truncationMode(.tail)
 
                             if isPeerTyping {
-                                HStack(spacing: 5) {
+                                HStack(spacing: 4) {
                                     ChatTypingDots(color: Color(hex: 0x25D366))
                                     Text(isGroup ? Tr("有人正在输入") : Tr("正在输入"))
-                                        .font(pf(12.5, .regular))
-                                        .foregroundStyle(adaptiveTopInk.opacity(
-                                            topBarUsesLightInk ? 0.78 : 0.72
-                                        ))
+                                        .font(pf(10.5, .regular))
+                                        .foregroundStyle(adaptiveTopInk.opacity(0.74))
                                         .lineLimit(1)
                                 }
                                 .transition(.opacity.combined(with: .move(edge: .top)))
                             } else if !whatsAppChatSubtitle.isEmpty {
                                 Text(whatsAppChatSubtitle)
-                                    .font(pf(12.5, .regular))
-                                    .foregroundStyle(adaptiveTopInk.opacity(
-                                        topBarUsesLightInk ? 0.78 : 0.72
-                                    ))
+                                    .font(pf(10.5, .regular))
+                                    .foregroundStyle(adaptiveTopInk.opacity(0.72))
                                     .lineLimit(1)
                             }
                         }
                     }
-                    .contentShape(Rectangle())
+                    .padding(.horizontal, 7)
+                    .frame(height: 39)
+                    .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(title)
-
-                Spacer(minLength: 6)
-
-                Button {
-                    startRealCall(video: true)
-                } label: {
-                    Image(systemName: "video")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundStyle(adaptiveTopInk.opacity(0.74))
-                        .frame(width: 38, height: 44)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Tr("视频通话"))
-
-                Button {
-                    startRealCall(video: false)
-                } label: {
-                    Image(systemName: "phone")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundStyle(adaptiveTopInk.opacity(0.74))
-                        .frame(width: 38, height: 44)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Tr("语音通话"))
-
-                Menu {
-                    Button {
-                        if isGroup { showGroupInfo = true } else { showChatInfo = true }
-                    } label: {
-                        Label(Tr("会话信息"), systemImage: "info.circle")
-                    }
-
-                    if isGroup && !groupAnnouncement.isEmpty {
-                        Button {
-                            announcePage = groupAnnouncement
-                            showAnnouncePage = true
-                        } label: {
-                            Label(Tr("群公告"), systemImage: "megaphone")
-                        }
-                    }
-
-                    Button {
-                        showChatFavorites = true
-                    } label: {
-                        Label(Tr("收藏"), systemImage: "bookmark")
-                    }
-
-                    if isStarWorld {
-                        Button {
-                            withAnimation(.easeInOut(duration: 0.18)) {
-                                newsMode.toggle()
-                            }
-                        } label: {
-                            Label(Tr("世界"), systemImage: "globe.asia.australia")
-                        }
-                    }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(adaptiveTopInk)
-                        .frame(width: 42, height: 44)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Tr("更多"))
-            } else {
-                Spacer(minLength: 0)
             }
+            .frame(maxWidth: 126)
         }
         .shadow(color: adaptiveTopGlyphShadow, radius: 0.9, x: 0, y: 0.35)
-        .padding(.leading, 2)
-        .padding(.trailing, 2)
+        .padding(.horizontal, 4)
         .frame(height: L.navH)
-        .animation(.easeOut(duration: 0.18), value: hideChrome)
     }
 
     private var chatTopNavigation: AnyView {
@@ -4142,6 +4274,10 @@ struct ChatDetailView: View {
 
     @ViewBuilder
     private func messageRow(_ message: Message) -> some View {
+        MessageReplySwipe(enabled: !selectMode, onReply: {
+            quote = message
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        }) {
         EquatableView(content: MessageRow(message: message,
                    mine: mineFor(message),
                    deliveryState: deliveryState(for: message),
@@ -4193,6 +4329,7 @@ struct ChatDetailView: View {
                     if !t.isEmpty { Speaker.shared.speak(t) }
                 }
             )
+        }
             .background(GeometryReader { g in
 
                 let contentFrame = g.frame(in: .global)

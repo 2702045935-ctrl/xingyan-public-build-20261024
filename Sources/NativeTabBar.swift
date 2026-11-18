@@ -106,13 +106,106 @@ private final class CompactDotTabBar: UITabBar {
     }
 
     private var dotViews: [Int: UIView] = [:]
+    private let selectionGlass = UIVisualEffectView(effect: nil)
+    private let selectionTint = UIView()
+    private var previousSelectionIndex: Int?
+    private var previousSelectionWidth: CGFloat = 0
+    private var selectionPillReady = false
     var badgeCount: Int = 0 {
         didSet { setNeedsLayout() }
+    }
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        configureSelectionPill()
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        configureSelectionPill()
+    }
+
+    private func configureSelectionPill() {
+        selectionGlass.isUserInteractionEnabled = false
+        selectionGlass.clipsToBounds = true
+        selectionGlass.layer.cornerRadius = 20
+        selectionGlass.layer.cornerCurve = .continuous
+        selectionGlass.layer.borderWidth = 0.7
+        selectionTint.isUserInteractionEnabled = false
+        selectionGlass.contentView.addSubview(selectionTint)
+        addSubview(selectionGlass)
+        updateSelectionAppearance()
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        if previousTraitCollection?.userInterfaceStyle != traitCollection.userInterfaceStyle {
+            updateSelectionAppearance()
+        }
+    }
+
+    private func updateSelectionAppearance() {
+        let dark = traitCollection.userInterfaceStyle == .dark
+        if #available(iOS 26.0, *) {
+            let glass = UIGlassEffect(style: .regular)
+            glass.isInteractive = false
+            glass.tintColor = UIColor.white.withAlphaComponent(dark ? 0.035 : 0.075)
+            selectionGlass.effect = glass
+        } else {
+            selectionGlass.effect = UIBlurEffect(
+                style: dark ? .systemUltraThinMaterialDark : .systemUltraThinMaterialLight
+            )
+        }
+        selectionTint.backgroundColor = dark
+            ? UIColor.white.withAlphaComponent(0.065)
+            : UIColor.white.withAlphaComponent(0.23)
+        selectionGlass.layer.borderColor = (dark
+            ? UIColor.white.withAlphaComponent(0.16)
+            : UIColor.black.withAlphaComponent(0.055)).cgColor
+    }
+
+    private func layoutSelectionPill() {
+        guard bounds.width > 10,
+              let items,
+              !items.isEmpty else { return }
+        let index = items.firstIndex(where: { $0 === selectedItem }) ?? 0
+        let slot = bounds.width / CGFloat(items.count)
+        let pillWidth = max(48, min(72, slot - 18))
+        let pillFrame = CGRect(
+            x: slot * (CGFloat(index) + 0.5) - pillWidth / 2,
+            y: max(4, (49 - 39) / 2),
+            width: pillWidth,
+            height: 39
+        )
+        bringSubviewToFront(selectionGlass)
+        let shouldAnimate = selectionPillReady
+            && (previousSelectionIndex != index
+                || abs(previousSelectionWidth - bounds.width) > 0.5)
+        selectionGlass.layer.cornerRadius = pillFrame.height / 2
+        selectionTint.frame = selectionGlass.bounds
+        previousSelectionIndex = index
+        previousSelectionWidth = bounds.width
+        if shouldAnimate {
+            UIView.animate(withDuration: 0.32,
+                           delay: 0,
+                           usingSpringWithDamping: 0.84,
+                           initialSpringVelocity: 0.24,
+                           options: [.allowUserInteraction, .beginFromCurrentState]) {
+                self.selectionGlass.frame = pillFrame
+            }
+        } else {
+            selectionGlass.frame = pillFrame
+            selectionPillReady = true
+        }
+        for child in subviews where child is UIControl {
+            bringSubviewToFront(child)
+        }
     }
 
     override func layoutSubviews() {
         super.layoutSubviews()
         updateNativeBackdropVisibility()
+        layoutSelectionPill()
         let slot = bounds.width / 5
         for index in 0..<5 {
             let dot = dotViews[index] ?? {
@@ -371,10 +464,8 @@ struct NativeTabBar: UIViewRepresentable {
             items[4].setTitleTextAttributes(normalTitle, for: .normal)
             items[4].setTitleTextAttributes(selectedMyTitle, for: .selected)
         }
-        if scheme == .dark {
-            appearance.selectionIndicatorImage = UIImage()
-            bar.selectionIndicatorImage = UIImage()
-        }
+        appearance.selectionIndicatorImage = UIImage()
+        bar.selectionIndicatorImage = UIImage()
         if #available(iOS 26.0, *) {
             if #unavailable(iOS 27.0) {
                 let offset = UIOffset(horizontal: 0, vertical: 8)
@@ -419,9 +510,48 @@ struct NativeTabBar: UIViewRepresentable {
 
         func tabBar(_ tabBar: UITabBar, didSelect item: UITabBarItem) {
             guard let index = tabBar.items?.firstIndex(where: { $0 === item }) else { return }
+            if selection.wrappedValue == index {
+                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                Self.scrollVisiblePageToTop(from: tabBar)
+                return
+            }
             selectionFeedback.prepare()
             selectionFeedback.selectionChanged()
             selection.wrappedValue = index
+        }
+
+        private static func scrollVisiblePageToTop(from tabBar: UITabBar) {
+            DispatchQueue.main.async {
+                guard let window = tabBar.window else { return }
+                let viewport = window.bounds
+                let minimumHeight = viewport.height * 0.42
+                var candidates: [(view: UIScrollView, visibleArea: CGFloat)] = []
+
+                func visit(_ view: UIView) {
+                    if let scroll = view as? UIScrollView,
+                       scroll !== tabBar,
+                       !scroll.isDescendant(of: tabBar),
+                       scroll.window === window,
+                       !scroll.isHidden,
+                       scroll.alpha > 0.05,
+                       scroll.bounds.height >= minimumHeight,
+                       scroll.contentSize.height > scroll.bounds.height + 16 {
+                        let frame = scroll.convert(scroll.bounds, to: window)
+                        let visible = frame.intersection(viewport)
+                        if !visible.isNull, visible.height > minimumHeight {
+                            candidates.append((scroll, visible.width * visible.height))
+                        }
+                    }
+                    for child in view.subviews { visit(child) }
+                }
+
+                visit(window)
+                guard let target = candidates.max(by: { $0.visibleArea < $1.visibleArea })?.view else {
+                    return
+                }
+                let top = CGPoint(x: 0, y: -target.adjustedContentInset.top)
+                target.setContentOffset(top, animated: true)
+            }
         }
 
         fileprivate func applyAvatar(in bar: UITabBar, loader: TabAvatarLoader,

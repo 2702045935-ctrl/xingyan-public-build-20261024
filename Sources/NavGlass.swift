@@ -131,15 +131,16 @@ struct ScrollActiveGlassMask: View {
                 ZStack(alignment: .bottom) {
                     NativeGlassHeaderMaterial()
                     base
-                        .opacity(activeBaseOpacity ?? (scheme == .dark ? 0.28 : 0.22))
+                        /* 滚动内容进入标题区后必须真正被遮住。
+                           保留玻璃的通透感，但浅色页面不能再让下面的文字透出来。 */
+                        .opacity(activeBaseOpacity ?? (scheme == .dark ? 0.72 : 0.56))
                     LinearGradient(
                         stops: [
-                            .init(color: .clear, location: 0),
-                            .init(color: .clear, location: 0.80),
-                            .init(color: base.opacity(scheme == .dark ? 0.08 : 0.06),
-                                  location: 0.94),
-                            .init(color: base.opacity(scheme == .dark ? 0.16 : 0.10),
-                                  location: 1)
+                            .init(color: base.opacity(scheme == .dark ? 0.22 : 0.15),
+                                  location: 0),
+                            .init(color: base.opacity(scheme == .dark ? 0.12 : 0.08),
+                                  location: 0.72),
+                            .init(color: .clear, location: 1)
                         ],
                         startPoint: .top,
                         endPoint: .bottom)
@@ -147,7 +148,7 @@ struct ScrollActiveGlassMask: View {
                 .transition(.opacity)
             }
         }
-        .animation(reduceMotion ? nil : .easeOut(duration: active ? 0.12 : 0.20),
+        .animation(reduceMotion ? nil : .easeOut(duration: active ? 0.18 : 0.22),
                    value: active)
         .allowsHitTesting(false)
     }
