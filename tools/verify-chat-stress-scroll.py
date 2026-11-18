@@ -59,4 +59,10 @@ require(
     "stress chat header must expose the visible sequence range against the 100k total",
 )
 
+CHATS = (ROOT / "Sources" / "ChatsView.swift").read_text(encoding="utf-8")
+require(
+    "allowInsertionDuringScroll: false" in CHATS,
+    "stress conversation lists must defer row insertion until scrolling ends",
+)
+
 print("chat-stress-scroll: passed")
