@@ -140,13 +140,18 @@ struct NativeChatsTopEdgeChrome: View {
     var scrolled: CGFloat
 
     var body: some View {
-        if #available(iOS 26.0, *) {
-            NativeScrollEdgeElementBridge(
-                scrollView: { NativeChatListScrollRegistry.shared.chats }
-            )
-        } else {
+        ZStack {
+            /* 与“我的”页共用同一层原生玻璃。系统 scroll-edge 在自定义
+               NavigationStack 顶栏上偶尔不会跨过宿主边界，保留它作为系统
+               交互，再用原生材质兜底，保证遮罩在真机上始终可见。 */
             NativeTopGlassMask(active: scrolled > 0)
+            if #available(iOS 26.0, *) {
+                NativeScrollEdgeElementBridge(
+                    scrollView: { NativeChatListScrollRegistry.shared.chats }
+                )
+            }
         }
+        .ignoresSafeArea(edges: .top)
     }
 }
 

@@ -31,9 +31,11 @@ require(
     "UIScrollEdgeElementContainerInteraction" in NAV
     and "interaction.edge = .top" in NAV
     and "let edgeShape = UIView()" in NAV
+    and "NativeTopGlassMask(active: scrolled > 0)" in NAV
+    and ".ignoresSafeArea(edges: .top)" in NAV
     and "NativeChatsTopEdgeChrome(scrolled: scrolled)" in CHATS
     and "NativeTopGlassMask(active: scrolled > 0)" not in CHATS,
-    "chat header must extend the native scroll edge through its full height",
+    "chat header must extend the native scroll edge and keep a native glass fallback",
 )
 require("NativeTopGlassMask(active: navScrolled > 0)" in CONTACTS
         and "TopGlassBar(" not in CONTACTS
