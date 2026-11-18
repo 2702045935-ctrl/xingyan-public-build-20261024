@@ -39,6 +39,13 @@ require(
     "opening a conversation must use UICollectionView native selection",
 )
 require(
+    "foreground.addGestureRecognizer(row)" in ROW
+    and "openFromSelection()" in ROW
+    and "cell.openFromSelection()" in LIST
+    and "openGuardUntil = now + 0.35" in ROW,
+    "row taps need a native touch fallback with a single-open guard",
+)
+require(
     "collection.isDirectionalLockEnabled" not in LIST,
     "directional lock must not compete with the system horizontal swipe recognizer",
 )

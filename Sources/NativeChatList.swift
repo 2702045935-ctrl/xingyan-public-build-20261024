@@ -367,6 +367,10 @@ where Item.ID: Hashable {
             guard let id = dataSource?.itemIdentifier(for: indexPath),
                   let entry = lookup[id],
                   let configuration = nativeRow?(entry) else { return }
+            if let cell = collectionView.cellForItem(at: indexPath) as? NativeChatRowCell,
+               cell.openFromSelection() {
+                return
+            }
             configuration.onOpen()
         }
 
