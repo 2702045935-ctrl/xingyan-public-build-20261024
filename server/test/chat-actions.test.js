@@ -185,6 +185,17 @@ async function main() {
         '通过好友后好友数量没有各增加 1');
     }
 
+    response = await call(base, bob.cookie, 'POST', '/api/moments', {
+      content: '好友生活圈可见性回归',
+      images: []
+    });
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    const friendMomentId = response.data.moment.id;
+    response = await call(base, alice.cookie, 'GET', '/api/moments?limit=20');
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    assert.ok((response.data.moments || []).some((moment) => moment.id === friendMomentId),
+      '好友发布的动态必须出现在生活圈：' + JSON.stringify(response.data));
+
     response = await call(base, alice.cookie, 'GET', '/api/chats');
     assert.equal(response.status, 200, JSON.stringify(response.data));
     const redDotBaseline = ((response.data.chats || [])

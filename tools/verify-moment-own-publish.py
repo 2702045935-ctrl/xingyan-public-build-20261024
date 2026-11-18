@@ -41,4 +41,12 @@ require(
     "liked-user avatars must overlap as one connected stack",
 )
 
+SERVER = (ROOT / "server" / "server.js").read_text(encoding="utf-8")
+require(
+    "async function ensureMomentFriendIndex" in SERVER
+    and "syncFriendshipCacheFromOwners([userId], 650)" in SERVER
+    and "await ensureMomentFriendIndex(user.id);" in SERVER,
+    "Moments reads must refresh friends from shard owners before visibility filtering",
+)
+
 print("moment-own-publish: passed")

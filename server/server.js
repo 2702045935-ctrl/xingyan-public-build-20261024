@@ -8159,7 +8159,7 @@ async function lookupRemoteUserByUsername(username) {
   return null;
 }
 
-async function syncFriendshipCacheFromOwners(userIds) {
+async function syncFriendshipCacheFromOwners(userIds, timeoutMs = 1800) {
   const ids = Array.from(new Set((userIds || []).map(String).filter(Boolean)));
   if (!ids.length) return;
   const results = await Promise.all(chatOwnerPorts.map(async (port) => {
@@ -8168,7 +8168,7 @@ async function syncFriendshipCacheFromOwners(userIds) {
       planHash: chatRoutePlan && chatRoutePlan.hash,
       fileSha256: chatRoutePlan && chatRoutePlan.fileHash,
       userIds: ids
-    }, 1800);
+    }, timeoutMs);
     return result.payload && result.payload.ok && result.payload.data
       && Array.isArray(result.payload.data.friendships)
       ? result.payload.data.friendships : [];
@@ -8432,6 +8432,16 @@ setTimeout(() => {
 setInterval(() => {
   syncFriendshipCacheFromOwners(db.users.map((row) => row && row.id)).catch(() => {});
 }, 60000).unref();
+const momentFriendRefreshAt = new Map();
+async function ensureMomentFriendIndex(userId) {
+  if (!userId) return;
+  const nowTs = Date.now();
+  if (nowTs - Number(momentFriendRefreshAt.get(userId) || 0) < 20000) return;
+  momentFriendRefreshAt.set(userId, nowTs);
+  if (momentFriendRefreshAt.size > 3000) momentFriendRefreshAt.clear();
+  await syncFriendshipCacheFromOwners([userId], 650);
+  forgetFriendSetCache(userId);
+}
 setTimeout(() => { syncUserCacheFromOwners().catch(() => {}); }, 1000).unref();
 setInterval(() => { syncUserCacheFromOwners().catch(() => {}); }, 60000).unref();
 
@@ -23065,6 +23075,7 @@ async function handleApi(req, res, pathname, query) {
 
   if (parts[0] === 'moments' && method === 'GET' && parts.length === 1) {
     refreshMomentsFromDisk(false);
+    await ensureMomentFriendIndex(user.id);
     const limit = Math.min(50, Math.max(1, Number(query.get('limit')) || 20));
     const before = str(query.get('before'), 40);
     const beforeId = str(query.get('beforeId'), 40);
