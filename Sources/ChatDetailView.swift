@@ -437,8 +437,8 @@ private struct ChatHeaderGlassGroup<Content: View>: View {
                     NativeGlassHeaderMaterial()
                     Capsule(style: .continuous)
                         .fill(lightInk
-                              ? Color.black.opacity(0.18)
-                              : Color.white.opacity(0.30))
+                              ? Color.black.opacity(0.055)
+                              : Color.white.opacity(0.075))
                 }
                 .clipShape(Capsule(style: .continuous))
             }
@@ -446,13 +446,13 @@ private struct ChatHeaderGlassGroup<Content: View>: View {
                 Capsule(style: .continuous)
                     .stroke(
                         lightInk
-                            ? Color.white.opacity(0.22)
-                            : Color.black.opacity(0.075),
-                        lineWidth: 0.7
+                            ? Color.white.opacity(0.18)
+                            : Color.black.opacity(0.05),
+                        lineWidth: 0.55
                     )
             }
-            .shadow(color: Color.black.opacity(lightInk ? 0.20 : 0.08),
-                    radius: 10, x: 0, y: 4)
+            .shadow(color: Color.black.opacity(lightInk ? 0.11 : 0.045),
+                    radius: 6, x: 0, y: 2)
     }
 }
 
@@ -2256,14 +2256,14 @@ struct ChatDetailView: View {
                                                       preset: ChatTheme.preset,
                                                       themeVersion: chatTheme.version)
                                 NativeGlassHeaderMaterial()
-                                    .opacity(0.78)
+                                    .opacity(0.40)
                                 Rectangle()
                                     .fill(topBarUsesLightInk
-                                          ? Color.black.opacity(0.10)
-                                          : Color.white.opacity(0.07))
+                                          ? Color.black.opacity(0.045)
+                                          : Color.white.opacity(0.035))
                                 LinearGradient(
                                     colors: [
-                                        Color.white.opacity(topBarUsesLightInk ? 0.08 : 0.13),
+                                        Color.white.opacity(topBarUsesLightInk ? 0.035 : 0.065),
                                         Color.clear
                                     ],
                                     startPoint: .top,
