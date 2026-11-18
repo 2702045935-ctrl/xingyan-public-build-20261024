@@ -189,6 +189,9 @@ async function main() {
     assert.equal(response.status, 200, JSON.stringify(response.data));
     const redDotBaseline = ((response.data.chats || [])
       .find((chat) => chat.id === directId) || {}).unread || 0;
+    response = await call(base, alice.cookie, 'GET', '/api/badge-counts');
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    const redDotTotalBaseline = response.data.unreadTotal || 0;
 
     response = await call(base, bob.cookie, 'POST',
       '/api/chats/' + directId + '/messages',
@@ -205,6 +208,9 @@ async function main() {
     redDotChat = (response.data.recentChats || []).find((chat) => chat.id === directId);
     assert.equal(redDotChat && redDotChat.unread, redDotBaseline + 1,
       'badge-counts 没有返回最新会话红点：' + JSON.stringify(response.data));
+    assert.equal(response.data.unreadTotal, redDotTotalBaseline + 1,
+      '桌面角标总数没有随新消息增加：' + JSON.stringify(response.data));
+    const redDotTotalAfterMessage = response.data.unreadTotal;
 
     response = await call(base, alice.cookie, 'POST',
       '/api/chats/' + directId + '/read', {});
@@ -213,6 +219,9 @@ async function main() {
     redDotChat = (response.data.recentChats || []).find((chat) => chat.id === directId);
     assert.equal(redDotChat && redDotChat.unread, 0,
       '标为已读后 badge-counts 红点没有清零：' + JSON.stringify(response.data));
+    assert.ok(response.data.unreadTotal < redDotTotalAfterMessage,
+      '标为已读后桌面角标总数没有减少：' + JSON.stringify(response.data));
+    const redDotTotalAfterRead = response.data.unreadTotal;
 
     response = await call(base, bob.cookie, 'POST',
       '/api/chats/' + directId + '/messages',
@@ -222,6 +231,8 @@ async function main() {
     redDotChat = (response.data.recentChats || []).find((chat) => chat.id === directId);
     assert.equal(redDotChat && redDotChat.unread, 1,
       '已读后再次收到消息红点没有恢复：' + JSON.stringify(response.data));
+    assert.equal(response.data.unreadTotal, redDotTotalAfterRead + 1,
+      '已读后再次收到消息桌面角标没有恢复：' + JSON.stringify(response.data));
 
     response = await call(base, alice.cookie, 'POST', '/api/friends/meta', {
       userId: bob.user.id,

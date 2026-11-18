@@ -8657,8 +8657,11 @@ function pushLog(row) {
 /** 某个人所有会话的未读总数 —— 推到手机上就是「桌面图标右上角那个数字」 */
 function unreadTotalOf(userId) {
   let n = 0;
-  chatsOf(userId).forEach((c) => { n += unreadCount(userId, c); });
-  return n;
+  chatsOf(userId).forEach((c) => {
+    if ((c.mutedFor || []).includes(userId)) return;
+    n += unreadCount(userId, c);
+  });
+  return Math.min(999, Math.max(0, n));
 }
 
 function pushPreview(kind, content) {
@@ -8705,7 +8708,8 @@ async function pushToUser(userId, opts) {
   if (!devices.length) return { sent: 0, reason: 'no-device' };
   let sent = 0;
   /* 桌面图标上的红点数字：不传就按「当前未读总数」算，和微信一样 */
-  const badge = typeof opts.badge === 'number' ? opts.badge : unreadTotalOf(userId);
+  const badge = Math.min(999, Math.max(0,
+    typeof opts.badge === 'number' ? opts.badge : unreadTotalOf(userId)));
   for (const d of devices) {
     const payload = {
       aps: Object.assign({
@@ -18045,6 +18049,7 @@ async function handleApi(req, res, pathname, query) {
     ok(res, {
       friendRequests: pendingFriendRequests(user.id),
       momentUnread: momentUnread(user.id),
+      unreadTotal: unreadTotalOf(user.id),
       recentChats
     });
     return;

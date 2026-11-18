@@ -1542,7 +1542,7 @@ struct ChatsView: View {
         return unreadTotal > 0 ? "\(chatListBrandTitle)(\(unreadTotal))" : chatListBrandTitle
     }
 
-    private var unreadTotal: Int { app.chats.reduce(0) { $0 + ($1.unread ?? 0) } }
+    private var unreadTotal: Int { app.unreadForIcon }
 
     private var chatTopTitle: String {
         if Lang.isEnglish { return "Chats" }

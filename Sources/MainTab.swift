@@ -15,8 +15,7 @@ struct MainTabView: View {
     @ObservedObject private var mallSheet = MallSheet.shared
 
     private var unreadTotal: Int {
-
-        app.chats.reduce(0) { $0 + (($1.muted == true) ? 0 : ($1.unread ?? 0)) }
+        app.unreadForIcon
     }
 
     private var mutedOnlyUnread: Bool {

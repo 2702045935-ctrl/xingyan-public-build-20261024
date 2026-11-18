@@ -14,6 +14,7 @@ def require(condition: bool, message: str) -> None:
 
 
 require("var recentChats: [Chat]?" in API
+        and "var unreadTotal: Int?" in API
         and "recentChats: [Chat])?" in API,
         "badge polling must decode recent chat snapshots")
 require("let recent = mergeServerChats(d.recentChats)" in APP
@@ -22,6 +23,13 @@ require("let recent = mergeServerChats(d.recentChats)" in APP
         "foreground badge polling must reconcile partial recent snapshots without dropping chats")
 require(".slice(0, 20)" in SERVER and ".map((chat) => chatSummary(chat, user.id))" in SERVER,
         "badge-counts must return a bounded recent chat snapshot")
+require(
+    "unreadTotal: unreadTotalOf(user.id)" in SERVER
+    and "if ((c.mutedFor || []).includes(userId)) return;" in SERVER
+    and "authoritativeUnreadTotal = d.unreadTotal" in APP
+    and "app.unreadForIcon" in (ROOT / "Sources" / "MainTab.swift").read_text(encoding="utf-8"),
+    "foreground and APNs badges must share the same muted-aware total",
+)
 require(
     "now.timeIntervalSince(stamp) >= 2" in APP
     and "out.unread = server.unread" in APP
