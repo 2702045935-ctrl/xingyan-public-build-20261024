@@ -727,37 +727,49 @@ struct EmojiPanel: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 0) {
-                        tabButton(0, Tr("搜索"), "magnifyingglass")
-                        glyphTabButton(1, Tr("笑脸"), "😊")
-                        glyphTabButton(2, Tr("赞"), "👍")
-                        glyphTabButton(3, Tr("其他表情包"), "🧩")
-                        ForEach(packTabs.indices, id: \.self) { offset in
-                            packTabButton(4 + offset, packTabs[offset])
-                        }
-                        Button {
-                            onCaptureSticker?()
-                        } label: {
-                            VStack(spacing: 2) {
-                                Image(systemName: "camera.fill")
-                                    .font(.system(size: L.v(18, 5.0, 20), weight: .semibold))
-                                    .frame(width: 32, height: 32)
-                                Capsule()
-                                    .fill(Color.clear)
-                                    .frame(width: 12, height: 2)
+                ScrollViewReader { tabProxy in
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 0) {
+                            tabButton(0, Tr("搜索"), "magnifyingglass").id(0)
+                            glyphTabButton(1, Tr("笑脸"), "😊").id(1)
+                            glyphTabButton(2, Tr("赞"), "👍").id(2)
+                            glyphTabButton(3, Tr("其他表情包"), "🧩").id(3)
+                            ForEach(packTabs.indices, id: \.self) { offset in
+                                packTabButton(4 + offset, packTabs[offset])
+                                    .id(4 + offset)
                             }
-                            .foregroundStyle(C.label)
-                            .frame(width: 56, height: 44)
-                            .contentShape(Rectangle())
+                            Button {
+                                onCaptureSticker?()
+                            } label: {
+                                VStack(spacing: 2) {
+                                    Image(systemName: "camera.fill")
+                                        .font(.system(size: L.v(18, 5.0, 20), weight: .semibold))
+                                        .frame(width: 32, height: 32)
+                                    Capsule()
+                                        .fill(Color.clear)
+                                        .frame(width: 12, height: 2)
+                                }
+                                .foregroundStyle(C.label)
+                                .frame(width: 56, height: 44)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(Tr("拍摄表情"))
+                            if let first = singleStickers.first {
+                                singleTabButton(singleTabIndex, Tr("我添加的表情"), first)
+                                    .id(singleTabIndex)
+                            }
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(Tr("拍摄表情"))
-                        if let first = singleStickers.first {
-                            singleTabButton(singleTabIndex, Tr("我添加的表情"), first)
+                        .padding(.horizontal, 8)
+                    }
+                    .onChange(of: tab) { value in
+                        withAnimation(.easeOut(duration: 0.18)) {
+                            tabProxy.scrollTo(value, anchor: .center)
                         }
                     }
-                    .padding(.horizontal, 8)
+                    .onAppear {
+                        tabProxy.scrollTo(tab, anchor: .center)
+                    }
                 }
 
                 Button {

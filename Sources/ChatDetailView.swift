@@ -5336,16 +5336,10 @@ struct ChatDetailView: View {
                 .frame(height: composerInputHeight)
                 .background {
                     ZStack {
-                        GlassBackground(
-                            shape: composerFieldShape,
-                            opacity: scheme == .dark ? 0.94 : 0.97,
-                            edgeAlpha: scheme == .dark ? 0.12 : 0.18,
-                            seed: 0.23,
-                            native: true,
-                            tint: composerUsesLightInk
-                                ? Color.black.opacity(0.10)
-                                : nil
-                        )
+                        NativeGlassHeaderMaterial()
+                        composerFieldShape
+                            .fill(Color(uiColor: .secondarySystemBackground)
+                                .opacity(scheme == .dark ? 0.10 : 0.16))
                         if recorder.recording {
                             composerFieldShape.fill(
                                 recorder.willCancel
@@ -5354,6 +5348,7 @@ struct ChatDetailView: View {
                             )
                         }
                     }
+                    .clipShape(composerFieldShape)
                 }
                 .overlay {
                     composerFieldShape

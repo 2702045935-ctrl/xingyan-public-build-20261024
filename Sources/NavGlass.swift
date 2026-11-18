@@ -264,7 +264,7 @@ struct NativeGlassCircleBackground: View {
         #if compiler(>=6.2)
         if #available(iOS 26.0, *), !reduceTransparency {
             Color.clear
-                .glassEffect(.regular, in: shape)
+                .glassEffect(.regular.interactive(), in: shape)
                 .overlay(shape.stroke(Color.white.opacity(0.20), lineWidth: 0.7))
                 .shadow(color: Color.black.opacity(0.10), radius: 7, y: 3)
                 .allowsHitTesting(false)

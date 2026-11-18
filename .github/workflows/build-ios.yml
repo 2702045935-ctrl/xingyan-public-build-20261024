@@ -86,6 +86,7 @@ jobs:
           python3 tools/verify-delete-friend-navigation.py
           python3 tools/verify-plus-panel.py
           python3 tools/verify-composer-placeholder.py
+          python3 tools/verify-emoji-category-swipe.py
           python3 tools/verify-registration-phone-only.py
           python3 tools/verify-line-registration.py
           python3 tools/verify-line-onboarding.py

@@ -13,8 +13,8 @@ def require(condition: bool, message: str) -> None:
 
 require(
     "private var composerFieldShape: RoundedRectangle" in CHAT
-    and "shape: composerFieldShape" in CHAT
-    and "native: true" in CHAT,
+    and "NativeGlassHeaderMaterial()" in CHAT
+    and ".clipShape(composerFieldShape)" in CHAT,
     "composer field must use the native Liquid Glass surface",
 )
 require(

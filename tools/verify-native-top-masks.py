@@ -18,6 +18,8 @@ require("struct NativeTopGlassMask" in NAV
         and "NativeGlassHeaderMaterial()" in NAV
         and "accessibilityReduceTransparency" in NAV,
         "shared top mask must use the iOS native glass with accessibility fallback")
+require(".glassEffect(.regular.interactive(), in: shape)" in NAV,
+        "tappable glass controls must use native interactive liquid glass")
 require("NativeTopGlassMask(active: scrolled > 0)" in CHATS
         and "ScrollActiveGlassMask" not in CHATS,
         "chat list must use the shared native top mask")
