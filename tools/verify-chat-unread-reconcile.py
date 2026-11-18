@@ -15,7 +15,7 @@ def require(condition: bool, message: str) -> None:
 
 require("var recentChats: [Chat]?" in API
         and "var unreadTotal: Int?" in API
-        and "recentChats: [Chat])?" in API,
+        and "unreadTotal: Int?, recentChats: [Chat])?" in API,
         "badge polling must decode recent chat snapshots")
 require("let recent = mergeServerChats(d.recentChats)" in APP
         and "let recentIds = Set(d.recentChats.map(\\.id))" in APP
