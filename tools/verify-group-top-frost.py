@@ -4,6 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CHAT = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
+CHAT_FLAT = " ".join(CHAT.split())
 
 
 def require(condition: bool, message: str) -> None:
@@ -17,7 +18,7 @@ require(
     "group chats must use the native glass material in the top mask",
 )
 require(
-    "NativeGlassHeaderMaterial()\n                                .opacity(0.78)" in CHAT,
+    "NativeGlassHeaderMaterial() .opacity(0.78)" in CHAT_FLAT,
     "the group top mask must remain subtly translucent",
 )
 require(
