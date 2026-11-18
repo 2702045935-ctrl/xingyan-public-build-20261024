@@ -63,10 +63,10 @@ require(
     "only the avatar may retain a separate tap recognizer",
 )
 require(
-    "suppressSelectionAfterSwipe" in ROW
+    "swipeSelectionGuardUntil" in ROW
     and "consumeSelectionAfterSwipe()" in ROW
     and "consumeSelectionAfterSwipe()" in LIST,
-    "a recognized swipe must consume the collection selection callback",
+    "a recognized swipe must consume only its short-lived selection callback",
 )
 require(
     "pan.cancelsTouchesInView = true" in ROW,
@@ -76,6 +76,10 @@ require(
     "override func touchesBegan" in ROW
     and "must not eat this fresh row tap" in ROW,
     "a new touch must clear stale swipe-selection suppression",
+)
+require(
+    "Date.timeIntervalSinceReferenceDate + 0.45" in ROW,
+    "swipe-selection suppression must expire instead of blocking later taps",
 )
 require(
     "tap.require(toFail: pan)" in CHATS

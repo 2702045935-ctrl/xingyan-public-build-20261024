@@ -93,7 +93,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
     private var startOffset: CGFloat = 0
     private var latestRawOffset: CGFloat = 0
     private var dragDirection: CGFloat = 0
-    private var suppressSelectionAfterSwipe = false
+    private var swipeSelectionGuardUntil: TimeInterval = 0
     private var actionsSignature = ""
     private var avatarSignature = ""
     private var accessibilitySignature = ""
@@ -138,7 +138,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         startOffset = 0
         latestRawOffset = 0
         dragDirection = 0
-        suppressSelectionAfterSwipe = false
+        swipeSelectionGuardUntil = 0
         pinActions.alpha = 1
         pinActions.transform = .identity
         pinActions.isHidden = true
@@ -665,7 +665,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         super.touchesBegan(touches, with: event)
         // A new touch starts a new intent. Any prior swipe whose selection
         // callback never arrived must not eat this fresh row tap.
-        suppressSelectionAfterSwipe = false
+        swipeSelectionGuardUntil = 0
         setPressed(true)
     }
 
@@ -707,7 +707,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         let velocity = gesture.velocity(in: foreground).x
         switch gesture.state {
         case .began:
-            suppressSelectionAfterSwipe = true
+            swipeSelectionGuardUntil = Date.timeIntervalSinceReferenceDate + 0.45
             freezeEnclosingScroll()
             startOffset = offset
             latestRawOffset = offset
@@ -818,7 +818,10 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
 
     @discardableResult
     func dismissOpenSwipeActions() -> Bool {
-        guard offset != 0 else { return false }
+        guard abs(offset) > 0.75 else {
+            if offset != 0 { open(offset: 0, animated: false) }
+            return false
+        }
         closeActions()
         return true
     }
@@ -827,9 +830,9 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
     /// touch-up that ended a swipe. Consume that callback once so swiping never
     /// opens the chat.
     func consumeSelectionAfterSwipe() -> Bool {
-        guard suppressSelectionAfterSwipe else { return false }
-        suppressSelectionAfterSwipe = false
-        return true
+        let active = swipeSelectionGuardUntil >= Date.timeIntervalSinceReferenceDate
+        swipeSelectionGuardUntil = 0
+        return active
     }
 
     @objc private func handleSwipeElsewhere(_ note: Notification) {
