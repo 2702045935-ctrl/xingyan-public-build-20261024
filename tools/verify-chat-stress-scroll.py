@@ -45,5 +45,9 @@ require(
     "flatMap(Int.init) ?? 8" in CONFIG,
     "the realistic single-group stress fixture must default to an 8-member family group",
 )
+require(
+    'return "已加载 \\(messages.count) · \\(first)–\\(last) / \\(MessageStressFixture.count)"' in CHAT,
+    "stress chat header must expose the visible sequence range against the 100k total",
+)
 
 print("chat-stress-scroll: passed")

@@ -1280,6 +1280,10 @@ struct ChatDetailView: View {
         if !peerTyping.isEmpty {
             return isGroup ? "有人正在输入…" : "对方正在输入…"
         }
+        if MessageStressFixture.isStressChat(chat.id),
+           let first = messages.first?.seq, let last = messages.last?.seq {
+            return "已加载 \(messages.count) · \(first)–\(last) / \(MessageStressFixture.count)"
+        }
         if isGroup {
             let count = liveChat.memberCount ?? (liveChat.memberIds?.count ?? 0)
             return count > 0 ? "\(count) 位成员" : ""
