@@ -63,7 +63,8 @@ def main() -> None:
             raise AssertionError(f"{filename}: stress fixture materializes its full message history")
 
     chat_detail = CHAT_DETAIL.read_text(encoding="utf-8")
-    if "LocalPersistence.saveOutbox(chat.id, outbox)" not in chat_detail:
+    if "persistOutboxAfterFrame()" not in chat_detail \
+            or "LocalPersistence.saveOutbox(chatId, snapshot)" not in chat_detail:
         raise AssertionError("chat send outbox is not persisted through SQLite")
     if "LocalPersistence.loadOutbox(chat.id)" not in chat_detail:
         raise AssertionError("chat send outbox is not restored from SQLite")
