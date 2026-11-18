@@ -4877,10 +4877,12 @@ struct ChatDetailView: View {
         min(21, composerInputHeight / 2)
     }
 
+    private var composerFieldShape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: composerFieldRadius, style: .continuous)
+    }
+
     private var composerFieldBorder: Color {
-        composerUsesLightInk
-            ? Color.clear
-            : Color.black.opacity(0.045)
+        Color.primary.opacity(0.085)
     }
 
     private var draftImagesBar: some View {
@@ -5306,21 +5308,14 @@ struct ChatDetailView: View {
                 .padding(.trailing, composerCanExpand ? 28 : 0)
                 .frame(height: composerInputHeight)
                 .background {
-                    let fieldShape = RoundedRectangle(cornerRadius: composerFieldRadius,
-                                                      style: .continuous)
                     ZStack {
-                        GlassBackground(
-                            shape: fieldShape,
-                            opacity: 0.90,
-                            edgeAlpha: 0.22,
-                            seed: 0.23,
-                            native: true,
-                            tint: composerUsesLightInk
-                                ? Color.black.opacity(0.24)
-                                : Color.clear
+                        composerFieldShape.fill(.regularMaterial)
+                        composerFieldShape.fill(
+                            Color(uiColor: .secondarySystemBackground)
+                                .opacity(scheme == .dark ? 0.34 : 0.52)
                         )
                         if recorder.recording {
-                            fieldShape.fill(
+                            composerFieldShape.fill(
                                 recorder.willCancel
                                     ? Color.red.opacity(0.12)
                                     : Color.white.opacity(0.08)
@@ -5329,8 +5324,7 @@ struct ChatDetailView: View {
                     }
                 }
                 .overlay {
-                    RoundedRectangle(cornerRadius: composerFieldRadius,
-                                     style: .continuous)
+                    composerFieldShape
                         .stroke(composerFieldBorder, lineWidth: 0.6)
                 }
                 .overlay(alignment: .trailing) {
