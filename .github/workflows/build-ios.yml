@@ -302,6 +302,11 @@ jobs:
           openssl enc -aes-256-cbc -pbkdf2 -salt \
             -in CHRISChat-unsigned.ipa -out Luchat.ipa.enc \
             -pass pass:"$IPA_PASSWORD"
+          openssl enc -d -aes-256-cbc -pbkdf2 \
+            -in Luchat.ipa.enc -out Luchat.ipa \
+            -pass pass:"$IPA_PASSWORD"
+          test "$(head -c 2 Luchat.ipa)" = "PK"
+          sha256sum CHRISChat-unsigned.ipa Luchat.ipa Luchat.ipa.enc
           ls -lh Luchat.ipa.enc
         env:
           IPA_PASSWORD: ${{ secrets.IPA_PASSWORD }}
@@ -313,7 +318,9 @@ jobs:
         continue-on-error: true
         with:
           name: CHRISChat-unsigned-ipa
-          path: Luchat.ipa.enc
+          path: |
+            Luchat.ipa
+            Luchat.ipa.enc
           if-no-files-found: error
           retention-days: 1
 
@@ -326,9 +333,9 @@ jobs:
           set -e
           TAG="ipa-$(date -u +%Y%m%d-%H%M%S)"
           TITLE="iOS 包 $(git log -1 --pretty=%s | cut -c1-60)"
-          gh release create "$TAG" Luchat.ipa.enc \
+          gh release create "$TAG" Luchat.ipa Luchat.ipa.enc \
             --title "$TITLE" \
-            --notes "自动出包（commit $(git rev-parse --short HEAD)）。文件是加密的 Luchat.ipa.enc，解密见 README / 怎么出包.md。" \
+            --notes "自动出包（commit $(git rev-parse --short HEAD)）。Luchat.ipa 可直接签名安装；Luchat.ipa.enc 为加密备份。" \
             --repo "$GITHUB_REPOSITORY"
           gh release list --repo "$GITHUB_REPOSITORY" --limit 100 --json tagName -q '.[].tagName' \
             | tail -n +4 | while read -r t; do gh release delete "$t" --yes --repo "$GITHUB_REPOSITORY" || true; done
