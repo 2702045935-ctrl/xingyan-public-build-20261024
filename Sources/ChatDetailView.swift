@@ -3141,6 +3141,7 @@ struct ChatDetailView: View {
                     actionMessage = nil
                     atBottom = false
                     wasAtBottom = false
+                    if isGroup { autoLoadOlder() }
                     if !initialScrollReady {
                         initialScrollTask?.cancel()
                         initialScrollTask = nil
@@ -3159,7 +3160,7 @@ struct ChatDetailView: View {
                 }
             },
             onScrollOffset: { y in
-                if isGroup, y < 1600 {
+                if isGroup, y < 4200 {
                     autoLoadOlder()
                 }
             },
@@ -6945,7 +6946,7 @@ struct ChatDetailView: View {
                 var olderIds = Set<String>()
                 more = true
                 /* 首屏之外始终保持一页预取；只有预取尚未完成时才现场补拉。 */
-                let target = isGroup ? 40 : 200
+                let target = isGroup ? 160 : 200
                 let maxPages = isGroup ? 1 : 3
                 for _ in 0..<maxPages {
                     let page = try await API.shared.messages(
@@ -7005,7 +7006,7 @@ struct ChatDetailView: View {
     private func scheduleOlderPrefetch() {
         guard hasOlder, olderPrefetch.isEmpty, olderPrefetchTask == nil,
               let seq = messages.first?.seq, seq > 0 else { return }
-        let target = isGroup ? 40 : 200
+        let target = isGroup ? 160 : 200
         let known = Set(messages.map(\.id))
         let token = UUID()
         olderPrefetchToken = token

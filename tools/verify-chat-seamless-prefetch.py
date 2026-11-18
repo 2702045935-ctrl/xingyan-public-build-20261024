@@ -24,7 +24,7 @@ require(
     "foreground paging must reuse an in-flight prefetch instead of waiting twice",
 )
 require(
-    "if isGroup, y < 1600" in CHAT,
+    "if isGroup, y < 4200" in CHAT,
     "large chats must prefetch before the user reaches the first row",
 )
 require(

@@ -292,14 +292,32 @@ where Item.ID: Hashable {
                 guard let nextPosition = nextPositions[id] else { return false }
                 return nextPosition > oldPosition
             }
-            let nextSignatures = Dictionary(uniqueKeysWithValues: next.map {
-                ($0.id, signature($0))
-            })
-            if !order.isEmpty, !isPrepending,
-               collection.isDragging || collection.isDecelerating {
+            let nextIDs = Set(nextOrder)
+            var nextSignatures = signatures.filter { nextIDs.contains($0.key) }
+            if isPrepending, !order.isEmpty {
+                let known = Set(order)
+                let firstExisting = nextOrder.firstIndex { known.contains($0) }
+                    ?? nextOrder.startIndex
+                let recalcEnd = nextOrder.index(
+                    firstExisting,
+                    offsetBy: min(8, nextOrder.count - firstExisting),
+                    limitedBy: nextOrder.endIndex
+                ) ?? nextOrder.endIndex
+                let recalc = Set(nextOrder[firstExisting..<recalcEnd])
+                for item in next where nextSignatures[item.id] == nil
+                    || recalc.contains(item.id) {
+                    nextSignatures[item.id] = signature(item)
+                }
+            } else {
+                nextSignatures = Dictionary(uniqueKeysWithValues: next.map {
+                    ($0.id, signature($0))
+                })
+            }
+            if !order.isEmpty,
+               collection.isDragging || collection.isTracking || collection.isDecelerating {
                 let known = Set(order)
                 let commonOrder = nextOrder.filter { known.contains($0) }
-                if commonOrder != order {
+                if isPrepending || commonOrder != order || nextSignatures != signatures {
                     pending = next
                     return
                 }

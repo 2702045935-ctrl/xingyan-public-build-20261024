@@ -38,8 +38,9 @@ require(
     "the prepend and bounded message window must be committed atomically",
 )
 require(
-    "!isPrepending,\n               collection.isDragging" in LIST,
-    "an exact-anchor prepend must stay live even when the same snapshot trims the tail",
+    "collection.isDragging || collection.isTracking || collection.isDecelerating" in LIST
+    and "if isPrepending || commonOrder != order || nextSignatures != signatures" in LIST,
+    "prepend snapshots must be deferred until active touch motion ends",
 )
 
 print("chat-prepend-anchor: passed")
