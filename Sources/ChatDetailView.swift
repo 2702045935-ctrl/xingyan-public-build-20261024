@@ -4067,6 +4067,11 @@ struct ChatDetailView: View {
                 let contentFrame = g.frame(in: .global)
                 Color.clear
                     .onAppear { frameBox.frames[message.id] = contentFrame }
+                    .onChange(of: contentFrame) { f in
+                        if !ChatScrollHandle.shared.moving {
+                            frameBox.frames[message.id] = f
+                        }
+                    }
                     .onChange(of: frameCaptureTick) { _ in
                         frameBox.frames[message.id] = contentFrame
                     }
@@ -4107,6 +4112,11 @@ struct ChatDetailView: View {
             let contentFrame = g.frame(in: .global)
             Color.clear
                 .onAppear { frameBox.frames[message.id] = contentFrame }
+                .onChange(of: contentFrame) { f in
+                    if !ChatScrollHandle.shared.moving {
+                        frameBox.frames[message.id] = f
+                    }
+                }
                 .onChange(of: frameCaptureTick) { _ in
                     frameBox.frames[message.id] = contentFrame
                 }
