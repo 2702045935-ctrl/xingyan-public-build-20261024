@@ -1380,6 +1380,7 @@ struct MomentsView: View {
     @State private var draft = ""
     @State private var picked: [UIImage] = []
     @State private var uploading = false
+    @State private var publishError = ""
     @State private var commentsSheet: Moment?
     @State private var likesSnapshot: [MomentLike] = []
     @State private var showLikes = false
@@ -2256,6 +2257,27 @@ struct MomentsView: View {
                 .disabled(!canPublish)
             }
 
+            if !publishError.isEmpty {
+                HStack(alignment: .top, spacing: 9) {
+                    Image(systemName: "exclamationmark.circle.fill")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(C.red)
+                    Text(publishError)
+                        .font(pf(13.5))
+                        .foregroundColor(C.label)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 11)
+                .background(Color.dyn(0xFFF2F2, 0x2A1518))
+                .overlay(alignment: .bottom) {
+                    Rectangle()
+                        .fill(C.hairline)
+                        .frame(height: 0.5)
+                }
+            }
+
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
 
@@ -2784,6 +2806,7 @@ struct MomentsView: View {
 
     private func publish() {
         uploading = true
+        publishError = ""
         publishProgress = 0.02
         publishStatus = pickedVideo == nil
             ? Tr("正在准备图片…")
@@ -2839,7 +2862,13 @@ struct MomentsView: View {
                     await remindFriends()
                     app.show(Tr("已发表"))
                 } catch {
-                    app.show((error as? APIError)?.errorDescription ?? "视频发表失败")
+                    let message = (error as? APIError)?.errorDescription ?? "视频发表失败"
+                    await MainActor.run {
+                        publishError = message
+                        uploading = false
+                    }
+                    app.show(message)
+                    return
                 }
                 resetComposer()
                 await reload()
@@ -2914,7 +2943,13 @@ struct MomentsView: View {
                 }
                 app.show(Tr("已发表"))
             } catch {
-                app.show((error as? APIError)?.errorDescription ?? "发表失败")
+                let message = (error as? APIError)?.errorDescription ?? "发表失败"
+                await MainActor.run {
+                    publishError = message
+                    uploading = false
+                }
+                app.show(message)
+                return
             }
             resetComposer()
             await reload()
@@ -2950,6 +2985,7 @@ struct MomentsView: View {
         draftLocation = ""
         remindIds = []
         uploading = false
+        publishError = ""
         posting = false
         tapLockUntil = Date().addingTimeInterval(0.6)
     }

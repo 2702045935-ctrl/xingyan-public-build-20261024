@@ -26,6 +26,9 @@ struct MomentFeedCard: View {
     private var showingLiked: Bool { likedOverride ?? (moment.likedByMe == true) }
     private let cardInset: CGFloat = 10
     private let contentInset: CGFloat = 16
+    private var socialSurface: Color {
+        Color.dyn(0xF7F7F9, 0x121214)
+    }
     private var mediaWidth: CGFloat {
         max(1, availableWidth - (cardInset + contentInset) * 2)
     }
@@ -357,7 +360,7 @@ struct MomentFeedCard: View {
             .padding(.vertical, 11)
             .background(
                 RoundedRectangle(cornerRadius: 15, style: .continuous)
-                    .fill(Color.dyn(0xF7F7F9, 0x121214))
+                    .fill(socialSurface)
             )
             .overlay {
                 RoundedRectangle(cornerRadius: 15, style: .continuous)
@@ -371,36 +374,21 @@ struct MomentFeedCard: View {
             onOpenLikes(stableOrderedLikes)
         } label: {
             HStack(spacing: 8) {
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color(hex: 0xFF6985), Color(hex: 0xF33D5E)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                    Image(systemName: "heart.fill")
-                        .font(.system(size: 10.5, weight: .bold))
-                        .foregroundColor(.white)
-                }
-                .frame(width: 25, height: 25)
-
-                HStack(spacing: 2) {
-                    ForEach(Array(stableOrderedLikes.prefix(8).enumerated()), id: \.offset) { _, like in
-                        likeAvatar(like, size: 21)
-                            .overlay(Circle().stroke(C.pageBg, lineWidth: 1.2))
+                HStack(spacing: -7) {
+                    ForEach(Array(stableOrderedLikes.prefix(6).enumerated()), id: \.offset) { _, like in
+                        likeAvatar(like, size: 24)
+                            .overlay(Circle().stroke(socialSurface, lineWidth: 2))
                     }
-                    if stableOrderedLikes.count > 8 {
-                        Text("+\(stableOrderedLikes.count - 8)")
+                    if stableOrderedLikes.count > 6 {
+                        Text("+\(stableOrderedLikes.count - 6)")
                             .font(.system(size: 9.5, weight: .bold, design: .rounded))
                             .foregroundColor(C.subLabel)
-                            .frame(width: 21, height: 21)
+                            .frame(width: 24, height: 24)
                             .background(Circle().fill(Color.primary.opacity(0.07)))
-                            .overlay(Circle().stroke(C.pageBg, lineWidth: 1.2))
+                            .overlay(Circle().stroke(socialSurface, lineWidth: 2))
                     }
                 }
-                .frame(height: 21)
+                .frame(height: 24)
 
                 Text(localizedLikeSummary)
                     .font(systemTextFont(13, .medium, relativeTo: .caption1))

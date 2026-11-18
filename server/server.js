@@ -57,6 +57,9 @@ const {
 const ROOT = __dirname;
 const PUBLIC_DIR = path.join(ROOT, 'public');
 const DATA_DIR = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : path.join(ROOT, 'data');
+const SHARED_SHARD_DATA_ROOT = process.env.DUAL_CELL_DATA_ROOT
+  ? path.resolve(process.env.DUAL_CELL_DATA_ROOT)
+  : '';
 const MSG_DIR = path.join(DATA_DIR, 'messages');
 const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
 let shardShadow = null;
@@ -197,6 +200,22 @@ if (chatRoutePlanEnforced && !chatRoutePlan) {
 }
 if (chatRoutePlan) {
   console.log('[聊天路由] mode=' + (chatRoutePlanEnforced ? 'enforced' : 'dormant'));
+}
+
+function shardDataDir(shard) {
+  return SHARED_SHARD_DATA_ROOT
+    ? path.join(SHARED_SHARD_DATA_ROOT, 'shards', String(Number(shard) || 0))
+    : DATA_DIR;
+}
+function userOwnerDataDir(userId) {
+  if (!chatRoutePlan || !userId) return DATA_DIR;
+  return shardDataDir(resolveRoute(chatRoutePlan, 'user', String(userId)));
+}
+function allShardDataDirs() {
+  const count = Math.max(1, Number(process.env.SHARD_COUNT)
+    || (chatRoutePlan && chatRoutePlan.shardCount) || 1);
+  if (!SHARED_SHARD_DATA_ROOT) return [DATA_DIR];
+  return Array.from({ length: count }, (_, shard) => shardDataDir(shard));
 }
 let shardRuntimeIdentity = null;
 if (process.env.SHARD_RUNTIME_MANIFEST) {
@@ -25452,6 +25471,33 @@ const shardMaintenanceStore = new ShardMaintenanceStore(
 let shardCapacityCollectionRunning = false;
 let shardCapacityLastCollectedAt = 0;
 
+function aggregateJsonRows(fileName, key) {
+  const seen = new Set();
+  const rows = [];
+  allShardDataDirs().forEach((dir) => {
+    const list = readJson(path.join(dir, fileName), []);
+    if (!Array.isArray(list)) return;
+    list.forEach((row) => {
+      if (!row || typeof row !== 'object') return;
+      const id = String(row[key] || '');
+      if (id && seen.has(id)) return;
+      if (id) seen.add(id);
+      rows.push(row);
+    });
+  });
+  return rows.sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')));
+}
+
+function findViolationAcrossShards(id) {
+  for (const dir of allShardDataDirs()) {
+    const file = path.join(dir, VIOLATIONS_FILE);
+    const rows = readJson(file, []);
+    const index = Array.isArray(rows) ? rows.findIndex((row) => row && row.id === id) : -1;
+    if (index >= 0) return { dir, file, rows, index, row: rows[index] };
+  }
+  return null;
+}
+
 function loadOps() {
   const raw = readJson(path.join(DATA_DIR, OPS_FILE), { admins: null });
   let admins = Array.isArray(raw.admins) ? raw.admins : [];
@@ -25473,7 +25519,7 @@ function loadOps() {
     writeJson(path.join(DATA_DIR, SENSITIVE_FILE), { words: opsStore.sensitive });
   }
   opsStore.reports = readJson(path.join(DATA_DIR, REPORTS_FILE), []);
-  opsStore.violations = readJson(path.join(DATA_DIR, VIOLATIONS_FILE), []);
+  opsStore.violations = aggregateJsonRows(VIOLATIONS_FILE, 'id');
   /* 高危操作的双人复核：默认关（只有一个管理员时不能开，否则谁都批不了） */
   opsStore.dualReview = !!raw.dualReview;
   opsStore.approvals = readJson(path.join(DATA_DIR, APPROVALS_FILE), []);
@@ -25592,12 +25638,40 @@ const RISK_DECAY_PER_HOUR = 4;                 // 每小时自然衰减 4 分（
 let riskStoreCache = null;
 let riskSaveTimer = null;
 
-function loadRiskStore() {
+function loadRiskStore(userId) {
+  if (userId) {
+    const ownerDir = userOwnerDataDir(userId);
+    const scoped = readJson(path.join(ownerDir, RISK_FILE), null);
+    if (scoped && typeof scoped === 'object') {
+      if (!scoped.users) scoped.users = {};
+      return scoped;
+    }
+  }
   if (!riskStoreCache) riskStoreCache = readJson(path.join(DATA_DIR, RISK_FILE), { users: {} });
   if (!riskStoreCache.users) riskStoreCache.users = {};
   return riskStoreCache;
 }
-function saveRiskStore() {
+function loadAllRiskStores() {
+  const users = {};
+  allShardDataDirs().forEach((dir) => {
+    const store = readJson(path.join(dir, RISK_FILE), { users: {} });
+    Object.keys((store && store.users) || {}).forEach((id) => {
+      const next = store.users[id];
+      const current = users[id];
+      if (!current || Number(next && next.updatedAt) >= Number(current.updatedAt)) {
+        users[id] = next;
+      }
+    });
+  });
+  return { users };
+}
+function saveRiskStore(userId) {
+  if (userId) {
+    try {
+      writeJson(path.join(userOwnerDataDir(userId), RISK_FILE), loadRiskStore(userId));
+    } catch (e) { }
+    return;
+  }
   if (riskSaveTimer) return;
   riskSaveTimer = setTimeout(() => {
     riskSaveTimer = null;
@@ -25605,7 +25679,7 @@ function saveRiskStore() {
   }, 3000);
 }
 function riskRecord(userId) {
-  const s = loadRiskStore();
+  const s = loadRiskStore(userId);
   const rec = s.users[userId] || (s.users[userId] = { score: 0, updatedAt: Date.now(), kinds: {}, restrictUntil: 0 });
   /* 时间衰减：离上次评估多久，就按小时往回退分 */
   const hours = Math.max(0, (Date.now() - (rec.updatedAt || Date.now())) / 3600000);
@@ -25638,7 +25712,9 @@ const RISK_DELTA = {
 function riskWhitelisted(user) {
   if (!user || !user.username) return false;
   try {
-    const raw = readJson(path.join(DATA_DIR, 'risk-whitelist.json'), { usernames: [] });
+    const ownerDir = userOwnerDataDir(user.id);
+    const raw = readJson(path.join(ownerDir, 'risk-whitelist.json'), null)
+      || readJson(path.join(DATA_DIR, 'risk-whitelist.json'), { usernames: [] });
     const list = Array.isArray(raw.usernames) ? raw.usernames.map((s) => String(s).toLowerCase()) : [];
     return list.indexOf(String(user.username).toLowerCase()) >= 0;
   } catch (e) { return false; }
@@ -25678,20 +25754,20 @@ function riskEvent(user, kind, detail) {
     /* 证据留痕（只追加，不覆盖） */
     try {
       /* 事件流也会涨：超过 2MB 归档一份，免得把硬盘写满 */
-      const evp = path.join(DATA_DIR, RISK_EVENT_FILE);
+      const evp = path.join(userOwnerDataDir(user.id), RISK_EVENT_FILE);
       if (fs.existsSync(evp) && fs.statSync(evp).size > 2 * 1024 * 1024) {
         try { fs.renameSync(evp, evp + '.1'); } catch (e2) {
           try { fs.unlinkSync(evp + '.1'); fs.renameSync(evp, evp + '.1'); } catch (e3) { }
         }
       }
-      fs.appendFileSync(path.join(DATA_DIR, RISK_EVENT_FILE), JSON.stringify({
+      fs.appendFileSync(evp, JSON.stringify({
         at: now(), userId: user.id, username: user.username, kind, delta,
         score: rec.score, level: lv.level, restrictUntil: rec.restrictUntil || 0,
         ip: (detail && detail.ip) || '', device: (detail && detail.device) || '',
         note: (detail && detail.note) || ''
       }) + '\n', 'utf8');
     } catch (e) { }
-    saveRiskStore();
+    saveRiskStore(user.id);
     if (lv.action === 'restrict24h') console.log(`  [风控] ${user.username} 评分 ${rec.score}（高危）→ 临时限制 24 小时`);
     else if (lv.action === 'restrict30m') console.log(`  [风控] ${user.username} 评分 ${rec.score}（受限）→ 临时限制 30 分钟`);
     return { score: rec.score, level: lv.level, action: lv.action };
@@ -25702,7 +25778,7 @@ function riskBlocked(user) {
   if (!user) return 0;
   if (riskOff()) return 0;
   if (riskWhitelisted(user)) return 0;        // 白名单：永远不拦
-  const rec = loadRiskStore().users[user.id];
+  const rec = loadRiskStore(user.id).users[user.id];
   if (!rec || !rec.restrictUntil || rec.restrictUntil <= Date.now()) return 0;
   return Math.ceil((rec.restrictUntil - Date.now()) / 60000);   // 还剩多少分钟
 }
@@ -25723,7 +25799,7 @@ function mediaBlockedReason(user) {
     return '这个账号有未处理的违规内容（' + open.length + ' 条），暂时不能发送图片 / 视频 / 文件；'
       + '请在「我的 → 设置 → 反馈」里说明情况，管理员处理后可恢复';
   }
-  const rec = loadRiskStore().users[user.id];
+  const rec = loadRiskStore(user.id).users[user.id];
   if (rec && (rec.score || 0) >= 80) {
     return '账号风控分偏高，暂时不能发送图片 / 视频 / 文件（如有疑问请联系管理员）';
   }
@@ -25845,9 +25921,17 @@ function recordViolation(user, chat, body, word) {
       content: String(body || '').slice(0, 200),
       handled: false
     };
-    opsStore.violations.unshift(row);
-    if (opsStore.violations.length > 500) opsStore.violations.length = 500;
-    saveViolations();
+    const ownerDir = user ? userOwnerDataDir(user.id) : DATA_DIR;
+    const ownerFile = path.join(ownerDir, VIOLATIONS_FILE);
+    const ownerRows = readJson(ownerFile, []);
+    const list = Array.isArray(ownerRows) ? ownerRows : [];
+    list.unshift(row);
+    writeJson(ownerFile, list.slice(0, 500));
+    if (ownerDir === DATA_DIR) {
+      opsStore.violations = list.slice(0, 500);
+    } else {
+      opsStore.violations = aggregateJsonRows(VIOLATIONS_FILE, 'id').slice(0, 500);
+    }
     if (user) riskEvent(user, 'sensitive', { note: '命中敏感词「' + word + '」' });
     return row;
   } catch (e) { return null; }
@@ -25893,7 +25977,7 @@ function noteFriendReqRisk(user) {
 /* ---------------- 后台风控面板要用的数据 ---------------- */
 /** 评分榜：只看有分或有临时限制的账号，按分数倒序 */
 function riskBoard(limit) {
-  const s = loadRiskStore();
+  const s = loadAllRiskStores();
   return Object.keys(s.users).map((id) => {
     const rec = riskRecord(id);                    // 顺手做一次时间衰减
     const u = findUser(id);
@@ -26538,7 +26622,7 @@ async function handleOps(req, res, parts, query) {
       rows.push({ type: '封禁', reason: u.banReason || '', at: u.bannedAt || '', until: '长期', admin: u.bannedBy || '—', ip: u.bannedIp || '' });
     }
     try {
-      const rec = loadRiskStore().users[uid];
+      const rec = loadRiskStore(uid).users[uid];
       if (rec && Number(rec.restrictUntil) > Date.now()) {
         rows.push({
           type: '风控临时限制', reason: Object.keys(rec.kinds || {}).join(' / ') || '风险评分过高',
@@ -26601,7 +26685,7 @@ async function handleOps(req, res, parts, query) {
       reason: u.banReason || '', at: u.bannedAt || '', until: '长期', admin: u.bannedBy || '—', ip: u.bannedIp || ''
     }));
     try {
-      const st = loadRiskStore();
+      const st = loadAllRiskStores();
       Object.keys(st.users || {}).forEach((id) => {
         const rec = st.users[id];
         if (!rec) return;
@@ -26850,7 +26934,7 @@ async function handleOps(req, res, parts, query) {
       id: u.id, username: u.username, nickname: u.nickname, reason: u.banReason || '', at: u.bannedAt || ''
     }));
     try {
-      const st = loadRiskStore();
+      const st = loadAllRiskStores();
       Object.keys(st.users || {}).forEach((id) => {
         const rec = st.users[id];
         if (rec && Number(rec.restrictUntil) > Date.now()) restricted.push({
@@ -27265,14 +27349,14 @@ async function handleOps(req, res, parts, query) {
     if (!can(admin, 'risk.write')) return fail(res, 403, '你的角色没有处置风控的权限');
     const body = await readBody(req);
     const targetId = str(body.userId, 40);
-    const rec = loadRiskStore().users[targetId];
+    const rec = loadRiskStore(targetId).users[targetId];
     if (!rec) return fail(res, 404, '这个账号没有风控记录');
     const before = Math.round(rec.score || 0);
     rec.score = Math.max(0, Number(body.score) || 0);   // 不传就是直接清零
     rec.restrictUntil = 0;
     if (rec.score === 0) rec.kinds = {};
     rec.updatedAt = Date.now();
-    saveRiskStore();
+    saveRiskStore(targetId);
     const u = findUser(targetId);
     audit(req, admin, '解除风控限制', (u && u.username) || targetId, '原评分 ' + before + ' → ' + rec.score);
     ok(res, { released: true, score: rec.score });
@@ -28015,7 +28099,10 @@ async function handleOps(req, res, parts, query) {
   /* ---------------- 风控 / 敏感词 ---------------- */
   if (sub === 'sensitive' && method === 'GET') {
     if (!can(admin, 'risk')) return fail(res, 403, '你的角色没有查看风控的权限');
-    ok(res, { words: opsStore.sensitive, violations: opsStore.violations.slice(0, 100) });
+    ok(res, {
+      words: opsStore.sensitive,
+      violations: aggregateJsonRows(VIOLATIONS_FILE, 'id').slice(0, 100)
+    });
     return;
   }
 
@@ -28034,12 +28121,18 @@ async function handleOps(req, res, parts, query) {
 
   if (sub === 'violations' && parts[3] === 'handle' && method === 'POST') {
     if (!can(admin, 'risk.write')) return fail(res, 403, '没有权限');
-    const v = opsStore.violations.find((x) => x.id === parts[2]);
+    const hit = findViolationAcrossShards(parts[2]);
+    const v = hit ? hit.row : opsStore.violations.find((x) => x.id === parts[2]);
     if (!v) return fail(res, 404, '这条告警不存在');
     v.handled = true;
     v.handledBy = admin.username;
     v.handledAt = now();
-    saveViolations();
+    if (hit) {
+      writeJson(hit.file, hit.rows);
+    } else {
+      saveViolations();
+    }
+    opsStore.violations = aggregateJsonRows(VIOLATIONS_FILE, 'id').slice(0, 100);
     audit(req, admin, '处理违规告警', v.id, v.word);
     ok(res, { handled: true });
     return;
