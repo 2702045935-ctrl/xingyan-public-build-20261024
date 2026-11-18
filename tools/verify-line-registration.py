@@ -12,8 +12,10 @@ def require(condition: bool, message: str) -> None:
 
 
 require("Color(hex: 0x06C755)" in APP, "registration must use the LINE brand green")
-require("registrationModeTabs\n" not in APP,
-        "the obsolete single-option tab strip must not render")
+require(
+    "registrationModeTabs\n" in APP,
+    "registration must render the supported account and phone tabs",
+)
 require(
     ".frame(width: 72, height: 72)" in APP,
     "the registration header must use the centered LINE-style brand lockup",
