@@ -129,6 +129,7 @@ struct NativeTopGlassMask: View {
                 NativeGlassHeaderMaterial()
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea(edges: .top)
         .allowsHitTesting(false)
         .animation(reduceMotion ? nil : .easeOut(duration: 0.16),
@@ -210,6 +211,69 @@ struct NativeScrollEdgeElementBridge: UIViewRepresentable {
             guard view.window != nil else { return }
             attach(to: view, coordinator: coordinator)
         }
+    }
+}
+#endif
+
+#if canImport(UIKit)
+/// SwiftUI 的 GeometryReader 偏好值在隐藏原生导航栏的页面里偶尔不会随滚动刷新。
+/// 顶栏玻璃直接观察实际的 UIScrollView，保证三个主页面使用同一条可靠状态。
+struct NativeTopScrollObserver: UIViewRepresentable {
+    var onChange: (CGFloat) -> Void
+
+    final class Coordinator {
+        weak var scroll: UIScrollView?
+        var observation: NSKeyValueObservation?
+        var retries = 20
+        var onChange: (CGFloat) -> Void = { _ in }
+
+        func attach(_ view: UIView) {
+            guard let scroll = Self.findScroll(view) else {
+                guard retries > 0 else { return }
+                retries -= 1
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { [weak self, weak view] in
+                    guard let self, let view else { return }
+                    self.attach(view)
+                }
+                return
+            }
+            if self.scroll === scroll {
+                onChange(max(0, scroll.contentOffset.y))
+                return
+            }
+            observation = nil
+            self.scroll = scroll
+            observation = scroll.observe(\.contentOffset, options: [.new]) {
+                [weak self] scroll, _ in
+                self?.onChange(max(0, scroll.contentOffset.y))
+            }
+            onChange(max(0, scroll.contentOffset.y))
+        }
+
+        private static func findScroll(_ view: UIView) -> UIScrollView? {
+            var current: UIView? = view
+            while let candidate = current {
+                if let scroll = candidate as? UIScrollView { return scroll }
+                current = candidate.superview
+            }
+            return nil
+        }
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView(frame: .zero)
+        view.backgroundColor = .clear
+        view.isUserInteractionEnabled = false
+        context.coordinator.onChange = onChange
+        context.coordinator.attach(view)
+        return view
+    }
+
+    func updateUIView(_ view: UIView, context: Context) {
+        context.coordinator.onChange = onChange
+        context.coordinator.attach(view)
     }
 }
 #endif

@@ -44,6 +44,14 @@ require(
     "normal row taps must use collection-view selection with a single-open guard",
 )
 require(
+    "contentView.isUserInteractionEnabled = false" in ROW
+    and "override func touchesBegan" not in ROW
+    and "UIGestureRecognizer" not in ROW
+    and "didHighlightItemAt" in LIST
+    and "didUnhighlightItemAt" in LIST,
+    "native swipe must own row touches; the cell may only render content",
+)
+require(
     "collection.isDirectionalLockEnabled" not in LIST,
     "directional lock must not compete with the system horizontal swipe recognizer",
 )
@@ -52,10 +60,6 @@ require(
     and "foreground.addGestureRecognizer(row)" not in ROW
     and "foreground.addGestureRecognizer(tap)" not in ROW,
     "the row must not install a custom tap recognizer over native swipe handling",
-)
-require(
-    "avatarView.addGestureRecognizer(tap)" in ROW,
-    "only the avatar may retain a separate tap recognizer",
 )
 require(
     "handlePan" not in ROW

@@ -33,17 +33,22 @@ require(
     and "let edgeShape = UIView()" in NAV
     and "NativeTopGlassMask(active: scrolled > 0)" in NAV
     and ".ignoresSafeArea(edges: .top)" in NAV
-    and "NativeChatsTopEdgeChrome(scrolled: scrolled)" in CHATS
+    and "NativeChatsTopEdgeChrome(scrolled: chatTopScrolled)" in CHATS
+    and "onOffsetChange:" in CHATS
     and "NativeTopGlassMask(active: scrolled > 0)" not in CHATS,
     "chat header must extend the native scroll edge and keep a native glass fallback",
 )
 require("NativeTopGlassMask(active: navScrolled > 0)" in CONTACTS
+        and "NativeTopScrollObserver" in CONTACTS
+        and "topScrollTracking($navScrolled" not in CONTACTS
         and "TopGlassBar(" not in CONTACTS
         and "TopGlassLine(" not in CONTACTS,
-        "contacts must remove its custom top material")
+        "contacts must observe the native scroll view and remove its custom top material")
 require("NativeTopGlassMask(active: navScrolled > 0)" in DISCOVER
+        and "NativeTopScrollObserver" in DISCOVER
+        and "topScrollTracking($navScrolled" not in DISCOVER
         and "TopGlassBar(" not in DISCOVER
         and "TopGlassLine(" not in DISCOVER,
-        "world top bar must use the shared native material")
+        "world top bar must observe the native scroll view and use the shared material")
 
 print("native-top-masks: passed")

@@ -235,9 +235,6 @@ private var funcs: [(String, String, Color, String)] {
                         ScrollView {
 
                             LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
-                                TopScrollProbe(space: "contactsScroll")
-                                    .frame(height: 0)
-
                                 Color.clear.frame(height: listHeadH)
 
                                 contactsSearchBar
@@ -314,6 +311,12 @@ private var funcs: [(String, String, Color, String)] {
                             }
                         }
                         .background(contactsCanvas)
+                        .background {
+                            NativeTopScrollObserver { y in
+                                let next = y > 8 ? y : 0
+                                if navScrolled != next { navScrolled = next }
+                            }
+                        }
                         .refreshable { await app.loadContacts() }
 
                         if keyword.isEmpty && !sections.isEmpty {
@@ -343,7 +346,6 @@ private var funcs: [(String, String, Color, String)] {
                                 .offset(y: -56)
                                 }
                             }
-                            .topScrollTracking($navScrolled, space: "contactsScroll")
                         }
 
                 .padding(.top, -listHeadH)

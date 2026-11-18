@@ -18,6 +18,7 @@ where Item.ID: Hashable {
     let height: (Item) -> CGFloat
     let nativeRow: ((Item) -> NativeChatRowConfiguration?)?
     let onScrollStateChange: (Bool) -> Void
+    let onOffsetChange: (CGFloat) -> Void
     let onZoneChange: (Int) -> Void
     let onApproachingEnd: () -> Void
     let onRefresh: () -> Void
@@ -26,6 +27,7 @@ where Item.ID: Hashable {
 
     func makeCoordinator() -> Coordinator {
         Coordinator(onScrollStateChange: onScrollStateChange,
+                    onOffsetChange: onOffsetChange,
                     onZoneChange: onZoneChange,
                     onApproachingEnd: onApproachingEnd,
                     onRefresh: onRefresh,
@@ -128,6 +130,7 @@ where Item.ID: Hashable {
         context.coordinator.height = height
         context.coordinator.nativeRow = nativeRow
         context.coordinator.onScrollStateChange = onScrollStateChange
+        context.coordinator.onOffsetChange = onOffsetChange
         context.coordinator.onZoneChange = onZoneChange
         context.coordinator.onApproachingEnd = onApproachingEnd
         context.coordinator.onRefresh = onRefresh
@@ -141,6 +144,7 @@ where Item.ID: Hashable {
         var height: (Item) -> CGFloat
         var nativeRow: ((Item) -> NativeChatRowConfiguration?)?
         var onScrollStateChange: (Bool) -> Void
+        var onOffsetChange: (CGFloat) -> Void
         var onZoneChange: (Int) -> Void
         var onApproachingEnd: () -> Void
         var onRefresh: () -> Void
@@ -159,6 +163,7 @@ where Item.ID: Hashable {
         private var layoutObservers: [NSObjectProtocol] = []
 
         init(onScrollStateChange: @escaping (Bool) -> Void,
+             onOffsetChange: @escaping (CGFloat) -> Void,
              onZoneChange: @escaping (Int) -> Void,
              onApproachingEnd: @escaping () -> Void,
              onRefresh: @escaping () -> Void,
@@ -167,6 +172,7 @@ where Item.ID: Hashable {
              nativeRow: ((Item) -> NativeChatRowConfiguration?)?,
              row: @escaping (Item) -> Row) {
             self.onScrollStateChange = onScrollStateChange
+            self.onOffsetChange = onOffsetChange
             self.onZoneChange = onZoneChange
             self.onApproachingEnd = onApproachingEnd
             self.onRefresh = onRefresh
@@ -315,6 +321,7 @@ where Item.ID: Hashable {
                                || scrollView.isTracking
                                || scrollView.isDecelerating)
             let y = scrollView.contentOffset.y
+            onOffsetChange(max(0, y))
             let remaining = scrollView.contentSize.height
                 - scrollView.bounds.height
                 - y
@@ -378,6 +385,18 @@ where Item.ID: Hashable {
                 return
             }
             configuration.onOpen()
+        }
+
+        func collectionView(_ collectionView: UICollectionView,
+                            didHighlightItemAt indexPath: IndexPath) {
+            (collectionView.cellForItem(at: indexPath) as? NativeChatRowCell)?
+                .setTouchPressed(true)
+        }
+
+        func collectionView(_ collectionView: UICollectionView,
+                            didUnhighlightItemAt indexPath: IndexPath) {
+            (collectionView.cellForItem(at: indexPath) as? NativeChatRowCell)?
+                .setTouchPressed(false)
         }
 
         func collectionView(

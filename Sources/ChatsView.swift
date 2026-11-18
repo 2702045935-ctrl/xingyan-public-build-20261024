@@ -1199,6 +1199,7 @@ struct ChatsView: View {
     private var chatsCardFill: Color { chatsPageFill }
 
     @State private var scrolled: CGFloat = 0
+    @State private var chatTopScrolled: CGFloat = 0
     @State private var chatsScrollActive = false
     @State private var filterHidden = false
 
@@ -2768,6 +2769,10 @@ struct ChatsView: View {
                                 chatsScrollActive = scrolling
                             }
                         },
+                        onOffsetChange: { y in
+                            let next = y > 8 ? y : 0
+                            if chatTopScrolled != next { chatTopScrolled = next }
+                        },
                         onZoneChange: { zone in
                             handleScrollZone(zone)
                         },
@@ -2831,7 +2836,7 @@ struct ChatsView: View {
                                     Color.clear
                                         .contentShape(Rectangle())
                                 }
-                                NativeChatsTopEdgeChrome(scrolled: scrolled)
+                                NativeChatsTopEdgeChrome(scrolled: chatTopScrolled)
                             }
                         }
                         .opacity(navFadeForFloor)

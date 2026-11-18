@@ -91,7 +91,6 @@ final class NativeChatRowCell: UICollectionViewCell {
     private var accessibilitySignature = ""
     private var cachedTimeSignature = ""
     private var cachedTimeWidth: CGFloat = 0
-    private var avatarTap: UITapGestureRecognizer?
     private var openGuardUntil: TimeInterval = 0
 
     private let rowLeading: CGFloat = 16
@@ -102,7 +101,6 @@ final class NativeChatRowCell: UICollectionViewCell {
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupViews()
-        setupGestures()
     }
 
     required init?(coder: NSCoder) {
@@ -261,7 +259,6 @@ final class NativeChatRowCell: UICollectionViewCell {
                                  online: configuration.showOnline,
                                  mood: configuration.moodIcon)
         }
-        avatarTap?.isEnabled = configuration.onAvatar != nil
         configureAccessibility(configuration)
         setNeedsLayout()
     }
@@ -433,6 +430,7 @@ final class NativeChatRowCell: UICollectionViewCell {
         backgroundColor = .clear
 
         foreground.clipsToBounds = true
+        contentView.isUserInteractionEnabled = false
         contentView.addSubview(foreground)
         foreground.addSubview(avatarView)
         foreground.addSubview(titleLabel)
@@ -486,31 +484,7 @@ final class NativeChatRowCell: UICollectionViewCell {
         }
     }
 
-    private func setupGestures() {
-        let tap = UITapGestureRecognizer(target: self, action: #selector(handleAvatarTap(_:)))
-        tap.cancelsTouchesInView = true
-        tap.delaysTouchesBegan = false
-        avatarView.isUserInteractionEnabled = true
-        avatarView.addGestureRecognizer(tap)
-        avatarTap = tap
-    }
-
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        super.touchesBegan(touches, with: event)
-        setPressed(true)
-    }
-
-    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        super.touchesEnded(touches, with: event)
-        setPressed(false)
-    }
-
-    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-        super.touchesCancelled(touches, with: event)
-        setPressed(false)
-    }
-
-    private func setPressed(_ pressed: Bool) {
+    func setTouchPressed(_ pressed: Bool) {
         let color: UIColor
         if configuration?.isLight == true {
             color = pressed ? UIColor.black.withAlphaComponent(0.045) : .clear
@@ -523,10 +497,6 @@ final class NativeChatRowCell: UICollectionViewCell {
                        options: [.beginFromCurrentState, .allowUserInteraction]) {
             self.pressOverlay.backgroundColor = color
         }
-    }
-
-    @objc private func handleAvatarTap(_ gesture: UITapGestureRecognizer) {
-        configuration?.onAvatar?()
     }
 
     @discardableResult

@@ -529,9 +529,6 @@ struct DiscoverView: View {
             ZStack(alignment: .top) {
                 ScrollView {
                     LazyVStack(spacing: 0) {
-                        TopScrollProbe(space: "discoverScroll")
-                            .frame(height: 0)
-
                         Color.clear.frame(height: discoverHeaderHeight)
 
                         if let hero = worldHeroItem {
@@ -559,7 +556,12 @@ struct DiscoverView: View {
                         Color.clear
                             .frame(height: max(24, L.safeBottom + L.tabH + 12))
                     }
-                    .topScrollTracking($navScrolled, space: "discoverScroll")
+                    .background {
+                        NativeTopScrollObserver { y in
+                            let next = y > 8 ? y : 0
+                            if navScrolled != next { navScrolled = next }
+                        }
+                    }
                 }
 
                 .background(Color.clear)
