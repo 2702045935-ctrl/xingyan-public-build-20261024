@@ -21941,11 +21941,14 @@ async function handleApi(req, res, pathname, query) {
     if (!chat || !chat.memberIds.includes(user.id)) return fail(res, 404, '会话不存在');
     const recipients = chat.memberIds
       .filter((id) => id !== user.id)
-      .map((id) => ({
-        userId: id,
-        deliveredSeq: Math.max(0, Number((db.delivered[id] || {})[chat.id] || 0)),
-        readSeq: Math.max(0, Number((db.reads[id] || {})[chat.id] || 0))
-      }));
+      .map((id) => {
+        const readSeq = Math.max(0, Number((db.reads[id] || {})[chat.id] || 0));
+        const deliveredSeq = Math.max(
+          readSeq,
+          Number((db.delivered[id] || {})[chat.id] || 0)
+        );
+        return { userId: id, deliveredSeq, readSeq };
+      });
     const allDelivered = recipients.length
       ? Math.min(...recipients.map((row) => row.deliveredSeq))
       : 0;

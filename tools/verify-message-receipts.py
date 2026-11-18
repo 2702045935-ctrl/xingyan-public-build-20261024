@@ -17,7 +17,8 @@ def require(condition: bool, message: str) -> None:
 require(
     "parts[2] === 'receipts'" in SERVER
     and "deliveredSeq: allDelivered" in SERVER
-    and "readSeq: allRead" in SERVER,
+    and "readSeq: allRead" in SERVER
+    and "const deliveredSeq = Math.max(\n          readSeq," in SERVER,
     "server must expose real per-chat receipt cursors",
 )
 require(

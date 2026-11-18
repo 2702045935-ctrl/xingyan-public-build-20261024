@@ -4194,7 +4194,8 @@ struct ChatDetailView: View {
         let recipients = receiptRecipientIds
         guard !recipients.isEmpty else { return .sent }
         let delivered = recipients.allSatisfy {
-            (receiptCursors[$0]?.deliveredSeq ?? 0) >= seq
+            let cursor = receiptCursors[$0]
+            return max(cursor?.deliveredSeq ?? 0, cursor?.readSeq ?? 0) >= seq
         }
         guard delivered else { return .sent }
         let read = recipients.allSatisfy {
