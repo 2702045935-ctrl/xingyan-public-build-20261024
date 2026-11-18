@@ -74,7 +74,7 @@ struct NativeChatRowConfiguration {
     var isPinned: Bool
 }
 
-final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate {
+final class NativeChatRowCell: UICollectionViewCell {
     private let foreground = UIView()
     private let avatarView = NativeChatAvatarView()
     private let titleLabel = UILabel()
@@ -92,7 +92,6 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
     private var cachedTimeSignature = ""
     private var cachedTimeWidth: CGFloat = 0
     private var avatarTap: UITapGestureRecognizer?
-    private var rowTap: UITapGestureRecognizer?
     private var openGuardUntil: TimeInterval = 0
 
     private let rowLeading: CGFloat = 16
@@ -488,28 +487,12 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
     }
 
     private func setupGestures() {
-        let row = UITapGestureRecognizer(target: self, action: #selector(handleRowTap(_:)))
-        row.delegate = self
-        row.cancelsTouchesInView = true
-        row.delaysTouchesBegan = false
-        foreground.addGestureRecognizer(row)
-        rowTap = row
-
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleAvatarTap(_:)))
         tap.cancelsTouchesInView = true
         tap.delaysTouchesBegan = false
-        tap.require(toFail: row)
         avatarView.isUserInteractionEnabled = true
         avatarView.addGestureRecognizer(tap)
         avatarTap = tap
-    }
-
-    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
-                           shouldReceive touch: UITouch) -> Bool {
-        guard gestureRecognizer === rowTap,
-              avatarTap?.isEnabled == true else { return true }
-        let point = touch.location(in: avatarView)
-        return !avatarView.bounds.contains(point)
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -546,22 +529,14 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         configuration?.onAvatar?()
     }
 
-    @objc private func handleRowTap(_ gesture: UITapGestureRecognizer) {
-        openFromTap()
-    }
-
     @discardableResult
     func openFromSelection() -> Bool {
-        guard configuration != nil else { return false }
-        openFromTap()
-        return true
-    }
-
-    private func openFromTap() {
+        guard let configuration else { return false }
         let now = Date.timeIntervalSinceReferenceDate
-        guard now >= openGuardUntil, let configuration else { return }
+        guard now >= openGuardUntil else { return true }
         openGuardUntil = now + 0.35
         configuration.onOpen()
+        return true
     }
 
     private func localized(_ zh: String, _ en: String, _ ru: String) -> String {
@@ -597,9 +572,9 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         ]
         .filter { !$0.isEmpty }
         .joined(separator: "，")
-        accessibilityHint = localized("打开聊天，向左或向右滑动可查看更多操作",
-                                      "Open chat. Swipe left or right for more actions",
-                                      "Открыть чат. Смахните влево или вправо для дополнительных действий")
+        accessibilityHint = localized("打开聊天，向左滑动可查看更多操作",
+                                      "Open chat. Swipe left for more actions",
+                                      "Открыть чат. Смахните влево для дополнительных действий")
 
         let pinTitle = configuration.isPinned
             ? localized("取消置顶", "Unpin", "Открепить")

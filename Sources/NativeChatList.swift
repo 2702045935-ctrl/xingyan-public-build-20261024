@@ -382,29 +382,6 @@ where Item.ID: Hashable {
 
         func collectionView(
             _ collectionView: UICollectionView,
-            leadingSwipeActionsConfigurationForItemAt indexPath: IndexPath
-        ) -> UISwipeActionsConfiguration? {
-            guard let id = dataSource?.itemIdentifier(for: indexPath),
-                  let entry = lookup[id],
-                  let configuration = nativeRow?(entry) else { return nil }
-            let title = configuration.isPinned
-                ? nativeChatSwipeText("取消置顶", "Unpin", "Открепить")
-                : nativeChatSwipeText("置顶", "Pin", "Закрепить")
-            let action = UIContextualAction(style: .normal, title: title) {
-                _, _, complete in
-                configuration.onPin(!configuration.isPinned)
-                complete(true)
-            }
-            action.image = UIImage(systemName: configuration.isPinned
-                                   ? "pin.slash.fill" : "pin.fill")
-            action.backgroundColor = .systemOrange
-            let swipe = UISwipeActionsConfiguration(actions: [action])
-            swipe.performsFirstActionWithFullSwipe = false
-            return swipe
-        }
-
-        func collectionView(
-            _ collectionView: UICollectionView,
             trailingSwipeActionsConfigurationForItemAt indexPath: IndexPath
         ) -> UISwipeActionsConfiguration? {
             guard let id = dataSource?.itemIdentifier(for: indexPath),

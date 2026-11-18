@@ -15,16 +15,15 @@ def require(condition: bool, message: str) -> None:
 
 require(
     "UISwipeActionsConfiguration" in LIST
-    and "leadingSwipeActionsConfigurationForItemAt" in LIST
-    and "trailingSwipeActionsConfigurationForItemAt" in LIST,
-    "chat rows must use native collection-view swipe actions",
+    and "trailingSwipeActionsConfigurationForItemAt" in LIST
+    and "leadingSwipeActionsConfigurationForItemAt" not in LIST,
+    "chat rows must use only the native collection-view left-swipe delete action",
 )
 require(
-    "action.backgroundColor = .systemOrange" in LIST
-    and "action.backgroundColor = .systemRed" in LIST
-    and "swipe.performsFirstActionWithFullSwipe = false" in LIST
-    and "swipe.performsFirstActionWithFullSwipe = true" in LIST,
-    "right swipe must pin in orange and left swipe must delete in red",
+    "action.backgroundColor = .systemRed" in LIST
+    and "swipe.performsFirstActionWithFullSwipe = true" in LIST
+    and ".systemOrange" not in LIST,
+    "left swipe must delete in red and must not expose a right-swipe pin",
 )
 require(
     "foreground.addGestureRecognizer(pan)" not in ROW,
@@ -39,19 +38,20 @@ require(
     "opening a conversation must use UICollectionView native selection",
 )
 require(
-    "foreground.addGestureRecognizer(row)" in ROW
-    and "openFromSelection()" in ROW
+    "openFromSelection()" in ROW
     and "cell.openFromSelection()" in LIST
     and "openGuardUntil = now + 0.35" in ROW,
-    "row taps need a native touch fallback with a single-open guard",
+    "normal row taps must use collection-view selection with a single-open guard",
 )
 require(
     "collection.isDirectionalLockEnabled" not in LIST,
     "directional lock must not compete with the system horizontal swipe recognizer",
 )
 require(
-    "foreground.addGestureRecognizer(tap)" not in ROW,
-    "the whole row must not install a child tap recognizer over native swipe handling",
+    "rowTap" not in ROW
+    and "foreground.addGestureRecognizer(row)" not in ROW
+    and "foreground.addGestureRecognizer(tap)" not in ROW,
+    "the row must not install a custom tap recognizer over native swipe handling",
 )
 require(
     "avatarView.addGestureRecognizer(tap)" in ROW,
