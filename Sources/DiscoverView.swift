@@ -1338,6 +1338,7 @@ struct MomentsView: View {
     @State private var solid = false
     @State private var momentsScrollActive = false
     @State private var moments: [Moment] = []
+    @State private var stressLoadedMoments: [Moment] = []
     @State private var locallyPostedMoments: [String: Moment] = [:]
     @State private var stressLoadedCount = min(MomentStressFixture.count,
                                                Self.stressMomentWindow)
@@ -2076,7 +2077,7 @@ struct MomentsView: View {
 
     private var displayedMoments: [Moment] {
         MomentStressFixture.isActive
-            ? MomentStressFixture.moments(prefix: stressLoadedCount)
+            ? stressLoadedMoments
             : moments
     }
 
@@ -2645,6 +2646,13 @@ struct MomentsView: View {
                 MomentStressFixture.count,
                 max(Self.stressMomentWindow, stressLoadedCount)
             )
+            if stressLoadedMoments.count > stressLoadedCount {
+                stressLoadedMoments = Array(stressLoadedMoments.prefix(stressLoadedCount))
+            } else if stressLoadedMoments.count < stressLoadedCount {
+                stressLoadedMoments.append(contentsOf: MomentStressFixture.moments(
+                    range: stressLoadedMoments.count..<stressLoadedCount
+                ))
+            }
             momentTotal = MomentStressFixture.count
             hasMoreMoments = stressLoadedCount < MomentStressFixture.count
             return
@@ -2682,9 +2690,10 @@ struct MomentsView: View {
         if MomentStressFixture.isActive {
             guard hasMoreMoments, !loadingMore else { return }
             loadingMore = true
+            let previous = stressLoadedCount
             let next = min(
                 MomentStressFixture.count,
-                stressLoadedCount + Self.stressMomentPageSize
+                previous + Self.stressMomentPageSize
             )
             momentTotal = MomentStressFixture.count
             if momentsScrollActive {
@@ -2693,6 +2702,11 @@ struct MomentsView: View {
                 return
             }
             stressLoadedCount = next
+            if stressLoadedCount > previous {
+                stressLoadedMoments.append(contentsOf: MomentStressFixture.moments(
+                    range: previous..<stressLoadedCount
+                ))
+            }
             hasMoreMoments = stressLoadedCount < MomentStressFixture.count
             loadingMore = false
             return
@@ -2752,8 +2766,14 @@ struct MomentsView: View {
 
     private func flushPendingMomentPage() {
         if pendingStressLoadedCount > 0 {
+            let previous = stressLoadedCount
             stressLoadedCount = pendingStressLoadedCount
             pendingStressLoadedCount = 0
+            if stressLoadedCount > previous {
+                stressLoadedMoments.append(contentsOf: MomentStressFixture.moments(
+                    range: previous..<stressLoadedCount
+                ))
+            }
             momentTotal = MomentStressFixture.count
             hasMoreMoments = stressLoadedCount < MomentStressFixture.count
         }

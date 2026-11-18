@@ -8,7 +8,9 @@ enum ChatStressFixture {
     static let isActive = count > 0
 
     static let initialWindow = min(count, 160)
-    static let pageSize = 160
+    static let pageSize = 320
+    private static let lock = NSLock()
+    private static var cache: [Chat] = []
 
     /// The stress source is index based. Building all 100,000 value rows up
     /// front makes the launch measurement test fixture generation rather than
@@ -16,7 +18,20 @@ enum ChatStressFixture {
     static func chats(prefix: Int) -> [Chat] {
         guard isActive else { return [] }
         let upper = max(0, min(count, prefix))
-        return (0..<upper).map { chat(at: $0) }
+        return chats(range: 0..<upper)
+    }
+
+    static func chats(range: Range<Int>) -> [Chat] {
+        guard isActive, !range.isEmpty else { return [] }
+        let lower = max(0, min(count, range.lowerBound))
+        let upper = max(lower, min(count, range.upperBound))
+        guard lower < upper else { return [] }
+        lock.lock()
+        defer { lock.unlock() }
+        while cache.count < upper {
+            cache.append(chat(at: cache.count))
+        }
+        return Array(cache[lower..<upper])
     }
 
     private static let base = Date()

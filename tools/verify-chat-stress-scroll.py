@@ -71,6 +71,16 @@ require(
     and "pendingItems = next" in NATIVE_CHAT_LIST,
     "all conversation-list changes, including pure appends, must defer during touch motion",
 )
+FIXTURE = (ROOT / "Sources" / "ChatStressFixture.swift").read_text(encoding="utf-8")
+require(
+    "private static var cache: [Chat]" in FIXTURE
+    and "static func chats(range: Range<Int>)" in FIXTURE,
+    "100k conversation stress data must materialize incrementally",
+)
+require(
+    "updated.list.append(contentsOf: added)" in CHATS,
+    "stress conversation snapshots must append new pages without rescanning all loaded rows",
+)
 
 MOMENTS = (ROOT / "Sources" / "MomentStressFixture.swift").read_text(encoding="utf-8")
 require(

@@ -30,5 +30,10 @@ require(
     '"已加载 \\(stressLoadedCount) / \\(MomentStressFixture.count)"' in VIEW,
     "stress header must expose the current loaded window",
 )
+require(
+    "stressLoadedMoments.append(contentsOf:" in VIEW
+    and "MomentStressFixture.moments(\n                    range:" in VIEW,
+    "Moments stress data must append only the new page instead of rebuilding all rows",
+)
 
 print("moment-stress-scroll: passed")

@@ -1279,10 +1279,33 @@ struct ChatsView: View {
 
     private func loadMoreStressChatsIfNeeded() {
         guard ChatStressFixture.isActive else { return }
+        let previous = stressLoadedCount
         let next = min(ChatStressFixture.count,
-                       stressLoadedCount + ChatStressFixture.pageSize)
-        guard next > stressLoadedCount else { return }
+                       previous + ChatStressFixture.pageSize)
+        guard next > previous else { return }
+        let added = ChatStressFixture.chats(range: previous..<next)
         stressLoadedCount = next
+        guard chatFilter == .all, keyword.isEmpty else {
+            cachedSnapshot = chatSnapshot()
+            return
+        }
+        var counts = cachedSnapshot.unreadCounts
+        var updated = cachedSnapshot
+        for chat in added {
+            let n = max(0, chat.unreadCount)
+            counts[.all, default: 0] += n
+            counts[.unread, default: 0] += n
+            if chat.type == "group" || (chat.memberCount ?? 0) > 2 {
+                counts[.group, default: 0] += n
+            }
+            if !(chat.oaId ?? "").isEmpty || chat.oaDigest == true {
+                counts[.official, default: 0] += n
+            }
+            if chat.pinned == true { counts[.pinned, default: 0] += n }
+        }
+        updated.list.append(contentsOf: added)
+        updated.unreadCounts = counts
+        cachedSnapshot = updated
     }
 
     private func chatSnapshot() -> ChatFilterSnapshot {
@@ -2710,7 +2733,7 @@ struct ChatsView: View {
         return NavigationStack(path: $path) {
 
             ZStack(alignment: .top) {
-                if activeChatSource.isEmpty {
+                if snapshot.list.isEmpty {
                     VStack(spacing: 0) {
                         Color.clear.frame(height: L.safeTop + chatsHeaderH
                                           + chatFilterOffset)
@@ -2868,7 +2891,11 @@ struct ChatsView: View {
             .onChange(of: app.chats) { _ in cachedSnapshot = chatSnapshot() }
             .onChange(of: chatFilter) { _ in cachedSnapshot = chatSnapshot() }
             .onChange(of: keyword) { _ in cachedSnapshot = chatSnapshot() }
-            .onChange(of: stressLoadedCount) { _ in cachedSnapshot = chatSnapshot() }
+            .onChange(of: stressLoadedCount) { _ in
+                if !ChatStressFixture.isActive {
+                    cachedSnapshot = chatSnapshot()
+                }
+            }
 
             .onChange(of: floorUp) { v in
                 withAnimation(.easeOut(duration: 0.2)) { app.floorFull = v }
