@@ -2153,13 +2153,13 @@ final class API {
         }
 
         guard let obj = try? JSONSerialization.jsonObject(with: data) else {
-            throw APIError.message("服务器返回了看不懂的内容")
+            throw APIError.message("服务暂时不可用，请稍后再试")
         }
         guard let dict = obj as? [String: Any] else {
-            throw APIError.message("服务器返回了看不懂的内容")
+            throw APIError.message("服务暂时不可用，请稍后再试")
         }
         if (dict["ok"] as? Bool) != true {
-            let msg = (dict["error"] as? String) ?? "请求失败"
+            let msg = friendlyServerMessage((dict["error"] as? String) ?? "")
 
             if let det = dict["details"] as? [String: Any],
                (det["code"] as? String) == "other_login" {
@@ -2188,8 +2188,25 @@ final class API {
         do {
             return try JSONDecoder().decode(T.self, from: data)
         } catch {
-            throw APIError.message("数据解析失败")
+            throw APIError.message("服务返回异常，请稍后再试")
         }
+    }
+
+    private func friendlyServerMessage(_ raw: String) -> String {
+        let value = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !value.isEmpty else { return "操作没有完成，请稍后再试" }
+        let lower = value.lowercased()
+        let technicalMarkers = [
+            "\"kind\":", "\"error\":", "[object object]", "typeerror",
+            "syntaxerror", "sqlite", "econn", "etimedout", "enoent",
+            "cannot read", "invalid json", "internal server", "stack trace",
+            "undefined", "null pointer"
+        ]
+        if value.hasPrefix("{") || value.hasPrefix("[")
+            || technicalMarkers.contains(where: { lower.contains($0) }) {
+            return "服务暂时不可用，请稍后再试"
+        }
+        return String(value.prefix(140))
     }
 
     private func get<T: Decodable>(_ path: String, as type: T.Type) async throws -> T {
@@ -5535,7 +5552,7 @@ private struct StarredPayload: Decodable {
         req.httpBody = data
         let (d, resp) = try await session.data(for: req)
         guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            throw APIError.message("上传失败（HTTP \((resp as? HTTPURLResponse)?.statusCode ?? 0)）")
+            throw APIError.message("上传失败，请检查网络后再试")
         }
         return try Self.rawUploadURL(from: d)
     }
@@ -5555,7 +5572,7 @@ private struct StarredPayload: Decodable {
         let delegate = UploadProgressDelegate(onProgress)
         let (d, resp) = try await session.upload(for: req, fromFile: file, delegate: delegate)
         guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            throw APIError.message("上传失败（HTTP \((resp as? HTTPURLResponse)?.statusCode ?? 0)）")
+            throw APIError.message("上传失败，请检查网络后再试")
         }
         return try Self.rawUploadURL(from: d)
     }
@@ -5621,7 +5638,7 @@ private struct StarredPayload: Decodable {
             (d, resp) = try await session.upload(for: req, from: data)
         }
         guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            throw APIError.message("上传失败（HTTP \((resp as? HTTPURLResponse)?.statusCode ?? 0)）")
+            throw APIError.message("上传失败，请检查网络后再试")
         }
         return try Self.rawUploadURL(from: d)
     }

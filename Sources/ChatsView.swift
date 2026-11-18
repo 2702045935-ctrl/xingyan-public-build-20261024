@@ -442,10 +442,14 @@ struct ChatRow: View, Equatable {
             break
         }
 
-        if kind == "pat" {
-            return (fallbackPreview("pat"), mentioned)
+        if kind == "pat" || value.contains("一束星光") {
+            return (patPreviewText(value), mentioned)
         }
         guard !value.isEmpty else { return (fallbackPreview(kind), mentioned) }
+        if value.hasPrefix("{") || value.hasPrefix("[")
+            || value.contains("\"kind\":") || value.contains("[object Object]") {
+            return (fallbackPreview(kind), mentioned)
+        }
         guard Lang.isEnglish || Lang.isRussian else { return (value, mentioned) }
         return (localizedGeneratedPreview(value), mentioned)
     }
@@ -483,7 +487,7 @@ struct ChatRow: View, Equatable {
         "新的会话": ("新的会话", "New conversation", "Новый чат"),
         "看看今天的热点": ("看看今天的热点", "See today's trending stories", "Смотрите сегодняшние тренды"),
         "查看官方内容": ("查看官方内容", "View official updates", "Смотреть официальные обновления"),
-        "星语提醒": ("星语提醒", "[Reminder]", "[Напоминание]"),
+        "星语提醒": ("拍了拍", "Poked", "Подтолкнул"),
         "拍了拍": ("拍了拍", "[Reminder]", "[Напоминание]"),
         "你撤回了一条消息": ("你撤回了一条消息", "You recalled a message", "Вы отозвали сообщение"),
         "对方撤回了一条消息": ("对方撤回了一条消息", "The other person recalled a message", "Собеседник отозвал сообщение"),
@@ -616,11 +620,31 @@ struct ChatRow: View, Equatable {
         case "channels", "channel", "feed", "shortvideo": return sessionCopy(zh: "[视频号]", en: "[Channels]", ru: "[Каналы]")
         case "call", "voicecall": return sessionCopy(zh: "[语音通话]", en: "[Voice Call]", ru: "[Голосовой вызов]")
         case "videocall": return sessionCopy(zh: "[视频通话]", en: "[Video Call]", ru: "[Видеовызов]")
-        case "pat": return sessionCopy(zh: "星语提醒", en: "[Reminder]", ru: "[Напоминание]")
+        case "pat": return sessionCopy(zh: "拍了拍", en: "Poked", ru: "Подтолкнул")
         case "system": return sessionCopy(zh: "消息", en: "Message", ru: "Сообщение")
         case "": return idlePreview
         default: return sessionCopy(zh: "[消息]", en: "[Message]", ru: "[Сообщение]")
         }
+    }
+
+    private func patPreviewText(_ raw: String) -> String {
+        if Lang.isEnglish || Lang.isRussian {
+            return sessionCopy(zh: "拍了拍", en: "Poked", ru: "Подтолкнул")
+        }
+        var value = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if value.isEmpty { return sessionCopy(zh: "拍了拍", en: "Poked", ru: "Подтолкнул") }
+        if value.hasPrefix("{"), value.hasSuffix("}") {
+            return "拍了拍"
+        }
+        value = value
+            .replacingOccurrences(of: "向你发来一束星光", with: "拍了拍你")
+            .replacingOccurrences(of: "发去一束星光", with: "拍了拍")
+            .replacingOccurrences(of: "一束星光", with: "拍了拍")
+            .replacingOccurrences(of: "我向", with: "你")
+            .replacingOccurrences(of: "提醒了", with: "拍了拍")
+            .replacingOccurrences(of: "提醒你", with: "拍了拍你")
+        value = value.replacingOccurrences(of: "你向", with: "你")
+        return value
     }
 
     private var idlePreview: String {

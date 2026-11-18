@@ -5783,7 +5783,7 @@ struct ChatDetailView: View {
                 } else if let i2 = outbox.firstIndex(where: { $0.id == p.id }) {
                     outbox[i2].sending = false
                     outbox[i2].failed = true
-                    outbox[i2].failureReason = "服务器没有确认这条消息"
+                    outbox[i2].failureReason = "消息没有发出去，点重试再发一次"
                     break
                 }
                 outbox.removeAll { $0.id == p.id }

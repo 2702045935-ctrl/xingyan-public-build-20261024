@@ -7,6 +7,7 @@ DETAIL = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
 CHATS = (ROOT / "Sources" / "ChatsView.swift").read_text(encoding="utf-8")
 LIST = (ROOT / "Sources" / "NativeStaticList.swift").read_text(encoding="utf-8")
 LINK = (ROOT / "Sources" / "ShopLink.swift").read_text(encoding="utf-8")
+API = (ROOT / "Sources" / "API.swift").read_text(encoding="utf-8")
 
 
 def require(condition: bool, message: str) -> None:
@@ -60,6 +61,17 @@ require(
     and "WhatsAppMessageTicks(count: 2" in DETAIL
     and "static let readReceipt = Color(hex: 0x53BDEB)" in DETAIL,
     "outgoing messages must use single and WhatsApp-style double ticks",
+)
+require(
+    "friendlyServerMessage" in API
+    and "服务器返回了看不懂的内容" not in API
+    and "数据解析失败" not in API,
+    "technical server failures must be converted into user-readable copy",
+)
+require(
+    "patPreviewText" in CHATS
+    and 'case "pat": return sessionCopy(zh: "拍了拍"' in CHATS,
+    "pat previews must never expose star-light implementation language",
 )
 
 print("chat-motion-link: passed")
