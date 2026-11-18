@@ -8,6 +8,7 @@ CHATS = (ROOT / "Sources" / "ChatsView.swift").read_text(encoding="utf-8")
 LIST = (ROOT / "Sources" / "NativeStaticList.swift").read_text(encoding="utf-8")
 LINK = (ROOT / "Sources" / "ShopLink.swift").read_text(encoding="utf-8")
 API = (ROOT / "Sources" / "API.swift").read_text(encoding="utf-8")
+APP = (ROOT / "Sources" / "App.swift").read_text(encoding="utf-8")
 
 
 def require(condition: bool, message: str) -> None:
@@ -72,6 +73,11 @@ require(
     "patPreviewText" in CHATS
     and 'case "pat": return sessionCopy(zh: "拍了拍"' in CHATS,
     "pat previews must never expose star-light implementation language",
+)
+require(
+    "localMessagePreview" in APP
+    and "return message.body.isEmpty ? \"[消息]\" : message.body" not in APP,
+    "realtime and first-send previews must never fall back to raw payload JSON",
 )
 
 print("chat-motion-link: passed")

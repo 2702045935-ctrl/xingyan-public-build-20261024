@@ -1663,22 +1663,7 @@ final class AppState: ObservableObject {
     }
 
     private func previewText(for message: Message) -> String {
-        switch message.kindName {
-        case "text": return message.body
-        case "image", "images": return "[图片]"
-        case "video", "livephoto": return "[视频]"
-        case "audio", "voice": return "[语音]"
-        case "file": return "[文件]"
-        case "location": return "[位置]"
-        case "card": return "[名片]"
-        case "transfer":
-            return message.moneyCardAmount.map { "[转账] ¥" + moneyFmt($0) } ?? "[转账]"
-        case "redpacket":
-            return message.moneyCardAmount.map { "[红包] ¥" + moneyFmt($0) } ?? "[红包]"
-        case "call", "voicecall": return "[语音通话]"
-        case "videocall": return "[视频通话]"
-        default: return message.body.isEmpty ? "[消息]" : message.body
-        }
+        Self.localMessagePreview(message)
     }
 
     func applyPinnedLocally(chatId: String, pinned: Bool) {
@@ -1995,6 +1980,25 @@ final class AppState: ObservableObject {
     }
 
     private static func realtimePreview(_ message: Message) -> String {
+        localMessagePreview(message)
+    }
+
+    private static func localMessagePreview(_ message: Message) -> String {
+        func object(_ body: String) -> [String: Any] {
+            guard let data = body.data(using: .utf8),
+                  let value = try? JSONSerialization.jsonObject(with: data),
+                  let dictionary = value as? [String: Any] else { return [:] }
+            return dictionary
+        }
+        func title(_ body: String, keys: [String]) -> String {
+            let values = object(body)
+            for key in keys {
+                guard let raw = values[key] as? String else { continue }
+                let clean = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !clean.isEmpty { return String(clean.prefix(30)) }
+            }
+            return ""
+        }
         switch message.kindName {
         case "text", "":
             let text = message.body.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -2003,20 +2007,55 @@ final class AppState: ObservableObject {
         case "video", "livephoto": return "[视频]"
         case "audio", "voice": return "[语音]"
         case "file": return "[文件]"
-        case "link", "oa": return "[链接]"
-        case "music": return "[音乐]"
+        case "link":
+            let name = title(message.body, keys: ["title", "name"])
+            return name.isEmpty ? "[链接]" : "[链接] " + name
+        case "oa":
+            let name = title(message.body, keys: ["title", "name"])
+            return name.isEmpty ? "[文章]" : "[文章] " + name
+        case "music":
+            let name = title(message.body, keys: ["title", "name"])
+            return name.isEmpty ? "[音乐]" : "[音乐] " + name
         case "location": return "[位置]"
-        case "card": return "[名片]"
+        case "card":
+            let name = title(message.body, keys: ["name", "nickname"])
+            return name.isEmpty ? "[名片]" : "[名片] " + name
         case "transfer":
             return message.moneyCardAmount.map { "[转账] ¥" + moneyFmt($0) } ?? "[转账]"
         case "redpacket":
             return message.moneyCardAmount.map { "[红包] ¥" + moneyFmt($0) } ?? "[红包]"
         case "gift": return "[礼物]"
-        case "miniapp", "mini", "app", "mall": return "[小程序]"
+        case "miniapp", "mini", "app":
+            let name = title(message.body, keys: ["title", "name"])
+            return name.isEmpty ? "[小程序]" : "[小程序] " + name
+        case "mall":
+            let name = title(message.body, keys: ["title", "name"])
+            return name.isEmpty ? "[商品]" : "[商品] " + name
         case "channels", "channel", "feed", "shortvideo": return "[视频号]"
         case "call", "voicecall": return "[语音通话]"
         case "videocall": return "[视频通话]"
-        case "system": return "消息"
+        case "pat": return "拍了拍"
+        case "note":
+            let first = message.body.split(separator: "\n").first.map(String.init) ?? ""
+            let clean = first.trimmingCharacters(in: .whitespacesAndNewlines)
+            return clean.isEmpty ? "[笔记]" : "[笔记] " + String(clean.prefix(30))
+        case "announce":
+            let name = title(message.body, keys: ["title", "text"])
+            return name.isEmpty ? "[群公告]" : "[群公告] " + name
+        case "sysnotice":
+            let name = title(message.body, keys: ["title", "text"])
+            return name.isEmpty ? "通知" : name
+        case "sticker": return "[表情]"
+        case "dice": return "[骰子]"
+        case "wheel": return "[转盘]"
+        case "fortune": return "[运势]"
+        case "rps": return "[猜拳]"
+        case "balance": return "[转账卡]"
+        case "company": return "[经营账户]"
+        case "system":
+            let body = message.body.trimmingCharacters(in: .whitespacesAndNewlines)
+            return body.hasPrefix("{") || body.hasPrefix("[") || body.isEmpty
+                ? "消息" : body
         default: return "[消息]"
         }
     }
