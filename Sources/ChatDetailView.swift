@@ -532,10 +532,6 @@ private struct ChatTopGlassBackdrop: View {
             if reduceTransparency {
                 Rectangle()
                     .fill(Color(uiColor: .systemBackground).opacity(0.97))
-            } else if #available(iOS 26.0, *) {
-                NativeScrollEdgeElementBridge(
-                    scrollView: { ChatScrollHandle.shared.scroll }
-                )
             } else {
                 NativeGlassHeaderMaterial()
                     .mask {
@@ -2214,13 +2210,16 @@ struct ChatDetailView: View {
                     if isStarWorld && newsMode {
                         newsMaskColor
                     } else if scheme == .light {
-                        ChatImmersiveEdgeMask(path: backgroundPath,
-                                              edge: .top,
-                                              tint: wallpaperTopTint,
-                                              dark: topBarUsesLightInk,
-                                              effect: backgroundEffect,
-                                              preset: ChatTheme.preset,
-                                              themeVersion: chatTheme.version)
+                        ZStack {
+                            ChatImmersiveEdgeMask(path: backgroundPath,
+                                                  edge: .top,
+                                                  tint: wallpaperTopTint,
+                                                  dark: topBarUsesLightInk,
+                                                  effect: backgroundEffect,
+                                                  preset: ChatTheme.preset,
+                                                  themeVersion: chatTheme.version)
+                            ChatTopGlassBackdrop()
+                        }
                     } else {
                         ChatTopGlassBackdrop()
                     }

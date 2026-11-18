@@ -14,9 +14,8 @@ def require(condition: bool, message: str) -> None:
 
 require(
     "private struct ChatTopGlassBackdrop" in CHAT
-    and "NativeScrollEdgeElementBridge(" in CHAT
-    and "ChatScrollHandle.shared.scroll" in CHAT,
-    "chat top chrome must use the system scroll-edge effect",
+    and "NativeGlassHeaderMaterial()" in CHAT,
+    "chat top chrome must restore the native blur layer",
 )
 require(
     "sv.topEdgeEffect.style = .automatic" in (
