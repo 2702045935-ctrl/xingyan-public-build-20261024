@@ -321,8 +321,7 @@ struct NativeTabBar: UIViewRepresentable {
     }
 
     private func applyColors(_ bar: UITabBar) {
-        let interactionAccent = UIColor(OrbitTheme.jade)
-        bar.tintColor = interactionAccent
+        bar.tintColor = UIColor.systemBlue
         bar.unselectedItemTintColor = UIColor(OrbitTheme.secondary)
 
         let appearance = UITabBarAppearance()
@@ -351,16 +350,16 @@ struct NativeTabBar: UIViewRepresentable {
             .font: pfUIFont(10.5, .medium)
         ]
         let selectedTitle: [NSAttributedString.Key: Any] = [
-            .foregroundColor: interactionAccent,
+            .foregroundColor: UIColor(OrbitTheme.secondary),
             .font: pfUIFont(10.5, .semibold)
         ]
         let selectedMyTitle: [NSAttributedString.Key: Any] = [
-            .foregroundColor: interactionAccent,
+            .foregroundColor: UIColor(OrbitTheme.jade),
             .font: pfUIFont(10.5, .semibold)
         ]
         appearance.stackedLayoutAppearance.normal.iconColor = UIColor(OrbitTheme.secondary)
         appearance.stackedLayoutAppearance.normal.titleTextAttributes = normalTitle
-        appearance.stackedLayoutAppearance.selected.iconColor = interactionAccent
+        appearance.stackedLayoutAppearance.selected.iconColor = UIColor.systemBlue
         appearance.stackedLayoutAppearance.selected.titleTextAttributes = selectedTitle
         appearance.stackedLayoutAppearance.normal.badgeBackgroundColor = .systemRed
         appearance.stackedLayoutAppearance.selected.badgeBackgroundColor = .systemRed
@@ -372,8 +371,10 @@ struct NativeTabBar: UIViewRepresentable {
             items[4].setTitleTextAttributes(normalTitle, for: .normal)
             items[4].setTitleTextAttributes(selectedMyTitle, for: .selected)
         }
-        appearance.selectionIndicatorImage = UIImage()
-        bar.selectionIndicatorImage = UIImage()
+        if scheme == .dark {
+            appearance.selectionIndicatorImage = UIImage()
+            bar.selectionIndicatorImage = UIImage()
+        }
         if #available(iOS 26.0, *) {
             if #unavailable(iOS 27.0) {
                 let offset = UIOffset(horizontal: 0, vertical: 8)
@@ -418,48 +419,9 @@ struct NativeTabBar: UIViewRepresentable {
 
         func tabBar(_ tabBar: UITabBar, didSelect item: UITabBarItem) {
             guard let index = tabBar.items?.firstIndex(where: { $0 === item }) else { return }
-            if selection.wrappedValue == index {
-                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
-                Self.scrollVisiblePageToTop(from: tabBar)
-                return
-            }
             selectionFeedback.prepare()
             selectionFeedback.selectionChanged()
             selection.wrappedValue = index
-        }
-
-        private static func scrollVisiblePageToTop(from tabBar: UITabBar) {
-            DispatchQueue.main.async {
-                guard let window = tabBar.window else { return }
-                let viewport = window.bounds
-                let minimumHeight = viewport.height * 0.42
-                var candidates: [(view: UIScrollView, visibleArea: CGFloat)] = []
-
-                func visit(_ view: UIView) {
-                    if let scroll = view as? UIScrollView,
-                       scroll !== tabBar,
-                       !scroll.isDescendant(of: tabBar),
-                       scroll.window === window,
-                       !scroll.isHidden,
-                       scroll.alpha > 0.05,
-                       scroll.bounds.height >= minimumHeight,
-                       scroll.contentSize.height > scroll.bounds.height + 16 {
-                        let frame = scroll.convert(scroll.bounds, to: window)
-                        let visible = frame.intersection(viewport)
-                        if !visible.isNull, visible.height > minimumHeight {
-                            candidates.append((scroll, visible.width * visible.height))
-                        }
-                    }
-                    for child in view.subviews { visit(child) }
-                }
-
-                visit(window)
-                guard let target = candidates.max(by: { $0.visibleArea < $1.visibleArea })?.view else {
-                    return
-                }
-                let top = CGPoint(x: 0, y: -target.adjustedContentInset.top)
-                target.setContentOffset(top, animated: true)
-            }
         }
 
         fileprivate func applyAvatar(in bar: UITabBar, loader: TabAvatarLoader,
