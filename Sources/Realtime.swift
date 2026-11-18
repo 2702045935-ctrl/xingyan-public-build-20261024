@@ -9,6 +9,8 @@ struct PushEvent: Equatable {
     var chatId = ""
     var messageId = ""
     var seq = 0
+    var deliveredSeq = 0
+    var readSeq = 0
     var chat: Chat? = nil
     var message: Message? = nil
     var fromId = ""
@@ -378,6 +380,8 @@ final class Realtime: ObservableObject {
         ev.chatId = (obj["chatId"] as? String) ?? ""
         ev.messageId = (obj["messageId"] as? String) ?? ""
         ev.seq = (obj["seq"] as? NSNumber)?.intValue ?? 0
+        ev.deliveredSeq = (obj["deliveredSeq"] as? NSNumber)?.intValue ?? 0
+        ev.readSeq = (obj["readSeq"] as? NSNumber)?.intValue ?? 0
         if let rawChat = obj["chat"] as? [String: Any],
            let chatData = try? JSONSerialization.data(withJSONObject: rawChat),
            let decodedChat = try? JSONDecoder().decode(Chat.self, from: chatData) {

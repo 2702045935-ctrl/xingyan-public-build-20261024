@@ -1702,6 +1702,7 @@ enum L10n {
         "正在连接星言": "Connecting to Xingyan",
         "没有听清，再说一次": "I did not catch that. Try again.",
         "消息": "Messages",
+        "消息通过加密连接传输，媒体文件加密存储于星言自有服务器。": "Messages travel over an encrypted connection, and media files are stored encrypted on Xingyan servers.",
         "消息已撤回": "Message recalled",
         "点一下重新开始": "Tap to start again",
         "登录后车载消息和音乐会同步到这里": "CarPlay messages and music will sync after sign-in",

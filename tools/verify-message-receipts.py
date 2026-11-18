@@ -1,0 +1,57 @@
+#!/usr/bin/env python3
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+SERVER = (ROOT / "server" / "server.js").read_text(encoding="utf-8")
+API = (ROOT / "Sources" / "API.swift").read_text(encoding="utf-8")
+CHAT = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
+REALTIME = (ROOT / "Sources" / "Realtime.swift").read_text(encoding="utf-8")
+
+
+def require(condition: bool, message: str) -> None:
+    if not condition:
+        raise SystemExit("message receipts verification failed: " + message)
+
+
+require(
+    "parts[2] === 'receipts'" in SERVER
+    and "deliveredSeq: allDelivered" in SERVER
+    and "readSeq: allRead" in SERVER,
+    "server must expose real per-chat receipt cursors",
+)
+require(
+    "type: 'receipt'" in SERVER
+    and "deliveredSeq: seq" in SERVER
+    and "readSeq: value" in SERVER,
+    "server must publish delivery and read receipt updates",
+)
+require(
+    "func chatReceipts(chatId: String)" in API
+    and "struct ChatReceiptSnapshot" in API,
+    "client must load receipt state from the server",
+)
+require(
+    "deliveryState: deliveryState(for: message)" in CHAT
+    and "case sent" in CHAT
+    and "case delivered" in CHAT
+    and "case read" in CHAT,
+    "message ticks must render the real receipt state",
+)
+require(
+    "WhatsAppMessageTicks(count: 2, color: ChatTheme.readReceipt)" not in CHAT,
+    "message ticks must not be hard-coded as delivered",
+)
+require(
+    'var deliveredSeq = 0' in REALTIME
+    and 'var readSeq = 0' in REALTIME
+    and 'ev.type == "receipt"' in CHAT,
+    "realtime receipt updates must reach the open conversation",
+)
+require(
+    "消息通过加密连接传输，媒体文件加密存储于星言自有服务器。" in CHAT
+    and "端到端加密" not in CHAT,
+    "security notice must remain accurate while server-side decryption exists",
+)
+
+print("message-receipts: passed")

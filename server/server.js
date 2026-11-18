@@ -9209,6 +9209,11 @@ function callSend(userId, payload) {
 
 async function publishReadCursor(chat, user, seq) {
   const value = Math.max(0, Math.floor(Number(seq) || 0));
+  if (!db.delivered[user.id]) db.delivered[user.id] = {};
+  if (value > Number(db.delivered[user.id][chat.id] || 0)) {
+    db.delivered[user.id][chat.id] = value;
+    deliveredDirty = true;
+  }
   const payload = {
     type: 'sync',
     action: 'read',
@@ -9224,6 +9229,13 @@ async function publishReadCursor(chat, user, seq) {
     chatId: chat.id,
     userId: user.id,
     seq: value
+  }, user.id);
+  sendToChat(chat, {
+    type: 'receipt',
+    chatId: chat.id,
+    userId: user.id,
+    deliveredSeq: value,
+    readSeq: value
   }, user.id);
   if (messageReliability) {
     messageReliability.recordEvent('chat.read', chat.id, value, {
@@ -9413,6 +9425,13 @@ function handleClientMessage(user, socket, raw) {
     if (seq > Number(db.delivered[user.id][chat.id] || 0)) {
       db.delivered[user.id][chat.id] = seq;
       deliveredDirty = true;
+      sendToChat(chat, {
+        type: 'receipt',
+        chatId: chat.id,
+        userId: user.id,
+        deliveredSeq: seq,
+        readSeq: Number((db.reads[user.id] || {})[chat.id] || 0)
+      }, user.id);
     }
     if (messageReliability && socket.__deviceId) {
       messageReliability.ackDevice(user.id, socket.__deviceId, chat.id, seq);
@@ -21913,6 +21932,32 @@ async function handleApi(req, res, pathname, query) {
     audit(req, { username: user.username, name: user.nickname, role: '用户' }, '导入聊天记录', user.username,
       '导入 ' + imported + ' 条，跳过 ' + skipped + ' 条，涉及 ' + touched.length + ' 个会话');
     ok(res, { imported, skipped, chats: touched.length });
+    return;
+  }
+
+  if (parts[0] === 'chats' && parts[2] === 'receipts' && method === 'GET') {
+    refreshChatAccessStateFromDisk(false);
+    const chat = db.chats.find((c) => c.id === parts[1]);
+    if (!chat || !chat.memberIds.includes(user.id)) return fail(res, 404, '会话不存在');
+    const recipients = chat.memberIds
+      .filter((id) => id !== user.id)
+      .map((id) => ({
+        userId: id,
+        deliveredSeq: Math.max(0, Number((db.delivered[id] || {})[chat.id] || 0)),
+        readSeq: Math.max(0, Number((db.reads[id] || {})[chat.id] || 0))
+      }));
+    const allDelivered = recipients.length
+      ? Math.min(...recipients.map((row) => row.deliveredSeq))
+      : 0;
+    const allRead = recipients.length
+      ? Math.min(...recipients.map((row) => row.readSeq))
+      : 0;
+    ok(res, {
+      chatId: chat.id,
+      deliveredSeq: allDelivered,
+      readSeq: allRead,
+      recipients
+    });
     return;
   }
 

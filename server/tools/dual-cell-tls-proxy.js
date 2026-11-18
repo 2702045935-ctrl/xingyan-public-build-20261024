@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const http = require('http');
 const https = require('https');
+const { isMediaObjectPath } = require('../lib/media-object-routing');
 
 const PORT = Number(process.env.TLS_PORT || 5443);
 const CERT = process.env.TLS_CERT || '/opt/chris/tls/u.crt';
@@ -87,6 +88,7 @@ function tokenFrom(req, url) {
 }
 
 function backFor(req, url, body) {
+  if (isMediaObjectPath(req.method, url.pathname)) return OWNER_PORTS[0];
   const chat = String(url.pathname || '').match(/^\/api\/chats\/([^/]+)/);
   if (chat && !['direct', 'group', 'face', 'export', 'import'].includes(chat[1])) {
     return OWNER_PORTS[shardFor('chat', decodeURIComponent(chat[1]))];

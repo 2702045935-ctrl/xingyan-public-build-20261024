@@ -184,6 +184,28 @@ async function main() {
     assert.strictEqual(response.status, 200, JSON.stringify(response.data));
     assert.strictEqual(response.data.message.seq, 3);
 
+    const aliceReceiptSocket = await openSocket(base, alice.cookie);
+    const bobReceiptSocket = await openSocket(base, bobPhone.cookie);
+    bobReceiptSocket.socket.send(JSON.stringify({
+      type: 'ack',
+      chatId,
+      seq: 3
+    }));
+    const deliveredReceipt = await waitForSocketEvent(aliceReceiptSocket.events, (event) =>
+      event.type === 'receipt'
+      && event.chatId === chatId
+      && event.userId === bobPhone.user.id
+      && event.deliveredSeq === 3
+      && event.readSeq === 0);
+    assert.strictEqual(deliveredReceipt.deliveredSeq, 3);
+
+    response = await call(base, alice.cookie, 'GET',
+      `/api/chats/${chatId}/receipts`, undefined, 'alice-phone');
+    assert.strictEqual(response.status, 200, JSON.stringify(response.data));
+    assert.strictEqual(response.data.deliveredSeq, 3);
+    assert.strictEqual(response.data.readSeq, 0);
+    assert.strictEqual(response.data.recipients[0].userId, bobPhone.user.id);
+
     response = await call(base, bobPhone.cookie, 'GET',
       `/api/chats/${chatId}/messages?since=0&limit=3`, undefined, 'bob-phone');
     assert.strictEqual(response.status, 200, JSON.stringify(response.data));
@@ -206,6 +228,21 @@ async function main() {
       && event.chatId === chatId
       && event.seq === 5);
     assert.strictEqual(readSync.userId, bobPhone.user.id);
+    const readReceipt = await waitForSocketEvent(aliceReceiptSocket.events, (event) =>
+      event.type === 'receipt'
+      && event.chatId === chatId
+      && event.userId === bobPhone.user.id
+      && event.deliveredSeq === 5
+      && event.readSeq === 5);
+    assert.strictEqual(readReceipt.readSeq, 5);
+
+    response = await call(base, alice.cookie, 'GET',
+      `/api/chats/${chatId}/receipts`, undefined, 'alice-phone');
+    assert.strictEqual(response.status, 200, JSON.stringify(response.data));
+    assert.strictEqual(response.data.deliveredSeq, 5);
+    assert.strictEqual(response.data.readSeq, 5);
+    aliceReceiptSocket.socket.close();
+    bobReceiptSocket.socket.close();
     desktopSocket.socket.close();
     await new Promise((resolve) => setTimeout(resolve, 100));
 

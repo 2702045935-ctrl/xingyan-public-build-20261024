@@ -589,10 +589,12 @@ final class AppState: ObservableObject {
                 await self?.loadChats()
             }
         case "read":
-            if !ev.chatId.isEmpty {
+            if ev.userId == me?.id, !ev.chatId.isEmpty {
                 markChatReadLocally(ev.chatId)
                 coalesce { [weak self] in await self?.loadChats() }
             }
+        case "receipt":
+            break
         case "sync":
             if ev.action == "read", !ev.chatId.isEmpty {
                 markChatReadLocally(ev.chatId)

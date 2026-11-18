@@ -317,6 +317,19 @@ struct DeviceSyncPage: Decodable, Hashable {
     var hasMore: Bool
 }
 
+struct ChatReceiptCursor: Decodable, Hashable {
+    var userId: String
+    var deliveredSeq: Int
+    var readSeq: Int
+}
+
+struct ChatReceiptSnapshot: Decodable, Hashable {
+    var chatId: String
+    var deliveredSeq: Int
+    var readSeq: Int
+    var recipients: [ChatReceiptCursor]
+}
+
 struct Message: Codable, Identifiable, Hashable {
     var id: String
     var clientId: String? = nil
@@ -3979,6 +3992,10 @@ private struct StarredPayload: Decodable {
             payload.cursor?.readSeq ?? 0,
             payload.cursor?.updatedAt ?? ""
         )
+    }
+
+    func chatReceipts(chatId: String) async throws -> ChatReceiptSnapshot {
+        try await get("/api/chats/\(chatId)/receipts", as: ChatReceiptSnapshot.self)
     }
 
     func deviceSyncState(cursor: String? = nil, limit: Int = 50)

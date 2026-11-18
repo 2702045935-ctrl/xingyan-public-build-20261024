@@ -235,6 +235,7 @@ private struct DeliveryFailureCopy {
 }
 
 private enum NativeGroupItemKind: Equatable {
+    case securityNotice
     case older
     case message(Message)
     case outbox(PendingMsg)
@@ -721,6 +722,7 @@ struct ChatDetailView: View {
     @Environment(\.colorScheme) private var scheme
 
     @State private var messages: [Message] = []
+    @State private var receiptCursors: [String: ChatReceiptCursor] = [:]
     @State private var senderAvatarCache: [String: String] = [:]
     @State private var groupSenderProfilesLoaded = false
     @State private var backgroundLuminance: Double? = nil
@@ -2633,6 +2635,7 @@ struct ChatDetailView: View {
             loadDeletedMessageIds()
             loadOutbox()
             await load(initial: true)
+            await refreshReceipts()
             historySyncTask?.cancel()
             if shouldLoadCompleteGroupHistory {
                 historySyncTask = Task { @MainActor in
@@ -2732,6 +2735,17 @@ struct ChatDetailView: View {
                 unreadHere = 0
             }
 
+            if (ev.type == "receipt" || ev.type == "read"),
+               ev.chatId == chat.id,
+               !ev.userId.isEmpty,
+               ev.userId != myId {
+                var row = receiptCursors[ev.userId]
+                    ?? ChatReceiptCursor(userId: ev.userId, deliveredSeq: 0, readSeq: 0)
+                row.deliveredSeq = max(row.deliveredSeq, max(ev.deliveredSeq, ev.seq))
+                row.readSeq = max(row.readSeq, ev.readSeq)
+                receiptCursors[ev.userId] = row
+            }
+
             if ev.type == "message", ev.chatId == chat.id, let message = ev.message {
                 upsertVisibleMessage(message)
                 if message.kindName == "pat" {
@@ -2767,7 +2781,12 @@ struct ChatDetailView: View {
             Task { await loadMyStickers() }
         }
         .onChange(of: realtime.connected) { connected in
-            if connected { Task { await load(initial: false) } }
+            if connected {
+                Task {
+                    await load(initial: false)
+                    await refreshReceipts()
+                }
+            }
         }
 
         .onDisappear {
@@ -2826,6 +2845,9 @@ struct ChatDetailView: View {
             ScrollViewReader { proxy in
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(spacing: 0) {
+                        securityNotice
+                            .padding(.horizontal, L.msgPad)
+
                         ForEach(messages) { message in
                             messageBlock(message)
                                 .id(message.id)
@@ -2905,6 +2927,8 @@ struct ChatDetailView: View {
         return ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(spacing: 0) {
+
+                    securityNotice
 
                     if hasOlder {
                         Color.clear
@@ -3215,7 +3239,9 @@ struct ChatDetailView: View {
     }
 
     private var nativeGroupItems: [NativeGroupItem] {
-        var items: [NativeGroupItem] = []
+        var items: [NativeGroupItem] = [
+            NativeGroupItem(id: "native-security-notice", kind: .securityNotice)
+        ]
         if hasOlder {
             items.append(NativeGroupItem(id: "native-older", kind: .older))
         }
@@ -3240,6 +3266,8 @@ struct ChatDetailView: View {
 
     private func nativeGroupSignature(_ item: NativeGroupItem) -> String {
         switch item.kind {
+        case .securityNotice:
+            return "security-notice"
         case .older:
             return "older:\(hasOlder)"
         case .message(let message):
@@ -3250,6 +3278,7 @@ struct ChatDetailView: View {
                 selected.contains(message.id) ? "selected" : "",
                 senderNameFor(message),
                 senderAvatarFor(message),
+                deliveryState(for: message).accessibilityText,
                 backgroundPath,
                 Lang.code,
                 usesPlainDefaultChatChrome ? "plain" : "styled"
@@ -3280,6 +3309,9 @@ struct ChatDetailView: View {
     @ViewBuilder
     private func nativeGroupRow(_ item: NativeGroupItem) -> some View {
         switch item.kind {
+        case .securityNotice:
+            securityNotice
+
         case .older:
             Color.clear
                 .frame(height: 1)
@@ -3323,6 +3355,31 @@ struct ChatDetailView: View {
         case .spacer:
             Color.clear.frame(height: 8 + L.msgPad)
         }
+    }
+
+    private var securityNotice: some View {
+        VStack(spacing: 5) {
+            Image(systemName: "lock.fill")
+                .font(.system(size: 10.5, weight: .semibold))
+                .foregroundStyle(C.subLabel)
+            Text(Tr("消息通过加密连接传输，媒体文件加密存储于星言自有服务器。"))
+                .font(pf(11.5))
+                .foregroundStyle(C.subLabel)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 28)
+        .padding(.vertical, 10)
+        .background(
+            Capsule(style: .continuous)
+                .fill(.ultraThinMaterial)
+        )
+        .overlay(
+            Capsule(style: .continuous)
+                .stroke(Color.primary.opacity(0.06), lineWidth: 0.5)
+        )
+        .padding(.vertical, 8)
     }
 
     /// Kept temporarily for reference while direct chats transition independently.
@@ -4054,6 +4111,7 @@ struct ChatDetailView: View {
     private func messageRow(_ message: Message) -> some View {
         EquatableView(content: MessageRow(message: message,
                    mine: mineFor(message),
+                   deliveryState: deliveryState(for: message),
                    myId: myId,
                    senderName: senderNameFor(message),
                    senderNameUsesLightInk: senderNameUsesLightInk,
@@ -4121,6 +4179,38 @@ struct ChatDetailView: View {
     private func mineFor(_ message: Message) -> Bool {
         if message.isCallRecord && !message.callFrom.isEmpty { return message.callFrom == myId }
         return message.senderId == myId
+    }
+
+    private var receiptRecipientIds: [String] {
+        (chat.memberIds ?? []).filter {
+            !$0.isEmpty && $0 != myId && $0 != "system"
+        }
+    }
+
+    private func deliveryState(for message: Message) -> MessageDeliveryState {
+        guard mineFor(message), !message.isRecalled, let seq = message.seq, seq > 0 else {
+            return .sent
+        }
+        let recipients = receiptRecipientIds
+        guard !recipients.isEmpty else { return .sent }
+        let delivered = recipients.allSatisfy {
+            (receiptCursors[$0]?.deliveredSeq ?? 0) >= seq
+        }
+        guard delivered else { return .sent }
+        let read = recipients.allSatisfy {
+            (receiptCursors[$0]?.readSeq ?? 0) >= seq
+        }
+        return read ? .read : .delivered
+    }
+
+    private func refreshReceipts() async {
+        guard !MessageStressFixture.isStressChat(chat.id),
+              let snapshot = try? await API.shared.chatReceipts(chatId: chat.id) else { return }
+        var next: [String: ChatReceiptCursor] = [:]
+        for row in snapshot.recipients where row.userId != myId {
+            next[row.userId] = row
+        }
+        receiptCursors = next
     }
 
     @ViewBuilder
@@ -7359,9 +7449,32 @@ private struct WhatsAppMessageTicks: View {
     }
 }
 
+enum MessageDeliveryState: Equatable {
+    case sent
+    case delivered
+    case read
+
+    var tickCount: Int { self == .sent ? 1 : 2 }
+
+    var color: Color {
+        self == .read
+            ? ChatTheme.readReceipt
+            : Color.dyn(0xA5A9AE, 0xB7BBC0)
+    }
+
+    var accessibilityText: String {
+        switch self {
+        case .sent: return Tr("已发送")
+        case .delivered: return Tr("已送达")
+        case .read: return Tr("已读")
+        }
+    }
+}
+
 struct MessageRow: View {
     let message: Message
     let mine: Bool
+    var deliveryState: MessageDeliveryState = .sent
 
     var myId: String = ""
     var senderName: String = ""
@@ -7524,12 +7637,13 @@ struct MessageRow: View {
                message.kindName != "pat" {
                 HStack(spacing: 0) {
                     Spacer(minLength: 0)
-                    WhatsAppMessageTicks(count: 2, color: ChatTheme.readReceipt)
+                    WhatsAppMessageTicks(count: deliveryState.tickCount,
+                                         color: deliveryState.color)
                 }
                 .padding(.trailing, 4)
                 .offset(y: -2)
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Tr("已送达"))
+                .accessibilityLabel(deliveryState.accessibilityText)
             }
 
             if asrBusy || !asrText.isEmpty {
