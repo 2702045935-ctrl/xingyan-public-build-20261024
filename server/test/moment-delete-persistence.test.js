@@ -155,6 +155,30 @@ async function main() {
     server = await start(dataDir, port, turnPort);
     const feed = await call(server.base, 'GET', '/api/moments?limit=100', undefined, cookie);
     assert.ok(!(feed.data.moments || []).some((row) => row.id === momentId));
+
+    const wrappedId = 'mo_wrapped_log_compat';
+    fs.appendFileSync(path.join(dataDir, 'moments-log.jsonl'),
+      JSON.stringify({
+        op: 'publish',
+        moment: {
+          id: wrappedId,
+          authorId: 'u_moment_delete',
+          content: 'wrapped-log-marker',
+          images: [],
+          createdAt: '2026-11-18T04:00:00.000Z',
+          visibility: 'private',
+          likes: [],
+          comments: []
+        }
+      }) + '\n');
+    const wrappedFeed = await call(server.base, 'GET', '/api/moments?limit=100', undefined, cookie);
+    assert.ok((wrappedFeed.data.moments || []).some((row) => row.id === wrappedId),
+      'wrapped publish log was not loaded');
+    fs.appendFileSync(path.join(dataDir, 'moments-log.jsonl'),
+      JSON.stringify({ op: 'delete', id: wrappedId }) + '\n');
+    const deletedWrappedFeed = await call(server.base, 'GET', '/api/moments?limit=100', undefined, cookie);
+    assert.ok(!(deletedWrappedFeed.data.moments || []).some((row) => row.id === wrappedId),
+      'wrapped delete log was not applied');
   } finally {
     await stop(server && server.child);
     fs.rmSync(dataDir, { recursive: true, force: true });

@@ -3206,6 +3206,18 @@ function momentsStorageSignature() {
   return fileSig(path.join(DATA_DIR, 'moments.json')) + '|' + fileSig(momentsLogPath());
 }
 
+function applyMomentLogRecord(rows, record) {
+  if (!record || typeof record !== 'object') return false;
+  if (record.op === 'delete') {
+    const id = String(record.id || record.momentId || '').trim();
+    return id ? rows.delete(id) : false;
+  }
+  const moment = record.op === 'publish' ? record.moment : record;
+  if (!moment || !moment.id || !moment.authorId) return false;
+  rows.set(String(moment.id), moment);
+  return true;
+}
+
 function refreshMomentsFromDisk(force) {
   const signature = momentsStorageSignature();
   if (!signature || (!force && signature === momentsDiskSignature)) return false;
@@ -3220,8 +3232,7 @@ function refreshMomentsFromDisk(force) {
     fs.readFileSync(momentsLogPath(), 'utf8').split('\n').forEach((line) => {
       if (!line.trim()) return;
       try {
-        const m = JSON.parse(line);
-        if (m && m.id && !rows.has(m.id)) rows.set(m.id, m);
+        applyMomentLogRecord(rows, JSON.parse(line));
       } catch (_) { /* skip bad line */ }
     });
   } catch (_) { /* no log yet */ }
@@ -3232,20 +3243,26 @@ function refreshMomentsFromDisk(force) {
 }
 
 function replayMomentsLog() {
-  let added = 0;
+  const rows = new Map();
+  (db.moments || []).forEach((m) => {
+    if (m && m.id) rows.set(m.id, m);
+  });
+  const before = new Set(rows.keys());
+  let changed = false;
   try {
     const raw = fs.readFileSync(momentsLogPath(), 'utf8');
-    const known = new Set((db.moments || []).map((m) => m.id));
     raw.split('\n').forEach((line) => {
       const t = line.trim();
       if (!t) return;
       try {
-        const m = JSON.parse(t);
-        if (m && m.id && !known.has(m.id)) { db.moments.unshift(m); known.add(m.id); added++; }
+        if (applyMomentLogRecord(rows, JSON.parse(t))) changed = true;
       } catch (err) { /* 跳过坏行 */ }
     });
   } catch (err) { /* 没有日志文件就是第一次跑 */ }
-  if (added) {
+  const added = Array.from(rows.keys()).filter((id) => !before.has(id)).length;
+  if (changed) {
+    db.moments = Array.from(rows.values())
+      .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
     try {
       writeJson(path.join(DATA_DIR, 'moments.json'), { moments: db.moments });
       fs.writeFileSync(momentsLogPath(), '', 'utf8');
@@ -3257,7 +3274,7 @@ function replayMomentsLog() {
 /** 发一条新动态：只追加一行 + 放进内存 */
 function appendMoment(moment) {
   try {
-    fs.appendFileSync(momentsLogPath(), JSON.stringify(moment) + '\n', 'utf8');
+    fs.appendFileSync(momentsLogPath(), JSON.stringify({ op: 'publish', moment }) + '\n', 'utf8');
     momentsLogCount++;
   } catch (err) { /* 写不进日志就让下次整体保存兜底 */ }
   db.moments.unshift(moment);
