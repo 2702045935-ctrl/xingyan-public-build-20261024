@@ -500,13 +500,7 @@ private var funcs: [(String, String, Color, String)] {
                 }
             }
         }
-        .background(Color.dyn(0xFFFFFF, 0x1C1C1E))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
-            .stroke(C.hairline.opacity(0.65), lineWidth: 0.6))
-        .shadow(color: Color.black.opacity(scheme == .dark ? 0 : 0.035),
-                radius: 8, y: 3)
-        .padding(.horizontal, 12)
+        .background(contactsCanvas)
         .padding(.bottom, 4)
     }
 
@@ -692,25 +686,26 @@ private var funcs: [(String, String, Color, String)] {
     private func nativeQuickIcon(_ item: (String, String, Color, String),
                                  size: CGFloat) -> some View {
         let symbol: String
+        let tint: Color
         switch item.3 {
-        case "newFriends": symbol = "person.badge.plus"
-        case "groups": symbol = "person.3.fill"
-        case "tags": symbol = "tag.fill"
-        default: symbol = "megaphone.fill"
+        case "newFriends":
+            symbol = "person.badge.plus"
+            tint = Color(uiColor: .systemGreen)
+        case "groups":
+            symbol = "person.3"
+            tint = Color(uiColor: .systemBlue)
+        case "tags":
+            symbol = "tag"
+            tint = Color(uiColor: .systemOrange)
+        default:
+            symbol = "megaphone"
+            tint = Color(uiColor: .systemPurple)
         }
-        return ZStack {
-            RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
-                .fill(item.2.opacity(0.14))
-            Image(systemName: symbol)
-                .font(.system(size: size * 0.43, weight: .semibold))
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(item.2)
-        }
+        return Image(systemName: symbol)
+            .font(.system(size: size * 0.56, weight: .regular))
+            .symbolRenderingMode(.hierarchical)
+            .foregroundStyle(tint)
         .frame(width: size, height: size)
-        .overlay {
-            RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
-                .stroke(item.2.opacity(0.24), lineWidth: 0.7)
-        }
         .accessibilityHidden(true)
     }
 

@@ -21,8 +21,14 @@ require(
     "alphabet headers must stay neutral instead of becoming a green block",
 )
 require(
-    "RoundedRectangle(cornerRadius: 16, style: .continuous)" in VIEW,
-    "utility contacts must be grouped in a rounded WhatsApp-style card",
+    "private var funcStrip" in VIEW
+    and "RoundedRectangle(cornerRadius: 16, style: .continuous)" not in VIEW,
+    "utility contact entries must use dividers without a surrounding selection card",
+)
+require(
+    'Image(systemName: symbol)' in VIEW
+    and "RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)" not in VIEW,
+    "utility contact icons must use native SF Symbols without a custom icon frame",
 )
 
 print("contacts-whatsapp: passed")
