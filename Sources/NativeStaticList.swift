@@ -281,16 +281,26 @@ where Item.ID: Hashable {
         func apply(_ next: [Item], animated: Bool) {
             guard let collection, let dataSource else { return }
             let nextOrder = next.map(\.id)
+            let isPureAppend = !order.isEmpty
+                && next.count > order.count
+                && next.prefix(order.count).enumerated().allSatisfy { index, item in
+                    order[index] == item.id && lookup[item.id] == item
+                }
             // The first item is often a permanent history sentinel. Detect a
             // prepend from any existing row that moved down, rather than only
             // checking item zero, otherwise the atomic offset compensation is
             // skipped and a loaded page can flash in one frame later.
-            let nextPositions = Dictionary(
-                uniqueKeysWithValues: nextOrder.enumerated().map { ($1, $0) }
-            )
-            let isPrepending = order.enumerated().contains { oldPosition, id in
-                guard let nextPosition = nextPositions[id] else { return false }
-                return nextPosition > oldPosition
+            let isPrepending: Bool
+            if isPureAppend {
+                isPrepending = false
+            } else {
+                let nextPositions = Dictionary(
+                    uniqueKeysWithValues: nextOrder.enumerated().map { ($1, $0) }
+                )
+                isPrepending = order.enumerated().contains { oldPosition, id in
+                    guard let nextPosition = nextPositions[id] else { return false }
+                    return nextPosition > oldPosition
+                }
             }
             let nextIDs = Set(nextOrder)
             var nextSignatures = signatures.filter { nextIDs.contains($0.key) }
@@ -309,9 +319,19 @@ where Item.ID: Hashable {
                     nextSignatures[item.id] = signature(item)
                 }
             } else {
-                nextSignatures = Dictionary(uniqueKeysWithValues: next.map {
-                    ($0.id, signature($0))
-                })
+                for item in next {
+                    if let old = lookup[item.id],
+                       old == item,
+                       let existing = signatures[item.id] {
+                        nextSignatures[item.id] = existing
+                    } else {
+                        nextSignatures[item.id] = signature(item)
+                    }
+                }
+            }
+            if nextOrder == order && nextSignatures == signatures {
+                pending = nil
+                return
             }
             if !order.isEmpty,
                collection.isDragging || collection.isTracking || collection.isDecelerating {
@@ -322,7 +342,6 @@ where Item.ID: Hashable {
                     return
                 }
             }
-            if nextOrder == order && nextSignatures == signatures { return }
             let nextLookup = Dictionary(uniqueKeysWithValues: next.map { ($0.id, $0) })
             let changed = nextOrder.filter { signatures[$0] != nextSignatures[$0] }
             for id in changed { heights[id] = nil }
