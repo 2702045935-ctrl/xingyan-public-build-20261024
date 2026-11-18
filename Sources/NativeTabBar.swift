@@ -106,111 +106,13 @@ private final class CompactDotTabBar: UITabBar {
     }
 
     private var dotViews: [Int: UIView] = [:]
-    private let selectionGlass = UIVisualEffectView(effect: nil)
-    private let selectionTint = UIView()
-    private var previousSelectionIndex: Int?
-    private var previousSelectionWidth: CGFloat = 0
-    private var selectionPillReady = false
     var badgeCount: Int = 0 {
         didSet { setNeedsLayout() }
-    }
-
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        configureSelectionPill()
-    }
-
-    required init?(coder: NSCoder) {
-        super.init(coder: coder)
-        configureSelectionPill()
-    }
-
-    private func configureSelectionPill() {
-        selectionGlass.isUserInteractionEnabled = false
-        selectionGlass.clipsToBounds = true
-        selectionGlass.layer.cornerRadius = 20
-        selectionGlass.layer.cornerCurve = .continuous
-        selectionGlass.layer.zPosition = 0.5
-        selectionGlass.layer.borderWidth = 0.7
-        selectionTint.isUserInteractionEnabled = false
-        selectionGlass.contentView.addSubview(selectionTint)
-        addSubview(selectionGlass)
-        updateSelectionAppearance()
-    }
-
-    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
-        super.traitCollectionDidChange(previousTraitCollection)
-        if previousTraitCollection?.userInterfaceStyle != traitCollection.userInterfaceStyle {
-            updateSelectionAppearance()
-        }
-    }
-
-    private func updateSelectionAppearance() {
-        let dark = traitCollection.userInterfaceStyle == .dark
-        if #available(iOS 26.0, *) {
-            let glass = UIGlassEffect(style: .regular)
-            glass.isInteractive = false
-            glass.tintColor = UIColor.white.withAlphaComponent(dark ? 0.035 : 0.075)
-            selectionGlass.effect = glass
-        } else {
-            selectionGlass.effect = UIBlurEffect(
-                style: dark ? .systemUltraThinMaterialDark : .systemUltraThinMaterialLight
-            )
-        }
-        selectionTint.backgroundColor = dark
-            ? UIColor.white.withAlphaComponent(0.045)
-            : UIColor.white.withAlphaComponent(0.16)
-        selectionGlass.layer.borderColor = (dark
-            ? UIColor.white.withAlphaComponent(0.16)
-            : UIColor.black.withAlphaComponent(0.055)).cgColor
-    }
-
-    private func layoutSelectionPill() {
-        guard bounds.width > 10,
-              let items,
-              !items.isEmpty else { return }
-        let index = items.firstIndex(where: { $0 === selectedItem }) ?? 0
-        let slot = bounds.width / CGFloat(items.count)
-        let pillWidth = max(36, min(52, slot - 24))
-        let pillFrame = CGRect(
-            x: slot * (CGFloat(index) + 0.5) - pillWidth / 2,
-            y: 3,
-            width: pillWidth,
-            height: 30
-        )
-        let shouldAnimate = selectionPillReady
-            && (previousSelectionIndex != index
-                || abs(previousSelectionWidth - bounds.width) > 0.5)
-        selectionGlass.layer.cornerRadius = pillFrame.height / 2
-        selectionTint.frame = selectionGlass.bounds
-        previousSelectionIndex = index
-        previousSelectionWidth = bounds.width
-        if shouldAnimate {
-            UIView.animate(withDuration: 0.32,
-                           delay: 0,
-                           usingSpringWithDamping: 0.84,
-                           initialSpringVelocity: 0.24,
-                           options: [.allowUserInteraction, .beginFromCurrentState]) {
-                self.selectionGlass.frame = pillFrame
-            }
-        } else {
-            selectionGlass.frame = pillFrame
-            selectionPillReady = true
-        }
-        for child in subviews {
-            let typeName = String(describing: type(of: child))
-            if typeName.contains("BarBackground") {
-                child.layer.zPosition = -1
-            } else if child is UIControl {
-                child.layer.zPosition = 2
-            }
-        }
     }
 
     override func layoutSubviews() {
         super.layoutSubviews()
         updateNativeBackdropVisibility()
-        layoutSelectionPill()
         let slot = bounds.width / 5
         for index in 0..<5 {
             let dot = dotViews[index] ?? {

@@ -21,13 +21,10 @@ require("private struct MessageReplySwipe" in CHAT
         and "MessageReplySwipe(enabled: !selectMode" in CHAT
         and "quote = message" in CHAT,
         "message rows must support an interruptible swipe-to-reply gesture")
-require("selectionGlass = UIVisualEffectView" in TAB
-        and "usingSpringWithDamping: 0.84" in TAB
-        and "selection.wrappedValue == index" in TAB
-        and "height: 30" in TAB
-        and "selectionGlass.layer.zPosition = 0.5" in TAB
-        and "child.layer.zPosition = 2" in TAB,
-        "native tab bar must animate its selected lens and reselect behavior")
+require("selection.wrappedValue == index" in TAB
+        and "scrollVisiblePageToTop" in TAB
+        and "selectionGlass" not in TAB,
+        "native tab bar must keep reselect behavior without an overlay covering labels")
 require("scrollVisiblePageToTop" in TAB
         and "StatusBarTapScrollTop" in MAIN,
         "repeated tab selection and status-bar taps must return the active page to top")
