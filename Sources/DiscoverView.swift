@@ -1338,6 +1338,7 @@ struct MomentsView: View {
     @State private var solid = false
     @State private var momentsScrollActive = false
     @State private var moments: [Moment] = []
+    @State private var locallyPostedMoments: [String: Moment] = [:]
     @State private var stressLoadedCount = min(MomentStressFixture.count,
                                                Self.stressMomentWindow)
     @State private var prefetchedMoments: [Moment] = []
@@ -2726,7 +2727,17 @@ struct MomentsView: View {
     }
 
     private func applyNewestMomentPage(_ page: [Moment]) {
-        let cleanPage = page.filter { !locallyDeletedMomentIds.contains($0.id) }
+        var cleanPage = page.filter { !locallyDeletedMomentIds.contains($0.id) }
+        let pageIds = Set(cleanPage.map(\.id))
+        locallyPostedMoments = locallyPostedMoments.filter { !pageIds.contains($0.key) }
+        let pendingLocal = locallyPostedMoments.values.sorted {
+            ($0.createdAt ?? "") > ($1.createdAt ?? "")
+        }
+        if !pendingLocal.isEmpty {
+            cleanPage = pendingLocal + cleanPage.filter {
+                !locallyPostedMoments.keys.contains($0.id)
+            }
+        }
         var merged = cleanPage
         if moments.count > Self.momentPageSize {
             let pageIds = Set(cleanPage.map(\.id))
@@ -2738,6 +2749,29 @@ struct MomentsView: View {
         if merged != moments {
             setMomentsWithoutAnimation(merged)
         }
+    }
+
+    private func insertLocallyPostedMoment(_ moment: Moment) {
+        locallyDeletedMomentIds.remove(moment.id)
+        locallyPostedMoments[moment.id] = moment
+        var next = moments.filter { $0.id != moment.id }
+        next.insert(moment, at: 0)
+        if next.count > Self.momentPageSize {
+            next = Array(next.prefix(Self.momentPageSize))
+        }
+        setMomentsWithoutAnimation(next)
+        momentTotal = max(momentTotal + 1, next.count)
+        hasMoreMoments = hasMoreMoments || momentTotal > next.count
+        if target == nil && !mineOnly {
+            LocalStore.saveMoments(next, userId: app.me?.id ?? "")
+        }
+        var global = app.moments
+        if let index = global.firstIndex(where: { $0.id == moment.id }) {
+            global[index] = moment
+        } else {
+            global.insert(moment, at: 0)
+        }
+        app.moments = global
     }
 
     private func setMomentsWithoutAnimation(_ next: [Moment]) {
@@ -2789,14 +2823,19 @@ struct MomentsView: View {
                         publishStatus = Tr("正在发布…")
                     }
                     let wh = videoWH
-                    try await API.shared.postMoment(content: draft, images: [],
-                                                    video: up, videoCover: cp,
-                                                    videoSeconds: videoSeconds,
-                                                    videoW: wh?.w ?? 0, videoH: wh?.h ?? 0,
-                                                    visibility: visibility,
-                                                    visibleTo: Array(visibleTo),
-                                                    hiddenFrom: Array(hiddenFrom),
-                                                    location: draftLocation)
+                    let created = try await API.shared.postMoment(
+                        content: draft, images: [],
+                        video: up, videoCover: cp,
+                        videoSeconds: videoSeconds,
+                        videoW: wh?.w ?? 0, videoH: wh?.h ?? 0,
+                        visibility: visibility,
+                        visibleTo: Array(visibleTo),
+                        hiddenFrom: Array(hiddenFrom),
+                        location: draftLocation
+                    )
+                    if let created {
+                        await MainActor.run { insertLocallyPostedMoment(created) }
+                    }
                     await remindFriends()
                     app.show(Tr("已发表"))
                 } catch {
@@ -2857,12 +2896,17 @@ struct MomentsView: View {
                     publishProgress = 0.84
                     publishStatus = Tr("正在发布…")
                 }
-                try await API.shared.postMoment(content: draft, images: urls,
-                                                imageSizes: sizes,
-                                                visibility: visibility,
-                                                visibleTo: Array(visibleTo),
-                                                hiddenFrom: Array(hiddenFrom),
-                                                location: draftLocation)
+                let created = try await API.shared.postMoment(
+                    content: draft, images: urls,
+                    imageSizes: sizes,
+                    visibility: visibility,
+                    visibleTo: Array(visibleTo),
+                    hiddenFrom: Array(hiddenFrom),
+                    location: draftLocation
+                )
+                if let created {
+                    await MainActor.run { insertLocallyPostedMoment(created) }
+                }
                 await remindFriends()
                 await MainActor.run {
                     publishProgress = 1

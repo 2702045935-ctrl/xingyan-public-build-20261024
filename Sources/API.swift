@@ -666,6 +666,9 @@ private struct MomentNoticesPayload: Decodable {
 private struct MomentCommentCreatePayload: Decodable {
     var moment: Moment?
 }
+private struct MomentCreatePayload: Decodable {
+    var moment: Moment?
+}
 
 private struct ChatsPayload: Decodable { var chats: [Chat] }
 private struct ChatPayload: Decodable { var chat: Chat? }
@@ -5753,13 +5756,14 @@ private struct StarredPayload: Decodable {
         }
     }
 
+    @discardableResult
     func postMoment(content: String, images: [String],
                     imageSizes: [String: [Int]] = [:],
                     video: String = "", videoCover: String = "",
                     videoSeconds: Int = 0, videoW: Int = 0, videoH: Int = 0,
                     visibility: String = "public",
                     visibleTo: [String] = [], hiddenFrom: [String] = [],
-                    location: String = "") async throws {
+                    location: String = "") async throws -> Moment? {
         var body: [String: Any] = [
             "content": content, "images": images,
             "visibility": visibility, "visibleTo": visibleTo, "hiddenFrom": hiddenFrom,
@@ -5774,7 +5778,8 @@ private struct StarredPayload: Decodable {
             body["videoW"] = videoW
             body["videoH"] = videoH
         }
-        _ = try await request("POST", "/api/moments", body: body)
+        let raw = try await request("POST", "/api/moments", body: body)
+        return (try? decode(raw, as: MomentCreatePayload.self))?.moment
     }
 
     func updateMe(_ fields: [String: Any]) async {
