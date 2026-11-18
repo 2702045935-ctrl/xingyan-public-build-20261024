@@ -11847,6 +11847,8 @@ async function housekeeperCommand(user, text, chat, bot) {
     setClearedSeq(user.id, chat.id, lastSeq);
     if (!db.reads[user.id]) db.reads[user.id] = {};
     db.reads[user.id][chat.id] = lastSeq;
+    chat.flaggedUnread = (chat.flaggedUnread || []).filter((id) => id !== user.id);
+    saveChats();
     saveReads();
     return '和「' + who + '」的聊天记录在你这台设备上清空了（对方那边还在）。';
   }
@@ -22903,6 +22905,8 @@ async function handleApi(req, res, pathname, query) {
     setClearedSeq(user.id, chat.id, lastSeq);
     if (!db.reads[user.id]) db.reads[user.id] = {};
     db.reads[user.id][chat.id] = lastSeq;
+    chat.flaggedUnread = (chat.flaggedUnread || []).filter((id) => id !== user.id);
+    saveChats();
     saveReads();
     if (messageReliability) {
       const info = clientInfo(req);

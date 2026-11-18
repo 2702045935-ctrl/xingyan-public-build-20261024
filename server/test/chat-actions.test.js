@@ -245,6 +245,64 @@ async function main() {
     assert.equal(response.data.unreadTotal, redDotTotalAfterRead + 1,
       '已读后再次收到消息桌面角标没有恢复：' + JSON.stringify(response.data));
 
+    response = await call(base, alice.cookie, 'POST',
+      '/api/chats/' + directId + '/read', {});
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    response = await call(base, alice.cookie, 'GET', '/api/badge-counts');
+    assert.equal(response.data.unreadTotal, redDotTotalAfterRead,
+      '重新已读后桌面角标没有回到基线：' + JSON.stringify(response.data));
+
+    response = await call(base, alice.cookie, 'POST',
+      '/api/chats/' + directId + '/unread', {});
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    response = await call(base, alice.cookie, 'GET', '/api/badge-counts');
+    redDotChat = (response.data.recentChats || []).find((chat) => chat.id === directId);
+    assert.equal(redDotChat && redDotChat.unread, 1,
+      '标为未读后会话行没有红点：' + JSON.stringify(response.data));
+    assert.equal(response.data.unreadTotal, redDotTotalAfterRead + 1,
+      '标为未读后桌面角标没有增加：' + JSON.stringify(response.data));
+
+    response = await call(base, alice.cookie, 'POST',
+      '/api/chats/' + directId + '/mute', { muted: true });
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    response = await call(base, alice.cookie, 'GET', '/api/badge-counts');
+    assert.equal(response.data.unreadTotal, redDotTotalAfterRead,
+      '静音会话仍被计入桌面角标：' + JSON.stringify(response.data));
+
+    response = await call(base, alice.cookie, 'POST',
+      '/api/chats/' + directId + '/unread', {});
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    response = await call(base, alice.cookie, 'GET', '/api/badge-counts');
+    assert.equal(response.data.unreadTotal, redDotTotalAfterRead,
+      '静音会话标为未读后仍被计入桌面角标：' + JSON.stringify(response.data));
+
+    response = await call(base, alice.cookie, 'POST',
+      '/api/chats/' + directId + '/mute', { muted: false });
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    response = await call(base, alice.cookie, 'GET', '/api/badge-counts');
+    assert.equal(response.data.unreadTotal, redDotTotalAfterRead + 1,
+      '取消静音后未读会话没有恢复桌面角标：' + JSON.stringify(response.data));
+
+    response = await call(base, alice.cookie, 'POST',
+      '/api/chats/' + directId + '/clear', {});
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    response = await call(base, alice.cookie, 'GET', '/api/badge-counts');
+    assert.equal(response.data.unreadTotal, redDotTotalAfterRead,
+      '清空聊天记录后未读仍计入桌面角标：' + JSON.stringify(response.data));
+
+    response = await call(base, alice.cookie, 'DELETE',
+      '/api/chats/' + directId, undefined);
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    response = await call(base, alice.cookie, 'GET', '/api/badge-counts');
+    redDotChat = (response.data.recentChats || []).find((chat) => chat.id === directId);
+    assert.ok(!redDotChat, '删除后的会话仍出现在 badge-counts：' + JSON.stringify(response.data));
+    assert.equal(response.data.unreadTotal, redDotTotalAfterRead,
+      '删除后的会话仍计入桌面角标：' + JSON.stringify(response.data));
+
+    response = await call(base, alice.cookie, 'POST',
+      '/api/chats/direct', { userId: bob.user.id });
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+
     response = await call(base, alice.cookie, 'POST', '/api/friends/meta', {
       userId: bob.user.id,
       block: true

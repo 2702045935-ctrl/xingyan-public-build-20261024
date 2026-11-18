@@ -37,6 +37,16 @@ require(
     "a stable server snapshot must retire stale optimistic unread counters",
 )
 require(
+    "private func adjustAuthoritativeUnread(from old: Chat?, to new: Chat?)" in APP
+    and "let delta = unreadContribution(new) - unreadContribution(old)" in APP
+    and APP.count("authoritativeUnreadTotal = nil") == 1,
+    "realtime chat changes must preserve the server total and apply only their own delta",
+)
+require(
+    "for c in chats where c.muted != true { n += c.unreadCount }" in APP,
+    "the fallback badge total must keep the same muted-session rule as the server",
+)
+require(
     "type: 'read',\n      chatId: chat.id,\n      userId: user.id,\n      seq: lastSeq" in SERVER,
     "cross-device read events must identify the reading user",
 )

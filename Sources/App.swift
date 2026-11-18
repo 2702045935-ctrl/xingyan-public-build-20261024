@@ -1063,7 +1063,6 @@ final class AppState: ObservableObject {
             guard isCurrentAccount(epoch) else { return }
             let merged = mergeServerChats(fresh)
             if !AppState.sameChats(chats, merged) { chats = merged }
-            authoritativeUnreadTotal = nil
             loadError = nil
         } catch {
             loadError = nil
@@ -1135,7 +1134,6 @@ final class AppState: ObservableObject {
             guard isCurrentAccount(epoch) else { return }
             let merged = mergeServerChats(r.chats)
             if !AppState.sameChats(chats, merged) { chats = merged }
-            authoritativeUnreadTotal = nil
             var total = 0
             for c in r.synced {
                 if let msgs = c.messages, !msgs.isEmpty {
@@ -1329,7 +1327,6 @@ final class AppState: ObservableObject {
             }
 
             if !AppState.sameChats(chats, merged) { chats = merged }
-            authoritativeUnreadTotal = nil
             LocalStore.saveChatList(chats, userId: userId)
             prefetchChatAvatars(merged)
             loadError = nil
@@ -1570,13 +1567,29 @@ final class AppState: ObservableObject {
         return raw == groupAction || raw.hasSuffix(" " + groupAction)
     }
 
+    /// 桌面角标以服务端总数为准；实时事件只修正这一个会话带来的差值。
+    /// 不能把权威总数清空后再按当前列表重算，否则跨分片或列表被截断时数字会回跳。
+    private func unreadContribution(_ chat: Chat?) -> Int {
+        guard let chat, chat.muted != true else { return 0 }
+        return max(0, chat.unreadCount)
+    }
+
+    private func adjustAuthoritativeUnread(from old: Chat?, to new: Chat?) {
+        guard let current = authoritativeUnreadTotal else { return }
+        let delta = unreadContribution(new) - unreadContribution(old)
+        guard delta != 0 else { return }
+        authoritativeUnreadTotal = min(999, max(0, current + delta))
+    }
+
     func markChatReadLocally(_ chatId: String) {
-        authoritativeUnreadTotal = nil
         optimisticChats[chatId] = nil
         optimisticAt[chatId] = nil
         locallyReadAt[chatId] = Date()
         if let i = chats.firstIndex(where: { $0.id == chatId }) {
-            chats[i] = removeReadMentionMarker(from: chats[i])
+            let before = chats[i]
+            let after = removeReadMentionMarker(from: before)
+            chats[i] = after
+            adjustAuthoritativeUnread(from: before, to: after)
         }
         syncIconBadge()
     }
@@ -1607,12 +1620,13 @@ final class AppState: ObservableObject {
 
     func setChatUnreadLocally(_ chatId: String, unread: Int?, flagged: Bool?) {
         guard let index = chats.firstIndex(where: { $0.id == chatId }) else { return }
-        authoritativeUnreadTotal = nil
+        let before = chats[index]
         if (unread ?? 0) > 0 || flagged == true {
             locallyReadAt[chatId] = nil
         }
         chats[index].unread = unread
         chats[index].flagged = flagged
+        adjustAuthoritativeUnread(from: before, to: chats[index])
         syncIconBadge()
     }
 
@@ -1649,12 +1663,13 @@ final class AppState: ObservableObject {
     }
 
     func hideChatLocally(_ chatId: String) {
-        authoritativeUnreadTotal = nil
+        let hidden = chats.first(where: { $0.id == chatId })
         locallyHiddenChats.insert(chatId)
         locallyHiddenAt[chatId] = Date()
         optimisticChats[chatId] = nil
         optimisticAt[chatId] = nil
         chats.removeAll { $0.id == chatId }
+        adjustAuthoritativeUnread(from: hidden, to: nil)
         syncIconBadge()
     }
 
@@ -1675,8 +1690,8 @@ final class AppState: ObservableObject {
             return
         }
         locallyHiddenChats.remove(chat.id)
-        authoritativeUnreadTotal = nil
-        var row = chats.first(where: { $0.id == chat.id }) ?? chat
+        let before = chats.first(where: { $0.id == chat.id })
+        var row = before ?? chat
         if let latest {
             row.lastMessage = LastMessage(
                 id: latest.id,
@@ -1696,6 +1711,7 @@ final class AppState: ObservableObject {
             chats.append(row)
         }
         chats = orderedChatsForList(chats)
+        adjustAuthoritativeUnread(from: before, to: row)
         if let userId = me?.id, !userId.isEmpty {
             LocalStore.saveChatList(chats, userId: userId)
         }
@@ -1729,7 +1745,10 @@ final class AppState: ObservableObject {
 
     func applyMutedLocally(chatId: String, muted: Bool) {
         guard let i = chats.firstIndex(where: { $0.id == chatId }) else { return }
+        let before = chats[i]
         chats[i].muted = muted
+        adjustAuthoritativeUnread(from: before, to: chats[i])
+        syncIconBadge()
     }
 
     func applyFriendRemarkLocally(userId: String, displayName: String, remark: String? = nil) {
@@ -1948,8 +1967,9 @@ final class AppState: ObservableObject {
         }
         locallyHiddenChats.remove(incoming.id)
         locallyHiddenAt.removeValue(forKey: incoming.id)
-        authoritativeUnreadTotal = nil
         var rows = chats
+        let previous = rows.first(where: { $0.id == incoming.id })
+        var updated = incoming
         if let index = rows.firstIndex(where: { $0.id == incoming.id }) {
             let current = rows[index]
             let currentMid = current.lastMessage?.id ?? ""
@@ -1963,6 +1983,7 @@ final class AppState: ObservableObject {
                 merged.unread = max(current.unreadCount, incoming.unreadCount)
             }
             rows[index] = merged
+            updated = merged
             if let sender = incoming.lastMessage?.senderId, sender != me?.id {
                 optimisticChats[incoming.id] = merged
                 optimisticAt[incoming.id] = Date()
@@ -1975,6 +1996,7 @@ final class AppState: ObservableObject {
             }
         }
         chats = orderedChatsForList(rows)
+        adjustAuthoritativeUnread(from: previous, to: updated)
         syncIconBadge()
     }
 
@@ -1986,8 +2008,9 @@ final class AppState: ObservableObject {
               let index = chats.firstIndex(where: { $0.id == id }),
               chats[index].lastMessage?.id == message.id,
               chats[index].unreadCount == 0 else { return }
-        authoritativeUnreadTotal = nil
+        let before = chats[index]
         chats[index].unread = 1
+        adjustAuthoritativeUnread(from: before, to: chats[index])
         if var optimistic = optimisticChats[id],
            optimistic.lastMessage?.id == message.id {
             optimistic.unread = 1
@@ -2001,8 +2024,8 @@ final class AppState: ObservableObject {
         let ids = [message.chatId ?? "", chatId]
         guard let id = ids.first(where: { !$0.isEmpty }),
               let index = chats.firstIndex(where: { $0.id == id }) else { return }
-        authoritativeUnreadTotal = nil
-        var row = chats[index]
+        let before = chats[index]
+        var row = before
         if countUnread, row.lastMessage?.id != message.id, message.senderId != me?.id {
             row.unread = row.unreadCount + 1
         }
@@ -2024,6 +2047,7 @@ final class AppState: ObservableObject {
         var rows = chats
         rows[index] = row
         chats = orderedChatsForList(rows)
+        adjustAuthoritativeUnread(from: before, to: row)
         optimisticChats[id] = row
         optimisticAt[id] = Date()
         syncIconBadge()
@@ -2113,13 +2137,14 @@ final class AppState: ObservableObject {
     /// 清空聊天记录后立即丢掉列表预览、预取缓存和本机底稿。
     /// 不能等下一次 loadChats：否则会短暂显示旧预览，重新进会话还会从本机缓存“复活”。
     func forgetChatHistory(_ chatId: String, notify: Bool = true) {
-        authoritativeUnreadTotal = nil
         if let i = chats.firstIndex(where: { $0.id == chatId }) {
+            let before = chats[i]
             var c = chats[i]
             c.lastMessage = nil
             c.unread = 0
             c.flagged = false
             chats[i] = c
+            adjustAuthoritativeUnread(from: before, to: c)
         }
         prefetched[chatId] = nil
         optimisticChats[chatId] = nil
