@@ -21323,8 +21323,13 @@ async function handleApi(req, res, pathname, query) {
     let dbm = null;
     if (removeIds.size) {
       dbm = readFriendMeta();
+      loadRemoteFriendshipCache();
+      let remoteChanged = false;
       removeIds.forEach((targetId) => {
         markFriendRemoved(user.id, targetId);
+        if (remoteFriendships.delete(pairKey(user.id, targetId))) {
+          remoteChanged = true;
+        }
         forgetFriendSetCache(user.id, targetId);
         if (dbm.byOwner[user.id] && dbm.byOwner[user.id][targetId]) {
           delete dbm.byOwner[user.id][targetId];
@@ -21346,6 +21351,7 @@ async function handleApi(req, res, pathname, query) {
         sendTo(user.id, { type: 'friend', action: 'removed', userId: targetId });
         sendTo(targetId, { type: 'friend', action: 'removed', userId: user.id });
       });
+      if (remoteChanged) saveRemoteFriendshipCache();
       saveChats();
       saveReads();
       if (metaChanged) saveFriendMeta();
