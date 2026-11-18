@@ -486,20 +486,29 @@ private extension View {
                          remove: @escaping (String) -> Void,
                          pin: @escaping ([String: Any]) -> Void,
                          forward: @escaping ([String: Any]) -> Void) -> some View {
-        swipeActions(edge: .trailing, allowsFullSwipe: true) {
+        Group {
             if let id = item["id"] as? String, !id.hasPrefix("local-") {
-                Button(role: .destructive) {
-                    remove(id)
-                } label: {
-                    Label(Tr("删除"), systemImage: "trash")
-                }
-                Button {
-                    pin(item)
-                } label: {
-                    Label((item["pinned"] as? Bool) == true ? Tr("取消置顶") : Tr("置顶"),
-                          systemImage: (item["pinned"] as? Bool) == true ? "pin.slash" : "pin")
-                }
-                .tint(.orange)
+                self
+                    .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                        Button {
+                            pin(item)
+                        } label: {
+                            Label((item["pinned"] as? Bool) == true
+                                  ? Tr("取消置顶") : Tr("置顶"),
+                                  systemImage: (item["pinned"] as? Bool) == true
+                                  ? "pin.slash.fill" : "pin.fill")
+                        }
+                        .tint(.orange)
+                    }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        Button(role: .destructive) {
+                            remove(id)
+                        } label: {
+                            Label(Tr("删除"), systemImage: "trash.fill")
+                        }
+                    }
+            } else {
+                self
             }
         }
         .contextMenu {

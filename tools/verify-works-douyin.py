@@ -50,4 +50,11 @@ require('if item.action == "favorites" { return Tr("备忘录") }' in ME,
 require('.navigationTitle(Tr("备忘录"))' in MISC
         and '.confirmationDialog(Tr("添加备忘录")' in MISC,
         "the Notes destination must not fall back to the Favorites title")
+require(
+    ".swipeActions(edge: .leading, allowsFullSwipe: false)" in MISC
+    and ".swipeActions(edge: .trailing, allowsFullSwipe: true)" in MISC
+    and '.tint(.orange)' in MISC
+    and 'Label(Tr("删除"), systemImage: "trash.fill")' in MISC,
+    "Notes rows must use Apple Notes gestures: swipe right to pin and swipe left to delete",
+)
 print("works-douyin: passed")
