@@ -36,5 +36,9 @@ require("errorState" in MISC and "loadError" in MISC,
 require(".navigationBarTitleDisplayMode(.large)" in ME
         and ".listStyle(.insetGrouped)" in ME,
         "works profile header typography must stay aligned with the native profile page")
-
+require('if item.action == "favorites" { return Tr("备忘录") }' in ME,
+        "the Me page entry must be labelled Notes, not Favorites")
+require('.navigationTitle(Tr("备忘录"))' in MISC
+        and '.confirmationDialog(Tr("添加备忘录")' in MISC,
+        "the Notes destination must not fall back to the Favorites title")
 print("works-douyin: passed")
