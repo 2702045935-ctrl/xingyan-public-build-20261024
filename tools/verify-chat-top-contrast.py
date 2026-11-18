@@ -20,8 +20,10 @@ require(
     "private struct ChatTopGlassBackdrop" in DETAIL
     and "NativeScrollEdgeElementBridge(" in DETAIL
     and "ChatScrollHandle.shared.scroll" in DETAIL
+    and "scheme == .light" in DETAIL
+    and "ChatImmersiveEdgeMask(path: backgroundPath,\n                                              edge: .top" in DETAIL
     and "topBarContrastScrim" not in DETAIL,
-    "chat top chrome must use the continuous system scroll-edge material",
+    "light chat chrome must preserve the November extended wallpaper mask and dark chrome must use the system edge",
 )
 require(
     "titleOutline: adaptiveTopOutline.opacity(0.55)" in DETAIL,

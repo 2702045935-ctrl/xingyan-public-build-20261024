@@ -2213,6 +2213,14 @@ struct ChatDetailView: View {
                 Group {
                     if isStarWorld && newsMode {
                         newsMaskColor
+                    } else if scheme == .light {
+                        ChatImmersiveEdgeMask(path: backgroundPath,
+                                              edge: .top,
+                                              tint: wallpaperTopTint,
+                                              dark: topBarUsesLightInk,
+                                              effect: backgroundEffect,
+                                              preset: ChatTheme.preset,
+                                              themeVersion: chatTheme.version)
                     } else {
                         ChatTopGlassBackdrop()
                     }
