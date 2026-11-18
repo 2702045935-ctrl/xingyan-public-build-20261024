@@ -6,6 +6,12 @@ final class NativeChatListScrollRegistry {
     weak var chats: UIScrollView?
 }
 
+private func nativeChatSwipeText(_ zh: String, _ en: String, _ ru: String) -> String {
+    if Lang.isRussian { return ru }
+    if Lang.isEnglish { return en }
+    return zh
+}
+
 struct NativeChatList<Item: Identifiable & Equatable, Row: View>: UIViewControllerRepresentable
 where Item.ID: Hashable {
     let items: [Item]
@@ -382,8 +388,8 @@ where Item.ID: Hashable {
                   let entry = lookup[id],
                   let configuration = nativeRow?(entry) else { return nil }
             let title = configuration.isPinned
-                ? localized("取消置顶", "Unpin", "Открепить")
-                : localized("置顶", "Pin", "Закрепить")
+                ? nativeChatSwipeText("取消置顶", "Unpin", "Открепить")
+                : nativeChatSwipeText("置顶", "Pin", "Закрепить")
             let action = UIContextualAction(style: .normal, title: title) {
                 _, _, complete in
                 configuration.onPin(!configuration.isPinned)
@@ -406,7 +412,7 @@ where Item.ID: Hashable {
                   let configuration = nativeRow?(entry) else { return nil }
             let action = UIContextualAction(
                 style: .destructive,
-                title: localized("删除", "Delete", "Удалить")
+                title: nativeChatSwipeText("删除", "Delete", "Удалить")
             ) { _, _, complete in
                 configuration.onDelete()
                 complete(true)
