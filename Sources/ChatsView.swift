@@ -686,7 +686,7 @@ struct ChatRow: View, Equatable {
                     .minimumScaleFactor(0.72)
                     .padding(.horizontal, chat.unreadCount > 9 ? 5 : 0)
                     .frame(minWidth: 18, minHeight: 18)
-                    .background(Capsule().fill(Color(.systemBlue)))
+                    .background(Capsule().fill(C.red))
                     .overlay(Capsule().stroke(ChatListVisual.badgeRing, lineWidth: 1.5))
             }
         }
@@ -1566,12 +1566,12 @@ struct ChatsView: View {
                         .padding(.horizontal, unreadTotal > 9 ? 5 : 0)
                         .frame(minWidth: 18, minHeight: 18)
                         .background {
-                            Capsule().fill(Color(.systemBlue))
+                            Capsule().fill(C.red)
                         }
                         .overlay {
                             Capsule().stroke(Color.white.opacity(0.20), lineWidth: 0.6)
                         }
-                        .shadow(color: Color(.systemBlue).opacity(0.20),
+                        .shadow(color: C.red.opacity(0.20),
                                 radius: 4, y: 1)
                 }
 

@@ -263,7 +263,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
                 unreadLabel.text = configuration.unread > 99 ? "99+" : "\(configuration.unread)"
                 unreadLabel.font = NativeChatRowMetrics.font(10, weight: .bold,
                                                              textStyle: .caption2)
-                unreadLabel.backgroundColor = .systemBlue
+                unreadLabel.backgroundColor = .systemRed
                 unreadLabel.textColor = .white
                 unreadLabel.layer.cornerRadius = 9
             }
@@ -375,14 +375,16 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
                range: NSRange(location: 0, length: bodyText.length)
            ) {
             let token = bodyText.substring(with: tag.range)
-            if let color = Self.previewTokenColor(token) {
+            if let color = Self.previewTokenColor(token,
+                                                  isLight: configuration.isLight) {
                 result.addAttributes([
                     .font: UIFont.systemFont(ofSize: 15, weight: .medium),
                     .foregroundColor: color
                 ], range: NSRange(location: prefixLength + tag.range.location,
                                   length: tag.range.length))
             }
-        } else if let color = Self.previewKindColor(kind) {
+        } else if let color = Self.previewKindColor(kind,
+                                                    isLight: configuration.isLight) {
             result.addAttribute(.foregroundColor, value: color, range: bodyRange)
         } else if kind == "pat" || kind == "system" {
             result.addAttribute(
@@ -413,7 +415,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
 
     private static let tokenRegex = try! NSRegularExpression(pattern: "\\[[^\\]]+\\]")
 
-    private static func previewTokenColor(_ token: String) -> UIColor? {
+    private static func previewTokenColor(_ token: String, isLight: Bool) -> UIColor? {
         let value = token.replacingOccurrences(of: "[", with: "")
             .replacingOccurrences(of: "]", with: "")
         if value.isEmpty { return nil }
@@ -421,6 +423,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
             || value.contains("余额") || value.contains("经营账户") {
             return .systemRed
         }
+        if !isLight { return nil }
         if value.contains("通话") {
             return .systemGreen
         }
@@ -443,10 +446,14 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         return nil
     }
 
-    private static func previewKindColor(_ kind: String) -> UIColor? {
+    private static func previewKindColor(_ kind: String, isLight: Bool) -> UIColor? {
         switch kind {
         case "transfer", "redpacket", "gift", "balance", "company":
             return .systemRed
+        default:
+            if !isLight { return nil }
+        }
+        switch kind {
         case "call", "voicecall", "videocall", "audio", "voice", "sticker":
             return .systemGreen
         case "file", "note":

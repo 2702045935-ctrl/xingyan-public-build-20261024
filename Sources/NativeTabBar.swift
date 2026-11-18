@@ -414,7 +414,8 @@ struct NativeTabBar: UIViewRepresentable {
     }
 
     private func applyColors(_ bar: UITabBar) {
-        bar.tintColor = UIColor.systemBlue
+        let interactionAccent = UIColor(OrbitTheme.jade)
+        bar.tintColor = interactionAccent
         bar.unselectedItemTintColor = UIColor(OrbitTheme.secondary)
 
         let appearance = UITabBarAppearance()
@@ -443,16 +444,16 @@ struct NativeTabBar: UIViewRepresentable {
             .font: pfUIFont(10.5, .medium)
         ]
         let selectedTitle: [NSAttributedString.Key: Any] = [
-            .foregroundColor: UIColor(OrbitTheme.secondary),
+            .foregroundColor: interactionAccent,
             .font: pfUIFont(10.5, .semibold)
         ]
         let selectedMyTitle: [NSAttributedString.Key: Any] = [
-            .foregroundColor: UIColor(OrbitTheme.jade),
+            .foregroundColor: interactionAccent,
             .font: pfUIFont(10.5, .semibold)
         ]
         appearance.stackedLayoutAppearance.normal.iconColor = UIColor(OrbitTheme.secondary)
         appearance.stackedLayoutAppearance.normal.titleTextAttributes = normalTitle
-        appearance.stackedLayoutAppearance.selected.iconColor = UIColor.systemBlue
+        appearance.stackedLayoutAppearance.selected.iconColor = interactionAccent
         appearance.stackedLayoutAppearance.selected.titleTextAttributes = selectedTitle
         appearance.stackedLayoutAppearance.normal.badgeBackgroundColor = .systemRed
         appearance.stackedLayoutAppearance.selected.badgeBackgroundColor = .systemRed
