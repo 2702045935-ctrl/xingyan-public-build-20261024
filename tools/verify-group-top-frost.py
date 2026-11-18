@@ -25,12 +25,9 @@ require(
     "message scrolling must expose the system top-edge effect",
 )
 require(
-    "ChatHeaderGlassGroup" not in CHAT
-    and CHAT.count("NativeGlassCircleBackground()") >= 4
-    and ".glassEffect(.regular.interactive(), in: shape)" in (
-        ROOT / "Sources" / "NavGlass.swift"
-    ).read_text(encoding="utf-8"),
-    "the top-bar controls need individual native interactive glass circles",
+    "private struct ChatHeaderGlassGroup" in CHAT
+    and ".glassEffect(.regular.interactive(), in: capsule)" in CHAT,
+    "the previous circled chat header layout must use native interactive glass",
 )
 require(
     "chatBackdrop" in CHAT and "ChatTopGlassBackdrop()" in CHAT,
