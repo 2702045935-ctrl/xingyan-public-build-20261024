@@ -51,7 +51,7 @@ enum MomentStressFixture {
                 id: "moment-stress-\(index)",
                 authorId: author.id,
                 author: author,
-                content: bodySamples[index % bodySamples.count],
+                content: "#\(index + 1) · \(bodySamples[index % bodySamples.count])",
                 images: images.isEmpty ? nil : images,
                 imageSizes: nil,
                 video: nil,

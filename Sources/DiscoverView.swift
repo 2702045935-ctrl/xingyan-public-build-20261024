@@ -1344,6 +1344,9 @@ struct MomentsView: View {
     @State private var prefetchedMoments: [Moment] = []
     @State private var prefetchedHasMore = false
     @State private var prefetchingMoments = false
+    @State private var pendingMomentPage: [Moment] = []
+    @State private var pendingMomentHasMore = false
+    @State private var pendingStressLoadedCount = 0
     @State private var locallyDeletedMomentIds: Set<String> = []
     @State private var momentPrefetchTask: Task<Void, Never>?
 
@@ -1502,6 +1505,11 @@ struct MomentsView: View {
                         guard momentsScrollActive != scrolling else { return }
                         withSystemAnimation(.easeOut(duration: scrolling ? 0.12 : 0.20)) {
                             momentsScrollActive = scrolling
+                        }
+                        if !scrolling {
+                            DispatchQueue.main.async {
+                                flushPendingMomentPage()
+                            }
                         }
                     })
                 }
@@ -2085,6 +2093,19 @@ struct MomentsView: View {
                     updateSolidState()
                 }
 
+            if MomentStressFixture.isActive {
+                HStack(spacing: 6) {
+                    Text("STRESS")
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                    Text("已加载 \(stressLoadedCount) / \(MomentStressFixture.count)")
+                        .font(pf(12, .medium))
+                    Spacer(minLength: 0)
+                }
+                .foregroundColor(C.subLabel)
+                .padding(.horizontal, L.momentPadH)
+                .frame(height: 28)
+            }
+
             let source = displayedMoments
             ForEach(Array(source.enumerated()), id: \.element.id) { index, moment in
                 let day = mineOnly ? fullDateLabel(moment.createdAt) : dayLabel(moment.createdAt)
@@ -2615,6 +2636,9 @@ struct MomentsView: View {
         momentPrefetchTask?.cancel()
         prefetchedMoments.removeAll(keepingCapacity: true)
         prefetchedHasMore = false
+        pendingMomentPage.removeAll(keepingCapacity: true)
+        pendingMomentHasMore = false
+        pendingStressLoadedCount = 0
 
         if MomentStressFixture.isActive {
             stressLoadedCount = min(
@@ -2658,11 +2682,17 @@ struct MomentsView: View {
         if MomentStressFixture.isActive {
             guard hasMoreMoments, !loadingMore else { return }
             loadingMore = true
-            stressLoadedCount = min(
+            let next = min(
                 MomentStressFixture.count,
                 stressLoadedCount + Self.stressMomentPageSize
             )
             momentTotal = MomentStressFixture.count
+            if momentsScrollActive {
+                pendingStressLoadedCount = max(pendingStressLoadedCount, next)
+                loadingMore = false
+                return
+            }
+            stressLoadedCount = next
             hasMoreMoments = stressLoadedCount < MomentStressFixture.count
             loadingMore = false
             return
@@ -2674,12 +2704,11 @@ struct MomentsView: View {
             loadingMore = true
             let known = Set(moments.map(\.id))
             let page = prefetchedMoments.filter { !known.contains($0.id) }
+            let more = prefetchedHasMore
             prefetchedMoments.removeAll(keepingCapacity: true)
-            setMomentsWithoutAnimation(moments + page)
-            hasMoreMoments = prefetchedHasMore
             prefetchedHasMore = false
             loadingMore = false
-            scheduleMomentPrefetch()
+            appendMomentPage(page, hasMore: more)
             return
         }
         guard hasMoreMoments, !loadingMore, let last = moments.last else { return }
@@ -2687,16 +2716,51 @@ struct MomentsView: View {
         if let feed = try? await API.shared.momentsFeed(limit: Self.momentPageSize, before: last.createdAt, beforeId: last.id,
                                                         userId: feedUserId) {
             let known = Set(moments.map { $0.id })
-            setMomentsWithoutAnimation(
-                moments + feed.moments.filter {
+            appendMomentPage(
+                feed.moments.filter {
                     !known.contains($0.id) && !locallyDeletedMomentIds.contains($0.id)
-                }
+                },
+                hasMore: feed.hasMore && !feed.moments.isEmpty
             )
-            hasMoreMoments = feed.hasMore && !feed.moments.isEmpty
         } else {
             hasMoreMoments = false
         }
         loadingMore = false
+        scheduleMomentPrefetch()
+    }
+
+    private func appendMomentPage(_ page: [Moment], hasMore: Bool) {
+        guard !page.isEmpty else {
+            if !momentsScrollActive { hasMoreMoments = hasMore }
+            return
+        }
+        if momentsScrollActive {
+            let known = Set(moments.map(\.id)).union(pendingMomentPage.map(\.id))
+            pendingMomentPage.append(contentsOf: page.filter { !known.contains($0.id) })
+            pendingMomentHasMore = hasMore
+            return
+        }
+        let known = Set(moments.map(\.id))
+        setMomentsWithoutAnimation(moments + page.filter { !known.contains($0.id) })
+        hasMoreMoments = hasMore
+        scheduleMomentPrefetch()
+    }
+
+    private func flushPendingMomentPage() {
+        if pendingStressLoadedCount > 0 {
+            stressLoadedCount = pendingStressLoadedCount
+            pendingStressLoadedCount = 0
+            momentTotal = MomentStressFixture.count
+            hasMoreMoments = stressLoadedCount < MomentStressFixture.count
+        }
+        guard !pendingMomentPage.isEmpty else { return }
+        let page = pendingMomentPage
+        let more = pendingMomentHasMore
+        pendingMomentPage.removeAll(keepingCapacity: true)
+        pendingMomentHasMore = false
+        let known = Set(moments.map(\.id))
+        setMomentsWithoutAnimation(moments + page.filter { !known.contains($0.id) })
+        hasMoreMoments = more
         scheduleMomentPrefetch()
     }
 

@@ -65,4 +65,10 @@ require(
     "stress conversation lists must defer row insertion until scrolling ends",
 )
 
+MOMENTS = (ROOT / "Sources" / "MomentStressFixture.swift").read_text(encoding="utf-8")
+require(
+    '"#\\(index + 1) · \\(bodySamples[index % bodySamples.count])"' in MOMENTS,
+    "100k Moments stress cards must expose their exact ordinal",
+)
+
 print("chat-stress-scroll: passed")
