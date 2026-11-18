@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CHATS = (ROOT / "Sources" / "ChatsView.swift").read_text(encoding="utf-8")
 ROW = (ROOT / "Sources" / "NativeChatRowCell.swift").read_text(encoding="utf-8")
+NATIVE_LIST = (ROOT / "Sources" / "NativeChatList.swift").read_text(encoding="utf-8")
 
 
 def require(condition: bool, message: str) -> None:
@@ -25,8 +26,9 @@ require(
     "native row cells must apply the divider visibility configuration",
 )
 require(
-    "NativeTopGlassMask(active: scrolled > 0)" in CHATS,
-    "dark scroll chrome must use the shared native material",
+    "collection.topEdgeEffect.style = .automatic" in NATIVE_LIST
+    and "collection.topEdgeEffect.isHidden = false" in NATIVE_LIST,
+    "dark scroll chrome must use the system scroll-edge material",
 )
 require(
     '"\\(chatsIsDark)-\\(scheme)-\\(Lang.code)' in CHATS,

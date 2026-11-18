@@ -1,6 +1,11 @@
 import SwiftUI
 import UIKit
 
+final class NativeChatListScrollRegistry {
+    static let shared = NativeChatListScrollRegistry()
+    weak var chats: UIScrollView?
+}
+
 struct NativeChatList<Item: Identifiable & Equatable, Row: View>: UIViewControllerRepresentable
 where Item.ID: Hashable {
     let items: [Item]
@@ -50,9 +55,16 @@ where Item.ID: Hashable {
         collection.allowsSelection = true
         collection.allowsMultipleSelection = false
         if #available(iOS 26.0, *) {
-            collection.topEdgeEffect.isHidden = true
+            /*
+             * 会话页和“我的”页必须使用同一套系统 scroll-edge 材质。
+             * 顶栏再通过 UIScrollEdgeElementContainerInteraction 把系统效果
+             * 延伸到自定义顶栏区域，静止在顶部时仍会自然消失。
+             */
+            collection.topEdgeEffect.style = .automatic
+            collection.topEdgeEffect.isHidden = false
             collection.bottomEdgeEffect.isHidden = true
         }
+        NativeChatListScrollRegistry.shared.chats = collection
         collection.delegate = context.coordinator
 
         let registration = UICollectionView.CellRegistration<UICollectionViewCell, Item.ID> {

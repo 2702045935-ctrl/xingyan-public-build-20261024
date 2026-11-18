@@ -2065,10 +2065,6 @@ struct ChatsView: View {
         }
     }
 
-    @ViewBuilder private func chatsNavGlass(_: CGFloat) -> some View {
-        NativeTopGlassMask(active: scrolled > 0)
-    }
-
     @ViewBuilder private var chatsCardBackground: some View {
         RoundedRectangle(cornerRadius: chatsCardRadius, style: .continuous)
             .fill(chatsCardFill)
@@ -2835,7 +2831,7 @@ struct ChatsView: View {
                                     Color.clear
                                         .contentShape(Rectangle())
                                 }
-                                chatsNavGlass(scrolled)
+                                NativeChatsTopEdgeChrome(scrolled: scrolled)
                             }
                         }
                         .opacity(navFadeForFloor)

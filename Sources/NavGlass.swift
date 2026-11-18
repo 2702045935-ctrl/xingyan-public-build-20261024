@@ -136,6 +136,64 @@ struct NativeTopGlassMask: View {
     }
 }
 
+struct NativeChatsTopEdgeChrome: View {
+    var scrolled: CGFloat
+
+    var body: some View {
+        if #available(iOS 26.0, *) {
+            NativeScrollEdgeElementBridge()
+        } else {
+            NativeTopGlassMask(active: scrolled > 0)
+        }
+    }
+}
+
+#if canImport(UIKit)
+private struct NativeScrollEdgeElementBridge: UIViewRepresentable {
+    final class Coordinator {
+        var retryScheduled = false
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        view.backgroundColor = .clear
+        view.isUserInteractionEnabled = false
+        attach(to: view, coordinator: context.coordinator)
+        return view
+    }
+
+    func updateUIView(_ view: UIView, context: Context) {
+        attach(to: view, coordinator: context.coordinator)
+    }
+
+    private func attach(to view: UIView, coordinator: Coordinator) {
+        guard #available(iOS 26.0, *) else { return }
+
+        let interaction: UIScrollEdgeElementContainerInteraction
+        if let current = view.interactions.compactMap({
+            $0 as? UIScrollEdgeElementContainerInteraction
+        }).first {
+            interaction = current
+        } else {
+            interaction = UIScrollEdgeElementContainerInteraction()
+            interaction.edge = .top
+            view.addInteraction(interaction)
+        }
+
+        interaction.scrollView = NativeChatListScrollRegistry.shared.chats
+        guard interaction.scrollView == nil, !coordinator.retryScheduled else { return }
+        coordinator.retryScheduled = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            coordinator.retryScheduled = false
+            guard view.window != nil else { return }
+            attach(to: view, coordinator: coordinator)
+        }
+    }
+}
+#endif
+
 struct ScrollActiveGlassMask: View {
     let base: Color
     let active: Bool
