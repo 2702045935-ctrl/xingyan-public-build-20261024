@@ -16,12 +16,18 @@ end = PANELS.find("\nprivate struct PlusTileStyle", start)
 require(start >= 0 and end > start, "plus panel implementation must exist")
 panel = PANELS[start:end]
 require(
-    ".fill(.ultraThinMaterial)" in panel,
-    "plus tiles must use a native translucent surface",
+    "struct ChatPlusPanelMaterial" in PANELS
+    and "Rectangle().fill(.regularMaterial)" in PANELS,
+    "the panel background must use native system material",
 )
 require(
-    "radius: 8, y: 3" in panel,
-    "plus tiles must use restrained depth instead of heavy colored shadows",
+    ".fill(tileColors(item.action).first ?? C.green)" in panel,
+    "plus tiles must use the simplified solid icon surface",
+)
+require(
+    ".shadow(" not in panel
+    and "RoundedRectangle(cornerRadius: L.v(14, 4.5, 16)" not in panel,
+    "plus tiles must not restore decorative cards or shadows",
 )
 require(
     "size: L.v(20.5, 6.2, 23)" in panel,

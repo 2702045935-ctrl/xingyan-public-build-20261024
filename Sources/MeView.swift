@@ -36,14 +36,8 @@ struct MeView: View {
             currentMeRows
         }
         .listStyle(.insetGrouped)
-        .listSectionSeparator(.visible)
-        .scrollContentBackground(.hidden)
-        .background(mePageCanvasColor.ignoresSafeArea())
         .navigationTitle(Tr("我的"))
         .navigationBarTitleDisplayMode(.large)
-        .toolbarBackground(.regularMaterial, for: .navigationBar)
-        .toolbarBackground(scheme == .dark ? .hidden : .visible,
-                           for: .navigationBar)
         .refreshable {
             if let user = try? await API.shared.me() {
                 app.applyMyProfileUser(user)
@@ -84,7 +78,7 @@ struct MeView: View {
                                 UmbrellaIcon(color: Color(hex: 0x3E9BF0), size: 14)
                             }
                             Text(app.me?.name ?? Tr("星言用户"))
-                                .font(pf(18, .semibold))
+                                .font(.headline)
                                 .foregroundStyle(.primary)
                                 .lineLimit(1)
                             MemberBadge(tier: app.me?.memberTier,
@@ -95,21 +89,19 @@ struct MeView: View {
                                 .fixedSize()
                         }
                         Text(Tr("星言号") + "：" + (app.me?.username ?? "-"))
-                            .font(pf(12.5))
+                            .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                         let bio = (app.me?.bio ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
                         Text(bio.isEmpty ? Tr("点击编辑个人资料") : bio)
-                            .font(pf(12.5))
+                            .font(.caption)
                             .foregroundStyle(.tertiary)
                             .lineLimit(1)
                     }
                 }
                 .padding(.vertical, 4)
             }
-            .buttonStyle(.plain)
         }
-        .listRowBackground(C.meCardBg)
 
         ForEach(grouped.indices, id: \.self) { gi in
             Section {
@@ -120,11 +112,7 @@ struct MeView: View {
                 }
             } header: {
                 Text(meSectionTitle(grouped[gi]))
-                    .font(pf(12.5, .semibold))
-                    .foregroundStyle(.secondary)
-                    .textCase(nil)
             }
-            .listRowBackground(C.meCardBg)
         }
 
         if app.me?.ops == true {
@@ -141,11 +129,7 @@ struct MeView: View {
                 }
             } header: {
                 Text(Tr("管理"))
-                    .font(pf(12.5, .semibold))
-                    .foregroundStyle(.secondary)
-                    .textCase(nil)
             }
-            .listRowBackground(C.meCardBg)
         }
     }
 
@@ -157,11 +141,6 @@ struct MeView: View {
         case 4: return Tr("设置")
         default: return Tr("更多")
         }
-    }
-
-    private var mePageCanvasColor: Color {
-        scheme == .dark ? C.pageBg
-            : (UIConfig.colorIfSet("pageBg") ?? worldAndMeCanvasColor())
     }
 
     private func nativeMeItemRow(_ item: DiscoverItem) -> some View {
