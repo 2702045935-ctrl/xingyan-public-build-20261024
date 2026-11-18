@@ -2493,6 +2493,7 @@ struct GameWindowCapsule: View {
 
 struct TapAvatarCard: ViewModifier {
     @Binding var cardUser: User?
+    @EnvironmentObject private var app: AppState
 
     @State private var nextChat: Chat?
     @State private var nextMoments: User?
