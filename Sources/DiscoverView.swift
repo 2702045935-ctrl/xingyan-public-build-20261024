@@ -1345,7 +1345,7 @@ struct MomentsView: View {
     @State private var prefetchedHasMore = false
     @State private var prefetchingMoments = false
     @State private var pendingMomentPage: [Moment] = []
-    @State private var pendingMomentHasMore = false
+    @State private var pendingMomentHasMore: Bool? = nil
     @State private var pendingStressLoadedCount = 0
     @State private var locallyDeletedMomentIds: Set<String> = []
     @State private var momentPrefetchTask: Task<Void, Never>?
@@ -2637,7 +2637,7 @@ struct MomentsView: View {
         prefetchedMoments.removeAll(keepingCapacity: true)
         prefetchedHasMore = false
         pendingMomentPage.removeAll(keepingCapacity: true)
-        pendingMomentHasMore = false
+        pendingMomentHasMore = nil
         pendingStressLoadedCount = 0
 
         if MomentStressFixture.isActive {
@@ -2731,7 +2731,11 @@ struct MomentsView: View {
 
     private func appendMomentPage(_ page: [Moment], hasMore: Bool) {
         guard !page.isEmpty else {
-            if !momentsScrollActive { hasMoreMoments = hasMore }
+            if momentsScrollActive {
+                pendingMomentHasMore = hasMore
+            } else {
+                hasMoreMoments = hasMore
+            }
             return
         }
         if momentsScrollActive {
@@ -2753,11 +2757,17 @@ struct MomentsView: View {
             momentTotal = MomentStressFixture.count
             hasMoreMoments = stressLoadedCount < MomentStressFixture.count
         }
-        guard !pendingMomentPage.isEmpty else { return }
+        guard !pendingMomentPage.isEmpty else {
+            if let more = pendingMomentHasMore {
+                hasMoreMoments = more
+                pendingMomentHasMore = nil
+            }
+            return
+        }
         let page = pendingMomentPage
-        let more = pendingMomentHasMore
+        let more = pendingMomentHasMore ?? hasMoreMoments
         pendingMomentPage.removeAll(keepingCapacity: true)
-        pendingMomentHasMore = false
+        pendingMomentHasMore = nil
         let known = Set(moments.map(\.id))
         setMomentsWithoutAnimation(moments + page.filter { !known.contains($0.id) })
         hasMoreMoments = more
