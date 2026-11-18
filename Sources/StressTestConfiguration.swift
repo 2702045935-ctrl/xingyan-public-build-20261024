@@ -38,7 +38,7 @@ enum StressTestConfiguration {
     }()
 
     static let messageGroupCount: Int = {
-        let raw = environment["XINGYAN_STRESS_GROUPS"].flatMap(Int.init) ?? 20
+        let raw = environment["XINGYAN_STRESS_GROUPS"].flatMap(Int.init) ?? 1
         return messageCount > 0 ? max(1, min(500, raw)) : 0
     }()
 

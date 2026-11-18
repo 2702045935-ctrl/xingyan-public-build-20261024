@@ -46,6 +46,15 @@ require(
     "the realistic single-group stress fixture must default to an 8-member family group",
 )
 require(
+    'environment["XINGYAN_STRESS_GROUPS"].flatMap(Int.init) ?? 1' in CHAT
+    or 'environment["XINGYAN_STRESS_GROUPS"].flatMap(Int.init) ?? 1' in CONFIG,
+    "the default 100k stress run must be one exact single-group chat",
+)
+require(
+    "let dominantCount = groupCount > 1 ? count * 3 / 4 : count" in FIXTURE,
+    "a one-group stress run must materialize all 100000 messages in that group",
+)
+require(
     'return "已加载 \\(messages.count) · \\(first)–\\(last) / \\(MessageStressFixture.count)"' in CHAT,
     "stress chat header must expose the visible sequence range against the 100k total",
 )
