@@ -41,6 +41,13 @@ require(
     "cross-device read events must identify the reading user",
 )
 require(
+    "function scheduleBadgePush" in SERVER
+    and "silent: true" in SERVER
+    and "'content-available': 1" in SERVER
+    and "silent ? 'background' : 'alert'" in SERVER,
+    "offline devices need a badge-only APNs update after cross-device read",
+)
+require(
     "ev.userId.isEmpty || ev.userId == me?.id" in APP,
     "the client must accept old read events that omitted the user id",
 )

@@ -211,7 +211,7 @@ final class AppState: ObservableObject {
         badges = await API.shared.badgeConfig()
     }
     @Published var chats: [Chat] = []
-    private var authoritativeUnreadTotal: Int?
+    @Published private var authoritativeUnreadTotal: Int?
 
     @Published var contacts: [User] = [] {
         didSet {

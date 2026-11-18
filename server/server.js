@@ -8589,7 +8589,8 @@ function apnsJwt() {
 }
 
 /** 真发一条 APNs 通知；返回 { ok, status, reason } */
-function apnsSend(deviceToken, sandbox, payload) {
+function apnsSend(deviceToken, sandbox, payload,
+                  pushType = 'alert', priority = '10') {
   return new Promise((resolve) => {
     const c = readPush().config;
     const host = sandbox ? 'https://api.sandbox.push.apple.com' : 'https://api.push.apple.com';
@@ -8614,8 +8615,8 @@ function apnsSend(deviceToken, sandbox, payload) {
         ':path': '/3/device/' + deviceToken,
         authorization: 'bearer ' + apnsJwt(),
         'apns-topic': c.bundleId,
-        'apns-push-type': 'alert',
-        'apns-priority': '10',
+        'apns-push-type': pushType,
+        'apns-priority': priority,
         'apns-expiration': String(Math.floor(Date.now() / 1000) + 3600),
         'content-type': 'application/json'
       });
@@ -8707,17 +8708,22 @@ async function pushToUser(userId, opts) {
   const devices = p.tokens[userId] || [];
   if (!devices.length) return { sent: 0, reason: 'no-device' };
   let sent = 0;
+  const silent = opts.silent === true;
   /* 桌面图标上的红点数字：不传就按「当前未读总数」算，和微信一样 */
   const badge = Math.min(999, Math.max(0,
     typeof opts.badge === 'number' ? opts.badge : unreadTotalOf(userId)));
   for (const d of devices) {
+    const aps = silent ? {
+      'content-available': 1,
+      badge: badge
+    } : Object.assign({
+      alert: { title: String(opts.title || '').slice(0, 60), body: String(opts.body || '').slice(0, 160) },
+      sound: opts.sound === false ? undefined : (opts.soundName || 'default'),
+      'thread-id': opts.chatId || opts.kind || 'chris',
+      'mutable-content': 0
+    }, { badge: badge });
     const payload = {
-      aps: Object.assign({
-        alert: { title: String(opts.title || '').slice(0, 60), body: String(opts.body || '').slice(0, 160) },
-        sound: opts.sound === false ? undefined : (opts.soundName || 'default'),
-        'thread-id': opts.chatId || opts.kind || 'chris',
-        'mutable-content': 0
-      }, { badge: badge }),
+      aps,
       /* 折叠：同一个会话连着来消息，通知只留最新一条（微信就是这个行为）。
          注意 apns-collapse-id 要放在 payload 顶层，不是 aps 里面。 */
       'apns-collapse-id': opts.collapse ? String(opts.collapse).slice(0, 64) : undefined,
@@ -8727,7 +8733,8 @@ async function pushToUser(userId, opts) {
       /* 「登录确认」那条通知要带上 6 位码：点通知直接进确认卡片，不用手输 */
       code: opts.pairCode || opts.code || ''
     };
-    const r = await apnsSend(d.token, d.env ? d.env === 'sandbox' : !!c.sandbox, payload);
+    const r = await apnsSend(d.token, d.env ? d.env === 'sandbox' : !!c.sandbox,
+      payload, silent ? 'background' : 'alert', silent ? '5' : '10');
     if (r.ok) sent += 1;
     const bad = r.status === 400 || r.status === 410 || /BadDeviceToken|Unregistered|DeviceTokenNotForTopic/.test(String(r.reason || ''));
     pushLog({
@@ -8737,6 +8744,24 @@ async function pushToUser(userId, opts) {
     if (!r.ok && bad) pushRemoveToken(userId, d.token);
   }
   return { sent, reason: 'ok' };
+}
+
+const badgePushTimers = new Map();
+function scheduleBadgePush(userId) {
+  if (!userId) return;
+  const previous = badgePushTimers.get(userId);
+  if (previous) clearTimeout(previous);
+  const timer = setTimeout(() => {
+    badgePushTimers.delete(userId);
+    if (!pushReady()) return;
+    pushToUser(userId, {
+      kind: 'badge',
+      badge: unreadTotalOf(userId),
+      silent: true
+    }).catch(() => {});
+  }, 250);
+  if (timer.unref) timer.unref();
+  badgePushTimers.set(userId, timer);
 }
 
 /* ---------------- 设备确认登录：给已登录的设备发「登录确认」 ----------------
@@ -9246,6 +9271,7 @@ async function publishReadCursor(chat, user, seq) {
   };
   /* 同一账号的所有设备都收到，另一端不用等下一次列表刷新才掉红点。 */
   sendTo(user.id, payload);
+  scheduleBadgePush(user.id);
   /* 会话对方仍然收到原来的已读回执格式，避免影响聊天页已有逻辑。 */
   sendToChat(chat, {
     type: 'read',
