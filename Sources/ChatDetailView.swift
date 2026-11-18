@@ -1138,7 +1138,6 @@ struct ChatDetailView: View {
     @State private var settleTask: Task<Void, Never>? = nil
     @State private var hasOlder = false
     @State private var loadingOlder = false
-    @State private var needsPrependTrim = false
 
     @State private var loadingAllGroupHistory = false
     @State private var holdScroll = false
@@ -2938,13 +2937,6 @@ struct ChatDetailView: View {
                         }
                     }, onSizeChange: {
                         let compensated = ChatScrollHandle.shared.compensatePendingPrepend()
-                        if compensated && needsPrependTrim {
-                            needsPrependTrim = false
-                            DispatchQueue.main.async {
-                                trimMessageWindowForOlderPage()
-                            }
-                        }
-
                         guard (isGroup ? wasAtBottom : atBottomNow), !holdScroll else { return }
                         if ChatScrollHandle.shared.moving { return }
                         ChatScrollDiag.shared.note("内容变高 → 哨兵贴底")
@@ -3078,10 +3070,6 @@ struct ChatDetailView: View {
             },
             onSizeChange: {
                 let compensated = ChatScrollHandle.shared.compensatePendingPrepend()
-                if compensated && needsPrependTrim {
-                    needsPrependTrim = false
-                    DispatchQueue.main.async { trimMessageWindowForOlderPage() }
-                }
                 guard atBottomNow, !holdScroll else { return }
                 if ChatScrollHandle.shared.moving { return }
                 ChatScrollDiag.shared.note("内容变高 → 原生消息列表贴底")
@@ -3362,10 +3350,6 @@ struct ChatDetailView: View {
                     }
                 }, onSizeChange: {
                     let compensated = ChatScrollHandle.shared.compensatePendingPrepend()
-                    if compensated && needsPrependTrim {
-                        needsPrependTrim = false
-                        DispatchQueue.main.async { trimMessageWindowForOlderPage() }
-                    }
                     guard atBottomNow, !holdScroll else { return }
                     if ChatScrollHandle.shared.moving { return }
                     ChatScrollDiag.shared.note("内容变高 → 原生消息列表贴底")
@@ -6769,23 +6753,21 @@ struct ChatDetailView: View {
             guard !older.isEmpty else { hasOlder = false; return }
             holdScroll = true
             let merged = visibleMessages(older + messages)
-            needsPrependTrim = merged.count > maxMessageWindow
-            /* 先只插入旧页，让 ScrollOffsetProbe 在 contentSize 变化的那一帧
-               直接补偿 offset；补偿完成后再裁掉底部窗口，屏幕内容不会先跳。 */
+            let bounded = merged.count > maxMessageWindow
+                ? Array(merged.prefix(maxMessageWindow))
+                : merged
+            /* 插入旧页和裁掉尾部窗口必须合成同一次快照。
+               分两次 apply 会在后段触发第二次全列表 diff，形成顿挫。 */
             ChatScrollHandle.shared.prepareForPrepend()
             var transaction = Transaction()
             transaction.disablesAnimations = true
             withTransaction(transaction) {
-                messages = merged
+                messages = bounded
             }
             if merged.count > maxMessageWindow || more { hasOlder = true }
             rebuildIndex()
             DispatchQueue.main.async {
-                let compensated = ChatScrollHandle.shared.compensatePendingPrepend()
-                if compensated && needsPrependTrim {
-                    needsPrependTrim = false
-                    trimMessageWindowForOlderPage()
-                }
+                _ = ChatScrollHandle.shared.compensatePendingPrepend()
             }
 
             ChatScrollDiag.shared.note("上翻加载完 → 原子补偿当前位置")
@@ -6796,22 +6778,6 @@ struct ChatDetailView: View {
             // backoff; explicit jump-to-message can still retry independently.
             lastOlderLoad = Date().addingTimeInterval(1.2)
             ChatScrollDiag.shared.note("上翻历史加载失败，保留当前位置")
-        }
-    }
-
-    private func trimMessageWindowForOlderPage() {
-        guard messages.count > maxMessageWindow else {
-            needsPrependTrim = false
-            return
-        }
-        var transaction = Transaction()
-        transaction.disablesAnimations = true
-        withTransaction(transaction) {
-            messages = Array(messages.prefix(maxMessageWindow))
-        }
-        rebuildIndex()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
-            holdScroll = false
         }
     }
 

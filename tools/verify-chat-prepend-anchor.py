@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 LIST = (ROOT / "Sources" / "NativeStaticList.swift").read_text(encoding="utf-8")
 SCROLL = (ROOT / "Sources" / "ScrollProbe.swift").read_text(encoding="utf-8")
+WINDOW = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
 
 
 def require(condition: bool, message: str) -> None:
@@ -27,6 +28,18 @@ require(
 require(
     "func clearPendingPrepend()" in SCROLL,
     "the scroll handle must support clearing a pending prepend",
+)
+require(
+    "trimMessageWindowForOlderPage" not in WINDOW,
+    "history insertion and tail-window trimming must not run as two snapshots",
+)
+require(
+    "let bounded = merged.count > maxMessageWindow" in WINDOW,
+    "the prepend and bounded message window must be committed atomically",
+)
+require(
+    "!isPrepending,\n               collection.isDragging" in LIST,
+    "an exact-anchor prepend must stay live even when the same snapshot trims the tail",
 )
 
 print("chat-prepend-anchor: passed")

@@ -278,7 +278,8 @@ where Item.ID: Hashable {
             let nextSignatures = Dictionary(uniqueKeysWithValues: next.map {
                 ($0.id, signature($0))
             })
-            if !order.isEmpty && (collection.isDragging || collection.isDecelerating) {
+            if !order.isEmpty, !isPrepending,
+               collection.isDragging || collection.isDecelerating {
                 let known = Set(order)
                 let commonOrder = nextOrder.filter { known.contains($0) }
                 if commonOrder != order {
