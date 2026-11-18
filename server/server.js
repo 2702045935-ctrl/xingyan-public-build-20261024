@@ -9519,7 +9519,12 @@ function handleClientMessage(user, socket, raw) {
       }
     }
     void publishReadCursor(chat, user, lastSeq).catch(() => {});
-    sendTo(user.id, { type: 'read', chatId: chat.id, seq: lastSeq });
+    sendTo(user.id, {
+      type: 'read',
+      chatId: chat.id,
+      userId: user.id,
+      seq: lastSeq
+    });
     return;
   }
 
@@ -22237,7 +22242,12 @@ async function handleApi(req, res, pathname, query) {
       unread: false,
       eventId: uid('sh-read')
     });
-    sendTo(user.id, { type: 'read', chatId: chat.id, seq: lastSeq });
+    sendTo(user.id, {
+      type: 'read',
+      chatId: chat.id,
+      userId: user.id,
+      seq: lastSeq
+    });
     ok(res, { seq: lastSeq });
     return;
   }

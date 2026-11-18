@@ -589,7 +589,8 @@ final class AppState: ObservableObject {
                 await self?.loadChats()
             }
         case "read":
-            if ev.userId == me?.id, !ev.chatId.isEmpty {
+            if !ev.chatId.isEmpty,
+               ev.userId.isEmpty || ev.userId == me?.id {
                 markChatReadLocally(ev.chatId)
                 coalesce { [weak self] in await self?.loadChats() }
             }
@@ -946,9 +947,8 @@ final class AppState: ObservableObject {
         dotTask?.cancel()
         dotTask = Task { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 12_000_000_000)
-                if Task.isCancelled { break }
                 await self?.refreshDotCounts()
+                try? await Task.sleep(nanoseconds: 12_000_000_000)
             }
         }
     }
@@ -962,12 +962,19 @@ final class AppState: ObservableObject {
         }
         if d.momentUnread != momentsUnread { momentsUnread = d.momentUnread }
         if !d.recentChats.isEmpty {
-            let merged = mergeServerChats(d.recentChats)
+            let recent = mergeServerChats(d.recentChats)
+            let recentIds = Set(d.recentChats.map(\.id))
+            var combined = recent
+            var known = Set(recent.map(\.id))
+            for row in chats where !recentIds.contains(row.id) && known.insert(row.id).inserted {
+                combined.append(row)
+            }
+            let merged = applyLocalRemarksToChats(orderedChatsForList(combined))
             if !AppState.sameChats(chats, merged) {
                 chats = merged
             }
-            syncIconBadge()
         }
+        syncIconBadge()
     }
 
     func rememberLastUser() {
@@ -1412,6 +1419,18 @@ final class AppState: ObservableObject {
                 if !sameLast || now.timeIntervalSince(stamp) < 2 {
                     out.unread = local.unreadCount
                 }
+            }
+            /* 同一末条消息稳定超过 2 秒后，以服务端计数为准。
+               另一台设备已读时，本地乐观未读不能继续压住红点。 */
+            if let stamp,
+               now.timeIntervalSince(stamp) >= 2,
+               !(server.lastMessage?.id ?? "").isEmpty,
+               server.lastMessage?.id == local.lastMessage?.id {
+                optimisticChats[server.id] = nil
+                optimisticAt[server.id] = nil
+                out = mergeServerChat(server, local: local)
+                out.unread = server.unread
+                out.flagged = server.flagged
             }
             if let stamp = optimisticAt[server.id], now.timeIntervalSince(stamp) < 86_400,
                serverCaughtUp(server, local: local) {

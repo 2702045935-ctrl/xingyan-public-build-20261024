@@ -16,10 +16,29 @@ def require(condition: bool, message: str) -> None:
 require("var recentChats: [Chat]?" in API
         and "recentChats: [Chat])?" in API,
         "badge polling must decode recent chat snapshots")
-require("let merged = mergeServerChats(d.recentChats)" in APP
-        and "if !AppState.sameChats(chats, merged)" in APP,
-        "foreground badge polling must reconcile recent chat summaries")
+require("let recent = mergeServerChats(d.recentChats)" in APP
+        and "let recentIds = Set(d.recentChats.map(\\.id))" in APP
+        and "combined.append(row)" in APP,
+        "foreground badge polling must reconcile partial recent snapshots without dropping chats")
 require(".slice(0, 20)" in SERVER and ".map((chat) => chatSummary(chat, user.id))" in SERVER,
         "badge-counts must return a bounded recent chat snapshot")
+require(
+    "now.timeIntervalSince(stamp) >= 2" in APP
+    and "out.unread = server.unread" in APP
+    and "optimisticChats[server.id] = nil" in APP,
+    "a stable server snapshot must retire stale optimistic unread counters",
+)
+require(
+    "type: 'read',\n      chatId: chat.id,\n      userId: user.id,\n      seq: lastSeq" in SERVER,
+    "cross-device read events must identify the reading user",
+)
+require(
+    "ev.userId.isEmpty || ev.userId == me?.id" in APP,
+    "the client must accept old read events that omitted the user id",
+)
+require(
+    "while !Task.isCancelled {\n                await self?.refreshDotCounts()" in APP,
+    "dot polling must calibrate immediately before waiting for the next interval",
+)
 
 print("chat-unread-reconcile: passed")
