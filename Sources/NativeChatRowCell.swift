@@ -733,30 +733,38 @@ private final class NativeChatAvatarView: UIView {
         let shown = Array(paths.prefix(4))
         for (index, imageView) in tileViews.enumerated() {
             let path = index < shown.count ? shown[index] : ""
+            let cacheKey = ImageCacheKey.stablePath(path)
             let visible = index < max(1, shown.count)
-            let changed = tilePaths[index] != path || imageView.isHidden != !visible
+            let changed = tilePaths[index] != cacheKey || imageView.isHidden != !visible
             imageView.isHidden = !visible
             if changed || path.isEmpty {
-                tilePaths[index] = path
+                tilePaths[index] = cacheKey
                 imageView.image = nil
                 imageView.backgroundColor = UIColor.tertiarySystemFill
             }
             guard visible, !path.isEmpty else { continue }
-            load(path: path) { [weak self, weak imageView] image in
+            load(path: path, cacheKey: cacheKey) { [weak self, weak imageView] image in
                 guard let self, self.token == requestToken, let imageView else { return }
                 imageView.image = image
             }
         }
     }
 
-    private func load(path: String, completion: @escaping (UIImage?) -> Void) {
-        if let hit = ImageStore.shared.get(path + "#150") ?? ImageStore.shared.get(path) {
+    private func load(path: String,
+                      cacheKey: String,
+                      completion: @escaping (UIImage?) -> Void) {
+        let thumbnailKey = cacheKey + "#150"
+        if let hit = ImageStore.shared.get(thumbnailKey)
+            ?? ImageStore.shared.get(cacheKey)
+            ?? ImageStore.shared.get(path + "#150")
+            ?? ImageStore.shared.get(path) {
             completion(hit)
             return
         }
         Task {
             let diskData = await Task.detached(priority: .userInitiated) {
-                ImageStore.shared.diskRead(path)
+                ImageStore.shared.diskRead(cacheKey)
+                    ?? ImageStore.shared.diskRead(path)
             }.value
             var data = diskData
             if let url = API.shared.assetURL(path) {
@@ -775,9 +783,9 @@ private final class NativeChatAvatarView: UIView {
                 RemoteImage.downsampled(data, maxSide: 150) ?? UIImage(data: data)
             }.value
             if let image {
-                ImageStore.shared.put(path + "#150", image)
+                ImageStore.shared.put(thumbnailKey, image)
                 Task.detached(priority: .background) {
-                    ImageStore.shared.diskWrite(path, data)
+                    ImageStore.shared.diskWrite(cacheKey, data)
                 }
             }
             await MainActor.run { completion(image) }

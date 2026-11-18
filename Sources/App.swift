@@ -1357,12 +1357,13 @@ final class AppState: ObservableObject {
             var available = false
             for path in paths {
                 if Task.isCancelled { return }
-                let key = path + "#150"
+                let stablePath = ImageCacheKey.stablePath(path)
+                let key = ImageCacheKey.avatar(path)
                 if ImageStore.shared.get(key) != nil {
                     available = true
                     continue
                 }
-                if let disk = ImageStore.shared.diskRead(path),
+                if let disk = ImageStore.shared.diskRead(stablePath),
                    let image = await Task.detached(priority: .utility, operation: {
                        RemoteImage.downsampled(disk, maxSide: 150) ?? UIImage(data: disk)
                    }).value {
@@ -1377,7 +1378,7 @@ final class AppState: ObservableObject {
                     RemoteImage.downsampled(data, maxSide: 150) ?? UIImage(data: data)
                 }).value {
                     ImageStore.shared.put(key, image)
-                    ImageStore.shared.diskWrite(path, data)
+                    ImageStore.shared.diskWrite(stablePath, data)
                     available = true
                 }
             }

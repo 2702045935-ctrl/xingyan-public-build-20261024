@@ -4,6 +4,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = (ROOT / "Sources" / "NativeChatRowCell.swift").read_text(encoding="utf-8")
+CORE = (ROOT / "Sources" / "Core.swift").read_text(encoding="utf-8")
+APP = (ROOT / "Sources" / "App.swift").read_text(encoding="utf-8")
 
 
 def require(condition: bool, message: str) -> None:
@@ -18,13 +20,19 @@ require(
 )
 require(
     "private var tilePaths" in SOURCE
-    and "let changed = tilePaths[index] != path" in SOURCE
+    and "let changed = tilePaths[index] != cacheKey" in SOURCE
     and "if changed || path.isEmpty" in SOURCE,
     "same-path avatars must keep their loaded image",
 )
 require(
     "guard let self, self.token == requestToken" in SOURCE,
     "late avatar responses must not overwrite a newer reused cell",
+)
+require(
+    'static func stablePath(_ path: String)' in CORE
+    and "ImageCacheKey.avatar(path)" in APP
+    and "let cacheKey = ImageCacheKey.stablePath(path)" in SOURCE,
+    "signed avatar URLs must share a stable cache key across refreshes",
 )
 
 print("chat-avatar-stability: passed")

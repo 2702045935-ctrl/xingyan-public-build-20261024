@@ -877,6 +877,20 @@ final class ScrollGate {
     }
 }
 
+enum ImageCacheKey {
+    static func stablePath(_ path: String) -> String {
+        let value = path.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let cut = value.firstIndex(where: { $0 == "?" || $0 == "#" }) else {
+            return value
+        }
+        return String(value[..<cut])
+    }
+
+    static func avatar(_ path: String) -> String {
+        stablePath(path) + "#150"
+    }
+}
+
 final class ImageStore {
     static let shared = ImageStore()
     private var cache: [String: UIImage] = [:]
