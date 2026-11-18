@@ -224,13 +224,7 @@ private var funcs: [(String, String, Color, String)] {
                     contactsTopHeader
 
                     .background {
-                        TopGlassBar(scrolled: navScrolled,
-                                    fallback: scheme == .dark ? C.navBg : contactsCanvas,
-                                    always: true,
-                                    matchDarkBackground: true)
-                    }
-                    .overlay(alignment: .bottom) {
-                        TopGlassLine(scrolled: navScrolled)
+                        NativeTopGlassMask(active: navScrolled > 0)
                     }
 
                 }
@@ -318,7 +312,6 @@ private var funcs: [(String, String, Color, String)] {
                                 Color.clear
                                     .frame(height: L.tabH + L.safeBottom + 12)
                             }
-                            .topScrollTracking($navScrolled, space: "contactsScroll")
                         }
                         .background(contactsCanvas)
                         .refreshable { await app.loadContacts() }
@@ -348,9 +341,10 @@ private var funcs: [(String, String, Color, String)] {
                             LetterBubble(letter: b)
                                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                                 .offset(y: -56)
+                                }
+                            }
+                            .topScrollTracking($navScrolled, space: "contactsScroll")
                         }
-                    }
-                }
 
                 .padding(.top, -listHeadH)
             }

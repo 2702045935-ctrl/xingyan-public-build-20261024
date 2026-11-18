@@ -113,6 +113,29 @@ struct NativeGlassHeaderMaterial: UIViewRepresentable {
 }
 #endif
 
+struct NativeTopGlassMask: View {
+    var active: Bool
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    var body: some View {
+        Group {
+            if !active {
+                Color.clear
+            } else if reduceTransparency {
+                Color(uiColor: .systemBackground)
+            } else {
+                NativeGlassHeaderMaterial()
+            }
+        }
+        .ignoresSafeArea(edges: .top)
+        .allowsHitTesting(false)
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.16),
+                   value: active)
+    }
+}
+
 struct ScrollActiveGlassMask: View {
     let base: Color
     let active: Bool

@@ -13,17 +13,17 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "} else if isGroup {" in CHAT
+    "private struct ChatTopGlassBackdrop" in CHAT
     and "NativeGlassHeaderMaterial()" in CHAT,
-    "group chats must use the native glass material in the top mask",
+    "chat top chrome must use the native glass material",
 )
 require(
-    "NativeGlassHeaderMaterial() .opacity(0.78)" in CHAT_FLAT,
-    "the group top mask must remain subtly translucent",
+    ".init(color: .clear, location: 1)" in CHAT_FLAT,
+    "the native top material must fade without a visible strip",
 )
 require(
-    "ChatImmersiveEdgeMask(path: backgroundPath" in CHAT,
-    "the original chat wallpaper must stay beneath the material",
+    "chatBackdrop" in CHAT and "ChatTopGlassBackdrop()" in CHAT,
+    "the continuous chat wallpaper must stay beneath the native material",
 )
 
 print("group-top-frost: passed")

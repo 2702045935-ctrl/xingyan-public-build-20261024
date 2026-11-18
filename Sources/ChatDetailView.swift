@@ -524,6 +524,34 @@ private struct ChatImmersiveEdgeMask: View {
     }
 }
 
+private struct ChatTopGlassBackdrop: View {
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    var body: some View {
+        Group {
+            if reduceTransparency {
+                Rectangle()
+                    .fill(Color(uiColor: .systemBackground).opacity(0.97))
+            } else {
+                NativeGlassHeaderMaterial()
+                    .mask {
+                        LinearGradient(
+                            stops: [
+                                .init(color: .black, location: 0),
+                                .init(color: .black.opacity(0.96), location: 0.84),
+                                .init(color: .clear, location: 1)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    }
+            }
+        }
+        .ignoresSafeArea(edges: .top)
+        .allowsHitTesting(false)
+    }
+}
+
 struct KeyboardLiftDisable: ViewModifier {
     let enabled: Bool
 
@@ -722,6 +750,7 @@ struct ChatDetailView: View {
     @Environment(\.colorScheme) private var scheme
 
     @State private var messages: [Message] = []
+    @State private var chatUnavailable = false
     @State private var receiptCursors: [String: ChatReceiptCursor] = [:]
     @State private var receiptDeliveredSeq = 0
     @State private var receiptReadSeq = 0
@@ -1794,19 +1823,6 @@ struct ChatDetailView: View {
             : Color.white.opacity(0.62)
     }
 
-    private var topBarContrastScrim: Color {
-        if isStarWorld && newsMode { return .clear }
-        if let luminance = backgroundTopLuminance ?? backgroundLuminance {
-            if topBarUsesLightInk {
-                return .black.opacity(max(0.08, min(0.20, (0.42 - luminance) * 0.38)))
-            }
-            return .white.opacity(max(0.05, min(0.16, (luminance - 0.58) * 0.30)))
-        }
-        return topBarUsesLightInk
-            ? Color.black.opacity(0.08)
-            : Color.white.opacity(0.045)
-    }
-
     private var adaptiveSystemSecondaryInk: Color {
         senderNameUsesLightInk
             ? Color.white.opacity(0.78)
@@ -2110,45 +2126,12 @@ struct ChatDetailView: View {
             chatTopNavigation
             }
             .background {
-                ZStack {
-                    Group {
-                        if isStarWorld && newsMode {
-                            newsMaskColor
-                        } else if isGroup {
-                            ZStack {
-                                ChatImmersiveEdgeMask(path: backgroundPath,
-                                                      edge: .top,
-                                                      tint: wallpaperTopTint,
-                                                      dark: topBarUsesLightInk,
-                                                      effect: backgroundEffect,
-                                                      preset: ChatTheme.preset,
-                                                      themeVersion: chatTheme.version)
-                                NativeGlassHeaderMaterial()
-                                    .opacity(0.78)
-                                Rectangle()
-                                    .fill(topBarUsesLightInk
-                                          ? Color.black.opacity(0.10)
-                                          : Color.white.opacity(0.07))
-                                LinearGradient(
-                                    colors: [
-                                        Color.white.opacity(topBarUsesLightInk ? 0.08 : 0.13),
-                                        Color.clear
-                                    ],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                )
-                            }
-                        } else {
-                            ChatImmersiveEdgeMask(path: backgroundPath,
-                                                  edge: .top,
-                                                  tint: wallpaperTopTint,
-                                                  dark: topBarUsesLightInk,
-                                                  effect: backgroundEffect,
-                                                  preset: ChatTheme.preset,
-                                                  themeVersion: chatTheme.version)
-                        }
+                Group {
+                    if isStarWorld && newsMode {
+                        newsMaskColor
+                    } else {
+                        ChatTopGlassBackdrop()
                     }
-                    topBarContrastScrim
                 }
                 .ignoresSafeArea(edges: .top)
             }
@@ -2531,6 +2514,19 @@ struct ChatDetailView: View {
                     scroller?.scrollTo("__bottom", anchor: .bottom)
                 }
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .chrisChatUnavailable)) { note in
+            guard let id = note.object as? String, id == chat.id else { return }
+            chatUnavailable = true
+            if note.userInfo?["clearPending"] as? Bool == true {
+                outbox.removeAll()
+                LocalPersistence.saveOutbox(chat.id, [])
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .chrisChatAvailable)) { note in
+            guard let id = note.object as? String, id == chat.id else { return }
+            chatUnavailable = false
+            Task { await flushOutbox() }
         }
         .onReceive(NotificationCenter.default.publisher(for: .chrisChatRecall)) { note in
             guard let info = note.userInfo,
@@ -5911,6 +5907,10 @@ struct ChatDetailView: View {
 
     private func send(kind: String, content: String, mentions: [String] = [],
                       quote: [String: Any]? = nil) {
+        guard !chatUnavailable else {
+            app.show(Tr("你已经不在这个群里"))
+            return
+        }
 
         if isStarWorld, newsMode { withAnimation(.easeInOut(duration: 0.18)) { newsMode = false } }
 
@@ -5936,7 +5936,7 @@ struct ChatDetailView: View {
 
     @MainActor
     private func flushOutbox() async {
-        guard !flushing, !outbox.isEmpty else { return }
+        guard !chatUnavailable, !flushing, !outbox.isEmpty else { return }
         flushing = true
         defer { flushing = false }
         for p in outbox.filter({ !$0.sending }) {
@@ -5961,7 +5961,13 @@ struct ChatDetailView: View {
                 }
             } catch {
                 let reason = (error as? APIError)?.errorDescription ?? "发送失败"
-                if p.kind == "text", reason.contains("敏感词") || reason.contains("稍后再试") {
+                if reason.contains("群聊已解散") || reason.contains("你不在这个会话里") {
+                    outbox.removeAll { $0.id == p.id }
+                    chatUnavailable = true
+                    LocalPersistence.saveOutbox(chat.id, [])
+                    app.show(reason)
+                    break
+                } else if p.kind == "text", reason.contains("敏感词") || reason.contains("稍后再试") {
 
                     outbox.removeAll { $0.id == p.id }
                     if input.isEmpty { input = p.content }

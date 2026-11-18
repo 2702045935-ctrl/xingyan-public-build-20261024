@@ -10206,9 +10206,12 @@ function directFriendMessageError(user, chatId) {
 
 function deliverMessage(user, chatId, kind, content, clientId, mentionHint, mediaExtra) {
   if (user.banned) return { error: '账号已被管理员禁用，无法发送消息' };
-  refreshChatAccessStateFromDisk(false);
+  refreshChatAccessStateFromDisk(true);
   const chat = db.chats.find((c) => c.id === chatId);
   if (!chat) return { error: '会话不存在' };
+  if (chat.dismissed || (chat.type === 'group' && !(chat.memberIds || []).length)) {
+    return { error: '群聊已解散' };
+  }
   if (!chat.memberIds.includes(user.id)) return { error: '你不在这个会话里' };
   /* 单聊：任何一边拉黑了，消息就不通（微信里对方看到「消息已发出，但被对方拒收了」） */
   if (chat.type === 'direct') {

@@ -2066,12 +2066,7 @@ struct ChatsView: View {
     }
 
     @ViewBuilder private func chatsNavGlass(_: CGFloat) -> some View {
-        ScrollActiveGlassMask(
-            base: chatsPageFill,
-            active: chatsScrollActive,
-            activeBaseOpacity: chatsIsDark ? 0.94 : nil
-        )
-        .ignoresSafeArea(edges: .top)
+        NativeTopGlassMask(active: scrolled > 0)
     }
 
     @ViewBuilder private var chatsCardBackground: some View {

@@ -25,8 +25,8 @@ require(
     "native row cells must apply the divider visibility configuration",
 )
 require(
-    'activeBaseOpacity: chatsIsDark ? 0.94 : nil' in CHATS,
-    "dark scroll mask must use the shared near-opaque chat canvas",
+    "NativeTopGlassMask(active: scrolled > 0)" in CHATS,
+    "dark scroll chrome must use the shared native material",
 )
 require(
     '"\\(chatsIsDark)-\\(scheme)-\\(Lang.code)' in CHATS,

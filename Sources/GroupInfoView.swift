@@ -438,6 +438,11 @@ struct GroupInfoView: View {
     private func quitGroup() {
         let wasOwner = isOwner
         let previousChat = app.openChat
+        NotificationCenter.default.post(
+            name: .chrisChatUnavailable,
+            object: chat.id,
+            userInfo: ["clearPending": false]
+        )
         app.hideChatLocally(chat.id)
         dismiss()
         onExitChat()
@@ -446,11 +451,18 @@ struct GroupInfoView: View {
             let err = wasOwner ? await API.shared.dismissGroup(chatId: chat.id)
                                : await API.shared.leaveGroup(chatId: chat.id)
             if let err = err {
+                NotificationCenter.default.post(name: .chrisChatAvailable, object: chat.id)
                 app.revealChatLocally(chat.id)
                 await app.loadChats()
                 app.openChat = previousChat
                 app.show(err)
             } else {
+                LocalPersistence.saveOutbox(chat.id, [])
+                NotificationCenter.default.post(
+                    name: .chrisChatUnavailable,
+                    object: chat.id,
+                    userInfo: ["clearPending": true]
+                )
                 await app.loadChats()
                 app.show(wasOwner ? "群已解散" : "已退出群聊")
             }

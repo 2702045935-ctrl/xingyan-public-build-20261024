@@ -188,7 +188,6 @@ private struct WorldPresentedRoute: Identifiable {
 
 struct DiscoverView: View {
 
-    @State private var navScrolled: CGFloat = 0
     @Environment(\.colorScheme) private var scheme
     @ObservedObject private var lang = LangStore.shared
     @ObservedObject private var musicLibrary = MusicLibrary.shared
@@ -202,6 +201,7 @@ struct DiscoverView: View {
 
     @State private var showScan = false
     @State private var presentedWorldRoute: WorldPresentedRoute?
+    @State private var navScrolled: CGFloat = 0
     @ObservedObject private var realtime = Realtime.shared
 
     private var latestThumb: String {
@@ -567,13 +567,7 @@ struct DiscoverView: View {
                 discoverTopHeader
                     .measure("discover.nav")
                     .background {
-                        TopGlassBar(scrolled: navScrolled,
-                                    fallback: scheme == .dark ? C.navBg : worldCanvas,
-                                    always: true,
-                                    matchDarkBackground: true)
-                    }
-                    .overlay(alignment: .bottom) {
-                        TopGlassLine(scrolled: navScrolled)
+                        NativeTopGlassMask(active: navScrolled > 0)
                     }
                     .contentShape(Rectangle())
                     .zIndex(10)

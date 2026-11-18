@@ -16,17 +16,22 @@ require(
     "the Me page must use the current functional grouping",
 )
 require(
-    '"favorites", "stickers", "works", "cards": return 2' in ME,
-    "my content shortcuts must stay together",
+    '"favorites", "moments", "works", "cards": return 2' in ME,
+    "moments must be grouped into My Content",
 )
 require(
-    'case "moments": return 3' in ME and 'case "settings": return 4' in ME,
-    "moments and settings must have separate current groups",
+    'case "settings": return 4' in ME,
+    "settings must have a separate current group",
 )
 require(
-    "let priority: [String: Int]" in ME,
-    "the current feature priority ordering must remain",
+    '"favorites": 10' in ME
+    and '"moments": 11' in ME
+    and '"works": 12' in ME
+    and '"cards": 13' in ME,
+    "favorites must be first, moments second, then works and cards",
 )
+require('if item.action == "stickers" { continue }' in ME,
+        "stickers must be hidden from the Me page")
 require(
     "private var nativeMeList" in ME and "currentMeRows" in ME,
     "the Me page must render through the native list row builder",

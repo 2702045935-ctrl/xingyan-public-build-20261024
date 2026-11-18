@@ -356,6 +356,7 @@ struct MeView: View {
         var insertedCards = false
 
         for item in items {
+            if item.action == "stickers" { continue }
             if item.action == "shop" || item.action == "mall" {
                 if !hasCards && !insertedCards {
                     out.append(cardsItem(group: 2))
@@ -371,10 +372,9 @@ struct MeView: View {
         let priority: [String: Int] = [
             "service": 0,
             "favorites": 10,
-            "stickers": 11,
+            "moments": 11,
             "works": 12,
             "cards": 13,
-            "moments": 20,
             "settings": 90
         ]
         return out.enumerated().sorted { lhs, rhs in
@@ -388,8 +388,7 @@ struct MeView: View {
     private func meGroup(for item: DiscoverItem) -> Int {
         switch item.action ?? "" {
         case "service": return 1
-        case "favorites", "stickers", "works", "cards": return 2
-        case "moments": return 3
+        case "favorites", "moments", "works", "cards": return 2
         case "settings": return 4
         default: return item.group ?? 5
         }

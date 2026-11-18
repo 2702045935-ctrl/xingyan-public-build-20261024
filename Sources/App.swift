@@ -598,6 +598,7 @@ final class AppState: ObservableObject {
         case "sync":
             if ev.action == "read", !ev.chatId.isEmpty {
                 markChatReadLocally(ev.chatId)
+                coalesce { [weak self] in await self?.loadChats() }
             }
         case "toast":
 
@@ -945,7 +946,7 @@ final class AppState: ObservableObject {
         dotTask?.cancel()
         dotTask = Task { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 25_000_000_000)
+                try? await Task.sleep(nanoseconds: 12_000_000_000)
                 if Task.isCancelled { break }
                 await self?.refreshDotCounts()
             }

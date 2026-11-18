@@ -185,10 +185,43 @@ async function main() {
         '通过好友后好友数量没有各增加 1');
     }
 
+    response = await call(base, alice.cookie, 'GET', '/api/chats');
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    const redDotBaseline = ((response.data.chats || [])
+      .find((chat) => chat.id === directId) || {}).unread || 0;
+
     response = await call(base, bob.cookie, 'POST',
       '/api/chats/' + directId + '/messages',
       { kind: 'text', content: '拉黑前消息' });
     assert.equal(response.status, 200, JSON.stringify(response.data));
+
+    response = await call(base, alice.cookie, 'GET', '/api/chats');
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    let redDotChat = (response.data.chats || []).find((chat) => chat.id === directId);
+    assert.equal(redDotChat && redDotChat.unread, redDotBaseline + 1,
+      '收到消息后会话未读没有增加：' + JSON.stringify(response.data));
+    response = await call(base, alice.cookie, 'GET', '/api/badge-counts');
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    redDotChat = (response.data.recentChats || []).find((chat) => chat.id === directId);
+    assert.equal(redDotChat && redDotChat.unread, redDotBaseline + 1,
+      'badge-counts 没有返回最新会话红点：' + JSON.stringify(response.data));
+
+    response = await call(base, alice.cookie, 'POST',
+      '/api/chats/' + directId + '/read', {});
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    response = await call(base, alice.cookie, 'GET', '/api/badge-counts');
+    redDotChat = (response.data.recentChats || []).find((chat) => chat.id === directId);
+    assert.equal(redDotChat && redDotChat.unread, 0,
+      '标为已读后 badge-counts 红点没有清零：' + JSON.stringify(response.data));
+
+    response = await call(base, bob.cookie, 'POST',
+      '/api/chats/' + directId + '/messages',
+      { kind: 'text', content: '已读后的新消息' });
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    response = await call(base, alice.cookie, 'GET', '/api/badge-counts');
+    redDotChat = (response.data.recentChats || []).find((chat) => chat.id === directId);
+    assert.equal(redDotChat && redDotChat.unread, 1,
+      '已读后再次收到消息红点没有恢复：' + JSON.stringify(response.data));
 
     response = await call(base, alice.cookie, 'POST', '/api/friends/meta', {
       userId: bob.user.id,
@@ -235,6 +268,16 @@ async function main() {
       '/api/chats/' + groupId + '/dismiss', {});
     assert.equal(response.status, 200, JSON.stringify(response.data));
     assert.equal(response.data.dismissed, true);
+    response = await call(base, alice.cookie, 'POST',
+      '/api/chats/' + groupId + '/messages',
+      { kind: 'text', content: '解散后不应还能发送' });
+    assert.ok(response.status >= 400,
+      '群主解散后仍然可以发送消息：' + JSON.stringify(response.data));
+    response = await call(base, bob.cookie, 'POST',
+      '/api/chats/' + groupId + '/messages',
+      { kind: 'text', content: '被解散群不应还能发送' });
+    assert.ok(response.status >= 400,
+      '群成员在群解散后仍然可以发送消息：' + JSON.stringify(response.data));
 
     for (const account of [alice, bob]) {
       for (let i = 0; i < 6; i++) {
@@ -245,6 +288,25 @@ async function main() {
         await new Promise((resolve) => setTimeout(resolve, 250));
       }
     }
+
+    response = await call(base, alice.cookie, 'POST', '/api/chats/group', {
+      name: '退群发送校验',
+      memberIds: [bob.user.id]
+    });
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    const leaveGroupId = response.data.chat.id;
+    response = await call(base, bob.cookie, 'POST',
+      '/api/chats/' + leaveGroupId + '/leave', {});
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    response = await call(base, bob.cookie, 'POST',
+      '/api/chats/' + leaveGroupId + '/messages',
+      { kind: 'text', content: '退群后不应还能发送' });
+    assert.ok(response.status >= 400,
+      '退出群聊后仍然可以发送消息：' + JSON.stringify(response.data));
+    response = await call(base, alice.cookie, 'POST',
+      '/api/chats/' + leaveGroupId + '/messages',
+      { kind: 'text', content: '留下的人仍可发送' });
+    assert.equal(response.status, 200, JSON.stringify(response.data));
 
     response = await call(base, alice.cookie, 'POST', '/api/friends/remove', {
       userId: bob.user.id

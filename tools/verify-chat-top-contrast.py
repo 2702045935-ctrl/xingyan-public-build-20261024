@@ -17,9 +17,11 @@ require(
     "top-bar glyphs need an adaptive contrast edge",
 )
 require(
-    "topBarContrastScrim" in DETAIL
-    and "topBarContrastScrim\n" in DETAIL,
-    "top-bar wallpaper needs an adaptive contrast scrim",
+    "private struct ChatTopGlassBackdrop" in DETAIL
+    and "NativeGlassHeaderMaterial()" in DETAIL
+    and ".init(color: .clear, location: 1)" in DETAIL
+    and "topBarContrastScrim" not in DETAIL,
+    "chat top chrome must blur the continuous backdrop without a visible strip",
 )
 require(
     "titleOutline: adaptiveTopOutline.opacity(0.55)" in DETAIL,

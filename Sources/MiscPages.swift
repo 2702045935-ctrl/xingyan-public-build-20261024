@@ -1784,6 +1784,9 @@ struct WorksView: View {
     @State private var loading = true
     @State private var tab = 0
     @State private var loadError = ""
+    @State private var showCoverPicker = false
+    @State private var coverPreview: UIImage?
+    @State private var coverBusy = false
     @Environment(\.colorScheme) private var scheme
 
     private let cols = Array(
@@ -1822,8 +1825,7 @@ struct WorksView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            topBar
+        ZStack(alignment: .top) {
             ScrollView {
                 LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
                     profileHeader
@@ -1849,7 +1851,11 @@ struct WorksView: View {
                 .padding(.bottom, 28)
             }
             .background(C.pageBg)
+            .ignoresSafeArea(edges: .top)
             .refreshable { await reload() }
+
+            topBar
+                .padding(.top, L.safeTop)
         }
         .background(C.pageBg.ignoresSafeArea(edges: .bottom))
         .background(C.pageBg.ignoresSafeArea(edges: .top))
@@ -1860,6 +1866,12 @@ struct WorksView: View {
             FeedPlayerSheet(item: w, all: visibleWorks)
                 .environmentObject(app)
         }
+        .sheet(isPresented: $showCoverPicker) {
+            PhotosPicker(limit: 1) { images in
+                showCoverPicker = false
+                if let image = images.first { changeCover(image) }
+            }
+        }
         .task { await reload() }
     }
 
@@ -1868,32 +1880,42 @@ struct WorksView: View {
             Button { dismiss() } label: {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 19, weight: .semibold))
-                    .foregroundColor(C.label)
+                    .foregroundColor(.white)
                     .frame(width: 44, height: 44)
             }
             .buttonStyle(.plain)
             Spacer(minLength: 0)
             Text(Tr("我的作品"))
                 .font(pf(18, .semibold))
-                .foregroundColor(C.label)
+                .foregroundColor(.white)
             Spacer(minLength: 0)
             Menu {
+                Button(Tr("更换背景")) {
+                    showCoverPicker = true
+                }
                 Button(Tr("刷新")) {
                     Task { await reload() }
                 }
             } label: {
                 Image(systemName: "ellipsis")
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(C.label)
+                    .foregroundColor(.white)
                     .frame(width: 44, height: 44)
             }
         }
+        .shadow(color: .black.opacity(0.28), radius: 3, y: 1)
         .padding(.horizontal, 4)
-        .background(C.pageBg)
-        .overlay(alignment: .bottom) {
-            Rectangle()
-                .fill(C.hairline)
-                .frame(height: 0.5)
+        .background {
+            LinearGradient(
+                colors: [
+                    .black.opacity(0.38),
+                    .black.opacity(0.12),
+                    .clear
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea(edges: .top)
         }
         .zIndex(5)
     }
@@ -1960,12 +1982,25 @@ struct WorksView: View {
                 endPoint: .bottomTrailing
             )
             if !profileCover.isEmpty {
-                RemoteImage(path: profileCover, mode: .fill, maxSide: 1600)
-                    .scaleEffect(1.08)
-                    .blur(radius: 0.5)
+                if let coverPreview {
+                    Image(uiImage: coverPreview)
+                        .resizable()
+                        .scaledToFill()
+                        .scaleEffect(1.08)
+                        .blur(radius: 0.5)
+                } else {
+                    RemoteImage(path: profileCover, mode: .fill, maxSide: 1600)
+                        .scaleEffect(1.08)
+                        .blur(radius: 0.5)
+                }
             }
             LinearGradient(
-                colors: [.black.opacity(0.02), .black.opacity(0.08), .black.opacity(0.62)],
+                stops: [
+                    .init(color: .black.opacity(0.40), location: 0),
+                    .init(color: .black.opacity(0.16), location: 0.24),
+                    .init(color: .black.opacity(0.06), location: 0.58),
+                    .init(color: .black.opacity(0.68), location: 1)
+                ],
                 startPoint: .top,
                 endPoint: .bottom
             )
@@ -1980,9 +2015,58 @@ struct WorksView: View {
                     .padding(12)
                     .padding(.bottom, 46)
             }
+
+            Button {
+                showCoverPicker = true
+            } label: {
+                HStack(spacing: 5) {
+                    if coverBusy {
+                        ProgressView().tint(.white).scaleEffect(0.72)
+                    } else {
+                        Image(systemName: "photo")
+                            .font(.system(size: 12, weight: .semibold))
+                    }
+                    Text(Tr("更换背景"))
+                        .font(pf(11.5, .semibold))
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 11)
+                .frame(height: 30)
+                .background(.ultraThinMaterial, in: Capsule())
+                .overlay(Capsule().stroke(Color.white.opacity(0.22), lineWidth: 0.6))
+            }
+            .buttonStyle(.plain)
+            .disabled(coverBusy)
+            .padding(12)
         }
-        .frame(height: 208)
+        .frame(height: 208 + L.safeTop)
         .clipped()
+    }
+
+    private func changeCover(_ image: UIImage) {
+        guard !coverBusy else { return }
+        coverBusy = true
+        coverPreview = image
+        Task {
+            guard let url = try? await API.shared.upload(image: image) else {
+                coverBusy = false
+                app.show(Tr("背景上传失败，请重试"))
+                return
+            }
+            ImageStore.shared.put(url, image)
+            if let data = image.jpegData(compressionQuality: 0.92) {
+                ImageStore.shared.diskWrite(url, data)
+            }
+            do {
+                try await API.shared.updateMeChecked(["momentCover": url])
+                app.applyMyProfileFields(["momentCover": url])
+                coverPreview = nil
+                app.show(Tr("作品页背景已更换"))
+            } catch {
+                app.show((error as? APIError)?.errorDescription ?? Tr("背景保存失败"))
+            }
+            coverBusy = false
+        }
     }
 
     private func stat(_ value: String, _ title: String) -> some View {

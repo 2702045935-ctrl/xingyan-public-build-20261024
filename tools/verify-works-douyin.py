@@ -24,6 +24,15 @@ require("private let cols = Array(" in MISC
 require("private var profileCover: String" in MISC
         and "private var coverBanner: some View" in MISC,
         "works profile must have the Douyin-style cover and overlapping avatar")
+require(".ignoresSafeArea(edges: .top)" in MISC
+        and ".frame(height: 208 + L.safeTop)" in MISC
+        and "topBar\n                .padding(.top, L.safeTop)" in MISC,
+        "works cover must extend behind the status bar with an overlaid top bar")
+require("@State private var showCoverPicker" in MISC
+        and "PhotosPicker(limit: 1)" in MISC
+        and 'updateMeChecked(["momentCover": url])' in MISC
+        and 'Tr("更换背景")' in MISC,
+        "works cover must be replaceable from the page and persist through momentCover")
 require("[Tr(\"作品\"), Tr(\"喜欢\"), Tr(\"私密\")]" in MISC
         and "pinnedViews: [.sectionHeaders]" in MISC,
         "works, likes and private tabs must pin above the cover grid")
