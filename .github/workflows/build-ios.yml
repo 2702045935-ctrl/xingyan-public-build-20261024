@@ -100,6 +100,7 @@ jobs:
           python3 tools/verify-chat-prepend-anchor.py
           python3 tools/verify-share-sheets.py
           python3 tools/verify-moment-editorial.py
+          python3 tools/verify-moment-own-publish.py
           python3 tools/verify-me-current.py
           python3 tools/verify-catalog-refresh-cache.py
           python3 tools/verify-chat-list-order.py
@@ -109,6 +110,7 @@ jobs:
         run: |
           node server/test/security-vault.test.js
           node server/test/chat-actions.test.js
+          node server/test/moment-delete-persistence.test.js
           node server/test/login-username.test.js
           node server/test/account-registration-sms.test.js
           node server/test/chat-route-plan.test.js
