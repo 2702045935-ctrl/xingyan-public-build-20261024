@@ -90,6 +90,7 @@ jobs:
           python3 tools/verify-line-registration.py
           python3 tools/verify-line-onboarding.py
           python3 tools/verify-known-device-login.py
+          python3 tools/verify-login-entry.py
           python3 tools/verify-chat-top-title.py
           python3 tools/verify-contacts-whatsapp.py
           python3 tools/verify-chat-menu-icon.py
@@ -108,6 +109,7 @@ jobs:
         run: |
           node server/test/security-vault.test.js
           node server/test/chat-actions.test.js
+          node server/test/login-username.test.js
           node server/test/chat-route-plan.test.js
           node server/test/shard-user-directory.test.js
           node server/test/shard-user-router.test.js
