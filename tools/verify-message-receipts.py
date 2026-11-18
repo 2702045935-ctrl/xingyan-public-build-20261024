@@ -50,9 +50,14 @@ require(
     "realtime receipt updates must reach the open conversation",
 )
 require(
-    "消息通过加密连接传输，媒体文件加密存储于星言自有服务器。" in CHAT
+    "消息已加密保护" in CHAT
+    and "lock.shield.fill" in CHAT
+    and "RoundedRectangle(cornerRadius: 12" in CHAT
+    and ".fill(.regularMaterial)" in CHAT
+    and "Capsule(style: .continuous)\n                .fill(.ultraThinMaterial)" not in CHAT
+    and "消息通过加密连接传输，媒体文件加密存储于星言自有服务器。" in CHAT
     and "端到端加密" not in CHAT,
-    "security notice must remain accurate while server-side decryption exists",
+    "security notice must stay readable and accurate without claiming E2EE",
 )
 
 print("message-receipts: passed")

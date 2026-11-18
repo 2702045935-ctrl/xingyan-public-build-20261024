@@ -3365,28 +3365,45 @@ struct ChatDetailView: View {
     }
 
     private var securityNotice: some View {
-        VStack(spacing: 5) {
-            Image(systemName: "lock.fill")
-                .font(.system(size: 10.5, weight: .semibold))
-                .foregroundStyle(C.subLabel)
-            Text(Tr("消息通过加密连接传输，媒体文件加密存储于星言自有服务器。"))
-                .font(pf(11.5))
-                .foregroundStyle(C.subLabel)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
+        HStack(alignment: .top, spacing: 9) {
+            Image(systemName: "lock.shield.fill")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(C.green)
+                .frame(width: 24, height: 24)
+                .background(C.green.opacity(scheme == .dark ? 0.16 : 0.11),
+                            in: Circle())
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(Tr("消息已加密保护"))
+                    .font(pf(12.5, .semibold))
+                    .foregroundStyle(Color.primary)
+                Text(Tr("消息通过加密连接传输，媒体文件加密存储于星言自有服务器。"))
+                    .font(pf(11.5, .regular))
+                    .foregroundStyle(Color.primary.opacity(0.72))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.horizontal, 28)
-        .padding(.vertical, 10)
+        .frame(maxWidth: 520, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
         .background(
-            Capsule(style: .continuous)
-                .fill(.ultraThinMaterial)
+            ZStack {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(.regularMaterial)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color(uiColor: .secondarySystemBackground)
+                        .opacity(scheme == .dark ? 0.48 : 0.76))
+            }
         )
         .overlay(
-            Capsule(style: .continuous)
-                .stroke(Color.primary.opacity(0.06), lineWidth: 0.5)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color.primary.opacity(0.09), lineWidth: 0.6)
         )
-        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 9)
+        .accessibilityElement(children: .combine)
     }
 
     /// Kept temporarily for reference while direct chats transition independently.
