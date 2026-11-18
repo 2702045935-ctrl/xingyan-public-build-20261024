@@ -25636,16 +25636,18 @@ const RISK_FILE = 'risk.json';
 const RISK_EVENT_FILE = 'risk-events.jsonl';   // 只追加，作为处置证据
 const RISK_DECAY_PER_HOUR = 4;                 // 每小时自然衰减 4 分（不白罚、也不轻易洗白）
 let riskStoreCache = null;
+const scopedRiskStoreCache = new Map();
 let riskSaveTimer = null;
 
 function loadRiskStore(userId) {
   if (userId) {
+    if (scopedRiskStoreCache.has(userId)) return scopedRiskStoreCache.get(userId);
     const ownerDir = userOwnerDataDir(userId);
-    const scoped = readJson(path.join(ownerDir, RISK_FILE), null);
-    if (scoped && typeof scoped === 'object') {
-      if (!scoped.users) scoped.users = {};
-      return scoped;
-    }
+    const raw = readJson(path.join(ownerDir, RISK_FILE), null);
+    const scoped = raw && typeof raw === 'object' ? raw : { users: {} };
+    if (!scoped.users) scoped.users = {};
+    scopedRiskStoreCache.set(userId, scoped);
+    return scoped;
   }
   if (!riskStoreCache) riskStoreCache = readJson(path.join(DATA_DIR, RISK_FILE), { users: {} });
   if (!riskStoreCache.users) riskStoreCache.users = {};
@@ -25668,7 +25670,9 @@ function loadAllRiskStores() {
 function saveRiskStore(userId) {
   if (userId) {
     try {
-      writeJson(path.join(userOwnerDataDir(userId), RISK_FILE), loadRiskStore(userId));
+      const store = scopedRiskStoreCache.get(userId) || loadRiskStore(userId);
+      writeJson(path.join(userOwnerDataDir(userId), RISK_FILE), store);
+      scopedRiskStoreCache.delete(userId);
     } catch (e) { }
     return;
   }
@@ -27349,6 +27353,7 @@ async function handleOps(req, res, parts, query) {
     if (!can(admin, 'risk.write')) return fail(res, 403, '你的角色没有处置风控的权限');
     const body = await readBody(req);
     const targetId = str(body.userId, 40);
+    scopedRiskStoreCache.delete(targetId);
     const rec = loadRiskStore(targetId).users[targetId];
     if (!rec) return fail(res, 404, '这个账号没有风控记录');
     const before = Math.round(rec.score || 0);
