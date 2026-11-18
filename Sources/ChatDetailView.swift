@@ -1181,6 +1181,10 @@ struct ChatDetailView: View {
     @State private var settleTask: Task<Void, Never>? = nil
     @State private var hasOlder = false
     @State private var loadingOlder = false
+    @State private var olderPrefetch: [Message] = []
+    @State private var olderPrefetchHasMore = false
+    @State private var olderPrefetchTask: Task<Void, Never>?
+    @State private var olderPrefetchToken = UUID()
 
     @State private var loadingAllGroupHistory = false
     @State private var holdScroll = false
@@ -2796,6 +2800,9 @@ struct ChatDetailView: View {
             }
             historySyncTask?.cancel()
             historySyncTask = nil
+            olderPrefetchTask?.cancel()
+            olderPrefetchTask = nil
+            olderPrefetchToken = UUID()
             persistTask?.cancel()
             persistTask = nil
             draftSaveTask?.cancel()
@@ -3152,7 +3159,7 @@ struct ChatDetailView: View {
                 }
             },
             onScrollOffset: { y in
-                if isGroup, y < 900 {
+                if isGroup, y < 1600 {
                     autoLoadOlder()
                 }
             },
@@ -6812,10 +6819,11 @@ struct ChatDetailView: View {
             }
         }
         if initial, !messages.isEmpty {
-            initialRetryTask?.cancel()
-            initialRetryTask = nil
+        initialRetryTask?.cancel()
+        initialRetryTask = nil
         }
         rebuildIndex()
+        scheduleOlderPrefetch()
         prefetchRecentFiles()
         loading = false
         autoOpenShopCard()
@@ -6909,33 +6917,38 @@ struct ChatDetailView: View {
         lastOlderLoad = Date()
         defer { loadingOlder = false }
         do {
-            var cursor = seq
-            var older: [Message] = []
-            var olderIds = Set<String>()
-            var more = true
-            /* 大群按微信式小页补历史：每次只取一页 100 条，
-               避免用户刚上滑就同步三段历史和触发行高/内存突增。 */
-            let target = isGroup ? 40 : 200
-            let maxPages = isGroup ? 1 : 3
-            for _ in 0..<maxPages {
-                let page = try await API.shared.messages(
-                    chatId: chat.id,
-                    limit: target,
-                    before: cursor,
-                    all: true
-                )
-                if page.messages.isEmpty {
-                    more = false
-                    break
+            if olderPrefetch.isEmpty, let pending = olderPrefetchTask {
+                await pending.value
+            }
+            var older = takeOlderPrefetch()
+            var more = olderPrefetchHasMore
+            if older.isEmpty {
+                var cursor = seq
+                var olderIds = Set<String>()
+                more = true
+                /* 首屏之外始终保持一页预取；只有预取尚未完成时才现场补拉。 */
+                let target = isGroup ? 40 : 200
+                let maxPages = isGroup ? 1 : 3
+                for _ in 0..<maxPages {
+                    let page = try await API.shared.messages(
+                        chatId: chat.id,
+                        limit: target,
+                        before: cursor,
+                        all: true
+                    )
+                    if page.messages.isEmpty {
+                        more = false
+                        break
+                    }
+                    for message in page.messages where olderIds.insert(message.id).inserted {
+                        older.append(message)
+                    }
+                    more = page.hasMore
+                    let next = page.messages.compactMap(\.seq).min() ?? 0
+                    if !more || next <= 0 || next >= cursor { break }
+                    cursor = next
+                    if older.count >= target { break }
                 }
-                for message in page.messages where olderIds.insert(message.id).inserted {
-                    older.append(message)
-                }
-                more = page.hasMore
-                let next = page.messages.compactMap(\.seq).min() ?? 0
-                if !more || next <= 0 || next >= cursor { break }
-                cursor = next
-                if older.count >= target { break }
             }
             hasOlder = more
 
@@ -6960,6 +6973,7 @@ struct ChatDetailView: View {
             }
 
             ChatScrollDiag.shared.note("上翻加载完 → 原子补偿当前位置")
+            scheduleOlderPrefetch()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { holdScroll = false }
         } catch {
             // Continuous scroll events must not turn one failed prefetch into a
@@ -6968,6 +6982,50 @@ struct ChatDetailView: View {
             lastOlderLoad = Date().addingTimeInterval(1.2)
             ChatScrollDiag.shared.note("上翻历史加载失败，保留当前位置")
         }
+    }
+
+    private func scheduleOlderPrefetch() {
+        guard hasOlder, olderPrefetch.isEmpty, olderPrefetchTask == nil,
+              let seq = messages.first?.seq, seq > 0 else { return }
+        let target = isGroup ? 40 : 200
+        let known = Set(messages.map(\.id))
+        let token = UUID()
+        olderPrefetchToken = token
+        olderPrefetchTask = Task {
+            defer {
+                if olderPrefetchToken == token {
+                    olderPrefetchTask = nil
+                }
+            }
+            do {
+                let page = try await API.shared.messages(
+                    chatId: chat.id,
+                    limit: target,
+                    before: seq,
+                    all: true
+                )
+                guard !Task.isCancelled, olderPrefetchToken == token else { return }
+                olderPrefetchHasMore = page.hasMore
+                olderPrefetch = visibleMessages(page.messages)
+                    .filter { !known.contains($0.id) }
+                if page.messages.isEmpty, !page.hasMore {
+                    hasOlder = false
+                }
+            } catch {
+                if olderPrefetchToken == token {
+                    olderPrefetchTask = nil
+                }
+            }
+        }
+    }
+
+    private func takeOlderPrefetch() -> [Message] {
+        olderPrefetchTask?.cancel()
+        olderPrefetchTask = nil
+        olderPrefetchToken = UUID()
+        let rows = olderPrefetch
+        olderPrefetch = []
+        return rows
     }
 
     private func autoOpenShopCard() {

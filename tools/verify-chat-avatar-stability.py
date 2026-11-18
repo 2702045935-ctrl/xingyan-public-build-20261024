@@ -1,0 +1,30 @@
+#!/usr/bin/env python3
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+SOURCE = (ROOT / "Sources" / "NativeChatRowCell.swift").read_text(encoding="utf-8")
+
+
+def require(condition: bool, message: str) -> None:
+    if not condition:
+        raise SystemExit("chat avatar stability verification failed: " + message)
+
+
+require(
+    "avatarView.invalidate()" in SOURCE
+    and "avatarView.reset()" not in SOURCE,
+    "cell reuse must invalidate requests without clearing visible avatars",
+)
+require(
+    "private var tilePaths" in SOURCE
+    and "let changed = tilePaths[index] != path" in SOURCE
+    and "if changed || path.isEmpty" in SOURCE,
+    "same-path avatars must keep their loaded image",
+)
+require(
+    "guard let self, self.token == requestToken" in SOURCE,
+    "late avatar responses must not overwrite a newer reused cell",
+)
+
+print("chat-avatar-stability: passed")

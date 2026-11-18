@@ -147,7 +147,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         leftActions.isHidden = true
         unreadBell.isHidden = true
         pressOverlay.backgroundColor = .clear
-        avatarView.reset()
+        avatarView.invalidate()
         avatarSignature = ""
         accessibilitySignature = ""
         cachedTimeSignature = ""
@@ -949,6 +949,7 @@ private final class PaddingLabel: UILabel {
 private final class NativeChatAvatarView: UIView {
     private let tileContainer = UIView()
     private let tileViews = (0..<4).map { _ in UIImageView() }
+    private var tilePaths = Array(repeating: "", count: 4)
     private let moodLabel = UILabel()
     private let onlineDot = UIView()
     private var token = UUID()
@@ -1010,14 +1011,8 @@ private final class NativeChatAvatarView: UIView {
         onlineDot.frame = CGRect(x: bounds.width - 14, y: bounds.height - 14, width: 14, height: 14)
     }
 
-    func reset() {
+    func invalidate() {
         token = UUID()
-        tileViews.forEach {
-            $0.image = nil
-            $0.isHidden = false
-        }
-        moodLabel.isHidden = true
-        onlineDot.isHidden = true
     }
 
     func configure(paths: [String],
@@ -1047,11 +1042,16 @@ private final class NativeChatAvatarView: UIView {
         let requestToken = token
         let shown = Array(paths.prefix(4))
         for (index, imageView) in tileViews.enumerated() {
-            imageView.isHidden = index >= max(1, shown.count)
-            imageView.image = nil
-            imageView.backgroundColor = UIColor.tertiarySystemFill
             let path = index < shown.count ? shown[index] : ""
-            guard !path.isEmpty else { continue }
+            let visible = index < max(1, shown.count)
+            let changed = tilePaths[index] != path || imageView.isHidden != !visible
+            imageView.isHidden = !visible
+            if changed || path.isEmpty {
+                tilePaths[index] = path
+                imageView.image = nil
+                imageView.backgroundColor = UIColor.tertiarySystemFill
+            }
+            guard visible, !path.isEmpty else { continue }
             load(path: path) { [weak self, weak imageView] image in
                 guard let self, self.token == requestToken, let imageView else { return }
                 imageView.image = image
