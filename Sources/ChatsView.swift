@@ -1155,8 +1155,8 @@ struct ChatsView: View {
     }
 
     private struct ChatFilterSnapshot {
-        let list: [Chat]
-        let unreadCounts: [ChatFilter: Int]
+        var list: [Chat]
+        var unreadCounts: [ChatFilter: Int]
     }
 
     @ObservedObject private var lang = LangStore.shared
