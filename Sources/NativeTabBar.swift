@@ -130,6 +130,7 @@ private final class CompactDotTabBar: UITabBar {
         selectionGlass.clipsToBounds = true
         selectionGlass.layer.cornerRadius = 20
         selectionGlass.layer.cornerCurve = .continuous
+        selectionGlass.layer.zPosition = 0.5
         selectionGlass.layer.borderWidth = 0.7
         selectionTint.isUserInteractionEnabled = false
         selectionGlass.contentView.addSubview(selectionTint)
@@ -157,8 +158,8 @@ private final class CompactDotTabBar: UITabBar {
             )
         }
         selectionTint.backgroundColor = dark
-            ? UIColor.white.withAlphaComponent(0.065)
-            : UIColor.white.withAlphaComponent(0.23)
+            ? UIColor.white.withAlphaComponent(0.045)
+            : UIColor.white.withAlphaComponent(0.16)
         selectionGlass.layer.borderColor = (dark
             ? UIColor.white.withAlphaComponent(0.16)
             : UIColor.black.withAlphaComponent(0.055)).cgColor
@@ -170,14 +171,13 @@ private final class CompactDotTabBar: UITabBar {
               !items.isEmpty else { return }
         let index = items.firstIndex(where: { $0 === selectedItem }) ?? 0
         let slot = bounds.width / CGFloat(items.count)
-        let pillWidth = max(48, min(72, slot - 18))
+        let pillWidth = max(36, min(52, slot - 24))
         let pillFrame = CGRect(
             x: slot * (CGFloat(index) + 0.5) - pillWidth / 2,
-            y: max(4, (49 - 39) / 2),
+            y: 3,
             width: pillWidth,
-            height: 39
+            height: 30
         )
-        bringSubviewToFront(selectionGlass)
         let shouldAnimate = selectionPillReady
             && (previousSelectionIndex != index
                 || abs(previousSelectionWidth - bounds.width) > 0.5)
@@ -197,8 +197,13 @@ private final class CompactDotTabBar: UITabBar {
             selectionGlass.frame = pillFrame
             selectionPillReady = true
         }
-        for child in subviews where child is UIControl {
-            bringSubviewToFront(child)
+        for child in subviews {
+            let typeName = String(describing: type(of: child))
+            if typeName.contains("BarBackground") {
+                child.layer.zPosition = -1
+            } else if child is UIControl {
+                child.layer.zPosition = 2
+            }
         }
     }
 
