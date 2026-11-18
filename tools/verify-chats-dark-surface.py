@@ -29,7 +29,7 @@ require(
     "dark scroll mask must use the shared near-opaque chat canvas",
 )
 require(
-    'let appearance = "\\(chatsIsDark)-\\(scheme)' in CHATS,
+    '"\\(chatsIsDark)-\\(scheme)-\\(Lang.code)' in CHATS,
     "native row signatures must invalidate when the effective theme changes",
 )
 

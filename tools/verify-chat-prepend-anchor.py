@@ -42,5 +42,10 @@ require(
     and "if isPrepending || commonOrder != order || nextSignatures != signatures" in LIST,
     "prepend snapshots must be deferred until active touch motion ends",
 )
+require(
+    "snapshot.insertItems(added, beforeItem: anchor)" in LIST
+    and "snapshot.deleteItems(removed)" in LIST,
+    "prepending must mutate only inserted, removed and changed identifiers",
+)
 
 print("chat-prepend-anchor: passed")

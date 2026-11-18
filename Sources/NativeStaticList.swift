@@ -332,11 +332,14 @@ where Item.ID: Hashable {
                 width = collection.bounds.width
                 heights.removeAll(keepingCapacity: true)
             }
+            let knownOld = order
             lookup = nextLookup
             signatures = nextSignatures
             order = nextOrder
             pending = nil
-            premeasure(nextOrder)
+            premeasure(isPrepending
+                ? Array(Set(changed).union(nextOrder.filter { !knownOld.contains($0) }))
+                : nextOrder)
             let previousOffset = collection.contentOffset
             let prependAnchor: (id: Item.ID, delta: CGFloat)?
             if isPrepending,
@@ -355,6 +358,47 @@ where Item.ID: Hashable {
             }
             applyGeneration += 1
             let generation = applyGeneration
+            if isPrepending {
+                let oldSet = Set(knownOld)
+                let nextSet = Set(nextOrder)
+                let added = nextOrder.filter { !oldSet.contains($0) }
+                let removed = knownOld.filter { !nextSet.contains($0) }
+                let reloaded = changed.filter { oldSet.contains($0) && nextSet.contains($0) }
+                var snapshot = dataSource.snapshot()
+                if widthChanged {
+                    collection.collectionViewLayout.invalidateLayout()
+                }
+                if !added.isEmpty {
+                    if let anchor = nextOrder.first(where: { oldSet.contains($0) }) {
+                        snapshot.insertItems(added, beforeItem: anchor)
+                    } else {
+                        snapshot.appendItems(added)
+                    }
+                }
+                if !removed.isEmpty { snapshot.deleteItems(removed) }
+                if !reloaded.isEmpty { snapshot.reloadItems(reloaded) }
+                dataSource.apply(snapshot, animatingDifferences: false) {
+                    guard generation == self.applyGeneration,
+                          self.collection === collection else { return }
+                    collection.layoutIfNeeded()
+                    if let anchor = prependAnchor,
+                       let indexPath = dataSource.indexPath(for: anchor.id),
+                       let attributes = collection.collectionViewLayout
+                           .layoutAttributesForItem(at: indexPath) {
+                        collection.setContentOffset(
+                            CGPoint(
+                                x: previousOffset.x,
+                                y: attributes.frame.minY - anchor.delta
+                            ),
+                            animated: false
+                        )
+                        ChatScrollHandle.shared.clearPendingPrepend()
+                        return
+                    }
+                    _ = ChatScrollHandle.shared.compensatePendingPrepend()
+                }
+                return
+            }
             var snapshot = NSDiffableDataSourceSnapshot<Int, Item.ID>()
             snapshot.appendSections([0])
             snapshot.appendItems(nextOrder)
