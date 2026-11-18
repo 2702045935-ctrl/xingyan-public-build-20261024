@@ -43,7 +43,7 @@ enum StressTestConfiguration {
     }()
 
     static let memberCount: Int = {
-        let raw = environment["XINGYAN_STRESS_MEMBERS"].flatMap(Int.init) ?? 1_000
+        let raw = environment["XINGYAN_STRESS_MEMBERS"].flatMap(Int.init) ?? 8
         return max(1, min(5_000, raw))
     }()
 

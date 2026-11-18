@@ -12,6 +12,8 @@ enum MessageStressFixture {
     private static let stamp = "2026-11-16T00:00:00Z"
     private static let lock = NSRecursiveLock()
     private static var cachedUserID = ""
+    private static let testImage =
+        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zl1sAAAAASUVORK5CYII="
 
     private static let timestamps: [String] = {
         let formatter = ISO8601DateFormatter()
@@ -102,11 +104,10 @@ enum MessageStressFixture {
 
     private static func message(group: Int, seq: Int, myId: String) -> Message {
         let ordinal = ordinal(group: group, seq: seq)
-        let mine = ordinal % 3 == 0
-        let sender = mine ? myId : "stress-peer-\(ordinal % 12)"
-        let mention = ordinal % 127 == 0 ? [myId] : nil
+        var mine = ordinal % 100 < 22
+        var sender = mine ? myId : "stress-peer-\(peerIndex(ordinal))"
         let timestamp = timestamps[min(timestamps.count - 1, (ordinal - 1) / 1_000)]
-        let quoted = ordinal % 109 == 0 && seq > 1
+        let quoted = ordinal % 397 == 0 && seq > 1
             ? QuoteRef(
                 id: "stress-message-\(group)-\(seq - 1)",
                 who: mine ? "对方" : "我",
@@ -115,24 +116,83 @@ enum MessageStressFixture {
                 thumb: nil
             )
             : nil
-        let recalled = ordinal % 211 == 0
-        let kind: String
-        let content: String
-        if recalled {
-            kind = "text"
-            content = "这条消息已经被撤回"
-        } else if ordinal % 173 == 0 {
+        let recalled = ordinal % 179 == 0
+        var kind = "text"
+        var content = ""
+        let bucket = ordinal % 10_000
+        switch bucket {
+        case 8768..<9348:
+            kind = "image"
+            content = testImage
+        case 9348..<9536:
+            kind = "pat"
+            content = "{\"from\":\"\(sender)\",\"to\":\"\(myId)\",\"fn\":\"家人\",\"tn\":\"我\"}"
+        case 9536..<9690:
+            kind = "system"
+            content = ordinal % 2 == 0 ? "你已加入群聊" : "一条群系统提示"
+        case 9690..<9786:
+            kind = "audio"
+            content = "{\"url\":\"/uploads/stress-audio-\(ordinal).m4a\",\"seconds\":\(4 + ordinal % 46),\"bytes\":\(24_000 + ordinal % 80_000)}"
+        case 9786..<9835:
+            kind = "location"
+            content = "{\"lat\":30.22537,\"lng\":120.22706,\"name\":\"滨盛路辅路\",\"addr\":\"杭州市 滨江区 滨盛路辅路\"}"
+        case 9835..<9871:
+            kind = "video"
+            content = "{\"seconds\":\(8 + ordinal % 45),\"w\":720,\"h\":1280,\"cover\":\"\(testImage)\",\"url\":\"/uploads/stress-video-\(ordinal).mp4\"}"
+        case 9871..<9904:
+            kind = "redpacket"
+            content = "{\"id\":\"stress-rp-\(ordinal)\",\"total\":\(ordinal % 100 + 1),\"count\":1,\"claimedCount\":1,\"claimedIds\":[\"\(myId)\"],\"type\":\"lucky\",\"note\":\"恭喜发财，大吉大利\",\"status\":\"done\",\"expired\":false,\"coverColor\":\"#8E1412\",\"fromId\":\"\(sender)\",\"fromName\":\"家人\"}"
+        case 9904..<9936:
+            kind = "images"
+            content = "{\"paths\":[\"\(testImage)\",\"\(testImage)\",\"\(testImage)\"]}"
+        case 9936..<9953:
             kind = "file"
-            content = "{\"name\":\"压力资料-\(ordinal).pdf\",\"size\":1048576,\"url\":\"\"}"
-        } else if ordinal % 151 == 0 {
+            content = "{\"name\":\"家庭资料-\(ordinal).pdf\",\"size\":\(250_000 + ordinal % 2_000_000),\"url\":\"/uploads/stress-file-\(ordinal).pdf\"}"
+        case 9953..<9968:
+            kind = "livephoto"
+            content = "{\"image\":\"\(testImage)\",\"video\":\"/uploads/stress-live-\(ordinal).mp4\"}"
+        case 9968..<9976:
+            kind = "miniapp"
+            content = "{\"name\":\"斗地主\",\"icon\":\"🃏\",\"action\":\"立即玩\",\"url\":\"/games/05-doudizhu/index.html\",\"id\":\"g05\",\"desc\":\"和朋友来一局\",\"cover\":\"\(testImage)\",\"kind\":\"game\"}"
+        case 9976..<9984:
+            kind = "card"
+            content = "{\"username\":\"family\(ordinal % 8 + 1)\",\"name\":\"家人名片\",\"userId\":\"stress-peer-\(peerIndex(ordinal))\",\"avatar\":\"\(testImage)\"}"
+        case 9984..<9990:
+            kind = "gift"
+            content = "{\"id\":\"g03\",\"name\":\"花束\",\"icon\":\"💐\",\"price\":5}"
+        case 9990..<9993:
             kind = "transfer"
-            content = "{\"amount\":128.0,\"status\":\"done\",\"note\":\"压力测试\"}"
-        } else if ordinal % 43 == 0 {
-            kind = "text"
-            content = "这是一条较长的消息 \(ordinal)。用于验证多行气泡、头像、时间、@、引用和长列表布局是否稳定，滚动中不应重排。"
-        } else {
-            kind = "text"
-            content = "本地压力消息 \(ordinal)"
+            content = "{\"id\":\"stress-transfer-\(ordinal)\",\"amount\":\(ordinal % 200 + 1),\"note\":\"家里用\",\"status\":\"done\",\"method\":\"balance\",\"fromId\":\"\(sender)\",\"toId\":\"\(myId)\"}"
+        case 9993..<9996:
+            kind = "music"
+            content = "{\"title\":\"家人分享的音乐\",\"url\":\"/uploads/stress-music-\(ordinal).mp3\"}"
+        case 9996..<9998:
+            kind = "announce"
+            content = "📢【家人群公告】\n各位家人好，群内文明聊天，不吵架、不转发不实信息，不随意拉外人进群。重要事情群内通知，愿一家人平安顺遂。"
+        case 9998..<10000:
+            kind = "mall"
+            content = "{\"id\":\"m03\",\"shop\":\"家庭好物\",\"em\":\"☕\",\"price\":13.03,\"orig\":39.9,\"img\":\"\(testImage)\",\"title\":\"咖啡杯316不锈钢保温杯\"}"
+        default:
+            if ordinal % 73 == 0 {
+                content = "这是一条较长的家庭消息 \(ordinal)。今天大家都有空的话，晚上一起吃饭，老人家最近身体还可以，孩子这周学校有活动，照片和注意事项我整理在下面，大家看到后回复一下。"
+            } else if ordinal % 7 == 0 {
+                content = "好的，知道了"
+            } else if ordinal % 5 == 0 {
+                content = "哈哈哈"
+            } else {
+                content = "家里消息 \(ordinal)"
+            }
+        }
+        if kind == "system" {
+            mine = false
+            sender = "system"
+        }
+        let mention = kind == "text" && ordinal % 47 == 0 ? [myId] : nil
+        if mention != nil {
+            content = "@我 " + content
+        }
+        if recalled {
+            content = "这条消息已经被撤回"
         }
         return Message(
             id: "stress-message-\(group)-\(seq)",
@@ -147,13 +207,24 @@ enum MessageStressFixture {
             quote: quoted,
             burn: false,
             burnAt: nil,
-            senderName: mine ? "我" : "压力测试用户 \(ordinal % 12 + 1)",
+            senderName: mine ? "我" : (kind == "system" ? "系统" : "压力成员 \(peerIndex(ordinal) + 1)"),
             senderAvatar: nil,
             call: nil,
             mentions: mention,
             imgW: nil,
             imgH: nil
         )
+    }
+
+    private static func peerIndex(_ ordinal: Int) -> Int {
+        let bucket = (ordinal * 37) % 83
+        if bucket < 25 { return 0 }
+        if bucket < 47 { return 1 }
+        if bucket < 65 { return 2 }
+        if bucket < 74 { return 3 }
+        if bucket < 79 { return 4 }
+        if bucket < 81 { return 5 }
+        return bucket < 82 ? 6 : 7
     }
 
     static func page(

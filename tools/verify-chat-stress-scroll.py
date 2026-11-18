@@ -5,6 +5,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 LIST = (ROOT / "Sources" / "NativeStaticList.swift").read_text(encoding="utf-8")
 CHAT = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
+FIXTURE = (ROOT / "Sources" / "MessageStressFixture.swift").read_text(encoding="utf-8")
+CONFIG = (ROOT / "Sources" / "StressTestConfiguration.swift").read_text(encoding="utf-8")
 
 
 def require(condition: bool, message: str) -> None:
@@ -30,6 +32,18 @@ require(
     "if isGroup { autoLoadOlder() }" in CHAT
     and "let target = isGroup ? 160 : 200" in CHAT,
     "group prefetch must start at drag begin and load a larger history runway",
+)
+require(
+    all(f'kind = "{kind}"' in FIXTURE for kind in (
+        "image", "pat", "system", "audio", "location", "video", "redpacket",
+        "images", "file", "livephoto", "miniapp", "card", "gift", "transfer",
+        "music", "announce", "mall"
+    )),
+    "100k stress fixture must cover the real chat message-kind distribution",
+)
+require(
+    "flatMap(Int.init) ?? 8" in CONFIG,
+    "the realistic single-group stress fixture must default to an 8-member family group",
 )
 
 print("chat-stress-scroll: passed")
