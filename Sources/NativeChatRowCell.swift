@@ -74,7 +74,7 @@ struct NativeChatRowConfiguration {
     var isPinned: Bool
 }
 
-final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate {
+final class NativeChatRowCell: UICollectionViewCell {
     private let foreground = UIView()
     private let avatarView = NativeChatAvatarView()
     private let titleLabel = UILabel()
@@ -86,65 +86,32 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
     private let unreadBell = UIImageView()
     private let divider = UIView()
     private let pressOverlay = UIView()
-    private let pinActions = UIStackView()
-    private let leftActions = UIStackView()
     private var configuration: NativeChatRowConfiguration?
-    private var offset: CGFloat = 0
-    private var startOffset: CGFloat = 0
-    private var latestRawOffset: CGFloat = 0
-    private var dragDirection: CGFloat = 0
-    private var swipeSelectionGuardUntil: TimeInterval = 0
-    private var actionsSignature = ""
     private var avatarSignature = ""
     private var accessibilitySignature = ""
     private var cachedTimeSignature = ""
     private var cachedTimeWidth: CGFloat = 0
     private var avatarTap: UITapGestureRecognizer?
-    private weak var frozenScrollPan: UIPanGestureRecognizer?
 
     private let rowLeading: CGFloat = 16
     private let avatarSize: CGFloat = 50
     private let avatarGap: CGFloat = 11
     private let rowTrailing: CGFloat = 16
     private let dividerLeading: CGFloat = 77
-    private let actionWidth: CGFloat = 50
-    private let actionGap: CGFloat = 10
-    private let actionInset: CGFloat = 12
-
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupViews()
         setupGestures()
-        NotificationCenter.default.addObserver(self,
-                                               selector: #selector(handleSwipeElsewhere(_:)),
-                                               name: .chrisRowSwipe,
-                                               object: nil)
     }
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
-    deinit {
-        frozenScrollPan?.isEnabled = true
-        NotificationCenter.default.removeObserver(self)
-    }
-
     override func prepareForReuse() {
         super.prepareForReuse()
         configuration = nil
         foreground.transform = .identity
-        offset = 0
-        startOffset = 0
-        latestRawOffset = 0
-        dragDirection = 0
-        swipeSelectionGuardUntil = 0
-        pinActions.alpha = 1
-        pinActions.transform = .identity
-        pinActions.isHidden = true
-        leftActions.alpha = 1
-        leftActions.transform = .identity
-        leftActions.isHidden = true
         unreadBell.isHidden = true
         pressOverlay.backgroundColor = .clear
         avatarView.invalidate()
@@ -218,13 +185,6 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         layoutTitleBadges()
         divider.frame = CGRect(x: dividerLeading, y: bounds.height - 0.5,
                                width: bounds.width - dividerLeading, height: 0.5)
-        pinActions.frame = CGRect(x: actionInset, y: 0,
-                                  width: actionWidth + actionInset * 2,
-                                  height: bounds.height)
-        leftActions.frame = CGRect(x: bounds.width - (actionWidth * 3 + actionGap * 2 + actionInset),
-                                   y: 0,
-                                   width: actionWidth * 3 + actionGap * 2 + actionInset,
-                                   height: bounds.height)
     }
 
     func configure(_ configuration: NativeChatRowConfiguration) {
@@ -300,11 +260,6 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
                                  mood: configuration.moodIcon)
         }
         avatarTap?.isEnabled = configuration.onAvatar != nil
-        let nextActionsSignature = "\(configuration.isPinned)|\(Lang.code)"
-        if actionsSignature != nextActionsSignature {
-            actionsSignature = nextActionsSignature
-            rebuildActions()
-        }
         configureAccessibility(configuration)
         setNeedsLayout()
     }
@@ -475,17 +430,6 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         contentView.clipsToBounds = true
         backgroundColor = .clear
 
-        pinActions.axis = .horizontal
-        pinActions.alignment = .center
-        pinActions.spacing = 0
-        pinActions.isHidden = true
-        leftActions.axis = .horizontal
-        leftActions.alignment = .center
-        leftActions.spacing = actionGap
-        leftActions.isHidden = true
-        contentView.addSubview(pinActions)
-        contentView.addSubview(leftActions)
-
         foreground.clipsToBounds = true
         contentView.addSubview(foreground)
         foreground.addSubview(avatarView)
@@ -540,83 +484,6 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         }
     }
 
-    private func rebuildActions() {
-        pinActions.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        leftActions.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        guard let configuration else { return }
-
-        let pinTitle = configuration.isPinned ? localized("取消置顶", "Unpin", "Открепить")
-            : localized("置顶", "Pin", "Закрепить")
-        pinActions.addArrangedSubview(makeAction(symbol: "pin.fill",
-                                                 title: pinTitle,
-                                                 background: UIColor(hex: 0x0A84FF)) { [weak self] in
-            guard let self, let configuration = self.configuration else { return }
-            configuration.onPin(!configuration.isPinned)
-            self.closeActions()
-        })
-        let spacer = UIView()
-        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        pinActions.addArrangedSubview(spacer)
-
-        leftActions.addArrangedSubview(makeAction(symbol: "envelope.badge.fill",
-                                                  title: localized("标为未读", "Unread", "Непрочитано"),
-                                                  background: UIColor(hex: 0x28986C)) { [weak self] in
-            self?.configuration?.onUnread()
-            self?.closeActions()
-        })
-        leftActions.addArrangedSubview(makeAction(symbol: "eye.slash.fill",
-                                                  title: localized("不显示", "Hide", "Скрыть"),
-                                                  background: UIColor(hex: 0x7B8087)) { [weak self] in
-            self?.configuration?.onHide()
-            self?.closeActions()
-        })
-        leftActions.addArrangedSubview(makeAction(symbol: "trash.fill",
-                                                  title: localized("删除", "Delete", "Удалить"),
-                                                  background: .systemRed) { [weak self] in
-            self?.configuration?.onDelete()
-            self?.closeActions()
-        })
-    }
-
-    private func makeAction(symbol: String,
-                            title: String,
-                            background: UIColor,
-                            action: @escaping () -> Void) -> UIView {
-        let container = UIView()
-        let button = UIButton(type: .system)
-        var config = UIButton.Configuration.filled()
-        config.image = UIImage(systemName: symbol)
-        config.preferredSymbolConfigurationForImage = UIImage.SymbolConfiguration(pointSize: 16, weight: .semibold)
-        config.baseBackgroundColor = background
-        config.baseForegroundColor = .white
-        config.cornerStyle = .capsule
-        config.contentInsets = NSDirectionalEdgeInsets(top: 13, leading: 13, bottom: 13, trailing: 13)
-        button.configuration = config
-        button.accessibilityLabel = title
-        button.addAction(UIAction { _ in action() }, for: .touchUpInside)
-        button.translatesAutoresizingMaskIntoConstraints = false
-        container.addSubview(button)
-        let label = UILabel()
-        label.text = title
-        label.font = .systemFont(ofSize: 9, weight: .medium)
-        label.textColor = .secondaryLabel
-        label.textAlignment = .center
-        label.translatesAutoresizingMaskIntoConstraints = false
-        container.addSubview(label)
-        NSLayoutConstraint.activate([
-            container.widthAnchor.constraint(equalToConstant: actionWidth),
-            container.heightAnchor.constraint(equalToConstant: 64),
-            button.centerXAnchor.constraint(equalTo: container.centerXAnchor),
-            button.centerYAnchor.constraint(equalTo: container.centerYAnchor, constant: -7),
-            button.widthAnchor.constraint(equalToConstant: actionWidth),
-            button.heightAnchor.constraint(equalToConstant: actionWidth),
-            label.topAnchor.constraint(equalTo: button.bottomAnchor, constant: 1),
-            label.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            label.trailingAnchor.constraint(equalTo: container.trailingAnchor)
-        ])
-        return container
-    }
-
     private func setupGestures() {
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleAvatarTap(_:)))
         tap.cancelsTouchesInView = true
@@ -626,42 +493,8 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         avatarTap = tap
     }
 
-    override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-        guard let pan = gestureRecognizer as? UIPanGestureRecognizer else { return true }
-        let translation = pan.translation(in: foreground)
-        let velocity = pan.velocity(in: foreground)
-        // Touch jitter commonly reaches 3–6 pt while tapping. Require an
-        // unmistakable horizontal intent before taking the gesture from the
-        // collection view, then keep that decision for the whole swipe.
-        let byTranslation = abs(translation.x) >= 8
-            && abs(translation.x) >= abs(translation.y) * 1.25
-        let byVelocity = abs(velocity.x) >= 64
-            && abs(velocity.x) >= abs(velocity.y) * 1.20
-        return byTranslation || byVelocity
-    }
-
-    private func freezeEnclosingScroll() {
-        var candidate: UIView? = superview
-        while let view = candidate {
-            if let scroll = view as? UIScrollView {
-                frozenScrollPan = scroll.panGestureRecognizer
-                scroll.panGestureRecognizer.isEnabled = false
-                return
-            }
-            candidate = view.superview
-        }
-    }
-
-    private func restoreEnclosingScroll() {
-        frozenScrollPan?.isEnabled = true
-        frozenScrollPan = nil
-    }
-
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesBegan(touches, with: event)
-        // A new touch starts a new intent. Any prior swipe whose selection
-        // callback never arrived must not eat this fresh row tap.
-        swipeSelectionGuardUntil = 0
         setPressed(true)
     }
 
@@ -692,151 +525,6 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
 
     @objc private func handleAvatarTap(_ gesture: UITapGestureRecognizer) {
         configuration?.onAvatar?()
-    }
-
-    @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
-        guard let configuration else {
-            restoreEnclosingScroll()
-            return
-        }
-        let translation = gesture.translation(in: foreground).x
-        let velocity = gesture.velocity(in: foreground).x
-        switch gesture.state {
-        case .began:
-            swipeSelectionGuardUntil = Date.timeIntervalSinceReferenceDate + 0.45
-            freezeEnclosingScroll()
-            startOffset = offset
-            latestRawOffset = offset
-            if dragDirection == 0 {
-                dragDirection = translation < 0 ? -1 : (translation > 0 ? 1 : 0)
-            }
-            NotificationCenter.default.post(name: .chrisRowSwipe,
-                                            object: configuration.chatId)
-        case .changed:
-            var raw = startOffset + translation
-            if dragDirection == 0, abs(translation) >= 2 {
-                dragDirection = translation < 0 ? -1 : 1
-            }
-            if dragDirection < 0, startOffset <= 0 {
-                raw = min(0, raw)
-            } else if dragDirection > 0, startOffset >= 0 {
-                raw = max(0, raw)
-            }
-            latestRawOffset = raw
-            offset = resisted(raw)
-            foreground.transform = CGAffineTransform(translationX: offset, y: 0)
-            pinActions.isHidden = offset <= 0
-            leftActions.isHidden = offset >= 0
-            let base = offset < 0
-                ? actionInset + actionWidth * 3 + actionGap * 2
-                : actionInset + actionWidth
-            let progress = min(1, abs(offset) / max(1, base))
-            let actions = offset < 0 ? leftActions : pinActions
-            let direction: CGFloat = offset < 0 ? 1 : -1
-            actions.alpha = 0.45 + progress * 0.55
-            actions.transform = CGAffineTransform(
-                translationX: direction * (1 - progress) * 10,
-                y: 0
-            )
-        case .ended, .cancelled, .failed:
-            restoreEnclosingScroll()
-            let raw = latestRawOffset
-            let projected = raw + velocity * 0.14
-            let pinBase = actionInset + actionWidth
-            let leftBase = actionInset + actionWidth * 3 + actionGap * 2
-            let pinCommit = max(32, pinBase * 0.44)
-            let leftCommit = max(46, min(leftBase * 0.34, bounds.width * 0.18))
-            if dragDirection > 0, projected >= pinCommit {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                open(offset: pinBase, animated: true)
-            } else if dragDirection < 0, projected <= -leftCommit {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                open(offset: -leftBase, animated: true)
-            } else {
-                closeActions()
-            }
-            if gesture.state == .ended, dragDirection < 0, -raw > bounds.width * 0.72 {
-                configuration.onDelete()
-            } else if gesture.state == .ended, dragDirection > 0, raw > bounds.width * 0.72 {
-                configuration.onPin(!configuration.isPinned)
-            }
-        default:
-            break
-        }
-    }
-
-    private func resisted(_ raw: CGFloat) -> CGFloat {
-        let limit = max(90, bounds.width * 0.24)
-        if raw > 0, raw > actionInset + actionWidth {
-            let extra = raw - (actionInset + actionWidth)
-            return actionInset + actionWidth + limit * extra / (extra + 90)
-        }
-        let leftBase = actionInset + actionWidth * 3 + actionGap * 2
-        if raw < 0, -raw > leftBase {
-            let extra = -raw - leftBase
-            return -(leftBase + limit * extra / (extra + 90))
-        }
-        return raw
-    }
-
-    private func open(offset target: CGFloat, animated: Bool) {
-        let velocity = target - offset
-        offset = target
-        pinActions.isHidden = target <= 0
-        leftActions.isHidden = target >= 0
-        let updates = {
-            self.foreground.transform = CGAffineTransform(translationX: target, y: 0)
-            self.pinActions.alpha = target > 0 ? 1 : 0
-            self.pinActions.transform = .identity
-            self.leftActions.alpha = target < 0 ? 1 : 0
-            self.leftActions.transform = .identity
-        }
-        if animated && !UIAccessibility.isReduceMotionEnabled {
-            let velocityVector = CGVector(
-                dx: max(-1, min(1, velocity / 900)),
-                dy: 0
-            )
-            let timing = UISpringTimingParameters(
-                dampingRatio: 0.86,
-                initialVelocity: velocityVector
-            )
-            let animator = UIViewPropertyAnimator(duration: 0.32, timingParameters: timing)
-            animator.addAnimations(updates)
-            animator.startAnimation()
-        } else {
-            updates()
-        }
-    }
-
-    private func closeActions() {
-        open(offset: 0, animated: true)
-    }
-
-    @discardableResult
-    func dismissOpenSwipeActions() -> Bool {
-        guard abs(offset) > 0.75 else {
-            if offset != 0 { open(offset: 0, animated: false) }
-            return false
-        }
-        closeActions()
-        return true
-    }
-
-    /// A collection view may still deliver its selection callback on the same
-    /// touch-up that ended a swipe. Consume that callback once so swiping never
-    /// opens the chat.
-    func consumeSelectionAfterSwipe() -> Bool {
-        let active = swipeSelectionGuardUntil >= Date.timeIntervalSinceReferenceDate
-        swipeSelectionGuardUntil = 0
-        return active
-    }
-
-    @objc private func handleSwipeElsewhere(_ note: Notification) {
-        if let chatId = note.object as? String, chatId == configuration?.chatId {
-            return
-        }
-        guard offset != 0 else { return }
-        closeActions()
     }
 
     private func localized(_ zh: String, _ en: String, _ ru: String) -> String {
@@ -909,11 +597,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
 
     override func accessibilityActivate() -> Bool {
         guard let configuration else { return false }
-        if offset != 0 {
-            closeActions()
-        } else {
-            configuration.onOpen()
-        }
+        configuration.onOpen()
         return true
     }
 

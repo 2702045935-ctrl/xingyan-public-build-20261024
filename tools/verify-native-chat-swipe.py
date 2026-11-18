@@ -31,21 +31,12 @@ require(
     "the custom cell-level horizontal swipe must be removed",
 )
 require(
-    "gestureRecognizerShouldBegin" in ROW,
-    "the avatar interaction must not compete with native row swipes",
-)
-require(
     "contextMenuConfigurationForItemAt" not in LIST,
     "chat rows must not keep the old long-press context menu",
 )
 require(
     "didSelectItemAt indexPath: IndexPath" in LIST,
     "opening a conversation must use UICollectionView native selection",
-)
-require(
-    "shouldSelectItemAt indexPath: IndexPath" in LIST
-    and "dismissOpenSwipeActions()" in LIST,
-    "tapping an open row must close actions before opening the chat",
 )
 require(
     "collection.isDirectionalLockEnabled" not in LIST,
@@ -60,19 +51,11 @@ require(
     "only the avatar may retain a separate tap recognizer",
 )
 require(
-    "swipeSelectionGuardUntil" in ROW
-    and "consumeSelectionAfterSwipe()" in ROW
-    and "consumeSelectionAfterSwipe()" in LIST,
-    "a recognized swipe must consume only its short-lived selection callback",
-)
-require(
-    "override func touchesBegan" in ROW
-    and "must not eat this fresh row tap" in ROW,
-    "a new touch must clear stale swipe-selection suppression",
-)
-require(
-    "Date.timeIntervalSinceReferenceDate + 0.45" in ROW,
-    "swipe-selection suppression must expire instead of blocking later taps",
+    "handlePan" not in ROW
+    and "pinActions" not in ROW
+    and "leftActions" not in ROW
+    and "consumeSelectionAfterSwipe" not in LIST,
+    "all cell-drawn swipe actions and arbitration state must be deleted",
 )
 require(
     "tap.require(toFail: pan)" in CHATS

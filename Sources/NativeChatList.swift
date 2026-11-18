@@ -362,17 +362,6 @@ where Item.ID: Hashable {
         }
 
         func collectionView(_ collectionView: UICollectionView,
-                            shouldSelectItemAt indexPath: IndexPath) -> Bool {
-            guard let cell = collectionView.cellForItem(at: indexPath) as? NativeChatRowCell else {
-                return true
-            }
-            if cell.consumeSelectionAfterSwipe() {
-                return false
-            }
-            return !cell.dismissOpenSwipeActions()
-        }
-
-        func collectionView(_ collectionView: UICollectionView,
                             didSelectItemAt indexPath: IndexPath) {
             collectionView.deselectItem(at: indexPath, animated: false)
             guard let id = dataSource?.itemIdentifier(for: indexPath),
