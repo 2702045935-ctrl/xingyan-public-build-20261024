@@ -870,7 +870,24 @@ struct ChatDetailView: View {
     private func openActions(_ m: Message) {
         if selectMode { toggleSelect(m); return }
         let contentRect = frameBox.frames[m.id] ?? .zero
-        menuRect = contentRect
+        if isGroup, contentRect.width > 1 {
+            // Group rows include an avatar and a full-width spacer. Anchoring
+            // from the row center makes the card appear between the bubble and
+            // the opposite edge, then feel like it drifts after layout settles.
+            // Keep the shared long-press behavior, but anchor group actions to
+            // the bubble edge.
+            let bubbleEdge = m.senderId == myId
+                ? contentRect.maxX - L.chatAvatar - L.chatGapMsg - 18
+                : contentRect.minX + L.chatAvatar + L.chatGapMsg + 18
+            menuRect = CGRect(
+                x: bubbleEdge,
+                y: contentRect.minY,
+                width: 1,
+                height: contentRect.height
+            )
+        } else {
+            menuRect = contentRect
+        }
         actionMessage = m
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }

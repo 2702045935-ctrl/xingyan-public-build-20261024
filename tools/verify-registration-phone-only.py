@@ -12,16 +12,17 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "@State private var mode: Mode = .phone" in APP,
-    "registration must open on the server-supported phone flow",
+    "@State private var mode: Mode = .account" in APP,
+    "registration must open on the supported Xingyan account flow",
 )
 require(
-    'registrationTab(Tr("自选星言号")' not in APP,
-    "the obsolete account-registration tab must not be shown",
+    'registrationTab(Tr("星言号注册"), selected: mode == .account)' in APP,
+    "the Xingyan account registration tab must be visible",
 )
 require(
-    'registrationTab(Tr("手机号注册"), selected: true)' in APP,
-    "phone registration must be the only visible registration path",
+    "smsCode: code" in APP
+    and "requirePhoneCode: true" in APP,
+    "account registration must keep the SMS verification requirement",
 )
 
 print("registration-phone-only: passed")
