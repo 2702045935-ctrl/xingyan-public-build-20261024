@@ -27,5 +27,21 @@ require(
     "let priority: [String: Int]" in ME,
     "the current feature priority ordering must remain",
 )
+require(
+    "private var nativeMeList" in ME and "currentMeRows" in ME,
+    "the Me page must render through the native list row builder",
+)
+require(
+    ".listStyle(.insetGrouped)" in ME,
+    "the Me page must use the native inset-grouped list style",
+)
+require(
+    "private func meSectionTitle" in ME,
+    "native list sections need user-facing headings",
+)
+require(
+    "nativeStat(value:" in ME and "nativeMeItemRow(item)" in ME,
+    "profile stats and feature rows must stay in native list rows",
+)
 
 print("me-current: passed")
