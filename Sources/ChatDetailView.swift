@@ -1472,6 +1472,7 @@ struct ChatDetailView: View {
                 Spacer(minLength: 0)
             }
         }
+        .shadow(color: adaptiveTopGlyphShadow, radius: 0.9, x: 0, y: 0.35)
         .padding(.leading, 2)
         .padding(.trailing, 2)
         .frame(height: L.navH)
@@ -1483,7 +1484,7 @@ struct ChatDetailView: View {
             return AnyView(
                 NavBar(title: navTitleShown, back: nil,
                        titleColor: adaptiveTopInk,
-                       titleOutline: .clear,
+                       titleOutline: adaptiveTopOutline.opacity(0.55),
                        backColor: adaptiveTopInk,
                        titleView: chatNavigationTitle,
                        leftExtra: nil,
@@ -1517,8 +1518,8 @@ struct ChatDetailView: View {
                                          ? AnyShapeStyle(OfficialAccountVisual.name)
                                          : AnyShapeStyle(adaptiveTopInk))
                         .shadow(color: chat.showsOfficialMark
-                                ? OfficialAccountVisual.glow : .clear,
-                                radius: 3)
+                                ? OfficialAccountVisual.glow : adaptiveTopGlyphShadow,
+                                radius: chat.showsOfficialMark ? 3 : 0.9)
                         .lineLimit(1)
                 }
                 if !chatNavigationStatus.isEmpty {
@@ -1773,6 +1774,25 @@ struct ChatDetailView: View {
         topBarUsesLightInk
             ? Color.black.opacity(0.82)
             : Color.white.opacity(0.86)
+    }
+
+    private var adaptiveTopGlyphShadow: Color {
+        topBarUsesLightInk
+            ? Color.black.opacity(0.52)
+            : Color.white.opacity(0.62)
+    }
+
+    private var topBarContrastScrim: Color {
+        if isStarWorld && newsMode { return .clear }
+        if let luminance = backgroundTopLuminance ?? backgroundLuminance {
+            if topBarUsesLightInk {
+                return .black.opacity(max(0.08, min(0.20, (0.42 - luminance) * 0.38)))
+            }
+            return .white.opacity(max(0.05, min(0.16, (luminance - 0.58) * 0.30)))
+        }
+        return topBarUsesLightInk
+            ? Color.black.opacity(0.08)
+            : Color.white.opacity(0.045)
     }
 
     private var adaptiveSystemSecondaryInk: Color {
@@ -2078,11 +2098,35 @@ struct ChatDetailView: View {
             chatTopNavigation
             }
             .background {
-                Group {
-                    if isStarWorld && newsMode {
-                        newsMaskColor
-                    } else if isGroup {
-                        ZStack {
+                ZStack {
+                    Group {
+                        if isStarWorld && newsMode {
+                            newsMaskColor
+                        } else if isGroup {
+                            ZStack {
+                                ChatImmersiveEdgeMask(path: backgroundPath,
+                                                      edge: .top,
+                                                      tint: wallpaperTopTint,
+                                                      dark: topBarUsesLightInk,
+                                                      effect: backgroundEffect,
+                                                      preset: ChatTheme.preset,
+                                                      themeVersion: chatTheme.version)
+                                NativeGlassHeaderMaterial()
+                                    .opacity(0.78)
+                                Rectangle()
+                                    .fill(topBarUsesLightInk
+                                          ? Color.black.opacity(0.10)
+                                          : Color.white.opacity(0.07))
+                                LinearGradient(
+                                    colors: [
+                                        Color.white.opacity(topBarUsesLightInk ? 0.08 : 0.13),
+                                        Color.clear
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            }
+                        } else {
                             ChatImmersiveEdgeMask(path: backgroundPath,
                                                   edge: .top,
                                                   tint: wallpaperTopTint,
@@ -2090,30 +2134,9 @@ struct ChatDetailView: View {
                                                   effect: backgroundEffect,
                                                   preset: ChatTheme.preset,
                                                   themeVersion: chatTheme.version)
-                            NativeGlassHeaderMaterial()
-                                .opacity(0.78)
-                            Rectangle()
-                                .fill(topBarUsesLightInk
-                                      ? Color.black.opacity(0.10)
-                                      : Color.white.opacity(0.07))
-                            LinearGradient(
-                                colors: [
-                                    Color.white.opacity(topBarUsesLightInk ? 0.08 : 0.13),
-                                    Color.clear
-                                ],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
                         }
-                    } else {
-                        ChatImmersiveEdgeMask(path: backgroundPath,
-                                              edge: .top,
-                                              tint: wallpaperTopTint,
-                                              dark: topBarUsesLightInk,
-                                              effect: backgroundEffect,
-                                              preset: ChatTheme.preset,
-                                              themeVersion: chatTheme.version)
                     }
+                    topBarContrastScrim
                 }
                 .ignoresSafeArea(edges: .top)
             }
