@@ -113,6 +113,36 @@ struct NativeGlassHeaderMaterial: UIViewRepresentable {
 }
 #endif
 
+#if canImport(UIKit)
+/// 顶栏的可靠磨砂层。Liquid Glass 在部分自定义导航容器里几乎透明，
+/// 这里直接使用系统材质模糊，保证内容进入标题区后确实被遮住。
+struct NativeFrostedHeaderMaterial: UIViewRepresentable {
+    @Environment(\.colorScheme) private var scheme
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    func makeUIView(context: Context) -> UIVisualEffectView {
+        let view = UIVisualEffectView(effect: effect)
+        view.isUserInteractionEnabled = false
+        view.contentView.backgroundColor = reduceTransparency
+            ? UIColor.secondarySystemBackground : .clear
+        return view
+    }
+
+    func updateUIView(_ view: UIVisualEffectView, context: Context) {
+        view.effect = effect
+        view.contentView.backgroundColor = reduceTransparency
+            ? UIColor.secondarySystemBackground : .clear
+    }
+
+    private var effect: UIVisualEffect? {
+        guard !reduceTransparency else { return nil }
+        return UIBlurEffect(style: scheme == .dark
+                            ? .systemMaterialDark
+                            : .systemMaterialLight)
+    }
+}
+#endif
+
 struct NativeTopGlassMask: View {
     var active: Bool
 
@@ -126,7 +156,7 @@ struct NativeTopGlassMask: View {
             } else if reduceTransparency {
                 Color(uiColor: .systemBackground)
             } else {
-                NativeGlassHeaderMaterial()
+                NativeFrostedHeaderMaterial()
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

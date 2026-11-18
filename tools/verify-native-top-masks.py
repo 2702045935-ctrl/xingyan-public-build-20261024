@@ -16,9 +16,11 @@ def require(condition: bool, message: str) -> None:
 
 
 require("struct NativeTopGlassMask" in NAV
-        and "NativeGlassHeaderMaterial()" in NAV
+        and "struct NativeFrostedHeaderMaterial" in NAV
+        and "UIBlurEffect(style: scheme == .dark" in NAV
+        and "NativeFrostedHeaderMaterial()" in NAV
         and "accessibilityReduceTransparency" in NAV,
-        "shared top mask must use the iOS native glass with accessibility fallback")
+        "shared top mask must use a visible native frosted material with accessibility fallback")
 require(".glassEffect(.regular.interactive(), in: shape)" in NAV,
         "tappable glass controls must use native interactive liquid glass")
 require(
