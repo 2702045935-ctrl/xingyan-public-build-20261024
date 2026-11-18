@@ -102,6 +102,7 @@ jobs:
           python3 tools/verify-chat-avatar-stability.py
           python3 tools/verify-chat-seamless-prefetch.py
           python3 tools/verify-group-avatar-three.py
+          python3 tools/verify-plus-panel-native.py
           python3 tools/verify-share-sheets.py
           python3 tools/verify-moment-editorial.py
           python3 tools/verify-moment-own-publish.py

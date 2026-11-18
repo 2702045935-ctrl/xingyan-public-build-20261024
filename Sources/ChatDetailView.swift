@@ -5467,6 +5467,8 @@ struct ChatDetailView: View {
                     Group {
                         if panel == .emoji {
                             ChatEmojiPanelMaterial()
+                        } else if panel == .plus {
+                            ChatPlusPanelMaterial()
                         } else if panel != .none {
                             ChatPanelGlassBackground()
                         } else {

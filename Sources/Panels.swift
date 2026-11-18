@@ -36,6 +36,20 @@ struct ChatEmojiPanelMaterial: View {
     }
 }
 
+struct ChatPlusPanelMaterial: View {
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        ZStack {
+            Rectangle().fill(.regularMaterial)
+            Rectangle().fill(
+                Color(uiColor: .systemBackground)
+                    .opacity(scheme == .dark ? 0.28 : 0.54)
+            )
+        }
+    }
+}
+
 let emojiAll: [String] = [
     "😄", "😖", "😍", "😳", "😎", "😭", "😚", "🤐",
     "😴", "😢", "😅", "😡", "😛", "😁", "😲", "😔",
@@ -826,7 +840,6 @@ struct PlusPanel: View {
 
     var onLongPress: ((PlusItem) -> Bool)? = nil
 
-    @Environment(\.colorScheme) private var scheme
     @State private var page = 0
 
     @State private var pressed: String? = nil
@@ -912,16 +925,12 @@ struct PlusPanel: View {
         return VStack(spacing: tileGap) {
             ZStack {
                 RoundedRectangle(cornerRadius: tileH * 0.30, style: .continuous)
-                    .fill(LinearGradient(colors: tileColors(item.action),
-                                         startPoint: .topLeading,
-                                         endPoint: .bottomTrailing))
+                    .fill(tileColors(item.action).first ?? C.green)
                     .frame(width: tileH, height: tileH)
                     .overlay {
                         RoundedRectangle(cornerRadius: tileH * 0.30, style: .continuous)
-                            .stroke(Color.white.opacity(0.24), lineWidth: 0.7)
+                            .stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
                     }
-                    .shadow(color: tileColors(item.action).last?.opacity(0.14) ?? .clear,
-                            radius: 5, y: 2)
                 Image(systemName: whatsAppPlusSymbol(item))
                     .font(.system(size: L.v(20.5, 6.2, 23), weight: .semibold))
                     .symbolRenderingMode(.monochrome)
@@ -934,36 +943,9 @@ struct PlusPanel: View {
                 .minimumScaleFactor(0.78)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.vertical, 8)
-        .padding(.horizontal, 4)
+        .padding(.vertical, 6)
+        .padding(.horizontal, 2)
         .frame(maxWidth: .infinity)
-        .background {
-            ZStack {
-                RoundedRectangle(cornerRadius: L.v(14, 4.5, 16), style: .continuous)
-                    .fill(.ultraThinMaterial)
-                RoundedRectangle(cornerRadius: L.v(14, 4.5, 16), style: .continuous)
-                    .fill(Color.white.opacity(scheme == .dark ? 0.055 : 0.16))
-                RoundedRectangle(cornerRadius: L.v(14, 4.5, 16), style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.white.opacity(0.13), .clear],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                RoundedRectangle(cornerRadius: L.v(14, 4.5, 16), style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: [Color.white.opacity(0.26),
-                                     Color.black.opacity(0.055)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 0.65
-                    )
-            }
-            .shadow(color: Color.black.opacity(0.045), radius: 8, y: 3)
-        }
         .opacity(item.enabled == false ? 0.45 : 1)
 
         .scaleEffect(pressed == item.id ? 0.92 : 1)
