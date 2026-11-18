@@ -999,6 +999,16 @@ private final class NativeChatAvatarView: UIView {
             tileViews[0].frame = CGRect(x: 0, y: 0, width: (bounds.width - gap) / 2, height: bounds.height)
             tileViews[1].frame = CGRect(x: tileViews[0].frame.maxX + gap, y: 0,
                                         width: (bounds.width - gap) / 2, height: bounds.height)
+        } else if visibleCount == 3 {
+            let largeWidth = (bounds.width - gap) * 0.64
+            let smallWidth = bounds.width - gap - largeWidth
+            let smallHeight = (bounds.height - gap) / 2
+            tileViews[0].frame = CGRect(x: 0, y: 0,
+                                        width: largeWidth, height: bounds.height)
+            tileViews[1].frame = CGRect(x: largeWidth + gap, y: 0,
+                                        width: smallWidth, height: smallHeight)
+            tileViews[2].frame = CGRect(x: largeWidth + gap, y: smallHeight + gap,
+                                        width: smallWidth, height: smallHeight)
         } else {
             let halfW = (bounds.width - gap) / 2
             let halfH = (bounds.height - gap) / 2

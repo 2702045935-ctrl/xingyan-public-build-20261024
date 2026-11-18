@@ -2048,6 +2048,16 @@ private struct GroupCreationAvatar: View {
                     tile(0, width: halfW, height: geo.size.height)
                     tile(1, width: halfW, height: geo.size.height)
                 }
+            } else if users.count == 3 {
+                let largeWidth = (geo.size.width - gap) * 0.64
+                let smallWidth = geo.size.width - gap - largeWidth
+                HStack(spacing: gap) {
+                    tile(0, width: largeWidth, height: geo.size.height)
+                    VStack(spacing: gap) {
+                        tile(1, width: smallWidth, height: halfH)
+                        tile(2, width: smallWidth, height: halfH)
+                    }
+                }
             } else {
                 VStack(spacing: gap) {
                     HStack(spacing: gap) {
