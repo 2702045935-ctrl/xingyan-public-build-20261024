@@ -960,6 +960,13 @@ final class AppState: ObservableObject {
             await loadContacts()
         }
         if d.momentUnread != momentsUnread { momentsUnread = d.momentUnread }
+        if !d.recentChats.isEmpty {
+            let merged = mergeServerChats(d.recentChats)
+            if !AppState.sameChats(chats, merged) {
+                chats = merged
+            }
+            syncIconBadge()
+        }
     }
 
     func rememberLastUser() {

@@ -5074,11 +5074,15 @@ private struct StarredPayload: Decodable {
         return (p.friends, p.incoming ?? [], p.outgoing ?? [], p.added ?? [])
     }
 
-    private struct BadgeCountsPayload: Decodable { var friendRequests: Int?; var momentUnread: Int? }
+    private struct BadgeCountsPayload: Decodable {
+        var friendRequests: Int?
+        var momentUnread: Int?
+        var recentChats: [Chat]?
+    }
 
-    func badgeCounts() async -> (friendRequests: Int, momentUnread: Int)? {
+    func badgeCounts() async -> (friendRequests: Int, momentUnread: Int, recentChats: [Chat])? {
         guard let p = try? await get("/api/badge-counts", as: BadgeCountsPayload.self) else { return nil }
-        return (p.friendRequests ?? 0, p.momentUnread ?? 0)
+        return (p.friendRequests ?? 0, p.momentUnread ?? 0, p.recentChats ?? [])
     }
 
     @discardableResult

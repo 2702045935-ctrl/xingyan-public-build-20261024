@@ -99,6 +99,9 @@ jobs:
           python3 tools/verify-phone-theme-previews.py
           python3 tools/verify-chat-prepend-anchor.py
           python3 tools/verify-message-receipts.py
+          python3 tools/verify-message-send-handoff.py
+          python3 tools/verify-chat-unread-reconcile.py
+          python3 tools/verify-pin-owner-routing.py
           python3 tools/verify-chat-avatar-stability.py
           python3 tools/verify-chat-seamless-prefetch.py
           python3 tools/verify-group-avatar-three.py

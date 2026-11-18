@@ -32,5 +32,13 @@ require(
     '"\\(chatsIsDark)-\\(scheme)-\\(Lang.code)' in CHATS,
     "native row signatures must invalidate when the effective theme changes",
 )
+require(
+    "let previewColor: UIColor = .secondaryLabel" in CHATS
+    and "let timeColor: UIColor = .tertiaryLabel" in CHATS
+    and "let titleColor: UIColor = chat.showsOfficialMark" in CHATS
+    and "?: .label" not in CHATS
+    and ": .label" in CHATS,
+    "chat-list title, preview and time must use adaptive semantic colors",
+)
 
 print("chats-dark-surface: passed")

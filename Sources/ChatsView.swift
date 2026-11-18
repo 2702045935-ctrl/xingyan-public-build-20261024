@@ -2617,12 +2617,11 @@ struct ChatsView: View {
         let isDark = chatsIsDark
         let titleColor: UIColor = chat.showsOfficialMark
             ? UIColor(hex: 0x25D366)
-            : (isDark ? UIColor(hex: 0xE9EDEF) : UIColor(hex: 0x1A1A1A))
-        let previewColor = isDark ? UIColor(hex: 0x8696A0)
-                                  : UIColor(hex: 0xB2B2B2)
+            : .label
+        let previewColor: UIColor = .secondaryLabel
         let memberColor = nativePeerColor(chat.memberColor)
         let rowBg: UIColor = isDark ? UIColor(hex: 0x000000) : UIColor.white
-        let timeColor = isDark ? UIColor(hex: 0x8696A0) : UIColor(hex: 0xCCCCCC)
+        let timeColor: UIColor = .tertiaryLabel
         let levelText = (chat.qqLevel ?? 0) > 1 && GrowthFlags.showInChats == true
             ? "Lv\(chat.qqLevel ?? 0)" : ""
 

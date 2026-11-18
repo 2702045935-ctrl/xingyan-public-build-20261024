@@ -438,7 +438,6 @@ final class Realtime: ObservableObject {
 
         if let n = obj["notice"] as? [String: Any] { ev.momentNotice = MomentNotice(json: n) }
         if let n = obj["friendRequests"] as? Int { ev.friendRequests = n }
-
         if let t = obj["transfer"] as? [String: Any] {
             ev.transferFromId = (t["fromId"] as? String) ?? ""
             ev.transferStatus = (t["status"] as? String) ?? ""

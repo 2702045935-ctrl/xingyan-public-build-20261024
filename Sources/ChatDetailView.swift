@@ -723,6 +723,8 @@ struct ChatDetailView: View {
 
     @State private var messages: [Message] = []
     @State private var receiptCursors: [String: ChatReceiptCursor] = [:]
+    @State private var receiptDeliveredSeq = 0
+    @State private var receiptReadSeq = 0
     @State private var senderAvatarCache: [String: String] = [:]
     @State private var groupSenderProfilesLoaded = false
     @State private var backgroundLuminance: Double? = nil
@@ -2752,6 +2754,8 @@ struct ChatDetailView: View {
                 row.deliveredSeq = max(row.deliveredSeq, max(ev.deliveredSeq, ev.seq))
                 row.readSeq = max(row.readSeq, ev.readSeq)
                 receiptCursors[ev.userId] = row
+                receiptDeliveredSeq = max(receiptDeliveredSeq, row.deliveredSeq)
+                receiptReadSeq = max(receiptReadSeq, row.readSeq)
             }
 
             if ev.type == "message", ev.chatId == chat.id, let message = ev.message {
@@ -4211,9 +4215,13 @@ struct ChatDetailView: View {
     }
 
     private var receiptRecipientIds: [String] {
-        (chat.memberIds ?? []).filter {
+        var ids = (chat.memberIds ?? []).filter {
             !$0.isEmpty && $0 != myId && $0 != "system"
         }
+        if ids.isEmpty, let peer = peerUserId, !peer.isEmpty, peer != myId {
+            ids = [peer]
+        }
+        return ids
     }
 
     private func deliveryState(for message: Message) -> MessageDeliveryState {
@@ -4221,16 +4229,15 @@ struct ChatDetailView: View {
             return .sent
         }
         let recipients = receiptRecipientIds
-        guard !recipients.isEmpty else { return .sent }
-        let delivered = recipients.allSatisfy {
+        let recipientDelivered = recipients.isEmpty ? 0 : recipients.map {
             let cursor = receiptCursors[$0]
-            return max(cursor?.deliveredSeq ?? 0, cursor?.readSeq ?? 0) >= seq
-        }
-        guard delivered else { return .sent }
-        let read = recipients.allSatisfy {
-            (receiptCursors[$0]?.readSeq ?? 0) >= seq
-        }
-        return read ? .read : .delivered
+            return max(cursor?.deliveredSeq ?? 0, cursor?.readSeq ?? 0)
+        }.min() ?? 0
+        guard max(receiptDeliveredSeq, recipientDelivered) >= seq else { return .sent }
+        let recipientRead = recipients.isEmpty ? 0 : recipients.map {
+            receiptCursors[$0]?.readSeq ?? 0
+        }.min() ?? 0
+        return max(receiptReadSeq, recipientRead) >= seq ? .read : .delivered
     }
 
     private func refreshReceipts() async {
@@ -4241,6 +4248,8 @@ struct ChatDetailView: View {
             next[row.userId] = row
         }
         receiptCursors = next
+        receiptDeliveredSeq = max(receiptDeliveredSeq, snapshot.deliveredSeq)
+        receiptReadSeq = max(receiptReadSeq, snapshot.readSeq)
     }
 
     @ViewBuilder
@@ -5939,6 +5948,9 @@ struct ChatDetailView: View {
                 if let message = try await API.shared.send(chatId: chat.id, kind: p.kind, content: p.content,
                                                            mentions: p.mentions, clientId: p.id,
                                                            quote: Self.quoteDict(p.quoteJSON)) {
+                    /* 先把本地发送占位撤掉，再落入服务端确认气泡。
+                       两步在同一个 MainActor 事务里完成，避免同一条消息短暂出现两张气泡。 */
+                    outbox.removeAll { $0.id == p.id }
                     appendVisibleMessage(message)
                     app.ensureChatVisible(chat, latest: message)
                 } else if let i2 = outbox.firstIndex(where: { $0.id == p.id }) {
@@ -5947,7 +5959,6 @@ struct ChatDetailView: View {
                     outbox[i2].failureReason = "消息没有发出去，点重试再发一次"
                     break
                 }
-                outbox.removeAll { $0.id == p.id }
             } catch {
                 let reason = (error as? APIError)?.errorDescription ?? "发送失败"
                 if p.kind == "text", reason.contains("敏感词") || reason.contains("稍后再试") {

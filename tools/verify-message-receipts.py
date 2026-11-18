@@ -50,6 +50,12 @@ require(
     "realtime receipt updates must reach the open conversation",
 )
 require(
+    "receiptDeliveredSeq" in CHAT
+    and "receiptReadSeq" in CHAT
+    and "max(receiptDeliveredSeq, recipientDelivered) >= seq" in CHAT,
+    "delivery ticks must combine per-recipient and aggregate receipt cursors",
+)
+require(
     "消息已加密保护" in CHAT
     and "lock.shield.fill" in CHAT
     and "RoundedRectangle(cornerRadius: 12" in CHAT

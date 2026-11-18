@@ -18029,9 +18029,15 @@ async function handleApi(req, res, pathname, query) {
   /* 红点数字（很轻的一个接口）：手机端回到前台、或者长连接重连时拉一次，
      就算推送丢了也能把「新的朋友」的红点点亮 */
   if (parts[0] === 'badge-counts' && method === 'GET') {
+    const recentChats = chatsOf(user.id)
+      .slice()
+      .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))
+      .slice(0, 20)
+      .map((chat) => chatSummary(chat, user.id));
     ok(res, {
       friendRequests: pendingFriendRequests(user.id),
-      momentUnread: momentUnread(user.id)
+      momentUnread: momentUnread(user.id),
+      recentChats
     });
     return;
   }
@@ -21718,11 +21724,23 @@ async function handleApi(req, res, pathname, query) {
 
   // 置顶 / 取消置顶会话（只对自己生效，QQ 右键菜单里的「置顶会话」）
   if (parts[0] === 'chats' && parts[2] === 'pin' && method === 'POST') {
+    const chatId = str(parts[1], 80);
+    const ownerPort = chatOwnerPort(chatId);
+    const body = await readBody(req);
+    if (ownerPort !== PORT) {
+      const relayed = await postShardJson(ownerPort, '/__shard/chat-pin', {
+        chatId,
+        userId: user.id,
+        pinned: body.pinned !== false
+      }, 2500);
+      const data = relayed.payload && relayed.payload.ok && relayed.payload.data;
+      if (!data) return fail(res, relayed.status || 502, '置顶链路暂时不可用');
+      return ok(res, data);
+    }
     refreshChatAccessStateFromDisk(false);
-    const chat = db.chats.find((c) => c.id === parts[1]);
+    const chat = db.chats.find((c) => c.id === chatId);
     if (!chat) return fail(res, 404, '会话不存在');
     if (!chat.memberIds.includes(user.id)) return fail(res, 403, '你不在这个会话里');
-    const body = await readBody(req);
     const set = new Set(chat.pinnedFor || []);
     const hasBot = chat.memberIds.map(findUser).some((u) => u && u.bot);
     if (hasBot) {
@@ -24490,6 +24508,42 @@ async function handleHttpRequest(req, res) {
       }
       handleClientMessage(actor, relaySocket, JSON.stringify(body.payload));
       return ok(res, { accepted: true });
+    }
+    if (parsed.pathname === '/__shard/chat-pin') {
+      if (req.method !== 'POST') return fail(res, 405, 'Method Not Allowed');
+      const supplied = String(req.headers['x-shard-relay'] || '');
+      const expected = String(db.secret || '');
+      const a = Buffer.from(supplied);
+      const b = Buffer.from(expected);
+      if (!expected || a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+        return fail(res, 403, '禁止访问');
+      }
+      const body = await readBody(req);
+      const chatId = str(body.chatId, 80);
+      const userId = str(body.userId, 80);
+      if (!chatId || !userId || chatOwnerPort(chatId) !== PORT) {
+        return fail(res, 422, '置顶会话不属于当前分片');
+      }
+      refreshChatAccessStateFromDisk(false);
+      const chat = db.chats.find((c) => c.id === chatId);
+      if (!chat) return fail(res, 404, '会话不存在');
+      if (!chat.memberIds.includes(userId)) return fail(res, 403, '你不在这个会话里');
+      const set = new Set(chat.pinnedFor || []);
+      const hasBot = chat.memberIds.map(findUser).some((u) => u && u.bot);
+      if (hasBot || body.pinned === true) {
+        set.add(userId);
+      } else {
+        set.delete(userId);
+      }
+      chat.pinnedFor = Array.from(set);
+      saveChats();
+      observeShardShadow('chats.pin', {
+        chatId,
+        ownerId: userId,
+        pinned: chat.pinnedFor.includes(userId),
+        eventId: uid('sh-pin')
+      });
+      return ok(res, { pinned: chat.pinnedFor.includes(userId), forced: hasBot });
     }
     if (parsed.pathname === '/__shard/call-signal') {
       if (req.method !== 'POST') return fail(res, 405, 'Method Not Allowed');
