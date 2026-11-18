@@ -42,7 +42,7 @@ private final class BrandTabBadgeView: UIView {
         switch kind {
         case .count:
             label.isHidden = false
-            label.text = count > 99 ? "99+" : "\(count)"
+            label.text = count > 99 ? "•••" : "\(count)"
             label.font = .systemFont(ofSize: 9.5, weight: .bold)
             gradient.colors = [
                 UIColor(red: 1.00, green: 0.23, blue: 0.19, alpha: 1).cgColor,
@@ -125,7 +125,7 @@ private final class CompactDotTabBar: UITabBar {
             let badge = dot as! BrandTabBadgeView
             let centerX = slot * (CGFloat(index) + 0.5)
             if index == 0, badgeCount > 0 {
-                let title = badgeCount > 99 ? "99+" : "\(badgeCount)"
+                let title = badgeCount > 99 ? "•••" : "\(badgeCount)"
                 let width: CGFloat = title.count > 2 ? 28 : (title.count > 1 ? 23 : 18)
                 badge.frame = CGRect(x: centerX + 8, y: 2,
                                      width: width, height: 18)
@@ -391,7 +391,7 @@ struct NativeTabBar: UIViewRepresentable {
 
     private func refresh(_ bar: UITabBar) {
         guard let items = bar.items, items.count == 5 else { return }
-        items[0].badgeValue = badge > 0 ? (badge > 99 ? "99+" : "\(badge)") : nil
+        items[0].badgeValue = badge > 0 ? (badge > 99 ? "•••" : "\(badge)") : nil
         items[1].badgeValue = contactsDot ? "" : nil
         items[2].badgeValue = nil
         items[3].badgeValue = momentsDot ? "" : nil

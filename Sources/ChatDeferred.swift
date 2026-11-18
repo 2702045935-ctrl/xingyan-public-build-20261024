@@ -5,19 +5,14 @@ struct DeferredChatView: View {
 
     @ObservedObject private var burnFX = BurnFX.shared
     let chat: Chat
-    @State private var ready = false
 
     var body: some View {
         ZStack {
             defaultChatCanvasColor().ignoresSafeArea()
-            if ready {
-                ChatDetailView(chat: chat)
-                    .transition(.opacity)
-            } else {
-
-                chatBackdrop
-                    .ignoresSafeArea()
-            }
+            ChatDetailView(
+                chat: chat,
+                initialMessages: app.prefetched[chat.id] ?? []
+            )
 
             if burnFX.firing {
                 FlameSweepOverlay()
@@ -25,33 +20,5 @@ struct DeferredChatView: View {
                     .transition(.opacity)
             }
         }
-        .task {
-            guard !ready else { return }
-            await Task.yield()
-            ready = true
-        }
-    }
-
-    @ViewBuilder private var chatBackdrop: some View {
-        ZStack {
-            defaultChatCanvasColor()
-            if !bgPath.isEmpty {
-                RemoteImage(path: bgPath)
-                    .id(bgPath)
-            }
-        }
-    }
-
-    private var bgPath: String {
-        let synced = app.me?.chatBackgrounds?[chat.id] ?? ""
-        if !synced.isEmpty, synced != "auto" { return synced }
-        let per = ChatBgStore.shared.get(chat.id)
-        if !per.isEmpty, per != "auto" { return per }
-        let v = effectiveGlobalChatBackground(app.me?.chatBackground)
-        if v.isEmpty || v == "auto" {
-            let def = app.defaultChatBackground
-            return effectiveDefaultChatBackground(def)
-        }
-        return v
     }
 }

@@ -2507,6 +2507,7 @@ struct TapAvatarCard: ViewModifier {
                     ContactCardView(user: u,
                                     onOpenChat: { chat in
                                         cardUser = nil
+                                        app.prepareChatForImmediatePresentation(chat)
                                         nextChat = chat
                                     },
                                     onOpenMoments: { _ in
@@ -2519,7 +2520,7 @@ struct TapAvatarCard: ViewModifier {
                 get: { nextChat != nil },
                 set: { if !$0 { nextChat = nil } }
             )) {
-                if let c = nextChat { ChatDetailView(chat: c) }
+                if let c = nextChat { DeferredChatView(chat: c) }
             }
             .navigationDestination(isPresented: Binding(
                 get: { nextMoments != nil },

@@ -1775,35 +1775,70 @@ struct WalletCardView: View {
 }
 
 struct WorksView: View {
+    @EnvironmentObject private var app: AppState
     @Environment(\.dismiss) private var dismiss
     @State private var works: [FeedItem] = []
+    @State private var likedWorks: [FeedItem] = []
     @State private var playing: FeedItem?
     @State private var loading = true
+    @State private var tab = 0
+    @Environment(\.colorScheme) private var scheme
 
-    private let cols = [GridItem(.flexible(), spacing: 3), GridItem(.flexible(), spacing: 3), GridItem(.flexible(), spacing: 3)]
+    private let cols = Array(
+        repeating: GridItem(.flexible(), spacing: 2),
+        count: 3
+    )
+
+    private var visibleWorks: [FeedItem] {
+        switch tab {
+        case 1: return likedWorks
+        case 2:
+            return works.filter {
+                let tag = (($0.tag ?? "") + " " + ($0.desc ?? "")).lowercased()
+                return tag.contains("private") || tag.contains("draft")
+                    || tag.contains("私密") || tag.contains("草稿")
+            }
+        default: return works
+        }
+    }
+
+    private var totalLikes: Int {
+        works.reduce(0) { $0 + max(0, $1.likes ?? 0) }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
-            NavBar(title: Tr("作品"), back: { dismiss() })
+            topBar
             if loading && works.isEmpty {
                 Spacer(); ProgressView(); Spacer()
-            } else if works.isEmpty {
+            } else if visibleWorks.isEmpty {
                 VStack(spacing: 10) {
                     Spacer()
-                    Image(systemName: "rectangle.stack").font(pf(34)).foregroundColor(C.subLabel)
-                    Text(Tr("还没有作品")).font(pf(15)).foregroundColor(C.subLabel)
+                    Image(systemName: tab == 1 ? "heart" : "rectangle.stack")
+                        .font(.system(size: 34, weight: .light))
+                        .foregroundColor(C.subLabel)
+                    Text(tab == 1 ? Tr("还没有喜欢的作品") : Tr("还没有作品"))
+                        .font(pf(15, .medium))
+                        .foregroundColor(C.subLabel)
                     Spacer()
                 }
                 .frame(maxWidth: .infinity)
             } else {
                 ScrollView {
-                    LazyVGrid(columns: cols, spacing: 3) {
-                        ForEach(works) { w in
-                            Button { playing = w } label: { tile(w) }
-                                .buttonStyle(.plain)
+                    LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
+                        profileHeader
+                        Section {
+                            LazyVGrid(columns: cols, spacing: 2) {
+                                ForEach(visibleWorks) { w in
+                                    Button { playing = w } label: { tile(w) }
+                                        .buttonStyle(.plain)
+                                }
+                            }
+                        } header: {
+                            tabs
                         }
                     }
-                    .padding(.bottom, 20)
+                    .padding(.bottom, 24)
                 }
                 .background(C.pageBg)
             }
@@ -1814,14 +1849,145 @@ struct WorksView: View {
         .swipeBack { dismiss() }
         .hidesTabBar()
         .sheet(item: $playing) { w in
-            FeedPlayerSheet(item: w, all: works)
+            FeedPlayerSheet(item: w, all: visibleWorks)
+                .environmentObject(app)
         }
         .task {
-
-            let mine = (try? await API.shared.myFeedItems()) ?? []
-            works = mine.isEmpty ? ((try? await API.shared.feedItems()) ?? []).filter { $0.mine == true } : mine
+            async let mineRequest = API.shared.myFeedItems()
+            async let allRequest = API.shared.feedItems()
+            let mine = (try? await mineRequest) ?? []
+            let all = (try? await allRequest) ?? []
+            works = mine.isEmpty ? all.filter { $0.mine == true } : mine
+            likedWorks = all.filter { $0.favorited == true }
             loading = false
         }
+    }
+
+    private var topBar: some View {
+        HStack(spacing: 12) {
+            Button { dismiss() } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 19, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 40, height: 40)
+                    .background(.black.opacity(0.28), in: Circle())
+            }
+            .buttonStyle(.plain)
+            Spacer(minLength: 0)
+            Text(Tr("作品"))
+                .font(pf(18, .semibold))
+                .foregroundColor(.white)
+            Spacer(minLength: 0)
+            Menu {
+                Button(Tr("刷新")) {
+                    loading = true
+                    Task { await reload() }
+                }
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 40, height: 40)
+                    .background(.black.opacity(0.28), in: Circle())
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.bottom, 8)
+        .background(Color.black)
+        .zIndex(5)
+    }
+
+    private var profileHeader: some View {
+        ZStack(alignment: .bottomLeading) {
+            LinearGradient(
+                colors: [Color(hex: 0x111214), Color(hex: 0x24262B), Color.black],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            if !(app.me?.avatarPath ?? "").isEmpty {
+                RemoteImage(path: app.me?.avatarPath ?? "", mode: .fill, maxSide: 900)
+                    .scaleEffect(1.35)
+                    .blur(radius: 34)
+                    .opacity(0.30)
+                    .clipped()
+            }
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .bottom, spacing: 14) {
+                    Avatar(path: app.me?.avatarPath ?? "",
+                           size: 84,
+                           radius: 42,
+                           circle: true,
+                           level: GrowthStore.shared.shownLevel)
+                        .overlay(Circle().stroke(.white.opacity(0.9), lineWidth: 3))
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(app.me?.name ?? Tr("星言用户"))
+                            .font(pf(22, .bold))
+                            .foregroundColor(.white)
+                            .lineLimit(1)
+                        Text("@" + (app.me?.username ?? "—"))
+                            .font(pf(12.5, .medium))
+                            .foregroundColor(.white.opacity(0.66))
+                            .lineLimit(1)
+                    }
+                }
+                HStack(spacing: 24) {
+                    stat("\(works.count)", Tr("作品"))
+                    stat("\(totalLikes)", Tr("获赞"))
+                    stat("\(likedWorks.count)", Tr("喜欢"))
+                }
+                let bio = (app.me?.bio ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                Text(bio.isEmpty ? Tr("记录生活，也记录作品") : bio)
+                    .font(pf(13))
+                    .foregroundColor(.white.opacity(0.74))
+                    .lineLimit(2)
+            }
+            .padding(.horizontal, 18)
+            .padding(.top, 20)
+            .padding(.bottom, 20)
+        }
+        .frame(height: 260)
+        .clipped()
+    }
+
+    private func stat(_ value: String, _ title: String) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(value).font(pf(17, .bold)).foregroundColor(.white)
+            Text(title).font(pf(11.5)).foregroundColor(.white.opacity(0.58))
+        }
+    }
+
+    private var tabs: some View {
+        HStack(spacing: 0) {
+            ForEach(Array([Tr("作品"), Tr("喜欢"), Tr("私密")].enumerated()), id: \.offset) { i, title in
+                Button {
+                    withAnimation(.easeOut(duration: 0.16)) { tab = i }
+                } label: {
+                    VStack(spacing: 7) {
+                        Text(title)
+                            .font(pf(14, tab == i ? .semibold : .regular))
+                            .foregroundColor(tab == i ? C.label : C.subLabel)
+                        Capsule()
+                            .fill(tab == i ? C.green : .clear)
+                            .frame(width: 22, height: 2)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(C.pageBg)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .background(C.pageBg)
+    }
+
+    private func reload() async {
+        async let mineRequest = API.shared.myFeedItems()
+        async let allRequest = API.shared.feedItems()
+        let mine = (try? await mineRequest) ?? []
+        let all = (try? await allRequest) ?? []
+        works = mine.isEmpty ? all.filter { $0.mine == true } : mine
+        likedWorks = all.filter { $0.favorited == true }
+        loading = false
     }
 
     private func tile(_ w: FeedItem) -> some View {
@@ -1843,18 +2009,14 @@ struct WorksView: View {
                     Image(systemName: "play.fill").font(.system(size: 10))
                     Text("\(w.likes ?? 0)").font(pf(11.5, .medium))
                     Spacer(minLength: 0)
-                    if w.mine == true {
-                        Text(Tr("我的")).font(pf(10.5)).padding(.horizontal, 5).padding(.vertical, 1)
-                            .background(Capsule().fill(C.green))
-                    }
                 }
                 .foregroundColor(.white)
                 .padding(.horizontal, 6).padding(.vertical, 4)
                 .background(LinearGradient(colors: [.clear, .black.opacity(0.55)], startPoint: .top, endPoint: .bottom))
             }
         }
-        .aspectRatio(1, contentMode: .fill)
-        .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
+        .aspectRatio(0.76, contentMode: .fill)
+        .clipShape(RoundedRectangle(cornerRadius: 2, style: .continuous))
         .contentShape(Rectangle())
     }
 }

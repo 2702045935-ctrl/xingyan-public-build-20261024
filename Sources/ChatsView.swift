@@ -116,6 +116,11 @@ struct RowSwipeCatcher: UIViewRepresentable {
 
         func gestureRecognizer(_ g: UIGestureRecognizer,
                                shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
+            // Tap and horizontal pan are mutually exclusive. Simultaneous
+            // recognition made a short left swipe fire both callbacks, which
+            // closed the actions and then opened the conversation.
+            if g is UIPanGestureRecognizer, other is UITapGestureRecognizer { return false }
+            if g is UITapGestureRecognizer, other is UIPanGestureRecognizer { return false }
             return true
         }
 
@@ -125,8 +130,8 @@ struct RowSwipeCatcher: UIViewRepresentable {
             let t = pan.translation(in: pan.view)
             // 纵向滚动直接让给 UIScrollView。只有明确的横向意图才接管，
             // 避免每行在纵向滚动时继续逐帧判断侧滑。
-            let byVelocity = abs(v.x) >= 32 && abs(v.x) >= abs(v.y) * 1.10
-            let byTranslation = abs(t.x) >= 4 && abs(t.x) >= abs(t.y) * 1.15
+            let byVelocity = abs(v.x) >= 64 && abs(v.x) >= abs(v.y) * 1.20
+            let byTranslation = abs(t.x) >= 8 && abs(t.x) >= abs(t.y) * 1.25
             return byVelocity || byTranslation
         }
     }
@@ -141,7 +146,7 @@ struct RowSwipeCatcher: UIViewRepresentable {
         let pan = UIPanGestureRecognizer(target: context.coordinator,
                                          action: #selector(Coord.handlePan(_:)))
         pan.delegate = context.coordinator
-        pan.cancelsTouchesInView = false
+        pan.cancelsTouchesInView = true
         pan.delaysTouchesBegan = false
         pan.maximumNumberOfTouches = 1
         v.addGestureRecognizer(pan)
@@ -151,6 +156,7 @@ struct RowSwipeCatcher: UIViewRepresentable {
         tap.delegate = context.coordinator
 
         tap.cancelsTouchesInView = false
+        tap.require(toFail: pan)
         v.addGestureRecognizer(tap)
 
         return v
@@ -636,8 +642,14 @@ struct ChatRow: View, Equatable {
 
     @ViewBuilder
     private var unreadAvatarBadge: some View {
-        if chat.unreadCount > 0 {
-            if (chat.muted == true || chat.flagged == true), chat.bot != "qqnews" {
+        if chat.flagged == true, chat.bot != "qqnews" {
+            Image(systemName: "bell.fill")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(ChatListVisual.timeInk)
+                .frame(width: 16, height: 16)
+                .accessibilityLabel(Tr("标为未读"))
+        } else if chat.unreadCount > 0 {
+            if chat.muted == true, chat.bot != "qqnews" {
                 Circle()
                     .fill(ChatListVisual.timeInk)
                     .frame(width: 8, height: 8)
@@ -1436,9 +1448,8 @@ struct ChatsView: View {
         } else if chat.oaDigest == true {
             showOAList = true
         } else {
-            app.withSoftChatTransition {
-                path.append(chat)
-            }
+            app.prepareChatForImmediatePresentation(chat)
+            path.append(chat)
         }
     }
 
@@ -2037,9 +2048,31 @@ struct ChatsView: View {
         return UIConfig.text("officialRowAvatar", "").trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    private func officialRowTimeKey(_ key: String) -> String {
+        "chris.officialConversationTime." + key
+    }
+
+    private func officialRowTime(_ key: String) -> String {
+        let defaultsKey = officialRowTimeKey(key)
+        var stamp = UserDefaults.standard.string(forKey: defaultsKey) ?? ""
+        if stamp.isEmpty {
+            stamp = TimeFmt.isoFrac.string(from: Date())
+            UserDefaults.standard.set(stamp, forKey: defaultsKey)
+        }
+        return TimeFmt.listApple(stamp)
+    }
+
+    private func markOfficialRowTime(_ key: String) {
+        UserDefaults.standard.set(
+            TimeFmt.isoFrac.string(from: Date()),
+            forKey: officialRowTimeKey(key)
+        )
+    }
+
     private var officialConversationRow: some View {
         ZStack(alignment: .trailing) {
             Button {
+                markOfficialRowTime("official")
                 showOfficialConversation = true
             } label: {
                 HStack(spacing: ChatListVisual.avatarGap) {
@@ -2077,10 +2110,10 @@ struct ChatsView: View {
                     Spacer(minLength: 8)
 
                     if app.me?.ops != true {
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(.tertiary)
-                            .padding(.trailing, 2)
+                        Text(officialRowTime("official"))
+                            .font(pfStyled(size: 12, weight: .regular))
+                            .foregroundStyle(ChatListVisual.timeInk)
+                            .lineLimit(1)
                     }
                 }
                 .padding(.leading, ChatListVisual.rowLeading)
@@ -2159,6 +2192,7 @@ struct ChatsView: View {
     private var payOfficialConversationRow: some View {
         ZStack(alignment: .trailing) {
             Button {
+                markOfficialRowTime("pay")
                 showPayOfficial = true
             } label: {
                 HStack(spacing: ChatListVisual.avatarGap) {
@@ -2188,10 +2222,10 @@ struct ChatsView: View {
                     }
                     Spacer(minLength: 8)
                     if app.me?.ops != true {
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(.tertiary)
-                            .padding(.trailing, 2)
+                        Text(officialRowTime("pay"))
+                            .font(pfStyled(size: 12, weight: .regular))
+                            .foregroundStyle(ChatListVisual.timeInk)
+                            .lineLimit(1)
                     }
                 }
                 .padding(.leading, ChatListVisual.rowLeading)
@@ -2238,6 +2272,7 @@ struct ChatsView: View {
     private var weatherConversationRow: some View {
         ZStack(alignment: .trailing) {
             Button {
+                markOfficialRowTime("weather")
                 showWeatherConversation = true
             } label: {
                 HStack(spacing: ChatListVisual.avatarGap) {
@@ -2277,10 +2312,10 @@ struct ChatsView: View {
                     }
                     Spacer(minLength: 8)
                     if app.me?.ops != true {
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(.tertiary)
-                            .padding(.trailing, 2)
+                        Text(officialRowTime("weather"))
+                            .font(pfStyled(size: 12, weight: .regular))
+                            .foregroundStyle(ChatListVisual.timeInk)
+                            .lineLimit(1)
                     }
                 }
                 .padding(.leading, ChatListVisual.rowLeading)
@@ -2340,12 +2375,12 @@ struct ChatsView: View {
             NativeChatEntry(
                 id: "official",
                 kind: .official,
-                signature: "\(appearance)-\(officialRowName)-\(officialRowSubtitle)-\(officialRowAvatar)-\(app.me?.ops == true)"
+                signature: "\(appearance)-\(officialRowName)-\(officialRowSubtitle)-\(officialRowAvatar)-\(officialRowTime("official"))-\(app.me?.ops == true)"
             ),
             NativeChatEntry(
                 id: "pay",
                 kind: .pay,
-                signature: "\(appearance)-\(payOfficialRowName)-\(payOfficialRowSubtitle)-\(payOfficialRowAvatar)-\(app.me?.ops == true)"
+                signature: "\(appearance)-\(payOfficialRowName)-\(payOfficialRowSubtitle)-\(payOfficialRowAvatar)-\(officialRowTime("pay"))-\(app.me?.ops == true)"
             )
         ]
 
@@ -2369,7 +2404,7 @@ struct ChatsView: View {
         entries.append(NativeChatEntry(
             id: "weather",
             kind: .weather,
-            signature: "\(appearance)-\(weatherRowName)-\(weatherRowSubtitle)-\(weatherRowAvatar)-\(app.me?.ops == true)"
+            signature: "\(appearance)-\(weatherRowName)-\(weatherRowSubtitle)-\(weatherRowAvatar)-\(officialRowTime("weather"))-\(app.me?.ops == true)"
         ))
         entries.append(NativeChatEntry(
             id: "bottom",
@@ -2551,7 +2586,8 @@ struct ChatsView: View {
             showOnline: !isGroup && peer?.online == true || groupHasOnline,
             moodIcon: chat.moodIcon ?? "",
             unread: chat.unreadCount,
-            unreadMuted: chat.muted == true || chat.flagged == true,
+            unreadMuted: chat.muted == true,
+            isManuallyUnread: chat.flagged == true,
             levelText: levelText,
             memberText: chat.memberShort ?? "",
             memberColor: memberColor,
@@ -2776,9 +2812,8 @@ struct ChatsView: View {
             .background(chatsPageFill.ignoresSafeArea(edges: .bottom))
             .fullScreenCover(isPresented: $showSearch) {
                 SearchPage(onOpenChat: { c in
-                    app.withSoftChatTransition {
-                        path.append(c)
-                    }
+                    app.prepareChatForImmediatePresentation(c)
+                    path.append(c)
                 })
                     .environmentObject(app)
             }
@@ -3148,9 +3183,8 @@ struct ChatsView: View {
             CrashCatcher.note("推送", "交给会话列表打开 " + id)
 
             try? await Task.sleep(nanoseconds: 350_000_000)
-            app.withSoftChatTransition {
-                path.append(c)
-            }
+            app.prepareChatForImmediatePresentation(c)
+            path.append(c)
         }
     }
 }

@@ -216,7 +216,7 @@ struct MainTabView: View {
         .fullScreenCover(item: $app.openChat) { c in
 
             NavigationStack {
-                ChatDetailView(chat: c).environmentObject(app)
+                DeferredChatView(chat: c).environmentObject(app)
             }
 
             .overlay(MiniPlayerBall())
@@ -414,7 +414,7 @@ private struct XingyanTabCountBadge: View {
     @Environment(\.colorScheme) private var scheme
 
     var body: some View {
-        Text(count > 99 ? "99+" : "\(count)")
+        Text(count > 99 ? "•••" : "\(count)")
             .font(pf(10.5, .bold))
             .foregroundStyle(.white)
             .lineLimit(1)

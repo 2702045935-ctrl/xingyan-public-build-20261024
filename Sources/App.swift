@@ -252,15 +252,33 @@ final class AppState: ObservableObject {
     @Published var scanWebURL: String?
     @Published var scanTextResult: String?
 
-    @Published var openChat: Chat?
+    @Published var openChat: Chat? {
+        didSet {
+            if let chat = openChat {
+                prepareChatForImmediatePresentation(chat)
+            }
+        }
+    }
 
     @Published var pendingPushChatId: String?
 
     @Published var wantChatsTab = false
 
     func openChatViaList(_ c: Chat) {
+        prepareChatForImmediatePresentation(c)
         wantChatsTab = true
         pendingPushChatId = c.id
+    }
+
+    /// Navigation must have message pixels available on its first frame. Pull
+    /// the local snapshot into memory before the destination is pushed, while
+    /// the tap pressing the source row is still visible on screen.
+    func prepareChatForImmediatePresentation(_ chat: Chat) {
+        guard prefetched[chat.id]?.isEmpty != false else { return }
+        let cached = LocalStore.cachedChat(chat.id)
+        if !cached.isEmpty {
+            prefetched[chat.id] = cached
+        }
     }
 
     func returnToChatsList() {
@@ -569,6 +587,11 @@ final class AppState: ObservableObject {
             }
             coalesce { [weak self] in
                 await self?.loadChats()
+            }
+        case "read":
+            if !ev.chatId.isEmpty {
+                markChatReadLocally(ev.chatId)
+                coalesce { [weak self] in await self?.loadChats() }
             }
         case "sync":
             if ev.action == "read", !ev.chatId.isEmpty {
@@ -1374,7 +1397,11 @@ final class AppState: ObservableObject {
                阅读游标的旧快照。短时间内必须保留本地较大的未读数，否则红点会闪一下消失。 */
             if let stamp, now.timeIntervalSince(stamp) < 90,
                local.unreadCount > out.unreadCount {
-                out.unread = local.unreadCount
+                let sameLast = !(server.lastMessage?.id ?? "").isEmpty
+                    && server.lastMessage?.id == local.lastMessage?.id
+                if !sameLast || now.timeIntervalSince(stamp) < 2 {
+                    out.unread = local.unreadCount
+                }
             }
             if let stamp = optimisticAt[server.id], now.timeIntervalSince(stamp) < 86_400,
                serverCaughtUp(server, local: local) {
@@ -3690,7 +3717,7 @@ struct RegisterSheet: View {
         case account, phone
     }
 
-    @State private var mode: Mode = .phone
+    @State private var mode: Mode = .account
     @State private var username = ""
     @State private var nickname = ""
     @State private var password = ""
@@ -3726,7 +3753,9 @@ struct RegisterSheet: View {
         case .account:
             return validUsername
                 && password.count >= 6
-                && (!needsManualCaptcha || (!captchaId.isEmpty && !captcha.isEmpty))
+                && validPhone
+                && codeSent
+                && code.count == 6
         case .phone:
             return validPhone && codeSent && code.count == 6
         }
@@ -3753,6 +3782,7 @@ struct RegisterSheet: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 18) {
                     registrationHeader
+                    registrationModeTabs
 
                     Group {
                         if mode == .account {
@@ -3775,7 +3805,7 @@ struct RegisterSheet: View {
                     HStack(spacing: 7) {
                         Image(systemName: "lock.shield.fill")
                         Text(mode == .account
-                             ? Tr("密码只以加密哈希保存，仅异常注册才需要安全验证")
+                             ? Tr("密码只保存加密哈希，短信验证仅用于本次注册")
                              : Tr("验证码仅用于本次注册 · 加密传输"))
                     }
                     .font(pfStyled(size: 11.5))
@@ -3830,7 +3860,7 @@ struct RegisterSheet: View {
                 Text((Lang.isEnglish || Lang.isRussian) ? "Star chat" : "星言")
                     .font(pfStyled(size: 25, weight: .bold))
                     .foregroundColor(C.label)
-                Text(Tr("用手机号快速创建，注册后可完善资料"))
+                Text(Tr("用星言号或手机号创建，短信验证后即可登录"))
                     .font(pfStyled(size: 13))
                     .foregroundColor(C.subLabel)
                     .multilineTextAlignment(.center)
@@ -3844,7 +3874,11 @@ struct RegisterSheet: View {
 
     private var registrationModeTabs: some View {
         HStack(spacing: 24) {
-            registrationTab(Tr("手机号注册"), selected: true) {
+            registrationTab(Tr("星言号注册"), selected: mode == .account) {
+                mode = .account
+                error = nil
+            }
+            registrationTab(Tr("手机号注册"), selected: mode == .phone) {
                 mode = .phone
                 error = nil
             }
@@ -3924,6 +3958,17 @@ struct RegisterSheet: View {
                 }
             }
 
+            registrationField(Tr("昵称")) {
+                TextField(Tr("可留空，默认使用星言号"), text: $nickname)
+                    .focused($focus, equals: .nickname)
+                    .onChange(of: nickname) { value in
+                        nickname = String(value.prefix(24))
+                        error = nil
+                    }
+            }
+
+            accountPhoneFields
+
             if needsManualCaptcha {
                 VStack(alignment: .leading, spacing: 7) {
                     Text(Tr("安全验证"))
@@ -3975,11 +4020,53 @@ struct RegisterSheet: View {
                     }
                 }
             } else {
-                Text(Tr("首次注册只需星言号和密码；昵称可直接使用星言号。"))
+                Text(Tr("星言号、密码和手机号短信验证即可注册，不显示图形字母验证码。"))
                     .font(pfStyled(size: 11.5))
                     .foregroundColor(C.subLabel)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.leading, 2)
+            }
+        }
+    }
+
+    private var accountPhoneFields: some View {
+        Group {
+            registrationField(Tr("手机号")) {
+                HStack(spacing: 10) {
+                    Text("+86").foregroundColor(C.label)
+                    Rectangle()
+                        .fill(registrationLine)
+                        .frame(width: 0.7, height: 20)
+                    TextField(Tr("请输入手机号"), text: $phone)
+                        .keyboardType(.phonePad)
+                        .textContentType(.telephoneNumber)
+                        .focused($focus, equals: .phone)
+                        .onChange(of: phone) { value in
+                            phone = String(value.filter(\.isNumber).prefix(11))
+                            error = nil
+                        }
+                }
+            }
+
+            registrationField(Tr("短信验证码")) {
+                HStack(spacing: 10) {
+                    TextField(Tr("6 位短信验证码"), text: $code)
+                        .keyboardType(.numberPad)
+                        .textContentType(.oneTimeCode)
+                        .focused($focus, equals: .code)
+                        .onChange(of: code) { value in
+                            code = String(value.filter(\.isNumber).prefix(6))
+                            error = nil
+                        }
+                    Button(countdown > 0
+                           ? "\(countdown) 秒"
+                           : (codeSent ? Tr("重新获取") : Tr("获取验证码"))) {
+                        requestCode()
+                    }
+                    .font(pfStyled(13.5, .medium))
+                    .foregroundColor(canRequestCode ? registrationGreen : C.subLabel)
+                    .disabled(!canRequestCode)
+                }
             }
         }
     }
@@ -4140,10 +4227,11 @@ struct RegisterSheet: View {
                     let user = try await API.shared.register(
                         username: account,
                         password: password,
-                        nickname: "",
-                        phone: "",
-                        captchaId: captchaId,
-                        captcha: captcha
+                        nickname: nickname,
+                        phone: phone,
+                        smsCode: code,
+                        requirePhoneCode: true,
+                        quick: true
                     )
                     UserDefaults.standard.set(account, forKey: "chris.lastUser")
                     await app.adoptRegistered(user)
@@ -4156,10 +4244,6 @@ struct RegisterSheet: View {
             } catch {
                 let text = (error as? APIError)?.errorDescription ?? "注册失败"
                 self.error = text
-                if mode == .account && text.contains("验证码") {
-                    needsManualCaptcha = true
-                    loadCaptcha(clearError: false)
-                }
             }
             busy = false
         }

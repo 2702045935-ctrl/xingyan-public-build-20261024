@@ -27,6 +27,7 @@ const { resolveTopology } = require('./lib/shard-topology');
 const { loadManifest, assertRunningShard } = require('./lib/shard-runtime-manifest');
 const { loadChatRoutePlan, chatOwnerShard } = require('./lib/chat-route-plan');
 const { resolveRoute, parseOwnerPorts } = require('./lib/shard-route-plan');
+const { pairKey } = require('./lib/shard-domain');
 const {
   FROZEN_TARGET: SHARD_MAINTENANCE_TARGET,
   READY_CHECKLIST: SHARD_READY_CHECKLIST,
@@ -6909,7 +6910,7 @@ function currentUser(req) {
   if (!data) return null;
   // 其它分片可能刚改过头像、资料、封面或壁纸；认证后先按共享文件的版本刷新。
   refreshUsersFromDisk(false);
-  const user = db.users.find((u) => u.id === data.sub) || null;
+  const user = findUser(data.sub) || null;
   if (!user) return null;
   // 会话版本对不上说明密码改过 / 在其他设备点了「退出其他设备」
   if ((data.v || 0) !== (user.tokenVersion || 0)) return null;
@@ -6932,7 +6933,51 @@ function sessionCookie(token, maxAgeSeconds) {
 /* -------------------------------------------------------------- 关系与视图 */
 
 const remoteCallUsers = new Map();
+let remoteUserCacheLoaded = false;
+const remoteUsers = new Map();
+
+function cacheUserRecord(user) {
+  if (!user || !user.id) return null;
+  const copy = Object.assign({}, user);
+  [
+    'salt', 'passwordHash', 'password', 'phone', 'realName',
+    'idCardHash', 'idCardMask', 'bankCards'
+  ].forEach((key) => { delete copy[key]; });
+  return copy;
+}
+
+function loadUserCache() {
+  if (remoteUserCacheLoaded) return;
+  remoteUserCacheLoaded = true;
+  try {
+    const payload = readJson(path.join(DATA_DIR, 'user-cache.json'), { users: [] });
+    (Array.isArray(payload.users) ? payload.users : []).forEach((user) => {
+      const cached = cacheUserRecord(user);
+      if (cached) remoteUsers.set(cached.id, cached);
+    });
+  } catch (_) { /* cache is optional */ }
+}
+
+function saveUserCache() {
+  writeJson(path.join(DATA_DIR, 'user-cache.json'), {
+    users: Array.from(remoteUsers.values())
+  });
+}
+
+function rememberCachedUsers(users) {
+  loadUserCache();
+  let changed = false;
+  (users || []).forEach((user) => {
+    const cached = cacheUserRecord(user);
+    if (!cached) return;
+    remoteUsers.set(cached.id, cached);
+    changed = true;
+  });
+  if (changed) saveUserCache();
+}
+
 const findUser = (id) => db.users.find((u) => u.id === id)
+  || (loadUserCache(), remoteUsers.get(String(id || '')))
   || remoteCallUsers.get(String(id || '')) || null;
 setInterval(() => {
   const cutoff = Date.now() - 10 * 60 * 1000;
@@ -6943,8 +6988,14 @@ setInterval(() => {
 
 function findUserByName(username) {
   const key = String(username || '').toLowerCase();
-  return db.users.find((u) => u.username.toLowerCase() === key) || null;
-}/** 登录凭证必须来自用户 owner 分片的完整记录，不能使用脱敏展示缓存。 */
+  loadUserCache();
+  return db.users.find((u) => String(u.username || '').toLowerCase() === key)
+    || Array.from(remoteUsers.values())
+      .find((u) => String(u.username || '').toLowerCase() === key)
+    || null;
+}
+
+/** 登录凭证必须来自用户 owner 分片的完整记录，不能使用脱敏展示缓存。 */
 async function lookupCredentialUserByUsername(username) {
   const key = String(username || '').trim().toLowerCase();
   if (!key) return null;
@@ -7011,15 +7062,69 @@ function usernameChangeTimes(user) {
 
 function friendshipBetween(a, b) {
   refreshFriendshipsFromDisk(false);
-  return db.friendships.find((f) =>
+  return friendshipRowsForUser(a).find((f) =>
     (f.fromId === a && f.toId === b) || (f.fromId === b && f.toId === a)) || null;
 }
 
 function friendIds(userId) {
   refreshFriendshipsFromDisk(false);
-  return db.friendships
+  return friendshipRowsForUser(userId)
     .filter((f) => f.status === 'accepted' && (f.fromId === userId || f.toId === userId))
     .map((f) => (f.fromId === userId ? f.toId : f.fromId));
+}
+
+let remoteFriendshipCacheLoaded = false;
+const remoteFriendships = new Map();
+
+function friendshipCacheKey(friendship) {
+  if (!friendship || !friendship.fromId || !friendship.toId) return '';
+  return pairKey(friendship.fromId, friendship.toId);
+}
+
+function loadRemoteFriendshipCache() {
+  if (remoteFriendshipCacheLoaded) return;
+  remoteFriendshipCacheLoaded = true;
+  try {
+    const payload = readJson(path.join(DATA_DIR, 'friendship-cache.json'), { friendships: [] });
+    (Array.isArray(payload.friendships) ? payload.friendships : []).forEach((friendship) => {
+      const key = friendshipCacheKey(friendship);
+      if (key) remoteFriendships.set(key, friendship);
+    });
+  } catch (_) { /* cache is optional */ }
+}
+
+function saveRemoteFriendshipCache() {
+  writeJson(path.join(DATA_DIR, 'friendship-cache.json'), {
+    friendships: Array.from(remoteFriendships.values())
+  });
+  friendSetCache.clear();
+}
+
+function upsertRemoteFriendship(friendship, deleted) {
+  loadRemoteFriendshipCache();
+  const key = friendshipCacheKey(friendship);
+  if (!key) return false;
+  if (deleted) remoteFriendships.delete(key);
+  else remoteFriendships.set(key, friendship);
+  saveRemoteFriendshipCache();
+  forgetFriendSetCache(friendship.fromId, friendship.toId);
+  return true;
+}
+
+function friendshipRowsForUser(userId) {
+  loadRemoteFriendshipCache();
+  const rows = new Map();
+  db.friendships.forEach((friendship) => {
+    if (!friendship || (friendship.fromId !== userId && friendship.toId !== userId)) return;
+    const key = friendshipCacheKey(friendship);
+    if (key) rows.set(key, friendship);
+  });
+  remoteFriendships.forEach((friendship) => {
+    if (!friendship || (friendship.fromId !== userId && friendship.toId !== userId)) return;
+    const key = friendshipCacheKey(friendship);
+    if (key && !rows.has(key)) rows.set(key, friendship);
+  });
+  return Array.from(rows.values());
 }
 
 /* 意见反馈：一行一条 JSONL（data/feedback.jsonl）。
@@ -7202,6 +7307,41 @@ function openChatForFriendship(aId, bId) {
     return exist;
   }
   return createDirectChat(aId, bId);
+}
+
+function directChatIdForPair(aId, bId) {
+  const digest = crypto.createHash('sha256')
+    .update(pairKey(aId, bId))
+    .digest('hex')
+    .slice(0, 16);
+  return 'c_direct_' + digest;
+}
+
+async function openChatForFriendshipAnywhere(aId, bId, actor, target) {
+  const existing = directChatBetween(aId, bId);
+  if (existing) return openChatForFriendship(aId, bId);
+  const chatId = directChatIdForPair(aId, bId);
+  for (let attempt = 0; attempt < 1; attempt += 1) {
+    const ownerPort = chatOwnerPort(chatId);
+    if (ownerPort === PORT) {
+      rememberRemoteUser(actor);
+      rememberRemoteUser(target);
+      return openChatForFriendship(aId, bId);
+    }
+    const result = await postShardJson(ownerPort, '/__shard/open-direct-chat', {
+      planHash: chatRoutePlan && chatRoutePlan.hash,
+      fileSha256: chatRoutePlan && chatRoutePlan.fileHash,
+      chatId,
+      aId: String(aId || ''),
+      bId: String(bId || ''),
+      actor: actor || null,
+      target: target || null
+    }, 2200);
+    const chat = result.payload && result.payload.ok && result.payload.data
+      && result.payload.data.chat;
+    if (chat) return chat;
+  }
+  return null;
 }
 
 // 删掉会话只是「对我隐藏」，对方那边不受影响；来了新消息会自动回到列表
@@ -7896,12 +8036,179 @@ function chatOwnerPort(chatId) {
   return chatOwnerPorts[chatOwnerShard(chatRoutePlan, chatId, count)];
 }
 
+function routeOwnerPort(kind, id) {
+  if (!chatRoutePlan) return PORT;
+  const shard = resolveRoute(chatRoutePlan, kind, String(id || ''));
+  return chatOwnerPorts[shard] || PORT;
+}
+
+function friendshipOwnerPort(a, b) {
+  return routeOwnerPort('friendship', pairKey(a, b));
+}
+
+function postShardJson(port, pathname, body, timeoutMs) {
+  return new Promise((resolve) => {
+    const text = JSON.stringify(body || {});
+    const request = http.request({
+      host: '127.0.0.1',
+      port,
+      path: pathname,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(text),
+        'X-Shard-Relay': db.secret || ''
+      }
+    }, (response) => {
+      const chunks = [];
+      response.on('data', (chunk) => chunks.push(chunk));
+      response.on('end', () => {
+        try {
+          const payload = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+          resolve({ status: response.statusCode || 0, payload });
+        } catch (_) {
+          resolve({ status: response.statusCode || 0, payload: null });
+        }
+      });
+    });
+    request.setTimeout(Math.max(250, Number(timeoutMs) || 1800), () => request.destroy());
+    request.on('error', () => resolve({ status: 0, payload: null }));
+    request.end(text);
+  });
+}
+
+function rememberRemoteUser(user) {
+  if (!user || !user.id) return null;
+  remoteCallUsers.set(String(user.id), Object.assign({}, user, {
+    __remoteAt: Date.now(),
+    __remoteCall: true
+  }));
+  return user;
+}
+
+async function lookupRemoteUserById(userId) {
+  if (!userId) return null;
+  const local = db.users.find((row) => row && row.id === userId);
+  if (local) return local;
+  const port = routeOwnerPort('user', userId);
+  if (!port || port === PORT) return null;
+  const result = await postShardJson(port, '/__shard/user-lookup', {
+    planHash: chatRoutePlan && chatRoutePlan.hash,
+    fileSha256: chatRoutePlan && chatRoutePlan.fileHash,
+    userId
+  }, 1800);
+  const user = result.payload && result.payload.ok && result.payload.data
+    && result.payload.data.user;
+  return rememberRemoteUser(user);
+}
+
+async function lookupRemoteUserByUsername(username) {
+  const key = String(username || '').trim().toLowerCase();
+  const local = db.users.find((row) =>
+    row && String(row.username || '').toLowerCase() === key);
+  if (local) return local;
+  const results = await Promise.all(chatOwnerPorts.map(async (port) => {
+    if (!port || port === PORT) return null;
+    const result = await postShardJson(port, '/__shard/user-lookup', {
+      planHash: chatRoutePlan && chatRoutePlan.hash,
+      fileSha256: chatRoutePlan && chatRoutePlan.fileHash,
+      username: String(username || '')
+    }, 1800);
+    return result.payload && result.payload.ok && result.payload.data
+      ? result.payload.data.user : null;
+  }));
+  for (const user of results) {
+    if (user) return rememberRemoteUser(user);
+  }
+  return null;
+}
+
+async function syncFriendshipCacheFromOwners(userIds) {
+  const ids = Array.from(new Set((userIds || []).map(String).filter(Boolean)));
+  if (!ids.length) return;
+  const results = await Promise.all(chatOwnerPorts.map(async (port) => {
+    if (!port || port === PORT) return [];
+    const result = await postShardJson(port, '/__shard/friend-list', {
+      planHash: chatRoutePlan && chatRoutePlan.hash,
+      fileSha256: chatRoutePlan && chatRoutePlan.fileHash,
+      userIds: ids
+    }, 1800);
+    return result.payload && result.payload.ok && result.payload.data
+      && Array.isArray(result.payload.data.friendships)
+      ? result.payload.data.friendships : [];
+  }));
+  loadRemoteFriendshipCache();
+  let changed = false;
+  results.flat().forEach((friendship) => {
+    const key = friendshipCacheKey(friendship);
+    if (!key) return;
+    remoteFriendships.set(key, friendship);
+    changed = true;
+  });
+  if (changed) saveRemoteFriendshipCache();
+}
+
+async function syncUserCacheFromOwners() {
+  const results = await Promise.all(chatOwnerPorts.map(async (port) => {
+    if (!port || port === PORT) return db.users;
+    const result = await postShardJson(port, '/__shard/user-export', {
+      planHash: chatRoutePlan && chatRoutePlan.hash,
+      fileSha256: chatRoutePlan && chatRoutePlan.fileHash
+    }, 2200);
+    return result.payload && result.payload.ok && result.payload.data
+      && Array.isArray(result.payload.data.users)
+      ? result.payload.data.users : [];
+  }));
+  rememberCachedUsers(results.flat());
+}
+
+async function broadcastFriendshipCache(friendship, deleted) {
+  loadRemoteFriendshipCache();
+  const key = friendshipCacheKey(friendship);
+  if (key) {
+    if (deleted) remoteFriendships.delete(key);
+    else remoteFriendships.set(key, friendship);
+    saveRemoteFriendshipCache();
+  }
+  await Promise.all(chatOwnerPorts.map((port) => {
+    if (!port || port === PORT) return Promise.resolve();
+    return postShardJson(port, '/__shard/friend-cache', {
+      planHash: chatRoutePlan && chatRoutePlan.hash,
+      fileSha256: chatRoutePlan && chatRoutePlan.fileHash,
+      friendship,
+      deleted: !!deleted
+    }, 1200);
+  }));
+}
+
+async function persistFriendshipOnOwner(friendship, deleted) {
+  if (!friendship || !friendship.fromId || !friendship.toId) return false;
+  const ownerPort = friendshipOwnerPort(friendship.fromId, friendship.toId);
+  if (ownerPort !== PORT) {
+    const result = await postShardJson(ownerPort, '/__shard/friend-upsert', {
+      planHash: chatRoutePlan && chatRoutePlan.hash,
+      fileSha256: chatRoutePlan && chatRoutePlan.fileHash,
+      friendship,
+      deleted: !!deleted
+    }, 2000);
+    if (!result.payload || !result.payload.ok) return false;
+  }
+  const pair = pairKey(friendship.fromId, friendship.toId);
+  db.friendships = db.friendships.filter((row) => row
+    && pairKey(row.fromId, row.toId) !== pair);
+  if (!deleted && ownerPort === PORT) db.friendships.push(friendship);
+  saveFriendships();
+  await broadcastFriendshipCache(friendship, deleted);
+  return true;
+}
+
 function forwardChatActionToOwner(actorId, msg, socket) {
   const ownerPort = chatOwnerPort(msg.chatId);
   if (!ownerPort || ownerPort === PORT) return false;
   chatOwnerForwardCount += 1;
   const body = JSON.stringify({
     actorId: String(actorId || ''),
+    actor: findUser(actorId) || null,
     deviceId: String(socket && socket.__deviceId || ''),
     appBuild: String(socket && socket.__appBuild || ''),
     deviceKind: String(socket && socket.__kind || ''),
@@ -8083,6 +8390,14 @@ function syncPresenceFromPeers() {
 
 setTimeout(syncPresenceFromPeers, 1200).unref();
 setInterval(syncPresenceFromPeers, 15000).unref();
+setTimeout(() => {
+  syncFriendshipCacheFromOwners(db.users.map((row) => row && row.id)).catch(() => {});
+}, 1500).unref();
+setInterval(() => {
+  syncFriendshipCacheFromOwners(db.users.map((row) => row && row.id)).catch(() => {});
+}, 60000).unref();
+setTimeout(() => { syncUserCacheFromOwners().catch(() => {}); }, 1000).unref();
+setInterval(() => { syncUserCacheFromOwners().catch(() => {}); }, 60000).unref();
 
 /** 给所有在线的人发一条（配置变更之类的全局通知） */
 function sendToAll(payload) {
@@ -8875,7 +9190,7 @@ function callSend(userId, payload) {
   return sent;
 }
 
-function publishReadCursor(chat, user, seq) {
+async function publishReadCursor(chat, user, seq) {
   const value = Math.max(0, Math.floor(Number(seq) || 0));
   const payload = {
     type: 'sync',
@@ -8898,6 +9213,15 @@ function publishReadCursor(chat, user, seq) {
       chatId: chat.id,
       userId: user.id,
       readSeq: value
+    });
+  }
+  const userOwnerPort = routeOwnerPort('user', user.id);
+  if (userOwnerPort && userOwnerPort !== PORT) {
+    await postShardJson(userOwnerPort, '/__shard/read-cursor', {
+      userId: user.id,
+      chatId: chat.id,
+      seq: value,
+      flagged: false
     });
   }
 }
@@ -9139,7 +9463,8 @@ function handleClientMessage(user, socket, raw) {
         messageReliability.markDeviceRead(user.id, socket.__deviceId, chat.id, lastSeq);
       }
     }
-    publishReadCursor(chat, user, lastSeq);
+    void publishReadCursor(chat, user, lastSeq).catch(() => {});
+    sendTo(user.id, { type: 'read', chatId: chat.id, seq: lastSeq });
     return;
   }
 
@@ -17056,13 +17381,26 @@ async function handleApi(req, res, pathname, query) {
     if (password.length < 6) return fail(res, 422, '密码至少 6 位');
     const phone = str(body.phone, 20);
     if (phone && !/^[0-9+\-\s]{5,20}$/.test(phone)) return fail(res, 422, '手机号格式不正确（也可以留空）');
+    let smsVerified = false;
+    if (body.requirePhoneCode === true) {
+      const normalized = normalizePhone(phone);
+      const rec = phoneCodes.get(normalized);
+      if (!normalized || !rec || rec.expiresAt < Date.now()) {
+        return fail(res, 422, '请先获取短信验证码');
+      }
+      if (rec.code !== str(body.code, 8)) return fail(res, 401, '短信验证码不对');
+      if (db.users.some((u) => normalizePhone(u.phone) === normalized)) {
+        return fail(res, 409, '这个手机号已经绑定过账号');
+      }
+      smsVerified = true;
+    }
     const ip = clientInfo(req).ip;
     const signupCount = signupSameIpCount(ip);
     const thresholds = imAdminCfg().thresholds || {};
     const signupLimit = Math.max(1, Number(thresholds.registerPerIpPerDay) || 5);
     if (signupCount >= signupLimit) return fail(res, 429, '这个网络今天注册的账号太多了，请明天再试');
     const quick = body.quick === true && signupCount < 2;
-    if (!quick && !checkCaptcha(body.captchaId, body.captcha)) {
+    if (!quick && !smsVerified && !checkCaptcha(body.captchaId, body.captcha)) {
       return fail(res, 422, '为了账号安全，请完成图形验证码');
     }
     if (findUserByName(username)) return fail(res, 409, '该用户名已被占用');
@@ -17082,6 +17420,7 @@ async function handleApi(req, res, pathname, query) {
       createdAt: now()
     };
     db.users.push(user);
+    if (smsVerified) phoneCodes.delete(normalizePhone(phone));
     saveUsers();
     attachBotsFor(user);      // 新用户也要有机器人（朋友 + 欢迎会话），否则会话列表是空的
     noteSignupRisk(user, req);   // 风控：同 IP 批量注册（要在记安全事件之前算，才算得准）
@@ -20729,6 +21068,13 @@ async function handleApi(req, res, pathname, query) {
 
   if (parts[0] === 'contacts' && method === 'GET') {
     refreshFriendshipsFromDisk(false);
+    await syncFriendshipCacheFromOwners([user.id]);
+    const relationRows = friendshipRowsForUser(user.id);
+    const relatedIds = relationRows.map((f) =>
+      f.fromId === user.id ? f.toId : f.fromId).filter(Boolean);
+    await Promise.all(Array.from(new Set(relatedIds)).map(async (id) => {
+      if (!findUser(id)) await lookupRemoteUserById(id);
+    }));
     const online = onlineUserIds();
     /* 公众号**不算好友**：微信里它们只出现在「通讯录 → 公众号」和会话列表，
        不会混进 A-Z 好友列表（用户反馈的「你又造了 2 个机器人出来」就是这个）。 */
@@ -20750,12 +21096,12 @@ async function handleApi(req, res, pathname, query) {
         , qqLevel: qqLevelFor(id)          // 通讯录里昵称后面挂等级图标（QQ 那套）
       }, (m.remark && String(m.remark).trim()) ? { nickname: String(m.remark).trim() } : {});
     }).filter(Boolean);
-    const incoming = db.friendships
+    const incoming = relationRows
       .filter((f) => f.toId === user.id && f.status === 'pending')
       .map((f) => Object.assign({ requestId: f.id, createdAt: f.createdAt, requestMessage: f.note || '' },
         publicUserBrief(findUser(f.fromId), user.id)))
       .filter((u) => u && u.id);
-    const outgoing = db.friendships
+    const outgoing = relationRows
       .filter((f) => f.fromId === user.id && f.status === 'pending')
       .map((f) => Object.assign({ requestId: f.id, createdAt: f.createdAt, requestMessage: f.note || '' },
         publicUserBrief(findUser(f.toId), user.id)))
@@ -20765,7 +21111,7 @@ async function handleApi(req, res, pathname, query) {
        结果「我加了别人、对方同意了」这种情况在我这边根本不出现 ——
        申请已经不是 pending，又不进「已添加」，那一行就凭空消失了
        （用户反馈的「新的朋友已经接受了但还是没刷新」就是这个）。 */
-    const added = db.friendships
+    const added = relationRows
       .filter((f) => f.status === 'accepted'
         && (f.toId === user.id || f.fromId === user.id)
         && (Date.parse(f.respondedAt || f.createdAt) || 0) > Date.now() - 3 * 86400000)
@@ -20791,7 +21137,9 @@ async function handleApi(req, res, pathname, query) {
 
   if (parts[0] === 'friends' && parts[1] === 'request' && method === 'POST') {
     const body = await readBody(req);
-    const target = str(body.username, 24) ? findUserByName(body.username) : findUser(str(body.userId, 40));
+    const target = str(body.username, 24)
+      ? await lookupRemoteUserByUsername(body.username)
+      : await lookupRemoteUserById(str(body.userId, 40));
     if (!target) return fail(res, 404, '用户不存在');
     if (target.id === user.id) return fail(res, 422, '不能添加自己');
     if (blockedByUser(user.id, target.id)) {
@@ -20815,13 +21163,20 @@ async function handleApi(req, res, pathname, query) {
       if (exist.fromId === user.id) return fail(res, 409, '已经发送过好友请求');
       exist.status = 'accepted';
       exist.respondedAt = now();
-      saveFriendships();
+      if (!await persistFriendshipOnOwner(exist, false)) {
+        return fail(res, 503, '好友分片暂时不可用，请稍后重试');
+      }
       clearFriendRemoved(exist.fromId, exist.toId);
       forgetFriendSetCache(exist.fromId, exist.toId);
       clearStrangerMessagesBetween(exist.fromId, exist.toId);
       observeShardShadow('friends.request', { friendship: exist, accept: true });
       /* 互相加好友（对方先加过我）：同样立刻在两个人的「微信」首页开出会话 */
-      const c2 = openChatForFriendship(exist.fromId, exist.toId);
+      const c2 = await openChatForFriendshipAnywhere(
+        exist.fromId,
+        exist.toId,
+        findUser(exist.fromId),
+        findUser(exist.toId)
+      );
       if (c2) pushRelationMessage(c2, '你们已成为好友，现在可以开始聊天了',
         'friend_added', user.id, target.id);
       sendTo(target.id, { type: 'friend', action: 'accepted', user: publicUser(user) });
@@ -20835,12 +21190,19 @@ async function handleApi(req, res, pathname, query) {
       const auto = { id: uid('f'), fromId: target.id, toId: user.id, status: 'accepted', createdAt: now(),
         respondedAt: now() };
       db.friendships.push(auto);
-      saveFriendships();
+      if (!await persistFriendshipOnOwner(auto, false)) {
+        return fail(res, 503, '好友分片暂时不可用，请稍后重试');
+      }
       clearFriendRemoved(target.id, user.id);
       forgetFriendSetCache(target.id, user.id);
       clearStrangerMessagesBetween(target.id, user.id);
       observeShardShadow('friends.request', { friendship: auto, accept: true });
-      const c0 = openChatForFriendship(target.id, user.id);
+      const c0 = await openChatForFriendshipAnywhere(
+        target.id,
+        user.id,
+        target,
+        user
+      );
       if (c0) pushRelationMessage(c0, '你们已成为好友，现在可以开始聊天了',
         'friend_added', target.id, user.id);
       sendTo(target.id, { type: 'friend', action: 'accepted', user: publicUser(user) });
@@ -20853,7 +21215,9 @@ async function handleApi(req, res, pathname, query) {
     const f = { id: uid('f'), fromId: user.id, toId: target.id, status: 'pending', createdAt: now(),
       note: str(body.message, 60) };
     db.friendships.push(f);
-    saveFriendships();
+    if (!await persistFriendshipOnOwner(f, false)) {
+      return fail(res, 503, '好友分片暂时不可用，请稍后重试');
+    }
     observeShardShadow('friends.request', { friendship: f, accept: false });
     sendTo(target.id, { type: 'friend', action: 'request', requestId: f.id, user: publicUser(user) });
     /* 对方手机没连着 → 推一条「新的朋友」 */
@@ -20999,15 +21363,18 @@ async function handleApi(req, res, pathname, query) {
   if (parts[0] === 'friends' && parts[1] === 'remove' && method === 'POST') {
     refreshFriendshipsFromDisk(false);
     const body = await readBody(req);
-    const target = findUser(str(body.userId, 40));
+    const target = await lookupRemoteUserById(str(body.userId, 40));
     if (!target) return fail(res, 404, '用户不存在');
+    await syncFriendshipCacheFromOwners([user.id]);
     const f = friendshipBetween(user.id, target.id);
     /* 删除必须幂等：多设备或实时事件已经删掉关系时，再点一次仍按成功处理，
        并继续清理本机可见的会话/备注，避免客户端乐观删除后又整页回滚。 */
     const removedRelationship = !!f;
     if (removedRelationship) {
       db.friendships = db.friendships.filter((x) => x.id !== f.id);
-      saveFriendships();
+      if (!await persistFriendshipOnOwner(f, true)) {
+        return fail(res, 503, '好友分片暂时不可用，请稍后重试');
+      }
     }
     markFriendRemoved(user.id, target.id);
     forgetFriendSetCache(user.id, target.id);
@@ -21048,6 +21415,8 @@ async function handleApi(req, res, pathname, query) {
   if (parts[0] === 'friends' && parts[1] === 'respond' && method === 'POST') {
     refreshFriendshipsFromDisk(false);
     const body = await readBody(req);
+    await syncFriendshipCacheFromOwners([user.id]);
+    const relationRows = friendshipRowsForUser(user.id);
     /* 两种传法都收：
        · requestId ——「通讯录 → 新的朋友」列表里本来就带着
        · userId    ——对方名片上直接点「同意」用的；以前要先拉一遍整份通讯录
@@ -21055,21 +21424,30 @@ async function handleApi(req, res, pathname, query) {
     const reqId = str(body.requestId, 40);
     const fromId = str(body.userId, 40);
     const f = reqId
-      ? db.friendships.find((x) => x.id === reqId)
-      : db.friendships.find((x) => x.fromId === fromId && x.toId === user.id && x.status === 'pending');
+      ? relationRows.find((x) => x.id === reqId)
+      : relationRows.find((x) => x.fromId === fromId && x.toId === user.id
+        && x.status === 'pending');
     if (!f || f.toId !== user.id || f.status !== 'pending') return fail(res, 404, '好友请求不存在');
+    await lookupRemoteUserById(f.fromId);
     /* 处理完还剩几个待处理：回给客户端，红点数字不用再拉一遍通讯录 */
-    const pendingLeft = () => db.friendships
+    const pendingLeft = () => friendshipRowsForUser(user.id)
       .filter((x) => x.toId === user.id && x.status === 'pending').length;
     if (body.accept) {
       f.status = 'accepted';
       f.respondedAt = now();
-      saveFriendships();
+      if (!await persistFriendshipOnOwner(f, false)) {
+        return fail(res, 503, '好友分片暂时不可用，请稍后重试');
+      }
       clearFriendRemoved(f.fromId, f.toId);
       forgetFriendSetCache(f.fromId, f.toId);
       clearStrangerMessagesBetween(f.fromId, f.toId);
       /* 通过好友以后，两个人的「微信」首页立刻各多一个会话（不用等谁先说话） */
-      const newChat = openChatForFriendship(f.fromId, f.toId);
+      const newChat = await openChatForFriendshipAnywhere(
+        f.fromId,
+        f.toId,
+        findUser(f.fromId),
+        findUser(f.toId)
+      );
       /* 和微信一样：通过以后聊天里留一条系统提示 */
       try {
         const fromUser = findUser(f.fromId);
@@ -21093,7 +21471,9 @@ async function handleApi(req, res, pathname, query) {
         chat: newChat ? chatSummary(newChat, user.id) : null });
     } else {
       db.friendships = db.friendships.filter((x) => x.id !== f.id);
-      saveFriendships();
+      if (!await persistFriendshipOnOwner(f, true)) {
+        return fail(res, 503, '好友分片暂时不可用，请稍后重试');
+      }
       observeShardShadow('friends.respond', { friendship: f, accept: false });
       forgetFriendSetCache(user.id, f.fromId);
       ok(res, { rejected: true, pending: pendingLeft() });
@@ -21739,13 +22119,14 @@ async function handleApi(req, res, pathname, query) {
       chat.flaggedUnread = chat.flaggedUnread.filter((id) => id !== user.id);
       saveChats();
     }
-    publishReadCursor(chat, user, lastSeq);
+    void publishReadCursor(chat, user, lastSeq).catch(() => {});
     observeShardShadow('chats.unread', {
       chatId: chat.id,
       ownerId: user.id,
       unread: false,
       eventId: uid('sh-read')
     });
+    sendTo(user.id, { type: 'read', chatId: chat.id, seq: lastSeq });
     ok(res, { seq: lastSeq });
     return;
   }
@@ -21858,9 +22239,16 @@ async function handleApi(req, res, pathname, query) {
       /* 对方之前加过我：互加，直接变好友 */
       exist.status = 'accepted';
       exist.respondedAt = now();
-      saveFriendships();
+      if (!await persistFriendshipOnOwner(exist, false)) {
+        return fail(res, 503, '好友分片暂时不可用，请稍后重试');
+      }
       clearFriendRemoved(exist.fromId, exist.toId);
-      const c2 = openChatForFriendship(exist.fromId, exist.toId);
+      const c2 = await openChatForFriendshipAnywhere(
+        exist.fromId,
+        exist.toId,
+        findUser(exist.fromId),
+        findUser(exist.toId)
+      );
       sendTo(u.id, { type: 'friend', action: 'accepted', user: publicUser(user) });
       sendTo(exist.fromId, { type: 'chat', chatId: c2 ? c2.id : '' });
       sendTo(exist.toId, { type: 'chat', chatId: c2 ? c2.id : '' });
@@ -21869,7 +22257,9 @@ async function handleApi(req, res, pathname, query) {
     }
     const f = { id: uid('f'), fromId: user.id, toId: u.id, status: 'pending', createdAt: now() };
     db.friendships.push(f);
-    saveFriendships();
+    if (!await persistFriendshipOnOwner(f, false)) {
+      return fail(res, 503, '好友分片暂时不可用，请稍后重试');
+    }
     sendTo(u.id, { type: 'friend', action: 'request', requestId: f.id, user: publicUser(user) });
     ok(res, { sent: true, user: publicUser(u) });
     return;
@@ -22242,6 +22632,15 @@ async function handleApi(req, res, pathname, query) {
     saveReads();
     chat.flaggedUnread = Array.from(new Set((chat.flaggedUnread || []).concat([user.id])));
     saveChats();
+    const unreadUserOwnerPort = routeOwnerPort('user', user.id);
+    if (unreadUserOwnerPort && unreadUserOwnerPort !== PORT) {
+      await postShardJson(unreadUserOwnerPort, '/__shard/read-cursor', {
+        userId: user.id,
+        chatId: chat.id,
+        seq: Math.max(0, lastSeq - 1),
+        flagged: true
+      });
+    }
     observeShardShadow('chats.unread', {
       chatId: chat.id,
       ownerId: user.id,
@@ -23805,19 +24204,143 @@ async function handleHttpRequest(req, res) {
         return fail(res, 409, '聊天路由计划哈希不一致');
       }
       const userId = String(body.userId || '');
-      const owner = userId ? resolveRoute(chatRoutePlan, 'user', userId) : -1;
+      const username = str(body.username, 40);
+      const user = userId
+        ? db.users.find((row) => row && row.id === userId)
+        : (username ? db.users.find((row) => row
+          && String(row.username || '').toLowerCase() === username.toLowerCase()) : null);
+      if (!user) return fail(res, 404, '用户不存在');
+      const owner = resolveRoute(chatRoutePlan, 'user', user.id);
       if (owner !== Number(process.env.SHARD_ID)) {
         return fail(res, 409, '用户不属于当前分片');
       }
-      const user = db.users.find((row) => row && row.id === userId);
-      if (!user) return fail(res, 404, '用户不存在');
       return ok(res, { user, owner });
     } catch (error) {
       return fail(res, 400, '用户查询请求无效');
     }
   }
+  if (parsed.pathname === '/__shard/friend-list'
+      || parsed.pathname === '/__shard/friend-cache'
+      || parsed.pathname === '/__shard/friend-upsert'
+      || parsed.pathname === '/__shard/user-export') {
+    if (req.method !== 'POST') return fail(res, 405, 'Method Not Allowed');
+    try {
+      const supplied = String(req.headers['x-shard-relay'] || '');
+      const expected = String(db.secret || '');
+      const suppliedBuffer = Buffer.from(supplied);
+      const expectedBuffer = Buffer.from(expected);
+      if (!expected || suppliedBuffer.length !== expectedBuffer.length
+          || !crypto.timingSafeEqual(suppliedBuffer, expectedBuffer)) {
+        return fail(res, 403, '禁止访问');
+      }
+      const body = await readBody(req);
+      if (!chatRoutePlan
+          || String(body.planHash || '') !== chatRoutePlan.hash
+          || String(body.fileSha256 || '') !== chatRoutePlan.fileHash) {
+        return fail(res, 409, '分片路由计划不一致');
+      }
+      if (parsed.pathname === '/__shard/friend-list') {
+        const ids = new Set((Array.isArray(body.userIds) ? body.userIds : [])
+          .map((value) => String(value || '')).filter(Boolean));
+        if (!ids.size) return ok(res, { friendships: [] });
+        refreshFriendshipsFromDisk(false);
+        const friendships = db.friendships.filter((friendship) => friendship
+          && (ids.has(String(friendship.fromId || ''))
+            || ids.has(String(friendship.toId || ''))));
+        return ok(res, { friendships });
+      }
+      if (parsed.pathname === '/__shard/user-export') {
+        refreshUsersFromDisk(false);
+        return ok(res, {
+          users: db.users.map(cacheUserRecord).filter(Boolean)
+        });
+      }
+      if (parsed.pathname === '/__shard/friend-upsert') {
+        const friendship = body.friendship;
+        if (!friendship || !friendship.fromId || !friendship.toId
+            || !friendship.id) {
+          return fail(res, 422, '好友记录不完整');
+        }
+        const owner = resolveRoute(
+          chatRoutePlan,
+          'friendship',
+          pairKey(friendship.fromId, friendship.toId)
+        );
+        if (owner !== Number(process.env.SHARD_ID)) {
+          return fail(res, 409, '好友关系不属于当前分片');
+        }
+        refreshFriendshipsFromDisk(false);
+        const pair = pairKey(friendship.fromId, friendship.toId);
+        db.friendships = db.friendships.filter((row) => row
+          && pairKey(row.fromId, row.toId) !== pair);
+        if (body.deleted !== true) db.friendships.push(friendship);
+        saveFriendships();
+        return ok(res, { stored: body.deleted !== true });
+      }
+      const friendship = body.friendship;
+      if (!friendship || !friendship.fromId || !friendship.toId) {
+        return fail(res, 422, '好友缓存记录不完整');
+      }
+      upsertRemoteFriendship(friendship, body.deleted === true);
+      return ok(res, { cached: true, deleted: body.deleted === true });
+    } catch (error) {
+      return fail(res, 400, '好友索引请求无效');
+    }
+  }
   try {
     /* 分片间实时事件：只允许本机六片用服务端密钥转发，不经过公网鉴权。 */
+    if (parsed.pathname === '/__shard/open-direct-chat') {
+      if (req.method !== 'POST') return fail(res, 405, 'Method Not Allowed');
+      const supplied = String(req.headers['x-shard-relay'] || '');
+      const expected = String(db.secret || '');
+      const suppliedBuffer = Buffer.from(supplied);
+      const expectedBuffer = Buffer.from(expected);
+      if (!expected || suppliedBuffer.length !== expectedBuffer.length
+          || !crypto.timingSafeEqual(suppliedBuffer, expectedBuffer)) {
+        return fail(res, 403, '禁止访问');
+      }
+      const body = await readBody(req);
+      if (!chatRoutePlan
+          || String(body.planHash || '') !== chatRoutePlan.hash
+          || String(body.fileSha256 || '') !== chatRoutePlan.fileHash) {
+        return fail(res, 409, '聊天路由计划不一致');
+      }
+      const aId = str(body.aId, 80);
+      const bId = str(body.bId, 80);
+      const chatId = str(body.chatId, 80);
+      if (!aId || !bId || !chatId || aId === bId) {
+        return fail(res, 422, '单聊创建参数不完整');
+      }
+      if (chatOwnerPort(chatId) !== PORT) {
+        return fail(res, 409, '聊天不属于当前分片');
+      }
+      rememberRemoteUser(body.actor);
+      rememberRemoteUser(body.target);
+      refreshChatAccessStateFromDisk(false);
+      let chat = directChatBetween(aId, bId);
+      if (!chat) {
+        chat = {
+          id: chatId,
+          type: 'direct',
+          name: '',
+          avatar: '',
+          memberIds: [aId, bId],
+          ownerId: aId,
+          seq: 0,
+          createdAt: now()
+        };
+        rememberDirectPeerProfiles(chat);
+        db.chats.push(chat);
+        saveChats();
+      } else {
+        chat.hiddenFor = (chat.hiddenFor || []).filter((id) => id !== aId && id !== bId);
+        chat.dismissed = false;
+        delete chat.friendshipRemovedAt;
+        rememberDirectPeerProfiles(chat);
+        saveChats();
+      }
+      return ok(res, { chat });
+    }
     if (parsed.pathname === '/__shard/owner-routing') {
       if (req.method !== 'POST') return fail(res, 405, 'Method Not Allowed');
       const supplied = String(req.headers['x-shard-relay'] || '');
@@ -23855,7 +24378,11 @@ async function handleHttpRequest(req, res) {
         return fail(res, 403, '禁止访问');
       }
       const body = await readBody(req);
-      const actor = findUser(str(body.actorId, 80));
+      const actorId = str(body.actorId, 80);
+      let actor = findUser(actorId);
+      if (!actor && body.actor && String(body.actor.id || '') === actorId) {
+        actor = rememberRemoteUser(body.actor);
+      }
       if (!actor || !body.payload || typeof body.payload !== 'object') {
         return fail(res, 422, '会话操作不完整');
       }
@@ -23938,6 +24465,34 @@ async function handleHttpRequest(req, res) {
       }
       const body = await readBody(req);
       return ok(res, { call: pendingCallFor(str(body.userId, 80)) });
+    }
+    if (parsed.pathname === '/__shard/read-cursor') {
+      if (req.method !== 'POST') return fail(res, 405, 'Method Not Allowed');
+      const supplied = String(req.headers['x-shard-relay'] || '');
+      const expected = String(db.secret || '');
+      const a = Buffer.from(supplied);
+      const b = Buffer.from(expected);
+      if (!expected || a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+        return fail(res, 403, '禁止访问');
+      }
+      const body = await readBody(req);
+      const userId = str(body.userId, 80);
+      const chatId = str(body.chatId, 80);
+      const seq = Math.max(0, Math.floor(Number(body.seq) || 0));
+      if (!userId || !chatId) return fail(res, 422, '已读游标不完整');
+      refreshChatAccessStateFromDisk(false);
+      if (!db.reads[userId]) db.reads[userId] = {};
+      db.reads[userId][chatId] = seq;
+      saveReads();
+      const localChat = db.chats.find((chat) => chat && chat.id === chatId);
+      if (localChat) {
+        const flags = new Set(localChat.flaggedUnread || []);
+        if (body.flagged === true) flags.add(userId);
+        else flags.delete(userId);
+        localChat.flaggedUnread = Array.from(flags);
+        saveChats();
+      }
+      return ok(res, { userId, chatId, seq });
     }
     if (parsed.pathname === '/__shard/relay') {
       if (req.method !== 'POST') return fail(res, 405, 'Method Not Allowed');

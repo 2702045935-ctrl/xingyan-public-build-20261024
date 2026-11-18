@@ -40,8 +40,12 @@ require(
     "native list sections need user-facing headings",
 )
 require(
-    "nativeStat(value:" in ME and "nativeMeItemRow(item)" in ME,
-    "profile stats and feature rows must stay in native list rows",
+    "nativeMeItemRow(item)" in ME,
+    "feature rows must stay in native list rows",
+)
+require(
+    "nativeStat(value:" not in ME,
+    "the old friends/active-days/moments stats strip must be removed",
 )
 for removed in (
     "orbitMeTop",

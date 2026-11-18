@@ -71,8 +71,9 @@ private enum ChatTheme {
     static let timeInk = Color.dyn(0x667781, 0x8696A0)
     static var composerBg: Color { preset.panel }
     static let separator = Color.dyn(0xE9EDEF, 0x38383A)
-    static let link = Color.dyn(0x0067DC, 0x7CCBFF)
+    static let link = Color.dyn(0x0056D6, 0x8FD3FF)
     static let linkOnMine = Color.dyn(0xEFFFFC, 0xD9FFF8)
+    static let readReceipt = Color(hex: 0x53BDEB)
     static let mentionMe = Color.dyn(0xE53935, 0xFF9E91)
     static let mentionMeOnMine = Color.dyn(0x7A1717, 0xFFD2CA)
 }
@@ -691,6 +692,29 @@ struct ChatDetailView: View {
     @ObservedObject private var chatTheme = ChatThemeStore.shared
     @ObservedObject private var drafts = ChatDraftStore.shared
     let chat: Chat
+
+    init(chat: Chat, initialMessages: [Message] = []) {
+        self.chat = chat
+        let hidden = Set(
+            UserDefaults.standard.stringArray(forKey: "chris.deleted." + chat.id) ?? []
+        )
+        let sorted = initialMessages.sorted { a, b in
+            let ca = a.createdAt ?? "", cb = b.createdAt ?? ""
+            if ca != cb { return ca < cb }
+            let sa = a.seq ?? 0, sb = b.seq ?? 0
+            if sa != sb { return sa < sb }
+            return a.id < b.id
+        }
+        let seed = Array(sorted.filter { !hidden.contains($0.id) }.suffix(200))
+        let draft = ChatDraftStore.shared.text(for: chat.id)
+        _messages = State(initialValue: seed)
+        _loading = State(initialValue: seed.isEmpty)
+        _initialCacheReady = State(initialValue: !seed.isEmpty)
+        _hiddenMessageIds = State(initialValue: hidden)
+        _outbox = State(initialValue: LocalPersistence.loadOutbox(chat.id))
+        _input = State(initialValue: draft)
+        _lastInputSnapshot = State(initialValue: draft)
+    }
 
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -2958,7 +2982,7 @@ struct ChatDetailView: View {
                 ChatScrollDiag.shared.note("消息数变了=\(messages.count) atBottom=\(atBottomNow ? 1 : 0)")
                 guard !holdScroll else { return }
                 guard atBottomNow || messages.last?.senderId == myId else { return }
-                scrollToEnd(proxy, animated: false)
+                scrollToEnd(proxy, animated: Date() < followOwnSendUntil)
                 scheduleSettledBottom()
                 markConversationReadSoon()
             }
@@ -3070,11 +3094,19 @@ struct ChatDetailView: View {
             },
             onSizeChange: {
                 let compensated = ChatScrollHandle.shared.compensatePendingPrepend()
+                if !initialScrollReady {
+                    // NativeStaticList performs its first bottom placement in
+                    // the same layout transaction before pixels are presented.
+                    return
+                }
                 guard atBottomNow, !holdScroll else { return }
                 if ChatScrollHandle.shared.moving { return }
                 ChatScrollDiag.shared.note("内容变高 → 原生消息列表贴底")
-                nativeMessageController.scrollToBottom(animated: false)
+                nativeMessageController.scrollToBottom(
+                    animated: Date() < followOwnSendUntil
+                )
             },
+            initiallyPinnedToBottom: true,
             signature: nativeGroupSignature
         ) { item in
             nativeGroupRow(item)
@@ -3087,7 +3119,9 @@ struct ChatDetailView: View {
             }
             guard !holdScroll else { return }
             guard atBottomNow || messages.last?.senderId == myId else { return }
-            nativeMessageController.scrollToBottom(animated: false)
+            nativeMessageController.scrollToBottom(
+                animated: Date() < followOwnSendUntil
+            )
             scheduleSettledBottom()
             markConversationReadSoon()
         }
@@ -3181,7 +3215,17 @@ struct ChatDetailView: View {
                 usesPlainDefaultChatChrome ? "plain" : "styled"
             ].joined(separator: "|")
         case .outbox(let pending):
-            return "outbox:\(String(describing: pending))"
+            // `sending` flips from false to true immediately after the bubble
+            // is inserted. It is not a visual state, so it must not invalidate
+            // or remeasure the row during the send animation.
+            return [
+                "outbox",
+                pending.id,
+                pending.kind,
+                pending.content,
+                pending.failed ? "failed" : "ok",
+                pending.failureReason ?? ""
+            ].joined(separator: "|")
         case .sendingVideo:
             return "sending-video:\(sendProgress):\(sendingPreview != nil)"
         case .sendingFile:
@@ -3368,7 +3412,7 @@ struct ChatDetailView: View {
                 }
                 guard !holdScroll else { return }
                 guard atBottomNow || messages.last?.senderId == myId else { return }
-                scrollToEnd(proxy, animated: false)
+                scrollToEnd(proxy, animated: Date() < followOwnSendUntil)
                 scheduleSettledBottom()
                 markConversationReadSoon()
             }
@@ -3451,17 +3495,11 @@ struct ChatDetailView: View {
         initialScrollTask = Task { @MainActor in
             atBottom = true
             wasAtBottom = true
-            for delay in [0, 24, 70, 150, 260] {
-                if delay > 0 {
-                    try? await Task.sleep(nanoseconds: UInt64(delay) * 1_000_000)
-                }
-                if Task.isCancelled { return }
-                if ChatScrollHandle.shared.moving { return }
-                nativeMessageController.scrollToBottom(animated: false)
-            }
+            nativeMessageController.scrollToBottom(animated: false)
+            await Task.yield()
             if Task.isCancelled { return }
+            nativeMessageController.scrollToBottom(animated: false)
             initialScrollReady = true
-            pinTick += 1
         }
     }
 
@@ -3482,29 +3520,24 @@ struct ChatDetailView: View {
         if force { ChatScrollHandle.shared.allowAutomaticPinning() }
         pinTask?.cancel()
         pinTask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: force ? 120_000_000 : 280_000_000)
+            try? await Task.sleep(nanoseconds: force ? 24_000_000 : 280_000_000)
             if Task.isCancelled { return }
             guard atBottomNow, !holdScroll, !ChatScrollHandle.shared.moving else { return }
             atBottom = true
             if force {
                 ChatScrollHandle.shared.allowAutomaticPinning()
                 if isGroup {
-                    nativeMessageController.scrollToBottom(animated: false)
+                    nativeMessageController.scrollToBottom(animated: true)
                 } else {
-                    scroller?.scrollTo("__bottom", anchor: .bottom)
+                    withAnimation(.spring(response: 0.24,
+                                          dampingFraction: 0.92,
+                                          blendDuration: 0.04)) {
+                        scroller?.scrollTo("__bottom", anchor: .bottom)
+                    }
                 }
+                return
             }
             pinTick += 1
-            if force {
-                try? await Task.sleep(nanoseconds: 320_000_000)
-                if Task.isCancelled { return }
-                ChatScrollHandle.shared.allowAutomaticPinning()
-                if isGroup {
-                    nativeMessageController.scrollToBottom(animated: false)
-                } else {
-                    scroller?.scrollTo("__bottom", anchor: .bottom)
-                }
-            }
         }
     }
 
@@ -3620,9 +3653,7 @@ struct ChatDetailView: View {
         VStack(alignment: .trailing, spacing: 3) {
             HStack(alignment: .center, spacing: 7) {
                 Spacer(minLength: 0)
-                if p.sending {
-                    ProgressView().scaleEffect(0.72)
-                } else if p.failed {
+                if p.failed {
                     Button {
                         Task { await flushOutbox() }
                     } label: {
@@ -3637,10 +3668,19 @@ struct ChatDetailView: View {
                     .foregroundColor(ChatTheme.ink)
                     .lineLimit(6)
                     .multilineTextAlignment(.leading)
-                    .padding(.horizontal, 12)
+                    .padding(.leading, 12)
+                    .padding(.trailing, p.failed ? 12 : 26)
                     .padding(.vertical, 9)
                     .background(BubbleFill(mine: true, tail: false))
                     .opacity(p.failed ? 0.9 : 1)
+                    .overlay(alignment: .bottomTrailing) {
+                        if !p.failed {
+                            WhatsAppMessageTicks(count: 1,
+                                                 color: Color.white.opacity(0.72))
+                                .padding(.trailing, 7)
+                                .padding(.bottom, 5)
+                        }
+                    }
             }
             if p.failed, let reason = p.failureReason, !reason.isEmpty {
                 deliveryFailureCard(DeliveryFailureCopy.make(reason: reason))
@@ -3648,6 +3688,13 @@ struct ChatDetailView: View {
         }
         .padding(.vertical, 4)
         .id(p.id)
+        .transition(
+            .asymmetric(
+                insertion: .scale(scale: 0.94, anchor: .bottomTrailing)
+                    .combined(with: .opacity),
+                removal: .opacity
+            )
+        )
     }
 
     private func deliveryFailureCard(_ failure: DeliveryFailureCopy) -> some View {
@@ -3706,8 +3753,14 @@ struct ChatDetailView: View {
         }
     }
 
-    private func saveOutbox() {
-        LocalPersistence.saveOutbox(chat.id, outbox)
+    private func persistOutboxAfterFrame() {
+        let chatId = chat.id
+        let snapshot = outbox
+        DispatchQueue.main.async {
+            DispatchQueue.global(qos: .utility).async {
+                LocalPersistence.saveOutbox(chatId, snapshot)
+            }
+        }
     }
 
     private func loadOutbox() {
@@ -5696,10 +5749,15 @@ struct ChatDetailView: View {
            let d = try? JSONSerialization.data(withJSONObject: q) {
             qJSON = String(data: d, encoding: .utf8)
         }
-        outbox.append(PendingMsg(id: UUID().uuidString, kind: kind, content: content,
-                                 mentions: mentions, quoteJSON: qJSON))
+        let pending = PendingMsg(id: UUID().uuidString, kind: kind, content: content,
+                                 mentions: mentions, quoteJSON: qJSON)
+        withAnimation(.spring(response: 0.24,
+                              dampingFraction: 0.92,
+                              blendDuration: 0.04)) {
+            outbox.append(pending)
+        }
         followOwnSendUntil = Date().addingTimeInterval(5)
-        saveOutbox()
+        persistOutboxAfterFrame()
 
         UINotification.lightTap()
         pinToBottomSoon(force: true)
@@ -5744,7 +5802,7 @@ struct ChatDetailView: View {
                 }
             }
         }
-        saveOutbox()
+        persistOutboxAfterFrame()
         await app.loadChats()
     }
 
@@ -7244,6 +7302,23 @@ struct QuoteInspectSheet: View {
     }
 }
 
+private struct WhatsAppMessageTicks: View {
+    let count: Int
+    let color: Color
+
+    var body: some View {
+        HStack(spacing: -4.4) {
+            ForEach(0..<max(1, min(2, count)), id: \.self) { index in
+                Image(systemName: "checkmark")
+                    .font(.system(size: 8.2, weight: .bold))
+                    .foregroundStyle(color)
+            }
+        }
+        .frame(height: 10)
+        .accessibilityHidden(true)
+    }
+}
+
 struct MessageRow: View {
     let message: Message
     let mine: Bool
@@ -7401,6 +7476,21 @@ struct MessageRow: View {
                 .padding(.leading, 4)
             }
             content
+
+            if mine,
+               !message.isRecalled,
+               !message.isCallRecord,
+               message.kindName != "system",
+               message.kindName != "pat" {
+                HStack(spacing: 0) {
+                    Spacer(minLength: 0)
+                    WhatsAppMessageTicks(count: 2, color: ChatTheme.readReceipt)
+                }
+                .padding(.trailing, 4)
+                .offset(y: -2)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Tr("已送达"))
+            }
 
             if asrBusy || !asrText.isEmpty {
                 asrLine

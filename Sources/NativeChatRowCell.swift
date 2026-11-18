@@ -61,6 +61,7 @@ struct NativeChatRowConfiguration {
     var moodIcon: String
     var unread: Int
     var unreadMuted: Bool
+    var isManuallyUnread: Bool
     var levelText: String
     var memberText: String
     var memberColor: UIColor?
@@ -82,6 +83,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
     private let previewLabel = UILabel()
     private let timeLabel = UILabel()
     private let unreadLabel = PaddingLabel(insets: .zero)
+    private let unreadBell = UIImageView()
     private let divider = UIView()
     private let pressOverlay = UIView()
     private let pinActions = UIStackView()
@@ -91,6 +93,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
     private var startOffset: CGFloat = 0
     private var latestRawOffset: CGFloat = 0
     private var dragDirection: CGFloat = 0
+    private var suppressSelectionAfterSwipe = false
     private var actionsSignature = ""
     private var avatarSignature = ""
     private var accessibilitySignature = ""
@@ -135,12 +138,14 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         startOffset = 0
         latestRawOffset = 0
         dragDirection = 0
+        suppressSelectionAfterSwipe = false
         pinActions.alpha = 1
         pinActions.transform = .identity
         pinActions.isHidden = true
         leftActions.alpha = 1
         leftActions.transform = .identity
         leftActions.isHidden = true
+        unreadBell.isHidden = true
         pressOverlay.backgroundColor = .clear
         avatarView.reset()
         avatarSignature = ""
@@ -180,9 +185,11 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         let contentTop = max(5, (bounds.height - contentHeight) / 2)
         let unread = configuration?.unread ?? 0
         let badgeScale = min(1.4, max(1, unreadLabel.font.pointSize / 10))
-        let unreadWidth: CGFloat = configuration?.unreadMuted == true
-            ? 8
-            : (unread > 99 ? 28 : (unread > 9 ? 23 : 18)) * badgeScale
+        let unreadWidth: CGFloat = configuration?.isManuallyUnread == true
+            ? 16
+            : (configuration?.unreadMuted == true
+                ? 8
+                : (unread > 99 ? 28 : (unread > 9 ? 23 : 18)) * badgeScale)
         let previewReserve = unread > 0 ? unreadWidth + 10 : 0
         let unreadHeight = max(18, ceil(unreadLabel.font.lineHeight) + 6)
         titleLabel.frame = CGRect(x: textX,
@@ -204,6 +211,10 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         unreadLabel.layer.cornerRadius = configuration?.unreadMuted == true
             ? min(4, unreadHeight / 2)
             : unreadHeight / 2
+        unreadBell.frame = CGRect(x: bounds.width - rowTrailing - 16,
+                                  y: previewLabel.frame.midY - 8,
+                                  width: 16,
+                                  height: 16)
         layoutTitleBadges()
         divider.frame = CGRect(x: dividerLeading, y: bounds.height - 0.5,
                                width: bounds.width - dividerLeading, height: 0.5)
@@ -234,8 +245,12 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         timeLabel.textColor = configuration.timeColor
         divider.backgroundColor = configuration.dividerColor
         divider.isHidden = !configuration.showsDivider
-        unreadLabel.isHidden = configuration.unread <= 0
-        if configuration.unread > 0 {
+        unreadBell.isHidden = !configuration.isManuallyUnread
+        unreadBell.image = UIImage(systemName: "bell.fill")
+        unreadBell.tintColor = configuration.timeColor
+        unreadBell.contentMode = .scaleAspectFit
+        unreadLabel.isHidden = configuration.isManuallyUnread || configuration.unread <= 0
+        if !configuration.isManuallyUnread, configuration.unread > 0 {
             if configuration.unreadMuted {
                 unreadLabel.text = "●"
                 unreadLabel.font = NativeChatRowMetrics.font(7, weight: .bold,
@@ -471,6 +486,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         foreground.addSubview(previewLabel)
         foreground.addSubview(timeLabel)
         foreground.addSubview(unreadLabel)
+        foreground.addSubview(unreadBell)
         foreground.addSubview(divider)
         pressOverlay.isUserInteractionEnabled = false
         pressOverlay.backgroundColor = .clear
@@ -485,6 +501,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         timeLabel.adjustsFontSizeToFitWidth = true
         timeLabel.minimumScaleFactor = 0.75
         unreadLabel.textAlignment = .center
+        unreadBell.isHidden = true
         unreadLabel.font = .systemFont(ofSize: 10, weight: .bold)
         unreadLabel.adjustsFontSizeToFitWidth = true
         unreadLabel.minimumScaleFactor = 0.9
@@ -606,7 +623,9 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
 
         let pan = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
         pan.delegate = self
-        pan.cancelsTouchesInView = false
+        // Once a horizontal swipe wins, the collection view must not also
+        // finish its selection gesture and open the conversation.
+        pan.cancelsTouchesInView = true
         pan.delaysTouchesBegan = false
         foreground.addGestureRecognizer(pan)
     }
@@ -615,10 +634,13 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         guard let pan = gestureRecognizer as? UIPanGestureRecognizer else { return true }
         let translation = pan.translation(in: foreground)
         let velocity = pan.velocity(in: foreground)
-        let byTranslation = abs(translation.x) >= 4
-            && abs(translation.x) >= abs(translation.y) * 1.15
-        let byVelocity = abs(velocity.x) >= 32
-            && abs(velocity.x) >= abs(velocity.y) * 1.10
+        // Touch jitter commonly reaches 3–6 pt while tapping. Require an
+        // unmistakable horizontal intent before taking the gesture from the
+        // collection view, then keep that decision for the whole swipe.
+        let byTranslation = abs(translation.x) >= 8
+            && abs(translation.x) >= abs(translation.y) * 1.25
+        let byVelocity = abs(velocity.x) >= 64
+            && abs(velocity.x) >= abs(velocity.y) * 1.20
         return byTranslation || byVelocity
     }
 
@@ -641,6 +663,9 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesBegan(touches, with: event)
+        // A new touch starts a new intent. Any prior swipe whose selection
+        // callback never arrived must not eat this fresh row tap.
+        suppressSelectionAfterSwipe = false
         setPressed(true)
     }
 
@@ -682,6 +707,7 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
         let velocity = gesture.velocity(in: foreground).x
         switch gesture.state {
         case .began:
+            suppressSelectionAfterSwipe = true
             freezeEnclosingScroll()
             startOffset = offset
             latestRawOffset = offset
@@ -794,6 +820,15 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
     func dismissOpenSwipeActions() -> Bool {
         guard offset != 0 else { return false }
         closeActions()
+        return true
+    }
+
+    /// A collection view may still deliver its selection callback on the same
+    /// touch-up that ended a swipe. Consume that callback once so swiping never
+    /// opens the chat.
+    func consumeSelectionAfterSwipe() -> Bool {
+        guard suppressSelectionAfterSwipe else { return false }
+        suppressSelectionAfterSwipe = false
         return true
     }
 

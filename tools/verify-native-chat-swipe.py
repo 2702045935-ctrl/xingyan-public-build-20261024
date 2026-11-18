@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 LIST = (ROOT / "Sources" / "NativeChatList.swift").read_text(encoding="utf-8")
 ROW = (ROOT / "Sources" / "NativeChatRowCell.swift").read_text(encoding="utf-8")
+CHATS = (ROOT / "Sources" / "ChatsView.swift").read_text(encoding="utf-8")
 
 
 def require(condition: bool, message: str) -> None:
@@ -60,6 +61,26 @@ require(
 require(
     "avatarView.addGestureRecognizer(tap)" in ROW,
     "only the avatar may retain a separate tap recognizer",
+)
+require(
+    "suppressSelectionAfterSwipe" in ROW
+    and "consumeSelectionAfterSwipe()" in ROW
+    and "consumeSelectionAfterSwipe()" in LIST,
+    "a recognized swipe must consume the collection selection callback",
+)
+require(
+    "pan.cancelsTouchesInView = true" in ROW,
+    "the winning horizontal pan must cancel the collection selection touch",
+)
+require(
+    "override func touchesBegan" in ROW
+    and "must not eat this fresh row tap" in ROW,
+    "a new touch must clear stale swipe-selection suppression",
+)
+require(
+    "tap.require(toFail: pan)" in CHATS
+    and "shouldRecognizeSimultaneouslyWith" in CHATS,
+    "SwiftUI fallback rows must arbitrate tap and pan instead of firing both",
 )
 
 print("native-chat-swipe: passed")

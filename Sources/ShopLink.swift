@@ -21,6 +21,24 @@ struct ShopLink: Hashable {
     var prices: [ShopLinkPrice]
 
     var rich: Bool { !meta.isEmpty || !prices.isEmpty }
+    var displayHost: String {
+        for raw in [url, scheme] where !raw.isEmpty {
+            let candidate = raw.contains("://") ? raw : "https://" + raw
+            guard let host = URL(string: candidate)?.host?.lowercased(),
+                  !host.isEmpty else { continue }
+            return host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
+        }
+        return ""
+    }
+
+    var visibleSubtitle: String {
+        let value = sub.trimmingCharacters(in: .whitespacesAndNewlines)
+        return value.isEmpty ? displayHost : value
+    }
+
+    var footerTitle: String {
+        displayHost.isEmpty ? Tr("网页链接") : displayHost
+    }
 
     init?(json: String) {
         guard let d = json.data(using: .utf8),
@@ -99,6 +117,7 @@ struct WebURL: Identifiable {
 struct ShopLinkCard: View {
     let link: ShopLink
     var onTap: () -> Void
+    private let linkAccent = Color.dyn(0x0056D6, 0x8FD3FF)
 
     var body: some View {
         Button(action: onTap) {
@@ -125,6 +144,14 @@ struct ShopLinkCard: View {
                             .font(pfStyled(size: 12.5))
                             .foregroundColor(C.subLabel)
                             .lineLimit(1)
+                    }
+                    if !link.visibleSubtitle.isEmpty,
+                       link.visibleSubtitle != link.meta {
+                        Text(link.visibleSubtitle)
+                            .font(pfStyled(size: 11.5, weight: .medium))
+                            .foregroundColor(linkAccent)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
                     }
                     if !link.reviews.isEmpty {
                         Text(link.reviews)
@@ -158,7 +185,9 @@ struct ShopLinkCard: View {
                 .frame(height: 0.5)
                 .padding(.vertical, 10)
 
-            WeChatMessageCardFooter(symbol: "link", title: Tr("网页链接"), trailing: Tr("打开"))
+            WeChatMessageCardFooter(symbol: "link",
+                                    title: link.footerTitle,
+                                    trailing: Tr("打开"))
         }
     }
 
@@ -186,7 +215,7 @@ struct ShopLinkCard: View {
                         .font(pfStyled(size: 16, weight: .semibold))
                         .foregroundColor(C.bubbleText)
                         .lineLimit(2)
-                    Text(link.sub)
+                    Text(link.visibleSubtitle)
                         .font(pfStyled(size: 12.5))
                         .foregroundColor(C.subLabel)
                         .lineLimit(2)
@@ -199,7 +228,9 @@ struct ShopLinkCard: View {
                 .frame(height: 0.5)
                 .padding(.vertical, 10)
 
-            WeChatMessageCardFooter(symbol: "link", title: Tr("网页链接"), trailing: Tr("打开"))
+            WeChatMessageCardFooter(symbol: "link",
+                                    title: link.footerTitle,
+                                    trailing: Tr("打开"))
         }
     }
 }

@@ -318,11 +318,13 @@ where Item.ID: Hashable {
 
         func collectionView(_ collectionView: UICollectionView,
                             shouldSelectItemAt indexPath: IndexPath) -> Bool {
-            guard let cell = collectionView.cellForItem(at: indexPath) as? NativeChatRowCell,
-                  cell.dismissOpenSwipeActions() else {
+            guard let cell = collectionView.cellForItem(at: indexPath) as? NativeChatRowCell else {
                 return true
             }
-            return false
+            if cell.consumeSelectionAfterSwipe() {
+                return false
+            }
+            return !cell.dismissOpenSwipeActions()
         }
 
         func collectionView(_ collectionView: UICollectionView,

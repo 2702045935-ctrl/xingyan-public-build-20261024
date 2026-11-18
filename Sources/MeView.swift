@@ -41,7 +41,7 @@ struct MeView: View {
         .background(mePageCanvasColor.ignoresSafeArea())
         .navigationTitle(Tr("我的"))
         .navigationBarTitleDisplayMode(.large)
-        .toolbarBackground(mePageCanvasColor, for: .navigationBar)
+        .toolbarBackground(.regularMaterial, for: .navigationBar)
         .toolbarBackground(scheme == .dark ? .hidden : .visible,
                            for: .navigationBar)
         .refreshable {
@@ -111,22 +111,6 @@ struct MeView: View {
         }
         .listRowBackground(C.meCardBg)
 
-        Section {
-            HStack(spacing: 0) {
-                nativeStat(value: "\(friendCount)", title: Tr("朋友")) {
-                    app.show(Tr("朋友列表请在通讯录查看"))
-                }
-                nativeStat(value: daysText, title: Tr("活跃天")) {
-                    path.append("level")
-                }
-                nativeStat(value: "\(app.me?.momentCount ?? 0)", title: Tr("动态")) {
-                    path.append("moments")
-                }
-            }
-            .padding(.vertical, 2)
-        }
-        .listRowBackground(C.meCardBg)
-
         ForEach(grouped.indices, id: \.self) { gi in
             Section {
                 ForEach(Array(grouped[gi].enumerated()), id: \.element.id) { _, item in
@@ -178,22 +162,6 @@ struct MeView: View {
     private var mePageCanvasColor: Color {
         scheme == .dark ? C.pageBg
             : (UIConfig.colorIfSet("pageBg") ?? worldAndMeCanvasColor())
-    }
-
-    private func nativeStat(value: String, title: String,
-                            action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            VStack(spacing: 3) {
-                Text(value)
-                    .font(pfStyled(size: 17, weight: .semibold))
-                    .foregroundStyle(.primary)
-                Text(title)
-                    .font(pfStyled(size: 12))
-                    .foregroundStyle(.secondary)
-            }
-            .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(.plain)
     }
 
     private func nativeMeItemRow(_ item: DiscoverItem) -> some View {

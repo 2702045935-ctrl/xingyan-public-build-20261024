@@ -65,6 +65,7 @@ where Item.ID: Hashable {
     let onScrollStateChange: ((Bool) -> Void)?
     let onScrollOffset: ((CGFloat) -> Void)?
     let onSizeChange: (() -> Void)?
+    let initiallyPinnedToBottom: Bool
     let signature: (Item) -> String
     @ViewBuilder let row: (Item) -> Row
 
@@ -74,6 +75,7 @@ where Item.ID: Hashable {
          onScrollStateChange: ((Bool) -> Void)? = nil,
          onScrollOffset: ((CGFloat) -> Void)? = nil,
          onSizeChange: (() -> Void)? = nil,
+         initiallyPinnedToBottom: Bool = false,
          signature: @escaping (Item) -> String,
          @ViewBuilder row: @escaping (Item) -> Row) {
         self.items = items
@@ -82,6 +84,7 @@ where Item.ID: Hashable {
         self.onScrollStateChange = onScrollStateChange
         self.onScrollOffset = onScrollOffset
         self.onSizeChange = onSizeChange
+        self.initiallyPinnedToBottom = initiallyPinnedToBottom
         self.signature = signature
         self.row = row
     }
@@ -92,6 +95,7 @@ where Item.ID: Hashable {
                     onScrollStateChange: onScrollStateChange,
                     onScrollOffset: onScrollOffset,
                     onSizeChange: onSizeChange,
+                    initiallyPinnedToBottom: initiallyPinnedToBottom,
                     signature: signature,
                     row: row)
     }
@@ -173,6 +177,8 @@ where Item.ID: Hashable {
         var onScrollStateChange: ((Bool) -> Void)?
         var onScrollOffset: ((CGFloat) -> Void)?
         var onSizeChange: (() -> Void)?
+        var initiallyPinnedToBottom: Bool
+        private var waitsForInitialBottom = false
         private var sizeObservation: NSKeyValueObservation?
         private var lastScrollState: Bool?
         private var order: [Item.ID] = []
@@ -188,6 +194,7 @@ where Item.ID: Hashable {
              onScrollStateChange: ((Bool) -> Void)?,
              onScrollOffset: ((CGFloat) -> Void)?,
              onSizeChange: (() -> Void)?,
+             initiallyPinnedToBottom: Bool,
              signature: @escaping (Item) -> String,
              row: @escaping (Item) -> Row) {
             self.controller = controller
@@ -195,6 +202,8 @@ where Item.ID: Hashable {
             self.onScrollStateChange = onScrollStateChange
             self.onScrollOffset = onScrollOffset
             self.onSizeChange = onSizeChange
+            self.initiallyPinnedToBottom = initiallyPinnedToBottom
+            self.waitsForInitialBottom = initiallyPinnedToBottom
             self.signature = signature
             self.row = row
             super.init()
@@ -213,8 +222,12 @@ where Item.ID: Hashable {
                     guard !self.sizeChangeScheduled else { return }
                     self.sizeChangeScheduled = true
                     DispatchQueue.main.async { [weak self] in
-                        guard let self else { return }
+                        guard let self, let scrollView = self.collection else { return }
                         self.sizeChangeScheduled = false
+                        if self.waitsForInitialBottom {
+                            scrollView.layoutIfNeeded()
+                            self.setBottom(scrollView, animated: false)
+                        }
                         self.onSizeChange?()
                     }
                 }
@@ -250,15 +263,19 @@ where Item.ID: Hashable {
                 guard let self, let collection = self.collection else { return false }
                 self.flush()
                 collection.layoutIfNeeded()
-                let minimumY = -collection.adjustedContentInset.top
-                let maximumY = max(
-                    minimumY,
-                    collection.contentSize.height - collection.bounds.height
-                        + collection.adjustedContentInset.bottom
-                )
-                collection.setContentOffset(CGPoint(x: 0, y: maximumY), animated: animated)
+                self.setBottom(collection, animated: animated)
                 return true
             }
+        }
+
+        private func setBottom(_ collection: UICollectionView, animated: Bool) {
+            let minimumY = -collection.adjustedContentInset.top
+            let maximumY = max(
+                minimumY,
+                collection.contentSize.height - collection.bounds.height
+                    + collection.adjustedContentInset.bottom
+            )
+            collection.setContentOffset(CGPoint(x: 0, y: maximumY), animated: animated)
         }
 
         func apply(_ next: [Item], animated: Bool) {
@@ -352,6 +369,10 @@ where Item.ID: Hashable {
                 guard !collection.isTracking,
                       !collection.isDragging,
                       !collection.isDecelerating else { return }
+                if self.waitsForInitialBottom {
+                    self.setBottom(collection, animated: false)
+                    return
+                }
                 let minimumY = -collection.adjustedContentInset.top
                 let maximumY = max(
                     minimumY,
@@ -384,6 +405,7 @@ where Item.ID: Hashable {
 
         func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
             ChatScrollHandle.shared.noteUserMotion()
+            waitsForInitialBottom = false
             publishScrollState(true)
         }
 

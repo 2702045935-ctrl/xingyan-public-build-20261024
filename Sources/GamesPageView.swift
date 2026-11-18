@@ -77,8 +77,7 @@ struct GamesPageView: View {
     var body: some View {
         VStack(spacing: 0) {
             ZStack {
-                Text(Tr("游戏")).font(pf(17, .semibold)).foregroundColor(ink)
-                HStack(spacing: 0) {
+                HStack(spacing: 12) {
                     Button { dismiss() } label: {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 19, weight: .medium))
@@ -86,6 +85,16 @@ struct GamesPageView: View {
                             .frame(width: 44, height: L.navH)
                     }
                     .buttonStyle(.plain)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(Tr("游戏中心"))
+                            .font(pf(24, .bold))
+                            .foregroundColor(ink)
+                        Text(list.isEmpty ? Tr("正在同步游戏内容") : "\(list.count) " + Tr("款游戏 · 好友排行"))
+                            .font(pf(11.5))
+                            .foregroundColor(subInk)
+                    }
+
                     Spacer(minLength: 0)
 
                     if app.me?.ops == true {
@@ -98,8 +107,9 @@ struct GamesPageView: View {
                         .buttonStyle(.plain)
                     }
                 }
+                .padding(.trailing, 12)
             }
-            .frame(height: L.navH)
+            .frame(height: L.navH + 18)
             .background(pageBg)
 
             ScrollView {

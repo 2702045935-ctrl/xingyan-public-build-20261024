@@ -2564,6 +2564,8 @@ final class API {
                   password: String,
                   nickname: String = "",
                   phone: String = "",
+                  smsCode: String = "",
+                  requirePhoneCode: Bool = false,
                   captchaId: String = "",
                   captcha: String = "",
                   quick: Bool = true) async throws -> User {
@@ -2575,6 +2577,10 @@ final class API {
             "captcha": captcha,
             "quick": quick
         ]
+        if requirePhoneCode {
+            body["code"] = smsCode
+            body["requirePhoneCode"] = true
+        }
         let cleanPhone = phone.trimmingCharacters(in: .whitespacesAndNewlines)
         if !cleanPhone.isEmpty { body["phone"] = cleanPhone }
         let payload: LoginPayload = try await post("/api/register", body, as: LoginPayload.self)

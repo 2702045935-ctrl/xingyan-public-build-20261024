@@ -188,7 +188,7 @@ private var funcs: [(String, String, Color, String)] {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 1) {
                 Text(C.tabText1)
-                    .font(systemTextFont(26, .bold, relativeTo: .largeTitle))
+                    .font(systemTextFont(22, .bold, relativeTo: .title2))
                     .foregroundStyle(contactsLabel)
                     .accessibilityAddTraits(.isHeader)
                 Text(contactCountText)
@@ -199,16 +199,16 @@ private var funcs: [(String, String, Color, String)] {
             Spacer(minLength: 8)
 
             Button {
-                withSystemAnimation(.spring(response: 0.32, dampingFraction: 0.62)) {
-                    plusMenu = true
-                }
+                plusMenu = true
             } label: {
                 Image(systemName: "plus")
                     .font(.system(size: 21, weight: .medium))
                     .foregroundStyle(contactsLabel)
                     .frame(width: 42, height: 42)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .zIndex(20)
             .accessibilityLabel(Tr("添加"))
         }
         .padding(.horizontal, 16)
@@ -360,11 +360,14 @@ private var funcs: [(String, String, Color, String)] {
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: User.self) { user in
                 ContactCardView(user: user,
-                                onOpenChat: { chat in path.append(chat) },
+                                onOpenChat: { chat in
+                                    app.prepareChatForImmediatePresentation(chat)
+                                    path.append(chat)
+                                },
                                 onOpenMoments: { id in path.append("moments:" + id) })
             }
             .navigationDestination(for: Chat.self) { chat in
-                ChatDetailView(chat: chat)
+                DeferredChatView(chat: chat)
             }
             .navigationDestination(for: String.self) { key in
                 if key.hasPrefix("moments:") {
@@ -376,16 +379,21 @@ private var funcs: [(String, String, Color, String)] {
                     AddFriendView()
                 } else if key == "newGroup" {
                     GroupCreateView { chat in
+                        app.prepareChatForImmediatePresentation(chat)
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { path.append(chat) }
                     }
                 } else if key == "faceGroup" {
                     FaceGroupView { chat in
+                        app.prepareChatForImmediatePresentation(chat)
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { path.append(chat) }
                     }
                 } else if key == "myQR" {
                     MyQRView()
                 } else if key == "groupList" {
-                    GroupListView(onOpenChat: { chat in path.append(chat) })
+                    GroupListView(onOpenChat: { chat in
+                        app.prepareChatForImmediatePresentation(chat)
+                        path.append(chat)
+                    })
                 } else if key == "starTags" {
                     StarOrbitTagsView()
                         .environmentObject(app)

@@ -148,7 +148,7 @@ struct SupportView: View {
                 get: { nextChat != nil },
                 set: { if !$0 { nextChat = nil } }
             )) {
-                if let c = nextChat { ChatDetailView(chat: c) }
+                if let c = nextChat { DeferredChatView(chat: c) }
             }
             .navigationDestination(isPresented: Binding(
                 get: { openCat != nil },
