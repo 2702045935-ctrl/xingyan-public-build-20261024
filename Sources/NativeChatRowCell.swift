@@ -618,23 +618,12 @@ final class NativeChatRowCell: UICollectionViewCell, UIGestureRecognizerDelegate
     }
 
     private func setupGestures() {
-        // Row taps use UICollectionView's native selection path. The swipe is
-        // owned by this UIKit cell so a custom Collection Cell cannot silently
-        // swallow UISwipeActionsConfiguration on newer iOS builds.
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleAvatarTap(_:)))
         tap.cancelsTouchesInView = true
         tap.delaysTouchesBegan = false
         avatarView.isUserInteractionEnabled = true
         avatarView.addGestureRecognizer(tap)
         avatarTap = tap
-
-        let pan = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
-        pan.delegate = self
-        // Once a horizontal swipe wins, the collection view must not also
-        // finish its selection gesture and open the conversation.
-        pan.cancelsTouchesInView = true
-        pan.delaysTouchesBegan = false
-        foreground.addGestureRecognizer(pan)
     }
 
     override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {

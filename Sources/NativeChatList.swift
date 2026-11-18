@@ -381,6 +381,50 @@ where Item.ID: Hashable {
             configuration.onOpen()
         }
 
+        func collectionView(
+            _ collectionView: UICollectionView,
+            leadingSwipeActionsConfigurationForItemAt indexPath: IndexPath
+        ) -> UISwipeActionsConfiguration? {
+            guard let id = dataSource?.itemIdentifier(for: indexPath),
+                  let entry = lookup[id],
+                  let configuration = nativeRow?(entry) else { return nil }
+            let title = configuration.isPinned
+                ? localized("取消置顶", "Unpin", "Открепить")
+                : localized("置顶", "Pin", "Закрепить")
+            let action = UIContextualAction(style: .normal, title: title) {
+                _, _, complete in
+                configuration.onPin(!configuration.isPinned)
+                complete(true)
+            }
+            action.image = UIImage(systemName: configuration.isPinned
+                                   ? "pin.slash.fill" : "pin.fill")
+            action.backgroundColor = .systemOrange
+            let swipe = UISwipeActionsConfiguration(actions: [action])
+            swipe.performsFirstActionWithFullSwipe = false
+            return swipe
+        }
+
+        func collectionView(
+            _ collectionView: UICollectionView,
+            trailingSwipeActionsConfigurationForItemAt indexPath: IndexPath
+        ) -> UISwipeActionsConfiguration? {
+            guard let id = dataSource?.itemIdentifier(for: indexPath),
+                  let entry = lookup[id],
+                  let configuration = nativeRow?(entry) else { return nil }
+            let action = UIContextualAction(
+                style: .destructive,
+                title: localized("删除", "Delete", "Удалить")
+            ) { _, _, complete in
+                configuration.onDelete()
+                complete(true)
+            }
+            action.image = UIImage(systemName: "trash.fill")
+            action.backgroundColor = .systemRed
+            let swipe = UISwipeActionsConfiguration(actions: [action])
+            swipe.performsFirstActionWithFullSwipe = true
+            return swipe
+        }
+
         private func publishScrollState(_ active: Bool) {
             guard active != lastScrollActive else { return }
             lastScrollActive = active

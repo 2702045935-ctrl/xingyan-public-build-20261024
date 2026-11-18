@@ -14,28 +14,25 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "UISwipeActionsConfiguration" not in LIST,
-    "the unreliable system collection swipe callback must not remain",
+    "UISwipeActionsConfiguration" in LIST
+    and "leadingSwipeActionsConfigurationForItemAt" in LIST
+    and "trailingSwipeActionsConfigurationForItemAt" in LIST,
+    "chat rows must use native collection-view swipe actions",
 )
 require(
-    "trailingSwipeActionsConfigurationForItemAt" not in LIST,
-    "left swipe must not depend on the system callback that fails in the custom cell",
+    "action.backgroundColor = .systemOrange" in LIST
+    and "action.backgroundColor = .systemRed" in LIST
+    and "swipe.performsFirstActionWithFullSwipe = false" in LIST
+    and "swipe.performsFirstActionWithFullSwipe = true" in LIST,
+    "right swipe must pin in orange and left swipe must delete in red",
 )
 require(
-    "UIGestureRecognizerDelegate" in ROW,
-    "the row must arbitrate horizontal swipe against vertical scrolling in UIKit",
-)
-require(
-    "foreground.addGestureRecognizer(pan)" in ROW,
-    "the foreground must install a cell-level UIKit swipe recognizer",
+    "foreground.addGestureRecognizer(pan)" not in ROW,
+    "the custom cell-level horizontal swipe must be removed",
 )
 require(
     "gestureRecognizerShouldBegin" in ROW,
-    "vertical scrolling must remain with the collection view",
-)
-require(
-    "freezeEnclosingScroll()" in ROW and "restoreEnclosingScroll()" in ROW,
-    "horizontal swipes must temporarily own the gesture and restore scrolling",
+    "the avatar interaction must not compete with native row swipes",
 )
 require(
     "contextMenuConfigurationForItemAt" not in LIST,
@@ -67,10 +64,6 @@ require(
     and "consumeSelectionAfterSwipe()" in ROW
     and "consumeSelectionAfterSwipe()" in LIST,
     "a recognized swipe must consume only its short-lived selection callback",
-)
-require(
-    "pan.cancelsTouchesInView = true" in ROW,
-    "the winning horizontal pan must cancel the collection selection touch",
 )
 require(
     "override func touchesBegan" in ROW
