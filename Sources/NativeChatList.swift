@@ -190,6 +190,40 @@ where Item.ID: Hashable {
                     return
                 }
             }
+            let isPureAppend = !order.isEmpty
+                && next.count > order.count
+                && next.prefix(order.count).allSatisfy { lookup[$0.id] == $0 }
+            if isPureAppend {
+                let added = Array(next[order.count...])
+                let addedIDs = added.map(\.id)
+                let previousOffset = collection.contentOffset
+                for item in added { lookup[item.id] = item }
+                order.append(contentsOf: addedIDs)
+                appliedItemCount = order.count
+                endRequestInFlight = false
+                pendingItems = nil
+                applyGeneration += 1
+                let generation = applyGeneration
+                var snapshot = dataSource.snapshot()
+                snapshot.appendItems(addedIDs, toSection: 0)
+                dataSource.apply(snapshot, animatingDifferences: false) {
+                    guard generation == self.applyGeneration,
+                          self.collection === collection,
+                          !collection.isTracking,
+                          !collection.isDragging,
+                          !collection.isDecelerating else { return }
+                    let minimumY = -collection.adjustedContentInset.top
+                    let maximumY = max(
+                        minimumY,
+                        collection.contentSize.height - collection.bounds.height
+                            + collection.adjustedContentInset.bottom
+                    )
+                    var target = previousOffset
+                    target.y = min(max(target.y, minimumY), maximumY)
+                    collection.setContentOffset(target, animated: false)
+                }
+                return
+            }
             let nextLookup = Dictionary(uniqueKeysWithValues: next.map { ($0.id, $0) })
             let nextOrder = next.map(\.id)
             if nextOrder == order && next.allSatisfy({ lookup[$0.id] == $0 }) {

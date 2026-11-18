@@ -81,6 +81,11 @@ require(
     "updated.list.append(contentsOf: added)" in CHATS,
     "stress conversation snapshots must append new pages without rescanning all loaded rows",
 )
+require(
+    "let isPureAppend = !order.isEmpty" in NATIVE_CHAT_LIST
+    and "snapshot.appendItems(addedIDs, toSection: 0)" in NATIVE_CHAT_LIST,
+    "pure conversation-list appends must update only the new identifiers",
+)
 
 MOMENTS = (ROOT / "Sources" / "MomentStressFixture.swift").read_text(encoding="utf-8")
 require(

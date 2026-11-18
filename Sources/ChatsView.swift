@@ -1232,6 +1232,7 @@ struct ChatsView: View {
     @State private var path = NavigationPath()
     @State private var stressAutoOpened = false
     @State private var stressLoadedCount = ChatStressFixture.initialWindow
+    @State private var stressChatEntries: [NativeChatEntry] = []
 
     @State private var oaOpenId = ""
     @State private var showOA = false
@@ -1305,6 +1306,7 @@ struct ChatsView: View {
         }
         updated.list.append(contentsOf: added)
         updated.unreadCounts = counts
+        stressChatEntries.append(contentsOf: added.map(nativeChatEntry(for:)))
         cachedSnapshot = updated
     }
 
@@ -2407,7 +2409,7 @@ struct ChatsView: View {
     }
 
     private func nativeChatEntries(_ snapshot: ChatFilterSnapshot) -> [NativeChatEntry] {
-        let appearance = "\(chatsIsDark)-\(scheme)-\(Lang.code)-\(UIConfig.text("chatsBackground", ""))"
+        let appearance = nativeChatAppearance
         var entries: [NativeChatEntry] = [
             NativeChatEntry(
                 id: "top",
@@ -2438,14 +2440,9 @@ struct ChatsView: View {
                 signature: "\(appearance)-\(Tr("这个分类暂时没有会话"))"
             ))
         } else {
-            entries.append(contentsOf: snapshot.list.map { chat in
-                NativeChatEntry(
-                    id: "chat:\(chat.id)",
-                    kind: .chat,
-                    signature: "\(appearance)-\(chatContactVisualSignature(chat))",
-                    chat: chat
-                )
-            })
+            entries.append(contentsOf: ChatStressFixture.isActive
+                ? stressChatEntries
+                : snapshot.list.map(nativeChatEntry(for:)))
         }
 
         entries.append(NativeChatEntry(
@@ -2459,6 +2456,24 @@ struct ChatsView: View {
             signature: "\(L.tabH)-\(L.safeBottom)"
         ))
         return entries
+    }
+
+    private var nativeChatAppearance: String {
+        "\(chatsIsDark)-\(scheme)-\(Lang.code)-\(UIConfig.text("chatsBackground", ""))"
+    }
+
+    private func nativeChatEntry(for chat: Chat) -> NativeChatEntry {
+        NativeChatEntry(
+            id: "chat:\(chat.id)",
+            kind: .chat,
+            signature: "\(nativeChatAppearance)-\(chatContactVisualSignature(chat))",
+            chat: chat
+        )
+    }
+
+    private func rebuildStressChatEntries(_ snapshot: ChatFilterSnapshot) {
+        guard ChatStressFixture.isActive else { return }
+        stressChatEntries = snapshot.list.map(nativeChatEntry(for:))
     }
 
     private func chatContactVisualSignature(_ chat: Chat) -> String {
@@ -2877,7 +2892,9 @@ struct ChatsView: View {
             }
 
             .onAppear {
-                cachedSnapshot = chatSnapshot()
+                let next = chatSnapshot()
+                cachedSnapshot = next
+                rebuildStressChatEntries(next)
                 if MessageStressFixture.autoOpen,
                    !stressAutoOpened,
                    let first = MessageStressFixture.firstChat {
@@ -2888,9 +2905,21 @@ struct ChatsView: View {
                 localPayOfficialAvatar = UserDefaults.standard.string(forKey: "chris.accountIcon.payOfficialRowAvatar") ?? ""
                 localWeatherRowAvatar = UserDefaults.standard.string(forKey: "chris.accountIcon.weatherRowAvatar") ?? ""
             }
-            .onChange(of: app.chats) { _ in cachedSnapshot = chatSnapshot() }
-            .onChange(of: chatFilter) { _ in cachedSnapshot = chatSnapshot() }
-            .onChange(of: keyword) { _ in cachedSnapshot = chatSnapshot() }
+            .onChange(of: app.chats) { _ in
+                let next = chatSnapshot()
+                cachedSnapshot = next
+                rebuildStressChatEntries(next)
+            }
+            .onChange(of: chatFilter) { _ in
+                let next = chatSnapshot()
+                cachedSnapshot = next
+                rebuildStressChatEntries(next)
+            }
+            .onChange(of: keyword) { _ in
+                let next = chatSnapshot()
+                cachedSnapshot = next
+                rebuildStressChatEntries(next)
+            }
             .onChange(of: stressLoadedCount) { _ in
                 if !ChatStressFixture.isActive {
                     cachedSnapshot = chatSnapshot()
