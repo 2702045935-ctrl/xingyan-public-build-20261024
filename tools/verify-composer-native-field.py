@@ -13,13 +13,13 @@ def require(condition: bool, message: str) -> None:
 
 require(
     "private var composerFieldShape: RoundedRectangle" in CHAT
-    and "composerFieldShape.fill(.regularMaterial)" in CHAT
-    and "Color(uiColor: .secondarySystemBackground)" in CHAT,
-    "composer field must use native material and system background",
+    and "shape: composerFieldShape" in CHAT
+    and "native: true" in CHAT,
+    "composer field must use the native Liquid Glass surface",
 )
 require(
-    "GlassBackground(\n                            shape: fieldShape" not in CHAT,
-    "composer field must not retain the old custom glass stack",
+    "composerFieldShape.fill(.regularMaterial)" not in CHAT,
+    "composer field must not fall back to an opaque material-only surface",
 )
 require(
     "Color.primary.opacity(0.085)" in CHAT,

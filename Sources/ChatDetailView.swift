@@ -5326,10 +5326,15 @@ struct ChatDetailView: View {
                 .frame(height: composerInputHeight)
                 .background {
                     ZStack {
-                        composerFieldShape.fill(.regularMaterial)
-                        composerFieldShape.fill(
-                            Color(uiColor: .secondarySystemBackground)
-                                .opacity(scheme == .dark ? 0.34 : 0.52)
+                        GlassBackground(
+                            shape: composerFieldShape,
+                            opacity: scheme == .dark ? 0.94 : 0.97,
+                            edgeAlpha: scheme == .dark ? 0.12 : 0.18,
+                            seed: 0.23,
+                            native: true,
+                            tint: composerUsesLightInk
+                                ? Color.black.opacity(0.10)
+                                : nil
                         )
                         if recorder.recording {
                             composerFieldShape.fill(
