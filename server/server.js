@@ -8162,25 +8162,45 @@ async function lookupRemoteUserByUsername(username) {
 async function syncFriendshipCacheFromOwners(userIds, timeoutMs = 1800) {
   const ids = Array.from(new Set((userIds || []).map(String).filter(Boolean)));
   if (!ids.length) return;
-  const results = await Promise.all(chatOwnerPorts.map(async (port) => {
-    if (!port || port === PORT) return [];
+  const remotePorts = chatOwnerPorts.filter((port) => port && port !== PORT);
+  if (!remotePorts.length) return;
+  const results = await Promise.all(remotePorts.map(async (port) => {
     const result = await postShardJson(port, '/__shard/friend-list', {
       planHash: chatRoutePlan && chatRoutePlan.hash,
       fileSha256: chatRoutePlan && chatRoutePlan.fileHash,
       userIds: ids
     }, timeoutMs);
-    return result.payload && result.payload.ok && result.payload.data
-      && Array.isArray(result.payload.data.friendships)
-      ? result.payload.data.friendships : [];
+    const ok = !!(result.payload && result.payload.ok && result.payload.data
+      && Array.isArray(result.payload.data.friendships));
+    return {
+      ok,
+      friendships: ok ? result.payload.data.friendships : []
+    };
   }));
   loadRemoteFriendshipCache();
   let changed = false;
-  results.flat().forEach((friendship) => {
+  const wanted = new Set(ids);
+  const ownerRows = results.flatMap((result) => result.friendships);
+  const ownerKeys = new Set(ownerRows.map(friendshipCacheKey).filter(Boolean));
+  ownerRows.forEach((friendship) => {
     const key = friendshipCacheKey(friendship);
     if (!key) return;
     remoteFriendships.set(key, friendship);
     changed = true;
   });
+  /* 只有所有 owner 分片都成功返回时才能判断“缺行=已删除”。
+     任一 owner 超时就只补新增，绝不误删仍然存在的好友关系。 */
+  if (results.every((result) => result.ok)) {
+    for (const [key, friendship] of remoteFriendships) {
+      if (!friendship) continue;
+      if (!wanted.has(String(friendship.fromId))
+          && !wanted.has(String(friendship.toId))) continue;
+      if (!ownerKeys.has(key)) {
+        remoteFriendships.delete(key);
+        changed = true;
+      }
+    }
+  }
   if (changed) saveRemoteFriendshipCache();
 }
 
