@@ -164,6 +164,17 @@ struct NativeScrollEdgeElementBridge: UIViewRepresentable {
         let view = UIView()
         view.backgroundColor = .clear
         view.isUserInteractionEnabled = false
+        let edgeShape = UIView()
+        edgeShape.backgroundColor = .clear
+        edgeShape.isUserInteractionEnabled = false
+        edgeShape.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(edgeShape)
+        NSLayoutConstraint.activate([
+            edgeShape.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            edgeShape.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            edgeShape.topAnchor.constraint(equalTo: view.topAnchor),
+            edgeShape.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
         attach(to: view, coordinator: context.coordinator)
         return view
     }

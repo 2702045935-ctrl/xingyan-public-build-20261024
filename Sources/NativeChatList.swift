@@ -66,7 +66,7 @@ where Item.ID: Hashable {
              * 顶栏再通过 UIScrollEdgeElementContainerInteraction 把系统效果
              * 延伸到自定义顶栏区域，静止在顶部时仍会自然消失。
              */
-            collection.topEdgeEffect.style = .automatic
+            collection.topEdgeEffect.style = .hard
             collection.topEdgeEffect.isHidden = false
             collection.bottomEdgeEffect.isHidden = true
         }

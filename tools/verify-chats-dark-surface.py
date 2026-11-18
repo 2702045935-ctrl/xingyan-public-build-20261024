@@ -26,7 +26,7 @@ require(
     "native row cells must apply the divider visibility configuration",
 )
 require(
-    "collection.topEdgeEffect.style = .automatic" in NATIVE_LIST
+    "collection.topEdgeEffect.style = .hard" in NATIVE_LIST
     and "collection.topEdgeEffect.isHidden = false" in NATIVE_LIST,
     "dark scroll chrome must use the system scroll-edge material",
 )
