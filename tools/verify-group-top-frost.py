@@ -14,12 +14,20 @@ def require(condition: bool, message: str) -> None:
 
 require(
     "private struct ChatTopGlassBackdrop" in CHAT
-    and "NativeGlassHeaderMaterial()" in CHAT,
-    "chat top chrome must use the native glass material",
+    and "NativeScrollEdgeElementBridge(" in CHAT
+    and "ChatScrollHandle.shared.scroll" in CHAT,
+    "chat top chrome must use the system scroll-edge effect",
 )
 require(
-    ".init(color: .clear, location: 1)" in CHAT_FLAT,
-    "the native top material must fade without a visible strip",
+    "sv.topEdgeEffect.style = .automatic" in (
+        ROOT / "Sources" / "ScrollProbe.swift"
+    ).read_text(encoding="utf-8"),
+    "message scrolling must expose the system top-edge effect",
+)
+require(
+    "private struct ChatHeaderGlassGroup" in CHAT
+    and ".glassEffect(.regular.interactive(), in: capsule)" in CHAT,
+    "the back, conversation title and three chat actions need native interactive glass",
 )
 require(
     "chatBackdrop" in CHAT and "ChatTopGlassBackdrop()" in CHAT,

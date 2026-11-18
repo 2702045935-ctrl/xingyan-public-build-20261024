@@ -141,7 +141,9 @@ struct NativeChatsTopEdgeChrome: View {
 
     var body: some View {
         if #available(iOS 26.0, *) {
-            NativeScrollEdgeElementBridge()
+            NativeScrollEdgeElementBridge(
+                scrollView: { NativeChatListScrollRegistry.shared.chats }
+            )
         } else {
             NativeTopGlassMask(active: scrolled > 0)
         }
@@ -149,7 +151,9 @@ struct NativeChatsTopEdgeChrome: View {
 }
 
 #if canImport(UIKit)
-private struct NativeScrollEdgeElementBridge: UIViewRepresentable {
+struct NativeScrollEdgeElementBridge: UIViewRepresentable {
+    let scrollView: () -> UIScrollView?
+
     final class Coordinator {
         var retryScheduled = false
     }
@@ -182,7 +186,7 @@ private struct NativeScrollEdgeElementBridge: UIViewRepresentable {
             view.addInteraction(interaction)
         }
 
-        interaction.scrollView = NativeChatListScrollRegistry.shared.chats
+        interaction.scrollView = scrollView()
         guard interaction.scrollView == nil, !coordinator.retryScheduled else { return }
         coordinator.retryScheduled = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {

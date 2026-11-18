@@ -184,6 +184,10 @@ struct ScrollOffsetProbe: UIViewRepresentable {
             lastScrollState = nil
             lastDragState = nil
 
+            if #available(iOS 26.0, *) {
+                sv.topEdgeEffect.style = .automatic
+                sv.topEdgeEffect.isHidden = false
+            }
             sv.alwaysBounceVertical = true
             obsOffset = sv.observe(\.contentOffset, options: [.new]) { [weak self] s, _ in
                 let active = s.isDragging || s.isDecelerating || s.isTracking

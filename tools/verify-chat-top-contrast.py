@@ -18,10 +18,10 @@ require(
 )
 require(
     "private struct ChatTopGlassBackdrop" in DETAIL
-    and "NativeGlassHeaderMaterial()" in DETAIL
-    and ".init(color: .clear, location: 1)" in DETAIL
+    and "NativeScrollEdgeElementBridge(" in DETAIL
+    and "ChatScrollHandle.shared.scroll" in DETAIL
     and "topBarContrastScrim" not in DETAIL,
-    "chat top chrome must blur the continuous backdrop without a visible strip",
+    "chat top chrome must use the continuous system scroll-edge material",
 )
 require(
     "titleOutline: adaptiveTopOutline.opacity(0.55)" in DETAIL,

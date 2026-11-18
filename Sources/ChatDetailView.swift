@@ -532,6 +532,10 @@ private struct ChatTopGlassBackdrop: View {
             if reduceTransparency {
                 Rectangle()
                     .fill(Color(uiColor: .systemBackground).opacity(0.97))
+            } else if #available(iOS 26.0, *) {
+                NativeScrollEdgeElementBridge(
+                    scrollView: { ChatScrollHandle.shared.scroll }
+                )
             } else {
                 NativeGlassHeaderMaterial()
                     .mask {
@@ -549,6 +553,71 @@ private struct ChatTopGlassBackdrop: View {
         }
         .ignoresSafeArea(edges: .top)
         .allowsHitTesting(false)
+    }
+}
+
+private struct ChatHeaderGlassGroup<Content: View>: View {
+    let lightInk: Bool
+    private let content: Content
+
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    init(lightInk: Bool, @ViewBuilder content: () -> Content) {
+        self.lightInk = lightInk
+        self.content = content()
+    }
+
+    var body: some View {
+        content
+            .background { glassBackdrop }
+            .overlay {
+                Capsule(style: .continuous)
+                    .stroke(
+                        lightInk
+                            ? Color.white.opacity(0.20)
+                            : Color.black.opacity(0.055),
+                        lineWidth: 0.6
+                    )
+            }
+            .shadow(color: Color.black.opacity(lightInk ? 0.14 : 0.055),
+                    radius: 7, x: 0, y: 2)
+    }
+
+    @ViewBuilder
+    private var glassBackdrop: some View {
+        let capsule = Capsule(style: .continuous)
+        let tint = lightInk
+            ? Color.black.opacity(0.06)
+            : Color.white.opacity(0.08)
+
+        if reduceTransparency {
+            ZStack {
+                capsule.fill(Color(uiColor: .secondarySystemBackground))
+                capsule.fill(tint)
+            }
+        } else {
+            #if compiler(>=6.2)
+            if #available(iOS 26.0, *) {
+                ZStack {
+                    Color.clear
+                        .glassEffect(.regular.interactive(), in: capsule)
+                    capsule.fill(tint)
+                }
+            } else {
+                legacyBackdrop(capsule: capsule, tint: tint)
+            }
+            #else
+            legacyBackdrop(capsule: capsule, tint: tint)
+            #endif
+        }
+    }
+
+    private func legacyBackdrop<S: Shape>(capsule: S, tint: Color) -> some View {
+        ZStack {
+            NativeGlassHeaderMaterial()
+            capsule.fill(tint)
+        }
+        .clipShape(capsule)
     }
 }
 
@@ -1381,143 +1450,158 @@ struct ChatDetailView: View {
     }
 
     private var whatsAppChatHeader: some View {
-        let hideChrome = false
         let title = loadingAllGroupHistory ? Tr("正在同步全部消息…") : navTitle
 
-        return HStack(spacing: 0) {
-            if let back = navBackAction {
-                Button(action: back) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 19, weight: .medium))
-                        .foregroundStyle(adaptiveTopInk)
-                        .frame(width: 42, height: 44)
-                        .contentShape(Rectangle())
+        return ZStack {
+            HStack(spacing: 8) {
+                if let back = navBackAction {
+                    ChatHeaderGlassGroup(lightInk: topBarUsesLightInk) {
+                        HStack(spacing: 2) {
+                            Button(action: back) {
+                                Image(systemName: "chevron.left")
+                                    .font(.system(size: 18.5, weight: .semibold))
+                                    .foregroundStyle(adaptiveTopInk)
+                                    .frame(width: 39, height: 39)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(Tr("返回"))
+
+                            if let badge = leftUnreadBadge {
+                                badge
+                                    .padding(.trailing, 8)
+                            }
+                        }
+                    }
+                } else {
+                    Color.clear.frame(width: 42, height: 42)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Tr("返回"))
+
+                Spacer(minLength: 0)
+
+                ChatHeaderGlassGroup(lightInk: topBarUsesLightInk) {
+                    HStack(spacing: 0) {
+                        Button {
+                            startRealCall(video: true)
+                        } label: {
+                            Image(systemName: "video")
+                                .font(.system(size: 17.5, weight: .medium))
+                                .foregroundStyle(adaptiveTopInk.opacity(0.82))
+                                .frame(width: 38, height: 39)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(Tr("视频通话"))
+
+                        Rectangle()
+                            .fill(adaptiveTopInk.opacity(0.10))
+                            .frame(width: 0.5, height: 18)
+
+                        Button {
+                            startRealCall(video: false)
+                        } label: {
+                            Image(systemName: "phone")
+                                .font(.system(size: 17.5, weight: .medium))
+                                .foregroundStyle(adaptiveTopInk.opacity(0.82))
+                                .frame(width: 38, height: 39)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(Tr("语音通话"))
+
+                        Rectangle()
+                            .fill(adaptiveTopInk.opacity(0.10))
+                            .frame(width: 0.5, height: 18)
+
+                        Menu {
+                            Button {
+                                if isGroup { showGroupInfo = true } else { showChatInfo = true }
+                            } label: {
+                                Label(Tr("会话信息"), systemImage: "info.circle")
+                            }
+
+                            if isGroup && !groupAnnouncement.isEmpty {
+                                Button {
+                                    announcePage = groupAnnouncement
+                                    showAnnouncePage = true
+                                } label: {
+                                    Label(Tr("群公告"), systemImage: "megaphone")
+                                }
+                            }
+
+                            Button {
+                                showChatFavorites = true
+                            } label: {
+                                Label(Tr("收藏"), systemImage: "bookmark")
+                            }
+
+                            if isStarWorld {
+                                Button {
+                                    withAnimation(.easeInOut(duration: 0.18)) {
+                                        newsMode.toggle()
+                                    }
+                                } label: {
+                                    Label(Tr("世界"), systemImage: "globe.asia.australia")
+                                }
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis")
+                                .font(.system(size: 16.5, weight: .semibold))
+                                .foregroundStyle(adaptiveTopInk)
+                                .frame(width: 39, height: 39)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(Tr("更多"))
+                    }
+                }
             }
 
-            if let badge = leftUnreadBadge {
-                badge
-                    .padding(.leading, 3)
-                    .padding(.trailing, 5)
-            }
-
-            if !hideChrome {
+            ChatHeaderGlassGroup(lightInk: topBarUsesLightInk) {
                 Button {
                     if isGroup { showGroupInfo = true } else { showChatInfo = true }
                 } label: {
-                    HStack(spacing: 10) {
+                    HStack(spacing: 7) {
                         whatsAppChatAvatar
+                            .scaleEffect(0.84)
+                            .frame(width: 29, height: 29)
 
-                        VStack(alignment: .leading, spacing: 2) {
+                        VStack(alignment: .leading, spacing: 0.5) {
                             Text(title)
-                                .font(pf(17, .semibold))
+                                .font(pf(15.5, .semibold))
                                 .foregroundStyle(adaptiveTopInk)
                                 .lineLimit(1)
                                 .truncationMode(.tail)
 
                             if isPeerTyping {
-                                HStack(spacing: 5) {
+                                HStack(spacing: 4) {
                                     ChatTypingDots(color: Color(hex: 0x25D366))
                                     Text(isGroup ? Tr("有人正在输入") : Tr("正在输入"))
-                                        .font(pf(12.5, .regular))
-                                        .foregroundStyle(adaptiveTopInk.opacity(
-                                            topBarUsesLightInk ? 0.78 : 0.72
-                                        ))
+                                        .font(pf(10.5, .regular))
+                                        .foregroundStyle(adaptiveTopInk.opacity(0.74))
                                         .lineLimit(1)
                                 }
                                 .transition(.opacity.combined(with: .move(edge: .top)))
                             } else if !whatsAppChatSubtitle.isEmpty {
                                 Text(whatsAppChatSubtitle)
-                                    .font(pf(12.5, .regular))
-                                    .foregroundStyle(adaptiveTopInk.opacity(
-                                        topBarUsesLightInk ? 0.78 : 0.72
-                                    ))
+                                    .font(pf(10.5, .regular))
+                                    .foregroundStyle(adaptiveTopInk.opacity(0.72))
                                     .lineLimit(1)
                             }
                         }
                     }
-                    .contentShape(Rectangle())
+                    .padding(.horizontal, 7)
+                    .frame(height: 39)
+                    .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(title)
-
-                Spacer(minLength: 6)
-
-                Button {
-                    startRealCall(video: true)
-                } label: {
-                    Image(systemName: "video")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundStyle(adaptiveTopInk.opacity(0.74))
-                        .frame(width: 38, height: 44)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Tr("视频通话"))
-
-                Button {
-                    startRealCall(video: false)
-                } label: {
-                    Image(systemName: "phone")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundStyle(adaptiveTopInk.opacity(0.74))
-                        .frame(width: 38, height: 44)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Tr("语音通话"))
-
-                Menu {
-                    Button {
-                        if isGroup { showGroupInfo = true } else { showChatInfo = true }
-                    } label: {
-                        Label(Tr("会话信息"), systemImage: "info.circle")
-                    }
-
-                    if isGroup && !groupAnnouncement.isEmpty {
-                        Button {
-                            announcePage = groupAnnouncement
-                            showAnnouncePage = true
-                        } label: {
-                            Label(Tr("群公告"), systemImage: "megaphone")
-                        }
-                    }
-
-                    Button {
-                        showChatFavorites = true
-                    } label: {
-                        Label(Tr("收藏"), systemImage: "bookmark")
-                    }
-
-                    if isStarWorld {
-                        Button {
-                            withAnimation(.easeInOut(duration: 0.18)) {
-                                newsMode.toggle()
-                            }
-                        } label: {
-                            Label(Tr("世界"), systemImage: "globe.asia.australia")
-                        }
-                    }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(adaptiveTopInk)
-                        .frame(width: 42, height: 44)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Tr("更多"))
-            } else {
-                Spacer(minLength: 0)
             }
+            .frame(maxWidth: 126)
         }
         .shadow(color: adaptiveTopGlyphShadow, radius: 0.9, x: 0, y: 0.35)
-        .padding(.leading, 2)
-        .padding(.trailing, 2)
+        .padding(.horizontal, 4)
         .frame(height: L.navH)
-        .animation(.easeOut(duration: 0.18), value: hideChrome)
     }
 
     private var chatTopNavigation: AnyView {
