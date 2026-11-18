@@ -3216,7 +3216,7 @@ let momentsLogCount = 0;
 let momentsDiskSignature = '';
 let momentReplicationState = null;
 let momentReplicationOutbox = null;
-let momentReplicationFlushing = false;
+let momentReplicationPromise = null;
 let momentReplicationRetryTimer = null;
 
 function momentsStorageSignature() {
@@ -3340,42 +3340,46 @@ function queueMomentReplicationRecords(records) {
   saveMomentReplicationOutbox();
 }
 
-async function flushMomentReplication() {
-  if (momentReplicationFlushing) return;
+function flushMomentReplication() {
+  if (momentReplicationPromise) return momentReplicationPromise;
   const outbox = momentReplicationMap();
-  if (!outbox.size || !chatRoutePlan || !db.secret) return;
+  if (!outbox.size || !chatRoutePlan || !db.secret) return Promise.resolve();
   const ports = Array.from(new Set(chatOwnerPorts)).filter((port) => port && port !== PORT);
   if (!ports.length) {
     outbox.clear();
     saveMomentReplicationOutbox();
-    return;
+    return Promise.resolve();
   }
-  momentReplicationFlushing = true;
-  const records = Array.from(outbox.values());
-  let allOk = true;
-  await Promise.all(ports.map(async (port) => {
-    const result = await postShardJson(port, '/__shard/moment-replicate', {
-      planHash: chatRoutePlan.hash,
-      fileSha256: chatRoutePlan.fileHash,
-      records
-    }, 2200);
-    if (!result.payload || !result.payload.ok) allOk = false;
-  }));
-  momentReplicationFlushing = false;
-  if (allOk) {
-    records.forEach((record) => {
-      const id = String(record && (record.id || (record.moment && record.moment.id)) || '');
-      if (id) outbox.delete(id);
-    });
-    saveMomentReplicationOutbox();
-  }
-  if (outbox.size && !momentReplicationRetryTimer) {
-    momentReplicationRetryTimer = setTimeout(() => {
-      momentReplicationRetryTimer = null;
-      flushMomentReplication().catch(() => {});
-    }, 2500);
-    if (momentReplicationRetryTimer.unref) momentReplicationRetryTimer.unref();
-  }
+  momentReplicationPromise = (async () => {
+    while (outbox.size) {
+      const records = Array.from(outbox.values());
+      let allOk = true;
+      await Promise.all(ports.map(async (port) => {
+        const result = await postShardJson(port, '/__shard/moment-replicate', {
+          planHash: chatRoutePlan.hash,
+          fileSha256: chatRoutePlan.fileHash,
+          records
+        }, 2200);
+        if (!result.payload || !result.payload.ok) allOk = false;
+      }));
+      if (!allOk) break;
+      records.forEach((record) => {
+        const id = String(record && (record.id || (record.moment && record.moment.id)) || '');
+        if (id) outbox.delete(id);
+      });
+      saveMomentReplicationOutbox();
+    }
+    if (outbox.size && !momentReplicationRetryTimer) {
+      momentReplicationRetryTimer = setTimeout(() => {
+        momentReplicationRetryTimer = null;
+        flushMomentReplication().catch(() => {});
+      }, 1200);
+      if (momentReplicationRetryTimer.unref) momentReplicationRetryTimer.unref();
+    }
+  })().finally(() => {
+    momentReplicationPromise = null;
+  });
+  return momentReplicationPromise;
 }
 
 function queueMomentReplicationDiff() {
