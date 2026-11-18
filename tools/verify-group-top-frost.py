@@ -26,8 +26,9 @@ require(
 )
 require(
     "private struct ChatHeaderGlassGroup" in CHAT
-    and ".glassEffect(.regular.interactive(), in: capsule)" in CHAT,
-    "the previous circled chat header layout must use native interactive glass",
+    and "Color.clear\n                            .glassEffect(.regular.interactive(), in: capsule)" in CHAT
+    and "capsule.fill(tint)" not in CHAT.split("private var legacyGlass", 1)[0],
+    "the previous circled chat header layout must use untinted native interactive glass",
 )
 require(
     "chatBackdrop" in CHAT and "ChatTopGlassBackdrop()" in CHAT,

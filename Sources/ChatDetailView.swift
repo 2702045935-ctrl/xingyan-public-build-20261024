@@ -568,56 +568,56 @@ private struct ChatHeaderGlassGroup<Content: View>: View {
     }
 
     var body: some View {
-        content
-            .background { glassBackdrop }
-            .overlay {
-                Capsule(style: .continuous)
-                    .stroke(
-                        lightInk
-                            ? Color.white.opacity(0.20)
-                            : Color.black.opacity(0.055),
-                        lineWidth: 0.6
-                    )
+        let capsule = Capsule(style: .continuous)
+
+        if reduceTransparency {
+            ZStack {
+                content
+                    .background {
+                        capsule.fill(Color(uiColor: .secondarySystemBackground))
+                    }
             }
-            .shadow(color: Color.black.opacity(lightInk ? 0.14 : 0.055),
-                    radius: 7, x: 0, y: 2)
+        } else {
+            #if compiler(>=6.2)
+            if #available(iOS 26.0, *) {
+                content
+                    .background {
+                        Color.clear
+                            .glassEffect(.regular.interactive(), in: capsule)
+                    }
+            } else {
+                legacyGlass
+            }
+            #else
+            legacyGlass
+            #endif
+        }
     }
 
-    @ViewBuilder
-    private var glassBackdrop: some View {
+    private var legacyGlass: some View {
         let capsule = Capsule(style: .continuous)
         let tint = lightInk
             ? Color.black.opacity(0.06)
             : Color.white.opacity(0.08)
 
-        if reduceTransparency {
-            ZStack {
-                capsule.fill(Color(uiColor: .secondarySystemBackground))
-                capsule.fill(tint)
-            }
-        } else {
-            #if compiler(>=6.2)
-            if #available(iOS 26.0, *) {
+        return content
+            .background {
                 ZStack {
-                    Color.clear
-                        .glassEffect(.regular.interactive(), in: capsule)
+                    NativeGlassHeaderMaterial()
                     capsule.fill(tint)
                 }
-            } else {
-                legacyBackdrop(capsule: capsule, tint: tint)
+                .clipShape(capsule)
             }
-            #else
-            legacyBackdrop(capsule: capsule, tint: tint)
-            #endif
-        }
-    }
-
-    private func legacyBackdrop<S: Shape>(capsule: S, tint: Color) -> some View {
-        ZStack {
-            NativeGlassHeaderMaterial()
-            capsule.fill(tint)
-        }
-        .clipShape(capsule)
+            .overlay {
+                capsule.stroke(
+                    lightInk
+                        ? Color.white.opacity(0.20)
+                        : Color.black.opacity(0.055),
+                    lineWidth: 0.6
+                )
+            }
+            .shadow(color: Color.black.opacity(lightInk ? 0.14 : 0.055),
+                    radius: 7, x: 0, y: 2)
     }
 }
 
