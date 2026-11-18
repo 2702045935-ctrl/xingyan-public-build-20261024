@@ -23,7 +23,14 @@ require(
     and "ChatImmersiveEdgeMask(path: backgroundPath" in DETAIL
     and "edge: .top" in DETAIL
     and "topBarContrastScrim" not in DETAIL,
-    "light chat chrome must preserve the wallpaper extension and native blur layer",
+    "chat chrome must keep the wallpaper extension and native top material",
+)
+require(
+    "} else if scheme == .light {\n"
+    "                        ChatImmersiveEdgeMask(path: backgroundPath" in DETAIL
+    and "themeVersion: chatTheme.version)\n"
+        "                            ChatTopGlassBackdrop()" not in DETAIL,
+    "light chat chrome must keep the wallpaper extension without the dark blur layer",
 )
 require(
     "titleOutline: adaptiveTopOutline.opacity(0.55)" in DETAIL,

@@ -2210,16 +2210,13 @@ struct ChatDetailView: View {
                     if isStarWorld && newsMode {
                         newsMaskColor
                     } else if scheme == .light {
-                        ZStack {
-                            ChatImmersiveEdgeMask(path: backgroundPath,
-                                                  edge: .top,
-                                                  tint: wallpaperTopTint,
-                                                  dark: topBarUsesLightInk,
-                                                  effect: backgroundEffect,
-                                                  preset: ChatTheme.preset,
-                                                  themeVersion: chatTheme.version)
-                            ChatTopGlassBackdrop()
-                        }
+                        ChatImmersiveEdgeMask(path: backgroundPath,
+                                              edge: .top,
+                                              tint: wallpaperTopTint,
+                                              dark: topBarUsesLightInk,
+                                              effect: backgroundEffect,
+                                              preset: ChatTheme.preset,
+                                              themeVersion: chatTheme.version)
                     } else {
                         ChatTopGlassBackdrop()
                     }
