@@ -458,6 +458,7 @@ private struct ChatImmersiveEdgeMask: View {
             let direction: (UnitPoint, UnitPoint) = edge == .top
                 ? (.top, .bottom)
                 : (.bottom, .top)
+            let contrastScrim = effectiveDark ? Color.black : Color.white
 
             ZStack(alignment: alignment) {
                 Rectangle()
@@ -492,6 +493,18 @@ private struct ChatImmersiveEdgeMask: View {
                     .fill(base.opacity(blurred
                                        ? (effectiveDark ? 0.065 : 0.045)
                                        : (effectiveDark ? 0.045 : 0.025)))
+
+                LinearGradient(
+                    stops: [
+                        .init(color: contrastScrim.opacity(effectiveDark ? 0.30 : 0.26),
+                              location: 0),
+                        .init(color: contrastScrim.opacity(effectiveDark ? 0.18 : 0.15),
+                              location: 0.58),
+                        .init(color: .clear, location: 1)
+                    ],
+                    startPoint: direction.0,
+                    endPoint: direction.1
+                )
 
                 LinearGradient(
                     colors: [
@@ -1937,8 +1950,8 @@ struct ChatDetailView: View {
 
     private var composerUtilityInk: Color {
         composerUsesLightInk
-            ? Color.white.opacity(0.72)
-            : Color(hex: 0x54656F)
+            ? Color.white.opacity(0.90)
+            : Color(hex: 0x3E4A52)
     }
 
     private var adaptiveComposerSurface: Color {
@@ -5405,7 +5418,7 @@ struct ChatDetailView: View {
                             if input.isEmpty && !voiceMode && !recorder.recording {
                                 Text(Tr("输入消息"))
                                     .font(pf(16))
-                                    .foregroundStyle(composerUtilityInk.opacity(0.66))
+                                    .foregroundStyle(composerUtilityInk.opacity(0.82))
                                     .padding(.leading, 2)
                                     .allowsHitTesting(false)
                             }
@@ -5426,8 +5439,8 @@ struct ChatDetailView: View {
                     ZStack {
                         NativeGlassHeaderMaterial()
                         composerFieldShape
-                            .fill(Color(uiColor: .secondarySystemBackground)
-                                .opacity(scheme == .dark ? 0.10 : 0.16))
+                            .fill((composerUsesLightInk ? Color.black : Color.white)
+                                .opacity(composerUsesLightInk ? 0.28 : 0.32))
                         if recorder.recording {
                             composerFieldShape.fill(
                                 recorder.willCancel
