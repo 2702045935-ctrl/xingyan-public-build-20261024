@@ -25,15 +25,14 @@ require(
     "prepending must reuse unchanged row signatures and remeasure only the boundary",
 )
 require(
-    "guard isGroup else { return }" in CHAT
-    and "y < max(4200, viewport * 1.25)" in CHAT,
-    "group history must prefetch with enough viewport runway to avoid an empty top edge",
+    "if isGroup, y < 4200" in CHAT,
+    "B2611191645 group history must use the fixed prefetch trigger",
 )
 require(
     "if isGroup { autoLoadOlder() }" in CHAT
-    and "let pageTarget = isGroup ? 300 : 200" in CHAT
-    and "let targetDepth = pageTarget * 2" in CHAT,
-    "group prefetch must keep a rolling two-page history runway",
+    and "let target = isGroup ? 300 : 200" in CHAT
+    and "guard hasOlder, olderPrefetch.isEmpty, olderPrefetchTask == nil" in CHAT,
+    "group prefetch must keep the B2611191645 single-page history runway",
 )
 require(
     "onApplyCompleted" in LIST

@@ -3315,16 +3315,7 @@ struct ChatDetailView: View {
                 }
             },
             onScrollOffset: { y in
-                guard isGroup else { return }
-                if let gap = ChatScrollHandle.shared.gap {
-                    let next = gap <= 16
-                    if atBottom != next { atBottom = next }
-                    if wasAtBottom != next && !ChatScrollHandle.shared.moving {
-                        wasAtBottom = next
-                    }
-                }
-                let viewport = ChatScrollHandle.shared.scroll?.bounds.height ?? 0
-                if y < max(4200, viewport * 1.25) {
+                if isGroup, y < 4200 {
                     autoLoadOlder()
                 }
             },
@@ -7165,26 +7156,26 @@ struct ChatDetailView: View {
         guard !loadingOlder, !loadingAllGroupHistory,
               oldestHistorySeq > 0 else { return }
         let seq = oldestHistorySeq
-        let pageTarget = isGroup ? 300 : 200
         loadingOlder = true
         lastOlderLoad = Date()
         defer { loadingOlder = false }
         do {
-            if olderPrefetch.count < pageTarget, let pending = olderPrefetchTask {
+            if olderPrefetch.isEmpty, let pending = olderPrefetchTask {
                 await pending.value
             }
-            var older = takeOlderPrefetch(limit: pageTarget)
-            var more = !olderPrefetch.isEmpty || olderPrefetchHasMore
+            var older = takeOlderPrefetch()
+            var more = olderPrefetchHasMore
             if older.isEmpty {
                 var cursor = seq
                 var olderIds = Set<String>()
                 more = true
-                /* 首屏之外始终保持滚动式预取；只有预取尚未完成时才现场补拉。 */
+                /* 首屏之外始终保持一页预取；只有预取尚未完成时才现场补拉。 */
+                let target = isGroup ? 300 : 200
                 let maxPages = isGroup ? 2 : 3
                 for _ in 0..<maxPages {
                     let page = try await API.shared.messages(
                         chatId: chat.id,
-                        limit: pageTarget,
+                        limit: target,
                         before: cursor,
                         all: true
                     )
@@ -7199,7 +7190,7 @@ struct ChatDetailView: View {
                     let next = page.messages.compactMap(\.seq).min() ?? 0
                     if !more || next <= 0 || next >= cursor { break }
                     cursor = next
-                    if older.count >= pageTarget { break }
+                    if older.count >= target { break }
                 }
             }
             hasOlder = more
@@ -7249,13 +7240,11 @@ struct ChatDetailView: View {
     }
 
     private func scheduleOlderPrefetch() {
-        guard hasOlder, olderPrefetchTask == nil,
+        guard hasOlder, olderPrefetch.isEmpty, olderPrefetchTask == nil,
               oldestHistorySeq > 0 else { return }
-        let pageTarget = isGroup ? 300 : 200
-        let targetDepth = pageTarget * 2
-        let startingPrefetch = olderPrefetch
-        let seq = startingPrefetch.first?.seq ?? oldestHistorySeq
-        let known = Set(messages.map(\.id) + startingPrefetch.map(\.id))
+        let seq = oldestHistorySeq
+        let target = isGroup ? 300 : 200
+        let known = Set(messages.map(\.id))
         let token = UUID()
         olderPrefetchToken = token
         olderPrefetchTask = Task {
@@ -7265,35 +7254,17 @@ struct ChatDetailView: View {
                 }
             }
             do {
-                var buffer = startingPrefetch
-                var cursor = seq
-                var more = hasOlder
-                var knownIds = known
-                for _ in 0..<3 where buffer.count < targetDepth && more {
-                    let page = try await API.shared.messages(
-                        chatId: chat.id,
-                        limit: pageTarget,
-                        before: cursor,
-                        all: true
-                    )
-                    guard !Task.isCancelled, olderPrefetchToken == token else { return }
-                    if page.messages.isEmpty {
-                        more = false
-                        break
-                    }
-                    let rows = visibleMessages(page.messages)
-                        .filter { knownIds.insert($0.id).inserted }
-                    if !rows.isEmpty {
-                        buffer.insert(contentsOf: rows, at: 0)
-                    }
-                    more = page.hasMore
-                    let next = page.messages.compactMap(\.seq).min() ?? 0
-                    if !more || next <= 0 || next >= cursor { break }
-                    cursor = next
-                }
-                olderPrefetchHasMore = more
-                olderPrefetch = buffer
-                if buffer.isEmpty, !more {
+                let page = try await API.shared.messages(
+                    chatId: chat.id,
+                    limit: target,
+                    before: seq,
+                    all: true
+                )
+                guard !Task.isCancelled, olderPrefetchToken == token else { return }
+                olderPrefetchHasMore = page.hasMore
+                olderPrefetch = visibleMessages(page.messages)
+                    .filter { !known.contains($0.id) }
+                if page.messages.isEmpty, !page.hasMore {
                     hasOlder = false
                 }
             } catch {
@@ -7304,15 +7275,12 @@ struct ChatDetailView: View {
         }
     }
 
-    private func takeOlderPrefetch(limit: Int) -> [Message] {
+    private func takeOlderPrefetch() -> [Message] {
         olderPrefetchTask?.cancel()
         olderPrefetchTask = nil
         olderPrefetchToken = UUID()
-        let take = min(max(1, limit), olderPrefetch.count)
-        guard take > 0 else { return [] }
-        let rows = Array(olderPrefetch.suffix(take))
-        olderPrefetch.removeLast(take)
-        if !olderPrefetch.isEmpty { olderPrefetchHasMore = true }
+        let rows = olderPrefetch
+        olderPrefetch = []
         return rows
     }
 
