@@ -1571,20 +1571,7 @@ struct ChatsView: View {
                     .accessibilityLabel(chatTopTitle)
 
                 if unreadTotal > 0 {
-                    Text(unreadTotal > 99 ? "99+" : "\(unreadTotal)")
-                        .font(pfStyled(size: 9.5, weight: .bold))
-                        .foregroundStyle(.white)
-                        .lineLimit(1)
-                        .padding(.horizontal, unreadTotal > 9 ? 5 : 0)
-                        .frame(minWidth: 18, minHeight: 18)
-                        .background {
-                            Capsule().fill(C.red)
-                        }
-                        .overlay {
-                            Capsule().stroke(Color.white.opacity(0.20), lineWidth: 0.6)
-                        }
-                        .shadow(color: C.red.opacity(0.20),
-                                radius: 4, y: 1)
+                    nativeUnreadTotalBadge
                 }
 
                 if chatFilter != .all {
@@ -1662,6 +1649,20 @@ struct ChatsView: View {
         .frame(maxWidth: chatsContentMaxWidth)
         .frame(maxWidth: .infinity)
         .frame(height: chatsHeaderH)
+    }
+
+    private var nativeUnreadTotalBadge: some View {
+        Text(unreadTotal > 99 ? "99+" : "\(unreadTotal)")
+            .font(pfStyled(size: 9.5, weight: .bold))
+            .foregroundStyle(.white)
+            .monospacedDigit()
+            .lineLimit(1)
+            .minimumScaleFactor(0.72)
+            .padding(.horizontal, unreadTotal > 9 ? 5 : 0)
+            .frame(minWidth: 18, minHeight: 18)
+            .background(Capsule().fill(Color(.systemRed)))
+            .overlay(Capsule().stroke(ChatListVisual.badgeRing, lineWidth: 1.5))
+            .accessibilityHidden(true)
     }
 
     private var chatsSearchBar: some View {

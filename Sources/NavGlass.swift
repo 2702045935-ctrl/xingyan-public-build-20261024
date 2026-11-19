@@ -179,6 +179,9 @@ final class NativeTopScrollRegistry {
 struct NativeChatsTopEdgeChrome: View {
     var scrolled: CGFloat
 
+    @Environment(\.colorScheme) private var scheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         ZStack {
             /* 与“我的”页共用同一层原生玻璃。系统 scroll-edge 在自定义
@@ -190,8 +193,13 @@ struct NativeChatsTopEdgeChrome: View {
                     scrollView: { NativeChatListScrollRegistry.shared.chats }
                 )
             }
+            Color.black
+                .opacity(scheme == .dark && scrolled > 0 ? 0.72 : 0)
+                .animation(reduceMotion ? nil : .easeOut(duration: 0.16),
+                           value: scrolled > 0)
         }
         .ignoresSafeArea(edges: .top)
+        .allowsHitTesting(false)
     }
 }
 

@@ -40,6 +40,11 @@ require(
     and "NativeTopGlassMask(active: scrolled > 0)" not in CHATS,
     "chat header must extend the native scroll edge and keep a native glass fallback",
 )
+require(
+    "NativeChatsTopEdgeChrome" in NAV
+    and "opacity(scheme == .dark && scrolled > 0 ? 0.72 : 0)" in NAV,
+    "dark chat-list chrome must stay neutral against its true-black surface",
+)
 require("NativeTopGlassMask(active: navScrolled > 0)" in CONTACTS
         and "NativeTopScrollObserver" in CONTACTS
         and "NativeScrollEdgeElementBridge(" in CONTACTS

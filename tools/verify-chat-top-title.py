@@ -19,5 +19,11 @@ require(
     "Text(chatTopTitle)\n                    .font(pf(22, .bold))" not in CHATS,
     "the oversized chat top title must not return",
 )
+require(
+    ".background(Capsule().fill(Color(.systemRed)))" in CHATS
+    and ".overlay(Capsule().stroke(ChatListVisual.badgeRing, lineWidth: 1.5))" in CHATS
+    and "nativeUnreadTotalBadge" in CHATS,
+    "the title unread count must use the native chat-list badge treatment",
+)
 
 print("chat-top-title: passed")
