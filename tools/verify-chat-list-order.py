@@ -36,5 +36,15 @@ require(
     and "return left > right" in CHATS,
     "platform official entries must follow WeChat-style recent-activity ordering",
 )
+require(
+    "locallyHiddenLastMessage" in APP
+    and "locallyHiddenLastMessageAt" in APP
+    and "hiddenChatHasNewerActivity(incoming)" in APP,
+    "stale realtime snapshots must not revive a deleted or hidden conversation",
+)
+require(
+    "timeIntervalSince(locallyHiddenAt[id] ?? .distantPast) > 3" not in APP,
+    "deleted or hidden conversations must not expire back into the list after three seconds",
+)
 
 print("chat-list-order: passed")

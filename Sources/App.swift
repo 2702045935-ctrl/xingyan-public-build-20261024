@@ -16,9 +16,12 @@ final class AppState: ObservableObject {
     /// 实时事件先上屏的会话摘要；旧列表响应不能用空值把它冲掉。
     private var optimisticChats: [String: Chat] = [:]
     private var optimisticAt: [String: Date] = [:]
-    /// 左滑隐藏/删除请求还没落库时，先挡住轮询把旧会话行加回来。
+    /// 删除/不显示后的本地可见性快照。旧列表、旧实时事件和重连快照都不能
+    /// 把会话放回来；只有服务端确认了更新的一条消息，才按微信行为重新出现。
     private var locallyHiddenChats: Set<String> = []
     private var locallyHiddenAt: [String: Date] = [:]
+    private var locallyHiddenLastMessage: [String: String] = [:]
+    private var locallyHiddenLastMessageAt: [String: Date] = [:]
     /// 刚读过的会话会短暂挡住分片旧快照，避免服务端尚未追上阅读游标时红点闪回。
     private var locallyReadAt: [String: Date] = [:]
     private var suspiciousChatDropCount = 0
@@ -425,6 +428,8 @@ final class AppState: ObservableObject {
         optimisticAt.removeAll()
         locallyHiddenChats.removeAll()
         locallyHiddenAt.removeAll()
+        locallyHiddenLastMessage.removeAll()
+        locallyHiddenLastMessageAt.removeAll()
         suspiciousChatDropCount = 0
         prefetched.removeAll()
         chats = []
@@ -1402,11 +1407,9 @@ final class AppState: ObservableObject {
 
     private func mergeServerChats(_ fresh: [Chat]) -> [Chat] {
         let now = Date()
-        Array(locallyHiddenAt.keys).forEach { id in
-            if now.timeIntervalSince(locallyHiddenAt[id] ?? .distantPast) > 3 {
-                locallyHiddenAt[id] = nil
-                locallyHiddenChats.remove(id)
-            }
+        for chat in fresh where locallyHiddenChats.contains(chat.id)
+            && hiddenChatHasNewerActivity(chat) {
+            revealChatLocally(chat.id)
         }
         Array(locallyReadAt.keys).forEach { id in
             if now.timeIntervalSince(locallyReadAt[id] ?? .distantPast) > 120 {
@@ -1679,6 +1682,10 @@ final class AppState: ObservableObject {
         let hidden = chats.first(where: { $0.id == chatId })
         locallyHiddenChats.insert(chatId)
         locallyHiddenAt[chatId] = Date()
+        locallyHiddenLastMessage[chatId] = hidden?.lastMessage?.id ?? ""
+        locallyHiddenLastMessageAt[chatId] = TimeFmt.date(
+            hidden?.lastMessage?.createdAt ?? hidden?.updatedAt ?? ""
+        )
         optimisticChats[chatId] = nil
         optimisticAt[chatId] = nil
         chats.removeAll { $0.id == chatId }
@@ -1689,6 +1696,23 @@ final class AppState: ObservableObject {
     func revealChatLocally(_ chatId: String) {
         locallyHiddenChats.remove(chatId)
         locallyHiddenAt.removeValue(forKey: chatId)
+        locallyHiddenLastMessage.removeValue(forKey: chatId)
+        locallyHiddenLastMessageAt.removeValue(forKey: chatId)
+    }
+
+    private func hiddenChatHasNewerActivity(_ chat: Chat) -> Bool {
+        guard locallyHiddenChats.contains(chat.id) else { return false }
+        let previousID = locallyHiddenLastMessage[chat.id] ?? ""
+        let nextID = chat.lastMessage?.id ?? ""
+        if !nextID.isEmpty, nextID == previousID { return false }
+        let previousAt = locallyHiddenLastMessageAt[chat.id]
+            ?? locallyHiddenAt[chat.id]
+            ?? .distantPast
+        guard let raw = chat.lastMessage?.createdAt ?? chat.updatedAt,
+              let nextAt = TimeFmt.date(raw) else {
+            return !nextID.isEmpty && nextID != previousID
+        }
+        return nextAt >= previousAt
     }
 
     /// 从联系人发出第一条消息时，服务端会话摘要可能比消息接口晚一拍。
@@ -1703,6 +1727,9 @@ final class AppState: ObservableObject {
             return
         }
         locallyHiddenChats.remove(chat.id)
+        locallyHiddenAt.removeValue(forKey: chat.id)
+        locallyHiddenLastMessage.removeValue(forKey: chat.id)
+        locallyHiddenLastMessageAt.removeValue(forKey: chat.id)
         let before = chats.first(where: { $0.id == chat.id })
         var row = before ?? chat
         if let latest {
@@ -1978,8 +2005,14 @@ final class AppState: ObservableObject {
             hideChatLocally(incoming.id)
             return
         }
+        if locallyHiddenChats.contains(incoming.id),
+           !hiddenChatHasNewerActivity(incoming) {
+            return
+        }
         locallyHiddenChats.remove(incoming.id)
         locallyHiddenAt.removeValue(forKey: incoming.id)
+        locallyHiddenLastMessage.removeValue(forKey: incoming.id)
+        locallyHiddenLastMessageAt.removeValue(forKey: incoming.id)
         var rows = chats
         let previous = rows.first(where: { $0.id == incoming.id })
         var updated = incoming
@@ -2255,6 +2288,9 @@ final class AppState: ObservableObject {
             me = nil
             chats = []
             locallyHiddenChats.removeAll()
+            locallyHiddenAt.removeAll()
+            locallyHiddenLastMessage.removeAll()
+            locallyHiddenLastMessageAt.removeAll()
             contacts = []
             moments = []
             showSavedLogin = false
@@ -2271,6 +2307,9 @@ final class AppState: ObservableObject {
         me = nil
         chats = []
         locallyHiddenChats.removeAll()
+        locallyHiddenAt.removeAll()
+        locallyHiddenLastMessage.removeAll()
+        locallyHiddenLastMessageAt.removeAll()
         contacts = []
         moments = []
         showSavedLogin = true

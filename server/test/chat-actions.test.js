@@ -352,6 +352,25 @@ async function main() {
         '删除后会话在刷新周期内回流');
     }
 
+    response = await call(base, alice.cookie, 'POST',
+      '/api/chats/' + directId + '/messages',
+      { kind: 'text', content: '删除后真正的新消息', clientId: 'revive-after-delete' });
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    response = await call(base, bob.cookie, 'GET', '/api/chats');
+    assert.ok((response.data.chats || []).some((chat) => chat.id === directId),
+      '删除后出现真正的新消息时必须像微信一样重新回到会话列表');
+
+    response = await call(base, bob.cookie, 'DELETE',
+      '/api/chats/' + directId, undefined);
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    assert.equal(response.data.hidden, true);
+    for (let i = 0; i < 6; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      response = await call(base, bob.cookie, 'GET', '/api/chats');
+      assert.ok(!(response.data.chats || []).some((chat) => chat.id === directId),
+        '不显示后会话在刷新周期内回流');
+    }
+
     response = await call(base, alice.cookie, 'POST', '/api/chats/group', {
       name: '接口烟测群',
       memberIds: [bob.user.id]
