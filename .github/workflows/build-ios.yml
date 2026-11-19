@@ -109,6 +109,7 @@ jobs:
           python3 tools/verify-video-publish-douyin.py
           python3 tools/verify-phone-theme-previews.py
           python3 tools/verify-chat-prepend-anchor.py
+          python3 tools/verify-news-compact-scroll.py
           python3 tools/verify-native-list-incremental-signatures.py
           python3 tools/verify-message-receipts.py
           python3 tools/verify-message-send-handoff.py

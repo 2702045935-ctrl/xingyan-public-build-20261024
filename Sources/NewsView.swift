@@ -1,5 +1,11 @@
 import SwiftUI
 
+private struct NewsTopic: Identifiable {
+    let id: String
+    let title: String
+    let items: [NewsItem]
+}
+
 struct NewsFeedView: View {
 
     var compact: Bool = false
@@ -20,6 +26,8 @@ struct NewsFeedView: View {
 
     @State private var offset = 0
     @State private var total = 0
+    @State private var compactLoadingMore = false
+    @State private var compactHasMore = true
     @State private var web: WebURL?
 
     static let builtinChannels: [NewsChannel] = [
@@ -34,7 +42,13 @@ struct NewsFeedView: View {
     private var newsPageBg: Color { Color(uiColor: .systemGroupedBackground) }
 
     var body: some View {
-        premiumFeed
+        Group {
+            if compact {
+                compactFeed
+            } else {
+                premiumFeed
+            }
+        }
         .task {
             if tab.isEmpty { tab = initialSource }
             if let only = onlyTabs { channels = only }
@@ -92,6 +106,162 @@ struct NewsFeedView: View {
         }
         .background(newsPageBg)
         .refreshable { await load(tab) }
+    }
+
+    private var compactFeed: some View {
+        ScrollView {
+            LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
+                Section {
+                    if items.isEmpty && loading {
+                        premiumLoading
+                    } else if items.isEmpty {
+                        premiumEmpty
+                    } else {
+                        ForEach(compactTopics) { topic in
+                            compactTopic(topic)
+                        }
+                        if compactHasMore {
+                            Color.clear
+                                .frame(height: 1)
+                                .onAppear {
+                                    Task { await loadCompactMore() }
+                                }
+                        } else {
+                            Text(Tr("已经到底了"))
+                                .font(pf(12))
+                                .foregroundColor(C.time)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 22)
+                        }
+                    }
+                } header: {
+                    compactChannelHeader
+                }
+            }
+            .padding(.bottom, 28)
+        }
+        .background(newsPageBg)
+        .refreshable { await load(tab) }
+    }
+
+    private var compactChannelHeader: some View {
+        HStack(spacing: 8) {
+            Text(Tr("时刻新闻"))
+                .font(pfStyled(size: 18, weight: .semibold))
+                .foregroundColor(C.label)
+            Text("·")
+                .foregroundColor(C.subLabel)
+            Text(Tr(channels.first(where: { $0.id == tab })?.label ?? "热点"))
+                .font(pfStyled(size: 13, weight: .medium))
+                .foregroundColor(C.green)
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.down")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(C.subLabel)
+        }
+        .padding(.horizontal, 16)
+        .frame(height: 42)
+        .background(newsPageBg)
+        .overlay(alignment: .bottom) { HairLine() }
+        .onTapGesture {
+            guard channels.count > 1 else { return }
+            if let next = channels.firstIndex(where: { $0.id == tab }),
+               next + 1 < channels.count {
+                select(channels[next + 1].id)
+            } else if let first = channels.first {
+                select(first.id)
+            }
+        }
+    }
+
+    private func compactTopic(_ topic: NewsTopic) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 7) {
+                Text(topic.title)
+                    .font(pfStyled(size: 14, weight: .semibold))
+                    .foregroundColor(C.label)
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+                Text("\(topic.items.count) " + Tr("条"))
+                    .font(pf(11.5))
+                    .foregroundColor(C.time)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 17)
+            .padding(.bottom, 8)
+
+            VStack(spacing: 0) {
+                ForEach(Array(topic.items.enumerated()), id: \.element.id) { index, item in
+                    Button { open(item) } label: {
+                        compactArticleRow(item, index: index)
+                    }
+                    .buttonStyle(.plain)
+                    if index < topic.items.count - 1 {
+                        HairLine(inset: 16)
+                    }
+                }
+            }
+            .background(Color(uiColor: .systemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(Color.primary.opacity(0.055), lineWidth: 0.5)
+            }
+            .padding(.horizontal, 12)
+            .padding(.bottom, 10)
+        }
+    }
+
+    private func compactArticleRow(_ item: NewsItem, index: Int) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Text("\(index + 1)")
+                .font(pfStyled(size: 12, weight: .semibold))
+                .foregroundColor(index == 0 ? C.green : C.time)
+                .frame(width: 18, alignment: .leading)
+                .padding(.top, 2)
+            VStack(alignment: .leading, spacing: 5) {
+                Text(item.title)
+                    .font(pfStyled(size: 15.5, weight: .medium))
+                    .foregroundColor(C.label)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                HStack(spacing: 5) {
+                    Text(item.src)
+                    if !timeText(item.at).isEmpty {
+                        Text("·")
+                        Text(timeText(item.at))
+                    }
+                }
+                .font(pf(11.5))
+                .foregroundColor(C.time)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            if !item.cover.isEmpty {
+                RemoteImage(path: item.cover, mode: .fill, maxSide: 420)
+                    .frame(width: 62, height: 46)
+                    .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .contentShape(Rectangle())
+    }
+
+    private var compactTopics: [NewsTopic] {
+        var groups: [NewsTopic] = []
+        var start = 0
+        while start < items.count {
+            let end = min(items.count, start + 4)
+            let slice = Array(items[start..<end])
+            let title = slice.first?.src.trimmingCharacters(in: .whitespacesAndNewlines)
+            groups.append(NewsTopic(
+                id: "topic-\(start)-\(slice.first?.id ?? "")",
+                title: title?.isEmpty == false ? title! : Tr("热点"),
+                items: slice
+            ))
+            start = end
+        }
+        return groups
     }
 
     @ViewBuilder
@@ -652,6 +822,8 @@ struct NewsFeedView: View {
         guard id != tab else { return }
         tab = id
         offset = 0
+        compactHasMore = true
+        compactLoadingMore = false
         items = []
         failed = false
         Task { await load(id) }
@@ -661,6 +833,10 @@ struct NewsFeedView: View {
         if loadingTab == source { return }
         loadingTab = source
         loading = true
+        if compact {
+            offset = 0
+            compactHasMore = true
+        }
         do {
             let feed = try await API.shared.news(source: source, limit: 20, offset: offset)
             guard source == tab else { loadingTab = ""; return }
@@ -668,6 +844,11 @@ struct NewsFeedView: View {
             if let t = feed.total, t > 0 { total = t }
             var seen = Set<String>()
             items = feed.items.filter { seen.insert($0.id).inserted }
+            if compact {
+                offset = feed.items.count
+                compactHasMore = !feed.items.isEmpty
+                    && (total <= 0 || offset < total)
+            }
             failed = items.isEmpty
         } catch {
             guard source == tab else { loadingTab = ""; return }
@@ -675,6 +856,26 @@ struct NewsFeedView: View {
         }
         loading = false
         loadingTab = ""
+    }
+
+    private func loadCompactMore() async {
+        guard compact, !loading, !compactLoadingMore, compactHasMore else { return }
+        compactLoadingMore = true
+        defer { compactLoadingMore = false }
+        let source = tab
+        do {
+            let feed = try await API.shared.news(source: source, limit: 20, offset: offset)
+            guard source == tab else { return }
+            let known = Set(items.map(\.id))
+            let next = feed.items.filter { known.insert($0.id).inserted }
+            items.append(contentsOf: next)
+            offset += feed.items.count
+            if let t = feed.total, t > 0 { total = t }
+            compactHasMore = !feed.items.isEmpty
+                && (total <= 0 || offset < total)
+        } catch {
+            compactHasMore = false
+        }
     }
 
     private func open(_ it: NewsItem) {
