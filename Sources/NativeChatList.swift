@@ -12,6 +12,8 @@ private func nativeChatSwipeText(_ zh: String, _ en: String, _ ru: String) -> St
     return zh
 }
 
+/// 会话页使用 UITableView 的系统 edit action。UITableView 的滑动识别比
+/// 自定义 collection cell 更稳定，点击、高亮、预取和行高仍使用原生列表实现。
 struct NativeChatList<Item: Identifiable & Equatable, Row: View>: UIViewControllerRepresentable
 where Item.ID: Hashable {
     let items: [Item]
@@ -37,94 +39,80 @@ where Item.ID: Hashable {
                     row: row)
     }
 
-    func makeUIViewController(context: Context) -> UICollectionViewController {
-        let layout = UICollectionViewFlowLayout()
-        layout.scrollDirection = .vertical
-        layout.minimumLineSpacing = 0
-        layout.minimumInteritemSpacing = 0
-        layout.sectionInset = .zero
-        layout.estimatedItemSize = .zero
-
-        let controller = UICollectionViewController(collectionViewLayout: layout)
+    func makeUIViewController(context: Context) -> UITableViewController {
+        let controller = UITableViewController(style: .plain)
         controller.view.backgroundColor = .clear
-        let collection = controller.collectionView!
-        collection.backgroundColor = .clear
-        collection.alwaysBounceVertical = true
-        collection.alwaysBounceHorizontal = false
-        collection.showsVerticalScrollIndicator = false
-        collection.contentInsetAdjustmentBehavior = .never
-        collection.keyboardDismissMode = .interactive
-        collection.delaysContentTouches = false
-        collection.canCancelContentTouches = true
-        collection.scrollsToTop = true
-        collection.allowsFocus = true
-        collection.remembersLastFocusedIndexPath = true
-        collection.isPrefetchingEnabled = true
-        collection.allowsSelection = true
-        collection.allowsMultipleSelection = false
+        let table = controller.tableView!
+        table.backgroundColor = .clear
+        table.separatorStyle = .none
+        table.rowHeight = UITableView.automaticDimension
+        table.estimatedRowHeight = 72
+        table.alwaysBounceVertical = true
+        table.alwaysBounceHorizontal = false
+        table.showsVerticalScrollIndicator = false
+        table.contentInsetAdjustmentBehavior = .never
+        table.keyboardDismissMode = .interactive
+        table.delaysContentTouches = false
+        table.canCancelContentTouches = true
+        table.scrollsToTop = true
+        table.allowsSelection = true
+        table.allowsMultipleSelection = false
+        table.sectionHeaderTopPadding = 0
         if #available(iOS 26.0, *) {
-            /*
-             * 会话页和“我的”页必须使用同一套系统 scroll-edge 材质。
-             * 顶栏再通过 UIScrollEdgeElementContainerInteraction 把系统效果
-             * 延伸到自定义顶栏区域，静止在顶部时仍会自然消失。
-             */
-            collection.topEdgeEffect.style = .hard
-            collection.topEdgeEffect.isHidden = false
-            collection.bottomEdgeEffect.isHidden = true
+            table.topEdgeEffect.style = .hard
+            table.topEdgeEffect.isHidden = false
+            table.bottomEdgeEffect.isHidden = true
         }
-        NativeChatListScrollRegistry.shared.chats = collection
-        collection.delegate = context.coordinator
+        NativeChatListScrollRegistry.shared.chats = table
+        table.delegate = context.coordinator
+        table.register(NativeChatRowCell.self,
+                       forCellReuseIdentifier: Coordinator.nativeCellID)
+        table.register(UITableViewCell.self,
+                       forCellReuseIdentifier: Coordinator.hostingCellID)
 
-        let registration = UICollectionView.CellRegistration<UICollectionViewCell, Item.ID> {
-            [weak coordinator = context.coordinator] cell, _, id in
-            guard let coordinator, let entry = coordinator.lookup[id] else { return }
-            cell.contentConfiguration = UIHostingConfiguration {
-                coordinator.row(entry)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .margins(.all, 0)
-            .background(.clear)
-            cell.backgroundConfiguration = .clear()
-            cell.clipsToBounds = true
-        }
-        let nativeRegistration = UICollectionView.CellRegistration<NativeChatRowCell, Item.ID> {
-            cell, _, _ in
-            cell.backgroundConfiguration = .clear()
-            cell.backgroundColor = .clear
-        }
-
-        let dataSource = UICollectionViewDiffableDataSource<Int, Item.ID>(
-            collectionView: collection
-        ) { collectionView, indexPath, id in
-            if let entry = context.coordinator.lookup[id],
-               let configuration = context.coordinator.nativeRow?(entry) {
-                let cell = collectionView.dequeueConfiguredReusableCell(
-                    using: nativeRegistration,
-                    for: indexPath,
-                    item: id
-                )
+        let dataSource = UITableViewDiffableDataSource<Int, Item.ID>(
+            tableView: table
+        ) { tableView, indexPath, id in
+            let coordinator = context.coordinator
+            if let entry = coordinator.lookup[id],
+               let configuration = coordinator.nativeRow?(entry) {
+                let cell = tableView.dequeueReusableCell(
+                    withIdentifier: Coordinator.nativeCellID,
+                    for: indexPath
+                ) as! NativeChatRowCell
                 cell.configure(configuration)
                 return cell
             }
-            return collectionView.dequeueConfiguredReusableCell(
-                using: registration,
-                for: indexPath,
-                item: id
+            let cell = tableView.dequeueReusableCell(
+                withIdentifier: Coordinator.hostingCellID,
+                for: indexPath
             )
+            cell.backgroundColor = .clear
+            cell.contentView.backgroundColor = .clear
+            cell.selectionStyle = .none
+            if let entry = coordinator.lookup[id] {
+                cell.contentConfiguration = UIHostingConfiguration {
+                    coordinator.row(entry)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .margins(.all, 0)
+                .background(.clear)
+            }
+            return cell
         }
         context.coordinator.dataSource = dataSource
-        context.coordinator.collection = collection
+        context.coordinator.table = table
         context.coordinator.apply(items, animated: false)
 
         let refresh = UIRefreshControl()
         refresh.addTarget(context.coordinator,
                           action: #selector(Coordinator.refreshPulled(_:)),
                           for: .valueChanged)
-        collection.refreshControl = refresh
+        table.refreshControl = refresh
         return controller
     }
 
-    func updateUIViewController(_ controller: UICollectionViewController,
+    func updateUIViewController(_ controller: UITableViewController,
                                 context: Context) {
         context.coordinator.row = row
         context.coordinator.height = height
@@ -138,7 +126,10 @@ where Item.ID: Hashable {
         context.coordinator.apply(items, animated: false)
     }
 
-    final class Coordinator: NSObject, UICollectionViewDelegateFlowLayout {
+    final class Coordinator: NSObject, UITableViewDelegate {
+        static let nativeCellID = "NativeChatRowCell"
+        static let hostingCellID = "NativeChatHostingCell"
+
         var lookup: [Item.ID: Item] = [:]
         var row: (Item) -> Row
         var height: (Item) -> CGFloat
@@ -149,8 +140,8 @@ where Item.ID: Hashable {
         var onApproachingEnd: () -> Void
         var onRefresh: () -> Void
         var allowInsertionDuringScroll: Bool
-        weak var collection: UICollectionView?
-        var dataSource: UICollectionViewDiffableDataSource<Int, Item.ID>?
+        weak var table: UITableView?
+        var dataSource: UITableViewDiffableDataSource<Int, Item.ID>?
         private var order: [Item.ID] = []
         private var lastZone = -1
         private var pendingZone = 0
@@ -184,9 +175,11 @@ where Item.ID: Hashable {
             let center = NotificationCenter.default
             for name in [UIContentSizeCategory.didChangeNotification,
                          Notification.Name.chrisUIPrefsChanged] {
-                layoutObservers.append(center.addObserver(forName: name,
-                                                          object: nil,
-                                                          queue: .main) { [weak self] _ in
+                layoutObservers.append(center.addObserver(
+                    forName: name,
+                    object: nil,
+                    queue: .main
+                ) { [weak self] _ in
                     self?.refreshMetrics()
                 })
             }
@@ -198,14 +191,9 @@ where Item.ID: Hashable {
         }
 
         func apply(_ next: [Item], animated: Bool) {
-            guard let dataSource, let collection else { return }
-            /*
-             * Diffable apply 会异步重排 cell。滚动过程中继续换快照，系统会把当前
-             * 视口推进到错误位置，表现就是会话页突然往下掉。用户手指还在屏幕上时
-             * 只记下最新数据，等滚动结束再一次性合并。
-             */
+            guard let dataSource, let table else { return }
             if !order.isEmpty,
-               collection.isDragging || collection.isTracking || collection.isDecelerating {
+               table.isDragging || table.isTracking || table.isDecelerating {
                 let nextOrder = next.map(\.id)
                 let unchanged = nextOrder == order
                     && next.allSatisfy { lookup[$0.id] == $0 }
@@ -220,7 +208,7 @@ where Item.ID: Hashable {
             if isPureAppend {
                 let added = Array(next[order.count...])
                 let addedIDs = added.map(\.id)
-                let previousOffset = collection.contentOffset
+                let previousOffset = table.contentOffset
                 for item in added { lookup[item.id] = item }
                 order.append(contentsOf: addedIDs)
                 appliedItemCount = order.count
@@ -232,19 +220,20 @@ where Item.ID: Hashable {
                 snapshot.appendItems(addedIDs, toSection: 0)
                 dataSource.apply(snapshot, animatingDifferences: false) {
                     guard generation == self.applyGeneration,
-                          self.collection === collection,
-                          !collection.isTracking,
-                          !collection.isDragging,
-                          !collection.isDecelerating else { return }
-                    let minimumY = -collection.adjustedContentInset.top
+                          self.table === table,
+                          !table.isTracking,
+                          !table.isDragging,
+                          !table.isDecelerating else { return }
+                    table.layoutIfNeeded()
+                    let minimumY = -table.adjustedContentInset.top
                     let maximumY = max(
                         minimumY,
-                        collection.contentSize.height - collection.bounds.height
-                            + collection.adjustedContentInset.bottom
+                        table.contentSize.height - table.bounds.height
+                            + table.adjustedContentInset.bottom
                     )
                     var target = previousOffset
                     target.y = min(max(target.y, minimumY), maximumY)
-                    collection.setContentOffset(target, animated: false)
+                    table.setContentOffset(target, animated: false)
                 }
                 return
             }
@@ -258,7 +247,7 @@ where Item.ID: Hashable {
                 guard let old = lookup[item.id] else { return nil }
                 return old == item ? nil : item.id
             }
-            let previousOffset = collection.contentOffset
+            let previousOffset = table.contentOffset
             applyGeneration += 1
             let generation = applyGeneration
             lookup = nextLookup
@@ -277,36 +266,31 @@ where Item.ID: Hashable {
             pendingItems = nil
             dataSource.apply(snapshot, animatingDifferences: animated) {
                 guard generation == self.applyGeneration,
-                      self.collection === collection,
-                      !collection.isTracking,
-                      !collection.isDragging,
-                      !collection.isDecelerating else { return }
-                collection.layoutIfNeeded()
-                let minimumY = -collection.adjustedContentInset.top
+                      self.table === table,
+                      !table.isTracking,
+                      !table.isDragging,
+                      !table.isDecelerating else { return }
+                table.layoutIfNeeded()
+                let minimumY = -table.adjustedContentInset.top
                 let maximumY = max(
                     minimumY,
-                    collection.contentSize.height - collection.bounds.height
-                        + collection.adjustedContentInset.bottom
+                    table.contentSize.height - table.bounds.height
+                        + table.adjustedContentInset.bottom
                 )
                 var target = previousOffset
                 target.y = min(max(target.y, minimumY), maximumY)
-                collection.setContentOffset(target, animated: false)
+                table.setContentOffset(target, animated: false)
             }
         }
 
-        func collectionView(_ collectionView: UICollectionView,
-                            layout collectionViewLayout: UICollectionViewLayout,
-                            sizeForItemAt indexPath: IndexPath) -> CGSize {
+        func tableView(_ tableView: UITableView,
+                       heightForRowAt indexPath: IndexPath) -> CGFloat {
             let resolvedId = dataSource?.itemIdentifier(for: indexPath)
-            let fallbackId = indexPath.item >= 0 && indexPath.item < order.count
-                ? order[indexPath.item] : nil
+            let fallbackId = indexPath.row >= 0 && indexPath.row < order.count
+                ? order[indexPath.row] : nil
             guard let id = resolvedId ?? fallbackId,
-                  let item = lookup[id] else { return .zero }
-            let width = max(0,
-                            collectionView.bounds.width
-                            - collectionView.adjustedContentInset.left
-                            - collectionView.adjustedContentInset.right)
-            return CGSize(width: width, height: max(1, height(item)))
+                  let item = lookup[id] else { return 1 }
+            return max(1, height(item))
         }
 
         @objc func refreshPulled(_ sender: UIRefreshControl) {
@@ -354,7 +338,6 @@ where Item.ID: Hashable {
 
         func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
             publishScrollState(true)
-            /* 让正在等待的异步布局完成回调失效，不能把用户的拖动位置写回旧值。 */
             applyGeneration += 1
             NotificationCenter.default.post(name: .chrisRowSwipe, object: nil)
         }
@@ -374,34 +357,34 @@ where Item.ID: Hashable {
             flushPendingItems()
         }
 
-        func collectionView(_ collectionView: UICollectionView,
-                            didSelectItemAt indexPath: IndexPath) {
-            collectionView.deselectItem(at: indexPath, animated: false)
+        func tableView(_ tableView: UITableView,
+                       didSelectRowAt indexPath: IndexPath) {
+            tableView.deselectRow(at: indexPath, animated: false)
             guard let id = dataSource?.itemIdentifier(for: indexPath),
                   let entry = lookup[id],
                   let configuration = nativeRow?(entry) else { return }
-            if let cell = collectionView.cellForItem(at: indexPath) as? NativeChatRowCell,
+            if let cell = tableView.cellForRow(at: indexPath) as? NativeChatRowCell,
                cell.openFromSelection() {
                 return
             }
             configuration.onOpen()
         }
 
-        func collectionView(_ collectionView: UICollectionView,
-                            didHighlightItemAt indexPath: IndexPath) {
-            (collectionView.cellForItem(at: indexPath) as? NativeChatRowCell)?
+        func tableView(_ tableView: UITableView,
+                       didHighlightRowAt indexPath: IndexPath) {
+            (tableView.cellForRow(at: indexPath) as? NativeChatRowCell)?
                 .setTouchPressed(true)
         }
 
-        func collectionView(_ collectionView: UICollectionView,
-                            didUnhighlightItemAt indexPath: IndexPath) {
-            (collectionView.cellForItem(at: indexPath) as? NativeChatRowCell)?
+        func tableView(_ tableView: UITableView,
+                       didUnhighlightRowAt indexPath: IndexPath) {
+            (tableView.cellForRow(at: indexPath) as? NativeChatRowCell)?
                 .setTouchPressed(false)
         }
 
-        func collectionView(
-            _ collectionView: UICollectionView,
-            trailingSwipeActionsConfigurationForItemAt indexPath: IndexPath
+        func tableView(
+            _ tableView: UITableView,
+            trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath
         ) -> UISwipeActionsConfiguration? {
             guard let id = dataSource?.itemIdentifier(for: indexPath),
                   let entry = lookup[id],
@@ -429,50 +412,20 @@ where Item.ID: Hashable {
         }
 
         private func refreshMetrics() {
-            guard let collection, let dataSource else { return }
+            guard let table, let dataSource else { return }
             NativeChatRowMetrics.invalidateScaleCache()
-            let previousOffset = collection.contentOffset
-            collection.collectionViewLayout.invalidateLayout()
+            table.beginUpdates()
+            table.endUpdates()
             var snapshot = dataSource.snapshot()
             guard !snapshot.itemIdentifiers.isEmpty else { return }
             snapshot.reloadItems(snapshot.itemIdentifiers)
-            dataSource.apply(snapshot, animatingDifferences: false) { [weak collection] in
-                guard let collection,
-                      !collection.isTracking,
-                      !collection.isDragging,
-                      !collection.isDecelerating else { return }
-                collection.layoutIfNeeded()
-                let minimumY = -collection.adjustedContentInset.top
-                let maximumY = max(
-                    minimumY,
-                    collection.contentSize.height - collection.bounds.height
-                        + collection.adjustedContentInset.bottom
-                )
-                var target = previousOffset
-                target.y = min(max(target.y, minimumY), maximumY)
-                collection.setContentOffset(target, animated: false)
-            }
+            dataSource.apply(snapshot, animatingDifferences: false)
         }
 
         private func flushPendingItems() {
             guard let pendingItems else { return }
             self.pendingItems = nil
             apply(pendingItems, animated: false)
-        }
-
-        private func isInsertionOnly(_ next: [Item]) -> Bool {
-            guard next.count > order.count else { return false }
-            var cursor = 0
-            for id in order {
-                while cursor < next.count, next[cursor].id != id {
-                    cursor += 1
-                }
-                guard cursor < next.count, lookup[id] == next[cursor] else {
-                    return false
-                }
-                cursor += 1
-            }
-            return true
         }
     }
 }

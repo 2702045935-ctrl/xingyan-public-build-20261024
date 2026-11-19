@@ -74,7 +74,7 @@ struct NativeChatRowConfiguration {
     var isPinned: Bool
 }
 
-final class NativeChatRowCell: UICollectionViewCell {
+final class NativeChatRowCell: UITableViewCell {
     private let foreground = UIView()
     private let avatarView = NativeChatAvatarView()
     private let titleLabel = UILabel()
@@ -98,8 +98,8 @@ final class NativeChatRowCell: UICollectionViewCell {
     private let avatarGap: CGFloat = 11
     private let rowTrailing: CGFloat = 16
     private let dividerLeading: CGFloat = 77
-    override init(frame: CGRect) {
-        super.init(frame: frame)
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        super.init(style: style, reuseIdentifier: reuseIdentifier)
         setupViews()
     }
 

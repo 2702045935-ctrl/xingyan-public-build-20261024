@@ -15,9 +15,10 @@ def require(condition: bool, message: str) -> None:
 
 require(
     "UISwipeActionsConfiguration" in LIST
-    and "trailingSwipeActionsConfigurationForItemAt" in LIST
-    and "leadingSwipeActionsConfigurationForItemAt" not in LIST,
-    "chat rows must use only the native collection-view left-swipe delete action",
+    and "trailingSwipeActionsConfigurationForRowAt" in LIST
+    and "leadingSwipeActionsConfigurationForRowAt" not in LIST
+    and "UITableViewDelegate" in LIST,
+    "chat rows must use only the native table-view left-swipe delete action",
 )
 require(
     "action.backgroundColor = .systemRed" in LIST
@@ -34,21 +35,21 @@ require(
     "chat rows must not keep the old long-press context menu",
 )
 require(
-    "didSelectItemAt indexPath: IndexPath" in LIST,
-    "opening a conversation must use UICollectionView native selection",
+    "didSelectRowAt indexPath: IndexPath" in LIST,
+    "opening a conversation must use UITableView native selection",
 )
 require(
     "openFromSelection()" in ROW
     and "cell.openFromSelection()" in LIST
     and "openGuardUntil = now + 0.35" in ROW,
-    "normal row taps must use collection-view selection with a single-open guard",
+    "normal row taps must use table-view selection with a single-open guard",
 )
 require(
     "contentView.isUserInteractionEnabled = false" in ROW
     and "override func touchesBegan" not in ROW
     and "UIGestureRecognizer" not in ROW
-    and "didHighlightItemAt" in LIST
-    and "didUnhighlightItemAt" in LIST,
+    and "didHighlightRowAt" in LIST
+    and "didUnhighlightRowAt" in LIST,
     "native swipe must own row touches; the cell may only render content",
 )
 require(
