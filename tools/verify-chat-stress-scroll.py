@@ -25,13 +25,21 @@ require(
     "prepending must reuse unchanged row signatures and remeasure only the boundary",
 )
 require(
-    "if isGroup, y < 4200" in CHAT,
-    "group history must prefetch with enough runway to avoid an empty top edge",
+    "guard isGroup else { return }" in CHAT
+    and "y < max(4200, viewport * 1.25)" in CHAT,
+    "group history must prefetch with enough viewport runway to avoid an empty top edge",
 )
 require(
     "if isGroup { autoLoadOlder() }" in CHAT
-    and "let target = isGroup ? 300 : 200" in CHAT,
+    and "let pageTarget = isGroup ? 300 : 200" in CHAT
+    and "let targetDepth = pageTarget * 2" in CHAT,
     "group prefetch must start at drag begin and load a larger history runway",
+)
+require(
+    "onApplyCompleted" in LIST
+    and "nativeHistoryApplyPending" in CHAT
+    and "attributes.frame.minY - anchor.delta" in LIST,
+    "history prepend must keep automatic pinning blocked through commit and anchor restoration",
 )
 require(
     all(f'kind = "{kind}"' in FIXTURE for kind in (
