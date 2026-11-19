@@ -39,8 +39,8 @@ require(
 )
 require(
     "collection.isDragging || collection.isTracking || collection.isDecelerating" in LIST
-    and "if isPrepending || commonOrder != order || nextSignatures != signatures" in LIST,
-    "prepend snapshots must be deferred until active touch motion ends",
+    and "!isPrepending && (commonOrder != order || nextSignatures != signatures)" in LIST,
+    "prepends must apply during touch motion through the native anchor compensation path",
 )
 require(
     "snapshot.insertItems(added, beforeItem: anchor)" in LIST

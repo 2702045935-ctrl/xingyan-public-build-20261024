@@ -106,6 +106,8 @@ async function main() {
       JSON.stringify({ sliderLogin: 0 }, null, 2));
     fs.writeFileSync(path.join(dataDir, 'ui.json'),
       JSON.stringify({ multiDevice: 1 }, null, 2));
+    fs.writeFileSync(path.join(dataDir, 'im.json'),
+      JSON.stringify({ allowStranger: true, strangerMessageLimit: 3 }, null, 2));
 
     child = spawn(process.execPath, ['server.js'], {
       cwd: SERVER_DIR,
@@ -310,11 +312,19 @@ async function main() {
     assert.equal(response.status, 200, JSON.stringify(response.data));
     assert.equal(response.data.meta.block, true);
 
-    response = await call(base, bob.cookie, 'POST',
-      '/api/chats/' + directId + '/messages',
-      { kind: 'text', content: '拉黑后消息' });
-    assert.equal(response.status, 422, JSON.stringify(response.data));
-    assert.equal(response.data.error, '消息已发出，但被对方拒收了');
+    for (let i = 1; i <= 12; i++) {
+      response = await call(base, bob.cookie, 'POST',
+        '/api/chats/' + directId + '/messages',
+        { kind: 'text', content: '拉黑后消息 ' + i, clientId: 'blocked-peer-' + i });
+      assert.equal(response.status, 422, JSON.stringify(response.data));
+      assert.equal(response.data.error, '消息已发出，但被对方拒收了');
+
+      response = await call(base, alice.cookie, 'POST',
+        '/api/chats/' + directId + '/messages',
+        { kind: 'text', content: '拉黑方消息 ' + i, clientId: 'blocked-owner-' + i });
+      assert.equal(response.status, 422, JSON.stringify(response.data));
+      assert.equal(response.data.error, '你已将对方加入黑名单，无法发送消息');
+    }
 
     response = await call(base, alice.cookie, 'POST', '/api/friends/meta', {
       userId: bob.user.id,
@@ -402,17 +412,21 @@ async function main() {
     });
     assert.equal(response.status, 200, '重复删除好友必须保持幂等：' + JSON.stringify(response.data));
     assert.equal(response.data.alreadyRemoved, true);
-    response = await call(base, alice.cookie, 'POST',
-      '/api/chats/' + directId + '/messages',
-      { kind: 'text', content: '删除好友后不应还能发送' });
-    assert.ok([403, 422].includes(response.status),
-      '删除好友后普通单聊必须禁止发送：' + JSON.stringify(response.data));
-    assert.match(response.data.error || '', /已解除好友关系/);
-    response = await call(base, bob.cookie, 'POST',
-      '/api/chats/' + directId + '/messages',
-      { kind: 'text', content: '对方删除好友后也不应还能发送' });
-    assert.ok([403, 422].includes(response.status),
-      '对方删除好友后仍可发送：' + JSON.stringify(response.data));
+    for (let i = 1; i <= 12; i++) {
+      response = await call(base, alice.cookie, 'POST',
+        '/api/chats/' + directId + '/messages',
+        { kind: 'text', content: '删除好友后消息 ' + i, clientId: 'removed-owner-' + i });
+      assert.ok([403, 422].includes(response.status),
+        '删除好友后普通单聊必须禁止发送：' + JSON.stringify(response.data));
+      assert.match(response.data.error || '', /已解除好友关系/);
+
+      response = await call(base, bob.cookie, 'POST',
+        '/api/chats/' + directId + '/messages',
+        { kind: 'text', content: '对方删除好友后消息 ' + i, clientId: 'removed-peer-' + i });
+      assert.ok([403, 422].includes(response.status),
+        '对方删除好友后仍可发送：' + JSON.stringify(response.data));
+      assert.match(response.data.error || '', /已解除好友关系/);
+    }
     response = await call(base, alice.cookie, 'GET', '/api/contacts');
     assert.equal(response.status, 200, JSON.stringify(response.data));
     assert.ok(!(response.data.friends || []).some((friend) => friend.id === bob.user.id),

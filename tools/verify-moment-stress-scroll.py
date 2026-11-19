@@ -13,14 +13,9 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "pendingMomentPage" in VIEW
-    and "flushPendingMomentPage()" in VIEW
-    and "if momentsScrollActive {" in VIEW,
-    "Moments pages must be buffered while the feed is scrolling",
-)
-require(
-    "pendingStressLoadedCount = max(pendingStressLoadedCount, next)" in VIEW,
-    "stress pages must defer their LazyVStack window expansion",
+    "pendingMomentPage" not in VIEW
+    and "pendingStressLoadedCount" not in VIEW,
+    "Moments pages must append while scrolling instead of stopping at the current page",
 )
 require(
     '"#\\(index + 1) · \\(bodySamples[index % bodySamples.count])"' in FIXTURE,

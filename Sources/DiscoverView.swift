@@ -1341,9 +1341,6 @@ struct MomentsView: View {
     @State private var prefetchedMoments: [Moment] = []
     @State private var prefetchedHasMore = false
     @State private var prefetchingMoments = false
-    @State private var pendingMomentPage: [Moment] = []
-    @State private var pendingMomentHasMore: Bool? = nil
-    @State private var pendingStressLoadedCount = 0
     @State private var locallyDeletedMomentIds: Set<String> = []
     @State private var momentPrefetchTask: Task<Void, Never>?
 
@@ -1502,11 +1499,6 @@ struct MomentsView: View {
                         guard momentsScrollActive != scrolling else { return }
                         withSystemAnimation(.easeOut(duration: scrolling ? 0.12 : 0.20)) {
                             momentsScrollActive = scrolling
-                        }
-                        if !scrolling {
-                            DispatchQueue.main.async {
-                                flushPendingMomentPage()
-                            }
                         }
                     })
                 }
@@ -2636,10 +2628,6 @@ struct MomentsView: View {
         momentPrefetchTask?.cancel()
         prefetchedMoments.removeAll(keepingCapacity: true)
         prefetchedHasMore = false
-        pendingMomentPage.removeAll(keepingCapacity: true)
-        pendingMomentHasMore = nil
-        pendingStressLoadedCount = 0
-
         if MomentStressFixture.isActive {
             stressLoadedCount = min(
                 MomentStressFixture.count,
@@ -2695,11 +2683,6 @@ struct MomentsView: View {
                 previous + Self.stressMomentPageSize
             )
             momentTotal = MomentStressFixture.count
-            if momentsScrollActive {
-                pendingStressLoadedCount = max(pendingStressLoadedCount, next)
-                loadingMore = false
-                return
-            }
             stressLoadedCount = next
             if stressLoadedCount > previous {
                 stressLoadedMoments.append(contentsOf: MomentStressFixture.moments(
@@ -2744,52 +2727,12 @@ struct MomentsView: View {
 
     private func appendMomentPage(_ page: [Moment], hasMore: Bool) {
         guard !page.isEmpty else {
-            if momentsScrollActive {
-                pendingMomentHasMore = hasMore
-            } else {
-                hasMoreMoments = hasMore
-            }
-            return
-        }
-        if momentsScrollActive {
-            let known = Set(moments.map(\.id)).union(pendingMomentPage.map(\.id))
-            pendingMomentPage.append(contentsOf: page.filter { !known.contains($0.id) })
-            pendingMomentHasMore = hasMore
+            hasMoreMoments = hasMore
             return
         }
         let known = Set(moments.map(\.id))
         setMomentsWithoutAnimation(moments + page.filter { !known.contains($0.id) })
         hasMoreMoments = hasMore
-        scheduleMomentPrefetch()
-    }
-
-    private func flushPendingMomentPage() {
-        if pendingStressLoadedCount > 0 {
-            let previous = stressLoadedCount
-            stressLoadedCount = pendingStressLoadedCount
-            pendingStressLoadedCount = 0
-            if stressLoadedCount > previous {
-                stressLoadedMoments.append(contentsOf: MomentStressFixture.moments(
-                    range: previous..<stressLoadedCount
-                ))
-            }
-            momentTotal = MomentStressFixture.count
-            hasMoreMoments = stressLoadedCount < MomentStressFixture.count
-        }
-        guard !pendingMomentPage.isEmpty else {
-            if let more = pendingMomentHasMore {
-                hasMoreMoments = more
-                pendingMomentHasMore = nil
-            }
-            return
-        }
-        let page = pendingMomentPage
-        let more = pendingMomentHasMore ?? hasMoreMoments
-        pendingMomentPage.removeAll(keepingCapacity: true)
-        pendingMomentHasMore = nil
-        let known = Set(moments.map(\.id))
-        setMomentsWithoutAnimation(moments + page.filter { !known.contains($0.id) })
-        hasMoreMoments = more
         scheduleMomentPrefetch()
     }
 
@@ -3216,7 +3159,6 @@ struct MomentsView: View {
         locallyDeletedMomentIds.insert(id)
         momentPrefetchTask?.cancel()
         prefetchedMoments.removeAll { $0.id == id }
-        pendingMomentPage.removeAll { $0.id == id }
         let next = moments.filter { $0.id != id }
         setMomentsWithoutAnimation(next)
         momentTotal = max(0, momentTotal - 1)

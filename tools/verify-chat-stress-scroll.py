@@ -15,9 +15,9 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "collection.isDragging || collection.isTracking || collection.isDecelerating" in LIST
-    and "pending = next" in LIST,
-    "history prepends must defer snapshot application until touch motion ends",
+    "!isPrepending && (commonOrder != order || nextSignatures != signatures)" in LIST
+    and "prependAnchor" in LIST,
+    "history prepends must apply during touch motion with atomic anchor compensation",
 )
 require(
     "if isPrepending, !order.isEmpty" in LIST

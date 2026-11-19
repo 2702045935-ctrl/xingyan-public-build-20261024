@@ -337,7 +337,7 @@ where Item.ID: Hashable {
                collection.isDragging || collection.isTracking || collection.isDecelerating {
                 let known = Set(order)
                 let commonOrder = nextOrder.filter { known.contains($0) }
-                if isPrepending || commonOrder != order || nextSignatures != signatures {
+                if !isPrepending && (commonOrder != order || nextSignatures != signatures) {
                     pending = next
                     return
                 }
