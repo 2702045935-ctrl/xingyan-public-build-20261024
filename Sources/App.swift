@@ -40,12 +40,13 @@ final class AppState: ObservableObject {
         guard MessageStressFixture.isActive,
               !myId.isEmpty,
               let first = MessageStressFixture.firstChat else { return }
+        let eager = StressTestConfiguration.eagerMessageMaterialization
         let page = MessageStressFixture.page(
             chatId: first.id,
-            limit: 200,
+            limit: eager ? MessageStressFixture.count : 200,
             before: nil,
             since: nil,
-            all: false,
+            all: eager,
             myId: myId
         )
         if !page.messages.isEmpty {
