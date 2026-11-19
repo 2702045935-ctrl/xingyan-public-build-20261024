@@ -3323,7 +3323,8 @@ struct ChatDetailView: View {
                         wasAtBottom = next
                     }
                 }
-                if y < 4200 {
+                let viewport = ChatScrollHandle.shared.scroll?.bounds.height ?? 0
+                if y < max(4200, viewport * 1.25) {
                     autoLoadOlder()
                 }
             },
@@ -7178,6 +7179,7 @@ struct ChatDetailView: View {
                 var cursor = seq
                 var olderIds = Set<String>()
                 more = true
+                /* 首屏之外始终保持滚动式预取；只有预取尚未完成时才现场补拉。 */
                 let maxPages = isGroup ? 2 : 3
                 for _ in 0..<maxPages {
                     let page = try await API.shared.messages(
@@ -7250,7 +7252,7 @@ struct ChatDetailView: View {
         guard hasOlder, olderPrefetchTask == nil,
               oldestHistorySeq > 0 else { return }
         let pageTarget = isGroup ? 300 : 200
-        let targetDepth = pageTarget
+        let targetDepth = pageTarget * 2
         let startingPrefetch = olderPrefetch
         let seq = startingPrefetch.first?.seq ?? oldestHistorySeq
         let known = Set(messages.map(\.id) + startingPrefetch.map(\.id))

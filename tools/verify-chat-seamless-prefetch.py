@@ -24,7 +24,7 @@ require(
     "foreground paging must reuse an in-flight prefetch instead of waiting twice",
 )
 require(
-    "if y < 4200" in CHAT,
+    "y < max(4200, viewport * 1.25)" in CHAT,
     "large chats must prefetch before the user reaches the first row",
 )
 require(
@@ -36,10 +36,10 @@ require(
 )
 require(
     "let pageTarget = isGroup ? 300 : 200" in CHAT
-    and "let targetDepth = pageTarget" in CHAT
+    and "let targetDepth = pageTarget * 2" in CHAT
     and "buffer.insert(contentsOf: rows, at: 0)" in CHAT
     and "let maxPages = isGroup ? 2 : 3" in CHAT,
-    "deep-group prefetch must keep the same 300-row runway as the beginning",
+    "large-group prefetch must keep a rolling two-page runway",
 )
 require(
     "prependAnchor =" in NATIVE
