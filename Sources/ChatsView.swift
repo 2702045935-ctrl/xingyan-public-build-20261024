@@ -2093,13 +2093,18 @@ struct ChatsView: View {
         "chris.officialConversationTime." + key
     }
 
-    private func officialRowTime(_ key: String) -> String {
+    private func officialRowStamp(_ key: String) -> String {
         let defaultsKey = officialRowTimeKey(key)
         var stamp = UserDefaults.standard.string(forKey: defaultsKey) ?? ""
         if stamp.isEmpty {
             stamp = TimeFmt.isoFrac.string(from: Date())
             UserDefaults.standard.set(stamp, forKey: defaultsKey)
         }
+        return stamp
+    }
+
+    private func officialRowTime(_ key: String) -> String {
+        let stamp = officialRowStamp(key)
         return TimeFmt.listApple(stamp)
     }
 
@@ -2108,6 +2113,16 @@ struct ChatsView: View {
             TimeFmt.isoFrac.string(from: Date()),
             forKey: officialRowTimeKey(key)
         )
+    }
+
+    private var sortedOfficialRowKeys: [String] {
+        let priority = ["official": 3, "pay": 2, "weather": 1]
+        return ["official", "pay", "weather"].sorted { lhs, rhs in
+            let left = officialRowStamp(lhs)
+            let right = officialRowStamp(rhs)
+            if left == right { return priority[lhs, default: 0] > priority[rhs, default: 0] }
+            return left > right
+        }
     }
 
     private var officialConversationRow: some View {
@@ -2400,6 +2415,20 @@ struct ChatsView: View {
         }
     }
 
+    @ViewBuilder
+    private var systemOfficialRows: some View {
+        ForEach(sortedOfficialRowKeys, id: \.self) { key in
+            switch key {
+            case "official":
+                officialConversationRow
+            case "pay":
+                payOfficialConversationRow
+            default:
+                weatherConversationRow
+            }
+        }
+    }
+
     private func nativeChatEntries(_ snapshot: ChatFilterSnapshot) -> [NativeChatEntry] {
         let appearance = nativeChatAppearance
         var entries: [NativeChatEntry] = [
@@ -2412,23 +2441,30 @@ struct ChatsView: View {
                 id: "search",
                 kind: .search,
                 signature: "\(appearance)-\(Tr("搜索"))"
-            ),
-            NativeChatEntry(
-                id: "official",
-                kind: .official,
-                signature: "\(appearance)-\(officialRowName)-\(officialRowSubtitle)-\(officialRowAvatar)-\(officialRowTime("official"))-\(app.me?.ops == true)"
-            ),
-            NativeChatEntry(
-                id: "pay",
-                kind: .pay,
-                signature: "\(appearance)-\(payOfficialRowName)-\(payOfficialRowSubtitle)-\(payOfficialRowAvatar)-\(officialRowTime("pay"))-\(app.me?.ops == true)"
-            ),
-            NativeChatEntry(
-                id: "weather",
-                kind: .weather,
-                signature: "\(appearance)-\(weatherRowName)-\(weatherRowSubtitle)-\(weatherRowAvatar)-\(officialRowTime("weather"))-\(app.me?.ops == true)"
             )
         ]
+        for key in sortedOfficialRowKeys {
+            switch key {
+            case "official":
+                entries.append(NativeChatEntry(
+                    id: "official",
+                    kind: .official,
+                    signature: "\(appearance)-\(officialRowName)-\(officialRowSubtitle)-\(officialRowAvatar)-\(officialRowTime("official"))-\(app.me?.ops == true)"
+                ))
+            case "pay":
+                entries.append(NativeChatEntry(
+                    id: "pay",
+                    kind: .pay,
+                    signature: "\(appearance)-\(payOfficialRowName)-\(payOfficialRowSubtitle)-\(payOfficialRowAvatar)-\(officialRowTime("pay"))-\(app.me?.ops == true)"
+                ))
+            default:
+                entries.append(NativeChatEntry(
+                    id: "weather",
+                    kind: .weather,
+                    signature: "\(appearance)-\(weatherRowName)-\(weatherRowSubtitle)-\(weatherRowAvatar)-\(officialRowTime("weather"))-\(app.me?.ops == true)"
+                ))
+            }
+        }
 
         if snapshot.list.isEmpty {
             entries.append(NativeChatEntry(
@@ -2744,11 +2780,7 @@ struct ChatsView: View {
                         Color.clear.frame(height: L.safeTop + chatsHeaderH
                                           + chatFilterOffset)
                         chatsSearchBar
-                        officialConversationRow
-                            .frame(width: chatsContentMaxWidth)
-                        payOfficialConversationRow
-                            .frame(width: chatsContentMaxWidth)
-                        weatherConversationRow
+                        systemOfficialRows
                             .frame(width: chatsContentMaxWidth)
                         emptyView
                         Spacer(minLength: 0)

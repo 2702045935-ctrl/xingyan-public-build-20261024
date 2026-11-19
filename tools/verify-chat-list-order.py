@@ -29,5 +29,12 @@ require(
     and ENTRIES.count('id: "weather"') == 1,
     "weather must remain in the top utility rows instead of trailing the conversations",
 )
+require(
+    "private var sortedOfficialRowKeys: [String]" in CHATS
+    and "for key in sortedOfficialRowKeys" in ENTRIES
+    and "systemOfficialRows" in CHATS
+    and "return left > right" in CHATS,
+    "platform official entries must follow WeChat-style recent-activity ordering",
+)
 
 print("chat-list-order: passed")
