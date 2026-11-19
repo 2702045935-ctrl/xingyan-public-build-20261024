@@ -224,7 +224,15 @@ private var funcs: [(String, String, Color, String)] {
                     contactsTopHeader
 
                     .background {
-                        NativeTopGlassMask(active: navScrolled > 0)
+                        ZStack {
+                            NativeTopGlassMask(active: navScrolled > 0)
+                            if #available(iOS 26.0, *) {
+                                NativeScrollEdgeElementBridge(
+                                    scrollView: { NativeTopScrollRegistry.shared.contacts }
+                                )
+                            }
+                        }
+                        .ignoresSafeArea(edges: .top)
                     }
 
                 }
@@ -315,6 +323,8 @@ private var funcs: [(String, String, Color, String)] {
                             NativeTopScrollObserver { y in
                                 let next = y > 8 ? y : 0
                                 if navScrolled != next { navScrolled = next }
+                            } onScrollViewReady: { scroll in
+                                NativeTopScrollRegistry.shared.contacts = scroll
                             }
                         }
                         .refreshable { await app.loadContacts() }

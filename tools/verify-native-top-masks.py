@@ -42,6 +42,9 @@ require(
 )
 require("NativeTopGlassMask(active: navScrolled > 0)" in CONTACTS
         and "NativeTopScrollObserver" in CONTACTS
+        and "NativeScrollEdgeElementBridge(" in CONTACTS
+        and "NativeTopScrollRegistry.shared.contacts = scroll" in CONTACTS
+        and "onScrollViewReady:" in NAV
         and "topScrollTracking($navScrolled" not in CONTACTS
         and "TopGlassBar(" not in CONTACTS
         and "TopGlassLine(" not in CONTACTS,

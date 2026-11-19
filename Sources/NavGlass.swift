@@ -167,6 +167,11 @@ struct NativeTopGlassMask: View {
     }
 }
 
+final class NativeTopScrollRegistry {
+    static let shared = NativeTopScrollRegistry()
+    weak var contacts: UIScrollView?
+}
+
 struct NativeChatsTopEdgeChrome: View {
     var scrolled: CGFloat
 
@@ -250,12 +255,14 @@ struct NativeScrollEdgeElementBridge: UIViewRepresentable {
 /// 顶栏玻璃直接观察实际的 UIScrollView，保证三个主页面使用同一条可靠状态。
 struct NativeTopScrollObserver: UIViewRepresentable {
     var onChange: (CGFloat) -> Void
+    var onScrollViewReady: ((UIScrollView) -> Void)? = nil
 
     final class Coordinator {
         weak var scroll: UIScrollView?
         var observation: NSKeyValueObservation?
         var retries = 20
         var onChange: (CGFloat) -> Void = { _ in }
+        var onScrollViewReady: ((UIScrollView) -> Void)? = nil
 
         func attach(_ view: UIView) {
             guard let scroll = Self.findScroll(view) else {
@@ -273,6 +280,7 @@ struct NativeTopScrollObserver: UIViewRepresentable {
             }
             observation = nil
             self.scroll = scroll
+            onScrollViewReady?(scroll)
             observation = scroll.observe(\.contentOffset, options: [.new]) {
                 [weak self] scroll, _ in
                 self?.onChange(max(0, scroll.contentOffset.y))
@@ -297,12 +305,14 @@ struct NativeTopScrollObserver: UIViewRepresentable {
         view.backgroundColor = .clear
         view.isUserInteractionEnabled = false
         context.coordinator.onChange = onChange
+        context.coordinator.onScrollViewReady = onScrollViewReady
         context.coordinator.attach(view)
         return view
     }
 
     func updateUIView(_ view: UIView, context: Context) {
         context.coordinator.onChange = onChange
+        context.coordinator.onScrollViewReady = onScrollViewReady
         context.coordinator.attach(view)
     }
 }

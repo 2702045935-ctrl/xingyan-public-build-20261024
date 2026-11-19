@@ -5,63 +5,58 @@ struct SplashView: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var revealed = false
-    @State private var breathing = false
-    @State private var shimmering = false
     @State private var progress: CGFloat = 0
 
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                StarLaunchBackdrop(remote: remote)
+                launchCanvas
 
                 VStack(spacing: 0) {
                     Spacer(minLength: 0)
 
-                    VStack(spacing: 20) {
-                        StarLaunchMark(
-                            size: min(112, max(96, geo.size.width * 0.26)),
-                            breathing: breathing,
-                            shimmering: shimmering
-                        )
-                        .scaleEffect(revealed ? 1 : 0.965)
-                        .opacity(revealed ? 1 : 0)
+                    VStack(spacing: 19) {
+                        launchIcon(size: min(92, max(78, geo.size.width * 0.21)))
 
-                        VStack(spacing: 7) {
+                        VStack(spacing: 6) {
                             Text("星言")
-                                .font(.system(size: 29, weight: .semibold, design: .default))
-                                .tracking(0.2)
+                                .font(.system(size: 30, weight: .semibold))
+                                .tracking(1.2)
                                 .foregroundStyle(.white)
 
                             Text("STAR CHAT")
-                                .font(.system(size: 9.5, weight: .semibold, design: .default))
-                                .tracking(2.7)
-                                .foregroundStyle(Color.white.opacity(0.38))
+                                .font(.system(size: 9.5, weight: .semibold))
+                                .tracking(3.8)
+                                .foregroundStyle(Color.white.opacity(0.34))
                         }
-                        .offset(y: revealed ? 0 : 7)
-                        .opacity(revealed ? 1 : 0)
                     }
-                    .offset(y: -geo.size.height * 0.034)
+                    .scaleEffect(revealed ? 1 : 0.985)
+                    .opacity(revealed ? 1 : 0)
+                    .offset(y: -geo.size.height * 0.025)
 
                     Spacer(minLength: 0)
 
-                    VStack(spacing: 0) {
+                    VStack(spacing: 13) {
+                        Text("让每一句真心，都有回应")
+                            .font(.system(size: 12.5, weight: .regular))
+                            .foregroundStyle(Color.white.opacity(0.32))
+
                         Capsule(style: .continuous)
-                            .fill(Color.white.opacity(0.10))
-                            .frame(width: 96, height: 1)
+                            .fill(Color.white.opacity(0.08))
+                            .frame(width: 112, height: 2)
                             .overlay(alignment: .leading) {
                                 Capsule(style: .continuous)
                                     .fill(
                                         LinearGradient(
                                             colors: [
-                                                Color.white.opacity(0.25),
-                                                Color.white.opacity(0.94)
+                                                OrbitTheme.jadeDeep.opacity(0.72),
+                                                OrbitTheme.jade
                                             ],
                                             startPoint: .leading,
                                             endPoint: .trailing
                                         )
                                     )
-                                    .frame(width: 96 * progress, height: 1)
-                                    .shadow(color: Color.white.opacity(0.28), radius: 3)
+                                    .frame(width: 112 * progress, height: 2)
                             }
                     }
                     .opacity(revealed ? 1 : 0)
@@ -75,20 +70,75 @@ struct SplashView: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("星言"))
         .onAppear {
-            withAnimation(.easeOut(duration: 0.72)) {
+            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.62)) {
                 revealed = true
             }
-            withAnimation(.easeInOut(duration: 1.30).delay(0.10)) {
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 1.05).delay(0.08)) {
                 progress = 1
             }
-            guard !reduceMotion else { return }
-            withAnimation(.easeInOut(duration: 3.2).repeatForever(autoreverses: true)) {
-                breathing = true
-            }
-            withAnimation(.linear(duration: 1.9).delay(0.36).repeatForever(autoreverses: false)) {
-                shimmering = true
+        }
+    }
+
+    private var launchCanvas: some View {
+        ZStack {
+            Color(hex: 0x040505)
+
+            LinearGradient(
+                stops: [
+                    .init(color: Color(hex: 0x07110D), location: 0),
+                    .init(color: Color(hex: 0x040505), location: 0.55),
+                    .init(color: .black, location: 1)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+
+            RadialGradient(
+                stops: [
+                    .init(color: OrbitTheme.jadeDeep.opacity(0.12), location: 0),
+                    .init(color: OrbitTheme.jadeDeep.opacity(0.025), location: 0.48),
+                    .init(color: .clear, location: 1)
+                ],
+                center: UnitPoint(x: 0.5, y: 0.42),
+                startRadius: 0,
+                endRadius: 360
+            )
+        }
+        .ignoresSafeArea()
+    }
+
+    @ViewBuilder
+    private func launchIcon(size: CGFloat) -> some View {
+        let shape = RoundedRectangle(cornerRadius: size * 0.235, style: .continuous)
+
+        Group {
+            if let icon = AppIconImage.image {
+                Image(uiImage: icon)
+                    .resizable()
+                    .scaledToFit()
+            } else {
+                shape
+                    .fill(
+                        LinearGradient(
+                            colors: [OrbitTheme.jade, OrbitTheme.jadeDeep],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .overlay {
+                        Text("星")
+                            .font(.system(size: size * 0.40, weight: .bold))
+                            .foregroundStyle(.white)
+                    }
             }
         }
+        .frame(width: size, height: size)
+        .clipShape(shape)
+        .overlay {
+            shape.stroke(Color.white.opacity(0.10), lineWidth: 0.7)
+        }
+        .shadow(color: Color.black.opacity(0.34), radius: 16, y: 8)
+        .accessibilityHidden(true)
     }
 }
 
