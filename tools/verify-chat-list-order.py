@@ -21,5 +21,13 @@ require(CHATS.count("TimeFmt.listApple(chat.listTimestamp)") >= 2,
         "all chat-list time labels must use the shared fallback timestamp")
 require("TimeFmt.date($0.lastMessage?.createdAt ?? $0.updatedAt)" not in APP,
         "ordering must not discard a valid updatedAt after a malformed message time")
+ENTRIES = CHATS.split("private func nativeChatEntries", 1)[1].split(
+    "private var nativeChatAppearance", 1
+)[0]
+require(
+    ENTRIES.find('id: "weather"') < ENTRIES.find("if snapshot.list.isEmpty")
+    and ENTRIES.count('id: "weather"') == 1,
+    "weather must remain in the top utility rows instead of trailing the conversations",
+)
 
 print("chat-list-order: passed")

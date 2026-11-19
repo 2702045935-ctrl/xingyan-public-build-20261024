@@ -2422,6 +2422,11 @@ struct ChatsView: View {
                 id: "pay",
                 kind: .pay,
                 signature: "\(appearance)-\(payOfficialRowName)-\(payOfficialRowSubtitle)-\(payOfficialRowAvatar)-\(officialRowTime("pay"))-\(app.me?.ops == true)"
+            ),
+            NativeChatEntry(
+                id: "weather",
+                kind: .weather,
+                signature: "\(appearance)-\(weatherRowName)-\(weatherRowSubtitle)-\(weatherRowAvatar)-\(officialRowTime("weather"))-\(app.me?.ops == true)"
             )
         ]
 
@@ -2437,11 +2442,6 @@ struct ChatsView: View {
                 : snapshot.list.map(nativeChatEntry(for:)))
         }
 
-        entries.append(NativeChatEntry(
-            id: "weather",
-            kind: .weather,
-            signature: "\(appearance)-\(weatherRowName)-\(weatherRowSubtitle)-\(weatherRowAvatar)-\(officialRowTime("weather"))-\(app.me?.ops == true)"
-        ))
         entries.append(NativeChatEntry(
             id: "bottom",
             kind: .bottom,
