@@ -167,6 +167,7 @@ jobs:
           node server/test/shard-authority-migration.test.js
           node server/test/shard-authority-shadow-audit.test.js
           node server/test/shard-authority-server.test.js
+          node server/test/multishard-state.test.js
           node server/test/call-audio-relay.test.js
           node server/test/call-cross-shard.test.js
           node server/test/dual-cell-call-topology.test.js

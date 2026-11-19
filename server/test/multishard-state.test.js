@@ -159,6 +159,12 @@ async function main() {
     response = await call(a.base, 'GET', '/api/contacts', undefined, alice.cookie);
     assert.ok((response.data.friends || []).some((u) => u.id === bob.user.id));
 
+    response = await call(a.base, 'POST', '/api/chats/direct', {
+      userId: bob.user.id
+    }, alice.cookie);
+    assert.strictEqual(response.status, 200, JSON.stringify(response.data));
+    const deletedFriendChatId = response.data.chat.id;
+
     response = await call(a.base, 'POST', '/api/friends/remove', {
       userId: bob.user.id
     }, alice.cookie);
@@ -166,6 +172,13 @@ async function main() {
     response = await call(b.base, 'GET', '/api/contacts', undefined, bob.cookie);
     assert.ok(!(response.data.friends || []).some((u) => u.id === alice.user.id),
       'deleted friend must disappear on another shard: ' + JSON.stringify(response.data));
+    response = await call(b.base, 'POST',
+      '/api/chats/' + deletedFriendChatId + '/messages',
+      { kind: 'text', content: 'deleted friend must not bypass send guard on another shard' },
+      bob.cookie);
+    assert.ok([403, 422].includes(response.status),
+      'deleted friend send guard must follow the relationship tombstone across shards: '
+        + JSON.stringify(response.data));
 
     response = await call(a.base, 'POST', '/api/friends/request', {
       username: 'shard_bob'
