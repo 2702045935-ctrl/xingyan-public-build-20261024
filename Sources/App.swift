@@ -971,7 +971,22 @@ final class AppState: ObservableObject {
         }
         if d.momentUnread != momentsUnread { momentsUnread = d.momentUnread }
         if !d.recentChats.isEmpty {
-            let recent = mergeServerChats(d.recentChats)
+            let serverRows = Dictionary(uniqueKeysWithValues: d.recentChats.map { ($0.id, $0) })
+            let recent = mergeServerChats(d.recentChats).map { row -> Chat in
+                guard let server = serverRows[row.id],
+                      let localMessageId = row.lastMessage?.id,
+                      !localMessageId.isEmpty,
+                      localMessageId == server.lastMessage?.id else { return row }
+                /* 同一末条消息下，服务端未读是最终结论；本机实时事件的乐观计数
+                   不能把另一台设备刚完成的已读重新盖回去。 */
+                optimisticChats[row.id] = nil
+                optimisticAt[row.id] = nil
+                var out = row
+                out.unread = server.unread
+                out.flagged = server.flagged
+                out.muted = server.muted
+                return out
+            }
             let recentIds = Set(d.recentChats.map(\.id))
             var combined = recent
             var known = Set(recent.map(\.id))
