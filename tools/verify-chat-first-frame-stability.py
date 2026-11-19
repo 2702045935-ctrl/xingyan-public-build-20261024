@@ -21,8 +21,13 @@ require(
 )
 require(
     "for delay in [0, 24, 70, 150, 260]" in CHAT
-    and "for delay in [0, 16, 50, 120, 220]" in CHAT,
-    "direct and native chats must settle across multiple stable layout frames",
+    and "nativeMessageController.scrollToBottom(animated: false)" in CHAT,
+    "direct chats must settle across stable layout frames and native chats must pin once",
+)
+require(
+    "collection.alpha = initiallyPinnedToBottom ? 0 : 1" in (ROOT / "Sources" / "NativeStaticList.swift").read_text(encoding="utf-8")
+    and "completeInitialBottom" in (ROOT / "Sources" / "NativeStaticList.swift").read_text(encoding="utf-8"),
+    "native chats must reveal only after the first bottom position is committed",
 )
 require(
     CHAT.count("initialOpenSettling = false") >= 3,

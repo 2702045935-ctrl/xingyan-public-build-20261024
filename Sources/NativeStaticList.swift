@@ -125,6 +125,7 @@ where Item.ID: Hashable {
         collection.canCancelContentTouches = true
         collection.scrollsToTop = true
         collection.isPrefetchingEnabled = true
+        collection.alpha = initiallyPinnedToBottom ? 0 : 1
         collection.delegate = context.coordinator
 
         let registration = UICollectionView.CellRegistration<NativeStaticHostCell, Item.ID> {
@@ -233,8 +234,7 @@ where Item.ID: Hashable {
                         guard let self, let scrollView = self.collection else { return }
                         self.sizeChangeScheduled = false
                         if self.waitsForInitialBottom {
-                            scrollView.layoutIfNeeded()
-                            self.setBottom(scrollView, animated: false)
+                            self.completeInitialBottom(scrollView)
                         }
                         self.onSizeChange?()
                     }
@@ -473,7 +473,7 @@ where Item.ID: Hashable {
                       !collection.isDragging,
                       !collection.isDecelerating else { return }
                 if self.waitsForInitialBottom {
-                    self.setBottom(collection, animated: false)
+                    self.completeInitialBottom(collection)
                     self.onApplyCompleted?()
                     return
                 }
@@ -487,6 +487,16 @@ where Item.ID: Hashable {
                 target.y = min(max(target.y, minimumY), maximumY)
                 collection.setContentOffset(target, animated: false)
                 self.onApplyCompleted?()
+            }
+        }
+
+        private func completeInitialBottom(_ collection: UICollectionView) {
+            guard waitsForInitialBottom else { return }
+            collection.layoutIfNeeded()
+            setBottom(collection, animated: false)
+            waitsForInitialBottom = false
+            UIView.performWithoutAnimation {
+                collection.alpha = 1
             }
         }
 
@@ -511,6 +521,7 @@ where Item.ID: Hashable {
         func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
             ChatScrollHandle.shared.noteUserMotion()
             waitsForInitialBottom = false
+            scrollView.alpha = 1
             publishScrollState(true)
         }
 

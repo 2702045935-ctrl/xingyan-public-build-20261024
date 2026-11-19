@@ -3807,18 +3807,12 @@ struct ChatDetailView: View {
         initialScrollTask = Task { @MainActor in
             atBottom = true
             wasAtBottom = true
-            for delay in [0, 16, 50, 120, 220] {
-                if delay > 0 {
-                    try? await Task.sleep(nanoseconds: UInt64(delay) * 1_000_000)
-                }
-                if Task.isCancelled { return }
-                if ChatScrollHandle.shared.moving { return }
-                nativeMessageController.scrollToBottom(animated: false)
-            }
-            if Task.isCancelled { return }
-            initialScrollReady = true
             await Task.yield()
             if Task.isCancelled { return }
+            nativeMessageController.scrollToBottom(animated: false)
+            try? await Task.sleep(nanoseconds: 100_000_000)
+            if Task.isCancelled { return }
+            initialScrollReady = true
             initialOpenSettling = false
             allowSettledBottom = true
         }
