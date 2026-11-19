@@ -1035,6 +1035,24 @@ struct RemoteImage: View {
     var onLoaded: ((UIImage) -> Void)? = nil
 
     @State private var image: UIImage?
+    @State private var loadedPath = ""
+
+    init(path: String,
+         icon: String = "photo",
+         mode: ContentMode = .fill,
+         template: Bool = false,
+         maxSide: CGFloat = 1600,
+         onLoaded: ((UIImage) -> Void)? = nil) {
+        self.path = path
+        self.icon = icon
+        self.mode = mode
+        self.template = template
+        self.maxSide = maxSide
+        self.onLoaded = onLoaded
+        let cached = Self.cachedImage(path: path, maxSide: maxSide)
+        _image = State(initialValue: cached)
+        _loadedPath = State(initialValue: cached == nil ? "" : path)
+    }
 
     var body: some View {
         GeometryReader { geo in
@@ -1057,9 +1075,23 @@ struct RemoteImage: View {
             .clipped()
         }
         .task(id: path) {
+            if loadedPath == path { return }
+            if let cached = Self.cachedImage(path: path, maxSide: maxSide) {
+                image = cached
+                loadedPath = path
+                onLoaded?(cached)
+                return
+            }
             image = nil
             await load()
         }
+    }
+
+    private static func cachedImage(path: String, maxSide: CGFloat) -> UIImage? {
+        guard !path.isEmpty else { return nil }
+        let side = max(64, maxSide)
+        let key = path + "#" + String(Int(side))
+        return ImageStore.shared.get(key) ?? ImageStore.shared.get(path)
     }
 
     private func load() async {
@@ -1071,12 +1103,14 @@ struct RemoteImage: View {
         if let hit = ImageStore.shared.get(memoryKey) {
             guard !Task.isCancelled, path == requestedPath else { return }
             image = hit
+            loadedPath = requestedPath
             onLoaded?(hit)
             return
         }
         if let direct = ImageStore.shared.get(requestedPath) {
             guard !Task.isCancelled, path == requestedPath else { return }
             image = direct
+            loadedPath = requestedPath
             onLoaded?(direct)
             return
         }
@@ -1093,6 +1127,7 @@ struct RemoteImage: View {
             if let diskImg = diskImg {
                 ImageStore.shared.put(memoryKey, diskImg)
                 image = diskImg
+                loadedPath = requestedPath
                 onLoaded?(diskImg)
                 return
             }
@@ -1127,6 +1162,7 @@ struct RemoteImage: View {
         guard !Task.isCancelled, path == requestedPath, let img = img else { return }
         ImageStore.shared.put(memoryKey, img)
         image = img
+        loadedPath = requestedPath
         onLoaded?(img)
 
         Task.detached(priority: .background) { ImageStore.shared.diskWrite(requestedPath, data) }
