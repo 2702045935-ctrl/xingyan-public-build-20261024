@@ -1277,6 +1277,8 @@ struct ChatDetailView: View {
 
     @State private var pressStart: Date?
     @State private var voiceStarting = false
+    @State private var voiceHoldActive = false
+    @State private var voiceHoldToken = UUID()
     @State private var pushTask: Task<Void, Never>?
 
     @State private var unreadHere = 0
@@ -5189,7 +5191,7 @@ struct ChatDetailView: View {
                         if recorder.recording {
                             Image(systemName: "waveform")
                                 .font(.system(size: 15, weight: .medium))
-                                .foregroundStyle(recorder.willCancel ? C.red : C.green)
+                                .foregroundStyle(recorder.willCancel ? C.red : OrbitTheme.jadeDeep)
                         } else if voiceMode {
                             Image(systemName: "keyboard")
                                 .font(.system(size: 20, weight: .medium))
@@ -5222,12 +5224,12 @@ struct ChatDetailView: View {
                                         Image(systemName: voicePlayer.playingID == previewID
                                               ? "stop.fill" : "play.fill")
                                             .font(.system(size: 13, weight: .bold))
-                                            .foregroundStyle(C.green)
+                                            .foregroundStyle(OrbitTheme.jadeDeep)
                                             .frame(width: 30, height: 30)
-                                            .background(Circle().fill(C.green.opacity(0.11)))
+                                            .background(Circle().fill(OrbitTheme.jadeDeep.opacity(0.11)))
                                     }
                                     .buttonStyle(ComposerIconButtonStyle(
-                                        ink: C.green,
+                                        ink: OrbitTheme.jadeDeep,
                                         active: voicePlayer.playingID == previewID
                                     ))
 
@@ -5268,7 +5270,7 @@ struct ChatDetailView: View {
                                             .font(.system(size: 15, weight: .bold))
                                             .foregroundStyle(.white)
                                             .frame(width: 32, height: 32)
-                                            .background(Circle().fill(C.green))
+                                            .background(Circle().fill(OrbitTheme.jadeDeep))
                                     }
                                     .buttonStyle(ComposerSendButtonStyle())
                                     .accessibilityLabel(Tr("发送"))
@@ -5276,7 +5278,7 @@ struct ChatDetailView: View {
                             } else if recorder.recording {
                                 HStack(spacing: 8) {
                                     Circle()
-                                        .fill(recorder.willCancel ? C.red : C.green)
+                                        .fill(recorder.willCancel ? C.red : OrbitTheme.jadeDeep)
                                         .frame(width: 8, height: 8)
                                         .scaleEffect(1 + min(0.22, recorder.level * 0.22))
                                         .animation(.easeOut(duration: 0.10), value: recorder.level)
@@ -5298,12 +5300,12 @@ struct ChatDetailView: View {
                                          ? Tr("上滑取消")
                                          : (recorder.willTranscribe ? Tr("松手转文字") : Tr("松手发送")))
                                         .font(pf(12.5, .semibold))
-                                        .foregroundStyle(recorder.willCancel ? C.red : C.green)
+                                        .foregroundStyle(recorder.willCancel ? C.red : OrbitTheme.jadeDeep)
                                         .padding(.horizontal, 9)
                                         .frame(height: 26)
                                         .background(
                                             Capsule().fill(
-                                                (recorder.willCancel ? C.red : C.green).opacity(0.10)
+                                                (recorder.willCancel ? C.red : OrbitTheme.jadeDeep).opacity(0.10)
                                             )
                                         )
                                 }
@@ -5311,10 +5313,10 @@ struct ChatDetailView: View {
                                 HStack(spacing: 8) {
                                     ZStack {
                                         Circle()
-                                            .fill(C.green.opacity(0.11))
+                                            .fill(OrbitTheme.jadeDeep.opacity(0.11))
                                         Image(systemName: voiceStarting ? "waveform" : "mic.fill")
                                             .font(.system(size: 12.5, weight: .semibold))
-                                            .foregroundStyle(C.green)
+                                            .foregroundStyle(OrbitTheme.jadeDeep)
                                     }
                                     .frame(width: 28, height: 28)
 
@@ -5353,16 +5355,28 @@ struct ChatDetailView: View {
                                     }
 
                                     guard pressStart == nil else { return }
+                                    voiceHoldActive = true
+                                    let holdToken = UUID()
+                                    voiceHoldToken = holdToken
                                     pressStart = Date()
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
-                                        guard pressStart != nil, !recorder.recording else { return }
+                                        guard voiceHoldToken == holdToken,
+                                              voiceHoldActive,
+                                              !recorder.recording else { return }
                                         voiceStarting = true
                                         focused = false
                                         panel = .none
-                                        Task {
+                                        Task { @MainActor in
                                             let started = await recorder.begin()
                                             voiceStarting = false
-                                            if started {
+                                            guard started else { return }
+                                            if voiceHoldToken != holdToken || !voiceHoldActive {
+                                                // The finger was released while AVAudioSession
+                                                // was still starting. Finish the recorder as
+                                                // soon as it becomes real, instead of leaving it
+                                                // running with no finger on screen.
+                                                finishVoice()
+                                            } else {
                                                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                                             }
                                         }
@@ -5370,6 +5384,8 @@ struct ChatDetailView: View {
                                 }
                                 .onEnded { _ in
                                     guard pendingVoiceURL == nil else { return }
+                                    voiceHoldActive = false
+                                    voiceHoldToken = UUID()
                                     pressStart = nil
                                     voiceStarting = false
                                     guard recorder.recording else { return }
@@ -5386,7 +5402,7 @@ struct ChatDetailView: View {
                     } else if recorder.recording {
                         HStack(spacing: 9) {
                             Circle()
-                                .fill(recorder.willCancel ? C.red : C.green)
+                                .fill(recorder.willCancel ? C.red : OrbitTheme.jadeDeep)
                                 .frame(width: 8, height: 8)
                             InlineVoiceWave(level: recorder.level,
                                             active: !recorder.willCancel)
@@ -5400,7 +5416,7 @@ struct ChatDetailView: View {
                             Spacer(minLength: 0)
                             Text(recorder.willCancel ? Tr("松手取消") : Tr("松手发送"))
                                 .font(pf(12.5, .medium))
-                                .foregroundStyle(recorder.willCancel ? C.red : C.green)
+                                .foregroundStyle(recorder.willCancel ? C.red : OrbitTheme.jadeDeep)
                         }
                         .padding(.horizontal, 12)
                         .frame(maxWidth: .infinity, minHeight: composerInputHeight)
@@ -6412,12 +6428,18 @@ struct ChatDetailView: View {
 
     private func finishVoice() {
         guard let got = recorder.end() else { return }
-        pendingVoiceURL = got.url
-        pendingVoiceSeconds = got.seconds
-        pendingVoiceWaveform = got.waveform
         voiceMode = true
         focused = false
         panel = .none
+        guard got.seconds >= 1 else {
+            try? FileManager.default.removeItem(at: got.url)
+            return
+        }
+        // Voice is a one-gesture WeChat-style send. Releasing the finger sends
+        // immediately; there is no second confirmation tap.
+        sendVoice(url: got.url,
+                  seconds: got.seconds,
+                  waveform: got.waveform)
     }
 
     private func discardPendingVoice() {

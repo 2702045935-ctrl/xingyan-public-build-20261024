@@ -43,6 +43,17 @@ require(
     "the compact bubble must still support native scrubbing",
 )
 require(
+    "voiceHoldToken != holdToken || !voiceHoldActive" in CHAT
+    and "sendVoice(url: got.url" in CHAT
+    and "pendingVoiceURL = got.url" not in CHAT,
+    "release must terminate a recording that starts late and send immediately",
+)
+require(
+    "recorder.willCancel ? C.red : OrbitTheme.jadeDeep" in CHAT
+    and "Circle().fill(OrbitTheme.jadeDeep)" in CHAT,
+    "recording controls must use the fixed Xingyan brand colour",
+)
+require(
     "python3 tools/verify-voice-bubble-wechat.py" in WORKFLOW,
     "voice bubble regression must run in the iOS gate",
 )
