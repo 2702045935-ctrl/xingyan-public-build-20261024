@@ -2948,9 +2948,11 @@ final class API {
         let p: FeedFavoritePayload = try await post("/api/feed/favorite", ["id": id], as: FeedFavoritePayload.self)
         return (p.favorited ?? false, p.favorites ?? 0)
     }
-    func feedPublish(video: String, desc: String, music: String) async throws -> String {
+    func feedPublish(video: String, desc: String, music: String,
+                     visibility: String = "public") async throws -> String {
         let p: FeedPublishPayload = try await post("/api/feed/publish",
-                                                   ["video": video, "desc": desc, "music": music],
+                                                   ["video": video, "desc": desc,
+                                                    "music": music, "visibility": visibility],
                                                    as: FeedPublishPayload.self)
         return p.id ?? ""
     }

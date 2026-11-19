@@ -2461,7 +2461,14 @@ struct HidesTabBar: ViewModifier {
 }
 
 extension View {
-    func hidesTabBar() -> some View { modifier(HidesTabBar()) }
+    @ViewBuilder
+    func hidesTabBar(_ hidden: Bool = true) -> some View {
+        if hidden {
+            modifier(HidesTabBar())
+        } else {
+            self
+        }
+    }
 }
 
 /// 小程序的统一悬浮控制：右侧只有一个大圆点和三个点。

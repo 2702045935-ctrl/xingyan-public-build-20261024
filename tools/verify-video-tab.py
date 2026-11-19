@@ -18,6 +18,7 @@ require("(0..<5).contains(next)" in MAIN, "all five tab indexes must route")
 require('UIImage(systemName: "play.rectangle")' in BAR,
         "the video tab must use the Apple play-rectangle icon")
 require("items.count == 5" in BAR, "the tab bar must expose five items")
-require('Text(Tr("正在开发中"))' in VIDEO, "the video page must show the requested placeholder")
+require("ChannelsView(embedded: true)" in VIDEO,
+        "the video tab must mount the shared full-screen reel instead of a placeholder")
 
 print("video-tab: passed")

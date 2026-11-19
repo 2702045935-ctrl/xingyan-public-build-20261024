@@ -39,11 +39,16 @@ struct FeedItem: Decodable, Identifiable, Hashable {
     var comments: Int?
     var shares: Int?
     var mine: Bool?
+    var visibility: String?
 }
 
 struct ChannelsView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
+
+    var embedded = false
+    var startingItems: [FeedItem]? = nil
+    var startingItemID: String? = nil
 
     @State private var items: [FeedItem] = []
 
@@ -146,8 +151,8 @@ struct ChannelsView: View {
             )
         }
         .toolbar(.hidden, for: .navigationBar)
-        .hidesTabBar()
-        .swipeBack { dismiss() }
+        .hidesTabBar(!embedded)
+        .swipeBack(!embedded) { dismiss() }
 
         .fullScreenCover(isPresented: $showBili) {
             NavigationStack {
@@ -265,71 +270,89 @@ struct ChannelsView: View {
 
     private var topBar: some View {
         VStack {
-            HStack {
-                Button { dismiss() } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 19, weight: .medium))
-                        .foregroundColor(.white)
+            HStack(spacing: 4) {
+                if embedded {
+                    Color.clear
                         .frame(width: 44, height: L.navH)
-                }
-                .buttonStyle(.plain)
-
-                Button { showBigPlayer = true } label: {
-                    Image(systemName: "rectangle.fill")
-                        .font(.system(size: 17, weight: .medium))
-                        .foregroundColor(.white)
-                        .frame(width: 40, height: L.navH)
-                }
-                .buttonStyle(.plain)
-
-                Button { showBili = true } label: {
-                    Text(Tr("B站热门"))
-                        .font(pf(14, .medium))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 10)
-                        .frame(height: 28)
-                        .background(Capsule().fill(Color.white.opacity(0.16)))
-                        .frame(height: L.navH)
-                }
-                .buttonStyle(.plain)
-
-                HStack(spacing: 22) {
-
-                    ForEach(Array([UIConfig.text("feedTab0", "关注"),
-                                   UIConfig.text("feedTab1", "朋友"),
-                                   UIConfig.text("feedTab2", "推荐")].enumerated()), id: \.offset) { i, name in
-                        Button {
-                            guard tab != i else { return }
-                            tab = i
-                            index = 0
-                            items = []
-                            loading = true
-                            Task { await load() }
-                        } label: {
-                            VStack(spacing: 5) {
-                                Text(Tr(name))
-                                    .font(pf(tab == i ? 17.5 : 16.5, tab == i ? .semibold : .regular))
-                                    .foregroundColor(tab == i ? .white : Color.white.opacity(0.62))
-                                Capsule()
-                                    .fill(tab == i ? Color.white : Color.clear)
-                                    .frame(width: 18, height: 2.5)
-                            }
-                        }
-                        .buttonStyle(.plain)
+                } else {
+                    Button { dismiss() } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 19, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(width: 44, height: L.navH)
+                            .background(Color.black.opacity(0.16), in: Circle())
                     }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Tr("返回"))
                 }
-                .frame(maxWidth: .infinity)
 
-                Spacer()
+                Spacer(minLength: 2)
 
-                if flags.allowPublish != false {
+                if startingItems == nil {
+                    HStack(spacing: 24) {
+                        ForEach(Array([UIConfig.text("feedTab0", "关注"),
+                                       UIConfig.text("feedTab1", "朋友"),
+                                       UIConfig.text("feedTab2", "推荐")].enumerated()), id: \.offset) { i, name in
+                            Button {
+                                guard tab != i else { return }
+                                tab = i
+                                index = 0
+                                items = []
+                                loading = true
+                                Task { await load() }
+                            } label: {
+                                VStack(spacing: 5) {
+                                    Text(Tr(name))
+                                        .font(pf(tab == i ? 17 : 16, tab == i ? .semibold : .regular))
+                                        .foregroundColor(tab == i ? .white : Color.white.opacity(0.58))
+                                    Capsule()
+                                        .fill(tab == i ? Color.white : Color.clear)
+                                        .frame(width: 18, height: 2.5)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                } else {
+                    Text(Tr("我的作品"))
+                        .font(pf(17, .semibold))
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                }
+
+                Spacer(minLength: 2)
+
+                Menu {
+                    Button {
+                        showBigPlayer = true
+                    } label: {
+                        Label(Tr("大屏播放"), systemImage: "rectangle.inset.filled")
+                    }
+                    Button {
+                        showBili = true
+                    } label: {
+                        Label(Tr("B站热门"), systemImage: "play.square.stack")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(width: 42, height: L.navH)
+                        .background(Color.black.opacity(0.16), in: Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Tr("更多"))
+
+                if flags.allowPublish != false, startingItems == nil {
                     Button { pickOpen = true } label: {
                         Image(systemName: "plus")
                             .font(.system(size: 18, weight: .semibold))
                             .foregroundColor(.white)
-                            .frame(width: 44, height: L.navH)
+                            .frame(width: 42, height: L.navH)
+                            .background(Color.black.opacity(0.16), in: Circle())
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(Tr("发布视频"))
                 }
             }
             .padding(.horizontal, 6)
@@ -348,6 +371,17 @@ struct ChannelsView: View {
     }
 
     private func load() async {
+        if let startingItems, !startingItems.isEmpty {
+            items = startingItems
+            if let startingItemID,
+               let start = startingItems.firstIndex(where: { $0.id == startingItemID }) {
+                index = start
+            } else {
+                index = 0
+            }
+            loading = false
+            return
+        }
         if let r = try? await API.shared.feed(tab: ["follow", "friends", "recommend"][tab]) {
             items = r.items
             style = r.style
@@ -357,6 +391,7 @@ struct ChannelsView: View {
     }
 
     private func loadMore() async {
+        guard startingItems == nil else { return }
         if loadingMore { return }
         loadingMore = true
         defer { loadingMore = false }

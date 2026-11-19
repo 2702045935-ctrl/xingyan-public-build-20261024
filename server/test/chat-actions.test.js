@@ -481,6 +481,49 @@ async function main() {
         '一键清除后双方通讯录仍保留好友');
     }
 
+    response = await call(base, alice.cookie, 'POST', '/api/feed/publish', {
+      video: '/uploads/feed-public-test.mp4',
+      desc: '公开作品',
+      visibility: 'public'
+    });
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    const publicFeedId = response.data.id;
+    response = await call(base, alice.cookie, 'POST', '/api/feed/publish', {
+      video: '/uploads/feed-private-test.mp4',
+      desc: '私密作品',
+      visibility: 'private'
+    });
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    const privateFeedId = response.data.id;
+
+    response = await call(base, alice.cookie, 'GET', '/api/feed?mine=1');
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    const mineFeed = response.data.items || [];
+    assert.ok(mineFeed.some((item) =>
+      item.id === publicFeedId && item.visibility === 'public'),
+    '公开视频发布后没有进入作品集');
+    assert.ok(mineFeed.some((item) =>
+      item.id === privateFeedId && item.visibility === 'private'),
+    '私密视频发布后没有进入作品集');
+
+    response = await call(base, alice.cookie, 'POST', '/api/feed/favorite', {
+      id: privateFeedId
+    });
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    response = await call(base, alice.cookie, 'GET', '/api/feed?mine=1');
+    const favoritedPrivate = (response.data.items || [])
+      .find((item) => item.id === privateFeedId);
+    assert.ok(favoritedPrivate && favoritedPrivate.favorited === true,
+      '收藏私密作品后作品集没有同步收藏状态');
+
+    response = await call(base, bob.cookie, 'GET', '/api/feed?tab=recommend');
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    const otherFeed = response.data.items || [];
+    assert.ok(otherFeed.some((item) => item.id === publicFeedId),
+      '其他用户看不到公开作品');
+    assert.ok(!otherFeed.some((item) => item.id === privateFeedId),
+      '私密作品泄漏到了推荐流');
+
     console.log('chat-actions: passed');
   } finally {
     if (child && child.exitCode === null) child.kill();

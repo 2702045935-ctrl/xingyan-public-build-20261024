@@ -737,7 +737,8 @@ function feedItemOut(it, user) {
     favorited: Array.isArray(it.savedBy) && it.savedBy.indexOf(user.id) >= 0,
     followed: iFollow,
     comments: (it.comments || []).length + (Number(it.baseComments) || 0),
-    shares: Number(it.baseShares) || 0
+    shares: Number(it.baseShares) || 0,
+    visibility: it.visibility || 'public'
   };
   /* 有分片才带上 hls（客户端优先用它边下边播；没有这个字段就直接走整包 MP4） */
   if (hlsPath) out.hls = hlsPath;
@@ -6227,6 +6228,16 @@ function momentVisibleTo(m, viewerId) {
   if (v === 'private') return false;
   if (v === 'partial') return (m.visibleTo || []).includes(viewerId);
   if (v === 'exclude') return !(m.hiddenFrom || []).includes(viewerId);
+  return true;
+}
+
+function feedVisibleTo(item, viewerId) {
+  if (!item) return false;
+  if (item.authorId === viewerId) return true;
+  const visibility = item.visibility || 'public';
+  if (visibility === 'private') return false;
+  if (visibility === 'partial') return (item.visibleTo || []).includes(viewerId);
+  if (visibility === 'exclude') return !(item.hiddenFrom || []).includes(viewerId);
   return true;
 }
 
@@ -16133,6 +16144,7 @@ async function handleApi(req, res, pathname, query) {
     const mineOnly = onlyMine
       ? (f.posts || []).filter((it) => it.authorId === user.id)
       : null;
+    const visiblePosts = (f.posts || []).filter((it) => feedVisibleTo(it, user.id));
     let all;
     if (mineOnly) {
       all = mineOnly;
@@ -16142,17 +16154,17 @@ async function handleApi(req, res, pathname, query) {
       const followed = myFeedFollows(user.id);
       if (followed.length) {
         const set = new Set(followed);
-        all = (f.posts || []).filter((it) => it.authorId && set.has(it.authorId));
+        all = visiblePosts.filter((it) => it.authorId && set.has(it.authorId));
       } else {
-        all = (f.posts || []).filter((it) => it.authorId && myFriends.has(it.authorId));
+        all = visiblePosts.filter((it) => it.authorId && myFriends.has(it.authorId));
       }
       all.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
     } else if (tab === 'friends') {
-      all = (f.posts || []).filter((it) => (it.likedBy || []).some((id) => myFriends.has(id)));
+      all = visiblePosts.filter((it) => (it.likedBy || []).some((id) => myFriends.has(id)));
       all.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
     } else {
       /* 推荐：抖音那套「千人千面」——兴趣 / 社交 / 负反馈 / 多样性 / 探索 */
-      all = rankFeedFor(user, (f.posts || []).concat(f.items || []), myFriends);
+      all = rankFeedFor(user, visiblePosts.concat(f.items || []), myFriends);
     }
     const out = all.map((it) => feedItemOut(it, user));
     const cfg0 = readJson(path.join(DATA_DIR, 'feed.json'), {});
@@ -16276,7 +16288,13 @@ async function handleApi(req, res, pathname, query) {
     const post = {
       id: uid('v'), authorId: user.id, video: video, cover: cover,
       desc: desc, music: music, createdAt: now(),
-      likedBy: [], comments: [], baseLikes: 0, baseComments: 0, baseShares: 0
+      likedBy: [], comments: [], baseLikes: 0, baseComments: 0, baseShares: 0,
+      visibility: ['private', 'partial', 'exclude'].includes(String(body.visibility))
+        ? String(body.visibility) : 'public',
+      visibleTo: (Array.isArray(body.visibleTo) ? body.visibleTo : [])
+        .map((id) => str(id, 40)).filter(Boolean).slice(0, 200),
+      hiddenFrom: (Array.isArray(body.hiddenFrom) ? body.hiddenFrom : [])
+        .map((id) => str(id, 40)).filter(Boolean).slice(0, 200)
     };
     f.posts.unshift(post);
     if (f.posts.length > 200) f.posts = f.posts.slice(0, 200);

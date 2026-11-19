@@ -1872,8 +1872,9 @@ struct WorksView: View {
         .toolbar(.hidden, for: .navigationBar)
         .swipeBack { dismiss() }
         .hidesTabBar()
-        .sheet(item: $playing) { w in
-            FeedPlayerSheet(item: w, all: visibleWorks)
+        .fullScreenCover(item: $playing) { w in
+            ChannelsView(startingItems: visibleWorks,
+                         startingItemID: w.id)
                 .environmentObject(app)
         }
         .sheet(isPresented: $showCoverPicker) {
@@ -2230,9 +2231,12 @@ struct WorksView: View {
             $0.mine == true || (!myId.isEmpty && $0.author?.id == myId)
         }
         var seen = Set<String>()
-        let merged = (mine + mineFromAll).filter { seen.insert($0.id).inserted }
-        works = merged.sorted(by: newestFirst)
-        likedWorks = all
+        let allKnown = (mine + mineFromAll + all)
+            .filter { seen.insert($0.id).inserted }
+        works = allKnown
+            .filter { $0.mine == true || (!myId.isEmpty && $0.author?.id == myId) }
+            .sorted(by: newestFirst)
+        likedWorks = allKnown
             .filter { $0.favorited == true }
             .sorted(by: newestFirst)
 
@@ -2250,6 +2254,8 @@ struct WorksView: View {
     }
 
     private func isPrivate(_ item: FeedItem) -> Bool {
+        let visibility = (item.visibility ?? "").lowercased()
+        if !visibility.isEmpty { return visibility == "private" }
         let tag = ((item.tag ?? "") + " " + (item.desc ?? "")).lowercased()
         return tag.contains("private") || tag.contains("draft")
             || tag.contains("私密") || tag.contains("草稿")
