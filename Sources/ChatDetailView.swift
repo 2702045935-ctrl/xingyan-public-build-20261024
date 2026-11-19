@@ -8513,7 +8513,16 @@ struct MessageRow: View {
         }
     }
 
+    @ViewBuilder
     private var audioBubble: some View {
+        if mine {
+            sentVoiceBubble
+        } else {
+            receivedVoiceBubble
+        }
+    }
+
+    private var sentVoiceBubble: some View {
         let o = dict(message.body)
         let secs = max(1, (o["seconds"] as? Int) ?? 1)
         let playing = voicePlayer.playingID == message.id
@@ -8522,24 +8531,129 @@ struct MessageRow: View {
                         min(220, 82 + min(CGFloat(secs), 60) * 2.1))
 
         return HStack(spacing: 10) {
-            if mine { Spacer(minLength: 0) }
+            Spacer(minLength: 0)
 
             HStack(spacing: 8) {
-                if mine {
-                    Text(weChatVoiceClock(total))
-                        .foregroundStyle(bubblePrimaryInk)
-                    Spacer(minLength: 6)
-                    voiceSpeakerGlyph(playing: playing)
-                } else {
-                    voiceSpeakerGlyph(playing: playing)
-                    Spacer(minLength: 6)
-                    Text(weChatVoiceClock(total))
-                        .foregroundStyle(bubblePrimaryInk)
-                }
+                Text(weChatVoiceClock(total))
+                    .foregroundStyle(bubblePrimaryInk)
+                Spacer(minLength: 6)
+                voiceSpeakerGlyph(playing: playing)
             }
             .font(pfStyled(size: 15, weight: .medium, design: .rounded))
             .padding(.horizontal, 13)
             .frame(width: width, height: 42, alignment: .leading)
+            .background(BubbleFill(mine: true,
+                                   tail: showTail,
+                                   seed: bubbleSeed(message.id)))
+            .contentShape(Rectangle())
+            .onTapGesture {
+                playedVoice.insert(message.id)
+                VoicePlayed.markPlayed(message.id)
+                guard let url = voiceURL() else {
+                    onShowToast?(Tr("这条语音找不到了"))
+                    return
+                }
+                voicePlayer.toggle(id: message.id, url: url)
+            }
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 8)
+                    .onChanged { value in
+                        let fraction = min(1, max(0, Double(value.location.x / max(1, width))))
+                        voiceScrub = fraction
+                        if voicePlayer.playingID != message.id, let url = voiceURL() {
+                            voicePlayer.toggle(id: message.id, url: url)
+                        }
+                        voicePlayer.seek(to: fraction)
+                    }
+                    .onEnded { _ in voiceScrub = -1 }
+            )
+            .animation(.easeOut(duration: 0.16), value: playing)
+        }
+    }
+
+    private func voiceSpeakerGlyph(playing: Bool) -> some View {
+        Image(systemName: playing ? "speaker.wave.3.fill" : "speaker.wave.2.fill")
+            .font(.system(size: 17, weight: .medium))
+            .foregroundStyle(bubblePrimaryInk.opacity(playing ? 1 : 0.88))
+            .frame(width: 22, height: 28)
+            .scaleEffect(playing ? 1.04 : 1)
+            .animation(playing
+                       ? .easeInOut(duration: 0.58).repeatForever(autoreverses: true)
+                       : .easeOut(duration: 0.16),
+                       value: playing)
+    }
+
+    private func weChatVoiceClock(_ seconds: Double) -> String {
+        let value = max(0, Int(seconds.rounded()))
+        if value < 60 { return "\(value)″" }
+        return "\(value / 60)′\(String(format: "%02d″", value % 60))"
+    }
+
+    private var receivedVoiceBubble: some View {
+        let o = dict(message.body)
+        let secs = max(1, (o["seconds"] as? Int) ?? 1)
+        let playing = voicePlayer.playingID == message.id
+        let scrubbing = voiceScrub >= 0
+
+        let dot: Double = scrubbing ? voiceScrub : (playing ? voicePlayer.progress : 0)
+        let total = playing && voicePlayer.total > 0 ? voicePlayer.total : Double(secs)
+        let elapsed: Double = {
+            if scrubbing { return max(0, total * dot) }
+            if playing { return max(0, min(total, voicePlayer.elapsed)) }
+            return 0
+        }()
+        let levels = voiceLevels(o, count: 36)
+        let width = min(maxBubbleWidth, min(286, 196 + CGFloat(secs) * 1.45))
+        let live = playing || scrubbing
+
+        return HStack(spacing: 10) {
+            if mine { Spacer(minLength: 0) }
+
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [Color(hex: 0x4EDC7C), C.green],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                    Circle()
+                        .stroke(Color.white.opacity(0.18), lineWidth: 0.7)
+                    Circle()
+                        .fill(Color.white.opacity(0.12))
+                        .frame(width: 25, height: 25)
+                    Image(systemName: playing ? "pause.fill" : "play.fill")
+                        .font(.system(size: 12.5, weight: .bold))
+                        .foregroundStyle(.white)
+                        .offset(x: playing ? 0 : 1)
+                }
+                .frame(width: 38, height: 38)
+                .shadow(color: C.green.opacity(0.20), radius: 6, y: 2)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    voiceProgressTrack(levels: levels, progress: dot, live: live)
+                        .frame(height: 25)
+
+                    HStack(spacing: 5) {
+                        Text(live ? voiceClock(elapsed) : voiceClock(total))
+                            .foregroundStyle(live ? C.green : bubbleSecondaryInk)
+                        if live {
+                            Text("/")
+                                .foregroundStyle(bubbleSecondaryInk.opacity(0.38))
+                            Text(voiceClock(total))
+                                .foregroundStyle(bubbleSecondaryInk)
+                        }
+                        Spacer(minLength: 0)
+                        if live { speedChip }
+                    }
+                    .font(pfStyled(size: 10, weight: .medium, design: .monospaced))
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .padding(.horizontal, 12)
+            .frame(width: width, height: 64, alignment: .leading)
             .background(BubbleFill(mine: mine,
                                    tail: showTail,
                                    seed: bubbleSeed(message.id)))
@@ -8561,42 +8675,10 @@ struct MessageRow: View {
                 }
                 voicePlayer.toggle(id: message.id, url: url)
             }
-            .simultaneousGesture(
-                DragGesture(minimumDistance: 8)
-                    .onChanged { value in
-                        let fraction = min(1, max(0, Double(value.location.x / max(1, width))))
-                        voiceScrub = fraction
-                        playedVoice.insert(message.id)
-                        VoicePlayed.markPlayed(message.id)
-                        if voicePlayer.playingID != message.id, let url = voiceURL() {
-                            voicePlayer.toggle(id: message.id, url: url)
-                        }
-                        voicePlayer.seek(to: fraction)
-                    }
-                    .onEnded { _ in voiceScrub = -1 }
-            )
             .animation(.easeOut(duration: 0.16), value: playing)
 
             if !mine { Spacer(minLength: 0) }
         }
-    }
-
-    private func voiceSpeakerGlyph(playing: Bool) -> some View {
-        Image(systemName: playing ? "speaker.wave.3.fill" : "speaker.wave.2.fill")
-            .font(.system(size: 17, weight: .medium))
-            .foregroundStyle(bubblePrimaryInk.opacity(playing ? 1 : 0.88))
-            .frame(width: 22, height: 28)
-            .scaleEffect(playing ? 1.04 : 1)
-            .animation(playing
-                       ? .easeInOut(duration: 0.58).repeatForever(autoreverses: true)
-                       : .easeOut(duration: 0.16),
-                       value: playing)
-    }
-
-    private func weChatVoiceClock(_ seconds: Double) -> String {
-        let value = max(0, Int(seconds.rounded()))
-        if value < 60 { return "\(value)″" }
-        return "\(value / 60)′\(String(format: "%02d″", value % 60))"
     }
 
     private func voiceClock(_ seconds: Double) -> String {
