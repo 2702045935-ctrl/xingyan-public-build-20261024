@@ -78,6 +78,7 @@ jobs:
           PY
           python3 tools/verify-no-tencent-media.py
           python3 tools/verify-native-chat-swipe.py
+          python3 tools/verify-chat-stress-scroll.py
           python3 tools/verify-chats-dark-surface.py
           python3 tools/verify-chat-chrome-contrast.py
           python3 tools/verify-recall-preview.py

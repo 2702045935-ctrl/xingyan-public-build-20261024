@@ -67,7 +67,7 @@ require(
 
 NATIVE_CHAT_LIST = (ROOT / "Sources" / "NativeChatList.swift").read_text(encoding="utf-8")
 require(
-    "collection.isDragging || collection.isTracking || collection.isDecelerating" in NATIVE_CHAT_LIST
+    "table.isDragging || table.isTracking || table.isDecelerating" in NATIVE_CHAT_LIST
     and "pendingItems = next" in NATIVE_CHAT_LIST,
     "all conversation-list changes, including pure appends, must defer during touch motion",
 )
