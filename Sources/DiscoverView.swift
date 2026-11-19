@@ -3653,19 +3653,17 @@ struct MomentImageGrid: View {
     var sizes: [String: [Int]] = [:]
     var onTap: (Int) -> Void
 
-    private let gap: CGFloat = 6
-    private let radius: CGFloat = 4
-
     var body: some View {
         if images.count == 1 {
             let sz = sizes[images[0]]
-            MomentSingleImage(path: images[0], avail: avail, radius: radius,
+            MomentSingleImage(path: images[0], avail: avail,
+                              radius: MomentMediaLayout.singleRadius,
                               knownSize: (sz != nil && sz!.count == 2 && sz![1] > 0)
                                   ? CGSize(width: CGFloat(sz![0]), height: CGFloat(sz![1])) : nil) { onTap(0) }
         } else {
-            let cols = (images.count == 2 || images.count == 4) ? 2 : 3
-            let maxW = avail * (cols == 2 ? (images.count == 4 ? 0.52 : 0.62) : 0.74)
-            let cell = (maxW - gap * CGFloat(cols - 1)) / CGFloat(cols)
+            let cols = MomentMediaLayout.columns(for: images.count)
+            let cell = MomentMediaLayout.gridCellSize(count: images.count, width: avail)
+            let gap = MomentMediaLayout.gap
             let rows = stride(from: 0, to: images.count, by: cols).map { start in
                 Array(start..<min(start + cols, images.count))
             }
@@ -3676,8 +3674,11 @@ struct MomentImageGrid: View {
                             Button { onTap(i) } label: {
 
                                 RemoteImage(path: images[i], icon: "photo", maxSide: 720)
-                                    .frame(width: cell, height: cell)
-                                    .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
+                                    .frame(width: cell.width, height: cell.height)
+                                    .clipShape(RoundedRectangle(
+                                        cornerRadius: MomentMediaLayout.gridRadius,
+                                        style: .continuous
+                                    ))
                                     .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
@@ -3991,23 +3992,17 @@ struct MomentSingleImage: View {
     var onTap: () -> Void
 
     @State private var aspect: CGFloat = 4.0 / 3.0
-    @State private var naturalW: CGFloat = 0
     @State private var started = false
 
     var body: some View {
 
         let rawAspect = (knownSize?.height ?? 0) > 0 ? (knownSize!.width / knownSize!.height) : aspect
-        let a = min(max(rawAspect, 0.75), 2.0)
-
-        let limit = a >= 1 ? avail : avail * 0.62
-        let rawW = (knownSize?.width ?? 0) > 0 ? knownSize!.width : naturalW
-        let w = rawW > 0 ? min(limit, rawW) : limit
-        let h = min(w / a, 300)
+        let fitted = MomentMediaLayout.singleImageSize(knownRatio: rawAspect, width: avail)
 
         Button { onTap() } label: {
 
             RemoteImage(path: path, icon: "photo", maxSide: 1080)
-                .frame(width: w, height: h)
+                .frame(width: fitted.width, height: fitted.height)
                 .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
                 .contentShape(Rectangle())
         }
@@ -4018,7 +4013,6 @@ struct MomentSingleImage: View {
     private func measure() async {
         if let hit = ImageStore.shared.get(path), hit.size.height > 0 {
             aspect = hit.size.width / hit.size.height
-            naturalW = hit.size.width
             return
         }
         guard let url = API.shared.assetURL(path) else { return }
@@ -4026,6 +4020,5 @@ struct MomentSingleImage: View {
               let img = RemoteImage.downsampled(data, maxSide: 2048), img.size.height > 0 else { return }
         ImageStore.shared.put(path, img)
         aspect = img.size.width / img.size.height
-        naturalW = img.size.width
     }
 }

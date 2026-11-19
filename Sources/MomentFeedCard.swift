@@ -673,8 +673,6 @@ private struct MomentFeedImageGrid: View {
     let width: CGFloat
     let onTap: (Int) -> Void
 
-    private let gap: CGFloat = 5
-
     var body: some View {
         if images.count == 1 {
             singleImage
@@ -689,16 +687,22 @@ private struct MomentFeedImageGrid: View {
         let ratio = (size?.count ?? 0) >= 2 && (size?[1] ?? 0) > 0
             ? CGFloat(size![0]) / CGFloat(size![1])
             : 4.0 / 3.0
-        let height = min(430, max(width * 0.62, width / max(0.55, ratio)))
+        let fitted = MomentMediaLayout.singleImageSize(knownRatio: ratio, width: width)
 
         return Button {
             onTap(0)
         } label: {
             RemoteImage(path: path, icon: "photo", maxSide: 1440)
-                .frame(width: width, height: height)
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .frame(width: fitted.width, height: fitted.height)
+                .clipShape(RoundedRectangle(
+                    cornerRadius: MomentMediaLayout.singleRadius,
+                    style: .continuous
+                ))
                 .overlay {
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    RoundedRectangle(
+                        cornerRadius: MomentMediaLayout.singleRadius,
+                        style: .continuous
+                    )
                         .stroke(Color.primary.opacity(0.075), lineWidth: 0.6)
                 }
                 .contentShape(Rectangle())
@@ -707,8 +711,9 @@ private struct MomentFeedImageGrid: View {
     }
 
     private var grid: some View {
-        let columns = (images.count == 2 || images.count == 4) ? 2 : 3
-        let cell = (width - gap * CGFloat(columns - 1)) / CGFloat(columns)
+        let columns = MomentMediaLayout.columns(for: images.count)
+        let cellSize = MomentMediaLayout.gridCellSize(count: images.count, width: width)
+        let gap = MomentMediaLayout.gap
         let rows = stride(from: 0, to: images.count, by: columns).map { start in
             Array(start..<min(start + columns, images.count))
         }
@@ -721,10 +726,16 @@ private struct MomentFeedImageGrid: View {
                             onTap(index)
                         } label: {
                             RemoteImage(path: images[index], icon: "photo", maxSide: 960)
-                                .frame(width: cell, height: cell)
-                                .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                                .frame(width: cellSize.width, height: cellSize.height)
+                                .clipShape(RoundedRectangle(
+                                    cornerRadius: MomentMediaLayout.gridRadius,
+                                    style: .continuous
+                                ))
                                 .overlay {
-                                    RoundedRectangle(cornerRadius: 13, style: .continuous)
+                                    RoundedRectangle(
+                                        cornerRadius: MomentMediaLayout.gridRadius,
+                                        style: .continuous
+                                    )
                                         .stroke(Color.primary.opacity(0.07), lineWidth: 0.6)
                                 }
                                 .contentShape(Rectangle())
