@@ -56,8 +56,9 @@ require(
 )
 require(
     "LaunchLogo.imageset" in WORKFLOW
+    and "LaunchLogo@1x.png" in WORKFLOW
     and "LaunchLogo@3x.png" in WORKFLOW,
-    "the iOS build must package the native LaunchLogo asset",
+    "the iOS build must package all native LaunchLogo scales",
 )
 require(
     "splash.jpg" not in WORKFLOW,

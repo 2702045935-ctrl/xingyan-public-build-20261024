@@ -246,10 +246,11 @@ jobs:
           JSON
           cp AppIcon60x60@2x.png Assets.xcassets/LaunchLogo.imageset/LaunchLogo@2x.png
           cp AppIcon60x60@3x.png Assets.xcassets/LaunchLogo.imageset/LaunchLogo@3x.png
+          cp AppIcon60x60@2x.png Assets.xcassets/LaunchLogo.imageset/LaunchLogo@1x.png
           cat > Assets.xcassets/LaunchLogo.imageset/Contents.json <<'JSON'
           {
             "images": [
-              { "idiom": "universal", "scale": "1x" },
+              { "idiom": "universal", "scale": "1x", "filename": "LaunchLogo@1x.png" },
               { "idiom": "universal", "scale": "2x", "filename": "LaunchLogo@2x.png" },
               { "idiom": "universal", "scale": "3x", "filename": "LaunchLogo@3x.png" }
             ],
