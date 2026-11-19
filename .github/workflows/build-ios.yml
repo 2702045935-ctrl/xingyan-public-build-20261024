@@ -147,6 +147,7 @@ jobs:
           node server/test/shard-user-router.test.js
           node server/test/shard-route-server-patch.test.js
           node server/test/shard-owner-switch.test.js
+          node server/test/fleet-release-plan.test.js
           node server/test/shard-write-freeze.test.js
           node server/test/shard-minimal-release.test.js
           node server/test/shard-release-install.test.js

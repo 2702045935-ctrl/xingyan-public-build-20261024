@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "topologyId": "server-b-mainline-shards-7",
+  "routePlanHash": "839c5a4e64e7aa4feb43d49a71de5eb017b0f93918bd05dbacb215dab02da660",
+  "routePlanFileSha256": "c02d3ccb14304371044aad4096cc9501d072566c232fb51700d8e228e68d519c",
+  "shardCount": 7,
+  "release": {
+    "id": "candidate-20261119",
+    "codeSha256": "35d2caca61bcff61f0e6d6ae8f1bb64f8986fa1fe66652b9e3e44f648432ae9d"
+  },
+  "policy": {
+    "maxOwnerShardsInFlight": 1,
+    "requireReplicaCaughtUp": true,
+    "requireCapacityReport": true,
+    "requireHealthGate": true,
+    "autoRollback": true,
+    "requireVerifiedFailureDomains": true
+  },
+  "cells": [
+    {
+      "id": "cell-a-43",
+      "host": "43.242.194.89",
+      "failureDomain": "provider-a-zone-unverified",
+      "servicePrefix": "xingyan-dual-cell-a",
+      "dataRoot": "/opt/xingyan-dual-cell/physical-r1/stage/shards",
+      "replicaShards": [0, 1, 2, 3, 4, 5, 6],
+      "ownerShards": [0, 1, 2, 3],
+      "ports": [17080, 17180, 17280, 17380, 18699, 18799, 18899]
+    },
+    {
+      "id": "cell-b-192",
+      "host": "192.140.179.176",
+      "failureDomain": "provider-b-zone-unverified",
+      "servicePrefix": "xingyan-dual-cell-b",
+      "dataRoot": "/opt/xingyan-dual-cell/physical-r1/stage/shards",
+      "replicaShards": [0, 1, 2, 3, 4, 5, 6],
+      "ownerShards": [4, 5, 6],
+      "ports": [15299, 15399, 15499, 15599, 19480, 19580, 19680]
+    }
+  ]
+}
