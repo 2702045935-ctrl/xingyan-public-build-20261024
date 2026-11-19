@@ -165,7 +165,7 @@ async function main() {
     assert.strictEqual(response.status, 200, JSON.stringify(response.data));
     response = await call(b.base, 'GET', '/api/contacts', undefined, bob.cookie);
     assert.ok(!(response.data.friends || []).some((u) => u.id === alice.user.id),
-      'deleted friend must disappear on another shard');
+      'deleted friend must disappear on another shard: ' + JSON.stringify(response.data));
 
     response = await call(a.base, 'POST', '/api/friends/request', {
       username: 'shard_bob'

@@ -7222,7 +7222,9 @@ function friendshipBetween(a, b) {
 function friendIds(userId) {
   refreshFriendshipsFromDisk(false);
   return friendshipRowsForUser(userId)
-    .filter((f) => f.status === 'accepted' && (f.fromId === userId || f.toId === userId))
+    .filter((f) => f.status === 'accepted'
+      && (f.fromId === userId || f.toId === userId)
+      && !friendPairWasRemoved(f.fromId, f.toId))
     .map((f) => (f.fromId === userId ? f.toId : f.fromId));
 }
 
@@ -8354,6 +8356,20 @@ async function broadcastFriendshipCache(friendship, deleted) {
   }));
 }
 
+async function broadcastFriendRemovalToPeers(a, b, deleted) {
+  if (!chatRoutePlan || !a || !b) return;
+  await Promise.all(chatOwnerPorts.map((port) => {
+    if (!port || port === PORT) return Promise.resolve();
+    return postShardJson(port, '/__shard/friend-removal', {
+      planHash: chatRoutePlan.hash,
+      fileSha256: chatRoutePlan.fileHash,
+      a: String(a),
+      b: String(b),
+      deleted: !!deleted
+    }, 1200);
+  }));
+}
+
 async function persistFriendshipOnOwner(friendship, deleted) {
   if (!friendship || !friendship.fromId || !friendship.toId) return false;
   const ownerPort = friendshipOwnerPort(friendship.fromId, friendship.toId);
@@ -8372,6 +8388,13 @@ async function persistFriendshipOnOwner(friendship, deleted) {
   if (!deleted && ownerPort === PORT) db.friendships.push(friendship);
   saveFriendships();
   await broadcastFriendshipCache(friendship, deleted);
+  if (deleted) {
+    await broadcastFriendRemovalToPeers(
+      friendship.fromId,
+      friendship.toId,
+      true
+    );
+  }
   return true;
 }
 
@@ -9029,20 +9052,26 @@ function readFriendRemovals() {
   return pairs;
 }
 
-function markFriendRemoved(a, b) {
+function markFriendRemoved(a, b, replicate = true) {
   const pairs = Object.assign({}, readFriendRemovals());
   pairs[friendPairKey(a, b)] = now();
   writeJson(FRIEND_REMOVALS_FILE, { pairs });
   friendRemovalCache = { signature: '', pairs };
+  if (replicate) {
+    broadcastFriendRemovalToPeers(a, b, true).catch(() => {});
+  }
 }
 
-function clearFriendRemoved(a, b) {
+function clearFriendRemoved(a, b, replicate = true) {
   const pairs = Object.assign({}, readFriendRemovals());
   const key = friendPairKey(a, b);
   if (!pairs[key]) return;
   delete pairs[key];
   writeJson(FRIEND_REMOVALS_FILE, { pairs });
   friendRemovalCache = { signature: '', pairs };
+  if (replicate) {
+    broadcastFriendRemovalToPeers(a, b, false).catch(() => {});
+  }
 }
 
 function friendPairWasRemoved(a, b) {
@@ -21363,6 +21392,7 @@ async function handleApi(req, res, pathname, query) {
     const added = relationRows
       .filter((f) => f.status === 'accepted'
         && (f.toId === user.id || f.fromId === user.id)
+        && !friendPairWasRemoved(f.fromId, f.toId)
         && (Date.parse(f.respondedAt || f.createdAt) || 0) > Date.now() - 3 * 86400000)
       .sort((a, b) => String(b.respondedAt || b.createdAt).localeCompare(String(a.respondedAt || a.createdAt)))
       .slice(0, 30)
@@ -21631,7 +21661,7 @@ async function handleApi(req, res, pathname, query) {
         return fail(res, 503, '好友分片暂时不可用，请稍后重试');
       }
     }
-    markFriendRemoved(user.id, target.id);
+    markFriendRemoved(user.id, target.id, false);
     forgetFriendSetCache(user.id, target.id);
     /* 只动我这边：把会话从我的列表里藏掉（对方那边不受影响，微信就是这样） */
     const chat = db.chats.find((c) => c.type === 'direct' && c.memberIds.includes(user.id) && c.memberIds.includes(target.id));
@@ -24527,6 +24557,7 @@ async function handleHttpRequest(req, res) {
   }
   if (parsed.pathname === '/__shard/friend-list'
       || parsed.pathname === '/__shard/friend-cache'
+      || parsed.pathname === '/__shard/friend-removal'
       || parsed.pathname === '/__shard/friend-upsert'
       || parsed.pathname === '/__shard/moment-replicate'
       || parsed.pathname === '/__shard/user-export') {
@@ -24561,6 +24592,15 @@ async function handleHttpRequest(req, res) {
         return ok(res, {
           users: db.users.map(cacheUserRecord).filter(Boolean)
         });
+      }
+      if (parsed.pathname === '/__shard/friend-removal') {
+        const a = str(body.a, 80);
+        const b = str(body.b, 80);
+        if (!a || !b || a === b) return fail(res, 422, '好友删除墓碑参数不完整');
+        if (body.deleted === true) markFriendRemoved(a, b, false);
+        else clearFriendRemoved(a, b, false);
+        forgetFriendSetCache(a, b);
+        return ok(res, { deleted: body.deleted === true });
       }
       if (parsed.pathname === '/__shard/friend-upsert') {
         const friendship = body.friendship;
