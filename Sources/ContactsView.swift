@@ -121,7 +121,7 @@ struct ContactsView: View {
         contactsCanvas
     }
     private var contactAvatarSize: CGFloat {
-        49
+        48
     }
     private let contactsAccent = Color(hex: 0x25D366)
 
@@ -482,19 +482,19 @@ private var funcs: [(String, String, Color, String)] {
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.system(size: 14.5, weight: .medium))
                     .foregroundColor(contactsSecondary)
                 Text(Tr("搜索"))
-                    .font(pfStyled(size: 16))
+                    .font(pfStyled(size: 15.5))
                     .foregroundColor(contactsSecondary)
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 14)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .frame(height: 44)
-            .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .frame(height: 40)
+            .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(contactsField))
-            .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Tr("搜索"))
@@ -508,7 +508,7 @@ private var funcs: [(String, String, Color, String)] {
                     Rectangle()
                         .fill(contactsRule)
                         .frame(height: 0.5)
-                        .padding(.leading, 73)
+                        .padding(.leading, 56)
                 }
             }
         }
@@ -521,10 +521,10 @@ private var funcs: [(String, String, Color, String)] {
             openFunc(item.3)
         } label: {
             HStack(spacing: 13) {
-                nativeQuickIcon(item, size: 40)
+                nativeQuickIcon(item, size: 28)
 
                 Text(item.0)
-                    .font(pfStyled(size: 16.5, weight: .regular))
+                    .font(pfStyled(size: 16, weight: .regular))
                     .foregroundColor(contactsLabel)
 
                 Spacer(minLength: 8)
@@ -540,7 +540,7 @@ private var funcs: [(String, String, Color, String)] {
             }
             .padding(.leading, 16)
             .padding(.trailing, 18)
-            .frame(height: 64)
+            .frame(height: 56)
             .background(Color.clear)
             .contentShape(Rectangle())
         }
@@ -559,14 +559,14 @@ private var funcs: [(String, String, Color, String)] {
     private var starStrip: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(Tr("星标朋友"))
-                .font(pfStyled(size: 14, weight: .semibold))
+                .font(pfStyled(size: 13, weight: .semibold))
                 .foregroundStyle(contactsSecondary)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 15) {
                     ForEach(starUsers) { u in
                         NavigationLink(value: u) {
                             VStack(spacing: 7) {
-                                Avatar(path: u.avatarPath, size: 48, radius: 24, circle: true,
+                                Avatar(path: u.avatarPath, size: 44, radius: 22, circle: true,
 
                                        level: (u.qqLevel ?? 0) > 1 ? (u.qqLevel ?? 0) : 0)
                                     .overlay(alignment: .bottomTrailing) {
@@ -714,11 +714,15 @@ private var funcs: [(String, String, Color, String)] {
             tint = Color(uiColor: .systemPurple)
         }
         return Image(systemName: symbol)
-            .font(.system(size: size * 0.56, weight: .regular))
+            .font(.system(size: size * 0.54, weight: .medium))
             .symbolRenderingMode(.hierarchical)
             .foregroundStyle(tint)
-        .frame(width: size, height: size)
-        .accessibilityHidden(true)
+            .frame(width: size, height: size)
+            .background(
+                RoundedRectangle(cornerRadius: size * 0.25, style: .continuous)
+                    .fill(tint.opacity(scheme == .dark ? 0.22 : 0.13))
+            )
+            .accessibilityHidden(true)
     }
 
     private func contactRow(_ user: User) -> some View {
@@ -731,7 +735,7 @@ private var funcs: [(String, String, Color, String)] {
             VStack(alignment: .leading, spacing: scheme == .dark ? 3 : 2) {
                 HStack(spacing: 5) {
                     Text(user.name)
-                        .font(pfStyled(size: scheme == .dark ? 16.5 : 17,
+                        .font(pfStyled(size: 16.5,
                                        weight: .regular))
                         .foregroundColor(contactsLabel)
                         .lineLimit(1)
@@ -751,7 +755,7 @@ private var funcs: [(String, String, Color, String)] {
 
                 if let subtitle = contactSubtitle(user) {
                     Text(subtitle)
-                        .font(pfStyled(size: scheme == .dark ? 13.5 : 14,
+                        .font(pfStyled(size: 13.5,
                                        weight: .regular))
                         .foregroundColor(contactsSecondary)
                         .lineLimit(1)
@@ -773,7 +777,7 @@ private var funcs: [(String, String, Color, String)] {
             Rectangle()
                 .fill(contactsRule)
                 .frame(height: 0.5)
-                .padding(.leading, 77)
+                .padding(.leading, 76)
         }
         .contentShape(Rectangle())
     }
