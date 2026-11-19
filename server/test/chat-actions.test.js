@@ -490,6 +490,25 @@ async function main() {
       { kind: 'text', content: '重新添加好友后接受方可以发送' });
     assert.equal(response.status, 200,
       '重新添加好友后接受方仍被发送守卫拦截：' + JSON.stringify(response.data));
+    const previewCases = [
+      { kind: 'image', content: '/uploads/preview-image.jpg', expected: '[图片]' },
+      { kind: 'video', content: '/uploads/preview-video.mp4', expected: '[视频]' },
+      {
+        kind: 'file',
+        content: JSON.stringify({ name: '项目资料.pdf', url: '/uploads/preview-file.pdf' }),
+        expected: '[文件] 项目资料.pdf'
+      }
+    ];
+    for (const row of previewCases) {
+      response = await call(base, alice.cookie, 'POST',
+        '/api/chats/' + directId + '/messages',
+        { kind: row.kind, content: row.content });
+      assert.equal(response.status, 200, JSON.stringify(response.data));
+    }
+    response = await call(base, bob.cookie, 'GET', '/api/chats');
+    const previewChat = (response.data.chats || []).find((chat) => chat.id === directId);
+    assert.ok(previewChat && previewChat.lastMessage.preview === '[文件] 项目资料.pdf',
+      '文件预览没有按微信显示文件名：' + JSON.stringify(previewChat && previewChat.lastMessage));
     response = await call(base, alice.cookie, 'POST', '/api/feed/publish', {
       video: '/uploads/feed-friends-test.mp4',
       desc: '仅朋友可见作品',

@@ -1908,9 +1908,6 @@ struct WorksView: View {
                         .font(pf(12.5, .medium))
                         .foregroundColor(C.subLabel)
                         .lineLimit(1)
-                    Text(Tr("作品") + " \(works.count)")
-                        .font(pf(11.5, .semibold))
-                        .foregroundColor(C.subLabel.opacity(0.82))
                 }
                 .padding(.top, 12)
                 Spacer(minLength: 0)
@@ -1919,10 +1916,11 @@ struct WorksView: View {
             .padding(.top, -44)
 
             HStack(spacing: 0) {
+                socialMetric(metric(social?.works ?? works.count), Tr("作品"))
+                socialMetric(metric(social?.likes ?? totalLikes), Tr("点赞"))
                 socialMetric(metric(social?.mutual ?? 0), Tr("互关"))
                 socialMetric(metric(social?.following ?? 0), Tr("关注"))
                 socialMetric(metric(social?.followers ?? 0), Tr("粉丝"))
-                socialMetric(metric(social?.likes ?? totalLikes), Tr("点赞"))
             }
             .frame(maxWidth: .infinity)
             .padding(.horizontal, 16)
@@ -2039,25 +2037,40 @@ struct WorksView: View {
     private func socialMetric(_ value: String, _ title: String) -> some View {
         VStack(spacing: 3) {
             Text(value)
-                .font(pf(18, .bold))
+                .font(pf(16.5, .bold))
                 .foregroundColor(C.label)
+                .minimumScaleFactor(0.72)
+                .lineLimit(1)
             Text(title)
-                .font(pf(11.5, .medium))
+                .font(pf(10.5, .medium))
                 .foregroundColor(C.subLabel)
+                .lineLimit(1)
         }
         .frame(maxWidth: .infinity)
     }
 
     private var tabs: some View {
+        let entries: [(String, Int)] = [
+            (Tr("作品"), works.count),
+            (Tr("喜欢"), likedWorks.count),
+            (Tr("私密"), privateWorks.count)
+        ]
         HStack(spacing: 0) {
-            ForEach(Array([Tr("作品"), Tr("喜欢"), Tr("私密")].enumerated()), id: \.offset) { i, title in
+            ForEach(Array(entries.enumerated()), id: \.offset) { i, entry in
                 Button {
                     withAnimation(.easeOut(duration: 0.16)) { tab = i }
                 } label: {
                     VStack(spacing: 7) {
-                        Text(title)
-                            .font(pf(14, tab == i ? .semibold : .regular))
-                            .foregroundColor(tab == i ? C.label : C.subLabel)
+                        HStack(spacing: 4) {
+                            Text(entry.0)
+                                .font(pf(14, tab == i ? .semibold : .regular))
+                                .foregroundColor(tab == i ? C.label : C.subLabel)
+                            Text(metric(entry.1))
+                                .font(pf(10.5, .semibold))
+                                .foregroundColor(tab == i
+                                                 ? C.label.opacity(0.72)
+                                                 : C.subLabel.opacity(0.62))
+                        }
                         Capsule()
                             .fill(tab == i ? C.label : .clear)
                             .frame(width: 28, height: 2)

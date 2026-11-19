@@ -287,12 +287,27 @@ final class NativeChatRowCell: UITableViewCell {
         let bodyText = body as NSString
         let kind = configuration.previewKind
 
-        let wholeColor: UIColor?
-        if kind == "draft"
-            || body.contains("草稿")
+        let draftRegex = try! NSRegularExpression(
+            pattern: "(\\[(?:草稿|Draft|Черновик)\\])|^(?:草稿[:：]|Draft:|Черновик:)"
+        )
+        if kind == "draft" || body.contains("草稿")
             || body.localizedCaseInsensitiveContains("draft") {
-            wholeColor = .systemRed
-        } else if body.contains("已添加")
+            if let match = draftRegex.firstMatch(
+                in: body,
+                range: NSRange(location: 0, length: bodyText.length)
+            ) {
+                result.addAttribute(
+                    .foregroundColor,
+                    value: UIColor.systemRed,
+                    range: NSRange(location: prefixLength + match.range.location,
+                                   length: match.range.length)
+                )
+            }
+            return result
+        }
+
+        let wholeColor: UIColor?
+        if body.contains("已添加")
             || body.contains("已成为好友")
             || body.contains("添加了好友")
             || body.contains("好友验证通过")
@@ -370,58 +385,13 @@ final class NativeChatRowCell: UITableViewCell {
     private static let tokenRegex = try! NSRegularExpression(pattern: "\\[[^\\]]+\\]")
 
     private static func previewTokenColor(_ token: String, isLight: Bool) -> UIColor? {
-        let value = token.replacingOccurrences(of: "[", with: "")
-            .replacingOccurrences(of: "]", with: "")
-        if value.isEmpty { return nil }
-        if value.contains("转账") || value.contains("红包") || value.contains("礼物")
-            || value.contains("余额") || value.contains("经营账户") {
-            return .systemRed
-        }
-        if !isLight { return nil }
-        if value.contains("通话") {
-            return .systemGreen
-        }
-        if value.contains("文件") || value.contains("笔记") {
-            return .systemOrange
-        }
-        if value.contains("位置") || value.contains("名片") || value.contains("链接")
-            || value.contains("文章") || value.contains("群公告") || value.contains("小程序") {
-            return .systemBlue
-        }
-        if value.contains("图片") || value.contains("实况") || value.contains("视频")
-            || value.contains("骰子") || value.contains("转盘")
-            || value.contains("运势") || value.contains("猜拳") {
-            return .systemPurple
-        }
-        if value.contains("语音") || value.contains("音频")
-            || value.contains("音乐") || value.contains("表情") {
-            return .systemGreen
-        }
+        /* 微信会话列表中的图片、视频、文件等标签统一保持次级灰，
+           只对“有人@我”和系统状态提醒使用强调色。 */
         return nil
     }
 
     private static func previewKindColor(_ kind: String, isLight: Bool) -> UIColor? {
-        switch kind {
-        case "transfer", "redpacket", "gift", "balance", "company":
-            return .systemRed
-        default:
-            if !isLight { return nil }
-        }
-        switch kind {
-        case "call", "voicecall", "videocall", "audio", "voice", "sticker":
-            return .systemGreen
-        case "file", "note":
-            return .systemOrange
-        case "location", "card", "link", "oa", "article", "miniapp", "mini", "app", "mall", "announce":
-            return .systemBlue
-        case "image", "images", "livephoto", "video", "channels", "channel", "feed", "shortvideo",
-             "dice", "wheel", "fortune", "rps":
-            return .systemPurple
-        case "music":
-            return .systemPink
-        default:
-            return nil
-        }
+        return nil
     }
 
     private func setupViews() {

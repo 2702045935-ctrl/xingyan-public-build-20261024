@@ -394,7 +394,7 @@ struct ChatRow: View, Equatable {
     private var mentionPreview: Text {
         let draftText = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         if !draftText.isEmpty {
-            let prefix = sessionCopy(zh: "草稿：", en: "Draft: ", ru: "Черновик: ")
+            let prefix = sessionCopy(zh: "[草稿] ", en: "[Draft] ", ru: "[Черновик] ")
             return previewInkText(prefix + draftText, kind: "draft")
         }
         let raw = (chat.lastMessage?.preview ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
@@ -500,7 +500,7 @@ struct ChatRow: View, Equatable {
     private func localizedGeneratedPreview(_ value: String) -> String {
         for draftPrefix in ["草稿：", "草稿:"] where value.hasPrefix(draftPrefix) {
             let content = String(value.dropFirst(draftPrefix.count))
-            return sessionCopy(zh: "草稿：", en: "Draft: ", ru: "Черновик: ") + content
+            return sessionCopy(zh: "[草稿] ", en: "[Draft] ", ru: "[Черновик] ") + content
         }
 
         if let tag = Self.generatedPreviewTags.first(where: { value == $0.zh }) {
@@ -549,11 +549,21 @@ struct ChatRow: View, Equatable {
             "[Draft]", "Draft:", "[Not sent]", "[Failed]", "Failed to send",
             "[Черновик]", "Черновик:", "[Не отправлено]", "[Ошибка]", "Не удалось отправить"
         ]
+        let draftPrefixes = ["[草稿] ", "[Draft] ", "[Черновик] ",
+                             "草稿：", "草稿:", "Draft: ", "Черновик: "]
+        if let prefix = draftPrefixes.first(where: { preview.hasPrefix($0) }) {
+            let content = String(preview.dropFirst(prefix.count))
+            return Text(prefix).foregroundColor(Color(.systemRed))
+                + Text(content).foregroundColor(ChatListVisual.previewInk)
+        }
         if redPrefixes.contains(where: { preview.hasPrefix($0) }) {
             return Text(preview).foregroundColor(Color(.systemRed))
         }
         let color: Color
         switch kind {
+        case "image", "images", "video", "livephoto", "file", "audio", "voice",
+             "location", "card", "miniapp", "mini", "mall", "music":
+            color = ChatListVisual.previewInk
         case "transfer", "redpacket", "gift":
             color = Color.dyn(0xB06B00, 0xF4B44C)
         case "call", "voicecall", "videocall":
@@ -2623,7 +2633,7 @@ struct ChatsView: View {
             break
         }
         if !draft.isEmpty {
-            preview = sessionCopy(zh: "草稿：", en: "Draft: ", ru: "Черновик: ") + draft
+            preview = sessionCopy(zh: "[草稿] ", en: "[Draft] ", ru: "[Черновик] ") + draft
         } else if preview.isEmpty, isGroup, chat.lastMessage == nil {
             let count = chat.memberCount ?? chat.memberIds?.count ?? 0
             if count > 0 {

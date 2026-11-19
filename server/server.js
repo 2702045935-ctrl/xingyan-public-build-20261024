@@ -7627,7 +7627,9 @@ function previewTextOf(m) {
       // 视频文件按微信显示成 [视频]，其它文件显示 [文件]
       let name = '';
       try { const o = JSON.parse(String(m.content || '{}')); name = String(o.name || o.url || ''); } catch (err) { name = String(m.content || ''); }
-      return /\.(mp4|mov|m4v|avi|mkv|webm|3gp|flv|wmv)(\?|$)/i.test(name) ? '[视频]' : '[文件]';
+      if (/\.(mp4|mov|m4v|avi|mkv|webm|3gp|flv|wmv)(\?|$)/i.test(name)) return '[视频]';
+      const clean = path.basename(name.split('?')[0] || '').trim();
+      return clean ? '[文件] ' + previewTextSlice(clean, 30) : '[文件]';
     }
     case 'audio': return '[语音]';
     case 'video': return '[视频]';

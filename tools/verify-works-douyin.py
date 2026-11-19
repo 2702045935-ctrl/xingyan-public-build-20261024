@@ -34,9 +34,10 @@ require("@State private var showCoverPicker" in MISC
         and 'updateMeChecked(["momentCover": url])' in MISC
         and 'Tr("更换背景")' in MISC,
         "works cover must be replaceable from the page and persist through momentCover")
-require("[Tr(\"作品\"), Tr(\"喜欢\"), Tr(\"私密\")]" in MISC
-        and "pinnedViews: [.sectionHeaders]" in MISC,
-        "works, likes and private tabs must pin above the cover grid")
+require("let entries: [(String, Int)]" in MISC
+        and "pinnedViews: [.sectionHeaders]" in MISC
+        and "metric(entry.1)" in MISC,
+        "works, likes and private tabs with counts must pin above the cover grid")
 require("isPrivate($0)" in MISC and "tag.contains(\"draft\")" in MISC,
         "private and draft works must not leak into the public works tab")
 require("mineFromAll" in MISC and "$0.author?.id == myId" in MISC,
@@ -44,11 +45,12 @@ require("mineFromAll" in MISC and "$0.author?.id == myId" in MISC,
 require("errorState" in MISC and "loadError" in MISC,
         "failed works requests must show a retry state instead of a blank page")
 require(
-    all(f'Tr("{label}")' in MISC for label in ["互关", "关注", "粉丝", "点赞"])
+    all(f'Tr("{label}")' in MISC for label in ["作品", "点赞", "互关", "关注", "粉丝"])
+    and "socialMetric(metric(social?.works ?? works.count)" in MISC
     and "socialMetric(metric(social?.mutual ?? 0)" in MISC
     and "socialMetric(metric(social?.followers ?? 0)" in MISC
     and "API.shared.feedSocial(" in MISC,
-    "works profile must use Douyin-style mutual, following, followers and likes metrics",
+    "works profile must show complete works, likes, mutual, following and follower metrics",
 )
 require(
     "FeedWorkThumbnail(item: w)" in MISC

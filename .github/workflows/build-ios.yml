@@ -83,6 +83,7 @@ jobs:
           python3 tools/verify-chats-dark-surface.py
           python3 tools/verify-chat-chrome-contrast.py
           python3 tools/verify-recall-preview.py
+          python3 tools/verify-preview-semantics.py
           python3 tools/verify-group-announce.py
           python3 tools/verify-group-top-frost.py
           python3 tools/verify-deleted-friend-send.py
