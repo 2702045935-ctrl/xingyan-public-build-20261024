@@ -935,10 +935,10 @@ struct ContactCardView: View {
         .overlay {
             if confirmBlock {
                 PanelConfirmDialog(
-                    title: Tr("加入黑名单？"),
+                    title: Tr("将联系人加入黑名单"),
                     okText: Tr("加入黑名单"),
                     danger: true,
-                    message: Tr("对方将无法给你发消息，也看不到你的朋友圈。聊天记录会保留。"),
+                    message: Tr("你将不再收到对方的消息，并且对方无法查看你的朋友圈。聊天记录会保留。"),
                     symbol: "hand.raised.fill",
                     onOk: {
                         confirmBlock = false
@@ -951,10 +951,11 @@ struct ContactCardView: View {
         .overlay {
             if confirmDelete {
                 PanelConfirmDialog(
-                    title: Tr("删除好友？"),
-                    okText: Tr("删除好友"),
+                    title: Tr("删除联系人？"),
+                    okText: Tr("删除联系人"),
                     danger: true,
-                    message: Tr("删除后将解除好友关系并移除本机会话，之后需要重新添加。"),
+                    message: Tr("将删除联系人“") + u.name
+                        + Tr("”，并清除本机的聊天记录。对方不会收到通知。"),
                     symbol: "person.badge.minus",
                     onOk: {
                         confirmDelete = false
@@ -1063,7 +1064,7 @@ struct ContactCardView: View {
                               showMore = true
                           },
                           onApply: { showApply = true },
-                          onAgree: { run(CardAct(title: "同意好友申请", key: "agree")) })
+                          onAgree: { run(CardAct(title: Tr("通过朋友验证"), key: "agree")) })
     }
 
     private var regionText: String {
@@ -1192,7 +1193,7 @@ struct ContactCardView: View {
                             symbol: "hand.raised.slash.fill",
                             colors: PanelTint.gray,
                             title: Tr("移出黑名单"),
-                            subtitle: Tr("恢复接收消息和查看朋友圈")
+                            subtitle: Tr("对方可以重新给你发送消息")
                         ) {
                             closeMore { toggleBlock() }
                         }
@@ -1200,7 +1201,7 @@ struct ContactCardView: View {
                         PanelDangerRow(
                             symbol: "hand.raised.fill",
                             title: Tr("加入黑名单"),
-                            subtitle: Tr("阻止对方发消息并隐藏你的朋友圈")
+                            subtitle: Tr("不再接收对方消息，对方也无法查看你的朋友圈")
                         ) {
                             closeMore { confirmBlock = true }
                         }
@@ -1208,8 +1209,8 @@ struct ContactCardView: View {
                     PanelDivider()
                     PanelDangerRow(
                         symbol: "person.badge.minus",
-                        title: Tr("删除好友"),
-                        subtitle: Tr("解除好友关系并移除本机会话")
+                        title: Tr("删除联系人"),
+                        subtitle: Tr("删除联系人并清除本机聊天记录")
                     ) {
                         closeMore { confirmDelete = true }
                     }
@@ -1427,20 +1428,20 @@ struct ContactCardView: View {
     private var actList: [CardAct] {
 
         if isBot {
-            return [CardAct(title: "发消息", key: "msg"),
-                    CardAct(title: "语音通话", key: "aicall")]
+            return [CardAct(title: Tr("发消息"), key: "msg"),
+                    CardAct(title: Tr("语音通话"), key: "aicall")]
         }
         switch relation {
         case "friend", "self":
-            return [CardAct(title: "发消息", key: "msg"),
-                    CardAct(title: "音视频通话", key: "call")]
+            return [CardAct(title: Tr("发消息"), key: "msg"),
+                    CardAct(title: Tr("音视频通话"), key: "call")]
         case "incoming":
-            return [CardAct(title: "同意好友申请", key: "agree"),
-                    CardAct(title: "发消息", key: "msg")]
+            return [CardAct(title: Tr("通过朋友验证"), key: "agree"),
+                    CardAct(title: Tr("发消息"), key: "msg")]
         case "requested":
-            return [CardAct(title: "已发送好友申请", key: "pending")]
+            return [CardAct(title: Tr("等待验证"), key: "pending")]
         default:
-            return [CardAct(title: "添加到通讯录", key: "add")]
+            return [CardAct(title: Tr("添加到通讯录"), key: "add")]
         }
     }
 
@@ -1507,7 +1508,7 @@ struct ContactCardView: View {
                 let res = await API.shared.respondFriend(userId: u.id, accept: true)
                 if res.ok {
                     UINotification.lightTap()
-                    app.show(Tr("已同意，现在可以聊天了"))
+                    app.show(Tr("已通过朋友验证，现在可以聊天了"))
                     if let n = res.pending { app.friendRequests = n }
                     await app.loadContacts()
                     await app.loadChats()
@@ -1528,7 +1529,7 @@ struct ContactCardView: View {
                 busy = false
             }
         default:
-            app.show(Tr("已经发过申请了，等对方通过"))
+            app.show(Tr("好友申请已发送，请等待对方通过"))
         }
     }
 
@@ -1637,7 +1638,7 @@ struct ContactCardView: View {
         meta = optimistic
         Task {
             if await API.shared.setFriendMeta(userId: u.id, block: next) {
-                app.show(next ? Tr("已加入黑名单，他发不了消息给你") : Tr("已移出黑名单"))
+                app.show(next ? Tr("已加入黑名单") : Tr("已移出黑名单"))
             } else {
                 meta = previous
                 app.show(Tr("没保存上，再试一次"))
@@ -1653,7 +1654,7 @@ struct ContactCardView: View {
         app.applyFriendRemoved(userId: userId)
         app.returnToChatsList()
         dismiss()
-        app.show(Tr("已删除好友"))
+        app.show(Tr("已删除联系人"))
         Task {
             if let err = await API.shared.removeFriend(userId: userId) {
                 app.show(Tr("删除失败，已恢复：") + err)

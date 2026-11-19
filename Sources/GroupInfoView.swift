@@ -1709,10 +1709,10 @@ struct DirectChatInfoView: View {
         .overlay {
             if confirmBlock {
                 PanelConfirmDialog(
-                    title: Tr("加入黑名单？"),
+                    title: Tr("将联系人加入黑名单"),
                     okText: Tr("加入黑名单"),
                     danger: true,
-                    message: Tr("对方将无法给你发消息，也看不到你的朋友圈。聊天记录会保留。"),
+                    message: Tr("你将不再收到对方的消息，并且对方无法查看你的朋友圈。聊天记录会保留。"),
                     symbol: "hand.raised.fill",
                     onOk: {
                         confirmBlock = false
@@ -1725,10 +1725,10 @@ struct DirectChatInfoView: View {
         .overlay {
             if confirmDeleteFriend {
                 PanelConfirmDialog(
-                    title: Tr("删除好友？"),
-                    okText: Tr("删除好友"),
+                    title: Tr("删除联系人？"),
+                    okText: Tr("删除联系人"),
                     danger: true,
-                    message: Tr("删除后将解除好友关系并从通讯录移除。聊天记录不会被自动删除。"),
+                    message: Tr("将解除双方朋友关系，并从通讯录中删除联系人。本机聊天记录会保留。"),
                     symbol: "person.badge.minus",
                     onOk: {
                         confirmDeleteFriend = false
@@ -1769,7 +1769,7 @@ struct DirectChatInfoView: View {
 
     private var relationshipStatusDetail: String {
         if friendMeta?.block == true {
-            return Tr("你已阻止对方发消息并隐藏朋友圈。可在下方移出黑名单。")
+            return Tr("你将不再收到对方的消息，对方也无法查看你的朋友圈。")
         }
         let reason = peer?.banReason?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return reason.isEmpty ? Tr("该账号已被管理员封禁，暂时无法正常聊天。")
@@ -1973,14 +1973,14 @@ struct DirectChatInfoView: View {
                         safetyActionRow(
                             symbol: "hand.raised.slash.fill",
                             title: Tr("移出黑名单"),
-                            subtitle: Tr("恢复接收消息和查看朋友圈"),
+                            subtitle: Tr("对方可以重新给你发送消息"),
                             destructive: false
                         ) { setBlocked(false) }
                     } else {
                         safetyActionRow(
                             symbol: "hand.raised.fill",
                             title: Tr("加入黑名单"),
-                            subtitle: Tr("阻止对方发消息并隐藏你的朋友圈"),
+                            subtitle: Tr("不再接收对方消息，对方也无法查看你的朋友圈"),
                             destructive: true
                         ) { confirmBlock = true }
                     }
@@ -1988,8 +1988,8 @@ struct DirectChatInfoView: View {
                         ChatInfoDivider()
                         safetyActionRow(
                             symbol: "person.badge.minus",
-                            title: Tr("删除好友"),
-                            subtitle: Tr("解除好友关系并从通讯录移除"),
+                            title: Tr("删除联系人"),
+                            subtitle: Tr("解除朋友关系并从通讯录中删除"),
                             destructive: true
                         ) { confirmDeleteFriend = true }
                     }
@@ -2003,7 +2003,7 @@ struct DirectChatInfoView: View {
                                 symbol: "bubble.left.and.bubble.right.fill",
                                 symbolTint: Color(hex: 0xFF3B30)) { confirmDelete = true }
             }
-            Text(Tr("危险操作会立即影响你和对方的联系。删除聊天只会移除本地会话，不会删除对方的好友关系。"))
+            Text(Tr("危险操作会立即影响你和对方的联系。删除聊天只会移除本地会话，不会解除双方的朋友关系。"))
                 .font(pf(12))
                 .foregroundColor(C.subLabel)
                 .lineSpacing(2)
@@ -2069,7 +2069,7 @@ struct DirectChatInfoView: View {
             app.returnToChatsList()
             dismiss()
             onExitChat()
-            app.show(Tr("已删除好友"))
+            app.show(Tr("已删除联系人"))
         }
     }
 

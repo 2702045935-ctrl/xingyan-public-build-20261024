@@ -4810,9 +4810,9 @@ private struct StarredPayload: Decodable {
         }
         do {
             let p: AddPayload = try await post("/api/add-by-code", ["code": code], as: AddPayload.self)
-            let msg = p.already == true ? "你们已经是好友了"
-                : (p.pending == true ? "已经发过申请了，等对方通过"
-                   : (p.accepted == true ? "对方之前加过你，现在已经是好友" : "好友申请已发出"))
+            let msg = p.already == true ? "你们已经是朋友了"
+                : (p.pending == true ? "朋友验证申请已发送，请等待对方通过"
+                   : (p.accepted == true ? "对方已通过你的朋友验证申请" : "朋友验证申请已发送"))
             return (msg, p.user)
         } catch {
             return ((error as? APIError)?.errorDescription ?? "加好友失败", nil)

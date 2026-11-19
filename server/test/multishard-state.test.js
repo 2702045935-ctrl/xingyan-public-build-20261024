@@ -172,6 +172,13 @@ async function main() {
     response = await call(b.base, 'GET', '/api/contacts', undefined, bob.cookie);
     assert.ok(!(response.data.friends || []).some((u) => u.id === alice.user.id),
       'deleted friend must disappear on another shard: ' + JSON.stringify(response.data));
+    response = await call(b.base, 'GET',
+      '/api/chats/' + deletedFriendChatId + '/messages?limit=100',
+      undefined, bob.cookie);
+    assert.strictEqual(response.status, 200, JSON.stringify(response.data));
+    assert.ok(!(response.data.messages || []).some((message) =>
+      message.relation && message.relation.action === 'friend_removed'),
+    'deleting a friend must not notify the other side with a relation message');
     response = await call(b.base, 'POST',
       '/api/chats/' + deletedFriendChatId + '/messages',
       { kind: 'text', content: 'deleted friend must not bypass send guard on another shard' },
@@ -202,12 +209,34 @@ async function main() {
       alice.cookie);
     assert.strictEqual(response.status, 200,
       '重新添加好友后主动方仍被跨分片发送守卫拦截：' + JSON.stringify(response.data));
+    await fetch(b.base + '/__shard/relay', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Shard-Relay': relaySecret
+      },
+      body: JSON.stringify({
+        userId: bob.user.id,
+        payload: { type: 'message', chatId: directId }
+      })
+    });
     response = await call(b.base, 'POST',
       '/api/chats/' + directId + '/messages',
       { kind: 'text', content: '重新添加后接受方跨分片可以发送' },
       bob.cookie);
     assert.strictEqual(response.status, 200,
       '重新添加好友后接受方仍被跨分片发送守卫拦截：' + JSON.stringify(response.data));
+    await fetch(a.base + '/__shard/relay', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Shard-Relay': relaySecret
+      },
+      body: JSON.stringify({
+        userId: alice.user.id,
+        payload: { type: 'message', chatId: directId }
+      })
+    });
 
     response = await call(a.base, 'DELETE', '/api/chats/' + directId, undefined, alice.cookie);
     assert.strictEqual(response.status, 200, JSON.stringify(response.data));
@@ -270,6 +299,9 @@ async function main() {
       '/api/chats/' + directId + '/messages?limit=50', undefined, bob.cookie);
     assert.strictEqual(response.status, 200, JSON.stringify(response.data));
     assert.ok(!(response.data.messages || []).some((m) => m.kind === 'transfer'));
+    response = await call(b.base, 'POST',
+      '/api/chats/' + directId + '/read', {}, bob.cookie);
+    assert.strictEqual(response.status, 200, JSON.stringify(response.data));
     response = await call(a.base, 'POST', '/api/pay/transfer', {
       chatId: directId,
       amount: 10,

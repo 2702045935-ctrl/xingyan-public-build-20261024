@@ -242,7 +242,6 @@ final class AppState: ObservableObject {
 
     @Published var defaultChatBackground = ""
 
-    @Published var splashImage = ""
     @Published var toast: String?
 
     @Published var payScan: PayScanInfo?
@@ -826,7 +825,6 @@ final class AppState: ObservableObject {
 
         if let b = await API.shared.branding() {
             defaultChatBackground = b.chatBackground ?? ""
-            splashImage = b.splash ?? ""
         }
 
         await loadChatQuick()
@@ -2382,7 +2380,7 @@ struct CHRISApp: App {
                             .environmentObject(app)
                     }
                 if !app.splashDone {
-                    SplashView(remote: app.splashImage)
+                    SplashView()
                         .transition(.opacity)
                         .zIndex(9)
                 }
@@ -2680,15 +2678,9 @@ struct RootView: View {
 
 struct LaunchView: View {
     var body: some View {
-        ZStack {
-            StarLaunchBackdrop()
-            VStack(spacing: 14) {
-                StarLaunchMark(size: 74, breathing: false)
-                Text(Tr("正在连接…"))
-                    .font(pfStyled(size: 12.5, weight: .medium))
-                    .foregroundStyle(Color.white.opacity(0.66))
-            }
-        }
+        /* 启动完成后如果还在取登录态，继续显示同一张品牌启动页。
+           以前这里会切回旧的星轨连接页，看起来像“新启动页没生效”。 */
+        SplashView()
     }
 }
 

@@ -44,16 +44,44 @@ echo "=== 3) 拼 App 目录 ==="
 rm -rf Payload && mkdir -p "$APP/Frameworks"
 cp Info.plist "$APP/Info.plist"
 cp AppIcon60x60@2x.png AppIcon60x60@3x.png "$APP/" 2>/dev/null || true
-[ -f splash.jpg ] && cp splash.jpg "$APP/"
 [ -f moments-cover.jpg ] && cp moments-cover.jpg "$APP/"
 [ -d levelicons ] && cp levelicons/*.png "$APP/" 2>/dev/null || true
 
-if [ -d Assets.xcassets ]; then
-  xcrun actool Assets.xcassets --compile "$APP" --platform iphoneos \
-    --target-device iphone --minimum-deployment-target 16.0 \
-    --output-format human-readable-text >/dev/null 2>&1 \
-    || echo "actool 跳过：启动屏用系统默认底色"
-fi
+rm -rf Assets.xcassets
+mkdir -p Assets.xcassets/LaunchBg.colorset Assets.xcassets/LaunchLogo.imageset
+cat > Assets.xcassets/Contents.json <<'JSON'
+{ "info": { "version": 1, "author": "xcode" } }
+JSON
+cat > Assets.xcassets/LaunchBg.colorset/Contents.json <<'JSON'
+{
+  "colors": [
+    {
+      "idiom": "universal",
+      "color": {
+        "color-space": "srgb",
+        "components": { "red": "0.016", "green": "0.031", "blue": "0.024", "alpha": "1.000" }
+      }
+    }
+  ],
+  "info": { "version": 1, "author": "xcode" }
+}
+JSON
+cp AppIcon60x60@2x.png Assets.xcassets/LaunchLogo.imageset/LaunchLogo@2x.png
+cp AppIcon60x60@3x.png Assets.xcassets/LaunchLogo.imageset/LaunchLogo@3x.png
+cat > Assets.xcassets/LaunchLogo.imageset/Contents.json <<'JSON'
+{
+  "images": [
+    { "idiom": "universal", "scale": "1x" },
+    { "idiom": "universal", "scale": "2x", "filename": "LaunchLogo@2x.png" },
+    { "idiom": "universal", "scale": "3x", "filename": "LaunchLogo@3x.png" }
+  ],
+  "info": { "version": 1, "author": "xcode" }
+}
+JSON
+xcrun actool Assets.xcassets --compile "$APP" --platform iphoneos \
+  --target-device iphone --minimum-deployment-target 16.0 \
+  --output-format human-readable-text >/dev/null 2>&1 \
+  || echo "actool 跳过：启动屏用系统默认底色"
 
 if [ -f Sources/VoiceOrb.metal ]; then
   if xcrun -sdk iphoneos metal -c Sources/VoiceOrb.metal -o /tmp/VoiceOrb.air 2>/dev/null; then

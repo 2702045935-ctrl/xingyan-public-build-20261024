@@ -151,30 +151,32 @@ private struct DeliveryFailureCopy {
 
         if reason.contains("拒收") {
             return DeliveryFailureCopy(
-                title: copy("消息未送达", "Message not delivered", "Сообщение не доставлено"),
+                title: copy("消息已发出，但被对方拒收了",
+                            "Message sent, but rejected by the recipient",
+                            "Сообщение отправлено, но получатель его отклонил"),
                 detail: copy(
-                    "对方已将你加入黑名单，当前无法接收你的消息",
-                    "This person has blocked you and cannot receive your messages",
-                    "Этот человек добавил вас в чёрный список и не получает сообщения"
+                    "对方已把你加入黑名单。",
+                    "This person has added you to their block list.",
+                    "Этот человек добавил вас в чёрный список."
                 ),
                 symbol: "hand.raised.fill",
                 tint: .red,
                 action: .details,
-                actionTitle: copy("查看资料", "View profile", "Профиль")
+                actionTitle: copy("查看朋友资料", "View profile", "Профиль")
             )
         }
         if reason.contains("你已经把对方拉黑") || reason.contains("将对方拉黑") {
             return DeliveryFailureCopy(
-                title: copy("无法发送", "Can't send", "Не удалось отправить"),
+                title: copy("无法发送消息", "Can't send messages", "Не удалось отправить сообщение"),
                 detail: copy(
-                    "你已将对方加入黑名单，请先在个人资料页解除",
-                    "You blocked this person. Unblock them in the profile first",
-                    "Вы заблокировали этого человека. Сначала разблокируйте его"
+                    "你已将对方加入黑名单。移出黑名单后可继续聊天。",
+                    "You added this person to your block list. Unblock them to continue chatting.",
+                    "Вы добавили этого человека в чёрный список. Разблокируйте его, чтобы продолжить."
                 ),
                 symbol: "hand.raised.slash.fill",
                 tint: .red,
                 action: .details,
-                actionTitle: copy("查看资料", "View profile", "Профиль")
+                actionTitle: copy("管理黑名单", "Manage block list", "Чёрный список")
             )
         }
         if reason.contains("禁言") {
@@ -186,32 +188,36 @@ private struct DeliveryFailureCopy {
                 action: nil
             )
         }
-        if reason.contains("陌生消息最多发送") || reason.contains("还不是他（她）朋友") {
+        if reason.contains("陌生人消息最多发送")
+            || reason.contains("还不是朋友")
+            || reason.contains("还不是他（她）朋友") {
             return DeliveryFailureCopy(
-                title: copy("陌生消息额度已用完", "Message limit reached", "Лимит сообщений исчерпан"),
+                title: copy("你们还不是朋友", "You're not friends yet", "Вы пока не друзья"),
                 detail: copy(
-                    "你们还不是好友。发送朋友验证，对方通过后可以继续聊天。",
-                    "You are not friends yet. Send a friend request to continue after approval.",
-                    "Вы ещё не друзья. Отправьте заявку, чтобы продолжить после подтверждения."
+                    "发送朋友验证申请，对方通过后可以继续聊天。",
+                    "Send a friend request. You can continue chatting after it is accepted.",
+                    "Отправьте заявку. После подтверждения вы сможете продолжить общение."
                 ),
                 symbol: "person.badge.plus",
                 tint: Color(hex: 0x2C73C9),
                 action: .addFriend,
-                actionTitle: copy("发送朋友验证", "Add friend", "Добавить")
+                actionTitle: copy("发送朋友验证申请", "Send friend request", "Отправить заявку")
             )
         }
-        if reason.contains("你们已经不是好友") || reason.contains("重新添加好友") {
+        if reason.contains("已解除好友关系")
+            || reason.contains("你们已经不是好友")
+            || reason.contains("重新添加好友") {
             return DeliveryFailureCopy(
-                title: copy("好友关系已解除", "No longer friends", "Вы больше не друзья"),
+                title: copy("你们已解除朋友关系", "You're no longer friends", "Вы больше не друзья"),
                 detail: copy(
-                    "重新添加对方并通过验证后，才能继续发送消息。",
-                    "Add this person again and wait for approval before messaging.",
-                    "Добавьте этого человека снова и дождитесь подтверждения."
+                    "添加对方为朋友并等待验证通过后，可继续聊天。",
+                    "Add this person as a friend and wait for approval to continue chatting.",
+                    "Добавьте этого человека в друзья и дождитесь подтверждения."
                 ),
                 symbol: "person.crop.circle.badge.plus",
                 tint: Color(hex: 0x2C73C9),
                 action: .addFriend,
-                actionTitle: copy("重新添加", "Add again", "Добавить снова")
+                actionTitle: copy("发送朋友验证申请", "Send friend request", "Отправить заявку")
             )
         }
         if reason.contains("管理员禁用") || reason.contains("账号") {
@@ -2215,12 +2221,12 @@ struct ChatDetailView: View {
             if applyNote.isEmpty { applyNote = "我是" + (app.me?.nickname ?? "") }
         }
 
-        .alert(Tr("发送朋友验证"), isPresented: $showApply) {
+        .alert(Tr("发送朋友验证申请"), isPresented: $showApply) {
             TextField(Tr("验证消息"), text: $applyNote)
             Button(Tr("发送")) { sendApply() }
             Button(Tr("取消"), role: .cancel) { }
         } message: {
-            Text(Tr("对方通过验证后，你们就能聊天了。"))
+            Text(Tr("你需要发送朋友验证申请，对方通过后才能聊天。"))
         }
 
         .onChange(of: focused) { pinAfterFocusChange($0) }
@@ -4888,7 +4894,7 @@ struct ChatDetailView: View {
                     Text(Tr("你已将对方加入黑名单"))
                         .font(pf(14.5, .semibold))
                         .foregroundColor(C.label)
-                    Text(Tr("对方无法给你发消息。点按这里可移出黑名单。"))
+                    Text(Tr("你将不再收到对方的消息。点按这里移出黑名单。"))
                         .font(pf(12.5))
                         .foregroundColor(C.subLabel)
                         .multilineTextAlignment(.leading)
@@ -4906,19 +4912,19 @@ struct ChatDetailView: View {
             .overlay(alignment: .top) { HairLine() }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Tr("你已将对方加入黑名单，点按移出黑名单"))
+        .accessibilityLabel(Tr("你已将对方加入黑名单。点按移出黑名单"))
     }
 
     private var verifyComposer: some View {
         VStack(spacing: 10) {
-            Text(Tr("你还不是他（她）朋友。请先发送朋友验证请求，对方验证通过后，才能聊天。"))
+            Text(Tr("你们还不是朋友。发送朋友验证申请，对方通过后可以继续聊天。"))
                 .font(pf(13.5))
                 .foregroundColor(C.subLabel)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 24)
 
             Button { showApply = true } label: {
-                Text(Tr("发送朋友验证"))
+                Text(Tr("发送朋友验证申请"))
                     .font(pf(15, .medium))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
@@ -4945,7 +4951,7 @@ struct ChatDetailView: View {
                         app.applyFriendAccepted(user)
                     }
                     await app.loadChats()
-                    app.show(Tr("你们已经是好友了"))
+                    app.show(Tr("你们已经是朋友了"))
                 } else {
                     app.show(Tr("已发送朋友验证"))
                 }
@@ -7401,11 +7407,11 @@ struct SystemLine: View {
 
     private var promptTitle: String {
         let raw = message.body
-        if raw.contains("已成为好友") {
-            return Tr("好友关系已建立")
+        if raw.contains("已成为朋友") || raw.contains("已成为好友") {
+            return Tr("你们已成为朋友")
         }
         if raw.contains("解除好友关系") || raw.contains("删除好友") {
-            return Tr("好友关系已解除")
+            return Tr("你们已解除朋友关系")
         }
         if raw.contains("拉黑") || raw.contains("黑名单") {
             return Tr("黑名单状态已更新")
@@ -7430,7 +7436,9 @@ struct SystemLine: View {
 
     private var promptSymbol: String {
         let raw = message.body
-        if raw.contains("已成为好友") { return "person.crop.circle.badge.checkmark" }
+        if raw.contains("已成为朋友") || raw.contains("已成为好友") {
+            return "person.crop.circle.badge.checkmark"
+        }
         if raw.contains("解除好友关系") || raw.contains("删除好友") {
             return "person.crop.circle.badge.xmark"
         }
@@ -7445,7 +7453,7 @@ struct SystemLine: View {
 
     private var promptTint: Color {
         let raw = message.body
-        if raw.contains("已成为好友") { return .green }
+        if raw.contains("已成为朋友") || raw.contains("已成为好友") { return .green }
         if raw.contains("解除好友关系") || raw.contains("删除好友")
             || raw.contains("拉黑") || raw.contains("黑名单")
             || raw.contains("解散") {

@@ -376,7 +376,9 @@ struct NewFriendsView: View {
                             .background(OrbitTheme.cardBackground())
                             .padding(.horizontal, 12)
                     } else if !loading && shownIncoming.isEmpty && shownOutgoing.isEmpty && shownAdded.isEmpty {
-                        Text(Tr("没有匹配的申请记录"))
+                        Text(keyword.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                             ? Tr("暂无朋友验证消息")
+                             : Tr("没有匹配的朋友验证消息"))
                             .font(pf(15))
                             .foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity)
@@ -386,7 +388,7 @@ struct NewFriendsView: View {
                     }
 
                     if !shownIncoming.isEmpty {
-                        sectionHeader(Tr("好友申请"), count: shownIncoming.count)
+                        sectionHeader(Tr("朋友验证"), count: shownIncoming.count)
                             .padding(.horizontal, 16)
                         ForEach(shownIncoming) { user in
                             requestRow(user)
@@ -408,7 +410,7 @@ struct NewFriendsView: View {
                         }
                     }
                     if !shownOutgoing.isEmpty {
-                        sectionHeader(Tr("我添加的"), count: shownOutgoing.count)
+                        sectionHeader(Tr("我发出的申请"), count: shownOutgoing.count)
                             .padding(.horizontal, 16)
                         ForEach(shownOutgoing) { user in
                             waitingRow(user)
@@ -444,49 +446,38 @@ struct NewFriendsView: View {
         .onChange(of: app.localOutgoingFriendRequests) { _ in
             mergeLocalOutgoing()
         }
-        .confirmationDialog(Tr("清除所有已添加好友？"),
+        .confirmationDialog(Tr("清除已添加的朋友？"),
                             isPresented: $confirmClearFriends,
                             titleVisibility: .visible) {
-            Button(Tr("清除") + " \(clearableFriends.count) " + Tr("位好友"), role: .destructive) {
+            Button(Tr("清除") + " \(clearableFriends.count) " + Tr("位朋友"), role: .destructive) {
                 clearAllAddedFriends()
             }
             Button(Tr("取消"), role: .cancel) { }
         } message: {
-            Text(Tr("将解除双方好友关系，并从当前账号移除单聊入口和本机记录。机器人、系统号和群聊会保留，此操作不可撤销。"))
+            Text(Tr("将解除双方朋友关系，并移除当前账号的单聊入口和本机聊天记录。机器人、系统号和群聊会保留，此操作不可撤销。"))
         }
-        .alert(Tr("删除这位好友？"), isPresented: Binding(
+        .alert(Tr("删除联系人？"), isPresented: Binding(
             get: { pendingRemoveFriend != nil },
             set: { if !$0 { pendingRemoveFriend = nil } }
         )) {
             Button(Tr("取消"), role: .cancel) { pendingRemoveFriend = nil }
-            Button(Tr("删除"), role: .destructive) {
+            Button(Tr("删除联系人"), role: .destructive) {
                 if let user = pendingRemoveFriend { removeAddedFriend(user) }
                 pendingRemoveFriend = nil
             }
         } message: {
-            Text(Tr("将解除双方好友关系，并从当前账号移除单聊入口和本机记录。此操作不可撤销。"))
+            Text(Tr("将解除双方朋友关系，并清除当前账号本机的聊天记录。对方不会收到通知，此操作不可撤销。"))
         }
     }
 
     private var orbitHeader: some View {
-        VStack(spacing: 10) {
-            StarOrbitHero(
-                kicker: "关系星轨",
-                title: Tr("新的朋友"),
-                subtitle: Tr("每一次连接，都是星轨上的一次靠近"),
-                symbol: "person.2.fill",
-                accent: OrbitTheme.jade,
-                metrics: [
-                    StarOrbitMetric(value: "\(incoming.count)", label: Tr("待确认")),
-                    StarOrbitMetric(value: "\(outgoing.count)", label: Tr("已发出"))
-                ]
-            )
-
-            StarOrbitSearchField(
-                placeholder: Tr("搜索昵称、星言号或验证消息"),
-                text: $keyword
-            )
-        }
+        StarOrbitSearchField(
+            placeholder: Tr("搜索昵称、星言号或验证消息"),
+            text: $keyword
+        )
+        .padding(.horizontal, 12)
+        .padding(.top, 8)
+        .padding(.bottom, 2)
     }
 
     private var addFriendRow: some View {
@@ -517,7 +508,7 @@ struct NewFriendsView: View {
                     .foregroundColor(.white)
             }
             .frame(width: L.ctIcon, height: L.ctIcon)
-            Text(Tr("清除已添加的好友"))
+            Text(Tr("清除已添加的朋友"))
                 .font(pf(L.ctNameSize))
                 .foregroundColor(C.red)
             Spacer(minLength: 0)
@@ -540,7 +531,7 @@ struct NewFriendsView: View {
     private func clearAllAddedFriends() {
         guard !clearingFriends else { return }
         clearingFriends = true
-        app.show(Tr("正在清除好友…"))
+        app.show(Tr("正在清除已添加的朋友…"))
         Task { @MainActor in
             let result = await API.shared.clearAddedFriends()
             await app.loadContacts()
@@ -550,7 +541,7 @@ struct NewFriendsView: View {
             if let error = result.error {
                 app.show(Tr("清除失败：") + error)
             } else {
-                app.show(Tr("已清除") + " \(result.removed) " + Tr("位好友"))
+                app.show(Tr("已清除") + " \(result.removed) " + Tr("位朋友"))
             }
         }
     }
@@ -638,7 +629,7 @@ struct NewFriendsView: View {
             await app.loadChats()
             await load()
             busy.remove(user.id)
-            app.show(Tr("已删除好友"))
+            app.show(Tr("已删除联系人"))
         }
     }
 
@@ -663,7 +654,7 @@ struct NewFriendsView: View {
 
     private func noteOf(_ user: User) -> String {
         let n = (user.requestMessage ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        return n.isEmpty ? Tr("请求加你为好友") : n
+        return n.isEmpty ? Tr("请求添加你为朋友") : n
     }
 
     private func openChat(_ user: User) {
@@ -734,7 +725,7 @@ struct NewFriendsView: View {
                 return
             }
             if let n = res.pending { app.friendRequests = n }
-            app.show(accept ? Tr("已添加到通讯录") : Tr("已拒绝"))
+            app.show(accept ? Tr("已通过朋友验证") : Tr("已拒绝朋友验证"))
             if accept { UINotification.lightTap() }
 
             await app.loadContacts()
@@ -1127,7 +1118,7 @@ struct AddFriendView: View {
             }
             UINotification.lightTap()
             if let n = res.pending { app.friendRequests = n }
-            app.show(Tr("已添加到通讯录"))
+            app.show(Tr("已通过朋友验证"))
             await app.loadContacts()
             await app.loadChats()
             if let chat = res.chat {
@@ -1184,7 +1175,7 @@ struct FriendApplySheet: View {
 
                 HStack(spacing: 12) {
                     Text(Tr("验证消息")).font(pf(15)).foregroundColor(C.subLabel)
-                    TextField(Tr("验证消息"), text: $note)
+                    TextField(Tr("填写朋友验证申请"), text: $note)
                         .font(pf(16))
                         .foregroundColor(C.label)
                     if !note.isEmpty {
@@ -1229,7 +1220,7 @@ struct FriendApplySheet: View {
                 if result.accepted {
                     app.applyFriendAccepted(result.friend ?? user)
                     await app.loadChats()
-                    app.show(Tr("你们已经是好友了"))
+                    app.show(Tr("你们已经是朋友了"))
                     if let chat = result.chat {
                         app.ensureChatVisible(chat)
                         app.openChat = chat
@@ -1239,7 +1230,7 @@ struct FriendApplySheet: View {
                     dismiss()
                 } else {
                     app.noteFriendRequestSent(user, note: trimmed)
-                    app.show(Tr("好友申请已发出"))
+                    app.show(Tr("朋友验证申请已发送"))
                 }
                 onSent()
                 dismiss()
@@ -1391,7 +1382,7 @@ struct FriendPermSheet: View {
                             symbol: "hand.raised.slash.fill",
                             colors: PanelTint.gray,
                             title: Tr("移出黑名单"),
-                            subtitle: Tr("恢复接收消息和查看朋友圈")
+                            subtitle: Tr("对方可以重新给你发送消息")
                         ) {
                             setBlocked(false)
                         }
@@ -1399,7 +1390,7 @@ struct FriendPermSheet: View {
                         PanelDangerRow(
                             symbol: "hand.raised.fill",
                             title: Tr("加入黑名单"),
-                            subtitle: Tr("阻止对方发消息并隐藏你的朋友圈")
+                            subtitle: Tr("不再接收对方消息，对方也无法查看你的朋友圈")
                         ) {
                             confirmBlock = true
                         }
@@ -1408,7 +1399,7 @@ struct FriendPermSheet: View {
             }
             .padding(.horizontal, 16)
 
-            Text(Tr("拉黑以后他发不了消息给你，也看不到你的朋友圈；聊天里你会看到「消息已发出，但被对方拒收了」。"))
+            Text(Tr("加入黑名单后，你将不再收到对方的消息，对方也无法查看你的朋友圈。"))
                 .font(pf(12.5))
                 .foregroundColor(C.subLabel)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -1429,10 +1420,10 @@ struct FriendPermSheet: View {
         .overlay {
             if confirmBlock {
                 PanelConfirmDialog(
-                    title: Tr("加入黑名单？"),
+                    title: Tr("将联系人加入黑名单"),
                     okText: Tr("加入黑名单"),
                     danger: true,
-                    message: Tr("对方将无法给你发消息，也看不到你的朋友圈。聊天记录会保留。"),
+                    message: Tr("你将不再收到对方的消息，并且对方无法查看你的朋友圈。聊天记录会保留。"),
                     symbol: "hand.raised.fill",
                     onOk: {
                         confirmBlock = false
@@ -1476,7 +1467,11 @@ struct FriendPermSheet: View {
                 return
             }
             await onSaved()
-            app.show(Tr("已保存"))
+            if blocked != oldBlocked {
+                app.show(blocked ? Tr("已加入黑名单") : Tr("已移出黑名单"))
+            } else {
+                app.show(Tr("朋友权限已保存"))
+            }
         }
     }
 

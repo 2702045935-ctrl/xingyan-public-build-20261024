@@ -170,8 +170,8 @@ struct ContactCardWechat: View {
         switch relation {
         case "self": return Tr("我的名片")
         case "friend": return Tr("星言联系人")
-        case "incoming": return Tr("好友申请")
-        case "requested": return Tr("申请已发送")
+        case "incoming": return Tr("朋友验证")
+        case "requested": return Tr("等待验证")
         default: return Tr("待建立联系")
         }
     }

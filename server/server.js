@@ -2654,7 +2654,6 @@ const DEFAULT_BRANDING = {
   appName: 'CHRIS Chat',
   logo: '',
   chatBackground: '',
-  splash: '',                 // 启动页图片（后台可换；空 = 用 App 包里那张）
   fontFamily: '',
   fontName: '',
   fontUrl: '',
@@ -10422,21 +10421,21 @@ function directFriendMessageError(user, chatId) {
   if (!chat || chat.type !== 'direct') return '';
   if (chat.bot || chat.oaId) return '';
   if (chat.friendshipRemovedAt) {
-    return '你们已经不是好友，重新添加好友并通过验证后才能继续聊天';
+    return '你们已解除好友关系，请先添加对方为朋友并等待验证通过';
   }
   const peerId = chat.memberIds.find((id) => id !== user.id);
   if (chat.friendshipRemovedAt || (peerId && friendPairWasRemoved(user.id, peerId))) {
-    return '你们已经不是好友，重新添加好友并通过验证后才能继续聊天';
+    return '你们已解除好友关系，请先添加对方为朋友并等待验证通过';
   }
   const relation = peerId ? friendshipBetween(user.id, peerId) : null;
   if (!peerId || peerId === user.id || (relation && relation.status === 'accepted')) return '';
   const im = readIm();
   if (im.allowStranger) return '';
   const limit = Math.max(0, Math.min(1000, Number(im.strangerMessageLimit) || 0));
-  if (limit <= 0) return '你还不是他（她）朋友，请先发送朋友验证请求，对方验证通过后才能聊天';
+  if (limit <= 0) return '你们还不是朋友，请先发送朋友验证申请';
   const used = strangerMessagesUsed(user.id, chatId);
   if (used < limit) return '';
-  return '陌生消息最多发送 ' + limit + ' 条，请先发送朋友验证，对方通过后才能继续聊天';
+  return '陌生人消息最多发送 ' + limit + ' 条，请先发送朋友验证申请';
 }
 
 function deliverMessage(user, chatId, kind, content, clientId, mentionHint, mediaExtra) {
@@ -10454,8 +10453,8 @@ function deliverMessage(user, chatId, kind, content, clientId, mentionHint, medi
     if (peerId && chatBlockedBetween(user.id, peerId)) {
       return {
         error: blockedByUser(peerId, user.id)
-          ? '对方已将你加入黑名单，消息未送达（拒收）'
-          : '你已经把对方拉黑，先去资料页解除才能发消息'
+          ? '消息已发出，但被对方拒收了'
+          : '你已将对方加入黑名单，无法发送消息'
       };
     }
   }
@@ -11826,8 +11825,8 @@ async function housekeeperCommand(user, text, chat, bot) {
     if (friendIds(user.id).includes(target.id)) return '你和「' + who + '」已经是好友了，直接聊就行。';
     const f = friendshipBetween(user.id, target.id);
     if (f) {
-      if (f.status === 'accepted') return '你们已经是好友了。';
-      if (f.fromId === user.id) return '好友申请已经发过了，等「' + who + '」在「新的朋友」里通过。';
+      if (f.status === 'accepted') return '你们已经是朋友了。';
+      if (f.fromId === user.id) return '好友申请已发送，请等待「' + who + '」通过。';
       f.status = 'accepted';
       saveFriendships();
       await clearFriendRemoved(f.fromId, f.toId);
@@ -11839,7 +11838,7 @@ async function housekeeperCommand(user, text, chat, bot) {
       note: str(body.message, 60) });
     saveFriendships();
     sendTo(target.id, { type: 'friend', action: 'request', user: publicUser(user) });
-    return '好友申请已经发给「' + who + '」了，等对方通过。';
+    return '好友申请已发送给「' + who + '」，请等待对方通过。';
   }
 
   /* ③ 改昵称：改昵称 小明 */
@@ -13652,8 +13651,6 @@ async function handleAdmin(req, res, parts, query) {
     if (body.appName !== undefined) next.appName = str(body.appName, 30) || DEFAULT_BRANDING.appName;
     if (body.logo !== undefined) next.logo = str(body.logo, 300000);
     if (body.chatBackground !== undefined) next.chatBackground = str(body.chatBackground, 300000);
-    /* 启动页图片（后台可换，不用重新出包） */
-    if (body.splash !== undefined) next.splash = str(body.splash, 300000);
     if (body.fontFamily !== undefined) next.fontFamily = str(body.fontFamily, 400);
     if (body.fontName !== undefined) next.fontName = str(body.fontName, 120);
     if (body.fontUrl !== undefined) next.fontUrl = str(body.fontUrl, 500000);
@@ -21354,10 +21351,10 @@ async function handleApi(req, res, pathname, query) {
         let addReason = '';
         if (u.id === user.id) { addState = 'self'; addReason = '这是你自己'; }
         else if (u.banned) { addState = 'banned'; addReason = '该账号当前不可添加'; }
-        else if (relation === 'friend') { addState = 'friend'; addReason = '你们已经是好友'; }
-        else if (relation === 'requested') { addState = 'requested'; addReason = '好友申请已发送'; }
+        else if (relation === 'friend') { addState = 'friend'; addReason = '你们已经是朋友'; }
+        else if (relation === 'requested') { addState = 'requested'; addReason = '朋友验证申请已发送'; }
         else if (relation === 'incoming') { addState = 'incoming'; addReason = '对方已申请添加你'; }
-        else if (blocked) { addState = 'blocked'; addReason = '先把对方移出黑名单'; }
+        else if (blocked) { addState = 'blocked'; addReason = '请先将对方移出黑名单'; }
         else if (blockedMe) { addState = 'blocked_by_peer'; addReason = '暂时无法添加'; }
         return Object.assign(publicUserBrief(u, user.id, myFriends), {
           relation,
@@ -21451,7 +21448,7 @@ async function handleApi(req, res, pathname, query) {
     if (!target) return fail(res, 404, '用户不存在');
     if (target.id === user.id) return fail(res, 422, '不能添加自己');
     if (blockedByUser(user.id, target.id)) {
-      return fail(res, 409, '先把对方移出黑名单再添加');
+      return fail(res, 409, '请先将对方移出黑名单');
     }
     if (blockedByUser(target.id, user.id)) {
       return fail(res, 403, '暂时无法添加该用户');
@@ -21467,8 +21464,8 @@ async function handleApi(req, res, pathname, query) {
     if (str(body.from, 12) === 'group' && !tp.addByGroup) return fail(res, 403, '对方关闭了「通过群聊添加我」');
     const exist = friendshipBetween(user.id, target.id);
     if (exist) {
-      if (exist.status === 'accepted') return fail(res, 409, '你们已经是好友');
-      if (exist.fromId === user.id) return fail(res, 409, '已经发送过好友请求');
+      if (exist.status === 'accepted') return fail(res, 409, '你们已经是朋友');
+      if (exist.fromId === user.id) return fail(res, 409, '好友申请已发送，请等待对方通过');
       exist.status = 'accepted';
       exist.respondedAt = now();
       if (!await persistFriendshipOnOwner(exist, false)) {
@@ -21485,7 +21482,7 @@ async function handleApi(req, res, pathname, query) {
         findUser(exist.fromId),
         findUser(exist.toId)
       );
-      if (c2) pushRelationMessage(c2, '你们已成为好友，现在可以开始聊天了',
+      if (c2) pushRelationMessage(c2, '你们已成为朋友，现在可以开始聊天了',
         'friend_added', user.id, target.id);
       sendTo(target.id, { type: 'friend', action: 'accepted', user: publicUser(user) });
       sendTo(exist.fromId, { type: 'chat', chatId: c2 ? c2.id : '' });
@@ -21511,7 +21508,7 @@ async function handleApi(req, res, pathname, query) {
         target,
         user
       );
-      if (c0) pushRelationMessage(c0, '你们已成为好友，现在可以开始聊天了',
+      if (c0) pushRelationMessage(c0, '你们已成为朋友，现在可以开始聊天了',
         'friend_added', target.id, user.id);
       sendTo(target.id, { type: 'friend', action: 'accepted', user: publicUser(user) });
       sendTo(user.id, { type: 'chat', chatId: c0 ? c0.id : '' });
@@ -21705,7 +21702,6 @@ async function handleApi(req, res, pathname, query) {
       db.reads[user.id][chat.id] = clearedSeq;
       saveReads();
       saveChats();
-      pushRelationMessage(chat, '你们已解除好友关系', 'friend_removed', user.id, target.id);
       sendTo(user.id, { type: 'chat', action: 'deleted', chatId: chat.id });
     }
     /* 备注之类的一并清掉 */
@@ -21770,7 +21766,7 @@ async function handleApi(req, res, pathname, query) {
           pushRelationMessage(
             newChat,
             (fromUser.nickname || fromUser.username || '对方') + ' 和 '
-              + (toUser.nickname || toUser.username || '你') + ' 已成为好友，现在可以开始聊天了',
+              + (toUser.nickname || toUser.username || '你') + ' 已成为朋友，现在可以开始聊天了',
             'friend_added',
             toUser.id,
             fromUser.id

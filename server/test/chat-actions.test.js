@@ -314,13 +314,18 @@ async function main() {
       '/api/chats/' + directId + '/messages',
       { kind: 'text', content: '拉黑后消息' });
     assert.equal(response.status, 422, JSON.stringify(response.data));
-    assert.match(response.data.error || '', /拒收/);
+    assert.equal(response.data.error, '消息已发出，但被对方拒收了');
 
     response = await call(base, alice.cookie, 'POST', '/api/friends/meta', {
       userId: bob.user.id,
       block: false
     });
     assert.equal(response.status, 200, JSON.stringify(response.data));
+    response = await call(base, bob.cookie, 'POST',
+      '/api/chats/' + directId + '/messages',
+      { kind: 'text', content: '移出黑名单后恢复发送' });
+    assert.equal(response.status, 200,
+      '移出黑名单后消息没有恢复：' + JSON.stringify(response.data));
 
     response = await call(base, bob.cookie, 'DELETE',
       '/api/chats/' + directId + '?clear=1');
@@ -402,7 +407,7 @@ async function main() {
       { kind: 'text', content: '删除好友后不应还能发送' });
     assert.ok([403, 422].includes(response.status),
       '删除好友后普通单聊必须禁止发送：' + JSON.stringify(response.data));
-    assert.match(response.data.error || '', /重新添加好友/);
+    assert.match(response.data.error || '', /已解除好友关系/);
     response = await call(base, bob.cookie, 'POST',
       '/api/chats/' + directId + '/messages',
       { kind: 'text', content: '对方删除好友后也不应还能发送' });
@@ -416,6 +421,12 @@ async function main() {
     assert.equal(response.status, 200, JSON.stringify(response.data));
     assert.ok(!(response.data.friends || []).some((friend) => friend.id === alice.user.id),
       '删除好友后对方联系人仍立即存在');
+    response = await call(base, bob.cookie, 'GET',
+      '/api/chats/' + directId + '/messages?limit=100');
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    assert.ok(!(response.data.messages || []).some((message) =>
+      message.relation && message.relation.action === 'friend_removed'),
+    '删除联系人不应向对方聊天里写入解除关系提示');
     for (const [account, removedId] of [
       [alice, bob.user.id],
       [bob, alice.user.id]
