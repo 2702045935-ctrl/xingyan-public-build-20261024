@@ -2055,7 +2055,7 @@ struct WorksView: View {
             (Tr("喜欢"), likedWorks.count),
             (Tr("私密"), privateWorks.count)
         ]
-        HStack(spacing: 0) {
+        return HStack(spacing: 0) {
             ForEach(Array(entries.enumerated()), id: \.offset) { i, entry in
                 Button {
                     withAnimation(.easeOut(duration: 0.16)) { tab = i }
