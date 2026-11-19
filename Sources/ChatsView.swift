@@ -2824,7 +2824,7 @@ struct ChatsView: View {
                         onRefresh: {
                             Task { await app.loadChats() }
                         },
-                        allowInsertionDuringScroll: false
+                        allowInsertionDuringScroll: true
                     ) { entry in
                         nativeChatEntry(entry)
                     }

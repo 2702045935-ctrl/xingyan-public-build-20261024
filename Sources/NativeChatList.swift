@@ -194,19 +194,20 @@ where Item.ID: Hashable {
 
         func apply(_ next: [Item], animated: Bool) {
             guard let dataSource, let table else { return }
+            let nextOrder = next.map(\.id)
+            let isPureAppend = !order.isEmpty
+                && next.count > order.count
+                && next.prefix(order.count).allSatisfy { lookup[$0.id] == $0 }
             if !order.isEmpty,
                table.isDragging || table.isTracking || table.isDecelerating {
-                let nextOrder = next.map(\.id)
                 let unchanged = nextOrder == order
                     && next.allSatisfy { lookup[$0.id] == $0 }
-                if !unchanged {
+                if !unchanged,
+                   !(allowInsertionDuringScroll && isPureAppend) {
                     pendingItems = next
                     return
                 }
             }
-            let isPureAppend = !order.isEmpty
-                && next.count > order.count
-                && next.prefix(order.count).allSatisfy { lookup[$0.id] == $0 }
             if isPureAppend {
                 let added = Array(next[order.count...])
                 let addedIDs = added.map(\.id)
@@ -240,7 +241,6 @@ where Item.ID: Hashable {
                 return
             }
             let nextLookup = Dictionary(uniqueKeysWithValues: next.map { ($0.id, $0) })
-            let nextOrder = next.map(\.id)
             if nextOrder == order && next.allSatisfy({ lookup[$0.id] == $0 }) {
                 pendingItems = nil
                 return

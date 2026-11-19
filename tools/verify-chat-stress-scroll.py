@@ -61,15 +61,16 @@ require(
 
 CHATS = (ROOT / "Sources" / "ChatsView.swift").read_text(encoding="utf-8")
 require(
-    "allowInsertionDuringScroll: false" in CHATS,
-    "stress conversation lists must defer row insertion until scrolling ends",
+    "allowInsertionDuringScroll: true" in CHATS,
+    "stress conversation lists must accept appended pages during active scrolling",
 )
 
 NATIVE_CHAT_LIST = (ROOT / "Sources" / "NativeChatList.swift").read_text(encoding="utf-8")
 require(
-    "table.isDragging || table.isTracking || table.isDecelerating" in NATIVE_CHAT_LIST
+    "allowInsertionDuringScroll && isPureAppend" in NATIVE_CHAT_LIST
+    and "table.isDragging || table.isTracking || table.isDecelerating" in NATIVE_CHAT_LIST
     and "pendingItems = next" in NATIVE_CHAT_LIST,
-    "all conversation-list changes, including pure appends, must defer during touch motion",
+    "only non-append changes may defer during touch motion",
 )
 FIXTURE = (ROOT / "Sources" / "ChatStressFixture.swift").read_text(encoding="utf-8")
 require(
