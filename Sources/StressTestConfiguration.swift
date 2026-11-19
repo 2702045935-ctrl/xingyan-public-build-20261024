@@ -53,4 +53,11 @@ enum StressTestConfiguration {
         }
         return messageCount > 0
     }()
+
+    /// Opt-in destructive performance test: materialise the complete message
+    /// fixture in memory instead of generating only the visible history window.
+    static let eagerMessageMaterialization: Bool = {
+        let raw = environment["XINGYAN_STRESS_EAGER"] ?? ""
+        return ["1", "true", "yes", "on"].contains(raw.lowercased())
+    }()
 }

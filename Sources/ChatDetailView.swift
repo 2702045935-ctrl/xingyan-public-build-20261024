@@ -1366,6 +1366,19 @@ struct ChatDetailView: View {
        这能避免进群时一次合并数千条消息造成明显掉帧。 */
     private let maxMessageWindow = 3_000
 
+    private var activeInitialMessageWindow: Int {
+        MessageStressFixture.isActive
+            && StressTestConfiguration.eagerMessageMaterialization
+            ? max(initialMessageWindow, MessageStressFixture.count)
+            : initialMessageWindow
+    }
+
+    /// 群聊顶部可能先出现没有 seq 的系统提示。分页游标必须跳过这些行，
+    /// 否则滚到系统提示处会静默停止预取，表现为几千条以后“上不去”。
+    private var oldestHistorySeq: Int {
+        messages.lazy.compactMap(\.seq).first(where: { $0 > 0 }) ?? 0
+    }
+
     private var navTitle: String {
         guard isGroup else {
             if let peer = peerUserId, let user = app.contact(for: peer) {
@@ -6790,7 +6803,8 @@ struct ChatDetailView: View {
     }
 
     private func loadHistory(to targetId: String, targetSeq: Int) async {
-        guard !loadingOlder, let firstSeq = messages.first?.seq, firstSeq > targetSeq else { return }
+        let firstSeq = oldestHistorySeq
+        guard !loadingOlder, firstSeq > targetSeq else { return }
         loadingOlder = true
         lastOlderLoad = Date()
         defer { loadingOlder = false }
@@ -6867,7 +6881,7 @@ struct ChatDetailView: View {
     private func load(initial: Bool) async {
         if initial, messages.isEmpty, let cached = app.prefetched[chat.id], !cached.isEmpty {
             let rows = visibleMessages(cached)
-            messages = Array(rows.suffix(initialMessageWindow))
+            messages = Array(rows.suffix(activeInitialMessageWindow))
             hasOlder = rows.count > messages.count
             prefetchRecentFiles()
         } else if initial, messages.isEmpty {
@@ -6878,7 +6892,7 @@ struct ChatDetailView: View {
             }.value
             if !local.isEmpty {
                 let rows = visibleMessages(local)
-                messages = Array(rows.suffix(initialMessageWindow))
+                messages = Array(rows.suffix(activeInitialMessageWindow))
                 hasOlder = rows.count > messages.count
                 prefetchRecentFiles()
             }
@@ -6917,7 +6931,7 @@ struct ChatDetailView: View {
             let merged = mergedById.values.sorted(by: messageSortsBefore)
             let visible = visibleMessages(merged)
 
-            let nextMessages = Array(visible.suffix(initialMessageWindow))
+            let nextMessages = Array(visible.suffix(activeInitialMessageWindow))
             let same = !initial && nextMessages.count == messages.count
                 && zip(nextMessages, messages).allSatisfy { $0.id == $1.id && $0.body == $1.body }
             if initial || !same {
@@ -7005,7 +7019,7 @@ struct ChatDetailView: View {
         for _ in 0..<3 {
             let page = try await API.shared.messages(
                 chatId: chat.id,
-                limit: initialMessageWindow,
+                limit: activeInitialMessageWindow,
                 before: before > 0 ? before : nil,
                 all: true
             )
@@ -7018,7 +7032,7 @@ struct ChatDetailView: View {
                 incoming.append(message)
             }
             more = page.hasMore
-            if incoming.count >= initialMessageWindow { break }
+            if incoming.count >= activeInitialMessageWindow { break }
             let next = page.messages.compactMap(\.seq).min() ?? 0
             if !more || next <= 0 || (before > 0 && next >= before) { break }
             before = next
@@ -7048,7 +7062,8 @@ struct ChatDetailView: View {
 
     private func loadOlder() async {
         guard !loadingOlder, !loadingAllGroupHistory,
-              let first = messages.first, let seq = first.seq else { return }
+              oldestHistorySeq > 0 else { return }
+        let seq = oldestHistorySeq
         loadingOlder = true
         lastOlderLoad = Date()
         defer { loadingOlder = false }
@@ -7063,8 +7078,8 @@ struct ChatDetailView: View {
                 var olderIds = Set<String>()
                 more = true
                 /* 首屏之外始终保持一页预取；只有预取尚未完成时才现场补拉。 */
-                let target = isGroup ? 160 : 200
-                let maxPages = isGroup ? 1 : 3
+                let target = isGroup ? 300 : 200
+                let maxPages = isGroup ? 2 : 3
                 for _ in 0..<maxPages {
                     let page = try await API.shared.messages(
                         chatId: chat.id,
@@ -7088,7 +7103,7 @@ struct ChatDetailView: View {
             }
             hasOlder = more
 
-            guard !older.isEmpty else { hasOlder = false; return }
+            guard !older.isEmpty else { hasOlder = more; return }
             holdScroll = true
             let merged = visibleMessages(older + messages)
             let bounded = merged.count > maxMessageWindow
@@ -7122,8 +7137,9 @@ struct ChatDetailView: View {
 
     private func scheduleOlderPrefetch() {
         guard hasOlder, olderPrefetch.isEmpty, olderPrefetchTask == nil,
-              let seq = messages.first?.seq, seq > 0 else { return }
-        let target = isGroup ? 160 : 200
+              oldestHistorySeq > 0 else { return }
+        let seq = oldestHistorySeq
+        let target = isGroup ? 300 : 200
         let known = Set(messages.map(\.id))
         let token = UUID()
         olderPrefetchToken = token
@@ -7189,7 +7205,7 @@ struct ChatDetailView: View {
 
         var olderById: [String: Message] = [:]
         var reachedStart = false
-        var before = messages.first?.seq ?? 0
+        var before = oldestHistorySeq
         var pages = 0
         var consecutiveFailures = 0
         /* 每页 5000 条，并且客户端只保留最近 5000 条。这样后台同步
@@ -8479,67 +8495,29 @@ struct MessageRow: View {
         let o = dict(message.body)
         let secs = max(1, (o["seconds"] as? Int) ?? 1)
         let playing = voicePlayer.playingID == message.id
-        let scrubbing = voiceScrub >= 0
-
-        let dot: Double = scrubbing ? voiceScrub : (playing ? voicePlayer.progress : 0)
         let total = playing && voicePlayer.total > 0 ? voicePlayer.total : Double(secs)
-        let elapsed: Double = {
-            if scrubbing { return max(0, total * dot) }
-            if playing { return max(0, min(total, voicePlayer.elapsed)) }
-            return 0
-        }()
-        let levels = voiceLevels(o, count: 36)
-        let width = min(maxBubbleWidth, min(286, 196 + CGFloat(secs) * 1.45))
-        let live = playing || scrubbing
+        let width = min(maxBubbleWidth,
+                        min(220, 82 + min(CGFloat(secs), 60) * 2.1))
 
         return HStack(spacing: 10) {
             if mine { Spacer(minLength: 0) }
 
-            HStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color(hex: 0x4EDC7C), C.green],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                    Circle()
-                        .stroke(Color.white.opacity(0.18), lineWidth: 0.7)
-                    Circle()
-                        .fill(Color.white.opacity(0.12))
-                        .frame(width: 25, height: 25)
-                    Image(systemName: playing ? "pause.fill" : "play.fill")
-                        .font(.system(size: 12.5, weight: .bold))
-                        .foregroundStyle(.white)
-                        .offset(x: playing ? 0 : 1)
+            HStack(spacing: 8) {
+                if mine {
+                    Text(weChatVoiceClock(total))
+                        .foregroundStyle(bubblePrimaryInk)
+                    Spacer(minLength: 6)
+                    voiceSpeakerGlyph(playing: playing)
+                } else {
+                    voiceSpeakerGlyph(playing: playing)
+                    Spacer(minLength: 6)
+                    Text(weChatVoiceClock(total))
+                        .foregroundStyle(bubblePrimaryInk)
                 }
-                .frame(width: 38, height: 38)
-                .shadow(color: C.green.opacity(0.20), radius: 6, y: 2)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    voiceProgressTrack(levels: levels, progress: dot, live: live)
-                        .frame(height: 25)
-
-                    HStack(spacing: 5) {
-                        Text(live ? voiceClock(elapsed) : voiceClock(total))
-                            .foregroundStyle(live ? C.green : bubbleSecondaryInk)
-                        if live {
-                            Text("/")
-                                .foregroundStyle(bubbleSecondaryInk.opacity(0.38))
-                            Text(voiceClock(total))
-                                .foregroundStyle(bubbleSecondaryInk)
-                        }
-                        Spacer(minLength: 0)
-                        if live { speedChip }
-                    }
-                    .font(pfStyled(size: 10, weight: .medium, design: .monospaced))
-                }
-                .frame(maxWidth: .infinity)
             }
-            .padding(.horizontal, 12)
-            .frame(width: width, height: 64, alignment: .leading)
+            .font(pfStyled(size: 15, weight: .medium, design: .rounded))
+            .padding(.horizontal, 13)
+            .frame(width: width, height: 42, alignment: .leading)
             .background(BubbleFill(mine: mine,
                                    tail: showTail,
                                    seed: bubbleSeed(message.id)))
@@ -8561,10 +8539,42 @@ struct MessageRow: View {
                 }
                 voicePlayer.toggle(id: message.id, url: url)
             }
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 8)
+                    .onChanged { value in
+                        let fraction = min(1, max(0, Double(value.location.x / max(1, width))))
+                        voiceScrub = fraction
+                        playedVoice.insert(message.id)
+                        VoicePlayed.markPlayed(message.id)
+                        if voicePlayer.playingID != message.id, let url = voiceURL() {
+                            voicePlayer.toggle(id: message.id, url: url)
+                        }
+                        voicePlayer.seek(to: fraction)
+                    }
+                    .onEnded { _ in voiceScrub = -1 }
+            )
             .animation(.easeOut(duration: 0.16), value: playing)
 
             if !mine { Spacer(minLength: 0) }
         }
+    }
+
+    private func voiceSpeakerGlyph(playing: Bool) -> some View {
+        Image(systemName: playing ? "speaker.wave.3.fill" : "speaker.wave.2.fill")
+            .font(.system(size: 17, weight: .medium))
+            .foregroundStyle(bubblePrimaryInk.opacity(playing ? 1 : 0.88))
+            .frame(width: 22, height: 28)
+            .scaleEffect(playing ? 1.04 : 1)
+            .animation(playing
+                       ? .easeInOut(duration: 0.58).repeatForever(autoreverses: true)
+                       : .easeOut(duration: 0.16),
+                       value: playing)
+    }
+
+    private func weChatVoiceClock(_ seconds: Double) -> String {
+        let value = max(0, Int(seconds.rounded()))
+        if value < 60 { return "\(value)″" }
+        return "\(value / 60)′\(String(format: "%02d″", value % 60))"
     }
 
     private func voiceClock(_ seconds: Double) -> String {

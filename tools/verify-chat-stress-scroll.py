@@ -30,7 +30,7 @@ require(
 )
 require(
     "if isGroup { autoLoadOlder() }" in CHAT
-    and "let target = isGroup ? 160 : 200" in CHAT,
+    and "let target = isGroup ? 300 : 200" in CHAT,
     "group prefetch must start at drag begin and load a larger history runway",
 )
 require(

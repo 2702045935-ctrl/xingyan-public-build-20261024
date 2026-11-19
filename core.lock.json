@@ -68,8 +68,8 @@
     },
     {
       "path": "Sources/ChatDetailView.swift",
-      "size": 382353,
-      "sha256": "b13e67364914da732972fc2e8be1ce520019c0d79285758b831bf4742f3167f2"
+      "size": 382753,
+      "sha256": "10dfd2b7956d97bd627265e8f1ad7c60aae5144eee243f9e12bd89d42355e5a4"
     },
     {
       "path": "Sources/GroupInfoView.swift",
@@ -108,13 +108,13 @@
     },
     {
       "path": "Sources/ChatsView.swift",
-      "size": 139988,
-      "sha256": "11f031ad87dfcb9a220e09ab00b2ac9120ebc2a6237c2db86841b138207065ed"
+      "size": 140038,
+      "sha256": "9baafed2f2a0eebbb8e02bba16e6018ac5d5a7fbd962cd07f396170dc821d5f5"
     },
     {
       "path": "Sources/MessageStressFixture.swift",
-      "size": 11563,
-      "sha256": "795ba1431a579955bbd3ba9f8ad40fdd4ad530e9bde495c97b5683c0999c5e7b"
+      "size": 11699,
+      "sha256": "dd3dd0fec5a76c693ad1914c13ce78a14a754b005fdbdbdbd082d39a26d5be0d"
     },
     {
       "path": "Sources/MomentStressFixture.swift",
@@ -123,8 +123,8 @@
     },
     {
       "path": "Sources/StressTestConfiguration.swift",
-      "size": 2006,
-      "sha256": "748522966754c5ab5ebb577458aa6f7160ab4d978de55dd838c3632f98556a08"
+      "size": 2356,
+      "sha256": "a5a09725c9954a9f08fa17114de09bbbd7cb0492fa645fce968efc03986d4c8b"
     }
   ]
 }

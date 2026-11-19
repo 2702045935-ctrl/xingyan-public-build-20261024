@@ -242,7 +242,12 @@ enum MessageStressFixture {
         let size = groupSize(group)
         guard size > 0 else { return (nil, [], false) }
         let me = rememberUser(myId)
-        let cap = max(1, min(all ? 20_000 : 500, limit))
+        let cap = max(1, min(
+            StressTestConfiguration.eagerMessageMaterialization && all
+                ? size
+                : (all ? 20_000 : 500),
+            limit
+        ))
         let start: Int
         let end: Int
         let hasMore: Bool

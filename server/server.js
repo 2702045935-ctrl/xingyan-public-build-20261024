@@ -7680,8 +7680,15 @@ function callRecordTextOf(text) {
 
 function lastPreviewMessage(messages) {
   for (let i = messages.length - 1; i >= 0; i -= 1) {
-    if (isLegacyTransferText(messages[i])) continue;   // 只跳过早期版本那条「💰 转账」文本
-    return messages[i];
+    const message = messages[i];
+    if (isLegacyTransferText(message)) continue;   // 只跳过早期版本那条「💰 转账」文本
+    /* 建群、成员连接等系统行有时只带 kind，不带任何可显示正文。
+       群列表不能因此退回“多少人星友连接”，要继续向前找最新真实消息。 */
+    if (message && message.kind === 'system'
+        && !String(message.content || message.preview || '').trim()) {
+      continue;
+    }
+    return message;
   }
   return null;
 }

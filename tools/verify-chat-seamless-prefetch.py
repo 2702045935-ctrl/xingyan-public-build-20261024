@@ -28,6 +28,18 @@ require(
     "large chats must prefetch before the user reaches the first row",
 )
 require(
+    "private var oldestHistorySeq: Int" in CHAT
+    and "messages.lazy.compactMap(\\.seq).first(where: { $0 > 0 })" in CHAT
+    and CHAT.count("oldestHistorySeq") >= 4
+    and "let seq = messages.first?.seq" not in CHAT,
+    "history cursors must skip leading system rows that have no sequence",
+)
+require(
+    "let target = isGroup ? 300 : 200" in CHAT
+    and "let maxPages = isGroup ? 2 : 3" in CHAT,
+    "large-group prefetch must keep a two-page runway instead of one 160-row page",
+)
+require(
     "prependAnchor =" in NATIVE
     and "attributes.frame.minY - anchor.delta" in NATIVE
     and "clearPendingPrepend()" in NATIVE,

@@ -398,7 +398,7 @@ struct ChatRow: View, Equatable {
             return previewInkText(prefix + draftText, kind: "draft")
         }
         let raw = (chat.lastMessage?.preview ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        if raw.isEmpty, isGroupAvatar {
+        if raw.isEmpty, isGroupAvatar, chat.lastMessage == nil {
             let count = chat.memberCount ?? chat.memberIds?.count ?? 0
             if count > 0 {
                 return Text(sessionCopy(
@@ -2588,7 +2588,7 @@ struct ChatsView: View {
         }
         if !draft.isEmpty {
             preview = sessionCopy(zh: "草稿：", en: "Draft: ", ru: "Черновик: ") + draft
-        } else if preview.isEmpty, isGroup {
+        } else if preview.isEmpty, isGroup, chat.lastMessage == nil {
             let count = chat.memberCount ?? chat.memberIds?.count ?? 0
             if count > 0 {
                 preview = sessionCopy(zh: "\(count)人星友连接",

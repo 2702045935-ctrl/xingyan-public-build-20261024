@@ -678,6 +678,7 @@ struct StickerViewOld: View {
         }
         .background(C.pageBg.ignoresSafeArea(edges: .bottom))
         .background(C.pageBg.ignoresSafeArea(edges: .top))
+        .ignoresSafeArea(edges: .top)
         .toolbar(.hidden, for: .navigationBar)
         .swipeBack { dismiss() }
         .hidesTabBar()
