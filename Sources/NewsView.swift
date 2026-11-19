@@ -866,7 +866,7 @@ struct NewsFeedView: View {
         do {
             let feed = try await API.shared.news(source: source, limit: 20, offset: offset)
             guard source == tab else { return }
-            let known = Set(items.map(\.id))
+            var known = Set(items.map(\.id))
             let next = feed.items.filter { known.insert($0.id).inserted }
             items.append(contentsOf: next)
             offset += feed.items.count
