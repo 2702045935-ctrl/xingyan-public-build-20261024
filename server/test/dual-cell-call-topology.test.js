@@ -60,6 +60,16 @@ function main() {
     'replica sync must periodically verify file contents');
   assert.ok(fileSync.includes('CHECKSUM_MARKER'),
     'replica sync must limit checksum scans instead of running them every second');
+  assert.ok(fileSync.includes("--exclude='metrics-history.jsonl'"),
+    'high-frequency telemetry must not abort authoritative shard replication');
+  assert.ok(fileSync.includes('failed_shards'),
+    'every shard sync must record failures and continue checking the remaining shards');
+  assert.ok(fileSync.includes('shard-$shard.ok'),
+    'each shard must expose its own last-success marker');
+  assert.ok(fileSync.includes('"state":"running"')
+    && fileSync.includes('"state":"ok"')
+    && fileSync.includes('"state":"failed"'),
+    'replication status must distinguish running, successful and failed rounds');
 
   console.log('dual-cell-call-topology: passed');
 }
