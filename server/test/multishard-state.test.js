@@ -196,6 +196,18 @@ async function main() {
     response = await call(a.base, 'POST', '/api/chats/direct', { userId: bob.user.id }, alice.cookie);
     assert.strictEqual(response.status, 200, JSON.stringify(response.data));
     const directId = response.data.chat.id;
+    response = await call(a.base, 'POST',
+      '/api/chats/' + directId + '/messages',
+      { kind: 'text', content: '重新添加后主动方跨分片可以发送' },
+      alice.cookie);
+    assert.strictEqual(response.status, 200,
+      '重新添加好友后主动方仍被跨分片发送守卫拦截：' + JSON.stringify(response.data));
+    response = await call(b.base, 'POST',
+      '/api/chats/' + directId + '/messages',
+      { kind: 'text', content: '重新添加后接受方跨分片可以发送' },
+      bob.cookie);
+    assert.strictEqual(response.status, 200,
+      '重新添加好友后接受方仍被跨分片发送守卫拦截：' + JSON.stringify(response.data));
 
     response = await call(a.base, 'DELETE', '/api/chats/' + directId, undefined, alice.cookie);
     assert.strictEqual(response.status, 200, JSON.stringify(response.data));

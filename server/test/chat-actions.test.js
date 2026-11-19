@@ -469,6 +469,16 @@ async function main() {
       assert.equal((response.data.friends || []).length, friendCounts[account.user.id] + 1,
         '重新添加好友后好友数量没有同步恢复');
     }
+    response = await call(base, alice.cookie, 'POST',
+      '/api/chats/' + directId + '/messages',
+      { kind: 'text', content: '重新添加好友后主动方可以发送' });
+    assert.equal(response.status, 200,
+      '重新添加好友后主动方仍被发送守卫拦截：' + JSON.stringify(response.data));
+    response = await call(base, bob.cookie, 'POST',
+      '/api/chats/' + directId + '/messages',
+      { kind: 'text', content: '重新添加好友后接受方可以发送' });
+    assert.equal(response.status, 200,
+      '重新添加好友后接受方仍被发送守卫拦截：' + JSON.stringify(response.data));
 
     response = await call(base, alice.cookie, 'POST', '/api/friends/clear', {});
     assert.equal(response.status, 200, JSON.stringify(response.data));

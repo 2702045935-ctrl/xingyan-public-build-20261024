@@ -7469,7 +7469,9 @@ function openChatForFriendship(aId, bId) {
     exist.dismissed = false;
     delete exist.friendshipRemovedAt;
     rememberDirectPeerProfiles(exist);
-    chatsDirty = true;
+    /* 这里必须同步落盘。发送守卫可能紧跟着读取 chats.json；
+       如果只标 chatsDirty，下一次强制刷新会把旧墓碑重新载回来。 */
+    saveChats();
     return exist;
   }
   return createDirectChat(aId, bId);
@@ -9083,13 +9085,16 @@ function markFriendRemoved(a, b, replicate = true) {
 function clearFriendRemoved(a, b, replicate = true) {
   const pairs = Object.assign({}, readFriendRemovals());
   const key = friendPairKey(a, b);
-  if (!pairs[key]) return;
-  delete pairs[key];
-  writeJson(FRIEND_REMOVALS_FILE, { pairs });
-  friendRemovalCache = { signature: '', pairs };
-  if (replicate) {
-    broadcastFriendRemovalToPeers(a, b, false).catch(() => {});
+  if (pairs[key]) {
+    delete pairs[key];
+    writeJson(FRIEND_REMOVALS_FILE, { pairs });
+    friendRemovalCache = { signature: '', pairs };
   }
+  /* 即使本分片已经没有墓碑，也要通知所有对端。重新加好友时，
+     墓碑可能只在其中一路分片存在；只清本地会让另一路继续拦截发送。 */
+  return replicate
+    ? broadcastFriendRemovalToPeers(a, b, false).catch(() => false)
+    : Promise.resolve(true);
 }
 
 function friendPairWasRemoved(a, b) {
@@ -10412,6 +10417,7 @@ function clearStrangerMessagesBetween(a, b) {
 
 function directFriendMessageError(user, chatId) {
   refreshFriendshipsFromDisk(false);
+  refreshChatAccessStateFromDisk(false);
   const chat = db.chats.find((c) => c.id === chatId);
   if (!chat || chat.type !== 'direct') return '';
   if (chat.bot || chat.oaId) return '';
@@ -11405,14 +11411,12 @@ function findContacts(user, name) {
   return hits;
 }
 function openChatWith(user, target) {
-  let chat = directChatBetween(user.id, target.id);
-  if (!chat) chat = createDirectChat(user.id, target.id);
   const f = friendshipBetween(user.id, target.id);
   if (!f) db.friendships.push({ id: uid('f'), fromId: user.id, toId: target.id, status: 'accepted', createdAt: now() });
   else if (f.status !== 'accepted') f.status = 'accepted';
   saveFriendships();
   clearFriendRemoved(user.id, target.id);
-  return chat;
+  return openChatForFriendship(user.id, target.id);
 }
 
 /* 「星联世界」这个号的回答：报热点 / 讲第N条 / 其他问题用新闻+联网作答 */
@@ -11826,7 +11830,7 @@ async function housekeeperCommand(user, text, chat, bot) {
       if (f.fromId === user.id) return '好友申请已经发过了，等「' + who + '」在「新的朋友」里通过。';
       f.status = 'accepted';
       saveFriendships();
-      clearFriendRemoved(f.fromId, f.toId);
+      await clearFriendRemoved(f.fromId, f.toId);
       openChatForFriendship(f.fromId, f.toId);
       sendTo(target.id, { type: 'friend', action: 'accepted', user: publicUser(user) });
       return '「' + who + '」之前加过你，现在你们互相是好友了，可以聊天了。';
@@ -21470,7 +21474,7 @@ async function handleApi(req, res, pathname, query) {
       if (!await persistFriendshipOnOwner(exist, false)) {
         return fail(res, 503, '好友分片暂时不可用，请稍后重试');
       }
-      clearFriendRemoved(exist.fromId, exist.toId);
+      await clearFriendRemoved(exist.fromId, exist.toId);
       forgetFriendSetCache(exist.fromId, exist.toId);
       clearStrangerMessagesBetween(exist.fromId, exist.toId);
       observeShardShadow('friends.request', { friendship: exist, accept: true });
@@ -21497,7 +21501,7 @@ async function handleApi(req, res, pathname, query) {
       if (!await persistFriendshipOnOwner(auto, false)) {
         return fail(res, 503, '好友分片暂时不可用，请稍后重试');
       }
-      clearFriendRemoved(target.id, user.id);
+      await clearFriendRemoved(target.id, user.id);
       forgetFriendSetCache(target.id, user.id);
       clearStrangerMessagesBetween(target.id, user.id);
       observeShardShadow('friends.request', { friendship: auto, accept: true });
@@ -21748,7 +21752,7 @@ async function handleApi(req, res, pathname, query) {
       if (!await persistFriendshipOnOwner(f, false)) {
         return fail(res, 503, '好友分片暂时不可用，请稍后重试');
       }
-      clearFriendRemoved(f.fromId, f.toId);
+      await clearFriendRemoved(f.fromId, f.toId);
       forgetFriendSetCache(f.fromId, f.toId);
       clearStrangerMessagesBetween(f.fromId, f.toId);
       /* 通过好友以后，两个人的「微信」首页立刻各多一个会话（不用等谁先说话） */
@@ -22598,7 +22602,7 @@ async function handleApi(req, res, pathname, query) {
       if (!await persistFriendshipOnOwner(exist, false)) {
         return fail(res, 503, '好友分片暂时不可用，请稍后重试');
       }
-      clearFriendRemoved(exist.fromId, exist.toId);
+      await clearFriendRemoved(exist.fromId, exist.toId);
       const c2 = await openChatForFriendshipAnywhere(
         exist.fromId,
         exist.toId,
