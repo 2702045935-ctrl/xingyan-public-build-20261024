@@ -25,11 +25,22 @@ require(
 )
 require(
     "(composerUsesLightInk ? Color.black : Color.white)" in CHAT
-    and ".opacity(composerUsesLightInk ? 0.28 : 0.32)" in CHAT,
+    and ".opacity(composerUsesLightInk ? 0.42 : 0.32)" in CHAT
+    and "NativeGlassHeaderMaterial(forcedDark: composerUsesLightInk)" in CHAT,
     "composer field backing must follow wallpaper luminance, not system appearance",
 )
 require(
-    "NativeGlassHeaderMaterial()" in CHAT
+    "NativeGlassHeaderMaterial(forcedDark: lightInk)" in CHAT
+    and "capsule.fill(lightInk" in CHAT
+    and "ChatTopGlassBackdrop(lightInk: topBarUsesLightInk)" in CHAT,
+    "top header glass and icon capsules must switch to dark material over black wallpapers",
+)
+require(
+    CHAT.count("if !path.isEmpty { return true }") >= 2,
+    "unsampled custom wallpapers must default to light chrome instead of system light ink",
+)
+require(
+    "NativeGlassHeaderMaterial(forcedDark:" in CHAT
     and ".glassEffect(.regular.interactive(), in: capsule)" in CHAT,
     "contrast protection must preserve the existing native glass controls",
 )

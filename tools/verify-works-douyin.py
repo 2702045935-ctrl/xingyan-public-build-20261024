@@ -26,8 +26,9 @@ require("private var profileCover: String" in MISC
         "works profile must have the Douyin-style cover and overlapping avatar")
 require(".ignoresSafeArea(edges: .top)" in MISC
         and ".frame(height: 208 + L.safeTop)" in MISC
-        and "topBar\n                .padding(.top, L.safeTop)" in MISC,
-        "works cover must extend behind the status bar with an overlaid top bar")
+        and "private var topBar" not in MISC
+        and ".swipeBack { dismiss() }" in MISC,
+        "works cover must extend behind the status bar with no top button row and left-swipe exit")
 require("@State private var showCoverPicker" in MISC
         and "PhotosPicker(limit: 1)" in MISC
         and 'updateMeChecked(["momentCover": url])' in MISC
@@ -42,6 +43,19 @@ require("mineFromAll" in MISC and "$0.author?.id == myId" in MISC,
         "the works page must recover the signed-in user's posts from the feed")
 require("errorState" in MISC and "loadError" in MISC,
         "failed works requests must show a retry state instead of a blank page")
+require(
+    all(f'Tr("{label}")' in MISC for label in ["互关", "关注", "粉丝", "点赞"])
+    and "socialMetric(metric(social?.mutual ?? 0)" in MISC
+    and "socialMetric(metric(social?.followers ?? 0)" in MISC
+    and "API.shared.feedSocial(" in MISC,
+    "works profile must use Douyin-style mutual, following, followers and likes metrics",
+)
+require(
+    "FeedWorkThumbnail(item: w)" in MISC
+    and "MediaTool.firstFrame(url)" in MISC
+    and "ImageStore.shared.put(cacheKey, image)" in MISC,
+    "works without a generated cover must show and cache the video's first frame",
+)
 require(".navigationBarTitleDisplayMode(.large)" in ME
         and ".listStyle(.insetGrouped)" in ME,
         "works profile header typography must stay aligned with the native profile page")

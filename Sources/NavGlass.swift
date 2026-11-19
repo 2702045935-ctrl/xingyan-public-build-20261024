@@ -55,6 +55,8 @@ struct TopGlassBar: View {
 
 #if canImport(UIKit)
 struct NativeGlassHeaderMaterial: UIViewRepresentable {
+    var forcedDark: Bool? = nil
+
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
@@ -65,21 +67,23 @@ struct NativeGlassHeaderMaterial: UIViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator() }
 
     func makeUIView(context: Context) -> UIVisualEffectView {
-        let view = UIVisualEffectView(effect: Self.visualEffect(dark: scheme == .dark))
+        let dark = forcedDark ?? (scheme == .dark)
+        let view = UIVisualEffectView(effect: Self.visualEffect(dark: dark))
         view.isUserInteractionEnabled = false
         view.contentView.backgroundColor = .clear
         applyReducedTransparency(to: view)
-        context.coordinator.token = Self.effectToken(dark: scheme == .dark,
+        context.coordinator.token = Self.effectToken(dark: dark,
                                                      reduced: reduceTransparency)
         return view
     }
 
     func updateUIView(_ view: UIVisualEffectView, context: Context) {
-        let token = Self.effectToken(dark: scheme == .dark,
+        let dark = forcedDark ?? (scheme == .dark)
+        let token = Self.effectToken(dark: dark,
                                      reduced: reduceTransparency)
         guard context.coordinator.token != token else { return }
         context.coordinator.token = token
-        view.effect = Self.visualEffect(dark: scheme == .dark)
+        view.effect = Self.visualEffect(dark: dark)
         applyReducedTransparency(to: view)
     }
 
@@ -88,7 +92,7 @@ struct NativeGlassHeaderMaterial: UIViewRepresentable {
             view.effect = nil
             view.backgroundColor = .secondarySystemBackground
         } else {
-            view.effect = Self.visualEffect(dark: scheme == .dark)
+            view.effect = Self.visualEffect(dark: forcedDark ?? (scheme == .dark))
             view.backgroundColor = .clear
         }
     }

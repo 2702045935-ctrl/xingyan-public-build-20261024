@@ -103,6 +103,7 @@ jobs:
           python3 tools/verify-splash-premium.py
           python3 tools/verify-video-tab.py
           python3 tools/verify-video-works-integration.py
+          python3 tools/verify-video-publish-douyin.py
           python3 tools/verify-phone-theme-previews.py
           python3 tools/verify-chat-prepend-anchor.py
           python3 tools/verify-native-list-incremental-signatures.py

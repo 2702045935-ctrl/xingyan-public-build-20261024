@@ -490,6 +490,32 @@ async function main() {
       { kind: 'text', content: '重新添加好友后接受方可以发送' });
     assert.equal(response.status, 200,
       '重新添加好友后接受方仍被发送守卫拦截：' + JSON.stringify(response.data));
+    response = await call(base, alice.cookie, 'POST', '/api/feed/publish', {
+      video: '/uploads/feed-friends-test.mp4',
+      desc: '仅朋友可见作品',
+      visibility: 'friends'
+    });
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    const friendsFeedId = response.data.id;
+    response = await call(base, bob.cookie, 'GET', '/api/feed?tab=recommend');
+    assert.ok((response.data.items || []).some((item) => item.id === friendsFeedId),
+      '朋友可见作品没有对好友展示');
+    response = await call(base, alice.cookie, 'POST', '/api/feed/follow', {
+      userId: bob.user.id,
+      follow: true
+    });
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    response = await call(base, bob.cookie, 'POST', '/api/feed/follow', {
+      userId: alice.user.id,
+      follow: true
+    });
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    response = await call(base, alice.cookie, 'GET', '/api/feed/social');
+    assert.equal(response.status, 200, JSON.stringify(response.data));
+    assert.equal(response.data.following, 1);
+    assert.equal(response.data.followers, 1);
+    assert.equal(response.data.mutual, 1);
+    assert.ok(response.data.works >= 1);
 
     response = await call(base, alice.cookie, 'POST', '/api/friends/clear', {});
     assert.equal(response.status, 200, JSON.stringify(response.data));
@@ -501,6 +527,9 @@ async function main() {
       assert.ok(!(response.data.friends || []).some((friend) => friend.id === absentId),
         '一键清除后双方通讯录仍保留好友');
     }
+    response = await call(base, bob.cookie, 'GET', '/api/feed?tab=recommend');
+    assert.ok(!(response.data.items || []).some((item) => item.id === friendsFeedId),
+      '解除朋友关系后仅朋友作品仍然可见');
 
     response = await call(base, alice.cookie, 'POST', '/api/feed/publish', {
       video: '/uploads/feed-public-test.mp4',

@@ -2928,6 +2928,23 @@ final class API {
         let p: P? = try? await post("/api/feed/follow", ["userId": userId, "follow": follow], as: P.self)
         return p?.following ?? false
     }
+
+    struct FeedSocialStats: Decodable {
+        var userId: String?
+        var works: Int?
+        var mutual: Int?
+        var following: Int?
+        var followers: Int?
+        var likes: Int?
+    }
+
+    func feedSocial(userId: String = "") async throws -> FeedSocialStats {
+        let suffix = userId.isEmpty
+            ? ""
+            : "?userId=" + (userId.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? userId)
+        return try await get("/api/feed/social" + suffix, as: FeedSocialStats.self)
+    }
+
     func feedComment(_ id: String, text: String) async throws -> Int {
         let p: FeedCommentPayload = try await post("/api/feed/comment", ["id": id, "text": text],
                                                    as: FeedCommentPayload.self)
@@ -2948,11 +2965,12 @@ final class API {
         let p: FeedFavoritePayload = try await post("/api/feed/favorite", ["id": id], as: FeedFavoritePayload.self)
         return (p.favorited ?? false, p.favorites ?? 0)
     }
-    func feedPublish(video: String, desc: String, music: String,
+    func feedPublish(video: String, desc: String, music: String, cover: String = "",
                      visibility: String = "public") async throws -> String {
         let p: FeedPublishPayload = try await post("/api/feed/publish",
                                                    ["video": video, "desc": desc,
-                                                    "music": music, "visibility": visibility],
+                                                    "music": music, "cover": cover,
+                                                    "visibility": visibility],
                                                    as: FeedPublishPayload.self)
         return p.id ?? ""
     }

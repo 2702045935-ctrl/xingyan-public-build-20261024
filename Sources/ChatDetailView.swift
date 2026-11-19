@@ -544,15 +544,19 @@ private struct ChatImmersiveEdgeMask: View {
 }
 
 private struct ChatTopGlassBackdrop: View {
+    let lightInk: Bool
+
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
         Group {
             if reduceTransparency {
                 Rectangle()
-                    .fill(Color(uiColor: .systemBackground).opacity(0.97))
+                    .fill(lightInk
+                          ? Color.black.opacity(0.94)
+                          : Color(uiColor: .systemBackground).opacity(0.97))
             } else {
-                NativeGlassHeaderMaterial()
+                NativeGlassHeaderMaterial(forcedDark: lightInk)
                     .mask {
                         LinearGradient(
                             stops: [
@@ -589,7 +593,9 @@ private struct ChatHeaderGlassGroup<Content: View>: View {
             ZStack {
                 content
                     .background {
-                        capsule.fill(Color(uiColor: .secondarySystemBackground))
+                        capsule.fill(lightInk
+                                     ? Color.black.opacity(0.86)
+                                     : Color(uiColor: .secondarySystemBackground))
                     }
             }
         } else {
@@ -597,8 +603,19 @@ private struct ChatHeaderGlassGroup<Content: View>: View {
             if #available(iOS 26.0, *) {
                 content
                     .background {
-                        Color.clear
-                            .glassEffect(.regular.interactive(), in: capsule)
+                        ZStack {
+                            Color.clear
+                                .glassEffect(.regular.interactive(), in: capsule)
+                            capsule.fill(lightInk
+                                         ? Color.black.opacity(0.24)
+                                         : Color.white.opacity(0.025))
+                        }
+                    }
+                    .overlay {
+                        capsule.stroke(lightInk
+                                       ? Color.white.opacity(0.18)
+                                       : Color.black.opacity(0.055),
+                                       lineWidth: 0.6)
                     }
             } else {
                 legacyGlass
@@ -618,7 +635,7 @@ private struct ChatHeaderGlassGroup<Content: View>: View {
         return content
             .background {
                 ZStack {
-                    NativeGlassHeaderMaterial()
+                    NativeGlassHeaderMaterial(forcedDark: lightInk)
                     capsule.fill(tint)
                 }
                 .clipShape(capsule)
@@ -1878,6 +1895,7 @@ struct ChatDetailView: View {
             break
         }
         if let backgroundBottomLuminance { return backgroundBottomLuminance < 0.46 }
+        if !path.isEmpty { return true }
         return senderNameUsesLightInk
     }
 
@@ -1900,6 +1918,7 @@ struct ChatDetailView: View {
         if let backgroundTopLuminance {
             return Self.prefersLightTopInk(for: backgroundTopLuminance)
         }
+        if !path.isEmpty { return true }
         return senderNameUsesLightInk
     }
 
@@ -2252,7 +2271,7 @@ struct ChatDetailView: View {
                                               preset: ChatTheme.preset,
                                               themeVersion: chatTheme.version)
                     } else {
-                        ChatTopGlassBackdrop()
+                        ChatTopGlassBackdrop(lightInk: topBarUsesLightInk)
                     }
                 }
                 .ignoresSafeArea(edges: .top)
@@ -5031,7 +5050,9 @@ struct ChatDetailView: View {
     }
 
     private var composerFieldBorder: Color {
-        Color.primary.opacity(0.085)
+        composerUsesLightInk
+            ? Color.white.opacity(0.18)
+            : Color.black.opacity(0.085)
     }
 
     private var draftImagesBar: some View {
@@ -5472,10 +5493,10 @@ struct ChatDetailView: View {
                 .frame(height: composerInputHeight)
                 .background {
                     ZStack {
-                        NativeGlassHeaderMaterial()
+                        NativeGlassHeaderMaterial(forcedDark: composerUsesLightInk)
                         composerFieldShape
                             .fill((composerUsesLightInk ? Color.black : Color.white)
-                                .opacity(composerUsesLightInk ? 0.28 : 0.32))
+                                .opacity(composerUsesLightInk ? 0.42 : 0.32))
                         if recorder.recording {
                             composerFieldShape.fill(
                                 recorder.willCancel

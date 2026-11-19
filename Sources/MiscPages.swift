@@ -1797,6 +1797,7 @@ struct WorksView: View {
     @State private var showCoverPicker = false
     @State private var coverPreview: UIImage?
     @State private var coverBusy = false
+    @State private var social: API.FeedSocialStats?
     @Environment(\.colorScheme) private var scheme
 
     private let cols = Array(
@@ -1864,8 +1865,6 @@ struct WorksView: View {
             .ignoresSafeArea(edges: .top)
             .refreshable { await reload() }
 
-            topBar
-                .padding(.top, L.safeTop)
         }
         .background(C.pageBg.ignoresSafeArea(edges: .bottom))
         .background(C.pageBg.ignoresSafeArea(edges: .top))
@@ -1884,51 +1883,6 @@ struct WorksView: View {
             }
         }
         .task { await reload() }
-    }
-
-    private var topBar: some View {
-        HStack(spacing: 12) {
-            Button { dismiss() } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 19, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(width: 44, height: 44)
-            }
-            .buttonStyle(.plain)
-            Spacer(minLength: 0)
-            Text(Tr("我的作品"))
-                .font(pf(18, .semibold))
-                .foregroundColor(.white)
-            Spacer(minLength: 0)
-            Menu {
-                Button(Tr("更换背景")) {
-                    showCoverPicker = true
-                }
-                Button(Tr("刷新")) {
-                    Task { await reload() }
-                }
-            } label: {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(width: 44, height: 44)
-            }
-        }
-        .shadow(color: .black.opacity(0.28), radius: 3, y: 1)
-        .padding(.horizontal, 4)
-        .background {
-            LinearGradient(
-                colors: [
-                    .black.opacity(0.38),
-                    .black.opacity(0.12),
-                    .clear
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea(edges: .top)
-        }
-        .zIndex(5)
     }
 
     private var profileHeader: some View {
@@ -1954,6 +1908,9 @@ struct WorksView: View {
                         .font(pf(12.5, .medium))
                         .foregroundColor(C.subLabel)
                         .lineLimit(1)
+                    Text(Tr("作品") + " \(works.count)")
+                        .font(pf(11.5, .semibold))
+                        .foregroundColor(C.subLabel.opacity(0.82))
                 }
                 .padding(.top, 12)
                 Spacer(minLength: 0)
@@ -1962,13 +1919,12 @@ struct WorksView: View {
             .padding(.top, -44)
 
             HStack(spacing: 0) {
-                stat(metric(works.count), Tr("作品"))
-                statDivider
-                stat(metric(totalLikes), Tr("获赞"))
-                statDivider
-                stat(metric(likedWorks.count), Tr("喜欢"))
+                socialMetric(metric(social?.mutual ?? 0), Tr("互关"))
+                socialMetric(metric(social?.following ?? 0), Tr("关注"))
+                socialMetric(metric(social?.followers ?? 0), Tr("粉丝"))
+                socialMetric(metric(social?.likes ?? totalLikes), Tr("点赞"))
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity)
             .padding(.horizontal, 16)
             .padding(.top, 16)
 
@@ -2080,22 +2036,16 @@ struct WorksView: View {
         }
     }
 
-    private func stat(_ value: String, _ title: String) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 4) {
+    private func socialMetric(_ value: String, _ title: String) -> some View {
+        VStack(spacing: 3) {
             Text(value)
-                .font(pf(17, .bold))
+                .font(pf(18, .bold))
                 .foregroundColor(C.label)
             Text(title)
-                .font(pf(12.5))
+                .font(pf(11.5, .medium))
                 .foregroundColor(C.subLabel)
         }
-        .padding(.horizontal, 13)
-    }
-
-    private var statDivider: some View {
-        Rectangle()
-            .fill(C.hairline)
-            .frame(width: 0.5, height: 13)
+        .frame(maxWidth: .infinity)
     }
 
     private var tabs: some View {
@@ -2239,6 +2189,7 @@ struct WorksView: View {
         likedWorks = allKnown
             .filter { $0.favorited == true }
             .sorted(by: newestFirst)
+        social = try? await API.shared.feedSocial(userId: myId)
 
         if works.isEmpty, !firstError.isEmpty {
             loadError = firstError
@@ -2271,16 +2222,7 @@ struct WorksView: View {
     private func tile(_ w: FeedItem) -> some View {
         ZStack(alignment: .topTrailing) {
             ZStack(alignment: .bottomLeading) {
-                if !(w.cover ?? "").isEmpty {
-                    RemoteImage(path: w.cover ?? "", mode: .fill, maxSide: 720)
-                } else {
-                    LinearGradient(colors: [Color(hex: 0x26282D), Color(hex: 0x101113)],
-                                   startPoint: .topLeading, endPoint: .bottomTrailing)
-                    Image(systemName: "play.fill")
-                        .font(.system(size: 22))
-                        .foregroundColor(.white.opacity(0.72))
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
+                FeedWorkThumbnail(item: w)
 
                 LinearGradient(
                     colors: [.clear, .black.opacity(0.52)],
@@ -2288,18 +2230,16 @@ struct WorksView: View {
                     endPoint: .bottom
                 )
 
-                if !(w.cover ?? "").isEmpty {
-                    HStack(spacing: 3.5) {
-                        Image(systemName: "heart.fill")
-                            .font(.system(size: 9.5, weight: .semibold))
-                        Text(metric(w.likes ?? 0))
-                            .font(pf(11, .semibold))
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 5)
-                    .padding(.bottom, 1)
+                HStack(spacing: 3.5) {
+                    Image(systemName: "heart.fill")
+                        .font(.system(size: 9.5, weight: .semibold))
+                    Text(metric(w.likes ?? 0))
+                        .font(pf(11, .semibold))
                 }
+                .foregroundColor(.white)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 5)
+                .padding(.bottom, 1)
             }
 
             if isPrivate(w) {
@@ -2314,5 +2254,69 @@ struct WorksView: View {
         .aspectRatio(3.0 / 4.0, contentMode: .fit)
         .clipped()
         .contentShape(Rectangle())
+    }
+}
+
+private struct FeedWorkThumbnail: View {
+    let item: FeedItem
+
+    @State private var fallback: UIImage?
+    @State private var failed = false
+
+    private var cacheKey: String {
+        "feed-thumb:" + item.id
+    }
+
+    var body: some View {
+        ZStack {
+            if let cover = item.cover, !cover.isEmpty {
+                RemoteImage(path: cover, mode: .fill, maxSide: 720)
+            } else if let fallback {
+                Image(uiImage: fallback)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                LinearGradient(
+                    colors: [Color(hex: 0x26282D), Color(hex: 0x101113)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+
+                Image(systemName: failed ? "video.slash.fill" : "play.fill")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundColor(.white.opacity(failed ? 0.34 : 0.72))
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clipped()
+        .task(id: item.id + "|" + (item.cover ?? "") + "|" + (item.video ?? "")) {
+            guard (item.cover ?? "").isEmpty else { return }
+            if let cached = ImageStore.shared.get(cacheKey) {
+                fallback = cached
+                return
+            }
+            if let disk = ImageStore.shared.diskRead(cacheKey),
+               let cached = UIImage(data: disk) {
+                ImageStore.shared.put(cacheKey, cached)
+                fallback = cached
+                return
+            }
+            guard let raw = [item.video, item.hls]
+                    .compactMap({ $0 })
+                    .first(where: { !$0.isEmpty }),
+                  let url = API.shared.assetURL(raw) else {
+                failed = true
+                return
+            }
+            guard let image = await MediaTool.firstFrame(url) else {
+                failed = true
+                return
+            }
+            ImageStore.shared.put(cacheKey, image)
+            if let data = image.jpegData(compressionQuality: 0.86) {
+                ImageStore.shared.diskWrite(cacheKey, data)
+            }
+            fallback = image
+        }
     }
 }

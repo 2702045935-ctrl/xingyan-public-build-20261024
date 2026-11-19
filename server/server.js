@@ -6234,6 +6234,10 @@ function feedVisibleTo(item, viewerId) {
   if (!item) return false;
   if (item.authorId === viewerId) return true;
   const visibility = item.visibility || 'public';
+  if (visibility === 'friends') {
+    const relation = friendshipBetween(viewerId, item.authorId);
+    return !!(relation && relation.status === 'accepted');
+  }
   if (visibility === 'private') return false;
   if (visibility === 'partial') return (item.visibleTo || []).includes(viewerId);
   if (visibility === 'exclude') return !(item.hiddenFrom || []).includes(viewerId);
@@ -16129,7 +16133,7 @@ async function handleApi(req, res, pathname, query) {
   /* ---------------- 视频号（抖音式竖屏 feed） ----------------
      items = 后台内置的（data/feed.json），posts = 用户自己发的；
      点赞/评论都落在同一个文件里，重启不丢。 */
-  if (parts[0] === 'feed' && method === 'GET') {
+  if (parts[0] === 'feed' && parts.length === 1 && method === 'GET') {
     refreshMomentsFromDisk(false);
     const user = currentUser(req);
     if (!user) return fail(res, 401, '请先登录');
@@ -16173,6 +16177,38 @@ async function handleApi(req, res, pathname, query) {
       items: out,
       style: Object.assign({}, FEED_STYLE_DEFAULT, cfg0.style || {}),
       flags: Object.assign({}, FEED_FLAGS_DEFAULT, cfg0.flags || {})
+    });
+    return;
+  }
+
+  /* 视频号：关注 / 取消关注（真的关注表，和好友关系分开） */
+  if (parts[0] === 'feed' && parts[1] === 'social' && method === 'GET') {
+    const user = currentUser(req);
+    if (!user) return fail(res, 401, '请先登录');
+    const targetId = str(query.get('userId'), 40) || user.id;
+    const target = findUser(targetId);
+    if (!target) return fail(res, 404, '用户不存在');
+    const follows = readFeedFollows().follows;
+    const following = new Set(follows.filter((row) => row.fromId === targetId)
+      .map((row) => row.toId));
+    const followers = new Set(follows.filter((row) => row.toId === targetId)
+      .map((row) => row.fromId));
+    let mutual = 0;
+    following.forEach((id) => { if (followers.has(id)) mutual += 1; });
+    const cfg = readJson(path.join(DATA_DIR, 'feed.json'), { items: [], posts: [] });
+    const posts = (Array.isArray(cfg.posts) ? cfg.posts : [])
+      .concat(Array.isArray(cfg.items) ? cfg.items : [])
+      .filter((item) => item && item.authorId === targetId);
+    const likes = posts.reduce((sum, item) =>
+      sum + (Array.isArray(item.likedBy) ? item.likedBy.length : 0)
+      + (Number(item.baseLikes) || 0), 0);
+    ok(res, {
+      userId: targetId,
+      works: posts.length,
+      mutual,
+      following: following.size,
+      followers: followers.size,
+      likes
     });
     return;
   }
@@ -16290,7 +16326,7 @@ async function handleApi(req, res, pathname, query) {
       id: uid('v'), authorId: user.id, video: video, cover: cover,
       desc: desc, music: music, createdAt: now(),
       likedBy: [], comments: [], baseLikes: 0, baseComments: 0, baseShares: 0,
-      visibility: ['private', 'partial', 'exclude'].includes(String(body.visibility))
+      visibility: ['friends', 'private', 'partial', 'exclude'].includes(String(body.visibility))
         ? String(body.visibility) : 'public',
       visibleTo: (Array.isArray(body.visibleTo) ? body.visibleTo : [])
         .map((id) => str(id, 40)).filter(Boolean).slice(0, 200),

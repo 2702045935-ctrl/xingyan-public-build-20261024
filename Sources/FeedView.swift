@@ -75,7 +75,14 @@ struct ChannelsView: View {
     @State private var showPublish = false
     @State private var publishDesc = ""
     @State private var publishMusic = ""
+    @State private var publishVisibility = "public"
     @State private var pendingVideoPath = ""
+    @State private var pendingCoverPath = ""
+    @State private var publishError = ""
+    @State private var publishing = false
+    @State private var coverPickOpen = false
+    @State private var coverPicked: PhotosPickerItem?
+    @State private var uploadJobID = UUID()
     @State private var uploadMB: Double = 0
     @State private var trim = 0
     @State private var style = FeedStyle()
@@ -221,35 +228,20 @@ struct ChannelsView: View {
         .sheet(item: $episodeFor) { item in
             episodeSheet(item)
         }
-        .sheet(isPresented: $showPublish) {
-            publishSheet
+        .fullScreenCover(isPresented: $showPublish) {
+            publishEditor
         }
         .photosPicker(isPresented: $pickOpen, selection: $picked, matching: .videos)
         .onChange(of: picked) { v in Task { await uploadPicked(v) } }
-        .overlay(alignment: .center) {
-            if uploading {
-                ZStack {
-                    Color.black.opacity(0.4).ignoresSafeArea()
-                    VStack(spacing: 10) {
-                        ZStack {
-                            Circle().stroke(Color.white.opacity(0.25), lineWidth: 4)
-                                .frame(width: 54, height: 54)
-                            Circle()
-                                .trim(from: 0, to: max(0.03, min(1, uploadProgress)))
-                                .stroke(Color.white, style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                                .rotationEffect(.degrees(-90))
-                                .frame(width: 54, height: 54)
-                            Text(uploadProgress > 0.01 ? "\(Int(min(1, uploadProgress) * 100))%" : "…")
-                                .font(pfStyled(size: 13, weight: .semibold))
-                                .foregroundColor(.white)
-                        }
-                        Text(uploadStage.isEmpty ? Tr("正在处理视频…") : uploadStage)
-                            .font(pf(13))
-                            .foregroundColor(.white)
-                    }
-                    .padding(18)
-                    .background(RoundedRectangle(cornerRadius: 12).fill(Color.black.opacity(0.72)))
-                }
+        .photosPicker(isPresented: $coverPickOpen, selection: $coverPicked, matching: .images)
+        .onChange(of: coverPicked) { item in
+            Task {
+                guard let item,
+                      let data = try? await item.loadTransferable(type: Data.self),
+                      let image = UIImage(data: data) else { return }
+                pendingCover = image
+                pendingCoverPath = ""
+                coverPicked = nil
             }
         }
         .task { await load() }
@@ -623,256 +615,398 @@ struct ChannelsView: View {
         .task { await loadComments(item) }
     }
 
-    private var publishSheet: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 10) {
-                Button { showPublish = false } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(C.subLabel)
-                        .frame(width: 36, height: 36)
-                        .background(Circle().fill(C.searchBg))
+    private var publishEditor: some View {
+        GeometryReader { geo in
+            ZStack {
+                Color.black.ignoresSafeArea()
+
+                VStack(spacing: 0) {
+                    publishHeader
+
+                    ScrollView(showsIndicators: false) {
+                        VStack(spacing: 14) {
+                            publishPreview(height: min(470, max(330, geo.size.height * 0.46)))
+                            publishDescriptionCard
+                            publishSettingsCard
+
+                            if uploading || !uploadStage.isEmpty {
+                                publishUploadCard
+                            }
+
+                            if !publishError.isEmpty {
+                                HStack(alignment: .top, spacing: 9) {
+                                    Image(systemName: "exclamationmark.circle.fill")
+                                        .foregroundColor(Color(hex: 0xFF4D4F))
+                                    Text(publishError)
+                                        .font(pf(12.5))
+                                        .foregroundColor(Color.white.opacity(0.70))
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+                                .padding(12)
+                                .background(Color(hex: 0xFF4D4F).opacity(0.10),
+                                            in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            }
+
+                            Text(Tr("发布后将自动转码并生成清晰封面，稍后即可在作品页查看。"))
+                                .font(pf(11.5))
+                                .foregroundColor(Color.white.opacity(0.34))
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 2)
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.top, 6)
+                        .padding(.bottom, max(24, L.safeBottom + 18))
+                    }
                 }
-                .buttonStyle(.plain)
-
-                Spacer()
-
-                Text(Tr("发布视频"))
-                    .font(pf(17, .semibold))
-                    .foregroundColor(C.label)
-
-                Spacer()
-
-                Color.clear.frame(width: 36, height: 36)
             }
-            .padding(.horizontal, 18)
-            .padding(.top, 8)
-            .padding(.bottom, 10)
-
-            HairLine(inset: 0)
-
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack(alignment: .top, spacing: 14) {
-                        ZStack {
-                            if let c = pendingCover {
-                                Image(uiImage: c).resizable().scaledToFill()
-                            } else {
-                                LinearGradient(
-                                    colors: [Color(hex: 0x31584B), Color(hex: 0x101916)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                                Image(systemName: "play.fill")
-                                    .font(.system(size: 22, weight: .semibold))
-                                    .foregroundColor(.white.opacity(0.76))
-                            }
-                            VStack {
-                                Spacer()
-                                HStack {
-                                    Spacer()
-                                    if uploadMB > 0 {
-                                        Text(String(format: "%.1f MB", uploadMB))
-                                            .font(pfStyled(size: 10.5, weight: .medium))
-                                            .foregroundColor(.white)
-                                            .padding(.horizontal, 6).padding(.vertical, 2)
-                                            .background(Capsule().fill(Color.black.opacity(0.5)))
-                                    }
-                                }
-                            }
-                            .padding(8)
-                        }
-                        .frame(width: 132, height: 178)
-                        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                .stroke(Color.white.opacity(0.12), lineWidth: 0.8)
-                        )
-
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Text(Tr("添加作品描述…"))
-                                    .font(pf(12.5, .medium))
-                                    .foregroundColor(C.subLabel)
-                                Spacer()
-                                Text("\(publishDesc.count)/120")
-                                    .font(pf(11))
-                                    .foregroundColor(C.subLabel.opacity(0.7))
-                            }
-
-                            ZStack(alignment: .topLeading) {
-                                if publishDesc.isEmpty {
-                                    Text(Tr("添加作品描述…"))
-                                        .font(pf(14.5))
-                                        .foregroundColor(C.subLabel)
-                                        .padding(.top, 10)
-                                        .padding(.leading, 6)
-                                }
-                                TextEditor(text: $publishDesc)
-                                    .font(pf(14.5))
-                                    .foregroundColor(C.label)
-                                    .scrollContentBackground(.hidden)
-                                    .background(Color.clear)
-                                    .onChange(of: publishDesc) { value in
-                                        if value.count > 120 {
-                                            publishDesc = String(value.prefix(120))
-                                        }
-                                    }
-                            }
-                            .padding(6)
-                            .frame(height: 124)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                    .fill(Color.dyn(0xFFFFFF, 0x1A1D1B))
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                    .stroke(Color.dyn(0xE8EAE7, 0xFFFFFF).opacity(0.08), lineWidth: 0.8)
-                            )
-
-                            HStack(spacing: 7) {
-                                Image(systemName: "waveform")
-                                    .font(.system(size: 11, weight: .semibold))
-                                Text(Tr("原创声音"))
-                                    .font(pf(11.5, .medium))
-                            }
-                            .foregroundColor(C.green)
-                            .padding(.horizontal, 9)
-                            .frame(height: 27)
-                            .background(Capsule().fill(C.green.opacity(0.1)))
-                        }
-                    }
-
-                    VStack(spacing: 0) {
-                        publishSettingRow(icon: "music.note",
-                                          title: Tr("音乐"),
-                                          detail: nil) {
-                            TextField(Tr("选填，例如：原声"), text: $publishMusic)
-                                .font(pf(14))
-                                .multilineTextAlignment(.trailing)
-                                .foregroundColor(C.subLabel)
-                        }
-
-                        if flags.allowTrim != false {
-                            HairLine(inset: 52)
-                            publishSettingRow(icon: "wand.and.stars",
-                                              title: Tr("剪掉水印"),
-                                              detail: trimTitle) {
-                                Menu {
-                                    Button(Tr("不处理")) { trim = 0 }
-                                    Button(Tr("底部 10%")) { trim = 1 }
-                                    Button(Tr("底部 14%")) { trim = 2 }
-                                    Button(Tr("右侧 12%")) { trim = 3 }
-                                    Button(Tr("右下角")) { trim = 4 }
-                                } label: {
-                                    Image(systemName: "chevron.up.chevron.down")
-                                        .font(.system(size: 12, weight: .semibold))
-                                        .foregroundColor(C.subLabel)
-                                }
-                            }
-                        }
-
-                        HairLine(inset: 52)
-                        publishSettingRow(icon: "bolt.hd.fill",
-                                          title: Tr("清晰度"),
-                                          detail: Tr("自动转 720p · 秒开")) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 17, weight: .semibold))
-                                .foregroundColor(C.green)
-                        }
-                    }
-                    .background(Color.dyn(0xFFFFFF, 0x171A18))
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .stroke(Color.dyn(0xECEEEB, 0xFFFFFF).opacity(0.07), lineWidth: 0.8)
-                    )
-
-                    HStack(alignment: .top, spacing: 9) {
-                        Image(systemName: "i.circle")
-                            .font(.system(size: 13))
-                            .foregroundColor(C.green.opacity(0.8))
-                            .padding(.top, 1)
-                        Text(Tr("发布后会先在后台转码，视频马上就能看，不用等。"))
-                            .font(pf(11.5))
-                            .foregroundColor(C.subLabel)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .padding(.horizontal, 2)
-
-                    if !uploadStage.isEmpty || uploadMB > 0 {
-                        VStack(alignment: .leading, spacing: 6) {
-                            HStack {
-                                Text(uploadStage)
-                                    .font(pf(11.5, .medium))
-                                    .foregroundColor(C.subLabel)
-                                Spacer()
-                                if uploadMB > 0 {
-                                    Text(String(format: "%.1f MB", uploadMB))
-                                        .font(pf(11))
-                                        .foregroundColor(C.subLabel)
-                                }
-                            }
-                            ProgressView(value: max(0.02, min(1, uploadProgress)))
-                                .tint(C.green)
-                        }
-                        .padding(12)
-                        .background(C.searchBg)
-                        .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-                    }
-                }
-                .padding(.horizontal, 18)
-                .padding(.top, 16)
-                .padding(.bottom, 24)
-            }
-
-            HStack(spacing: 10) {
-                Button { showPublish = false } label: {
-                    Text(Tr("取消"))
-                        .font(pf(14.5, .semibold))
-                        .foregroundColor(C.label)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 46)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .fill(C.searchBg)
-                        )
-                }
-                .buttonStyle(.plain)
-
-                Button { publish() } label: {
-                    Text(Tr("发布"))
-                        .font(pf(15, .semibold))
-                        .foregroundColor(pendingVideoPath.isEmpty ? C.subLabel : Color(hex: 0x07150D))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 46)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .fill(
-                                    LinearGradient(
-                                        colors: pendingVideoPath.isEmpty
-                                            ? [C.searchBg, C.searchBg]
-                                            : [Color(hex: 0x79F0AE), Color(hex: 0x2DCF80)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                        )
-                        .shadow(color: pendingVideoPath.isEmpty ? .clear : C.green.opacity(0.2),
-                                radius: 14, y: 5)
-                }
-                .buttonStyle(.plain)
-                .disabled(pendingVideoPath.isEmpty)
-                .frame(maxWidth: .infinity)
-            }
-            .padding(.horizontal, 18)
-            .padding(.top, 10)
-            .padding(.bottom, max(10, L.safeBottom + 4))
-            .background(.ultraThinMaterial)
         }
-        .background(C.pageBg.ignoresSafeArea())
-        .presentationDetents([.large])
-        .presentationDragIndicator(.hidden)
+        .preferredColorScheme(.dark)
+        .interactiveDismissDisabled(uploading || publishing)
+    }
+
+    private var publishHeader: some View {
+        HStack(spacing: 12) {
+            Button {
+                cancelPublish()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 36, height: 36)
+                    .background(Color.white.opacity(0.10), in: Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Tr("取消发布"))
+
+            Spacer(minLength: 0)
+
+            Text(Tr("发布作品"))
+                .font(pf(17, .semibold))
+                .foregroundColor(.white)
+
+            Spacer(minLength: 0)
+
+            Button {
+                publish()
+            } label: {
+                HStack(spacing: 6) {
+                    if publishing {
+                        ProgressView()
+                            .controlSize(.small)
+                            .tint(.white)
+                    }
+                    Text(publishing ? Tr("发布中") : Tr("发布"))
+                        .font(pf(14, .semibold))
+                }
+                .foregroundColor(canPublish ? .white : Color.white.opacity(0.34))
+                .padding(.horizontal, 16)
+                .frame(height: 34)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(canPublish ? Color(hex: 0xFE2C55) : Color.white.opacity(0.10))
+                )
+            }
+            .buttonStyle(.plain)
+            .disabled(!canPublish || publishing)
+            .accessibilityLabel(Tr("发布作品"))
+        }
+        .padding(.horizontal, 14)
+        .padding(.top, 4)
+        .padding(.bottom, 8)
+        .background(Color.black)
+    }
+
+    private func publishPreview(height: CGFloat) -> some View {
+        ZStack(alignment: .bottomLeading) {
+            Color(hex: 0x111214)
+
+            if let cover = pendingCover {
+                Image(uiImage: cover)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .clipped()
+            } else {
+                LinearGradient(
+                    colors: [Color(hex: 0x24252A), Color(hex: 0x08090B)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                Image(systemName: uploading ? "arrow.triangle.2.circlepath" : "play.fill")
+                    .font(.system(size: 34, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.58))
+            }
+
+            LinearGradient(
+                colors: [.clear, .black.opacity(0.08), .black.opacity(0.78)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+
+            if uploading {
+                VStack(spacing: 12) {
+                    ZStack {
+                        Circle()
+                            .stroke(Color.white.opacity(0.18), lineWidth: 4)
+                        Circle()
+                            .trim(from: 0, to: max(0.02, min(1, uploadProgress)))
+                            .stroke(.white, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                            .rotationEffect(.degrees(-90))
+                        Text(uploadProgress > 0.01
+                             ? "\(Int(min(1, uploadProgress) * 100))%"
+                             : "…")
+                            .font(pfStyled(size: 12, weight: .semibold))
+                            .foregroundColor(.white)
+                    }
+                    .frame(width: 54, height: 54)
+
+                    Text(uploadStage.isEmpty ? Tr("正在处理视频…") : uploadStage)
+                        .font(pf(13, .medium))
+                        .foregroundColor(.white.opacity(0.88))
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.black.opacity(0.30))
+            }
+
+            VStack(alignment: .leading, spacing: 10) {
+                if uploadMB > 0 {
+                    Label(String(format: "%.1f MB", uploadMB), systemImage: "checkmark.circle.fill")
+                        .font(pf(11.5, .medium))
+                        .foregroundColor(.white.opacity(0.88))
+                }
+
+                HStack(spacing: 9) {
+                    Label(publishMusic.isEmpty ? Tr("原声") : publishMusic,
+                          systemImage: "music.note")
+                        .font(pf(12, .medium))
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                        .padding(.horizontal, 10)
+                        .frame(height: 30)
+                        .background(Color.black.opacity(0.44), in: Capsule())
+
+                    Spacer(minLength: 8)
+
+                    Button { coverPickOpen = true } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "photo.on.rectangle.angled")
+                            Text(pendingCover == nil ? Tr("选择封面") : Tr("更换封面"))
+                        }
+                        .font(pf(12, .semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 11)
+                        .frame(height: 30)
+                        .background(.ultraThinMaterial, in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(13)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: height)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.white.opacity(0.10), lineWidth: 0.7)
+        }
+    }
+
+    private var publishDescriptionCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(Tr("作品描述"))
+                    .font(pf(14.5, .semibold))
+                    .foregroundColor(.white)
+                Spacer()
+                Text("\(publishDesc.count)/120")
+                    .font(pf(11))
+                    .foregroundColor(Color.white.opacity(0.38))
+            }
+
+            ZStack(alignment: .topLeading) {
+                if publishDesc.isEmpty {
+                    Text(Tr("添加作品描述，让更多人了解这条作品…"))
+                        .font(pf(14.5))
+                        .foregroundColor(Color.white.opacity(0.36))
+                        .padding(.top, 8)
+                        .padding(.leading, 5)
+                }
+
+                TextEditor(text: $publishDesc)
+                    .font(pf(14.5))
+                    .foregroundColor(.white)
+                    .scrollContentBackground(.hidden)
+                    .background(Color.clear)
+                    .onChange(of: publishDesc) { value in
+                        if value.count > 120 {
+                            publishDesc = String(value.prefix(120))
+                        }
+                    }
+            }
+            .frame(height: 92)
+
+            HStack(spacing: 8) {
+                publishQuickToken("@")
+                publishQuickToken("#")
+                Button {
+                    publishDesc += "😊"
+                } label: {
+                    Image(systemName: "face.smiling")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(Color.white.opacity(0.78))
+                        .frame(width: 30, height: 28)
+                        .background(Color.white.opacity(0.08), in: Capsule())
+                }
+                .buttonStyle(.plain)
+
+                Spacer()
+
+                Text(Tr("添加话题和好友，更容易被发现"))
+                    .font(pf(10.5))
+                    .foregroundColor(Color.white.opacity(0.30))
+            }
+        }
+        .padding(14)
+        .background(Color.white.opacity(0.065),
+                    in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.white.opacity(0.07), lineWidth: 0.7)
+        }
+    }
+
+    private var publishSettingsCard: some View {
+        VStack(spacing: 0) {
+            publishSettingRow(icon: "music.note", title: Tr("添加音乐")) {
+                TextField(Tr("选填，例如：原声"), text: $publishMusic)
+                    .font(pf(13.5))
+                    .multilineTextAlignment(.trailing)
+                    .foregroundColor(Color.white.opacity(0.58))
+                    .frame(maxWidth: 170)
+            }
+
+            publishSettingDivider
+
+            publishSettingRow(icon: "eye", title: Tr("谁可以看"),
+                              detail: publishAudienceTitle) {
+                Menu {
+                    Button(Tr("公开")) { publishVisibility = "public" }
+                    Button(Tr("仅朋友")) { publishVisibility = "friends" }
+                    Button(Tr("仅自己")) { publishVisibility = "private" }
+                } label: {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.32))
+                }
+            }
+
+            publishSettingDivider
+
+            Button { coverPickOpen = true } label: {
+                publishSettingRow(icon: "photo", title: Tr("选择封面"),
+                                  detail: pendingCover == nil ? Tr("视频首帧") : Tr("已选择")) {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(Color.white.opacity(0.32))
+                }
+            }
+            .buttonStyle(.plain)
+
+            if flags.allowTrim != false {
+                publishSettingDivider
+
+                publishSettingRow(icon: "wand.and.stars", title: Tr("清除水印"),
+                                  detail: trimTitle) {
+                    Menu {
+                        Button(Tr("不处理")) { trim = 0 }
+                        Button(Tr("底部 10%")) { trim = 1 }
+                        Button(Tr("底部 14%")) { trim = 2 }
+                        Button(Tr("右侧 12%")) { trim = 3 }
+                        Button(Tr("右下角")) { trim = 4 }
+                    } label: {
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(Color.white.opacity(0.32))
+                    }
+                }
+            }
+
+            publishSettingDivider
+
+            publishSettingRow(icon: "bolt.hd.fill", title: Tr("画质"),
+                              detail: Tr("高清 · 自动转码")) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(Color(hex: 0x25F4EE))
+            }
+        }
+        .background(Color.white.opacity(0.065),
+                    in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.white.opacity(0.07), lineWidth: 0.7)
+        }
+    }
+
+    private var publishUploadCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(uploadStage.isEmpty ? Tr("视频已就绪") : uploadStage)
+                    .font(pf(12.5, .medium))
+                    .foregroundColor(.white.opacity(0.78))
+                Spacer()
+                if uploadMB > 0 {
+                    Text(String(format: "%.1f MB", uploadMB))
+                        .font(pf(11))
+                        .foregroundColor(.white.opacity(0.38))
+                }
+            }
+
+            if uploading {
+                ProgressView(value: max(0.02, min(1, uploadProgress)))
+                    .tint(Color(hex: 0x25F4EE))
+            } else {
+                Label(Tr("可以发布"), systemImage: "checkmark.seal.fill")
+                    .font(pf(12))
+                    .foregroundColor(Color(hex: 0x25F4EE))
+            }
+        }
+        .padding(13)
+        .background(Color.white.opacity(0.065),
+                    in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private func publishQuickToken(_ token: String) -> some View {
+        Button {
+            publishDesc += token
+        } label: {
+            Text(token)
+                .font(pf(16, .semibold))
+                .foregroundColor(Color.white.opacity(0.82))
+                .frame(width: 30, height: 28)
+                .background(Color.white.opacity(0.08), in: Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var publishSettingDivider: some View {
+        Rectangle()
+            .fill(Color.white.opacity(0.06))
+            .frame(height: 0.6)
+            .padding(.leading, 48)
+    }
+
+    private var publishAudienceTitle: String {
+        switch publishVisibility {
+        case "friends": return Tr("仅朋友")
+        case "private": return Tr("仅自己")
+        default: return Tr("公开")
+        }
+    }
+
+    private var canPublish: Bool {
+        !pendingVideoPath.isEmpty && !uploading
     }
 
     private func publishSettingRow<Accessory: View>(
@@ -884,16 +1018,16 @@ struct ChannelsView: View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 15, weight: .semibold))
-                .foregroundColor(C.label.opacity(0.82))
+                .foregroundColor(Color.white.opacity(0.82))
                 .frame(width: 22)
             Text(title)
                 .font(pf(15))
-                .foregroundColor(C.label)
+                .foregroundColor(.white)
             Spacer(minLength: 10)
             if let detail {
                 Text(detail)
                     .font(pf(13.5))
-                    .foregroundColor(C.subLabel)
+                    .foregroundColor(Color.white.opacity(0.40))
                     .lineLimit(1)
             }
             accessory()
@@ -914,20 +1048,37 @@ struct ChannelsView: View {
 
     private func uploadPicked(_ v: PhotosPickerItem?) async {
         guard let v = v else { return }
+        let job = UUID()
+        uploadJobID = job
+        pendingVideoPath = ""
+        pendingCoverPath = ""
+        pendingCover = nil
+        publishError = ""
+        publishVisibility = "public"
+        uploadMB = 0
         uploading = true
+        showPublish = true
         uploadProgress = 0
         uploadStage = Tr("准备中…")
-        defer { uploading = false; uploadStage = "" }
+        defer {
+            picked = nil
+            if uploadJobID == job {
+                uploading = false
+                uploadStage = ""
+            }
+        }
         do {
             guard let data = try await v.loadTransferable(type: Data.self), !data.isEmpty else {
-                app.show(Tr("读不到这个视频")); return
+                if uploadJobID == job { publishError = Tr("读不到这个视频，请重新选择") }
+                return
             }
+            guard uploadJobID == job else { return }
 
             let raw = FileManager.default.temporaryDirectory.appendingPathComponent("feed-raw-\(UUID().uuidString).mov")
             try data.write(to: raw)
 
             if pendingCover == nil, let img = await MediaTool.firstFrame(raw) {
-                pendingCover = img
+                if uploadJobID == job { pendingCover = img }
             }
             let uploadData: Data
             let mb = Double(data.count) / 1024 / 1024
@@ -950,14 +1101,19 @@ struct ChannelsView: View {
             try uploadData.write(to: upFile)
             uploadProgress = 0
             let url = try await API.shared.uploadBinaryFile(upFile, mime: "video/mp4", skipTranscode: true) { p in
-                DispatchQueue.main.async { uploadProgress = p }
+                DispatchQueue.main.async {
+                    if uploadJobID == job { uploadProgress = p }
+                }
             }
             try? FileManager.default.removeItem(at: upFile)
+            guard uploadJobID == job else { return }
             pendingVideoPath = url
             uploadMB = Double(uploadData.count) / 1024 / 1024
-            showPublish = true
         } catch {
-            app.show((error as? APIError)?.errorDescription ?? "上传失败（视频别超过 20MB）")
+            if uploadJobID == job {
+                publishError = (error as? APIError)?.errorDescription
+                    ?? Tr("视频上传失败，请检查网络后重新选择")
+            }
         }
     }
 
@@ -980,16 +1136,18 @@ struct ChannelsView: View {
     }
 
     private func publish() {
+        guard canPublish, !publishing else { return }
         let desc = publishDesc.trimmingCharacters(in: .whitespacesAndNewlines)
         let music = publishMusic.trimmingCharacters(in: .whitespacesAndNewlines)
-        publishDesc = ""
-        publishMusic = ""
-        pendingCover = nil
+        let visibility = publishVisibility
+        let cover = pendingCover
+        let baseVideo = pendingVideoPath
         let crop = trim
-        showPublish = false
+        publishing = true
+        publishError = ""
         Task {
             do {
-                var video = pendingVideoPath
+                var video = baseVideo
                 if crop > 0 {
                     let area: (top: Double, bottom: Double, left: Double, right: Double)
                     switch crop {
@@ -1001,19 +1159,51 @@ struct ChannelsView: View {
                     if let trimmed = try? await API.shared.feedTrim(video, top: area.top, bottom: area.bottom,
                                                                      left: area.left, right: area.right) {
                         video = trimmed
-                    } else {
-                        app.show(Tr("剪水印失败，就用原视频发了"))
                     }
                 }
-                _ = try await API.shared.feedPublish(video: video, desc: desc, music: music)
+                var coverPath = pendingCoverPath
+                if coverPath.isEmpty, let cover {
+                    coverPath = (try? await API.shared.uploadCover(image: cover)) ?? ""
+                }
+                _ = try await API.shared.feedPublish(
+                    video: video,
+                    desc: desc,
+                    music: music,
+                    cover: coverPath,
+                    visibility: visibility
+                )
                 app.show(Tr("发表成功"))
+                resetPublishDraft(close: true)
                 index = 0
                 await load()
             } catch {
-                app.show((error as? APIError)?.errorDescription ?? "发表失败")
+                publishError = (error as? APIError)?.errorDescription
+                    ?? Tr("发表失败，请检查网络后重试")
             }
+            publishing = false
         }
+    }
+
+    private func cancelPublish() {
+        uploadJobID = UUID()
+        uploading = false
+        publishing = false
+        resetPublishDraft(close: true)
+    }
+
+    private func resetPublishDraft(close: Bool) {
+        publishDesc = ""
+        publishMusic = ""
+        pendingCover = nil
+        pendingCoverPath = ""
+        pendingVideoPath = ""
+        publishVisibility = "public"
+        publishError = ""
+        uploadProgress = 0
+        uploadStage = ""
+        uploadMB = 0
         trim = 0
+        if close { showPublish = false }
     }
 }
 
