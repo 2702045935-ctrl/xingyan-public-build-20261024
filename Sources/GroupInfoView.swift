@@ -83,7 +83,7 @@ struct GroupInfoView: View {
         .background(C.pageBg.ignoresSafeArea())
         .environment(\.chatInfoCardTone, .group)
         .toolbar(.hidden, for: .navigationBar)
-        .swipeBack { dismiss() }
+        .background(NativeInteractivePopEnabler().frame(width: 0, height: 0))
         .hidesTabBar()
         .onAppear {
             CrashCatcher.markStep("三点", "群聊信息页出现 \(chat.id)")

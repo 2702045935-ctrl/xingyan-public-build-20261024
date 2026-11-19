@@ -1508,6 +1508,7 @@ struct ChatsView: View {
         } else if chat.oaDigest == true {
             showOAList = true
         } else {
+            InteractionKernel.shared.begin(page: "chat", id: chat.id)
             app.prepareChatForImmediatePresentation(chat)
             path.append(chat)
         }

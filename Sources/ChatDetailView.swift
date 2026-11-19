@@ -2478,7 +2478,7 @@ struct ChatDetailView: View {
             sysToolsPageView(page)
                 .environmentObject(app)
         }
-        .swipeBack { dismiss() }
+        .background(NativeInteractivePopEnabler().frame(width: 0, height: 0))
         .hidesTabBar()
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
@@ -2926,6 +2926,7 @@ struct ChatDetailView: View {
         }
         .onAppear {
             chatTheme.activate(chat.id)
+            InteractionKernel.shared.complete(page: "chat", id: chat.id)
         }
         .onReceive(NotificationCenter.default.publisher(for: .chrisStickersChanged)) { _ in
             Task { await loadMyStickers() }
