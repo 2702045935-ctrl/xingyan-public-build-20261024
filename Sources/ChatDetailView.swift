@@ -875,6 +875,7 @@ struct ChatDetailView: View {
     @State private var initialCacheReady = false
     @State private var initialRetryTask: Task<Void, Never>?
     @State private var initialScrollReady = false
+    @State private var initialOpenSettling = false
     @State private var initialScrollTask: Task<Void, Never>?
     @State private var panel: PanelKind = .none
     @State private var emojiPanelExpanded = false
@@ -3161,6 +3162,7 @@ struct ChatDetailView: View {
                                 atBottom = false
                                 wasAtBottom = false
                             }
+                            initialOpenSettling = false
                             if !initialScrollReady {
                                 initialScrollTask?.cancel()
                                 initialScrollTask = nil
@@ -3179,6 +3181,7 @@ struct ChatDetailView: View {
                         }
                     }, onSizeChange: {
                         let compensated = ChatScrollHandle.shared.compensatePendingPrepend()
+                        if initialOpenSettling { return }
                         guard (isGroup ? wasAtBottom : atBottomNow), !holdScroll else { return }
                         if ChatScrollHandle.shared.moving { return }
                         ChatScrollDiag.shared.note("内容变高 → 哨兵贴底")
@@ -3193,6 +3196,7 @@ struct ChatDetailView: View {
         .onChange(of: messages.count) { _ in
 
                 backfillVoiceText()
+                if initialOpenSettling { return }
                 if !initialScrollReady {
                     if !loading { settleInitialScroll(proxy) }
                     return
@@ -3209,6 +3213,7 @@ struct ChatDetailView: View {
                     allowSettledBottom = false
                 } else {
                     if !initialScrollReady {
+                        initialOpenSettling = true
                         settleInitialScroll(proxy)
                     }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
@@ -3249,6 +3254,7 @@ struct ChatDetailView: View {
                 wasAtBottom = true
                 atBottom = true
                 if initialCacheReady || !loading {
+                    initialOpenSettling = true
                     settleInitialScroll(proxy)
                 } else {
                     initialScrollReady = false
@@ -3267,6 +3273,7 @@ struct ChatDetailView: View {
             }
             .onChange(of: initialCacheReady) { ready in
                 if ready {
+                    initialOpenSettling = true
                     settleInitialScroll(proxy)
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                         allowSettledBottom = true
@@ -3288,6 +3295,7 @@ struct ChatDetailView: View {
                     actionMessage = nil
                     atBottom = false
                     wasAtBottom = false
+                    initialOpenSettling = false
                     if isGroup { autoLoadOlder() }
                     if !initialScrollReady {
                         initialScrollTask?.cancel()
@@ -3322,6 +3330,9 @@ struct ChatDetailView: View {
             },
             onSizeChange: {
                 let compensated = ChatScrollHandle.shared.compensatePendingPrepend()
+                if initialOpenSettling {
+                    return
+                }
                 if !initialScrollReady {
                     // NativeStaticList performs its first bottom placement in
                     // the same layout transaction before pixels are presented.
@@ -3346,6 +3357,9 @@ struct ChatDetailView: View {
         }
         .onChange(of: messages.count) { _ in
             backfillVoiceText()
+            if initialOpenSettling {
+                return
+            }
             if !initialScrollReady {
                 if !loading { settleInitialNativeScroll() }
                 return
@@ -3362,7 +3376,10 @@ struct ChatDetailView: View {
             if value {
                 allowSettledBottom = false
             } else {
-                if !initialScrollReady { settleInitialNativeScroll() }
+                if !initialScrollReady {
+                    initialOpenSettling = true
+                    settleInitialNativeScroll()
+                }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                     allowSettledBottom = true
                 }
@@ -3392,6 +3409,7 @@ struct ChatDetailView: View {
             wasAtBottom = true
             atBottom = true
             if initialCacheReady || !loading {
+                initialOpenSettling = true
                 settleInitialNativeScroll()
             } else {
                 initialScrollReady = false
@@ -3399,6 +3417,7 @@ struct ChatDetailView: View {
         }
         .onChange(of: initialCacheReady) { ready in
             if ready {
+                initialOpenSettling = true
                 settleInitialNativeScroll()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                     allowSettledBottom = true
@@ -3755,6 +3774,7 @@ struct ChatDetailView: View {
         initialScrollTask?.cancel()
         ChatScrollHandle.shared.allowAutomaticPinning()
         initialScrollTask = Task { @MainActor in
+            initialOpenSettling = true
             atBottom = true
             wasAtBottom = true
             for delay in [0, 24, 70, 150, 260] {
@@ -3768,6 +3788,9 @@ struct ChatDetailView: View {
             if Task.isCancelled { return }
             initialScrollReady = true
             pinTick += 1
+            await Task.yield()
+            if Task.isCancelled { return }
+            initialOpenSettling = false
         }
     }
 
@@ -3778,11 +3801,20 @@ struct ChatDetailView: View {
         initialScrollTask = Task { @MainActor in
             atBottom = true
             wasAtBottom = true
-            nativeMessageController.scrollToBottom(animated: false)
+            for delay in [0, 16, 50, 120, 220] {
+                if delay > 0 {
+                    try? await Task.sleep(nanoseconds: UInt64(delay) * 1_000_000)
+                }
+                if Task.isCancelled { return }
+                if ChatScrollHandle.shared.moving { return }
+                nativeMessageController.scrollToBottom(animated: false)
+            }
+            if Task.isCancelled { return }
+            initialScrollReady = true
             await Task.yield()
             if Task.isCancelled { return }
-            nativeMessageController.scrollToBottom(animated: false)
-            initialScrollReady = true
+            initialOpenSettling = false
+            allowSettledBottom = true
         }
     }
 
