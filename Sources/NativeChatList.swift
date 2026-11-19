@@ -6,6 +6,11 @@ final class NativeChatListScrollRegistry {
     weak var chats: UIScrollView?
 }
 
+private enum NativeChatCellIdentifier {
+    static let nativeRow = "NativeChatRowCell"
+    static let hostingRow = "NativeChatHostingCell"
+}
+
 private func nativeChatSwipeText(_ zh: String, _ en: String, _ ru: String) -> String {
     if Lang.isRussian { return ru }
     if Lang.isEnglish { return en }
@@ -66,9 +71,9 @@ where Item.ID: Hashable {
         NativeChatListScrollRegistry.shared.chats = table
         table.delegate = context.coordinator
         table.register(NativeChatRowCell.self,
-                       forCellReuseIdentifier: Coordinator.nativeCellID)
+                       forCellReuseIdentifier: NativeChatCellIdentifier.nativeRow)
         table.register(UITableViewCell.self,
-                       forCellReuseIdentifier: Coordinator.hostingCellID)
+                       forCellReuseIdentifier: NativeChatCellIdentifier.hostingRow)
 
         let dataSource = UITableViewDiffableDataSource<Int, Item.ID>(
             tableView: table
@@ -77,14 +82,14 @@ where Item.ID: Hashable {
             if let entry = coordinator.lookup[id],
                let configuration = coordinator.nativeRow?(entry) {
                 let cell = tableView.dequeueReusableCell(
-                    withIdentifier: Coordinator.nativeCellID,
+                    withIdentifier: NativeChatCellIdentifier.nativeRow,
                     for: indexPath
                 ) as! NativeChatRowCell
                 cell.configure(configuration)
                 return cell
             }
             let cell = tableView.dequeueReusableCell(
-                withIdentifier: Coordinator.hostingCellID,
+                withIdentifier: NativeChatCellIdentifier.hostingRow,
                 for: indexPath
             )
             cell.backgroundColor = .clear
@@ -127,9 +132,6 @@ where Item.ID: Hashable {
     }
 
     final class Coordinator: NSObject, UITableViewDelegate {
-        static let nativeCellID = "NativeChatRowCell"
-        static let hostingCellID = "NativeChatHostingCell"
-
         var lookup: [Item.ID: Item] = [:]
         var row: (Item) -> Row
         var height: (Item) -> CGFloat
