@@ -65,6 +65,7 @@ where Item.ID: Hashable {
     let onScrollStateChange: ((Bool) -> Void)?
     let onScrollOffset: ((CGFloat) -> Void)?
     let onSizeChange: (() -> Void)?
+    let onApplyCompleted: (() -> Void)?
     let initiallyPinnedToBottom: Bool
     let signature: (Item) -> String
     @ViewBuilder let row: (Item) -> Row
@@ -75,6 +76,7 @@ where Item.ID: Hashable {
          onScrollStateChange: ((Bool) -> Void)? = nil,
          onScrollOffset: ((CGFloat) -> Void)? = nil,
          onSizeChange: (() -> Void)? = nil,
+         onApplyCompleted: (() -> Void)? = nil,
          initiallyPinnedToBottom: Bool = false,
          signature: @escaping (Item) -> String,
          @ViewBuilder row: @escaping (Item) -> Row) {
@@ -84,6 +86,7 @@ where Item.ID: Hashable {
         self.onScrollStateChange = onScrollStateChange
         self.onScrollOffset = onScrollOffset
         self.onSizeChange = onSizeChange
+        self.onApplyCompleted = onApplyCompleted
         self.initiallyPinnedToBottom = initiallyPinnedToBottom
         self.signature = signature
         self.row = row
@@ -95,6 +98,7 @@ where Item.ID: Hashable {
                     onScrollStateChange: onScrollStateChange,
                     onScrollOffset: onScrollOffset,
                     onSizeChange: onSizeChange,
+                    onApplyCompleted: onApplyCompleted,
                     initiallyPinnedToBottom: initiallyPinnedToBottom,
                     signature: signature,
                     row: row)
@@ -159,6 +163,7 @@ where Item.ID: Hashable {
         context.coordinator.onScrollStateChange = onScrollStateChange
         context.coordinator.onScrollOffset = onScrollOffset
         context.coordinator.onSizeChange = onSizeChange
+        context.coordinator.onApplyCompleted = onApplyCompleted
         context.coordinator.attachController()
         if let collection = controller.collectionView {
             context.coordinator.attachScroll(collection)
@@ -177,6 +182,7 @@ where Item.ID: Hashable {
         var onScrollStateChange: ((Bool) -> Void)?
         var onScrollOffset: ((CGFloat) -> Void)?
         var onSizeChange: (() -> Void)?
+        var onApplyCompleted: (() -> Void)?
         var initiallyPinnedToBottom: Bool
         private var waitsForInitialBottom = false
         private var sizeObservation: NSKeyValueObservation?
@@ -194,6 +200,7 @@ where Item.ID: Hashable {
              onScrollStateChange: ((Bool) -> Void)?,
              onScrollOffset: ((CGFloat) -> Void)?,
              onSizeChange: (() -> Void)?,
+             onApplyCompleted: (() -> Void)?,
              initiallyPinnedToBottom: Bool,
              signature: @escaping (Item) -> String,
              row: @escaping (Item) -> Row) {
@@ -202,6 +209,7 @@ where Item.ID: Hashable {
             self.onScrollStateChange = onScrollStateChange
             self.onScrollOffset = onScrollOffset
             self.onSizeChange = onSizeChange
+            self.onApplyCompleted = onApplyCompleted
             self.initiallyPinnedToBottom = initiallyPinnedToBottom
             self.waitsForInitialBottom = initiallyPinnedToBottom
             self.signature = signature
@@ -412,9 +420,11 @@ where Item.ID: Hashable {
                             animated: false
                         )
                         ChatScrollHandle.shared.clearPendingPrepend()
+                        self.onApplyCompleted?()
                         return
                     }
                     _ = ChatScrollHandle.shared.compensatePendingPrepend()
+                    self.onApplyCompleted?()
                 }
                 return
             }
@@ -452,6 +462,7 @@ where Item.ID: Hashable {
                       !collection.isDecelerating else { return }
                 if self.waitsForInitialBottom {
                     self.setBottom(collection, animated: false)
+                    self.onApplyCompleted?()
                     return
                 }
                 let minimumY = -collection.adjustedContentInset.top
@@ -463,6 +474,7 @@ where Item.ID: Hashable {
                 var target = previousOffset
                 target.y = min(max(target.y, minimumY), maximumY)
                 collection.setContentOffset(target, animated: false)
+                self.onApplyCompleted?()
             }
         }
 
