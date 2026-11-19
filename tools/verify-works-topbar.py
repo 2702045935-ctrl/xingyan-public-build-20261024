@@ -20,18 +20,19 @@ def require(condition: bool, message: str) -> None:
 require(
     "ScrollView {" in WORKS
     and ".ignoresSafeArea(edges: .top)" in WORKS
-    and "topBar\n                .padding(.top, L.safeTop)" in WORKS,
-    "works page must use one full-screen coordinate space for cover and top bar",
+    and "private var topBar" not in WORKS
+    and ".swipeBack { dismiss() }" in WORKS,
+    "works page must stay full screen without a top button row and keep left-swipe exit",
 )
 require(
-    WORKS.count(".ignoresSafeArea(edges: .top)") >= 3,
-    "scroll content, page background and root container must share the top safe-area policy",
+    WORKS.count(".ignoresSafeArea(edges: .top)") >= 2,
+    "scroll content and the page background must share the top safe-area policy",
 )
 require(
-    "Button { dismiss() }" in WORKS
-    and 'Text(Tr("我的作品"))' in WORKS
-    and "Menu {" in WORKS,
-    "works page must keep back, centered title and right-side actions in the fixed top bar",
+    "coverBanner" in WORKS
+    and 'Tr("更换背景")' in WORKS
+    and "private var tabs" in WORKS,
+    "works actions must live in the cover and content instead of a fixed top bar",
 )
 require(
     "python3 tools/verify-works-topbar.py" in WORKFLOW,

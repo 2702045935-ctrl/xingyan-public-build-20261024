@@ -18,7 +18,7 @@ require(
 )
 require(
     "private struct ChatTopGlassBackdrop" in DETAIL
-    and "NativeGlassHeaderMaterial()" in DETAIL
+    and "NativeGlassHeaderMaterial(forcedDark: lightInk)" in DETAIL
     and "scheme == .light" in DETAIL
     and "ChatImmersiveEdgeMask(path: backgroundPath" in DETAIL
     and "edge: .top" in DETAIL
@@ -29,7 +29,7 @@ require(
     "} else if scheme == .light {\n"
     "                        ChatImmersiveEdgeMask(path: backgroundPath" in DETAIL
     and "themeVersion: chatTheme.version)\n"
-        "                            ChatTopGlassBackdrop()" not in DETAIL,
+        "                            ChatTopGlassBackdrop(lightInk: topBarUsesLightInk)" not in DETAIL,
     "light chat chrome must keep the wallpaper extension without the dark blur layer",
 )
 require(

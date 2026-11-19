@@ -14,7 +14,7 @@ def require(condition: bool, message: str) -> None:
 
 require(
     "private struct ChatTopGlassBackdrop" in CHAT
-    and "NativeGlassHeaderMaterial()" in CHAT,
+    and "NativeGlassHeaderMaterial(forcedDark: lightInk)" in CHAT,
     "chat top chrome must restore the native blur layer",
 )
 require(
@@ -25,12 +25,12 @@ require(
 )
 require(
     "private struct ChatHeaderGlassGroup" in CHAT
-    and "Color.clear\n                            .glassEffect(.regular.interactive(), in: capsule)" in CHAT
-    and "capsule.fill(tint)" not in CHAT.split("private var legacyGlass", 1)[0],
-    "the previous circled chat header layout must use untinted native interactive glass",
+    and ".glassEffect(.regular.interactive(), in: capsule)" in CHAT
+    and "capsule.fill(lightInk" in CHAT,
+    "the circled chat header layout must use adaptive native interactive glass",
 )
 require(
-    "chatBackdrop" in CHAT and "ChatTopGlassBackdrop()" in CHAT,
+    "chatBackdrop" in CHAT and "ChatTopGlassBackdrop(lightInk: topBarUsesLightInk)" in CHAT,
     "the continuous chat wallpaper must stay beneath the native material",
 )
 
