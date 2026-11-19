@@ -24,9 +24,9 @@ require("struct NativeTopGlassMask" in NAV
 require(".glassEffect(.regular.interactive(), in: shape)" in NAV,
         "tappable glass controls must use native interactive liquid glass")
 require(
-    "collection.topEdgeEffect.style = .hard" in NATIVE_LIST
-    and "collection.topEdgeEffect.isHidden = false" in NATIVE_LIST
-    and "NativeChatListScrollRegistry.shared.chats = collection" in NATIVE_LIST,
+    "table.topEdgeEffect.style = .hard" in NATIVE_LIST
+    and "table.topEdgeEffect.isHidden = false" in NATIVE_LIST
+    and "NativeChatListScrollRegistry.shared.chats = table" in NATIVE_LIST,
     "chat list must expose the system scroll-edge effect instead of a custom glass strip",
 )
 require(
