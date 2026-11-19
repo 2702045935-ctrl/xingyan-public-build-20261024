@@ -47,5 +47,15 @@ require(
     and "snapshot.deleteItems(removed)" in LIST,
     "prepending must mutate only inserted, removed and changed identifiers",
 )
+require(
+    "previousContentHeight" in LIST
+    and "previousOffset.y + heightDelta" in LIST,
+    "native prepends must keep a pixel-height fallback when no visible anchor exists",
+)
+require(
+    "if isGroup, nativeHistoryApplyPending" in WINDOW
+    and "if !isGroup {\n                ChatScrollHandle.shared.prepareForPrepend()" in WINDOW,
+    "group prepends must not run native and height-delta compensation twice",
+)
 
 print("chat-prepend-anchor: passed")

@@ -3329,6 +3329,12 @@ struct ChatDetailView: View {
                 }
             },
             onSizeChange: {
+                if isGroup, nativeHistoryApplyPending {
+                    // NativeStaticList restores the visible row atomically for
+                    // history prepends. Applying the height-delta fallback here
+                    // as well would move the list a second time.
+                    return
+                }
                 let compensated = ChatScrollHandle.shared.compensatePendingPrepend()
                 if initialOpenSettling {
                     return
@@ -7213,7 +7219,9 @@ struct ChatDetailView: View {
                 : merged
             /* 插入旧页和裁掉尾部窗口必须合成同一次快照。
                分两次 apply 会在后段触发第二次全列表 diff，形成顿挫。 */
-            ChatScrollHandle.shared.prepareForPrepend()
+            if !isGroup {
+                ChatScrollHandle.shared.prepareForPrepend()
+            }
             var transaction = Transaction()
             transaction.disablesAnimations = true
             withTransaction(transaction) {

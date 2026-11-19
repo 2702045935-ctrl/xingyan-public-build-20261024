@@ -360,6 +360,7 @@ where Item.ID: Hashable {
                 heights.removeAll(keepingCapacity: true)
             }
             let knownOld = order
+            let previousContentHeight = collection.contentSize.height
             lookup = nextLookup
             signatures = nextSignatures
             order = nextOrder
@@ -423,7 +424,18 @@ where Item.ID: Hashable {
                         self.onApplyCompleted?()
                         return
                     }
-                    _ = ChatScrollHandle.shared.compensatePendingPrepend()
+                    let heightDelta = collection.contentSize.height - previousContentHeight
+                    if abs(heightDelta) > 0.5 {
+                        let minimumY = -collection.adjustedContentInset.top
+                        collection.setContentOffset(
+                            CGPoint(
+                                x: previousOffset.x,
+                                y: max(minimumY, previousOffset.y + heightDelta)
+                            ),
+                            animated: false
+                        )
+                    }
+                    ChatScrollHandle.shared.clearPendingPrepend()
                     self.onApplyCompleted?()
                 }
                 return
