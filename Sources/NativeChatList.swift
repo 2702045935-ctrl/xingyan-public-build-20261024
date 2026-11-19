@@ -391,16 +391,47 @@ where Item.ID: Hashable {
             guard let id = dataSource?.itemIdentifier(for: indexPath),
                   let entry = lookup[id],
                   let configuration = nativeRow?(entry) else { return nil }
-            let action = UIContextualAction(
+            var actions: [UIContextualAction] = []
+            let deleteAction = UIContextualAction(
                 style: .destructive,
                 title: nativeChatSwipeText("删除", "Delete", "Удалить")
             ) { _, _, complete in
                 configuration.onDelete()
                 complete(true)
             }
-            action.image = UIImage(systemName: "trash.fill")
-            action.backgroundColor = .systemRed
-            let swipe = UISwipeActionsConfiguration(actions: [action])
+            deleteAction.image = UIImage(systemName: "trash.fill")
+            deleteAction.backgroundColor = .systemRed
+            actions.append(deleteAction)
+
+            let hideAction = UIContextualAction(
+                style: .normal,
+                title: nativeChatSwipeText("不显示", "Hide", "Скрыть")
+            ) { _, _, complete in
+                configuration.onHide()
+                complete(true)
+            }
+            hideAction.image = UIImage(systemName: "eye.slash.fill")
+            hideAction.backgroundColor = .systemGray
+            actions.append(hideAction)
+
+            if !configuration.isManuallyUnread {
+                let unreadAction = UIContextualAction(
+                    style: .normal,
+                    title: nativeChatSwipeText(
+                        "标为未读",
+                        "Mark unread",
+                        "Не прочитано"
+                    )
+                ) { _, _, complete in
+                    configuration.onUnread()
+                    complete(true)
+                }
+                unreadAction.image = UIImage(systemName: "bell.fill")
+                unreadAction.backgroundColor = .systemBlue
+                actions.append(unreadAction)
+            }
+
+            let swipe = UISwipeActionsConfiguration(actions: actions)
             swipe.performsFirstActionWithFullSwipe = true
             return swipe
         }

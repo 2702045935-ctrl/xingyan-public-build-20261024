@@ -18,13 +18,24 @@ require(
     and "trailingSwipeActionsConfigurationForRowAt" in LIST
     and "leadingSwipeActionsConfigurationForRowAt" not in LIST
     and "UITableViewDelegate" in LIST,
-    "chat rows must use only the native table-view left-swipe delete action",
+    "chat rows must use the native table-view trailing swipe actions",
 )
 require(
-    "action.backgroundColor = .systemRed" in LIST
+    'nativeChatSwipeText("删除", "Delete", "Удалить")' in LIST
+    and 'nativeChatSwipeText("不显示", "Hide", "Скрыть")' in LIST
+    and '"标为未读"' in LIST
+    and "configuration.onDelete()" in LIST
+    and "configuration.onHide()" in LIST
+    and "configuration.onUnread()" in LIST,
+    "left swipe must expose native delete, hide and mark-unread actions",
+)
+require(
+    "deleteAction.backgroundColor = .systemRed" in LIST
+    and "hideAction.backgroundColor = .systemGray" in LIST
+    and "unreadAction.backgroundColor = .systemBlue" in LIST
     and "swipe.performsFirstActionWithFullSwipe = true" in LIST
     and ".systemOrange" not in LIST,
-    "left swipe must delete in red and must not expose a right-swipe pin",
+    "native swipe actions must keep distinct native colors without a pin action",
 )
 require(
     "foreground.addGestureRecognizer(pan)" not in ROW,
