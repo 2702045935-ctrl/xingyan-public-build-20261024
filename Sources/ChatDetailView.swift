@@ -6107,7 +6107,11 @@ struct ChatDetailView: View {
         guard !chatUnavailable, !flushing, !outbox.isEmpty else { return }
         flushing = true
         defer { flushing = false }
-        for p in outbox.filter({ !$0.sending }) {
+        while !Task.isCancelled {
+            // A new message may be appended while the previous request is in
+            // flight. Re-read the queue after every acknowledgement so rapid
+            // sends drain immediately instead of waiting for another event.
+            guard let p = outbox.first(where: { !$0.sending }) else { break }
             guard let idx = outbox.firstIndex(where: { $0.id == p.id }) else { continue }
             outbox[idx].sending = true
             outbox[idx].failed = false

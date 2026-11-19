@@ -20,4 +20,13 @@ require(remove < append, "local send placeholder must be removed before confirme
 require("UINotification.lightTap()" in CHAT, "send action must keep native tactile feedback")
 require("pinToBottomSoon(force: true)" in CHAT, "send action must keep bottom pinning")
 
+flush_start = CHAT.index("private func flushOutbox")
+flush_end = CHAT.index("private func tapRedPacket", flush_start)
+flush_block = CHAT[flush_start:flush_end]
+require(
+    "while !Task.isCancelled" in flush_block
+    and "outbox.first(where: { !$0.sending })" in flush_block,
+    "rapid sends must drain newly appended outbox items without another trigger",
+)
+
 print("message-send-handoff: passed")
