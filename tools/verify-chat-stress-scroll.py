@@ -31,8 +31,9 @@ require(
 )
 require(
     "if isGroup { autoLoadOlder() }" in CHAT
-    and "let target = isGroup ? 300 : 200" in CHAT,
-    "group prefetch must start at drag begin and load a larger history runway",
+    and "let pageTarget = isGroup ? 300 : 200" in CHAT
+    and "let targetDepth = pageTarget * 2" in CHAT,
+    "group prefetch must keep the same rolling history runway at every depth",
 )
 require(
     "onApplyCompleted" in LIST

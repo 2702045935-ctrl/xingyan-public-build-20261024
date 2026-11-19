@@ -15,11 +15,11 @@ def require(condition: bool, message: str) -> None:
 require(
     "private var olderPrefetch: [Message]" in CHAT
     and "private func scheduleOlderPrefetch()" in CHAT
-    and "private func takeOlderPrefetch()" in CHAT,
+    and "private func takeOlderPrefetch(limit: Int)" in CHAT,
     "older history must stay prefetched ahead of the viewport",
 )
 require(
-    "if olderPrefetch.isEmpty, let pending = olderPrefetchTask" in CHAT
+    "if olderPrefetch.count < pageTarget, let pending = olderPrefetchTask" in CHAT
     and "await pending.value" in CHAT,
     "foreground paging must reuse an in-flight prefetch instead of waiting twice",
 )
@@ -35,9 +35,11 @@ require(
     "history cursors must skip leading system rows that have no sequence",
 )
 require(
-    "let target = isGroup ? 300 : 200" in CHAT
+    "let pageTarget = isGroup ? 300 : 200" in CHAT
+    and "let targetDepth = pageTarget * 2" in CHAT
+    and "buffer.insert(contentsOf: rows, at: 0)" in CHAT
     and "let maxPages = isGroup ? 2 : 3" in CHAT,
-    "large-group prefetch must keep the established bounded page runway",
+    "deep-group prefetch must keep the same rolling page runway as the beginning",
 )
 require(
     "prependAnchor =" in NATIVE
