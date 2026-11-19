@@ -32,7 +32,7 @@ require(
 require(
     "if isGroup { autoLoadOlder() }" in CHAT
     and "let pageTarget = isGroup ? 300 : 200" in CHAT
-    and "let targetDepth = pageTarget * 2" in CHAT,
+    and "let targetDepth = pageTarget" in CHAT,
     "group prefetch must keep the same rolling history runway at every depth",
 )
 require(

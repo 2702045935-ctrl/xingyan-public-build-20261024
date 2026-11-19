@@ -36,10 +36,10 @@ require(
 )
 require(
     "let pageTarget = isGroup ? 300 : 200" in CHAT
-    and "let targetDepth = pageTarget * 2" in CHAT
+    and "let targetDepth = pageTarget" in CHAT
     and "buffer.insert(contentsOf: rows, at: 0)" in CHAT
     and "let maxPages = isGroup ? 2 : 3" in CHAT,
-    "deep-group prefetch must keep the same rolling page runway as the beginning",
+    "deep-group prefetch must keep the same 300-row runway as the beginning",
 )
 require(
     "prependAnchor =" in NATIVE

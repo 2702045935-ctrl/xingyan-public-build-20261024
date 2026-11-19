@@ -7250,7 +7250,7 @@ struct ChatDetailView: View {
         guard hasOlder, olderPrefetchTask == nil,
               oldestHistorySeq > 0 else { return }
         let pageTarget = isGroup ? 300 : 200
-        let targetDepth = pageTarget * 2
+        let targetDepth = pageTarget
         let startingPrefetch = olderPrefetch
         let seq = startingPrefetch.first?.seq ?? oldestHistorySeq
         let known = Set(messages.map(\.id) + startingPrefetch.map(\.id))
