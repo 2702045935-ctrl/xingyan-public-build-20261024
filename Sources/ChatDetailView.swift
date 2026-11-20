@@ -284,7 +284,7 @@ func bubbleSeed(_ id: String) -> Double {
 
 struct BubbleShape: Shape {
     let mine: Bool
-    var radius: CGFloat = 12
+    var radius: CGFloat = 8
     var tail: Bool = true
 
     var pill: Bool = false
@@ -1607,9 +1607,9 @@ struct ChatDetailView: View {
                             }
                         } label: {
                             Image(systemName: "ellipsis")
-                                .font(.system(size: 16.5, weight: .semibold))
+                                .font(.system(size: 17, weight: .semibold))
                                 .foregroundStyle(adaptiveTopInk)
-                                .frame(width: 39, height: 39)
+                                .frame(width: 44, height: 44)
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)

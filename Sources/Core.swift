@@ -328,20 +328,20 @@ enum L {
     static var chatGapMsg: CGFloat { o("chatMsgGap", 9) }
 
     static var chatGap: CGFloat { o("chatGap", 10) }
-    static var bubblePadH: CGFloat { o("bubblePadH", 13) }
+    static var bubblePadH: CGFloat { o("bubblePadH", 9) }
     static var bubblePadV: CGFloat { o("bubblePadV", 10) }
 
     static var bubblePadHPill: CGFloat { bubblePadH + 3 }
 
     static var msgLineSpacing: CGFloat { o("msgLineSpacing", 5) }
 
-    static var bubbleMaxW: CGFloat { o("bubbleMaxW", min(324, max(252, width * 0.73))) }
+    static var bubbleMaxW: CGFloat { o("bubbleMaxW", min(324, max(220, width * 0.66))) }
     static var composerH: CGFloat { o("composerH", 56) }
     static var composerIconBox: CGFloat { o("composerIconBox", 33) }
     static var composerIcon: CGFloat { o("composerIcon", 28) }
     static var inputH: CGFloat { o("inputH", 39) }
 
-    static var chatFontSize: CGFloat { o("chatFontSize", 16) }
+    static var chatFontSize: CGFloat { o("chatFontSize", 17) }
     static var msgTimeSize: CGFloat { o("msgTimeSize", 12.5) }
 
     static var coverH: CGFloat { o("coverH", 380) }
