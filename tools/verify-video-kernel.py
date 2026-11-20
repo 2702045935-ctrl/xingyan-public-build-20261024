@@ -9,6 +9,11 @@ KERNEL = (ROOT / "server" / "lib" / "video-recommendation.js").read_text(
 SERVER = (ROOT / "server" / "server.js").read_text(encoding="utf-8")
 API = (ROOT / "Sources" / "API.swift").read_text(encoding="utf-8")
 FEED = (ROOT / "Sources" / "FeedView.swift").read_text(encoding="utf-8")
+PLAYER = (ROOT / "Sources" / "FeedPlayerView.swift").read_text(encoding="utf-8")
+KERNEL_IOS = (ROOT / "Sources" / "VideoPlaybackKernel.swift").read_text(
+    encoding="utf-8"
+)
+STREAM = (ROOT / "Sources" / "StreamPlayback.swift").read_text(encoding="utf-8")
 TELEMETRY = (ROOT / "Sources" / "VideoKernelTelemetry.swift").read_text(
     encoding="utf-8"
 )
@@ -42,23 +47,48 @@ require(
 require(
     "VideoKernelTelemetry.shared.begin(item.id)" in FEED
     and "VideoKernelTelemetry.shared.update(item.id" in FEED
-    and "VideoKernelTelemetry.shared.complete(item.id)" in FEED
+    and "VideoKernelTelemetry.shared.complete(entry.item.id)" in KERNEL_IOS
     and "VideoKernelTelemetry.shared.finish(item.id)" in FEED,
     "active video lifecycle must emit impression, watch time, completion and skip signals",
 )
 require(
-    "preload: row.offset == 1" in FEED
-    and "private func prewarm()" in FEED
-    and "guard !active, player == nil" in FEED
-    and "let hls = item.hls, !hls.isEmpty" in FEED,
-    "only the next HLS item may be prewarmed, paused and failure-isolated",
+    "final class VideoPlaybackPolicy" in KERNEL_IOS
+    and "var playerLimit: Int { reducesWork ? 2 : 4 }" in KERNEL_IOS
+    and "var lookAhead: Int { reducesWork ? 1 : 2 }" in KERNEL_IOS,
+    "the playback kernel needs bounded adaptive hot-player and look-ahead limits",
 )
 require(
-    "let path = hls.isEmpty ? mp4 : hls" in FEED
-    and "viaDownload: !streaming" in FEED
-    and "VideoKernelTelemetry.shared.event(\"first_frame\"" in FEED
-    and "VideoKernelTelemetry.shared.event(\"playback_error\"" in FEED,
-    "HLS must be preferred for first-frame latency with MP4 fallback and playback metrics",
+    "out.append(Source(url: url, kind: .hls))" in KERNEL_IOS
+    and "out.append(Source(url: url, kind: .mp4))" in KERNEL_IOS
+    and KERNEL_IOS.index("out.append(Source(url: url, kind: .hls))")
+    < KERNEL_IOS.index("out.append(Source(url: url, kind: .mp4))"),
+    "HLS must be selected before progressive MP4 fallback",
+)
+require(
+    "entry.player.preroll(atRate: 1.0)" in KERNEL_IOS
+    and ".AVPlayerItemPlaybackStalled" in KERNEL_IOS
+    and "private func recover(_ entry: Entry, reason: String)" in KERNEL_IOS
+    and "首帧超时" in KERNEL_IOS
+    and "播放停滞" in KERNEL_IOS,
+    "the kernel must preroll, detect stalls, and recover from first-frame timeouts",
+)
+require(
+    "PlayerPool.shared.focus(items: items, index: index)" in PLAYER
+    and "PlayerPool.shared.focus(items: items, index: i)" in FEED
+    and "@ObservedObject private var playerPool = PlayerPool.shared" in FEED,
+    "main-feed and full-screen playback must share the bounded playback pool",
+)
+require(
+    "StreamPlay.cancel(old)" in KERNEL_IOS
+    and "loader.cancelAll()" in STREAM
+    and "release(loader)" in STREAM
+    and "while keepOrder.count > 32" in STREAM,
+    "stream loaders must be released and retained under a hard upper bound",
+)
+require(
+    "VideoKernelTelemetry.shared.event(\"first_frame\"" in KERNEL_IOS
+    and "VideoKernelTelemetry.shared.event(\"playback_error\"" in KERNEL_IOS,
+    "playback lifecycle must report first-frame and recovery failures",
 )
 require(
     "private var pending: [VideoKernelFeedbackEvent] = []" in TELEMETRY

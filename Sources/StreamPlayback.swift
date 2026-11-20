@@ -211,7 +211,8 @@ final class StreamLoader: NSObject, AVAssetResourceLoaderDelegate {
 
 enum StreamPlay {
 
-    private static var keepAlive: [StreamLoader] = []
+    private static var keepAlive: [ObjectIdentifier: StreamLoader] = [:]
+    private static var keepOrder: [ObjectIdentifier] = []
     private static let keepLock = NSLock()
 
     static func makeAsset(_ url: URL) -> AVURLAsset? {
@@ -235,7 +236,9 @@ enum StreamPlay {
     }
 
     static func cancel(_ item: AVPlayerItem?) {
-        item?.chrisLoader?.cancelAll()
+        guard let loader = item?.chrisLoader else { return }
+        loader.cancelAll()
+        release(loader)
     }
 
     static func player(_ url: URL) -> AVPlayer? {
@@ -274,8 +277,21 @@ enum StreamPlay {
 
     private static func keep(_ l: StreamLoader) {
         keepLock.lock()
-        keepAlive.append(l)
+        let key = ObjectIdentifier(l)
+        keepAlive[key] = l
+        keepOrder.removeAll { $0 == key }
+        keepOrder.append(key)
+        while keepOrder.count > 32 {
+            keepAlive.removeValue(forKey: keepOrder.removeFirst())
+        }
+        keepLock.unlock()
+    }
 
+    private static func release(_ l: StreamLoader) {
+        keepLock.lock()
+        let key = ObjectIdentifier(l)
+        keepAlive.removeValue(forKey: key)
+        keepOrder.removeAll { $0 == key }
         keepLock.unlock()
     }
 }

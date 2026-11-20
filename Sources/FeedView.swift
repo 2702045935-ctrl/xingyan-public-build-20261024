@@ -245,9 +245,13 @@ struct ChannelsView: View {
                 coverPicked = nil
             }
         }
-        .task { await load() }
+        .task {
+            await load()
+            PlayerPool.shared.focus(items: items, index: index)
+        }
 
         .onChange(of: index) { i in
+            PlayerPool.shared.focus(items: items, index: i)
             if i >= items.count - 2 { Task { await loadMore() } }
         }
 
@@ -258,6 +262,7 @@ struct ChannelsView: View {
         }
         .onDisappear {
             VideoKernelTelemetry.shared.finishAll()
+            PlayerPool.shared.suspend()
             try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         }
     }
@@ -1223,8 +1228,7 @@ struct FeedCell: View {
     var onPickEpisode: () -> Void = {}
     var onFavorite: () -> Void = {}
 
-    @State private var player: AVPlayer?
-    @State private var loadingVideo = true
+    @ObservedObject private var playerPool = PlayerPool.shared
     @State private var liked = false
     @State private var likes = 0
     @State private var favorited = false
@@ -1233,12 +1237,21 @@ struct FeedCell: View {
     @State private var progress: Double = 0
     @State private var durationSec: Double = 0
     @State private var timeObserver: Any?
+    @State private var observedPlayer: AVPlayer?
+
+    private var player: AVPlayer? { playerPool.player(for: item) }
+    private var loadingVideo: Bool {
+        !playerPool.isReady(item.id)
+            && !playerPool.hasPlayed(item.id)
+            && !playerPool.failed.contains(item.id)
+    }
 
     var body: some View {
         ZStack {
             Color.black
             if !(item.cover ?? "").isEmpty {
-                RemoteImage(path: item.cover ?? "").opacity(player == nil ? 1 : 0.001)
+                RemoteImage(path: item.cover ?? "")
+                    .opacity(playerPool.hasPlayed(item.id) ? 0.001 : 1)
             }
             if let p = player {
                 PlayerSurface(player: p)
@@ -1330,35 +1343,28 @@ struct FeedCell: View {
 
         .onAppear {
             if active { setup() }
-            else if preload { prewarm() }
+            else if preload { _ = player }
         }
-        .onDisappear { teardown() }
+        .onDisappear { deactivate() }
         .onChange(of: active) { on in
             if on {
                 setup()
-                player?.play()
-            } else if preload {
-                player?.pause()
+                playerPool.play(item)
             } else {
-                teardown()
+                deactivate()
             }
         }
         .onChange(of: preload) { on in
-            if on, !active {
-                prewarm()
-            } else if !on, !active {
-                teardown()
-            }
+            if on, !active { _ = player }
         }
     }
 
-    private func teardown() {
+    private func deactivate() {
         VideoKernelTelemetry.shared.finish(item.id)
-        if let obs = timeObserver, let p = player { p.removeTimeObserver(obs) }
+        if let obs = timeObserver, let p = observedPlayer { p.removeTimeObserver(obs) }
         timeObserver = nil
-        player?.pause()
-        player = nil
-        loadingVideo = true
+        observedPlayer = nil
+        playerPool.pause(item)
         progress = 0
     }
 
@@ -1456,41 +1462,10 @@ struct FeedCell: View {
         likes = item.likes ?? 0
         favorited = item.favorited ?? false
         favorites = item.favorites ?? 0
-        if let existing = player {
-            if existing.currentItem?.status == .failed {
-                teardown()
-            } else {
-                installObservers(existing)
-                if active { existing.play() }
-                verifyPrewarmed(existing)
-                return
-            }
-        }
-
-        let hls = item.playPath
-        let mp4 = item.video ?? ""
-        let path = hls.isEmpty ? mp4 : hls
-        guard let url = API.shared.assetURL(path) else { return }
-        loadingVideo = true
-        CrashCatcher.note("视频号", "开始加载 id=\(item.id) 源=\(path)")
-        let streaming = !hls.isEmpty && path == hls
-        startPlayer(path: path, url: url,
-                    canFallback: !mp4.isEmpty && mp4 != path,
-                    viaDownload: !streaming)
-    }
-
-    private func prewarm() {
-        guard !active, player == nil,
-              let hls = item.hls, !hls.isEmpty,
-              let url = API.shared.assetURL(hls) else { return }
-        let prepared = StreamPlay.player(url) ?? AVPlayer(url: url)
-        prepared.actionAtItemEnd = .none
-        prepared.automaticallyWaitsToMinimizeStalling = false
-        prepared.currentItem?.preferredForwardBufferDuration = 0.8
-        prepared.pause()
-        player = prepared
-        loadingVideo = true
-        CrashCatcher.note("视频号", "预取下一条 id=\(item.id) 源=\(hls)")
+        guard let player else { return }
+        observedPlayer = player
+        installObservers(player)
+        playerPool.play(item)
     }
 
     private func installObservers(_ p: AVPlayer) {
@@ -1503,101 +1478,6 @@ struct FeedCell: View {
                 VideoKernelTelemetry.shared.update(item.id,
                                                   progress: progress,
                                                   duration: d)
-            }
-        }
-        NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime,
-                                               object: p.currentItem, queue: .main) { _ in
-            VideoKernelTelemetry.shared.complete(item.id)
-            p.seek(to: .zero)
-            p.play()
-        }
-    }
-
-    private func verifyPrewarmed(_ p: AVPlayer) {
-        guard active else { return }
-        Task { @MainActor in
-            for _ in 0..<15 {
-                if player !== p || !active { return }
-                if p.currentItem?.status == .failed { break }
-                if CMTimeGetSeconds(p.currentTime()) > 0.05 {
-                    loadingVideo = false
-                    VideoKernelTelemetry.shared.event("first_frame", itemId: item.id)
-                    return
-                }
-                try? await Task.sleep(nanoseconds: 200_000_000)
-            }
-            guard player === p, active else { return }
-            teardown()
-            setup()
-        }
-    }
-
-    private func startPlayer(path: String, url: URL, canFallback: Bool, viaDownload: Bool = false) {
-        Task { @MainActor in
-
-            var playURL = url
-            if viaDownload {
-                guard let local = await StreamPlay.download(url) else {
-
-                    if canFallback, let h = item.hls, !h.isEmpty,
-                       let u2 = API.shared.assetURL(h), u2 != url {
-                        CrashCatcher.note("视频号", "整段下载失败，改用分片 id=\(item.id)")
-                        startPlayer(path: h, url: u2, canFallback: false, viaDownload: false)
-                    } else {
-                        loadingVideo = false
-                    }
-                    return
-                }
-                playURL = local
-            }
-            let p = viaDownload ? AVPlayer(url: playURL) : (StreamPlay.player(playURL) ?? AVPlayer(url: playURL))
-            p.isMuted = false
-            p.actionAtItemEnd = .none
-
-            p.automaticallyWaitsToMinimizeStalling = false
-            p.currentItem?.preferredForwardBufferDuration = viaDownload ? 2 : 1.2
-
-            if let old = timeObserver, let oldP = player { oldP.removeTimeObserver(old) }
-            timeObserver = nil
-            installObservers(p)
-            if let old = player, old !== p {
-                old.pause()
-                StreamPlay.cancel(old.currentItem)
-            }
-            player = p
-            if active { p.play() }
-
-            let ticks = canFallback ? 15 : 60
-            var moved = false
-            for _ in 0..<ticks {
-                if let it = p.currentItem {
-                    if it.status == .failed { break }
-                    if it.status == .readyToPlay, CMTimeGetSeconds(p.currentTime()) > 0.05 {
-                        moved = true
-                        break
-                    }
-                }
-                try? await Task.sleep(nanoseconds: 200_000_000)
-                if player !== p || !active { return }
-            }
-            if player !== p { return }
-            if moved {
-                loadingVideo = false
-                VideoKernelTelemetry.shared.event("first_frame", itemId: item.id)
-                CrashCatcher.note("视频号", "出画面 id=\(item.id) 源=\(path)")
-                return
-            }
-            let why = p.currentItem?.error?.localizedDescription ?? "没等到画面"
-            VideoKernelTelemetry.shared.event("playback_error", itemId: item.id)
-            CrashCatcher.note("视频号", "加载失败 id=\(item.id) 源=\(path) 原因=\(why)")
-            p.pause()
-            player = nil
-            if canFallback, let fb = item.video, !fb.isEmpty, let u2 = API.shared.assetURL(fb) {
-                CrashCatcher.note("视频号", "改用整包 MP4（先下后播）id=\(item.id) 源=\(fb)")
-                loadingVideo = true
-                startPlayer(path: fb, url: u2, canFallback: false, viaDownload: true)
-            } else {
-                loadingVideo = false
             }
         }
     }
@@ -1785,6 +1665,10 @@ struct PlayerSurface: UIViewRepresentable {
 
     func updateUIView(_ v: PlayerView, context: Context) {
         v.playerLayer.player = player
+    }
+
+    static func dismantleUIView(_ uiView: PlayerView, coordinator: ()) {
+        uiView.playerLayer.player = nil
     }
 
     final class PlayerView: UIView {
