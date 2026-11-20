@@ -3044,9 +3044,7 @@ struct ChatDetailView: View {
                     .frame(minHeight: geometry.size.height, alignment: .top)
                 }
                 .scrollDismissesKeyboard(.interactively)
-                .onAppear {
-                    scrollShortConversationToBottom(proxy, animated: false)
-                }
+                .defaultScrollAnchor(.top)
                 .onChange(of: messages.count) { _ in
                     scrollShortConversationToBottom(proxy, animated: true)
                 }
@@ -3192,6 +3190,7 @@ struct ChatDetailView: View {
             }
             .coordinateSpace(name: "chatScroll")
             .scrollDismissesKeyboard(.interactively)
+            .defaultScrollAnchor(initialScrollReady ? nil : UnitPoint.bottom)
         .onChange(of: messages.count) { _ in
 
                 backfillVoiceText()
@@ -3762,17 +3761,12 @@ struct ChatDetailView: View {
             initialOpenSettling = true
             atBottom = true
             wasAtBottom = true
-            for delay in [0, 24, 70, 150, 260] {
-                if delay > 0 {
-                    try? await Task.sleep(nanoseconds: UInt64(delay) * 1_000_000)
-                }
-                if Task.isCancelled { return }
-                if ChatScrollHandle.shared.moving { return }
-                proxy.scrollTo("__bottom", anchor: .bottom)
-            }
+            await Task.yield()
+            if Task.isCancelled { return }
+            proxy.scrollTo("__bottom", anchor: .bottom)
+            await Task.yield()
             if Task.isCancelled { return }
             initialScrollReady = true
-            pinTick += 1
             await Task.yield()
             if Task.isCancelled { return }
             initialOpenSettling = false

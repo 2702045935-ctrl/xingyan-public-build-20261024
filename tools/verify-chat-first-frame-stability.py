@@ -20,9 +20,14 @@ require(
     "first-frame settling must suppress direct and native size-change pinning",
 )
 require(
-    "for delay in [0, 24, 70, 150, 260]" in CHAT
-    and "nativeMessageController.scrollToBottom(animated: false)" in CHAT,
-    "direct chats must settle across stable layout frames and native chats must pin once",
+    "defaultScrollAnchor(initialScrollReady ? nil : UnitPoint.bottom)" in CHAT
+    and "defaultScrollAnchor(.top)" in CHAT
+    and "for delay in [0, 24, 70, 150, 260]" not in CHAT,
+    "chat entry must use one native bottom anchor instead of repeated visible pinning",
+)
+require(
+    "nativeMessageController.scrollToBottom(animated: false)" in CHAT,
+    "native chats must retain their single committed initial bottom placement",
 )
 require(
     "collection.alpha = initiallyPinnedToBottom ? 0 : 1" in (ROOT / "Sources" / "NativeStaticList.swift").read_text(encoding="utf-8")
