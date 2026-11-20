@@ -805,12 +805,21 @@ private final class StarMapModel: NSObject, ObservableObject,
 struct StarMapView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var model = StarMapModel()
     @State private var query = ""
+    @State private var showingHUD = false
 
     var body: some View {
         ZStack(alignment: .top) {
-            StarMapSurface(model: model, dark: scheme == .dark)
+            StarMapSurface(
+                model: model,
+                dark: scheme == .dark,
+                reduceMotion: reduceMotion
+            )
                 .ignoresSafeArea()
 
             Group {
@@ -825,8 +834,11 @@ struct StarMapView: View {
             .padding(.horizontal, 14)
             .padding(.top, max(10, L.safeTop + 8))
             .padding(.bottom, max(12, L.safeBottom + 8))
+            .frame(maxWidth: verticalSizeClass == .compact ? 760 : .infinity)
             .animation(
-                .spring(response: 0.42, dampingFraction: 0.88),
+                reduceMotion
+                    ? .linear(duration: 0.01)
+                    : .spring(response: 0.42, dampingFraction: 0.88),
                 value: model.navigating
             )
 
@@ -858,6 +870,15 @@ struct StarMapView: View {
                     .padding(.horizontal, 28)
                     .padding(.top, max(72, L.safeTop + 62))
             }
+
+            if showingHUD {
+                StarNavigationHUD(
+                    model: model,
+                    onClose: { showingHUD = false }
+                )
+                .transition(.opacity)
+                .zIndex(10)
+            }
         }
         .background(Color.black.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
@@ -866,7 +887,11 @@ struct StarMapView: View {
             model.start()
         }
         .onDisappear {
+            UIApplication.shared.isIdleTimerDisabled = false
             model.stop()
+        }
+        .onChange(of: showingHUD) { visible in
+            UIApplication.shared.isIdleTimerDisabled = visible
         }
     }
 
@@ -930,6 +955,7 @@ struct StarMapView: View {
                     .foregroundStyle(.secondary)
                 TextField(Tr("搜索地点、商场、车站"), text: $query)
                     .font(pf(15))
+                    .accessibilityLabel(Tr("搜索地点"))
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .submitLabel(.search)
@@ -993,6 +1019,10 @@ struct StarMapView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(
+                    (item.name ?? Tr("未命名地点"))
+                        + "，" + (item.placemark.title ?? "")
+                )
                 if index < model.results.count - 1 {
                     HairLine(inset: 59)
                 }
@@ -1203,6 +1233,11 @@ struct StarMapView: View {
                                     in: Capsule())
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(
+                        (index == 0 ? Tr("推荐路线") : Tr("备选路线"))
+                            + "，" + routeClock(value.expectedTravelTime)
+                            + "，" + routeDistance(value.distance)
+                    )
                 }
             }
 
@@ -1421,7 +1456,7 @@ struct StarMapView: View {
             VStack(alignment: .leading, spacing: 5) {
                 HStack(spacing: 6) {
                     Text(routeDistance(model.nextDistance))
-                        .font(pf(14, .bold))
+                        .font(navigationFont(14, .bold))
                         .foregroundStyle(Color(hex: 0x0A84FF))
                         .monospacedDigit()
                     Text(model.travelMode.title + Tr("导航"))
@@ -1435,11 +1470,16 @@ struct StarMapView: View {
                         )
                 }
                 Text(model.nextInstruction)
-                    .font(pf(21, .semibold))
+                    .font(navigationFont(21, .semibold))
                     .foregroundStyle(.primary)
                     .lineLimit(2)
                     .minimumScaleFactor(0.80)
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(
+                routeDistance(model.nextDistance)
+                    + "，" + model.nextInstruction
+            )
             Spacer(minLength: 0)
             Button {
                 model.toggleVoiceGuidance()
@@ -1463,7 +1503,7 @@ struct StarMapView: View {
         .overlay {
             RoundedRectangle(cornerRadius: 26, style: .continuous)
                 .stroke(Color.white.opacity(scheme == .dark ? 0.13 : 0.46),
-                        lineWidth: 0.6)
+                        lineWidth: adaptiveStrokeWidth)
         }
         .shadow(color: .black.opacity(0.23), radius: 24, y: 10)
     }
@@ -1472,7 +1512,7 @@ struct StarMapView: View {
         HStack(spacing: 9) {
             StarManeuverIcon(kind: followingManeuverKind, size: 28)
             Text(model.followingInstruction)
-                .font(pf(13, .medium))
+                .font(navigationFont(13, .medium))
                 .foregroundStyle(.primary)
                 .lineLimit(1)
             Spacer(minLength: 6)
@@ -1490,7 +1530,7 @@ struct StarMapView: View {
         .overlay {
             RoundedRectangle(cornerRadius: 17, style: .continuous)
                 .stroke(Color.white.opacity(scheme == .dark ? 0.11 : 0.42),
-                        lineWidth: 0.6)
+                        lineWidth: adaptiveStrokeWidth)
         }
         .shadow(color: .black.opacity(0.15), radius: 14, y: 6)
     }
@@ -1525,14 +1565,22 @@ struct StarMapView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(Tr("预计到达")
                          + " " + arrivalClock(model.timeRemaining))
-                        .font(pf(17, .semibold))
+                        .font(navigationFont(17, .semibold))
                     Text(routeClock(model.timeRemaining)
                          + " · " + routeDistance(model.distanceRemaining)
                          + " " + Tr("剩余"))
-                        .font(pf(12, .medium))
+                        .font(navigationFont(12, .medium))
                         .foregroundStyle(.secondary)
                         .monospacedDigit()
                 }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(
+                    Tr("预计到达")
+                        + arrivalClock(model.timeRemaining)
+                        + "，" + routeClock(model.timeRemaining)
+                        + "，" + routeDistance(model.distanceRemaining)
+                        + Tr("剩余")
+                )
                 Spacer(minLength: 6)
                 mapControl(kind: model.showingRouteOverview
                            ? .overviewOn : .overview,
@@ -1542,6 +1590,9 @@ struct StarMapView: View {
                 mapControl(kind: model.use3D ? .cubeOn : .cube,
                            active: model.use3D) {
                     model.toggle3D()
+                }
+                mapControl(kind: .hud, active: false) {
+                    showingHUD = true
                 }
                 Button {
                     model.endNavigation()
@@ -1565,7 +1616,7 @@ struct StarMapView: View {
         .overlay {
             RoundedRectangle(cornerRadius: 25, style: .continuous)
                 .stroke(Color.white.opacity(scheme == .dark ? 0.13 : 0.46),
-                        lineWidth: 0.6)
+                        lineWidth: adaptiveStrokeWidth)
         }
         .shadow(color: .black.opacity(0.23), radius: 24, y: 10)
     }
@@ -1577,6 +1628,26 @@ struct StarMapView: View {
             StarMapControlIcon(kind: kind, size: 36, active: active)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(kind.accessibilityTitle)
+    }
+
+    private func navigationFont(_ size: CGFloat,
+                                _ weight: Font.Weight = .regular) -> Font {
+        let scale: CGFloat
+        switch dynamicTypeSize {
+        case .xSmall: scale = 0.90
+        case .small: scale = 0.95
+        case .medium, .large: scale = 1
+        case .xLarge: scale = 1.08
+        case .xxLarge: scale = 1.14
+        case .xxxLarge: scale = 1.20
+        default: scale = 1.27
+        }
+        return pf(size * scale, weight)
+    }
+
+    private var adaptiveStrokeWidth: CGFloat {
+        contrast == .increased ? 1.2 : 0.6
     }
 
     private var maneuverKind: StarManeuverKind {
@@ -1745,7 +1816,19 @@ private struct StarManeuverIcon: View {
 }
 
 private enum StarMapControlKind {
-    case cube, cubeOn, layers, satellite, locate, route, overview, overviewOn
+    case cube, cubeOn, layers, satellite, locate, route, overview, overviewOn, hud
+
+    var accessibilityTitle: String {
+        switch self {
+        case .cube, .cubeOn: return Tr("切换三维地图")
+        case .layers: return Tr("切换地图图层")
+        case .satellite: return Tr("切换卫星地图")
+        case .locate: return Tr("回到当前位置")
+        case .route: return Tr("路线")
+        case .overview, .overviewOn: return Tr("切换路线全览")
+        case .hud: return Tr("打开 HUD 抬头显示")
+        }
+    }
 }
 
 private struct StarMapControlIcon: View {
@@ -1839,6 +1922,22 @@ private struct StarMapControlIcon: View {
                     path.addLine(to: p(0.39, 0.70))
                     path.move(to: p(0.61, 0.31))
                     path.addLine(to: p(0.61, 0.81))
+                case .hud:
+                    let screen = CGRect(
+                        x: canvas.width * 0.15,
+                        y: canvas.height * 0.30,
+                        width: canvas.width * 0.70,
+                        height: canvas.height * 0.40
+                    )
+                    path.addRoundedRect(in: screen,
+                                        cornerSize: CGSize(
+                                            width: size * 0.08,
+                                            height: size * 0.08
+                                        ))
+                    path.move(to: p(0.25, 0.89))
+                    path.addLine(to: p(0.75, 0.89))
+                    path.move(to: p(0.50, 0.70))
+                    path.addLine(to: p(0.50, 0.89))
                 }
                 context.stroke(
                     path,
@@ -1858,9 +1957,172 @@ private struct StarMapControlIcon: View {
     }
 }
 
+private struct StarNavigationHUD: View {
+    @ObservedObject var model: StarMapModel
+    let onClose: () -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            VStack(spacing: 22) {
+                HStack {
+                    Text(model.travelMode.title + Tr("导航"))
+                        .font(pf(13, .semibold))
+                        .foregroundStyle(.white.opacity(0.62))
+                    Spacer()
+                    Button(action: onClose) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 38, height: 38)
+                            .background(.white.opacity(0.12), in: Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Tr("关闭 HUD"))
+                }
+
+                Spacer(minLength: 8)
+
+                HStack(spacing: 24) {
+                    StarManeuverIcon(
+                        kind: Self.maneuverKind(for: model.nextInstruction),
+                        size: min(118, UIScreen.main.bounds.height * 0.15)
+                    )
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text({
+                            if model.nextDistance >= 1000 {
+                                return String(
+                                    format: "%.1f km",
+                                    model.nextDistance / 1000
+                                )
+                            }
+                            return "\(max(0, Int(model.nextDistance.rounded()))) m"
+                        }())
+                            .font(.system(size: 35, weight: .bold,
+                                          design: .rounded))
+                            .foregroundStyle(Color(hex: 0x69C8FF))
+                            .monospacedDigit()
+                        Text(model.nextInstruction)
+                            .font(.system(size: 35, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.72)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                if !model.followingInstruction.isEmpty {
+                    HStack(spacing: 12) {
+                        Image(systemName: "arrow.turn.down.right")
+                            .font(.system(size: 20, weight: .semibold))
+                        Text(model.followingInstruction)
+                            .font(.system(size: 18, weight: .medium))
+                            .lineLimit(1)
+                        Spacer(minLength: 0)
+                    }
+                    .foregroundStyle(.white.opacity(0.72))
+                    .padding(.horizontal, 17)
+                    .frame(height: 52)
+                    .background(.white.opacity(0.08),
+                                in: RoundedRectangle(cornerRadius: 17,
+                                                     style: .continuous))
+                }
+
+                Spacer(minLength: 12)
+
+                GeometryReader { proxy in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(.white.opacity(0.12))
+                        Capsule()
+                            .fill(Color(hex: 0x36A8FF))
+                            .frame(
+                                width: max(5, proxy.size.width
+                                    * max(0.015, model.progress))
+                            )
+                    }
+                }
+                .frame(height: 5)
+
+                HStack(alignment: .lastTextBaseline) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(hudClock(model.timeRemaining))
+                            .font(.system(size: 24, weight: .semibold,
+                                          design: .rounded))
+                            .foregroundStyle(.white)
+                            .monospacedDigit()
+                        Text(Tr("预计到达")
+                             + " " + hudArrival(model.timeRemaining))
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.58))
+                    }
+                    Spacer()
+                    Text(hudDistance(model.distanceRemaining))
+                        .font(.system(size: 18, weight: .semibold,
+                                      design: .rounded))
+                        .foregroundStyle(.white.opacity(0.82))
+                        .monospacedDigit()
+                }
+            }
+            .padding(.horizontal, 28)
+            .padding(.top, max(18, L.safeTop + 10))
+            .padding(.bottom, max(24, L.safeBottom + 12))
+        }
+        .accessibilityElement(children: .contain)
+        .animation(
+            reduceMotion
+                ? .linear(duration: 0.01)
+                : .easeOut(duration: 0.18),
+            value: model.nextInstruction
+        )
+    }
+
+    private static func maneuverKind(for text: String) -> StarManeuverKind {
+        if text.contains("到达") { return .arrive }
+        if text.contains("向右前方") || text.contains("稍向右") {
+            return .slightRight
+        }
+        if text.contains("向左前方") || text.contains("稍向左") {
+            return .slightLeft
+        }
+        if text.contains("掉头") { return .uTurn }
+        if text.contains("环岛") { return .roundabout }
+        if text.contains("左") { return .left }
+        if text.contains("右") { return .right }
+        return .straight
+    }
+
+    private func hudClock(_ seconds: TimeInterval) -> String {
+        let minutes = max(1, Int(seconds.rounded()) / 60)
+        if minutes >= 60 {
+            return "\(minutes / 60) " + Tr("小时")
+                + " \(minutes % 60) " + Tr("分钟")
+        }
+        return "\(minutes) " + Tr("分钟")
+    }
+
+    private func hudDistance(_ meters: Double) -> String {
+        meters >= 1000
+            ? String(format: "%.1f km", meters / 1000)
+            : "\(max(0, Int(meters.rounded()))) m"
+    }
+
+    private func hudArrival(_ seconds: TimeInterval) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = .current
+        formatter.timeStyle = .short
+        formatter.dateStyle = .none
+        return formatter.string(
+            from: Date().addingTimeInterval(max(0, seconds))
+        )
+    }
+}
+
 private struct StarMapSurface: UIViewRepresentable {
     @ObservedObject var model: StarMapModel
     let dark: Bool
+    let reduceMotion: Bool
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
@@ -1897,6 +2159,7 @@ private struct StarMapSurface: UIViewRepresentable {
         map.pointOfInterestFilter = model.navigating
             ? .excludingAll : .includingAll
         map.showsCompass = !model.navigating
+        context.coordinator.reduceMotion = reduceMotion
         context.coordinator.sync(map: map, model: model)
     }
 
@@ -1911,6 +2174,7 @@ private struct StarMapSurface: UIViewRepresentable {
         private var lastNavigationTimestamp = Date.distantPast
         private var smoothedHeading: Double?
         private var travelMode = StarTravelMode.driving
+        var reduceMotion = false
 
         func sync(map: MKMapView, model: StarMapModel) {
             syncRoute(map: map, model: model)
@@ -1995,18 +2259,26 @@ private struct StarMapSurface: UIViewRepresentable {
                     previous: smoothedHeading ?? map.camera.heading
                 )
                 smoothedHeading = heading
+                let approach = max(
+                    0,
+                    min(1, (260 - model.nextDistance) / 210)
+                )
+                let baseDistance = model.use3D
+                    ? (model.travelMode == .walking ? 410.0 : 520.0)
+                    : (model.travelMode == .walking ? 620.0 : 760.0)
+                let basePitch = model.use3D
+                    ? (model.travelMode == .walking ? 38.0 : 62.0)
+                    : 32.0
                 let camera = MKMapCamera(
                     lookingAtCenter: model.navigationCenter
                         ?? location.coordinate,
-                    fromDistance: model.use3D
-                        ? (model.travelMode == .walking ? 410 : 520)
-                        : (model.travelMode == .walking ? 620 : 760),
-                    pitch: model.use3D
-                        ? (model.travelMode == .walking ? 38 : 62)
-                        : 32,
+                    fromDistance: baseDistance
+                        - (model.travelMode == .walking ? 65 : 145) * approach,
+                    pitch: basePitch
+                        + (model.use3D ? 5 : 2) * approach,
                     heading: heading
                 )
-                map.setCamera(camera, animated: true)
+                map.setCamera(camera, animated: !reduceMotion)
                 return
             }
             if model.cameraRevision != lastCameraRevision {
@@ -2016,7 +2288,7 @@ private struct StarMapSurface: UIViewRepresentable {
                         route.polyline.boundingMapRect,
                         edgePadding: UIEdgeInsets(top: 150, left: 50,
                                                   bottom: 220, right: 50),
-                        animated: true
+                        animated: !reduceMotion
                     )
                 } else if let location = model.location {
                     let camera = MKMapCamera(
@@ -2025,7 +2297,7 @@ private struct StarMapSurface: UIViewRepresentable {
                         pitch: model.use3D ? 46 : 20,
                         heading: 0
                     )
-                    map.setCamera(camera, animated: true)
+                    map.setCamera(camera, animated: !reduceMotion)
                 }
             }
         }

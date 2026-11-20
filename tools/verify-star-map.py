@@ -22,8 +22,9 @@ require(
     and "MKMapCamera(" in MAP
     and "map.showsBuildings = true" in MAP
     and "map.showsTraffic = true" in MAP
-    and "pitch: model.use3D" in MAP
-    and "? (model.travelMode == .walking ? 38 : 62)" in MAP,
+    and "let approach = max(" in MAP
+    and "let basePitch = model.use3D" in MAP
+    and "pitch: basePitch" in MAP,
     "star map must use native MapKit 3D camera, buildings and traffic",
 )
 require(
@@ -76,6 +77,17 @@ require(
         "NSLocationWhenInUseUsageDescription", ""
     ),
     "navigation must persist recoverable state and declare background location use",
+)
+require(
+    "private struct StarNavigationHUD: View" in MAP
+    and "accessibilityReduceMotion" in MAP
+    and "colorSchemeContrast" in MAP
+    and "dynamicTypeSize" in MAP
+    and "verticalSizeClass" in MAP
+    and "adaptiveStrokeWidth" in MAP
+    and "accessibilityLabel(kind.accessibilityTitle)" in MAP
+    and "打开 HUD 抬头显示" in MAP,
+    "navigation must expose adaptive motion, contrast and HUD access",
 )
 require(
     'case "map": StarMapView()' in DISCOVER
