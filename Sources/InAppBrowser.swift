@@ -336,8 +336,8 @@ struct InAppBrowserView: View {
         }
         .sheet(isPresented: $showTabs) {
             BrowserTabsSheet(
-                tabs: tabs,
-                active: activeTabID,
+                tabs: $tabs,
+                active: $activeTabID,
                 onSelect: selectTab,
                 onClose: closeTab,
                 onNew: { openTab() },
@@ -1199,8 +1199,8 @@ private struct BrowserStartSection: View {
 }
 
 private struct BrowserTabsSheet: View {
-    let tabs: [BrowserTab]
-    let active: UUID
+    @Binding var tabs: [BrowserTab]
+    @Binding var active: UUID
     let onSelect: (UUID) -> Void
     let onClose: (UUID) -> Void
     let onNew: () -> Void
