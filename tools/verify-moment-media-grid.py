@@ -23,6 +23,18 @@ require(
     "two/four images must use two columns and three-plus images must use three",
 )
 require(
+    "static let gap: CGFloat = 4" in LAYOUT
+    and "static let gridRadius: CGFloat = 9" in LAYOUT
+    and "static let singleRadius: CGFloat = 12" in LAYOUT,
+    "moments must use the compact thumbnail gap and corner scale",
+)
+require(
+    "gridWidth = min(width, max(196, width * 0.60))" in LAYOUT
+    and "gridWidth = min(width, max(228, min(252, width * 0.72)))" in LAYOUT
+    and "singleWidth = min(width, max(184, width * 0.62))" in LAYOUT,
+    "six/nine grids must stay compact while two-column and single media scale proportionally",
+)
+require(
     "MomentMediaLayout.singleImageSize(" in FEED
     and FEED.count("MomentMediaLayout.gridCellSize(") >= 1,
     "feed cards must share the canonical single-image and grid sizes",

@@ -1307,6 +1307,12 @@ struct MomentsView: View {
         formatter.dateFormat = "M月d日"
         return formatter
     }()
+    private static let weekdayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.dateFormat = "EEE"
+        return formatter
+    }()
     private static let yearMonthDayFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "zh_CN")
@@ -1986,7 +1992,7 @@ struct MomentsView: View {
         let days = cal.dateComponents([.day],
                                       from: cal.startOfDay(for: d),
                                       to: cal.startOfDay(for: Date())).day ?? 99
-        if days == 2 { return Tr("前天") }
+        if days < 7 { return Self.weekdayFormatter.string(from: d) }
         return cal.isDate(d, equalTo: Date(), toGranularity: .year)
             ? Self.monthDayFormatter.string(from: d)
             : Self.yearMonthDayFormatter.string(from: d)
@@ -2000,12 +2006,12 @@ struct MomentsView: View {
     private func dayHeader(_ t: String) -> some View {
         HStack {
             Text(t)
-                .font(pf(13))
+                .font(pf(12))
                 .foregroundColor(C.subLabel)
             Spacer(minLength: 0)
         }
-        .padding(.top, 14)
-        .padding(.bottom, 2)
+        .padding(.top, 11)
+        .padding(.bottom, 1)
     }
 
     private struct FoldRow: Identifiable {
@@ -2151,7 +2157,7 @@ struct MomentsView: View {
                     .padding(.vertical, 16)
             }
         }
-        .padding(.top, 18)
+        .padding(.top, 13)
         .padding(.bottom, max(42, L.safeBottom + 20))
         .frame(maxWidth: .infinity)
         .background(C.pageBg)

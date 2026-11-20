@@ -26,16 +26,18 @@ require(
     "ads must share the regular card skeleton instead of creating a second feed layout",
 )
 require(
-    "RoundedRectangle(cornerRadius: 22, style: .continuous)" in CARD,
+    "RoundedRectangle(cornerRadius: 20, style: .continuous)" in CARD,
     "the editorial feed must use the refined card surface",
 )
 require(
-    "cornerRadius: 18, style: .continuous" in CARD,
+    "cornerRadius: 16, style: .continuous" in CARD,
     "single photos and video must use the premium media treatment",
 )
 require(
-    "systemTextFont(16.5, .regular, relativeTo: .body)" in CARD,
-    "moment copy must use the refined editorial type scale",
+    "systemTextFont(15.5, .regular, relativeTo: .body)" in CARD
+    and "systemTextFont(15.8, .semibold, relativeTo: .headline)" in CARD
+    and "systemTextFont(11.6, .regular, relativeTo: .caption1)" in CARD,
+    "moment copy, author and timestamp must use the compact editorial type scale",
 )
 require(
     "availableWidth - (cardInset + contentInset) * 2" in CARD,
@@ -47,6 +49,11 @@ require(
     and ".opacity(momentsScrollActive && !timelineVisibleDay.isEmpty ? 1 : 0)" in DISCOVER
     and ".allowsHitTesting(false)" in DISCOVER,
     "moments must show a non-interactive native date timeline only while scrolling",
+)
+require(
+    'formatter.dateFormat = "EEE"' in DISCOVER
+    and "if days < 7 { return Self.weekdayFormatter.string(from: d) }" in DISCOVER,
+    "moment date sections must cover weekday, month/day and cross-year dates",
 )
 
 print("moment-editorial: passed")

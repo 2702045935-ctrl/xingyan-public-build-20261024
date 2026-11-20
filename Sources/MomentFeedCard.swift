@@ -24,8 +24,8 @@ struct MomentFeedCard: View {
     private var likes: [MomentLike] { moment.likes ?? [] }
     private var comments: [MomentComment] { moment.comments ?? [] }
     private var showingLiked: Bool { likedOverride ?? (moment.likedByMe == true) }
-    private let cardInset: CGFloat = 10
-    private let contentInset: CGFloat = 16
+    private let cardInset: CGFloat = 9
+    private let contentInset: CGFloat = 14
     private var socialSurface: Color {
         Color.dyn(0xF7F7F9, 0x121214)
     }
@@ -44,7 +44,7 @@ struct MomentFeedCard: View {
         VStack(alignment: .leading, spacing: 0) {
             if let promotion = moment.promotion {
                 promotionBanner(promotion)
-                    .padding(.bottom, 12)
+                    .padding(.bottom, 9)
             }
 
             postHeader
@@ -52,12 +52,12 @@ struct MomentFeedCard: View {
             if let text = moment.content?.trimmingCharacters(in: .whitespacesAndNewlines),
                !text.isEmpty {
                 Text(RichText.linkified(text))
-                    .font(systemTextFont(16.5, .regular, relativeTo: .body))
+                    .font(systemTextFont(15.5, .regular, relativeTo: .body))
                     .foregroundColor(C.label)
-                    .lineSpacing(7)
+                    .lineSpacing(4.8)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 15)
+                    .padding(.top, 11)
                     .contentShape(Rectangle())
                     .onTapGesture(perform: onOpenComments)
                     .onLongPressGesture(minimumDuration: 0.45, maximumDistance: 28) {
@@ -67,27 +67,27 @@ struct MomentFeedCard: View {
 
             if !images.isEmpty || isVideo {
                 media
-                    .padding(.top, 16)
+                    .padding(.top, 12)
             }
 
             actionRow
-                .padding(.top, 14)
+                .padding(.top, 10)
 
             socialContext
-                .padding(.top, 12)
+                .padding(.top, 9)
         }
         .padding(.horizontal, contentInset)
-        .padding(.top, contentInset)
-        .padding(.bottom, 14)
+        .padding(.top, 13)
+        .padding(.bottom, 11)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(C.cardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .stroke(Color.primary.opacity(0.065), lineWidth: 0.7)
         }
         .padding(.horizontal, cardInset)
-        .padding(.vertical, 6)
+        .padding(.vertical, 5)
         .background(C.pageBg)
         .onChange(of: moment.likedByMe) { _ in
             likedOverride = nil
@@ -116,7 +116,7 @@ struct MomentFeedCard: View {
                 .foregroundColor(C.subLabel.opacity(0.7))
         }
         .padding(.horizontal, 10)
-        .frame(height: 34)
+        .frame(height: 31)
         .background(
             RoundedRectangle(cornerRadius: 11, style: .continuous)
                 .fill(Color.dyn(0xFBF7F1, 0x211C16))
@@ -128,20 +128,20 @@ struct MomentFeedCard: View {
     }
 
     private var postHeader: some View {
-        HStack(alignment: .center, spacing: 11) {
+        HStack(alignment: .center, spacing: 9.5) {
             Avatar(path: moment.author?.avatarPath ?? "",
-                   size: 46,
-                   radius: 23,
+                   size: 43,
+                   radius: 21.5,
                    circle: true)
                 .contentShape(Circle())
                 .onTapGesture {
                     if let user = moment.author { onOpenAvatar(user) }
                 }
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 5) {
                     Text(moment.author?.name ?? "")
-                        .font(systemTextFont(16.5, .semibold, relativeTo: .headline))
+                        .font(systemTextFont(15.8, .semibold, relativeTo: .headline))
                         .foregroundColor(C.label)
                         .lineLimit(1)
 
@@ -162,7 +162,7 @@ struct MomentFeedCard: View {
                         Text(location).lineLimit(1)
                     }
                 }
-                .font(systemTextFont(12.5, .regular, relativeTo: .caption1))
+                .font(systemTextFont(11.6, .regular, relativeTo: .caption1))
                 .foregroundColor(C.subLabel)
             }
             .contentShape(Rectangle())
@@ -174,9 +174,9 @@ struct MomentFeedCard: View {
 
             Button(action: onMore) {
                 Image(systemName: "ellipsis")
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(C.subLabel)
-                    .frame(width: 40, height: 40)
+                    .frame(width: 36, height: 36)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -256,9 +256,9 @@ struct MomentFeedCard: View {
                 }
             }
             .frame(width: width, height: height)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .stroke(Color.primary.opacity(0.075), lineWidth: 0.6)
             }
             .contentShape(Rectangle())
@@ -285,16 +285,16 @@ struct MomentFeedCard: View {
                 } label: {
                     HStack(spacing: 5) {
                         Image(systemName: showingLiked ? "heart.fill" : "heart")
-                            .font(.system(size: 18, weight: .regular))
+                            .font(.system(size: 17, weight: .regular))
                             .scaleEffect(likePulse ? 1.16 : 1)
                         if showingLikeCount > 0 {
                             Text("\(showingLikeCount)")
-                                .font(systemTextFont(12.5, .medium, relativeTo: .caption1))
+                                .font(systemTextFont(11.8, .medium, relativeTo: .caption1))
                         }
                     }
                     .foregroundColor(showingLiked ? Color(hex: 0xFF3B4D) : C.subLabel)
-                    .padding(.horizontal, 9)
-                    .frame(height: 32)
+                    .padding(.horizontal, 8)
+                    .frame(height: 30)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -303,15 +303,15 @@ struct MomentFeedCard: View {
                 Button(action: onOpenComments) {
                     HStack(spacing: 5) {
                         Image(systemName: "bubble.right")
-                            .font(.system(size: 17.5, weight: .regular))
+                            .font(.system(size: 16.5, weight: .regular))
                         if !comments.isEmpty {
                             Text("\(comments.count)")
-                                .font(systemTextFont(12.5, .medium, relativeTo: .caption1))
+                                .font(systemTextFont(11.8, .medium, relativeTo: .caption1))
                         }
                     }
                     .foregroundColor(C.subLabel)
-                    .padding(.horizontal, 9)
-                    .frame(height: 32)
+                    .padding(.horizontal, 8)
+                    .frame(height: 30)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -319,9 +319,9 @@ struct MomentFeedCard: View {
 
                 Button(action: onMore) {
                     Image(systemName: "ellipsis")
-                        .font(.system(size: 16.5, weight: .semibold))
+                        .font(.system(size: 15.5, weight: .semibold))
                         .foregroundColor(C.subLabel)
-                        .frame(width: 34, height: 32)
+                        .frame(width: 31, height: 30)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -336,7 +336,7 @@ struct MomentFeedCard: View {
     @ViewBuilder
     private var socialContext: some View {
         if !likes.isEmpty || !comments.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 6) {
                 if !likes.isEmpty {
                     likesSummaryButton
                 }
@@ -350,20 +350,20 @@ struct MomentFeedCard: View {
                         Text(Lang.isEnglish
                              ? "View all \(comments.count) comments"
                              : "查看全部 \(comments.count) 条评论")
-                            .font(systemTextFont(13, .medium, relativeTo: .caption1))
+                            .font(systemTextFont(12.2, .medium, relativeTo: .caption1))
                             .foregroundColor(C.label.opacity(0.72))
                     }
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 11)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
             .background(
-                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                RoundedRectangle(cornerRadius: 13, style: .continuous)
                     .fill(socialSurface)
             )
             .overlay {
-                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                RoundedRectangle(cornerRadius: 13, style: .continuous)
                     .stroke(Color.primary.opacity(0.055), lineWidth: 0.6)
             }
         }
@@ -376,22 +376,22 @@ struct MomentFeedCard: View {
             HStack(spacing: 8) {
                 HStack(spacing: -7) {
                     ForEach(Array(stableOrderedLikes.prefix(6).enumerated()), id: \.offset) { _, like in
-                        likeAvatar(like, size: 24)
+                        likeAvatar(like, size: 22)
                             .overlay(Circle().stroke(socialSurface, lineWidth: 2))
                     }
                     if stableOrderedLikes.count > 6 {
                         Text("+\(stableOrderedLikes.count - 6)")
                             .font(.system(size: 9.5, weight: .bold, design: .rounded))
                             .foregroundColor(C.subLabel)
-                            .frame(width: 24, height: 24)
+                            .frame(width: 22, height: 22)
                             .background(Circle().fill(Color.primary.opacity(0.07)))
                             .overlay(Circle().stroke(socialSurface, lineWidth: 2))
                     }
                 }
-                .frame(height: 24)
+                .frame(height: 22)
 
                 Text(localizedLikeSummary)
-                    .font(systemTextFont(13, .medium, relativeTo: .caption1))
+                    .font(systemTextFont(12.3, .medium, relativeTo: .caption1))
                     .foregroundColor(C.label)
                     .lineLimit(1)
 
@@ -401,7 +401,7 @@ struct MomentFeedCard: View {
                     .font(.system(size: 9.5, weight: .semibold))
                     .foregroundColor(C.subLabel)
             }
-            .frame(minHeight: 32)
+            .frame(minHeight: 28)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -468,7 +468,7 @@ struct MomentFeedCard: View {
 
         return Text(line)
             .foregroundColor(C.label)
-            .font(systemTextFont(13.5, .regular, relativeTo: .caption1))
+            .font(systemTextFont(12.5, .regular, relativeTo: .caption1))
             .lineLimit(2)
             .multilineTextAlignment(.leading)
             .frame(maxWidth: .infinity, alignment: .leading)
