@@ -43,8 +43,8 @@
     },
     {
       "path": "Sources/StreamPlayback.swift",
-      "size": 10724,
-      "sha256": "18cf6e93d83cdb349e7d3d8ac35f1e59f19b149cb8dd297ad5c0dc69bd334ce4"
+      "size": 11329,
+      "sha256": "32eca115a887d7297d612bae18f656c12abb38a7ee7822a7f99a68094fa65047"
     },
     {
       "path": "Sources/Keychain.swift",
@@ -125,6 +125,11 @@
       "path": "Sources/StressTestConfiguration.swift",
       "size": 2769,
       "sha256": "f10b2957ae1c0372b9eab62dd9a82f64af5eca763472b4a7f7d52ab52a73558b"
+    },
+    {
+      "path": "Sources/VideoPlaybackKernel.swift",
+      "size": 22361,
+      "sha256": "22f6a9d0035b5644c3ce538434e4bec838c3c78c3c7eadd39d5547116b326d14"
     }
   ]
 }
