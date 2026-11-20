@@ -9,6 +9,9 @@ enum ChatStressFixture {
 
     static let initialWindow = min(count, 160)
     static let pageSize = 320
+    /// Keep the rendered conversation working set bounded even when the
+    /// synthetic data source grows toward 100,000 rows.
+    static let maxActiveWindow = 2_400
     private static let lock = NSLock()
     private static var cache: [Chat] = []
 

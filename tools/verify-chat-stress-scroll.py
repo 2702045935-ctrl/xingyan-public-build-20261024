@@ -106,6 +106,18 @@ require(
     "100k conversation stress data must materialize incrementally",
 )
 require(
+    "static let maxActiveWindow = 2_400" in FIXTURE
+    and "range: stressWindowStart..<stressLoadedCount" in CHATS
+    and "updated.list.removeFirst(min(removedCount, updated.list.count))" in CHATS
+    and "stressChatEntries.removeFirst(min(removedCount, stressChatEntries.count))" in CHATS,
+    "large conversation lists must keep a bounded active window while reading the full fixture",
+)
+require(
+    "let removedPrefixHeight" in NATIVE_CHAT_LIST
+    and "target.y -= removedPrefixHeight" in NATIVE_CHAT_LIST,
+    "removing the leading conversation window must compensate its exact row height",
+)
+require(
     "updated.list.append(contentsOf: added)" in CHATS,
     "stress conversation snapshots must append new pages without rescanning all loaded rows",
 )

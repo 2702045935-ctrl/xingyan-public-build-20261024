@@ -228,6 +228,13 @@ where Item.ID: Hashable {
                 pendingItems = nil
                 return
             }
+            let removedPrefixCount = nextOrder.first
+                .flatMap { order.firstIndex(of: $0) }
+                .map { max(0, $0) } ?? 0
+            let removedPrefixHeight = order.prefix(removedPrefixCount).reduce(CGFloat(0)) {
+                partial, id in
+                partial + (lookup[id].map(height) ?? 0)
+            }
             let reload = next.compactMap { item -> Item.ID? in
                 guard let old = lookup[item.id] else { return nil }
                 return old == item ? nil : item.id
@@ -244,10 +251,8 @@ where Item.ID: Hashable {
                 snapshot.reloadItems(reload)
             }
             order = nextOrder
-            if appliedItemCount != nextOrder.count {
-                appliedItemCount = nextOrder.count
-                endRequestInFlight = false
-            }
+            appliedItemCount = nextOrder.count
+            endRequestInFlight = false
             pendingItems = nil
             dataSource.apply(snapshot, animatingDifferences: animated) {
                 guard generation == self.applyGeneration,
@@ -263,6 +268,7 @@ where Item.ID: Hashable {
                         + table.adjustedContentInset.bottom
                 )
                 var target = previousOffset
+                target.y -= removedPrefixHeight
                 target.y = min(max(target.y, minimumY), maximumY)
                 table.setContentOffset(target, animated: false)
             }

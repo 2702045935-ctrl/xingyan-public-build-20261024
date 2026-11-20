@@ -1227,6 +1227,7 @@ struct ChatsView: View {
     }
     @State private var path = NavigationPath()
     @State private var stressAutoOpened = false
+    @State private var stressWindowStart = 0
     @State private var stressLoadedCount = ChatStressFixture.initialWindow
     @State private var stressChatEntries: [NativeChatEntry] = []
 
@@ -1265,7 +1266,9 @@ struct ChatsView: View {
 
     private var activeChatSource: [Chat] {
         if ChatStressFixture.isActive {
-            let conversations = ChatStressFixture.chats(prefix: stressLoadedCount)
+            let conversations = ChatStressFixture.chats(
+                range: stressWindowStart..<stressLoadedCount
+            )
             return MessageStressFixture.isActive
                 ? MessageStressFixture.chats + conversations
                 : conversations
@@ -1276,12 +1279,21 @@ struct ChatsView: View {
 
     private func loadMoreStressChatsIfNeeded() {
         guard ChatStressFixture.isActive else { return }
-        let previous = stressLoadedCount
-        let next = min(ChatStressFixture.count,
-                       previous + ChatStressFixture.pageSize)
-        guard next > previous else { return }
-        let added = ChatStressFixture.chats(range: previous..<next)
-        stressLoadedCount = next
+        let previousEnd = stressLoadedCount
+        let nextEnd = min(ChatStressFixture.count,
+                          previousEnd + ChatStressFixture.pageSize)
+        guard nextEnd > previousEnd else { return }
+        let nextStart = min(
+            nextEnd,
+            max(
+                stressWindowStart,
+                nextEnd - ChatStressFixture.maxActiveWindow
+            )
+        )
+        let removedCount = nextStart - stressWindowStart
+        let added = ChatStressFixture.chats(range: previousEnd..<nextEnd)
+        stressWindowStart = nextStart
+        stressLoadedCount = nextEnd
         guard chatFilter == .all, keyword.isEmpty else {
             cachedSnapshot = chatSnapshot()
             return
@@ -1300,8 +1312,14 @@ struct ChatsView: View {
             }
             if chat.pinned == true { counts[.pinned, default: 0] += n }
         }
+        if removedCount > 0 {
+            updated.list.removeFirst(min(removedCount, updated.list.count))
+        }
         updated.list.append(contentsOf: added)
         updated.unreadCounts = counts
+        if removedCount > 0 {
+            stressChatEntries.removeFirst(min(removedCount, stressChatEntries.count))
+        }
         stressChatEntries.append(contentsOf: added.map(nativeChatEntry(for:)))
         cachedSnapshot = updated
     }
