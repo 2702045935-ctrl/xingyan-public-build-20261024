@@ -68,8 +68,8 @@
     },
     {
       "path": "Sources/ChatDetailView.swift",
-      "size": 394627,
-      "sha256": "5ab05939b509e514439aac3db8cfe1cfadff25de91cec88b73f823c8ce9206aa"
+      "size": 394896,
+      "sha256": "c7842053e853395963dec4d06a70f320e5b3add08d8d3e1afdeda89fe7f96e2a"
     },
     {
       "path": "Sources/GroupInfoView.swift",
@@ -108,8 +108,8 @@
     },
     {
       "path": "Sources/ChatsView.swift",
-      "size": 143180,
-      "sha256": "ad227579c6c8dd5670a7d46dd84ecb1835bb24aa5ca63d3327c43f1d9f298401"
+      "size": 143543,
+      "sha256": "62c8720ad67e04e627d48bb8524208c53d18a2f79adfb93d1c6348f5781bfbca"
     },
     {
       "path": "Sources/MessageStressFixture.swift",
@@ -135,6 +135,11 @@
       "path": "Sources/SystemMusicKernel.swift",
       "size": 9989,
       "sha256": "aaa2fa193bd27a8bf4f3aa61d87954853f4261090d18b631c771918823aba9d8"
+    },
+    {
+      "path": "Sources/MusicPresenceStore.swift",
+      "size": 4008,
+      "sha256": "180930d75a78f0043483dfc0c7e3ddb263f72b0648e4cfbe0b1cc417a877ff6c"
     }
   ]
 }

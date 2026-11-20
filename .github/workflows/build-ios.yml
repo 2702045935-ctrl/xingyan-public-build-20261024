@@ -89,6 +89,7 @@ jobs:
           python3 tools/verify-video-kernel.py
           python3 tools/verify-music-kernel.py
           python3 tools/verify-search-recommendation.py
+          python3 tools/verify-transfer-checkout.py
           python3 tools/verify-chat-bubble-metrics.py
           python3 tools/verify-group-announce.py
           python3 tools/verify-group-top-frost.py
@@ -131,9 +132,11 @@ jobs:
           python3 tools/verify-composer-native-field.py
           python3 tools/verify-share-sheets.py
           python3 tools/verify-moment-editorial.py
+          python3 tools/verify-moment-text-layout.py
           python3 tools/verify-moment-media-grid.py
           python3 tools/verify-moment-photo-reader.py
           python3 tools/verify-moment-video-autoplay.py
+          python3 tools/verify-moment-like-particles.py
           python3 tools/verify-chat-info-layout.py
           python3 tools/verify-large-group-runtime.py
           python3 tools/verify-moment-own-publish.py

@@ -8,6 +8,7 @@ struct TransferView: View {
 
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var scheme
 
     @State private var digits = ""
     @State private var note = ""
@@ -31,6 +32,7 @@ struct TransferView: View {
     @State private var caretOn = true
 
     @State private var faceOK = false
+    @State private var usePassword = false
 
     @State private var peerRealName = ""
 
@@ -344,6 +346,7 @@ struct TransferView: View {
     private func openPay() {
         guard amount > 0 else { app.show(Tr("请先输入转账金额")); return }
         password = ""
+        usePassword = !faceOK
         payHint = nil
         badPwd = false
         withAnimation(.easeOut(duration: 0.26)) { showPay = true }
@@ -377,19 +380,7 @@ struct TransferView: View {
                         .foregroundColor(C.label)
                         .frame(maxWidth: .infinity)
 
-                    Group {
-                        if faceOK {
-                            Button { facePay() } label: {
-                                Image(systemName: "faceid")
-                                    .font(.system(size: 18, weight: .semibold))
-                                    .foregroundColor(PayVisual.tint)
-                                    .frame(width: 40, height: 40)
-                            }
-                            .buttonStyle(.plain)
-                        } else {
-                            Color.clear.frame(width: 40, height: 40)
-                        }
-                    }
+                    Color.clear.frame(width: 40, height: 40)
                 }
                 .padding(.horizontal, 14)
                 .padding(.top, 2)
@@ -481,44 +472,136 @@ struct TransferView: View {
                         }
                         .padding(.horizontal, 20)
 
-                        VStack(spacing: 10) {
-                            PayDotField(count: password.count, shake: badPwd ? -6 : 0, height: 48)
-
-                            if let hint = payHint {
-                                Text(hint)
-                                    .font(pf(13.5))
-                                    .foregroundColor(PayVisual.danger)
-                            } else if !hasPwd {
-                                Text(Tr("还没设置支付密码：我 → 设置 → 账号与安全 → 支付密码"))
-                                    .font(pf(13.5))
-                                    .foregroundColor(C.subLabel)
-                                    .multilineTextAlignment(.center)
-                            } else {
-                                Text(amount > balance
-                                     ? "余额只剩 ¥\(money(balance))，点这里去充值"
-                                     : Tr("输入 6 位支付密码完成这笔转账"))
-                                    .font(pfMoney(13.5))
-                                    .foregroundColor(amount > balance ? C.link : C.subLabel)
-                            }
+                        if faceOK && !usePassword {
+                            faceConfirmPanel
+                        } else {
+                            passwordPanel
                         }
-                        .padding(.top, 18)
-                        .padding(.bottom, 8)
                     }
                 }
 
-                PayKeypadView(busy: busy, keyHeight: L.payPadH) { k in
-                    tapPay(k)
+                if !faceOK || usePassword {
+                    PayKeypadView(busy: busy, keyHeight: L.payPadH) { k in
+                        tapPay(k)
+                    }
+                    .padding(.top, 10)
                 }
-                .padding(.top, 10)
 
                 Rectangle()
                     .fill(C.cardBg)
                     .frame(height: max(34, L.safeBottom))
             }
-            .background(C.cardBg)
+            .background {
+                ZStack {
+                    NativePremiumGlassMaterial(dark: scheme == .dark)
+                    C.cardBg.opacity(scheme == .dark ? 0.78 : 0.86)
+                }
+            }
             .clipShape(TopRounded(radius: L.paySheetRadius))
+            .overlay(alignment: .top) {
+                Rectangle()
+                    .fill(Color.white.opacity(scheme == .dark ? 0.12 : 0.34))
+                    .frame(height: 0.55)
+                    .clipShape(TopRounded(radius: L.paySheetRadius))
+            }
             .shadow(color: .black.opacity(0.20), radius: 22, y: -6)
         }
+    }
+
+    private var faceConfirmPanel: some View {
+        VStack(spacing: 14) {
+            Button {
+                facePay()
+            } label: {
+                HStack(spacing: 9) {
+                    Image(systemName: "faceid")
+                        .font(.system(size: 20, weight: .semibold))
+                    Text(Tr("使用面容 ID 确认"))
+                        .font(pf(16, .semibold))
+                }
+                .foregroundStyle(C.cardBg)
+                .frame(maxWidth: .infinity)
+                .frame(height: 52)
+                .background(
+                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .fill(C.label)
+                )
+            }
+            .buttonStyle(.plain)
+            .disabled(busy)
+
+            HStack(spacing: 7) {
+                Image(systemName: "checkmark.shield.fill")
+                    .font(.system(size: 12, weight: .semibold))
+                Text(Tr("金额与收款方确认后将立即安全提交"))
+                    .font(pf(12))
+            }
+            .foregroundStyle(PayVisual.secondaryInk)
+
+            Button {
+                usePassword = true
+            } label: {
+                Text(Tr("改用支付密码"))
+                    .font(pf(13.5, .medium))
+                    .foregroundStyle(PayVisual.tint)
+                    .frame(height: 34)
+            }
+            .buttonStyle(.plain)
+
+            if amount > balance {
+                Button {
+                    recharge()
+                } label: {
+                    Text("余额不足 · 去充值")
+                        .font(pf(13, .medium))
+                        .foregroundStyle(C.link)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.top, 18)
+        .padding(.bottom, max(16, L.safeBottom))
+    }
+
+    private var passwordPanel: some View {
+        VStack(spacing: 10) {
+            PayDotField(count: password.count, shake: badPwd ? -6 : 0, height: 48)
+
+            if let hint = payHint {
+                Text(hint)
+                    .font(pf(13.5))
+                    .foregroundColor(PayVisual.danger)
+            } else if !hasPwd {
+                Text(Tr("还没设置支付密码：我 → 设置 → 账号与安全 → 支付密码"))
+                    .font(pf(13.5))
+                    .foregroundColor(C.subLabel)
+                    .multilineTextAlignment(.center)
+            } else {
+                Text(amount > balance
+                     ? "余额只剩 ¥\(money(balance))，点这里去充值"
+                     : Tr("输入 6 位支付密码完成这笔转账"))
+                    .font(pfMoney(13.5))
+                    .foregroundColor(amount > balance ? C.link : C.subLabel)
+            }
+
+            if faceOK {
+                Button {
+                    usePassword = false
+                    password = ""
+                    payHint = nil
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "faceid")
+                        Text(Tr("改用面容 ID"))
+                    }
+                    .font(pf(13, .medium))
+                    .foregroundStyle(PayVisual.tint)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.top, 16)
+        .padding(.bottom, 8)
     }
 
     private func tapPay(_ k: String) {
@@ -540,6 +623,7 @@ struct TransferView: View {
             showMethod = false
         }
         password = ""
+        usePassword = false
         payHint = nil
         badPwd = false
     }

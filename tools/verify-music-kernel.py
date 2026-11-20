@@ -6,6 +6,8 @@ ROOT = Path(__file__).resolve().parents[1]
 KERNEL = (ROOT / "Sources" / "SystemMusicKernel.swift").read_text(encoding="utf-8")
 PLAYER = (ROOT / "Sources" / "MusicShare.swift").read_text(encoding="utf-8")
 CHAT = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
+PRESENCE = (ROOT / "Sources" / "MusicPresenceStore.swift").read_text(encoding="utf-8")
+NATIVE_CHAT = (ROOT / "Sources" / "NativeChatRowCell.swift").read_text(encoding="utf-8")
 API = (ROOT / "Sources" / "API.swift").read_text(encoding="utf-8")
 REALTIME = (ROOT / "Sources" / "Realtime.swift").read_text(encoding="utf-8")
 SERVER = (ROOT / "server" / "server.js").read_text(encoding="utf-8")
@@ -75,6 +77,14 @@ require(
     and "MusicPlayer.shared.play(track)" in CHAT
     and "peerMusic.line" in CHAT,
     "direct chats must surface a friend's music state and allow one-tap playback",
+)
+require(
+    "final class MusicPresenceStore" in PRESENCE
+    and "struct MusicListeningRing" in PRESENCE
+    and "musicOrbit.layer.add(spin" in NATIVE_CHAT
+    and "musicListening" in NATIVE_CHAT
+    and "MusicListeningRing(size: 46, active: true)" in CHAT,
+    "friends who are listening must animate their chat avatars and stop on pause",
 )
 require(
     "python3 tools/verify-music-kernel.py" in WORKFLOW,

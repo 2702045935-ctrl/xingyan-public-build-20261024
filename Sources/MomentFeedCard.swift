@@ -6,6 +6,7 @@ import AVFoundation
 /// 不再叠加实时玻璃或阴影，避免长列表滚动时持续触发合成开销。
 struct MomentFeedCard: View {
     let moment: Moment
+    let dateText: String
     let availableWidth: CGFloat
     let onOpenComments: () -> Void
     let onOpenImage: (Int) -> Void
@@ -19,6 +20,7 @@ struct MomentFeedCard: View {
 
     @State private var likedOverride: Bool?
     @State private var likePulse = false
+    @State private var likeBurst = 0
 
     private var images: [String] { moment.images ?? [] }
     private var isVideo: Bool { !(moment.video ?? "").isEmpty }
@@ -52,10 +54,11 @@ struct MomentFeedCard: View {
 
             if let text = moment.content?.trimmingCharacters(in: .whitespacesAndNewlines),
                !text.isEmpty {
-                Text(RichText.linkified(text))
+                Text(MomentTextLayout.attributed(text, size: 15.5))
                     .font(systemTextFont(15.5, .regular, relativeTo: .body))
                     .foregroundColor(C.label)
-                    .lineSpacing(4.8)
+                    .tracking(0.08)
+                    .lineSpacing(5.15)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 11)
@@ -154,7 +157,7 @@ struct MomentFeedCard: View {
                 }
 
                 HStack(spacing: 5) {
-                    Text(TimeFmt.ago(moment.createdAt))
+                    Text(dateText)
                     if let location = moment.location?.trimmingCharacters(in: .whitespacesAndNewlines),
                        !location.isEmpty {
                         Text("·")
@@ -272,6 +275,7 @@ struct MomentFeedCard: View {
                 Button {
                     if !showingLiked {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        likeBurst += 1
                     }
                     likedOverride = !showingLiked
                     withAnimation(.spring(response: 0.2, dampingFraction: 0.7)) {
@@ -283,9 +287,16 @@ struct MomentFeedCard: View {
                     onLike()
                 } label: {
                     HStack(spacing: 5) {
-                        Image(systemName: showingLiked ? "heart.fill" : "heart")
-                            .font(.system(size: 17, weight: .regular))
-                            .scaleEffect(likePulse ? 1.16 : 1)
+                        ZStack {
+                            if likeBurst > 0 {
+                                MomentLikeParticleBurst(seed: likeBurst)
+                                    .id(likeBurst)
+                            }
+                            Image(systemName: showingLiked ? "heart.fill" : "heart")
+                                .font(.system(size: 17, weight: .regular))
+                                .scaleEffect(likePulse ? 1.16 : 1)
+                        }
+                        .frame(width: 20, height: 22)
                         if showingLikeCount > 0 {
                             Text("\(showingLikeCount)")
                                 .font(systemTextFont(11.8, .medium, relativeTo: .caption1))
@@ -666,6 +677,41 @@ struct MomentLikesPresenter: ViewModifier {
     }
 }
 
+private enum MomentTextLayout {
+    static func normalized(_ raw: String) -> String {
+        let unified = raw
+            .replacingOccurrences(of: "\r\n", with: "\n")
+            .replacingOccurrences(of: "\r", with: "\n")
+        var output: [String] = []
+        var blankRun = 0
+        for original in unified.split(
+            separator: "\n",
+            omittingEmptySubsequences: false
+        ) {
+            let line = String(original)
+                .replacingOccurrences(
+                    of: #"[ \t]+$"#,
+                    with: "",
+                    options: .regularExpression
+                )
+            if line.trimmingCharacters(in: .whitespaces).isEmpty {
+                blankRun += 1
+                if blankRun <= 1 { output.append("") }
+            } else {
+                blankRun = 0
+                output.append(line)
+            }
+        }
+        while output.first == "" { output.removeFirst() }
+        while output.last == "" { output.removeLast() }
+        return output.joined(separator: "\n")
+    }
+
+    static func attributed(_ raw: String, size: CGFloat) -> AttributedString {
+        RichText.lines(normalized(raw), size: size)
+    }
+}
+
 struct MomentAutoplayVideo: View {
     let url: URL
     let cover: String
@@ -766,6 +812,47 @@ struct MomentAutoplayVideo: View {
         }
         player?.playImmediately(atRate: 1)
         playing = true
+    }
+}
+
+private struct MomentLikeParticleBurst: View {
+    let seed: Int
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var expanded = false
+
+    private let colors: [Color] = [
+        Color(hex: 0xFF3B4D),
+        Color(hex: 0xFF7A59),
+        Color(hex: 0xFFC857),
+        Color.white
+    ]
+
+    var body: some View {
+        ZStack {
+            ForEach(0..<(reduceMotion ? 6 : 14), id: \.self) { index in
+                let angle = Double(index) / Double(reduceMotion ? 6 : 14) * .pi * 2
+                let distance = CGFloat(12 + ((index * 7 + seed * 11) % 13))
+                let lift = CGFloat(((index * 5 + seed) % 9) - 4)
+                Circle()
+                    .fill(colors[index % colors.count])
+                    .frame(width: CGFloat(2 + (index % 3)),
+                           height: CGFloat(2 + (index % 3)))
+                    .offset(
+                        x: expanded ? CGFloat(cos(angle)) * distance : 0,
+                        y: expanded ? CGFloat(sin(angle)) * distance + lift : 0
+                    )
+                    .scaleEffect(expanded ? 0.25 : 1.15)
+                    .opacity(expanded ? 0 : 1)
+            }
+        }
+        .frame(width: 30, height: 30)
+        .allowsHitTesting(false)
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.52)) {
+                expanded = true
+            }
+        }
+        .accessibilityHidden(true)
     }
 }
 

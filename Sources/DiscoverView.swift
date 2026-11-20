@@ -1297,6 +1297,20 @@ private final class MomentDragClock {
     var lastDragAt = Date(timeIntervalSince1970: 0)
 }
 
+private enum MomentTimelineMode: String, CaseIterable {
+    case relative
+    case week
+    case full
+
+    var title: String {
+        switch self {
+        case .relative: return Tr("相对时间")
+        case .week: return Tr("按周")
+        case .full: return Tr("完整年月日")
+        }
+    }
+}
+
 struct MomentsView: View {
     private static let momentPageSize = 30
     private static let stressMomentWindow = 120
@@ -1340,6 +1354,7 @@ struct MomentsView: View {
     @State private var solid = false
     @State private var momentsScrollActive = false
     @State private var timelineVisibleDay = ""
+    @AppStorage("moments.timelineMode") private var timelineModeRaw = "relative"
     @State private var moments: [Moment] = []
     @State private var stressLoadedMoments: [Moment] = []
     @State private var locallyPostedMoments: [String: Moment] = [:]
@@ -2000,6 +2015,7 @@ struct MomentsView: View {
     private func momentRow(_ moment: Moment) -> some View {
         MomentFeedCard(
             moment: moment,
+            dateText: timelineLabel(moment.createdAt),
             availableWidth: L.width,
             onOpenComments: { commentsSheet = moment },
             onOpenImage: { index in
@@ -2039,6 +2055,26 @@ struct MomentsView: View {
     private func fullDateLabel(_ s: String?) -> String {
         guard let d = TimeFmt.date(s) else { return "" }
         return Self.yearMonthDayFormatter.string(from: d)
+    }
+
+    private var timelineMode: MomentTimelineMode {
+        MomentTimelineMode(rawValue: timelineModeRaw) ?? .relative
+    }
+
+    private func timelineLabel(_ s: String?) -> String {
+        guard let d = TimeFmt.date(s) else { return "" }
+        switch timelineMode {
+        case .relative:
+            return dayLabel(s)
+        case .full:
+            return fullDateLabel(s)
+        case .week:
+            var calendar = Calendar(identifier: .gregorian)
+            calendar.locale = Locale(identifier: "zh_CN")
+            let week = calendar.component(.weekOfYear, from: d)
+            let year = calendar.component(.yearForWeekOfYear, from: d)
+            return "\(year)年 · 第\(week)周"
+        }
     }
 
     private func dayHeader(_ t: String) -> some View {
@@ -2148,10 +2184,9 @@ struct MomentsView: View {
 
             let source = displayedMoments
             ForEach(Array(source.enumerated()), id: \.element.id) { index, moment in
-                let day = mineOnly ? fullDateLabel(moment.createdAt) : dayLabel(moment.createdAt)
+                let day = timelineLabel(moment.createdAt)
                 let previous = index > 0
-                    ? (mineOnly ? fullDateLabel(source[index - 1].createdAt)
-                                : dayLabel(source[index - 1].createdAt))
+                    ? timelineLabel(source[index - 1].createdAt)
                     : ""
                 if index == 0 || day != previous {
                     dayHeader(day)
@@ -2208,11 +2243,23 @@ struct MomentsView: View {
             Spacer(minLength: 0)
             HStack(spacing: 7) {
                 Spacer(minLength: 0)
-                Text(timelineVisibleDay)
+                Menu {
+                    Picker(Tr("时间轴"), selection: $timelineModeRaw) {
+                        ForEach(MomentTimelineMode.allCases, id: \.rawValue) { mode in
+                            Text(mode.title).tag(mode.rawValue)
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 5) {
+                        Text(timelineVisibleDay)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.82)
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.system(size: 8.5, weight: .semibold))
+                            .opacity(0.62)
+                    }
                     .font(pfStyled(size: 11.5, weight: .semibold))
                     .foregroundStyle(C.label)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.82)
                     .padding(.horizontal, 9)
                     .frame(height: 24)
                     .background(.regularMaterial, in: Capsule(style: .continuous))
@@ -2220,6 +2267,8 @@ struct MomentsView: View {
                         Capsule(style: .continuous)
                             .stroke(C.label.opacity(0.08), lineWidth: 0.5)
                     }
+                }
+                .buttonStyle(.plain)
 
                 ZStack {
                     Capsule(style: .continuous)
@@ -2243,8 +2292,8 @@ struct MomentsView: View {
                          anchor: .trailing)
             .animation(.easeOut(duration: momentsScrollActive ? 0.12 : 0.18),
                        value: momentsScrollActive)
-            .allowsHitTesting(false)
-            .accessibilityHidden(true)
+            .allowsHitTesting(momentsScrollActive && !timelineVisibleDay.isEmpty)
+            .accessibilityLabel(Tr("时间轴显示方式"))
             Spacer(minLength: 0)
         }
         .padding(.top, L.safeTop + L.navH + 38)

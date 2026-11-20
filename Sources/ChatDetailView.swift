@@ -1392,6 +1392,7 @@ struct ChatDetailView: View {
 
     @State private var peerTyping = ""
     @State private var peerMusic: FriendNowPlaying?
+    @ObservedObject private var musicPresence = MusicPresenceStore.shared
     @State private var typingClear: Task<Void, Never>?
 
     @State private var lastTypingSent = Date.distantPast
@@ -1515,6 +1516,7 @@ struct ChatDetailView: View {
         }
         guard let list = await API.shared.friendsNowPlaying() else { return }
         let cutoff = Date().timeIntervalSince1970 * 1000 - 2 * 60 * 60 * 1000
+        musicPresence.merge(list)
         peerMusic = list.first {
             $0.id == peer && ($0.at ?? 0) >= cutoff
         }
@@ -1559,6 +1561,11 @@ struct ChatDetailView: View {
                     }
                     .offset(x: 1.5, y: 1.5)
                     .accessibilityHidden(true)
+            }
+        }
+        .overlay {
+            if let peerMusic, peerMusic.playing != false {
+                MusicListeningRing(size: 46, active: true)
             }
         }
     }

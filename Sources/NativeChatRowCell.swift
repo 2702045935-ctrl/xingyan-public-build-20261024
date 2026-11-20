@@ -58,6 +58,7 @@ struct NativeChatRowConfiguration {
     var groupMemberIds: [String]
     var avatarIsGroup: Bool
     var showOnline: Bool
+    var musicListening: Bool
     var moodIcon: String
     var unread: Int
     var unreadMuted: Bool
@@ -250,6 +251,7 @@ final class NativeChatRowCell: UITableViewCell {
             configuration.chatId,
             configuration.avatarIsGroup ? "1" : "0",
             configuration.showOnline ? "1" : "0",
+            configuration.musicListening ? "1" : "0",
             configuration.moodIcon
         ].joined(separator: "\u{1E}")
         if avatarSignature != nextAvatarSignature || !avatarView.hasVisibleImage {
@@ -259,6 +261,7 @@ final class NativeChatRowCell: UITableViewCell {
                                  memberIds: configuration.groupMemberIds,
                                  group: configuration.avatarIsGroup,
                                  online: configuration.showOnline,
+                                 listening: configuration.musicListening,
                                  mood: configuration.moodIcon)
         }
         configureAccessibility(configuration)
@@ -562,7 +565,11 @@ private final class NativeChatAvatarView: UIView {
     private var tilePaths = Array(repeating: "", count: 4)
     private let moodLabel = UILabel()
     private let onlineDot = UIView()
+    private let musicRing = CAShapeLayer()
+    private let musicOrbit = UIView()
+    private let musicNote = UIImageView()
     private var token = UUID()
+    private var listening = false
 
     var hasVisibleImage: Bool {
         tileViews.contains { !$0.isHidden && $0.image != nil }
@@ -575,6 +582,12 @@ private final class NativeChatAvatarView: UIView {
         tileContainer.layer.cornerRadius = 25
         tileContainer.layer.cornerCurve = .continuous
         tileContainer.backgroundColor = UIColor.secondarySystemFill
+        musicRing.fillColor = UIColor.clear.cgColor
+        musicRing.strokeColor = UIColor(hex: 0x25D366).cgColor
+        musicRing.lineWidth = 2
+        musicRing.lineCap = .round
+        musicRing.isHidden = true
+        layer.addSublayer(musicRing)
         addSubview(tileContainer)
         tileViews.forEach {
             $0.contentMode = .scaleAspectFill
@@ -591,6 +604,17 @@ private final class NativeChatAvatarView: UIView {
         onlineDot.backgroundColor = UIColor(hex: 0x4FD229)
         onlineDot.layer.cornerRadius = 7
         addSubview(onlineDot)
+        musicOrbit.isUserInteractionEnabled = false
+        musicOrbit.isHidden = true
+        addSubview(musicOrbit)
+        musicNote.image = UIImage(systemName: "music.note")
+        musicNote.tintColor = .white
+        musicNote.contentMode = .scaleAspectFit
+        musicNote.backgroundColor = UIColor(hex: 0x25D366)
+        musicNote.layer.cornerRadius = 7.5
+        musicNote.layer.borderColor = UIColor.white.withAlphaComponent(0.75).cgColor
+        musicNote.layer.borderWidth = 0.8
+        musicOrbit.addSubview(musicNote)
     }
 
     required init?(coder: NSCoder) {
@@ -629,10 +653,25 @@ private final class NativeChatAvatarView: UIView {
         }
         moodLabel.frame = CGRect(x: bounds.width - 16, y: bounds.height - 16, width: 17, height: 17)
         onlineDot.frame = CGRect(x: bounds.width - 14, y: bounds.height - 14, width: 14, height: 14)
+        let ringRect = bounds.insetBy(dx: -2.2, dy: -2.2)
+        musicRing.frame = bounds
+        musicRing.path = UIBezierPath(ovalIn: ringRect).cgPath
+        musicRing.lineDashPattern = [
+            NSNumber(value: Double(max(7, bounds.width * 0.18))),
+            NSNumber(value: Double(max(5, bounds.width * 0.11)))
+        ]
+        musicOrbit.frame = bounds
+        musicNote.frame = CGRect(
+            x: (bounds.width - 15) / 2,
+            y: -7,
+            width: 15,
+            height: 15
+        )
     }
 
     func invalidate() {
         token = UUID()
+        stopMusicOrbit()
     }
 
     func configure(paths: [String],
@@ -640,6 +679,7 @@ private final class NativeChatAvatarView: UIView {
                    memberIds: [String],
                    group: Bool,
                    online: Bool,
+                   listening: Bool,
                    mood: String) {
         token = UUID()
         let requestToken = token
@@ -657,7 +697,36 @@ private final class NativeChatAvatarView: UIView {
         onlineDot.isHidden = !online
         moodLabel.isHidden = online || mood.isEmpty
         moodLabel.text = mood
+        self.listening = listening
+        musicRing.isHidden = !listening
+        musicOrbit.isHidden = !listening
+        if listening {
+            startMusicOrbit()
+        } else {
+            stopMusicOrbit()
+        }
         setNeedsLayout()
+    }
+
+    private func startMusicOrbit() {
+        guard !UIAccessibility.isReduceMotionEnabled else {
+            musicOrbit.layer.removeAnimation(forKey: "music-orbit")
+            musicOrbit.transform = .identity
+            return
+        }
+        guard musicOrbit.layer.animation(forKey: "music-orbit") == nil else { return }
+        let spin = CABasicAnimation(keyPath: "transform.rotation.z")
+        spin.fromValue = 0
+        spin.toValue = Double.pi * 2
+        spin.duration = 3.4
+        spin.repeatCount = .infinity
+        spin.timingFunction = CAMediaTimingFunction(name: .linear)
+        musicOrbit.layer.add(spin, forKey: "music-orbit")
+    }
+
+    private func stopMusicOrbit() {
+        musicOrbit.layer.removeAnimation(forKey: "music-orbit")
+        musicOrbit.transform = .identity
     }
 
     private func apply(paths: [String]) {

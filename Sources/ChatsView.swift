@@ -1155,6 +1155,7 @@ struct ChatsView: View {
     }
 
     @ObservedObject private var lang = LangStore.shared
+    @ObservedObject private var musicPresence = MusicPresenceStore.shared
 
     @ObservedObject private var eyes = EyesStore.shared
     @EnvironmentObject var app: AppState
@@ -2640,6 +2641,11 @@ struct ChatsView: View {
                 id != app.me?.id && app.contact(for: id)?.online == true
             }
         )
+        let musicListening = isGroup
+            ? (chat.memberIds ?? []).contains {
+                musicPresence.item(for: $0)?.playing == true
+            }
+            : (peerId.map { musicPresence.item(for: $0)?.playing == true } ?? false)
         let rawAvatar = (chat.avatar ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let displayAvatar = rawAvatar.isEmpty ? (peer?.avatarPath ?? "") : rawAvatar
         let mosaic = isGroup && (rawAvatar.isEmpty || rawAvatar.contains("/uploads/group-"))
@@ -2718,6 +2724,7 @@ struct ChatsView: View {
             groupMemberIds: chat.memberIds ?? [],
             avatarIsGroup: mosaic,
             showOnline: !isGroup && peer?.online == true || groupHasOnline,
+            musicListening: musicListening,
             moodIcon: chat.moodIcon ?? "",
             unread: chat.unreadCount,
             unreadMuted: chat.muted == true,
