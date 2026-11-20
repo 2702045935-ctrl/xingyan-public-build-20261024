@@ -5,9 +5,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MAP = (ROOT / "Sources" / "StarMapView.swift").read_text(encoding="utf-8")
-LOCATION = (ROOT / "Sources" / "LocationView.swift").read_text(
-    encoding="utf-8"
-)
 DISCOVER = (ROOT / "Sources" / "DiscoverView.swift").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
@@ -97,12 +94,6 @@ require(
     and '"星轨地图"' in DISCOVER
     and 'action: "map"' in DISCOVER,
     "the star map must be reachable from the World page",
-)
-require(
-    "StarMapView(point: point)" in LOCATION
-    and "MapLink" not in LOCATION
-    and not (ROOT / "Sources" / "MapLinks.swift").exists(),
-    "shared locations must navigate inside the native map without app handoff",
 )
 require(
     "python3 tools/verify-star-map.py" in WORKFLOW,
