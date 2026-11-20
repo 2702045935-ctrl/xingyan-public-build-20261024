@@ -6,6 +6,9 @@ ROOT = Path(__file__).resolve().parents[1]
 SERVER = (ROOT / "server" / "server.js").read_text(encoding="utf-8")
 API = (ROOT / "Sources" / "API.swift").read_text(encoding="utf-8")
 GROUP = (ROOT / "Sources" / "GroupInfoView.swift").read_text(encoding="utf-8")
+CONFIG = (ROOT / "Sources" / "StressTestConfiguration.swift").read_text(
+    encoding="utf-8"
+)
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
 )
@@ -53,6 +56,11 @@ require(
 require(
     "python3 tools/verify-large-group-runtime.py" in WORKFLOW,
     "large-group runtime regression must run in the iOS gate",
+)
+require(
+    'profile == "group-300000-members-10000"' in CONFIG
+    and "if largeGroupPressure { return 10_000 }" in CONFIG,
+    "device stress must expose a one-variable 10000-member pressure profile",
 )
 
 print("large-group-runtime: passed")

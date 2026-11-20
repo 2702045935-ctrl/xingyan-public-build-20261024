@@ -6,6 +6,7 @@ enum StressTestConfiguration {
     private static let environment = ProcessInfo.processInfo.environment
     private static let profile = (environment["XINGYAN_STRESS_PROFILE"] ?? "").lowercased()
     private static let eagerMessages100K = profile == "messages-100000-eager"
+    private static let largeGroupPressure = profile == "group-300000-members-10000"
     private static let hardCap = 300_000
 
     private static func value(_ key: String) -> Int? {
@@ -30,7 +31,8 @@ enum StressTestConfiguration {
         value("XINGYAN_MESSAGE_STRESS")
             ?? profileValue("messages-")
             ?? profileValue("chat-")
-            ?? (eagerMessages100K || profile == "full-100000" ? 100_000 : 0)
+            ?? (largeGroupPressure ? 300_000
+                : (eagerMessages100K || profile == "full-100000" ? 100_000 : 0))
     }()
 
     static let momentCount: Int = {
@@ -45,8 +47,9 @@ enum StressTestConfiguration {
     }()
 
     static let memberCount: Int = {
+        if largeGroupPressure { return 10_000 }
         let raw = environment["XINGYAN_STRESS_MEMBERS"].flatMap(Int.init) ?? 8
-        return max(1, min(5_000, raw))
+        return max(1, min(10_000, raw))
     }()
 
     static let autoOpenMessageChat: Bool = {
