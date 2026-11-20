@@ -85,6 +85,8 @@ enum RowIcon {
         "状态": "face.smiling.fill",
         "搜一搜": "magnifyingglass",
         "扫一扫": "qrcode.viewfinder",
+        "星轨地图": "map.fill",
+        "map": "map.fill",
         "帮助与反馈": "questionmark.circle.fill",
         "关于": "info.circle.fill",
         "设置": "gearshape.fill",

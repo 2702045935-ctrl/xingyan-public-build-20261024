@@ -1138,8 +1138,20 @@ struct DiscoverView: View {
 
     private func loadItems() async {
         if let list = try? await API.shared.discover(), !list.isEmpty {
-
-            items = list
+            var merged = list
+            if !merged.contains(where: { $0.action == "map" }) {
+                merged.append(DiscoverItem(
+                    id: "d13",
+                    label: "星轨地图",
+                    icon: "i.map",
+                    svg: "",
+                    color: "#168B73",
+                    action: "map",
+                    group: 5,
+                    enabled: true
+                ))
+            }
+            items = merged
             loaded = true
         } else if items.isEmpty {
 
@@ -1172,6 +1184,7 @@ struct DiscoverView: View {
         switch key {
         case "moments": MomentsView()
         case "nearby": NearbyPageView()
+        case "map": StarMapView()
         case "shake", "bottle": BottlePageView()
         case "live": LiveListView()
         case "games": GamesPageView()
@@ -1223,6 +1236,8 @@ extension DiscoverItem {
                          color: "#59C47E", action: "search", group: 4, enabled: true),
             DiscoverItem(id: "d08", label: "附近", icon: "i.nearby", svg: I.nearby,
                          color: "#3D83E7", action: "nearby", group: 5, enabled: true),
+            DiscoverItem(id: "d13", label: "星轨地图", icon: "i.map", svg: "",
+                         color: "#168B73", action: "map", group: 5, enabled: true),
             DiscoverItem(id: "d10", label: "游戏", icon: "i.game", svg: I.game,
                          color: "#9A6AE8", action: "games", group: 7, enabled: true),
             DiscoverItem(id: "d11", label: "商城", icon: "i.shop", svg: I.wallet,
