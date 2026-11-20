@@ -20,8 +20,9 @@ require(
     "first-frame settling must suppress direct and native size-change pinning",
 )
 require(
-    "defaultScrollAnchor(initialScrollReady ? nil : UnitPoint.bottom)" in CHAT
-    and "defaultScrollAnchor(.top)" in CHAT
+    "ChatInitialBottomAnchor(enabled: !initialScrollReady)" in CHAT
+    and "defaultScrollAnchor(enabled ? UnitPoint.bottom : nil)" in CHAT
+    and "if #available(iOS 17.0, *)" in CHAT
     and "for delay in [0, 24, 70, 150, 260]" not in CHAT,
     "chat entry must use one native bottom anchor instead of repeated visible pinning",
 )

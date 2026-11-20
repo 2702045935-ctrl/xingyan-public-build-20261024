@@ -263,6 +263,19 @@ private struct ChatContentHeightKey: PreferenceKey {
     }
 }
 
+private struct ChatInitialBottomAnchor: ViewModifier {
+    let enabled: Bool
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(iOS 17.0, *) {
+            content.defaultScrollAnchor(enabled ? UnitPoint.bottom : nil)
+        } else {
+            content
+        }
+    }
+}
+
 func bubbleSeed(_ id: String) -> Double {
     var h = 5381
     for u in id.unicodeScalars { h = (h &* 33) &+ Int(u.value) }
@@ -3044,7 +3057,6 @@ struct ChatDetailView: View {
                     .frame(minHeight: geometry.size.height, alignment: .top)
                 }
                 .scrollDismissesKeyboard(.interactively)
-                .defaultScrollAnchor(.top)
                 .onChange(of: messages.count) { _ in
                     scrollShortConversationToBottom(proxy, animated: true)
                 }
@@ -3190,7 +3202,7 @@ struct ChatDetailView: View {
             }
             .coordinateSpace(name: "chatScroll")
             .scrollDismissesKeyboard(.interactively)
-            .defaultScrollAnchor(initialScrollReady ? nil : UnitPoint.bottom)
+            .modifier(ChatInitialBottomAnchor(enabled: !initialScrollReady))
         .onChange(of: messages.count) { _ in
 
                 backfillVoiceText()
