@@ -312,10 +312,14 @@ where Item.ID: Hashable {
                 - scrollView.bounds.height
                 - y
                 + scrollView.adjustedContentInset.bottom
+            /* 会话列表按“一页跑道”提前补下一页。触发点保持两屏半左右，
+               让 320 行夹具在用户接近尾部前完成追加；endRequestInFlight
+               保证同一时间最多只有一个下一页请求，不会插两页。 */
+            let prefetchLead = max(2_400, scrollView.bounds.height * 2.5)
             if !endRequestInFlight,
                !order.isEmpty,
                (scrollView.isDragging || scrollView.isDecelerating),
-               remaining < 900 {
+               remaining < prefetchLead {
                 endRequestInFlight = true
                 DispatchQueue.main.async { [weak self] in
                     self?.onApproachingEnd()

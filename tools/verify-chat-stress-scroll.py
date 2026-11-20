@@ -81,6 +81,12 @@ require(
     and "pendingItems = next" in NATIVE_CHAT_LIST,
     "only non-append changes may defer during touch motion",
 )
+require(
+    "let prefetchLead = max(2_400, scrollView.bounds.height * 2.5)" in NATIVE_CHAT_LIST
+    and "remaining < prefetchLead" in NATIVE_CHAT_LIST
+    and "!endRequestInFlight" in NATIVE_CHAT_LIST,
+    "the conversation list must prefetch one page two-and-a-half viewports before the tail",
+)
 FIXTURE = (ROOT / "Sources" / "ChatStressFixture.swift").read_text(encoding="utf-8")
 require(
     "private static var cache: [Chat]" in FIXTURE
