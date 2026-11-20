@@ -88,8 +88,20 @@ private final class BrowserDataStore: ObservableObject {
     private let bookmarkKey = "xingyan.browser.bookmarks.v1"
 
     init() {
-        history = Self.load([BrowserVisit].self, key: historyKey)
-        bookmarks = Self.load([BrowserBookmark].self, key: bookmarkKey)
+        if let data = UserDefaults.standard.data(forKey: historyKey),
+           let values = try? JSONDecoder().decode(
+               [BrowserVisit].self,
+               from: data
+           ) {
+            history = values
+        }
+        if let data = UserDefaults.standard.data(forKey: bookmarkKey),
+           let values = try? JSONDecoder().decode(
+               [BrowserBookmark].self,
+               from: data
+           ) {
+            bookmarks = values
+        }
     }
 
     func record(url: URL, title: String) {
@@ -141,17 +153,6 @@ private final class BrowserDataStore: ObservableObject {
     func clearHistory() {
         history = []
         UserDefaults.standard.removeObject(forKey: historyKey)
-    }
-
-    private static func load<T: Decodable>(
-        _ type: T.Type,
-        key: String
-    ) -> T where T: ExpressibleByArrayLiteral {
-        guard let data = UserDefaults.standard.data(forKey: key),
-              let value = try? JSONDecoder().decode(type, from: data) else {
-            return [] as! T
-        }
-        return value
     }
 
     private func save<T: Encodable>(_ value: T, key: String) {
@@ -913,7 +914,7 @@ private struct BrowserWebView: UIViewRepresentable {
             parent.progress = 1
             parent.canBack = webView.canGoBack
             parent.canForward = webView.canGoForward
-            if let url = webView.url {
+            if !parent.privateMode, let url = webView.url {
                 parent.onVisit(url, webView.title ?? "")
             }
         }
