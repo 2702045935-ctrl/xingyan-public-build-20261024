@@ -1343,6 +1343,7 @@ struct MomentsView: View {
     @State private var moments: [Moment] = []
     @State private var stressLoadedMoments: [Moment] = []
     @State private var locallyPostedMoments: [String: Moment] = [:]
+    @State private var stressWindowStart = 0
     @State private var stressLoadedCount = min(MomentStressFixture.count,
                                                Self.stressMomentWindow)
     @State private var prefetchedMoments: [Moment] = []
@@ -2738,19 +2739,13 @@ struct MomentsView: View {
         prefetchedMoments.removeAll(keepingCapacity: true)
         prefetchedHasMore = false
         if MomentStressFixture.isActive {
-            stressLoadedCount = min(
-                MomentStressFixture.count,
-                max(Self.stressMomentWindow, stressLoadedCount)
-            )
-            if stressLoadedMoments.count > stressLoadedCount {
-                stressLoadedMoments = Array(stressLoadedMoments.prefix(stressLoadedCount))
-            } else if stressLoadedMoments.count < stressLoadedCount {
-                stressLoadedMoments.append(contentsOf: MomentStressFixture.moments(
-                    range: stressLoadedMoments.count..<stressLoadedCount
-                ))
-            }
+            stressWindowStart = 0
+            stressLoadedCount = min(MomentStressFixture.count, Self.stressMomentWindow)
+            stressLoadedMoments = MomentStressFixture.moments(range: 0..<stressLoadedCount)
             momentTotal = MomentStressFixture.count
             hasMoreMoments = stressLoadedCount < MomentStressFixture.count
+            loadingMore = false
+            scheduleMomentPrefetch()
             return
         }
 
@@ -2786,20 +2781,39 @@ struct MomentsView: View {
         if MomentStressFixture.isActive {
             guard hasMoreMoments, !loadingMore else { return }
             loadingMore = true
-            let previous = stressLoadedCount
-            let next = min(
-                MomentStressFixture.count,
-                previous + Self.stressMomentPageSize
-            )
-            momentTotal = MomentStressFixture.count
-            stressLoadedCount = next
-            if stressLoadedCount > previous {
-                stressLoadedMoments.append(contentsOf: MomentStressFixture.moments(
-                    range: previous..<stressLoadedCount
-                ))
+            defer { loadingMore = false }
+            if let momentPrefetchTask {
+                await momentPrefetchTask.value
             }
+            var page = prefetchedMoments
+            var more = prefetchedHasMore
+            prefetchedMoments.removeAll(keepingCapacity: true)
+            prefetchedHasMore = false
+            if page.isEmpty {
+                let next = min(
+                    MomentStressFixture.count,
+                    stressLoadedCount + Self.stressMomentPageSize
+                )
+                page = MomentStressFixture.moments(range: stressLoadedCount..<next)
+                more = next < MomentStressFixture.count
+            }
+            guard !page.isEmpty else {
+                hasMoreMoments = false
+                return
+            }
+            let nextEnd = min(MomentStressFixture.count,
+                              stressLoadedCount + page.count)
+            let nextStart = max(0, nextEnd - Self.stressMomentWindow)
+            let removed = nextStart - stressWindowStart
+            if removed > 0 {
+                stressLoadedMoments.removeFirst(min(removed, stressLoadedMoments.count))
+            }
+            stressLoadedMoments.append(contentsOf: page)
+            stressWindowStart = nextStart
+            stressLoadedCount = nextEnd
+            momentTotal = MomentStressFixture.count
             hasMoreMoments = stressLoadedCount < MomentStressFixture.count
-            loadingMore = false
+            scheduleMomentPrefetch()
             return
         }
         if let momentPrefetchTask {
@@ -2862,11 +2876,10 @@ struct MomentsView: View {
     }
 
     private func scheduleMomentPrefetch() {
-        guard !MomentStressFixture.isActive,
-              hasMoreMoments,
+        guard hasMoreMoments,
               prefetchedMoments.isEmpty,
               !prefetchingMoments,
-              let last = moments.last else { return }
+              MomentStressFixture.isActive || moments.last != nil else { return }
         momentPrefetchTask?.cancel()
         momentPrefetchTask = Task { @MainActor in
             try? await Task.sleep(nanoseconds: 120_000_000)
@@ -2876,13 +2889,23 @@ struct MomentsView: View {
     }
 
     private func prefetchNextMomentsPage() async {
-        guard !MomentStressFixture.isActive,
-              hasMoreMoments,
+        guard hasMoreMoments,
               !prefetchingMoments,
-              prefetchedMoments.isEmpty,
-              let last = moments.last else { return }
+              prefetchedMoments.isEmpty else { return }
         prefetchingMoments = true
         defer { prefetchingMoments = false }
+        if MomentStressFixture.isActive {
+            let next = min(
+                MomentStressFixture.count,
+                stressLoadedCount + Self.stressMomentPageSize
+            )
+            prefetchedMoments = MomentStressFixture.moments(
+                range: stressLoadedCount..<next
+            )
+            prefetchedHasMore = next < MomentStressFixture.count
+            return
+        }
+        guard let last = moments.last else { return }
         guard let feed = try? await API.shared.momentsFeed(
             limit: Self.momentPageSize,
             before: last.createdAt,

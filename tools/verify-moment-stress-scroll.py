@@ -27,8 +27,15 @@ require(
 )
 require(
     "stressLoadedMoments.append(contentsOf:" in VIEW
-    and "MomentStressFixture.moments(\n                    range:" in VIEW,
-    "Moments stress data must append only the new page instead of rebuilding all rows",
+    and "range: stressLoadedCount..<next" in VIEW
+    and "stressLoadedMoments.removeFirst(min(removed, stressLoadedMoments.count))" in VIEW,
+    "Moments stress data must consume one page and keep a bounded active window",
+)
+require(
+    "prefetchedMoments = MomentStressFixture.moments(" in VIEW
+    and "if let momentPrefetchTask {\n                await momentPrefetchTask.value" in VIEW
+    and "scheduleMomentPrefetch()" in VIEW,
+    "Moments stress data must use the same one-page prefetch-and-consume contract as chat",
 )
 
 print("moment-stress-scroll: passed")
