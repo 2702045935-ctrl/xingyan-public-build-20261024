@@ -1265,11 +1265,7 @@ struct StarMapView: View {
                                     in: Capsule())
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(
-                        (index == 0 ? Tr("推荐路线") : Tr("备选路线"))
-                            + "，" + routeClock(value.expectedTravelTime)
-                            + "，" + routeDistance(value.distance)
-                    )
+                    .accessibilityLabel(mode.title)
                 }
             }
 
@@ -1477,6 +1473,11 @@ struct StarMapView: View {
                         }
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(
+                        (index == 0 ? Tr("推荐路线") : Tr("备选路线"))
+                            + "，" + routeClock(value.expectedTravelTime)
+                            + "，" + routeDistance(value.distance)
+                    )
                 }
             }
         }
