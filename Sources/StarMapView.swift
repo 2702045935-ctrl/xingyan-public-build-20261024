@@ -60,6 +60,108 @@ private enum StarTravelMode: String, CaseIterable, Identifiable {
     }
 }
 
+private enum StarNavigationPhase {
+    case idle
+    case previewing
+    case navigating
+    case rerouting
+    case arrived
+}
+
+private enum StarRouteRanking: String, CaseIterable, Identifiable {
+    case recommended
+    case fastest
+    case shortest
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .recommended: return Tr("推荐")
+        case .fastest: return Tr("最快")
+        case .shortest: return Tr("最短")
+        }
+    }
+}
+
+private struct StarSavedPlace: Codable, Identifiable, Hashable {
+    let id: String
+    let name: String
+    let subtitle: String
+    let latitude: Double
+    let longitude: Double
+    let savedAt: Date
+
+    init(item: MKMapItem) {
+        let mark = item.placemark
+        let placeName = item.name ?? Tr("未命名地点")
+        id = String(format: "%.6f,%.6f:", mark.coordinate.latitude,
+                    mark.coordinate.longitude) + placeName
+        name = placeName
+        subtitle = mark.title ?? ""
+        latitude = mark.coordinate.latitude
+        longitude = mark.coordinate.longitude
+        savedAt = Date()
+    }
+
+    var mapItem: MKMapItem {
+        let coordinate = CLLocationCoordinate2D(
+            latitude: latitude,
+            longitude: longitude
+        )
+        let placemark = MKPlacemark(
+            coordinate: coordinate,
+            addressDictionary: nil
+        )
+        let item = MKMapItem(placemark: placemark)
+        item.name = name
+        return item
+    }
+}
+
+private enum StarPlaceStore {
+    static let recentKey = "starmap.recentPlaces.v1"
+    static let favoriteKey = "starmap.favoritePlaces.v1"
+    static let activeKey = "starmap.activeNavigation.v1"
+
+    static func load(_ key: String) -> [StarSavedPlace] {
+        guard let data = UserDefaults.standard.data(forKey: key),
+              let rows = try? JSONDecoder().decode(
+                  [StarSavedPlace].self,
+                  from: data
+              ) else { return [] }
+        return rows
+    }
+
+    static func save(_ places: [StarSavedPlace], key: String) {
+        guard let data = try? JSONEncoder().encode(places) else { return }
+        UserDefaults.standard.set(data, forKey: key)
+    }
+
+    static func remember(_ place: StarSavedPlace) -> [StarSavedPlace] {
+        var rows = load(recentKey)
+        rows.removeAll { $0.id == place.id }
+        rows.insert(place, at: 0)
+        rows = Array(rows.prefix(8))
+        save(rows, key: recentKey)
+        return rows
+    }
+
+    static func toggleFavorite(_ place: StarSavedPlace)
+        -> ([StarSavedPlace], Bool) {
+        var rows = load(favoriteKey)
+        if let index = rows.firstIndex(where: { $0.id == place.id }) {
+            rows.remove(at: index)
+            save(rows, key: favoriteKey)
+            return (rows, false)
+        }
+        rows.insert(place, at: 0)
+        rows = Array(rows.prefix(12))
+        save(rows, key: favoriteKey)
+        return (rows, true)
+    }
+}
+
 private struct StarRouteGeometry {
     struct Match {
         let crossTrack: Double
@@ -189,9 +291,10 @@ private final class StarMapModel: NSObject, ObservableObject,
     @Published var route: MKRoute?
     @Published var searching = false
     @Published var routing = false
-    @Published var navigating = false
+    @Published private(set) var phase: StarNavigationPhase = .idle
     @Published var error = ""
     @Published var travelMode: StarTravelMode = .driving
+    @Published var routeRanking: StarRouteRanking = .recommended
     @Published var mapStyle: StarMapStyle = .standard
     @Published var use3D = true
     @Published var progress: Double = 0
@@ -207,25 +310,48 @@ private final class StarMapModel: NSObject, ObservableObject,
     @Published var showingRouteOverview = false
     @Published var cameraRevision = 0
     @Published var authorizationDenied = false
+    @Published var recentPlaces: [StarSavedPlace] = []
+    @Published var favoritePlaces: [StarSavedPlace] = []
 
     private let manager = CLLocationManager()
     private let geocoder = CLGeocoder()
     private let speech = AVSpeechSynthesizer()
+    private let instructionHaptic = UIImpactFeedbackGenerator(style: .soft)
+    private let arrivalHaptic = UINotificationFeedbackGenerator()
     private var geometry: StarRouteGeometry?
     private var offRouteSamples = 0
     private var lastRerouteAt = Date.distantPast
     private var routeRequest: MKDirections?
+    private var originalRoutes: [MKRoute] = []
     private var didReverseGeocode = false
     private var lastAcceptedAt = Date.distantPast
     private var lastSpokenInstruction = ""
+    private var pendingResumePlace: StarSavedPlace?
+
+    var navigating: Bool {
+        phase == .navigating || phase == .rerouting
+    }
+
+    var isDestinationFavorite: Bool {
+        guard let destination else { return false }
+        let place = StarSavedPlace(item: destination)
+        return favoritePlaces.contains { $0.id == place.id }
+    }
 
     override init() {
         super.init()
+        recentPlaces = StarPlaceStore.load(StarPlaceStore.recentKey)
+        favoritePlaces = StarPlaceStore.load(StarPlaceStore.favoriteKey)
+        pendingResumePlace = StarPlaceStore.load(
+            StarPlaceStore.activeKey
+        ).first
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyBestForNavigation
         manager.distanceFilter = 5
         manager.activityType = .automotiveNavigation
         manager.pausesLocationUpdatesAutomatically = false
+        manager.showsBackgroundLocationIndicator = true
+        manager.allowsBackgroundLocationUpdates = false
     }
 
     func start() {
@@ -242,6 +368,7 @@ private final class StarMapModel: NSObject, ObservableObject,
     }
 
     func stop() {
+        manager.allowsBackgroundLocationUpdates = false
         manager.stopUpdatingLocation()
         routeRequest?.cancel()
         routeRequest = nil
@@ -309,19 +436,37 @@ private final class StarMapModel: NSObject, ObservableObject,
 
     func select(_ item: MKMapItem) {
         destination = item
+        let saved = StarSavedPlace(item: item)
+        recentPlaces = StarPlaceStore.remember(saved)
         results = []
         routes = []
+        originalRoutes = []
         route = nil
         geometry = nil
+        phase = .idle
         planRoute()
+    }
+
+    func selectSavedPlace(_ place: StarSavedPlace) {
+        select(place.mapItem)
+    }
+
+    func toggleDestinationFavorite() {
+        guard let destination else { return }
+        let result = StarPlaceStore.toggleFavorite(
+            StarSavedPlace(item: destination)
+        )
+        favoritePlaces = result.0
+        instructionHaptic.impactOccurred(intensity: result.1 ? 0.85 : 0.55)
     }
 
     func clearDestination() {
         destination = nil
         routes = []
+        originalRoutes = []
         route = nil
         geometry = nil
-        navigating = false
+        phase = .idle
         progress = 0
         nextInstruction = Tr("选择目的地")
         nextDistance = 0
@@ -330,6 +475,8 @@ private final class StarMapModel: NSObject, ObservableObject,
         navigationCenter = nil
         currentSpeed = 0
         showingRouteOverview = false
+        manager.allowsBackgroundLocationUpdates = false
+        UserDefaults.standard.removeObject(forKey: StarPlaceStore.activeKey)
         distanceRemaining = 0
         timeRemaining = 0
         cameraRevision += 1
@@ -350,6 +497,9 @@ private final class StarMapModel: NSObject, ObservableObject,
         timeRemaining = value.expectedTravelTime
         showingRouteOverview = false
         updateInstruction(along: 0)
+        if phase != .navigating, phase != .rerouting {
+            phase = .previewing
+        }
         cameraRevision += 1
     }
 
@@ -362,6 +512,9 @@ private final class StarMapModel: NSObject, ObservableObject,
         routeRequest?.cancel()
         routing = true
         error = ""
+        if preserveNavigation {
+            phase = .rerouting
+        }
         let request = MKDirections.Request()
         request.source = .forCurrentLocation()
         request.destination = destination
@@ -376,12 +529,15 @@ private final class StarMapModel: NSObject, ObservableObject,
                 guard let response, !response.routes.isEmpty else {
                     self.error = error?.localizedDescription
                         ?? Tr("暂时无法规划这条路线")
+                    if preserveNavigation {
+                        self.phase = .navigating
+                    }
                     return
                 }
-                self.routes = response.routes
-                self.selectRoute(response.routes[0])
+                self.originalRoutes = response.routes
+                self.applyRouteRanking()
                 if preserveNavigation {
-                    self.navigating = true
+                    self.phase = .navigating
                     self.offRouteSamples = 0
                 }
             }
@@ -389,23 +545,31 @@ private final class StarMapModel: NSObject, ObservableObject,
     }
 
     func startNavigation() {
-        guard route != nil else { return }
-        navigating = true
+        guard route != nil, let destination else { return }
+        phase = .navigating
         use3D = true
         showingRouteOverview = false
         offRouteSamples = 0
         lastSpokenInstruction = ""
         manager.activityType = travelMode == .walking
             ? .fitness : .automotiveNavigation
+        manager.allowsBackgroundLocationUpdates = true
         manager.startUpdatingLocation()
+        if let data = try? JSONEncoder().encode(
+            [StarSavedPlace(item: destination)]
+        ) {
+            UserDefaults.standard.set(data, forKey: StarPlaceStore.activeKey)
+        }
         speakCurrentInstruction()
         cameraRevision += 1
     }
 
     func endNavigation() {
-        navigating = false
+        phase = route == nil ? .idle : .previewing
         showingRouteOverview = false
         navigationCenter = nil
+        manager.allowsBackgroundLocationUpdates = false
+        UserDefaults.standard.removeObject(forKey: StarPlaceStore.activeKey)
         speech.stopSpeaking(at: .immediate)
         cameraRevision += 1
     }
@@ -427,6 +591,30 @@ private final class StarMapModel: NSObject, ObservableObject,
             return
         }
         speakCurrentInstruction()
+    }
+
+    func setRouteRanking(_ value: StarRouteRanking) {
+        guard value != routeRanking, !navigating else { return }
+        routeRanking = value
+        applyRouteRanking()
+    }
+
+    private func applyRouteRanking() {
+        let sorted: [MKRoute]
+        switch routeRanking {
+        case .recommended:
+            sorted = originalRoutes
+        case .fastest:
+            sorted = originalRoutes.sorted {
+                $0.expectedTravelTime < $1.expectedTravelTime
+            }
+        case .shortest:
+            sorted = originalRoutes.sorted { $0.distance < $1.distance }
+        }
+        routes = sorted
+        if let first = sorted.first {
+            selectRoute(first)
+        }
     }
 
     func cycleMapStyle() {
@@ -474,6 +662,12 @@ private final class StarMapModel: NSObject, ObservableObject,
         currentSpeed = max(0, next.speed) * 3.6
         cameraRevision += 1
         reverseGeocodeIfNeeded(next)
+        if let saved = pendingResumePlace, destination == nil {
+            pendingResumePlace = nil
+            destination = saved.mapItem
+            routes = []
+            planRoute(preserveNavigation: true)
+        }
         updateNavigation(next)
     }
 
@@ -523,14 +717,25 @@ private final class StarMapModel: NSObject, ObservableObject,
             planRoute(preserveNavigation: true)
         }
         if distanceRemaining < 18 {
-            navigating = false
+            phase = .arrived
             showingRouteOverview = false
             navigationCenter = nil
+            manager.allowsBackgroundLocationUpdates = false
+            UserDefaults.standard.removeObject(forKey: StarPlaceStore.activeKey)
             nextInstruction = Tr("已到达目的地")
             nextDistance = 0
             followingInstruction = ""
             followingDistance = 0
             speech.stopSpeaking(at: .immediate)
+            arrivalHaptic.notificationOccurred(.success)
+            if voiceGuidanceEnabled {
+                let arrival = AVSpeechUtterance(
+                    string: Tr("已到达目的地")
+                )
+                arrival.voice = AVSpeechSynthesisVoice(language: "zh-CN")
+                arrival.rate = 0.48
+                speech.speak(arrival)
+            }
         }
     }
 
@@ -580,6 +785,7 @@ private final class StarMapModel: NSObject, ObservableObject,
         guard voiceGuidanceEnabled,
               nextInstruction != lastSpokenInstruction else { return }
         lastSpokenInstruction = nextInstruction
+        instructionHaptic.impactOccurred(intensity: 0.72)
         let lead = nextDistance < 30
             ? Tr("现在")
             : "\(max(10, Int(nextDistance.rounded(.toNearestOrAwayFromZero))))"
@@ -672,9 +878,18 @@ struct StarMapView: View {
                 searchResults
             }
 
+            if query.isEmpty,
+               model.results.isEmpty,
+               model.route == nil,
+               !shortcutPlaces.isEmpty {
+                placeShortcuts
+            }
+
             Spacer(minLength: 0)
 
-            if let route = model.route {
+            if model.phase == .arrived {
+                arrivalCapsule
+            } else if let route = model.route {
                 routeCapsule(route)
             } else {
                 exploreCapsule
@@ -794,6 +1009,96 @@ struct StarMapView: View {
         .shadow(color: .black.opacity(0.15), radius: 16, y: 7)
     }
 
+    private var shortcutPlaces: [StarSavedPlace] {
+        var seen = Set<String>()
+        return (model.favoritePlaces + model.recentPlaces).filter {
+            seen.insert($0.id).inserted
+        }
+    }
+
+    private var placeShortcuts: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            HStack {
+                Text(Tr("常用地点"))
+                    .font(pf(13, .semibold))
+                Spacer()
+                Text("\(shortcutPlaces.count)")
+                    .font(pf(11.5, .medium))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 3)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(shortcutPlaces) { place in
+                        let favorite = model.favoritePlaces.contains {
+                            $0.id == place.id
+                        }
+                        Button {
+                            model.selectSavedPlace(place)
+                        } label: {
+                            HStack(spacing: 9) {
+                                Image(systemName: favorite
+                                      ? "star.fill" : "clock.fill")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundStyle(Color(hex: 0x0A84FF))
+                                    .frame(width: 28, height: 28)
+                                    .background(
+                                        Color(hex: 0x0A84FF).opacity(0.11),
+                                        in: Circle()
+                                    )
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(place.name)
+                                        .font(pf(13, .semibold))
+                                        .foregroundStyle(.primary)
+                                        .lineLimit(1)
+                                    Text(place.subtitle)
+                                        .font(pf(10.5))
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
+                                }
+                                .frame(maxWidth: 150, alignment: .leading)
+                            }
+                            .padding(.horizontal, 10)
+                            .frame(height: 50)
+                            .background(
+                                .regularMaterial,
+                                in: RoundedRectangle(
+                                    cornerRadius: 16,
+                                    style: .continuous
+                                )
+                            )
+                            .overlay {
+                                RoundedRectangle(
+                                    cornerRadius: 16,
+                                    style: .continuous
+                                )
+                                .stroke(
+                                    Color.white.opacity(
+                                        scheme == .dark ? 0.10 : 0.40
+                                    ),
+                                    lineWidth: 0.6
+                                )
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+        .padding(11)
+        .background(
+            .thinMaterial,
+            in: RoundedRectangle(cornerRadius: 20, style: .continuous)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Color.white.opacity(scheme == .dark ? 0.10 : 0.38),
+                        lineWidth: 0.6)
+        }
+        .shadow(color: .black.opacity(0.14), radius: 16, y: 7)
+    }
+
     private var exploreCapsule: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
@@ -847,6 +1152,24 @@ struct StarMapView: View {
                 }
                 Spacer(minLength: 6)
                 Button {
+                    model.toggleDestinationFavorite()
+                } label: {
+                    Image(systemName: model.isDestinationFavorite
+                          ? "star.fill" : "star")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(
+                            model.isDestinationFavorite
+                                ? Color(hex: 0xF3B51B)
+                                : Color.secondary
+                        )
+                        .frame(width: 34, height: 34)
+                        .background(Color.primary.opacity(0.055), in: Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(
+                    model.isDestinationFavorite ? Tr("取消收藏") : Tr("收藏地点")
+                )
+                Button {
                     model.clearDestination()
                 } label: {
                     Image(systemName: "xmark")
@@ -884,6 +1207,33 @@ struct StarMapView: View {
             }
 
             if model.routes.count > 1 {
+                HStack(spacing: 6) {
+                    ForEach(StarRouteRanking.allCases) { ranking in
+                        Button {
+                            model.setRouteRanking(ranking)
+                        } label: {
+                            Text(ranking.title)
+                                .font(pf(11.5, .semibold))
+                                .foregroundStyle(
+                                    model.routeRanking == ranking
+                                        ? Color(hex: 0x0A6ED1)
+                                        : Color.secondary
+                                )
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 28)
+                                .background(
+                                    model.routeRanking == ranking
+                                        ? Color(hex: 0x0A84FF).opacity(0.11)
+                                        : Color.clear,
+                                    in: Capsule()
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(3)
+                .background(Color.primary.opacity(0.04), in: Capsule())
+
                 routeOptions
             }
 
@@ -936,6 +1286,69 @@ struct StarMapView: View {
                         lineWidth: 0.6)
         }
         .shadow(color: .black.opacity(0.22), radius: 24, y: 11)
+    }
+
+    private var arrivalCapsule: some View {
+        VStack(spacing: 14) {
+            HStack(spacing: 13) {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 50, height: 50)
+                    .background(Color(hex: 0x34C759), in: Circle())
+                    .shadow(color: Color(hex: 0x34C759).opacity(0.24),
+                            radius: 9, y: 4)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(Tr("已到达目的地"))
+                        .font(pf(20, .semibold))
+                    Text(model.destination?.name ?? Tr("目的地"))
+                        .font(pf(13, .medium))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 6)
+            }
+
+            HStack(spacing: 9) {
+                Button {
+                    model.clearDestination()
+                } label: {
+                    Text(Tr("完成"))
+                        .font(pf(14.5, .semibold))
+                        .foregroundStyle(.primary)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 43)
+                        .background(
+                            Color.primary.opacity(0.055),
+                            in: Capsule()
+                        )
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    model.startNavigation()
+                } label: {
+                    Text(Tr("再次导航"))
+                        .font(pf(14.5, .semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 43)
+                        .background(Color(hex: 0x007AFF), in: Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(16)
+        .background(
+            .regularMaterial,
+            in: RoundedRectangle(cornerRadius: 25, style: .continuous)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 25, style: .continuous)
+                .stroke(Color.white.opacity(scheme == .dark ? 0.13 : 0.46),
+                        lineWidth: 0.6)
+        }
+        .shadow(color: .black.opacity(0.22), radius: 24, y: 10)
     }
 
     private var routeOptions: some View {
@@ -1006,10 +1419,21 @@ struct StarMapView: View {
         HStack(alignment: .center, spacing: 14) {
             StarManeuverIcon(kind: maneuverKind, size: 62)
             VStack(alignment: .leading, spacing: 5) {
-                Text(routeDistance(model.nextDistance))
-                    .font(pf(14, .bold))
-                    .foregroundStyle(Color(hex: 0x0A84FF))
-                    .monospacedDigit()
+                HStack(spacing: 6) {
+                    Text(routeDistance(model.nextDistance))
+                        .font(pf(14, .bold))
+                        .foregroundStyle(Color(hex: 0x0A84FF))
+                        .monospacedDigit()
+                    Text(model.travelMode.title + Tr("导航"))
+                        .font(pf(10.5, .semibold))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 7)
+                        .frame(height: 20)
+                        .background(
+                            Color.primary.opacity(0.055),
+                            in: Capsule()
+                        )
+                }
                 Text(model.nextInstruction)
                     .font(pf(21, .semibold))
                     .foregroundStyle(.primary)

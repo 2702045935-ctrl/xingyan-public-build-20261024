@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import plistlib
 from pathlib import Path
 
 
@@ -8,6 +9,7 @@ DISCOVER = (ROOT / "Sources" / "DiscoverView.swift").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
 )
+INFO = plistlib.loads((ROOT / "Info.plist").read_bytes())
 
 
 def require(condition: bool, message: str) -> None:
@@ -59,6 +61,21 @@ require(
     and "smoothedCourse(" in MAP
     and "AVSpeechSynthesizer()" in MAP,
     "navigation must provide native system-grade guidance, options and camera behavior",
+)
+require(
+    "private enum StarNavigationPhase" in MAP
+    and "phase = .rerouting" in MAP
+    and "private struct StarSavedPlace" in MAP
+    and "StarPlaceStore.activeKey" in MAP
+    and "recentPlaces" in MAP
+    and "favoritePlaces" in MAP
+    and "StarRouteRanking" in MAP
+    and "allowsBackgroundLocationUpdates = true" in MAP
+    and "location" in INFO.get("UIBackgroundModes", [])
+    and "星轨地图导航" in INFO.get(
+        "NSLocationWhenInUseUsageDescription", ""
+    ),
+    "navigation must persist recoverable state and declare background location use",
 )
 require(
     'case "map": StarMapView()' in DISCOVER
