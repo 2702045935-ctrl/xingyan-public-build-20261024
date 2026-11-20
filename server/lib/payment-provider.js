@@ -181,21 +181,42 @@ class SignedPaymentProviderBridge {
     const type = String(row.type || '');
     const data = row.data && typeof row.data === 'object' ? row.data : row;
     const status = String(data.status || '');
+    const kind = String(data.kind || '');
+    const amountCents = Number(data.amountCents);
+    const feeCents = Number(data.feeCents || 0);
+    const currency = String(data.currency || '').toUpperCase();
+    const providerRef = String(data.providerRef || '');
     if (!providerEventId || !type) throw new Error('provider webhook identity is missing');
-    if (!['deposit', 'payout'].includes(String(data.kind || ''))) {
+    if (!['deposit', 'payout'].includes(kind)) {
       throw new Error('provider webhook kind is missing');
     }
     if (!['succeeded', 'failed'].includes(status)) {
       throw new Error('provider webhook status is invalid');
     }
+    if (type.toLowerCase() !== kind + '.' + status) {
+      throw new Error('provider webhook type does not match kind/status');
+    }
+    if (!Number.isSafeInteger(amountCents) || amountCents <= 0
+        || !Number.isSafeInteger(feeCents) || feeCents < 0) {
+      throw new Error('provider webhook amount is invalid');
+    }
+    if (!/^[A-Z]{3}$/.test(currency)) {
+      throw new Error('provider webhook currency is invalid');
+    }
+    if (status === 'succeeded' && !providerRef) {
+      throw new Error('provider webhook reference is missing');
+    }
     return {
       providerEventId,
       type,
-      kind: String(data.kind),
+      kind,
       orderId: String(data.orderId || ''),
       status,
-      providerRef: String(data.providerRef || ''),
+      providerRef,
       failureCode: String(data.failureCode || ''),
+      amountCents,
+      feeCents,
+      currency,
       raw: row
     };
   }

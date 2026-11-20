@@ -218,10 +218,30 @@ async function main() {
         kind: 'deposit',
         orderId: depositOrder.id,
         status: 'succeeded',
-        providerRef: 'provider-deposit-ref'
+        providerRef: 'provider-deposit-ref',
+        amountCents: 2500,
+        feeCents: 0,
+        currency: 'CNY'
       }
     }, 'wrong-webhook-secret');
     assert.strictEqual(rejectedWebhook.status, 401);
+    response = await call(base, 'GET', '/api/me', undefined, cookie);
+    assert.strictEqual(Number(response.data.user.balance), 100);
+
+    const mismatchedWebhook = await signedWebhook(base, {
+      id: 'provider-deposit-amount-mismatch',
+      type: 'deposit.succeeded',
+      data: {
+        kind: 'deposit',
+        orderId: depositOrder.id,
+        status: 'succeeded',
+        providerRef: 'provider-deposit-mismatch',
+        amountCents: 2600,
+        feeCents: 0,
+        currency: 'CNY'
+      }
+    });
+    assert.strictEqual(mismatchedWebhook.status, 409);
     response = await call(base, 'GET', '/api/me', undefined, cookie);
     assert.strictEqual(Number(response.data.user.balance), 100);
 
@@ -232,7 +252,10 @@ async function main() {
         kind: 'deposit',
         orderId: depositOrder.id,
         status: 'succeeded',
-        providerRef: 'provider-deposit-ref'
+        providerRef: 'provider-deposit-ref',
+        amountCents: 2500,
+        feeCents: 0,
+        currency: 'CNY'
       }
     });
     assert.strictEqual(webhook.status, 200, await webhook.text());
@@ -258,7 +281,10 @@ async function main() {
         kind: 'payout',
         orderId: payoutOrder.id,
         status: 'succeeded',
-        providerRef: 'provider-payout-ref'
+        providerRef: 'provider-payout-ref',
+        amountCents: 500,
+        feeCents: 10,
+        currency: 'CNY'
       }
     });
     assert.strictEqual(webhook.status, 200, await webhook.text());
@@ -275,7 +301,10 @@ async function main() {
         kind: 'payout',
         orderId: payoutOrder.id,
         status: 'succeeded',
-        providerRef: 'provider-payout-ref'
+        providerRef: 'provider-payout-ref',
+        amountCents: 500,
+        feeCents: 10,
+        currency: 'CNY'
       }
     });
     assert.strictEqual(webhook.status, 200);
@@ -300,7 +329,10 @@ async function main() {
         orderId: failedPayout.id,
         status: 'failed',
         providerRef: 'provider-payout-failed-ref',
-        failureCode: 'bank_rejected'
+        failureCode: 'bank_rejected',
+        amountCents: 500,
+        feeCents: 10,
+        currency: 'CNY'
       }
     });
     assert.strictEqual(webhook.status, 200, await webhook.text());

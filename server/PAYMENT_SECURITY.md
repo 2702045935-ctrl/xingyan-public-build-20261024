@@ -112,10 +112,16 @@ POST /api/payment/provider/webhook
     "orderId": "fund_xxx",
     "status": "succeeded",
     "providerRef": "provider-reference",
+    "amountCents": 1000,
+    "feeCents": 0,
+    "currency": "CNY",
     "failureCode": ""
   }
 }
 ```
+
+回调金额、手续费、币种、订单类型和状态必须与本地资金单完全一致；不一致时
+返回 409，且不会登记为已处理或改变余额。成功回调必须提供 `providerRef`。
 
 ## 逐日对账
 
@@ -124,10 +130,13 @@ POST /api/payment/provider/webhook
 ```text
 GET /api/ops/payments/reconcile
 GET /api/ops/payments/settlement?date=YYYY-MM-DD
+GET /api/ops/payments/settlement/incidents?status=open
+POST /api/ops/payments/settlement/incidents/:id/resolve
 ```
 
 机构结算文件会逐笔比对订单号、金额、手续费、币种和状态。差异只生成报告，
-不会自动改钱。差异必须进入人工工单。
+不会自动改钱。存在差异时同事务生成人工对账工单，必须填写处理说明后才能
+结案；重复结案按幂等返回。
 
 ## 首次切换
 

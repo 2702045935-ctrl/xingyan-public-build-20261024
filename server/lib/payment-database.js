@@ -236,6 +236,24 @@ class PaymentDatabase extends SqlitePaymentLedger {
         PRIMARY KEY(run_id, provider_ref),
         FOREIGN KEY(run_id) REFERENCES payment_settlement_runs(id)
       );
+
+      CREATE TABLE IF NOT EXISTS payment_settlement_incidents (
+        id TEXT PRIMARY KEY,
+        run_id TEXT NOT NULL UNIQUE,
+        provider TEXT NOT NULL,
+        settlement_date TEXT NOT NULL,
+        status TEXT NOT NULL,
+        mismatch_count INTEGER NOT NULL,
+        report_json TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        resolved_at TEXT NOT NULL DEFAULT '',
+        resolved_by TEXT NOT NULL DEFAULT '',
+        resolution_note TEXT NOT NULL DEFAULT '',
+        FOREIGN KEY(run_id) REFERENCES payment_settlement_runs(id)
+      );
+
+      CREATE INDEX IF NOT EXISTS payment_settlement_incidents_status
+        ON payment_settlement_incidents(status, created_at);
     `);
     this.ensureMeta('intent_last_hash', '');
     this.ensureMeta('intent_sequence', '0');
@@ -1503,6 +1521,24 @@ class PaymentDatabase extends SqlitePaymentLedger {
         stableJson(report),
         at
       );
+      let incidentId = '';
+      if (mismatches.length) {
+        incidentId = this.newId('setcase');
+        this.db.prepare(`
+          INSERT INTO payment_settlement_incidents(
+            id, run_id, provider, settlement_date, status, mismatch_count,
+            report_json, created_at, resolved_at, resolved_by, resolution_note
+          ) VALUES(?, ?, ?, ?, 'open', ?, ?, ?, '', '', '')
+        `).run(
+          incidentId,
+          runId,
+          providerName,
+          date,
+          mismatches.length,
+          stableJson(report),
+          at
+        );
+      }
       const insertLine = this.db.prepare(`
         INSERT INTO payment_settlement_lines(
           run_id, provider_ref, order_id, kind, amount_cents, fee_cents,
@@ -1522,7 +1558,89 @@ class PaymentDatabase extends SqlitePaymentLedger {
           stableJson(line.raw)
         );
       }
-      return Object.assign({ runId, createdAt: at }, report);
+      return Object.assign({ runId, incidentId, createdAt: at }, report);
+    });
+  }
+
+  settlementIncidents(limit, status) {
+    const max = Math.min(200, Math.max(1, Number(limit) || 50));
+    const wanted = String(status || '').trim().toLowerCase();
+    const rows = wanted
+      ? this.db.prepare(`
+          SELECT * FROM payment_settlement_incidents
+          WHERE status = ?
+          ORDER BY created_at DESC
+          LIMIT ?
+        `).all(wanted, max)
+      : this.db.prepare(`
+          SELECT * FROM payment_settlement_incidents
+          ORDER BY created_at DESC
+          LIMIT ?
+        `).all(max);
+    return rows.map((row) => ({
+      id: String(row.id),
+      runId: String(row.run_id),
+      provider: String(row.provider),
+      settlementDate: String(row.settlement_date),
+      status: String(row.status),
+      mismatchCount: Number(row.mismatch_count),
+      report: parseJson(row.report_json, {}),
+      createdAt: String(row.created_at),
+      resolvedAt: String(row.resolved_at || ''),
+      resolvedBy: String(row.resolved_by || ''),
+      resolutionNote: String(row.resolution_note || '')
+    }));
+  }
+
+  settlementIncident(incidentId) {
+    const row = this.db.prepare(`
+      SELECT * FROM payment_settlement_incidents WHERE id = ?
+    `).get(String(incidentId || ''));
+    if (!row) return null;
+    return {
+      id: String(row.id),
+      runId: String(row.run_id),
+      provider: String(row.provider),
+      settlementDate: String(row.settlement_date),
+      status: String(row.status),
+      mismatchCount: Number(row.mismatch_count),
+      report: parseJson(row.report_json, {}),
+      createdAt: String(row.created_at),
+      resolvedAt: String(row.resolved_at || ''),
+      resolvedBy: String(row.resolved_by || ''),
+      resolutionNote: String(row.resolution_note || '')
+    };
+  }
+
+  resolveSettlementIncident(incidentId, actor, note) {
+    const id = String(incidentId || '');
+    const resolvedBy = String(actor || '').trim();
+    const resolutionNote = String(note || '').trim();
+    if (!id) throw new Error('settlement incident id is required');
+    if (!resolvedBy || !resolutionNote) {
+      throw new Error('settlement incident resolution requires actor and note');
+    }
+    return this.transaction(() => {
+      const row = this.db.prepare(`
+        SELECT * FROM payment_settlement_incidents WHERE id = ?
+      `).get(id);
+      if (!row) throw new Error('settlement incident not found');
+      if (row.status === 'resolved') {
+        return {
+          duplicate: true,
+          incident: this.settlementIncident(id)
+        };
+      }
+      const at = this.now();
+      this.db.prepare(`
+        UPDATE payment_settlement_incidents
+        SET status = 'resolved', resolved_at = ?, resolved_by = ?, resolution_note = ?
+        WHERE id = ?
+      `).run(at, resolvedBy, resolutionNote, id);
+      return {
+        duplicate: false,
+        incident: this.settlementIncident(id)
+      };
     });
   }
 

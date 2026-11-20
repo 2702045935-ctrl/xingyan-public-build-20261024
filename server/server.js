@@ -14094,6 +14094,11 @@ async function handleApi(req, res, pathname, query) {
       if (!order || order.kind !== event.kind || order.provider !== paymentProvider.name) {
         return fail(res, 404, '支付订单不存在或支付机构不匹配');
       }
+      if (order.amountCents !== event.amountCents
+          || order.feeCents !== event.feeCents
+          || order.currency !== event.currency) {
+        return fail(res, 409, '支付机构回调金额、手续费或币种与本机资金单不一致');
+      }
       paymentDatabase.recordProviderEvent({
         provider: paymentProvider.name,
         providerEventId: event.providerEventId,
@@ -28958,7 +28963,43 @@ async function handleOps(req, res, parts, query) {
     return;
   }
 
-  if (sub === 'payments' && parts[2] === 'settlement' && method === 'GET') {
+  if (sub === 'payments' && parts[2] === 'settlement'
+      && parts[3] === 'incidents' && parts.length === 4 && method === 'GET') {
+    if (!can(admin, 'payments')) return fail(res, 403, '你的角色没有查看这一项的权限');
+    if (!paymentDatabase) return fail(res, 503, '支付数据库暂时不可用');
+    const status = String(query.get('status') || '').trim().toLowerCase();
+    const incidents = paymentDatabase.settlementIncidents(100, status);
+    ok(res, {
+      incidents,
+      open: incidents.filter((x) => x.status === 'open').length
+    });
+    return;
+  }
+
+  if (sub === 'payments' && parts[2] === 'settlement'
+      && parts[3] === 'incidents' && parts[5] === 'resolve'
+      && parts.length === 6 && method === 'POST') {
+    if (!can(admin, 'payments')) return fail(res, 403, '你的角色没有处理对账差异的权限');
+    if (!paymentDatabase) return fail(res, 503, '支付数据库暂时不可用');
+    const body = await readBody(req);
+    const note = str(body.note, 500).trim();
+    if (note.length < 8) return fail(res, 422, '请填写至少 8 个字的差异处理说明');
+    try {
+      const result = paymentDatabase.resolveSettlementIncident(
+        str(parts[4], 120),
+        admin.username || admin.name || admin.id || 'admin',
+        note
+      );
+      audit(req, admin, '支付对账差异结案', str(parts[4], 120), note);
+      ok(res, result);
+      return;
+    } catch (error) {
+      return fail(res, 409, String(error && error.message || error));
+    }
+  }
+
+  if (sub === 'payments' && parts[2] === 'settlement'
+      && parts.length === 3 && method === 'GET') {
     if (!can(admin, 'payments')) return fail(res, 403, '你的角色没有查看这一项的权限');
     if (!paymentDatabase || !paymentProvider || !paymentProvider.ready()) {
       return fail(res, 503, '支付数据库或持牌支付机构尚未就绪');

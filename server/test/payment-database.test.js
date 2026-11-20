@@ -225,6 +225,27 @@ try {
   assert.strictEqual(mismatch.ok, false);
   assert.ok(mismatch.mismatches.some((row) => row.code === 'amount-or-fee-mismatch'));
   assert.ok(mismatch.mismatches.some((row) => row.code === 'missing-provider-line'));
+  assert.ok(mismatch.incidentId);
+  const openIncidents = database.settlementIncidents(10, 'open');
+  assert.strictEqual(openIncidents.length, 1);
+  assert.strictEqual(openIncidents[0].id, mismatch.incidentId);
+  assert.strictEqual(openIncidents[0].report.ok, false);
+  const resolvedIncident = database.resolveSettlementIncident(
+    mismatch.incidentId,
+    'finance-reviewer',
+    '已核对机构结算文件，差异进入人工调账流程'
+  );
+  assert.strictEqual(resolvedIncident.duplicate, false);
+  assert.strictEqual(resolvedIncident.incident.status, 'resolved');
+  assert.strictEqual(database.settlementIncidents(10, 'open').length, 0);
+  assert.strictEqual(
+    database.resolveSettlementIncident(
+      mismatch.incidentId,
+      'finance-reviewer',
+      '重复点击结案'
+    ).duplicate,
+    true
+  );
 
   const pendingOutbox = database.outbox(100);
   assert.ok(pendingOutbox.length >= 4);
