@@ -31,7 +31,9 @@ require(
 require(
     "if isGroup { autoLoadOlder() }" in CHAT
     and "let target = isGroup ? 300 : 200" in CHAT
-    and "guard hasOlder, olderPrefetch.isEmpty, olderPrefetchTask == nil" in CHAT,
+    and "let canContinue = explicitMore ?? hasOlder" in CHAT
+    and "guard canContinue, olderPrefetch.isEmpty, olderPrefetchTask == nil" in CHAT
+    and "scheduleOlderPrefetch(before: nextCursor" in CHAT,
     "group prefetch must keep the B2611191645 single-page history runway",
 )
 require(

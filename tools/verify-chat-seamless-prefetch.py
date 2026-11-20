@@ -14,7 +14,7 @@ def require(condition: bool, message: str) -> None:
 
 require(
     "private var olderPrefetch: [Message]" in CHAT
-    and "private func scheduleOlderPrefetch()" in CHAT
+    and "private func scheduleOlderPrefetch(" in CHAT
     and "private func takeOlderPrefetch()" in CHAT,
     "older history must stay prefetched ahead of the viewport",
 )
@@ -36,11 +36,18 @@ require(
 )
 require(
     "let target = isGroup ? 300 : 200" in CHAT
-    and "guard hasOlder, olderPrefetch.isEmpty, olderPrefetchTask == nil" in CHAT
+    and "let canContinue = explicitMore ?? hasOlder" in CHAT
+    and "guard canContinue, olderPrefetch.isEmpty, olderPrefetchTask == nil" in CHAT
     and "olderPrefetch = visibleMessages(page.messages)" in CHAT
     and "before: seq" in CHAT
     and "let maxPages = isGroup ? 2 : 3" in CHAT,
     "chat prefetch must keep the B2611191645 single-page runway",
+)
+require(
+    "scheduleOlderPrefetch(before: nextCursor" in CHAT
+    and "knownIds: Set(bounded.map(\\.id))" in CHAT
+    and "continues: more" in CHAT,
+    "each consumed history page must enqueue exactly one fresh prefetch page",
 )
 require(
     "prependAnchor =" in NATIVE

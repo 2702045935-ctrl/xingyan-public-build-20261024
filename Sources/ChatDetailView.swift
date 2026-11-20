@@ -7204,7 +7204,10 @@ struct ChatDetailView: View {
             }
 
             ChatScrollDiag.shared.note("上翻加载完 → 原子补偿当前位置")
-            scheduleOlderPrefetch()
+            let nextCursor = bounded.lazy.compactMap(\.seq).first(where: { $0 > 0 }) ?? 0
+            scheduleOlderPrefetch(before: nextCursor,
+                                  knownIds: Set(bounded.map(\.id)),
+                                  continues: more)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { holdScroll = false }
         } catch {
             // Continuous scroll events must not turn one failed prefetch into a
@@ -7215,12 +7218,15 @@ struct ChatDetailView: View {
         }
     }
 
-    private func scheduleOlderPrefetch() {
-        guard hasOlder, olderPrefetch.isEmpty, olderPrefetchTask == nil,
-              oldestHistorySeq > 0 else { return }
-        let seq = oldestHistorySeq
+    private func scheduleOlderPrefetch(before explicitSeq: Int? = nil,
+                                       knownIds: Set<String>? = nil,
+                                       continues explicitMore: Bool? = nil) {
+        let canContinue = explicitMore ?? hasOlder
+        guard canContinue, olderPrefetch.isEmpty, olderPrefetchTask == nil else { return }
+        let seq = explicitSeq ?? oldestHistorySeq
+        guard seq > 0 else { return }
         let target = isGroup ? 300 : 200
-        let known = Set(messages.map(\.id))
+        let known = knownIds ?? Set(messages.map(\.id))
         let token = UUID()
         olderPrefetchToken = token
         olderPrefetchTask = Task {
