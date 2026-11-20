@@ -1562,6 +1562,7 @@ struct SearchPage: View {
     private func openChat(id: String,
                           peerId: String? = nil,
                           isGroup: Bool = false) {
+        recordSearchHit(scope: isGroup ? "groups" : "messages", targetId: id)
         if let chat = app.chats.first(where: { $0.id == id }) {
             finishOpenChat(chat)
             return
@@ -1599,6 +1600,7 @@ struct SearchPage: View {
     }
 
     private func openUser(_ user: User) {
+        recordSearchHit(scope: "people", targetId: user.id)
         if let onOpenUser {
             onOpenUser(user)
             dismiss()
@@ -1606,6 +1608,20 @@ struct SearchPage: View {
             focused = false
             pickedUser = user
         }
+    }
+
+    private func recordSearchHit(scope: String, targetId: String) {
+        let query = key
+        guard !query.isEmpty, !targetId.isEmpty else { return }
+        let event: [String: Any] = [
+            "eventId": UUID().uuidString,
+            "type": "click",
+            "scope": scope,
+            "targetId": targetId,
+            "query": query,
+            "at": ISO8601DateFormatter().string(from: Date())
+        ]
+        Task { await API.shared.searchEvents([event]) }
     }
 
     private func scheduleRemoteSearch() {

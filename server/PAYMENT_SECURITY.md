@@ -142,6 +142,12 @@ POST /api/ops/payments/disputes/:id/finalize
 不会自动改钱。存在差异时同事务生成人工对账工单，必须填写处理说明后才能
 结案；重复结案按幂等返回。
 
+服务启动后还会自动执行逐日对账：每天北京时间 03:30 对账上一自然日；若启动
+时发现上一日尚未成功对账，会在启动 2 秒后补跑。失败每 30 分钟重试，成功记录
+写入 `data/payment-settlement-runs.json`。自动对账只负责比对和生成差异工单，
+不会自动改余额。管理员可在 `/api/ops/payments/reconcile` 的
+`scheduledSettlement` 字段查看最近一次自动对账结果。
+
 支付争议使用独立台账，绑定支付意图、机构争议号、争议金额和冻结前状态。
 开启争议时支付意图与争议记录在同一事务内变为 `disputed`；同一机构争议号
 重复回调只返回原记录，不会重复冻结。未结争议会让 `realMoneyReady=false`。

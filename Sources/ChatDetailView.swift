@@ -569,18 +569,52 @@ private struct ChatTopGlassBackdrop: View {
                           ? Color.black.opacity(0.94)
                           : Color(uiColor: .systemBackground).opacity(0.97))
             } else {
-                NativeGlassHeaderMaterial(forcedDark: lightInk)
-                    .mask {
-                        LinearGradient(
-                            stops: [
-                                .init(color: .black, location: 0),
-                                .init(color: .black.opacity(0.96), location: 0.84),
-                                .init(color: .clear, location: 1)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
+                ZStack {
+                    NativePremiumGlassMaterial(dark: lightInk)
+                    LinearGradient(
+                        colors: lightInk
+                            ? [Color.black.opacity(0.17),
+                               Color.white.opacity(0.018),
+                               .clear,
+                               Color.black.opacity(0.025)]
+                            : [Color.white.opacity(0.16),
+                               Color.white.opacity(0.025),
+                               .clear,
+                               Color.black.opacity(0.022)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(lightInk ? 0.025 : 0.075),
+                            .clear,
+                            Color.black.opacity(lightInk ? 0.035 : 0.012)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    ChatMaterialGrainOverlay()
+                        .opacity(lightInk ? 0.34 : 0.24)
+                    VStack {
+                        Spacer()
+                        Rectangle()
+                            .fill(lightInk
+                                  ? Color.white.opacity(0.07)
+                                  : Color.black.opacity(0.05))
+                            .frame(height: 0.55)
                     }
+                }
+                .mask {
+                    LinearGradient(
+                        stops: [
+                            .init(color: .black, location: 0),
+                            .init(color: .black.opacity(0.97), location: 0.82),
+                            .init(color: .clear, location: 1)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                }
             }
         }
         .ignoresSafeArea(edges: .top)
@@ -3588,40 +3622,41 @@ struct ChatDetailView: View {
     }
 
     private var securityNotice: some View {
+        let noticeInk = Color.dyn(0x66736B, 0xC1CEC5)
         HStack(alignment: .top, spacing: 9) {
             Image(systemName: "lock.shield.fill")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(C.green)
-                .frame(width: 24, height: 24)
-                .background(C.green.opacity(scheme == .dark ? 0.16 : 0.11),
+                .font(.system(size: 11.5, weight: .semibold))
+                .foregroundStyle(noticeInk)
+                .frame(width: 22, height: 22)
+                .background(noticeInk.opacity(scheme == .dark ? 0.12 : 0.08),
                             in: Circle())
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(Tr("消息已加密保护"))
-                    .font(pf(12.5, .semibold))
-                    .foregroundStyle(Color.primary)
+                    .font(pf(11.5, .semibold))
+                    .foregroundStyle(noticeInk)
                 Text(Tr("消息通过加密连接传输，媒体文件加密存储于星言自有服务器。"))
-                    .font(pf(11.5, .regular))
-                    .foregroundStyle(Color.primary.opacity(0.72))
+                    .font(pf(11, .regular))
+                    .foregroundStyle(noticeInk.opacity(0.86))
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
         }
-        .frame(maxWidth: 520, alignment: .leading)
+        .frame(maxWidth: 390, alignment: .leading)
         .padding(.horizontal, 12)
         .padding(.vertical, 9)
         .background(
             ZStack {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(.regularMaterial)
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color(uiColor: .secondarySystemBackground)
-                        .opacity(scheme == .dark ? 0.48 : 0.76))
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    .fill(Color.dyn(0xF7F6ED, 0x18231D))
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    .fill(noticeInk.opacity(scheme == .dark ? 0.055 : 0.035))
             }
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(Color.primary.opacity(0.09), lineWidth: 0.6)
+            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                .stroke(Color.dyn(0xE2E1D8, 0x2C3A32).opacity(0.82),
+                        lineWidth: 0.55)
         )
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 18)

@@ -658,7 +658,7 @@ final class ChatWallpaperEffectRenderer {
                 "inputSharpness": 0.36
             ]) else { return nil }
 
-        let radius = max(22, min(48, target.width * 0.033))
+        let radius = max(26, min(56, target.width * 0.039))
         let blurred = input
             .clampedToExtent()
             .applyingFilter("CIGaussianBlur", parameters: [
@@ -668,15 +668,15 @@ final class ChatWallpaperEffectRenderer {
 
         let black = effect == .blackBlur
         let toned = blurred.applyingFilter("CIColorControls", parameters: [
-            kCIInputSaturationKey: black ? 0.93 : 0.96,
-            kCIInputContrastKey: black ? 1.025 : 1.012,
-            kCIInputBrightnessKey: black ? -0.006 : 0.012
+            kCIInputSaturationKey: black ? 0.84 : 0.92,
+            kCIInputContrastKey: black ? 1.045 : 1.026,
+            kCIInputBrightnessKey: black ? -0.004 : 0.016
         ])
         let exposed = toned.applyingFilter("CIExposureAdjust", parameters: [
-            kCIInputEVKey: black ? -0.12 : 0.09
+            kCIInputEVKey: black ? -0.09 : 0.11
         ])
         let vibrant = exposed.applyingFilter("CIVibrance", parameters: [
-            "inputAmount": black ? 0.015 : 0.042
+            "inputAmount": black ? 0.055 : 0.068
         ])
         let vignetted = vibrant.applyingFilter("CIVignette", parameters: [
             kCIInputIntensityKey: black ? 0.16 : 0.065,

@@ -44,6 +44,8 @@ const { PaymentDeviceEnrollment } = require('./lib/payment-device-enrollment');
 const { PaymentKeyRing } = require('./lib/payment-keyring');
 const { PaymentIntentEngine } = require('./lib/payment-intent-engine');
 const { VideoRecommendationKernel } = require('./lib/video-recommendation');
+const { SearchRankingKernel } = require('./lib/search-ranking');
+const { PaymentSettlementScheduler } = require('./lib/payment-settlement-scheduler');
 const {
   normalizeBillTimeZone,
   billMonthKey,
@@ -75,6 +77,7 @@ let paymentProvider = null;
 let paymentKeyringReady = false;
 let paymentOutboxTimer = null;
 let paymentBackupTimer = null;
+let paymentSettlementScheduler = null;
 let paymentRealMoneyReady = false;
 const paymentIntentChallenges = new Map();
 const paymentCoreMode = ['off', 'shadow', 'enforce'].includes(
@@ -646,6 +649,24 @@ function closeVideoRecommendationKernel() {
   try { videoRecommendationKernel.close(); }
   catch (_) { /* process is already exiting */ }
   videoRecommendationKernel = null;
+}
+let searchRankingKernel = null;
+try {
+  searchRankingKernel = new SearchRankingKernel({
+    file: path.join(DATA_DIR, 'search-events.json'),
+    persistDelayMs: 1500,
+    maxEventsPerUser: 3000
+  });
+} catch (error) {
+  searchRankingKernel = null;
+  console.log('[搜索推荐] 内核初始化失败，自动使用基础排序：'
+    + String(error && error.message || error));
+}
+function closeSearchRankingKernel() {
+  if (!searchRankingKernel) return;
+  try { searchRankingKernel.close(); }
+  catch (_) { /* process is already exiting */ }
+  searchRankingKernel = null;
 }
 function feedStoreRead(name, fallback) {
   if (!FEED_STORE[name]) FEED_STORE[name] = { data: null, dirty: false };
@@ -4017,6 +4038,10 @@ async function runPaymentOutboxOnce() {
 }
 
 function closePaymentDatabase() {
+  if (paymentSettlementScheduler) {
+    try { paymentSettlementScheduler.stop(); } catch (_) { }
+    paymentSettlementScheduler = null;
+  }
   if (paymentOutboxTimer) {
     clearTimeout(paymentOutboxTimer);
     paymentOutboxTimer = null;
@@ -15858,9 +15883,13 @@ async function handleApi(req, res, pathname, query) {
   if (parts[0] === 'search-hot' && method === 'GET') {
     const cfg = readJson(path.join(DATA_DIR, 'search-hot.json'), { words: null });
     const def = ['朋友圈', '聊天记录', '公众号', '视频号', '附近的人', '群聊'];
-    const words = Array.isArray(cfg.words) && cfg.words.length
+    let words = Array.isArray(cfg.words) && cfg.words.length
       ? cfg.words.map((w) => String(w || '').trim()).filter(Boolean).slice(0, 20)
       : def;
+    const me = currentUser(req);
+    if (me && searchRankingKernel) {
+      words = searchRankingKernel.suggestions(me.id, words, 20);
+    }
     ok(res, { words });
     return;
   }
@@ -17531,77 +17560,177 @@ async function handleApi(req, res, pathname, query) {
     return;
   }
 
-  /* 搜一搜：一次搜完 联系人 / 群聊 / 朋友圈 / 视频号 / 聊天记录（和微信那个搜索页一样分组给）。
-     scope 可以是 people / groups / moments / videos / messages / all */
+  /* 搜索反馈：曝光、点击、打开、跳过和查询本身进入可衰减的个人画像。 */
+  if (parts[0] === 'search' && parts[1] === 'events' && method === 'POST') {
+    const me = currentUser(req);
+    if (!me) return fail(res, 401, '请先登录');
+    if (!searchRankingKernel) return fail(res, 503, '搜索推荐内核暂时不可用');
+    const body = await readBody(req);
+    if (!Array.isArray(body.events) || !body.events.length) {
+      return fail(res, 422, '缺少搜索反馈事件');
+    }
+    if (body.events.length > 100) return fail(res, 413, '一次最多上报 100 条事件');
+    try {
+      ok(res, searchRankingKernel.recordEvents(me.id, body.events));
+      return;
+    } catch (error) {
+      return fail(res, 422, '搜索反馈暂时无法写入');
+    }
+  }
+
+  /* 搜一搜：统一权限过滤、字段匹配、个人偏好、新鲜度和去重后分组返回。 */
   if (parts[0] === 'search' && method === 'GET') {
     const me = currentUser(req);
     if (!me) return fail(res, 401, '请先登录');
-    const nmx = (id) => { const u = findUser(String(id || '')); return u ? (u.nickname || u.username || '') : ''; };
-    const q = String(query.get('q') || '').trim().slice(0, 40);
-    const scope = String(query.get('scope') || 'all');
-    if (!q) return ok(res, { people: [], groups: [], moments: [], videos: [], messages: [] });
-    const lower = q.toLowerCase();
-    const want = (k) => scope === 'all' || scope === k;
-    const out = { people: [], groups: [], moments: [], videos: [], messages: [] };
+    const startedAt = Date.now();
+    const nmx = (id) => {
+      const u = findUser(String(id || ''));
+      return u ? (u.nickname || u.username || '') : '';
+    };
+    const q = String(query.get('q') || '').trim().slice(0, 80);
+    const scope = ['all', 'people', 'groups', 'moments', 'videos', 'messages']
+      .includes(String(query.get('scope') || ''))
+      ? String(query.get('scope'))
+      : 'all';
+    const limit = Math.max(1, Math.min(50, Number(query.get('limit')) || 20));
+    if (!q) {
+      return ok(res, {
+        people: [], groups: [], moments: [], videos: [], messages: [],
+        meta: { q: '', scope, tookMs: 0, total: 0 }
+      });
+    }
+    const want = (kind) => scope === 'all' || scope === kind;
+    const output = { people: [], groups: [], moments: [], videos: [], messages: [] };
+    const totals = { people: 0, groups: 0, moments: 0, videos: 0, messages: 0 };
+    const rank = (kind, rows, fields, idOf, recencyOf, kindLimit) => {
+      if (!searchRankingKernel) {
+        const fallback = rows.slice(0, kindLimit || limit);
+        return { rows: fallback, total: fallback.length };
+      }
+      return searchRankingKernel.rank(me.id, kind, rows, q, {
+        fields, idOf, recencyOf, limit: kindLimit || limit
+      });
+    };
+
     if (want('people')) {
-      out.people = friendIds(me.id).map(findUser).filter(Boolean)
-        .filter((u) => displayNameFor(me.id, u).toLowerCase().includes(lower)
-          || String(u.username || '').toLowerCase().includes(lower))
-        .slice(0, 20)
-        .map((u) => ({ id: u.id, name: displayNameFor(me.id, u), username: u.username || '', avatar: u.avatar || '' }));
+      const candidates = friendIds(me.id).map(findUser).filter(Boolean)
+        .map((u) => ({
+          id: u.id,
+          name: displayNameFor(me.id, u),
+          username: u.username || '',
+          avatar: u.avatar || '',
+          createdAt: u.createdAt || ''
+        }));
+      const result = rank('people', candidates,
+        (row) => [row.name, row.username],
+        (row) => row.id, (row) => row.createdAt);
+      output.people = result.rows;
+      totals.people = result.total;
     }
     if (want('groups')) {
-      out.groups = db.chats
-        .filter((c) => c.type === 'group' && (c.memberIds || []).includes(me.id)
-          && String(c.name || '').toLowerCase().includes(lower))
-        .slice(0, 20)
-        .map((c) => ({ id: c.id, name: c.name || '', avatar: c.avatar || '', members: (c.memberIds || []).length }));
+      const candidates = db.chats
+        .filter((c) => c.type === 'group' && (c.memberIds || []).includes(me.id))
+        .map((c) => ({
+          id: c.id,
+          name: c.name || '',
+          avatar: c.avatar || '',
+          members: (c.memberIds || []).length,
+          updatedAt: c.updatedAt || ''
+        }));
+      const result = rank('groups', candidates,
+        (row) => [row.name],
+        (row) => row.id, (row) => row.updatedAt);
+      output.groups = result.rows;
+      totals.groups = result.total;
     }
     if (want('moments')) {
-      out.moments = (db.moments || [])
-        .filter((m) => m && momentVisibleTo(m, me.id) && String(m.content || '').toLowerCase().includes(lower))
-        .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))
-        .slice(0, 20)
+      const candidates = (db.moments || [])
+        .filter((m) => m && momentVisibleTo(m, me.id))
         .map((m) => ({
-          id: m.id, authorId: m.authorId, author: nmx(m.authorId),
+          id: m.id,
+          authorId: m.authorId,
+          author: nmx(m.authorId),
           content: String(m.content || '').slice(0, 120),
-          images: (m.images || []).slice(0, 3), createdAt: m.createdAt
+          images: (m.images || []).slice(0, 3),
+          createdAt: m.createdAt || ''
         }));
+      const result = rank('moments', candidates,
+        (row) => [row.content, row.author],
+        (row) => row.id, (row) => row.createdAt);
+      output.moments = result.rows;
+      totals.moments = result.total;
     }
     if (want('videos')) {
-      const f = readJson(path.join(DATA_DIR, 'feed.json'), { items: [], posts: [] });
-      out.videos = (f.items || []).concat(f.posts || [])
-        .filter((v) => v && (String(v.title || '') + String(v.caption || '')).toLowerCase().includes(lower))
-        .slice(0, 20)
-        .map((v) => ({ id: v.id, title: v.title || v.caption || '', cover: v.cover || '', authorId: v.authorId || '', author: v.authorId ? nmx(v.authorId) : '' }));
+      const feed = readJson(path.join(DATA_DIR, 'feed.json'), { items: [], posts: [] });
+      const candidates = (feed.items || []).concat(feed.posts || [])
+        .filter((v) => v && feedVisibleTo(v, me.id))
+        .map((v) => ({
+          id: v.id,
+          title: v.title || v.caption || v.desc || '',
+          cover: v.cover || '',
+          authorId: v.authorId || '',
+          author: v.authorId ? nmx(v.authorId) : '',
+          tag: v.tag || '',
+          createdAt: v.createdAt || ''
+        }));
+      const result = rank('videos', candidates,
+        (row) => [row.title, row.author, row.tag],
+        (row) => row.id, (row) => row.createdAt);
+      output.videos = result.rows;
+      totals.videos = result.total;
     }
     if (want('messages')) {
       const hits = [];
-      for (const c of chatsOf(me.id)) {
-        if (hits.length >= 30) break;
-        const msgs = loadMessages(c.id);
-        for (let i = msgs.length - 1; i >= 0 && hits.length < 30; i -= 1) {
-          const m = msgs[i];
-          if (!m || m.recalled) continue;
-          if (!String(m.content || '').toLowerCase().includes(lower)) continue;
-          const peerId = (c.memberIds || []).find((id) => id !== me.id) || '';
+      for (const chat of chatsOf(me.id)) {
+        const peerId = (chat.memberIds || []).find((id) => id !== me.id) || '';
+        const chatTitle = chat.type === 'group' ? (chat.name || '群聊') : nmx(peerId);
+        const msgs = loadMessages(chat.id);
+        for (let i = msgs.length - 1; i >= 0 && hits.length < 500; i -= 1) {
+          const message = msgs[i];
+          if (!message || message.recalled) continue;
           hits.push({
-            chatId: c.id, isGroup: c.type === 'group',
-            chatTitle: c.type === 'group' ? (c.name || '群聊') : nmx(peerId),
-            peerId, messageId: m.id, senderId: m.senderId, sender: nmx(m.senderId),
-            text: String(m.content || '').slice(0, 120), at: m.createdAt
+            chatId: chat.id,
+            isGroup: chat.type === 'group',
+            chatTitle,
+            peerId,
+            messageId: message.id,
+            senderId: message.senderId,
+            sender: nmx(message.senderId),
+            text: String(message.content || '').slice(0, 120),
+            at: message.createdAt || ''
           });
         }
       }
-      out.messages = hits.sort((a, b) => String(b.at).localeCompare(String(a.at))).slice(0, 30);
+      const result = rank('messages', hits,
+        (row) => [row.text, row.chatTitle, row.sender],
+        (row) => row.messageId, (row) => row.at, Math.min(30, limit));
+      output.messages = result.rows;
+      totals.messages = result.total;
     }
-    /* 临时调试：确认搜索内部到底扫了多少会话/消息（排查完就删） */
-    out._dbg = {
-      scope: scope, q: q,
-      chats: chatsOf(me.id).length,
-      scanned: chatsOf(me.id).reduce((n, c) => n + loadMessages(c.id).length, 0)
-    };
-    ok(res, out);
+    if (searchRankingKernel) {
+      searchRankingKernel.recordEvents(me.id, [{
+        eventId: uid('se'),
+        type: 'query',
+        scope,
+        query: q,
+        at: new Date().toISOString()
+      }]);
+    }
+    const hotCfg = readJson(path.join(DATA_DIR, 'search-hot.json'), { words: [] });
+    const suggestions = searchRankingKernel
+      ? searchRankingKernel.suggestions(me.id, hotCfg.words || [], 10)
+      : (hotCfg.words || []).slice(0, 10);
+    ok(res, Object.assign(output, {
+      suggestions,
+      meta: {
+        q,
+        scope,
+        tookMs: Date.now() - startedAt,
+        total: Object.values(totals).reduce((sum, value) => sum + value, 0),
+        totals,
+        engine: 'xingyan-search-v1'
+      }
+    }));
     return;
   }
 
@@ -24543,6 +24672,16 @@ try {
     + String(error && error.message || error));
 }
 if (paymentDatabase) {
+  if (paymentProvider && paymentProvider.ready()) {
+    paymentSettlementScheduler = new PaymentSettlementScheduler({
+      provider: paymentProvider,
+      database: paymentDatabase,
+      file: path.join(DATA_DIR, 'payment-settlement-runs.json'),
+      hour: 3,
+      minute: 30
+    });
+    paymentSettlementScheduler.start();
+  }
   const scheduleOutbox = () => {
     runPaymentOutboxOnce().catch((error) => {
       console.log('[支付 outbox] ' + String(error && error.message || error));
@@ -25944,12 +26083,14 @@ process.on('SIGINT', () => {
   console.log('\n正在退出…');
   server.close(() => {
     closeVideoRecommendationKernel();
+    closeSearchRankingKernel();
     closePaymentDatabase();
     process.exit(0);
   });
 });
 process.on('SIGTERM', () => {
   closeVideoRecommendationKernel();
+  closeSearchRankingKernel();
   closePaymentDatabase();
   process.exit(0);
 });
@@ -29123,7 +29264,11 @@ async function handleOps(req, res, parts, query) {
     const result = paymentLedger.reconcile(db.users, (id) => bizOf(id, false));
     audit(req, admin, '支付账本对账', 'reconcile',
       'entries=' + result.entries + ', differences=' + result.differences.length);
-    ok(res, result);
+    ok(res, Object.assign(result, {
+      scheduledSettlement: paymentSettlementScheduler
+        ? paymentSettlementScheduler.latest()
+        : null
+    }));
     return;
   }
 

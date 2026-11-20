@@ -21,6 +21,7 @@ struct SearchAllData: Decodable {
     var moments: [Post]?
     var videos: [Video]?
     var messages: [ChatHit]?
+    var suggestions: [String]?
 }
 
 struct SearchAllView: View {

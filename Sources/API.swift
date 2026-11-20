@@ -1935,9 +1935,19 @@ final class API {
     }
 
     func searchAll(_ q: String, scope: String = "all") async throws -> SearchAllData {
-        let path = "/api/search?q=" + (q.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")
-            + "&scope=" + scope
+        let path = "/api/search?q="
+            + (q.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")
+            + "&scope=" + scope + "&limit=30"
         return try await get(path, as: SearchAllData.self)
+    }
+
+    func searchEvents(_ events: [[String: Any]]) async {
+        guard !events.isEmpty else { return }
+        _ = try? await request(
+            "POST",
+            "/api/search/events",
+            body: ["events": Array(events.prefix(100))]
+        )
     }
 
     func searchHot() async throws -> [String] {
