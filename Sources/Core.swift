@@ -1025,6 +1025,7 @@ func chatWallpaperDecodeSide() -> CGFloat {
 
 struct RemoteImage: View {
     let path: String
+    var cacheKey: String? = nil
     var icon: String = "photo"
     var mode: ContentMode = .fill
 
@@ -1038,20 +1039,23 @@ struct RemoteImage: View {
     @State private var loadedPath = ""
 
     init(path: String,
+         cacheKey: String? = nil,
          icon: String = "photo",
          mode: ContentMode = .fill,
          template: Bool = false,
          maxSide: CGFloat = 1600,
          onLoaded: ((UIImage) -> Void)? = nil) {
         self.path = path
+        self.cacheKey = cacheKey
         self.icon = icon
         self.mode = mode
         self.template = template
         self.maxSide = maxSide
         self.onLoaded = onLoaded
-        let cached = Self.cachedImage(path: path, maxSide: maxSide)
+        let identity = Self.cacheIdentity(path: path, cacheKey: cacheKey)
+        let cached = Self.cachedImage(path: identity, maxSide: maxSide)
         _image = State(initialValue: cached)
-        _loadedPath = State(initialValue: cached == nil ? "" : path)
+        _loadedPath = State(initialValue: cached == nil ? "" : identity)
     }
 
     var body: some View {
@@ -1074,11 +1078,12 @@ struct RemoteImage: View {
             .frame(width: geo.size.width, height: geo.size.height)
             .clipped()
         }
-        .task(id: path) {
-            if loadedPath == path { return }
-            if let cached = Self.cachedImage(path: path, maxSide: maxSide) {
+        .task(id: Self.cacheIdentity(path: path, cacheKey: cacheKey)) {
+            let identity = Self.cacheIdentity(path: path, cacheKey: cacheKey)
+            if loadedPath == identity { return }
+            if let cached = Self.cachedImage(path: identity, maxSide: maxSide) {
                 image = cached
-                loadedPath = path
+                loadedPath = identity
                 onLoaded?(cached)
                 return
             }
@@ -1094,40 +1099,50 @@ struct RemoteImage: View {
         return ImageStore.shared.get(key) ?? ImageStore.shared.get(path)
     }
 
+    private static func cacheIdentity(path: String, cacheKey: String?) -> String {
+        let key = cacheKey?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return key.isEmpty ? path : key
+    }
+
     private func load() async {
         if path.isEmpty { return }
         let requestedPath = path
+        let requestedKey = Self.cacheIdentity(path: path, cacheKey: cacheKey)
         let side = max(64, maxSide)
-        let memoryKey = requestedPath + "#" + String(Int(side))
+        let memoryKey = requestedKey + "#" + String(Int(side))
 
         if let hit = ImageStore.shared.get(memoryKey) {
-            guard !Task.isCancelled, path == requestedPath else { return }
+            guard !Task.isCancelled,
+                  Self.cacheIdentity(path: path, cacheKey: cacheKey) == requestedKey else { return }
             image = hit
-            loadedPath = requestedPath
+            loadedPath = requestedKey
             onLoaded?(hit)
             return
         }
-        if let direct = ImageStore.shared.get(requestedPath) {
-            guard !Task.isCancelled, path == requestedPath else { return }
+        if let direct = ImageStore.shared.get(requestedKey) {
+            guard !Task.isCancelled,
+                  Self.cacheIdentity(path: path, cacheKey: cacheKey) == requestedKey else { return }
             image = direct
-            loadedPath = requestedPath
+            loadedPath = requestedKey
             onLoaded?(direct)
             return
         }
 
         let diskBytes: Data? = await Task.detached(priority: .userInitiated) { () -> Data? in
-            ImageStore.shared.diskRead(requestedPath)
+            ImageStore.shared.diskRead(ImageCacheKey.stablePath(requestedKey))
         }.value
-        guard !Task.isCancelled, path == requestedPath else { return }
+        guard !Task.isCancelled,
+              Self.cacheIdentity(path: path, cacheKey: cacheKey) == requestedKey else { return }
         if let diskBytes = diskBytes {
             let diskImg: UIImage? = await Task.detached(priority: .userInitiated) { () -> UIImage? in
                 RemoteImage.downsampled(diskBytes, maxSide: side)
             }.value
-            guard !Task.isCancelled, path == requestedPath else { return }
+            guard !Task.isCancelled,
+                  Self.cacheIdentity(path: path, cacheKey: cacheKey) == requestedKey else { return }
             if let diskImg = diskImg {
                 ImageStore.shared.put(memoryKey, diskImg)
                 image = diskImg
-                loadedPath = requestedPath
+                loadedPath = requestedKey
                 onLoaded?(diskImg)
                 return
             }
@@ -1149,7 +1164,8 @@ struct RemoteImage: View {
                 } catch {
                     guard attempt == 0 else { return }
                     try? await Task.sleep(nanoseconds: 350_000_000)
-                    guard !Task.isCancelled, path == requestedPath else { return }
+                    guard !Task.isCancelled,
+                          Self.cacheIdentity(path: path, cacheKey: cacheKey) == requestedKey else { return }
                 }
             }
             guard let remote else { return }
@@ -1159,13 +1175,17 @@ struct RemoteImage: View {
         let img = await Task.detached(priority: .userInitiated) {
             RemoteImage.downsampled(data, maxSide: side)
         }.value
-        guard !Task.isCancelled, path == requestedPath, let img = img else { return }
+        guard !Task.isCancelled,
+              Self.cacheIdentity(path: path, cacheKey: cacheKey) == requestedKey,
+              let img = img else { return }
         ImageStore.shared.put(memoryKey, img)
         image = img
-        loadedPath = requestedPath
+        loadedPath = requestedKey
         onLoaded?(img)
 
-        Task.detached(priority: .background) { ImageStore.shared.diskWrite(requestedPath, data) }
+        Task.detached(priority: .background) {
+            ImageStore.shared.diskWrite(ImageCacheKey.stablePath(requestedKey), data)
+        }
 
         if requestedPath.hasPrefix("/uploads/") || requestedPath.hasPrefix("/emoji/") {
             Task.detached(priority: .background) { LocalStore.keep(requestedPath, data: data) }
@@ -1226,9 +1246,11 @@ struct Avatar: View {
                 .frame(width: size, height: size)
                 .clipShape(shape)
             } else {
-                RemoteImage(path: path, icon: "person.fill",
+                RemoteImage(path: path,
+                            cacheKey: ImageCacheKey.stablePath(path),
+                            icon: "person.fill",
                             maxSide: max(96, size * 3))
-                    .id(path)
+                    .id(ImageCacheKey.stablePath(path))
                     .frame(width: size, height: size)
                     .clipShape(shape)
             }
