@@ -23,21 +23,26 @@ require(
     "checkout must offer a primary biometric action with an explicit password fallback",
 )
 require(
-    "NativePremiumGlassMaterial(dark: scheme == .dark)" in TRANSFER
-    and "let sheetRadius = max(28, L.paySheetRadius)" in TRANSFER
-    and "TopRounded(radius: sheetRadius)" in TRANSFER
-    and "max(34, L.safeBottom)" in TRANSFER,
-    "checkout sheet must use native material, continuous corners and safe-area spacing",
+    ".sheet(isPresented: $showPay)" in TRANSFER
+    and ".presentationDetents([.large])" in TRANSFER
+    and ".interactiveDismissDisabled(busy)" in TRANSFER
+    and "private var paySheetHeader" in TRANSFER
+    and "max(18, L.safeBottom)" in TRANSFER,
+    "checkout must use a native system sheet with safe pinned authorization controls",
 )
 require(
     "private var checkoutHero" in TRANSFER
     and "private var checkoutSummaryCard" in TRANSFER
     and "private var paymentTrustLine" in TRANSFER
-    and "private func checkoutSurface" in TRANSFER,
-    "checkout must use an Apple Pay-style amount, recipient, payment method and trust hierarchy",
+    and "private func checkoutSurface" in TRANSFER
+    and "checkoutDetailsExpanded" in TRANSFER
+    and 'Tr("付款详情")' in TRANSFER,
+    "checkout must use an Apple Pay-style amount, method, expandable details and trust hierarchy",
 )
 require(
-    "private var methodLayer" in TRANSFER
+    "private var methodSheet" in TRANSFER
+    and "NavigationStack" in TRANSFER
+    and ".presentationDetents([.medium, .large])" in TRANSFER
     and "Image(systemName: key == \"xypay\"" in TRANSFER
     and "PayVisual.tint.opacity(scheme == .dark ? 0.14 : 0.08)" in TRANSFER
     and "Image(systemName: \"checkmark\")" in TRANSFER,

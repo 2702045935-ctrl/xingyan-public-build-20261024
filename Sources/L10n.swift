@@ -1454,6 +1454,8 @@ enum L10n {
         "更改": "Change",
         "还没设置支付密码，点这里直接支付": "No payment password set — tap to pay directly",
         "选择付款方式": "Choose payment method",
+        "付款详情": "Payment details",
+        "收起详情": "Hide details",
         "充值余额": "Top up balance",
         "待好友确认收款": "Waiting for the friend to confirm",
         "付款方式：": "Payment method: ",
