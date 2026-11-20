@@ -101,9 +101,10 @@ require(
 )
 FIXTURE = (ROOT / "Sources" / "ChatStressFixture.swift").read_text(encoding="utf-8")
 require(
-    "private static var cache: [Chat]" in FIXTURE
-    and "static func chats(range: Range<Int>)" in FIXTURE,
-    "100k conversation stress data must materialize incrementally",
+    "static func chats(range: Range<Int>)" in FIXTURE
+    and "return (lower..<upper).map(chat(at:))" in FIXTURE
+    and "private static var cache" not in FIXTURE,
+    "100k conversation stress data must generate only the requested active window",
 )
 require(
     "static let maxActiveWindow = 2_400" in FIXTURE

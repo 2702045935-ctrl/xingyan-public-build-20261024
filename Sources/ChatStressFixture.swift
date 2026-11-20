@@ -12,8 +12,6 @@ enum ChatStressFixture {
     /// Keep the rendered conversation working set bounded even when the
     /// synthetic data source grows toward 100,000 rows.
     static let maxActiveWindow = 2_400
-    private static let lock = NSLock()
-    private static var cache: [Chat] = []
 
     /// The stress source is index based. Building all 100,000 value rows up
     /// front makes the launch measurement test fixture generation rather than
@@ -29,12 +27,7 @@ enum ChatStressFixture {
         let lower = max(0, min(count, range.lowerBound))
         let upper = max(lower, min(count, range.upperBound))
         guard lower < upper else { return [] }
-        lock.lock()
-        defer { lock.unlock() }
-        while cache.count < upper {
-            cache.append(chat(at: cache.count))
-        }
-        return Array(cache[lower..<upper])
+        return (lower..<upper).map(chat(at:))
     }
 
     private static let base = Date()
