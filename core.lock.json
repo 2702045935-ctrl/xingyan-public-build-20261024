@@ -83,8 +83,8 @@
     },
     {
       "path": "Sources/InAppBrowser.swift",
-      "size": 48152,
-      "sha256": "65fd36e0e0508fb501333db54678f2e119af258f9e554a07eb4ae02ceda5e28b"
+      "size": 48370,
+      "sha256": "84fa4a88671cc61abca21a41f02886bafa27cfa98fded7e3827e83a50f6e1a32"
     },
     {
       "path": "Sources/MallWebPage.swift",

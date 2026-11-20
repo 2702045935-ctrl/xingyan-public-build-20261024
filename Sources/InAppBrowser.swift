@@ -780,9 +780,7 @@ private struct BrowserWebView: UIViewRepresentable {
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
         config.defaultWebpagePreferences.allowsContentJavaScript = true
-        if privateMode {
-            config.websiteDataStore = .nonPersistent()
-        }
+        config.websiteDataStore = privateMode ? .nonPersistent() : .default()
 
         let web = WKWebView(frame: .zero, configuration: config)
         web.navigationDelegate = context.coordinator
@@ -888,9 +886,14 @@ private struct BrowserWebView: UIViewRepresentable {
             decidePolicyFor navigationAction: WKNavigationAction,
             decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
         ) {
-            if navigationAction.navigationType == .linkActivated,
-               let url = navigationAction.request.url,
-               ExternalLinkRouter.openIfNeeded(url) {
+            guard let url = navigationAction.request.url else {
+                decisionHandler(.allow)
+                return
+            }
+            let scheme = url.scheme?.lowercased() ?? ""
+            if scheme != "http", scheme != "https" {
+                // Keep shopping/social links inside the WebKit session. Custom
+                // schemes are cancelled instead of launching another app.
                 decisionHandler(.cancel)
                 return
             }

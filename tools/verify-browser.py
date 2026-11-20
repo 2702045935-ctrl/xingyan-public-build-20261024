@@ -25,6 +25,12 @@ require(
     "browser must use WebKit with normal system certificate handling",
 )
 require(
+    "ExternalLinkRouter" not in BROWSER
+    and "schemes are cancelled" in BROWSER.lower()
+    and "removeData" not in BROWSER,
+    "WEB links must stay in the persistent in-app WebKit session",
+)
+require(
     "struct InAppBrowserView" in BROWSER
     and "private struct BrowserTab" in BROWSER
     and "BrowserTabsSheet" in BROWSER
