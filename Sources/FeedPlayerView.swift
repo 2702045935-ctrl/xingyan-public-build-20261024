@@ -295,10 +295,10 @@ private struct PlayerPage: View {
 
             VStack {
                 Spacer()
-                VStack(spacing: 18) {
+                VStack(spacing: 16) {
                     ZStack(alignment: .bottom) {
                         Button { onAvatar() } label: {
-                            Avatar(path: ui.authorAvatar, size: 46, radius: 23, circle: true)
+                            Avatar(path: ui.authorAvatar, size: 48, radius: 24, circle: true)
                                 .overlay(Circle().stroke(Color.white.opacity(0.9), lineWidth: 1.5))
                         }
                         .buttonStyle(.plain)
@@ -311,7 +311,7 @@ private struct PlayerPage: View {
                                     .background(Circle().fill(Color(hex: 0xFE2C55)))
                             }
                             .buttonStyle(.plain)
-                            .offset(y: 9)
+                            .offset(y: 8)
                         }
                     }
                     .padding(.bottom, ui.followed ? 0 : 8)
@@ -328,7 +328,7 @@ private struct PlayerPage: View {
                                    count: 0, action: onShare)
                     MusicDisc()
                 }
-                .padding(.bottom, 34)
+                .padding(.bottom, 32)
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
             .padding(.trailing, 12)
@@ -481,16 +481,17 @@ private struct FeedRailButton: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 4) {
+            VStack(spacing: 5) {
                 Image(systemName: icon)
-                    .font(.system(size: 27))
+                    .font(.system(size: 29, weight: .semibold))
                     .foregroundColor(color)
-                    .shadow(color: .black.opacity(0.35), radius: 4)
+                    .shadow(color: .black.opacity(0.62), radius: 4, y: 2)
+                    .frame(width: 44, height: 34)
                 if count > 0 {
                     Text(FeedCount.text(count))
-                        .font(pfStyled(size: 12, weight: .semibold))
+                        .font(pfStyled(size: 12.5, weight: .semibold))
                         .foregroundColor(.white)
-                        .shadow(color: .black.opacity(0.35), radius: 3)
+                        .shadow(color: .black.opacity(0.68), radius: 3, y: 1)
                 }
             }
         }

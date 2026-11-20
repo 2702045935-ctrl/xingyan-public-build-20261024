@@ -68,8 +68,8 @@
     },
     {
       "path": "Sources/ChatDetailView.swift",
-      "size": 394896,
-      "sha256": "c7842053e853395963dec4d06a70f320e5b3add08d8d3e1afdeda89fe7f96e2a"
+      "size": 394903,
+      "sha256": "622abf14ca761774eb5b6c97e6a564ae74b423e6eab5ea537935cf8becdff7fa"
     },
     {
       "path": "Sources/GroupInfoView.swift",
@@ -138,8 +138,8 @@
     },
     {
       "path": "Sources/MusicPresenceStore.swift",
-      "size": 4008,
-      "sha256": "180930d75a78f0043483dfc0c7e3ddb263f72b0648e4cfbe0b1cc417a877ff6c"
+      "size": 4023,
+      "sha256": "c7a0d86842d371b73be20ae024a088f1468f4973a5706441bb6a8a74a7972a72"
     }
   ]
 }

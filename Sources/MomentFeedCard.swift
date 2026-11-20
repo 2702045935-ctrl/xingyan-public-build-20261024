@@ -816,6 +816,14 @@ struct MomentAutoplayVideo: View {
 }
 
 private struct MomentLikeParticleBurst: View {
+    private struct Particle: Identifiable {
+        let id: Int
+        let x: CGFloat
+        let y: CGFloat
+        let size: CGFloat
+        let color: Color
+    }
+
     let seed: Int
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var expanded = false
@@ -827,19 +835,31 @@ private struct MomentLikeParticleBurst: View {
         Color.white
     ]
 
+    private var particles: [Particle] {
+        let count = reduceMotion ? 6 : 14
+        return (0..<count).map { index in
+            let angle = Double(index) / Double(count) * .pi * 2
+            let distance = CGFloat(12 + ((index * 7 + seed * 11) % 13))
+            let lift = CGFloat(((index * 5 + seed) % 9) - 4)
+            return Particle(
+                id: index,
+                x: CGFloat(cos(angle)) * distance,
+                y: CGFloat(sin(angle)) * distance + lift,
+                size: CGFloat(2 + (index % 3)),
+                color: colors[index % colors.count]
+            )
+        }
+    }
+
     var body: some View {
         ZStack {
-            ForEach(0..<(reduceMotion ? 6 : 14), id: \.self) { index in
-                let angle = Double(index) / Double(reduceMotion ? 6 : 14) * .pi * 2
-                let distance = CGFloat(12 + ((index * 7 + seed * 11) % 13))
-                let lift = CGFloat(((index * 5 + seed) % 9) - 4)
+            ForEach(particles) { particle in
                 Circle()
-                    .fill(colors[index % colors.count])
-                    .frame(width: CGFloat(2 + (index % 3)),
-                           height: CGFloat(2 + (index % 3)))
+                    .fill(particle.color)
+                    .frame(width: particle.size, height: particle.size)
                     .offset(
-                        x: expanded ? CGFloat(cos(angle)) * distance : 0,
-                        y: expanded ? CGFloat(sin(angle)) * distance + lift : 0
+                        x: expanded ? particle.x : 0,
+                        y: expanded ? particle.y : 0
                     )
                     .scaleEffect(expanded ? 0.25 : 1.15)
                     .opacity(expanded ? 0 : 1)

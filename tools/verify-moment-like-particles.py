@@ -16,7 +16,8 @@ def require(condition: bool, message: str) -> None:
 
 require(
     "struct MomentLikeParticleBurst: View" in CARD
-    and "ForEach(0..<(reduceMotion ? 6 : 14)" in CARD
+    and "let count = reduceMotion ? 6 : 14" in CARD
+    and "ForEach(particles)" in CARD
     and ".easeOut(duration: 0.52)" in CARD
     and ".allowsHitTesting(false)" in CARD,
     "likes must use a short bounded particle burst that cannot intercept touches",

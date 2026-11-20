@@ -2248,12 +2248,31 @@ struct WorksView: View {
                         .font(.system(size: 9.5, weight: .semibold))
                     Text(metric(w.likes ?? 0))
                         .font(pf(11, .semibold))
+                    Spacer(minLength: 5)
+                    Image(systemName: "bubble.right.fill")
+                        .font(.system(size: 9, weight: .semibold))
+                    Text(metric(w.comments ?? 0))
+                        .font(pf(11, .semibold))
                 }
                 .foregroundColor(.white)
                 .padding(.horizontal, 6)
                 .padding(.vertical, 5)
                 .padding(.bottom, 1)
             }
+
+            HStack(spacing: 4) {
+                Image(systemName: "play.fill")
+                    .font(.system(size: 9, weight: .bold))
+                Text(Tr("预览"))
+                    .font(pf(9.5, .semibold))
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 6)
+            .frame(height: 21)
+            .background(Color.black.opacity(0.38), in: Capsule())
+            .padding(7)
+            .frame(maxWidth: .infinity, maxHeight: .infinity,
+                   alignment: .topLeading)
 
             if isPrivate(w) {
                 Image(systemName: "lock.fill")

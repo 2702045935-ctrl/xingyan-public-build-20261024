@@ -87,6 +87,7 @@ jobs:
           python3 tools/verify-recall-preview.py
           python3 tools/verify-preview-semantics.py
           python3 tools/verify-video-kernel.py
+          python3 tools/verify-video-interactions.py
           python3 tools/verify-music-kernel.py
           python3 tools/verify-search-recommendation.py
           python3 tools/verify-transfer-checkout.py

@@ -3630,7 +3630,7 @@ struct ChatDetailView: View {
 
     private var securityNotice: some View {
         let noticeInk = Color.dyn(0x66736B, 0xC1CEC5)
-        HStack(alignment: .top, spacing: 9) {
+        return HStack(alignment: .top, spacing: 9) {
             Image(systemName: "lock.shield.fill")
                 .font(.system(size: 11.5, weight: .semibold))
                 .foregroundStyle(noticeInk)
