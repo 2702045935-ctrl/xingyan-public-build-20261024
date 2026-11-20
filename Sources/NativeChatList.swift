@@ -373,9 +373,6 @@ where Item.ID: Hashable {
                 DispatchQueue.main.async { [weak self] in
                     self?.onApproachingStart()
                 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
-                    self?.startRequestInFlight = false
-                }
             }
             if !endRequestInFlight,
                !order.isEmpty,
@@ -414,12 +411,14 @@ where Item.ID: Hashable {
             if decelerate {
                 publishScrollState(true)
             } else {
+                startRequestInFlight = false
                 publishScrollState(false)
                 flushPendingItems()
             }
         }
 
         func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+            startRequestInFlight = false
             publishScrollState(false)
             flushPendingItems()
         }
