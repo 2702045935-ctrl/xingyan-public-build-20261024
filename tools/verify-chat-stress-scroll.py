@@ -35,10 +35,10 @@ require(
     "group prefetch must keep the B2611191645 single-page history runway",
 )
 require(
-    "onApplyCompleted" in LIST
-    and "nativeHistoryApplyPending" in CHAT
+    "ChatScrollHandle.shared.prepareForPrepend()" in CHAT
+    and "_ = ChatScrollHandle.shared.compensatePendingPrepend()" in LIST
     and "attributes.frame.minY - anchor.delta" in LIST,
-    "history prepend must keep automatic pinning blocked through commit and anchor restoration",
+    "history prepend must restore the B2611191645 anchor compensation path",
 )
 require(
     all(f'kind = "{kind}"' in FIXTURE for kind in (

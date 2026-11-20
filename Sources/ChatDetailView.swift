@@ -1323,7 +1323,6 @@ struct ChatDetailView: View {
 
     @State private var loadingAllGroupHistory = false
     @State private var holdScroll = false
-    @State private var nativeHistoryApplyPending = false
     @State private var allowSettledBottom = false
     @State private var atBottom = true
 
@@ -3320,12 +3319,6 @@ struct ChatDetailView: View {
                 }
             },
             onSizeChange: {
-                if isGroup, nativeHistoryApplyPending {
-                    // NativeStaticList restores the visible row atomically for
-                    // history prepends. Applying the height-delta fallback here
-                    // as well would move the list a second time.
-                    return
-                }
                 let compensated = ChatScrollHandle.shared.compensatePendingPrepend()
                 if initialOpenSettling {
                     return
@@ -3341,11 +3334,6 @@ struct ChatDetailView: View {
                 nativeMessageController.scrollToBottom(
                     animated: Date() < followOwnSendUntil
                 )
-            },
-            onApplyCompleted: {
-                guard nativeHistoryApplyPending else { return }
-                nativeHistoryApplyPending = false
-                holdScroll = false
             },
             initiallyPinnedToBottom: true,
             signature: nativeGroupSignature
@@ -7196,7 +7184,6 @@ struct ChatDetailView: View {
             hasOlder = more
 
             guard !older.isEmpty else { hasOlder = more; return }
-            if isGroup { nativeHistoryApplyPending = true }
             holdScroll = true
             let merged = visibleMessages(older + messages)
             let bounded = merged.count > maxMessageWindow
@@ -7204,9 +7191,7 @@ struct ChatDetailView: View {
                 : merged
             /* 插入旧页和裁掉尾部窗口必须合成同一次快照。
                分两次 apply 会在后段触发第二次全列表 diff，形成顿挫。 */
-            if !isGroup {
-                ChatScrollHandle.shared.prepareForPrepend()
-            }
+            ChatScrollHandle.shared.prepareForPrepend()
             var transaction = Transaction()
             transaction.disablesAnimations = true
             withTransaction(transaction) {
@@ -7220,16 +7205,7 @@ struct ChatDetailView: View {
 
             ChatScrollDiag.shared.note("上翻加载完 → 原子补偿当前位置")
             scheduleOlderPrefetch()
-            if !isGroup {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { holdScroll = false }
-            } else {
-                // NativeStaticList clears this as soon as the insert and anchor
-                // compensation are both committed. Keep a safety fallback only.
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                    nativeHistoryApplyPending = false
-                    holdScroll = false
-                }
-            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { holdScroll = false }
         } catch {
             // Continuous scroll events must not turn one failed prefetch into a
             // request storm. Hold the next automatic retry for a short, silent

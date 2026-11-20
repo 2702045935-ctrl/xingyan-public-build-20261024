@@ -49,9 +49,9 @@ require(
     "native prepend must restore the visible row before the next frame",
 )
 require(
-    "onApplyCompleted" in NATIVE
-    and "nativeHistoryApplyPending" in CHAT,
-    "automatic pinning must stay blocked until native prepend commit completes",
+    "ChatScrollHandle.shared.prepareForPrepend()" in CHAT
+    and "_ = ChatScrollHandle.shared.compensatePendingPrepend()" in NATIVE,
+    "B2611191645 history prepends must use the original atomic compensation path",
 )
 
 print("chat-seamless-prefetch: passed")

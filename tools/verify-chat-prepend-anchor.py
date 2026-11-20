@@ -48,14 +48,14 @@ require(
     "prepending must mutate only inserted, removed and changed identifiers",
 )
 require(
-    "previousContentHeight" in LIST
-    and "previousOffset.y + heightDelta" in LIST,
-    "native prepends must keep a pixel-height fallback when no visible anchor exists",
+    "_ = ChatScrollHandle.shared.compensatePendingPrepend()" in LIST,
+    "prepends without a visible anchor must use the original bounded fallback",
 )
 require(
-    "if isGroup, nativeHistoryApplyPending" in WINDOW
-    and "if !isGroup {\n                ChatScrollHandle.shared.prepareForPrepend()" in WINDOW,
-    "group prepends must not run native and height-delta compensation twice",
+    "ChatScrollHandle.shared.prepareForPrepend()" in WINDOW
+    and "nativeHistoryApplyPending" not in WINDOW
+    and "onApplyCompleted" not in LIST,
+    "B2611191645 prepends must use the original immediate compensation path",
 )
 
 print("chat-prepend-anchor: passed")
