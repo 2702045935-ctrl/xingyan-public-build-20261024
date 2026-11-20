@@ -65,5 +65,10 @@ require(
     and "端到端加密" not in CHAT,
     "security notice must stay readable and accurate without claiming E2EE",
 )
+require(
+    "Color.dyn(0x667781, 0xAEBAC1)" in CHAT
+    and "noticeInk.opacity(0.86)" not in CHAT,
+    "encrypted notice text must match WhatsApp secondary-text brightness",
+)
 
 print("message-receipts: passed")

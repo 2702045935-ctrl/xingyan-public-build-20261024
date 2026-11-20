@@ -3629,7 +3629,8 @@ struct ChatDetailView: View {
     }
 
     private var securityNotice: some View {
-        let noticeInk = Color.dyn(0x66736B, 0xC1CEC5)
+        // WhatsApp 的加密提示统一使用次级灰绿，而不是更暗的系统灰。
+        let noticeInk = Color.dyn(0x667781, 0xAEBAC1)
         return HStack(alignment: .top, spacing: 9) {
             Image(systemName: "lock.shield.fill")
                 .font(.system(size: 11.5, weight: .semibold))
@@ -3644,7 +3645,7 @@ struct ChatDetailView: View {
                     .foregroundStyle(noticeInk)
                 Text(Tr("消息通过加密连接传输，媒体文件加密存储于星言自有服务器。"))
                     .font(pf(11, .regular))
-                    .foregroundStyle(noticeInk.opacity(0.86))
+                    .foregroundStyle(noticeInk)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
