@@ -27,6 +27,7 @@ protocol SystemMusicHost: AnyObject {
     func systemMusicResume()
     func systemMusicRecover(at position: Double)
     func systemMusicPrefetchNext()
+    func systemMusicDucking(_ active: Bool)
 }
 
 @MainActor
@@ -49,6 +50,7 @@ final class SystemMusicKernel: ObservableObject {
     private var lastReportAt = Date.distantPast
     private var heartbeatTask: Task<Void, Never>?
     private var observers: [NSObjectProtocol] = []
+    private var callCancellable: AnyCancellable?
     private let pathMonitor = NWPathMonitor()
     private let pathQueue = DispatchQueue(label: "chris.music.network")
 
@@ -192,6 +194,11 @@ final class SystemMusicKernel: ObservableObject {
                 self.host?.systemMusicResume()
             }
         })
+        callCancellable = CallCenter.shared.$phase.sink { [weak self] phase in
+            Task { @MainActor in
+                self?.host?.systemMusicDucking(phase == .active)
+            }
+        }
 
         pathMonitor.pathUpdateHandler = { [weak self] path in
             Task { @MainActor in

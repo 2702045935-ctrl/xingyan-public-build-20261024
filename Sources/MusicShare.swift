@@ -995,6 +995,12 @@ final class MusicPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate, Syst
         prefetchNextTrack()
     }
 
+    func systemMusicDucking(_ active: Bool) {
+        let volume: Float = active ? 0.16 : 1
+        player?.volume = volume
+        stream?.volume = volume
+    }
+
     private func prefetchNextTrack() {
         guard let next = nextTrackForPrefetch(),
               !next.url.isEmpty,

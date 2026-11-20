@@ -35,6 +35,12 @@ require(
     "music kernel must adapt buffering to network and publish a bounded heartbeat",
 )
 require(
+    "CallCenter.shared.$phase" in KERNEL
+    and "systemMusicDucking" in KERNEL
+    and "systemMusicDucking" in PLAYER,
+    "an active call must duck rather than abruptly replace music audio",
+)
+require(
     "SystemMusicHost" in PLAYER
     and "kernel.attach(self)" in PLAYER
     and "kernel.begin(t)" in PLAYER
