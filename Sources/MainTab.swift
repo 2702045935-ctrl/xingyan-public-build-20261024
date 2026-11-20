@@ -1401,7 +1401,7 @@ struct GroupCard<Content: View>: View {
 
     var body: some View {
         let themedCard = tone != .standard
-        let radius: CGFloat = themedCard ? 16 : (scheme == .dark ? 14 : 0)
+        let radius: CGFloat = themedCard ? 14 : (scheme == .dark ? 14 : 0)
         if glass && scheme != .dark {
             VStack(spacing: 0) { content }
                 .background {
