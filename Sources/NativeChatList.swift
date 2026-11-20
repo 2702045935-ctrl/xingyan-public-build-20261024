@@ -27,6 +27,7 @@ where Item.ID: Hashable {
     let onScrollStateChange: (Bool) -> Void
     let onOffsetChange: (CGFloat) -> Void
     let onZoneChange: (Int) -> Void
+    let onApproachingStart: () -> Void
     let onApproachingEnd: () -> Void
     let onRefresh: () -> Void
     let allowInsertionDuringScroll: Bool
@@ -36,6 +37,7 @@ where Item.ID: Hashable {
         Coordinator(onScrollStateChange: onScrollStateChange,
                     onOffsetChange: onOffsetChange,
                     onZoneChange: onZoneChange,
+                    onApproachingStart: onApproachingStart,
                     onApproachingEnd: onApproachingEnd,
                     onRefresh: onRefresh,
                     allowInsertionDuringScroll: allowInsertionDuringScroll,
@@ -125,6 +127,7 @@ where Item.ID: Hashable {
         context.coordinator.onScrollStateChange = onScrollStateChange
         context.coordinator.onOffsetChange = onOffsetChange
         context.coordinator.onZoneChange = onZoneChange
+        context.coordinator.onApproachingStart = onApproachingStart
         context.coordinator.onApproachingEnd = onApproachingEnd
         context.coordinator.onRefresh = onRefresh
         context.coordinator.allowInsertionDuringScroll = allowInsertionDuringScroll
@@ -139,6 +142,7 @@ where Item.ID: Hashable {
         var onScrollStateChange: (Bool) -> Void
         var onOffsetChange: (CGFloat) -> Void
         var onZoneChange: (Int) -> Void
+        var onApproachingStart: () -> Void
         var onApproachingEnd: () -> Void
         var onRefresh: () -> Void
         var allowInsertionDuringScroll: Bool
@@ -152,12 +156,14 @@ where Item.ID: Hashable {
         private var pendingItems: [Item]?
         private var applyGeneration = 0
         private var endRequestInFlight = false
+        private var startRequestInFlight = false
         private var appliedItemCount = 0
         private var layoutObservers: [NSObjectProtocol] = []
 
         init(onScrollStateChange: @escaping (Bool) -> Void,
              onOffsetChange: @escaping (CGFloat) -> Void,
              onZoneChange: @escaping (Int) -> Void,
+             onApproachingStart: @escaping () -> Void,
              onApproachingEnd: @escaping () -> Void,
              onRefresh: @escaping () -> Void,
              allowInsertionDuringScroll: Bool,
@@ -167,6 +173,7 @@ where Item.ID: Hashable {
             self.onScrollStateChange = onScrollStateChange
             self.onOffsetChange = onOffsetChange
             self.onZoneChange = onZoneChange
+            self.onApproachingStart = onApproachingStart
             self.onApproachingEnd = onApproachingEnd
             self.onRefresh = onRefresh
             self.allowInsertionDuringScroll = allowInsertionDuringScroll
@@ -229,17 +236,25 @@ where Item.ID: Hashable {
                 return
             }
             let commonPrefix = zip(order, nextOrder).prefix { $0.0 == $0.1 }.count
-            let removedPrefixCount: Int
-            if commonPrefix < nextOrder.count,
-               let oldIndex = order.firstIndex(of: nextOrder[commonPrefix]),
-               oldIndex > commonPrefix {
-                removedPrefixCount = oldIndex - commonPrefix
+            let offsetAdjustment: CGFloat
+            if commonPrefix < order.count,
+               commonPrefix < nextOrder.count,
+               let oldIDPosition = nextOrder.firstIndex(of: order[commonPrefix]),
+               oldIDPosition > commonPrefix {
+                offsetAdjustment = nextOrder[commonPrefix..<oldIDPosition].reduce(CGFloat(0)) {
+                    partial, id in
+                    partial + (nextLookup[id].map(height) ?? 0)
+                }
+            } else if commonPrefix < order.count,
+                      commonPrefix < nextOrder.count,
+                      let newIDPosition = order.firstIndex(of: nextOrder[commonPrefix]),
+                      newIDPosition > commonPrefix {
+                offsetAdjustment = -order[commonPrefix..<newIDPosition].reduce(CGFloat(0)) {
+                    partial, id in
+                    partial + (lookup[id].map(height) ?? 0)
+                }
             } else {
-                removedPrefixCount = 0
-            }
-            let removedPrefixHeight = order.prefix(removedPrefixCount).reduce(CGFloat(0)) {
-                partial, id in
-                partial + (lookup[id].map(height) ?? 0)
+                offsetAdjustment = 0
             }
             let reload = next.compactMap { item -> Item.ID? in
                 guard let old = lookup[item.id] else { return nil }
@@ -274,7 +289,7 @@ where Item.ID: Hashable {
                         + table.adjustedContentInset.bottom
                 )
                 var target = previousOffset
-                target.y -= removedPrefixHeight
+                target.y += offsetAdjustment
                 target.y = min(max(target.y, minimumY), maximumY)
                 table.setContentOffset(target, animated: false)
             }
@@ -345,10 +360,23 @@ where Item.ID: Hashable {
                 - scrollView.bounds.height
                 - y
                 + scrollView.adjustedContentInset.bottom
+            let fromTop = y + scrollView.adjustedContentInset.top
             /* 会话列表按“一页跑道”提前补下一页。触发点保持两屏半左右，
                让 320 行夹具在用户接近尾部前完成追加；endRequestInFlight
                保证同一时间最多只有一个下一页请求，不会插两页。 */
             let prefetchLead = max(2_400, scrollView.bounds.height * 2.5)
+            if !startRequestInFlight,
+               !order.isEmpty,
+               (scrollView.isDragging || scrollView.isDecelerating),
+               fromTop < max(1_600, scrollView.bounds.height * 1.5) {
+                startRequestInFlight = true
+                DispatchQueue.main.async { [weak self] in
+                    self?.onApproachingStart()
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                    self?.startRequestInFlight = false
+                }
+            }
             if !endRequestInFlight,
                !order.isEmpty,
                (scrollView.isDragging || scrollView.isDecelerating),

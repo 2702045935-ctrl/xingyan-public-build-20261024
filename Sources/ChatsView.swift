@@ -1229,6 +1229,7 @@ struct ChatsView: View {
     @State private var stressAutoOpened = false
     @State private var stressWindowStart = 0
     @State private var stressLoadedCount = ChatStressFixture.initialWindow
+    @State private var stressCountedEnd = ChatStressFixture.initialWindow
     @State private var stressChatEntries: [NativeChatEntry] = []
 
     @State private var oaOpenId = ""
@@ -1300,17 +1301,20 @@ struct ChatsView: View {
         }
         var counts = cachedSnapshot.unreadCounts
         var updated = cachedSnapshot
-        for chat in added {
-            let n = max(0, chat.unreadCount)
-            counts[.all, default: 0] += n
-            counts[.unread, default: 0] += n
-            if chat.type == "group" || (chat.memberCount ?? 0) > 2 {
-                counts[.group, default: 0] += n
+        if previousEnd >= stressCountedEnd {
+            for chat in added {
+                let n = max(0, chat.unreadCount)
+                counts[.all, default: 0] += n
+                counts[.unread, default: 0] += n
+                if chat.type == "group" || (chat.memberCount ?? 0) > 2 {
+                    counts[.group, default: 0] += n
+                }
+                if !(chat.oaId ?? "").isEmpty || chat.oaDigest == true {
+                    counts[.official, default: 0] += n
+                }
+                if chat.pinned == true { counts[.pinned, default: 0] += n }
             }
-            if !(chat.oaId ?? "").isEmpty || chat.oaDigest == true {
-                counts[.official, default: 0] += n
-            }
-            if chat.pinned == true { counts[.pinned, default: 0] += n }
+            stressCountedEnd = nextEnd
         }
         if removedCount > 0 {
             updated.list.removeFirst(min(removedCount, updated.list.count))
@@ -1321,6 +1325,32 @@ struct ChatsView: View {
             stressChatEntries.removeFirst(min(removedCount, stressChatEntries.count))
         }
         stressChatEntries.append(contentsOf: added.map(nativeChatEntry(for:)))
+        cachedSnapshot = updated
+    }
+
+    private func loadPreviousStressChatsIfNeeded() {
+        guard ChatStressFixture.isActive, stressWindowStart > 0 else { return }
+        let newStart = max(0, stressWindowStart - ChatStressFixture.pageSize)
+        let inserted = ChatStressFixture.chats(range: newStart..<stressWindowStart)
+        guard !inserted.isEmpty else { return }
+        stressWindowStart = newStart
+
+        var updated = cachedSnapshot
+        updated.list.insert(contentsOf: inserted, at: 0)
+        stressChatEntries.insert(contentsOf: inserted.map(nativeChatEntry(for:)), at: 0)
+
+        let removedTail = max(
+            0,
+            stressLoadedCount - min(
+                ChatStressFixture.count,
+                newStart + ChatStressFixture.maxActiveWindow
+            )
+        )
+        if removedTail > 0 {
+            updated.list.removeLast(min(removedTail, updated.list.count))
+            stressChatEntries.removeLast(min(removedTail, stressChatEntries.count))
+            stressLoadedCount -= removedTail
+        }
         cachedSnapshot = updated
     }
 
@@ -2822,6 +2852,9 @@ struct ChatsView: View {
                         },
                         onZoneChange: { zone in
                             handleScrollZone(zone)
+                        },
+                        onApproachingStart: {
+                            loadPreviousStressChatsIfNeeded()
                         },
                         onApproachingEnd: {
                             loadMoreStressChatsIfNeeded()

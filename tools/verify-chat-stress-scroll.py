@@ -113,9 +113,16 @@ require(
     "large conversation lists must keep a bounded active window while reading the full fixture",
 )
 require(
-    "let removedPrefixHeight" in NATIVE_CHAT_LIST
-    and "target.y -= removedPrefixHeight" in NATIVE_CHAT_LIST,
-    "removing the leading conversation window must compensate its exact row height",
+    "loadPreviousStressChatsIfNeeded()" in CHATS
+    and "updated.list.insert(contentsOf: inserted, at: 0)" in CHATS
+    and "stressChatEntries.removeLast(min(removedTail, stressChatEntries.count))" in CHATS,
+    "scrolling back must refill the leading window and recycle the tail",
+)
+require(
+    "let offsetAdjustment" in NATIVE_CHAT_LIST
+    and "target.y += offsetAdjustment" in NATIVE_CHAT_LIST
+    and "fromTop < max(1_600, scrollView.bounds.height * 1.5)" in NATIVE_CHAT_LIST,
+    "both leading inserts and trailing removals must compensate their exact row height",
 )
 require(
     "updated.list.append(contentsOf: added)" in CHATS,
