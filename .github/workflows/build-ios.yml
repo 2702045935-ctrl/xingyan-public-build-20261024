@@ -86,6 +86,7 @@ jobs:
           python3 tools/verify-chat-chrome-contrast.py
           python3 tools/verify-recall-preview.py
           python3 tools/verify-preview-semantics.py
+          python3 tools/verify-video-kernel.py
           python3 tools/verify-group-announce.py
           python3 tools/verify-group-top-frost.py
           python3 tools/verify-deleted-friend-send.py
@@ -203,6 +204,8 @@ jobs:
           node server/test/payment-device-server.test.js
           node server/test/payment-ledger-startup.test.js
           node server/test/payment-opening-balance.test.js
+          node server/test/video-recommendation.test.js
+          node server/test/video-recommendation-server.test.js
           node server/test/aml.test.js
           node server/test/aml-system.test.js
           node server/test/aml-failclosed.test.js

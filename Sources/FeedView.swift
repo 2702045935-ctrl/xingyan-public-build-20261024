@@ -108,6 +108,7 @@ struct ChannelsView: View {
                     ForEach(visible, id: \.item.id) { row in
                         FeedCell(item: row.item,
                                  active: row.offset == 0,
+                                 preload: row.offset == 1,
                                  style: style,
                                  flags: flags,
                                  onLike: { toggleLike(row.item) },
@@ -256,6 +257,7 @@ struct ChannelsView: View {
             try? s.setActive(true)
         }
         .onDisappear {
+            VideoKernelTelemetry.shared.finishAll()
             try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         }
     }
@@ -1210,6 +1212,7 @@ struct ChannelsView: View {
 struct FeedCell: View {
     let item: FeedItem
     let active: Bool
+    var preload = false
     var style = FeedStyle()
     var flags = FeedFlags()
     var onLike: () -> Void
@@ -1325,14 +1328,32 @@ struct FeedCell: View {
             .padding(.bottom, max(style.padBottom ?? 28, L.safeBottom + 10))
         }
 
-        .onAppear { if active { setup() } }
+        .onAppear {
+            if active { setup() }
+            else if preload { prewarm() }
+        }
         .onDisappear { teardown() }
         .onChange(of: active) { on in
-            if on { setup(); player?.play() } else { teardown() }
+            if on {
+                setup()
+                player?.play()
+            } else if preload {
+                player?.pause()
+            } else {
+                teardown()
+            }
+        }
+        .onChange(of: preload) { on in
+            if on, !active {
+                prewarm()
+            } else if !on, !active {
+                teardown()
+            }
         }
     }
 
     private func teardown() {
+        VideoKernelTelemetry.shared.finish(item.id)
         if let obs = timeObserver, let p = player { p.removeTimeObserver(obs) }
         timeObserver = nil
         player?.pause()
@@ -1348,7 +1369,10 @@ struct FeedCell: View {
                        radius: (style.avatar ?? 46) / 2, circle: true)
                     .overlay(Circle().stroke(Color.white.opacity(0.92), lineWidth: 1.6))
                     .shadow(color: .black.opacity(0.35), radius: 6, y: 2)
-                Button { onFollow() } label: {
+                Button {
+                    VideoKernelTelemetry.shared.event("follow", itemId: item.id)
+                    onFollow()
+                } label: {
                     Image(systemName: "plus")
                         .font(.system(size: 12, weight: .heavy))
                         .foregroundColor(.white)
@@ -1369,17 +1393,26 @@ struct FeedCell: View {
                 likes += liked ? 1 : -1
                 bounced = true
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { bounced = false }
+                VideoKernelTelemetry.shared.event(liked ? "like" : "unlike", itemId: item.id)
                 onLike()
             }
-            railAction(icon: "bubble.right.fill", tint: .white, count: "\(item.comments ?? 0)", action: onComment)
+            railAction(icon: "bubble.right.fill", tint: .white, count: "\(item.comments ?? 0)") {
+                VideoKernelTelemetry.shared.event("comment", itemId: item.id)
+                onComment()
+            }
 
             railAction(icon: "star.fill", tint: favorited ? Color(hex: 0xFFC542) : .white,
                        count: "\(favorites)", active: favorited) {
                 favorited.toggle()
                 favorites += favorited ? 1 : -1
+                VideoKernelTelemetry.shared.event(favorited ? "favorite" : "unfavorite",
+                                                   itemId: item.id)
                 onFavorite()
             }
-            railAction(icon: "arrowshape.turn.up.right.fill", tint: .white, count: "\(item.shares ?? 0)", action: onShare)
+            railAction(icon: "arrowshape.turn.up.right.fill", tint: .white, count: "\(item.shares ?? 0)") {
+                VideoKernelTelemetry.shared.event("share", itemId: item.id)
+                onShare()
+            }
             if item.mine == true {
                 railAction(icon: "trash.fill", tint: .white, count: Tr("删除"), action: onDelete)
             }
@@ -1416,19 +1449,87 @@ struct FeedCell: View {
     }
 
     private func setup() {
+        if active {
+            VideoKernelTelemetry.shared.begin(item.id)
+        }
         liked = item.liked ?? false
         likes = item.likes ?? 0
         favorited = item.favorited ?? false
         favorites = item.favorites ?? 0
-        guard player == nil else { return }
+        if let existing = player {
+            if existing.currentItem?.status == .failed {
+                teardown()
+            } else {
+                installObservers(existing)
+                if active { existing.play() }
+                verifyPrewarmed(existing)
+                return
+            }
+        }
 
         let hls = item.playPath
         let mp4 = item.video ?? ""
-        let path = mp4.isEmpty ? hls : mp4
+        let path = hls.isEmpty ? mp4 : hls
         guard let url = API.shared.assetURL(path) else { return }
         loadingVideo = true
         CrashCatcher.note("视频号", "开始加载 id=\(item.id) 源=\(path)")
-        startPlayer(path: path, url: url, canFallback: !mp4.isEmpty && mp4 != hls, viaDownload: true)
+        let streaming = !hls.isEmpty && path == hls
+        startPlayer(path: path, url: url,
+                    canFallback: !mp4.isEmpty && mp4 != path,
+                    viaDownload: !streaming)
+    }
+
+    private func prewarm() {
+        guard !active, player == nil,
+              let hls = item.hls, !hls.isEmpty,
+              let url = API.shared.assetURL(hls) else { return }
+        let prepared = StreamPlay.player(url) ?? AVPlayer(url: url)
+        prepared.actionAtItemEnd = .none
+        prepared.automaticallyWaitsToMinimizeStalling = false
+        prepared.currentItem?.preferredForwardBufferDuration = 0.8
+        prepared.pause()
+        player = prepared
+        loadingVideo = true
+        CrashCatcher.note("视频号", "预取下一条 id=\(item.id) 源=\(hls)")
+    }
+
+    private func installObservers(_ p: AVPlayer) {
+        if timeObserver != nil { return }
+        timeObserver = p.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.1, preferredTimescale: 600), queue: .main) { t in
+            let d = p.currentItem?.duration.seconds ?? 0
+            if d.isFinite, d > 0 {
+                durationSec = d
+                progress = min(1, max(0, t.seconds / d))
+                VideoKernelTelemetry.shared.update(item.id,
+                                                  progress: progress,
+                                                  duration: d)
+            }
+        }
+        NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime,
+                                               object: p.currentItem, queue: .main) { _ in
+            VideoKernelTelemetry.shared.complete(item.id)
+            p.seek(to: .zero)
+            p.play()
+        }
+    }
+
+    private func verifyPrewarmed(_ p: AVPlayer) {
+        guard active else { return }
+        Task { @MainActor in
+            for _ in 0..<15 {
+                if player !== p || !active { return }
+                if p.currentItem?.status == .failed { break }
+                if CMTimeGetSeconds(p.currentTime()) > 0.05 {
+                    loadingVideo = false
+                    VideoKernelTelemetry.shared.event("first_frame", itemId: item.id)
+                    return
+                }
+                try? await Task.sleep(nanoseconds: 200_000_000)
+            }
+            guard player === p, active else { return }
+            teardown()
+            setup()
+        }
     }
 
     private func startPlayer(path: String, url: URL, canFallback: Bool, viaDownload: Bool = false) {
@@ -1454,21 +1555,11 @@ struct FeedCell: View {
             p.actionAtItemEnd = .none
 
             p.automaticallyWaitsToMinimizeStalling = false
-            p.currentItem?.preferredForwardBufferDuration = 2
+            p.currentItem?.preferredForwardBufferDuration = viaDownload ? 2 : 1.2
 
             if let old = timeObserver, let oldP = player { oldP.removeTimeObserver(old) }
-            timeObserver = p.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.1, preferredTimescale: 600), queue: .main) { t in
-                let d = p.currentItem?.duration.seconds ?? 0
-                if d.isFinite, d > 0 {
-                    durationSec = d
-                    progress = min(1, max(0, t.seconds / d))
-                }
-            }
-            NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime,
-                                                   object: p.currentItem, queue: .main) { _ in
-                p.seek(to: .zero)
-                p.play()
-            }
+            timeObserver = nil
+            installObservers(p)
             if let old = player, old !== p {
                 old.pause()
                 StreamPlay.cancel(old.currentItem)
@@ -1492,10 +1583,12 @@ struct FeedCell: View {
             if player !== p { return }
             if moved {
                 loadingVideo = false
+                VideoKernelTelemetry.shared.event("first_frame", itemId: item.id)
                 CrashCatcher.note("视频号", "出画面 id=\(item.id) 源=\(path)")
                 return
             }
             let why = p.currentItem?.error?.localizedDescription ?? "没等到画面"
+            VideoKernelTelemetry.shared.event("playback_error", itemId: item.id)
             CrashCatcher.note("视频号", "加载失败 id=\(item.id) 源=\(path) 原因=\(why)")
             p.pause()
             player = nil

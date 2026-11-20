@@ -43,6 +43,7 @@ const { PaymentTokenVault } = require('./lib/payment-token-vault');
 const { PaymentDeviceEnrollment } = require('./lib/payment-device-enrollment');
 const { PaymentKeyRing } = require('./lib/payment-keyring');
 const { PaymentIntentEngine } = require('./lib/payment-intent-engine');
+const { VideoRecommendationKernel } = require('./lib/video-recommendation');
 const {
   normalizeBillTimeZone,
   billMonthKey,
@@ -628,6 +629,24 @@ const FEED_BATCH = 12;
    原来每个 /api/feed 请求都要同步读写两个文件，人多的时候白白占磁盘和事件循环。 */
 const FEED_STORE = {};
 let feedStoreTimer = null;
+let videoRecommendationKernel = null;
+try {
+  videoRecommendationKernel = new VideoRecommendationKernel({
+    file: path.join(DATA_DIR, 'feed-events.json'),
+    persistDelayMs: 1500,
+    maxEventsPerUser: 5000
+  });
+} catch (error) {
+  videoRecommendationKernel = null;
+  console.log('[视频推荐] 内核初始化失败，自动使用旧排序：'
+    + String(error && error.message || error));
+}
+function closeVideoRecommendationKernel() {
+  if (!videoRecommendationKernel) return;
+  try { videoRecommendationKernel.close(); }
+  catch (_) { /* process is already exiting */ }
+  videoRecommendationKernel = null;
+}
 function feedStoreRead(name, fallback) {
   if (!FEED_STORE[name]) FEED_STORE[name] = { data: null, dirty: false };
   const slot = FEED_STORE[name];
@@ -842,7 +861,7 @@ function rankFeedFor(user, items, myFriends) {
      连排 3 条。以前是"严格交替"，结果把某个作者的老视频硬插到新视频中间，
      顺序看上去像被洗过一样乱，所以改成现在这种轻量打散。 */
   const top = scored.slice(0, 300);
-  const out = top.map((x) => x.it);
+  let out = top.map((x) => x.it);
   const authorKeyOf = (it) => it.authorId || ('item:' + it.id);
   for (let i = 2; i < out.length; i += 1) {
     const a0 = authorKeyOf(out[i - 2]), a1 = authorKeyOf(out[i - 1]), a2 = authorKeyOf(out[i]);
@@ -855,6 +874,27 @@ function rankFeedFor(user, items, myFriends) {
           break;
         }
       }
+    }
+  }
+
+  /* 视频推荐内核只覆盖“候选顺序”。队列、曝光和旧逻辑保留作为最终兜底：
+     内核异常、文件损坏或空结果时，视频页仍然使用上面的旧排序正常出片。 */
+  if (videoRecommendationKernel) {
+    try {
+      const kernelRanked = videoRecommendationKernel.rank({
+        userId: user.id,
+        items: feedPool,
+        follows,
+        friends: Array.from(myFriends || []),
+        views: mineViews,
+        nowMs
+      });
+      if (Array.isArray(kernelRanked) && kernelRanked.length) {
+        out = kernelRanked.map((row) => row.item);
+      }
+    } catch (error) {
+      console.log('[视频推荐] 排序失败，回退旧排序：'
+        + String(error && error.message || error));
     }
   }
 
@@ -16113,6 +16153,35 @@ async function handleApi(req, res, pathname, query) {
   }
 
   /* ---------------- 游戏页：只发列表，玩法在客户端 ---------------- */
+  /* 视频反馈：客户端按批上报曝光、播放、停留、完播、跳过和互动。
+     这是尽力而为旁路，服务端任何异常都不能影响下一条视频播放。 */
+  if (parts[0] === 'feed' && parts[1] === 'events' && method === 'POST') {
+    const user = currentUser(req);
+    if (!user) return fail(res, 401, '请先登录');
+    if (!videoRecommendationKernel) return fail(res, 503, '视频推荐内核暂时不可用');
+    const body = await readBody(req);
+    if (!Array.isArray(body.events) || !body.events.length) {
+      return fail(res, 422, '缺少视频反馈事件');
+    }
+    if (body.events.length > 100) return fail(res, 413, '一次最多上报 100 条事件');
+    const cfg = readJson(path.join(DATA_DIR, 'feed.json'), { items: [], posts: [] });
+    const all = (cfg.items || []).concat(cfg.posts || []);
+    const itemById = new Map(all.map((item) => [String(item.id), item]));
+    try {
+      const result = videoRecommendationKernel.recordEvents(
+        user.id,
+        body.events,
+        itemById
+      );
+      ok(res, result);
+      return;
+    } catch (error) {
+      console.log('[视频推荐] 反馈写入失败：'
+        + String(error && error.message || error));
+      return fail(res, 422, '视频反馈暂时无法写入');
+    }
+  }
+
   /* 读某条视频的评论列表（客户端点开评论面板时用）。
      注意：必须放在下面的 feed GET 之前 —— 那个路由不校验子路径，
      放后面的话 /api/feed/comments 会被当成"拉推荐流"。 */
@@ -25781,11 +25850,13 @@ server.listen(PORT, BIND_HOST, () => {
 process.on('SIGINT', () => {
   console.log('\n正在退出…');
   server.close(() => {
+    closeVideoRecommendationKernel();
     closePaymentDatabase();
     process.exit(0);
   });
 });
 process.on('SIGTERM', () => {
+  closeVideoRecommendationKernel();
   closePaymentDatabase();
   process.exit(0);
 });

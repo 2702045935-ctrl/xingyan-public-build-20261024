@@ -2901,6 +2901,15 @@ final class API {
         return (p.items, p.style ?? FeedStyle(), p.flags ?? FeedFlags())
     }
 
+    func feedEvents(_ events: [VideoKernelFeedbackEvent]) async -> Bool {
+        struct P: Decodable { var accepted: Int?; var rejected: Int?; var duplicates: Int? }
+        let body: [String: Any] = ["events": events.map { $0.dictionary }]
+        guard let p: P = try? await post("/api/feed/events", body, as: P.self) else {
+            return false
+        }
+        return (p.accepted ?? 0) + (p.rejected ?? 0) + (p.duplicates ?? 0) > 0
+    }
+
     struct GeoPlace: Decodable {
         var name: String?
         var addr: String?
