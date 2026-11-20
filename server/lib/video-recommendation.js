@@ -285,9 +285,18 @@ class VideoRecommendationKernel {
     const feedback = this.itemFeedback(userId, itemById, nowMs);
     const hasProfile = prefs.author.size > 0 || prefs.tag.size > 0 || prefs.music.size > 0;
     const today = new Date(nowMs).toISOString().slice(0, 10);
+    const featuresById = new Map(items.map((item) => [
+      String(item.id),
+      {
+        author: String(item.authorId || item.id),
+        music: String(item.music || '').trim().toLowerCase(),
+        tags: tagsOf(item)
+      }
+    ]));
 
     const scored = items.map((item) => {
       const itemId = String(item.id);
+      const features = featuresById.get(itemId);
       const likes = (Array.isArray(item.likedBy) ? item.likedBy.length : 0)
         + (Number(item.baseLikes) || 0);
       const comments = (Array.isArray(item.comments) ? item.comments.length : 0)
@@ -302,8 +311,8 @@ class VideoRecommendationKernel {
 
       let affinity = 0;
       affinity += clamp(prefs.author.get(String(item.authorId || '')) || 0, -20, 20) * 0.16;
-      affinity += clamp(prefs.music.get(String(item.music || '').trim().toLowerCase()) || 0, -12, 12) * 0.08;
-      for (const tag of tagsOf(item)) {
+      affinity += clamp(prefs.music.get(features.music) || 0, -12, 12) * 0.08;
+      for (const tag of features.tags) {
         affinity += clamp(prefs.tag.get(tag) || 0, -14, 14) * 0.1;
       }
       affinity = Math.exp(clamp(affinity, -2.2, 1.7));
@@ -347,6 +356,9 @@ class VideoRecommendationKernel {
         * exploration;
       return {
         item,
+        authorKey: features.author,
+        musicKey: features.music,
+        tags: features.tags,
         score,
         sources,
         components: {
@@ -373,10 +385,9 @@ class VideoRecommendationKernel {
       let pickedIndex = -1;
       for (let index = 0; index < remaining.length; index += 1) {
         const row = remaining[index];
-        const item = row.item;
-        const author = String(item.authorId || item.id);
-        const music = String(item.music || '').trim().toLowerCase();
-        const tags = tagsOf(item);
+        const author = row.authorKey;
+        const music = row.musicKey;
+        const tags = row.tags;
         const authorRepeated = authorWindow.filter((id) => id === author).length >= 2;
         const musicRepeated = music && musicWindow.filter((id) => id === music).length >= 2;
         const tagRepeated = tags.some((tag) =>
@@ -389,7 +400,7 @@ class VideoRecommendationKernel {
       }
       if (pickedIndex < 0) {
         for (let index = 0; index < remaining.length; index += 1) {
-          const author = String(remaining[index].item.authorId || remaining[index].item.id);
+          const author = remaining[index].authorKey;
           if (out.length === 0 || authorWindow[authorWindow.length - 1] !== author) {
             pickedIndex = index;
             break;
@@ -399,11 +410,11 @@ class VideoRecommendationKernel {
       }
       const row = remaining.splice(pickedIndex, 1)[0];
       out.push(row);
-      const author = String(row.item.authorId || row.item.id);
-      const music = String(row.item.music || '').trim().toLowerCase();
+      const author = row.authorKey;
+      const music = row.musicKey;
       authorWindow.push(author);
       musicWindow.push(music);
-      for (const tag of tagsOf(row.item)) tagWindow.push(tag);
+      for (const tag of row.tags) tagWindow.push(tag);
       if (authorWindow.length > 8) authorWindow.shift();
       if (musicWindow.length > 10) musicWindow.shift();
       if (tagWindow.length > 18) tagWindow.splice(0, tagWindow.length - 18);
