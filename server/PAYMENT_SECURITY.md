@@ -54,7 +54,7 @@ PAYMENT_PROVIDER_NAME=<licensed provider name>
 PAYMENT_PROVIDER_BASE_URL=<provider bridge https origin>
 PAYMENT_PROVIDER_API_KEY=<provider request signing secret>
 PAYMENT_PROVIDER_WEBHOOK_SECRET=<provider webhook secret>
-AML_RUNTIME_ENABLED=0
+AML_RUNTIME_ENABLED=1
 ```
 
 生产环境建议用 systemd credentials、KMS 注入文件或 HSM 挂载文件提供密钥：
@@ -66,10 +66,17 @@ PAYMENT_KEYS_FILE=/run/credentials/chris.service/payment-keys.json
 `payment-keys.json` 支持多版本密钥和 `PAYMENT_ACTIVE_KEY_ID` 轮换。不要把支付
 密钥写入仓库、聊天记录或 shell 历史。
 
+支付机构桥接地址必须是 HTTPS。只有 `CHRIS_LOCAL_ONLY=1` 的本地机构沙箱
+可额外设置 `PAYMENT_PROVIDER_ALLOW_HTTP=1`，生产环境不得设置该变量。
+机构请求默认 10 秒超时，可通过 `PAYMENT_PROVIDER_TIMEOUT_MS` 调整，
+允许范围 1000～60000 毫秒。
+
 任何一项缺失时：
 
 - 转账等内部钱包操作仍必须经过 SQLite 支付意图；缺少数据库时返回 503。
 - 充值和提现直接返回 503，不会出现先加钱或先扣钱再等接口的情况。
+- `GET /api/payment/status` 的 `realMoneyReady=false`，并通过 `blockers`
+  返回未通过项，例如支付密钥、AML、数据库自检或机构 HTTPS。
 
 ## 支付机构桥接协议
 
@@ -143,6 +150,10 @@ GET /api/ops/payments/settlement?date=<昨日>
 ```
 
 8. 完成机构沙箱、重复回调、断网重试、进程崩溃恢复和回滚演练后才可接真钱。
+
+`realMoneyReady=true` 必须同时满足：`enforce` 模式、SQLite 支付数据库自检
+通过、支付密钥就绪、持牌机构配置通过、HTTPS 机构地址、AML 引擎健康。
+任何一项不满足，充值、提现和机构资金入口都会故障关闭。
 
 ## 测试
 

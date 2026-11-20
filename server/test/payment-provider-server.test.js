@@ -163,13 +163,14 @@ async function main() {
         PORT: String(port),
         TURN_PORT: String(turnPort),
         CHRIS_LOCAL_ONLY: '1',
-        AML_RUNTIME_ENABLED: '0',
+        AML_RUNTIME_ENABLED: '1',
         PAYMENT_REAL_MONEY_MODE: 'enforce',
         PAYMENT_DATABASE_MODE: 'sqlite',
         PAYMENT_KEY_ID: 'provider-intent-key',
         PAYMENT_KEY_BASE64: crypto.randomBytes(32).toString('base64'),
         PAYMENT_PROVIDER_NAME: 'licensed-mock',
         PAYMENT_PROVIDER_BASE_URL: providerBase,
+        PAYMENT_PROVIDER_ALLOW_HTTP: '1',
         PAYMENT_PROVIDER_API_KEY: API_KEY,
         PAYMENT_PROVIDER_WEBHOOK_SECRET: WEBHOOK_SECRET,
         ADMIN_PASSWORD: 'provider-admin'
@@ -192,7 +193,9 @@ async function main() {
     assert.strictEqual(response.status, 200, JSON.stringify(response.data));
     assert.strictEqual(response.data.realMoneyReady, true);
     assert.strictEqual(response.data.providerReady, true);
-    assert.strictEqual(response.data.amlEnforcement, false);
+    assert.strictEqual(response.data.keyringReady, true);
+    assert.strictEqual(response.data.amlEnforcement, true);
+    assert.deepStrictEqual(response.data.blockers, []);
 
     response = await call(base, 'POST', '/api/wallet/recharge', {
       amount: 25,
@@ -237,14 +240,14 @@ async function main() {
     response = await call(base, 'GET', '/api/me', undefined, cookie);
     assert.strictEqual(Number(response.data.user.balance), 125);
     response = await call(base, 'POST', '/api/wallet/withdraw', {
-      amount: 10,
+      amount: 5,
       bankId: 'bank-test',
       password: PAY_PASSWORD,
       requestId: 'provider-payout-request'
     }, cookie);
     assert.strictEqual(response.status, 200, JSON.stringify(response.data));
     assert.strictEqual(response.data.pending, true);
-    assert.strictEqual(Number(response.data.balance), 114.9);
+    assert.strictEqual(Number(response.data.balance), 119.9);
     const payoutOrder = response.data.order;
     assert.ok(providerCalls.some((row) => row.url === '/v1/payouts'));
 
@@ -263,7 +266,7 @@ async function main() {
     assert.strictEqual(response.data.order.status, 'succeeded');
     response = await call(base, 'GET', '/api/bills/ledger?limit=200', undefined, cookie);
     assert.strictEqual(response.data.verified, true);
-    assert.strictEqual(Number(response.data.balance), 114.9);
+    assert.strictEqual(Number(response.data.balance), 119.9);
 
     webhook = await signedWebhook(base, {
       id: 'provider-payout-event',
@@ -277,7 +280,7 @@ async function main() {
     });
     assert.strictEqual(webhook.status, 200);
     response = await call(base, 'GET', '/api/me', undefined, cookie);
-    assert.strictEqual(Number(response.data.user.balance), 114.9,
+    assert.strictEqual(Number(response.data.user.balance), 119.9,
       'duplicate provider webhook must not move money twice');
 
     response = await call(base, 'POST', '/api/wallet/withdraw', {
@@ -288,7 +291,7 @@ async function main() {
     }, cookie);
     assert.strictEqual(response.status, 200, JSON.stringify(response.data));
     const failedPayout = response.data.order;
-    assert.strictEqual(Number(response.data.balance), 109.8);
+    assert.strictEqual(Number(response.data.balance), 114.8);
     webhook = await signedWebhook(base, {
       id: 'provider-payout-failure-event',
       type: 'payout.failed',
@@ -304,7 +307,7 @@ async function main() {
     response = await call(base, 'GET', '/api/payment/funding/' + failedPayout.id, undefined, cookie);
     assert.strictEqual(response.data.order.status, 'failed');
     response = await call(base, 'GET', '/api/me', undefined, cookie);
-    assert.strictEqual(Number(response.data.user.balance), 114.9,
+    assert.strictEqual(Number(response.data.user.balance), 119.9,
       'failed payout must return both principal and fee');
 
     console.log('payment-provider-server: passed');

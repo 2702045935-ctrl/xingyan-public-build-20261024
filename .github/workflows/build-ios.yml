@@ -195,6 +195,17 @@ jobs:
           node server/test/payment-database.test.js
           node server/test/payment-database-concurrency.test.js
           node server/test/payment-provider-server.test.js
+          node server/test/payment-readiness.test.js
+          node server/test/payment-real-chain.test.js
+          node server/test/payment-intent.test.js
+          node server/test/payment-intent-ledger.test.js
+          node server/test/payment-device-enrollment.test.js
+          node server/test/payment-device-server.test.js
+          node server/test/payment-ledger-startup.test.js
+          node server/test/payment-opening-balance.test.js
+          node server/test/aml.test.js
+          node server/test/aml-system.test.js
+          node server/test/aml-failclosed.test.js
 
       - name: 客户端本地事务库测试
         run: python3 tools/test-local-client-storage.py

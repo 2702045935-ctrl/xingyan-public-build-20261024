@@ -71,6 +71,7 @@ let paymentTokenVault = null;
 let paymentIntentEngine = null;
 let paymentDatabase = null;
 let paymentProvider = null;
+let paymentKeyringReady = false;
 let paymentOutboxTimer = null;
 let paymentBackupTimer = null;
 let paymentRealMoneyReady = false;
@@ -115,6 +116,25 @@ function configuredPaymentKeyring() {
   } catch (_) {
     return null;
   }
+}
+
+function paymentReadinessSnapshot() {
+  const { evaluatePaymentReadiness } = require('./lib/payment-readiness');
+  let databaseReady = false;
+  if (paymentDatabase) {
+    try { databaseReady = paymentDatabase.readiness().ok === true; }
+    catch (_) { databaseReady = false; }
+  }
+  return evaluatePaymentReadiness({
+    mode: paymentCoreMode,
+    database: !!paymentDatabase,
+    databaseReady,
+    keyringReady: paymentKeyringReady,
+    provider: paymentProvider,
+    providerReady: !!(paymentProvider && paymentProvider.ready()),
+    amlEnabled: AML_ENFORCEMENT_ENABLED,
+    amlHealthy: amlEngineHealthy === true
+  });
 }
 
 function observeShardShadow(routeId, payload) {
@@ -3449,6 +3469,7 @@ function initPaymentLedger() {
   if (databaseMode === 'sqlite') {
     const { SqlitePaymentLedger } = require('./lib/sqlite-payment-ledger');
     const keyring = configuredPaymentKeyring();
+    paymentKeyringReady = !!keyring;
     const databaseOptions = {
       databaseFile: path.join(DATA_DIR, 'payments.sqlite3'),
       hmac: (payload) => crypto.createHmac('sha256', String(db.secret || 'chris'))
@@ -19200,13 +19221,16 @@ async function handleApi(req, res, pathname, query) {
   }
 
   if (parts[0] === 'payment' && parts[1] === 'status' && method === 'GET') {
+    const readiness = paymentReadinessSnapshot();
     ok(res, {
       mode: paymentCoreMode,
       database: paymentDatabase ? 'sqlite-v1' : 'legacy',
       databaseReady: !!paymentDatabase && paymentDatabase.readiness().ok,
       providerReady: !!(paymentProvider && paymentProvider.ready()),
       provider: paymentProvider && paymentProvider.ready() ? paymentProvider.name : '',
-      realMoneyReady: paymentRealMoneyReady,
+      keyringReady: paymentKeyringReady,
+      realMoneyReady: readiness.ready,
+      blockers: readiness.blockers,
       amlEnforcement: AML_ENFORCEMENT_ENABLED
     });
     return;
@@ -20337,9 +20361,24 @@ async function handleApi(req, res, pathname, query) {
     const bank = list.find((b) => b.id === str(body.bankId, 40)) || list.find((b) => b.isDefault) || list[0] || null;
     const before = Number(user.balance) || 0;
     if (paymentCoreMode === 'enforce') {
-      if (!paymentDatabase || !paymentProvider || !paymentProvider.ready()) {
+      const readiness = paymentReadinessSnapshot();
+      if (!readiness.ready) {
         idemAbort(idem.key);
-        return fail(res, 503, '持牌支付机构尚未配置，充值已安全暂停');
+        return fail(res, 503, '真实支付上线检查未通过，充值已安全暂停', {
+          paymentBlockers: readiness.blockers
+        });
+      }
+      const aml = amlGateOrReject(res, req, user, {
+        channel: 'wallet_recharge',
+        direction: 'in',
+        amount,
+        counterpartyName: bank ? (bank.bank + '（' + bank.tail + '）') : '银行卡',
+        note: '充值到零钱',
+        requestId: idem.key
+      });
+      if (!aml) {
+        idemAbort(idem.key);
+        return;
       }
       let fundingOrder = null;
       try {
@@ -20361,6 +20400,7 @@ async function handleApi(req, res, pathname, query) {
           order.id,
           providerRef
         );
+        amlComplete(aml, true, { externalRef: providerRef || order.id });
         const payload = {
           pending: true,
           recharged: 0,
@@ -20375,6 +20415,7 @@ async function handleApi(req, res, pathname, query) {
         ok(res, payload);
         return;
       } catch (error) {
+        amlComplete(aml, false, { note: String(error && error.message || error) });
         if (fundingOrder) {
           idemFinish(idem.key, {
             pending: true,
@@ -20462,9 +20503,24 @@ async function handleApi(req, res, pathname, query) {
           + '，当前零钱 ¥' + before.toFixed(2));
     }
     if (paymentCoreMode === 'enforce') {
-      if (!paymentDatabase || !paymentProvider || !paymentProvider.ready()) {
+      const readiness = paymentReadinessSnapshot();
+      if (!readiness.ready) {
         idemAbort(idem.key);
-        return fail(res, 503, '持牌支付机构尚未配置，提现已安全暂停');
+        return fail(res, 503, '真实支付上线检查未通过，提现已安全暂停', {
+          paymentBlockers: readiness.blockers
+        });
+      }
+      const aml = amlGateOrReject(res, req, user, {
+        channel: 'wallet_withdraw',
+        direction: 'out',
+        amount,
+        counterpartyName: bank.bank + '（' + bank.tail + '）',
+        note: '零钱提现',
+        requestId: idem.key
+      });
+      if (!aml) {
+        idemAbort(idem.key);
+        return;
       }
       let fundingOrder = null;
       try {
@@ -20493,6 +20549,7 @@ async function handleApi(req, res, pathname, query) {
           order.id,
           providerRef
         );
+        amlComplete(aml, true, { externalRef: providerRef || order.id });
         const payload = {
           pending: true,
           amount,
@@ -20507,6 +20564,7 @@ async function handleApi(req, res, pathname, query) {
         ok(res, payload);
         return;
       } catch (error) {
+        amlComplete(aml, false, { note: String(error && error.message || error) });
         user.balance = paymentLedger.accountBalance('user:' + user.id);
         saveUsers();
         if (fundingOrder) {
@@ -24306,12 +24364,11 @@ if (paymentCoreMode !== 'off' && !paymentIntentEngine && !paymentDatabase) {
 try {
   const { createPaymentProviderFromEnv } = require('./lib/payment-provider');
   paymentProvider = createPaymentProviderFromEnv(process.env);
-  paymentRealMoneyReady = paymentCoreMode === 'enforce'
-    && !!paymentDatabase
-    && paymentProvider.ready();
+  paymentRealMoneyReady = false;
   console.log('[支付机构] ' + (paymentProvider.ready()
     ? ('已配置 ' + paymentProvider.name)
-    : '未配置，真钱充值 / 提现将安全暂停'));
+    : '未通过就绪检查，真钱充值 / 提现将安全暂停：'
+      + paymentProvider.readiness().blockers.join(',')));
 } catch (error) {
   paymentProvider = null;
   paymentRealMoneyReady = false;
@@ -24502,6 +24559,13 @@ if (!AML_ENFORCEMENT_ENABLED) {
     try { amlEngine.sweep(db.users, { limit: 500 }); }
     catch (error) { console.log('[AML] 定时筛查失败：' + String(error && error.message || error)); }
   }, 30 * 60 * 1000).unref();
+}
+const startupPaymentReadiness = paymentReadinessSnapshot();
+paymentRealMoneyReady = startupPaymentReadiness.ready;
+if (paymentCoreMode !== 'off') {
+  console.log('[支付上线闸门] ' + (paymentRealMoneyReady
+    ? '全部通过'
+    : '已关闭真钱入口：' + startupPaymentReadiness.blockers.join(',')));
 }
 loadSecurityState();   // 恢复「登录失败计数 / IP 封禁」（重启也不会被清掉）
 /* 钱的开工前自检：总账上每个账号最后那笔余额，必须和 users.json 对得上；

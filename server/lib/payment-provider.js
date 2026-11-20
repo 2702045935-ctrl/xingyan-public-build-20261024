@@ -16,13 +16,38 @@ class SignedPaymentProviderBridge {
     this.baseUrl = String(opts.baseUrl || '').replace(/\/+$/, '');
     this.apiKey = String(opts.apiKey || '');
     this.webhookSecret = String(opts.webhookSecret || '');
+    this.allowInsecure = opts.allowInsecure === true;
+    const configuredTimeout = Number(opts.requestTimeoutMs);
+    this.requestTimeoutMs = Number.isFinite(configuredTimeout)
+      ? Math.max(1000, Math.min(60000, Math.round(configuredTimeout)))
+      : 10000;
     this.now = typeof opts.now === 'function' ? opts.now : () => Date.now();
     this.fetch = typeof opts.fetch === 'function' ? opts.fetch : global.fetch;
   }
 
+  readiness() {
+    const blockers = [];
+    if (!this.name) blockers.push('payment_provider_name_missing');
+    if (!this.baseUrl) blockers.push('payment_provider_url_missing');
+    if (!this.apiKey) blockers.push('payment_provider_api_key_missing');
+    if (!this.webhookSecret) blockers.push('payment_provider_webhook_secret_missing');
+    if (typeof this.fetch !== 'function') blockers.push('payment_provider_fetch_unavailable');
+    if (this.baseUrl) {
+      let parsed = null;
+      try { parsed = new URL(this.baseUrl); } catch (_) { parsed = null; }
+      if (!parsed || parsed.protocol !== 'https:' && !this.allowInsecure) {
+        blockers.push('payment_provider_https_required');
+      }
+      if (parsed && parsed.username) blockers.push('payment_provider_url_has_userinfo');
+    }
+    return {
+      ready: blockers.length === 0,
+      blockers
+    };
+  }
+
   ready() {
-    return !!(this.name && this.baseUrl && this.apiKey && this.webhookSecret
-      && typeof this.fetch === 'function');
+    return this.readiness().ready;
   }
 
   assertReady() {
@@ -41,7 +66,7 @@ class SignedPaymentProviderBridge {
     this.assertReady();
     const body = stableJson(payload || {});
     const timestamp = String(this.now());
-    const response = await this.fetch(this.baseUrl + pathname, {
+    const response = await this.fetchWithTimeout(this.baseUrl + pathname, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -64,7 +89,7 @@ class SignedPaymentProviderBridge {
   async requestGet(pathname) {
     this.assertReady();
     const timestamp = String(this.now());
-    const response = await this.fetch(this.baseUrl + pathname, {
+    const response = await this.fetchWithTimeout(this.baseUrl + pathname, {
       method: 'GET',
       headers: {
         'x-xingyan-timestamp': timestamp,
@@ -80,6 +105,23 @@ class SignedPaymentProviderBridge {
         || ('payment provider HTTP ' + response.status)));
     }
     return envelope.data || envelope;
+  }
+
+  async fetchWithTimeout(url, options) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), this.requestTimeoutMs);
+    try {
+      return await this.fetch(url, Object.assign({}, options, {
+        signal: controller.signal
+      }));
+    } catch (error) {
+      if (error && (error.name === 'AbortError' || controller.signal.aborted)) {
+        throw new Error('payment provider request timed out');
+      }
+      throw error;
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   createDeposit(order) {
@@ -165,7 +207,10 @@ function createPaymentProviderFromEnv(env) {
     name: source.PAYMENT_PROVIDER_NAME || '',
     baseUrl: source.PAYMENT_PROVIDER_BASE_URL || '',
     apiKey: source.PAYMENT_PROVIDER_API_KEY || '',
-    webhookSecret: source.PAYMENT_PROVIDER_WEBHOOK_SECRET || ''
+    webhookSecret: source.PAYMENT_PROVIDER_WEBHOOK_SECRET || '',
+    allowInsecure: source.PAYMENT_PROVIDER_ALLOW_HTTP === '1'
+      && source.CHRIS_LOCAL_ONLY === '1',
+    requestTimeoutMs: source.PAYMENT_PROVIDER_TIMEOUT_MS
   });
 }
 
