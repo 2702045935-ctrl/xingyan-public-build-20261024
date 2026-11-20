@@ -213,18 +213,13 @@ where Item.ID: Hashable {
                 self.flushPendingItems()
                 table.layoutIfNeeded()
                 let visible = table.indexPathsForVisibleRows ?? []
-                if !visible.isEmpty {
-                    UIView.performWithoutAnimation {
-                        table.reloadRows(at: visible, with: .none)
-                    }
-                } else {
-                    let snapshot = dataSource.snapshot()
-                    let ids = snapshot.itemIdentifiers
-                    guard !ids.isEmpty else { return }
-                    var refreshed = snapshot
-                    refreshed.reloadItems(ids)
-                    dataSource.apply(refreshed, animatingDifferences: false)
-                }
+                var snapshot = dataSource.snapshot()
+                let ids = visible.isEmpty
+                    ? snapshot.itemIdentifiers
+                    : visible.compactMap { dataSource.itemIdentifier(for: $0) }
+                guard !ids.isEmpty else { return }
+                snapshot.reloadItems(ids)
+                dataSource.apply(snapshot, animatingDifferences: false)
                 table.setNeedsLayout()
             }
         }
@@ -546,8 +541,6 @@ where Item.ID: Hashable {
         private func refreshMetrics() {
             guard let table, let dataSource else { return }
             NativeChatRowMetrics.invalidateScaleCache()
-            table.beginUpdates()
-            table.endUpdates()
             var snapshot = dataSource.snapshot()
             guard !snapshot.itemIdentifiers.isEmpty else { return }
             snapshot.reloadItems(snapshot.itemIdentifiers)

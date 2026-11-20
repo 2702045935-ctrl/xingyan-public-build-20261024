@@ -128,10 +128,11 @@ require(
 )
 require(
     "UIApplication.didBecomeActiveNotification" in NATIVE_CHAT_LIST
-    and "table.reloadRows(at: visible, with: .none)" in NATIVE_CHAT_LIST
+    and "visible.compactMap { dataSource.itemIdentifier(for: $0) }" in NATIVE_CHAT_LIST
+    and "snapshot.reloadItems(ids)" in NATIVE_CHAT_LIST
     and "UIApplication.didBecomeActiveNotification" in NATIVE_STATIC_LIST
     and "collection.reloadItems(at: visible)" in NATIVE_STATIC_LIST,
-    "foreground recovery must repaint visible cells without requiring a user scroll",
+    "foreground recovery must repaint through the diffable snapshot without stale row paths",
 )
 require(
     "updated.list.append(contentsOf: added)" in CHATS,
