@@ -235,7 +235,12 @@ where Item.ID: Hashable {
                 pendingItems = nil
                 return
             }
-            let commonPrefix = zip(order, nextOrder).prefix { $0.0 == $0.1 }.count
+            var commonPrefix = 0
+            while commonPrefix < order.count,
+                  commonPrefix < nextOrder.count,
+                  order[commonPrefix] == nextOrder[commonPrefix] {
+                commonPrefix += 1
+            }
             let offsetAdjustment: CGFloat
             if commonPrefix < order.count,
                commonPrefix < nextOrder.count,
@@ -243,7 +248,7 @@ where Item.ID: Hashable {
                oldIDPosition > commonPrefix {
                 offsetAdjustment = nextOrder[commonPrefix..<oldIDPosition].reduce(CGFloat(0)) {
                     partial, id in
-                    partial + (nextLookup[id].map(height) ?? 0)
+                    partial + (nextLookup[id].map { height($0) } ?? 0)
                 }
             } else if commonPrefix < order.count,
                       commonPrefix < nextOrder.count,
@@ -251,7 +256,7 @@ where Item.ID: Hashable {
                       newIDPosition > commonPrefix {
                 offsetAdjustment = -order[commonPrefix..<newIDPosition].reduce(CGFloat(0)) {
                     partial, id in
-                    partial + (lookup[id].map(height) ?? 0)
+                    partial + (lookup[id].map { height($0) } ?? 0)
                 }
             } else {
                 offsetAdjustment = 0
