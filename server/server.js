@@ -8908,7 +8908,7 @@ function apnsJwt() {
 
 /** 真发一条 APNs 通知；返回 { ok, status, reason } */
 function apnsSend(deviceToken, sandbox, payload,
-                  pushType = 'alert', priority = '10') {
+                  pushType = 'alert', priority = '10', collapseId = '') {
   return new Promise((resolve) => {
     const c = readPush().config;
     const host = sandbox ? 'https://api.sandbox.push.apple.com' : 'https://api.push.apple.com';
@@ -8928,7 +8928,7 @@ function apnsSend(deviceToken, sandbox, payload,
     client.on('error', (e) => finish({ ok: false, status: 0, reason: String(e && e.message || e) }));
     let req = null;
     try {
-      req = client.request({
+      const headers = {
         ':method': 'POST',
         ':path': '/3/device/' + deviceToken,
         authorization: 'bearer ' + apnsJwt(),
@@ -8937,7 +8937,9 @@ function apnsSend(deviceToken, sandbox, payload,
         'apns-priority': priority,
         'apns-expiration': String(Math.floor(Date.now() / 1000) + 3600),
         'content-type': 'application/json'
-      });
+      };
+      if (collapseId) headers['apns-collapse-id'] = String(collapseId).slice(0, 64);
+      req = client.request(headers);
     } catch (e) {
       return finish({ ok: false, status: 0, reason: String(e && e.message || e) });
     }
@@ -9042,9 +9044,6 @@ async function pushToUser(userId, opts) {
     }, { badge: badge });
     const payload = {
       aps,
-      /* 折叠：同一个会话连着来消息，通知只留最新一条（微信就是这个行为）。
-         注意 apns-collapse-id 要放在 payload 顶层，不是 aps 里面。 */
-      'apns-collapse-id': opts.collapse ? String(opts.collapse).slice(0, 64) : undefined,
       chatId: opts.chatId || '',
       fromId: opts.fromId || '',
       kind: opts.kind || '',
@@ -9052,7 +9051,8 @@ async function pushToUser(userId, opts) {
       code: opts.pairCode || opts.code || ''
     };
     const r = await apnsSend(d.token, d.env ? d.env === 'sandbox' : !!c.sandbox,
-      payload, silent ? 'background' : 'alert', silent ? '5' : '10');
+      payload, silent ? 'background' : 'alert', silent ? '5' : '10',
+      opts.collapse || '');
     if (r.ok) sent += 1;
     const bad = r.status === 400 || r.status === 410 || /BadDeviceToken|Unregistered|DeviceTokenNotForTopic/.test(String(r.reason || ''));
     pushLog({
@@ -21568,8 +21568,16 @@ async function handleApi(req, res, pathname, query) {
     const env = str(body.env, 10) === 'sandbox' ? 'sandbox' : 'prod';
     const list = p.tokens[user.id] || (p.tokens[user.id] = []);
     const exist = list.find((d) => d.token === token);
-    if (exist) { exist.env = env; exist.updatedAt = now(); }
-    else list.push({ token, env, platform: str(body.platform, 12) || 'ios', updatedAt: now() });
+    const deviceId = str(body.deviceId, 120);
+    const platform = str(body.platform, 12) || 'ios';
+    if (exist) {
+      exist.env = env;
+      exist.platform = platform;
+      if (deviceId) exist.deviceId = deviceId;
+      exist.updatedAt = now();
+    } else {
+      list.push({ token, env, platform, deviceId, updatedAt: now() });
+    }
     /* 同一台手机换个账号登录：token 从旧账号名下摘掉，免得推给错的人 */
     Object.keys(p.tokens).forEach((uid) => {
       if (uid === user.id) return;
@@ -22030,9 +22038,27 @@ async function handleApi(req, res, pathname, query) {
           if (!db.reads[user.id]) db.reads[user.id] = {};
           db.reads[user.id][chat.id] = clearedSeq;
           sendTo(user.id, { type: 'chat', action: 'deleted', chatId: chat.id });
+          if (messageReliability) {
+            messageReliability.recordEvent('chat.removed', chat.id, clearedSeq, {
+              chatId: chat.id,
+              ownerId: user.id
+            });
+          }
         }
         sendTo(user.id, { type: 'friend', action: 'removed', userId: targetId });
         sendTo(targetId, { type: 'friend', action: 'removed', userId: user.id });
+        if (messageReliability) {
+          messageReliability.recordEvent('friend.removed',
+            user.id + ':' + targetId, 1, {
+              ownerId: user.id,
+              targetId
+            });
+          messageReliability.recordEvent('friend.removed',
+            targetId + ':' + user.id, 1, {
+              ownerId: targetId,
+              targetId: user.id
+            });
+        }
       });
       if (remoteChanged) saveRemoteFriendshipCache();
       saveChats();
@@ -22081,6 +22107,12 @@ async function handleApi(req, res, pathname, query) {
       saveReads();
       saveChats();
       sendTo(user.id, { type: 'chat', action: 'deleted', chatId: chat.id });
+      if (messageReliability) {
+        messageReliability.recordEvent('chat.removed', chat.id, clearedSeq, {
+          chatId: chat.id,
+          ownerId: user.id
+        });
+      }
     }
     /* 备注之类的一并清掉 */
     const dbm = readFriendMeta();
@@ -22091,6 +22123,18 @@ async function handleApi(req, res, pathname, query) {
     sendTo(user.id, { type: 'friend', action: 'removed', userId: target.id });
     /* 对端也立即刷新，不再等客户端每 10 秒拉通讯录。 */
     sendTo(target.id, { type: 'friend', action: 'removed', userId: user.id });
+    if (messageReliability) {
+      messageReliability.recordEvent('friend.removed',
+        user.id + ':' + target.id, 1, {
+          ownerId: user.id,
+          targetId: target.id
+        });
+      messageReliability.recordEvent('friend.removed',
+        target.id + ':' + user.id, 1, {
+          ownerId: target.id,
+          targetId: user.id
+        });
+    }
     observeShardShadow('friends.remove', {
       actorId: user.id,
       targetId: target.id,
@@ -22410,6 +22454,12 @@ async function handleApi(req, res, pathname, query) {
       chat.pinnedFor = (chat.pinnedFor || []).filter((id) => id !== user.id);
       saveChats();
       sendTo(user.id, { type: 'chat', action: 'removed', chatId: chat.id });
+      if (messageReliability) {
+        messageReliability.recordEvent('chat.removed', chat.id, clearedSeq, {
+          chatId: chat.id,
+          ownerId: user.id
+        });
+      }
       observeShardShadow('chats.hide', { chatId: chat.id, ownerId: user.id, eventId: 'hide:' + user.id + ':' + chat.id });
       ok(res, { hidden: true, chatId: chat.id, bot: true, cleared: clearedSeq });
       return;
@@ -22417,6 +22467,12 @@ async function handleApi(req, res, pathname, query) {
     chat.hiddenFor = Array.from(new Set((chat.hiddenFor || []).concat([user.id])));
     saveChats();
     sendTo(user.id, { type: 'chat', action: 'removed', chatId: chat.id });
+    if (messageReliability) {
+      messageReliability.recordEvent('chat.removed', chat.id, clearedSeq, {
+        chatId: chat.id,
+        ownerId: user.id
+      });
+    }
     observeShardShadow('chats.hide', { chatId: chat.id, ownerId: user.id, eventId: 'hide:' + user.id + ':' + chat.id });
     ok(res, { hidden: true, chatId: chat.id, cleared: clearedSeq });
     return;
@@ -23401,6 +23457,94 @@ async function handleApi(req, res, pathname, query) {
     return;
   }
 
+  /* 多端同步：按“账号 + 设备 + 会话”维护送达游标。已读属于账号级真值，
+     所以所有设备共享 readSeq；deliveredSeq 只属于当前设备。 */
+  if (parts[0] === 'sync' && parts[1] === 'state' && method === 'GET') {
+    const info = clientInfo(req);
+    const deviceId = String(info.deviceId || '').slice(0, 120);
+    if (!deviceId) return fail(res, 422, '缺少设备标识');
+    const limit = Math.min(200, Math.max(1, Number(query.get('limit')) || 50));
+    const cursor = str(query.get('cursor'), 120);
+    if (!messageReliability) {
+      ok(res, {
+        enabled: false, deviceId, items: [], nextCursor: '', hasMore: false
+      });
+      return;
+    }
+    const rows = chatsOf(user.id)
+      .filter((chat) => chat && chat.id && !chat.dismissedFor?.includes(user.id))
+      .map((chat) => {
+        const lastSeq = Math.max(0,
+          Number(messageReliability.lastSequence(chat.id)) || 0);
+        const device = messageReliability.deviceCursor(user.id, deviceId, chat.id);
+        const deliveredSeq = Math.min(lastSeq,
+          Math.max(0, Number(device.deliveredSeq) || 0));
+        const readSeq = Math.min(lastSeq,
+          Math.max(0, Number(((db.reads || {})[user.id] || {})[chat.id] || 0)));
+        return {
+          chatId: String(chat.id),
+          lastSeq,
+          deliveredSeq,
+          readSeq,
+          hasDelta: lastSeq > deliveredSeq
+        };
+      })
+      .sort((left, right) => left.chatId.localeCompare(right.chatId));
+    const cursorIndex = cursor
+      ? rows.findIndex((row) => row.chatId.localeCompare(cursor) > 0)
+      : 0;
+    const start = cursor && cursorIndex < 0 ? rows.length : Math.max(0, cursorIndex);
+    const page = rows.slice(start, start + limit);
+    const hasMore = start + page.length < rows.length;
+    ok(res, {
+      enabled: true,
+      deviceId,
+      items: page,
+      nextCursor: hasMore && page.length ? page[page.length - 1].chatId : '',
+      hasMore
+    });
+    return;
+  }
+
+  if (parts[0] === 'sync' && parts[1] === 'ack' && method === 'POST') {
+    const info = clientInfo(req);
+    const deviceId = String(info.deviceId || '').slice(0, 120);
+    if (!deviceId) return fail(res, 422, '缺少设备标识');
+    if (!messageReliability) {
+      ok(res, { acknowledged: 0, rejected: [{ reason: 'sync-disabled' }] });
+      return;
+    }
+    const body = await readBody(req);
+    const rows = Array.isArray(body.items)
+      ? body.items.slice(0, 200)
+      : [];
+    const rejected = [];
+    let acknowledged = 0;
+    rows.forEach((row) => {
+      const chatId = str(row && row.chatId, 80);
+      const requested = Math.max(0, Math.floor(Number(row && row.seq) || 0));
+      const chat = chatId ? db.chats.find((value) => value.id === chatId) : null;
+      if (!chat || !Array.isArray(chat.memberIds)
+          || !chat.memberIds.includes(user.id)) {
+        rejected.push({ chatId, reason: 'chat-not-found' });
+        return;
+      }
+      const lastSeq = Math.max(0,
+        Number(messageReliability.lastSequence(chatId)) || 0);
+      if (!requested || requested > lastSeq) {
+        rejected.push({ chatId, reason: 'sequence-out-of-range' });
+        return;
+      }
+      if (messageReliability.ackDevice(user.id, deviceId, chatId, requested)) {
+        acknowledged += 1;
+      } else {
+        rejected.push({ chatId, reason: 'ack-rejected' });
+      }
+    });
+    ok(res, { acknowledged, rejected });
+    return;
+  }
+
   if (parts[0] === 'message-events' && method === 'GET') {
     if (!messageReliability) return ok(res, { events: [], sequence: 0, hasMore: false });
     const after = Math.max(0, Number(query.get('after')) || 0);
@@ -23409,6 +23553,8 @@ async function handleApi(req, res, pathname, query) {
     const events = scanned.filter((event) => {
       const payload = event.payload || {};
       if (event.type === 'chat.cleared') return payload.userId === user.id;
+      if (event.type === 'chat.removed') return payload.ownerId === user.id;
+      if (event.type === 'friend.removed') return payload.ownerId === user.id;
       const chatId = String(payload.chatId || '');
       const chat = chatId ? db.chats.find((c) => c.id === chatId) : null;
       return !!(chat && chat.memberIds.includes(user.id));

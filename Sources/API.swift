@@ -288,6 +288,8 @@ struct MessageEventEnvelope: Decodable, Hashable {
         var chatId: String?
         var messageId: String?
         var userId: String?
+        var ownerId: String?
+        var targetId: String?
         var clearedSeq: Int?
         var readSeq: Int?
         var recalled: Bool?

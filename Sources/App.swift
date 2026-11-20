@@ -1304,6 +1304,14 @@ final class AppState: ObservableObject {
                     case "chat.read":
                         guard payload.userId == userId else { continue }
                         markChatReadLocally(chatId)
+                    case "chat.removed":
+                        guard payload.ownerId == userId else { continue }
+                        hideChatLocally(chatId)
+                    case "friend.removed":
+                        guard payload.ownerId == userId,
+                              let removedId = payload.targetId,
+                              !removedId.isEmpty else { continue }
+                        applyFriendRemoved(removedId)
                     default:
                         break
                     }

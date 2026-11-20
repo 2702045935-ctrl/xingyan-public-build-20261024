@@ -129,6 +129,7 @@ jobs:
           python3 tools/verify-dark-neutral-palette.py
           python3 tools/verify-chat-avatar-stability.py
           python3 tools/verify-chat-seamless-prefetch.py
+          python3 tools/verify-push-multidevice.py
           python3 tools/verify-group-avatar-three.py
           python3 tools/verify-plus-panel-native.py
           python3 tools/verify-composer-native-field.py
@@ -155,6 +156,7 @@ jobs:
           node server/test/chat-actions.test.js
           node server/test/media-object-routing.test.js
           node server/test/messages-since.test.js
+          node server/test/device-sync-state.test.js
           node server/test/moment-delete-persistence.test.js
           node server/test/moment-shard-replication.test.js
           node server/test/login-username.test.js
