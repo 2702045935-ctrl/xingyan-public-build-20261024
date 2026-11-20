@@ -6,17 +6,18 @@ enum StressTestConfiguration {
     private static let environment = ProcessInfo.processInfo.environment
     private static let profile = (environment["XINGYAN_STRESS_PROFILE"] ?? "").lowercased()
     private static let eagerMessages100K = profile == "messages-100000-eager"
+    private static let hardCap = 300_000
 
     private static func value(_ key: String) -> Int? {
         guard let raw = environment[key], let number = Int(raw) else { return nil }
-        return max(0, min(100_000, number))
+        return max(0, min(hardCap, number))
     }
 
     private static func profileValue(_ prefix: String) -> Int? {
         guard profile.hasPrefix(prefix) else { return nil }
         let suffix = profile.dropFirst(prefix.count)
         guard let value = Int(suffix) else { return nil }
-        return max(0, min(100_000, value))
+        return max(0, min(hardCap, value))
     }
 
     static let chatCount: Int = {

@@ -48,7 +48,7 @@ require(
         "images", "file", "livephoto", "miniapp", "card", "gift", "transfer",
         "music", "announce", "mall"
     )),
-    "100k stress fixture must cover the real chat message-kind distribution",
+    "the message stress fixture must cover the real chat message-kind distribution",
 )
 require(
     "flatMap(Int.init) ?? 8" in CONFIG,
@@ -57,15 +57,15 @@ require(
 require(
     'environment["XINGYAN_STRESS_GROUPS"].flatMap(Int.init) ?? 1' in CHAT
     or 'environment["XINGYAN_STRESS_GROUPS"].flatMap(Int.init) ?? 1' in CONFIG,
-    "the default 100k stress run must be one exact single-group chat",
+    "the default large-message stress run must be one exact single-group chat",
 )
 require(
     "let dominantCount = groupCount > 1 ? count * 3 / 4 : count" in FIXTURE,
-    "a one-group stress run must materialize all 100000 messages in that group",
+    "a one-group stress run must materialize the complete requested history in that group",
 )
 require(
     'return "已加载 \\(messages.count) · \\(first)–\\(last) / \\(MessageStressFixture.count)"' in CHAT,
-    "stress chat header must expose the visible sequence range against the 100k total",
+    "stress chat header must expose the visible sequence range against the total",
 )
 
 CHATS = (ROOT / "Sources" / "ChatsView.swift").read_text(encoding="utf-8")
@@ -105,7 +105,7 @@ require(
     "static func chats(range: Range<Int>)" in FIXTURE
     and "return (lower..<upper).map(chat(at:))" in FIXTURE
     and "private static var cache" not in FIXTURE,
-    "100k conversation stress data must generate only the requested active window",
+    "conversation stress data must generate only the requested active window",
 )
 require(
     "static let maxActiveWindow = 2_400" in FIXTURE
@@ -150,7 +150,11 @@ require(
 MOMENTS = (ROOT / "Sources" / "MomentStressFixture.swift").read_text(encoding="utf-8")
 require(
     '"#\\(index + 1) · \\(bodySamples[index % bodySamples.count])"' in MOMENTS,
-    "100k Moments stress cards must expose their exact ordinal",
+    "Moments stress cards must expose their exact ordinal",
+)
+require(
+    "private static let hardCap = 300_000" in CONFIG,
+    "message stress must support a true 300k fixture",
 )
 
 print("chat-stress-scroll: passed")
