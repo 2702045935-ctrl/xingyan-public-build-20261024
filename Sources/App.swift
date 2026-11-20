@@ -1311,7 +1311,7 @@ final class AppState: ObservableObject {
                         guard payload.ownerId == userId,
                               let removedId = payload.targetId,
                               !removedId.isEmpty else { continue }
-                        applyFriendRemoved(removedId)
+                        applyFriendRemoved(userId: removedId)
                     default:
                         break
                     }
