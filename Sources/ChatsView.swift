@@ -12,7 +12,7 @@ private enum ChatListVisual {
     static let dividerLeading: CGFloat = 77
 
     static let ink = Color.dyn(0x1A1A1A, 0xE9EDEF)
-    static let previewInk = Color.dyn(0xB2B2B2, 0x8696A0)
+    static let previewInk = Color.dyn(0xB5B5B5, 0x5E5E5E)
     static let timeInk = Color.dyn(0xCCCCCC, 0x8696A0)
     static let rule = Color(UIColor { trait in
         trait.userInterfaceStyle == .dark ? .clear : UIColor(hex: 0xE9EDEF)
@@ -2658,7 +2658,7 @@ struct ChatsView: View {
         let titleColor: UIColor = chat.showsOfficialMark
             ? UIColor(hex: 0x25D366)
             : .label
-        let previewColor: UIColor = .secondaryLabel
+        let previewColor = UIColor(hex: isDark ? 0x5E5E5E : 0xB5B5B5)
         let memberColor = nativePeerColor(chat.memberColor)
         let rowBg: UIColor = isDark ? UIColor(hex: 0x000000) : UIColor.white
         let timeColor: UIColor = .tertiaryLabel

@@ -75,6 +75,8 @@ struct NativeChatRowConfiguration {
 }
 
 final class NativeChatRowCell: UITableViewCell {
+    private static let previewAccentInk = UIColor(hex: 0xFA5151)
+
     private let foreground = UIView()
     private let avatarView = NativeChatAvatarView()
     private let titleLabel = UILabel()
@@ -194,7 +196,7 @@ final class NativeChatRowCell: UITableViewCell {
         titleLabel.text = configuration.title
         titleLabel.textColor = configuration.titleColor
         titleLabel.font = NativeChatRowMetrics.font(17, weight: .semibold, textStyle: .headline)
-        previewLabel.font = NativeChatRowMetrics.font(15,
+        previewLabel.font = NativeChatRowMetrics.font(14,
                                                      weight: .regular,
                                                      textStyle: .body)
         timeLabel.font = NativeChatRowMetrics.font(12,
@@ -276,8 +278,10 @@ final class NativeChatRowCell: UITableViewCell {
         )
         if prefixLength > 0 {
             result.addAttributes([
-                .font: UIFont.systemFont(ofSize: 15, weight: .medium),
-                .foregroundColor: UIColor.systemRed
+                .font: NativeChatRowMetrics.font(14,
+                                                weight: .medium,
+                                                textStyle: .body),
+                .foregroundColor: Self.previewAccentInk
             ], range: NSRange(location: 0, length: prefixLength))
         }
 
@@ -298,7 +302,7 @@ final class NativeChatRowCell: UITableViewCell {
             ) {
                 result.addAttribute(
                     .foregroundColor,
-                    value: UIColor.systemRed,
+                    value: Self.previewAccentInk,
                     range: NSRange(location: prefixLength + match.range.location,
                                    length: match.range.length)
                 )
@@ -347,7 +351,9 @@ final class NativeChatRowCell: UITableViewCell {
             if let color = Self.previewTokenColor(token,
                                                   isLight: configuration.isLight) {
                 result.addAttributes([
-                    .font: UIFont.systemFont(ofSize: 15, weight: .medium),
+                    .font: NativeChatRowMetrics.font(14,
+                                                    weight: .medium,
+                                                    textStyle: .body),
                     .foregroundColor: color
                 ], range: NSRange(location: prefixLength + tag.range.location,
                                   length: tag.range.length))
@@ -369,8 +375,10 @@ final class NativeChatRowCell: UITableViewCell {
             let range = NSRange(location: 0, length: bodyText.length)
             for match in Self.mentionRegex.matches(in: body, range: range) {
                 result.addAttributes([
-                    .font: UIFont.systemFont(ofSize: 15, weight: .medium),
-                    .foregroundColor: UIColor.systemRed
+                    .font: NativeChatRowMetrics.font(14,
+                                                    weight: .medium,
+                                                    textStyle: .body),
+                    .foregroundColor: Self.previewAccentInk
                 ], range: NSRange(location: prefixLength + match.range.location,
                                   length: match.range.length))
             }
@@ -415,7 +423,7 @@ final class NativeChatRowCell: UITableViewCell {
 
         titleLabel.font = .systemFont(ofSize: 17, weight: .semibold)
         titleLabel.lineBreakMode = .byTruncatingTail
-        previewLabel.font = .systemFont(ofSize: 15, weight: .regular)
+        previewLabel.font = .systemFont(ofSize: 14, weight: .regular)
         previewLabel.lineBreakMode = .byTruncatingTail
         timeLabel.font = .systemFont(ofSize: 13, weight: .regular)
         timeLabel.textAlignment = .right

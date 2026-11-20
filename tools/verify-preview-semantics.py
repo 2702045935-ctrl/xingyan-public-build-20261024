@@ -35,6 +35,17 @@ require(
     "media and file tokens in the native conversation row must stay neutral instead of being rainbow-colored",
 )
 require(
+    "NativeChatRowMetrics.font(14," in ROW
+    and "previewLabel.font = .systemFont(ofSize: 14, weight: .regular)" in ROW
+    and "let previewColor = UIColor(hex: isDark ? 0x5E5E5E : 0xB5B5B5)" in CHATS,
+    "conversation previews must use WeChat's 14pt neutral-gray text",
+)
+require(
+    "private static let previewAccentInk = UIColor(hex: 0xFA5151)" in ROW
+    and "foregroundColor: Self.previewAccentInk" in ROW,
+    "mention and draft prefixes must use WeChat's red without tinting the body",
+)
+require(
     "const clean = path.basename(name.split('?')[0] || '').trim();" in SERVER
     and "return clean ? '[文件] ' + previewTextSlice(clean, 30) : '[文件]';" in SERVER,
     "file previews must use [文件] followed by the visible filename",

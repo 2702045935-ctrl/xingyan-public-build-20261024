@@ -35,7 +35,7 @@ require(
     "native row signatures must invalidate when the effective theme changes",
 )
 require(
-    "let previewColor: UIColor = .secondaryLabel" in CHATS
+    "let previewColor = UIColor(hex: isDark ? 0x5E5E5E : 0xB5B5B5)" in CHATS
     and "let timeColor: UIColor = .tertiaryLabel" in CHATS
     and "let titleColor: UIColor = chat.showsOfficialMark" in CHATS
     and "?: .label" not in CHATS
