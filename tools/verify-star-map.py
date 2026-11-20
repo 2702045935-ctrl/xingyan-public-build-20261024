@@ -20,7 +20,8 @@ require(
     and "MKMapCamera(" in MAP
     and "map.showsBuildings = true" in MAP
     and "map.showsTraffic = true" in MAP
-    and "model.use3D ? 58 : 36" in MAP,
+    and "pitch: model.use3D" in MAP
+    and "? (model.travelMode == .walking ? 38 : 62)" in MAP,
     "star map must use native MapKit 3D camera, buildings and traffic",
 )
 require(
@@ -37,6 +38,27 @@ require(
     and "offRouteSamples >= 3" in MAP
     and "planRoute(preserveNavigation: true)" in MAP,
     "navigation must match the route, detect drift and reroute safely",
+)
+require(
+    "private struct StarManeuverIcon: View" in MAP
+    and "private struct StarMapControlIcon: View" in MAP
+    and "case straight, left, right, slightLeft, slightRight, uTurn, roundabout, arrive" in MAP
+    and "Color(hex: 0x2F86FF)" in MAP
+    and "maneuverKind" in MAP,
+    "navigation must use map-grade custom blue maneuver and control iconography",
+)
+require(
+    "private var navigationChrome: some View" in MAP
+    and "private var navigationInstructionCard: some View" in MAP
+    and "private var followingInstructionStrip: some View" in MAP
+    and "private var navigationTripCard: some View" in MAP
+    and "private var routeOptions: some View" in MAP
+    and "model.showingRouteOverview" in MAP
+    and "model.voiceGuidanceEnabled" in MAP
+    and "model.navigationCenter" in MAP
+    and "smoothedCourse(" in MAP
+    and "AVSpeechSynthesizer()" in MAP,
+    "navigation must provide native system-grade guidance, options and camera behavior",
 )
 require(
     'case "map": StarMapView()' in DISCOVER
