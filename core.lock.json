@@ -3,8 +3,8 @@
   "files": [
     {
       "path": "Sources/API.swift",
-      "size": 223559,
-      "sha256": "87d1cec563c7d2a139ef5ea47f8ffd7494c6141f2df58d9d0204ed6b3af8ce09"
+      "size": 223840,
+      "sha256": "5e42f724ced31c60e55eec0f29e91278356590d0bd4077c73d77facb9d3a4501"
     },
     {
       "path": "Sources/App.swift",
@@ -13,8 +13,8 @@
     },
     {
       "path": "Sources/Realtime.swift",
-      "size": 19674,
-      "sha256": "bb6be6358be3d6fd9204a5c44b9abf8e43a45c0fb77b6d55697d4df54413128e"
+      "size": 19861,
+      "sha256": "8d8a371afd940774735b9babc5568646bf059cd03eee411d71f6d20b452d6aff"
     },
     {
       "path": "Sources/CallAudio.swift",
@@ -130,6 +130,11 @@
       "path": "Sources/VideoPlaybackKernel.swift",
       "size": 22467,
       "sha256": "a7ca22e133de75cad81568794a612898a47c78ac4fa070496d265477215804b9"
+    },
+    {
+      "path": "Sources/SystemMusicKernel.swift",
+      "size": 9695,
+      "sha256": "d313f2e7e0becc5f5628c8e2c22d04df6fd6e69064fa2c538c4c207fb54e54d1"
     }
   ]
 }

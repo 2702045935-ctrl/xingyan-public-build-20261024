@@ -16552,8 +16552,31 @@ async function handleApi(req, res, pathname, query) {
     };
     if (!t.title) return fail(res, 422, '缺少歌名');
     const j = readMusicNow();
-    j.users[user.id] = Object.assign({}, t, { at: Date.now() });
+    const presence = Object.assign({}, t, {
+      at: Date.now(),
+      playing: b.playing !== false,
+      position: Math.max(0, Number(b.position) || 0),
+      duration: Math.max(0, Number(b.duration) || 0),
+      deviceId: clientInfo(req).deviceId || ''
+    });
+    j.users[user.id] = presence;
     saveMusicNow(j);
+    const event = {
+      type: 'musicPresence',
+      userId: user.id,
+      name: user.nickname || user.username || '好友',
+      avatar: user.avatar || '',
+      trackId: presence.id,
+      title: presence.title,
+      artist: presence.artist,
+      cover: presence.cover,
+      url: presence.url,
+      playing: presence.playing,
+      position: presence.position,
+      duration: presence.duration,
+      at: presence.at
+    };
+    friendIds(user.id).forEach((friendId) => sendTo(friendId, event));
     ok(res, { at: j.users[user.id].at });
     return;
   }
@@ -16578,7 +16601,11 @@ async function handleApi(req, res, pathname, query) {
         artist: it.artist || '',
         cover: it.cover || '',
         url: it.url || '',
-        at: Number(it.at) || 0
+        at: Number(it.at) || 0,
+        playing: it.playing !== false,
+        position: Math.max(0, Number(it.position) || 0),
+        duration: Math.max(0, Number(it.duration) || 0),
+        deviceId: it.deviceId || ''
       });
     });
     rows.sort((a, b) => (b.at - a.at) || String(a.name).localeCompare(String(b.name)));
@@ -18450,7 +18477,7 @@ async function handleApi(req, res, pathname, query) {
     const body = await readBody(req);
     const trackId = str(body.id, 80);
     if (!trackId) return fail(res, 422, '缺少歌曲');
-    musicNowState.set(user.id, {
+    const presence = {
       track: {
         id: trackId,
         title: str(body.title, 120),
@@ -18458,8 +18485,29 @@ async function handleApi(req, res, pathname, query) {
         cover: str(body.cover, 300),
         url: str(body.url, 500)
       },
-      at: Date.now()
-    });
+      at: Date.now(),
+      playing: body.playing !== false,
+      position: Math.max(0, Number(body.position) || 0),
+      duration: Math.max(0, Number(body.duration) || 0),
+      deviceId: clientInfo(req).deviceId || ''
+    };
+    musicNowState.set(user.id, presence);
+    const event = {
+      type: 'musicPresence',
+      userId: user.id,
+      name: user.nickname || user.username || '好友',
+      avatar: user.avatar || '',
+      trackId,
+      title: presence.track.title,
+      artist: presence.track.artist,
+      cover: presence.track.cover,
+      url: presence.track.url,
+      playing: presence.playing,
+      position: presence.position,
+      duration: presence.duration,
+      at: presence.at
+    };
+    friendIds(user.id).forEach((friendId) => sendTo(friendId, event));
     if (musicNowState.size > 5000) {
       const cutoff = Date.now() - 2 * 60 * 60 * 1000;
       musicNowState.forEach((row, id) => {
@@ -18488,7 +18536,11 @@ async function handleApi(req, res, pathname, query) {
         artist: row.track.artist,
         cover: row.track.cover,
         url: row.track.url,
-        at: row.at
+        at: row.at,
+        playing: row.playing !== false,
+        position: Math.max(0, Number(row.position) || 0),
+        duration: Math.max(0, Number(row.duration) || 0),
+        deviceId: row.deviceId || ''
       });
     });
     list.sort((a, b) => Number(b.at) - Number(a.at));

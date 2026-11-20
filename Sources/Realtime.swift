@@ -491,6 +491,12 @@ final class Realtime: ObservableObject {
            let text = String(data: data, encoding: .utf8) {
             ev.callCandidate = text
         }
+        if ev.type == "musicPresence" {
+            NotificationCenter.default.post(
+                name: .chrisMusicPresenceChanged,
+                object: nil
+            )
+        }
 
         let important = ["ui", "friend", "call", "transfer", "transferRemind",
                          "toast", "moment", "profile", "pair"]

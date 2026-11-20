@@ -2447,10 +2447,16 @@ final class API {
         return r.items ?? []
     }
 
-    func musicNow(_ t: MusicTrack) async {
+    func musicNow(_ t: MusicTrack,
+                  playing: Bool = true,
+                  seconds: Double = 0,
+                  duration: Double = 0) async {
         _ = try? await request("POST", "/api/music/now", body: [
             "id": t.id, "title": t.title, "artist": t.artist ?? "",
-            "cover": t.cover ?? "", "url": t.url
+            "cover": t.cover ?? "", "url": t.url,
+            "playing": playing,
+            "position": seconds.isFinite ? max(0, seconds) : 0,
+            "duration": duration.isFinite ? max(0, duration) : 0
         ])
     }
 
