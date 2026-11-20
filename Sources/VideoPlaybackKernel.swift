@@ -430,7 +430,9 @@ final class PlayerPool: ObservableObject {
         ) { [weak self, weak entry, weak item] _ in
             guard let self, let entry, let item,
                   entry.player.currentItem === item else { return }
-            VideoKernelTelemetry.shared.complete(entry.item.id)
+            Task { @MainActor in
+                VideoKernelTelemetry.shared.complete(entry.item.id)
+            }
             entry.player.seek(to: .zero)
             if self.currentId == entry.item.id, self.wantsPlayback {
                 entry.player.playImmediately(atRate: 1)
@@ -529,7 +531,9 @@ final class PlayerPool: ObservableObject {
         entry.switching = true
         let seconds = CMTimeGetSeconds(entry.player.currentTime())
         let keepPosition = seconds.isFinite ? max(0, seconds) : 0
-        VideoKernelTelemetry.shared.event("playback_error", itemId: entry.item.id)
+        Task { @MainActor in
+            VideoKernelTelemetry.shared.event("playback_error", itemId: entry.item.id)
+        }
         CrashCatcher.note(
             "视频号",
             "播放自愈 id=\(entry.item.id) 原因=\(reason) 当前源=\(entry.sourceIndex) 进度=\(String(format: "%.2f", keepPosition))"
@@ -620,6 +624,6 @@ final class PlayerPool: ObservableObject {
 
 private extension Array {
     subscript(safe index: Int) -> Element {
-        self[max(0, min(index, count - 1))]
+        self[Swift.max(0, Swift.min(index, count - 1))]
     }
 }
