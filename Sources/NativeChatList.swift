@@ -228,9 +228,15 @@ where Item.ID: Hashable {
                 pendingItems = nil
                 return
             }
-            let removedPrefixCount = nextOrder.first
-                .flatMap { order.firstIndex(of: $0) }
-                .map { max(0, $0) } ?? 0
+            let commonPrefix = zip(order, nextOrder).prefix { $0.0 == $0.1 }.count
+            let removedPrefixCount: Int
+            if commonPrefix < nextOrder.count,
+               let oldIndex = order.firstIndex(of: nextOrder[commonPrefix]),
+               oldIndex > commonPrefix {
+                removedPrefixCount = oldIndex - commonPrefix
+            } else {
+                removedPrefixCount = 0
+            }
             let removedPrefixHeight = order.prefix(removedPrefixCount).reduce(CGFloat(0)) {
                 partial, id in
                 partial + (lookup[id].map(height) ?? 0)
