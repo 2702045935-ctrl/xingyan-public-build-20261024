@@ -11,6 +11,8 @@
 Validated behavior:
 
 - Full 100,000-row traversal completed without a crash.
+- No visible scroll jump, viewport displacement, or blank-screen flicker was
+  observed during the accepted hand-test run.
 - Conversation rows continued loading through the bounded window.
 - Physical memory stayed bounded at approximately 65-69 MB during the run.
 - No linear growth of the active conversation working set was observed.
