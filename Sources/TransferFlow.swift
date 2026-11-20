@@ -63,15 +63,6 @@ struct TransferView: View {
                 mainPage
             }
 
-            if busy {
-                ZStack {
-                    Color.black.opacity(0.15).ignoresSafeArea()
-                    ProgressView().padding(18)
-                        .background { CardGlassBox(radius: 10) }
-                }
-                .zIndex(30)
-            }
-
             if showPay {
                 payLayer.zIndex(10)
             }
@@ -177,14 +168,34 @@ struct TransferView: View {
 
     private var sendBar: some View {
         Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
             openPay()
         } label: {
-            Text(Tr("转账"))
+            HStack(spacing: 8) {
+                Text(Tr("转账"))
+                    .font(pf(17, .semibold))
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 14, weight: .bold))
+            }
+            .foregroundStyle(amount > 0 ? C.cardBg : PayVisual.secondaryInk)
+            .frame(maxWidth: .infinity)
+            .frame(height: 54)
+            .background(
+                amount > 0 ? C.label : PayVisual.secondaryInk.opacity(0.12),
+                in: RoundedRectangle(cornerRadius: 17, style: .continuous)
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 17, style: .continuous)
+                    .stroke(Color.white.opacity(scheme == .dark ? 0.17 : 0.06),
+                            lineWidth: 0.6)
+            }
+            .shadow(color: .black.opacity(amount > 0 ? 0.16 : 0),
+                    radius: 12, y: 6)
         }
-        .buttonStyle(PayPrimaryButtonStyle(tint: PayVisual.tint, enabled: amount > 0))
+        .buttonStyle(AppleCheckoutButtonStyle())
         .disabled(amount <= 0)
         .padding(.horizontal, 20)
-        .padding(.top, 10)
+        .padding(.top, 12)
         .padding(.bottom, max(14, L.safeBottom))
     }
 
@@ -213,7 +224,14 @@ struct TransferView: View {
                         .foregroundColor(C.subLabel)
                 }
                 Spacer(minLength: 0)
-                Avatar(path: peerAvatar, size: L.tfAvatar, radius: 6)
+                Avatar(path: peerAvatar,
+                       size: L.tfAvatar,
+                       radius: L.tfAvatar / 2)
+                    .overlay {
+                        Circle().stroke(Color.white.opacity(scheme == .dark ? 0.20 : 0.72),
+                                        lineWidth: 0.8)
+                    }
+                    .shadow(color: .black.opacity(0.12), radius: 7, y: 3)
             }
             .padding(.top, L.v(10, 4.8, 20))
             .padding(.horizontal, L.v(16, 5, 20))
@@ -278,10 +296,22 @@ struct TransferView: View {
             .buttonStyle(.plain)
         }
 
-        .background(PayVisual.card)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background {
+            ZStack {
+                NativePremiumGlassMaterial(dark: scheme == .dark)
+                PayVisual.card.opacity(scheme == .dark ? 0.84 : 0.90)
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(Color.white.opacity(scheme == .dark ? 0.10 : 0.46),
+                        lineWidth: 0.65)
+        }
+        .shadow(color: .black.opacity(scheme == .dark ? 0.18 : 0.06),
+                radius: 18, y: 8)
         .padding(.horizontal, 20)
-        .padding(.top, 10)
+        .padding(.top, 12)
     }
 
     private var digitCells: some View {
@@ -357,134 +387,75 @@ struct TransferView: View {
     }
 
     private var payLayer: some View {
-        ZStack(alignment: .bottom) {
-            Color.black.opacity(0.45)
-                .ignoresSafeArea()
-                .onTapGesture { closePay() }
+        let sheetRadius = max(28, L.paySheetRadius)
+
+        return ZStack(alignment: .bottom) {
+            ZStack {
+                NativePremiumGlassMaterial(dark: scheme == .dark)
+                    .ignoresSafeArea()
+                    .opacity(scheme == .dark ? 0.50 : 0.42)
+                Color.black.opacity(scheme == .dark ? 0.40 : 0.24)
+                    .ignoresSafeArea()
+            }
+            .contentShape(Rectangle())
+            .onTapGesture { closePay() }
 
             VStack(spacing: 0) {
                 Capsule()
-                    .fill(C.subLabel.opacity(0.30))
-                    .frame(width: 38, height: 5)
-                    .padding(.top, 8)
+                    .fill(C.subLabel.opacity(0.26))
+                    .frame(width: 40, height: 5)
+                    .padding(.top, 9)
 
-                HStack(spacing: 10) {
+                HStack(spacing: 12) {
                     Button { closePay() } label: {
-                        SVGIcon(markup: payClose, size: L.v(13, 3.6, 15), color: C.label)
-                            .frame(width: 40, height: 40)
+                        Image(systemName: "xmark")
+                            .font(.system(size: 13.5, weight: .semibold))
+                            .foregroundStyle(C.label)
+                            .frame(width: 36, height: 36)
+                            .background(.ultraThinMaterial, in: Circle())
+                            .overlay {
+                                Circle().stroke(
+                                    C.label.opacity(scheme == .dark ? 0.14 : 0.08),
+                                    lineWidth: 0.7
+                                )
+                            }
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(Tr("关闭"))
 
                     Text(Tr("确认转账"))
                         .font(pf(17, .semibold))
                         .foregroundColor(C.label)
                         .frame(maxWidth: .infinity)
 
-                    Color.clear.frame(width: 40, height: 40)
+                    Color.clear.frame(width: 36, height: 36)
                 }
-                .padding(.horizontal, 14)
-                .padding(.top, 2)
+                .padding(.horizontal, 18)
+                .padding(.top, 3)
+                .padding(.bottom, 8)
 
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 0) {
-                        VStack(spacing: 5) {
-                            Text(Tr("转账金额"))
-                                .font(pf(12.5, .medium))
-                                .foregroundColor(PayVisual.secondaryInk)
-                            StarPayAmount(value: amount, role: .sheet, color: C.label)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 6)
-                        .padding(.bottom, 18)
-
-                        PayGroupCard {
-                            VStack(spacing: 0) {
-                                HStack(spacing: 13) {
-                                    Avatar(path: peerAvatar, size: 44, radius: 22)
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(Tr("收款给"))
-                                    .font(pf(11.5, .medium))
-                                    .foregroundColor(PayVisual.secondaryInk)
-                                        Text(peerTitle)
-                                            .font(pf(16, .semibold))
-                                    .foregroundColor(C.label)
-                                    .lineLimit(1)
-                            }
-                            Spacer(minLength: 0)
-                                }
-                                .padding(.horizontal, 16)
-                                .frame(minHeight: 74)
-
-                                HairLine(inset: 16)
-
-                                Button {
-                                    showMethod = true
-                                } label: {
-                                    HStack(spacing: 13) {
-                                        Image(systemName: method == "card"
-                                              ? "creditcard.fill" : "wallet.bifold.fill")
-                                            .font(.system(size: 17, weight: .semibold))
-                                            .foregroundStyle(.white)
-                                            .frame(width: 38, height: 38)
-                                            .background(
-                                                method == "card" ? Color(hex: 0x1677FF)
-                                                    : (method == "xypay" ? PayVisual.gold : PayVisual.success),
-                                                in: RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                            )
-
-                                        VStack(alignment: .leading, spacing: 3) {
-                                            Text(methodName)
-                                                .font(pf(15.5, .semibold))
-                                                .foregroundColor(C.label)
-                                            Text(methodSub)
-                                                .font(pf(12))
-                                                .foregroundColor(PayVisual.secondaryInk)
-                                                .lineLimit(1)
-                                        }
-                                        Spacer(minLength: 6)
-                                        Text(Tr("更改"))
-                                            .font(pf(13, .medium))
-                                            .foregroundColor(PayVisual.tint)
-                                        Chevron(size: 7, line: 1.4, color: PayVisual.tint)
-                                    }
-                                    .padding(.horizontal, 16)
-                                    .frame(minHeight: 66)
-                                    .contentShape(Rectangle())
-                                }
-                                .buttonStyle(.plain)
-
-                                if !note.isEmpty {
-                                    HairLine(inset: 16)
-                                    HStack(spacing: 12) {
-                                        Text(Tr("转账说明"))
-                                            .font(pf(13.5))
-                                            .foregroundColor(PayVisual.secondaryInk)
-                                        Spacer()
-                                        Text(note)
-                                            .font(pf(13.5, .medium))
-                                            .foregroundColor(C.label)
-                                            .lineLimit(1)
-                                    }
-                                    .padding(.horizontal, 16)
-                                    .frame(minHeight: 48)
-                                }
-                            }
-                        }
-                        .padding(.horizontal, 20)
+                    VStack(spacing: 16) {
+                        checkoutHero
+                        checkoutSummaryCard
 
                         if faceOK && !usePassword {
                             faceConfirmPanel
                         } else {
                             passwordPanel
                         }
+
+                        paymentTrustLine
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 14)
                 }
 
                 if !faceOK || usePassword {
                     PayKeypadView(busy: busy, keyHeight: L.payPadH) { k in
                         tapPay(k)
                     }
-                    .padding(.top, 10)
+                    .padding(.top, 8)
                 }
 
                 Rectangle()
@@ -494,57 +465,209 @@ struct TransferView: View {
             .background {
                 ZStack {
                     NativePremiumGlassMaterial(dark: scheme == .dark)
-                    C.cardBg.opacity(scheme == .dark ? 0.78 : 0.86)
+                    LinearGradient(
+                        colors: [
+                            C.cardBg.opacity(scheme == .dark ? 0.74 : 0.86),
+                            C.cardBg.opacity(scheme == .dark ? 0.90 : 0.94)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
                 }
             }
-            .clipShape(TopRounded(radius: L.paySheetRadius))
-            .overlay(alignment: .top) {
-                Rectangle()
-                    .fill(Color.white.opacity(scheme == .dark ? 0.12 : 0.34))
-                    .frame(height: 0.55)
-                    .clipShape(TopRounded(radius: L.paySheetRadius))
+            .clipShape(TopRounded(radius: sheetRadius))
+            .overlay {
+                TopRounded(radius: sheetRadius)
+                    .stroke(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(scheme == .dark ? 0.16 : 0.52),
+                                C.hairline.opacity(0.28)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        ),
+                        lineWidth: 0.7
+                    )
             }
-            .shadow(color: .black.opacity(0.20), radius: 22, y: -6)
+            .shadow(color: .black.opacity(scheme == .dark ? 0.44 : 0.22),
+                    radius: 30, y: -10)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+    }
+
+    private var checkoutHero: some View {
+        VStack(spacing: 9) {
+            Avatar(path: peerAvatar, size: 58, radius: 29)
+                .overlay {
+                    Circle().stroke(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.86),
+                                Color.white.opacity(0.18)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1.2
+                    )
+                }
+                .shadow(color: .black.opacity(0.16), radius: 10, y: 5)
+
+            Text(Tr("转账金额"))
+                .font(pf(12.5, .medium))
+                .foregroundStyle(PayVisual.secondaryInk)
+
+            StarPayAmount(value: amount, role: .sheet, color: C.label)
+                .accessibilityLabel(Tr("转账金额") + " " + money(amount))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 3)
+    }
+
+    private var checkoutSummaryCard: some View {
+        checkoutSurface {
+            VStack(spacing: 0) {
+                HStack(spacing: 13) {
+                    Avatar(path: peerAvatar, size: 42, radius: 21)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(Tr("收款给"))
+                            .font(pf(11.5, .medium))
+                            .foregroundStyle(PayVisual.secondaryInk)
+                        Text(peerTitle)
+                            .font(pf(16, .semibold))
+                            .foregroundStyle(C.label)
+                            .lineLimit(1)
+                    }
+                    Spacer(minLength: 8)
+                    Image(systemName: "checkmark.shield.fill")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(PayVisual.success)
+                }
+                .padding(.horizontal, 17)
+                .frame(minHeight: 70)
+
+                HairLine(inset: 17)
+
+                Button {
+                    showMethod = true
+                } label: {
+                    HStack(spacing: 13) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [Color(hex: 0x2C2C2E), Color(hex: 0x050506)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                            Image(systemName: method == "card"
+                                  ? "creditcard.fill" : "wallet.bifold.fill")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(.white)
+                        }
+                        .frame(width: 38, height: 38)
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                .stroke(.white.opacity(0.17), lineWidth: 0.65)
+                        }
+
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(methodName)
+                                .font(pf(15.5, .semibold))
+                                .foregroundStyle(C.label)
+                            Text(methodSub)
+                                .font(pf(12))
+                                .foregroundStyle(PayVisual.secondaryInk)
+                                .lineLimit(1)
+                        }
+                        Spacer(minLength: 6)
+                        Text(Tr("更改"))
+                            .font(pf(13, .medium))
+                            .foregroundStyle(PayVisual.tint)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(PayVisual.tint.opacity(0.82))
+                    }
+                    .padding(.horizontal, 17)
+                    .frame(minHeight: 66)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+
+                if !note.isEmpty {
+                    HairLine(inset: 17)
+                    HStack(spacing: 12) {
+                        Text(Tr("转账说明"))
+                            .font(pf(13.5))
+                            .foregroundStyle(PayVisual.secondaryInk)
+                        Spacer(minLength: 10)
+                        Text(note)
+                            .font(pf(13.5, .medium))
+                            .foregroundStyle(C.label)
+                            .lineLimit(1)
+                    }
+                    .padding(.horizontal, 17)
+                    .frame(minHeight: 48)
+                }
+            }
         }
     }
 
     private var faceConfirmPanel: some View {
         VStack(spacing: 14) {
             Button {
+                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
                 facePay()
             } label: {
-                HStack(spacing: 9) {
+                HStack(spacing: 10) {
                     Image(systemName: "faceid")
                         .font(.system(size: 20, weight: .semibold))
                     Text(Tr("使用面容 ID 确认"))
-                        .font(pf(16, .semibold))
+                        .font(pf(16.5, .semibold))
                 }
                 .foregroundStyle(C.cardBg)
                 .frame(maxWidth: .infinity)
-                .frame(height: 52)
-                .background(
-                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                .frame(height: 56)
+                .background {
+                    RoundedRectangle(cornerRadius: 17, style: .continuous)
                         .fill(C.label)
-                )
+                        .overlay {
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(scheme == .dark ? 0.18 : 0.10),
+                                    Color.clear
+                                ],
+                                startPoint: .top,
+                                endPoint: .center
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 17,
+                                                         style: .continuous))
+                        }
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: 17, style: .continuous)
+                        .stroke(.white.opacity(scheme == .dark ? 0.18 : 0.06),
+                                lineWidth: 0.6)
+                }
+                .shadow(color: .black.opacity(0.18), radius: 12, y: 6)
+                .scaleEffect(busy ? 0.99 : 1)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(AppleCheckoutButtonStyle())
             .disabled(busy)
 
-            HStack(spacing: 7) {
-                Image(systemName: "checkmark.shield.fill")
-                    .font(.system(size: 12, weight: .semibold))
-                Text(Tr("金额与收款方确认后将立即安全提交"))
-                    .font(pf(12))
-            }
-            .foregroundStyle(PayVisual.secondaryInk)
-
             Button {
-                usePassword = true
+                withAnimation(.easeOut(duration: 0.18)) {
+                    usePassword = true
+                    password = ""
+                    payHint = nil
+                }
             } label: {
                 Text(Tr("改用支付密码"))
                     .font(pf(13.5, .medium))
                     .foregroundStyle(PayVisual.tint)
-                    .frame(height: 34)
+                    .frame(height: 32)
             }
             .buttonStyle(.plain)
 
@@ -552,56 +675,117 @@ struct TransferView: View {
                 Button {
                     recharge()
                 } label: {
-                    Text("余额不足 · 去充值")
-                        .font(pf(13, .medium))
-                        .foregroundStyle(C.link)
+                    HStack(spacing: 5) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 13, weight: .semibold))
+                        Text(Tr("充值余额"))
+                            .font(pf(13, .semibold))
+                    }
+                    .foregroundStyle(C.link)
+                    .padding(.horizontal, 12)
+                    .frame(height: 31)
+                    .background(C.link.opacity(0.09), in: Capsule())
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(.top, 18)
-        .padding(.bottom, max(16, L.safeBottom))
+        .padding(.top, 1)
     }
 
     private var passwordPanel: some View {
-        VStack(spacing: 10) {
-            PayDotField(count: password.count, shake: badPwd ? -6 : 0, height: 48)
-
-            if let hint = payHint {
-                Text(hint)
-                    .font(pf(13.5))
-                    .foregroundColor(PayVisual.danger)
-            } else if !hasPwd {
-                Text(Tr("还没设置支付密码：我 → 设置 → 账号与安全 → 支付密码"))
-                    .font(pf(13.5))
-                    .foregroundColor(C.subLabel)
-                    .multilineTextAlignment(.center)
-            } else {
-                Text(amount > balance
-                     ? "余额只剩 ¥\(money(balance))，点这里去充值"
-                     : Tr("输入 6 位支付密码完成这笔转账"))
-                    .font(pfMoney(13.5))
-                    .foregroundColor(amount > balance ? C.link : C.subLabel)
-            }
-
-            if faceOK {
-                Button {
-                    usePassword = false
-                    password = ""
-                    payHint = nil
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "faceid")
-                        Text(Tr("改用面容 ID"))
-                    }
-                    .font(pf(13, .medium))
-                    .foregroundStyle(PayVisual.tint)
+        checkoutSurface {
+            VStack(spacing: 12) {
+                HStack(spacing: 8) {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 12, weight: .semibold))
+                    Text(Tr("输入 6 位支付密码完成这笔转账"))
+                        .font(pf(13, .medium))
                 }
-                .buttonStyle(.plain)
+                .foregroundStyle(PayVisual.secondaryInk)
+
+                PayDotField(count: password.count,
+                            shake: badPwd ? -6 : 0,
+                            height: 48)
+                    .padding(.horizontal, -20)
+
+                if let hint = payHint {
+                    Text(hint)
+                        .font(pf(13.5))
+                        .foregroundStyle(PayVisual.danger)
+                        .multilineTextAlignment(.center)
+                } else if !hasPwd {
+                    Text(Tr("还没设置支付密码：我 → 设置 → 账号与安全 → 支付密码"))
+                        .font(pf(13))
+                        .foregroundStyle(PayVisual.secondaryInk)
+                        .multilineTextAlignment(.center)
+                } else if amount > balance {
+                    Button {
+                        recharge()
+                    } label: {
+                        Text("余额只剩 ¥\(money(balance))，点这里去充值")
+                            .font(pfMoney(13.5))
+                            .foregroundStyle(C.link)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                if faceOK {
+                    Button {
+                        withAnimation(.easeOut(duration: 0.18)) {
+                            usePassword = false
+                            password = ""
+                            payHint = nil
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "faceid")
+                            Text(Tr("改用面容 ID"))
+                        }
+                        .font(pf(13, .medium))
+                        .foregroundStyle(PayVisual.tint)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 16)
         }
-        .padding(.top, 16)
-        .padding(.bottom, 8)
+    }
+
+    private var paymentTrustLine: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "checkmark.shield.fill")
+                .font(.system(size: 12.5, weight: .semibold))
+                .foregroundStyle(PayVisual.secondaryInk)
+                .padding(.top, 1)
+            Text(Tr("金额与收款方确认后将立即安全提交"))
+                .font(pf(12))
+                .foregroundStyle(PayVisual.secondaryInk)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.horizontal, 3)
+    }
+
+    private func checkoutSurface<Content: View>(
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(spacing: 0) { content() }
+            .background {
+                ZStack {
+                    NativePremiumGlassMaterial(dark: scheme == .dark)
+                    PayVisual.card.opacity(scheme == .dark ? 0.68 : 0.78)
+                }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 21, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 21, style: .continuous)
+                    .stroke(
+                        Color.white.opacity(scheme == .dark ? 0.10 : 0.44),
+                        lineWidth: 0.65
+                    )
+            }
+            .shadow(color: .black.opacity(scheme == .dark ? 0.20 : 0.06),
+                    radius: 16, y: 7)
     }
 
     private func tapPay(_ k: String) {
@@ -629,14 +813,27 @@ struct TransferView: View {
     }
 
     private var methodLayer: some View {
-        ZStack(alignment: .bottom) {
-            Color.black.opacity(0.45)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    withAnimation(.easeOut(duration: 0.22)) { showMethod = false }
-                }
+        let sheetRadius = max(28, L.paySheetRadius)
+
+        return ZStack(alignment: .bottom) {
+            ZStack {
+                NativePremiumGlassMaterial(dark: scheme == .dark)
+                    .ignoresSafeArea()
+                    .opacity(scheme == .dark ? 0.48 : 0.40)
+                Color.black.opacity(scheme == .dark ? 0.38 : 0.22)
+                    .ignoresSafeArea()
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                withAnimation(.easeOut(duration: 0.22)) { showMethod = false }
+            }
 
             VStack(spacing: 0) {
+                Capsule()
+                    .fill(C.subLabel.opacity(0.26))
+                    .frame(width: 40, height: 5)
+                    .padding(.top, 9)
+
                 ZStack {
                     Text(Tr("选择付款方式"))
                         .font(pf(16.5, .semibold))
@@ -645,71 +842,154 @@ struct TransferView: View {
                         Button {
                             withAnimation(.easeOut(duration: 0.22)) { showMethod = false }
                         } label: {
-                            SVGIcon(markup: payClose, size: L.v(13, 3.6, 15), color: C.label)
-                                .frame(width: 30, height: 30)
+                            Image(systemName: "xmark")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(C.label)
+                                .frame(width: 34, height: 34)
+                                .background(.ultraThinMaterial, in: Circle())
+                                .overlay {
+                                    Circle().stroke(
+                                        C.label.opacity(scheme == .dark ? 0.14 : 0.08),
+                                        lineWidth: 0.7
+                                    )
+                                }
                         }
                         .buttonStyle(.plain)
                         Spacer()
                     }
-                    .padding(.leading, L.v(10, 3.4, 14))
+                    .padding(.leading, 16)
                 }
-                .frame(height: L.payHeadH)
+                .frame(height: max(54, L.payHeadH))
 
-                VStack(spacing: 10) {
-                        methodRow("balance", Tr("星言零钱"), "¥" + money(balance))
+                VStack(spacing: 9) {
+                    methodRow("balance", Tr("星言零钱"), "¥" + money(balance))
 
-                        if XYPay.on { methodRow("xypay", XYPay.name, XYPay.cardLine + " · ¥" + money(balance)) }
+                    if XYPay.on {
+                        methodRow("xypay", XYPay.name,
+                                  XYPay.cardLine + " · ¥" + money(balance))
+                    }
                 }
-                .padding(.horizontal, L.v(12, 3.8, 16))
-                .padding(.bottom, L.v(10, 3, 14))
+                .padding(.horizontal, 18)
+                .padding(.bottom, 14)
 
                 Button {
                     recharge()
                 } label: {
-                    Text(Tr("充值余额"))
-                        .font(pf(14.5))
-                        .foregroundColor(C.link)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: L.v(44, 12.4, 50))
-                        .background(RoundedRectangle(cornerRadius: L.v(9, 2.9, 12))
-                            .fill(Color.dyn(0xEDEDED, 0x111111)))
+                    HStack(spacing: 7) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 15, weight: .semibold))
+                        Text(Tr("充值余额"))
+                            .font(pf(14.5, .semibold))
+                    }
+                    .foregroundStyle(C.label)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(.ultraThinMaterial,
+                                in: RoundedRectangle(cornerRadius: 15, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 15, style: .continuous)
+                            .stroke(C.hairline.opacity(0.72), lineWidth: 0.65)
+                    }
                 }
                 .buttonStyle(.plain)
-                .padding(.horizontal, L.v(12, 3.8, 16))
+                .padding(.horizontal, 18)
 
-                Rectangle()
-                    .fill(Color.dyn(0xEDEDED, 0x232325))
-                    .frame(height: max(34, L.safeBottom))
+                Color.clear.frame(height: max(34, L.safeBottom))
             }
-            .background(C.cardBg)
-            .clipShape(TopRounded(radius: L.paySheetRadius))
+            .background {
+                ZStack {
+                    NativePremiumGlassMaterial(dark: scheme == .dark)
+                    LinearGradient(
+                        colors: [
+                            C.cardBg.opacity(scheme == .dark ? 0.76 : 0.88),
+                            C.cardBg.opacity(scheme == .dark ? 0.92 : 0.95)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                }
+            }
+            .clipShape(TopRounded(radius: sheetRadius))
+            .overlay {
+                TopRounded(radius: sheetRadius)
+                    .stroke(Color.white.opacity(scheme == .dark ? 0.14 : 0.46),
+                            lineWidth: 0.7)
+            }
+            .shadow(color: .black.opacity(scheme == .dark ? 0.40 : 0.18),
+                    radius: 28, y: -8)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }
 
     private func methodRow(_ key: String, _ name: String, _ sub: String) -> some View {
         Button {
             method = key
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
             withAnimation(.easeOut(duration: 0.22)) { showMethod = false }
             app.show(Tr("付款方式：") + name)
         } label: {
-            HStack(spacing: L.v(8, 2.6, 11)) {
-                SVGIcon(markup: payBalanceIcon,
-                        size: L.v(21, 5.8, 25),
-                        color: key == "xypay" ? XYPay.on ? PayVisual.gold : PayVisual.tint : PayVisual.tint)
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [Color(hex: 0x303034), Color(hex: 0x08080A)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                    Image(systemName: key == "xypay"
+                          ? "creditcard.fill" : "wallet.bifold.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.white)
+                }
+                .frame(width: 40, height: 40)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(.white.opacity(0.16), lineWidth: 0.65)
+                }
+
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(name).font(pf(14)).foregroundColor(C.label)
-                    Text(sub).font(pf(12.8)).foregroundColor(C.subLabel)
+                    Text(name)
+                        .font(pf(15, .semibold))
+                        .foregroundColor(C.label)
+                    Text(sub)
+                        .font(pf(12.5))
+                        .foregroundColor(PayVisual.secondaryInk)
                 }
                 Spacer(minLength: 0)
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(PayVisual.success)
-                    .opacity(method == key ? 1 : 0)
+                ZStack {
+                    Circle()
+                        .stroke(method == key
+                                ? PayVisual.tint
+                                : PayVisual.secondaryInk.opacity(0.34),
+                                lineWidth: 1.1)
+                        .frame(width: 23, height: 23)
+                    if method == key {
+                        Circle()
+                            .fill(PayVisual.tint)
+                            .frame(width: 17, height: 17)
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 9.5, weight: .bold))
+                            .foregroundStyle(.white)
+                    }
+                }
             }
-            .padding(.horizontal, L.v(12, 3.8, 15))
-            .frame(height: L.v(56, 16, 64))
-            .background(RoundedRectangle(cornerRadius: L.v(9, 2.9, 12))
-                .fill(method == key ? Color.dyn(0xEAF3FC, 0x1B2A3D) : Color.dyn(0xEDEDED, 0x111111)))
+            .padding(.horizontal, 14)
+            .frame(height: 66)
+            .background {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(method == key
+                          ? PayVisual.tint.opacity(scheme == .dark ? 0.14 : 0.08)
+                          : PayVisual.card.opacity(scheme == .dark ? 0.76 : 0.82))
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(method == key
+                            ? PayVisual.tint.opacity(0.36)
+                            : C.hairline.opacity(0.58),
+                            lineWidth: method == key ? 0.9 : 0.6)
+            }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -744,20 +1024,37 @@ struct TransferView: View {
             .padding(.horizontal, 6)
             .padding(.top, 8)
 
-            Spacer().frame(height: 44)
+            Spacer().frame(height: 36)
             ZStack {
                 Circle()
-                    .fill(PayVisual.tint.opacity(0.12))
-                    .frame(width: 92, height: 92)
-                Image(systemName: "paperplane.fill")
-                    .font(.system(size: 36, weight: .semibold))
-                    .foregroundColor(PayVisual.tint)
-                    .offset(x: -2, y: 1)
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                PayVisual.success.opacity(0.22),
+                                PayVisual.success.opacity(0.04)
+                            ],
+                            center: .center,
+                            startRadius: 2,
+                            endRadius: 48
+                        )
+                    )
+                    .frame(width: 96, height: 96)
+                Circle()
+                    .fill(.ultraThinMaterial)
+                    .frame(width: 76, height: 76)
+                    .overlay {
+                        Circle()
+                            .stroke(Color.white.opacity(scheme == .dark ? 0.18 : 0.52),
+                                    lineWidth: 0.8)
+                    }
+                Image(systemName: "checkmark")
+                    .font(.system(size: 31, weight: .semibold))
+                    .foregroundStyle(PayVisual.success)
             }
             Text(Tr("转账已发出"))
-                .font(pf(22, .semibold))
+                .font(pf(23, .semibold))
                 .foregroundColor(C.label)
-                .padding(.top, 18)
+                .padding(.top, 16)
             StarPayAmount(value: doneAmount, role: .sheet, color: C.label)
                 .padding(.top, 8)
             PayStatusPill(text: Tr("等待对方确认收款"), tone: .processing)
@@ -769,7 +1066,7 @@ struct TransferView: View {
                 .padding(.horizontal, 36)
                 .padding(.top, 12)
 
-            PayGroupCard {
+            checkoutSurface {
                 VStack(spacing: 0) {
                     resultRow(Tr("收款方"), chat.name)
                     HairLine(inset: 18)
@@ -796,21 +1093,57 @@ struct TransferView: View {
                     showBills = true
                 } label: {
                     Text(Tr("查看账单"))
+                        .font(pf(16, .semibold))
+                        .foregroundStyle(C.label)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(.ultraThinMaterial,
+                                    in: RoundedRectangle(cornerRadius: 15, style: .continuous))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                                .stroke(C.hairline.opacity(0.76), lineWidth: 0.65)
+                        }
                 }
-                .buttonStyle(PaySecondaryButtonStyle(tint: PayVisual.tint))
+                .buttonStyle(AppleCheckoutButtonStyle())
 
                 Button {
                     dismiss()
                 } label: {
                     Text(Tr("完成"))
+                        .font(pf(17, .semibold))
+                        .foregroundStyle(C.cardBg)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 54)
+                        .background(C.label,
+                                    in: RoundedRectangle(cornerRadius: 17, style: .continuous))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 17, style: .continuous)
+                                .stroke(Color.white.opacity(scheme == .dark ? 0.18 : 0.06),
+                                        lineWidth: 0.6)
+                        }
+                        .shadow(color: .black.opacity(0.17), radius: 12, y: 6)
                 }
-                .buttonStyle(PayPrimaryButtonStyle(tint: PayVisual.tint))
+                .buttonStyle(AppleCheckoutButtonStyle())
             }
             .padding(.horizontal, 20)
             .padding(.bottom, max(26, L.safeBottom))
         }
         .frame(maxWidth: .infinity)
-        .background(PayVisual.canvas.ignoresSafeArea())
+        .background {
+            ZStack {
+                PayVisual.canvas
+                RadialGradient(
+                    colors: [
+                        PayVisual.success.opacity(scheme == .dark ? 0.08 : 0.06),
+                        Color.clear
+                    ],
+                    center: .top,
+                    startRadius: 30,
+                    endRadius: 420
+                )
+            }
+            .ignoresSafeArea()
+        }
     }
 
     private func resultRow(_ k: String, _ v: String) -> some View {
@@ -892,6 +1225,16 @@ struct TransferView: View {
             }
             busy = false
         }
+    }
+}
+
+private struct AppleCheckoutButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.975 : 1)
+            .opacity(configuration.isPressed ? 0.88 : 1)
+            .animation(.spring(response: 0.24, dampingFraction: 0.82),
+                       value: configuration.isPressed)
     }
 }
 
