@@ -23,16 +23,16 @@ require(
     "two/four images must use two columns and three-plus images must use three",
 )
 require(
-    "static let gap: CGFloat = 4" in LAYOUT
-    and "static let gridRadius: CGFloat = 9" in LAYOUT
+    "static let gap: CGFloat = 5" in LAYOUT
+    and "static let gridRadius: CGFloat = 2" in LAYOUT
     and "static let singleRadius: CGFloat = 12" in LAYOUT,
     "moments must use the compact thumbnail gap and corner scale",
 )
 require(
-    "gridWidth = min(width, max(196, width * 0.60))" in LAYOUT
-    and "gridWidth = min(width, max(228, min(252, width * 0.72)))" in LAYOUT
+    "static let gridCellMax: CGFloat = 86" in LAYOUT
+    and "let side = min(gridCellMax, usable / CGFloat(columns))" in LAYOUT
     and "singleWidth = min(width, max(184, width * 0.62))" in LAYOUT,
-    "six/nine grids must stay compact while two-column and single media scale proportionally",
+    "WeChat two/four/six/nine grids must share the measured 86pt square cell",
 )
 require(
     "MomentMediaLayout.singleImageSize(" in FEED

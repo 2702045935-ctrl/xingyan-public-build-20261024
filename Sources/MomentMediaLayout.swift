@@ -1,9 +1,10 @@
 import CoreGraphics
 
 enum MomentMediaLayout {
-    static let gap: CGFloat = 4
-    static let gridRadius: CGFloat = 9
+    static let gap: CGFloat = 5
+    static let gridRadius: CGFloat = 2
     static let singleRadius: CGFloat = 12
+    static let gridCellMax: CGFloat = 86
 
     static func columns(for count: Int) -> Int {
         switch count {
@@ -18,15 +19,8 @@ enum MomentMediaLayout {
 
     static func gridCellSize(count: Int, width: CGFloat) -> CGSize {
         let columns = max(1, columns(for: count))
-        let gridWidth: CGFloat
-        switch columns {
-        case 2:
-            gridWidth = min(width, max(196, width * 0.60))
-        default:
-            gridWidth = min(width, max(228, min(252, width * 0.72)))
-        }
-        let usable = max(1, gridWidth - gap * CGFloat(columns - 1))
-        let side = usable / CGFloat(columns)
+        let usable = max(1, width - gap * CGFloat(columns - 1))
+        let side = min(gridCellMax, usable / CGFloat(columns))
         return CGSize(width: side, height: side)
     }
 

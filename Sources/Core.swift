@@ -2670,6 +2670,7 @@ struct PhotoPager: View {
     var showActions: Bool = false
 
     var onLongPress: (() -> Void)? = nil
+    var onIndexChange: ((Int) -> Void)? = nil
     var onClose: () -> Void
 
     @EnvironmentObject private var app: AppState
@@ -2750,7 +2751,10 @@ struct PhotoPager: View {
             index = min(max(0, startIndex), max(0, paths.count - 1))
             revealChrome()
         }
-        .onChange(of: index) { _ in revealChrome() }
+        .onChange(of: index) { value in
+            revealChrome()
+            onIndexChange?(value)
+        }
         .onDisappear { hideChromeTask?.cancel() }
         .statusBarHidden(showActions && !chromeVisible)
 

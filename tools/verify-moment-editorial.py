@@ -35,9 +35,14 @@ require(
 )
 require(
     "systemTextFont(15.5, .regular, relativeTo: .body)" in CARD
-    and "systemTextFont(15.8, .semibold, relativeTo: .headline)" in CARD
+    and "systemTextFont(15.8, .medium, relativeTo: .headline)" in CARD
     and "systemTextFont(11.6, .regular, relativeTo: .caption1)" in CARD,
     "moment copy, author and timestamp must use the compact editorial type scale",
+)
+require(
+    "Text(attribution).foregroundColor(C.link)" in CARD
+    and "Text(text).foregroundColor(C.label)" in CARD,
+    "comment author attribution must use WeChat link blue while body copy stays primary",
 )
 require(
     "availableWidth - (cardInset + contentInset) * 2" in CARD,

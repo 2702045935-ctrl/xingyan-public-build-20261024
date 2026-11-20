@@ -141,8 +141,8 @@ struct MomentFeedCard: View {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 5) {
                     Text(moment.author?.name ?? "")
-                        .font(systemTextFont(15.8, .semibold, relativeTo: .headline))
-                        .foregroundColor(C.label)
+                        .font(systemTextFont(15.8, .medium, relativeTo: .headline))
+                        .foregroundColor(C.link)
                         .lineLimit(1)
 
                     if moment.pinned == true {
@@ -462,12 +462,12 @@ struct MomentFeedCard: View {
         let name = comment.nickname ?? ""
         let text = comment.content ?? ""
         let replyName = (comment.replyToName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        let line = replyName.isEmpty
-            ? "\(name)：\(text)"
-            : "\(name) 回复 \(replyName)：\(text)"
+        let attribution = replyName.isEmpty
+            ? "\(name)："
+            : "\(name) 回复 \(replyName)："
 
-        return Text(line)
-            .foregroundColor(C.label)
+        return (Text(attribution).foregroundColor(C.link)
+                + Text(text).foregroundColor(C.label))
             .font(systemTextFont(12.5, .regular, relativeTo: .caption1))
             .lineLimit(2)
             .multilineTextAlignment(.leading)

@@ -1394,6 +1394,7 @@ struct MomentsView: View {
 
     @State private var viewerPaths: [String] = []
     @State private var viewerIndex: Int?
+    @State private var viewerMoment: Moment?
 
     @State private var momentVideo: URL?
 
@@ -1591,12 +1592,47 @@ struct MomentsView: View {
             }
 
             if let i = viewerIndex, !viewerPaths.isEmpty {
-
-                PhotoPager(paths: viewerPaths, startIndex: i, showActions: true) {
-                    viewerIndex = nil
-                    tapLockUntil = Date().addingTimeInterval(0.6)
-                }
+                if let moment = viewerMoment {
+                    MomentPhotoReader(
+                        moment: moment,
+                        paths: viewerPaths,
+                        startIndex: i,
+                        onClose: closeMomentReader,
+                        onLike: { like(moment) },
+                        onOpenComments: {
+                            closeMomentReader()
+                            commentsSheet = moment
+                        },
+                        onOpenAvatar: { user in
+                            closeMomentReader()
+                            cardUser = user
+                        },
+                        onOpenLikes: { likes in
+                            closeMomentReader()
+                            likesSnapshot = likes
+                            showLikes = true
+                        },
+                        avatarPathFor: { id in
+                            if let path = app.contact(for: id)?.avatarPath,
+                               !path.isEmpty {
+                                return path
+                            }
+                            if id == app.me?.id {
+                                return app.me?.avatarPath ?? ""
+                            }
+                            if id == moment.authorId {
+                                return moment.author?.avatarPath ?? ""
+                            }
+                            return ""
+                        }
+                    )
                     .zIndex(40)
+                } else {
+                    PhotoPager(paths: viewerPaths, startIndex: i, showActions: true) {
+                        closeMomentReader()
+                    }
+                    .zIndex(40)
+                }
             }
 
         }
@@ -1970,6 +2006,7 @@ struct MomentsView: View {
                 guard paths.indices.contains(index) else { return }
                 viewerPaths = paths
                 viewerIndex = index
+                viewerMoment = moment
             },
             onOpenVideo: { url in momentVideo = url },
             onOpenAvatar: { user in cardUser = user },
@@ -2283,12 +2320,20 @@ struct MomentsView: View {
 
     private var momentsGlassHeaderExtension: CGFloat { 56 }
 
+    private func closeMomentReader() {
+        viewerIndex = nil
+        viewerPaths = []
+        viewerMoment = nil
+        tapLockUntil = Date().addingTimeInterval(0.6)
+    }
+
     private func openPhoto(_ path: String, in moment: Moment) {
         guard Date() >= tapLockUntil else { return }
         let paths = moment.images ?? []
         guard let index = paths.firstIndex(of: path) else { return }
         viewerPaths = paths
         viewerIndex = index
+        viewerMoment = moment
     }
 
     private func openNotice(_ n: MomentNotice) {
@@ -2309,6 +2354,7 @@ struct MomentsView: View {
         if let paths = m.images, !paths.isEmpty {
             viewerPaths = paths
             viewerIndex = 0
+            viewerMoment = m
             return
         }
         if let v = m.video, !v.isEmpty {
