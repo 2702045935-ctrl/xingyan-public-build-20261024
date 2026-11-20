@@ -192,11 +192,41 @@ where Item.ID: Hashable {
                     self?.refreshMetrics()
                 })
             }
+            layoutObservers.append(center.addObserver(
+                forName: UIApplication.didBecomeActiveNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                self?.refreshAfterForeground()
+            })
         }
 
         deinit {
             let center = NotificationCenter.default
             layoutObservers.forEach { center.removeObserver($0) }
+        }
+
+        private func refreshAfterForeground() {
+            guard let table, let dataSource else { return }
+            DispatchQueue.main.async { [weak self, weak table] in
+                guard let self, let table, self.table === table else { return }
+                self.flushPendingItems()
+                table.layoutIfNeeded()
+                let visible = table.indexPathsForVisibleRows ?? []
+                if !visible.isEmpty {
+                    UIView.performWithoutAnimation {
+                        table.reloadRows(at: visible, with: .none)
+                    }
+                } else {
+                    let snapshot = dataSource.snapshot()
+                    let ids = snapshot.itemIdentifiers
+                    guard !ids.isEmpty else { return }
+                    var refreshed = snapshot
+                    refreshed.reloadItems(ids)
+                    dataSource.apply(refreshed, animatingDifferences: false)
+                }
+                table.setNeedsLayout()
+            }
         }
 
         func apply(_ next: [Item], animated: Bool) {

@@ -189,6 +189,7 @@ where Item.ID: Hashable {
         private var pending: [Item]?
         private var applyGeneration = 0
         private var sizeChangeScheduled = false
+        private var foregroundObserver: NSObjectProtocol?
 
         init(controller: NativeStaticListController?,
              onScrollViewReady: ((UIScrollView) -> Void)?,
@@ -208,10 +209,43 @@ where Item.ID: Hashable {
             self.signature = signature
             self.row = row
             super.init()
+            foregroundObserver = NotificationCenter.default.addObserver(
+                forName: UIApplication.didBecomeActiveNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                self?.refreshAfterForeground()
+            }
         }
 
         deinit {
             sizeObservation?.invalidate()
+            if let foregroundObserver {
+                NotificationCenter.default.removeObserver(foregroundObserver)
+            }
+        }
+
+        private func refreshAfterForeground() {
+            guard let collection, let dataSource else { return }
+            DispatchQueue.main.async { [weak self, weak collection] in
+                guard let self, let collection, self.collection === collection else { return }
+                self.flush()
+                collection.layoutIfNeeded()
+                let visible = collection.indexPathsForVisibleItems
+                if !visible.isEmpty {
+                    UIView.performWithoutAnimation {
+                        collection.reloadItems(at: visible)
+                    }
+                } else {
+                    let snapshot = dataSource.snapshot()
+                    let ids = snapshot.itemIdentifiers
+                    guard !ids.isEmpty else { return }
+                    var refreshed = snapshot
+                    refreshed.reloadItems(ids)
+                    dataSource.apply(refreshed, animatingDifferences: false)
+                }
+                collection.setNeedsLayout()
+            }
         }
 
         func attachScroll(_ scrollView: UIScrollView) {

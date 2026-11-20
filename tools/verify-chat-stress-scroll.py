@@ -76,6 +76,7 @@ require(
 
 NATIVE_CHAT_LIST = (ROOT / "Sources" / "NativeChatList.swift").read_text(encoding="utf-8")
 NATIVE_CHAT_CELL = (ROOT / "Sources" / "NativeChatRowCell.swift").read_text(encoding="utf-8")
+NATIVE_STATIC_LIST = (ROOT / "Sources" / "NativeStaticList.swift").read_text(encoding="utf-8")
 require(
     "allowInsertionDuringScroll,\n                   next.count > oldCount" in NATIVE_CHAT_LIST
     and "table.isDragging || table.isTracking || table.isDecelerating" in NATIVE_CHAT_LIST
@@ -124,6 +125,13 @@ require(
     and "target.y += offsetAdjustment" in NATIVE_CHAT_LIST
     and "fromTop < max(1_600, scrollView.bounds.height * 1.5)" in NATIVE_CHAT_LIST,
     "both leading inserts and trailing removals must compensate their exact row height",
+)
+require(
+    "UIApplication.didBecomeActiveNotification" in NATIVE_CHAT_LIST
+    and "table.reloadRows(at: visible, with: .none)" in NATIVE_CHAT_LIST
+    and "UIApplication.didBecomeActiveNotification" in NATIVE_STATIC_LIST
+    and "collection.reloadItems(at: visible)" in NATIVE_STATIC_LIST,
+    "foreground recovery must repaint visible cells without requiring a user scroll",
 )
 require(
     "updated.list.append(contentsOf: added)" in CHATS,
