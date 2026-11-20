@@ -15,6 +15,7 @@ struct MomentPhotoReader: View {
     @State private var expanded = false
     @State private var likedOverride: Bool?
     @State private var currentIndex = 0
+    @State private var chromeVisible = true
 
     private var likes: [MomentLike] {
         var seen = Set<String>()
@@ -27,6 +28,13 @@ struct MomentPhotoReader: View {
     }
 
     private var comments: [MomentComment] { moment.comments ?? [] }
+    private var bodyText: String {
+        moment.content?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    }
+    private var readerLink: Color { Color(hex: 0x8DA9D8) }
+    private var readerText: Color { Color.white.opacity(0.92) }
+    private var readerSecondary: Color { Color.white.opacity(0.56) }
+    private var readerSurface: Color { Color(hex: 0x0C0C0E) }
     private var showingLiked: Bool {
         likedOverride ?? (moment.likedByMe == true)
     }
@@ -44,16 +52,21 @@ struct MomentPhotoReader: View {
                 startIndex: startIndex,
                 showActions: true,
                 onIndexChange: { currentIndex = $0 },
+                onChromeVisibilityChange: { chromeVisible = $0 },
                 onClose: onClose
             )
 
             readerPanel
                 .transition(.move(edge: .bottom).combined(with: .opacity))
+                .opacity(chromeVisible || expanded ? 1 : 0)
+                .allowsHitTesting(chromeVisible || expanded)
+                .animation(.easeInOut(duration: 0.2), value: chromeVisible)
                 .zIndex(2)
         }
         .background(Color.black.ignoresSafeArea())
         .onAppear {
             currentIndex = min(max(0, startIndex), max(0, paths.count - 1))
+            chromeVisible = true
         }
         .onChange(of: moment.likedByMe) { _ in
             likedOverride = nil
@@ -62,35 +75,13 @@ struct MomentPhotoReader: View {
 
     private var readerPanel: some View {
         VStack(spacing: 0) {
-            Button {
-                withAnimation(.spring(response: 0.34, dampingFraction: 0.88)) {
-                    expanded.toggle()
-                }
-            } label: {
-                Capsule(style: .continuous)
-                    .fill(Color.primary.opacity(0.18))
-                    .frame(width: 38, height: 5)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 22)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .simultaneousGesture(
-                DragGesture(minimumDistance: 8)
-                    .onEnded { value in
-                        guard abs(value.translation.height) > 24 else { return }
-                        withAnimation(.spring(response: 0.34, dampingFraction: 0.88)) {
-                            expanded = value.translation.height < 0
-                        }
-                    }
-            )
-            .accessibilityLabel(expanded ? Tr("收起原文") : Tr("展开原文"))
+            readerHandle
 
-            HStack(alignment: .top, spacing: 10) {
+            HStack(alignment: .center, spacing: 10) {
                 Avatar(
                     path: moment.author?.avatarPath ?? "",
-                    size: 34,
-                    radius: 17,
+                    size: 32,
+                    radius: 16,
                     circle: true
                 )
                 .contentShape(Circle())
@@ -99,10 +90,18 @@ struct MomentPhotoReader: View {
                 }
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(moment.author?.name ?? "")
-                        .font(systemTextFont(14.5, .semibold, relativeTo: .subheadline))
-                        .foregroundColor(C.link)
-                        .lineLimit(1)
+                    HStack(spacing: 8) {
+                        Text(moment.author?.name ?? "")
+                            .font(systemTextFont(14.2, .semibold, relativeTo: .subheadline))
+                            .foregroundColor(readerLink)
+                            .lineLimit(1)
+
+                        Spacer(minLength: 4)
+
+                        Text("\(min(currentIndex + 1, paths.count)) / \(paths.count)")
+                            .font(.system(size: 10.5, weight: .medium, design: .rounded))
+                            .foregroundColor(readerSecondary)
+                    }
 
                     HStack(spacing: 5) {
                         Text(TimeFmt.ago(moment.createdAt))
@@ -115,76 +114,34 @@ struct MomentPhotoReader: View {
                             Text(location).lineLimit(1)
                         }
                     }
-                    .font(systemTextFont(11.5, .regular, relativeTo: .caption1))
-                    .foregroundColor(C.subLabel)
-                }
+                    .font(systemTextFont(11.2, .regular, relativeTo: .caption1))
+                    .foregroundColor(readerSecondary)
 
-                Spacer(minLength: 8)
-
-                Text("\(min(currentIndex + 1, paths.count)) / \(paths.count)")
-                    .font(.system(size: 11.5, weight: .medium, design: .rounded))
-                    .foregroundColor(C.subLabel)
-                    .padding(.top, 2)
-            }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 10)
-
-            if let text = moment.content?
-                .trimmingCharacters(in: .whitespacesAndNewlines),
-               !text.isEmpty {
-                Text(RichText.linkified(text))
-                    .font(systemTextFont(14.5, .regular, relativeTo: .body))
-                    .foregroundColor(C.label)
-                    .lineSpacing(4)
-                    .lineLimit(expanded ? nil : 3)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 10)
-            }
-
-            if expanded, !comments.isEmpty {
-                VStack(alignment: .leading, spacing: 7) {
-                    ForEach(Array(comments.prefix(4).enumerated()), id: \.offset) { _, comment in
-                        let name = comment.nickname ?? ""
-                        let text = comment.content ?? ""
-                        (Text("\(name)：").foregroundColor(C.link)
-                         + Text(text).foregroundColor(C.label))
-                            .font(systemTextFont(12.5, .regular, relativeTo: .caption1))
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    if comments.count > 4 {
-                        Button(action: onOpenComments) {
-                            Text(Tr("查看全部") + " \(comments.count) " + Tr("条评论"))
-                                .font(systemTextFont(12.2, .medium, relativeTo: .caption1))
-                                .foregroundColor(C.subLabel)
-                        }
-                        .buttonStyle(.plain)
+                    if !expanded, !bodyText.isEmpty {
+                        Text(RichText.linkified(bodyText))
+                            .font(systemTextFont(13.2, .regular, relativeTo: .subheadline))
+                            .foregroundColor(readerText)
+                            .lineLimit(1)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 10)
-                .transition(.opacity)
-            }
 
-            Divider().opacity(0.45)
-
-            HStack(spacing: 18) {
                 Button {
                     likedOverride = !showingLiked
                     onLike()
                 } label: {
                     HStack(spacing: 5) {
                         Image(systemName: showingLiked ? "heart.fill" : "heart")
-                            .font(.system(size: 18, weight: .regular))
+                            .font(.system(size: 17, weight: .regular))
                         if showingLikeCount > 0 {
                             Text("\(showingLikeCount)")
-                                .font(systemTextFont(12, .medium, relativeTo: .caption1))
+                                .font(systemTextFont(11.2, .medium, relativeTo: .caption1))
                         }
                     }
                     .foregroundColor(showingLiked
                                      ? Color(hex: 0xFF3B4D)
-                                     : C.label)
+                                     : readerText)
+                    .frame(minWidth: 30, minHeight: 36)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(showingLiked ? Tr("取消赞") : Tr("赞"))
@@ -195,30 +152,14 @@ struct MomentPhotoReader: View {
                             .font(.system(size: 17, weight: .regular))
                         if !comments.isEmpty {
                             Text("\(comments.count)")
-                                .font(systemTextFont(12, .medium, relativeTo: .caption1))
+                                .font(systemTextFont(11.2, .medium, relativeTo: .caption1))
                         }
                     }
-                    .foregroundColor(C.label)
+                    .foregroundColor(readerText)
+                    .frame(minWidth: 30, minHeight: 36)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Tr("评论"))
-
-                if !likes.isEmpty {
-                    Button {
-                        onOpenLikes(likes)
-                    } label: {
-                        HStack(spacing: -6) {
-                            ForEach(Array(likes.prefix(4).enumerated()), id: \.offset) { _, like in
-                                likeAvatar(like)
-                            }
-                        }
-                        .frame(height: 22)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(Tr("查看点赞的人"))
-                }
-
-                Spacer(minLength: 0)
 
                 Button {
                     withAnimation(.spring(response: 0.34, dampingFraction: 0.88)) {
@@ -229,32 +170,140 @@ struct MomentPhotoReader: View {
                           ? "chevron.down"
                           : "chevron.up")
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(C.subLabel)
-                        .frame(width: 30, height: 30)
+                        .foregroundColor(readerSecondary)
+                        .frame(width: 30, height: 36)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.horizontal, 16)
-            .frame(height: 44)
+            .padding(.horizontal, 15)
+            .padding(.top, 7)
+            .padding(.bottom, 10)
+
+            if expanded {
+                Divider()
+                    .overlay(Color.white.opacity(0.12))
+                    .padding(.horizontal, 15)
+                    .transition(.opacity)
+
+                expandedReader
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
         }
-        .padding(.bottom, max(8, L.safeBottom))
+        .padding(.bottom, max(6, L.safeBottom))
         .frame(maxWidth: .infinity)
-        .background(C.pageBg)
+        .background {
+            Color(hex: 0x0C0C0E)
+                .opacity(0.94)
+                .background(.ultraThinMaterial)
+        }
         .clipShape(UnevenRoundedRectangle(
-            topLeadingRadius: 20,
-            topTrailingRadius: 20,
+            topLeadingRadius: 18,
+            topTrailingRadius: 18,
             style: .continuous
         ))
         .overlay(alignment: .top) {
             UnevenRoundedRectangle(
-                topLeadingRadius: 20,
-                topTrailingRadius: 20,
+                topLeadingRadius: 18,
+                topTrailingRadius: 18,
                 style: .continuous
             )
-            .stroke(Color.primary.opacity(0.07), lineWidth: 0.6)
+            .stroke(Color.white.opacity(0.10), lineWidth: 0.6)
         }
-        .shadow(color: Color.black.opacity(0.24), radius: 18, x: 0, y: -4)
+        .shadow(color: Color.black.opacity(0.32), radius: 14, x: 0, y: -3)
+        .gesture(
+            DragGesture(minimumDistance: 10)
+                .onEnded { value in
+                    guard abs(value.translation.height) > 28 else { return }
+                    withAnimation(.spring(response: 0.34, dampingFraction: 0.88)) {
+                        expanded = value.translation.height < 0
+                    }
+                }
+        )
+    }
+
+    private var readerHandle: some View {
+        Button {
+            withAnimation(.spring(response: 0.34, dampingFraction: 0.88)) {
+                expanded.toggle()
+            }
+        } label: {
+            Capsule(style: .continuous)
+                .fill(Color.white.opacity(0.24))
+                .frame(width: 34, height: 4)
+                .frame(maxWidth: .infinity)
+                .frame(height: 18)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(expanded ? Tr("收起原文") : Tr("展开原文"))
+    }
+
+    private var expandedReader: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                if !bodyText.isEmpty {
+                    Text(RichText.linkified(bodyText))
+                        .font(systemTextFont(14.2, .regular, relativeTo: .body))
+                        .foregroundColor(readerText)
+                        .lineSpacing(4)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                if !likes.isEmpty {
+                    Button {
+                        onOpenLikes(likes)
+                    } label: {
+                        HStack(spacing: 8) {
+                            HStack(spacing: -6) {
+                                ForEach(Array(likes.prefix(5).enumerated()), id: \.offset) { _, like in
+                                    likeAvatar(like)
+                                }
+                            }
+                            .frame(height: 22)
+
+                            Text(likes.compactMap(\.nickname)
+                                .filter { !$0.isEmpty }
+                                .prefix(2)
+                                .joined(separator: "、"))
+                                .font(systemTextFont(12.2, .medium, relativeTo: .caption1))
+                                .foregroundColor(readerText)
+                                .lineLimit(1)
+
+                            Spacer(minLength: 0)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                if !comments.isEmpty {
+                    Divider()
+                        .overlay(Color.white.opacity(0.11))
+
+                    ForEach(Array(comments.prefix(4).enumerated()), id: \.offset) { _, comment in
+                        let name = comment.nickname ?? ""
+                        let text = comment.content ?? ""
+                        (Text("\(name)：").foregroundColor(readerLink)
+                         + Text(text).foregroundColor(readerText))
+                            .font(systemTextFont(12.5, .regular, relativeTo: .caption1))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    if comments.count > 4 {
+                        Button(action: onOpenComments) {
+                            Text(Tr("查看全部") + " \(comments.count) " + Tr("条评论"))
+                                .font(systemTextFont(12.2, .medium, relativeTo: .caption1))
+                                .foregroundColor(readerSecondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            .padding(.bottom, 16)
+        }
+        .frame(maxHeight: 300)
     }
 
     @ViewBuilder
@@ -265,13 +314,13 @@ struct MomentPhotoReader: View {
         if path.isEmpty {
             Text(String(name.prefix(1)))
                 .font(.system(size: 8.5, weight: .bold))
-                .foregroundColor(C.subLabel)
+                .foregroundColor(readerSecondary)
                 .frame(width: 22, height: 22)
-                .background(Circle().fill(Color.primary.opacity(0.08)))
-                .overlay(Circle().stroke(C.pageBg, lineWidth: 2))
+                .background(Circle().fill(Color.white.opacity(0.10)))
+                .overlay(Circle().stroke(readerSurface, lineWidth: 2))
         } else {
             Avatar(path: path, size: 22, radius: 11, circle: true)
-                .overlay(Circle().stroke(C.pageBg, lineWidth: 2))
+                .overlay(Circle().stroke(readerSurface, lineWidth: 2))
         }
     }
 }

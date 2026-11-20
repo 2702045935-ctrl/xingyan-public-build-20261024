@@ -2671,6 +2671,7 @@ struct PhotoPager: View {
 
     var onLongPress: (() -> Void)? = nil
     var onIndexChange: ((Int) -> Void)? = nil
+    var onChromeVisibilityChange: ((Bool) -> Void)? = nil
     var onClose: () -> Void
 
     @EnvironmentObject private var app: AppState
@@ -2712,9 +2713,9 @@ struct PhotoPager: View {
             .onTapGesture {
                 if showActions {
                     toggleChrome()
-                } else {
-                    closePager()
-                }
+        } else {
+            closePager()
+        }
             }
             .onLongPressGesture {
                 if let cb = onLongPress { cb(); return }
@@ -2846,6 +2847,7 @@ struct PhotoPager: View {
         withAnimation(.easeInOut(duration: 0.2)) {
             chromeVisible.toggle()
         }
+        onChromeVisibilityChange?(chromeVisible)
         if chromeVisible { scheduleChromeHide() }
     }
 
@@ -2854,6 +2856,7 @@ struct PhotoPager: View {
         withAnimation(.easeInOut(duration: 0.18)) {
             chromeVisible = true
         }
+        onChromeVisibilityChange?(true)
         scheduleChromeHide()
     }
 
@@ -2866,6 +2869,7 @@ struct PhotoPager: View {
             withAnimation(.easeInOut(duration: 0.24)) {
                 chromeVisible = false
             }
+            onChromeVisibilityChange?(false)
         }
     }
 

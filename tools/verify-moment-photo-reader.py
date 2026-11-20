@@ -25,8 +25,17 @@ require(
 require(
     "moment.author?.name" in READER
     and "TimeFmt.ago(moment.createdAt)" in READER
-    and "RichText.linkified(text)" in READER,
+    and "RichText.linkified(bodyText)" in READER,
     "photo reading surface must retain author, complete time and original copy",
+)
+require(
+    "private var readerHandle" in READER
+    and "if !expanded, !bodyText.isEmpty" in READER
+    and "private var expandedReader" in READER
+    and "Color(hex: 0x0C0C0E)" in READER
+    and "onChromeVisibilityChange: { chromeVisible = $0 }" in READER
+    and ".opacity(chromeVisible || expanded ? 1 : 0)" in READER,
+    "photo reading surface must stay compact until the user expands it",
 )
 require(
     "onOpenComments" in READER
