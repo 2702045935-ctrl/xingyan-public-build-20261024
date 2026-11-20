@@ -254,7 +254,7 @@ final class NativeChatRowCell: UITableViewCell {
             configuration.musicListening ? "1" : "0",
             configuration.moodIcon
         ].joined(separator: "\u{1E}")
-        if avatarSignature != nextAvatarSignature || !avatarView.hasVisibleImage {
+        if avatarSignature != nextAvatarSignature {
             avatarSignature = nextAvatarSignature
             avatarView.configure(paths: configuration.avatarPaths,
                                  chatId: configuration.chatId,
@@ -565,6 +565,7 @@ private final class NativeChatAvatarView: UIView {
     private let tileContainer = UIView()
     private let tileViews = (0..<4).map { _ in UIImageView() }
     private var tilePaths = Array(repeating: "", count: 4)
+    private var requestedPaths = Array(repeating: "", count: 4)
     private let moodLabel = UILabel()
     private let onlineDot = UIView()
     private let musicRing = CAShapeLayer()
@@ -572,6 +573,7 @@ private final class NativeChatAvatarView: UIView {
     private let musicNote = UIImageView()
     private var token = UUID()
     private var listening = false
+    private var sourceSignature = ""
 
     var hasVisibleImage: Bool {
         tileViews.contains { !$0.isHidden && $0.image != nil }
@@ -673,6 +675,8 @@ private final class NativeChatAvatarView: UIView {
 
     func invalidate() {
         token = UUID()
+        sourceSignature = ""
+        requestedPaths = Array(repeating: "", count: 4)
         stopMusicOrbit()
     }
 
@@ -683,11 +687,22 @@ private final class NativeChatAvatarView: UIView {
                    online: Bool,
                    listening: Bool,
                    mood: String) {
-        token = UUID()
-        let requestToken = token
         let shown = group ? Array(paths.prefix(4)) : Array(paths.prefix(1))
-        apply(paths: shown)
-        if group,
+        let nextSourceSignature = [
+            shown.joined(separator: "\u{1F}"),
+            chatId,
+            memberIds.prefix(4).joined(separator: "\u{1F}"),
+            group ? "1" : "0"
+        ].joined(separator: "\u{1E}")
+        let sourceChanged = nextSourceSignature != sourceSignature
+        if sourceChanged {
+            sourceSignature = nextSourceSignature
+            token = UUID()
+            apply(paths: shown)
+        }
+        let requestToken = token
+        if sourceChanged,
+           group,
            !chatId.hasPrefix("stress-chat-"),
            shown.filter({ !$0.isEmpty }).count < max(1, min(4, memberIds.count)) {
             NativeGroupAvatarCache.shared.paths(chatId: chatId, memberIds: memberIds) { [weak self] resolved in
@@ -742,13 +757,24 @@ private final class NativeChatAvatarView: UIView {
             imageView.isHidden = !visible
             if changed || path.isEmpty {
                 tilePaths[index] = cacheKey
+                requestedPaths[index] = ""
                 imageView.image = nil
                 imageView.backgroundColor = UIColor.tertiarySystemFill
             }
             guard visible, !path.isEmpty else { continue }
+            if tilePaths[index] == cacheKey,
+               imageView.image != nil || requestedPaths[index] == cacheKey {
+                continue
+            }
+            requestedPaths[index] = cacheKey
             load(path: path, cacheKey: cacheKey) { [weak self, weak imageView] image in
                 guard let self, self.token == requestToken, let imageView else { return }
-                imageView.image = image
+                if self.requestedPaths[index] == cacheKey {
+                    self.requestedPaths[index] = ""
+                }
+                if let image {
+                    imageView.image = image
+                }
             }
         }
     }

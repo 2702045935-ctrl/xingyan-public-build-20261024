@@ -19,10 +19,22 @@ require(
     "cell reuse must invalidate requests without clearing visible avatars",
 )
 require(
+    "private var sourceSignature" in SOURCE
+    and "let sourceChanged = nextSourceSignature != sourceSignature" in SOURCE
+    and "if sourceChanged {\n            sourceSignature = nextSourceSignature\n            token = UUID()" in SOURCE,
+    "presence and music updates must not replace the avatar request token",
+)
+require(
     "private var tilePaths" in SOURCE
     and "let changed = tilePaths[index] != cacheKey" in SOURCE
     and "if changed || path.isEmpty" in SOURCE,
     "same-path avatars must keep their loaded image",
+)
+require(
+    "private var requestedPaths" in SOURCE
+    and "requestedPaths[index] == cacheKey" in SOURCE
+    and "requestedPaths[index] = cacheKey" in SOURCE,
+    "an avatar already loading must not be requested or cleared repeatedly",
 )
 require(
     "guard let self, self.token == requestToken" in SOURCE,
