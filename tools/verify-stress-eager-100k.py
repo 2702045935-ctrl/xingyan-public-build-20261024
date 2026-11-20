@@ -26,6 +26,12 @@ require(
     "stress harness must expose an explicit eager materialisation switch",
 )
 require(
+    'profile == "messages-100000-eager"' in CONFIG
+    and "if eagerMessages100K { return true }" in CONFIG
+    and "if eagerMessages100K { return false }" in CONFIG,
+    "the one-variable 100k eager profile must enable eager materialisation and avoid racing auto-open",
+)
+require(
     "StressTestConfiguration.eagerMessageMaterialization && all" in FIXTURE
     and "? size" in FIXTURE,
     "eager mode must materialise the complete fixture range rather than one page",
