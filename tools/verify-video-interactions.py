@@ -6,6 +6,8 @@ ROOT = Path(__file__).resolve().parents[1]
 FEED = (ROOT / "Sources" / "FeedView.swift").read_text(encoding="utf-8")
 PLAYER = (ROOT / "Sources" / "FeedPlayerView.swift").read_text(encoding="utf-8")
 WORKS = (ROOT / "Sources" / "MiscPages.swift").read_text(encoding="utf-8")
+MEDIA = (ROOT / "Sources" / "ChatMediaBubbles.swift").read_text(encoding="utf-8")
+PIP = (ROOT / "Sources" / "PiPPlayer.swift").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
 )
@@ -49,6 +51,12 @@ require(
 require(
     "python3 tools/verify-video-interactions.py" in WORKFLOW,
     "video interaction regression must run in the iOS gate",
+)
+require(
+    "func reset()" in PIP
+    and "guard layer?.player?.currentItem?.status == .readyToPlay else { return }" in PIP
+    and "pip.reset()" in MEDIA,
+    "chat video PiP must never open before a frame is ready and must stop on dismissal",
 )
 
 print("video-interactions: passed")

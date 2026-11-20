@@ -128,8 +128,8 @@
     },
     {
       "path": "Sources/VideoPlaybackKernel.swift",
-      "size": 22467,
-      "sha256": "a7ca22e133de75cad81568794a612898a47c78ac4fa070496d265477215804b9"
+      "size": 23142,
+      "sha256": "512c47fd8564a42bddf5260ee114b1aeb3c56cc4130b4f59cebd0b4690d66b0b"
     },
     {
       "path": "Sources/SystemMusicKernel.swift",

@@ -1354,6 +1354,11 @@ struct MomentsView: View {
     @State private var solid = false
     @State private var momentsScrollActive = false
     @State private var timelineVisibleDay = ""
+    @State private var showTimelineDatePicker = false
+    @State private var timelineDateDraft = Date()
+    @State private var selectedTimelineDate: Date? = nil
+    @State private var timelineDateLoading = false
+    @State private var timelineDateLoadError = ""
     @AppStorage("moments.timelineMode") private var timelineModeRaw = "relative"
     @State private var moments: [Moment] = []
     @State private var stressLoadedMoments: [Moment] = []
@@ -1679,6 +1684,9 @@ struct MomentsView: View {
                                     set: { if !$0 { momentVideo = nil } })) {
             if let u = momentVideo { VideoPlayerSheet(url: u) }
         }
+        .sheet(isPresented: $showTimelineDatePicker) {
+            timelineDatePickerSheet
+        }
         .sheet(item: $commentsSheet) { moment in
             MomentCommentsSheet(moment: moment) {
                 Task { await reload() }
@@ -1696,6 +1704,8 @@ struct MomentsView: View {
             solid = false
             momentsScrollActive = false
             timelineVisibleDay = ""
+            timelineDateLoading = false
+            timelineDateLoadError = ""
             coverOverride = UserDefaults.standard.string(forKey: coverOverrideKey) ?? ""
             if !coverOverride.isEmpty, !coverOverride.hasPrefix("local-"),
                coverOverride != (owner?.momentCover ?? "") {
@@ -2063,6 +2073,9 @@ struct MomentsView: View {
 
     private func timelineLabel(_ s: String?) -> String {
         guard let d = TimeFmt.date(s) else { return "" }
+        if selectedTimelineDate != nil {
+            return Self.yearMonthDayFormatter.string(from: d)
+        }
         switch timelineMode {
         case .relative:
             return dayLabel(s)
@@ -2151,9 +2164,15 @@ struct MomentsView: View {
     }
 
     private var displayedMoments: [Moment] {
-        MomentStressFixture.isActive
+        let source = MomentStressFixture.isActive
             ? stressLoadedMoments
             : moments
+        guard let selectedTimelineDate else { return source }
+        let calendar = Calendar.current
+        return source.filter { moment in
+            guard let date = TimeFmt.date(moment.createdAt) else { return false }
+            return calendar.isDate(date, inSameDayAs: selectedTimelineDate)
+        }
     }
 
     private var momentList: some View {
@@ -2183,6 +2202,9 @@ struct MomentsView: View {
             }
 
             let source = displayedMoments
+            if source.isEmpty, let selectedTimelineDate {
+                timelineDateEmptyState(selectedTimelineDate)
+            }
             ForEach(Array(source.enumerated()), id: \.element.id) { index, moment in
                 let day = timelineLabel(moment.createdAt)
                 let previous = index > 0
@@ -2203,7 +2225,7 @@ struct MomentsView: View {
                     }
             }
 
-            if hasMoreMoments {
+            if hasMoreMoments && selectedTimelineDate == nil {
                 Text(loadingMore ? "正在加载…" : " ")
                     .font(pf(14))
                     .foregroundColor(C.subLabel)
@@ -2212,7 +2234,7 @@ struct MomentsView: View {
                     .onAppear {
                         Task { await loadMoreMoments() }
                     }
-            } else if momentTotal > 0 {
+            } else if momentTotal > 0 && selectedTimelineDate == nil {
                 Text(Tr("没有更多了"))
                     .font(pf(13))
                     .foregroundColor(C.subLabel)
@@ -2243,18 +2265,21 @@ struct MomentsView: View {
             Spacer(minLength: 0)
             HStack(spacing: 7) {
                 Spacer(minLength: 0)
-                Menu {
-                    Picker(Tr("时间轴"), selection: $timelineModeRaw) {
-                        ForEach(MomentTimelineMode.allCases, id: \.rawValue) { mode in
-                            Text(mode.title).tag(mode.rawValue)
-                        }
-                    }
+                Button {
+                    timelineDateDraft = selectedTimelineDate
+                        ?? TimeFmt.date(displayedMoments.first?.createdAt)
+                        ?? Date()
+                    showTimelineDatePicker = true
                 } label: {
                     HStack(spacing: 5) {
-                        Text(timelineVisibleDay)
+                        if selectedTimelineDate != nil {
+                            Image(systemName: "calendar.badge.checkmark")
+                                .font(.system(size: 10.5, weight: .semibold))
+                        }
+                        Text(timelineCapsuleTitle)
                             .lineLimit(1)
                             .minimumScaleFactor(0.82)
-                        Image(systemName: "chevron.up.chevron.down")
+                        Image(systemName: "chevron.down")
                             .font(.system(size: 8.5, weight: .semibold))
                             .opacity(0.62)
                     }
@@ -2286,19 +2311,247 @@ struct MomentsView: View {
                 .frame(width: 8, height: 58)
             }
             .padding(.trailing, 5)
-            .opacity(momentsScrollActive && !timelineVisibleDay.isEmpty ? 1 : 0)
+            .opacity((momentsScrollActive || selectedTimelineDate != nil)
+                     && !timelineCapsuleTitle.isEmpty ? 1 : 0)
             .scaleEffect(x: momentsScrollActive ? 1 : 0.86,
                          y: momentsScrollActive ? 1 : 0.86,
                          anchor: .trailing)
             .animation(.easeOut(duration: momentsScrollActive ? 0.12 : 0.18),
                        value: momentsScrollActive)
-            .allowsHitTesting(momentsScrollActive && !timelineVisibleDay.isEmpty)
+            .allowsHitTesting((momentsScrollActive || selectedTimelineDate != nil)
+                              && !timelineCapsuleTitle.isEmpty)
             .accessibilityLabel(Tr("时间轴显示方式"))
             Spacer(minLength: 0)
         }
         .padding(.top, L.safeTop + L.navH + 38)
         .padding(.bottom, max(42, L.safeBottom + 20))
         .zIndex(24)
+    }
+
+    private var timelineCapsuleTitle: String {
+        if let selectedTimelineDate {
+            return Self.yearMonthDayFormatter.string(from: selectedTimelineDate)
+        }
+        return timelineVisibleDay
+    }
+
+    private var timelineDatePickerSheet: some View {
+        NavigationStack {
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 20) {
+                    Picker(Tr("时间轴显示方式"), selection: $timelineModeRaw) {
+                        ForEach(MomentTimelineMode.allCases, id: \.rawValue) { mode in
+                            Text(mode.title).tag(mode.rawValue)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
+                    DatePicker(
+                        Tr("选择日期"),
+                        selection: $timelineDateDraft,
+                        in: timelineDateMinimum...Date(),
+                        displayedComponents: [.date]
+                    )
+                    .datePickerStyle(.graphical)
+                    .labelsHidden()
+                    .tint(C.green)
+                    .padding(10)
+                    .background(.regularMaterial,
+                                in: RoundedRectangle(cornerRadius: 20,
+                                                     style: .continuous))
+
+                    if !timelineAvailableDays.isEmpty {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text(Tr("最近有动态"))
+                                .font(pf(13, .semibold))
+                                .foregroundStyle(C.subLabel)
+
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    ForEach(timelineAvailableDays.prefix(12), id: \.self) { day in
+                                        Button {
+                                            timelineDateDraft = day
+                                        } label: {
+                                            Text(Self.monthDayFormatter.string(from: day))
+                                                .font(pf(12.5, .semibold))
+                                                .foregroundStyle(
+                                                    Calendar.current.isDate(
+                                                        day,
+                                                        inSameDayAs: timelineDateDraft
+                                                    ) ? C.cardBg : C.label
+                                                )
+                                                .padding(.horizontal, 12)
+                                                .frame(height: 32)
+                                                .background(
+                                                    Calendar.current.isDate(
+                                                        day,
+                                                        inSameDayAs: timelineDateDraft
+                                                    ) ? C.label : C.fieldBg,
+                                                    in: Capsule()
+                                                )
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if timelineDateLoading {
+                        HStack(spacing: 9) {
+                            ProgressView()
+                            Text(Tr("正在查找这一天的动态…"))
+                                .font(pf(13))
+                                .foregroundStyle(C.subLabel)
+                        }
+                    } else if !timelineDateLoadError.isEmpty {
+                        Text(timelineDateLoadError)
+                            .font(pf(13))
+                            .foregroundStyle(C.red)
+                    }
+
+                    if selectedTimelineDate != nil {
+                        Button {
+                            clearTimelineDateFilter()
+                        } label: {
+                            Text(Tr("显示全部动态"))
+                                .font(pf(15, .semibold))
+                                .foregroundStyle(C.label)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 48)
+                                .background(.ultraThinMaterial,
+                                            in: RoundedRectangle(cornerRadius: 15,
+                                                                 style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                .padding(.bottom, max(28, L.safeBottom))
+            }
+            .background(C.pageBg.ignoresSafeArea())
+            .navigationTitle(Tr("时间轴"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(Tr("取消")) {
+                        showTimelineDatePicker = false
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(Tr("查看这一天")) {
+                        applyTimelineDate(timelineDateDraft)
+                    }
+                    .fontWeight(.semibold)
+                }
+            }
+        }
+        .presentationDetents([.large])
+        .presentationDragIndicator(.visible)
+    }
+
+    private var timelineDateMinimum: Date {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.locale = Locale(identifier: "zh_CN")
+        let loaded = (MomentStressFixture.isActive ? stressLoadedMoments : moments)
+            .compactMap { TimeFmt.date($0.createdAt) }
+            .min()
+        return loaded
+            ?? calendar.date(byAdding: .year, value: -10, to: Date())
+            ?? Date(timeIntervalSince1970: 946_684_800)
+    }
+
+    private var timelineAvailableDays: [Date] {
+        let calendar = Calendar.current
+        var seen = Set<Date>()
+        let source = MomentStressFixture.isActive ? stressLoadedMoments : moments
+        return source.compactMap { moment -> Date? in
+            guard let date = TimeFmt.date(moment.createdAt) else { return nil }
+            let day = calendar.startOfDay(for: date)
+            return seen.insert(day).inserted ? day : nil
+        }
+    }
+
+    private func timelineDateEmptyState(_ date: Date) -> some View {
+        VStack(spacing: 10) {
+            Image(systemName: timelineDateLoading
+                  ? "clock.arrow.circlepath" : "calendar.badge.exclamationmark")
+                .font(.system(size: 29, weight: .light))
+                .foregroundStyle(C.subLabel.opacity(0.86))
+            Text(Self.yearMonthDayFormatter.string(from: date))
+                .font(pf(15, .semibold))
+                .foregroundStyle(C.label)
+            Text(timelineDateLoading
+                 ? Tr("正在查找这一天的动态…")
+                 : (timelineDateLoadError.isEmpty
+                    ? Tr("这一天还没有动态")
+                    : timelineDateLoadError))
+                .font(pf(13))
+                .foregroundStyle(timelineDateLoadError.isEmpty
+                                 ? C.subLabel : C.red)
+                .multilineTextAlignment(.center)
+            Button {
+                clearTimelineDateFilter()
+            } label: {
+                Text(Tr("显示全部动态"))
+                    .font(pf(13.5, .semibold))
+                    .foregroundStyle(C.label)
+                    .padding(.horizontal, 14)
+                    .frame(height: 34)
+                    .background(C.fieldBg, in: Capsule())
+            }
+            .buttonStyle(.plain)
+        }
+        .frame(maxWidth: .infinity, minHeight: 250)
+        .padding(.horizontal, 30)
+    }
+
+    private func applyTimelineDate(_ date: Date) {
+        let day = Calendar.current.startOfDay(for: date)
+        selectedTimelineDate = day
+        timelineDateDraft = day
+        timelineVisibleDay = Self.yearMonthDayFormatter.string(from: day)
+        timelineDateLoadError = ""
+        showTimelineDatePicker = false
+        timelineDateLoading = true
+        Task {
+            await loadMoments(through: day)
+            guard selectedTimelineDate == day else { return }
+            timelineDateLoading = false
+        }
+    }
+
+    private func clearTimelineDateFilter() {
+        selectedTimelineDate = nil
+        timelineDateLoadError = ""
+        timelineDateLoading = false
+        showTimelineDatePicker = false
+    }
+
+    private func loadMoments(through day: Date) async {
+        if MomentStressFixture.isActive {
+            return
+        }
+        let calendar = Calendar.current
+        func hasDay() -> Bool {
+            moments.contains {
+                guard let date = TimeFmt.date($0.createdAt) else { return false }
+                return calendar.isDate(date, inSameDayAs: day)
+            }
+        }
+        var attempts = 0
+        while hasMoreMoments, !hasDay(), attempts < 24 {
+            let before = moments.count
+            await loadMoreMoments()
+            if moments.count == before {
+                if hasMoreMoments {
+                    timelineDateLoadError = Tr("这一天的动态暂时没有加载出来")
+                }
+                break
+            }
+            attempts += 1
+        }
     }
 
     private var navBar: some View {

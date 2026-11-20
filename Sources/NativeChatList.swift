@@ -11,10 +11,43 @@ private enum NativeChatCellIdentifier {
     static let hostingRow = "NativeChatHostingCell"
 }
 
-private func nativeChatSwipeText(_ zh: String, _ en: String, _ ru: String) -> String {
+func nativeChatSwipeText(_ zh: String, _ en: String, _ ru: String) -> String {
     if Lang.isRussian { return ru }
     if Lang.isEnglish { return en }
     return zh
+}
+
+func presentNativeChatDeleteConfirmation(from view: UIView?,
+                                         onConfirm: @escaping () -> Void) {
+    guard let view,
+          var presenter = view.window?.rootViewController else { return }
+    while let presented = presenter.presentedViewController {
+        presenter = presented
+    }
+    let alert = UIAlertController(
+        title: nativeChatSwipeText(
+            "删除这个会话？",
+            "Delete this conversation?",
+            "Удалить этот чат?"
+        ),
+        message: nativeChatSwipeText(
+            "删除后，这个会话会从你的列表中移除。",
+            "This conversation will be removed from your chat list.",
+            "Этот чат будет удален из вашего списка."
+        ),
+        preferredStyle: .alert
+    )
+    alert.addAction(UIAlertAction(
+        title: nativeChatSwipeText("取消", "Cancel", "Отмена"),
+        style: .cancel
+    ))
+    alert.addAction(UIAlertAction(
+        title: nativeChatSwipeText("确认删除", "Delete", "Удалить"),
+        style: .destructive
+    ) { _ in
+        onConfirm()
+    })
+    presenter.present(alert, animated: true)
 }
 
 /// 会话页使用 UITableView 的系统 edit action。UITableView 的滑动识别比
@@ -489,8 +522,10 @@ where Item.ID: Hashable {
             let deleteAction = UIContextualAction(
                 style: .destructive,
                 title: nativeChatSwipeText("删除", "Delete", "Удалить")
-            ) { _, _, complete in
-                configuration.onDelete()
+            ) { [weak tableView] _, _, complete in
+                presentNativeChatDeleteConfirmation(from: tableView) {
+                    configuration.onDelete()
+                }
                 complete(true)
             }
             deleteAction.image = UIImage(systemName: "trash.fill")

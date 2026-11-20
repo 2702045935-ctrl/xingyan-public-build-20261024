@@ -323,6 +323,9 @@ final class PlayerPool: ObservableObject {
 
     private func sourcePlan(_ item: FeedItem) -> [Source] {
         var out: [Source] = []
+        let videoURL = item.video.flatMap {
+            $0.isEmpty ? nil : API.shared.assetURL($0)
+        }
         if let video = item.video, !video.isEmpty,
            let remote = API.shared.assetURL(video) {
             if let local = LocalStore.localURL(remote.path),
@@ -330,18 +333,31 @@ final class PlayerPool: ObservableObject {
                 out.append(Source(url: local, kind: .local))
             }
         }
-        if let hls = item.hls, !hls.isEmpty, let url = API.shared.assetURL(hls) {
-            out.append(Source(url: url, kind: .hls))
+        let hlsURL = item.hls.flatMap {
+            $0.isEmpty ? nil : API.shared.assetURL($0)
         }
-        if let video = item.video, !video.isEmpty, let url = API.shared.assetURL(video) {
-            if !out.contains(where: { $0.url == url }) {
-                out.append(Source(url: url, kind: .mp4))
-            }
+        /* 刚发布的作品优先原片。HLS 是后台异步生成的，立刻先挂 HLS
+           会有一小段目录/分片还没齐的空白窗口；原片反而能立即出首帧。 */
+        let preferOriginal = item.mine == true && isRecentUpload(item.createdAt)
+        if preferOriginal, let videoURL {
+            out.append(Source(url: videoURL, kind: .mp4))
+        }
+        if let hlsURL {
+            out.append(Source(url: hlsURL, kind: .hls))
+        }
+        if !preferOriginal, let videoURL,
+           !out.contains(where: { $0.url == videoURL }) {
+            out.append(Source(url: videoURL, kind: .mp4))
         }
         if out.isEmpty, let url = API.shared.assetURL(item.playPath) {
             out.append(Source(url: url, kind: url.pathExtension == "m3u8" ? .hls : .mp4))
         }
         return out
+    }
+
+    private func isRecentUpload(_ value: String?) -> Bool {
+        guard let date = TimeFmt.date(value) else { return false }
+        return Date().timeIntervalSince(date) < 30 * 60
     }
 
     private func installSource(_ entry: Entry, index: Int, seekTo: TimeInterval) {

@@ -38,6 +38,14 @@ require(
     "native swipe actions must keep distinct native colors without a pin action",
 )
 require(
+    "func presentNativeChatDeleteConfirmation(from view: UIView?" in LIST
+    and "UIAlertController(" in LIST
+    and 'style: .destructive' in LIST
+    and "presentNativeChatDeleteConfirmation(from: tableView)" in LIST
+    and "presentNativeChatDeleteConfirmation(from: self)" in ROW,
+    "delete must require a second native destructive confirmation for swipe and accessibility",
+)
+require(
     "foreground.addGestureRecognizer(pan)" not in ROW,
     "the custom cell-level horizontal swipe must be removed",
 )

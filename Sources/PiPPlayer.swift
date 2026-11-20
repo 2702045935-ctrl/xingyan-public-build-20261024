@@ -33,6 +33,7 @@ final class PiPBox: NSObject, ObservableObject, AVPictureInPictureControllerDele
         guard let c = pip else { return }
         if c.isPictureInPictureActive { c.stopPictureInPicture(); return }
         guard c.isPictureInPicturePossible else { return }
+        guard layer?.player?.currentItem?.status == .readyToPlay else { return }
 
         let s = AVAudioSession.sharedInstance()
         try? s.setCategory(.playback, mode: .moviePlayback, options: [.mixWithOthers])
@@ -41,6 +42,21 @@ final class PiPBox: NSObject, ObservableObject, AVPictureInPictureControllerDele
     }
 
     func stop() { pip?.stopPictureInPicture() }
+
+    func reset() {
+        if let c = pip, c.isPictureInPictureActive {
+            c.stopPictureInPicture()
+        }
+        watch?.invalidate()
+        watch = nil
+        pip?.delegate = nil
+        pip = nil
+        layer = nil
+        DispatchQueue.main.async {
+            self.active = false
+            self.possible = false
+        }
+    }
 
     func pictureInPictureControllerDidStartPictureInPicture(_ c: AVPictureInPictureController) {
         DispatchQueue.main.async { self.active = true }

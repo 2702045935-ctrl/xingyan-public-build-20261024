@@ -521,8 +521,10 @@ final class NativeChatRowCell: UITableViewCell {
                 return true
             },
             UIAccessibilityCustomAction(name: deleteTitle) { [weak self] _ in
-                guard let action = self?.configuration?.onDelete else { return false }
-                action()
+                guard let self, let action = self.configuration?.onDelete else { return false }
+                presentNativeChatDeleteConfirmation(from: self) {
+                    action()
+                }
                 return true
             }
         ]

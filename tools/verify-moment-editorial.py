@@ -51,9 +51,18 @@ require(
 require(
     "private var momentTimeline" in DISCOVER
     and "timelineVisibleDay" in DISCOVER
-    and ".opacity(momentsScrollActive && !timelineVisibleDay.isEmpty ? 1 : 0)" in DISCOVER
-    and ".allowsHitTesting(false)" in DISCOVER,
-    "moments must show a non-interactive native date timeline only while scrolling",
+    and "showTimelineDatePicker" in DISCOVER
+    and "DatePicker(" in DISCOVER
+    and ".datePickerStyle(.graphical)" in DISCOVER
+    and "selectedTimelineDate" in DISCOVER,
+    "moments must expose an interactive native calendar that selects a specific day",
+)
+require(
+    "private func applyTimelineDate(_ date: Date)" in DISCOVER
+    and "private func clearTimelineDateFilter()" in DISCOVER
+    and "private func loadMoments(through day: Date) async" in DISCOVER
+    and "calendar.isDate(date, inSameDayAs: day)" in DISCOVER,
+    "selecting a moment date must filter the feed and fetch older pages when needed",
 )
 require(
     'formatter.dateFormat = "EEE"' in DISCOVER

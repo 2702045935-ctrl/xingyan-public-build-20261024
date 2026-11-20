@@ -4,6 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 VIEW = (ROOT / "Sources" / "ContactsView.swift").read_text(encoding="utf-8")
+PHONE = (ROOT / "Sources" / "PhoneContactsView.swift").read_text(encoding="utf-8")
 
 
 def require(condition: bool, message: str) -> None:
@@ -35,6 +36,20 @@ require(
     ".frame(height: max(72, L.ctRowH))" in VIEW
     and ".padding(.leading, 76)" in VIEW,
     "alphabet contact rows and dividers must share the 48pt avatar geometry",
+)
+require(
+    "private var phoneSearchBar" in PHONE
+    and 'TextField(Tr("搜索姓名或号码"), text: $keyword)' in PHONE
+    and ".frame(height: 64)" in PHONE
+    and ".padding(.leading, 74)" in PHONE,
+    "phone contacts must use a WhatsApp-style searchable alphabet list",
+)
+require(
+    "private var phonePermissionCard" in PHONE
+    and "private func phoneEmptyState" in PHONE
+    and "private func phoneAvatarColor" in PHONE
+    and 'Image(systemName: "person.crop.circle.badge.plus")' in PHONE,
+    "phone contacts must use native permission, empty and invite states",
 )
 
 print("contacts-whatsapp: passed")

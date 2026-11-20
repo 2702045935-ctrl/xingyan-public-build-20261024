@@ -58,11 +58,12 @@ require(
     "the playback kernel needs bounded adaptive hot-player and look-ahead limits",
 )
 require(
-    "out.append(Source(url: url, kind: .hls))" in KERNEL_IOS
-    and "out.append(Source(url: url, kind: .mp4))" in KERNEL_IOS
-    and KERNEL_IOS.index("out.append(Source(url: url, kind: .hls))")
-    < KERNEL_IOS.index("out.append(Source(url: url, kind: .mp4))"),
-    "HLS must be selected before progressive MP4 fallback",
+    "let preferOriginal = item.mine == true && isRecentUpload(item.createdAt)" in KERNEL_IOS
+    and "if preferOriginal, let videoURL" in KERNEL_IOS
+    and "if let hlsURL" in KERNEL_IOS
+    and "if !preferOriginal, let videoURL" in KERNEL_IOS
+    and KERNEL_IOS.index("if let hlsURL") < KERNEL_IOS.index("if !preferOriginal, let videoURL"),
+    "newly published owned videos must play MP4 first while normal videos keep HLS first",
 )
 require(
     "entry.player.preroll(atRate: 1.0)" in KERNEL_IOS

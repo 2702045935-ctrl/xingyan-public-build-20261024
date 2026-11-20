@@ -458,6 +458,7 @@ struct VideoPlayerSheet: View {
             if let o = timeObs, let p = player { p.removeTimeObserver(o) }
             timeObs = nil
             hideTask?.cancel()
+            pip.reset()
             player?.pause()
             player = nil
         }
