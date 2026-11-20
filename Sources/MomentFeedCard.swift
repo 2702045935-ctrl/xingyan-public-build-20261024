@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import AVFoundation
 
 /// 生活圈主页的单列编辑流。只使用不透明语义底色和细分割线，
 /// 不再叠加实时玻璃或阴影，避免长列表滚动时持续触发合成开销。
@@ -200,28 +201,22 @@ struct MomentFeedCard: View {
         let width = mediaWidth
         let ratio = CGFloat(max(1, moment.videoH ?? 4)) / CGFloat(max(1, moment.videoW ?? 5))
         let height = min(430, max(width * 0.62, width * ratio))
+        let raw = moment.video ?? ""
+        let full = raw.hasPrefix("http") ? raw : API.shared.base + raw
+        let videoURL = URL(string: full)
 
         return Button {
-            let raw = moment.video ?? ""
-            let full = raw.hasPrefix("http") ? raw : API.shared.base + raw
-            if let url = URL(string: full) { onOpenVideo(url) }
+            if let videoURL { onOpenVideo(videoURL) }
         } label: {
             ZStack {
-                if let cover = moment.videoCover, !cover.isEmpty {
-                    RemoteImage(path: cover, mode: .fill, maxSide: 1440)
+                if let videoURL {
+                    MomentAutoplayVideo(
+                        url: videoURL,
+                        cover: moment.videoCover ?? ""
+                    )
                 } else {
                     C.searchBg
                 }
-
-                Circle()
-                    .fill(Color.black.opacity(0.5))
-                    .frame(width: 54, height: 54)
-                    .overlay {
-                        Image(systemName: "play.fill")
-                            .font(.system(size: 21, weight: .semibold))
-                            .foregroundColor(.white)
-                            .offset(x: 1.5)
-                    }
 
                 if (moment.videoSeconds ?? 0) > 0 {
                     VStack {
@@ -664,6 +659,105 @@ struct MomentLikesPresenter: ViewModifier {
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.hidden)
         }
+    }
+}
+
+private struct MomentAutoplayVideo: View {
+    let url: URL
+    let cover: String
+
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var player: AVPlayer?
+    @State private var playing = false
+    @State private var lastFrame = CGRect.zero
+
+    var body: some View {
+        ZStack {
+            if cover.isEmpty {
+                Color.black
+            } else {
+                RemoteImage(path: cover, mode: .fill, maxSide: 1440)
+            }
+
+            if let player {
+                PlayerLayerView(player: player)
+                    .opacity(playing ? 1 : 0)
+            }
+
+            if !playing {
+                Circle()
+                    .fill(Color.black.opacity(0.46))
+                    .frame(width: 50, height: 50)
+                    .overlay {
+                        Image(systemName: "play.fill")
+                            .font(.system(size: 19, weight: .semibold))
+                            .foregroundColor(.white)
+                            .offset(x: 1.2)
+                    }
+                    .allowsHitTesting(false)
+            }
+        }
+        .background {
+            GeometryReader { proxy in
+                Color.clear
+                    .onAppear {
+                        evaluate(proxy.frame(in: .global))
+                    }
+                    .onChange(of: proxy.frame(in: .global)) { frame in
+                        evaluate(frame)
+                    }
+            }
+        }
+        .onAppear {
+            preparePlayer()
+            evaluate(lastFrame)
+        }
+        .onDisappear {
+            player?.pause()
+            playing = false
+        }
+        .onChange(of: scenePhase) { _ in
+            evaluate(lastFrame)
+        }
+    }
+
+    private func preparePlayer() {
+        guard player == nil else { return }
+        let next = AVPlayer(url: url)
+        next.isMuted = true
+        next.volume = 0
+        next.actionAtItemEnd = .pause
+        player = next
+    }
+
+    private func evaluate(_ frame: CGRect) {
+        guard !frame.isEmpty else { return }
+        lastFrame = frame
+
+        let screen = UIScreen.main.bounds
+        let clipped = frame.intersection(screen)
+        let visible = clipped.isNull || frame.height <= 0
+            ? 0
+            : max(0, min(1, clipped.height / frame.height))
+        let safeCenter = frame.midY > L.safeTop + L.navH + 18
+            && frame.midY < screen.height - max(20, L.safeBottom)
+        let shouldPlay = scenePhase == .active && visible >= 0.72 && safeCenter
+
+        guard shouldPlay else {
+            player?.pause()
+            playing = false
+            return
+        }
+
+        preparePlayer()
+        if let item = player?.currentItem,
+           item.duration.isValid,
+           !item.duration.isIndefinite,
+           item.currentTime() >= item.duration {
+            player?.seek(to: .zero)
+        }
+        player?.play()
+        playing = true
     }
 }
 

@@ -129,6 +129,7 @@ jobs:
           python3 tools/verify-moment-editorial.py
           python3 tools/verify-moment-media-grid.py
           python3 tools/verify-moment-photo-reader.py
+          python3 tools/verify-moment-video-autoplay.py
           python3 tools/verify-moment-own-publish.py
           python3 tools/verify-me-current.py
           python3 tools/verify-me-native.py
