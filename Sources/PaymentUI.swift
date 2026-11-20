@@ -271,6 +271,240 @@ struct StarPayHologram: View {
     }
 }
 
+struct StarPayGoldCardSurface: View {
+    var radius: CGFloat = 28
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: radius, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(hex: 0x4A3210),
+                            Color(hex: 0x160E03)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .offset(y: 4)
+
+            RoundedRectangle(cornerRadius: radius, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        stops: [
+                            .init(color: Color(hex: 0x7A571A), location: 0),
+                            .init(color: Color(hex: 0xD9AD47), location: 0.24),
+                            .init(color: Color(hex: 0x8A631D), location: 0.54),
+                            .init(color: Color(hex: 0xF2D77E), location: 0.82),
+                            .init(color: Color(hex: 0x5A3D0D), location: 1)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+
+            StarPayGoldBrushedMetal()
+                .clipShape(RoundedRectangle(cornerRadius: radius,
+                                             style: .continuous))
+                .opacity(0.68)
+
+            RoundedRectangle(cornerRadius: radius, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        stops: [
+                            .init(color: .white.opacity(0.30), location: 0),
+                            .init(color: .clear, location: 0.18),
+                            .init(color: .white.opacity(0.07), location: 0.44),
+                            .init(color: .clear, location: 0.62),
+                            .init(color: .white.opacity(0.14), location: 1)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .blendMode(.screen)
+
+            RadialGradient(
+                colors: [.white.opacity(0.22), .clear],
+                center: UnitPoint(x: 0.78, y: 0.12),
+                startRadius: 0,
+                endRadius: 180
+            )
+            .blendMode(.screen)
+
+            RoundedRectangle(cornerRadius: radius, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            .white.opacity(0.52),
+                            .white.opacity(0.10),
+                            Color(hex: 0x2E1D06).opacity(0.90),
+                            .white.opacity(0.24)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1.05
+                )
+
+            RoundedRectangle(cornerRadius: max(1, radius - 1.3),
+                             style: .continuous)
+                .stroke(.white.opacity(0.10), lineWidth: 0.65)
+                .padding(1.3)
+        }
+        .compositingGroup()
+        .shadow(color: .black.opacity(0.36), radius: 24, y: 14)
+        .shadow(color: Color(hex: 0x6D4A12).opacity(0.28), radius: 3, y: 1)
+    }
+}
+
+private struct StarPayGoldBrushedMetal: View {
+    var body: some View {
+        Canvas { context, size in
+            var lines = Path()
+            let spacing: CGFloat = 1.8
+            var y: CGFloat = -size.height
+            while y < size.height * 2 {
+                lines.move(to: CGPoint(x: -size.width * 0.12, y: y))
+                lines.addLine(to: CGPoint(x: size.width * 1.12,
+                                          y: y + size.height * 0.18))
+                y += spacing
+            }
+            context.stroke(
+                lines,
+                with: .linearGradient(
+                    Gradient(colors: [
+                        .clear,
+                        .white.opacity(0.10),
+                        .black.opacity(0.075),
+                        .clear
+                    ]),
+                    startPoint: .zero,
+                    endPoint: CGPoint(x: size.width, y: size.height)
+                ),
+                lineWidth: 0.28
+            )
+        }
+        .blendMode(.overlay)
+        .allowsHitTesting(false)
+    }
+}
+
+struct StarPayGoldCardFace: View {
+    let cardholder: String
+    let last4: String
+    let cumulativeSpend: Double
+    var adminPreview = false
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            StarPayGoldCardSurface(radius: 26)
+
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 10) {
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Color(hex: 0xFFF1B8),
+                                        Color(hex: 0xB8872D)
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(Color(hex: 0x3A2608))
+                    }
+                    .frame(width: 30, height: 30)
+
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("STAR PAY")
+                            .font(pfExact(11.5, .bold))
+                            .tracking(1.8)
+                            .foregroundStyle(Color(hex: 0x211503))
+                        Text("GOLD SIGNATURE")
+                            .font(pfExact(7.5, .bold))
+                            .tracking(1.65)
+                            .foregroundStyle(Color(hex: 0x322006).opacity(0.66))
+                    }
+
+                    Spacer(minLength: 6)
+
+                    if adminPreview {
+                        Text(Tr("管理灰度"))
+                            .font(pf(9, .bold))
+                            .foregroundStyle(Color(hex: 0x2B1B04))
+                            .padding(.horizontal, 8)
+                            .frame(height: 22)
+                            .background(.white.opacity(0.24), in: Capsule())
+                    }
+
+                    Image(systemName: "wave.3.right")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(Color(hex: 0x251604).opacity(0.76))
+                }
+
+                Spacer(minLength: 18)
+
+                HStack(alignment: .center, spacing: 12) {
+                    StarPayChip(width: 39)
+                    StarPayHologram(size: 30)
+                    Spacer()
+                    Text("GOLD")
+                        .font(pfExact(13, .black))
+                        .tracking(2.2)
+                        .foregroundStyle(Color(hex: 0x241503))
+                }
+
+                Spacer(minLength: 16)
+
+                Text("8800  ••••  ••••  \(last4)")
+                    .font(Font(UIFont.monospacedDigitSystemFont(ofSize: 18,
+                                                               weight: .bold)))
+                    .tracking(1.0)
+                    .foregroundStyle(Color(hex: 0x241503))
+                    .shadow(color: .white.opacity(0.18), radius: 0.3, y: -0.5)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+
+                Spacer(minLength: 12)
+
+                HStack(alignment: .bottom) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("CARD HOLDER")
+                            .font(pfExact(7.2, .bold))
+                            .tracking(1.1)
+                            .foregroundStyle(Color(hex: 0x2A1904).opacity(0.54))
+                        Text(cardholder)
+                            .font(pfExact(10.5, .bold))
+                            .tracking(0.65)
+                            .foregroundStyle(Color(hex: 0x241503))
+                            .lineLimit(1)
+                    }
+                    Spacer(minLength: 10)
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("CUMULATIVE SPEND")
+                            .font(pfExact(7.2, .bold))
+                            .tracking(0.9)
+                            .foregroundStyle(Color(hex: 0x2A1904).opacity(0.54))
+                        Text("¥" + moneyFmt(cumulativeSpend))
+                            .font(pfMoney(12.5, .bold))
+                            .foregroundStyle(Color(hex: 0x241503))
+                    }
+                }
+            }
+            .padding(20)
+        }
+        .frame(height: 224)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Tr("星言金卡") + " " + last4)
+    }
+}
+
 struct StarPayAmount: View {
     enum Role {
         case hero, metric, row, detail, sheet
@@ -531,6 +765,12 @@ struct PayOfficialView: View {
     @State private var faceBusy = false
 
     private var balance: Double { app.me?.balance ?? ledger?.balance ?? 0 }
+    private static let goldThreshold = 50_000.0
+    private var cumulativeSpend: Double { max(0, ledger?.expense ?? 0) }
+    private var adminGoldPreview: Bool { app.me?.ops == true }
+    private var goldUnlocked: Bool {
+        adminGoldPreview || cumulativeSpend >= Self.goldThreshold
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -539,6 +779,9 @@ struct PayOfficialView: View {
             ScrollView(showsIndicators: false) {
                 LazyVStack(spacing: 18) {
                     paymentHero
+                    if goldUnlocked {
+                        goldCardSection
+                    }
                     ledgerSummaryStrip
                     quickActions
 
@@ -688,6 +931,63 @@ struct PayOfficialView: View {
         .frame(height: 224)
         .padding(.horizontal, 16)
         .padding(.bottom, 4)
+    }
+
+    private var goldCardSection: some View {
+        VStack(alignment: .leading, spacing: 11) {
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(Tr("星言消费金卡"))
+                        .font(pf(18, .bold))
+                        .foregroundStyle(C.label)
+                    Text("STAR PAY GOLD")
+                        .font(pfExact(8.5, .bold))
+                        .tracking(1.55)
+                        .foregroundStyle(PayVisual.secondaryInk)
+                }
+                Spacer()
+                if adminGoldPreview {
+                    Text(Tr("管理灰度"))
+                        .font(pf(10, .semibold))
+                        .foregroundStyle(PayVisual.secondaryInk)
+                        .padding(.horizontal, 9)
+                        .frame(height: 25)
+                        .background(PayVisual.inset, in: Capsule())
+                }
+            }
+            .padding(.horizontal, 3)
+
+            StarPayGoldCardFace(
+                cardholder: (app.me?.name ?? app.me?.username ?? "STAR PAY")
+                    .uppercased(),
+                last4: XYPay.tail(app.me?.id ?? app.me?.username ?? "xingyan"),
+                cumulativeSpend: cumulativeSpend,
+                adminPreview: adminGoldPreview
+            )
+
+            if adminGoldPreview && cumulativeSpend < Self.goldThreshold {
+                HStack(alignment: .top, spacing: 9) {
+                    Image(systemName: "lock.open.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(PayVisual.gold)
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(Tr("管理灰度预览"))
+                            .font(pf(13, .semibold))
+                            .foregroundStyle(C.label)
+                        Text(Tr("普通用户累计消费满 ¥50,000 后自动解锁。"))
+                            .font(pf(12.5))
+                            .foregroundStyle(PayVisual.secondaryInk)
+                        ProgressView(value: min(1, cumulativeSpend / Self.goldThreshold))
+                            .tint(PayVisual.gold)
+                    }
+                }
+                .padding(14)
+                .background(PayVisual.card,
+                            in: RoundedRectangle(cornerRadius: 14,
+                                                 style: .continuous))
+            }
+        }
+        .padding(.horizontal, 16)
     }
 
     private func toggleBalancePrivacy() {

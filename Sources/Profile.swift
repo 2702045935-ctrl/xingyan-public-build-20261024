@@ -893,66 +893,76 @@ struct AddFriendView: View {
     @State private var target: User?
     @State private var sentTo: Set<String> = []
     @State private var showScan = false
+    @State private var showPhoneContacts = false
+    @State private var showShareInvite = false
+    @State private var searchDebounce: Task<Void, Never>?
 
     var body: some View {
         VStack(spacing: 0) {
             NavBar(title: Tr("添加朋友"), back: { dismiss() })
 
-            ScrollView {
-                VStack(spacing: 0) {
-                    searchRow
-                        .padding(L.searchPad)
+            ScrollView(showsIndicators: false) {
+                LazyVStack(spacing: 18) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(Tr("查找星言用户"))
+                            .font(pf(13, .semibold))
+                            .foregroundStyle(C.subLabel)
+                            .padding(.horizontal, 4)
+                        searchRow
+                        Text(Tr("输入星言号或手机号，确认身份后再发送朋友申请。"))
+                            .font(pf(12.5))
+                            .foregroundStyle(C.subLabel)
+                            .padding(.horizontal, 5)
+                    }
+                    .padding(.horizontal, 16)
 
                     if let errorText = errorText {
                         Text(errorText)
                             .font(pf(14))
-                            .foregroundColor(C.subLabel)
+                            .foregroundColor(C.red)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 16)
-                            .padding(.bottom, 12)
+                            .padding(.horizontal, 20)
                     }
 
                     if searching {
-                        HStack { Spacer(); ProgressView(); Spacer() }
-                            .frame(height: 76).background(C.cardBg)
+                        HStack(spacing: 10) {
+                            ProgressView()
+                            Text(Tr("正在搜索…"))
+                                .font(pf(14))
+                                .foregroundStyle(C.subLabel)
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 108)
                     } else if searched && results.isEmpty {
-                        Text(Tr("未找到相关用户"))
-                            .font(pf(15))
-                            .foregroundColor(C.subLabel)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 30)
-                            .background(C.cardBg)
+                        addFriendEmptyState
                     }
 
                     if !results.isEmpty {
-                        Text(Tr("搜索结果"))
-                            .font(pf(13)).foregroundColor(C.subLabel)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.leading, 16)
-                            .frame(height: 30)
-                            .background(C.pageBg)
-                        ForEach(results) { u in
-                            VStack(spacing: 0) {
-                                HairLine(inset: 72)
-                                resultRow(u)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(Tr("搜索结果"))
+                                .font(pf(13, .semibold))
+                                .foregroundColor(C.subLabel)
+                                .padding(.horizontal, 4)
+
+                            addFriendSurface {
+                                VStack(spacing: 0) {
+                                    ForEach(Array(results.enumerated()),
+                                            id: \.element.id) { index, user in
+                                        resultRow(user)
+                                        if index < results.count - 1 {
+                                            HairLine(inset: 78)
+                                        }
+                                    }
+                                }
                             }
-                            .background(C.cardBg)
                         }
+                        .padding(.horizontal, 16)
+                    } else {
+                        addFriendActions
                     }
 
-                    VStack(spacing: 0) {
-                        HairLine(inset: 56)
-                        otherRow(icon: "qrcode.viewfinder", title: Tr("扫一扫")) { showScan = true }
-                        HairLine(inset: 56)
-                        NavigationLink(value: "myQR") {
-                            otherRowLabel(icon: "qrcode", title: Tr("我的二维码"))
-                        }
-                        .buttonStyle(MenuPressStyle())
-                    }
-                    .background(C.cardBg)
-                    .padding(.top, 24)
+                    Color.clear.frame(height: max(18, L.safeBottom))
                 }
-                .padding(.bottom, 30)
+                .padding(.top, 8)
             }
         }
         .background(C.pageBg.ignoresSafeArea(edges: .bottom))
@@ -970,21 +980,45 @@ struct AddFriendView: View {
             }
             .environmentObject(app)
         }
+        .sheet(isPresented: $showPhoneContacts) {
+            PhoneContactsView { user in
+                showPhoneContacts = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                    target = user
+                }
+            }
+            .environmentObject(app)
+        }
+        .sheet(isPresented: $showShareInvite) {
+            ShareSheet(items: [
+                Tr("我正在使用星言，点这里下载后可以通过星言号找到我：")
+                    + " https://aa.x8iu.com/download.html"
+            ])
+        }
         .onChange(of: realtime.event) { ev in
             if ev.type == "friend" && !results.isEmpty { search() }
+        }
+        .onDisappear {
+            searchDebounce?.cancel()
+            searchDebounce = nil
         }
     }
 
     private var searchRow: some View {
         HStack(spacing: 8) {
-            SVGIcon(markup: I.searchSmall, size: 16, color: C.searchIcon)
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(C.subLabel)
             TextField(Tr("星言号/手机号"), text: $keyword)
-                .font(pf(16))
+                .font(pf(15.5))
                 .foregroundColor(C.label)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled(true)
                 .submitLabel(.search)
                 .onSubmit { search() }
+                .onChange(of: keyword) { value in
+                    scheduleSearch(value)
+                }
             if !keyword.isEmpty {
                 Button {
                     keyword = ""
@@ -998,38 +1032,37 @@ struct AddFriendView: View {
                 }
                 .buttonStyle(.plain)
             }
-            Button { search() } label: {
-                Text(searching ? Tr("搜索中…") : Tr("搜索"))
-                    .font(pf(15, .medium))
-                    .foregroundColor(keyword.isEmpty ? C.subLabel : .white)
-                    .padding(.horizontal, 12)
-                    .frame(height: 30)
-                    .background(RoundedRectangle(cornerRadius: 5, style: .continuous)
-                        .fill(keyword.isEmpty ? Color.clear : C.green))
-            }
-            .buttonStyle(.plain)
-            .disabled(keyword.isEmpty || searching)
         }
-        .padding(.horizontal, 12)
-        .frame(height: 44)
-        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(C.searchBg))
+        .padding(.horizontal, 13)
+        .frame(height: 46)
+        .background(C.fieldBg,
+                    in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 13, style: .continuous)
+                .stroke(C.hairline.opacity(0.48), lineWidth: 0.55)
+        }
     }
 
     private func resultRow(_ u: User) -> some View {
-        HStack(spacing: L.ctGap) {
-            Avatar(path: u.avatarPath, size: 52, radius: 7)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(u.name).font(pf(17)).foregroundColor(C.label).lineLimit(1)
+        HStack(spacing: 12) {
+            Avatar(path: u.avatarPath, size: 50, radius: 25, circle: true)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(u.name)
+                    .font(pf(16.5, .semibold))
+                    .foregroundColor(C.label)
+                    .lineLimit(1)
                 if let un = u.username, !un.isEmpty {
                     Text(Tr("星言号") + "：" + un)
-                        .font(pf(13)).foregroundColor(C.subLabel).lineLimit(1)
+                        .font(pf(13))
+                        .foregroundColor(C.subLabel)
+                        .lineLimit(1)
                 }
             }
             Spacer(minLength: 8)
             resultAction(u)
         }
         .padding(.horizontal, 16)
-        .frame(height: 76)
+        .frame(height: 72)
         .contentShape(Rectangle())
     }
 
@@ -1055,11 +1088,137 @@ struct AddFriendView: View {
 
     private func greenChip(_ t: String) -> some View {
         Text(t)
-            .font(pf(14, .medium))
+            .font(pf(13, .semibold))
             .foregroundColor(.white)
-            .padding(.horizontal, 12)
-            .frame(height: 28)
-            .background(RoundedRectangle(cornerRadius: 5, style: .continuous).fill(C.green))
+            .padding(.horizontal, 13)
+            .frame(height: 30)
+            .background(Color(hex: 0x25D366),
+                        in: RoundedRectangle(cornerRadius: 9,
+                                             style: .continuous))
+    }
+
+    private var addFriendActions: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(Tr("添加朋友"))
+                .font(pf(13, .semibold))
+                .foregroundColor(C.subLabel)
+                .padding(.horizontal, 4)
+
+            addFriendSurface {
+                VStack(spacing: 0) {
+                    addFriendActionRow(
+                        icon: "qrcode.viewfinder",
+                        title: Tr("扫一扫"),
+                        detail: Tr("扫描二维码添加")
+                    ) {
+                        showScan = true
+                    }
+                    HairLine(inset: 62)
+
+                    addFriendActionRow(
+                        icon: "person.text.rectangle",
+                        title: Tr("手机联系人"),
+                        detail: Tr("从手机通讯录查找")
+                    ) {
+                        showPhoneContacts = true
+                    }
+                    HairLine(inset: 62)
+
+                    NavigationLink(value: "myQR") {
+                        addFriendActionLabel(
+                            icon: "qrcode",
+                            title: Tr("我的二维码"),
+                            detail: Tr("让朋友扫码添加我")
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    HairLine(inset: 62)
+
+                    NavigationLink(value: "newFriends") {
+                        addFriendActionLabel(
+                            icon: "person.crop.circle.badge.clock",
+                            title: Tr("新的朋友"),
+                            detail: Tr("查看朋友申请")
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    HairLine(inset: 62)
+
+                    addFriendActionRow(
+                        icon: "square.and.arrow.up",
+                        title: Tr("分享星言"),
+                        detail: Tr("通过短信或其他 App 邀请")
+                    ) {
+                        showShareInvite = true
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+    }
+
+    private func addFriendActionRow(icon: String,
+                                    title: String,
+                                    detail: String,
+                                    action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            addFriendActionLabel(icon: icon, title: title, detail: detail)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func addFriendActionLabel(icon: String,
+                                      title: String,
+                                      detail: String) -> some View {
+        HStack(spacing: 13) {
+            Image(systemName: icon)
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 38, height: 38)
+                .background(Color(hex: 0x25D366), in: Circle())
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(pf(16, .medium))
+                    .foregroundColor(C.label)
+                Text(detail)
+                    .font(pf(12.5))
+                    .foregroundColor(C.subLabel)
+            }
+            Spacer(minLength: 8)
+            Image(systemName: "chevron.right")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(C.subLabel.opacity(0.72))
+        }
+        .padding(.horizontal, 14)
+        .frame(height: 64)
+        .contentShape(Rectangle())
+    }
+
+    private func addFriendSurface<Content: View>(
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(spacing: 0) { content() }
+            .background(C.cardBg)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(C.hairline.opacity(0.45), lineWidth: 0.55)
+            }
+    }
+
+    private var addFriendEmptyState: some View {
+        VStack(spacing: 9) {
+            Image(systemName: "person.crop.circle.badge.questionmark")
+                .font(.system(size: 32, weight: .light))
+                .foregroundColor(C.subLabel)
+            Text(Tr("未找到相关用户"))
+                .font(pf(15, .medium))
+                .foregroundColor(C.label)
+            Text(Tr("检查星言号或手机号后再试"))
+                .font(pf(12.5))
+                .foregroundColor(C.subLabel)
+        }
+        .frame(maxWidth: .infinity, minHeight: 180)
     }
 
     private func otherRow(icon: String, title: String, tap: @escaping () -> Void) -> some View {
@@ -1086,6 +1245,8 @@ struct AddFriendView: View {
     }
 
     private func search() {
+        searchDebounce?.cancel()
+        searchDebounce = nil
         let q = keyword.trimmingCharacters(in: .whitespaces)
         guard !q.isEmpty else { return }
         searching = true
@@ -1101,6 +1262,23 @@ struct AddFriendView: View {
                 errorText = (error as? APIError)?.errorDescription ?? Tr("未找到相关用户")
             }
             searching = false
+        }
+    }
+
+    private func scheduleSearch(_ value: String) {
+        searchDebounce?.cancel()
+        let query = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else {
+            results = []
+            searched = false
+            errorText = nil
+            searching = false
+            return
+        }
+        searchDebounce = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 360_000_000)
+            guard !Task.isCancelled else { return }
+            search()
         }
     }
 

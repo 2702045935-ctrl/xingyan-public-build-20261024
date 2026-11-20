@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 VIEW = (ROOT / "Sources" / "ContactsView.swift").read_text(encoding="utf-8")
 PHONE = (ROOT / "Sources" / "PhoneContactsView.swift").read_text(encoding="utf-8")
+PROFILE = (ROOT / "Sources" / "Profile.swift").read_text(encoding="utf-8")
 
 
 def require(condition: bool, message: str) -> None:
@@ -50,6 +51,15 @@ require(
     and "private func phoneAvatarColor" in PHONE
     and 'Image(systemName: "person.crop.circle.badge.plus")' in PHONE,
     "phone contacts must use native permission, empty and invite states",
+)
+require(
+    "private var addFriendActions" in PROFILE
+    and "private func addFriendSurface" in PROFILE
+    and "private func scheduleSearch" in PROFILE
+    and "showPhoneContacts" in PROFILE
+    and "showShareInvite" in PROFILE
+    and 'NavigationLink(value: "newFriends")' in PROFILE,
+    "add-friend page must use WhatsApp-level search, actions and result states",
 )
 
 print("contacts-whatsapp: passed")
