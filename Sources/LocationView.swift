@@ -23,10 +23,6 @@ struct LocationPoint: Identifiable, Equatable {
                              addr: (o["addr"] as? String) ?? "")
     }
 
-    var navigateURL: URL? {
-        let q = title.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-        return URL(string: "http://maps.apple.com/?daddr=\(lat),\(lng)&q=\(q)&dirflg=d")
-    }
 }
 
 struct MapSnapshotView: View {
@@ -105,7 +101,7 @@ struct LocationDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var copied = false
 
-    @State private var pickMap = false
+    @State private var showMap = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -124,7 +120,7 @@ struct LocationDetailView: View {
                 HStack(spacing: 10) {
                     Button {
 
-                        pickMap = true
+                        showMap = true
                     } label: {
                         HStack(spacing: 6) {
                             Image(systemName: "arrow.triangle.turn.up.right.circle.fill")
@@ -159,11 +155,8 @@ struct LocationDetailView: View {
             .padding(.vertical, 14)
             .background(C.cardBg)
         }
-        .confirmationDialog(Tr("用哪个地图打开"), isPresented: $pickMap, titleVisibility: .visible) {
-            ForEach(MapApp.allCases) { m in
-                Button(m.rawValue) { MapLink.open(m, point: point) }
-            }
-            Button(Tr("取消"), role: .cancel) { }
+        .fullScreenCover(isPresented: $showMap) {
+            StarMapView(point: point)
         }
         .background(C.pageBg.ignoresSafeArea(edges: .top))
         .toolbar(.hidden, for: .navigationBar)

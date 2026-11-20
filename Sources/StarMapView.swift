@@ -104,6 +104,16 @@ private struct StarSavedPlace: Codable, Identifiable, Hashable {
         savedAt = Date()
     }
 
+    init(point: LocationPoint) {
+        id = String(format: "%.6f,%.6f:", point.lat, point.lng)
+            + point.title
+        name = point.title
+        subtitle = point.addr
+        latitude = point.lat
+        longitude = point.lng
+        savedAt = Date()
+    }
+
     var mapItem: MKMapItem {
         let coordinate = CLLocationCoordinate2D(
             latitude: latitude,
@@ -327,6 +337,7 @@ private final class StarMapModel: NSObject, ObservableObject,
     private var lastAcceptedAt = Date.distantPast
     private var lastSpokenInstruction = ""
     private var pendingResumePlace: StarSavedPlace?
+    private var pendingPreviewPlace: StarSavedPlace?
 
     var navigating: Bool {
         phase == .navigating || phase == .rerouting
@@ -352,6 +363,13 @@ private final class StarMapModel: NSObject, ObservableObject,
         manager.pausesLocationUpdatesAutomatically = false
         manager.showsBackgroundLocationIndicator = true
         manager.allowsBackgroundLocationUpdates = false
+    }
+
+    convenience init(starting place: StarSavedPlace?) {
+        self.init()
+        guard let place else { return }
+        pendingResumePlace = nil
+        pendingPreviewPlace = place
     }
 
     func start() {
@@ -667,6 +685,12 @@ private final class StarMapModel: NSObject, ObservableObject,
             destination = saved.mapItem
             routes = []
             planRoute(preserveNavigation: true)
+        } else if let saved = pendingPreviewPlace, destination == nil {
+            pendingPreviewPlace = nil
+            destination = saved.mapItem
+            routes = []
+            phase = .idle
+            planRoute()
         }
         updateNavigation(next)
     }
@@ -809,9 +833,17 @@ struct StarMapView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @StateObject private var model = StarMapModel()
+    @StateObject private var model: StarMapModel
     @State private var query = ""
     @State private var showingHUD = false
+
+    @MainActor
+    init(point: LocationPoint? = nil) {
+        let saved = point.map { StarSavedPlace(point: $0) }
+        _model = StateObject(
+            wrappedValue: StarMapModel(starting: saved)
+        )
+    }
 
     var body: some View {
         ZStack(alignment: .top) {
