@@ -75,6 +75,7 @@ require(
 )
 
 NATIVE_CHAT_LIST = (ROOT / "Sources" / "NativeChatList.swift").read_text(encoding="utf-8")
+NATIVE_CHAT_CELL = (ROOT / "Sources" / "NativeChatRowCell.swift").read_text(encoding="utf-8")
 require(
     "allowInsertionDuringScroll && isPureAppend" in NATIVE_CHAT_LIST
     and "table.isDragging || table.isTracking || table.isDecelerating" in NATIVE_CHAT_LIST
@@ -87,6 +88,11 @@ require(
     and "!endRequestInFlight" in NATIVE_CHAT_LIST,
     "the conversation list must prefetch one page two-and-a-half viewports before the tail",
 )
+require(
+    '!chatId.hasPrefix("stress-chat-")' in NATIVE_CHAT_CELL
+    and "NativeGroupAvatarCache.shared.paths(chatId: chatId" in NATIVE_CHAT_CELL,
+    "synthetic conversation rows must not start thousands of fake group-member API requests",
+)
 FIXTURE = (ROOT / "Sources" / "ChatStressFixture.swift").read_text(encoding="utf-8")
 require(
     "private static var cache: [Chat]" in FIXTURE
@@ -96,6 +102,10 @@ require(
 require(
     "updated.list.append(contentsOf: added)" in CHATS,
     "stress conversation snapshots must append new pages without rescanning all loaded rows",
+)
+require(
+    ".onChange(of: app.chats) { _ in\n                guard !ChatStressFixture.isActive else { return }" in CHATS,
+    "background chat refreshes must not rebuild the large stress fixture while it is on screen",
 )
 require(
     "let isPureAppend = !order.isEmpty" in NATIVE_CHAT_LIST

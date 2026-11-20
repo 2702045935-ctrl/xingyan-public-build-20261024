@@ -2930,6 +2930,7 @@ struct ChatsView: View {
                 localWeatherRowAvatar = UserDefaults.standard.string(forKey: "chris.accountIcon.weatherRowAvatar") ?? ""
             }
             .onChange(of: app.chats) { _ in
+                guard !ChatStressFixture.isActive else { return }
                 let next = chatSnapshot()
                 cachedSnapshot = next
                 rebuildStressChatEntries(next)

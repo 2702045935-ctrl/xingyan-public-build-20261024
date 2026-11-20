@@ -645,7 +645,9 @@ private final class NativeChatAvatarView: UIView {
         let requestToken = token
         let shown = group ? Array(paths.prefix(4)) : Array(paths.prefix(1))
         apply(paths: shown)
-        if group, shown.filter({ !$0.isEmpty }).count < max(1, min(4, memberIds.count)) {
+        if group,
+           !chatId.hasPrefix("stress-chat-"),
+           shown.filter({ !$0.isEmpty }).count < max(1, min(4, memberIds.count)) {
             NativeGroupAvatarCache.shared.paths(chatId: chatId, memberIds: memberIds) { [weak self] resolved in
                 guard let self, self.token == requestToken else { return }
                 self.apply(paths: Array(resolved.prefix(4)))
