@@ -623,7 +623,7 @@ struct ChannelsView: View {
                 Color.black.ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    publishHeader
+                    publishHeader(topInset: max(geo.safeAreaInsets.top, L.safeTop))
 
                     ScrollView(showsIndicators: false) {
                         VStack(spacing: 14) {
@@ -666,7 +666,7 @@ struct ChannelsView: View {
         .interactiveDismissDisabled(uploading || publishing)
     }
 
-    private var publishHeader: some View {
+    private func publishHeader(topInset: CGFloat) -> some View {
         HStack(spacing: 12) {
             Button {
                 cancelPublish()
@@ -713,7 +713,7 @@ struct ChannelsView: View {
             .accessibilityLabel(Tr("发布作品"))
         }
         .padding(.horizontal, 14)
-        .padding(.top, 4)
+        .padding(.top, topInset + 4)
         .padding(.bottom, 8)
         .background(Color.black)
     }
