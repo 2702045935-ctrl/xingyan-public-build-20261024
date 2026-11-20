@@ -230,6 +230,9 @@ try {
   assert.strictEqual(openIncidents.length, 1);
   assert.strictEqual(openIncidents[0].id, mismatch.incidentId);
   assert.strictEqual(openIncidents[0].report.ok, false);
+  const blockedByIncident = database.readiness();
+  assert.strictEqual(blockedByIncident.ok, false);
+  assert.ok(blockedByIncident.blockers.includes('settlement_incident_open'));
   const resolvedIncident = database.resolveSettlementIncident(
     mismatch.incidentId,
     'finance-reviewer',
@@ -238,6 +241,7 @@ try {
   assert.strictEqual(resolvedIncident.duplicate, false);
   assert.strictEqual(resolvedIncident.incident.status, 'resolved');
   assert.strictEqual(database.settlementIncidents(10, 'open').length, 0);
+  assert.strictEqual(database.readiness().ok, true);
   assert.strictEqual(
     database.resolveSettlementIncident(
       mismatch.incidentId,
@@ -249,8 +253,102 @@ try {
 
   const pendingOutbox = database.outbox(100);
   assert.ok(pendingOutbox.length >= 4);
+  const deadCandidate = pendingOutbox.find((row) => row.id !== captured.outboxId);
+  assert.ok(deadCandidate);
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    database.retryOutbox(deadCandidate.id, 'database-test-dead');
+  }
+  const blockedByDeadOutbox = database.readiness();
+  assert.strictEqual(blockedByDeadOutbox.ok, false);
+  assert.ok(blockedByDeadOutbox.blockers.includes('payment_outbox_dead'));
+  database.completeOutbox(deadCandidate.id, 'database-test-recovered');
+  assert.strictEqual(database.readiness().ok, true);
   database.completeOutbox(captured.outboxId, 'message-database-test');
   assert.strictEqual(database.transfer(captured.transfer.id).messageId, 'message-database-test');
+
+  const openedDispute = database.openDispute({
+    intentId: intent.id,
+    provider: 'licensed-mock',
+    providerDisputeId: 'provider-dispute-database-test',
+    reason: '持卡人提出支付争议'
+  });
+  assert.strictEqual(openedDispute.duplicate, false);
+  assert.strictEqual(openedDispute.dispute.status, 'open');
+  assert.strictEqual(openedDispute.dispute.previousStatus, 'captured');
+  assert.strictEqual(database.intent(intent.id).status, 'disputed');
+  assert.strictEqual(database.openDispute({
+    intentId: intent.id,
+    provider: 'licensed-mock',
+    providerDisputeId: 'provider-dispute-database-test',
+    reason: '重复的支付争议回调'
+  }).duplicate, true);
+  const blockedByDispute = database.readiness();
+  assert.strictEqual(blockedByDispute.ok, false);
+  assert.ok(blockedByDispute.blockers.includes('payment_dispute_open'));
+  assert.strictEqual(blockedByDispute.openDisputes, 1);
+
+  const resolvedDispute = database.resolveDispute(
+    openedDispute.dispute.id,
+    'finance-reviewer',
+    '已核对机构争议材料并确认无需调整资金',
+    'won'
+  );
+  assert.strictEqual(resolvedDispute.duplicate, false);
+  assert.strictEqual(resolvedDispute.dispute.status, 'resolved');
+  assert.strictEqual(resolvedDispute.dispute.outcome, 'won');
+  assert.strictEqual(database.intent(intent.id).status, 'captured');
+  assert.strictEqual(database.readiness().ok, true);
+  assert.strictEqual(database.resolveDispute(
+    openedDispute.dispute.id,
+    'finance-reviewer',
+    '重复点击争议结案',
+    'won'
+  ).duplicate, true);
+  assert.strictEqual(database.verifyIntentIntegrity().ok, true);
+
+  const lossDispute = database.openDispute({
+    intentId: intent.id,
+    provider: 'licensed-mock',
+    providerDisputeId: 'provider-dispute-loss-database-test',
+    reason: '机构判定拒付成立'
+  });
+  const lossDecision = database.resolveDispute(
+    lossDispute.dispute.id,
+    'finance-reviewer',
+    '接受机构争议结论，等待资金损失核销',
+    'lost'
+  );
+  assert.strictEqual(lossDecision.adjustmentRequired, true);
+  assert.strictEqual(lossDecision.dispute.status, 'adjustment_required');
+  assert.strictEqual(database.intent(intent.id).status, 'disputed');
+  assert.strictEqual(database.readiness().ok, false);
+  assert.throws(() => database.finalizeDisputeAdjustment(
+    lossDispute.dispute.id,
+    'finance-reviewer',
+    '未落账的争议核销流水不能结案',
+    'dispute-loss:missing'
+  ), /ledger entry not found/);
+  const adjustmentRef = 'dispute-loss:' + lossDispute.dispute.id;
+  const adjustment = database.recordOnce({
+    userId: 'payer',
+    reason: '争议损失核销',
+    ref: adjustmentRef
+  }, [
+    { account: 'system:chargeback-source', deltaCents: -intent.amountCents },
+    { account: 'system:chargeback-loss', deltaCents: intent.amountCents }
+  ]);
+  assert.strictEqual(adjustment.duplicate, false);
+  const finalizedLoss = database.finalizeDisputeAdjustment(
+    lossDispute.dispute.id,
+    'finance-reviewer',
+    '已绑定争议损失核销流水并完成复核',
+    adjustmentRef
+  );
+  assert.strictEqual(finalizedLoss.dispute.status, 'resolved');
+  assert.strictEqual(finalizedLoss.dispute.outcome, 'lost');
+  assert.strictEqual(database.intent(intent.id).status, 'captured');
+  assert.strictEqual(database.readiness().ok, true);
+  assert.strictEqual(database.verifyIntentIntegrity().ok, true);
 
   const reconciled = database.reconcile(
     [{ id: 'payer', username: 'payer', balance: 97.9 }],

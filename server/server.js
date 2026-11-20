@@ -28963,6 +28963,102 @@ async function handleOps(req, res, parts, query) {
     return;
   }
 
+  if (sub === 'payments' && parts[2] === 'disputes'
+      && parts.length === 3 && method === 'GET') {
+    if (!can(admin, 'payments')) return fail(res, 403, '你的角色没有查看支付争议的权限');
+    if (!paymentDatabase) return fail(res, 503, '支付数据库暂时不可用');
+    const status = String(query.get('status') || '').trim().toLowerCase();
+    const disputes = paymentDatabase.disputes(100, status);
+    ok(res, {
+      disputes,
+      open: disputes.filter((row) => row.status === 'open').length
+    });
+    return;
+  }
+
+  if (sub === 'payments' && parts[2] === 'disputes'
+      && parts.length === 3 && method === 'POST') {
+    if (!can(admin, 'payments')) return fail(res, 403, '你的角色没有登记支付争议的权限');
+    if (!paymentDatabase) return fail(res, 503, '支付数据库暂时不可用');
+    const body = await readBody(req);
+    if (!opsConfirmOk(admin, body)) {
+      audit(req, admin, '登记支付争议被拦（密码未确认）', '', '');
+      return fail(res, 428, '登记支付争议属于资金冻结操作，请再输入一次后台密码确认');
+    }
+    const reason = str(body.reason, 500).trim();
+    if (reason.length < 4) return fail(res, 422, '请填写至少 4 个字的争议原因');
+    try {
+      const result = paymentDatabase.openDispute({
+        intentId: str(body.intentId, 128),
+        provider: str(body.provider, 120) || 'xingyan',
+        providerDisputeId: str(body.providerDisputeId, 200),
+        reason
+      });
+      audit(req, admin, '登记支付争议', result.dispute.intentId,
+        result.dispute.provider + ' · ' + reason);
+      ok(res, result);
+      return;
+    } catch (error) {
+      return fail(res, 409, String(error && error.message || error));
+    }
+  }
+
+  if (sub === 'payments' && parts[2] === 'disputes'
+      && parts[4] === 'resolve' && parts.length === 5 && method === 'POST') {
+    if (!can(admin, 'payments')) return fail(res, 403, '你的角色没有处理支付争议的权限');
+    if (!paymentDatabase) return fail(res, 503, '支付数据库暂时不可用');
+    const body = await readBody(req);
+    if (!opsConfirmOk(admin, body)) {
+      audit(req, admin, '支付争议结案被拦（密码未确认）', str(parts[3], 120), '');
+      return fail(res, 428, '支付争议结案属于资金操作，请再输入一次后台密码确认');
+    }
+    const note = str(body.note, 500).trim();
+    if (note.length < 8) return fail(res, 422, '请填写至少 8 个字的争议处理说明');
+    try {
+      const result = paymentDatabase.resolveDispute(
+        str(parts[3], 120),
+        admin.username || admin.name || admin.id || 'admin',
+        note,
+        str(body.outcome, 40)
+      );
+      audit(req, admin, '支付争议结案', str(parts[3], 120),
+        result.dispute.outcome + ' · ' + note);
+      ok(res, result);
+      return;
+    } catch (error) {
+      return fail(res, 409, String(error && error.message || error));
+    }
+  }
+
+  if (sub === 'payments' && parts[2] === 'disputes'
+      && parts[4] === 'finalize' && parts.length === 5 && method === 'POST') {
+    if (!can(admin, 'payments')) return fail(res, 403, '你的角色没有处理支付争议的权限');
+    if (!paymentDatabase) return fail(res, 503, '支付数据库暂时不可用');
+    const body = await readBody(req);
+    if (!opsConfirmOk(admin, body)) {
+      audit(req, admin, '支付争议核销结案被拦（密码未确认）', str(parts[3], 120), '');
+      return fail(res, 428, '支付争议资金核销属于高危操作，请再输入一次后台密码确认');
+    }
+    const note = str(body.note, 500).trim();
+    const ledgerRef = str(body.ledgerRef, 200).trim();
+    if (note.length < 8) return fail(res, 422, '请填写至少 8 个字的争议核销说明');
+    if (!ledgerRef) return fail(res, 422, '请填写已记账的争议核销流水号');
+    try {
+      const result = paymentDatabase.finalizeDisputeAdjustment(
+        str(parts[3], 120),
+        admin.username || admin.name || admin.id || 'admin',
+        note,
+        ledgerRef
+      );
+      audit(req, admin, '支付争议核销结案', str(parts[3], 120),
+        result.dispute.outcome + ' · ' + ledgerRef + ' · ' + note);
+      ok(res, result);
+      return;
+    } catch (error) {
+      return fail(res, 409, String(error && error.message || error));
+    }
+  }
+
   if (sub === 'payments' && parts[2] === 'settlement'
       && parts[3] === 'incidents' && parts.length === 4 && method === 'GET') {
     if (!can(admin, 'payments')) return fail(res, 403, '你的角色没有查看这一项的权限');

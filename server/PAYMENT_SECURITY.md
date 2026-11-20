@@ -132,11 +132,24 @@ GET /api/ops/payments/reconcile
 GET /api/ops/payments/settlement?date=YYYY-MM-DD
 GET /api/ops/payments/settlement/incidents?status=open
 POST /api/ops/payments/settlement/incidents/:id/resolve
+GET /api/ops/payments/disputes?status=open
+POST /api/ops/payments/disputes
+POST /api/ops/payments/disputes/:id/resolve
+POST /api/ops/payments/disputes/:id/finalize
 ```
 
 机构结算文件会逐笔比对订单号、金额、手续费、币种和状态。差异只生成报告，
 不会自动改钱。存在差异时同事务生成人工对账工单，必须填写处理说明后才能
 结案；重复结案按幂等返回。
+
+支付争议使用独立台账，绑定支付意图、机构争议号、争议金额和冻结前状态。
+开启争议时支付意图与争议记录在同一事务内变为 `disputed`；同一机构争议号
+重复回调只返回原记录，不会重复冻结。未结争议会让 `realMoneyReady=false`。
+处置必须填写处理人、至少 8 个字的处理说明和 `won`、`withdrawn`、
+`accepted`、`lost` 之一。`won` / `withdrawn` 可恢复原意图状态；
+`accepted` / `lost` 会保持资金冻结并进入 `adjustment_required`，只有绑定一笔
+争议发生后已幂等落账的核销流水才能通过 `finalize` 解冻。系统不会自动改钱，
+退款、扣款和冲正仍必须使用独立幂等账本分录并由人工复核。
 
 ## 首次切换
 
@@ -163,6 +176,10 @@ GET /api/ops/payments/settlement?date=<昨日>
 `realMoneyReady=true` 必须同时满足：`enforce` 模式、SQLite 支付数据库自检
 通过、支付密钥就绪、持牌机构配置通过、HTTPS 机构地址、AML 引擎健康。
 任何一项不满足，充值、提现和机构资金入口都会故障关闭。
+
+运行过程中出现以下任一状态也会立即取消真钱就绪：账本哈希链异常、支付意图
+链异常、dead outbox、未结对账差异或未结支付争议。清零并由人工处理后才会
+重新通过 readiness。
 
 ## 测试
 
