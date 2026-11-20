@@ -194,50 +194,33 @@ where Item.ID: Hashable {
 
         func apply(_ next: [Item], animated: Bool) {
             guard let dataSource, let table else { return }
+            let isScrolling = table.isDragging || table.isTracking || table.isDecelerating
+            if !order.isEmpty, isScrolling {
+                let oldCount = order.count
+                let sameBoundaries = next.count >= oldCount
+                    && next.first?.id == order.first
+                    && next[oldCount - 1].id == order[oldCount - 1]
+                if next.count == oldCount {
+                    /* 滚动期间不为未变化的 13k+ 行做全量相等比较。
+                       可见行状态变化在手指停止后统一 flush。 */
+                    pendingItems = next
+                    return
+                }
+                if allowInsertionDuringScroll,
+                   next.count > oldCount,
+                   sameBoundaries,
+                   appendPureTail(next, from: oldCount, keepPending: true) {
+                    return
+                }
+                pendingItems = next
+                return
+            }
             let nextOrder = next.map(\.id)
             let isPureAppend = !order.isEmpty
                 && next.count > order.count
                 && next.prefix(order.count).allSatisfy { lookup[$0.id] == $0 }
-            if !order.isEmpty,
-               table.isDragging || table.isTracking || table.isDecelerating {
-                let unchanged = nextOrder == order
-                    && next.allSatisfy { lookup[$0.id] == $0 }
-                if !unchanged,
-                   !(allowInsertionDuringScroll && isPureAppend) {
-                    pendingItems = next
-                    return
-                }
-            }
             if isPureAppend {
-                let added = Array(next[order.count...])
-                let addedIDs = added.map(\.id)
-                let previousOffset = table.contentOffset
-                for item in added { lookup[item.id] = item }
-                order.append(contentsOf: addedIDs)
-                appliedItemCount = order.count
-                endRequestInFlight = false
-                pendingItems = nil
-                applyGeneration += 1
-                let generation = applyGeneration
-                var snapshot = dataSource.snapshot()
-                snapshot.appendItems(addedIDs, toSection: 0)
-                dataSource.apply(snapshot, animatingDifferences: false) {
-                    guard generation == self.applyGeneration,
-                          self.table === table,
-                          !table.isTracking,
-                          !table.isDragging,
-                          !table.isDecelerating else { return }
-                    table.layoutIfNeeded()
-                    let minimumY = -table.adjustedContentInset.top
-                    let maximumY = max(
-                        minimumY,
-                        table.contentSize.height - table.bounds.height
-                            + table.adjustedContentInset.bottom
-                    )
-                    var target = previousOffset
-                    target.y = min(max(target.y, minimumY), maximumY)
-                    table.setContentOffset(target, animated: false)
-                }
+                _ = appendPureTail(next, from: order.count, keepPending: false)
                 return
             }
             let nextLookup = Dictionary(uniqueKeysWithValues: next.map { ($0.id, $0) })
@@ -283,6 +266,44 @@ where Item.ID: Hashable {
                 target.y = min(max(target.y, minimumY), maximumY)
                 table.setContentOffset(target, animated: false)
             }
+        }
+
+        @discardableResult
+        private func appendPureTail(_ next: [Item],
+                                    from start: Int,
+                                    keepPending: Bool) -> Bool {
+            guard start >= 0, start < next.count,
+                  let dataSource, let table else { return false }
+            let added = Array(next[start...])
+            let addedIDs = added.map(\.id)
+            let previousOffset = table.contentOffset
+            for item in added { lookup[item.id] = item }
+            order.append(contentsOf: addedIDs)
+            appliedItemCount = order.count
+            endRequestInFlight = false
+            pendingItems = keepPending ? next : nil
+            applyGeneration += 1
+            let generation = applyGeneration
+            var snapshot = dataSource.snapshot()
+            snapshot.appendItems(addedIDs, toSection: 0)
+            dataSource.apply(snapshot, animatingDifferences: false) {
+                guard generation == self.applyGeneration,
+                      self.table === table,
+                      !table.isTracking,
+                      !table.isDragging,
+                      !table.isDecelerating else { return }
+                table.layoutIfNeeded()
+                let minimumY = -table.adjustedContentInset.top
+                let maximumY = max(
+                    minimumY,
+                    table.contentSize.height - table.bounds.height
+                        + table.adjustedContentInset.bottom
+                )
+                var target = previousOffset
+                target.y = min(max(target.y, minimumY), maximumY)
+                table.setContentOffset(target, animated: false)
+            }
+            return true
         }
 
         func tableView(_ tableView: UITableView,

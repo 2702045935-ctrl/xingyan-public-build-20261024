@@ -77,7 +77,7 @@ require(
 NATIVE_CHAT_LIST = (ROOT / "Sources" / "NativeChatList.swift").read_text(encoding="utf-8")
 NATIVE_CHAT_CELL = (ROOT / "Sources" / "NativeChatRowCell.swift").read_text(encoding="utf-8")
 require(
-    "allowInsertionDuringScroll && isPureAppend" in NATIVE_CHAT_LIST
+    "allowInsertionDuringScroll,\n                   next.count > oldCount" in NATIVE_CHAT_LIST
     and "table.isDragging || table.isTracking || table.isDecelerating" in NATIVE_CHAT_LIST
     and "pendingItems = next" in NATIVE_CHAT_LIST,
     "only non-append changes may defer during touch motion",
@@ -87,6 +87,12 @@ require(
     and "remaining < prefetchLead" in NATIVE_CHAT_LIST
     and "!endRequestInFlight" in NATIVE_CHAT_LIST,
     "the conversation list must prefetch one page two-and-a-half viewports before the tail",
+)
+require(
+    "滚动期间不为未变化的 13k+ 行做全量相等比较" in NATIVE_CHAT_LIST
+    and "appendPureTail(next, from: oldCount, keepPending: true)" in NATIVE_CHAT_LIST
+    and "pendingItems = next" in NATIVE_CHAT_LIST,
+    "active scrolling must avoid full-list equality work and reconcile after touch ends",
 )
 require(
     '!chatId.hasPrefix("stress-chat-")' in NATIVE_CHAT_CELL
