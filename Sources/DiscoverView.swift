@@ -1333,6 +1333,7 @@ struct MomentsView: View {
 
     @State private var solid = false
     @State private var momentsScrollActive = false
+    @State private var timelineVisibleDay = ""
     @State private var moments: [Moment] = []
     @State private var stressLoadedMoments: [Moment] = []
     @State private var locallyPostedMoments: [String: Moment] = [:]
@@ -1572,6 +1573,8 @@ struct MomentsView: View {
 
             navBar
 
+            momentTimeline
+
             if pullY > 0 || pulling {
                 ColorBall(size: 34, spin: spin)
                     .scaleEffect(0.72 + min(1, pullY / 90) * 0.28)
@@ -1634,6 +1637,7 @@ struct MomentsView: View {
             sentinelGone = false
             solid = false
             momentsScrollActive = false
+            timelineVisibleDay = ""
             coverOverride = UserDefaults.standard.string(forKey: coverOverrideKey) ?? ""
             if !coverOverride.isEmpty, !coverOverride.hasPrefix("local-"),
                coverOverride != (owner?.momentCover ?? "") {
@@ -2108,6 +2112,10 @@ struct MomentsView: View {
                 if index == 0 || day != previous {
                     dayHeader(day)
                         .padding(.horizontal, L.momentPadH)
+                        .onAppear {
+                            guard !day.isEmpty, timelineVisibleDay != day else { return }
+                            timelineVisibleDay = day
+                        }
                 }
                 momentRow(moment)
                     .onAppear {
@@ -2149,6 +2157,55 @@ struct MomentsView: View {
         .background(C.pageBg)
         .offset(y: 0)
         .zIndex(0)
+    }
+
+    private var momentTimeline: some View {
+        VStack {
+            Spacer(minLength: 0)
+            HStack(spacing: 7) {
+                Spacer(minLength: 0)
+                Text(timelineVisibleDay)
+                    .font(pfStyled(size: 11.5, weight: .semibold))
+                    .foregroundStyle(C.label)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
+                    .padding(.horizontal, 9)
+                    .frame(height: 24)
+                    .background(.regularMaterial, in: Capsule(style: .continuous))
+                    .overlay {
+                        Capsule(style: .continuous)
+                            .stroke(C.label.opacity(0.08), lineWidth: 0.5)
+                    }
+
+                ZStack {
+                    Capsule(style: .continuous)
+                        .fill(C.label.opacity(0.22))
+                        .frame(width: 2, height: 58)
+                    VStack(spacing: 7) {
+                        ForEach(0..<5, id: \.self) { index in
+                            Circle()
+                                .fill(C.label.opacity(index == 2 ? 0.88 : 0.34))
+                                .frame(width: index == 2 ? 5 : 3.5,
+                                       height: index == 2 ? 5 : 3.5)
+                        }
+                    }
+                }
+                .frame(width: 8, height: 58)
+            }
+            .padding(.trailing, 5)
+            .opacity(momentsScrollActive && !timelineVisibleDay.isEmpty ? 1 : 0)
+            .scaleEffect(x: momentsScrollActive ? 1 : 0.86,
+                         y: momentsScrollActive ? 1 : 0.86,
+                         anchor: .trailing)
+            .animation(.easeOut(duration: momentsScrollActive ? 0.12 : 0.18),
+                       value: momentsScrollActive)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+            Spacer(minLength: 0)
+        }
+        .padding(.top, L.safeTop + L.navH + 38)
+        .padding(.bottom, max(42, L.safeBottom + 20))
+        .zIndex(24)
     }
 
     private var navBar: some View {

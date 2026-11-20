@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 API = (ROOT / "Sources" / "API.swift").read_text(encoding="utf-8")
 CARD = (ROOT / "Sources" / "MomentFeedCard.swift").read_text(encoding="utf-8")
+DISCOVER = (ROOT / "Sources" / "DiscoverView.swift").read_text(encoding="utf-8")
 
 
 def require(condition: bool, message: str) -> None:
@@ -39,6 +40,13 @@ require(
 require(
     "availableWidth - (cardInset + contentInset) * 2" in CARD,
     "media width must follow the new card insets",
+)
+require(
+    "private var momentTimeline" in DISCOVER
+    and "timelineVisibleDay" in DISCOVER
+    and ".opacity(momentsScrollActive && !timelineVisibleDay.isEmpty ? 1 : 0)" in DISCOVER
+    and ".allowsHitTesting(false)" in DISCOVER,
+    "moments must show a non-interactive native date timeline only while scrolling",
 )
 
 print("moment-editorial: passed")
