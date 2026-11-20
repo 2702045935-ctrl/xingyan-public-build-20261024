@@ -198,9 +198,13 @@ struct MomentFeedCard: View {
     }
 
     private var videoTile: some View {
-        let width = mediaWidth
-        let ratio = CGFloat(max(1, moment.videoH ?? 4)) / CGFloat(max(1, moment.videoW ?? 5))
-        let height = min(430, max(width * 0.62, width * ratio))
+        let knownRatio: CGFloat = (moment.videoW ?? 0) > 0 && (moment.videoH ?? 0) > 0
+            ? CGFloat(moment.videoW!) / CGFloat(moment.videoH!)
+            : 1.25
+        let size = MomentMediaLayout.singleVideoSize(
+            knownRatio: knownRatio,
+            width: mediaWidth
+        )
         let raw = moment.video ?? ""
         let full = raw.hasPrefix("http") ? raw : API.shared.base + raw
         let videoURL = URL(string: full)
@@ -250,7 +254,7 @@ struct MomentFeedCard: View {
                     .padding(8)
                 }
             }
-            .frame(width: width, height: height)
+            .frame(width: size.width, height: size.height)
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -662,7 +666,7 @@ struct MomentLikesPresenter: ViewModifier {
     }
 }
 
-private struct MomentAutoplayVideo: View {
+struct MomentAutoplayVideo: View {
     let url: URL
     let cover: String
 
@@ -727,6 +731,8 @@ private struct MomentAutoplayVideo: View {
         next.isMuted = true
         next.volume = 0
         next.actionAtItemEnd = .pause
+        next.automaticallyWaitsToMinimizeStalling = false
+        next.currentItem?.preferredForwardBufferDuration = 1.0
         player = next
     }
 
@@ -741,7 +747,9 @@ private struct MomentAutoplayVideo: View {
             : max(0, min(1, clipped.height / frame.height))
         let safeCenter = frame.midY > L.safeTop + L.navH + 18
             && frame.midY < screen.height - max(20, L.safeBottom)
-        let shouldPlay = scenePhase == .active && visible >= 0.72 && safeCenter
+        let shouldPlay = scenePhase == .active
+            && visible >= 0.60
+            && (safeCenter || visible >= 0.86)
 
         guard shouldPlay else {
             player?.pause()
@@ -756,7 +764,7 @@ private struct MomentAutoplayVideo: View {
            item.currentTime() >= item.duration {
             player?.seek(to: .zero)
         }
-        player?.play()
+        player?.playImmediately(atRate: 1)
         playing = true
     }
 }
@@ -808,39 +816,36 @@ private struct MomentFeedImageGrid: View {
         let columns = MomentMediaLayout.columns(for: images.count)
         let cellSize = MomentMediaLayout.gridCellSize(count: images.count, width: width)
         let gap = MomentMediaLayout.gap
-        let rows = stride(from: 0, to: images.count, by: columns).map { start in
-            Array(start..<min(start + columns, images.count))
-        }
+        let gridWidth = cellSize.width * CGFloat(columns)
+            + gap * CGFloat(max(0, columns - 1))
+        let layout = Array(
+            repeating: GridItem(.fixed(cellSize.width), spacing: gap),
+            count: columns
+        )
 
-        return VStack(spacing: gap) {
-            ForEach(rows.indices, id: \.self) { rowIndex in
-                HStack(spacing: gap) {
-                    ForEach(rows[rowIndex], id: \.self) { index in
-                        Button {
-                            onTap(index)
-                        } label: {
-                            RemoteImage(path: images[index], icon: "photo", maxSide: 960)
-                                .frame(width: cellSize.width, height: cellSize.height)
-                                .clipShape(RoundedRectangle(
-                                    cornerRadius: MomentMediaLayout.gridRadius,
-                                    style: .continuous
-                                ))
-                                .overlay {
-                                    RoundedRectangle(
-                                        cornerRadius: MomentMediaLayout.gridRadius,
-                                        style: .continuous
-                                    )
-                                        .stroke(Color.primary.opacity(0.07), lineWidth: 0.6)
-                                }
-                                .contentShape(Rectangle())
+        return LazyVGrid(columns: layout, alignment: .leading, spacing: gap) {
+            ForEach(Array(images.enumerated()), id: \.offset) { index, path in
+                Button {
+                    onTap(index)
+                } label: {
+                    RemoteImage(path: path, icon: "photo", maxSide: 960)
+                        .frame(width: cellSize.width, height: cellSize.height)
+                        .clipShape(RoundedRectangle(
+                            cornerRadius: MomentMediaLayout.gridRadius,
+                            style: .continuous
+                        ))
+                        .overlay {
+                            RoundedRectangle(
+                                cornerRadius: MomentMediaLayout.gridRadius,
+                                style: .continuous
+                            )
+                                .stroke(Color.primary.opacity(0.07), lineWidth: 0.6)
                         }
-                        .buttonStyle(.plain)
-                    }
-                    if rows[rowIndex].count < columns {
-                        Spacer(minLength: 0)
-                    }
+                        .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
             }
         }
+        .frame(width: gridWidth, alignment: .leading)
     }
 }

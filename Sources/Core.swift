@@ -894,14 +894,19 @@ enum ImageCacheKey {
 final class ImageStore {
     static let shared = ImageStore()
     private var cache: [String: UIImage] = [:]
+    /* Avatars are visible in nearly every list and must not compete with
+       full-size photos in the general image cache.  A small pinned store
+       prevents list reuse from flashing the person placeholder. */
+    private var avatarCache: [String: UIImage] = [:]
 
     private var bytes = 0
+    private var avatarBytes = 0
 
     private let memoryCap = 96 * 1024 * 1024
     private let lock = NSLock()
     func get(_ key: String) -> UIImage? {
         lock.lock(); defer { lock.unlock() }
-        return cache[key]
+        return avatarCache[key] ?? cache[key]
     }
     func put(_ key: String, _ img: UIImage) {
         lock.lock(); defer { lock.unlock() }
@@ -916,10 +921,26 @@ final class ImageStore {
         }
     }
 
+    func putAvatar(_ key: String, _ img: UIImage) {
+        guard !key.isEmpty else { return }
+        lock.lock(); defer { lock.unlock() }
+        if avatarCache[key] != nil { return }
+        avatarCache[key] = img
+        avatarBytes += Int(img.size.width * img.size.height * 4)
+        while avatarBytes > 24 * 1024 * 1024, avatarCache.count > 16 {
+            let first = avatarCache.keys.first!
+            if let old = avatarCache.removeValue(forKey: first) {
+                avatarBytes -= Int(old.size.width * old.size.height * 4)
+            }
+        }
+    }
+
     func clear() {
         lock.lock(); defer { lock.unlock() }
         cache.removeAll(keepingCapacity: false)
+        avatarCache.removeAll(keepingCapacity: false)
         bytes = 0
+        avatarBytes = 0
         if let d = diskDir {
             try? FileManager.default.removeItem(at: d)
             try? FileManager.default.createDirectory(at: d, withIntermediateDirectories: true)
@@ -1115,6 +1136,9 @@ struct RemoteImage: View {
             guard !Task.isCancelled,
                   Self.cacheIdentity(path: path, cacheKey: cacheKey) == requestedKey else { return }
             image = hit
+            if icon == "person.fill" {
+                ImageStore.shared.putAvatar(memoryKey, hit)
+            }
             loadedPath = requestedKey
             onLoaded?(hit)
             return
@@ -1123,6 +1147,9 @@ struct RemoteImage: View {
             guard !Task.isCancelled,
                   Self.cacheIdentity(path: path, cacheKey: cacheKey) == requestedKey else { return }
             image = direct
+            if icon == "person.fill" {
+                ImageStore.shared.putAvatar(memoryKey, direct)
+            }
             loadedPath = requestedKey
             onLoaded?(direct)
             return
@@ -1141,6 +1168,9 @@ struct RemoteImage: View {
                   Self.cacheIdentity(path: path, cacheKey: cacheKey) == requestedKey else { return }
             if let diskImg = diskImg {
                 ImageStore.shared.put(memoryKey, diskImg)
+                if icon == "person.fill" {
+                    ImageStore.shared.putAvatar(memoryKey, diskImg)
+                }
                 image = diskImg
                 loadedPath = requestedKey
                 onLoaded?(diskImg)
@@ -1179,6 +1209,9 @@ struct RemoteImage: View {
               Self.cacheIdentity(path: path, cacheKey: cacheKey) == requestedKey,
               let img = img else { return }
         ImageStore.shared.put(memoryKey, img)
+        if icon == "person.fill" {
+            ImageStore.shared.putAvatar(memoryKey, img)
+        }
         image = img
         loadedPath = requestedKey
         onLoaded?(img)

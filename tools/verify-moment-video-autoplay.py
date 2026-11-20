@@ -21,8 +21,10 @@ require(
     "moment videos must use a muted inline AVPlayer rather than a static image",
 )
 require(
-    "visible >= 0.72" in CARD
+    "visible >= 0.60" in CARD
     and "safeCenter" in CARD
+    and "visible >= 0.86" in CARD
+    and "playImmediately(atRate: 1)" in CARD
     and "player?.pause()" in CARD
     and ".onDisappear" in CARD,
     "autoplay must start only near the viewport and pause when leaving",

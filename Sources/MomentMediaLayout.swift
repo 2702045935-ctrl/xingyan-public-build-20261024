@@ -32,4 +32,16 @@ enum MomentMediaLayout {
             height: min(290, max(148, singleWidth / ratio))
         )
     }
+
+    /// WeChat-style single video: preserve the source aspect ratio, use the
+    /// full content width for landscape clips, and cap tall clips at 4:5.
+    static func singleVideoSize(knownRatio: CGFloat?, width: CGFloat) -> CGSize {
+        let ratio = min(2.0, max(0.5, knownRatio ?? 1.25))
+        let maxHeight = width * 1.25
+        let naturalHeight = width / ratio
+        if naturalHeight <= maxHeight {
+            return CGSize(width: width, height: max(150, naturalHeight))
+        }
+        return CGSize(width: maxHeight * ratio, height: maxHeight)
+    }
 }

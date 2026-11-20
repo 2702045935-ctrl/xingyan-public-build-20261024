@@ -3631,7 +3631,14 @@ struct MomentRow: View {
     }
 
     private func videoTile(_ path: String) -> some View {
-        let size = videoBubbleSize(w: moment.videoW ?? 0, h: moment.videoH ?? 0)
+        let knownRatio: CGFloat = (moment.videoW ?? 0) > 0 && (moment.videoH ?? 0) > 0
+            ? CGFloat(moment.videoW!) / CGFloat(moment.videoH!)
+            : 1.25
+        let avail = L.width - L.momentPadH * 2 - L.momentAvatar - 9
+        let size = MomentMediaLayout.singleVideoSize(
+            knownRatio: knownRatio,
+            width: avail
+        )
         let cover = moment.videoCover ?? ""
         let secs = moment.videoSeconds ?? 0
         return Button {
@@ -3639,15 +3646,12 @@ struct MomentRow: View {
             if let u = URL(string: full) { onOpenVideo?(u) }
         } label: {
             ZStack {
-                if !cover.isEmpty {
-                    RemoteImage(path: cover, mode: .fill, maxSide: 1280)
+                let full = path.hasPrefix("http") ? path : API.shared.base + path
+                if let videoURL = URL(string: full) {
+                    MomentAutoplayVideo(url: videoURL, cover: cover)
                 } else {
                     C.searchBg
                 }
-                Image(systemName: "play.circle.fill")
-                    .font(.system(size: 42))
-                    .foregroundColor(.white.opacity(0.92))
-                    .shadow(color: .black.opacity(0.32), radius: 6)
                 if secs > 0 {
                     VStack {
                         Spacer()
@@ -3796,29 +3800,27 @@ struct MomentImageGrid: View {
             let cols = MomentMediaLayout.columns(for: images.count)
             let cell = MomentMediaLayout.gridCellSize(count: images.count, width: avail)
             let gap = MomentMediaLayout.gap
-            let rows = stride(from: 0, to: images.count, by: cols).map { start in
-                Array(start..<min(start + cols, images.count))
-            }
-            VStack(alignment: .leading, spacing: gap) {
-                ForEach(rows.indices, id: \.self) { r in
-                    HStack(spacing: gap) {
-                        ForEach(rows[r], id: \.self) { i in
-                            Button { onTap(i) } label: {
-
-                                RemoteImage(path: images[i], icon: "photo", maxSide: 720)
-                                    .frame(width: cell.width, height: cell.height)
-                                    .clipShape(RoundedRectangle(
-                                        cornerRadius: MomentMediaLayout.gridRadius,
-                                        style: .continuous
-                                    ))
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                        }
-                        if rows[r].count < cols { Spacer(minLength: 0) }
+            let gridWidth = cell.width * CGFloat(cols)
+                + gap * CGFloat(max(0, cols - 1))
+            let layout = Array(
+                repeating: GridItem(.fixed(cell.width), spacing: gap),
+                count: cols
+            )
+            LazyVGrid(columns: layout, alignment: .leading, spacing: gap) {
+                ForEach(Array(images.enumerated()), id: \.offset) { i, path in
+                    Button { onTap(i) } label: {
+                        RemoteImage(path: path, icon: "photo", maxSide: 720)
+                            .frame(width: cell.width, height: cell.height)
+                            .clipShape(RoundedRectangle(
+                                cornerRadius: MomentMediaLayout.gridRadius,
+                                style: .continuous
+                            ))
+                            .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
                 }
             }
+            .frame(width: gridWidth, alignment: .leading)
         }
     }
 }

@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 KERNEL = (ROOT / "Sources" / "SystemMusicKernel.swift").read_text(encoding="utf-8")
 PLAYER = (ROOT / "Sources" / "MusicShare.swift").read_text(encoding="utf-8")
+CHAT = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
 API = (ROOT / "Sources" / "API.swift").read_text(encoding="utf-8")
 REALTIME = (ROOT / "Sources" / "Realtime.swift").read_text(encoding="utf-8")
 SERVER = (ROOT / "server" / "server.js").read_text(encoding="utf-8")
@@ -61,6 +62,13 @@ require(
     and ".chrisMusicPresenceChanged" in PLAYER
     and "friend.liveProgress" in PLAYER,
     "friend music cards must refresh in real time and render live progress",
+)
+require(
+    "@State private var peerMusic: FriendNowPlaying?" in CHAT
+    and "await API.shared.friendsNowPlaying()" in CHAT
+    and "MusicPlayer.shared.play(track)" in CHAT
+    and "peerMusic.line" in CHAT,
+    "direct chats must surface a friend's music state and allow one-tap playback",
 )
 require(
     "python3 tools/verify-music-kernel.py" in WORKFLOW,

@@ -1357,6 +1357,7 @@ struct ChatDetailView: View {
     @State private var videoPayload = ""
 
     @State private var peerTyping = ""
+    @State private var peerMusic: FriendNowPlaying?
     @State private var typingClear: Task<Void, Never>?
 
     @State private var lastTypingSent = Date.distantPast
@@ -1441,6 +1442,12 @@ struct ChatDetailView: View {
         if !peerTyping.isEmpty {
             return isGroup ? "有人正在输入…" : "对方正在输入…"
         }
+        if let peerMusic {
+            if peerMusic.playing == false {
+                return "\(peerMusic.name) 最近在听《\(peerMusic.title)》"
+            }
+            return "\(peerMusic.name) \(peerMusic.line)"
+        }
         if MessageStressFixture.isStressChat(chat.id),
            let first = messages.first?.seq, let last = messages.last?.seq {
             return "已加载 \(messages.count) · \(first)–\(last) / \(MessageStressFixture.count)"
@@ -1465,6 +1472,18 @@ struct ChatDetailView: View {
 
     private var isPeerTyping: Bool {
         !peerTyping.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private func loadPeerMusic() async {
+        guard !isGroup, let peer = peerUserId, !peer.isEmpty else {
+            peerMusic = nil
+            return
+        }
+        guard let list = await API.shared.friendsNowPlaying() else { return }
+        let cutoff = Date().timeIntervalSince1970 * 1000 - 2 * 60 * 60 * 1000
+        peerMusic = list.first {
+            $0.id == peer && ($0.at ?? 0) >= cutoff
+        }
     }
 
     private var navAvatarPath: String {
@@ -1620,7 +1639,18 @@ struct ChatDetailView: View {
 
             ChatHeaderGlassGroup(lightInk: topBarUsesLightInk) {
                 Button {
-                    if isGroup { showGroupInfo = true } else { showChatInfo = true }
+                    if let music = peerMusic {
+                        let track = music.asTrack
+                        if !MusicPlayer.shared.isPlaying(track.id) {
+                            MusicPlayer.shared.setQueue([track])
+                            MusicPlayer.shared.play(track)
+                        }
+                        MusicSheet.shared.open(track)
+                    } else if isGroup {
+                        showGroupInfo = true
+                    } else {
+                        showChatInfo = true
+                    }
                 } label: {
                     HStack(spacing: 7) {
                         whatsAppChatAvatar
@@ -2252,6 +2282,22 @@ struct ChatDetailView: View {
                 }
             }
             if applyNote.isEmpty { applyNote = "我是" + (app.me?.nickname ?? "") }
+        }
+        .task(id: chat.id) {
+            guard !isGroup else {
+                peerMusic = nil
+                return
+            }
+            while !Task.isCancelled {
+                await loadPeerMusic()
+                try? await Task.sleep(nanoseconds: 15_000_000_000)
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(
+            for: .chrisMusicPresenceChanged
+        )) { _ in
+            guard !isGroup else { return }
+            Task { await loadPeerMusic() }
         }
 
         .alert(Tr("发送朋友验证申请"), isPresented: $showApply) {
@@ -7902,16 +7948,22 @@ struct MessageRow: View {
                     radius: patPulse ? 9 : 0)
             .animation(.spring(response: 0.24, dampingFraction: 0.62), value: patPulse)
             .contentShape(Rectangle())
-
-            .onTapGesture(count: 2) {
-                patPulse = true
-                Task { @MainActor in
-                    try? await Task.sleep(nanoseconds: 190_000_000)
-                    patPulse = false
-                }
-                onPat?(message.senderId ?? "")
-            }
-            .onTapGesture { onOpenAvatar?(message.senderId ?? "") }
+            .gesture(
+                TapGesture(count: 2).exclusively(before: TapGesture())
+                    .onEnded { result in
+                        switch result {
+                        case .first:
+                            patPulse = true
+                            Task { @MainActor in
+                                try? await Task.sleep(nanoseconds: 190_000_000)
+                                patPulse = false
+                            }
+                            onPat?(message.senderId ?? "")
+                        case .second:
+                            onOpenAvatar?(message.senderId ?? "")
+                        }
+                    }
+            )
     }
 
     private var bubbleColumn: some View {
