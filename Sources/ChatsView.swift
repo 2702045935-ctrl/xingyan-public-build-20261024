@@ -12,7 +12,9 @@ private enum ChatListVisual {
     static let dividerLeading: CGFloat = 77
 
     static let ink = Color.dyn(0x1A1A1A, 0xE9EDEF)
-    static let previewInk = Color.dyn(0xB5B5B5, 0x5E5E5E)
+    static let previewInk = Color.dyn(0xB2B2B2, 0x8696A0)
+    static let conversationPreviewInk = Color.dyn(0xB5B5B5, 0x5E5E5E)
+    static let previewAccentInk = Color.dyn(0xFA5151, 0xFA5151)
     static let timeInk = Color.dyn(0xCCCCCC, 0x8696A0)
     static let rule = Color(UIColor { trait in
         trait.userInterfaceStyle == .dark ? .clear : UIColor(hex: 0xE9EDEF)
@@ -371,7 +373,7 @@ struct ChatRow: View, Equatable {
                 }
 
                 mentionPreview
-                    .font(pfStyled(size: scheme == .dark ? 14 : 15,
+                    .font(pfStyled(size: 14,
                                    weight: .regular))
                     .lineLimit(1)
                     .truncationMode(.tail)
@@ -405,7 +407,7 @@ struct ChatRow: View, Equatable {
                     zh: "\(count)人星友连接",
                     en: "\(count) Xingyan friends connected",
                     ru: "\(count) подключений Xingyan"
-                )).foregroundColor(ChatListVisual.previewInk)
+                )).foregroundColor(ChatListVisual.conversationPreviewInk)
             }
         }
         let kind = chat.lastMessage?.kind ?? ""
@@ -420,7 +422,7 @@ struct ChatRow: View, Equatable {
             zh: "[有人@我] ",
             en: "[Mentioned you] ",
             ru: "[Упомянули вас] "
-        )).foregroundColor(Color(.systemRed)) + body
+        )).foregroundColor(ChatListVisual.previewAccentInk) + body
     }
 
     private func sessionCopy(zh: String, en: String, ru: String) -> String {
@@ -553,30 +555,13 @@ struct ChatRow: View, Equatable {
                              "草稿：", "草稿:", "Draft: ", "Черновик: "]
         if let prefix = draftPrefixes.first(where: { preview.hasPrefix($0) }) {
             let content = String(preview.dropFirst(prefix.count))
-            return Text(prefix).foregroundColor(Color(.systemRed))
-                + Text(content).foregroundColor(ChatListVisual.previewInk)
+            return Text(prefix).foregroundColor(ChatListVisual.previewAccentInk)
+                + Text(content).foregroundColor(ChatListVisual.conversationPreviewInk)
         }
         if redPrefixes.contains(where: { preview.hasPrefix($0) }) {
-            return Text(preview).foregroundColor(Color(.systemRed))
+            return Text(preview).foregroundColor(ChatListVisual.previewAccentInk)
         }
-        let color: Color
-        switch kind {
-        case "image", "images", "video", "livephoto", "file", "audio", "voice",
-             "location", "card", "miniapp", "mini", "mall", "music":
-            color = ChatListVisual.previewInk
-        case "transfer", "redpacket", "gift":
-            color = Color.dyn(0xB06B00, 0xF4B44C)
-        case "call", "voicecall", "videocall":
-            color = Color.dyn(0x18835F, 0x58D49B)
-        case "file", "music", "location", "card", "miniapp", "mini", "mall":
-            color = Color.dyn(0x2C73C9, 0x74B7FF)
-        case "channels", "channel", "feed", "shortvideo":
-            color = Color.dyn(0x6B5BCB, 0xAD9CFF)
-        case "pat":
-            color = Color.dyn(0x0C7A70, 0x52D6C7)
-        default:
-            color = ChatListVisual.previewInk
-        }
+        let color = ChatListVisual.conversationPreviewInk
         guard highlightMentions, preview.contains("@") else {
             return Text(preview).foregroundColor(color)
         }
@@ -597,7 +582,7 @@ struct ChatRow: View, Equatable {
                 end = preview.index(after: end)
             }
             output = output + Text(String(preview[at..<end]))
-                .foregroundColor(Color(.systemRed))
+                .foregroundColor(ChatListVisual.previewAccentInk)
             cursor = end
         }
         if cursor < preview.endIndex {
@@ -2170,9 +2155,9 @@ struct ChatsView: View {
                                 .lineLimit(1)
                         }
                         Text(officialRowSubtitle)
-                            .font(pfStyled(size: scheme == .dark ? 14 : 15,
+                            .font(pfStyled(size: 14,
                                            weight: .regular))
-                            .foregroundStyle(ChatListVisual.previewInk)
+                            .foregroundStyle(ChatListVisual.conversationPreviewInk)
                             .lineLimit(1)
                     }
                     Spacer(minLength: 8)
@@ -2283,9 +2268,9 @@ struct ChatsView: View {
                                 .foregroundStyle(PayVisual.tint)
                         }
                         Text(payOfficialRowSubtitle)
-                            .font(pfStyled(size: scheme == .dark ? 14 : 15,
+                            .font(pfStyled(size: 14,
                                            weight: .regular))
-                            .foregroundStyle(ChatListVisual.previewInk)
+                            .foregroundStyle(ChatListVisual.conversationPreviewInk)
                             .lineLimit(1)
                     }
                     Spacer(minLength: 8)
@@ -2373,9 +2358,9 @@ struct ChatsView: View {
                                 .lineLimit(1)
                         }
                         Text(weatherRowSubtitle)
-                            .font(pfStyled(size: scheme == .dark ? 14 : 15,
+                            .font(pfStyled(size: 14,
                                            weight: .regular))
-                            .foregroundStyle(ChatListVisual.previewInk)
+                            .foregroundStyle(ChatListVisual.conversationPreviewInk)
                             .lineLimit(1)
                     }
                     Spacer(minLength: 8)

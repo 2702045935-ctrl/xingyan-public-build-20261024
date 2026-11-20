@@ -22,8 +22,8 @@ require(
 )
 require(
     "if let prefix = draftPrefixes.first(where: { preview.hasPrefix($0) })" in CHATS
-    and "Text(prefix).foregroundColor(Color(.systemRed))" in CHATS
-    and "Text(content).foregroundColor(ChatListVisual.previewInk)" in CHATS
+    and "Text(prefix).foregroundColor(ChatListVisual.previewAccentInk)" in CHATS
+    and "Text(content).foregroundColor(ChatListVisual.conversationPreviewInk)" in CHATS
     and "let draftRegex = try! NSRegularExpression" in ROW,
     "only the draft tag should be red while the draft body stays neutral",
 )
@@ -37,11 +37,13 @@ require(
 require(
     "NativeChatRowMetrics.font(14," in ROW
     and "previewLabel.font = .systemFont(ofSize: 14, weight: .regular)" in ROW
+    and ".font(pfStyled(size: 14," in CHATS
     and "let previewColor = UIColor(hex: isDark ? 0x5E5E5E : 0xB5B5B5)" in CHATS,
     "conversation previews must use WeChat's 14pt neutral-gray text",
 )
 require(
     "private static let previewAccentInk = UIColor(hex: 0xFA5151)" in ROW
+    and "static let previewAccentInk = Color.dyn(0xFA5151, 0xFA5151)" in CHATS
     and "foregroundColor: Self.previewAccentInk" in ROW,
     "mention and draft prefixes must use WeChat's red without tinting the body",
 )

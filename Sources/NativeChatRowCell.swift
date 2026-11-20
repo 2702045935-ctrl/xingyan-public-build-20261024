@@ -310,36 +310,14 @@ final class NativeChatRowCell: UITableViewCell {
             return result
         }
 
-        let wholeColor: UIColor?
-        if body.contains("已添加")
-            || body.contains("已成为好友")
-            || body.contains("添加了好友")
-            || body.contains("好友验证通过")
-            || body.contains("解冻") {
-            wholeColor = .systemGreen
-        } else if body.contains("删除好友")
-            || body.contains("已删除")
-            || body.contains("解除好友")
-            || body.contains("不再是好友")
-            || body.contains("关系已解除")
-            || body.contains("拉黑")
-            || body.contains("黑名单")
-            || body.contains("拒收") {
-            wholeColor = .systemRed
-        } else if body.contains("封号")
-            || body.contains("封禁")
-            || body.contains("账号")
-            || body.contains("冻结")
-            || body.contains("其他地方登录")
-            || body.contains("已下线") {
-            wholeColor = .systemOrange
-        } else if body.contains("撤回") {
-            wholeColor = .systemRed
-        } else {
-            wholeColor = nil
-        }
-        if let wholeColor {
-            result.addAttribute(.foregroundColor, value: wholeColor, range: bodyRange)
+        if body.contains("发送失败")
+            || body.contains("[失败]")
+            || body.localizedCaseInsensitiveContains("failed to send") {
+            result.addAttribute(
+                .foregroundColor,
+                value: Self.previewAccentInk,
+                range: bodyRange
+            )
             return result
         }
 
@@ -361,14 +339,6 @@ final class NativeChatRowCell: UITableViewCell {
         } else if let color = Self.previewKindColor(kind,
                                                     isLight: configuration.isLight) {
             result.addAttribute(.foregroundColor, value: color, range: bodyRange)
-        } else if kind == "pat" || kind == "system" {
-            result.addAttribute(
-                .foregroundColor,
-                value: configuration.isLight
-                    ? UIColor(hex: 0x5C6B73)
-                    : UIColor(hex: 0xA8B5BC),
-                range: bodyRange
-            )
         }
 
         if configuration.highlightMention {
@@ -394,7 +364,7 @@ final class NativeChatRowCell: UITableViewCell {
 
     private static func previewTokenColor(_ token: String, isLight: Bool) -> UIColor? {
         /* 微信会话列表中的图片、视频、文件等标签统一保持次级灰，
-           只对“有人@我”和系统状态提醒使用强调色。 */
+           只对“有人@我”、草稿和发送失败使用强调色。 */
         return nil
     }
 
