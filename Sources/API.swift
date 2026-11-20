@@ -690,6 +690,9 @@ private struct ChatMembersPayload: Decodable {
     var ownerId: String?
     var createdAt: String?
     var avatar: String?
+    var memberCount: Int?
+    var nextCursor: Int?
+    var hasMore: Bool?
 }
 private struct PinPayload: Decodable { var pinned: Bool?; var forced: Bool? }
 private struct ChatInfoPayload: Decodable { var name: String?; var announce: String? }
@@ -4075,6 +4078,38 @@ private struct StarredPayload: Decodable {
         }
         let p: ChatMembersPayload = try await get("/api/chats/\(chatId)/members", as: ChatMembersPayload.self)
         return (p.members ?? [], p.ownerId ?? "", p.createdAt ?? "")
+    }
+
+    func chatMembersPage(chatId: String, limit: Int = 100, cursor: Int = 0)
+        async throws -> (members: [User], ownerId: String, createdAt: String,
+                         memberCount: Int, nextCursor: Int, hasMore: Bool) {
+        if MessageStressFixture.isStressChat(chatId) {
+            let users = MessageStressFixture.members
+            let start = max(0, min(users.count, cursor))
+            let end = max(start, min(users.count, start + max(1, limit)))
+            return (
+                Array(users[start..<end]),
+                users.first?.id ?? "",
+                "2026-11-16T00:00:00Z",
+                users.count,
+                end,
+                end < users.count
+            )
+        }
+        let p: ChatMembersPayload = try await get(
+            "/api/chats/\(chatId)/members?limit=\(max(1, limit))&cursor=\(max(0, cursor))",
+            as: ChatMembersPayload.self
+        )
+        let members = p.members ?? []
+        let next = p.nextCursor ?? (cursor + members.count)
+        return (
+            members,
+            p.ownerId ?? "",
+            p.createdAt ?? "",
+            p.memberCount ?? next,
+            next,
+            p.hasMore ?? false
+        )
     }
 
     @discardableResult

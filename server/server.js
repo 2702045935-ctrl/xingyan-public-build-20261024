@@ -7626,9 +7626,15 @@ function setClearedSeq(userId, chatId, seq) {
 
 function unreadCount(userId, chat) {
   const last = Math.max(lastReadSeq(userId, chat.id), clearedSeqFor(userId, chat.id));
-  const n = loadMessages(chat.id).filter((m) =>
-    m.seq > last && m.senderId !== userId && !m.recalled
-  ).length;
+  const messages = loadMessages(chat.id);
+  let n = 0;
+  /* 绝大多数会话只有少量未读；从尾部扫到已读游标即可，不能每个收件人
+     都把整个 5000 条消息缓存过滤一遍。 */
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    if (Number(message.seq || 0) <= last) break;
+    if (message.senderId !== userId && !message.recalled) n += 1;
+  }
   if (n > 0) return n;
   /* 左滑「标为未读」：最后一条是自己发的也算未读（微信就是这样，只显示一个小红点） */
   return (chat.flaggedUnread || []).includes(userId) ? 1 : 0;
@@ -7781,7 +7787,7 @@ function isLegacyTransferText(m) {
   return c.indexOf('💰 转账') === 0 || c.indexOf('💰 已发起一笔转账') === 0;
 }
 
-function chatSummary(chat, forUserId, lastHint) {
+function chatSummary(chat, forUserId, lastHint, summaryContext) {
   /* 发消息时调用方知道刚写进去的那条，就不用把整个聊天记录读一遍了
      —— 这是压测里最热的一段（每发一条消息要读 2 次聊天文件）。 */
   let last = lastHint || null;
@@ -7879,7 +7885,12 @@ function chatSummary(chat, forUserId, lastHint) {
   if (mentionMe && preview && previewSrc && previewSrc.kind === 'text') {
     preview = '[有人@我] ' + preview;
   }
-  const online = chat.type === 'group' ? onlinePresenceSet() : null;
+  const memberPreviewIds = summaryContext && summaryContext.memberPreviewIds
+    ? summaryContext.memberPreviewIds
+    : (chat.type === 'group' ? chat.memberIds.slice(0, 64) : chat.memberIds);
+  const online = chat.type === 'group'
+    ? ((summaryContext && summaryContext.online) || onlinePresenceSet())
+    : null;
   return {
     id: chat.id,
     type: chat.type,
@@ -7897,9 +7908,13 @@ function chatSummary(chat, forUserId, lastHint) {
     oaDigest: oaDigest,
     qqLevel,
     ...memberInfo,
-    memberIds: chat.memberIds,
+    /* 会话摘要只携带头像所需的一小段成员预览；万人群不能把完整成员数组
+       复制给每个收件人，完整目录走 chats/:id/members 分页接口。 */
+    memberIds: memberPreviewIds,
+    memberIdsTruncated: chat.type === 'group'
+      && chat.memberIds.length > memberPreviewIds.length,
     onlineMemberIds: online
-      ? chat.memberIds.filter((id) => id !== forUserId && online.has(id))
+      ? memberPreviewIds.filter((id) => id !== forUserId && online.has(id))
       : undefined,
     memberCount: chat.memberIds.length,
     lastMessage: last ? {
@@ -8707,6 +8722,28 @@ function sendToChat(chat, payload, exceptUserId) {
     if (exceptUserId && id === exceptUserId) return;
     sent += sendTo(id, payload);
   });
+  return sent;
+}
+
+function fanoutChatMessage(chat, message, sender, clientId) {
+  const online = onlinePresenceSet();
+  const memberPreviewIds = chat.type === 'group'
+    ? chat.memberIds.slice(0, 64)
+    : chat.memberIds;
+  const summaryContext = { online, memberPreviewIds };
+  let sent = 0;
+  for (const id of chat.memberIds) {
+    if (!online.has(id)) continue;
+    const out = chat.type === 'group'
+      ? Object.assign({}, message, { senderName: groupNameFor(chat, id, sender) })
+      : message;
+    sent += sendTo(id, {
+      type: 'message',
+      message: out,
+      chat: chatSummary(chat, id, message, summaryContext),
+      clientId: id === sender.id ? (clientId || null) : null
+    });
+  }
   return sent;
 }
 
@@ -10721,19 +10758,9 @@ function deliverMessage(user, chatId, kind, content, clientId, mentionHint, medi
   db.reads[user.id][chat.id] = message.seq;
   readsDirty = true;
 
-  // 每个接收者的未读数不同，所以摘要要按人各算一份
-  chat.memberIds.forEach((id) => {
-    /* 群里显示的名字用群昵称（微信就是这样）：收消息的人立刻就该看到改过的群昵称 */
-    const out = chat.type === 'group'
-      ? Object.assign({}, message, { senderName: groupNameFor(chat, id, user) })
-      : message;
-    sendTo(id, {
-      type: 'message',
-      message: out,
-      chat: chatSummary(chat, id, message),
-      clientId: id === user.id ? (clientId || null) : null
-    });
-  });
+  /* 只对当前在线的成员计算个性化摘要；离线成员重连后从会话列表取权威状态。
+     万人群不能对 10,000 个离线成员逐个构造完整 chatSummary。 */
+  fanoutChatMessage(chat, message, user, clientId);
   /* 手机没连着（在后台 / 被杀掉 / 没网）→ 给他推一条系统通知，微信也是这个逻辑 */
   try { pushForMessage(user, chat, message); } catch (e) { }
   /* 发给「AI 助手 / 管家」→ 机器人自动回一句（异步，不卡发送方） */
@@ -22664,15 +22691,28 @@ async function handleApi(req, res, pathname, query) {
     if (!chat) return fail(res, 404, '会话不存在');
     if (!chat.memberIds.includes(user.id)) return fail(res, 403, '你不在这个会话里');
     const ownerId = chat.ownerId && chat.memberIds.includes(chat.ownerId) ? chat.ownerId : '';
-    const ordered = (ownerId ? [ownerId] : []).concat(chat.memberIds.filter((id) => id !== ownerId));
+    const leadIds = Array.from(new Set([ownerId, user.id].filter(Boolean)));
+    const ordered = leadIds.concat(
+      chat.memberIds.filter((id) => !leadIds.includes(id))
+    );
+    const rawLimit = query && query.get ? Number(query.get('limit') || 0) : 0;
+    const rawCursor = query && query.get ? Number(query.get('cursor') || 0) : 0;
+    const cursor = Math.max(0, Math.floor(Number.isFinite(rawCursor) ? rawCursor : 0));
+    const limit = rawLimit > 0
+      ? Math.max(1, Math.min(500, Math.floor(rawLimit)))
+      : ordered.length;
+    const page = ordered.slice(cursor, cursor + limit);
+    const nextCursor = cursor + page.length;
     ok(res, {
       name: chat.name || '',
       avatar: chat.avatar || '',
       ownerId: ownerId,
       createdAt: chat.createdAt || '',
       memberCount: chat.memberIds.length,
+      nextCursor,
+      hasMore: nextCursor < ordered.length,
       /* alias = 群昵称（微信「设置群昵称」），没设就是空串 */
-      members: ordered.map((id) => {
+      members: page.map((id) => {
         const u = publicUser(findUser(id));
         if (!u) return null;
         u.alias = memberAlias(chat, id);
@@ -22816,7 +22856,8 @@ async function handleApi(req, res, pathname, query) {
     const chat = db.chats.find((c) => c.id === chatId && c.type === 'group');
     if (!chat || chat.dismissed) return fail(res, 404, '这个群已经不在了');
     if (chat.memberIds.includes(user.id)) return ok(res, { joined: false, already: true, chat: chatSummary(chat, user.id) });
-    if (chat.memberIds.length >= 200) return fail(res, 422, '群人数满了');
+    const joinCap = Math.max(2, Math.min(10000, Number(im.maxGroupMembers) || 100));
+    if (chat.memberIds.length >= joinCap) return fail(res, 422, '群人数满了');
     chat.memberIds.push(user.id);
     buildGroupAvatar(chat);
     const sys = pushSystemMessage(chat, user.nickname + ' 通过群二维码加入了群聊');
@@ -22974,7 +23015,7 @@ async function handleApi(req, res, pathname, query) {
     return;
   }
 
-  /* 群加人：群里任何一个成员都能拉人进来（微信默认也是这样），群上限 500。
+  /* 群加人：群里任何一个成员都能拉人进来，上限跟随后台 im.maxGroupMembers。
      注意路径不能用 invite —— 那个已经被「群二维码/邀请码」占用了。 */
   if (parts[0] === 'chats' && parts[2] === 'add-members' && method === 'POST') {
     refreshChatAccessStateFromDisk(false);
@@ -22987,7 +23028,7 @@ async function handleApi(req, res, pathname, query) {
     const want = (Array.isArray(body.userIds) ? body.userIds : []).map((x) => String(x)).slice(0, 50);
     if (!want.length) return fail(res, 422, '先选要拉进来的人');
 
-    const MAX_MEMBERS = 500;
+    const MAX_MEMBERS = Math.max(2, Math.min(10000, Number(im.maxGroupMembers) || 100));
     const added = [];
     let skipped = 0;
     for (const id of want) {

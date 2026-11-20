@@ -3,8 +3,8 @@
   "files": [
     {
       "path": "Sources/API.swift",
-      "size": 222274,
-      "sha256": "e4581f526072b220acfdccef5de7fcfa7e3dc112331faee1b158675b454110f0"
+      "size": 223559,
+      "sha256": "87d1cec563c7d2a139ef5ea47f8ffd7494c6141f2df58d9d0204ed6b3af8ce09"
     },
     {
       "path": "Sources/App.swift",
@@ -73,8 +73,8 @@
     },
     {
       "path": "Sources/GroupInfoView.swift",
-      "size": 98514,
-      "sha256": "db7c24867570935309ef9b0f08eee791b88c09fd208a5c941f6cfe6d3de10e6b"
+      "size": 101313,
+      "sha256": "5c8d7841ce39f359661d6fcaa8ed1aa5ba700aa4e2b71e6723cd57a970cdf12b"
     },
     {
       "path": "Sources/OtherLogin.swift",

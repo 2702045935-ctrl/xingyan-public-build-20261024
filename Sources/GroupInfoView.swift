@@ -9,6 +9,9 @@ struct GroupInfoView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var members: [User] = []
+    @State private var memberCount = 0
+    @State private var memberNextCursor = 0
+    @State private var membersHasMore = false
     @State private var ownerId = ""
     @State private var createdAt = ""
     @State private var loading = true
@@ -97,8 +100,15 @@ struct GroupInfoView: View {
             pinned = live.pinned == true
             muted = live.muted == true
             muteAll = live.muteAll == true
-            if let r = try? await API.shared.chatMembers(chatId: chat.id) {
+            if let r = try? await API.shared.chatMembersPage(
+                chatId: chat.id,
+                limit: 100,
+                cursor: 0
+            ) {
                 members = r.members
+                memberCount = r.memberCount
+                memberNextCursor = r.nextCursor
+                membersHasMore = r.hasMore
                 ownerId = r.ownerId
                 createdAt = r.createdAt
             }
@@ -142,13 +152,27 @@ struct GroupInfoView: View {
             GroupAddMembersView(chat: chat, existing: members.map { $0.id }) { names in
                 app.show(names.isEmpty ? Tr("没有新增成员") : (Tr("已邀请 ") + names.joined(separator: "、") + Tr(" 进群")))
                 Task {
-                    if let r = try? await API.shared.chatMembers(chatId: chat.id) { members = r.members }
+                    if let r = try? await API.shared.chatMembersPage(
+                        chatId: chat.id,
+                        limit: 100,
+                        cursor: 0
+                    ) {
+                        members = r.members
+                        memberCount = r.memberCount
+                        memberNextCursor = r.nextCursor
+                        membersHasMore = r.hasMore
+                    }
                     await app.loadChats()
                 }
             }
         }
         .navigationDestination(isPresented: $showAllMembers) {
-            GroupMembersPage(chat: chat, members: members, ownerId: ownerId)
+            GroupMembersPage(chat: chat,
+                             initialMembers: members,
+                             initialNextCursor: memberNextCursor,
+                             initialHasMore: membersHasMore,
+                             totalMembers: max(memberCount, members.count),
+                             ownerId: ownerId)
                 .environmentObject(app)
         }
         .onReceive(NotificationCenter.default.publisher(for: ChatSearchJump.didRequest)) { note in
@@ -543,7 +567,7 @@ struct GroupInfoView: View {
         case "members":
             VStack(spacing: 0) {
                 HStack(spacing: 8) {
-                    Text(Tr("群成员") + "（\(members.count)）")
+                    Text(Tr("群成员") + "（\(max(memberCount, members.count))）")
                         .font(pf(13))
                         .foregroundColor(C.subLabel)
                     Spacer(minLength: 0)
@@ -637,8 +661,9 @@ struct GroupInfoView: View {
     }
 
     private var memberLine: String {
-        if members.isEmpty { return Tr("群聊") }
-        var s = "\(members.count) 位成员"
+        let count = max(memberCount, members.count)
+        if count == 0 { return Tr("群聊") }
+        var s = "\(count) 位成员"
         if !createdText.isEmpty { s += " · " + createdText + "创建" }
         return s
     }
@@ -719,7 +744,7 @@ struct GroupInfoView: View {
                         }
                     }
 
-                    if members.count > 20 {
+                    if max(memberCount, members.count) > 20 {
                         VStack(spacing: 6) {
                             Button {
                                 showAllMembers = true
@@ -911,11 +936,29 @@ struct GroupMembersPage: View {
     @Environment(\.dismiss) private var dismiss
 
     let chat: Chat
-    let members: [User]
     let ownerId: String
+    let totalMembers: Int
 
     @State private var query = ""
     @State private var selected: User? = nil
+    @State private var members: [User]
+    @State private var nextCursor: Int
+    @State private var hasMore: Bool
+    @State private var loadingMore = false
+
+    init(chat: Chat,
+         initialMembers: [User],
+         initialNextCursor: Int,
+         initialHasMore: Bool,
+         totalMembers: Int,
+         ownerId: String) {
+        self.chat = chat
+        self.ownerId = ownerId
+        self.totalMembers = totalMembers
+        _members = State(initialValue: initialMembers)
+        _nextCursor = State(initialValue: initialNextCursor)
+        _hasMore = State(initialValue: initialHasMore)
+    }
 
     private let columns = Array(
         repeating: GridItem(.flexible(minimum: 0), spacing: 12, alignment: .top),
@@ -932,10 +975,25 @@ struct GroupMembersPage: View {
         }
     }
 
+    private func loadMoreMembers() async {
+        guard hasMore, !loadingMore else { return }
+        loadingMore = true
+        defer { loadingMore = false }
+        guard let page = try? await API.shared.chatMembersPage(
+            chatId: chat.id,
+            limit: 100,
+            cursor: nextCursor
+        ) else { return }
+        let known = Set(members.map(\.id))
+        members.append(contentsOf: page.members.filter { !known.contains($0.id) })
+        nextCursor = page.nextCursor
+        hasMore = page.hasMore
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             NavBar(title: Tr("全部群成员"), back: { dismiss() }) {
-                Text("\(members.count)")
+                Text("\(max(totalMembers, members.count))")
                     .font(pf(13, .semibold))
                     .foregroundColor(C.subLabel)
                     .padding(.trailing, 14)
@@ -966,7 +1024,7 @@ struct GroupMembersPage: View {
 
                     GroupCard {
                         LazyVGrid(columns: columns, spacing: 18) {
-                            ForEach(filtered) { u in
+                            ForEach(Array(filtered.enumerated()), id: \.element.id) { index, u in
                                 Button { selected = u } label: {
                                     VStack(spacing: 7) {
                                         Avatar(path: u.avatarPath, size: 54, radius: 11,
@@ -991,6 +1049,10 @@ struct GroupMembersPage: View {
                                     .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
+                                .onAppear {
+                                    guard index >= filtered.count - 15 else { return }
+                                    Task { await loadMoreMembers() }
+                                }
                             }
                         }
                         .padding(.horizontal, 14)
@@ -1003,6 +1065,14 @@ struct GroupMembersPage: View {
                             .foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 36)
+                    }
+                    if hasMore {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .onAppear {
+                                Task { await loadMoreMembers() }
+                            }
                     }
                 }
                 .padding(.horizontal, 14)
