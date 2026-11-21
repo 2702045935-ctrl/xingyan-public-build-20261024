@@ -927,7 +927,7 @@ final class ImageStore {
         if avatarCache[key] != nil { return }
         avatarCache[key] = img
         avatarBytes += Int(img.size.width * img.size.height * 4)
-        while avatarBytes > 24 * 1024 * 1024, avatarCache.count > 16 {
+        while avatarBytes > 48 * 1024 * 1024, avatarCache.count > 24 {
             let first = avatarCache.keys.first!
             if let old = avatarCache.removeValue(forKey: first) {
                 avatarBytes -= Int(old.size.width * old.size.height * 4)

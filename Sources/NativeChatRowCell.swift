@@ -773,7 +773,19 @@ private final class NativeChatAvatarView: UIView {
                     self.requestedPaths[index] = ""
                 }
                 if let image {
-                    imageView.image = image
+                    ImageStore.shared.putAvatar(thumbnailKey, image)
+                    ImageStore.shared.putAvatar(cacheKey, image)
+                    if imageView.image == nil {
+                        imageView.image = image
+                    } else {
+                        UIView.transition(with: imageView,
+                                          duration: 0.12,
+                                          options: [.transitionCrossDissolve,
+                                                    .beginFromCurrentState,
+                                                    .allowUserInteraction]) {
+                            imageView.image = image
+                        }
+                    }
                 }
             }
         }

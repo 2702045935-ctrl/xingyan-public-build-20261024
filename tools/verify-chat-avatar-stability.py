@@ -37,6 +37,13 @@ require(
     "an avatar already loading must not be requested or cleared repeatedly",
 )
 require(
+    "ImageStore.shared.putAvatar(thumbnailKey, image)" in SOURCE
+    and "ImageStore.shared.putAvatar(cacheKey, image)" in SOURCE
+    and ".transitionCrossDissolve" in SOURCE
+    and "avatarBytes > 48 * 1024 * 1024" in CORE,
+    "native chat avatars must persist in the pinned avatar cache and cross-fade updates",
+)
+require(
     "guard let self, self.token == requestToken" in SOURCE,
     "late avatar responses must not overwrite a newer reused cell",
 )
