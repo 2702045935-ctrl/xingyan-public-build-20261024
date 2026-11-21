@@ -36,6 +36,26 @@ require(
     "the chat overflow control must use WeChat's 17pt dots in a 44pt hit target",
 )
 require(
+    "showsAvatar: !isGroup || mineFor(message) || isRunStart(message)" in CHAT
+    and "showsDeliveryTicks: isRunEnd(message)" in CHAT
+    and "private func isRunEnd(_ message: Message)" in CHAT,
+    "group avatars and delivery ticks must collapse across a continuous message run",
+)
+require(
+    "var showsDeliveryTicks: Bool = true" in CHAT
+    and ".overlay(alignment: .bottomTrailing)" in CHAT
+    and ".offset(y: 8)" in CHAT
+    and "VStack(alignment: mine ? .trailing : .leading, spacing: 4)" in CHAT,
+    "delivery ticks must overlay the bubble instead of occupying a separate row",
+)
+require(
+    "same ? 5 : 13" in CHAT
+    and "same ? 6 : 15" in CHAT
+    and "gap = max(gap, 10)" in CHAT
+    and "return mineFor(message) && isRunEnd(message) ? 10 : 4" in CHAT,
+    "conversation runs must use distinct WeChat-style same-sender and sender-change spacing",
+)
+require(
     "python3 tools/verify-chat-bubble-metrics.py" in WORKFLOW,
     "chat bubble metrics regression must run in the iOS gate",
 )

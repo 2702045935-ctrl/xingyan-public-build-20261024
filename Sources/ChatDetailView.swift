@@ -4471,11 +4471,12 @@ struct ChatDetailView: View {
                    senderOnline: senderIsOnline(message),
                    avatarSize: L.chatAvatar,
                    maxBubbleWidth: isGroup ? groupBubbleMaxWidth : L.bubbleMaxW,
-                   showsAvatar: true,
+                   showsAvatar: !isGroup || mineFor(message) || isRunStart(message),
                    reservesAvatarSpace: true,
                    currentNickname: app.me?.nickname ?? "",
                    currentUsername: app.me?.username ?? "",
                    showTail: isRunStart(message),
+                   showsDeliveryTicks: isRunEnd(message),
                    onTapTransfer: { info in billInfo = info },
                    onOpenImage: { path in openImage(path) },
                    onOpenAvatar: { id in openAvatar(id) },
@@ -4671,6 +4672,21 @@ struct ChatDetailView: View {
         return TimeFmt.minutesBetween(prev.createdAt, message.createdAt) >= 5
     }
 
+    private func isRunEnd(_ message: Message) -> Bool {
+        guard let i = indexOf(message), i + 1 < messages.count else { return true }
+        let next = messages[i + 1]
+        if showTime(for: next)
+            || next.kindName == "system"
+            || next.kindName == "pat"
+            || next.isRecalled {
+            return true
+        }
+        if (next.senderId ?? "") != (message.senderId ?? "") {
+            return true
+        }
+        return TimeFmt.minutesBetween(message.createdAt, next.createdAt) >= 5
+    }
+
     private func senderNameFor(_ message: Message) -> String {
         guard isGroup, message.senderId != myId else { return "" }
         return isRunStart(message) ? displayName(message) : ""
@@ -4730,17 +4746,20 @@ struct ChatDetailView: View {
 
     private func gapAfter(_ message: Message) -> CGFloat {
         guard let i = indexOf(message) else { return 15 }
-        guard i + 1 < messages.count else { return 4 }
+        guard i + 1 < messages.count else {
+            return mineFor(message) && isRunEnd(message) ? 10 : 4
+        }
         let next = messages[i + 1]
         if showTime(for: next) { return 0 }
-        if next.kindName == "system" || next.kindName == "pat" || next.isRecalled { return 12 }
-        if message.kindName == "system" || message.kindName == "pat" || message.isRecalled { return 12 }
+        if next.kindName == "system" || next.kindName == "pat" || next.isRecalled { return 13 }
+        if message.kindName == "system" || message.kindName == "pat" || message.isRecalled { return 13 }
         let same = (next.senderId ?? "") == (message.senderId ?? "")
 
-        if isGroup {
-            return same ? 4 : 12
+        var gap: CGFloat = isGroup ? (same ? 5 : 13) : (same ? 6 : 15)
+        if same, mineFor(message), isRunEnd(message) {
+            gap = max(gap, 10)
         }
-        return same ? UIConfig.num("msgGapSame", 7) : UIConfig.num("msgGapOther", 15)
+        return gap
     }
 
     private var leftUnreadBadge: AnyView? {
@@ -7964,6 +7983,7 @@ struct MessageRow: View {
     var currentUsername: String = ""
 
     var showTail: Bool = true
+    var showsDeliveryTicks: Bool = true
 
     var onTapTransfer: ((TransferInfo) -> Void)? = nil
 
@@ -8087,7 +8107,7 @@ struct MessageRow: View {
     }
 
     private var bubbleColumn: some View {
-        VStack(alignment: mine ? .trailing : .leading, spacing: 2) {
+        VStack(alignment: mine ? .trailing : .leading, spacing: 4) {
             if !senderName.isEmpty {
 
                 HStack(spacing: 4) {
@@ -8106,22 +8126,21 @@ struct MessageRow: View {
                 .padding(.leading, 4)
             }
             content
-
-            if mine,
-               !message.isRecalled,
-               !message.isCallRecord,
-               message.kindName != "system",
-               message.kindName != "pat" {
-                HStack(spacing: 0) {
-                    Spacer(minLength: 0)
-                    WhatsAppMessageTicks(count: deliveryState.tickCount,
-                                         color: deliveryState.color)
+                .overlay(alignment: .bottomTrailing) {
+                    if mine,
+                       showsDeliveryTicks,
+                       !message.isRecalled,
+                       !message.isCallRecord,
+                       message.kindName != "system",
+                       message.kindName != "pat" {
+                        WhatsAppMessageTicks(count: deliveryState.tickCount,
+                                             color: deliveryState.color)
+                            .padding(.trailing, 10)
+                            .offset(y: 8)
+                            .accessibilityElement(children: .ignore)
+                            .accessibilityLabel(deliveryState.accessibilityText)
+                    }
                 }
-                .padding(.trailing, 4)
-                .offset(y: -2)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(deliveryState.accessibilityText)
-            }
 
             if asrBusy || !asrText.isEmpty {
                 asrLine
