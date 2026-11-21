@@ -205,6 +205,7 @@ struct NativeTopGlassMask: View {
 final class NativeTopScrollRegistry {
     static let shared = NativeTopScrollRegistry()
     weak var contacts: UIScrollView?
+    weak var discover: UIScrollView?
 }
 
 struct NativeChatsTopEdgeChrome: View {

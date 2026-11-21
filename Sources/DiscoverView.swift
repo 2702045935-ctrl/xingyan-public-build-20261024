@@ -142,6 +142,21 @@ private struct WorldStarfield: View {
     }
 }
 
+private struct WorldTopIconPressStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background {
+                Circle()
+                    .fill(Color.primary.opacity(configuration.isPressed ? 0.06 : 0))
+            }
+            .scaleEffect(reduceMotion ? 1 : (configuration.isPressed ? 0.92 : 1))
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.10),
+                       value: configuration.isPressed)
+    }
+}
+
 private struct XingyanMallMark: View {
     var size: CGFloat = 52
 
@@ -274,54 +289,50 @@ struct DiscoverView: View {
     }
 
     private var discoverTopHeader: some View {
-        HStack(spacing: 10) {
-            VStack(alignment: .leading, spacing: 1) {
-                Text(Tr("世界"))
-                    .font(systemTextFont(26, .bold, relativeTo: .largeTitle))
-                    .foregroundStyle(OrbitTheme.ink)
-                    .accessibilityAddTraits(.isHeader)
-                Text(app.moments.isEmpty ? Tr("去发现、聊天、生活")
-                                         : momentCountText)
-                    .font(systemTextFont(12, .regular, relativeTo: .caption1))
-                    .foregroundStyle(OrbitTheme.secondary)
-                    .lineLimit(1)
-            }
+        ZStack {
+            Text(Tr("世界"))
+                .font(systemTextFont(17, .semibold, relativeTo: .headline))
+                .foregroundStyle(OrbitTheme.ink)
+                .accessibilityAddTraits(.isHeader)
+                .frame(maxWidth: .infinity)
 
-            Spacer(minLength: 8)
+            HStack(spacing: 2) {
+                Spacer(minLength: 0)
 
-            Button {
-                path.append("search")
-            } label: {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(OrbitTheme.ink)
-                    .frame(width: 42, height: 42)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Tr("搜索"))
+                Button {
+                    path.append("search")
+                } label: {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(OrbitTheme.ink)
+                        .frame(width: 42, height: 42)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(WorldTopIconPressStyle())
+                .accessibilityLabel(Tr("搜索"))
 
-            Button {
-                showScan = true
-            } label: {
-                Image(systemName: "qrcode.viewfinder")
-                    .font(.system(size: 19, weight: .semibold))
-                    .foregroundStyle(OrbitTheme.jadeDeep)
-                    .frame(width: 42, height: 42)
-                    .contentShape(Rectangle())
+                Button {
+                    showScan = true
+                } label: {
+                    Image(systemName: "qrcode.viewfinder")
+                        .font(.system(size: 19, weight: .semibold))
+                        .foregroundStyle(OrbitTheme.jadeDeep)
+                        .frame(width: 42, height: 42)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(WorldTopIconPressStyle())
+                .accessibilityLabel(Tr("扫一扫"))
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Tr("扫一扫"))
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 8)
         .frame(height: discoverHeaderHeight)
     }
 
     private var discoverHeaderHeight: CGFloat {
-        let preferred = 26 * fontScale * CareMode.scale
-        let titleHeight = UIFontMetrics(forTextStyle: .largeTitle)
+        let preferred = 17 * fontScale * CareMode.scale
+        let titleHeight = UIFontMetrics(forTextStyle: .headline)
             .scaledValue(for: preferred)
-        return max(L.navH, ceil(titleHeight + 14))
+        return max(L.navH, ceil(titleHeight + 12))
     }
 
     private var worldCanvas: Color {
@@ -355,7 +366,7 @@ struct DiscoverView: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 16)
-        .frame(height: 34)
+        .frame(height: 30)
         .background(worldSectionFill)
         .accessibilityAddTraits(.isHeader)
     }
@@ -375,18 +386,18 @@ struct DiscoverView: View {
                             ),
                             lineWidth: 2
                         )
-                        .frame(width: 58, height: 58)
+                        .frame(width: 54, height: 54)
 
                     if !latestThumb.isEmpty {
                         RemoteImage(path: latestThumb, mode: .fill, maxSide: 180)
-                            .frame(width: 50, height: 50)
+                            .frame(width: 46, height: 46)
                             .clipShape(Circle())
                     } else {
                         Avatar(path: latestMomentAvatar,
-                               size: 50, circle: true)
+                               size: 46, circle: true)
                     }
                 }
-                .frame(width: 60, height: 60)
+                .frame(width: 56, height: 56)
 
                 VStack(alignment: .leading, spacing: scheme == .dark ? 4 : 5) {
                     Text(Tr(item.label))
@@ -413,16 +424,16 @@ struct DiscoverView: View {
                 }
             }
             .padding(.horizontal, 16)
-            .frame(height: 78)
+            .frame(height: 72)
             .background(worldRowFill)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(MenuPressStyle())
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(worldHairline)
                 .frame(height: 0.5)
-                .padding(.leading, 88)
+                .padding(.leading, 82)
         }
         .accessibilityElement(children: .combine)
     }
@@ -436,13 +447,13 @@ struct DiscoverView: View {
         } label: {
             HStack(spacing: 12) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .fill(accent)
 
                     if !artwork.isEmpty {
                         RemoteImage(path: artwork, mode: .fill, maxSide: 180)
-                            .frame(width: 52, height: 52)
-                            .clipShape(RoundedRectangle(cornerRadius: 14,
+                            .frame(width: 42, height: 42)
+                            .clipShape(RoundedRectangle(cornerRadius: 12,
                                                        style: .continuous))
                     } else {
                         Image(systemName: RowIcon.sf(action: item.action,
@@ -451,7 +462,7 @@ struct DiscoverView: View {
                             .foregroundStyle(.white)
                     }
                 }
-                .frame(width: 52, height: 52)
+                .frame(width: 42, height: 42)
 
                 VStack(alignment: .leading, spacing: scheme == .dark ? 3 : 4) {
                     Text(Tr(item.label))
@@ -473,16 +484,16 @@ struct DiscoverView: View {
                     .foregroundStyle(OrbitTheme.tertiary)
             }
             .padding(.horizontal, 16)
-            .frame(height: 74)
+            .frame(height: 64)
             .background(worldRowFill)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(MenuPressStyle())
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(worldHairline)
                 .frame(height: 0.5)
-                .padding(.leading, 80)
+                .padding(.leading, 70)
         }
         .accessibilityElement(children: .combine)
     }
@@ -492,7 +503,7 @@ struct DiscoverView: View {
             open(item)
         } label: {
             HStack(spacing: 12) {
-                XingyanMallMark(size: 52)
+                XingyanMallMark(size: 42)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(Tr("星选商城"))
@@ -510,16 +521,16 @@ struct DiscoverView: View {
                     .foregroundStyle(OrbitTheme.tertiary)
             }
             .padding(.horizontal, 16)
-            .frame(height: 74)
+            .frame(height: 64)
             .background(worldRowFill)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(MenuPressStyle())
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(worldHairline)
                 .frame(height: 0.5)
-                .padding(.leading, 80)
+                .padding(.leading, 70)
         }
         .accessibilityElement(children: .combine)
     }
@@ -534,6 +545,7 @@ struct DiscoverView: View {
                         if let hero = worldHeroItem {
                             worldSectionHeader(Tr("动态"))
                             worldUpdatesRow(hero)
+                            Color.clear.frame(height: 8)
                         }
 
                         if worldShopItem != nil || !worldEntryGroups.isEmpty {
@@ -541,6 +553,7 @@ struct DiscoverView: View {
 
                             if let shop = worldShopItem {
                                 worldShopRow(shop)
+                                Color.clear.frame(height: 8)
                             }
 
                             ForEach(worldEntryGroups) { group in
@@ -550,6 +563,7 @@ struct DiscoverView: View {
                                         worldFlatRow(item)
                                     }
                                 }
+                                Color.clear.frame(height: 8)
                             }
                         }
 
@@ -560,6 +574,8 @@ struct DiscoverView: View {
                         NativeTopScrollObserver { y in
                             let next = y > 8 ? y : 0
                             if navScrolled != next { navScrolled = next }
+                        } onScrollViewReady: { scroll in
+                            NativeTopScrollRegistry.shared.discover = scroll
                         }
                     }
                 }
@@ -569,7 +585,15 @@ struct DiscoverView: View {
                 discoverTopHeader
                     .measure("discover.nav")
                     .background {
-                        NativeTopGlassMask(active: navScrolled > 0)
+                        ZStack {
+                            NativeTopGlassMask(active: navScrolled > 0)
+                            if #available(iOS 26.0, *) {
+                                NativeScrollEdgeElementBridge(
+                                    scrollView: { NativeTopScrollRegistry.shared.discover }
+                                )
+                            }
+                        }
+                        .ignoresSafeArea(edges: .top)
                     }
                     .contentShape(Rectangle())
                     .zIndex(10)

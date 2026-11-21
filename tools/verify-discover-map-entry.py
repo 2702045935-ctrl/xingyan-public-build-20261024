@@ -34,5 +34,27 @@ check(
     "items = DiscoverItem.builtin" in DISCOVER,
     "the first world frame must render before the network catalog returns",
 )
+check(
+    "private struct WorldTopIconPressStyle" in DISCOVER
+    and "systemTextFont(17, .semibold, relativeTo: .headline)" in DISCOVER
+    and "buttonStyle(WorldTopIconPressStyle())" in DISCOVER
+    and "buttonStyle(MenuPressStyle())" in DISCOVER,
+    "the world page must use native centered hierarchy and restrained press feedback",
+)
+check(
+    ".frame(height: 30)" in DISCOVER
+    and ".frame(height: 72)" in DISCOVER
+    and ".frame(height: 64)" in DISCOVER
+    and "Color.clear.frame(height: 8)" in DISCOVER,
+    "world sections and rows must use compact spacing with visible group separation",
+)
+check(
+    "weak var discover: UIScrollView?" in (
+        ROOT / "Sources" / "NavGlass.swift"
+    ).read_text(encoding="utf-8")
+    and "NativeTopScrollRegistry.shared.discover" in DISCOVER
+    and "NativeScrollEdgeElementBridge(" in DISCOVER,
+    "the world header must bind to the native scroll-edge material",
+)
 
 print("discover-map-entry: passed")

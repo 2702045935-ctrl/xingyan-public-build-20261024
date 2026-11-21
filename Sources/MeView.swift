@@ -67,18 +67,19 @@ struct MeView: View {
             NavigationLink(value: "profile") {
                 HStack(spacing: 13) {
                     Avatar(path: app.me?.avatarPath ?? "",
-                           size: 58,
-                           radius: 29,
+                           size: 60,
+                           radius: 30,
                            circle: true,
                            level: growth.shownLevel)
 
-                    VStack(alignment: .leading, spacing: 5) {
+                    VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 6) {
                             if teenOn {
                                 UmbrellaIcon(color: Color(hex: 0x3E9BF0), size: 14)
                             }
                             Text(app.me?.name ?? Tr("星言用户"))
                                 .font(.headline)
+                                .fontWeight(.semibold)
                                 .foregroundStyle(.primary)
                                 .lineLimit(1)
                             MemberBadge(tier: app.me?.memberTier,
@@ -92,6 +93,7 @@ struct MeView: View {
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
+                            .monospacedDigit()
                         let bio = (app.me?.bio ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
                         Text(bio.isEmpty ? Tr("点击编辑个人资料") : bio)
                             .font(.caption)
@@ -99,7 +101,7 @@ struct MeView: View {
                             .lineLimit(1)
                     }
                 }
-                .padding(.vertical, 4)
+                .padding(.vertical, 6)
             }
         }
 
@@ -111,7 +113,7 @@ struct MeView: View {
                     }
                 }
             } header: {
-                Text(meSectionTitle(grouped[gi]))
+                meSectionHeader(meSectionTitle(grouped[gi]))
             }
         }
 
@@ -128,9 +130,16 @@ struct MeView: View {
                                           color: C.green)
                 }
             } header: {
-                Text(Tr("管理"))
+                meSectionHeader(Tr("管理"))
             }
         }
+    }
+
+    private func meSectionHeader(_ title: String) -> some View {
+        Text(title)
+            .font(.footnote.weight(.semibold))
+            .foregroundStyle(.secondary)
+            .textCase(nil)
     }
 
     private func meSectionTitle(_ items: [DiscoverItem]) -> String {
@@ -158,15 +167,27 @@ struct MeView: View {
                                        color: Color) -> some View {
         Label {
             Text(title)
+                .font(.body)
                 .foregroundStyle(.primary)
+                .lineLimit(1)
         } icon: {
             Image(systemName: symbol)
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(.white)
-                .frame(width: 28, height: 28)
+                .frame(width: 29, height: 29)
                 .background(
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .fill(color)
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [color.opacity(0.96), color],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .stroke(Color.white.opacity(0.18), lineWidth: 0.5)
+                        )
                 )
         }
     }
