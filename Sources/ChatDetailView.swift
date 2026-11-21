@@ -1021,6 +1021,7 @@ struct ChatDetailView: View {
 
     @State private var outbox: [PendingMsg] = []
     @State private var flushing = false
+    @State private var postSendRefreshTask: Task<Void, Never>?
 
     @State private var filePreview: FilePreviewData?
 
@@ -3061,6 +3062,8 @@ struct ChatDetailView: View {
             initialScrollTask = nil
             pinTask?.cancel()
             pinTask = nil
+            postSendRefreshTask?.cancel()
+            postSendRefreshTask = nil
             patAnimationTask?.cancel()
             patAnimationTask = nil
             let snapshot = messages
@@ -6259,7 +6262,18 @@ struct ChatDetailView: View {
             }
         }
         persistOutboxAfterFrame()
-        await app.loadChats()
+        scheduleChatListRefreshAfterSend()
+    }
+
+    @MainActor
+    private func scheduleChatListRefreshAfterSend() {
+        postSendRefreshTask?.cancel()
+        let state = app
+        postSendRefreshTask = Task { @MainActor [weak state] in
+            try? await Task.sleep(nanoseconds: 650_000_000)
+            guard !Task.isCancelled else { return }
+            await state?.loadChats()
+        }
     }
 
     private func tapRedPacket(_ info: RedPacketInfo) {

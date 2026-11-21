@@ -28,5 +28,10 @@ require(
     and "outbox.first(where: { !$0.sending })" in flush_block,
     "rapid sends must drain newly appended outbox items without another trigger",
 )
+require(
+    "await app.loadChats()" not in flush_block
+    and "scheduleChatListRefreshAfterSend()" in flush_block,
+    "sending must not block acknowledgement on a full conversation-list refresh",
+)
 
 print("message-send-handoff: passed")
