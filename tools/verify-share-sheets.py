@@ -6,6 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SHARE = (ROOT / "Sources" / "ShareSheet.swift").read_text(encoding="utf-8")
 VIDEO = (ROOT / "Sources" / "VideoShareSheet.swift").read_text(encoding="utf-8")
 MALL = (ROOT / "Sources" / "MallDeep.swift").read_text(encoding="utf-8")
+PLIST = (ROOT / "Info.plist").read_text(encoding="utf-8")
 
 
 def require(condition: bool, message: str) -> None:
@@ -30,6 +31,22 @@ require(
 require(
     "SharePreviewCard" in VIDEO and "ShareActionTile" in VIDEO,
     "video sharing must use the shared preview and action hierarchy",
+)
+require(
+    "enum ShareBrand" in SHARE
+    and "struct ShareBrandIcon" in SHARE
+    and "struct ShareBrandRail" in SHARE
+    and "ShareBrandAction.open" in SHARE,
+    "share surfaces must expose dedicated branded app actions",
+)
+for scheme in ("weixin", "mqq", "xhsdiscover", "snssdk1128"):
+    require(scheme + "://" in SHARE,
+            "missing third-party share scheme: " + scheme)
+    require("<string>" + scheme + "</string>" in PLIST,
+            "share scheme must be declared in LSApplicationQueriesSchemes: " + scheme)
+require(
+    "ShareBrandRail" in VIDEO and "ShareBrandRail" in MALL,
+    "video and mall sharing must expose the same branded app row",
 )
 require(
     "SharePreviewCard" in MALL and "ShareActionTile" in MALL,

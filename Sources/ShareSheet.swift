@@ -1,6 +1,209 @@
 import SwiftUI
 import UIKit
 
+enum ShareBrand: String, CaseIterable, Identifiable {
+    case wechat
+    case qq
+    case xiaohongshu
+    case douyin
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .wechat: return "微信"
+        case .qq: return "QQ"
+        case .xiaohongshu: return "小红书"
+        case .douyin: return "抖音"
+        }
+    }
+
+    var scheme: String {
+        switch self {
+        case .wechat: return "weixin://"
+        case .qq: return "mqq://"
+        case .xiaohongshu: return "xhsdiscover://"
+        case .douyin: return "snssdk1128://"
+        }
+    }
+}
+
+enum ShareBrandAction {
+    @discardableResult
+    static func open(_ brand: ShareBrand, text: String?, image: UIImage? = nil) -> Bool {
+        if let image {
+            UIPasteboard.general.image = image
+        } else if let text, !text.isEmpty {
+            UIPasteboard.general.string = text
+        }
+        guard let url = URL(string: brand.scheme),
+              UIApplication.shared.canOpenURL(url) else {
+            return false
+        }
+        UIApplication.shared.open(url)
+        return true
+    }
+}
+
+struct ShareBrandIcon: View {
+    let brand: ShareBrand
+    var size: CGFloat = 54
+
+    var body: some View {
+        ZStack {
+            switch brand {
+            case .wechat:
+                RoundedRectangle(cornerRadius: size * 0.23, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [Color(hex: 0x29D268), Color(hex: 0x07B84D)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                ZStack {
+                    Ellipse()
+                        .fill(Color.white.opacity(0.96))
+                        .frame(width: size * 0.55, height: size * 0.40)
+                        .offset(x: -size * 0.07, y: -size * 0.08)
+                    Ellipse()
+                        .fill(Color.white.opacity(0.90))
+                        .frame(width: size * 0.44, height: size * 0.32)
+                        .offset(x: size * 0.14, y: size * 0.15)
+                    HStack(spacing: size * 0.075) {
+                        Circle().fill(Color(hex: 0x07B84D)).frame(width: size * 0.055)
+                        Circle().fill(Color(hex: 0x07B84D)).frame(width: size * 0.055)
+                    }
+                    .offset(x: -size * 0.07, y: -size * 0.08)
+                    HStack(spacing: size * 0.06) {
+                        Circle().fill(Color(hex: 0x07B84D)).frame(width: size * 0.046)
+                        Circle().fill(Color(hex: 0x07B84D)).frame(width: size * 0.046)
+                    }
+                    .offset(x: size * 0.14, y: size * 0.15)
+                }
+            case .qq:
+                RoundedRectangle(cornerRadius: size * 0.23, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [Color(hex: 0x26C9FF), Color(hex: 0x0798E9)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                ZStack {
+                    Ellipse()
+                        .fill(Color.white)
+                        .frame(width: size * 0.48, height: size * 0.58)
+                        .offset(y: size * 0.04)
+                    HStack(spacing: size * 0.12) {
+                        Circle().fill(Color(hex: 0x20242B)).frame(width: size * 0.06)
+                        Circle().fill(Color(hex: 0x20242B)).frame(width: size * 0.06)
+                    }
+                    .offset(y: -size * 0.07)
+                    Capsule()
+                        .fill(Color(hex: 0xFF9F22))
+                        .frame(width: size * 0.15, height: size * 0.055)
+                        .offset(y: size * 0.04)
+                    Capsule()
+                        .fill(Color(hex: 0xEB3F43))
+                        .frame(width: size * 0.38, height: size * 0.055)
+                        .rotationEffect(.degrees(-7))
+                        .offset(y: size * 0.14)
+                }
+            case .xiaohongshu:
+                RoundedRectangle(cornerRadius: size * 0.23, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [Color(hex: 0xFF334E), Color(hex: 0xFF1838)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                VStack(spacing: size * 0.025) {
+                    Text("小红书")
+                        .font(.system(size: size * 0.205, weight: .bold,
+                                      design: .rounded))
+                    Text("RED")
+                        .font(.system(size: size * 0.075, weight: .heavy))
+                        .tracking(size * 0.024)
+                }
+                .foregroundStyle(.white)
+            case .douyin:
+                RoundedRectangle(cornerRadius: size * 0.23, style: .continuous)
+                    .fill(Color(hex: 0x101014))
+                Image(systemName: "music.note")
+                    .font(.system(size: size * 0.48, weight: .black))
+                    .foregroundStyle(Color(hex: 0x25F4EE))
+                    .offset(x: -size * 0.045, y: size * 0.018)
+                Image(systemName: "music.note")
+                    .font(.system(size: size * 0.48, weight: .black))
+                    .foregroundStyle(Color(hex: 0xFE2C55))
+                    .offset(x: size * 0.045, y: -size * 0.018)
+                Image(systemName: "music.note")
+                    .font(.system(size: size * 0.48, weight: .black))
+                    .foregroundStyle(.white)
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(RoundedRectangle(cornerRadius: size * 0.23, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: size * 0.23, style: .continuous)
+                .stroke(Color.white.opacity(0.14), lineWidth: 0.7)
+        }
+        .accessibilityHidden(true)
+    }
+}
+
+struct ShareBrandRail: View {
+    @Environment(\.colorScheme) private var scheme
+    let onTap: (ShareBrand) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(Tr("常用应用"))
+                .font(pf(12, .semibold))
+                .foregroundStyle(ShareSheetTheme.secondaryInk(scheme))
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(alignment: .top, spacing: 8) {
+                    ForEach(ShareBrand.allCases) { brand in
+                        Button {
+                            UISelectionFeedbackGenerator().selectionChanged()
+                            onTap(brand)
+                        } label: {
+                            VStack(spacing: 7) {
+                                ShareBrandIcon(brand: brand, size: 54)
+                                    .shadow(color: Color.black.opacity(scheme == .dark ? 0.28 : 0.10),
+                                            radius: 8, y: 4)
+                                Text(Tr(brand.label))
+                                    .font(pf(11.5, .medium))
+                                    .foregroundStyle(ShareSheetTheme.ink(scheme))
+                                    .lineLimit(1)
+                            }
+                            .frame(width: 72)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(ShareBrandPressStyle())
+                        .accessibilityLabel(Tr("分享到") + Tr(brand.label))
+                    }
+                }
+            }
+        }
+    }
+}
+
+private struct ShareBrandPressStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(reduceMotion ? 1 : (configuration.isPressed ? 0.93 : 1))
+            .opacity(configuration.isPressed ? 0.78 : 1)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.10),
+                       value: configuration.isPressed)
+    }
+}
+
 struct ShareFile: Identifiable {
     let id = UUID()
     let url: URL
@@ -200,8 +403,13 @@ struct ShareSheet: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 18) {
                     preview
+                    brandRail
+                    shareSectionTitle(Tr("更多操作"))
                     actionRail
-                    moreCard
+                    if copyText != nil {
+                        moreCard
+                    }
+                    privacyNote
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 16)
@@ -210,7 +418,7 @@ struct ShareSheet: View {
         }
         .background(ShareSheetTheme.page(scheme).ignoresSafeArea())
         .presentationDragIndicator(.hidden)
-        .presentationDetents([.height(492), .large])
+        .presentationDetents([.fraction(0.76), .large])
     }
 
     private var header: some View {
@@ -353,6 +561,37 @@ struct ShareSheet: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    private var brandRail: some View {
+        ShareBrandRail { brand in
+            let text = copyText ?? primaryText
+            if ShareBrandAction.open(brand, text: text, image: image) {
+                dismiss()
+            } else {
+                dismiss()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
+                    presentSystemShare()
+                }
+            }
+        }
+    }
+
+    private func shareSectionTitle(_ title: String) -> some View {
+        Text(title)
+            .font(pf(12, .semibold))
+            .foregroundStyle(ShareSheetTheme.secondaryInk(scheme))
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var privacyNote: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "lock.shield.fill")
+            Text(Tr("仅复制本次要分享的内容，不会读取其他信息"))
+        }
+        .font(pf(10.5))
+        .foregroundStyle(ShareSheetTheme.secondaryInk(scheme))
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     private var moreCard: some View {
         Button {
             UIPasteboard.general.string = copyText
@@ -383,7 +622,7 @@ struct ShareSheet: View {
             .background(ShareSheetTheme.card(scheme),
                         in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(MenuPressStyle())
         .disabled(copyText == nil)
         .opacity(copyText == nil ? 0.45 : 1)
     }
@@ -397,7 +636,7 @@ struct ShareSheet: View {
                 .frame(height: 52)
                 .background(ShareSheetTheme.card(scheme))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(MenuPressStyle())
         .padding(.top, 8)
     }
 

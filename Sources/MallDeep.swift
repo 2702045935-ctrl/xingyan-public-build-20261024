@@ -670,6 +670,24 @@ struct DDShareSheet: View {
             }
             .padding(.horizontal, 16)
 
+            ShareBrandRail { brand in
+                let payload = "https://aa.x8iu.com/#mall/" + product.id + "\n" + product.title
+                let opened = ShareBrandAction.open(brand, text: payload)
+                dismiss()
+                if !opened {
+                    app.show(Tr("内容已复制，请确认已安装") + Tr(brand.label))
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+
+            Text(Tr("更多操作"))
+                .font(pf(12, .semibold))
+                .foregroundStyle(ShareSheetTheme.secondaryInk(scheme))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
+
             HStack(alignment: .top, spacing: 8) {
                 ShareActionTile(title: "转发给朋友",
                                 subtitle: "星言好友",
@@ -707,7 +725,7 @@ struct DDShareSheet: View {
         }
         .background(ShareSheetTheme.page(scheme).ignoresSafeArea())
         .presentationDragIndicator(.hidden)
-        .presentationDetents([.height(420), .large])
+        .presentationDetents([.fraction(0.72), .large])
         .sheet(isPresented: $showForward) {
             ForwardPickerView(items: [ForwardItem(kind: "mall", content: mallCardJSON)]) {
                 dismiss()
