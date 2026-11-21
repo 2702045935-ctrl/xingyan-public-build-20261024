@@ -400,6 +400,10 @@ struct MeView: View {
     }
 
     private func loadItems() async {
+        if items.isEmpty {
+            items = DiscoverItem.builtinMe
+            loaded = true
+        }
         if let list = try? await API.shared.mePage(), !list.isEmpty {
             items = list
             loaded = true

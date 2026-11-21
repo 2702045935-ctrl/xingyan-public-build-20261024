@@ -29,5 +29,9 @@ require(
     and ".font(.headline)" in ME,
     "native navigation, section and typography hierarchy are required",
 )
+require(
+    "items = DiscoverItem.builtinMe" in ME,
+    "the native me rows must render before the network catalog returns",
+)
 
 print("me-native: passed")
