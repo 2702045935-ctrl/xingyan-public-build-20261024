@@ -4,6 +4,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 VIEW = (ROOT / "Sources" / "ContactsView.swift").read_text(encoding="utf-8")
+INDEX = (ROOT / "Sources" / "ContactIndex.swift").read_text(encoding="utf-8")
+MENU = (ROOT / "Sources" / "MainTab.swift").read_text(encoding="utf-8")
 PHONE = (ROOT / "Sources" / "PhoneContactsView.swift").read_text(encoding="utf-8")
 PROFILE = (ROOT / "Sources" / "Profile.swift").read_text(encoding="utf-8")
 
@@ -55,6 +57,38 @@ require(
     'Tr("未找到相关联系人")' in VIEW
     and 'Tr("换个关键词试试")' in VIEW,
     "contact search must distinguish an empty result from a missing contact list",
+)
+require(
+    "private var displayedLetters: [String] { Self.letters }" in INDEX
+    and "ForEach(displayedLetters, id: \\.self)" in INDEX
+    and "nearestAvailableLetter(to: i)" in INDEX
+    and "haptic.selectionChanged()" in INDEX
+    and "UIImpactFeedbackGenerator(style: .heavy)" not in INDEX,
+    "contact index positions must stay stable and use lightweight selection feedback",
+)
+require(
+    "guard active != letter else { return }" in INDEX
+    and INDEX.find("guard active != letter else { return }") < INDEX.find("onPick(letter)"),
+    "index dragging must scroll only when the target letter actually changes",
+)
+require(
+    "ContactAvatarPressStyle" in VIEW
+    and "ContactTopIconPressStyle" in VIEW
+    and "ContactSearchPressStyle" in VIEW
+    and "buttonStyle(ContactSearchPressStyle())" in VIEW
+    and "buttonStyle(MenuPressStyle())" in VIEW,
+    "contact rows and controls must expose a restrained pressed state",
+)
+require(
+    "withSystemAnimation(.easeOut(duration: 0.12))" not in VIEW
+    and 'proxy.scrollTo("letter-\\(L)", anchor: .top)' in VIEW,
+    "alphabet index jumps must stay immediate instead of animating across the list",
+)
+require(
+    "opacity(configuration.isPressed ? 0.055 : 0)" in MENU
+    and ".easeOut(duration: 0.09)" in MENU
+    and "Color.gray.opacity(0.16)" not in MENU,
+    "shared menu press feedback must be subtle and animated",
 )
 require(
     "private var phoneSearchBar" in PHONE

@@ -33,6 +33,17 @@ require(
     "chat handoff timing must cover source tap through destination appearance",
 )
 require(
+    "private struct ChatChromeIconPressStyle" in CHATS
+    and "private struct ChatFilterChipPressStyle" in CHATS
+    and "private struct ChatSearchPressStyle" in CHATS
+    and "buttonStyle(ChatChromeIconPressStyle())" in CHATS
+    and "buttonStyle(ChatFilterChipPressStyle())" in CHATS
+    and "buttonStyle(ChatSearchPressStyle())" in CHATS
+    and ".scaleEffect(configuration.isPressed ? 0.94 : 1)" in CHATS
+    and ".scaleEffect(configuration.isPressed ? 0.97 : 1)" in CHATS,
+    "chat chrome and filter chips must provide restrained native press feedback",
+)
+require(
     "pagePush" in KERNEL and "pagePop" in KERNEL and "interruptionSpring" in KERNEL,
     "page transitions must share one motion budget",
 )

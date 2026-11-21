@@ -1357,9 +1357,18 @@ struct MenuRow: View {
 }
 
 struct MenuPressStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .background(configuration.isPressed ? Color.gray.opacity(0.16) : Color.clear)
+            .contentShape(Rectangle())
+            .overlay {
+                Color.primary
+                    .opacity(configuration.isPressed ? 0.055 : 0)
+                    .allowsHitTesting(false)
+            }
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.09),
+                       value: configuration.isPressed)
     }
 }
 

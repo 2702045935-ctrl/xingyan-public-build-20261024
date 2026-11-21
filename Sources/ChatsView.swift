@@ -1100,6 +1100,45 @@ private struct RowSwipeActionButtonStyle: ButtonStyle {
     }
 }
 
+private struct ChatChromeIconPressStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background {
+                Circle()
+                    .fill(Color.primary.opacity(configuration.isPressed ? 0.06 : 0))
+            }
+            .scaleEffect(configuration.isPressed ? 0.94 : 1)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.10),
+                       value: configuration.isPressed)
+    }
+}
+
+private struct ChatFilterChipPressStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .opacity(configuration.isPressed ? 0.82 : 1)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.09),
+                       value: configuration.isPressed)
+    }
+}
+
+private struct ChatSearchPressStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .overlay {
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .fill(Color.primary.opacity(configuration.isPressed ? 0.055 : 0))
+                    .allowsHitTesting(false)
+            }
+            .animation(.easeOut(duration: 0.09), value: configuration.isPressed)
+    }
+}
+
 private struct NativeChatEntry: Identifiable, Equatable {
     enum Kind: Equatable {
         case top
@@ -1521,7 +1560,7 @@ struct ChatsView: View {
                             }
                             .contentShape(Capsule())
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(ChatFilterChipPressStyle())
                     }
                 }
                 .padding(.horizontal, 8)
@@ -1631,7 +1670,7 @@ struct ChatsView: View {
                         )
                         .frame(width: 44, height: 44)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(ChatChromeIconPressStyle())
                 .accessibilityLabel(Tr("切换账号"))
 
                 if app.offline {
@@ -1661,7 +1700,7 @@ struct ChatsView: View {
                         JarvisEyesAvatar(size: 26, tint: eyesTint)
                             .frame(width: 34, height: 34)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(ChatChromeIconPressStyle())
                 }
 
                 Button {
@@ -1722,7 +1761,7 @@ struct ChatsView: View {
             }
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(ChatSearchPressStyle())
         .accessibilityLabel(Tr("搜索"))
         .padding(.horizontal, 16)
         .frame(maxWidth: chatsContentMaxWidth)

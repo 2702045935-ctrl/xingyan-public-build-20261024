@@ -63,6 +63,45 @@ private func contactDetailLine(_ label: String, _ value: String) -> String {
     return "\(Tr(label))：\(value)"
 }
 
+private struct ContactAvatarPressStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.95 : 1)
+            .opacity(configuration.isPressed ? 0.82 : 1)
+            .animation(reduceMotion ? nil : .spring(response: 0.20, dampingFraction: 0.84),
+                       value: configuration.isPressed)
+    }
+}
+
+private struct ContactTopIconPressStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background {
+                Circle()
+                    .fill(Color.primary.opacity(configuration.isPressed ? 0.065 : 0))
+            }
+            .scaleEffect(configuration.isPressed ? 0.92 : 1)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.10),
+                       value: configuration.isPressed)
+    }
+}
+
+private struct ContactSearchPressStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .overlay {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color.primary.opacity(configuration.isPressed ? 0.055 : 0))
+                    .allowsHitTesting(false)
+            }
+            .animation(.easeOut(duration: 0.09), value: configuration.isPressed)
+    }
+}
+
 struct ContactsView: View {
 
     @ObservedObject private var lang = LangStore.shared
@@ -204,7 +243,7 @@ private var funcs: [(String, String, Color, String)] {
                 .frame(width: 42, height: 42)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(ContactTopIconPressStyle())
         .zIndex(20)
         .accessibilityLabel(Tr("添加"))
     }
@@ -263,7 +302,7 @@ private var funcs: [(String, String, Color, String)] {
                                             NavigationLink(value: user) {
                                                 contactRow(user)
                                             }
-                                            .buttonStyle(.plain)
+                                            .buttonStyle(MenuPressStyle())
                                         }
                                         .id(user.id)
                                       }
@@ -326,9 +365,7 @@ private var funcs: [(String, String, Color, String)] {
                             ContactIndexBar(
                                 available: Set(sections.map { $0.letter }),
                                 onPick: { L in
-                                    withSystemAnimation(.easeOut(duration: 0.12)) {
-                                        proxy.scrollTo("letter-\(L)", anchor: .top)
-                                    }
+                                    proxy.scrollTo("letter-\(L)", anchor: .top)
                                     showBubble(L)
                                 },
                                  onSearch: {
@@ -487,7 +524,7 @@ private var funcs: [(String, String, Color, String)] {
                 .fill(contactsField))
             .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(ContactSearchPressStyle())
         .accessibilityLabel(Tr("搜索"))
     }
 
@@ -535,7 +572,7 @@ private var funcs: [(String, String, Color, String)] {
             .background(Color.clear)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(MenuPressStyle())
     }
 
     private var ctFuncs: [(String, String, Color, String)] {
@@ -576,7 +613,7 @@ private var funcs: [(String, String, Color, String)] {
                                     .frame(width: 58)
                             }
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(ContactAvatarPressStyle())
                     }
                 }
                 .padding(.vertical, 1)

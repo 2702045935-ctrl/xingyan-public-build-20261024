@@ -72,6 +72,12 @@ require(
     "native swipe must own row touches; the cell may only render content",
 )
 require(
+    "pressed ? 0.07 : 0.14" in ROW
+    and ".beginFromCurrentState" in ROW
+    and ".allowUserInteraction" in ROW,
+    "native row press feedback must arrive quickly and release without holding the gesture",
+)
+require(
     "collection.isDirectionalLockEnabled" not in LIST,
     "directional lock must not compete with the system horizontal swipe recognizer",
 )

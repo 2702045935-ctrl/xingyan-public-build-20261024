@@ -3,6 +3,18 @@ import UIKit
 
 func ctIdxWeight() -> Font.Weight { UIConfig.num("ctIdxBold", 1) > 0 ? .heavy : .regular }
 
+private struct ContactIndexSearchPressStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(reduceMotion ? 1 : (configuration.isPressed ? 0.93 : 1))
+            .opacity(configuration.isPressed ? 0.78 : 1)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.09),
+                       value: configuration.isPressed)
+    }
+}
+
 struct ContactIndexBar: View {
     static let letters: [String] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ#".map { String($0) }
 
@@ -19,7 +31,7 @@ struct ContactIndexBar: View {
     @State private var active: String? = nil
     @State private var clearTask: Task<Void, Never>?
 
-    private let haptic = UIImpactFeedbackGenerator(style: .heavy)
+    private let haptic = UISelectionFeedbackGenerator()
 
     private var fontSize: CGFloat { max(6.5, L.ctIdxSize - 0.5) }
     private var rowH: CGFloat { max(fontSize, L.ctIdxItemH) }
@@ -27,14 +39,18 @@ struct ContactIndexBar: View {
 
     private var dotSide: CGFloat { max(16, rowH + 2) }
 
-    private var letters: [String] {
+    private var availableLetters: [String] {
         Self.letters.filter { available.contains($0) }
     }
+    private var displayedLetters: [String] { Self.letters }
     private var shownLetter: String? { active }
 
     var body: some View {
         VStack(spacing: searchGap) {
-            Button(action: onSearch) {
+            Button {
+                UISelectionFeedbackGenerator().selectionChanged()
+                onSearch()
+            } label: {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 11.5, weight: .semibold))
                     .foregroundStyle(OrbitTheme.jade)
@@ -44,15 +60,21 @@ struct ContactIndexBar: View {
                     .shadow(color: Color.black.opacity(0.08), radius: 5, y: 2)
                     .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(ContactIndexSearchPressStyle())
             .accessibilityLabel(Tr("搜索"))
 
             VStack(spacing: 0) {
-                ForEach(letters, id: \.self) { L in
+                ForEach(displayedLetters, id: \.self) { L in
                     Text(L)
                         .font(pfStyled(size: fontSize, weight: shownLetter == L ? .bold : .medium))
 
-                        .foregroundColor(shownLetter == L ? .white : OrbitTheme.tertiary)
+                        .foregroundColor(
+                            shownLetter == L
+                                ? .white
+                                : (available.contains(L)
+                                    ? OrbitTheme.tertiary
+                                    : OrbitTheme.tertiary.opacity(0.28))
+                        )
                         .frame(height: rowH)
                         .frame(width: 18)
                         .background {
@@ -70,13 +92,16 @@ struct ContactIndexBar: View {
             .accessibilityValue(shownLetter ?? "")
             .accessibilityHint(Tr("上下轻扫切换字母"))
             .accessibilityAdjustableAction { direction in
-                guard !letters.isEmpty else { return }
-                let current = active.flatMap { letters.firstIndex(of: $0) } ?? 0
+                guard !availableLetters.isEmpty else { return }
                 switch direction {
                 case .increment:
-                    pick(letters[min(letters.count - 1, current + 1)])
+                    let current = active.flatMap { availableLetters.firstIndex(of: $0) }
+                    let next = current.map { min(availableLetters.count - 1, $0 + 1) } ?? 0
+                    pick(availableLetters[next])
                 case .decrement:
-                    pick(letters[max(0, current - 1)])
+                    let current = active.flatMap { availableLetters.firstIndex(of: $0) }
+                    let next = current.map { max(0, $0 - 1) } ?? (availableLetters.count - 1)
+                    pick(availableLetters[next])
                 @unknown default:
                     return
                 }
@@ -85,11 +110,12 @@ struct ContactIndexBar: View {
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
-                        guard !letters.isEmpty else { return }
+                        guard !displayedLetters.isEmpty else { return }
                         clearTask?.cancel()
-                        let i = max(0, min(letters.count - 1,
+                        let i = max(0, min(displayedLetters.count - 1,
                                            Int(floor(value.location.y / pitch))))
-                        pick(letters[i])
+                        guard let letter = nearestAvailableLetter(to: i) else { return }
+                        pick(letter)
                     }
                     .onEnded { _ in
                         scheduleHighlightEnd()
@@ -113,17 +139,31 @@ struct ContactIndexBar: View {
         .padding(.vertical, padV)
         .frame(width: 28)
         .onAppear { haptic.prepare() }
-        .onChange(of: available) { _ in haptic.prepare() }
+        .onChange(of: available) { next in
+            if let active, !next.contains(active) {
+                self.active = nil
+                onHighlight(nil)
+            }
+            haptic.prepare()
+        }
     }
 
     private func pick(_ letter: String) {
-        if active != letter {
-            active = letter
-            onHighlight(letter)
-            haptic.impactOccurred(intensity: 1.0)
-            haptic.prepare()
-        }
+        guard active != letter else { return }
+        active = letter
+        onHighlight(letter)
         onPick(letter)
+        haptic.selectionChanged()
+        haptic.prepare()
+    }
+
+    private func nearestAvailableLetter(to index: Int) -> String? {
+        guard !availableLetters.isEmpty else { return nil }
+        let clamped = max(0, min(displayedLetters.count - 1, index))
+        if let forward = displayedLetters[clamped...].first(where: available.contains) {
+            return forward
+        }
+        return displayedLetters[..<clamped].reversed().first(where: available.contains)
     }
 
     private func scheduleHighlightEnd() {

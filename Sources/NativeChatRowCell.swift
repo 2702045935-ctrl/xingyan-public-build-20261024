@@ -442,7 +442,7 @@ final class NativeChatRowCell: UITableViewCell {
         } else {
             color = pressed ? UIColor.white.withAlphaComponent(0.07) : .clear
         }
-        let duration = UIAccessibility.isReduceMotionEnabled ? 0 : 0.12
+        let duration = UIAccessibility.isReduceMotionEnabled ? 0 : (pressed ? 0.07 : 0.14)
         UIView.animate(withDuration: duration,
                        delay: 0,
                        options: [.beginFromCurrentState, .allowUserInteraction]) {
