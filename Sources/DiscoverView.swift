@@ -1137,24 +1137,20 @@ struct DiscoverView: View {
     }
 
     private func loadItems() async {
-        if let list = try? await API.shared.discover(), !list.isEmpty {
-            var merged = list
-            if !merged.contains(where: { $0.action == "map" }) {
-                merged.append(DiscoverItem(
-                    id: "d13",
-                    label: "星轨地图",
-                    icon: "i.map",
-                    svg: "",
-                    color: "#168B73",
-                    action: "map",
-                    group: 5,
-                    enabled: true
-                ))
-            }
-            items = merged
+        if let data = try? await API.shared.signedFeatureManifest(),
+           let list = try? FeatureManifestStore.verifyAndCache(data),
+           !list.isEmpty {
+            items = list
+            loaded = true
+        } else if let cached = FeatureManifestStore.cachedItems(),
+                  !cached.isEmpty {
+            items = cached
+            loaded = true
+        } else if let list = try? await API.shared.discover(),
+                  !list.isEmpty {
+            items = list
             loaded = true
         } else if items.isEmpty {
-
             items = DiscoverItem.builtin
         }
     }
@@ -1218,30 +1214,8 @@ extension DiscoverItem {
     static var builtin: [DiscoverItem] {
         [
             DiscoverItem(id: "d01", label: "生活圈", icon: "i.moments", svg: I.moments,
-                         color: "#4A90D9", action: "moments", group: 1, enabled: true),
-            DiscoverItem(id: "d12", label: "小程序", icon: "i.miniapps", svg: "",
-                         color: "#239B68", action: "miniapps", group: 1, enabled: true),
-            DiscoverItem(id: "d02", label: "视频号", icon: "i.channels", svg: I.channels,
-                         color: "#F2943B", action: "channels", group: 2, enabled: true),
-            DiscoverItem(id: "d03", label: "直播", icon: "i.live", svg: I.live,
-                         color: "#F4525B", action: "live", group: 2, enabled: true),
-            DiscoverItem(id: "d04", label: "扫一扫", icon: "i.scan", svg: I.scan,
-                         color: "#3D83E7", action: "scan", group: 3, enabled: true),
-
-            DiscoverItem(id: "d05", label: "漂流瓶", icon: "i.shake", svg: I.shake,
-                         color: "#2E7BD6", action: "bottle", group: 3, enabled: true),
-            DiscoverItem(id: "d06", label: "看一看", icon: "i.look", svg: I.look,
-                         color: "#7275E9", action: "look", group: 4, enabled: true),
-            DiscoverItem(id: "d07", label: "搜一搜", icon: "i.searchRow", svg: I.searchRow,
-                         color: "#59C47E", action: "search", group: 4, enabled: true),
-            DiscoverItem(id: "d08", label: "附近", icon: "i.nearby", svg: I.nearby,
-                         color: "#3D83E7", action: "nearby", group: 5, enabled: true),
-            DiscoverItem(id: "d13", label: "星轨地图", icon: "i.map", svg: "",
-                         color: "#168B73", action: "map", group: 5, enabled: true),
-            DiscoverItem(id: "d10", label: "游戏", icon: "i.game", svg: I.game,
-                         color: "#9A6AE8", action: "games", group: 7, enabled: true),
-            DiscoverItem(id: "d11", label: "商城", icon: "i.shop", svg: I.wallet,
-                         color: "#E02A0F", action: "shop", group: 6, enabled: true)
+                         color: "#4A90D9", action: "moments", group: 1,
+                         enabled: true)
         ]
     }
 

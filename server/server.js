@@ -1752,7 +1752,42 @@ const DISCOVER_FILE = 'discover.json';
    但这个名字**不在白名单里** → normalizeRowList 会把它改成列表最后那个（soon），
    于是 App 收到 action=soon，点进去就是「这一页排在下一批」。
    （用户报的「漂流瓶肯定不在发现页 / 显示的是这一页排在下一批」就是这个。） */
-const DISCOVER_ACTIONS = ['moments', 'news', 'nearby', 'shake', 'bottle', 'live', 'games', 'channels', 'miniapps', 'music', 'soon'];
+const DISCOVER_ACTIONS = ['moments', 'news', 'nearby', 'shake', 'bottle', 'live',
+  'games', 'channels', 'miniapps', 'music', 'map', 'shop', 'scan', 'search', 'soon'];
+const FEATURE_MANIFEST_KEY_ID = 'fm-v1';
+let featureManifestPrivateKey = null;
+
+function loadFeatureManifestPrivateKey() {
+  if (featureManifestPrivateKey) return featureManifestPrivateKey;
+  const inline = String(process.env.FEATURE_MANIFEST_PRIVATE_KEY_PEM || '');
+  const file = String(
+    process.env.FEATURE_MANIFEST_KEY_FILE
+      || path.join(DATA_DIR, 'feature-manifest-ed25519.pem')
+  );
+  const pem = inline || (fs.existsSync(file)
+    ? fs.readFileSync(file, 'utf8')
+    : '');
+  if (!pem.trim()) {
+    throw new Error('feature manifest signing key is not configured');
+  }
+  featureManifestPrivateKey = crypto.createPrivateKey(pem);
+  return featureManifestPrivateKey;
+}
+
+function signFeatureManifest(manifest) {
+  const bytes = Buffer.from(JSON.stringify(manifest), 'utf8');
+  const signature = crypto.sign(
+    null,
+    bytes,
+    loadFeatureManifestPrivateKey()
+  );
+  return {
+    algorithm: 'Ed25519',
+    keyId: FEATURE_MANIFEST_KEY_ID,
+    payload: bytes.toString('base64url'),
+    signature: signature.toString('base64url')
+  };
+}
 /* ---------------------------------------------- 我页（后台也能自由增删） */
 const ME_PAGE_FILE = 'me-page.json';
 const ME_ACTIONS = ['service', 'favorites', 'moments', 'works', 'stickers', 'settings', 'cards', 'channels', 'shop', 'plugins', 'soon'];
@@ -17172,7 +17207,44 @@ async function handleApi(req, res, pathname, query) {
     return;
   }
 
-  /* 发现页的行：后台加/删/改，前端（网页版和 App）每次打开都拉一次。
+  /* 世界页功能清单：只返回签名后的模块描述，实验功能可在服务端直接撤销。 */
+  if (parts[0] === 'ui-manifest' && method === 'GET') {
+    try {
+      const defs = readJson(
+        path.join(DATA_DIR, 'icon-defaults.json'),
+        { items: [] }
+      ).items || [];
+      const overrides = readJson(path.join(DATA_DIR, ICONS_FILE), {});
+      const builtin = {};
+      defs.forEach((d) => { builtin[d.key] = d.svg || ''; });
+      const items = (db.discover || [])
+        .filter((it) => it.enabled !== false)
+        .map((it) => {
+          let svg = it.svg || overrides[it.icon] || builtin[it.icon] || '';
+          if (svg.indexOf('anim:') === 0) {
+            const bm = String(req.headers['x-app-build'] || '').match(/B(\d+)/);
+            const buildNo = bm ? Number(bm[1]) : 0;
+            if (buildNo < 723) svg = builtin[it.icon] || svg;
+          }
+          return Object.assign({}, it, { svg });
+        });
+      const now = Date.now();
+      const envelope = signFeatureManifest({
+        version: now,
+        issuedAt: new Date(now).toISOString(),
+        expiresAt: new Date(now + 5 * 60 * 1000).toISOString(),
+        items
+      });
+      res.setHeader('Cache-Control', 'no-store');
+      ok(res, envelope);
+    } catch (error) {
+      fail(res, 503, '功能清单签名服务未就绪');
+    }
+    return;
+  }
+
+  /* 发现页的旧接口保留给旧版本客户端，新版本优先使用 ui-manifest。
+     后台加/删/改，前端（网页版和 App）每次打开都拉一次。
      图标分两种：icon 写 UI 图标页里的 key（后台换过图标就用换过的），
      或者直接给一段 svg。两者都没有就留空，前端只显示文字。 */
   if (parts[0] === 'discover' && method === 'GET') {

@@ -5439,6 +5439,14 @@ private struct StarredPayload: Decodable {
         return payload.items.filter { $0.enabled != false }
     }
 
+    func signedFeatureManifest() async throws -> Data {
+        let envelope: FeatureManifestEnvelope = try await get(
+            "/api/ui-manifest",
+            as: FeatureManifestEnvelope.self
+        )
+        return try JSONEncoder().encode(envelope)
+    }
+
     func news(source: String, limit: Int = 40, offset: Int = 0) async throws -> NewsFeed {
         let s = source.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? source
         return try await get("/api/news?source=" + s + "&limit=\(limit)&offset=\(offset)", as: NewsFeed.self)
