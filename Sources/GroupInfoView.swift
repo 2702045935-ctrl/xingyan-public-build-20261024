@@ -310,7 +310,7 @@ struct GroupInfoView: View {
                                                                 endPoint: .bottomTrailing))))
                             .padding(.trailing, 14)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(MenuPressStyle())
                     .disabled(over)
                 }
             }
@@ -652,7 +652,7 @@ struct GroupInfoView: View {
                         .background(Color.primary.opacity(0.055), in: Circle())
                         .contentShape(Circle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(MenuPressStyle())
                 .accessibilityLabel(Tr("群二维码"))
             }
             .padding(.horizontal, 16)
@@ -679,7 +679,10 @@ struct GroupInfoView: View {
             } else {
                 LazyVGrid(columns: gridColumns, spacing: 14) {
                     ForEach(visibleMembers) { u in
-                        VStack(spacing: 6) {
+                        Button {
+                            cardUser = u
+                        } label: {
+                            VStack(spacing: 6) {
                             ZStack(alignment: .topLeading) {
                                 Avatar(path: u.avatarPath, size: 52, radius: 10, level: u.qqLevel ?? 0)
 
@@ -695,7 +698,7 @@ struct GroupInfoView: View {
                                             .frame(height: 20)
                                             .background(Capsule().fill(C.red))
                                     }
-                                    .buttonStyle(.plain)
+                                    .buttonStyle(MenuPressStyle())
                                     .offset(x: -6, y: -6)
                                 }
                             }
@@ -712,11 +715,10 @@ struct GroupInfoView: View {
                                 }
                             }
                             .frame(maxWidth: .infinity)
+                            }
+                            .frame(maxWidth: .infinity)
                         }
-                        .frame(maxWidth: .infinity)
-
-                        .contentShape(Rectangle())
-                        .onTapGesture { cardUser = u }
+                        .buttonStyle(MenuPressStyle())
                         .contextMenu {
                             Button { cardUser = u } label: { Label(Tr("查看资料"), systemImage: "person.crop.circle") }
                             if u.id == app.me?.id || isOwner {
@@ -758,7 +760,7 @@ struct GroupInfoView: View {
                                         .foregroundColor(C.subLabel)
                                 }
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(MenuPressStyle())
                             Text(Tr("更多群成员"))
                                 .font(pf(10.5))
                                 .foregroundColor(C.subLabel)
@@ -778,7 +780,7 @@ struct GroupInfoView: View {
                                     .foregroundColor(C.subLabel)
                             }
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(MenuPressStyle())
                         Text(Tr("成员")).font(pf(10.5)).foregroundColor(C.subLabel)
                     }
                     .frame(maxWidth: .infinity)
@@ -1664,26 +1666,11 @@ struct DirectChatInfoView: View {
                     .padding(.bottom, 2)
             }
 
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 0) {
-                    peerCard
-                    if chat.sysTeam != true, peer?.banned == true || friendMeta?.block == true {
-                        relationshipStatusCard
-                    }
-                    if chat.sysTeam == true {
-                        teamSimpleIntro
-                    } else {
-                        ChatInfoSectionTitle(text: Tr("聊天设置"))
-                        switchCard
-                        ChatInfoSectionTitle(text: Tr("聊天工具"))
-                        toolCard
-                        ChatInfoSectionTitle(text: Tr("其他"))
-                        dangerCard
-                    }
-                }
-                .padding(.horizontal, 14)
-                .padding(.top, 6)
-                .padding(.bottom, 30)
+            NativeStaticList(items: directInfoNativeItems,
+                             signature: { $0.signature }) { item in
+                directInfoNativeRow(item)
+                    .environmentObject(app)
+                    .environment(\.chatInfoCardTone, .direct)
             }
         }
         .background(C.pageBg.ignoresSafeArea())
@@ -1817,6 +1804,71 @@ struct DirectChatInfoView: View {
         }
     }
 
+    private var directInfoNativeItems: [NativeStaticItem] {
+        let statusNeeded = chat.sysTeam != true
+            && (peer?.banned == true || friendMeta?.block == true)
+        if chat.sysTeam == true {
+            return [
+                NativeStaticItem(id: "peer",
+                                 signature: "\(peer?.id ?? "")-\(peer?.name ?? "")-\(peer?.avatarPath ?? "")"),
+                NativeStaticItem(id: "team-intro", signature: chat.id)
+            ]
+        }
+        return [
+            NativeStaticItem(id: "peer",
+                             signature: "\(peer?.id ?? "")-\(peer?.name ?? "")-\(peer?.avatarPath ?? "")-\(peer?.username ?? "")"),
+            NativeStaticItem(id: "relationship",
+                             signature: "\(statusNeeded)-\(peer?.banned == true)-\(friendMeta?.block == true)-\(relationshipStatusDetail)"),
+            NativeStaticItem(id: "chat-settings-title", signature: Tr("聊天设置") + Lang.code),
+            NativeStaticItem(id: "switches", signature: "\(pinned)-\(muted)-\(peer?.relation ?? "")"),
+            NativeStaticItem(id: "chat-tools-title", signature: Tr("聊天工具") + Lang.code),
+            NativeStaticItem(id: "tools", signature: "\(chat.id)-\(peer?.id ?? "")-\(Lang.code)"),
+            NativeStaticItem(id: "other-title", signature: Tr("其他") + Lang.code),
+            NativeStaticItem(id: "danger", signature: "\(peer?.relation ?? "")-\(friendMeta?.block == true)")
+        ]
+    }
+
+    @ViewBuilder
+    private func directInfoNativeRow(_ item: NativeStaticItem) -> some View {
+        switch item.id {
+        case "peer":
+            peerCard
+                .padding(.horizontal, 14)
+                .padding(.top, 6)
+        case "relationship":
+            if chat.sysTeam != true,
+               peer?.banned == true || friendMeta?.block == true {
+                relationshipStatusCard
+                    .padding(.horizontal, 14)
+            }
+        case "team-intro":
+            teamSimpleIntro
+                .padding(.horizontal, 14)
+                .padding(.bottom, 30)
+        case "chat-settings-title":
+            ChatInfoSectionTitle(text: Tr("聊天设置"))
+                .padding(.horizontal, 14)
+        case "switches":
+            switchCard.padding(.horizontal, 14)
+        case "chat-tools-title":
+            ChatInfoSectionTitle(text: Tr("聊天工具"))
+                .padding(.horizontal, 14)
+        case "tools":
+            toolCard.padding(.horizontal, 14)
+        case "other-title":
+            ChatInfoSectionTitle(text: Tr("其他"))
+                .padding(.horizontal, 14)
+        case "danger":
+            VStack(spacing: 0) {
+                dangerCard
+                Color.clear.frame(height: 30)
+            }
+            .padding(.horizontal, 14)
+        default:
+            EmptyView()
+        }
+    }
+
     private var relationshipStatusCard: some View {
         GroupCard {
             HStack(alignment: .top, spacing: 12) {
@@ -1854,8 +1906,11 @@ struct DirectChatInfoView: View {
     }
 
     private var peerCard: some View {
-        GroupCard {
-            HStack(spacing: 12) {
+        Button {
+            if peer != nil { showCard = true }
+        } label: {
+            GroupCard {
+                HStack(spacing: 12) {
                 Avatar(path: peer?.avatarPath ?? "", size: 68, radius: 16, level: peer?.qqLevel ?? 0)
                     .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .stroke(Color.white.opacity(0.35), lineWidth: 0.8))
@@ -1886,10 +1941,12 @@ struct DirectChatInfoView: View {
                 }
             }
             .contentShape(Rectangle())
-            .onTapGesture { if peer != nil { showCard = true } }
             .padding(.horizontal, 16)
             .padding(.vertical, 18)
+            }
         }
+        .buttonStyle(MenuPressStyle())
+        .disabled(peer == nil)
     }
 
     private var switchCard: some View {
@@ -1994,7 +2051,7 @@ struct DirectChatInfoView: View {
             .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(MenuPressStyle())
     }
 
     private func sysDestination(for key: String) -> SysPage {
@@ -2108,7 +2165,7 @@ struct DirectChatInfoView: View {
             .padding(.vertical, 12)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(MenuPressStyle())
     }
 
     private func setBlocked(_ value: Bool) {
@@ -2371,7 +2428,7 @@ private struct ChatInfoTextRow: View {
             .frame(minHeight: 54)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(MenuPressStyle())
     }
 }
 
@@ -2423,7 +2480,7 @@ private struct ChatInfoTextButton: View {
                 .padding(.horizontal, 12)
                 .frame(height: 30)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(MenuPressStyle())
     }
 }
 
@@ -2440,6 +2497,6 @@ private struct ChatInfoDangerRow: View {
                 .frame(height: 54)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(MenuPressStyle())
     }
 }

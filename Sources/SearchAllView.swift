@@ -24,6 +24,15 @@ struct SearchAllData: Decodable {
     var suggestions: [String]?
 }
 
+private struct SearchScopePressStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.96 : 1)
+            .opacity(configuration.isPressed ? 0.80 : 1)
+            .animation(.easeOut(duration: 0.09), value: configuration.isPressed)
+    }
+}
+
 struct SearchAllView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -31,6 +40,7 @@ struct SearchAllView: View {
     @State private var scope = "all"
     @State private var data: SearchAllData?
     @State private var searching = false
+    @State private var searchFailed = false
     @State private var history: [String] = ContactSearchHistory.load()
     @FocusState private var focused: Bool
     @State private var task: Task<Void, Never>?
@@ -44,7 +54,7 @@ struct SearchAllView: View {
 
     private let scopes: [(String, String)] = [
         ("all", "全部"), ("people", "联系人"), ("groups", "群聊"),
-        ("moments", "朋友圈"), ("videos", "视频号"), ("messages", "聊天记录")
+        ("moments", "生活圈"), ("videos", "视频号"), ("messages", "聊天记录")
     ]
 
     private struct ToolHit: Identifiable {
@@ -89,11 +99,12 @@ struct SearchAllView: View {
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(.horizontal, 8)
-                .frame(height: 34)
-                .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(C.searchBg))
+                .padding(.horizontal, 10)
+                .frame(height: 36)
+                .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(C.searchBg))
                 Button(Tr("取消")) { dismiss() }
-                    .font(pf(16)).foregroundColor(C.label).buttonStyle(.plain)
+                    .font(pf(16)).foregroundColor(C.label)
+                    .buttonStyle(MenuPressStyle())
             }
             .padding(.horizontal, 12)
             .padding(.top, L.safeTop)
@@ -114,7 +125,7 @@ struct SearchAllView: View {
                                 .frame(height: 28)
                                 .background(Capsule().fill(scope == s.0 ? C.green : C.cardBg))
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(SearchScopePressStyle())
                     }
                 }
                 .padding(.horizontal, 12)
@@ -137,7 +148,7 @@ struct SearchAllView: View {
                                 Button {
                                     ContactSearchHistory.clear(); history = []
                                 } label: { Text(Tr("清空")).font(pf(13)).foregroundColor(C.subLabel) }
-                                .buttonStyle(.plain)
+                                .buttonStyle(MenuPressStyle())
                             }
                             .padding(.horizontal, 16).frame(height: 34)
                             ForEach(history, id: \.self) { h in
@@ -150,13 +161,62 @@ struct SearchAllView: View {
                                     .padding(.horizontal, 16).frame(height: 46)
                                     .background(C.cardBg).contentShape(Rectangle())
                                 }
-                                .buttonStyle(.plain)
+                                .buttonStyle(MenuPressStyle())
                                 HairLine(inset: 16)
                             }
                         }
-                    } else if searching {
-                        ProgressView().padding(.top, 40)
+                    } else if searching && data == nil {
+                        VStack(spacing: 10) {
+                            ProgressView()
+                            Text(Tr("正在搜索…")).font(pf(13)).foregroundColor(C.subLabel)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 44)
+                    } else if searchFailed && data == nil {
+                        VStack(spacing: 9) {
+                            Image(systemName: "wifi.exclamationmark")
+                                .font(.system(size: 30, weight: .light))
+                                .foregroundColor(C.subLabel)
+                            Text(Tr("搜索暂时不可用"))
+                                .font(pf(15, .semibold))
+                                .foregroundColor(C.label)
+                            Text(Tr("检查网络后再试一次"))
+                                .font(pf(12.5))
+                                .foregroundColor(C.subLabel)
+                            Button(Tr("重新搜索")) { runSearch() }
+                                .font(pf(14, .medium))
+                                .foregroundColor(C.green)
+                                .padding(.horizontal, 14)
+                                .frame(height: 34)
+                                .background(C.green.opacity(0.10), in: Capsule())
+                                .buttonStyle(MenuPressStyle())
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 46)
                     } else {
+                        if searching {
+                            ProgressView()
+                                .controlSize(.small)
+                                .frame(maxWidth: .infinity)
+                                .padding(.top, 8)
+                        }
+                        if searchFailed {
+                            HStack(spacing: 8) {
+                                Image(systemName: "exclamationmark.circle.fill")
+                                    .foregroundStyle(C.orange)
+                                Text(Tr("结果可能没有更新"))
+                                    .font(pf(12.5))
+                                    .foregroundStyle(C.subLabel)
+                                Spacer(minLength: 0)
+                                Button(Tr("重试")) { runSearch() }
+                                    .font(pf(12.5, .semibold))
+                                    .foregroundStyle(C.green)
+                                    .buttonStyle(MenuPressStyle())
+                            }
+                            .padding(.horizontal, 16)
+                            .frame(height: 34)
+                            .background(C.orange.opacity(0.07))
+                        }
                         results
                     }
                     Spacer().frame(height: 30)
@@ -215,6 +275,7 @@ struct SearchAllView: View {
             header(Tr("功能"), matchedTools.count)
             ForEach(matchedTools) { tool in
                 row(tap: {
+                    remember()
                     if tool.id == "browser" { showBrowser = true }
                     else if tool.id == "drop" { showDrop = true }
                     else { showPlugins = true }
@@ -223,7 +284,7 @@ struct SearchAllView: View {
                         .font(.system(size: 19, weight: .medium))
                         .foregroundColor(C.green)
                         .frame(width: 40, height: 40)
-                        .background(C.cardBg)
+                        .background(C.green.opacity(0.10))
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     VStack(alignment: .leading, spacing: 2) {
                         highlightMatch(tool.title, q).font(pf(15.5)).foregroundColor(C.label)
@@ -235,7 +296,10 @@ struct SearchAllView: View {
         if !people.isEmpty {
             header(Tr("联系人"), people.count)
             ForEach(people) { p in
-                row(tap: { pickedUser = User(id: p.id) }) {
+                row(tap: {
+                    remember()
+                    pickedUser = User(id: p.id)
+                }) {
                     Avatar(path: p.avatar ?? "", size: 40, radius: 6)
                     VStack(alignment: .leading, spacing: 2) {
                         highlightMatch(p.name ?? "", q).font(pf(15.5)).foregroundColor(C.label)
@@ -249,7 +313,10 @@ struct SearchAllView: View {
         if !groups.isEmpty {
             header(Tr("群聊"), groups.count)
             ForEach(groups) { g in
-                row(tap: { openChat(g.id) }) {
+                row(tap: {
+                    remember()
+                    openChat(g.id)
+                }) {
                     Avatar(path: g.avatar ?? "", size: 40, radius: 6)
                     VStack(alignment: .leading, spacing: 2) {
                         highlightMatch(g.name ?? "", q).font(pf(15.5)).foregroundColor(C.label)
@@ -261,7 +328,10 @@ struct SearchAllView: View {
         if !msgs.isEmpty {
             header(Tr("聊天记录"), msgs.count)
             ForEach(msgs) { m in
-                row(tap: { openChat(m.chatId) }) {
+                row(tap: {
+                    remember()
+                    openMessage(m)
+                }) {
                     Avatar(path: "", size: 40, radius: 6)
                     VStack(alignment: .leading, spacing: 2) {
                         HStack(spacing: 6) {
@@ -278,7 +348,10 @@ struct SearchAllView: View {
         if !moments.isEmpty {
             header(Tr("朋友圈"), moments.count)
             ForEach(moments) { p in
-                row(tap: { showMoments = true }) {
+                row(tap: {
+                    remember()
+                    showMoments = true
+                }) {
                     Avatar(path: "", size: 40, radius: 6)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(p.author ?? "").font(pf(14)).foregroundColor(C.label)
@@ -290,7 +363,10 @@ struct SearchAllView: View {
         if !videos.isEmpty {
             header(Tr("视频号"), videos.count)
             ForEach(videos) { v in
-                row(tap: { showChannels = true }) {
+                row(tap: {
+                    remember()
+                    showChannels = true
+                }) {
                     Avatar(path: v.cover ?? "", size: 40, radius: 6)
                     VStack(alignment: .leading, spacing: 2) {
                         highlightMatch(v.title ?? "", q).font(pf(15)).foregroundColor(C.label).lineLimit(1)
@@ -303,8 +379,10 @@ struct SearchAllView: View {
 
     private func header(_ t: String, _ n: Int) -> some View {
         HStack {
-            Text(t + "（\(n)）").font(pf(13)).foregroundColor(C.subLabel)
+            Text(t).font(pf(12.5, .semibold)).foregroundColor(C.subLabel)
             Spacer(minLength: 0)
+            Text("\(n)").font(pf(11.5, .medium))
+                .foregroundColor(C.subLabel.opacity(0.75)).monospacedDigit()
         }
         .padding(.horizontal, 16).frame(height: 32).background(C.pageBg)
     }
@@ -320,8 +398,11 @@ struct SearchAllView: View {
             .frame(minHeight: 56)
             .background(C.cardBg)
             .contentShape(Rectangle())
+            .overlay(alignment: .bottom) {
+                HairLine(inset: 68)
+            }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(MenuPressStyle())
     }
 
     private func shortDate(_ s: String?) -> String {
@@ -343,10 +424,29 @@ struct SearchAllView: View {
         }
     }
 
+    private func openMessage(_ hit: SearchAllData.ChatHit) {
+        guard let c = app.chats.first(where: { $0.id == hit.chatId }) else {
+            app.show(Tr("这个会话不在你的列表里"))
+            return
+        }
+        app.openChatViaList(c)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.42) {
+            ChatSearchJump.request(chatId: hit.chatId,
+                                   messageId: hit.messageId,
+                                   seq: nil)
+        }
+    }
+
     private func runSearch() {
         task?.cancel()
         let key = q.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !key.isEmpty else { data = nil; return }
+        guard !key.isEmpty else {
+            data = nil
+            searchFailed = false
+            searching = false
+            return
+        }
+        searchFailed = false
         searching = true
         task = Task {
             try? await Task.sleep(nanoseconds: 250_000_000)
@@ -354,7 +454,11 @@ struct SearchAllView: View {
             let got = try? await API.shared.searchAll(key, scope: scope)
             if Task.isCancelled { return }
             await MainActor.run {
-                data = got
+                if let got {
+                    data = got
+                } else {
+                    searchFailed = true
+                }
                 searching = false
             }
         }

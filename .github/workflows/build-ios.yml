@@ -95,6 +95,7 @@ jobs:
           python3 tools/verify-discover-map-entry.py
           python3 tools/verify-music-kernel.py
           python3 tools/verify-search-recommendation.py
+          python3 tools/verify-search-all.py
           python3 tools/verify-transfer-checkout.py
           python3 tools/verify-payment-gold-card.py
           python3 tools/verify-wallet-layout.py

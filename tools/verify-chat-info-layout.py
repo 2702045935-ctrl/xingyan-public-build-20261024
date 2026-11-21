@@ -33,6 +33,12 @@ require(
     "chat info rows must use the compact native settings rhythm",
 )
 require(
+    "NativeStaticList(items: directInfoNativeItems" in INFO
+    and "private var directInfoNativeItems" in INFO
+    and "buttonStyle(MenuPressStyle())" in INFO,
+    "single-chat info must share the native list and pressed-row behavior",
+)
+require(
     "private struct ChatInfoDangerRow" in INFO
     and ".frame(maxWidth: .infinity)\n                .frame(height: 54)" in INFO,
     "destructive chat actions must be isolated as centered red rows",
