@@ -43,6 +43,7 @@ struct XYPaySheet: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 14) {
                     cardFace
+                    paymentJourney
                     amountBlock
                     if stage == 2 { successBlock }
                     else if stage == 1 { pwdBlock }
@@ -132,6 +133,46 @@ struct XYPaySheet: View {
             }
         }
         .padding(.top, 4)
+    }
+
+    private var paymentJourney: some View {
+        HStack(spacing: 0) {
+            journeyStep(index: 0, title: Tr("确认"), symbol: "creditcard.fill")
+            journeyLine(active: stage >= 1)
+            journeyStep(index: 1, title: Tr("验证"), symbol: "faceid")
+            journeyLine(active: stage >= 2)
+            journeyStep(index: 2, title: Tr("完成"), symbol: "checkmark")
+        }
+        .padding(.horizontal, 8)
+    }
+
+    private func journeyStep(index: Int, title: String, symbol: String) -> some View {
+        let complete = stage > index
+        let active = stage == index
+        let tint = complete || active ? PayVisual.tint : PayVisual.secondaryInk.opacity(0.42)
+        return VStack(spacing: 5) {
+            Image(systemName: complete ? "checkmark" : symbol)
+                .font(.system(size: 12, weight: .bold))
+                .foregroundStyle(complete || active ? Color.white : tint)
+                .frame(width: 28, height: 28)
+                .background(
+                    Circle().fill(complete || active
+                                  ? PayVisual.tint
+                                  : PayVisual.secondaryInk.opacity(0.10))
+                )
+            Text(title)
+                .font(pf(10.5, active ? .semibold : .medium))
+                .foregroundStyle(active ? C.label : PayVisual.secondaryInk)
+        }
+        .frame(width: 64)
+    }
+
+    private func journeyLine(active: Bool) -> some View {
+        Capsule(style: .continuous)
+            .fill(active ? PayVisual.tint.opacity(0.72) : PayVisual.separator)
+            .frame(maxWidth: .infinity)
+            .frame(height: 1.5)
+            .padding(.bottom, 18)
     }
 
     private var verifyBlock: some View {

@@ -61,6 +61,7 @@ struct CardsView: View {
     @State private var loading = true
     @State private var open: WalletCard? = nil
     @State private var focusedCardID: String? = nil
+    @AppStorage("wallet.deck.tip.seen.v2") private var deckTipSeen = false
 
     @State private var diagNote = ""
 
@@ -88,6 +89,9 @@ struct CardsView: View {
                     } else {
                         if !live.isEmpty {
                             sectionTitle(Tr("可用"))
+                            if live.count > 1 && !deckTipSeen {
+                                walletDeckTip
+                            }
                             walletCardStack(live)
                         }
                         if !used.isEmpty {
@@ -149,6 +153,42 @@ struct CardsView: View {
         }
     }
 
+    private var walletDeckTip: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "rectangle.stack.fill")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(PayVisual.gold)
+                .frame(width: 30, height: 30)
+                .background(PayVisual.gold.opacity(0.10), in: Circle())
+
+            Text(Tr("点后面露出的卡片，可以先把它切到前面再查看"))
+                .font(pf(12.5))
+                .foregroundStyle(C.label)
+                .lineLimit(2)
+
+            Spacer(minLength: 4)
+
+            Button {
+                withAnimation(.easeOut(duration: 0.16)) { deckTipSeen = true }
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(C.subLabel)
+                    .frame(width: 28, height: 28)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Tr("关闭提示"))
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .background(PayVisual.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(PayVisual.separator, lineWidth: 0.6)
+        }
+        .padding(.horizontal, 16)
+    }
+
     private var walletCardHeight: CGFloat {
         min(218, max(194, L.width * 0.54))
     }
@@ -175,6 +215,7 @@ struct CardsView: View {
                     if index == 0 {
                         open = card
                     } else {
+                        deckTipSeen = true
                         withAnimation(.spring(response: 0.40, dampingFraction: 0.86)) {
                             focusedCardID = card.id
                         }

@@ -756,6 +756,222 @@ private struct PayPrimaryActionPressStyle: ButtonStyle {
     }
 }
 
+private struct StarPayGuidePage: Identifiable {
+    let id: Int
+    let kicker: String
+    let title: String
+    let detail: String
+}
+
+private struct StarPayGuideView: View {
+    let onFinish: () -> Void
+
+    @State private var page = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private let pages: [StarPayGuidePage] = [
+        .init(id: 0,
+              kicker: "STAR PAY WALLET",
+              title: Tr("先确认当前卡"),
+              detail: Tr("卡包里的后卡先切到前台，再确认卡面和尾号。余额只在面容验证后显示。")),
+        .init(id: 1,
+              kicker: Tr("安全验证"),
+              title: Tr("每次支付都先验证"),
+              detail: Tr("面容 ID 或支付密码通过后才继续。验证失败不会创建付款记录。")),
+        .init(id: 2,
+              kicker: Tr("快捷操作"),
+              title: Tr("付款和收款分开"),
+              detail: Tr("付款用于向商家出示付款码；收款用于展示你的收款码，避免拿错页面。")),
+        .init(id: 3,
+              kicker: Tr("账本"),
+              title: Tr("每一笔都有记录"),
+              detail: Tr("支付完成后可在最近交易里查看金额、方向、余额变化和交易单号。"))
+    ]
+
+    var body: some View {
+        ZStack {
+            PayVisual.canvas.ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                HStack(spacing: 10) {
+                    Image(systemName: "wallet.bifold.fill")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(PayVisual.tint)
+                    Text(Tr("星言支付"))
+                        .font(pf(17, .semibold))
+                        .foregroundStyle(C.label)
+                    Spacer(minLength: 0)
+                    Button(Tr("跳过")) { onFinish() }
+                        .font(pf(14, .medium))
+                        .foregroundStyle(PayVisual.secondaryInk)
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, max(12, L.safeTop))
+
+                TabView(selection: $page) {
+                    ForEach(pages) { item in
+                        guidePage(item)
+                            .tag(item.id)
+                    }
+                }
+                .tabViewStyle(.page(indexDisplayMode: .never))
+
+                HStack(spacing: 6) {
+                    ForEach(pages) { item in
+                        Capsule(style: .continuous)
+                            .fill(item.id == page ? PayVisual.tint : PayVisual.separator)
+                            .frame(width: item.id == page ? 20 : 6, height: 6)
+                    }
+                }
+                .animation(reduceMotion ? nil : .easeOut(duration: 0.18), value: page)
+
+                Button {
+                    if page < pages.count - 1 {
+                        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.24)) {
+                            page += 1
+                        }
+                    } else {
+                        onFinish()
+                    }
+                } label: {
+                    Text(page < pages.count - 1 ? Tr("继续") : Tr("开始使用"))
+                }
+                .buttonStyle(PayPrimaryButtonStyle(tint: PayVisual.tint))
+                .padding(.horizontal, 20)
+                .padding(.top, 22)
+                .padding(.bottom, max(18, L.safeBottom + 8))
+            }
+        }
+        .interactiveDismissDisabled()
+    }
+
+    private func guidePage(_ item: StarPayGuidePage) -> some View {
+        VStack(spacing: 22) {
+            Spacer(minLength: 10)
+            guideArtwork(item.id)
+                .frame(height: 238)
+                .padding(.horizontal, 20)
+
+            VStack(spacing: 9) {
+                Text(item.kicker)
+                    .font(pfExact(10, .bold))
+                    .tracking(1.7)
+                    .foregroundStyle(PayVisual.tint)
+                Text(item.title)
+                    .font(pf(28, .bold))
+                    .foregroundStyle(C.label)
+                    .multilineTextAlignment(.center)
+                Text(item.detail)
+                    .font(pf(15))
+                    .foregroundStyle(PayVisual.secondaryInk)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(3)
+                    .padding(.horizontal, 18)
+            }
+            Spacer(minLength: 10)
+        }
+        .padding(.horizontal, 12)
+        .accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder
+    private func guideArtwork(_ index: Int) -> some View {
+        switch index {
+        case 0:
+            ZStack(alignment: .top) {
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(PayVisual.gold.opacity(0.24))
+                    .frame(width: 236, height: 148)
+                    .offset(y: 38)
+                StarPayPhysicalCardSurface(radius: 24)
+                    .frame(width: 270, height: 166)
+                    .overlay {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("STAR PAY")
+                                .font(pfExact(11, .bold))
+                                .tracking(1.4)
+                                .foregroundStyle(.white.opacity(0.56))
+                            Spacer()
+                            Text("••••  " + XYPay.tail("guide"))
+                                .font(pfStyled(size: 16, weight: .semibold, design: .monospaced))
+                                .foregroundStyle(.white)
+                            Text(Tr("当前卡"))
+                                .font(pf(11, .semibold))
+                                .foregroundStyle(.white.opacity(0.62))
+                        }
+                        .padding(18)
+                    }
+            }
+        case 1:
+            ZStack {
+                Circle()
+                    .fill(PayVisual.tint.opacity(0.10))
+                    .frame(width: 176, height: 176)
+                Circle()
+                    .stroke(PayVisual.tint.opacity(0.18), lineWidth: 1)
+                    .frame(width: 208, height: 208)
+                Image(systemName: "faceid")
+                    .font(.system(size: 86, weight: .light))
+                    .foregroundStyle(PayVisual.tint)
+                Image(systemName: "checkmark.shield.fill")
+                    .font(.system(size: 30, weight: .semibold))
+                    .foregroundStyle(.white, PayVisual.success)
+                    .offset(x: 62, y: 62)
+            }
+        case 2:
+            HStack(spacing: 12) {
+                guideActionPreview(Tr("付款"), symbol: "wave.3.right.circle.fill",
+                                   fill: Color(hex: 0x111111), ink: .white)
+                guideActionPreview(Tr("收款"), symbol: "qrcode",
+                                   fill: PayVisual.card, ink: C.label)
+            }
+        default:
+            ZStack {
+                PayVisual.card
+                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                    .frame(width: 258, height: 176)
+                    .shadow(color: Color.black.opacity(0.08), radius: 14, y: 7)
+                VStack(alignment: .leading, spacing: 13) {
+                    Label(Tr("交易成功"), systemImage: "checkmark.circle.fill")
+                        .font(pf(16, .semibold))
+                        .foregroundStyle(PayVisual.success)
+                    Text("− ¥ 128.00")
+                        .font(pfMoney(26, .bold))
+                        .foregroundStyle(C.label)
+                    HairLine()
+                    HStack {
+                        Text(Tr("余额"))
+                        Spacer()
+                        Text("¥ 1,280.00")
+                    }
+                    .font(pf(12.5, .medium))
+                    .foregroundStyle(PayVisual.secondaryInk)
+                }
+                .padding(20)
+            }
+        }
+    }
+
+    private func guideActionPreview(_ title: String, symbol: String,
+                                    fill: Color, ink: Color) -> some View {
+        VStack(spacing: 12) {
+            Image(systemName: symbol)
+                .font(.system(size: 30, weight: .semibold))
+                .foregroundStyle(title == Tr("付款") ? .white : PayVisual.tint)
+            Text(title)
+                .font(pf(18, .semibold))
+                .foregroundStyle(ink)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 168)
+        .background(fill, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(Color.primary.opacity(0.055), lineWidth: 0.6)
+        }
+    }
+}
+
 struct PayOfficialView: View {
     private struct LedgerDayGroup: Identifiable {
         let day: String
@@ -775,6 +991,8 @@ struct PayOfficialView: View {
     @State private var selectedLedger: LedgerBillEntry?
     @State private var balanceVisible = false
     @State private var faceBusy = false
+    @State private var showPayGuide = false
+    @AppStorage("starpay.guide.seen.v2") private var payGuideSeen = false
 
     private var balance: Double { app.me?.balance ?? ledger?.balance ?? 0 }
     private static let goldThreshold = 50_000.0
@@ -815,6 +1033,18 @@ struct PayOfficialView: View {
         .hidesTabBar()
         .sheet(item: $selectedLedger) { entry in
             ledgerDetail(entry)
+        }
+        .fullScreenCover(isPresented: $showPayGuide) {
+            StarPayGuideView {
+                payGuideSeen = true
+                showPayGuide = false
+            }
+        }
+        .onAppear {
+            guard !payGuideSeen, !showPayGuide else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                if !payGuideSeen { showPayGuide = true }
+            }
         }
         .task {
             async let account = API.shared.me()

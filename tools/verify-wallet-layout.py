@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CARDS = (ROOT / "Sources" / "CardsView.swift").read_text(encoding="utf-8")
 PAY = (ROOT / "Sources" / "PaymentUI.swift").read_text(encoding="utf-8")
+PAY_SHEET = (ROOT / "Sources" / "XingyanPay.swift").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
 )
@@ -42,6 +43,26 @@ require(
     and "CardsView()" in PAY
     and 'quickAction(Tr("收付款"), "qrcode", PayVisual.tint)' not in PAY,
     "Star Pay quick actions must open the wallet and must not duplicate the primary pay action",
+)
+require(
+    "private struct StarPayGuideView" in PAY
+    and "starpay.guide.seen.v2" in PAY
+    and "TabView(selection: $page)" in PAY
+    and "开始使用" in PAY,
+    "Star Pay must provide a first-use Wallet guide with persistent completion",
+)
+require(
+    "wallet.deck.tip.seen.v2" in CARDS
+    and "private var walletDeckTip" in CARDS
+    and "deckTipSeen = true" in CARDS,
+    "multi-card wallet guidance must appear once and dismiss after the first deck interaction",
+)
+require(
+    "private var paymentJourney" in PAY_SHEET
+    and 'journeyStep(index: 0, title: Tr("确认")' in PAY_SHEET
+    and 'journeyStep(index: 1, title: Tr("验证")' in PAY_SHEET
+    and 'journeyStep(index: 2, title: Tr("完成")' in PAY_SHEET,
+    "the payment sheet must explain confirmation, verification and completion",
 )
 require(
     "paymentHero\n                    paymentPrimaryActions\n                    quickActions" in PAY,
