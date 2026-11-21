@@ -251,6 +251,7 @@ where Item.ID: Hashable {
                 guard let self, let table, self.table === table else { return }
                 self.flushPendingItems()
                 table.layoutIfNeeded()
+                let previousOffset = table.contentOffset
                 let visible = table.indexPathsForVisibleRows ?? []
                 var snapshot = dataSource.snapshot()
                 let ids = visible.isEmpty
@@ -258,8 +259,10 @@ where Item.ID: Hashable {
                     : visible.compactMap { dataSource.itemIdentifier(for: $0) }
                 guard !ids.isEmpty else { return }
                 snapshot.reloadItems(ids)
-                dataSource.apply(snapshot, animatingDifferences: false)
-                table.setNeedsLayout()
+                dataSource.apply(snapshot, animatingDifferences: false) {
+                    table.layoutIfNeeded()
+                    table.setContentOffset(previousOffset, animated: false)
+                }
             }
         }
 
@@ -330,6 +333,8 @@ where Item.ID: Hashable {
                 return old == item ? nil : item.id
             }
             let previousOffset = table.contentOffset
+            let minimumYBeforeApply = -table.adjustedContentInset.top
+            let keepsTopAnchor = previousOffset.y <= minimumYBeforeApply + 2
             applyGeneration += 1
             let generation = applyGeneration
             lookup = nextLookup
@@ -359,6 +364,7 @@ where Item.ID: Hashable {
                 )
                 var target = previousOffset
                 target.y += offsetAdjustment
+                if keepsTopAnchor { target.y = minimumY }
                 target.y = min(max(target.y, minimumY), maximumY)
                 table.setContentOffset(target, animated: false)
             }
@@ -373,6 +379,8 @@ where Item.ID: Hashable {
             let added = Array(next[start...])
             let addedIDs = added.map(\.id)
             let previousOffset = table.contentOffset
+            let minimumYBeforeApply = -table.adjustedContentInset.top
+            let keepsTopAnchor = previousOffset.y <= minimumYBeforeApply + 2
             for item in added { lookup[item.id] = item }
             order.append(contentsOf: addedIDs)
             appliedItemCount = order.count
@@ -396,6 +404,7 @@ where Item.ID: Hashable {
                         + table.adjustedContentInset.bottom
                 )
                 var target = previousOffset
+                target.y = keepsTopAnchor ? minimumY : previousOffset.y
                 target.y = min(max(target.y, minimumY), maximumY)
                 table.setContentOffset(target, animated: false)
             }
@@ -582,10 +591,14 @@ where Item.ID: Hashable {
         private func refreshMetrics() {
             guard let table, let dataSource else { return }
             NativeChatRowMetrics.invalidateScaleCache()
+            let previousOffset = table.contentOffset
             var snapshot = dataSource.snapshot()
             guard !snapshot.itemIdentifiers.isEmpty else { return }
             snapshot.reloadItems(snapshot.itemIdentifiers)
-            dataSource.apply(snapshot, animatingDifferences: false)
+            dataSource.apply(snapshot, animatingDifferences: false) {
+                table.layoutIfNeeded()
+                table.setContentOffset(previousOffset, animated: false)
+            }
         }
 
         private func flushPendingItems() {

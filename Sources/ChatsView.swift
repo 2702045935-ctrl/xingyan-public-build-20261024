@@ -2913,7 +2913,7 @@ struct ChatsView: View {
                 ) { entry in
                     nativeChatEntry(entry)
                 }
-                .id(chatFilter)
+                .id("\(app.me?.id ?? "")-\(chatFilter)")
                 .ignoresSafeArea(edges: .top)
                 .background(Color.clear)
 
