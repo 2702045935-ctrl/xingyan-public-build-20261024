@@ -70,17 +70,11 @@ def main() -> None:
         if leftovers:
             fail("debug/development files remain: " + ", ".join(leftovers[:5]))
 
-        executable = f"Payload/{app_name}/"
-        candidates = [
-            name
-            for name in names
-            if name.startswith(executable)
-            and name.count("/") == 2
-            and not name.endswith("/")
-        ]
-        if len(candidates) != 1:
+        executable_name = str(info.get("CFBundleExecutable") or "")
+        executable_path = f"Payload/{app_name}/{executable_name}"
+        if not executable_name or executable_path not in names:
             fail("unable to identify the main executable")
-        binary = archive.read(candidates[0])
+        binary = archive.read(executable_path)
         if len(binary) < 1_000_000:
             fail("main executable is unexpectedly small")
 
