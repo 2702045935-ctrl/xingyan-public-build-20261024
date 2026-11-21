@@ -92,6 +92,7 @@ jobs:
           python3 tools/verify-browser.py
           python3 tools/verify-feature-manifest.py
           python3 tools/verify-trusted-ingress.py
+          python3 tools/verify-discover-map-entry.py
           python3 tools/verify-music-kernel.py
           python3 tools/verify-search-recommendation.py
           python3 tools/verify-transfer-checkout.py

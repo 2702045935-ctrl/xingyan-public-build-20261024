@@ -1752,7 +1752,7 @@ const DISCOVER_FILE = 'discover.json';
    但这个名字**不在白名单里** → normalizeRowList 会把它改成列表最后那个（soon），
    于是 App 收到 action=soon，点进去就是「这一页排在下一批」。
    （用户报的「漂流瓶肯定不在发现页 / 显示的是这一页排在下一批」就是这个。） */
-const DISCOVER_ACTIONS = ['moments', 'news', 'nearby', 'shake', 'bottle', 'live',
+const DISCOVER_ACTIONS = ['moments', 'map', 'news', 'nearby', 'shake', 'bottle', 'live',
   'games', 'channels', 'miniapps', 'music', 'map', 'shop', 'scan', 'search', 'soon'];
 const FEATURE_MANIFEST_KEY_ID = 'fm-v1';
 let featureManifestPrivateKey = null;

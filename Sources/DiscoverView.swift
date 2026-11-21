@@ -1137,6 +1137,10 @@ struct DiscoverView: View {
     }
 
     private func loadItems() async {
+        if items.isEmpty {
+            items = DiscoverItem.builtin
+            loaded = true
+        }
         if let cached = FeatureManifestStore.cachedItems(),
            !cached.isEmpty {
             items = cached
@@ -1217,6 +1221,21 @@ extension DiscoverItem {
         [
             DiscoverItem(id: "d01", label: "生活圈", icon: "i.moments", svg: I.moments,
                          color: "#4A90D9", action: "moments", group: 1,
+                         enabled: true),
+            DiscoverItem(id: "d-map", label: "星轨地图", icon: "i.map", svg: "",
+                         color: "#2C7BE5", action: "map", group: 5,
+                         enabled: true),
+            DiscoverItem(id: "d09", label: "星联世界", icon: "i.searchBig", svg: "",
+                         color: "#2C7BE5", action: "news", group: 6,
+                         enabled: true),
+            DiscoverItem(id: "d-music", label: "听音乐", icon: "i.music", svg: "",
+                         color: "#07C160", action: "music", group: 6,
+                         enabled: true),
+            DiscoverItem(id: "d10", label: "游戏", icon: "i.game", svg: "",
+                         color: "#9A6AE8", action: "games", group: 7,
+                         enabled: true),
+            DiscoverItem(id: "d-mini", label: "小程序", icon: "i.gear", svg: "",
+                         color: "#3FA36B", action: "miniapps", group: 7,
                          enabled: true)
         ]
     }
