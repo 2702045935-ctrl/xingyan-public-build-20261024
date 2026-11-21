@@ -4065,10 +4065,9 @@ struct ChatDetailView: View {
                     }
                     .buttonStyle(.plain)
                 }
-                Text(p.kind == "text" ? richBody(p.content) : p.preview)
+                Text(p.preview)
                     .font(pf(L.chatFontSize))
                     .foregroundColor(Color.white.opacity(0.98))
-                    .lineSpacing(p.kind == "text" ? textLineSpacing(p.content) : 0)
                     .lineLimit(6)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)

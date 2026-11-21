@@ -37,7 +37,7 @@ pending_start = CHAT.index("private func pendingBubble")
 pending_end = CHAT.index("private func deliveryFailureCard", pending_start)
 pending = CHAT[pending_start:pending_end]
 require(
-    'Text(p.kind == "text" ? richBody(p.content) : p.preview)' in pending
+    "Text(p.preview)" in pending
     and "BubbleFill(mine: true, tail: showsTail)" in pending
     and "MessageDeliveryState.sent.color" in pending
     and "Avatar(path: app.me?.avatarPath" in pending,
