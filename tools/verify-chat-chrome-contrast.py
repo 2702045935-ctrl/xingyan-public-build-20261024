@@ -24,10 +24,17 @@ require(
     "top and bottom chrome need a strong-to-transparent contrast falloff",
 )
 require(
-    "(composerUsesLightInk ? Color.black : Color.white)" in CHAT
-    and ".opacity(composerUsesLightInk ? 0.42 : 0.32)" in CHAT
-    and "NativeGlassHeaderMaterial(forcedDark: composerUsesLightInk)" in CHAT,
-    "composer field backing must follow wallpaper luminance, not system appearance",
+    "private struct ChatCleanEdgeMask" in CHAT
+    and "scheme == .light && !topBarUsesLightInk" in CHAT
+    and "scheme == .light && !composerUsesLightInk" in CHAT
+    and "ChatCleanEdgeMask(" in CHAT,
+    "light chat chrome must use a clean edge surface instead of layered wallpaper effects",
+)
+require(
+    "if composerUsesLightInk" in CHAT
+    and "NativeGlassHeaderMaterial(forcedDark: true)" in CHAT
+    and "Color(uiColor: .systemBackground).opacity(0.97)" in CHAT,
+    "composer field backing must be solid in light mode and keep glass over dark wallpapers",
 )
 require(
     "NativeGlassHeaderMaterial(forcedDark: lightInk)" in CHAT

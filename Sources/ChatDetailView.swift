@@ -556,6 +556,33 @@ private struct ChatImmersiveEdgeMask: View {
     }
 }
 
+private struct ChatCleanEdgeMask: View {
+    let edge: ChatWallpaperEdge
+    let fill: Color
+
+    var body: some View {
+        let colors: [Color] = edge == .top
+            ? [fill, fill.opacity(0.985), fill.opacity(0.94), fill.opacity(0)]
+            : [fill.opacity(0), fill.opacity(0.94), fill.opacity(0.985), fill]
+        let stops: [Gradient.Stop] = [
+            .init(color: colors[0], location: 0),
+            .init(color: colors[1], location: edge == .top ? 0.58 : 0.16),
+            .init(color: colors[2], location: edge == .top ? 0.84 : 0.42),
+            .init(color: colors[3], location: 1)
+        ]
+
+        LinearGradient(stops: stops,
+                       startPoint: edge == .top ? .top : .bottom,
+                       endPoint: edge == .top ? .bottom : .top)
+            .overlay(alignment: edge == .top ? .bottom : .top) {
+                Rectangle()
+                    .fill(Color.black.opacity(0.045))
+                    .frame(height: 0.5)
+            }
+            .allowsHitTesting(false)
+    }
+}
+
 private struct ChatTopGlassBackdrop: View {
     let lightInk: Bool
 
@@ -2364,6 +2391,11 @@ struct ChatDetailView: View {
                 Group {
                     if isStarWorld && newsMode {
                         newsMaskColor
+                    } else if scheme == .light && !topBarUsesLightInk {
+                        ChatCleanEdgeMask(
+                            edge: .top,
+                            fill: Color(uiColor: .systemBackground)
+                        )
                     } else if scheme == .light {
                         ChatImmersiveEdgeMask(path: backgroundPath,
                                               edge: .top,
@@ -5199,7 +5231,7 @@ struct ChatDetailView: View {
     private var composerFieldBorder: Color {
         composerUsesLightInk
             ? Color.white.opacity(0.18)
-            : Color.black.opacity(0.085)
+            : Color.black.opacity(0.055)
     }
 
     private var draftImagesBar: some View {
@@ -5640,10 +5672,14 @@ struct ChatDetailView: View {
                 .frame(height: composerInputHeight)
                 .background {
                     ZStack {
-                        NativeGlassHeaderMaterial(forcedDark: composerUsesLightInk)
-                        composerFieldShape
-                            .fill((composerUsesLightInk ? Color.black : Color.white)
-                                .opacity(composerUsesLightInk ? 0.42 : 0.32))
+                        if composerUsesLightInk {
+                            NativeGlassHeaderMaterial(forcedDark: true)
+                            composerFieldShape.fill(Color.black.opacity(0.42))
+                        } else {
+                            composerFieldShape.fill(
+                                Color(uiColor: .systemBackground).opacity(0.97)
+                            )
+                        }
                         if recorder.recording {
                             composerFieldShape.fill(
                                 recorder.willCancel
@@ -5808,6 +5844,11 @@ struct ChatDetailView: View {
                 Group {
                     if isStarWorld && newsMode {
                         newsMaskColor
+                    } else if scheme == .light && !composerUsesLightInk {
+                        ChatCleanEdgeMask(
+                            edge: .bottom,
+                            fill: ChatTheme.composerBg
+                        )
                     } else {
                         ChatImmersiveEdgeMask(path: backgroundPath,
                                               edge: .bottom,

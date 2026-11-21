@@ -1660,6 +1660,18 @@ struct FriendPermSheet: View {
     }
 }
 
+private struct GroupMemberChipPressStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(reduceMotion ? 1 : (configuration.isPressed ? 0.97 : 1))
+            .opacity(configuration.isPressed ? 0.80 : 1)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.09),
+                       value: configuration.isPressed)
+    }
+}
+
 struct GroupCreateView: View {
     private enum Step: Equatable { case participants, details }
 
@@ -1689,27 +1701,42 @@ struct GroupCreateView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            NavBar(title: Tr("发起群聊"), back: { dismiss() }) {
-                Text("\(picked.count)")
-                    .font(pf(12, .semibold))
-                    .foregroundColor(picked.isEmpty ? C.subLabel : C.green)
-                    .padding(.horizontal, 10)
-                    .frame(height: 28)
-                    .background {
-                        GlassBackground(shape: Capsule(style: .continuous),
-                                        edgeAlpha: 0.18,
-                                        seed: 0.17,
-                                        native: true)
+            NavBar(title: step == .participants ? Tr("发起群聊") : Tr("群聊详情"),
+                   back: { goBack() },
+                   rightGlass: false) {
+                if step == .participants {
+                    Button {
+                        primaryAction()
+                    } label: {
+                        Text(picked.isEmpty ? Tr("完成") : "\(Tr("完成")) \(picked.count)")
+                            .font(pf(15, .semibold))
+                            .foregroundColor(picked.isEmpty ? C.subLabel : C.green)
+                            .padding(.horizontal, 12)
+                            .frame(height: 32)
+                            .background {
+                                Capsule(style: .continuous)
+                                    .fill(picked.isEmpty
+                                          ? Color.primary.opacity(0.045)
+                                          : C.green.opacity(0.10))
+                            }
                     }
+                    .buttonStyle(MenuPressStyle())
+                    .disabled(picked.isEmpty)
                     .padding(.trailing, 14)
+                }
             }
 
-            participantPicker
+            if step == .participants {
+                participantPicker
+                    .transition(.opacity)
+            } else {
+                groupDetails
+                    .transition(.opacity)
+            }
         }
         .background(C.pageBg.ignoresSafeArea())
-        .safeAreaInset(edge: .bottom, spacing: 0) { createDock }
         .toolbar(.hidden, for: .navigationBar)
-        .swipeBack { dismiss() }
+        .swipeBack { goBack() }
         .hidesTabBar()
     }
 
@@ -1720,10 +1747,19 @@ struct GroupCreateView: View {
 
     private var participantPicker: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 16) {
-                identityCard
-                selectionSummary
+            LazyVStack(alignment: .leading, spacing: 0) {
+                if !selectedContacts.isEmpty {
+                    selectedPeopleStrip
+                    Rectangle()
+                        .fill(C.hairline)
+                        .frame(height: 0.5)
+                        .padding(.leading, 16)
+                }
+
                 contactSearch
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                    .padding(.bottom, 10)
 
                 HStack {
                     Text(Tr("联系人"))
@@ -1733,65 +1769,53 @@ struct GroupCreateView: View {
                     Text("\(filteredContacts.count)")
                         .font(pf(12, .medium))
                         .foregroundColor(C.subLabel.opacity(0.8))
+                        .monospacedDigit()
                 }
-                .padding(.horizontal, 4)
+                .padding(.horizontal, 16)
+                .frame(height: 30)
 
                 if filteredContacts.isEmpty {
-                    VStack(spacing: 12) {
+                    VStack(spacing: 7) {
                         Image(systemName: "person.crop.circle.badge.questionmark")
-                            .font(.system(size: 34, weight: .light))
+                            .font(.system(size: 28, weight: .light))
                             .foregroundColor(C.subLabel)
                         Text(Tr("没有找到联系人"))
-                            .font(pf(16, .medium))
+                            .font(pf(15, .medium))
                             .foregroundColor(C.label)
                         Text(Tr("换一个姓名或号码试试"))
-                            .font(pf(13))
+                            .font(pf(12.5))
                             .foregroundColor(C.subLabel)
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 42)
-                    .background {
-                        GlassBackground(
-                            shape: RoundedRectangle(cornerRadius: 20, style: .continuous),
-                            opacity: 0.88,
-                            edgeAlpha: 0.20,
-                            seed: 0.27,
-                            native: true
-                        )
-                    }
+                    .padding(.vertical, 38)
+                    .padding(.horizontal, 16)
                 } else {
                     LazyVStack(spacing: 0) {
                         ForEach(Array(filteredContacts.enumerated()), id: \.element.id) { index, user in
                             Button { toggle(user.id) } label: {
                                 contactRow(user)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(MenuPressStyle())
                             if index < filteredContacts.count - 1 {
                                 Rectangle()
                                     .fill(C.hairline)
                                     .frame(height: 0.5)
-                                    .padding(.leading, 74)
+                                    .padding(.leading, 70)
                             }
                         }
                     }
-                    .background {
-                        GlassBackground(
-                            shape: RoundedRectangle(cornerRadius: 20, style: .continuous),
-                            opacity: 0.88,
-                            edgeAlpha: 0.20,
-                            seed: 0.29,
-                            native: true
-                        )
-                    }
+                    .background(C.cardBg)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                     .overlay {
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
                             .stroke(C.hairline, lineWidth: 0.6)
                     }
+                    .padding(.horizontal, 16)
                 }
+
+                Color.clear.frame(height: max(24, L.safeBottom + 16))
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 14)
-            .padding(.bottom, 24)
+            .padding(.top, 2)
         }
         .scrollDismissesKeyboard(.interactively)
     }
@@ -1996,13 +2020,64 @@ struct GroupCreateView: View {
         }
     }
 
+    private var selectedPeopleStrip: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Text(String(format: Tr("已选择 %d 位联系人"), picked.count))
+                    .font(pf(12.5, .semibold))
+                    .foregroundColor(C.subLabel)
+                Spacer(minLength: 0)
+                Button {
+                    withAnimation(.easeOut(duration: 0.18)) { picked.removeAll() }
+                } label: {
+                    Text(Tr("清除"))
+                        .font(pf(12.5, .semibold))
+                        .foregroundColor(C.green)
+                        .padding(.horizontal, 9)
+                        .frame(height: 28)
+                        .background(Capsule().fill(C.green.opacity(0.09)))
+                }
+                .buttonStyle(MenuPressStyle())
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(selectedContacts) { user in
+                        Button { toggle(user.id) } label: {
+                            HStack(spacing: 7) {
+                                Avatar(path: user.avatarPath, size: 30, circle: true)
+                                Text(user.name)
+                                    .font(pf(13, .medium))
+                                    .foregroundColor(C.label)
+                                    .lineLimit(1)
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 8.5, weight: .bold))
+                                    .foregroundColor(C.subLabel)
+                            }
+                            .padding(.leading, 4)
+                            .padding(.trailing, 10)
+                            .frame(height: 38)
+                            .background(
+                                Capsule().fill(Color.dyn(0xF2F2F7, 0x2C2C2E))
+                            )
+                        }
+                        .buttonStyle(GroupMemberChipPressStyle())
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(C.cardBg)
+    }
+
     private var contactSearch: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 15, weight: .medium))
                 .foregroundColor(C.subLabel)
             TextField(Tr("搜索姓名或号码"), text: $keyword)
-                .font(pf(16))
+                .font(pf(15))
                 .foregroundColor(C.label)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
@@ -2015,36 +2090,22 @@ struct GroupCreateView: View {
             }
         }
         .padding(.horizontal, 12)
-        .frame(height: 44)
+        .frame(height: 36)
         .background {
-            GlassBackground(
-                shape: RoundedRectangle(cornerRadius: 13, style: .continuous),
-                opacity: 0.84,
-                edgeAlpha: 0.18,
-                seed: 0.11,
-                native: true
-            )
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color.dyn(0xF0F2F5, 0x2C2C2E))
         }
     }
 
     private func contactRow(_ user: User) -> some View {
         let selected = picked.contains(user.id)
-        let detail = (user.bio ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        return HStack(spacing: 13) {
-            Avatar(path: user.avatarPath, size: 48, circle: true)
+        return HStack(spacing: 12) {
+            Avatar(path: user.avatarPath, size: 42, circle: true)
 
-            VStack(alignment: .leading, spacing: 3) {
-                Text(user.name)
-                    .font(pf(16.5, .medium))
-                    .foregroundColor(C.label)
-                    .lineLimit(1)
-                if !detail.isEmpty {
-                    Text(detail)
-                        .font(pf(13))
-                        .foregroundColor(C.subLabel)
-                        .lineLimit(1)
-                }
-            }
+            Text(user.name)
+                .font(pf(16.5, .regular))
+                .foregroundColor(C.label)
+                .lineLimit(1)
 
             Spacer(minLength: 8)
 
@@ -2059,12 +2120,11 @@ struct GroupCreateView: View {
                         .foregroundColor(.white)
                 }
             }
-            .frame(width: 24, height: 24)
+            .frame(width: 23, height: 23)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 9)
-        .frame(minHeight: 66)
-        .background(selected ? C.green.opacity(0.055) : Color.clear)
+        .padding(.horizontal, 16)
+        .frame(height: 60)
+        .background(selected ? C.green.opacity(0.045) : Color.clear)
         .contentShape(Rectangle())
     }
 
@@ -2163,10 +2223,19 @@ struct GroupCreateView: View {
     private func primaryAction() {
         if step == .participants {
             guard !picked.isEmpty else { app.show(Tr("至少选一个好友")); return }
+            if name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                name = defaultGroupName()
+            }
             withAnimation(.easeOut(duration: 0.2)) { step = .details }
         } else {
             create()
         }
+    }
+
+    private func defaultGroupName() -> String {
+        let names = selectedContacts.prefix(3).map(\.name)
+        guard !names.isEmpty else { return "" }
+        return names.joined(separator: "、") + (selectedContacts.count > 3 ? "…" : "")
     }
 
     private func goBack() {
