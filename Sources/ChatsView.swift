@@ -1225,8 +1225,8 @@ struct ChatsView: View {
     private var chatsContentMaxWidth: CGFloat { L.width }
     private var chatsContentSideInset: CGFloat { 0 }
     private var chatFilterH: CGFloat { 42 }
-    private var chatsHeaderH: CGFloat { 52 }
-    private var chatsSearchH: CGFloat { 48 }
+    private var chatsHeaderH: CGFloat { 44 }
+    private var chatsSearchH: CGFloat { 36 }
     private var chatFilterVisible: Bool { UIConfig.num("chatsOrbitFilter", 0) > 0 }
     private var chatFilterOffset: CGFloat { chatFilterVisible ? chatFilterH : 0 }
     private var chatsCardStyle: Bool { false }
@@ -1655,14 +1655,10 @@ struct ChatsView: View {
     private var chatTopHeader: some View {
         ZStack {
             HStack(spacing: 7) {
-                Text(chatTopTitle)
+                Text(navTitle)
                     .font(pf(17, .semibold))
                     .foregroundStyle(C.label)
-                    .accessibilityLabel(chatTopTitle)
-
-                if unreadTotal > 0 {
-                    nativeUnreadTotalBadge
-                }
+                    .accessibilityLabel(navTitle)
 
                 if chatFilter != .all {
                     Text(Tr(chatFilter.rawValue))
@@ -1739,6 +1735,7 @@ struct ChatsView: View {
         .frame(maxWidth: chatsContentMaxWidth)
         .frame(maxWidth: .infinity)
         .frame(height: chatsHeaderH)
+        .offset(y: -13)
     }
 
     private var nativeUnreadTotalBadge: some View {
@@ -1784,6 +1781,7 @@ struct ChatsView: View {
         .frame(maxWidth: chatsContentMaxWidth)
         .frame(maxWidth: .infinity)
         .frame(height: chatsSearchH)
+        .offset(y: -6)
     }
 
     private var pullDots: some View {

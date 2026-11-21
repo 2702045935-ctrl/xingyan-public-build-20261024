@@ -32,6 +32,30 @@ private struct ChatTypingDots: View {
     }
 }
 
+private struct ChatUnreadRollingBadge: View {
+    let value: Int
+
+    private var label: String {
+        value > 99 ? "99+" : "\(value)"
+    }
+
+    var body: some View {
+        if #available(iOS 17.0, *) {
+            Text(label)
+                .contentTransition(.numericText(value: Double(value)))
+                .animation(.snappy(duration: 0.20), value: value)
+        } else {
+            Text(label)
+                .id(label)
+                .transition(.asymmetric(
+                    insertion: .move(edge: .bottom).combined(with: .opacity),
+                    removal: .move(edge: .top).combined(with: .opacity)
+                ))
+                .animation(.easeOut(duration: 0.16), value: value)
+        }
+    }
+}
+
 private final class ImageUploadProgress: @unchecked Sendable {
     private let lock = NSLock()
     private var values: [Double]
@@ -63,7 +87,21 @@ private enum ChatTheme {
     }
     static var bubbleOther: Color { preset.other }
     static let ink = Color.dyn(0x111B21, 0xE9EDEF)
-    static let mineInk = Color.dyn(0xFFFFFF, 0xE9EDEF)
+    static var mineInk: Color {
+        preset == .wechat
+            ? Color.dyn(0x111111, 0xE9EDEF)
+            : Color.white.opacity(0.98)
+    }
+    static var mineSecondaryInk: Color {
+        preset == .wechat
+            ? Color.dyn(0x5D6B60, 0xB8C4BC)
+            : Color(hex: 0xD4F5EF).opacity(0.92)
+    }
+    static var mineLinkInk: Color {
+        preset == .wechat
+            ? Color.dyn(0x576B95, 0x8FC7FF)
+            : Color(hex: 0xEFFFFC)
+    }
     static let secondary = Color.dyn(0x667781, 0x8696A0)
     static let groupSenderNameOnLight = Color.dyn(0x111B21, 0x111B21)
     static let groupSenderNameOnDark = Color.dyn(0xE9EDEF, 0xE9EDEF)
@@ -1604,169 +1642,138 @@ struct ChatDetailView: View {
     }
 
     private var whatsAppChatHeader: some View {
-        let title = loadingAllGroupHistory ? Tr("正在同步全部消息…") : navTitle
+        let memberCount = liveChat.memberCount ?? (liveChat.memberIds?.count ?? 0)
+        let title = loadingAllGroupHistory
+            ? Tr("正在同步全部消息…")
+            : (isGroup && memberCount > 0 ? "\(navTitle)(\(memberCount))" : navTitle)
+        let detail: String = {
+            if isPeerTyping {
+                return isGroup ? Tr("有人正在输入…") : Tr("对方正在输入…")
+            }
+            if let music = peerMusic {
+                if music.playing == false {
+                    return "\(music.name) " + Tr("最近在听") + "《\(music.title)》"
+                }
+                return "\(music.name) \(music.line)"
+            }
+            if MessageStressFixture.isStressChat(chat.id),
+               let first = messages.first?.seq, let last = messages.last?.seq {
+                return "已加载 \(messages.count) · \(first)–\(last) / \(MessageStressFixture.count)"
+            }
+            return ""
+        }()
 
         return ZStack {
             HStack(spacing: 8) {
                 if let back = navBackAction {
-                    ChatHeaderGlassGroup(lightInk: topBarUsesLightInk) {
-                        HStack(spacing: 2) {
-                            Button(action: back) {
-                                Image(systemName: "chevron.left")
-                                    .font(.system(size: 18.5, weight: .semibold))
-                                    .foregroundStyle(adaptiveTopInk)
-                                    .frame(width: 39, height: 39)
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel(Tr("返回"))
-
-                            if let badge = leftUnreadBadge {
-                                badge
-                                    .padding(.trailing, 8)
-                            }
-                        }
+                    Button(action: back) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 19, weight: .semibold))
+                            .foregroundStyle(adaptiveTopInk)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Tr("返回"))
                 } else {
-                    Color.clear.frame(width: 42, height: 42)
+                    Color.clear.frame(width: 44, height: 44)
                 }
 
                 Spacer(minLength: 0)
 
-                ChatHeaderGlassGroup(lightInk: topBarUsesLightInk) {
-                    HStack(spacing: 0) {
-                        Button {
-                            startRealCall(video: true)
-                        } label: {
-                            Image(systemName: "video")
-                                .font(.system(size: 17.5, weight: .medium))
-                                .foregroundStyle(adaptiveTopInk.opacity(0.82))
-                                .frame(width: 38, height: 39)
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(Tr("视频通话"))
-
-                        Rectangle()
-                            .fill(adaptiveTopInk.opacity(0.10))
-                            .frame(width: 0.5, height: 18)
-
-                        Button {
-                            startRealCall(video: false)
-                        } label: {
-                            Image(systemName: "phone")
-                                .font(.system(size: 17.5, weight: .medium))
-                                .foregroundStyle(adaptiveTopInk.opacity(0.82))
-                                .frame(width: 38, height: 39)
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(Tr("语音通话"))
-
-                        Rectangle()
-                            .fill(adaptiveTopInk.opacity(0.10))
-                            .frame(width: 0.5, height: 18)
-
-                        Menu {
-                            Button {
-                                if isGroup { showGroupInfo = true } else { showChatInfo = true }
-                            } label: {
-                                Label(Tr("会话信息"), systemImage: "info.circle")
-                            }
-
-                            if isGroup && !groupAnnouncement.isEmpty {
-                                Button {
-                                    announcePage = groupAnnouncement
-                                    showAnnouncePage = true
-                                } label: {
-                                    Label(Tr("群公告"), systemImage: "megaphone")
-                                }
-                            }
-
-                            Button {
-                                showChatFavorites = true
-                            } label: {
-                                Label(Tr("收藏"), systemImage: "bookmark")
-                            }
-
-                            if isStarWorld {
-                                Button {
-                                    withAnimation(.easeInOut(duration: 0.18)) {
-                                        newsMode.toggle()
-                                    }
-                                } label: {
-                                    Label(Tr("世界"), systemImage: "globe.asia.australia")
-                                }
-                            }
-                        } label: {
-                            Image(systemName: "ellipsis")
-                                .font(.system(size: 17, weight: .semibold))
-                                .foregroundStyle(adaptiveTopInk)
-                                .frame(width: 44, height: 44)
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(Tr("更多"))
+                Menu {
+                    Button {
+                        startRealCall(video: true)
+                    } label: {
+                        Label(Tr("视频通话"), systemImage: "video")
                     }
-                }
-            }
 
-            ChatHeaderGlassGroup(lightInk: topBarUsesLightInk) {
-                Button {
-                    if let music = peerMusic {
-                        let track = music.asTrack
-                        if !MusicPlayer.shared.isPlaying(track.id) {
-                            MusicPlayer.shared.setQueue([track])
-                            MusicPlayer.shared.play(track)
+                    Button {
+                        startRealCall(video: false)
+                    } label: {
+                        Label(Tr("语音通话"), systemImage: "phone")
+                    }
+
+                    Divider()
+
+                    Button {
+                        if isGroup { showGroupInfo = true } else { showChatInfo = true }
+                    } label: {
+                        Label(Tr("会话信息"), systemImage: "info.circle")
+                    }
+
+                    if isGroup && !groupAnnouncement.isEmpty {
+                        Button {
+                            announcePage = groupAnnouncement
+                            showAnnouncePage = true
+                        } label: {
+                            Label(Tr("群公告"), systemImage: "megaphone")
                         }
-                        MusicSheet.shared.open(track)
-                    } else if isGroup {
-                        showGroupInfo = true
-                    } else {
-                        showChatInfo = true
+                    }
+
+                    Button {
+                        showChatFavorites = true
+                    } label: {
+                        Label(Tr("收藏"), systemImage: "bookmark")
+                    }
+
+                    if isStarWorld {
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.18)) {
+                                newsMode.toggle()
+                            }
+                        } label: {
+                            Label(Tr("世界"), systemImage: "globe.asia.australia")
+                        }
                     }
                 } label: {
-                    HStack(spacing: 7) {
-                        whatsAppChatAvatar
-                            .scaleEffect(0.84)
-                            .frame(width: 29, height: 29)
-
-                        VStack(alignment: .leading, spacing: 0.5) {
-                            Text(title)
-                                .font(pf(15.5, .semibold))
-                                .foregroundStyle(adaptiveTopInk)
-                                .lineLimit(1)
-                                .truncationMode(.tail)
-
-                            if isPeerTyping {
-                                HStack(spacing: 4) {
-                                    ChatTypingDots(color: Color(hex: 0x25D366))
-                                    Text(isGroup ? Tr("有人正在输入") : Tr("正在输入"))
-                                        .font(pf(10.5, .regular))
-                                        .foregroundStyle(adaptiveTopInk.opacity(0.74))
-                                        .lineLimit(1)
-                                }
-                                .transition(.opacity.combined(with: .move(edge: .top)))
-                            } else if !whatsAppChatSubtitle.isEmpty {
-                                Text(whatsAppChatSubtitle)
-                                    .font(pf(10.5, .regular))
-                                    .foregroundStyle(adaptiveTopInk.opacity(0.72))
-                                    .lineLimit(1)
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 7)
-                    .frame(height: 39)
-                    .contentShape(Capsule())
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(adaptiveTopInk)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(title)
+                .accessibilityLabel(Tr("更多"))
             }
-            .frame(maxWidth: 126)
+
+            Button {
+                if let music = peerMusic {
+                    let track = music.asTrack
+                    if !MusicPlayer.shared.isPlaying(track.id) {
+                        MusicPlayer.shared.setQueue([track])
+                        MusicPlayer.shared.play(track)
+                    }
+                    MusicSheet.shared.open(track)
+                } else if isGroup {
+                    showGroupInfo = true
+                } else {
+                    showChatInfo = true
+                }
+            } label: {
+                VStack(spacing: 1) {
+                    Text(title)
+                        .font(pf(16, .semibold))
+                        .foregroundStyle(adaptiveTopInk)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                    if !detail.isEmpty {
+                        Text(detail)
+                            .font(pf(10.5))
+                            .foregroundStyle(adaptiveTopInk.opacity(0.62))
+                            .lineLimit(1)
+                    }
+                }
+                .frame(maxWidth: 238)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(title)
+            .padding(.horizontal, 48)
         }
-        .shadow(color: adaptiveTopGlyphShadow, radius: 0.9, x: 0, y: 0.35)
-        .padding(.horizontal, 4)
+        .padding(.horizontal, 6)
         .frame(height: L.navH)
+        .offset(y: -7)
     }
 
     private var chatTopNavigation: AnyView {
@@ -2289,54 +2296,69 @@ struct ChatDetailView: View {
                 .zIndex(60)
             }
 
-            if !atBottomNow {
+            if unreadHere > 0, !atBottomNow, !initialOpenSettling {
                 VStack {
                     Spacer(minLength: 0)
                     HStack {
                         Spacer(minLength: 0)
-                        VStack(spacing: 8) {
-
-                            if let lastMsg = messages.last?.id {
-                                Button {
-                                    if isGroup {
-                                        nativeMessageController.scrollToBottom(animated: true)
-                                    } else {
-                                        withAnimation(.easeOut(duration: 0.26)) {
-                                            scroller?.scrollTo(lastMsg, anchor: .bottom)
-                                        }
+                        ZStack(alignment: .topTrailing) {
+                            Button {
+                                if isGroup {
+                                    nativeMessageController.scrollToBottom(animated: true)
+                                } else if let lastMsg = messages.last?.id {
+                                    withAnimation(.easeOut(duration: 0.26)) {
+                                        scroller?.scrollTo(lastMsg, anchor: .bottom)
                                     }
-                                    unreadHere = 0
-                                } label: {
-                                    HStack(spacing: 5) {
-                                        if unreadHere > 0 {
-                                            Text(Lang.isRussian
-                                                 ? "\(unreadHere) новых сообщений"
-                                                 : (Lang.isEnglish
-                                                    ? "\(unreadHere) new messages"
-                                                    : "\(unreadHere) 条新消息"))
-                                                .font(pf(11.5, .medium))
-                                                .foregroundColor(C.label)
-                                        }
-                                        Image(systemName: "chevron.down")
-                                            .font(.system(size: 15, weight: .semibold))
-                                            .foregroundColor(C.label)
-                                    }
-                                    .padding(.horizontal, unreadHere > 0 ? 11 : 0)
-                                    .frame(minWidth: 34, minHeight: 34)
-                                    .background(Capsule().fill(.regularMaterial))
-                                    .overlay(Capsule().stroke(Color.white.opacity(0.16), lineWidth: 0.5))
-                                    .shadow(color: Color.black.opacity(0.18), radius: 8, y: 3)
                                 }
-                                .buttonStyle(.plain)
+                                withAnimation(.easeOut(duration: 0.16)) {
+                                    unreadHere = 0
+                                }
+                            } label: {
+                                Image(systemName: "chevron.down")
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundColor(C.label)
+                                    .frame(width: 36, height: 36)
+                                    .background(Circle().fill(.regularMaterial))
+                                    .overlay(
+                                        Circle().stroke(Color.primary.opacity(0.09),
+                                                        lineWidth: 0.5)
+                                    )
+                                    .shadow(color: Color.black.opacity(0.09),
+                                            radius: 5, y: 2)
                             }
+                            .buttonStyle(.plain)
+
+                            ChatUnreadRollingBadge(value: unreadHere)
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.white)
+                                .monospacedDigit()
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
+                                .padding(.horizontal, unreadHere > 9 ? 4 : 0)
+                                .frame(minWidth: 18, minHeight: 18)
+                                .background(Capsule().fill(Color(.systemRed)))
+                                .overlay(Capsule().stroke(C.label, lineWidth: 1.2))
+                                .offset(x: 7, y: -7)
+                                .transition(.scale(scale: 0.72).combined(with: .opacity))
                         }
-                        .padding(.trailing, 12)
-                        .padding(.bottom, 10)
+                        .padding(.trailing, 14)
+                        .padding(.bottom, 8)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(Tr("回到底部"))
+                        .accessibilityValue("\(unreadHere)")
                     }
                 }
                 .zIndex(55)
+                .transition(.scale(scale: 0.86, anchor: .bottomTrailing)
+                    .combined(with: .opacity))
             }
 
+        }
+
+        .onChange(of: atBottom) { bottom in
+            if bottom, !initialOpenSettling {
+                unreadHere = 0
+            }
         }
 
         .onChange(of: recorder.seconds) { s in
@@ -4104,7 +4126,7 @@ struct ChatDetailView: View {
                 }
                 Text(p.preview)
                     .font(pf(L.chatFontSize))
-                    .foregroundColor(Color.white.opacity(0.98))
+                    .foregroundColor(ChatTheme.mineInk)
                     .lineLimit(6)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
@@ -4113,7 +4135,7 @@ struct ChatDetailView: View {
                     .background(BubbleFill(mine: true, tail: showsTail))
                     .opacity(p.failed ? 0.9 : 1)
                 }
-                if !p.failed {
+                if !p.failed, UIConfig.num("chatDeliveryTicks", 0) > 0 {
                     HStack(spacing: 0) {
                         Spacer(minLength: 0)
                         WhatsAppMessageTicks(
@@ -4397,7 +4419,7 @@ struct ChatDetailView: View {
     private func timeLine(_ message: Message) -> some View {
         if isGroup || usesPlainDefaultChatChrome {
             Text(TimeFmt.bubble(message.createdAt))
-                .font(pf(11.5, .medium))
+                .font(pf(11.5, .regular))
                 .monospacedDigit()
                 .foregroundColor(adaptiveSystemSecondaryInk.opacity(0.92))
                 .frame(maxWidth: .infinity)
@@ -4405,7 +4427,7 @@ struct ChatDetailView: View {
                 .padding(.bottom, 7)
         } else {
             Text(TimeFmt.bubble(message.createdAt))
-                .font(pf(12, .medium))
+                .font(pf(12, .regular))
                 .monospacedDigit()
                 .foregroundColor(adaptiveSystemSecondaryInk)
                 .padding(.horizontal, L.o("chatTimePadX", 9))
@@ -4483,7 +4505,8 @@ struct ChatDetailView: View {
                    currentNickname: app.me?.nickname ?? "",
                    currentUsername: app.me?.username ?? "",
                    showTail: isRunStart(message),
-                   showsDeliveryTicks: isRunEnd(message),
+                   showsDeliveryTicks: UIConfig.num("chatDeliveryTicks", 0) > 0
+                       && isRunEnd(message),
                    onTapTransfer: { info in billInfo = info },
                    onOpenImage: { path in openImage(path) },
                    onOpenAvatar: { id in openAvatar(id) },
@@ -4754,7 +4777,7 @@ struct ChatDetailView: View {
     private func gapAfter(_ message: Message) -> CGFloat {
         guard let i = indexOf(message) else { return 15 }
         guard i + 1 < messages.count else {
-            return mineFor(message) && isRunEnd(message) ? 10 : 4
+            return mineFor(message) && isRunEnd(message) ? 8 : 4
         }
         let next = messages[i + 1]
         if showTime(for: next) { return 0 }
@@ -4762,9 +4785,9 @@ struct ChatDetailView: View {
         if message.kindName == "system" || message.kindName == "pat" || message.isRecalled { return 13 }
         let same = (next.senderId ?? "") == (message.senderId ?? "")
 
-        var gap: CGFloat = isGroup ? (same ? 5 : 13) : (same ? 6 : 15)
+        var gap: CGFloat = isGroup ? (same ? 4 : 12) : (same ? 4 : 13)
         if same, mineFor(message), isRunEnd(message) {
-            gap = max(gap, 10)
+            gap = max(gap, 8)
         }
         return gap
     }
@@ -8114,12 +8137,13 @@ struct MessageRow: View {
     }
 
     private var bubbleColumn: some View {
-        VStack(alignment: mine ? .trailing : .leading, spacing: 4) {
+        VStack(alignment: mine ? .trailing : .leading,
+               spacing: senderName.isEmpty ? 0 : 3) {
             if !senderName.isEmpty {
 
                 HStack(spacing: 4) {
                     Text(senderName)
-                        .font(pf(12, .regular))
+                        .font(pf(12.5, .regular))
                         .foregroundColor(senderNameColor ?? (senderNameUsesLightInk
                                          ? ChatTheme.groupSenderNameOnDark
                                          : ChatTheme.groupSenderNameOnLight))
@@ -8250,21 +8274,23 @@ struct MessageRow: View {
     private var bubbleFill: Color { mine ? ChatTheme.bubbleMine : ChatTheme.bubbleOther }
 
     private var bubblePrimaryInk: Color {
-        mine ? Color.white.opacity(0.98) : ChatTheme.ink
+        mine ? ChatTheme.mineInk : ChatTheme.ink
     }
 
     private var bubbleSecondaryInk: Color {
-        mine ? Color(hex: 0xD4F5EF).opacity(0.92) : ChatTheme.secondary
+        mine ? ChatTheme.mineSecondaryInk : ChatTheme.secondary
     }
 
     private var bubbleMentionInk: Color {
         mine
-            ? Color.white.opacity(0.96)
+            ? (ChatTheme.preset == .wechat
+               ? Color.dyn(0x576B95, 0xFFD2CA)
+               : Color.white.opacity(0.96))
             : Color.dyn(0x576B95, 0x7D90A9)
     }
 
     private var bubbleLinkInk: Color {
-        mine ? Color(hex: 0xEFFFFC) : ChatTheme.link
+        mine ? ChatTheme.mineLinkInk : ChatTheme.link
     }
 
     private var quoteSurface: Color {

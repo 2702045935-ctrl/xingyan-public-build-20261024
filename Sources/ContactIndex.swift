@@ -25,9 +25,6 @@ struct ContactIndexBar: View {
 
     private let padV: CGFloat = 4.2
 
-    private let searchBox: CGFloat = 26
-    private let searchGap: CGFloat = 6
-
     @State private var active: String? = nil
     @State private var clearTask: Task<Void, Never>?
 
@@ -46,23 +43,7 @@ struct ContactIndexBar: View {
     private var shownLetter: String? { active }
 
     var body: some View {
-        VStack(spacing: searchGap) {
-            Button {
-                UISelectionFeedbackGenerator().selectionChanged()
-                onSearch()
-            } label: {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 11.5, weight: .semibold))
-                    .foregroundStyle(OrbitTheme.jade)
-                    .frame(width: searchBox, height: searchBox)
-                    .background(Circle().fill(OrbitTheme.raised))
-                    .overlay(Circle().stroke(OrbitTheme.divider, lineWidth: 0.6))
-                    .shadow(color: Color.black.opacity(0.08), radius: 5, y: 2)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(ContactIndexSearchPressStyle())
-            .accessibilityLabel(Tr("搜索"))
-
+        VStack(spacing: 0) {
             VStack(spacing: 0) {
                 ForEach(displayedLetters, id: \.self) { L in
                     Text(L)
@@ -81,7 +62,7 @@ struct ContactIndexBar: View {
                             if shownLetter == L {
                                 Capsule(style: .continuous)
                                     .fill(OrbitTheme.jade)
-                                    .frame(width: dotSide, height: dotSide)
+                                    .frame(width: dotSide - 3, height: dotSide - 3)
                             }
                         }
                 }
@@ -127,14 +108,6 @@ struct ContactIndexBar: View {
                 onHighlight(nil)
             }
             .padding(.vertical, 5)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(OrbitTheme.field.opacity(0.92))
-                    .overlay(
-                        Capsule(style: .continuous)
-                            .stroke(OrbitTheme.divider, lineWidth: 0.6)
-                    )
-            )
         }
         .padding(.vertical, padV)
         .frame(width: 28)
@@ -183,16 +156,16 @@ struct LetterBubble: View {
     var body: some View {
         Text(letter)
             .font(pfStyled(size: 34, weight: .bold))
-            .foregroundColor(OrbitTheme.ink)
-            .frame(width: 74, height: 74)
+            .foregroundColor(.white)
+            .frame(width: 66, height: 66)
             .background(
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(OrbitTheme.raised.opacity(0.96))
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(Color.dyn(0x62666B, 0x4A4D52).opacity(0.88))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 22, style: .continuous)
-                            .stroke(OrbitTheme.jade.opacity(0.42), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(Color.white.opacity(0.14), lineWidth: 0.6)
                     )
-                    .shadow(color: Color.black.opacity(0.16), radius: 16, y: 7)
+                    .shadow(color: Color.black.opacity(0.08), radius: 5, y: 2)
             )
             .allowsHitTesting(false)
     }

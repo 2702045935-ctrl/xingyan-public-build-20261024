@@ -68,9 +68,9 @@ private struct ContactAvatarPressStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .scaleEffect(configuration.isPressed ? 0.95 : 1)
-            .opacity(configuration.isPressed ? 0.82 : 1)
-            .animation(reduceMotion ? nil : .spring(response: 0.20, dampingFraction: 0.84),
+            .scaleEffect(configuration.isPressed ? 0.985 : 1)
+            .opacity(configuration.isPressed ? 0.78 : 1)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.09),
                        value: configuration.isPressed)
     }
 }
@@ -84,7 +84,6 @@ private struct ContactTopIconPressStyle: ButtonStyle {
                 Circle()
                     .fill(Color.primary.opacity(configuration.isPressed ? 0.065 : 0))
             }
-            .scaleEffect(configuration.isPressed ? 0.92 : 1)
             .animation(reduceMotion ? nil : .easeOut(duration: 0.10),
                        value: configuration.isPressed)
     }
@@ -231,6 +230,7 @@ private var funcs: [(String, String, Color, String)] {
         }
         .padding(.horizontal, 16)
         .frame(height: contactsHeaderHeight)
+        .offset(y: -16)
     }
 
     private var plusButton: some View {

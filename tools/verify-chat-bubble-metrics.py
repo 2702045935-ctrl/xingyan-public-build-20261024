@@ -22,14 +22,15 @@ require(
     'static var chatFontSize: CGFloat { o("chatFontSize", 17) }' in CORE
     and 'static var bubblePadH: CGFloat { o("bubblePadH", 9) }' in CORE
     and 'static var bubblePadHPill: CGFloat { bubblePadH + 3 }' in CORE
-    and 'max(220, width * 0.66)' in CORE
+    and 'max(232, width * 0.70)' in CORE
     and 'var radius: CGFloat = 8' in CHAT,
-    "WeChat text-bubble geometry must remain 17pt / 12pt / 66% / 8pt",
+    "text-bubble geometry must remain 17pt / 12pt / 70% / 8pt",
 )
 require(
-    'case .whatsapp: return Color.dyn(0x0C7A70, 0x005C4B)' in THEMES
-    and "mine ? Color.white.opacity(0.98) : ChatTheme.ink" in CHAT,
-    "bubble geometry changes must not change the existing bubble colors",
+    'case .wechat: return Color.dyn(0x95EC69, 0x3EB575)' in THEMES
+    and "mine ? ChatTheme.mineInk : ChatTheme.ink" in CHAT
+    and "preset == .wechat" in CHAT,
+    "the classic theme must keep readable dark ink on its light-green bubble",
 )
 require(
     "var glass: Bool = false" in CHAT
@@ -74,29 +75,36 @@ require(
 )
 require(
     'Image(systemName: "ellipsis")' in CHAT
-    and ".font(.system(size: 17, weight: .semibold))" in CHAT
+    and ".font(.system(size: 18, weight: .semibold))" in CHAT
     and ".frame(width: 44, height: 44)" in CHAT,
-    "the chat overflow control must use WeChat's 17pt dots in a 44pt hit target",
+    "the chat overflow control must use restrained dots in a 44pt hit target",
 )
 require(
     "showsAvatar: !isGroup || mineFor(message) || isRunStart(message)" in CHAT
-    and "showsDeliveryTicks: isRunEnd(message)" in CHAT
+    and 'UIConfig.num("chatDeliveryTicks", 0) > 0' in CHAT
     and "private func isRunEnd(_ message: Message)" in CHAT,
-    "group avatars and delivery ticks must collapse across a continuous message run",
+    "group avatars must collapse while delivery ticks stay opt-in",
 )
 require(
     "var showsDeliveryTicks: Bool = true" in CHAT
     and ".overlay(alignment: .bottomTrailing)" in CHAT
     and ".offset(y: 8)" in CHAT
-    and "VStack(alignment: mine ? .trailing : .leading, spacing: 4)" in CHAT,
+    and "spacing: senderName.isEmpty ? 0 : 3" in CHAT,
     "delivery ticks must overlay the bubble instead of occupying a separate row",
 )
 require(
-    "same ? 5 : 13" in CHAT
-    and "same ? 6 : 15" in CHAT
-    and "gap = max(gap, 10)" in CHAT
-    and "return mineFor(message) && isRunEnd(message) ? 10 : 4" in CHAT,
-    "conversation runs must use distinct WeChat-style same-sender and sender-change spacing",
+    "same ? 4 : 12" in CHAT
+    and "same ? 4 : 13" in CHAT
+    and "gap = max(gap, 8)" in CHAT
+    and "return mineFor(message) && isRunEnd(message) ? 8 : 4" in CHAT,
+    "conversation runs must keep distinct but tighter sender spacing",
+)
+require(
+    "ChatUnreadRollingBadge(value: unreadHere)" in CHAT
+    and 'if unreadHere > 0, !atBottomNow, !initialOpenSettling' in CHAT
+    and ".frame(width: 36, height: 36)" in CHAT
+    and "Circle().fill(.regularMaterial)" in CHAT,
+    "new-message jump control must be a circular unread-only control",
 )
 require(
     "python3 tools/verify-chat-bubble-metrics.py" in WORKFLOW,

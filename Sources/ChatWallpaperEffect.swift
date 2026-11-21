@@ -131,6 +131,8 @@ struct ChatThemeBackdrop: View {
     @ViewBuilder
     private func scene(size: CGSize) -> some View {
         switch preset {
+        case .wechat:
+            wechatScene(size: size)
         case .whatsapp:
             whatsappScene(size: size)
         case .midnight:
@@ -151,6 +153,29 @@ struct ChatThemeBackdrop: View {
             mintScene(size: size)
         case .sand:
             sandScene(size: size)
+        }
+    }
+
+    private func wechatScene(size: CGSize) -> some View {
+        ZStack {
+            LinearGradient(
+                colors: dark
+                    ? [Color(hex: 0x111111), Color(hex: 0x0B0B0B)]
+                    : [Color(hex: 0xF4F4F4), Color(hex: 0xEDEDED)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            Canvas { context, canvas in
+                let ink = Color.black.opacity(dark ? 0.018 : 0.010)
+                for x in stride(from: CGFloat(12), through: canvas.width, by: CGFloat(28)) {
+                    for y in stride(from: CGFloat(10), through: canvas.height, by: CGFloat(28)) {
+                        context.fill(
+                            Path(ellipseIn: CGRect(x: x, y: y, width: 1.1, height: 1.1)),
+                            with: .color(ink)
+                        )
+                    }
+                }
+            }
         }
     }
 

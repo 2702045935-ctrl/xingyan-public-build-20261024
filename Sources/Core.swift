@@ -335,7 +335,7 @@ enum L {
 
     static var msgLineSpacing: CGFloat { o("msgLineSpacing", 5) }
 
-    static var bubbleMaxW: CGFloat { o("bubbleMaxW", min(324, max(220, width * 0.66))) }
+    static var bubbleMaxW: CGFloat { o("bubbleMaxW", min(342, max(232, width * 0.70))) }
     static var composerH: CGFloat { o("composerH", 56) }
     static var composerIconBox: CGFloat { o("composerIconBox", 33) }
     static var composerIcon: CGFloat { o("composerIcon", 28) }

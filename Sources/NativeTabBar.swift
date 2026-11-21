@@ -321,7 +321,7 @@ struct NativeTabBar: UIViewRepresentable {
     }
 
     private func applyColors(_ bar: UITabBar) {
-        bar.tintColor = UIColor.systemBlue
+        bar.tintColor = UIColor(OrbitTheme.jade)
         bar.unselectedItemTintColor = UIColor(OrbitTheme.secondary)
 
         let appearance = UITabBarAppearance()
@@ -350,7 +350,7 @@ struct NativeTabBar: UIViewRepresentable {
             .font: pfUIFont(10.5, .medium)
         ]
         let selectedTitle: [NSAttributedString.Key: Any] = [
-            .foregroundColor: UIColor(OrbitTheme.secondary),
+            .foregroundColor: UIColor(OrbitTheme.jade),
             .font: pfUIFont(10.5, .semibold)
         ]
         let selectedMyTitle: [NSAttributedString.Key: Any] = [
@@ -359,7 +359,7 @@ struct NativeTabBar: UIViewRepresentable {
         ]
         appearance.stackedLayoutAppearance.normal.iconColor = UIColor(OrbitTheme.secondary)
         appearance.stackedLayoutAppearance.normal.titleTextAttributes = normalTitle
-        appearance.stackedLayoutAppearance.selected.iconColor = UIColor.systemBlue
+        appearance.stackedLayoutAppearance.selected.iconColor = UIColor(OrbitTheme.jade)
         appearance.stackedLayoutAppearance.selected.titleTextAttributes = selectedTitle
         appearance.stackedLayoutAppearance.normal.badgeBackgroundColor = .systemRed
         appearance.stackedLayoutAppearance.selected.badgeBackgroundColor = .systemRed
@@ -391,7 +391,7 @@ struct NativeTabBar: UIViewRepresentable {
 
     private func refresh(_ bar: UITabBar) {
         guard let items = bar.items, items.count == 5 else { return }
-        items[0].badgeValue = badge > 0 ? (badge > 99 ? "•••" : "\(badge)") : nil
+        items[0].badgeValue = badge > 0 ? (badge > 99 ? "99+" : "\(badge)") : nil
         items[1].badgeValue = contactsDot ? "" : nil
         items[2].badgeValue = nil
         items[3].badgeValue = momentsDot ? "" : nil
