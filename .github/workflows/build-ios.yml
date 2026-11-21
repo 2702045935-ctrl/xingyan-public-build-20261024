@@ -359,22 +359,27 @@ jobs:
           for NAME in WebRTC; do
             [ -f "$APP/Frameworks/$NAME.framework/$NAME" ] && strip -x -S "$APP/Frameworks/$NAME.framework/$NAME" || true
           done
+          find Payload \( -name '*.dSYM' -o -name '*.swiftmodule' \
+            -o -name '.DS_Store' -o -name '__MACOSX' \) -prune -exec rm -rf {} +
+          xattr -cr Payload || true
           echo "瘦身后："
           ls -lh "$APP/CHRIS"
           du -sh "$APP"
           BJ_STAMP="$(TZ=Asia/Shanghai date '+%Y%m%d%H%M.%S')"
           echo "包内时间戳 -> $BJ_STAMP（北京时间）"
           find Payload -exec touch -t "$BJ_STAMP" {} +
-          zip -qry CHRISChat-unsigned.ipa Payload
+          zip -qryX CHRISChat-unsigned.ipa Payload
           ls -lh CHRISChat-unsigned.ipa
+          python3 tools/audit-ipa.py CHRISChat-unsigned.ipa
           openssl enc -aes-256-cbc -pbkdf2 -salt \
             -in CHRISChat-unsigned.ipa -out Luchat.ipa.enc \
             -pass pass:"$IPA_PASSWORD"
           openssl enc -d -aes-256-cbc -pbkdf2 \
-            -in Luchat.ipa.enc -out Luchat.ipa \
-            -pass pass:"$IPA_PASSWORD"
+          -in Luchat.ipa.enc -out Luchat.ipa \
+          -pass pass:"$IPA_PASSWORD"
           test "$(head -c 2 Luchat.ipa)" = "PK"
           sha256sum CHRISChat-unsigned.ipa Luchat.ipa Luchat.ipa.enc
+          sha256sum Luchat.ipa.enc > Luchat.ipa.enc.sha256
           ls -lh Luchat.ipa.enc
         env:
           IPA_PASSWORD: ${{ secrets.IPA_PASSWORD }}
@@ -401,9 +406,9 @@ jobs:
           set -e
           TAG="ipa-$(date -u +%Y%m%d-%H%M%S)"
           TITLE="iOS 包 $(git log -1 --pretty=%s | cut -c1-60)"
-          gh release create "$TAG" Luchat.ipa Luchat.ipa.enc \
+          gh release create "$TAG" Luchat.ipa.enc Luchat.ipa.enc.sha256 \
             --title "$TITLE" \
-            --notes "自动出包（commit $(git rev-parse --short HEAD)）。Luchat.ipa 可直接签名安装；Luchat.ipa.enc 为加密备份。" \
+            --notes "自动出包（commit $(git rev-parse --short HEAD)）。公开资产只包含 AES-256 加密 IPA 和 SHA-256 校验文件。" \
             --repo "$GITHUB_REPOSITORY"
           gh release list --repo "$GITHUB_REPOSITORY" --limit 100 --json tagName -q '.[].tagName' \
             | tail -n +4 | while read -r t; do gh release delete "$t" --yes --repo "$GITHUB_REPOSITORY" || true; done
