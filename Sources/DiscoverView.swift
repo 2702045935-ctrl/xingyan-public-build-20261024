@@ -1137,14 +1137,15 @@ struct DiscoverView: View {
     }
 
     private func loadItems() async {
+        if let cached = FeatureManifestStore.cachedItems(),
+           !cached.isEmpty {
+            items = cached
+            loaded = true
+        }
         if let data = try? await API.shared.signedFeatureManifest(),
            let list = try? FeatureManifestStore.verifyAndCache(data),
            !list.isEmpty {
             items = list
-            loaded = true
-        } else if let cached = FeatureManifestStore.cachedItems(),
-                  !cached.isEmpty {
-            items = cached
             loaded = true
         } else if let list = try? await API.shared.discover(),
                   !list.isEmpty {
@@ -1152,6 +1153,7 @@ struct DiscoverView: View {
             loaded = true
         } else if items.isEmpty {
             items = DiscoverItem.builtin
+            loaded = true
         }
     }
 
