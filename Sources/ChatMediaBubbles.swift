@@ -36,17 +36,17 @@ struct UserCardBubble: View {
     @Environment(\.colorScheme) private var scheme
 
     var body: some View {
-        PremiumGlassCard(radius: 18,
-                         tint: scheme == .dark ? C.green.opacity(0.045)
-                                               : Color.white.opacity(0.03)) {
+        WeChatMessageCard(width: 258, padding: 0) {
             VStack(spacing: 0) {
                 HStack(spacing: 12) {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
+                                         style: .continuous)
                             .fill(C.green.opacity(scheme == .dark ? 0.14 : 0.10))
                         RemoteImage(path: info.avatar, icon: "person.fill")
                             .frame(width: 48, height: 48)
-                            .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: ChatMessageSurface.innerRadius,
+                                                       style: .continuous))
                     }
                     .frame(width: 56, height: 56)
 
@@ -95,7 +95,6 @@ struct UserCardBubble: View {
                 .frame(height: 31)
             }
         }
-        .frame(width: 258)
     }
 }
 
@@ -827,14 +826,14 @@ struct SendingFileBubble: View {
         .padding(.vertical, 11)
         .frame(width: 218)
         .background {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(C.cardBg)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(C.hairline.opacity(0.78), lineWidth: 0.6)
-                }
-                .shadow(color: Color.black.opacity(0.10),
-                        radius: 6, x: 0, y: 3)
+            RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
+                             style: .continuous)
+                .fill(ChatMessageSurface.cardFill)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
+                             style: .continuous)
+                .stroke(ChatMessageSurface.cardBorder, lineWidth: 0.5)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(Tr("上传中") + " " + name))

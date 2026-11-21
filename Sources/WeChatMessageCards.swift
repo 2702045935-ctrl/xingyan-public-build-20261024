@@ -1,5 +1,20 @@
 import SwiftUI
 
+enum ChatMessageSurface {
+    static let cardRadius: CGFloat = 8
+    static let innerRadius: CGFloat = 6
+    static let mediaRadius: CGFloat = 6
+    static let gridRadius: CGFloat = 4
+
+    static var cardFill: Color {
+        Color.dyn(0xFFFFFF, 0x1C1C1E)
+    }
+
+    static var cardBorder: Color {
+        Color.dyn(0xE7E7E8, 0x343436)
+    }
+}
+
 struct WeChatMessageCard<Content: View>: View {
     var width: CGFloat = 268
     var padding: CGFloat = 13
@@ -18,36 +33,19 @@ struct WeChatMessageCard<Content: View>: View {
             .padding(padding)
             .frame(width: width, alignment: .leading)
             .background {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(.regularMaterial)
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(Color.dyn(0xFFFFFF, 0x242426).opacity(0.72))
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: [Color.white.opacity(0.13), .clear],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                }
+                RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
+                                 style: .continuous)
+                    .fill(ChatMessageSurface.cardFill)
             }
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
+                                        style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: [Color.white.opacity(0.28),
-                                     Color.black.opacity(0.07)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 0.7
-                    )
+                RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
+                                 style: .continuous)
+                    .stroke(ChatMessageSurface.cardBorder, lineWidth: 0.5)
             }
-            .shadow(color: Color.black.opacity(0.08), radius: 12, y: 5)
-            .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
+                                           style: .continuous))
     }
 }
 
@@ -63,7 +61,8 @@ struct WeChatMessageCardFooter: View {
                 .foregroundStyle(C.green)
                 .frame(width: 20, height: 20)
                 .background(C.green.opacity(0.10),
-                            in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                            in: RoundedRectangle(cornerRadius: ChatMessageSurface.innerRadius,
+                                                 style: .continuous))
             Text(title)
                 .font(pfStyled(size: 11, weight: .semibold))
                 .lineLimit(1)

@@ -6,6 +6,8 @@ ROOT = Path(__file__).resolve().parents[1]
 CORE = (ROOT / "Sources" / "Core.swift").read_text(encoding="utf-8")
 CHAT = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
 THEMES = (ROOT / "Sources" / "ChatThemes.swift").read_text(encoding="utf-8")
+CARDS = (ROOT / "Sources" / "WeChatMessageCards.swift").read_text(encoding="utf-8")
+MEDIA = (ROOT / "Sources" / "ChatMediaBubbles.swift").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
 )
@@ -45,6 +47,30 @@ require(
     "Text(TimeFmt.bubble(message.createdAt))" in CHAT
     and ".monospacedDigit()" in CHAT,
     "conversation timestamps must keep stable digits while messages arrive",
+)
+require(
+    "static let cardRadius: CGFloat = 8" in CARDS
+    and "static let mediaRadius: CGFloat = 6" in CARDS
+    and "static let gridRadius: CGFloat = 4" in CARDS
+    and ".fill(ChatMessageSurface.cardFill)" in CARDS
+    and ".stroke(ChatMessageSurface.cardBorder, lineWidth: 0.5)" in CARDS
+    and ".regularMaterial" not in CARDS,
+    "WeChat message cards must use the flat 8pt card surface",
+)
+require(
+    "ChatMessageSurface.gridRadius" in CHAT
+    and "ChatMessageSurface.mediaRadius" in CHAT
+    and "ChatMessageSurface.innerRadius" in CHAT
+    and ".fill(mine ? ChatTheme.bubbleMine : ChatMessageSurface.cardFill)" in CHAT
+    and ".stroke(mine ? Color.white.opacity(0.08) : ChatMessageSurface.cardBorder"
+    in CHAT,
+    "image grids, file cards and quotes must share the message surface tokens",
+)
+require(
+    "WeChatMessageCard(width: 258, padding: 0)" in MEDIA
+    and "PremiumGlassCard(radius: 18" not in MEDIA
+    and "ChatMessageSurface.cardRadius" in MEDIA,
+    "contact and upload cards must use the same flat message shell",
 )
 require(
     'Image(systemName: "ellipsis")' in CHAT

@@ -131,7 +131,8 @@ struct ShopLinkCard: View {
             HStack(alignment: .top, spacing: 12) {
                 RemoteImage(path: link.image, mode: .fill, maxSide: 360)
                     .frame(width: 82, height: 82)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: ChatMessageSurface.mediaRadius,
+                                               style: .continuous))
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(link.title)
@@ -198,10 +199,12 @@ struct ShopLinkCard: View {
                 if !link.image.isEmpty {
                     RemoteImage(path: link.image, mode: .fill, maxSide: 240)
                         .frame(width: 56, height: 56)
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: ChatMessageSurface.mediaRadius,
+                                                   style: .continuous))
                 } else {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        RoundedRectangle(cornerRadius: ChatMessageSurface.mediaRadius,
+                                         style: .continuous)
                             .fill(Color(hexString: "#FF5000"))
                         Text("淘")
                             .font(pf(16, .semibold))

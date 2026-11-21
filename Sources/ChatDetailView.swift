@@ -8511,16 +8511,14 @@ struct MessageRow: View {
             .buttonStyle(.plain)
             .padding(.horizontal, 7)
             .padding(.vertical, 6)
-            .background {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 4, style: .continuous)
-                        .fill(.ultraThinMaterial)
-                    RoundedRectangle(cornerRadius: 4, style: .continuous)
-                        .fill(quoteSurface)
-                }
-            }
+            .background(
+                RoundedRectangle(cornerRadius: ChatMessageSurface.innerRadius,
+                                 style: .continuous)
+                    .fill(quoteSurface)
+            )
             .overlay {
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                RoundedRectangle(cornerRadius: ChatMessageSurface.innerRadius,
+                                 style: .continuous)
                     .stroke(quoteBorder, lineWidth: 0.5)
             }
             .frame(maxWidth: 250, alignment: mine ? .trailing : .leading)
@@ -8541,8 +8539,10 @@ struct MessageRow: View {
             }
         }
         .frame(width: 58, height: 58)
-        .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 5, style: .continuous)
+        .clipShape(RoundedRectangle(cornerRadius: ChatMessageSurface.mediaRadius,
+                                    style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: ChatMessageSurface.mediaRadius,
+                                  style: .continuous)
             .stroke(Color.black.opacity(0.10), lineWidth: 0.5))
         .accessibilityHidden(true)
     }
@@ -8690,7 +8690,8 @@ struct MessageRow: View {
         }
         .frame(width: 216)
 
-        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
+                                    style: .continuous))
 
         .background(BubbleFill(mine: false, tail: showTail))
     }
@@ -9082,8 +9083,8 @@ struct MessageRow: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
-            .shadow(color: Color.black.opacity(0.14), radius: 7, x: 0, y: 2)
+            .clipShape(RoundedRectangle(cornerRadius: ChatMessageSurface.mediaRadius,
+                                        style: .continuous))
         } else if total == 2 {
             let tileWidth = (width - gap) / 2
             HStack(spacing: gap) {
@@ -9102,19 +9103,8 @@ struct MessageRow: View {
                 }
             }
             .frame(width: width)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(Color.white.opacity(0.14), lineWidth: 0.5)
-                    .allowsHitTesting(false)
-            }
-            .padding(4)
-            .background {
-                GlassBackground(
-                    shape: RoundedRectangle(cornerRadius: 18, style: .continuous),
-                    shadow: true
-                )
-            }
+            .clipShape(RoundedRectangle(cornerRadius: ChatMessageSurface.gridRadius,
+                                        style: .continuous))
         } else {
             let strip = Array(paths.dropFirst().prefix(3))
             let tileWidth = (width - CGFloat(strip.count - 1) * gap) / CGFloat(max(1, strip.count))
@@ -9149,13 +9139,10 @@ struct MessageRow: View {
                                         .foregroundColor(.white)
                                         .padding(.horizontal, 8)
                                         .frame(height: 25)
-                                        .background {
-                                            GlassBackground(
-                                                shape: Capsule(style: .continuous),
-                                                opacity: 0.84,
-                                                tint: Color.black.opacity(0.30)
-                                            )
-                                        }
+                                        .background(
+                                            Capsule(style: .continuous)
+                                                .fill(Color.black.opacity(0.52))
+                                        )
                                         .padding(6)
                                 }
                             }
@@ -9168,19 +9155,8 @@ struct MessageRow: View {
                 }
             }
             .frame(width: width)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(Color.white.opacity(0.10), lineWidth: 0.5)
-                    .allowsHitTesting(false)
-            }
-            .padding(4)
-            .background {
-                GlassBackground(
-                    shape: RoundedRectangle(cornerRadius: 18, style: .continuous),
-                    shadow: true
-                )
-            }
+            .clipShape(RoundedRectangle(cornerRadius: ChatMessageSurface.gridRadius,
+                                        style: .continuous))
         }
     }
 
@@ -9217,32 +9193,36 @@ struct MessageRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(name)
                     .font(pf(15, .semibold))
-                    .foregroundColor(ChatTheme.ink)
+                    .foregroundColor(mine ? bubblePrimaryInk : ChatTheme.ink)
                     .lineLimit(1)
                     .truncationMode(.middle)
                 Text(typeName + " · " + byteText(bytes))
                     .font(pf(12))
-                    .foregroundColor(ChatTheme.secondary)
+                    .foregroundColor(mine ? bubbleSecondaryInk : ChatTheme.secondary)
                     .lineLimit(1)
             }
             Spacer(minLength: 0)
             Image(systemName: "chevron.right")
                 .font(.system(size: 10, weight: .semibold))
-                .foregroundColor(ChatTheme.secondary.opacity(0.7))
+                .foregroundColor(mine
+                                 ? bubbleSecondaryInk.opacity(0.78)
+                                 : ChatTheme.secondary.opacity(0.7))
         }
         .padding(.horizontal, 13)
         .frame(width: min(224, maxBubbleWidth), height: 72, alignment: .leading)
         .background {
-            RoundedRectangle(cornerRadius: 15, style: .continuous)
-                .fill(.regularMaterial)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 15, style: .continuous)
-                        .stroke(Color.primary.opacity(0.07), lineWidth: 0.6)
-                }
-                .shadow(color: Color.black.opacity(mine ? 0.05 : 0.10),
-                        radius: 6, x: 0, y: 3)
+            RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
+                             style: .continuous)
+                .fill(mine ? ChatTheme.bubbleMine : ChatMessageSurface.cardFill)
         }
-        .contentShape(Rectangle())
+        .overlay {
+            RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
+                             style: .continuous)
+                .stroke(mine ? Color.white.opacity(0.08) : ChatMessageSurface.cardBorder,
+                        lineWidth: 0.5)
+        }
+        .contentShape(RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
+                                       style: .continuous))
         .onTapGesture { onOpenFile?(message.body) }
     }
 
@@ -9359,16 +9339,18 @@ struct ImageBubble: View {
                 }
             }
             .frame(width: size.width, height: size.height)
-            .clipShape(RoundedRectangle(cornerRadius: stickerLook ? 8 : 5,
+            .clipShape(RoundedRectangle(cornerRadius: stickerLook
+                                        ? 8
+                                        : ChatMessageSurface.mediaRadius,
                                         style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: stickerLook ? 8 : 5,
+                RoundedRectangle(cornerRadius: stickerLook
+                                 ? 8
+                                 : ChatMessageSurface.mediaRadius,
                                  style: .continuous)
                     .stroke(Color.black.opacity(stickerLook ? 0 : 0.10),
                             lineWidth: 0.6)
             )
-            .shadow(color: stickerLook ? .clear : Color.black.opacity(0.16),
-                    radius: 7, x: 0, y: 3)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
