@@ -18,8 +18,10 @@ require(
     "dark chat canvas must use the same true-black surface as native rows",
 )
 require(
-    'showsDivider: !isDark' in CHATS,
-    "dark native chat rows must disable their divider",
+    "showsDivider: true" in CHATS
+    and "UIColor.white.withAlphaComponent(0.055)" in CHATS
+    and "dividerLeading: CGFloat = 77" in ROW,
+    "dark chat rows must use the subtle 77pt structural hairline",
 )
 require(
     'divider.isHidden = !configuration.showsDivider' in ROW,

@@ -17,7 +17,9 @@ private enum ChatListVisual {
     static let previewAccentInk = Color.dyn(0xFA5151, 0xFA5151)
     static let timeInk = Color.dyn(0xCCCCCC, 0x8696A0)
     static let rule = Color(UIColor { trait in
-        trait.userInterfaceStyle == .dark ? .clear : UIColor(hex: 0xE9EDEF)
+        trait.userInterfaceStyle == .dark
+            ? UIColor.white.withAlphaComponent(0.055)
+            : UIColor(hex: 0xE9EDEF)
     })
     static let badgeRing = Color.dyn(0xFFFFFF, 0x000000)
     static let chipInk = Color.dyn(0x62636A, 0xA8A9AF)
@@ -1239,7 +1241,7 @@ struct ChatsView: View {
         chatsIsDark ? Color(hex: 0x000000) : C.chatsPageBg
     }
     private var chatsRule: Color {
-        chatsIsDark ? .clear : ChatListVisual.rule
+        ChatListVisual.rule
     }
     private var chatsSearchFill: Color {
         chatsIsDark
@@ -2766,8 +2768,10 @@ struct ChatsView: View {
             time: TimeFmt.listApple(chat.listTimestamp),
             timeColor: timeColor,
             rowBackground: rowBg,
-            dividerColor: isDark ? .clear : UIColor(hex: 0xE9EDEF),
-            showsDivider: !isDark,
+            dividerColor: isDark
+                ? UIColor.white.withAlphaComponent(0.055)
+                : UIColor(hex: 0xE9EDEF),
+            showsDivider: true,
             badgeRing: isDark ? .black : .white,
             chatId: chat.id,
             avatarPaths: avatarPaths,
