@@ -55,6 +55,7 @@ func presentNativeChatDeleteConfirmation(from view: UIView?,
 struct NativeChatList<Item: Identifiable & Equatable, Row: View>: UIViewControllerRepresentable
 where Item.ID: Hashable {
     let items: [Item]
+    let dark: Bool
     let height: (Item) -> CGFloat
     let nativeRow: ((Item) -> NativeChatRowConfiguration?)?
     let onScrollStateChange: (Bool) -> Void
@@ -100,7 +101,7 @@ where Item.ID: Hashable {
         table.sectionHeaderTopPadding = 0
         if #available(iOS 26.0, *) {
             table.topEdgeEffect.style = .hard
-            table.topEdgeEffect.isHidden = false
+            table.topEdgeEffect.isHidden = dark
             table.bottomEdgeEffect.isHidden = true
         }
         NativeChatListScrollRegistry.shared.chats = table
@@ -164,6 +165,11 @@ where Item.ID: Hashable {
         context.coordinator.onApproachingEnd = onApproachingEnd
         context.coordinator.onRefresh = onRefresh
         context.coordinator.allowInsertionDuringScroll = allowInsertionDuringScroll
+        if #available(iOS 26.0, *) {
+            controller.tableView.topEdgeEffect.style = .hard
+            controller.tableView.topEdgeEffect.isHidden = dark
+            controller.tableView.bottomEdgeEffect.isHidden = true
+        }
         context.coordinator.apply(items, animated: false)
     }
 

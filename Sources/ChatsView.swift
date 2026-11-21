@@ -2879,6 +2879,7 @@ struct ChatsView: View {
             ZStack(alignment: .top) {
                 NativeChatList(
                     items: nativeChatEntries(snapshot),
+                    dark: chatsIsDark,
                     height: { entry in
                         nativeChatHeight(entry)
                     },
@@ -2961,7 +2962,8 @@ struct ChatsView: View {
                                     Color.clear
                                         .contentShape(Rectangle())
                                 }
-                                NativeChatsTopEdgeChrome(scrolled: chatTopScrolled)
+                                NativeChatsTopEdgeChrome(scrolled: chatTopScrolled,
+                                                         dark: chatsIsDark)
                             }
                         }
                         .opacity(navFadeForFloor)

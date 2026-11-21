@@ -27,8 +27,10 @@ require(
 )
 require(
     "table.topEdgeEffect.style = .hard" in NATIVE_LIST
-    and "table.topEdgeEffect.isHidden = false" in NATIVE_LIST,
-    "dark scroll chrome must use the system scroll-edge material",
+    and "table.topEdgeEffect.isHidden = dark" in NATIVE_LIST
+    and "controller.tableView.topEdgeEffect.isHidden = dark" in NATIVE_LIST
+    and "dark: chatsIsDark" in CHATS,
+    "the chat surface must disable the gray system edge effect in dark mode",
 )
 require(
     '"\\(chatsIsDark)-\\(scheme)-\\(Lang.code)' in CHATS,
