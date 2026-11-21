@@ -362,7 +362,7 @@ struct BubbleFill: View {
 
     var seed: Double = 0
 
-    var glass: Bool = true
+    var glass: Bool = false
     @Environment(\.colorScheme) private var scheme
     @Environment(\.bubbleUsesLightInk) private var wallpaperUsesLightInk
     private var usesDarkBackdrop: Bool { wallpaperUsesLightInk ?? (scheme == .dark) }
@@ -390,8 +390,13 @@ struct BubbleFill: View {
     var body: some View {
         ZStack {
             if mine {
-                BubbleShape(mine: mine, tail: tail, pill: pill)
-                    .fill(mineFill)
+                if glass {
+                    BubbleShape(mine: mine, tail: tail, pill: pill)
+                        .fill(mineFill)
+                } else {
+                    BubbleShape(mine: mine, tail: tail, pill: pill)
+                        .fill(ChatTheme.bubbleMine)
+                }
             } else {
                 BubbleShape(mine: mine, tail: tail, pill: pill)
                     .fill(ChatTheme.bubbleOther)
@@ -4393,6 +4398,7 @@ struct ChatDetailView: View {
         if isGroup || usesPlainDefaultChatChrome {
             Text(TimeFmt.bubble(message.createdAt))
                 .font(pf(11.5, .medium))
+                .monospacedDigit()
                 .foregroundColor(adaptiveSystemSecondaryInk.opacity(0.92))
                 .frame(maxWidth: .infinity)
                 .padding(.top, 8)
@@ -4400,6 +4406,7 @@ struct ChatDetailView: View {
         } else {
             Text(TimeFmt.bubble(message.createdAt))
                 .font(pf(12, .medium))
+                .monospacedDigit()
                 .foregroundColor(adaptiveSystemSecondaryInk)
                 .padding(.horizontal, L.o("chatTimePadX", 9))
                 .padding(.vertical, L.o("chatTimePadY", 4))
@@ -8580,13 +8587,8 @@ struct MessageRow: View {
     }
 
     private func textLineSpacing(_ raw: String) -> CGFloat {
-        let lineCount = raw.reduce(1) { count, character in
-            count + (character == "\n" ? 1 : 0)
-        }
-        let isLong = raw.count >= 120 || lineCount >= 5
-        let preferred: CGFloat = isLong ? 3.2 : 2.4
-        let configured = max(2.2, min(3.2, L.msgLineSpacing))
-        return min(preferred, configured)
+        _ = raw
+        return min(3.2, max(2.8, L.msgLineSpacing * 0.6))
     }
 
     private func richBody(_ raw: String) -> AttributedString {

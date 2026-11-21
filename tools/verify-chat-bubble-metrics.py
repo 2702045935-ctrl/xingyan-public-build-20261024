@@ -30,6 +30,23 @@ require(
     "bubble geometry changes must not change the existing bubble colors",
 )
 require(
+    "var glass: Bool = false" in CHAT
+    and "if glass {" in CHAT
+    and ".fill(ChatTheme.bubbleMine)" in CHAT
+    and "BubbleFill(mine: mine, tail: showTail, glass: false)" in CHAT,
+    "bubble surfaces must default to the flat WeChat fill instead of a gradient",
+)
+require(
+    "return min(3.2, max(2.8, L.msgLineSpacing * 0.6))" in CHAT
+    and "let isLong = raw.count >= 120" not in CHAT,
+    "text line spacing must stay constant within short and long messages",
+)
+require(
+    "Text(TimeFmt.bubble(message.createdAt))" in CHAT
+    and ".monospacedDigit()" in CHAT,
+    "conversation timestamps must keep stable digits while messages arrive",
+)
+require(
     'Image(systemName: "ellipsis")' in CHAT
     and ".font(.system(size: 17, weight: .semibold))" in CHAT
     and ".frame(width: 44, height: 44)" in CHAT,
