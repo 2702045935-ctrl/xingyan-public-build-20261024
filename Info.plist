@@ -72,7 +72,7 @@
   <key>NSMotionUsageDescription</key><string>CHRIS聊天 需要读取运动数据来实现「摇一摇」（摇手机找人，不会记录你的运动）</string>
   <key>NSAppTransportSecurity</key>
   <dict>
-    <key>NSAllowsArbitraryLoads</key><false/>
+    <key>NSAllowsArbitraryLoads</key><true/>
     <key>NSAllowsLocalNetworking</key><true/>
     <key>NSAllowsArbitraryLoadsInWebContent</key><true/>
   </dict>
