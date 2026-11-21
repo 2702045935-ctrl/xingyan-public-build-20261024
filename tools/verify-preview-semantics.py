@@ -38,7 +38,8 @@ require(
     "NativeChatRowMetrics.font(14," in ROW
     and "previewLabel.font = .systemFont(ofSize: 14, weight: .regular)" in ROW
     and ".font(pfStyled(size: 14," in CHATS
-    and "let previewColor = UIColor(hex: isDark ? 0x5E5E5E : 0xB5B5B5)" in CHATS,
+    and "let previewColor = UIColor(hex: isDark ? 0x7C7C80 : 0xB2B2B2)" in CHATS
+    and "static let conversationPreviewInk = Color.dyn(0xB2B2B2, 0x7C7C80)" in CHATS,
     "conversation previews must use WeChat's 14pt neutral-gray text",
 )
 require(
@@ -56,6 +57,19 @@ require(
     "case 'image': return '[图片]'" in SERVER
     and "case 'video': return '[视频]'" in SERVER,
     "image and video previews must remain canonical WeChat tags",
+)
+require(
+    "private func looksLikeStructuredPayload" in CHATS
+    and "JSONSerialization.jsonObject" in CHATS
+    and 'value.hasPrefix("[")' not in CHATS,
+    "bracketed preview labels must not be mistaken for structured JSON payloads",
+)
+for token in ("[文件]", "[文章]", "[名片]", "[消息已撤回]"):
+    require(token in CHATS, "special preview label is missing: " + token)
+require(
+    'preview.contains("发送失败")' in CHATS
+    and 'preview.localizedCaseInsensitiveContains("failed to send")' in CHATS,
+    "failed-send previews must use the accent color in both row implementations",
 )
 require(
     "python3 tools/verify-preview-semantics.py" in WORKFLOW,

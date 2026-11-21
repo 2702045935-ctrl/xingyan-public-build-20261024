@@ -13,7 +13,7 @@ private enum ChatListVisual {
 
     static let ink = Color.dyn(0x1A1A1A, 0xE9EDEF)
     static let previewInk = Color.dyn(0xB2B2B2, 0x8696A0)
-    static let conversationPreviewInk = Color.dyn(0xB5B5B5, 0x5E5E5E)
+    static let conversationPreviewInk = Color.dyn(0xB2B2B2, 0x7C7C80)
     static let previewAccentInk = Color.dyn(0xFA5151, 0xFA5151)
     static let timeInk = Color.dyn(0xCCCCCC, 0x8696A0)
     static let rule = Color(UIColor { trait in
@@ -448,12 +448,22 @@ struct ChatRow: View, Equatable {
             return (patPreviewText(value), mentioned)
         }
         guard !value.isEmpty else { return (fallbackPreview(kind), mentioned) }
-        if value.hasPrefix("{") || value.hasPrefix("[")
-            || value.contains("\"kind\":") || value.contains("[object Object]") {
+        if looksLikeStructuredPayload(value) {
             return (fallbackPreview(kind), mentioned)
         }
         guard Lang.isEnglish || Lang.isRussian else { return (value, mentioned) }
         return (localizedGeneratedPreview(value), mentioned)
+    }
+
+    private func looksLikeStructuredPayload(_ value: String) -> Bool {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return false }
+        if trimmed.hasPrefix("{") || trimmed.hasPrefix("[{") {
+            return (try? JSONSerialization.jsonObject(
+                with: Data(trimmed.utf8)
+            )) != nil
+        }
+        return trimmed == "[object Object]"
     }
 
     private static let generatedPreviewTags: [(zh: String, en: String, ru: String)] = [
@@ -559,6 +569,11 @@ struct ChatRow: View, Equatable {
                 + Text(content).foregroundColor(ChatListVisual.conversationPreviewInk)
         }
         if redPrefixes.contains(where: { preview.hasPrefix($0) }) {
+            return Text(preview).foregroundColor(ChatListVisual.previewAccentInk)
+        }
+        if preview.contains("发送失败")
+            || preview.localizedCaseInsensitiveContains("failed to send")
+            || preview.localizedCaseInsensitiveContains("не удалось отправить") {
             return Text(preview).foregroundColor(ChatListVisual.previewAccentInk)
         }
         let color = ChatListVisual.conversationPreviewInk
@@ -2732,7 +2747,7 @@ struct ChatsView: View {
         let titleColor: UIColor = chat.showsOfficialMark
             ? UIColor(hex: 0x25D366)
             : .label
-        let previewColor = UIColor(hex: isDark ? 0x5E5E5E : 0xB5B5B5)
+        let previewColor = UIColor(hex: isDark ? 0x7C7C80 : 0xB2B2B2)
         let memberColor = nativePeerColor(chat.memberColor)
         let rowBg: UIColor = isDark ? UIColor(hex: 0x000000) : UIColor.white
         let timeColor: UIColor = .tertiaryLabel

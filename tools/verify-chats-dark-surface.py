@@ -43,7 +43,7 @@ require(
     "empty and filtered chat lists must stay inside the native list surface",
 )
 require(
-    "let previewColor = UIColor(hex: isDark ? 0x5E5E5E : 0xB5B5B5)" in CHATS
+    "let previewColor = UIColor(hex: isDark ? 0x7C7C80 : 0xB2B2B2)" in CHATS
     and "let timeColor: UIColor = .tertiaryLabel" in CHATS
     and "let titleColor: UIColor = chat.showsOfficialMark" in CHATS
     and "?: .label" not in CHATS
