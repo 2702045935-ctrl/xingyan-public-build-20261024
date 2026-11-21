@@ -35,6 +35,14 @@ require(
     "native row signatures must invalidate when the effective theme changes",
 )
 require(
+    "if snapshot.list.isEmpty {\n                    VStack" not in CHATS
+    and "private var chatListEmptyState" in CHATS
+    and "private var chatListEmptyTitle" in CHATS
+    and "private var chatListEmptyDetail" in CHATS
+    and ".background(OrbitTheme.canvas)" not in CHATS,
+    "empty and filtered chat lists must stay inside the native list surface",
+)
+require(
     "let previewColor = UIColor(hex: isDark ? 0x5E5E5E : 0xB5B5B5)" in CHATS
     and "let timeColor: UIColor = .tertiaryLabel" in CHATS
     and "let titleColor: UIColor = chat.showsOfficialMark" in CHATS

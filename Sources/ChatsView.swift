@@ -2516,7 +2516,7 @@ struct ChatsView: View {
             entries.append(NativeChatEntry(
                 id: "empty",
                 kind: .empty,
-                signature: "\(appearance)-\(Tr("这个分类暂时没有会话"))"
+                signature: "\(appearance)-\(chatListEmptyTitle)-\(chatListEmptyDetail)-\(app.loadError != nil)"
             ))
         } else {
             entries.append(contentsOf: ChatStressFixture.isActive
@@ -2596,11 +2596,7 @@ struct ChatsView: View {
                 )
             }
         case .empty:
-            Text(Tr("这个分类暂时没有会话"))
-                .font(pf(14))
-                .foregroundColor(C.subLabel)
-                .frame(maxWidth: .infinity)
-                .frame(height: 126)
+            chatListEmptyState
         case .weather:
             weatherConversationRow
                 .frame(width: chatsContentMaxWidth)
@@ -2619,7 +2615,7 @@ struct ChatsView: View {
         case .official, .pay, .chat, .weather:
             return ChatListVisual.rowHeight
         case .empty:
-            return 126
+            return 96
         case .bottom:
             return L.tabH + L.safeBottom + 10
         }
@@ -2827,56 +2823,44 @@ struct ChatsView: View {
         return NavigationStack(path: $path) {
 
             ZStack(alignment: .top) {
-                if snapshot.list.isEmpty {
-                    VStack(spacing: 0) {
-                        Color.clear.frame(height: L.safeTop + chatsHeaderH
-                                          + chatFilterOffset)
-                        chatsSearchBar
-                        systemOfficialRows
-                            .frame(width: chatsContentMaxWidth)
-                        emptyView
-                        Spacer(minLength: 0)
-                    }
-                } else {
-                    NativeChatList(
-                        items: nativeChatEntries(snapshot),
-                        height: { entry in
-                            nativeChatHeight(entry)
-                        },
-                        nativeRow: { entry in
-                            guard entry.kind == .chat, let chat = entry.chat else { return nil }
-                            return nativeChatRowConfiguration(chat)
-                        },
-                        onScrollStateChange: { scrolling in
-                            guard chatsScrollActive != scrolling else { return }
-                            withAnimation(.easeOut(duration: scrolling ? 0.12 : 0.20)) {
-                                chatsScrollActive = scrolling
-                            }
-                        },
-                        onOffsetChange: { y in
-                            let next = y > 8 ? y : 0
-                            if chatTopScrolled != next { chatTopScrolled = next }
-                        },
-                        onZoneChange: { zone in
-                            handleScrollZone(zone)
-                        },
-                        onApproachingStart: {
-                            loadPreviousStressChatsIfNeeded()
-                        },
-                        onApproachingEnd: {
-                            loadMoreStressChatsIfNeeded()
-                        },
-                        onRefresh: {
-                            Task { await app.loadChats() }
-                        },
-                        allowInsertionDuringScroll: true
-                    ) { entry in
-                        nativeChatEntry(entry)
-                    }
-                    .id(chatFilter)
-                    .ignoresSafeArea(edges: .top)
-                    .background(Color.clear)
+                NativeChatList(
+                    items: nativeChatEntries(snapshot),
+                    height: { entry in
+                        nativeChatHeight(entry)
+                    },
+                    nativeRow: { entry in
+                        guard entry.kind == .chat, let chat = entry.chat else { return nil }
+                        return nativeChatRowConfiguration(chat)
+                    },
+                    onScrollStateChange: { scrolling in
+                        guard chatsScrollActive != scrolling else { return }
+                        withAnimation(.easeOut(duration: scrolling ? 0.12 : 0.20)) {
+                            chatsScrollActive = scrolling
+                        }
+                    },
+                    onOffsetChange: { y in
+                        let next = y > 8 ? y : 0
+                        if chatTopScrolled != next { chatTopScrolled = next }
+                    },
+                    onZoneChange: { zone in
+                        handleScrollZone(zone)
+                    },
+                    onApproachingStart: {
+                        loadPreviousStressChatsIfNeeded()
+                    },
+                    onApproachingEnd: {
+                        loadMoreStressChatsIfNeeded()
+                    },
+                    onRefresh: {
+                        Task { await app.loadChats() }
+                    },
+                    allowInsertionDuringScroll: true
+                ) { entry in
+                    nativeChatEntry(entry)
                 }
+                .id(chatFilter)
+                .ignoresSafeArea(edges: .top)
+                .background(Color.clear)
 
                 if pullDown > 0.5 || floorUp {
                     ZStack(alignment: .top) {
@@ -2953,7 +2937,7 @@ struct ChatsView: View {
                 .zIndex(3)
             }
 
-            .background(chatsPageFill.ignoresSafeArea(edges: .bottom))
+            .background(chatsPageFill.ignoresSafeArea())
             .fullScreenCover(isPresented: $showSearch) {
                 SearchPage(onOpenChat: { c in
                     app.prepareChatForImmediatePresentation(c)
@@ -2964,7 +2948,6 @@ struct ChatsView: View {
             .sheet(isPresented: $showChatFilterSheet) {
                 chatFilterSheet
             }
-            .background(chatsPageFill.ignoresSafeArea(edges: .top))
             .navigationTitle(chatListBrandTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .navigationBar)
@@ -3242,21 +3225,94 @@ struct ChatsView: View {
         if key == "weatherRowAvatar" { localWeatherRowAvatar = "" }
     }
 
-    private var emptyView: some View {
-        VStack(spacing: 10) {
-            Spacer()
-            Text(app.loadError ?? "正在加载会话…")
+    private var chatListEmptyTitle: String {
+        if app.loadError != nil {
+            return sessionCopy(zh: "会话加载失败",
+                               en: "Couldn't load conversations",
+                               ru: "Не удалось загрузить чаты")
+        }
+        if app.loadingChats && app.chats.isEmpty {
+            return sessionCopy(zh: "正在加载会话…",
+                               en: "Loading conversations…",
+                               ru: "Загрузка чатов…")
+        }
+        if !keyword.isEmpty {
+            return sessionCopy(zh: "未找到相关会话",
+                               en: "No conversations found",
+                               ru: "Чаты не найдены")
+        }
+        switch chatFilter {
+        case .all:
+            return sessionCopy(zh: "暂无会话",
+                               en: "No conversations",
+                               ru: "Нет чатов")
+        case .unread:
+            return sessionCopy(zh: "暂无未读会话",
+                               en: "No unread conversations",
+                               ru: "Нет непрочитанных чатов")
+        case .group:
+            return sessionCopy(zh: "暂无群聊",
+                               en: "No group chats",
+                               ru: "Нет групповых чатов")
+        case .official:
+            return sessionCopy(zh: "暂无公众号会话",
+                               en: "No official account chats",
+                               ru: "Нет чатов официальных аккаунтов")
+        case .pinned:
+            return sessionCopy(zh: "暂无置顶会话",
+                               en: "No pinned conversations",
+                               ru: "Нет закрепленных чатов")
+        }
+    }
+
+    private var chatListEmptyDetail: String {
+        if app.loadError != nil {
+            return sessionCopy(zh: "下拉可重新同步",
+                               en: "Pull down to try again",
+                               ru: "Потяните вниз, чтобы повторить")
+        }
+        if app.loadingChats && app.chats.isEmpty {
+            return ""
+        }
+        if !keyword.isEmpty {
+            return sessionCopy(zh: "换个关键词试试",
+                               en: "Try another search",
+                               ru: "Попробуйте другой запрос")
+        }
+        if chatFilter != .all {
+            return sessionCopy(zh: "新会话会显示在这里",
+                               en: "New conversations will appear here",
+                               ru: "Новые чаты появятся здесь")
+        }
+        return app.chats.isEmpty
+            ? sessionCopy(zh: "收到的新消息会显示在这里",
+                          en: "New messages will appear here",
+                          ru: "Новые сообщения появятся здесь")
+            : ""
+    }
+
+    private var chatListEmptyState: some View {
+        VStack(spacing: 4) {
+            if app.loadingChats && app.chats.isEmpty && app.loadError == nil {
+                ProgressView()
+                    .controlSize(.small)
+                    .padding(.bottom, 2)
+            }
+            Text(chatListEmptyTitle)
                 .font(pf(14))
                 .foregroundColor(C.subLabel)
-            if app.loadError != nil {
-                Button(Tr("重试")) { Task { await app.loadChats() } }
-                    .font(pf(15))
-                    .foregroundColor(C.green)
+                .multilineTextAlignment(.center)
+            if !chatListEmptyDetail.isEmpty {
+                Text(chatListEmptyDetail)
+                    .font(pf(12))
+                    .foregroundColor(Color(.tertiaryLabel))
+                    .multilineTextAlignment(.center)
             }
-            Spacer()
         }
         .frame(maxWidth: .infinity)
-        .background(OrbitTheme.canvas)
+        .frame(height: 96)
+        .background(Color.clear)
+        .accessibilityElement(children: .combine)
     }
 
     private func markUnread(_ chat: Chat) {

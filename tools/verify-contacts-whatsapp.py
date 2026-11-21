@@ -10,14 +10,26 @@ PROFILE = (ROOT / "Sources" / "Profile.swift").read_text(encoding="utf-8")
 
 def require(condition: bool, message: str) -> None:
     if not condition:
-        raise SystemExit("contacts WhatsApp verification failed: " + message)
+        raise SystemExit("contacts WeChat verification failed: " + message)
 
 
-require("        48\n" in VIEW, "contact avatars must use the compact 48pt row standard")
 require(
-    "nativeQuickIcon(item, size: 28)" in VIEW
-    and ".frame(height: 56)" in VIEW,
-    "contact utility rows must use the shared WhatsApp-style icon system",
+    "private var contactAvatarSize: CGFloat {\n        40" in VIEW
+    and ".frame(height: 64)" in VIEW
+    and ".padding(.leading, 68)" in VIEW,
+    "contact rows must use the compact 40pt avatar and 64pt WeChat-style rhythm",
+)
+require(
+    "private var plusButton" in VIEW
+    and "Text(C.tabText1)" in VIEW
+    and "systemTextFont(17, .semibold, relativeTo: .headline)" in VIEW,
+    "contacts must use a centered native title with the add control on the trailing edge",
+)
+require(
+    "nativeQuickIcon(item, size: 30)" in VIEW
+    and ".frame(height: 56)" in VIEW
+    and ".padding(.leading, 58)" in VIEW,
+    "contact utility rows must use compact WeChat-style icon and divider geometry",
 )
 require(
     ".background(contactsSectionFill)" in VIEW,
@@ -31,12 +43,18 @@ require(
 require(
     'Image(systemName: symbol)' in VIEW
     and "RoundedRectangle(cornerRadius: size * 0.25, style: .continuous)" in VIEW,
-    "utility contact icons must use compact native SF Symbols with a system tint surface",
+    "utility contact icons must use native symbols on a compact colored surface",
 )
 require(
-    ".frame(height: max(72, L.ctRowH))" in VIEW
-    and ".padding(.leading, 76)" in VIEW,
-    "alphabet contact rows and dividers must share the 48pt avatar geometry",
+    "contactSubtitle(" not in VIEW
+    and ".frame(height: 36)" in VIEW
+    and "RoundedRectangle(cornerRadius: 8, style: .continuous)" in VIEW,
+    "contacts must use single-line native rows and the compact WeChat search field",
+)
+require(
+    'Tr("未找到相关联系人")' in VIEW
+    and 'Tr("换个关键词试试")' in VIEW,
+    "contact search must distinguish an empty result from a missing contact list",
 )
 require(
     "private var phoneSearchBar" in PHONE
