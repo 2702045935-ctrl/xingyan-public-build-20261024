@@ -4042,9 +4042,19 @@ struct ChatDetailView: View {
     private var atBottomNow: Bool { wasAtBottom || atBottom }
 
     private func pendingBubble(_ p: PendingMsg) -> some View {
-        VStack(alignment: .trailing, spacing: 3) {
-            HStack(alignment: .center, spacing: 7) {
-                Spacer(minLength: 0)
+        let pendingIndex = outbox.firstIndex(where: { $0.id == p.id }) ?? 0
+        let showsTail: Bool = {
+            guard pendingIndex == 0, let last = messages.last else {
+                return pendingIndex == 0
+            }
+            if last.senderId != myId { return true }
+            guard let date = TimeFmt.date(last.createdAt) else { return true }
+            return p.at.timeIntervalSince(date) >= 300
+        }()
+        return HStack(alignment: .top, spacing: 0) {
+            Spacer(minLength: 0)
+            VStack(alignment: .trailing, spacing: 2) {
+                HStack(alignment: .center, spacing: 7) {
                 if p.failed {
                     Button {
                         Task { await flushOutbox() }
@@ -4055,28 +4065,41 @@ struct ChatDetailView: View {
                     }
                     .buttonStyle(.plain)
                 }
-                Text(p.preview)
-                    .font(pf(16))
-                    .foregroundColor(ChatTheme.ink)
+                Text(p.kind == "text" ? richBody(p.content) : p.preview)
+                    .font(pf(L.chatFontSize))
+                    .foregroundColor(Color.white.opacity(0.98))
+                    .lineSpacing(p.kind == "text" ? textLineSpacing(p.content) : 0)
                     .lineLimit(6)
                     .multilineTextAlignment(.leading)
-                    .padding(.leading, 12)
-                    .padding(.trailing, p.failed ? 12 : 26)
-                    .padding(.vertical, 9)
-                    .background(BubbleFill(mine: true, tail: false))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, L.bubblePadHPill)
+                    .padding(.vertical, L.bubblePadV)
+                    .background(BubbleFill(mine: true, tail: showsTail))
                     .opacity(p.failed ? 0.9 : 1)
-                    .overlay(alignment: .bottomTrailing) {
-                        if !p.failed {
-                            WhatsAppMessageTicks(count: 1,
-                                                 color: Color.white.opacity(0.72))
-                                .padding(.trailing, 7)
-                                .padding(.bottom, 5)
-                        }
+                }
+                if !p.failed {
+                    HStack(spacing: 0) {
+                        Spacer(minLength: 0)
+                        WhatsAppMessageTicks(
+                            count: 1,
+                            color: MessageDeliveryState.sent.color
+                        )
                     }
+                    .padding(.trailing, 4)
+                    .offset(y: -2)
+                }
+                if p.failed, let reason = p.failureReason, !reason.isEmpty {
+                    deliveryFailureCard(DeliveryFailureCopy.make(reason: reason))
+                }
             }
-            if p.failed, let reason = p.failureReason, !reason.isEmpty {
-                deliveryFailureCard(DeliveryFailureCopy.make(reason: reason))
-            }
+            .frame(maxWidth: isGroup ? groupBubbleMaxWidth : L.bubbleMaxW,
+                   alignment: .trailing)
+            Spacer().frame(width: L.chatGapMsg)
+            Avatar(path: app.me?.avatarPath ?? "",
+                   size: L.chatAvatar,
+                   radius: L.chatAvatar / 2,
+                   circle: true,
+                   level: GrowthStore.shared.shownLevel)
         }
         .padding(.vertical, 4)
         .id(p.id)
