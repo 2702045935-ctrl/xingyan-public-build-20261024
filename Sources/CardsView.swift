@@ -40,6 +40,18 @@ struct WalletCard: Decodable, Identifiable, Hashable {
     }
 }
 
+private struct WalletCardPressStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(reduceMotion ? 1 : (configuration.isPressed ? 0.985 : 1))
+            .brightness(configuration.isPressed ? -0.025 : 0)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.10),
+                       value: configuration.isPressed)
+    }
+}
+
 struct CardsView: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
@@ -48,6 +60,7 @@ struct CardsView: View {
     @State private var cards: [WalletCard] = []
     @State private var loading = true
     @State private var open: WalletCard? = nil
+    @State private var focusedCardID: String? = nil
 
     @State private var diagNote = ""
 
@@ -75,7 +88,7 @@ struct CardsView: View {
                     } else {
                         if !live.isEmpty {
                             sectionTitle(Tr("可用"))
-                            cardList(live)
+                            walletCardStack(live)
                         }
                         if !used.isEmpty {
                             sectionTitle(Tr("已使用"))
@@ -134,6 +147,162 @@ struct CardsView: View {
                 .buttonStyle(MenuPressStyle())
             }
         }
+    }
+
+    private var walletCardHeight: CGFloat {
+        min(218, max(194, L.width * 0.54))
+    }
+
+    private var walletCardPeek: CGFloat { 42 }
+
+    private func orderedLiveCards(_ list: [WalletCard]) -> [WalletCard] {
+        guard let focusedCardID,
+              let focused = list.first(where: { $0.id == focusedCardID }) else {
+            return list
+        }
+        return [focused] + list.filter { $0.id != focusedCardID }
+    }
+
+    private func walletCardStack(_ list: [WalletCard]) -> some View {
+        let ordered = orderedLiveCards(list)
+        let stackHeight = walletCardHeight
+            + CGFloat(max(0, ordered.count - 1)) * walletCardPeek
+
+        return ZStack(alignment: .top) {
+            ForEach(Array(ordered.enumerated()), id: \.element.id) { index, card in
+                Button {
+                    UISelectionFeedbackGenerator().selectionChanged()
+                    if index == 0 {
+                        open = card
+                    } else {
+                        withAnimation(.spring(response: 0.40, dampingFraction: 0.86)) {
+                            focusedCardID = card.id
+                        }
+                    }
+                } label: {
+                    walletCardFace(card, isFront: index == 0)
+                }
+                .buttonStyle(WalletCardPressStyle())
+                .scaleEffect(index == 0 ? 1 : 0.975, anchor: .top)
+                .opacity(index == 0 ? 1 : max(0.78, 1 - CGFloat(index) * 0.035))
+                .offset(y: index == 0
+                        ? 0
+                        : walletCardHeight - 30 + CGFloat(index - 1) * walletCardPeek)
+                .zIndex(Double(ordered.count - index))
+                .accessibilityLabel(
+                    (card.title ?? card.kindName)
+                    + "，" + subText(card)
+                    + "，" + Tr(index == 0 ? "当前卡，点按查看详情" : "点按移到前面")
+                )
+            }
+        }
+        .frame(height: stackHeight, alignment: .top)
+        .clipped()
+        .padding(.horizontal, 16)
+        .accessibilityHint(Tr("点按后卡切换到前面，再点当前卡查看详情"))
+    }
+
+    private func walletCardFace(_ card: WalletCard, isFront: Bool) -> some View {
+        let ink = Color.white
+        return ZStack(alignment: .topLeading) {
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [card.tint.opacity(0.96), card.tint, card.tint.opacity(0.72)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+
+            Circle()
+                .stroke(Color.white.opacity(0.16), lineWidth: 1)
+                .frame(width: walletCardHeight * 0.92, height: walletCardHeight * 0.92)
+                .offset(x: L.width * 0.38, y: -walletCardHeight * 0.42)
+
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.white.opacity(0.10), lineWidth: 0.8)
+                .padding(10)
+
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: card.symbol)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(ink)
+                        .frame(width: 38, height: 38)
+                        .background(Circle().fill(Color.white.opacity(0.16)))
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(card.kindName)
+                            .font(pf(12, .semibold))
+                            .foregroundStyle(ink.opacity(0.74))
+                        Text(card.title ?? "")
+                            .font(pf(19, .semibold))
+                            .foregroundStyle(ink)
+                            .lineLimit(1)
+                    }
+
+                    Spacer(minLength: 8)
+
+                    Text(card.used == true ? Tr("已使用") : Tr("星言卡包"))
+                        .font(pf(10.5, .semibold))
+                        .foregroundStyle(ink.opacity(0.82))
+                        .padding(.horizontal, 9)
+                        .frame(height: 25)
+                        .background(Capsule().fill(Color.white.opacity(0.13)))
+                }
+
+                Spacer(minLength: 10)
+
+                if let amount = card.amount, amount > 0 {
+                    Text("¥" + String(format: "%.0f", amount))
+                        .font(pf(28, .bold))
+                        .foregroundStyle(ink)
+                        .monospacedDigit()
+                } else if let sub = card.sub, !sub.isEmpty {
+                    Text(sub)
+                        .font(pf(16, .medium))
+                        .foregroundStyle(ink)
+                        .lineLimit(1)
+                    }
+
+                Spacer(minLength: 8)
+
+                HStack(alignment: .bottom) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(maskedCardCode(card.code))
+                            .font(pfStyled(size: 13, weight: .medium, design: .monospaced))
+                            .foregroundStyle(ink.opacity(0.84))
+                        Text((card.validTo ?? "").isEmpty
+                             ? Tr("长期有效")
+                             : Tr("有效期至 ") + (card.validTo ?? ""))
+                            .font(pf(11))
+                            .foregroundStyle(ink.opacity(0.62))
+                    }
+                    Spacer(minLength: 8)
+                    Image(systemName: "wave.3.right")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(ink.opacity(0.70))
+                        .rotationEffect(.degrees(90))
+                }
+            }
+            .padding(18)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: walletCardHeight)
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(Color.white.opacity(isFront ? 0.20 : 0.12), lineWidth: 0.8)
+        }
+        .shadow(color: card.tint.opacity(isFront ? 0.24 : 0.14),
+                radius: isFront ? 14 : 7,
+                y: isFront ? 8 : 3)
+    }
+
+    private func maskedCardCode(_ code: String?) -> String {
+        let raw = (code ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !raw.isEmpty else { return "••••  ••••  ••••" }
+        return "••••  ••••  " + String(raw.suffix(4))
     }
 
     private func subText(_ c: WalletCard) -> String {
@@ -248,6 +417,13 @@ struct CardsView: View {
             cards = r.cards
             diagNote = r.note
             loading = false
+            let available = r.cards.filter { $0.used != true }
+            let stillAvailable = focusedCardID.map { id in
+                available.contains(where: { $0.id == id })
+            } ?? false
+            if !stillAvailable {
+                focusedCardID = available.first?.id
+            }
         }
     }
 }

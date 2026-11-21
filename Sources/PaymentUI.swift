@@ -744,6 +744,18 @@ struct PaySecondaryButtonStyle: ButtonStyle {
     }
 }
 
+private struct PayPrimaryActionPressStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(reduceMotion ? 1 : (configuration.isPressed ? 0.975 : 1))
+            .opacity(configuration.isPressed ? 0.84 : 1)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.10),
+                       value: configuration.isPressed)
+    }
+}
+
 struct PayOfficialView: View {
     private struct LedgerDayGroup: Identifiable {
         let day: String
@@ -779,11 +791,12 @@ struct PayOfficialView: View {
             ScrollView(showsIndicators: false) {
                 LazyVStack(spacing: 18) {
                     paymentHero
+                    paymentPrimaryActions
+                    quickActions
+                    ledgerSummaryStrip
                     if goldUnlocked {
                         goldCardSection
                     }
-                    ledgerSummaryStrip
-                    quickActions
 
                     transactionFeed
 
@@ -928,9 +941,75 @@ struct PayOfficialView: View {
             .padding(.horizontal, 20)
             .padding(.vertical, 18)
         }
-        .frame(height: 224)
+        .frame(height: 208)
         .padding(.horizontal, 16)
         .padding(.bottom, 4)
+    }
+
+    private var paymentPrimaryActions: some View {
+        HStack(spacing: 12) {
+            NavigationLink {
+                PayCodePage()
+            } label: {
+                paymentActionTile(
+                    title: Tr("付款"),
+                    subtitle: Tr("向商家出示付款码"),
+                    symbol: "wave.3.right.circle.fill",
+                    ink: Color.dyn(0xFFFFFF, 0x111111),
+                    fill: Color.dyn(0x111111, 0xFFFFFF).opacity(0.97),
+                    accent: Color.dyn(0xFFFFFF, 0x111111)
+                )
+            }
+            .buttonStyle(PayPrimaryActionPressStyle())
+
+            NavigationLink {
+                ReceiveCodePage()
+            } label: {
+                paymentActionTile(
+                    title: Tr("收款"),
+                    subtitle: Tr("展示我的收款码"),
+                    symbol: "qrcode",
+                    ink: C.label,
+                    fill: PayVisual.card,
+                    accent: PayVisual.tint
+                )
+            }
+            .buttonStyle(PayPrimaryActionPressStyle())
+        }
+        .padding(.horizontal, 16)
+    }
+
+    private func paymentActionTile(title: String, subtitle: String,
+                                   symbol: String, ink: Color,
+                                   fill: Color, accent: Color) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: symbol)
+                .font(.system(size: 21, weight: .semibold))
+                .foregroundStyle(accent)
+                .frame(width: 46, height: 46)
+                .background(
+                    Circle().fill(accent.opacity(0.10))
+                )
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(pf(17, .semibold))
+                    .foregroundStyle(ink)
+                Text(subtitle)
+                    .font(pf(10.5, .regular))
+                    .foregroundStyle(ink.opacity(0.56))
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 14)
+        .frame(maxWidth: .infinity, minHeight: 74)
+        .background(fill, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.primary.opacity(0.055), lineWidth: 0.6)
+        }
+        .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
     private var goldCardSection: some View {
@@ -1025,28 +1104,32 @@ struct PayOfficialView: View {
         PayGroupCard {
             HStack(spacing: 0) {
                 NavigationLink {
-                    PayCodePage()
-                } label: {
-                    quickAction(Tr("收付款"), "qrcode", PayVisual.tint)
-                }
-                actionDivider
-                NavigationLink {
                     BillsView()
                 } label: {
                     quickAction(Tr("账单"), "doc.text.magnifyingglass", PayVisual.success)
                 }
+                .buttonStyle(MenuPressStyle())
+                actionDivider
+                NavigationLink {
+                    CardsView()
+                } label: {
+                    quickAction(Tr("卡包"), "rectangle.stack.fill", PayVisual.gold)
+                }
+                .buttonStyle(MenuPressStyle())
                 actionDivider
                 NavigationLink {
                     AccountSecurityView()
                 } label: {
                     quickAction(Tr("支付安全"), "lock.shield.fill", PayVisual.warning)
                 }
+                .buttonStyle(MenuPressStyle())
                 actionDivider
                 NavigationLink {
                     VirtualCardView()
                 } label: {
                     quickAction(Tr("虚拟卡"), "creditcard.fill", PayVisual.gold)
                 }
+                .buttonStyle(MenuPressStyle())
             }
             .padding(.vertical, 16)
         }
@@ -1111,7 +1194,7 @@ struct PayOfficialView: View {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .firstTextBaseline) {
                     Text(Tr("最近交易"))
-                        .font(pf(22, .bold))
+                        .font(pf(20, .semibold))
                         .foregroundStyle(C.label)
                     Spacer()
                     Text("\(entries.count)")
@@ -1219,7 +1302,7 @@ struct PayOfficialView: View {
             .frame(minHeight: 66)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(MenuPressStyle())
     }
 
     private func ledgerDetail(_ entry: LedgerBillEntry) -> some View {
