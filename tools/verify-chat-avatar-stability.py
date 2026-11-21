@@ -37,7 +37,7 @@ require(
     "an avatar already loading must not be requested or cleared repeatedly",
 )
 require(
-    "ImageStore.shared.putAvatar(thumbnailKey, image)" in SOURCE
+    'ImageStore.shared.putAvatar(cacheKey + "#150", image)' in SOURCE
     and "ImageStore.shared.putAvatar(cacheKey, image)" in SOURCE
     and ".transitionCrossDissolve" in SOURCE
     and "avatarBytes > 48 * 1024 * 1024" in CORE,

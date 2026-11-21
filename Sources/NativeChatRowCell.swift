@@ -773,7 +773,7 @@ private final class NativeChatAvatarView: UIView {
                     self.requestedPaths[index] = ""
                 }
                 if let image {
-                    ImageStore.shared.putAvatar(thumbnailKey, image)
+                    ImageStore.shared.putAvatar(cacheKey + "#150", image)
                     ImageStore.shared.putAvatar(cacheKey, image)
                     if imageView.image == nil {
                         imageView.image = image
