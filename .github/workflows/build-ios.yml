@@ -391,10 +391,10 @@ jobs:
         uses: actions/upload-artifact@v4
         continue-on-error: true
         with:
-          name: CHRISChat-unsigned-ipa
+          name: CHRISChat-encrypted-ipa
           path: |
-            Luchat.ipa
             Luchat.ipa.enc
+            Luchat.ipa.enc.sha256
           if-no-files-found: error
           retention-days: 1
 
