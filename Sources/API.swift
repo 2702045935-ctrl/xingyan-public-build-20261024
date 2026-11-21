@@ -1654,8 +1654,15 @@ enum ServerTrustPolicy {
     static func canAccept(_ trust: SecTrust, host: String) -> Bool {
         guard API.trustedHost(host) else { return false }
 
+        // The public ingress uses a normal publicly trusted certificate.
+        // The direct Cell endpoint keeps a pinned self-signed certificate as
+        // a fallback, so accept either a valid system chain or the exact pin.
+        if SecTrustEvaluateWithError(trust, nil) {
+            return true
+        }
+
         if API.isLocalHost(host) {
-            return SecTrustEvaluateWithError(trust, nil)
+            return false
         }
 
         guard let chain = SecTrustCopyCertificateChain(trust) as? [SecCertificate] else {
@@ -1776,15 +1783,20 @@ final class API {
     let session: URLSession
     private let trustDelegate = SecureURLSessionDelegate()
 
+    static let publicIngressServer = "mail.xingyanmail.site:443"
+    static let publicIngressPath = "/xy"
+    private static let legacyDirectServer = "43.242.194.89:8443"
+
     private(set) var token: String = ""
 
-    private(set) var server: String = "43.242.194.89:8443"
+    private(set) var server: String = API.publicIngressServer
 
     private(set) var backups: [String] = API.builtinBackups
 
     static let trustedHosts: Set<String> = [
         "43.242.194.89",
-        "u.598218.xyz"
+        "u.598218.xyz",
+        "mail.xingyanmail.site"
     ]
     static func trustedHost(_ s: String) -> Bool {
         var h = s.lowercased()
@@ -1825,8 +1837,10 @@ final class API {
 
     static let builtinBackups: [String] = []
     private static let retiredEndpoints: Set<String> = [
+        "43.242.194.89:8443",
         "43.242.194.89:443",
         "43.242.194.89:5443",
+        "u.598218.xyz:8443",
         "u.598218.xyz:443",
         "u.598218.xyz:5443",
         "u.598218.xyz:8443"
@@ -1860,7 +1874,13 @@ final class API {
            !legacyServers.contains(API.normalizeServer(saved)),
            !API.retiredEndpoints.contains(API.normalizeServer(saved)),
            API.trustedHost(saved) {
-            server = API.normalizeServer(saved)
+            let normalized = API.normalizeServer(saved)
+            if normalized == API.legacyDirectServer {
+                server = API.publicIngressServer
+                UserDefaults.standard.set(server, forKey: "chris.server")
+            } else {
+                server = normalized
+            }
         } else {
             UserDefaults.standard.set(server, forKey: "chris.server")
         }
@@ -1970,14 +1990,26 @@ final class API {
         }
     }
 
-    var base: String { "https://\(server)" }
+    var base: String {
+        let root = "https://\(server)"
+        return server == API.publicIngressServer
+            ? root + API.publicIngressPath
+            : root
+    }
 
     var realtimeServer: String {
         server == "43.242.194.89:443" ? "43.242.194.89:8443" : server
     }
 
+    var realtimePathPrefix: String {
+        server == API.publicIngressServer ? API.publicIngressPath : ""
+    }
+
     var cacheNamespace: String {
-        let raw = API.normalizeServer(server).lowercased()
+        let namespaceServer = server == API.publicIngressServer
+            ? API.legacyDirectServer
+            : API.normalizeServer(server)
+        let raw = namespaceServer.lowercased()
         let safe = raw.map { $0.isLetter || $0.isNumber ? $0 : "_" }
         return "v2_" + String(safe)
     }
@@ -1987,7 +2019,11 @@ final class API {
         v = v.replacingOccurrences(of: "https://", with: "")
         v = v.replacingOccurrences(of: "http://", with: "")
         while v.hasSuffix("/") { v.removeLast() }
-        if !v.contains(":") { v += ":5443" }
+        if v == "mail.xingyanmail.site" {
+            v += ":443"
+        } else if !v.contains(":") {
+            v += ":5443"
+        }
         v = v.replacingOccurrences(of: ":5180", with: ":5443")
         v = v.replacingOccurrences(of: ":80", with: ":5443")
         return v

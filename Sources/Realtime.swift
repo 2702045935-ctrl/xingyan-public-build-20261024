@@ -167,7 +167,8 @@ final class Realtime: ObservableObject {
 
         let plainHost = host.replacingOccurrences(of: ":5443", with: ":5180")
         let lanOnly = Self.isLanHost(host)
-        let raw = (plainFallback && lanOnly) ? "ws://\(plainHost)" : "wss://\(host)"
+        let raw = ((plainFallback && lanOnly) ? "ws://\(plainHost)" : "wss://\(host)")
+            + API.shared.realtimePathPrefix
         guard let url = URL(string: "\(raw)/?token=\(API.shared.token)") else { return }
 
         var req = URLRequest(url: url)
