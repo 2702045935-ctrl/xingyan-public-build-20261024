@@ -123,7 +123,7 @@ def main() -> None:
                     "swift_metadata_strings": swift_type_count,
                     "debug_files": 0,
                     "embedded_credentials": 0,
-                    "arbitrary_app_http": False,
+                    "arbitrary_app_http": ats.get("NSAllowsArbitraryLoads") is True,
                 },
                 ensure_ascii=False,
             )
