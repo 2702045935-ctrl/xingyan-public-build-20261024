@@ -349,13 +349,15 @@ where Item.ID: Hashable {
             appliedItemCount = nextOrder.count
             endRequestInFlight = false
             pendingItems = nil
-            dataSource.apply(snapshot, animatingDifferences: animated) {
+            dataSource.apply(snapshot, animatingDifferences: animated) { [weak self, weak table] in
+                guard let self, let table else { return }
                 guard generation == self.applyGeneration,
-                      self.table === table,
-                      !table.isTracking,
+                      self.table === table else { return }
+                table.layoutIfNeeded()
+                self.prefetchEndRunwayIfNeeded(table)
+                guard !table.isTracking,
                       !table.isDragging,
                       !table.isDecelerating else { return }
-                table.layoutIfNeeded()
                 let minimumY = -table.adjustedContentInset.top
                 let maximumY = max(
                     minimumY,
@@ -390,13 +392,15 @@ where Item.ID: Hashable {
             let generation = applyGeneration
             var snapshot = dataSource.snapshot()
             snapshot.appendItems(addedIDs, toSection: 0)
-            dataSource.apply(snapshot, animatingDifferences: false) {
+            dataSource.apply(snapshot, animatingDifferences: false) { [weak self, weak table] in
+                guard let self, let table else { return }
                 guard generation == self.applyGeneration,
-                      self.table === table,
-                      !table.isTracking,
+                      self.table === table else { return }
+                table.layoutIfNeeded()
+                self.prefetchEndRunwayIfNeeded(table)
+                guard !table.isTracking,
                       !table.isDragging,
                       !table.isDecelerating else { return }
-                table.layoutIfNeeded()
                 let minimumY = -table.adjustedContentInset.top
                 let maximumY = max(
                     minimumY,
@@ -442,7 +446,6 @@ where Item.ID: Hashable {
             /* 会话列表按“一页跑道”提前补下一页。触发点保持两屏半左右，
                让 320 行夹具在用户接近尾部前完成追加；endRequestInFlight
                保证同一时间最多只有一个下一页请求，不会插两页。 */
-            let prefetchLead = max(2_400, scrollView.bounds.height * 2.5)
             if !startRequestInFlight,
                !order.isEmpty,
                (scrollView.isDragging || scrollView.isDecelerating),
@@ -452,15 +455,7 @@ where Item.ID: Hashable {
                     self?.onApproachingStart()
                 }
             }
-            if !endRequestInFlight,
-               !order.isEmpty,
-               (scrollView.isDragging || scrollView.isDecelerating),
-               remaining < prefetchLead {
-                endRequestInFlight = true
-                DispatchQueue.main.async { [weak self] in
-                    self?.onApproachingEnd()
-                }
-            }
+            prefetchEndRunwayIfNeeded(scrollView)
             let zone: Int
             if y < 1 { zone = 0 }
             else if y <= 8 { zone = 1 }
@@ -475,6 +470,20 @@ where Item.ID: Hashable {
                 guard let self else { return }
                 self.zoneFlushScheduled = false
                 self.onZoneChange(self.pendingZone)
+            }
+        }
+
+        private func prefetchEndRunwayIfNeeded(_ scrollView: UIScrollView) {
+            guard !endRequestInFlight, !order.isEmpty else { return }
+            let remaining = scrollView.contentSize.height
+                - scrollView.bounds.height
+                - scrollView.contentOffset.y
+                + scrollView.adjustedContentInset.bottom
+            let prefetchLead = max(4_200, scrollView.bounds.height * 3.5)
+            guard remaining < prefetchLead else { return }
+            endRequestInFlight = true
+            DispatchQueue.main.async { [weak self] in
+                self?.onApproachingEnd()
             }
         }
 

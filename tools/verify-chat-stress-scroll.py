@@ -84,10 +84,15 @@ require(
     "only non-append changes may defer during touch motion",
 )
 require(
-    "let prefetchLead = max(2_400, scrollView.bounds.height * 2.5)" in NATIVE_CHAT_LIST
+    "let prefetchLead = max(4_200, scrollView.bounds.height * 3.5)" in NATIVE_CHAT_LIST
     and "remaining < prefetchLead" in NATIVE_CHAT_LIST
     and "!endRequestInFlight" in NATIVE_CHAT_LIST,
-    "the conversation list must prefetch one page two-and-a-half viewports before the tail",
+    "the conversation list must prefetch one page three-and-a-half viewports before the tail",
+)
+require(
+    "self.prefetchEndRunwayIfNeeded(table)" in NATIVE_CHAT_LIST
+    and NATIVE_CHAT_LIST.count("self.prefetchEndRunwayIfNeeded(table)") >= 2,
+    "conversation appends must remeasure and refill the prefetch runway without another gesture",
 )
 require(
     "滚动期间不为未变化的 13k+ 行做全量相等比较" in NATIVE_CHAT_LIST
