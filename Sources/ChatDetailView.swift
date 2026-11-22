@@ -3503,6 +3503,14 @@ struct ChatDetailView: View {
                     }
                     ScrollGate.shared.setScrolling(false)
                     frameCaptureTick &+= 1
+                    if isGroup, initialScrollReady,
+                       let y = ChatScrollHandle.shared.scroll?.contentOffset.y,
+                       y < 4200 {
+                        // A fling can cross the runway exactly as deceleration
+                        // ends. Consume the already-prefetched page here so
+                        // reaching the top never leaves the history stranded.
+                        autoLoadOlder()
+                    }
                 }
             },
             onScrollOffset: { y in

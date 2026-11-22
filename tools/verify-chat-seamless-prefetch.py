@@ -33,6 +33,12 @@ require(
     "automatic history paging must be driven by the user scroll runway",
 )
 require(
+    "ScrollGate.shared.setScrolling(false)" in CHAT
+    and "let y = ChatScrollHandle.shared.scroll?.contentOffset.y" in CHAT
+    and "y < 4200" in CHAT,
+    "history runway must also be consumed after deceleration ends",
+)
+require(
     "private var oldestHistorySeq: Int" in CHAT
     and "messages.lazy.compactMap(\\.seq).first(where: { $0 > 0 })" in CHAT
     and CHAT.count("oldestHistorySeq") >= 4
