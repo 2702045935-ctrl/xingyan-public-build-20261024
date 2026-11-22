@@ -96,6 +96,8 @@ where Item.ID: Hashable {
         table.delaysContentTouches = false
         table.canCancelContentTouches = true
         table.scrollsToTop = true
+        table.panGestureRecognizer.delaysTouchesBegan = false
+        table.panGestureRecognizer.maximumNumberOfTouches = 1
         table.allowsSelection = true
         table.allowsMultipleSelection = false
         table.sectionHeaderTopPadding = 0
@@ -192,6 +194,7 @@ where Item.ID: Hashable {
         private var pendingZone = 0
         private var zoneFlushScheduled = false
         private var lastScrollActive = false
+        private var lastReportedOffsetY = CGFloat.greatestFiniteMagnitude
         private var pendingItems: [Item]?
         private var applyGeneration = 0
         private var endRequestInFlight = false
@@ -437,7 +440,10 @@ where Item.ID: Hashable {
                                || scrollView.isTracking
                                || scrollView.isDecelerating)
             let y = scrollView.contentOffset.y
-            onOffsetChange(max(0, y))
+            if abs(y - lastReportedOffsetY) >= 6 {
+                lastReportedOffsetY = y
+                onOffsetChange(max(0, y))
+            }
             let remaining = scrollView.contentSize.height
                 - scrollView.bounds.height
                 - y
@@ -488,6 +494,7 @@ where Item.ID: Hashable {
         }
 
         func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+            lastReportedOffsetY = scrollView.contentOffset.y
             publishScrollState(true)
             applyGeneration += 1
             NotificationCenter.default.post(name: .chrisRowSwipe, object: nil)

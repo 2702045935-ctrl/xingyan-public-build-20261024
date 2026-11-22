@@ -1,5 +1,5 @@
 {
-  "version": "B679",
+  "version": "B680",
   "files": [
     {
       "path": "Sources/API.swift",
@@ -108,8 +108,8 @@
     },
     {
       "path": "Sources/ChatsView.swift",
-      "size": 148454,
-      "sha256": "21451f399ea69edab56353ad1f88c03506b644c7884393c04e462887c98ee480"
+      "size": 148463,
+      "sha256": "dcbd4382afadb01c2ce2760e83f989eef1a79e597822bb7814f78c0f70cdfc43"
     },
     {
       "path": "Sources/MessageStressFixture.swift",

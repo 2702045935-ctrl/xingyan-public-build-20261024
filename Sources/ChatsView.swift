@@ -2896,7 +2896,7 @@ struct ChatsView: View {
                         }
                     },
                     onOffsetChange: { y in
-                        let next = y > 8 ? y : 0
+                        let next: CGFloat = y > 8 ? 1 : 0
                         if chatTopScrolled != next { chatTopScrolled = next }
                     },
                     onZoneChange: { zone in

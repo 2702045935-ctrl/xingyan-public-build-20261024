@@ -78,6 +78,19 @@ require(
     "allowInsertionDuringScroll: true" in CHATS,
     "stress conversation lists must accept appended pages during active scrolling",
 )
+require(
+    "let next: CGFloat = y > 8 ? 1 : 0" in CHATS
+    and "lastReportedOffsetY" in (
+        ROOT / "Sources" / "NativeChatList.swift"
+    ).read_text(encoding="utf-8")
+    and "abs(y - lastReportedOffsetY) >= 6" in (
+        ROOT / "Sources" / "NativeChatList.swift"
+    ).read_text(encoding="utf-8")
+    and "panGestureRecognizer.delaysTouchesBegan = false" in (
+        ROOT / "Sources" / "NativeChatList.swift"
+    ).read_text(encoding="utf-8"),
+    "conversation scrolling must not write exact offsets into SwiftUI every pixel",
+)
 
 NATIVE_CHAT_LIST = (ROOT / "Sources" / "NativeChatList.swift").read_text(encoding="utf-8")
 NATIVE_CHAT_CELL = (ROOT / "Sources" / "NativeChatRowCell.swift").read_text(encoding="utf-8")
