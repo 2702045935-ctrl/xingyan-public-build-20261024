@@ -31,6 +31,12 @@ require(
     "native chats must retain their single committed initial bottom placement",
 )
 require(
+    "private var usesNativeMessageList: Bool" in CHAT
+    and "} else {\n            nativeMessageList" in CHAT
+    and "initiallyPinnedToBottom: true" in CHAT,
+    "long chats must use the premeasured native list to avoid first-scroll stalls",
+)
+require(
     "collection.alpha = initiallyPinnedToBottom ? 0 : 1" in (ROOT / "Sources" / "NativeStaticList.swift").read_text(encoding="utf-8")
     and "completeInitialBottom" in (ROOT / "Sources" / "NativeStaticList.swift").read_text(encoding="utf-8"),
     "native chats must reveal only after the first bottom position is committed",

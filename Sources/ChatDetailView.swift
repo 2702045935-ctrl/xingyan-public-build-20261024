@@ -1504,6 +1504,10 @@ struct ChatDetailView: View {
         messages.count + outbox.count <= 12
     }
 
+    private var usesNativeMessageList: Bool {
+        !usesShortConversationSurface
+    }
+
     /// 群历史按需分页，不在进群时一次性合并最多 5000 条。
     private var shouldLoadCompleteGroupHistory: Bool { false }
 
@@ -2303,7 +2307,7 @@ struct ChatDetailView: View {
                         Spacer(minLength: 0)
                         ZStack(alignment: .topTrailing) {
                             Button {
-                                if isGroup {
+                                if usesNativeMessageList {
                                     nativeMessageController.scrollToBottom(animated: true)
                                 } else if let lastMsg = messages.last?.id {
                                     withAnimation(.easeOut(duration: 0.26)) {
@@ -2810,7 +2814,7 @@ struct ChatDetailView: View {
             UserDefaults.standard.removeObject(forKey: deletedMessageKey)
             rebuildIndex()
             DispatchQueue.main.async {
-                if isGroup {
+                if usesNativeMessageList {
                     nativeMessageController.scrollToBottom(animated: false)
                 } else {
                     scroller?.scrollTo("__bottom", anchor: .bottom)
@@ -3147,7 +3151,7 @@ struct ChatDetailView: View {
         if usesShortConversationSurface {
             shortConversationSurface
         } else {
-            messageList
+            nativeMessageList
         }
     }
 
@@ -3977,7 +3981,7 @@ struct ChatDetailView: View {
             atBottom = true
             if force {
                 ChatScrollHandle.shared.allowAutomaticPinning()
-                if isGroup {
+                if usesNativeMessageList {
                     nativeMessageController.scrollToBottom(animated: true)
                 } else {
                     withAnimation(.spring(response: 0.24,
@@ -4006,7 +4010,7 @@ struct ChatDetailView: View {
         ChatScrollHandle.shared.allowAutomaticPinning()
         atBottom = true
         wasAtBottom = true
-        if isGroup {
+        if usesNativeMessageList {
             nativeMessageController.scrollToBottom(animated: false)
         } else {
             scroller?.scrollTo("__bottom", anchor: .bottom)
@@ -4051,7 +4055,7 @@ struct ChatDetailView: View {
 
         ChatScrollDiag.shared.note("scrollToEnd anim=\(animated ? 1 : 0)")
         if ChatScrollHandle.shared.pinToBottom(animated: animated) { return }
-        if isGroup {
+        if usesNativeMessageList {
             nativeMessageController.scrollToBottom(animated: animated)
             return
         }
@@ -7068,7 +7072,7 @@ struct ChatDetailView: View {
     private func jumpToMessage(_ id: String, seq targetSeq: Int? = nil) {
         guard !id.isEmpty else { return }
         if messages.contains(where: { $0.id == id }) {
-            if isGroup {
+            if usesNativeMessageList {
                 nativeMessageController.scrollToID(id, at: .centeredVertically, animated: true)
             } else {
                 withAnimation(.easeInOut(duration: 0.25)) { scroller?.scrollTo(id, anchor: .center) }
@@ -7091,7 +7095,7 @@ struct ChatDetailView: View {
                 return
             }
             try? await Task.sleep(nanoseconds: 80_000_000)
-            if isGroup {
+            if usesNativeMessageList {
                 nativeMessageController.scrollToID(id, at: .centeredVertically, animated: true)
             } else {
                 withAnimation(.easeInOut(duration: 0.25)) { scroller?.scrollTo(id, anchor: .center) }
@@ -7540,7 +7544,7 @@ struct ChatDetailView: View {
                 messages = Array(visibleMessages(merged).suffix(maxMessageWindow))
                 hasOlder = true
                 rebuildIndex()
-                if followBottom, isGroup {
+                if followBottom, usesNativeMessageList {
                     ChatScrollHandle.shared.allowAutomaticPinning()
                     DispatchQueue.main.async {
                         nativeMessageController.scrollToBottom(animated: false)
@@ -7550,7 +7554,7 @@ struct ChatDetailView: View {
                     DispatchQueue.main.async {
                         scroller.scrollTo("__bottom", anchor: .bottom)
                     }
-                } else if let keepAnchor, isGroup {
+                } else if let keepAnchor, usesNativeMessageList {
                     holdScroll = true
                     DispatchQueue.main.async {
                         nativeMessageController.scrollToID(keepAnchor, at: .top, animated: false)
@@ -7596,7 +7600,7 @@ struct ChatDetailView: View {
         hasOlder = !reachedStart
         rebuildIndex()
 
-        if !followBottom, let keepAnchor, isGroup {
+        if !followBottom, let keepAnchor, usesNativeMessageList {
             holdScroll = true
             DispatchQueue.main.async {
                 nativeMessageController.scrollToID(keepAnchor, at: .top, animated: false)
