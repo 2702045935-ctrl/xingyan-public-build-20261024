@@ -30,6 +30,7 @@ require(
 )
 require(
     "NativeStaticUIKitCell" in LIST
+    and "nativeEligible" in LIST
     and "nativeRow" in LIST
     and "NativeChatTextRowView" in TEXT_ROWS
     and "NativeChatTimeRowView" in TEXT_ROWS,

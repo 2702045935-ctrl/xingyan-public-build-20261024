@@ -3534,6 +3534,7 @@ struct ChatDetailView: View {
             },
             initiallyPinnedToBottom: true,
             signature: nativeGroupSignature,
+            nativeEligible: nativeGroupUIKitEligible,
             nativeRow: nativeGroupUIKitRow,
             nativeHeight: nativeGroupUIKitHeight
         ) { item in
@@ -3737,6 +3738,23 @@ struct ChatDetailView: View {
             secondaryColor: UIColor(ChatTheme.secondary),
             mentionColor: UIColor(mine ? ChatTheme.mentionMeOnMine : ChatTheme.mentionMe)
         )
+    }
+
+    private func nativeGroupUIKitEligible(_ item: NativeGroupItem) -> Bool {
+        switch item.kind {
+        case .timestamp:
+            return true
+        case .message(let message):
+            return message.kindName == "text"
+                && !message.isRecalled
+                && message.quote == nil
+                && message.burn != true
+                && !selectMode
+                && UIConfig.num("chatDeliveryTicks", 0) <= 0
+                && !message.body.hasPrefix("{")
+        default:
+            return false
+        }
     }
 
     private func nativeGroupUIKitRow(_ item: NativeGroupItem, reuse: UIView?) -> UIView? {

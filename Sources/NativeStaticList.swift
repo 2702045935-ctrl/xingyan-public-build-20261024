@@ -106,6 +106,7 @@ where Item.ID: Hashable {
     let onSizeChange: (() -> Void)?
     let initiallyPinnedToBottom: Bool
     let signature: (Item) -> String
+    let nativeEligible: ((Item) -> Bool)?
     let nativeRow: ((Item, UIView?) -> UIView?)?
     let nativeHeight: ((Item, CGFloat) -> CGFloat?)?
     @ViewBuilder let row: (Item) -> Row
@@ -118,6 +119,7 @@ where Item.ID: Hashable {
          onSizeChange: (() -> Void)? = nil,
          initiallyPinnedToBottom: Bool = false,
          signature: @escaping (Item) -> String,
+         nativeEligible: ((Item) -> Bool)? = nil,
          nativeRow: ((Item, UIView?) -> UIView?)? = nil,
          nativeHeight: ((Item, CGFloat) -> CGFloat?)? = nil,
          @ViewBuilder row: @escaping (Item) -> Row) {
@@ -129,6 +131,7 @@ where Item.ID: Hashable {
         self.onSizeChange = onSizeChange
         self.initiallyPinnedToBottom = initiallyPinnedToBottom
         self.signature = signature
+        self.nativeEligible = nativeEligible
         self.nativeRow = nativeRow
         self.nativeHeight = nativeHeight
         self.row = row
@@ -142,6 +145,7 @@ where Item.ID: Hashable {
                     onSizeChange: onSizeChange,
                     initiallyPinnedToBottom: initiallyPinnedToBottom,
                     signature: signature,
+                    nativeEligible: nativeEligible,
                     nativeRow: nativeRow,
                     nativeHeight: nativeHeight,
                     row: row)
@@ -197,7 +201,7 @@ where Item.ID: Hashable {
             collectionView: collection
         ) { collectionView, indexPath, id in
             if let item = context.coordinator.lookup[id],
-               context.coordinator.nativeHeight?(item, collectionView.bounds.width) != nil {
+               context.coordinator.nativeEligible?(item) == true {
                 let cell = collectionView.dequeueReusableCell(
                     withReuseIdentifier: "NativeStaticUIKitCell",
                     for: indexPath
@@ -231,6 +235,7 @@ where Item.ID: Hashable {
                                 context: Context) {
         context.coordinator.row = row
         context.coordinator.signature = signature
+        context.coordinator.nativeEligible = nativeEligible
         context.coordinator.nativeRow = nativeRow
         context.coordinator.nativeHeight = nativeHeight
         context.coordinator.onScrollViewReady = onScrollViewReady
@@ -250,6 +255,7 @@ where Item.ID: Hashable {
         var lookup: [Item.ID: Item] = [:]
         var row: (Item) -> Row
         var signature: (Item) -> String
+        var nativeEligible: ((Item) -> Bool)?
         var nativeRow: ((Item, UIView?) -> UIView?)?
         var nativeHeight: ((Item, CGFloat) -> CGFloat?)?
         weak var collection: UICollectionView?
@@ -281,6 +287,7 @@ where Item.ID: Hashable {
              onSizeChange: (() -> Void)?,
              initiallyPinnedToBottom: Bool,
              signature: @escaping (Item) -> String,
+             nativeEligible: ((Item) -> Bool)?,
              nativeRow: ((Item, UIView?) -> UIView?)?,
              nativeHeight: ((Item, CGFloat) -> CGFloat?)?,
              row: @escaping (Item) -> Row) {
@@ -292,6 +299,7 @@ where Item.ID: Hashable {
             self.initiallyPinnedToBottom = initiallyPinnedToBottom
             self.waitsForInitialBottom = initiallyPinnedToBottom
             self.signature = signature
+            self.nativeEligible = nativeEligible
             self.nativeRow = nativeRow
             self.nativeHeight = nativeHeight
             self.row = row
