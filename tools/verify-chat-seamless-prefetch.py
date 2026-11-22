@@ -61,6 +61,13 @@ require(
     "each consumed history page must enqueue exactly one fresh prefetch page",
 )
 require(
+    "var loadedUsefulPage = false" in CHAT
+    and "olderRunwayConsumedForGesture = false" in CHAT
+    and "lastOlderLoad = .distantPast" in CHAT
+    and "consumeOlderRunway(requireActiveMotion: true)" in CHAT,
+    "a continuous gesture must re-arm and consume every history page",
+)
+require(
     "let refreshWindow = initial ? activeInitialMessageWindow : maxMessageWindow" in CHAT
     and "Array(visible.suffix(refreshWindow))" in CHAT,
     "realtime refreshes must preserve the user's loaded history window",

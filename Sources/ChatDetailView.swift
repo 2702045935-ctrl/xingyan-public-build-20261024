@@ -7736,7 +7736,19 @@ struct ChatDetailView: View {
         let seq = oldestHistorySeq
         loadingOlder = true
         lastOlderLoad = Date()
-        defer { loadingOlder = false }
+        var loadedUsefulPage = false
+        defer {
+            loadingOlder = false
+            guard loadedUsefulPage else { return }
+            // A long fling can cross more than one history page. Re-arm the
+            // runway after every consumed page so the next page starts loading
+            // while the finger is still moving, matching the initial pages.
+            olderRunwayConsumedForGesture = false
+            lastOlderLoad = .distantPast
+            DispatchQueue.main.async {
+                consumeOlderRunway(requireActiveMotion: true)
+            }
+        }
         do {
             if olderPrefetch.isEmpty, let pending = olderPrefetchTask {
                 await pending.value
@@ -7774,6 +7786,7 @@ struct ChatDetailView: View {
             hasOlder = more
 
             guard !older.isEmpty else { hasOlder = more; return }
+            loadedUsefulPage = more
             holdScroll = true
             let merged = visibleMessages(older + messages)
             let bounded = merged.count > maxMessageWindow

@@ -47,6 +47,12 @@ require(
     "group history must only be consumed from the user's runway offset",
 )
 require(
+    "loadedUsefulPage = more" in CHAT
+    and "lastOlderLoad = .distantPast" in CHAT
+    and "consumeOlderRunway(requireActiveMotion: true)" in CHAT,
+    "every consumed history page must re-arm the runway during a long gesture",
+)
+require(
     "ChatScrollHandle.shared.prepareForPrepend()" in CHAT
     and "_ = ChatScrollHandle.shared.compensatePendingPrepend()" in LIST
     and "attributes.frame.minY - anchor.delta" in LIST,
