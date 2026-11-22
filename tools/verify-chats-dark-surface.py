@@ -61,12 +61,18 @@ require(
     "empty and filtered chat lists must stay inside the native list surface",
 )
 require(
-    "let previewColor = UIColor(hex: isDark ? 0x7C7C80 : 0xB2B2B2)" in CHATS
-    and "let timeColor: UIColor = .tertiaryLabel" in CHATS
+    "let previewColor = UIColor(hex: isDark ? 0x7C7C80 : 0x999999)" in CHATS
+    and "let timeColor = UIColor(hex: isDark ? 0x5F6368 : 0xB2B2B2)" in CHATS
     and "let titleColor: UIColor = chat.showsOfficialMark" in CHATS
-    and "?: .label" not in CHATS
-    and ": .label" in CHATS,
-    "chat-list title, preview and time must use adaptive semantic colors",
+    and "UIColor(hex: isDark ? 0xE9EDEF : 0x191919)" in CHATS,
+    "chat-list title, preview and time must use a restrained three-level hierarchy",
+)
+require(
+    "static let avatarSize: CGFloat = 48" in CHATS
+    and "static let avatarGap: CGFloat = 13" in CHATS
+    and "max(73, (73 + (combinedScale - 1) * 34).rounded())" in ROW
+    and "weight: .medium, textStyle: .headline" in ROW,
+    "conversation rows must use the tighter WeChat avatar grid and lighter title weight",
 )
 
 print("chats-dark-surface: passed")

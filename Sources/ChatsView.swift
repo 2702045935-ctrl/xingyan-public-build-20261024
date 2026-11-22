@@ -7,15 +7,15 @@ private enum ChatListVisual {
     static let rowLeading: CGFloat = 16
     static let headerLeading: CGFloat = 12
     static let trailing: CGFloat = 16
-    static let avatarSize: CGFloat = 50
-    static let avatarGap: CGFloat = 11
+    static let avatarSize: CGFloat = 48
+    static let avatarGap: CGFloat = 13
     static let dividerLeading: CGFloat = 77
 
     static let ink = Color.dyn(0x1A1A1A, 0xE9EDEF)
-    static let previewInk = Color.dyn(0xB2B2B2, 0x8696A0)
-    static let conversationPreviewInk = Color.dyn(0xB2B2B2, 0x7C7C80)
+    static let previewInk = Color.dyn(0x8A8A8A, 0x8A8F93)
+    static let conversationPreviewInk = Color.dyn(0x999999, 0x7C7C80)
     static let previewAccentInk = Color.dyn(0xFA5151, 0xFA5151)
-    static let timeInk = Color.dyn(0xCCCCCC, 0x8696A0)
+    static let timeInk = Color.dyn(0xB2B2B2, 0x5F6368)
     static let rule = Color(UIColor { trait in
         trait.userInterfaceStyle == .dark
             ? UIColor.white.withAlphaComponent(0.055)
@@ -2751,11 +2751,11 @@ struct ChatsView: View {
         let isDark = chatsIsDark
         let titleColor: UIColor = chat.showsOfficialMark
             ? UIColor(hex: 0x25D366)
-            : .label
-        let previewColor = UIColor(hex: isDark ? 0x7C7C80 : 0xB2B2B2)
+            : UIColor(hex: isDark ? 0xE9EDEF : 0x191919)
+        let previewColor = UIColor(hex: isDark ? 0x7C7C80 : 0x999999)
         let memberColor = nativePeerColor(chat.memberColor)
         let rowBg: UIColor = isDark ? UIColor(hex: 0x000000) : UIColor.white
-        let timeColor: UIColor = .tertiaryLabel
+        let timeColor = UIColor(hex: isDark ? 0x5F6368 : 0xB2B2B2)
         let levelText = (chat.qqLevel ?? 0) > 1 && GrowthFlags.showInChats == true
             ? "Lv\(chat.qqLevel ?? 0)" : ""
 

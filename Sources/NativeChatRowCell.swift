@@ -21,7 +21,7 @@ enum NativeChatRowMetrics {
     }
 
     static var rowHeight: CGFloat {
-        max(72, (72 + (combinedScale - 1) * 34).rounded())
+        max(73, (73 + (combinedScale - 1) * 34).rounded())
     }
 
     static func invalidateScaleCache() {
@@ -97,8 +97,8 @@ final class NativeChatRowCell: UITableViewCell {
     private var openGuardUntil: TimeInterval = 0
 
     private let rowLeading: CGFloat = 16
-    private let avatarSize: CGFloat = 50
-    private let avatarGap: CGFloat = 11
+    private let avatarSize: CGFloat = 48
+    private let avatarGap: CGFloat = 13
     private let rowTrailing: CGFloat = 16
     private let dividerLeading: CGFloat = 77
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
@@ -211,7 +211,7 @@ final class NativeChatRowCell: UITableViewCell {
         contentView.isOpaque = true
         titleLabel.text = configuration.title
         titleLabel.textColor = configuration.titleColor
-        titleLabel.font = NativeChatRowMetrics.font(17, weight: .semibold, textStyle: .headline)
+        titleLabel.font = NativeChatRowMetrics.font(17, weight: .medium, textStyle: .headline)
         previewLabel.font = NativeChatRowMetrics.font(14,
                                                      weight: .regular,
                                                      textStyle: .body)
