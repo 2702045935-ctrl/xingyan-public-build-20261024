@@ -31,6 +31,13 @@ require(
     "unchanged scroll frames must return before diff bookkeeping",
 )
 require(
+    "if isPureAppend {" in LIST
+    and "snapshot.insertItems(added, beforeItem: anchor)" in LIST
+    and "if wasAtBottom" in LIST
+    and "drainDeferredWarmup()" in LIST,
+    "append updates must stay incremental and defer warmup until scrolling ends",
+)
+require(
     "NativeStaticUIKitCell" in LIST
     and "nativeEligible" in LIST
     and "nativeRow" in LIST

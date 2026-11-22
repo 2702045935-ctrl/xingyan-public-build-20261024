@@ -274,6 +274,7 @@ where Item.ID: Hashable {
         private var heights: [Item.ID: CGFloat] = [:]
         private var warmHosts: [Item.ID: (signature: String,
                                           host: UIHostingController<AnyView>)] = [:]
+        private var deferredWarmIDs: [Item.ID] = []
         private var width: CGFloat = 0
         private var pending: [Item]?
         private var applyGeneration = 0
@@ -538,26 +539,44 @@ where Item.ID: Hashable {
             signatures = nextSignatures
             order = nextOrder
             pending = nil
+            let moving = collection.isDragging || collection.isTracking
+                || collection.isDecelerating
             premeasure(isPrepending
                 ? Array(Set(changed).union(nextOrder.filter { !knownOld.contains($0) }))
-                : nextOrder)
-            prewarm(
-                Array(nextOrder.suffix(waitsForInitialBottom ? 40 : 24)),
-                maxCount: waitsForInitialBottom ? 40 : 12
-            )
+                : nextOrder,
+                nativeOnly: moving)
+            let warmIDs = Array(nextOrder.suffix(waitsForInitialBottom ? 40 : 24))
+            if moving {
+                enqueueWarm(warmIDs)
+            } else {
+                prewarm(warmIDs, maxCount: waitsForInitialBottom ? 40 : 12)
+            }
             let previousOffset = collection.contentOffset
-            let prependAnchor: (id: Item.ID, delta: CGFloat)?
-            if isPrepending,
-               let indexPath = collection.indexPathsForVisibleItems.min(by: {
-                   $0.item < $1.item
-               }),
+            let minimumY = -collection.adjustedContentInset.top
+            let maximumY = max(
+                minimumY,
+                collection.contentSize.height - collection.bounds.height
+                    + collection.adjustedContentInset.bottom
+            )
+            let wasAtBottom = previousOffset.y >= maximumY - 16
+            let visibleAnchor: (id: Item.ID, delta: CGFloat)?
+            if let indexPath = collection.indexPathsForVisibleItems.min(by: {
+                $0.item < $1.item
+            }),
                let id = dataSource.itemIdentifier(for: indexPath),
                let attributes = collection.collectionViewLayout
                    .layoutAttributesForItem(at: indexPath) {
-                prependAnchor = (
+                visibleAnchor = (
                     id,
                     attributes.frame.minY - collection.contentOffset.y
                 )
+            } else {
+                visibleAnchor = nil
+            }
+            let prependAnchor: (id: Item.ID, delta: CGFloat)?
+            if isPrepending,
+               let anchor = visibleAnchor {
+                prependAnchor = anchor
             } else {
                 prependAnchor = nil
             }
@@ -601,6 +620,63 @@ where Item.ID: Hashable {
                         return
                     }
                     _ = ChatScrollHandle.shared.compensatePendingPrepend()
+                }
+                return
+            }
+            if isPureAppend {
+                let oldSet = Set(knownOld)
+                let nextSet = Set(nextOrder)
+                let added = nextOrder.filter { !oldSet.contains($0) }
+                let removed = knownOld.filter { !nextSet.contains($0) }
+                let reloaded = changed.filter {
+                    oldSet.contains($0) && nextSet.contains($0)
+                }
+                var snapshot = dataSource.snapshot()
+                if widthChanged {
+                    collection.collectionViewLayout.invalidateLayout()
+                }
+                if !removed.isEmpty { snapshot.deleteItems(removed) }
+                let addedSet = Set(added)
+                if let lastAdded = nextOrder.lastIndex(where: {
+                    addedSet.contains($0)
+                }) {
+                    let trailing = nextOrder[nextOrder.index(after: lastAdded)...]
+                    if let anchor = trailing.first(where: {
+                        oldSet.contains($0) && nextSet.contains($0)
+                    }) {
+                        snapshot.insertItems(added, beforeItem: anchor)
+                    } else {
+                        snapshot.appendItems(added)
+                    }
+                }
+                if !reloaded.isEmpty { snapshot.reloadItems(reloaded) }
+                dataSource.apply(snapshot, animatingDifferences: false) {
+                    guard generation == self.applyGeneration,
+                          self.collection === collection else { return }
+                    collection.layoutIfNeeded()
+                    if self.waitsForInitialBottom {
+                        self.completeInitialBottom(collection)
+                        return
+                    }
+                    if wasAtBottom,
+                       !collection.isDragging,
+                       !collection.isTracking,
+                       !collection.isDecelerating {
+                        self.setBottom(collection, animated: false)
+                        return
+                    }
+                    if let anchor = visibleAnchor,
+                       let indexPath = dataSource.indexPath(for: anchor.id),
+                       let attributes = collection.collectionViewLayout
+                           .layoutAttributesForItem(at: indexPath) {
+                        collection.setContentOffset(
+                            CGPoint(
+                                x: previousOffset.x,
+                                y: attributes.frame.minY - anchor.delta
+                            ),
+                            animated: false
+                        )
+                    }
                 }
                 return
             }
@@ -677,7 +753,10 @@ where Item.ID: Hashable {
         func scrollViewDidEndDragging(_ scrollView: UIScrollView,
                                       willDecelerate decelerate: Bool) {
             publishScrollState(decelerate)
-            if !decelerate { flush() }
+            if !decelerate {
+                flush()
+                drainDeferredWarmup()
+            }
         }
 
         func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
@@ -690,6 +769,7 @@ where Item.ID: Hashable {
         func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
             publishScrollState(false)
             flush()
+            drainDeferredWarmup()
         }
 
         func scrollViewDidScroll(_ scrollView: UIScrollView) {
@@ -702,12 +782,13 @@ where Item.ID: Hashable {
             )
         }
 
-        private func premeasure(_ ids: [Item.ID]) {
+        private func premeasure(_ ids: [Item.ID], nativeOnly: Bool = false) {
             let measured = collection?.bounds.width ?? 0
             let width = measured > 1 ? measured : UIScreen.main.bounds.width
             guard width > 1 else { return }
             for id in ids where heights[id] == nil {
                 guard let item = lookup[id] else { continue }
+                if nativeOnly, nativeHeight?(item, width) == nil { continue }
                 heights[id] = measuredHeight(item, width: width)
             }
         }
@@ -766,6 +847,26 @@ where Item.ID: Hashable {
             }
         }
 
+        private func enqueueWarm(_ ids: [Item.ID]) {
+            guard !ids.isEmpty else { return }
+            let known = Set(deferredWarmIDs)
+            deferredWarmIDs.append(contentsOf: ids.filter { !known.contains($0) })
+            if deferredWarmIDs.count > 80 {
+                deferredWarmIDs.removeFirst(deferredWarmIDs.count - 80)
+            }
+        }
+
+        private func drainDeferredWarmup() {
+            guard !deferredWarmIDs.isEmpty,
+                  let collection,
+                  !collection.isDragging,
+                  !collection.isTracking,
+                  !collection.isDecelerating else { return }
+            let ids = deferredWarmIDs
+            deferredWarmIDs.removeAll(keepingCapacity: true)
+            prewarm(ids, maxCount: 12)
+        }
+
         func rootView(for item: Item) -> AnyView? {
             AnyView(
                 row(item)
@@ -779,7 +880,12 @@ where Item.ID: Hashable {
                 guard indexPath.item >= 0, indexPath.item < order.count else { return nil }
                 return order[indexPath.item]
             }
-            prewarm(ids, maxCount: 8)
+            if collectionView.isDragging || collectionView.isTracking
+                || collectionView.isDecelerating {
+                enqueueWarm(ids)
+            } else {
+                prewarm(ids, maxCount: 8)
+            }
         }
 
         func collectionView(_ collectionView: UICollectionView,
