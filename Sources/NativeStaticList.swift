@@ -210,7 +210,7 @@ where Item.ID: Hashable {
         private var sizeObservation: NSKeyValueObservation?
         private var lastScrollState: Bool?
         private var order: [Item.ID] = []
-        private var signatures: [Item.ID: String] = [:]
+        fileprivate var signatures: [Item.ID: String] = [:]
         private var heights: [Item.ID: CGFloat] = [:]
         private var warmHosts: [Item.ID: (signature: String,
                                           host: UIHostingController<AnyView>)] = [:]
