@@ -7,6 +7,8 @@ SERVER = (ROOT / "server" / "server.js").read_text(encoding="utf-8")
 KERNEL = (ROOT / "server" / "transfer-kernel.js").read_text(encoding="utf-8")
 CLIENT = (ROOT / "Sources" / "TransferUploader.swift").read_text(encoding="utf-8")
 API = (ROOT / "Sources" / "API.swift").read_text(encoding="utf-8")
+CHAT = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
+MEDIA = (ROOT / "Sources" / "ChatMediaBubbles.swift").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(encoding="utf-8")
 
 
@@ -54,13 +56,38 @@ require(
     "client hashing and chunk reads must stay bounded",
 )
 require(
-    "URLSessionConfiguration.background(" in CLIENT
-    and "sessionSendsLaunchEvents = true" in CLIENT
+    "let progress: Double?" in MEDIA
+    and "ProgressView()" in MEDIA
+    and 'return Tr("准备上传…")' in MEDIA
+    and 'return Tr("连接中…")' in MEDIA
+    and "sendProgress = 0.02" not in CHAT
+    and "sendingFileProgress = 0.01" not in CHAT,
+    "preparing, hashing and compression must not masquerade as upload percentages",
+)
+require(
+    "sendProgress = min(1, max(0, p))" in CHAT
+    and "let value = min(1, max(0, p))" in CHAT,
+    "upload percentages must come from actual sent chunk bytes",
+)
+require(
+    "func uploadPreparedJPEGForSend(" in API
+    and "private final class ActualUploadProgress" in CHAT
+    and "let totalBytes = prepared.reduce(Int64(0))" in CHAT
+    and "value: p," in CHAT
+    and "bytes: Int64(item.data.count)" in CHAT
+    and "ImageUploadProgress" not in CHAT,
+    "multi-image progress must aggregate actual prepared and sent bytes",
+)
+require(
+    "URLSessionConfiguration.default" in CLIENT
+    and "httpMaximumConnectionsPerHost = 6" in CLIENT
+    and "requestCachePolicy = .reloadIgnoringLocalCacheData" in CLIENT
+    and "A background session can" in CLIENT
     and "urlSessionDidFinishEvents(forBackgroundURLSession" in CLIENT
     and "handleEventsForBackgroundURLSession" in (
         ROOT / "Sources" / "PushCenter.swift"
     ).read_text(encoding="utf-8"),
-    "chunk uploads must continue through a system background URLSession",
+    "active chunk uploads must start immediately on a foreground URLSession",
 )
 require(
     "parts[0] === 'transfer'" in SERVER

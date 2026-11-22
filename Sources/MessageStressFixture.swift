@@ -14,6 +14,10 @@ enum MessageStressFixture {
     private static var cachedUserID = ""
     private static let testImage =
         "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zl1sAAAAASUVORK5CYII="
+    private static let testDocument =
+        "data:text/plain;base64," + Data(
+            "星言文件卡片压力测试。\n聊天文件可以正常打开、预览和分享。".utf8
+        ).base64EncodedString()
 
     private static let timestamps: [String] = {
         let formatter = ISO8601DateFormatter()
@@ -147,7 +151,7 @@ enum MessageStressFixture {
             content = "{\"paths\":[\"\(testImage)\",\"\(testImage)\",\"\(testImage)\"]}"
         case 9936..<9953:
             kind = "file"
-            content = "{\"name\":\"家庭资料-\(ordinal).pdf\",\"size\":\(250_000 + ordinal % 2_000_000),\"url\":\"/uploads/stress-file-\(ordinal).pdf\"}"
+            content = "{\"name\":\"家庭资料-\(ordinal).txt\",\"bytes\":\(testDocument.utf8.count),\"url\":\"\(testDocument)\"}"
         case 9953..<9968:
             kind = "livephoto"
             content = "{\"image\":\"\(testImage)\",\"video\":\"/uploads/stress-live-\(ordinal).mp4\"}"

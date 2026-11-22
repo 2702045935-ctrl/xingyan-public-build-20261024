@@ -102,6 +102,9 @@ final class NativeChatMediaRowView: UIView {
     private let senderLabel = UILabel()
     private let bubble = NativeChatBubbleBackground()
     private let imageView = NativeMediaImageView()
+    private let extraImageViews: [NativeMediaImageView] = (0..<3).map { _ in
+        NativeMediaImageView()
+    }
     private let fileIcon = UIImageView()
     private let titleLabel = UILabel()
     private let detailLabel = UILabel()
@@ -130,6 +133,7 @@ final class NativeChatMediaRowView: UIView {
         addSubview(senderLabel)
         addSubview(bubble)
         addSubview(imageView)
+        extraImageViews.forEach { addSubview($0) }
         addSubview(fileIcon)
         addSubview(titleLabel)
         addSubview(detailLabel)
@@ -191,6 +195,7 @@ final class NativeChatMediaRowView: UIView {
         bubble.showTail = next.showTail
 
         imageView.isHidden = true
+        extraImageViews.forEach { $0.isHidden = true }
         fileIcon.isHidden = true
         titleLabel.isHidden = true
         detailLabel.isHidden = true
@@ -205,8 +210,13 @@ final class NativeChatMediaRowView: UIView {
         case .images(let paths):
             imageView.isHidden = false
             imageView.configure(path: paths.first ?? "", maxPixel: 720)
-            badgeLabel.isHidden = paths.count < 2
-            badgeLabel.text = paths.count > 1 ? "\(paths.count)" : ""
+            for (index, view) in extraImageViews.enumerated()
+                where index + 1 < min(4, paths.count) {
+                view.isHidden = false
+                view.configure(path: paths[index + 1], maxPixel: 720)
+            }
+            badgeLabel.isHidden = paths.count <= 4
+            badgeLabel.text = paths.count > 4 ? "+\(paths.count - 4)" : ""
         case .video(let cover, let seconds):
             imageView.isHidden = false
             imageView.configure(path: cover, maxPixel: 720)
@@ -289,7 +299,11 @@ final class NativeChatMediaRowView: UIView {
             width: max(1, bubbleWidth - tailInset),
             height: bubbleHeight
         )
-        imageView.frame = body
+        if case .images(let paths) = model.kind {
+            layoutImageGrid(paths: paths, in: body)
+        } else {
+            imageView.frame = body
+        }
 
         let playSide: CGFloat = 44
         playView.frame = CGRect(
@@ -310,6 +324,52 @@ final class NativeChatMediaRowView: UIView {
                                   width: max(20, body.maxX - textX - 14), height: 21)
         detailLabel.frame = CGRect(x: textX, y: body.midY + 3,
                                    width: max(20, body.maxX - textX - 14), height: 17)
+    }
+
+    private func layoutImageGrid(paths: [String], in body: CGRect) {
+        let views = [imageView] + extraImageViews
+        let count = min(4, paths.count)
+        let gap: CGFloat = 3
+        switch count {
+        case 0:
+            imageView.frame = body
+        case 1:
+            imageView.frame = body
+        case 2:
+            let tileWidth = floor((body.width - gap) / 2)
+            imageView.frame = CGRect(x: body.minX, y: body.minY,
+                                     width: tileWidth, height: body.height)
+            views[1].frame = CGRect(x: body.minX + tileWidth + gap, y: body.minY,
+                                    width: body.width - tileWidth - gap,
+                                    height: body.height)
+        case 3:
+            let largeWidth = floor((body.width - gap) * 0.62)
+            let sideWidth = body.width - largeWidth - gap
+            let sideHeight = floor((body.height - gap) / 2)
+            imageView.frame = CGRect(x: body.minX, y: body.minY,
+                                     width: largeWidth, height: body.height)
+            views[1].frame = CGRect(x: body.minX + largeWidth + gap, y: body.minY,
+                                    width: sideWidth, height: sideHeight)
+            views[2].frame = CGRect(x: body.minX + largeWidth + gap,
+                                    y: body.minY + sideHeight + gap,
+                                    width: sideWidth,
+                                    height: body.height - sideHeight - gap)
+        default:
+            let tileWidth = floor((body.width - gap) / 2)
+            let tileHeight = floor((body.height - gap) / 2)
+            imageView.frame = CGRect(x: body.minX, y: body.minY,
+                                     width: tileWidth, height: tileHeight)
+            views[1].frame = CGRect(x: body.minX + tileWidth + gap, y: body.minY,
+                                    width: body.width - tileWidth - gap,
+                                    height: tileHeight)
+            views[2].frame = CGRect(x: body.minX, y: body.minY + tileHeight + gap,
+                                    width: tileWidth,
+                                    height: body.height - tileHeight - gap)
+            views[3].frame = CGRect(x: body.minX + tileWidth + gap,
+                                    y: body.minY + tileHeight + gap,
+                                    width: body.width - tileWidth - gap,
+                                    height: body.height - tileHeight - gap)
+        }
     }
 
     static func height(for model: NativeChatMediaRowModel, width: CGFloat) -> CGFloat {

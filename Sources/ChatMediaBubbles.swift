@@ -744,14 +744,18 @@ struct SendingVideoBubble: View {
                     .stroke(Color.white, style: StrokeStyle(lineWidth: 4, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                     .frame(width: 54, height: 54)
-                if progress > 0.01 {
+                if progress > 0.001 {
                     Text("\(Int(min(1, progress) * 100))%")
                         .font(pfStyled(size: 13.5, weight: .semibold))
                         .foregroundColor(.white)
                 } else {
-                    Image(systemName: "play.fill")
-                        .font(.system(size: 15))
-                        .foregroundColor(.white.opacity(0.95))
+                    VStack(spacing: 3) {
+                        ProgressView()
+                            .tint(.white)
+                        Text(Tr("准备中"))
+                            .font(pf(9.5, .medium))
+                            .foregroundColor(.white.opacity(0.92))
+                    }
                 }
             }
         }
@@ -763,9 +767,9 @@ struct SendingVideoBubble: View {
 struct SendingFileBubble: View {
     let name: String
     let bytes: Int
-    let progress: Double
+    let progress: Double?
 
-    private var value: Double { min(1, max(0, progress)) }
+    private var value: Double { min(1, max(0, progress ?? 0)) }
     private var look: (symbol: String, color: Color, badge: String) {
         FileKind.look(name)
     }
@@ -796,13 +800,11 @@ struct SendingFileBubble: View {
                         .lineLimit(1)
                         .truncationMode(.middle)
                     HStack(spacing: 6) {
-                        Text(byteText(bytes))
+                        Text(byteText(Int64(bytes)))
                             .font(pf(11))
                             .foregroundColor(C.subLabel)
                         Spacer(minLength: 4)
-                        Text(value >= 0.995
-                             ? Tr("服务器处理中…")
-                             : Tr("上传中") + " \(Int(value * 100))%")
+                        Text(progressText)
                             .font(pf(10.5, .medium))
                             .foregroundColor(look.color)
                     }
@@ -837,10 +839,20 @@ struct SendingFileBubble: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(Tr("上传中") + " " + name))
-        .accessibilityValue(Text("\(Int(value * 100))%"))
+        .accessibilityValue(Text(progressText))
     }
 
-    private func byteText(_ n: Int) -> String {
+    private var progressText: String {
+        guard let progress = progress else { return Tr("准备上传…") }
+        if progress <= 0 { return Tr("连接中…") }
+        if progress >= 0.995 { return Tr("服务器处理中…") }
+        let clamped = min(1, max(0, progress))
+        let sent = Int64(Double(max(0, bytes)) * clamped)
+        return byteText(sent) + " / " + byteText(Int64(max(0, bytes)))
+            + " · \(Int(clamped * 100))%"
+    }
+
+    private func byteText(_ n: Int64) -> String {
         if n > 1024 * 1024 { return String(format: "%.1f MB", Double(n) / 1024 / 1024) }
         if n > 1024 { return "\(n / 1024) KB" }
         return "\(n) B"

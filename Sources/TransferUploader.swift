@@ -100,15 +100,18 @@ final class TransferBackgroundSession: NSObject, URLSessionDataDelegate, URLSess
     private var backgroundEventsCompletion: (() -> Void)?
 
     private lazy var session: URLSession = {
-        let config = URLSessionConfiguration.background(
-            withIdentifier: "com.chris.chatnative.transfer"
-        )
-        config.sessionSendsLaunchEvents = true
+        // Active chat uploads must start immediately. A background session can
+        // defer the first request even when discretionary is disabled, which
+        // leaves the UI stuck on a placeholder percentage before any bytes move.
+        let config = URLSessionConfiguration.default
         config.isDiscretionary = false
         config.waitsForConnectivity = true
+        config.requestCachePolicy = .reloadIgnoringLocalCacheData
+        config.urlCache = nil
+        config.httpShouldUsePipelining = true
         config.timeoutIntervalForRequest = 180
         config.timeoutIntervalForResource = 86_400
-        config.httpMaximumConnectionsPerHost = 3
+        config.httpMaximumConnectionsPerHost = 6
         return URLSession(configuration: config, delegate: self, delegateQueue: nil)
     }()
 

@@ -84,6 +84,19 @@ require(
     "native media content must stay anchored inside its message bubble",
 )
 require(
+    "private let extraImageViews" in MEDIA_ROW
+    and "layoutImageGrid(paths: paths, in: body)" in MEDIA_ROW
+    and "case 3:" in MEDIA_ROW
+    and "default:" in MEDIA_ROW,
+    "native multi-image messages must render a real 2/3/4-tile album grid",
+)
+require(
+    "case .file:\n                            openFile(message.body)" in CHAT
+    and "path.hasPrefix(\"data:\")" in CHAT
+    and "private func openInlineFile(dataURL: String, name: String)" in CHAT,
+    "file cards must open both remote and inline test documents",
+)
+require(
     'Image(systemName: "ellipsis")' in CHAT
     and ".font(.system(size: 18, weight: .semibold))" in CHAT
     and ".frame(width: 44, height: 44)" in CHAT,

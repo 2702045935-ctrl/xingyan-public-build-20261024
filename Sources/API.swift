@@ -5700,6 +5700,11 @@ private struct StarredPayload: Decodable {
         return (url, data)
     }
 
+    func uploadPreparedJPEGForSend(_ data: Data,
+                                   onProgress: @escaping (Double) -> Void) async throws -> String {
+        try await uploadData(data, onProgress: onProgress)
+    }
+
     func streamingAsset(_ path: String) -> AVURLAsset? {
         guard let u = assetURL(path) else { return nil }
         let headers: [String: String] = token.isEmpty ? [:] : ["Authorization": "Bearer \(token)"]

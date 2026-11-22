@@ -56,25 +56,35 @@ private struct ChatUnreadRollingBadge: View {
     }
 }
 
-private final class ImageUploadProgress: @unchecked Sendable {
+private final class ActualUploadProgress: @unchecked Sendable {
     private let lock = NSLock()
-    private var values: [Double]
+    private let totalBytes: Int64
+    private var partial: [Int: Int64] = [:]
+    private var completedBytes: Int64 = 0
+    private var finished: Set<Int> = []
     private var completed = 0
 
-    init(count: Int) {
-        values = Array(repeating: 0, count: max(1, count))
+    init(totalBytes: Int64) {
+        self.totalBytes = max(1, totalBytes)
     }
 
-    func update(index: Int, value: Double) -> (progress: Double, completed: Int) {
+    func update(index: Int, value: Double, bytes: Int64) -> (progress: Double, completed: Int) {
         lock.lock()
         defer { lock.unlock() }
-        if values.indices.contains(index) {
-            if values[index] < 0.999, value >= 0.999 {
-                completed += 1
-            }
-            values[index] = min(1, max(0, value))
+        partial[index] = Int64(min(1, max(0, value)) * Double(max(0, bytes)))
+        let sent = completedBytes + partial.values.reduce(0, +)
+        return (min(1, Double(sent) / Double(totalBytes)), completed)
+    }
+
+    func finish(index: Int, bytes: Int64) -> (progress: Double, completed: Int) {
+        lock.lock()
+        defer { lock.unlock() }
+        if finished.insert(index).inserted {
+            partial[index] = nil
+            completedBytes += max(0, bytes)
+            completed += 1
         }
-        return (values.reduce(0, +) / Double(values.count), completed)
+        return (min(1, Double(completedBytes) / Double(totalBytes)), completed)
     }
 }
 
@@ -3245,12 +3255,12 @@ struct ChatDetailView: View {
                             .padding(.trailing, 6)
                         }
 
-                        if let progress = sendingFileProgress, !sendingFileName.isEmpty {
+                        if !sendingFileName.isEmpty {
                             HStack(spacing: 8) {
                                 Spacer(minLength: 0)
                                 SendingFileBubble(name: sendingFileName,
                                                   bytes: sendingFileBytes,
-                                                  progress: progress)
+                                                  progress: sendingFileProgress)
                             }
                             .padding(.bottom, 12)
                             .padding(.trailing, 6)
@@ -3331,12 +3341,12 @@ struct ChatDetailView: View {
                         .padding(.bottom, 12)
                         .padding(.trailing, 6)
                     }
-                    if let progress = sendingFileProgress, !sendingFileName.isEmpty {
+                    if !sendingFileName.isEmpty {
                         HStack(spacing: 8) {
                             Spacer(minLength: 0)
                             SendingFileBubble(name: sendingFileName,
                                               bytes: sendingFileBytes,
-                                              progress: progress)
+                                              progress: sendingFileProgress)
                         }
                         .id("__sending-file")
                         .padding(.bottom, 12)
@@ -3655,7 +3665,7 @@ struct ChatDetailView: View {
         if !sendingMedia.isEmpty {
             items.append(NativeGroupItem(id: "native-sending-video", kind: .sendingVideo))
         }
-        if sendingFileProgress != nil && !sendingFileName.isEmpty {
+        if uploading && !sendingFileName.isEmpty {
             items.append(NativeGroupItem(id: "native-sending-file", kind: .sendingFile))
         }
         items.append(NativeGroupItem(id: "__bottom", kind: .bottom))
@@ -3963,7 +3973,7 @@ struct ChatDetailView: View {
                 Spacer(minLength: 0)
                 SendingFileBubble(name: sendingFileName,
                                   bytes: sendingFileBytes,
-                                  progress: sendingFileProgress ?? 0)
+                                  progress: sendingFileProgress)
             }
             .padding(.horizontal, L.msgPad)
             .padding(.bottom, 12)
@@ -4065,12 +4075,12 @@ struct ChatDetailView: View {
                     .listRowBackground(Color.clear)
                 }
 
-                if let progress = sendingFileProgress, !sendingFileName.isEmpty {
+                if !sendingFileName.isEmpty {
                     HStack(spacing: 8) {
                         Spacer(minLength: 0)
                         SendingFileBubble(name: sendingFileName,
                                           bytes: sendingFileBytes,
-                                          progress: progress)
+                                          progress: sendingFileProgress)
                     }
                     .id("__sending-file")
                     .padding(.horizontal, L.msgPad)
@@ -6908,8 +6918,8 @@ struct ChatDetailView: View {
         case .image(let img, let nativeCamera):
             uploading = true
             sendingPreview = img
-            sendingMedia = Tr("图片上传中…")
-            sendProgress = 0.02
+            sendingMedia = Tr("图片处理中…")
+            sendProgress = 0
             scrollTick += 1
             let px = img.sendPixelSize
             Task {
@@ -6920,13 +6930,14 @@ struct ChatDetailView: View {
                         preserveResolution: nativeCamera,
                         onProgress: { p in
                             DispatchQueue.main.async {
-                                sendProgress = min(0.82, 0.02 + p * 0.80)
+                                sendProgress = min(1, max(0, p))
+                                sendingMedia = Tr("图片上传中…")
                             }
                         })
                     let url = up.url
                     seedLocalImage(url, img, data: up.data)
                     sendingMedia = Tr("正在发送…")
-                    sendProgress = 0.9
+                    sendProgress = 1
                     let tUp = Date()
                     if let m = try await API.shared.send(chatId: chat.id, kind: "image", content: url,
                                                          imgW: px.w, imgH: px.h) {
@@ -6950,12 +6961,32 @@ struct ChatDetailView: View {
             CrashCatcher.note("发图", "多选 \(list.count) 张，开始上传")
             uploading = true
             sendingPreview = list.first
-            sendingMedia = Tr("图片上传中…") + " 0/\(list.count)"
-            sendProgress = 0.02
+            sendingMedia = Tr("图片处理中…") + " 0/\(list.count)"
+            sendProgress = 0
             scrollTick += 1
-            let progress = ImageUploadProgress(count: list.count)
             Task {
                 do {
+                    var prepared: [(idx: Int, data: Data, w: Int, h: Int)] = []
+                    for (i, img) in list.enumerated() {
+                        sendingMedia = Tr("图片处理中…") + " \(i + 1)/\(list.count)"
+                        let px = img.sendPixelSize
+                        let data = await Task.detached(priority: .userInitiated) {
+                            img.resizedJPEG(
+                                maxSide: original ? 1920 : 1280,
+                                quality: original ? 0.88 : 0.75
+                            )
+                        }.value
+                        guard let data, !data.isEmpty else {
+                            throw APIError.message("图片处理失败")
+                        }
+                        prepared.append((i, data, px.w, px.h))
+                    }
+                    let totalBytes = prepared.reduce(Int64(0)) {
+                        $0 + Int64($1.data.count)
+                    }
+                    let progress = ActualUploadProgress(totalBytes: totalBytes)
+                    sendProgress = 0
+                    sendingMedia = Tr("图片上传中…") + " 0/\(list.count)"
                     var urls: [String] = []
                     var dims: [(w: Int, h: Int)] = []
 
@@ -6964,34 +6995,45 @@ struct ChatDetailView: View {
                     await withTaskGroup(of: (Int, String, Int, Int, Data, String?).self) { group in
                         var nextIdx = 0
                         func addUpload(_ i: Int) {
-                            let img = list[i]
-                            let px = img.sendPixelSize
+                            let item = prepared[i]
                             group.addTask {
                                 do {
-                                    let up = try await API.shared.uploadImageForSend(
-                                        img, original: original,
+                                    let url = try await API.shared.uploadPreparedJPEGForSend(
+                                        item.data,
                                         onProgress: { p in
-                                            let state = progress.update(index: i, value: p)
+                                            let state = progress.update(
+                                                index: item.idx,
+                                                value: p,
+                                                bytes: Int64(item.data.count)
+                                            )
                                             DispatchQueue.main.async {
-                                                sendProgress = min(0.82, 0.02 + state.progress * 0.80)
+                                                sendProgress = state.progress
                                                 sendingMedia = Tr("图片上传中…") + " \(state.completed)/\(list.count)"
                                             }
                                         })
-                                    return (i, up.url, px.w, px.h, up.data, nil)
+                                    let state = progress.finish(
+                                        index: item.idx,
+                                        bytes: Int64(item.data.count)
+                                    )
+                                    DispatchQueue.main.async {
+                                        sendProgress = state.progress
+                                        sendingMedia = Tr("图片上传中…") + " \(state.completed)/\(list.count)"
+                                    }
+                                    return (item.idx, url, item.w, item.h, item.data, nil)
                                 } catch {
                                     return (i, "", 0, 0, Data(),
                                             (error as? APIError)?.errorDescription ?? "图片上传失败")
                                 }
                             }
                         }
-                        while nextIdx < min(3, list.count) { addUpload(nextIdx); nextIdx += 1 }
+                        while nextIdx < min(3, prepared.count) { addUpload(nextIdx); nextIdx += 1 }
                         for await r in group {
                             if let e = r.5 {
                                 if upError == nil { upError = e }
                             } else {
                                 upResults.append((idx: r.0, url: r.1, w: r.2, h: r.3, data: r.4))
                             }
-                            if nextIdx < list.count { addUpload(nextIdx); nextIdx += 1 }
+                            if nextIdx < prepared.count { addUpload(nextIdx); nextIdx += 1 }
                         }
                     }
                     if let e = upError, upResults.count != list.count { throw APIError.message(e) }
@@ -7002,7 +7044,7 @@ struct ChatDetailView: View {
                     }
                     if urls.count >= 2 {
                         sendingMedia = Tr("正在发送…")
-                        sendProgress = 0.9
+                        sendProgress = 1
                         CrashCatcher.note("发图", "合成一条相册消息（\(urls.count) 张）")
                         let body = "{\"paths\":" + Self.jsonStringArray(urls) + "}"
                         if let m = try await API.shared.send(chatId: chat.id, kind: "images", content: body) {
@@ -7028,9 +7070,9 @@ struct ChatDetailView: View {
 
         case .video(let url, let preview):
             uploading = true
-            sendProgress = 0.02
+            sendProgress = 0
             sendingPreview = preview
-            sendingMedia = Tr("视频发送中…")
+            sendingMedia = Tr("视频准备中…")
             scrollTick += 1
             Task {
 
@@ -7047,23 +7089,19 @@ struct ChatDetailView: View {
 
                 var file = url
 
-                var uploadFrom = 0.0
                 if !original, await MediaTool.needsCompress(url) {
                     sendingMedia = Tr("视频压缩中…")
-                    uploadFrom = 0.45
-                    file = (await MediaTool.compress(url) { p in
-                        DispatchQueue.main.async { sendProgress = min(0.45, p * 0.45) }
-                    }) ?? url
+                    sendProgress = 0
+                    file = (await MediaTool.compress(url) { _ in }) ?? url
                     sendingMedia = Tr("视频发送中…")
                 }
 
                 let secs = await MediaTool.seconds(file)
 
                 let wh = await MediaTool.aspect(file)
-                let from = uploadFrom
                 guard let up = await MediaTool.upload(file, onProgress: { p in
                     DispatchQueue.main.async {
-                        sendProgress = from + p * (1 - from)
+                        sendProgress = min(1, max(0, p))
                         if p >= 0.999 { sendingMedia = Tr("服务器处理中…") }
                     }
                 }, skipServerTranscode: true) else {
@@ -7095,29 +7133,27 @@ struct ChatDetailView: View {
 
             if !live { sendImage(img); return }
             uploading = true
-            sendProgress = 0.02
+            sendProgress = 0
             sendingPreview = img
-            sendingMedia = Tr("实况发送中…")
+            sendingMedia = Tr("实况处理中…")
             scrollTick += 1
             Task {
                 do {
                     let up = try await API.shared.uploadImageForSend(img, original: original)
                     let iurl = up.url
                     seedLocalImage(iurl, img, data: up.data)
-                    DispatchQueue.main.async { sendProgress = 0.25 }
+                    DispatchQueue.main.async {
+                        sendProgress = 0
+                        sendingMedia = Tr("实况视频上传中…")
+                    }
                     var file = url
-                    var uploadFrom = 0.25
                     if !original, await MediaTool.needsCompress(url) {
                         sendingMedia = Tr("实况压缩中…")
-                        file = (await MediaTool.compress(url) { p in
-                            DispatchQueue.main.async { sendProgress = 0.25 + p * 0.15 }
-                        }) ?? url
-                        uploadFrom = 0.4
+                        file = (await MediaTool.compress(url) { _ in }) ?? url
                         sendingMedia = Tr("实况发送中…")
                     }
-                    let from = uploadFrom
                     guard let vurl = await MediaTool.upload(file, onProgress: { p in
-                        DispatchQueue.main.async { sendProgress = from + p * (1 - from) }
+                        DispatchQueue.main.async { sendProgress = min(1, max(0, p)) }
                     }, skipServerTranscode: true) else { throw APIError.message("实况上传失败") }
 
                     LocalStore.keepOriginal(vurl, from: file)
@@ -7391,7 +7427,7 @@ struct ChatDetailView: View {
         uploading = true
         sendingFileName = name
         sendingFileBytes = sizeBytes
-        sendingFileProgress = 0.01
+        sendingFileProgress = nil
         scrollTick += 1
         defer {
             uploading = false
@@ -7405,7 +7441,7 @@ struct ChatDetailView: View {
         do {
             let uploadedURL = try await API.shared.uploadBinaryFile(
                 uploadURL, mime: "application/octet-stream", skipTranscode: true, onProgress: { p in
-                    let value = min(1, max(0.01, p))
+                    let value = min(1, max(0, p))
                     DispatchQueue.main.async {
                         guard sendingFileName == name else { return }
                         sendingFileProgress = value
@@ -7455,12 +7491,17 @@ struct ChatDetailView: View {
         let raw = (o["name"] as? String) ?? "文件"
 
         let name = MyFilesPickerView.previewName(raw, path: path)
+        if path.hasPrefix("data:") {
+            openInlineFile(dataURL: path, name: name)
+            return
+        }
         if let local = RemoteFileCache.localFile(path: path, preferredName: name) {
             filePreview = FilePreviewData(name: local.name, local: local.local,
                                           favoriteTitle: chat.name,
                                           favoriteFrom: "聊天文件")
             return
         }
+        app.show(Tr("正在打开文件…"))
         Task {
             do {
                 let file = try await RemoteFileCache.shared.file(path: path,
@@ -7472,6 +7513,42 @@ struct ChatDetailView: View {
             } catch {
                 app.show(Tr("文件下载失败，检查一下网络"))
             }
+        }
+    }
+
+    private func openInlineFile(dataURL: String, name: String) {
+        guard let comma = dataURL.firstIndex(of: ",") else {
+            app.show(Tr("这个文件找不到了"))
+            return
+        }
+        let meta = String(dataURL[dataURL.index(dataURL.startIndex, offsetBy: 5)..<comma])
+        let payload = String(dataURL[dataURL.index(after: comma)...])
+        let data: Data?
+        if meta.lowercased().contains(";base64") {
+            data = Data(base64Encoded: payload, options: .ignoreUnknownCharacters)
+        } else {
+            data = payload.removingPercentEncoding?.data(using: .utf8)
+        }
+        guard let data, !data.isEmpty else {
+            app.show(Tr("这个文件找不到了"))
+            return
+        }
+        let cleanName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let safeName = cleanName.isEmpty ? "文件" : cleanName
+        let ext = (safeName as NSString).pathExtension
+        let local = FileManager.default.temporaryDirectory
+            .appendingPathComponent("inline-\(UUID().uuidString)")
+            .appendingPathExtension(ext.isEmpty ? "dat" : ext)
+        do {
+            try data.write(to: local, options: .atomic)
+            filePreview = FilePreviewData(
+                name: safeName,
+                local: local,
+                favoriteTitle: chat.name,
+                favoriteFrom: "聊天文件"
+            )
+        } catch {
+            app.show(Tr("文件打不开"))
         }
     }
 
