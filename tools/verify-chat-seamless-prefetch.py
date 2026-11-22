@@ -69,6 +69,12 @@ require(
     "a continuous gesture must re-arm and consume every history page",
 )
 require(
+    "defer {\n            loadingNewer = false\n            if loadedUsefulPage" in CHAT
+    and "defer {\n            loadingOlder = false\n            if loadedUsefulPage" in CHAT
+    and "guard loadedUsefulPage else { return }" not in CHAT,
+    "async history defers must not return from defer blocks",
+)
+require(
     "else if !olderPrefetch.isEmpty" in CHAT
     and "consumeOlderRunway(requireActiveMotion: false)" in CHAT,
     "a prefetched page must enter the runway after the finger has stopped",

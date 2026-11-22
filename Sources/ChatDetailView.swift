@@ -4387,11 +4387,12 @@ struct ChatDetailView: View {
         var loadedUsefulPage = false
         defer {
             loadingNewer = false
-            guard loadedUsefulPage else { return }
-            newerRunwayConsumedForGesture = false
-            lastNewerLoad = .distantPast
-            DispatchQueue.main.async {
-                consumeNewerRunway(requireActiveMotion: true)
+            if loadedUsefulPage {
+                newerRunwayConsumedForGesture = false
+                lastNewerLoad = .distantPast
+                DispatchQueue.main.async {
+                    consumeNewerRunway(requireActiveMotion: true)
+                }
             }
         }
         do {
@@ -8085,14 +8086,15 @@ struct ChatDetailView: View {
         var loadedUsefulPage = false
         defer {
             loadingOlder = false
-            guard loadedUsefulPage else { return }
-            // A long fling can cross more than one history page. Re-arm the
-            // runway after every consumed page so the next page starts loading
-            // while the finger is still moving, matching the initial pages.
-            olderRunwayConsumedForGesture = false
-            lastOlderLoad = .distantPast
-            DispatchQueue.main.async {
-                consumeOlderRunway(requireActiveMotion: true)
+            if loadedUsefulPage {
+                // A long fling can cross more than one history page. Re-arm the
+                // runway after every consumed page so the next page starts loading
+                // while the finger is still moving, matching the initial pages.
+                olderRunwayConsumedForGesture = false
+                lastOlderLoad = .distantPast
+                DispatchQueue.main.async {
+                    consumeOlderRunway(requireActiveMotion: true)
+                }
             }
         }
         do {
