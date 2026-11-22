@@ -1999,6 +1999,15 @@ final class API {
             : root
     }
 
+    /// Cloudflare's shared HTTP tunnel is appropriate for API traffic but
+    /// cancels long-lived large request bodies. Keep uploads on the pinned
+    /// direct Cell endpoint; all auth and chunk hashes still apply.
+    var transferBase: String {
+        server == API.publicIngressServer
+            ? "https://43.242.194.89:8443"
+            : base
+    }
+
     var realtimeServer: String {
         server == "43.242.194.89:443" ? "43.242.194.89:8443" : server
     }
@@ -5704,7 +5713,7 @@ private struct StarredPayload: Decodable {
                 name: "file.bin",
                 mime: mime,
                 skipTranscode: true,
-                base: base,
+                base: transferBase,
                 token: token,
                 session: session,
                 onProgress: { _ in }
@@ -5737,7 +5746,7 @@ private struct StarredPayload: Decodable {
                 file,
                 mime: mime,
                 skipTranscode: skipTranscode,
-                base: base,
+                base: transferBase,
                 token: token,
                 session: session,
                 onProgress: onProgress
@@ -5821,7 +5830,7 @@ private struct StarredPayload: Decodable {
             name: "photo.jpg",
             mime: "image/jpeg",
             skipTranscode: true,
-            base: base,
+            base: transferBase,
             token: token,
             session: session,
             onProgress: onProgress ?? { _ in }
