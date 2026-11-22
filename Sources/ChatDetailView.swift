@@ -6675,6 +6675,11 @@ struct ChatDetailView: View {
                               blendDuration: 0.04)) {
             outbox.append(pending)
         }
+        app.previewOutgoingMessage(chat,
+                                   clientId: pending.id,
+                                   kind: kind,
+                                   content: content,
+                                   mentions: mentions)
         followOwnSendUntil = Date().addingTimeInterval(5)
         persistOutboxAfterFrame()
 

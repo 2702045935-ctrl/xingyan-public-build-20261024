@@ -279,11 +279,14 @@ final class NativeChatMediaRowView: UIView {
             : model.horizontalMargin + model.avatarSize + model.avatarGap
         bubble.frame = CGRect(x: bubbleX, y: nameHeight,
                               width: bubbleWidth, height: bubbleHeight)
-        let inset: CGFloat = 6
+        // Native media subviews live in the row coordinate space, not inside
+        // the bubble. Anchor their body to the bubble itself and reserve the
+        // tail-only strip so images and file cards cannot drift out of frame.
+        let tailInset: CGFloat = model.showTail ? 6 : 0
         let body = CGRect(
-            x: model.mine ? 0 : inset,
-            y: 0,
-            width: bubbleWidth - inset,
+            x: bubble.frame.minX + (model.mine ? 0 : tailInset),
+            y: bubble.frame.minY,
+            width: max(1, bubbleWidth - tailInset),
             height: bubbleHeight
         )
         imageView.frame = body

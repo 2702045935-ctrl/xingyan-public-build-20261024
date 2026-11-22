@@ -1754,6 +1754,13 @@ final class AppState: ObservableObject {
             row.updatedAt = latest.createdAt ?? row.updatedAt
         }
         row.unread = 0
+        if latest != nil {
+            // Sending and navigating back can race the conversation-list
+            // request. Keep the confirmed or optimistic last message visible
+            // until the server snapshot catches up with the same message.
+            optimisticChats[chat.id] = row
+            optimisticAt[chat.id] = Date()
+        }
         if let index = chats.firstIndex(where: { $0.id == chat.id }) {
             chats[index] = row
         } else {
@@ -1765,6 +1772,30 @@ final class AppState: ObservableObject {
             LocalStore.saveChatList(chats, userId: userId)
         }
         syncIconBadge()
+    }
+
+    /// The composer shows its pending bubble immediately. Mirror that same
+    /// pending row into the conversation list so backing out before the send
+    /// acknowledgement cannot leave the previous message in the list preview.
+    func previewOutgoingMessage(_ chat: Chat,
+                                clientId: String,
+                                kind: String,
+                                content: String,
+                                mentions: [String] = []) {
+        guard let myId = me?.id, !myId.isEmpty else { return }
+        let now = TimeFmt.isoFrac.string(from: Date())
+        let pending = Message(
+            id: "pending-" + clientId,
+            clientId: clientId,
+            chatId: chat.id,
+            senderId: myId,
+            kind: kind,
+            content: content,
+            createdAt: now,
+            senderName: me?.name,
+            mentions: mentions
+        )
+        ensureChatVisible(chat, latest: pending)
     }
 
     func noteFriendRequestSent(_ user: User, note: String) {

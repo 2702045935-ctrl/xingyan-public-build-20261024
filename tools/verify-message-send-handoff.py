@@ -4,6 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CHAT = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
+APP = (ROOT / "Sources" / "App.swift").read_text(encoding="utf-8")
 
 
 def require(condition: bool, message: str) -> None:
@@ -42,6 +43,23 @@ require(
     and "MessageDeliveryState.sent.color" in pending
     and "Avatar(path: app.me?.avatarPath" in pending,
     "pending and confirmed outgoing bubbles must use the same visual structure",
+)
+send_start = CHAT.index("private func send(kind: String")
+send_end = CHAT.index("private func flushOutbox", send_start)
+send_block = CHAT[send_start:send_end]
+require(
+    "app.previewOutgoingMessage(chat" in send_block
+    and send_block.find("outbox.append(pending)") < send_block.find(
+        "app.previewOutgoingMessage(chat"
+    ),
+    "the conversation-list preview must update on tap, before network acknowledgement",
+)
+require(
+    "func previewOutgoingMessage(" in APP
+    and '"pending-" + clientId' in APP
+    and "optimisticChats[chat.id] = row" in APP
+    and "optimisticAt[chat.id] = Date()" in APP,
+    "pending and confirmed sends must protect the latest list preview from stale snapshots",
 )
 
 print("message-send-handoff: passed")

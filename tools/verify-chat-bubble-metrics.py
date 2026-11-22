@@ -8,6 +8,9 @@ CHAT = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
 THEMES = (ROOT / "Sources" / "ChatThemes.swift").read_text(encoding="utf-8")
 CARDS = (ROOT / "Sources" / "WeChatMessageCards.swift").read_text(encoding="utf-8")
 MEDIA = (ROOT / "Sources" / "ChatMediaBubbles.swift").read_text(encoding="utf-8")
+MEDIA_ROW = (ROOT / "Sources" / "NativeChatMediaRowCell.swift").read_text(
+    encoding="utf-8"
+)
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
 )
@@ -72,6 +75,13 @@ require(
     and "PremiumGlassCard(radius: 18" not in MEDIA
     and "ChatMessageSurface.cardRadius" in MEDIA,
     "contact and upload cards must use the same flat message shell",
+)
+require(
+    "x: bubble.frame.minX + (model.mine ? 0 : tailInset)" in MEDIA_ROW
+    and "y: bubble.frame.minY" in MEDIA_ROW
+    and "width: max(1, bubbleWidth - tailInset)" in MEDIA_ROW
+    and "imageView.frame = body" in MEDIA_ROW,
+    "native media content must stay anchored inside its message bubble",
 )
 require(
     'Image(systemName: "ellipsis")' in CHAT
