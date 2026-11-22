@@ -1347,7 +1347,7 @@ private enum MomentTimelineMode: String, CaseIterable {
 
 struct MomentsView: View {
     private static let momentPageSize = 30
-    private static let stressMomentWindow = 120
+    private static let stressMomentWindow = 10_000
     private static let stressMomentPageSize = 20
     private static let monthDayFormatter: DateFormatter = {
         let formatter = DateFormatter()

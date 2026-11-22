@@ -156,6 +156,12 @@ require(
     "Moments stress cards must expose their exact ordinal",
 )
 require(
+    "private static let stressMomentWindow = 10_000" in (
+        ROOT / "Sources" / "DiscoverView.swift"
+    ).read_text(encoding="utf-8"),
+    "the 10000-card Moments run must not trim leading rows while paging",
+)
+require(
     "private static let hardCap = 300_000" in CONFIG,
     "message stress must support a true 300k fixture",
 )

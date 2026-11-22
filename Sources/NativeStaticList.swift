@@ -47,6 +47,27 @@ private final class NativeStaticHostCell: UICollectionViewCell {
     }
 }
 
+private final class NativeStaticUIKitCell: UICollectionViewCell {
+    private(set) var nativeView: UIView?
+
+    func install(_ view: UIView) {
+        if nativeView !== view {
+            nativeView?.removeFromSuperview()
+            nativeView = view
+            contentView.addSubview(view)
+        }
+        backgroundColor = .clear
+        contentView.backgroundColor = .clear
+        clipsToBounds = true
+        setNeedsLayout()
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        nativeView?.frame = contentView.bounds
+    }
+}
+
 final class NativeStaticListController {
     fileprivate var scrollToIDHandler: ((String, UICollectionView.ScrollPosition, Bool) -> Bool)?
     fileprivate var scrollToBottomHandler: ((Bool) -> Bool)?
@@ -85,6 +106,8 @@ where Item.ID: Hashable {
     let onSizeChange: (() -> Void)?
     let initiallyPinnedToBottom: Bool
     let signature: (Item) -> String
+    let nativeRow: ((Item, UIView?) -> UIView?)?
+    let nativeHeight: ((Item, CGFloat) -> CGFloat?)?
     @ViewBuilder let row: (Item) -> Row
 
     init(items: [Item],
@@ -95,6 +118,8 @@ where Item.ID: Hashable {
          onSizeChange: (() -> Void)? = nil,
          initiallyPinnedToBottom: Bool = false,
          signature: @escaping (Item) -> String,
+         nativeRow: ((Item, UIView?) -> UIView?)? = nil,
+         nativeHeight: ((Item, CGFloat) -> CGFloat?)? = nil,
          @ViewBuilder row: @escaping (Item) -> Row) {
         self.items = items
         self.controller = controller
@@ -104,6 +129,8 @@ where Item.ID: Hashable {
         self.onSizeChange = onSizeChange
         self.initiallyPinnedToBottom = initiallyPinnedToBottom
         self.signature = signature
+        self.nativeRow = nativeRow
+        self.nativeHeight = nativeHeight
         self.row = row
     }
 
@@ -115,6 +142,8 @@ where Item.ID: Hashable {
                     onSizeChange: onSizeChange,
                     initiallyPinnedToBottom: initiallyPinnedToBottom,
                     signature: signature,
+                    nativeRow: nativeRow,
+                    nativeHeight: nativeHeight,
                     row: row)
     }
 
@@ -142,6 +171,10 @@ where Item.ID: Hashable {
         collection.alpha = initiallyPinnedToBottom ? 0 : 1
         collection.delegate = context.coordinator
         collection.prefetchDataSource = context.coordinator
+        collection.register(
+            NativeStaticUIKitCell.self,
+            forCellWithReuseIdentifier: "NativeStaticUIKitCell"
+        )
 
         let registration = UICollectionView.CellRegistration<NativeStaticHostCell, Item.ID> {
             [weak coordinator = context.coordinator] cell, _, id in
@@ -163,6 +196,23 @@ where Item.ID: Hashable {
         let dataSource = UICollectionViewDiffableDataSource<Int, Item.ID>(
             collectionView: collection
         ) { collectionView, indexPath, id in
+            if let item = context.coordinator.lookup[id],
+               context.coordinator.nativeHeight?(item, collectionView.bounds.width) != nil {
+                let cell = collectionView.dequeueReusableCell(
+                    withReuseIdentifier: "NativeStaticUIKitCell",
+                    for: indexPath
+                ) as! NativeStaticUIKitCell
+                if let nativeView = context.coordinator.nativeRow?(item, cell.nativeView) {
+                    cell.install(nativeView)
+                    return cell
+                }
+                let fallback = collectionView.dequeueConfiguredReusableCell(
+                    using: registration,
+                    for: indexPath,
+                    item: id
+                )
+                return fallback
+            }
             collectionView.dequeueConfiguredReusableCell(
                 using: registration,
                 for: indexPath,
@@ -181,6 +231,8 @@ where Item.ID: Hashable {
                                 context: Context) {
         context.coordinator.row = row
         context.coordinator.signature = signature
+        context.coordinator.nativeRow = nativeRow
+        context.coordinator.nativeHeight = nativeHeight
         context.coordinator.onScrollViewReady = onScrollViewReady
         context.coordinator.onScrollStateChange = onScrollStateChange
         context.coordinator.onScrollOffset = onScrollOffset
@@ -198,6 +250,8 @@ where Item.ID: Hashable {
         var lookup: [Item.ID: Item] = [:]
         var row: (Item) -> Row
         var signature: (Item) -> String
+        var nativeRow: ((Item, UIView?) -> UIView?)?
+        var nativeHeight: ((Item, CGFloat) -> CGFloat?)?
         weak var collection: UICollectionView?
         var dataSource: UICollectionViewDiffableDataSource<Int, Item.ID>?
         let controller: NativeStaticListController?
@@ -227,6 +281,8 @@ where Item.ID: Hashable {
              onSizeChange: (() -> Void)?,
              initiallyPinnedToBottom: Bool,
              signature: @escaping (Item) -> String,
+             nativeRow: ((Item, UIView?) -> UIView?)?,
+             nativeHeight: ((Item, CGFloat) -> CGFloat?)?,
              row: @escaping (Item) -> Row) {
             self.controller = controller
             self.onScrollViewReady = onScrollViewReady
@@ -236,6 +292,8 @@ where Item.ID: Hashable {
             self.initiallyPinnedToBottom = initiallyPinnedToBottom
             self.waitsForInitialBottom = initiallyPinnedToBottom
             self.signature = signature
+            self.nativeRow = nativeRow
+            self.nativeHeight = nativeHeight
             self.row = row
             super.init()
             foregroundObserver = NotificationCenter.default.addObserver(
@@ -612,6 +670,9 @@ where Item.ID: Hashable {
         }
 
         private func measuredHeight(_ item: Item, width: CGFloat) -> CGFloat {
+            if let nativeHeight {
+                return max(1, nativeHeight(item, width))
+            }
             let host = UIHostingController(
                 rootView: AnyView(row(item).frame(width: width))
             )

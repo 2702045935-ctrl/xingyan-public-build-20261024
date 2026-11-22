@@ -3533,7 +3533,9 @@ struct ChatDetailView: View {
                 )
             },
             initiallyPinnedToBottom: true,
-            signature: nativeGroupSignature
+            signature: nativeGroupSignature,
+            nativeRow: nativeGroupUIKitRow,
+            nativeHeight: nativeGroupUIKitHeight
         ) { item in
             nativeGroupRow(item)
         }
@@ -3703,6 +3705,74 @@ struct ChatDetailView: View {
             return "bottom"
         case .spacer:
             return "spacer:\(L.msgPad)"
+        }
+    }
+
+    private func nativeTextModel(_ item: NativeGroupItem) -> NativeChatTextRowModel? {
+        guard case .message(let message) = item.kind,
+              message.kindName == "text",
+              !message.isRecalled,
+              message.quote == nil,
+              message.burn != true,
+              !selectMode,
+              UIConfig.num("chatDeliveryTicks", 0) <= 0,
+              !message.body.hasPrefix("{") else { return nil }
+        let mine = mineFor(message)
+        return NativeChatTextRowModel(
+            messageID: message.id,
+            text: message.body,
+            mine: mine,
+            senderName: (!mine && isGroup) ? senderNameFor(message) : "",
+            senderNameColor: UIColor(groupSenderNameColor(message)),
+            avatarPath: senderAvatarFor(message),
+            avatarSize: L.chatAvatar,
+            maxBubbleWidth: isGroup ? groupBubbleMaxWidth : L.bubbleMaxW,
+            horizontalMargin: L.msgPad,
+            avatarGap: L.chatGapMsg,
+            bubblePadH: L.bubblePadHPill,
+            bubblePadV: L.bubblePadV,
+            bottomGap: gapAfter(message),
+            textColor: UIColor(mine ? ChatTheme.mineInk : ChatTheme.ink),
+            bubbleColor: UIColor(mine ? ChatTheme.bubbleMine : ChatTheme.bubbleOther),
+            secondaryColor: UIColor(ChatTheme.secondary),
+            mentionColor: UIColor(mine ? ChatTheme.mentionMeOnMine : ChatTheme.mentionMe)
+        )
+    }
+
+    private func nativeGroupUIKitRow(_ item: NativeGroupItem, reuse: UIView?) -> UIView? {
+        switch item.kind {
+        case .timestamp(let message):
+            let view = (reuse as? NativeChatTimeRowView) ?? NativeChatTimeRowView()
+            view.configure(text: TimeFmt.bubble(message.createdAt))
+            return view
+        case .message(let message):
+            guard let model = nativeTextModel(item) else { return nil }
+            let view = (reuse as? NativeChatTextRowView) ?? NativeChatTextRowView()
+            view.configure(model)
+            view.setActions(
+                onTap: {
+                    guard CareMode.on, CareMode.speakText else { return }
+                    let text = readableText(message)
+                    if !text.isEmpty { Speaker.shared.speak(text) }
+                },
+                onLongPress: { openActions(message) },
+                onAvatarTap: { openAvatar(message.senderId ?? "") }
+            )
+            return view
+        default:
+            return nil
+        }
+    }
+
+    private func nativeGroupUIKitHeight(_ item: NativeGroupItem, width: CGFloat) -> CGFloat? {
+        switch item.kind {
+        case .timestamp:
+            return NativeChatTimeRowView.height()
+        case .message:
+            guard let model = nativeTextModel(item) else { return nil }
+            return NativeChatTextRowView.height(for: model, width: width)
+        default:
+            return nil
         }
     }
 

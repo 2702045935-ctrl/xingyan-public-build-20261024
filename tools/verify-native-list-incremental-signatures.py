@@ -4,6 +4,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 LIST = (ROOT / "Sources" / "NativeStaticList.swift").read_text(encoding="utf-8")
+TEXT_ROWS = (ROOT / "Sources" / "NativeChatTextRowCell.swift").read_text(
+    encoding="utf-8"
+)
 
 
 def require(condition: bool, message: str) -> None:
@@ -24,6 +27,13 @@ require(
 require(
     "if nextOrder == order && nextSignatures == signatures" in LIST,
     "unchanged scroll frames must return before diff bookkeeping",
+)
+require(
+    "NativeStaticUIKitCell" in LIST
+    and "nativeRow" in LIST
+    and "NativeChatTextRowView" in TEXT_ROWS
+    and "NativeChatTimeRowView" in TEXT_ROWS,
+    "text and complex message rows must use separate native cell paths",
 )
 
 print("native-list-incremental-signatures: passed")
