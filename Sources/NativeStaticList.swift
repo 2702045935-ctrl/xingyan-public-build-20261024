@@ -217,7 +217,7 @@ where Item.ID: Hashable {
                 )
                 return fallback
             }
-            collectionView.dequeueConfiguredReusableCell(
+            return collectionView.dequeueConfiguredReusableCell(
                 using: registration,
                 for: indexPath,
                 item: id
