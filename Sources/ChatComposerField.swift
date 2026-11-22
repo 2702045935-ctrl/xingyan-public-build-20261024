@@ -25,7 +25,9 @@ final class ComposerTextView: UITextView {
 
 func chatComposerUIFont(_ size: CGFloat = 17) -> UIFont {
     let scaled = max(9, (size * fontScale * CareMode.scale).rounded())
-    if let name = pfName(.regular), let font = UIFont(name: name, size: scaled) {
+    if !AppFontPrefs.family.isEmpty,
+       let name = pfName(.regular),
+       let font = UIFont(name: name, size: scaled) {
         return font
     }
     return .systemFont(ofSize: scaled)

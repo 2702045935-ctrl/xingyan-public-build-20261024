@@ -1757,13 +1757,13 @@ struct ChatDetailView: View {
             } label: {
                 VStack(spacing: 1) {
                     Text(title)
-                        .font(pf(16, .semibold))
+                        .font(pfStyled(16, .semibold))
                         .foregroundStyle(adaptiveTopInk)
                         .lineLimit(1)
                         .truncationMode(.tail)
                     if !detail.isEmpty {
                         Text(detail)
-                            .font(pf(10.5))
+                            .font(pfStyled(10.5))
                             .foregroundStyle(adaptiveTopInk.opacity(0.62))
                             .lineLimit(1)
                     }
@@ -4129,7 +4129,7 @@ struct ChatDetailView: View {
                     .buttonStyle(.plain)
                 }
                 Text(p.preview)
-                    .font(pf(L.chatFontSize))
+                    .font(pfStyled(L.chatFontSize))
                     .foregroundColor(ChatTheme.mineInk)
                     .lineLimit(6)
                     .multilineTextAlignment(.leading)
@@ -4423,7 +4423,7 @@ struct ChatDetailView: View {
     private func timeLine(_ message: Message) -> some View {
         if isGroup || usesPlainDefaultChatChrome {
             Text(TimeFmt.bubble(message.createdAt))
-                .font(pf(11.5, .regular))
+                .font(pfStyled(11.5, .regular))
                 .monospacedDigit()
                 .foregroundColor(adaptiveSystemSecondaryInk.opacity(0.92))
                 .frame(maxWidth: .infinity)
@@ -4431,7 +4431,7 @@ struct ChatDetailView: View {
                 .padding(.bottom, 7)
         } else {
             Text(TimeFmt.bubble(message.createdAt))
-                .font(pf(12, .regular))
+                .font(pfStyled(12, .regular))
                 .monospacedDigit()
                 .foregroundColor(adaptiveSystemSecondaryInk)
                 .padding(.horizontal, L.o("chatTimePadX", 9))
@@ -4458,14 +4458,14 @@ struct ChatDetailView: View {
     private func recallLine(_ message: Message) -> some View {
         if isGroup || usesPlainDefaultChatChrome {
             Text(recallText(message))
-                .font(pf(12.5))
+                .font(pfStyled(12.5))
                 .foregroundColor(adaptiveSystemSecondaryInk.opacity(0.92))
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, 40)
         } else {
             Text(recallText(message))
-                .font(pf(13))
+                .font(pfStyled(13))
                 .foregroundColor(adaptiveSystemSecondaryInk)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 10)
@@ -5701,7 +5701,7 @@ struct ChatDetailView: View {
                         .overlay(alignment: .leading) {
                             if input.isEmpty && !voiceMode && !recorder.recording {
                                 Text(Tr("输入消息"))
-                                    .font(pf(16))
+                                    .font(pfStyled(16))
                                     .foregroundStyle(composerUtilityInk.opacity(0.82))
                                     .padding(.leading, 2)
                                     .allowsHitTesting(false)
@@ -8143,7 +8143,7 @@ struct MessageRow: View {
 
                 HStack(spacing: 4) {
                     Text(senderName)
-                        .font(pf(12.5, .regular))
+                        .font(pfStyled(12.5, .regular))
                         .foregroundColor(senderNameColor ?? (senderNameUsesLightInk
                                          ? ChatTheme.groupSenderNameOnDark
                                          : ChatTheme.groupSenderNameOnLight))
@@ -8477,7 +8477,7 @@ struct MessageRow: View {
                 } else {
 
             Text(richBody(message.body))
-                .font(pf(L.chatFontSize))
+                .font(pfStyled(L.chatFontSize))
 
                 .foregroundColor(bubblePrimaryInk)
                 .lineSpacing(textLineSpacing(message.body))
@@ -8495,7 +8495,7 @@ struct MessageRow: View {
     private func quotedTextBubble(_ q: QuoteRef, raw: String) -> some View {
         VStack(alignment: mine ? .trailing : .leading, spacing: 4) {
             Text(richBody(raw))
-                .font(pf(L.chatFontSize))
+                .font(pfStyled(L.chatFontSize))
                 .foregroundColor(bubblePrimaryInk)
                 .lineSpacing(textLineSpacing(raw))
                 .multilineTextAlignment(.leading)
@@ -8515,12 +8515,12 @@ struct MessageRow: View {
                     VStack(alignment: .leading, spacing: 2) {
                         if !q.sender.isEmpty {
                             Text(q.sender)
-                                .font(pf(12.5, .medium))
+                                .font(pfStyled(12.5, .medium))
                                 .foregroundColor(bubbleSecondaryInk)
                                 .lineLimit(1)
                         }
                         Text(q.summary.isEmpty ? Tr("[引用]") : q.summary)
-                            .font(pf(13, .regular))
+                            .font(pfStyled(13, .regular))
                             .foregroundColor(bubbleSecondaryInk)
                             .lineLimit(2)
                             .multilineTextAlignment(.leading)
