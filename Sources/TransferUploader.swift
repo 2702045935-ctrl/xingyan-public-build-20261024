@@ -515,7 +515,10 @@ final class TransferUploader {
         )
         progress.update(index: -1, sent: 0)
         let pending = remote.missing
-        let workerCount = min(3, pending.count)
+        // Small files favor low overhead while large files benefit from more
+        // parallel requests on high-latency mobile links.
+        let preferredWorkers = size >= 16 * 1024 * 1024 ? 6 : 3
+        let workerCount = min(preferredWorkers, pending.count)
         if workerCount > 0 {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 for worker in 0..<workerCount {

@@ -29,9 +29,10 @@ require(
     and "jobs.json" in CLIENT
     and "fetchStatus(id: existing.remoteId" in CLIENT
     and "let pending = remote.missing" in CLIENT
-    and "let workerCount = min(3, pending.count)" in CLIENT
+    and "let preferredWorkers = size >= 16 * 1024 * 1024 ? 6 : 3" in CLIENT
+    and "let workerCount = min(preferredWorkers, pending.count)" in CLIENT
     and "withThrowingTaskGroup" in CLIENT,
-    "client must persist jobs and resume acknowledged chunks with bounded concurrency",
+    "client must persist jobs and resume acknowledged chunks with adaptive concurrency",
 )
 require(
     "allowsLegacyFallback" in CLIENT
