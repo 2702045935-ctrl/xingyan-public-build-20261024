@@ -18,7 +18,7 @@ private enum ChatListVisual {
     static let timeInk = Color.dyn(0xB2B2B2, 0x5F6368)
     static let rule = Color(UIColor { trait in
         trait.userInterfaceStyle == .dark
-            ? UIColor.white.withAlphaComponent(0.055)
+            ? UIColor.white.withAlphaComponent(0.032)
             : UIColor(hex: 0xE9EDEF)
     })
     static let badgeRing = Color.dyn(0xFFFFFF, 0x000000)
@@ -1245,8 +1245,14 @@ struct ChatsView: View {
     }
     private var chatsSearchFill: Color {
         chatsIsDark
-            ? C.searchBg
+            ? Color(hex: 0x111111)
             : Color(hex: 0xF0F2F5)
+    }
+    private var chatsSearchBorder: Color {
+        chatsIsDark ? Color.white.opacity(0.045) : Color.clear
+    }
+    private var chatsSearchInk: Color {
+        chatsIsDark ? Color(hex: 0x6E7378) : Color(hex: 0x8A8A8A)
     }
     private var chatsCardFill: Color { chatsPageFill }
 
@@ -1767,7 +1773,7 @@ struct ChatsView: View {
                 Text(Tr("搜索"))
                     .font(pfStyled(size: 15, weight: .regular))
             }
-            .foregroundStyle(ChatListVisual.previewInk)
+            .foregroundStyle(chatsSearchInk)
             .frame(maxWidth: .infinity)
             .frame(height: 36)
             .background {
@@ -1775,7 +1781,7 @@ struct ChatsView: View {
                     .fill(chatsSearchFill)
                     .overlay {
                         RoundedRectangle(cornerRadius: 9, style: .continuous)
-                            .stroke(C.searchBorderChats, lineWidth: 0.6)
+                            .stroke(chatsSearchBorder, lineWidth: 0.5)
                     }
             }
             .contentShape(Rectangle())
@@ -2772,7 +2778,7 @@ struct ChatsView: View {
             timeColor: timeColor,
             rowBackground: rowBg,
             dividerColor: isDark
-                ? UIColor.white.withAlphaComponent(0.055)
+                ? UIColor.white.withAlphaComponent(0.025)
                 : UIColor(hex: 0xE9EDEF),
             showsDivider: true,
             badgeRing: isDark ? .black : .white,

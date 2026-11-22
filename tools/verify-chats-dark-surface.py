@@ -20,7 +20,8 @@ require(
 )
 require(
     "showsDivider: true" in CHATS
-    and "UIColor.white.withAlphaComponent(0.055)" in CHATS
+    and "UIColor.white.withAlphaComponent(0.025)" in CHATS
+    and "UIColor.white.withAlphaComponent(0.032)" in CHATS
     and "dividerLeading: CGFloat = 77" in ROW,
     "dark chat rows must use the subtle 77pt structural hairline",
 )
@@ -47,6 +48,13 @@ require(
     and "foreground.layer.isOpaque = opaque" in ROW
     and "contentView.isOpaque = true" in ROW,
     "reused native rows must clear old text and render on an opaque surface",
+)
+require(
+    "? Color(hex: 0x111111)" in CHATS
+    and "Color.white.opacity(0.045)" in CHATS
+    and "Color(hex: 0x6E7378)" in CHATS
+    and ".stroke(chatsSearchBorder, lineWidth: 0.5)" in CHATS,
+    "dark search must sit quietly on pure black instead of using a raised light card",
 )
 require(
     '"\\(chatsIsDark)-\\(scheme)-\\(Lang.code)' in CHATS,
