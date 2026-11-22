@@ -1741,23 +1741,32 @@ final class AppState: ObservableObject {
         locallyHiddenLastMessageAt.removeValue(forKey: chat.id)
         let before = chats.first(where: { $0.id == chat.id })
         var row = before ?? chat
+        var advancedSummary = false
         if let latest {
-            row.lastMessage = LastMessage(
-                id: latest.id,
-                senderId: latest.senderId,
-                senderName: latest.senderName,
-                kind: latest.kind,
-                preview: previewText(for: latest),
-                createdAt: latest.createdAt,
-                mentionMe: false
-            )
-            row.updatedAt = latest.createdAt ?? row.updatedAt
+            let candidateAt = latest.createdAt ?? ""
+            let currentAt = row.lastMessage?.createdAt ?? ""
+            let isSameMessage = row.lastMessage?.id == latest.id
+            let shouldAdvance = row.lastMessage == nil
+                || candidateAt > currentAt
+                || (candidateAt == currentAt && !isSameMessage)
+            if shouldAdvance {
+                row.lastMessage = LastMessage(
+                    id: latest.id,
+                    senderId: latest.senderId,
+                    senderName: latest.senderName,
+                    kind: latest.kind,
+                    preview: previewText(for: latest),
+                    createdAt: latest.createdAt,
+                    mentionMe: false
+                )
+                row.updatedAt = latest.createdAt ?? row.updatedAt
+                advancedSummary = true
+            }
         }
         row.unread = 0
-        if latest != nil {
-            // Sending and navigating back can race the conversation-list
-            // request. Keep the confirmed or optimistic last message visible
-            // until the server snapshot catches up with the same message.
+        if advancedSummary {
+            // A pending preview was written on tap. Only a non-regressing
+            // candidate may replace that optimistic list row.
             optimisticChats[chat.id] = row
             optimisticAt[chat.id] = Date()
         }

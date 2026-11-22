@@ -61,5 +61,11 @@ require(
     and "optimisticAt[chat.id] = Date()" in APP,
     "pending and confirmed sends must protect the latest list preview from stale snapshots",
 )
+require(
+    "let shouldAdvance = row.lastMessage == nil" in APP
+    and "candidateAt > currentAt" in APP
+    and "Only a non-regressing" in APP,
+    "leaving chat must never overwrite a newer pending summary with messages.last",
+)
 
 print("message-send-handoff: passed")
