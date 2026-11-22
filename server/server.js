@@ -46,6 +46,7 @@ const { PaymentIntentEngine } = require('./lib/payment-intent-engine');
 const { VideoRecommendationKernel } = require('./lib/video-recommendation');
 const { SearchRankingKernel } = require('./lib/search-ranking');
 const { PaymentSettlementScheduler } = require('./lib/payment-settlement-scheduler');
+const { createTransferKernel, TransferError } = require('./transfer-kernel');
 const {
   normalizeBillTimeZone,
   billMonthKey,
@@ -65,6 +66,7 @@ const SHARED_SHARD_DATA_ROOT = process.env.DUAL_CELL_DATA_ROOT
   : '';
 const MSG_DIR = path.join(DATA_DIR, 'messages');
 const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
+let transferKernelInstance = null;
 let shardShadow = null;
 let shardShadowAuditTimer = null;
 let messageReliability = null;
@@ -5659,6 +5661,37 @@ function sealUploadInPlace(name) {
   } catch (err) {
     return 0;
   }
+}
+
+function getTransferKernel() {
+  if (!transferKernelInstance) {
+    transferKernelInstance = createTransferKernel({
+      dataDir: DATA_DIR,
+      uploadDir: UPLOAD_DIR,
+      secret: db.secret
+    });
+  }
+  return transferKernelInstance;
+}
+
+async function inspectTransferFile(job) {
+  const file = path.join(UPLOAD_DIR, job.fileName);
+  if (job.mime.indexOf('image/') !== 0) {
+    job.storedBytes = job.size;
+    return;
+  }
+  const original = readUploadPlain(file);
+  const mime = sniffImageMime(original) || job.mime;
+  const checked = checkImage(original, mime);
+  if (!checked.ok) throw new TransferError(422, checked.error || '图片校验失败');
+  let final = checked.buffer;
+  if (checked.needShrink) {
+    const shrunk = shrinkImageBuffer(checked.buffer, path.extname(job.fileName));
+    if (shrunk && shrunk.length) final = shrunk;
+  }
+  fs.writeFileSync(file, sealUploadBuffer(job.fileName, final));
+  uploadPlainCache.delete(job.fileName);
+  job.storedBytes = final.length;
 }
 
 /** ffmpeg 读不了加密文件：先解到临时文件，跑完必须删掉（调用方负责） */
@@ -24347,7 +24380,75 @@ async function handleApi(req, res, pathname, query) {
     return;
   }
 
-  /* 二进制直传：视频/图片直接把原始字节 PUT 上来，不再塞 base64
+  /* 可恢复传输内核：先声明任务，再幂等写分片，最后统一校验。
+     分片直接以 AES-256-CTR 写入最终加密文件，不会先落一份明文。 */
+  if (parts[0] === 'transfer' && parts.length >= 2) {
+    const kernel = getTransferKernel();
+    try {
+      if (parts[1] === 'init' && method === 'POST') {
+        if (!uploadRateAllow(user.id)) {
+          return fail(res, 429, '上传太频繁了，歇一会儿再传');
+        }
+        if (uploadDirFull()) return fail(res, 507, '服务器空间不够了，先清理上传目录');
+        const body = await readBody(req);
+        const transfer = await kernel.init({
+          ownerId: user.id,
+          size: body.size,
+          sha256: body.sha256,
+          mime: body.mime,
+          name: body.name,
+          skipTranscode: body.skipTranscode === true
+        });
+        ok(res, { transfer: transfer });
+        return;
+      }
+
+      const transferId = String(parts[1] || '');
+      if (parts.length === 2 && method === 'GET') {
+        const transfer = await kernel.status(user.id, transferId);
+        ok(res, { transfer: transfer });
+        return;
+      }
+      if (parts.length === 2 && method === 'DELETE') {
+        const transfer = await kernel.cancel(user.id, transferId);
+        ok(res, { transfer: transfer });
+        return;
+      }
+      if (parts[2] === 'chunk' && parts.length === 3 && method === 'PUT') {
+        const result = await kernel.putChunk({
+          ownerId: user.id,
+          id: transferId,
+          index: Number(req.headers['x-transfer-chunk-index']),
+          sha256: String(req.headers['x-transfer-chunk-sha256'] || ''),
+          req: req
+        });
+        ok(res, result);
+        return;
+      }
+      if (parts[2] === 'complete' && parts.length === 3 && method === 'POST') {
+        const result = await kernel.complete({
+          ownerId: user.id,
+          id: transferId,
+          inspect: inspectTransferFile,
+          onComplete: async (job) => {
+            noteUpload(user.id, Math.max(0, Number(job.storedBytes) || job.size));
+          }
+        });
+        ok(res, result);
+        return;
+      }
+      return fail(res, 404, '传输接口不存在');
+    } catch (error) {
+      if (error instanceof TransferError) {
+        return fail(res, error.status || 422, error.message, error.details);
+      }
+      console.error('[transfer] ' + String(error && error.stack || error));
+      return fail(res, 500, '传输服务暂时不可用');
+    }
+  }
+
+  /* 旧版二进制直传。新版客户端走 /api/transfer，保留此入口用于滚动升级。
+     视频/图片直接把原始字节 PUT 上来，不再塞 base64
      （base64 会多传 33%，一条 5MB 视频要多跑 1.7MB 流量 → 手机上就是多等十几秒） */
   if (parts[0] === 'upload' && parts[1] === 'raw' && method === 'POST') {
     const clientSaidCompressed = String(req.headers['x-chris-compressed'] || '').trim() === '1';   // CHRIS_UPLOAD_SKIP_SHRINK_V1

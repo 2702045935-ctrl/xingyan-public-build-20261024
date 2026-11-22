@@ -3273,7 +3273,6 @@ struct ChatDetailView: View {
 
     private var messageList: some View {
 
-        let nearTopIds = hasOlder ? Set(messages.prefix(24).map { $0.id }) : Set<String>()
         return ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(spacing: 0) {
@@ -3283,15 +3282,12 @@ struct ChatDetailView: View {
                     if hasOlder {
                         Color.clear
                             .frame(height: 1)
-                            .onAppear { autoLoadOlder() }
                     }
                     ForEach(messages) { message in
                         messageBlock(message)
                             .id(message.id)
 
                             .onAppear {
-                                if nearTopIds.contains(message.id) { autoLoadOlder() }
-
                                 if message.id == messages.last?.id { atBottom = true }
                             }
                     }
@@ -3492,7 +3488,6 @@ struct ChatDetailView: View {
                     atBottom = false
                     wasAtBottom = false
                     initialOpenSettling = false
-                    if isGroup { autoLoadOlder() }
                     if !initialScrollReady {
                         initialScrollTask?.cancel()
                         initialScrollTask = nil
@@ -3511,12 +3506,14 @@ struct ChatDetailView: View {
                 }
             },
             onScrollOffset: { y in
-                if isGroup, y < 4200 {
-                    autoLoadOlder()
-                }
+                guard isGroup, y < 4200,
+                      ChatScrollHandle.shared.moving else { return }
+                // Only the user's real scroll offset may consume history.
+                // Prefetch completion, row appearance and programmatic layout
+                // must never start the next page by themselves.
+                autoLoadOlder()
             },
             onSizeChange: {
-                let compensated = ChatScrollHandle.shared.compensatePendingPrepend()
                 if initialOpenSettling {
                     return
                 }
@@ -3803,7 +3800,6 @@ struct ChatDetailView: View {
         case .older:
             Color.clear
                 .frame(height: 1)
-                .onAppear { autoLoadOlder() }
 
         case .timestamp(let message):
             timeLine(message)
@@ -3819,9 +3815,6 @@ struct ChatDetailView: View {
                     openActions(message)
                 }
                 .onAppear {
-                    if hasOlder, messages.prefix(24).contains(where: { $0.id == message.id }) {
-                        autoLoadOlder()
-                    }
                     if message.id == messages.last?.id { atBottom = true }
                 }
 
@@ -3901,7 +3894,6 @@ struct ChatDetailView: View {
 
     /// Kept temporarily for reference while direct chats transition independently.
     private var legacyNativeMessageList: some View {
-        let nearTopIds = hasOlder ? Set(messages.prefix(24).map { $0.id }) : Set<String>()
         return ScrollViewReader { proxy in
             List {
                 if hasOlder {
@@ -3910,7 +3902,6 @@ struct ChatDetailView: View {
                         .listRowInsets(EdgeInsets())
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
-                        .onAppear { autoLoadOlder() }
                 }
 
                 ForEach(messages) { message in
@@ -3921,7 +3912,6 @@ struct ChatDetailView: View {
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
                         .onAppear {
-                            if nearTopIds.contains(message.id) { autoLoadOlder() }
                             if message.id == messages.last?.id { atBottom = true }
                         }
                 }
@@ -7592,9 +7582,9 @@ struct ChatDetailView: View {
             }
             if merged.count > maxMessageWindow || more { hasOlder = true }
             rebuildIndex()
-            DispatchQueue.main.async {
-                _ = ChatScrollHandle.shared.compensatePendingPrepend()
-            }
+            // NativeStaticList restores the exact visible-row anchor in the
+            // same diffable apply. A second height-delta fallback here would
+            // move the viewport again after the anchor was already restored.
 
             ChatScrollDiag.shared.note("上翻加载完 → 原子补偿当前位置")
             let nextCursor = bounded.lazy.compactMap(\.seq).first(where: { $0 > 0 }) ?? 0

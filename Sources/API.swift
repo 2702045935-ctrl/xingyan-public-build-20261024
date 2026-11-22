@@ -5698,6 +5698,23 @@ private struct StarredPayload: Decodable {
     }
 
     func uploadBinary(_ data: Data, mime: String) async throws -> String {
+        do {
+            return try await TransferUploader.shared.uploadData(
+                data,
+                name: "file.bin",
+                mime: mime,
+                skipTranscode: true,
+                base: base,
+                token: token,
+                session: session,
+                onProgress: { _ in }
+            )
+        } catch let error as TransferUploaderError where error.isUnsupported {
+            return try await uploadBinaryLegacy(data, mime: mime)
+        }
+    }
+
+    private func uploadBinaryLegacy(_ data: Data, mime: String) async throws -> String {
         guard let url = URL(string: base + "/api/upload/raw") else { throw APIError.message("服务器地址不正确") }
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
@@ -5715,6 +5732,27 @@ private struct StarredPayload: Decodable {
     func uploadBinaryFile(_ file: URL, mime: String,
                           skipTranscode: Bool = false,
                           onProgress: @escaping (Double) -> Void) async throws -> String {
+        do {
+            return try await TransferUploader.shared.uploadFile(
+                file,
+                mime: mime,
+                skipTranscode: skipTranscode,
+                base: base,
+                token: token,
+                session: session,
+                onProgress: onProgress
+            )
+        } catch let error as TransferUploaderError where error.isUnsupported {
+            return try await uploadBinaryFileLegacy(file,
+                                                    mime: mime,
+                                                    skipTranscode: skipTranscode,
+                                                    onProgress: onProgress)
+        }
+    }
+
+    private func uploadBinaryFileLegacy(_ file: URL, mime: String,
+                                        skipTranscode: Bool,
+                                        onProgress: @escaping (Double) -> Void) async throws -> String {
         guard let url = URL(string: base + "/api/upload/raw") else { throw APIError.message("服务器地址不正确") }
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
@@ -5761,41 +5799,33 @@ private struct StarredPayload: Decodable {
             throw APIError.message("图片处理失败")
         }
 
-        if let url = try? await uploadRawJPEG(data, onProgress: onProgress) { return url }
-        onProgress?(0.15)
-        let b64 = data.base64EncodedString()
-        let payload: UploadPayload = try await post("/api/upload",
-                                                    ["dataUrl": "data:image/jpeg;base64," + b64,
-                                                     "filename": "photo.jpg"],
-                                                    as: UploadPayload.self)
-        guard let url = payload.url else { throw APIError.message("上传失败") }
-        onProgress?(1)
-        return url
+        do {
+            return try await uploadRawJPEG(data, onProgress: onProgress)
+        } catch let error as TransferUploaderError where error.isUnsupported {
+            onProgress?(0.15)
+            let b64 = data.base64EncodedString()
+            let payload: UploadPayload = try await post("/api/upload",
+                                                        ["dataUrl": "data:image/jpeg;base64," + b64,
+                                                         "filename": "photo.jpg"],
+                                                        as: UploadPayload.self)
+            guard let url = payload.url else { throw APIError.message("上传失败") }
+            onProgress?(1)
+            return url
+        }
     }
 
     private func uploadRawJPEG(_ data: Data,
                                onProgress: ((Double) -> Void)? = nil) async throws -> String {
-        guard let url = URL(string: base + "/api/upload/raw") else {
-            throw APIError.message("服务器地址不正确")
-        }
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.timeoutInterval = 120
-        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        req.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")
-
-        req.setValue("1", forHTTPHeaderField: "x-chris-compressed")
-        let delegate = onProgress.map(UploadProgressDelegate.init)
-        let (d, resp): (Data, URLResponse)
-        if let delegate {
-            (d, resp) = try await session.upload(for: req, from: data, delegate: delegate)
-        } else {
-            (d, resp) = try await session.upload(for: req, from: data)
-        }
-        guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            throw APIError.message("上传失败，请检查网络后再试")
-        }
-        return try Self.rawUploadURL(from: d)
+        try await TransferUploader.shared.uploadData(
+            data,
+            name: "photo.jpg",
+            mime: "image/jpeg",
+            skipTranscode: true,
+            base: base,
+            token: token,
+            session: session,
+            onProgress: onProgress ?? { _ in }
+        )
     }
 
     func send(chatId: String, kind: String, content: String, mentions: [String] = [],

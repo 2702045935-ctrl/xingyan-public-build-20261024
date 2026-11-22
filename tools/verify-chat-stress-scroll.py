@@ -25,16 +25,19 @@ require(
     "prepending must reuse unchanged row signatures and remeasure only the boundary",
 )
 require(
-    "if isGroup, y < 4200" in CHAT,
+    "guard isGroup, y < 4200" in CHAT,
     "B2611191645 group history must use the fixed prefetch trigger",
 )
 require(
-    "if isGroup { autoLoadOlder() }" in CHAT
+    "ChatScrollHandle.shared.moving else { return }" in CHAT
+    and "if isGroup { autoLoadOlder() }" not in CHAT
+    and ".onAppear { autoLoadOlder() }" not in CHAT
+    and "nearTopIds.contains(message.id) { autoLoadOlder() }" not in CHAT
     and "let target = isGroup ? 150 : 200" in CHAT
     and "let canContinue = explicitMore ?? hasOlder" in CHAT
     and "guard canContinue, olderPrefetch.isEmpty, olderPrefetchTask == nil" in CHAT
     and "scheduleOlderPrefetch(before: nextCursor" in CHAT,
-    "group prefetch must keep a bounded single-page history runway",
+    "group history must only be consumed from the user's runway offset",
 )
 require(
     "ChatScrollHandle.shared.prepareForPrepend()" in CHAT

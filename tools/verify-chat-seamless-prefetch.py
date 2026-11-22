@@ -24,8 +24,13 @@ require(
     "foreground paging must reuse an in-flight prefetch instead of waiting twice",
 )
 require(
-    "if isGroup, y < 4200" in CHAT,
+    "guard isGroup, y < 4200" in CHAT,
     "B2611191645 chat prefetch must use the fixed 4200-point trigger",
+)
+require(
+    "ChatScrollHandle.shared.moving else { return }" in CHAT
+    and "if isGroup { autoLoadOlder() }" not in CHAT,
+    "automatic history paging must be driven by the user scroll runway",
 )
 require(
     "private var oldestHistorySeq: Int" in CHAT
