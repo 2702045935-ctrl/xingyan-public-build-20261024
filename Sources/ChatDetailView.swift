@@ -1571,7 +1571,10 @@ struct ChatDetailView: View {
     private let initialMessageWindow = 240
     /* 首屏放最近 240 条，更早历史由用户继续上滑按页加载。
        这能避免进群时一次合并数千条消息造成明显掉帧。 */
-    private let maxMessageWindow = 1_800
+    private let stressMessageWindow = 1_800
+    private var maxMessageWindow: Int {
+        MessageStressFixture.isActive ? stressMessageWindow : 50_000
+    }
     private let historyPageSize = 120
 
     private var activeInitialMessageWindow: Int {
@@ -4254,6 +4257,15 @@ struct ChatDetailView: View {
         Task { await loadOlder() }
     }
 
+    private func scheduleOlderRunwayRetry() {
+        guard hasOlder else { return }
+        olderRunwayConsumedForGesture = false
+        lastOlderLoad = Date().addingTimeInterval(0.8)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
+            consumeOlderRunway(requireActiveMotion: false)
+        }
+    }
+
     private func consumeOlderRunway(requireActiveMotion: Bool,
                                     offsetY: CGFloat? = nil) {
         guard isGroup, initialScrollReady, hasOlder,
@@ -4296,6 +4308,15 @@ struct ChatDetailView: View {
         Task { await loadNewer() }
     }
 
+    private func scheduleNewerRunwayRetry() {
+        guard hasNewerMessages else { return }
+        newerRunwayConsumedForGesture = false
+        lastNewerLoad = Date().addingTimeInterval(0.8)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
+            consumeNewerRunway(requireActiveMotion: false)
+        }
+    }
+
     private func loadNewer() async {
         guard !loadingNewer, hasNewerMessages else { return }
         let cursor = messages.compactMap(\.seq).max() ?? 0
@@ -4332,7 +4353,10 @@ struct ChatDetailView: View {
                 )
             }
             guard messages.compactMap(\.seq).max() == cursor else { return }
-            guard !incoming.isEmpty else { return }
+            guard !incoming.isEmpty else {
+                if more { scheduleNewerRunwayRetry() }
+                return
+            }
             let merged = visibleMessages(messages + incoming)
             let bounded = Array(merged.suffix(maxMessageWindow))
             var transaction = Transaction()
@@ -4352,6 +4376,7 @@ struct ChatDetailView: View {
             )
         } catch {
             lastNewerLoad = Date().addingTimeInterval(1.2)
+            scheduleNewerRunwayRetry()
         }
     }
 
@@ -4389,7 +4414,10 @@ struct ChatDetailView: View {
                     newestKnownSeq,
                     page.messages.compactMap(\.seq).max() ?? 0
                 )
-                guard !newerPrefetch.isEmpty else { return }
+                guard !newerPrefetch.isEmpty else {
+                    if page.hasMore { scheduleNewerRunwayRetry() }
+                    return
+                }
                 newerRunwayConsumedForGesture = false
                 lastNewerLoad = .distantPast
                 DispatchQueue.main.async {
@@ -7964,7 +7992,7 @@ struct ChatDetailView: View {
                         all: true
                     )
                     if page.messages.isEmpty {
-                        more = false
+                        more = page.hasMore
                         break
                     }
                     for message in page.messages where olderIds.insert(message.id).inserted {
@@ -7979,7 +8007,11 @@ struct ChatDetailView: View {
             }
             hasOlder = more
 
-            guard !older.isEmpty else { hasOlder = more; return }
+            guard !older.isEmpty else {
+                hasOlder = more
+                if more { scheduleOlderRunwayRetry() }
+                return
+            }
             loadedUsefulPage = more
             holdScroll = true
             let merged = visibleMessages(older + messages)
@@ -8015,6 +8047,7 @@ struct ChatDetailView: View {
             // backoff; explicit jump-to-message can still retry independently.
             lastOlderLoad = Date().addingTimeInterval(1.2)
             ChatScrollDiag.shared.note("上翻历史加载失败，保留当前位置")
+            scheduleOlderRunwayRetry()
         }
     }
 
@@ -8048,6 +8081,8 @@ struct ChatDetailView: View {
                     .filter { !known.contains($0.id) }
                 if page.messages.isEmpty, !page.hasMore {
                     hasOlder = false
+                } else if page.messages.isEmpty {
+                    scheduleOlderRunwayRetry()
                 } else if !olderPrefetch.isEmpty {
                     // If the finger stopped while waiting for this request, the
                     // completed page must still enter the window. Otherwise the

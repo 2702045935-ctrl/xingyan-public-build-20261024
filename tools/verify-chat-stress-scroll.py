@@ -70,6 +70,13 @@ require(
     "completed prefetches must auto-consume without another finger gesture",
 )
 require(
+    "private func scheduleOlderRunwayRetry()" in CHAT
+    and "private func scheduleNewerRunwayRetry()" in CHAT
+    and "if more { scheduleOlderRunwayRetry() }" in CHAT
+    and "if more { scheduleNewerRunwayRetry() }" in CHAT,
+    "failed or empty pages must auto-unlock both directions before the server confirms an end",
+)
+require(
     "ChatScrollHandle.shared.prepareForPrepend()" in CHAT
     and "_ = ChatScrollHandle.shared.compensatePendingPrepend()" in LIST
     and "attributes.frame.minY - anchor.delta" in LIST,
