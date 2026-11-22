@@ -1753,7 +1753,7 @@ struct MomentsView: View {
             }
         }
         .onDisappear {
-            momentPrefetchTask?.cancel()
+            momentPaging.task?.cancel()
             momentsScrollActive = false
             guard scrollGateActive else { return }
             scrollGateActive = false
