@@ -80,10 +80,11 @@ require(
     "the chat overflow control must use restrained dots in a 44pt hit target",
 )
 require(
-    "showsAvatar: !isGroup || mineFor(message) || isRunStart(message)" in CHAT
-    and 'UIConfig.num("chatDeliveryTicks", 0) > 0' in CHAT
-    and "private func isRunEnd(_ message: Message)" in CHAT,
-    "group avatars must collapse while delivery ticks stay opt-in",
+    "showsAvatar: true" in CHAT
+    and "showTail: true" in CHAT
+    and "return displayName(message)" in CHAT
+    and 'UIConfig.num("chatDeliveryTicks", 0) > 0' in CHAT,
+    "WeChat rows must keep an avatar, tail and sender label on every message",
 )
 require(
     "var showsDeliveryTicks: Bool = true" in CHAT
@@ -93,11 +94,9 @@ require(
     "delivery ticks must overlay the bubble instead of occupying a separate row",
 )
 require(
-    "same ? 4 : 12" in CHAT
-    and "same ? 4 : 13" in CHAT
-    and "gap = max(gap, 8)" in CHAT
+    "let gap: CGFloat = same ? 7 : (isGroup ? 14 : 15)" in CHAT
     and "return mineFor(message) && isRunEnd(message) ? 8 : 4" in CHAT,
-    "conversation runs must keep distinct but tighter sender spacing",
+    "conversation rows must use close same-sender and distinct cross-sender spacing",
 )
 require(
     "ChatUnreadRollingBadge(value: unreadHere)" in CHAT

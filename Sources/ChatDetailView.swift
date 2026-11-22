@@ -4500,13 +4500,12 @@ struct ChatDetailView: View {
                    senderOnline: senderIsOnline(message),
                    avatarSize: L.chatAvatar,
                    maxBubbleWidth: isGroup ? groupBubbleMaxWidth : L.bubbleMaxW,
-                   showsAvatar: !isGroup || mineFor(message) || isRunStart(message),
+                   showsAvatar: true,
                    reservesAvatarSpace: true,
                    currentNickname: app.me?.nickname ?? "",
                    currentUsername: app.me?.username ?? "",
-                   showTail: isRunStart(message),
-                   showsDeliveryTicks: UIConfig.num("chatDeliveryTicks", 0) > 0
-                       && isRunEnd(message),
+                   showTail: true,
+                   showsDeliveryTicks: UIConfig.num("chatDeliveryTicks", 0) > 0,
                    onTapTransfer: { info in billInfo = info },
                    onOpenImage: { path in openImage(path) },
                    onOpenAvatar: { id in openAvatar(id) },
@@ -4719,7 +4718,7 @@ struct ChatDetailView: View {
 
     private func senderNameFor(_ message: Message) -> String {
         guard isGroup, message.senderId != myId else { return "" }
-        return isRunStart(message) ? displayName(message) : ""
+        return displayName(message)
     }
 
     private func groupSenderNameColor(_ message: Message) -> Color {
@@ -4785,10 +4784,7 @@ struct ChatDetailView: View {
         if message.kindName == "system" || message.kindName == "pat" || message.isRecalled { return 13 }
         let same = (next.senderId ?? "") == (message.senderId ?? "")
 
-        var gap: CGFloat = isGroup ? (same ? 4 : 12) : (same ? 4 : 13)
-        if same, mineFor(message), isRunEnd(message) {
-            gap = max(gap, 8)
-        }
+        let gap: CGFloat = same ? 7 : (isGroup ? 14 : 15)
         return gap
     }
 
