@@ -94,6 +94,12 @@ require(
     "realtime refreshes must preserve the user's loaded history window",
 )
 require(
+    "private var shouldLoadCompleteGroupHistory: Bool" in CHAT
+    and "!MessageStressFixture.isActive" in CHAT
+    and "loadAllGroupHistory()" in CHAT,
+    "ordinary conversations must backfill complete history without finger paging",
+)
+require(
     "prependAnchor =" in NATIVE
     and "attributes.frame.minY - anchor.delta" in NATIVE
     and "clearPendingPrepend()" in NATIVE,

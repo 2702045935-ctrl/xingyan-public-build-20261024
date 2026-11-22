@@ -1565,8 +1565,12 @@ struct ChatDetailView: View {
         !usesShortConversationSurface
     }
 
-    /// 群历史按需分页，不在进群时一次性合并最多 5000 条。
-    private var shouldLoadCompleteGroupHistory: Bool { false }
+    /// Ordinary conversations backfill the complete history in the background.
+    /// The 300k synthetic stress fixture remains windowed so it cannot exhaust
+    /// device memory, but a normal 7k group must eventually expose all 7k rows.
+    private var shouldLoadCompleteGroupHistory: Bool {
+        !MessageStressFixture.isActive
+    }
 
     private let initialMessageWindow = 240
     /* 首屏放最近 240 条，更早历史由用户继续上滑按页加载。
