@@ -65,6 +65,16 @@ require(
     "preparing, hashing and compression must not masquerade as upload percentages",
 )
 require(
+    "enum UploadVisualPhase" in MEDIA
+    and "case .preparing" in MEDIA
+    and "case .connecting" in MEDIA
+    and "case .processing" in MEDIA
+    and "var detailText: String = \"\"" in MEDIA
+    and "private final class UploadRateMeter" in CHAT
+    and "fileUploadDetail = parts.joined(separator: \" · \")" in CHAT,
+    "upload cards must expose phases, byte totals, smoothed speed and ETA",
+)
+require(
     "sendProgress = min(1, max(0, p))" in CHAT
     and "let value = min(1, max(0, p))" in CHAT,
     "upload percentages must come from actual sent chunk bytes",

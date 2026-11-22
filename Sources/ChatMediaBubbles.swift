@@ -3,6 +3,13 @@ import AVFoundation
 import AVKit
 import Photos
 
+enum UploadVisualPhase {
+    case preparing
+    case connecting
+    case uploading
+    case processing
+}
+
 private func jsonDict(_ s: String) -> [String: Any] {
     guard let d = s.data(using: .utf8),
           let o = try? JSONSerialization.jsonObject(with: d) as? [String: Any] else { return [:] }
@@ -715,6 +722,7 @@ struct VideoPlayerSheet: View {
 struct SendingVideoBubble: View {
     var cover: UIImage?
     var progress: Double
+    var phase: UploadVisualPhase = .preparing
 
     private var size: CGSize {
         guard let c = cover, c.size.width > 0, c.size.height > 0 else {
@@ -744,7 +752,7 @@ struct SendingVideoBubble: View {
                     .stroke(Color.white, style: StrokeStyle(lineWidth: 4, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                     .frame(width: 54, height: 54)
-                if progress > 0.001 {
+                if phase == .uploading, progress > 0.001 {
                     Text("\(Int(min(1, progress) * 100))%")
                         .font(pfStyled(size: 13.5, weight: .semibold))
                         .foregroundColor(.white)
@@ -752,7 +760,7 @@ struct SendingVideoBubble: View {
                     VStack(spacing: 3) {
                         ProgressView()
                             .tint(.white)
-                        Text(Tr("准备中"))
+                        Text(phaseLabel)
                             .font(pf(9.5, .medium))
                             .foregroundColor(.white.opacity(0.92))
                     }
@@ -762,12 +770,23 @@ struct SendingVideoBubble: View {
         .frame(width: size.width, height: size.height)
         .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
     }
+
+    private var phaseLabel: String {
+        switch phase {
+        case .preparing: return Tr("准备中")
+        case .connecting: return Tr("连接中")
+        case .uploading: return Tr("上传中")
+        case .processing: return Tr("处理中")
+        }
+    }
 }
 
 struct SendingFileBubble: View {
     let name: String
     let bytes: Int
     let progress: Double?
+    var phase: UploadVisualPhase = .preparing
+    var detailText: String = ""
 
     private var value: Double { min(1, max(0, progress ?? 0)) }
     private var look: (symbol: String, color: Color, badge: String) {
@@ -808,6 +827,12 @@ struct SendingFileBubble: View {
                             .font(pf(10.5, .medium))
                             .foregroundColor(look.color)
                     }
+                    if !detailText.isEmpty {
+                        Text(detailText)
+                            .font(pf(10.5, .medium))
+                            .foregroundColor(C.subLabel)
+                            .lineLimit(1)
+                    }
                 }
             }
 
@@ -843,9 +868,18 @@ struct SendingFileBubble: View {
     }
 
     private var progressText: String {
+        switch phase {
+        case .preparing:
+            return Tr("准备上传…")
+        case .connecting:
+            return Tr("连接中…")
+        case .processing:
+            return Tr("服务器处理中…")
+        case .uploading:
+            break
+        }
         guard let progress = progress else { return Tr("准备上传…") }
         if progress <= 0 { return Tr("连接中…") }
-        if progress >= 0.995 { return Tr("服务器处理中…") }
         let clamped = min(1, max(0, progress))
         let sent = Int64(Double(max(0, bytes)) * clamped)
         return byteText(sent) + " / " + byteText(Int64(max(0, bytes)))
