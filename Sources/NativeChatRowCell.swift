@@ -113,6 +113,16 @@ final class NativeChatRowCell: UITableViewCell {
     override func prepareForReuse() {
         super.prepareForReuse()
         configuration = nil
+        titleLabel.text = nil
+        previewLabel.attributedText = nil
+        timeLabel.text = nil
+        levelLabel.text = nil
+        memberLabel.text = nil
+        unreadLabel.text = nil
+        levelLabel.isHidden = true
+        memberLabel.isHidden = true
+        unreadLabel.isHidden = true
+        divider.isHidden = true
         foreground.transform = .identity
         unreadBell.isHidden = true
         pressOverlay.backgroundColor = .clear
@@ -194,6 +204,11 @@ final class NativeChatRowCell: UITableViewCell {
         self.configuration = configuration
         backgroundColor = configuration.rowBackground
         foreground.backgroundColor = configuration.rowBackground
+        let opaque = configuration.rowBackground.cgColor.alpha >= 0.999
+        isOpaque = opaque
+        foreground.isOpaque = opaque
+        foreground.layer.isOpaque = opaque
+        contentView.isOpaque = true
         titleLabel.text = configuration.title
         titleLabel.textColor = configuration.titleColor
         titleLabel.font = NativeChatRowMetrics.font(17, weight: .semibold, textStyle: .headline)
@@ -376,11 +391,14 @@ final class NativeChatRowCell: UITableViewCell {
     }
 
     private func setupViews() {
+        selectionStyle = .none
         backgroundConfiguration = .clear()
         contentView.clipsToBounds = true
+        contentView.isOpaque = true
         backgroundColor = .clear
 
         foreground.clipsToBounds = true
+        foreground.isOpaque = true
         contentView.isUserInteractionEnabled = false
         contentView.addSubview(foreground)
         foreground.addSubview(avatarView)

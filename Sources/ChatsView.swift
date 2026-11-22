@@ -2970,7 +2970,8 @@ struct ChatsView: View {
                                         .contentShape(Rectangle())
                                 }
                                 NativeChatsTopEdgeChrome(scrolled: chatTopScrolled,
-                                                         dark: chatsIsDark)
+                                                         dark: chatsIsDark,
+                                                         background: chatsPageFill)
                             }
                         }
                         .opacity(navFadeForFloor)

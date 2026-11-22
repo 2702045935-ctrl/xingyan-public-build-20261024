@@ -6,6 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CHATS = (ROOT / "Sources" / "ChatsView.swift").read_text(encoding="utf-8")
 ROW = (ROOT / "Sources" / "NativeChatRowCell.swift").read_text(encoding="utf-8")
 NATIVE_LIST = (ROOT / "Sources" / "NativeChatList.swift").read_text(encoding="utf-8")
+NAV = (ROOT / "Sources" / "NavGlass.swift").read_text(encoding="utf-8")
 
 
 def require(condition: bool, message: str) -> None:
@@ -33,6 +34,19 @@ require(
     and "controller.tableView.topEdgeEffect.isHidden = dark" in NATIVE_LIST
     and "dark: chatsIsDark" in CHATS,
     "the chat surface must disable the gray system edge effect in dark mode",
+)
+require(
+    "background: chatsPageFill" in CHATS
+    and "opacity(scrolled > 0 ? 1 : 0)" in NAV
+    and "background ?? (isDark ? Color.black" in NAV,
+    "scrolled chat content must disappear behind an opaque top chrome",
+)
+require(
+    "previewLabel.attributedText = nil" in ROW
+    and "titleLabel.text = nil" in ROW
+    and "foreground.layer.isOpaque = opaque" in ROW
+    and "contentView.isOpaque = true" in ROW,
+    "reused native rows must clear old text and render on an opaque surface",
 )
 require(
     '"\\(chatsIsDark)-\\(scheme)-\\(Lang.code)' in CHATS,

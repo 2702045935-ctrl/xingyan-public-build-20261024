@@ -211,6 +211,7 @@ final class NativeTopScrollRegistry {
 struct NativeChatsTopEdgeChrome: View {
     var scrolled: CGFloat
     var dark: Bool? = nil
+    var background: Color? = nil
 
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -218,16 +219,12 @@ struct NativeChatsTopEdgeChrome: View {
 
     var body: some View {
         ZStack {
-            if isDark {
-                Color.black
-                    .opacity(scrolled > 0 ? 0.985 : 0)
-            } else {
-                NativeTopGlassMask(active: scrolled > 0)
-                if #available(iOS 26.0, *) {
-                    NativeScrollEdgeElementBridge(
-                        scrollView: { NativeChatListScrollRegistry.shared.chats }
-                    )
-                }
+            (background ?? (isDark ? Color.black : Color(uiColor: .systemBackground)))
+                .opacity(scrolled > 0 ? 1 : 0)
+            if #available(iOS 26.0, *), !isDark {
+                NativeScrollEdgeElementBridge(
+                    scrollView: { NativeChatListScrollRegistry.shared.chats }
+                )
             }
         }
         .animation(reduceMotion ? nil : .easeOut(duration: 0.16),
