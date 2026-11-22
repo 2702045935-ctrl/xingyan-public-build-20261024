@@ -8705,6 +8705,10 @@ function relayToShardPorts(userId, payload, ports) {
   });
 }
 
+function relayToShardPeers(userId, payload) {
+  relayToShardPorts(userId, payload, shardPorts());
+}
+
 function sendTo(userId, payload) {
   const sent = sendToLocal(userId, payload);
   /* 只把消息转发给「确实有这条用户连接」的分片。以前每个人都会向所有
