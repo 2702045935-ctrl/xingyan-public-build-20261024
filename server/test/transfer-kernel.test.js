@@ -110,6 +110,13 @@ async function main() {
       : login.headers.get('set-cookie') || '';
     const cookie = rawCookie.split(';')[0];
 
+    const capabilityResponse = await fetch(base + '/api/transfer/capabilities', {
+      headers: { Cookie: cookie }
+    });
+    const capability = await capabilityResponse.json();
+    assert.equal(capabilityResponse.status, 200, JSON.stringify(capability));
+    assert.equal(capability.data.version, 1);
+
     const requestedBytes = Number(process.env.XINGYAN_TRANSFER_TEST_BYTES || 0);
     const payloadBytes = Number.isSafeInteger(requestedBytes) && requestedBytes > 0
       ? requestedBytes

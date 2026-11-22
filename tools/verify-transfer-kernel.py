@@ -19,6 +19,7 @@ require(
     '"/api/transfer/init"' in CLIENT
     and '"/api/transfer/\\(id)/chunk"' in CLIENT
     and '"/api/transfer/\\(id)/complete"' in CLIENT
+    and '"/api/transfer/capabilities"' in CLIENT
     and "x-transfer-chunk-index" in CLIENT
     and "x-transfer-chunk-sha256" in CLIENT,
     "client must use the declared resumable transfer protocol",
@@ -37,6 +38,12 @@ require(
     and "TransferJobStore.shared.remove(key)" in CLIENT
     and "error.allowsLegacyFallback" in API,
     "rolling upgrades must recover from stale jobs and unavailable transfer routes",
+)
+require(
+    "TransferCapabilityCache" in CLIENT
+    and "guard await TransferCapabilityCache.shared.supports" in CLIENT
+    and "parts[1] === 'capabilities'" in SERVER,
+    "legacy servers must be detected before hashing or staging large files",
 )
 require(
     "SHA256" in CLIENT

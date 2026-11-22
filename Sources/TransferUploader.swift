@@ -314,6 +314,43 @@ private final class TransferJobStore {
     }
 }
 
+private final class TransferCapabilityCache {
+    static let shared = TransferCapabilityCache()
+
+    private let lock = NSLock()
+    private var probes: [String: (task: Task<Bool, Never>, at: Date)] = [:]
+
+    func supports(base: String,
+                  token: String,
+                  session: URLSession) async -> Bool {
+        let key = base + "|" + token
+        let task: Task<Bool, Never>
+        lock.lock()
+        if let existing = probes[key],
+           Date().timeIntervalSince(existing.at) < 600 {
+            task = existing.task
+        } else {
+            task = Task {
+                guard let url = URL(string: base + "/api/transfer/capabilities") else {
+                    return false
+                }
+                var request = URLRequest(url: url)
+                request.timeoutInterval = 3
+                request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+                guard let (_, response) = try? await session.data(for: request),
+                      let http = response as? HTTPURLResponse,
+                      http.statusCode == 200 else {
+                    return false
+                }
+                return true
+            }
+            probes[key] = (task, Date())
+        }
+        lock.unlock()
+        return await task.value
+    }
+}
+
 final class TransferUploader {
     static let shared = TransferUploader()
 
@@ -326,6 +363,13 @@ final class TransferUploader {
                     token: String,
                     session: URLSession,
                     onProgress: @escaping (Double) -> Void) async throws -> String {
+        guard await TransferCapabilityCache.shared.supports(
+            base: base,
+            token: token,
+            session: session
+        ) else {
+            throw TransferUploaderError.unsupported
+        }
         let values = try? file.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey])
         guard values?.isRegularFile == true, let fileSize = values?.fileSize, fileSize > 0 else {
             throw TransferUploaderError.invalidFile("读不到这个文件")
@@ -367,6 +411,13 @@ final class TransferUploader {
                     token: String,
                     session: URLSession,
                     onProgress: @escaping (Double) -> Void) async throws -> String {
+        guard await TransferCapabilityCache.shared.supports(
+            base: base,
+            token: token,
+            session: session
+        ) else {
+            throw TransferUploaderError.unsupported
+        }
         guard !data.isEmpty else {
             throw TransferUploaderError.invalidFile("文件内容为空")
         }

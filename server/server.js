@@ -24449,6 +24449,15 @@ async function handleApi(req, res, pathname, query) {
   if (parts[0] === 'transfer' && parts.length >= 2) {
     const kernel = getTransferKernel();
     try {
+      if (parts[1] === 'capabilities' && method === 'GET') {
+        ok(res, {
+          version: 1,
+          chunked: true,
+          resumable: true,
+          maxChunkBytes: 16 * 1024 * 1024
+        });
+        return;
+      }
       if (parts[1] === 'init' && method === 'POST') {
         if (!uploadRateAllow(user.id)) {
           return fail(res, 429, '上传太频繁了，歇一会儿再传');
