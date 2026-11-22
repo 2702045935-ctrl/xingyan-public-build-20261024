@@ -1547,8 +1547,8 @@ struct ChatDetailView: View {
 
     private var myId: String { app.me?.id ?? "" }
     private var isGroup: Bool {
-
         if chat.type == "group" { return true }
+        if (chat.memberCount ?? 0) > 2 { return true }
         if (chat.memberIds ?? []).count >= 3 { return true }
         return false
     }

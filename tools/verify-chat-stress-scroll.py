@@ -31,6 +31,12 @@ require(
     "group history must use a viewport-relative prefetch runway",
 )
 require(
+    'if chat.type == "group" { return true }' in CHAT
+    and "if (chat.memberCount ?? 0) > 2 { return true }" in CHAT
+    and "if (chat.memberIds ?? []).count >= 3 { return true }" in CHAT,
+    "every group snapshot shape must enter the same history runway",
+)
+require(
     "func scrollViewWillBeginDragging" in LIST
     and "lastScrollState = false\n            publishScrollState(true)" in LIST,
     "a new physical gesture must re-arm the history runway even during deceleration",
