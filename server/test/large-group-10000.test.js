@@ -271,7 +271,8 @@ async function main() {
       '/api/chats/' + CHAT_ID + '/messages', {
         kind: 'text',
         content: 'first large group message',
-        clientId: 'large-group-first'
+        clientId: 'large-group-first',
+        mentions: []
       });
     assert.strictEqual(response.status, 200, JSON.stringify(response.data));
     trackSlowest(latencySamples, 'message 1', response.elapsedMs);
@@ -283,7 +284,8 @@ async function main() {
       '/api/chats/' + CHAT_ID + '/messages', {
         kind: 'text',
         content: 'second large group message',
-        clientId: 'large-group-second'
+        clientId: 'large-group-second',
+        mentions: []
       });
     assert.strictEqual(response.status, 200, JSON.stringify(response.data));
     trackSlowest(latencySamples, 'message 2', response.elapsedMs);
@@ -310,7 +312,8 @@ async function main() {
       '/api/chats/' + CHAT_ID + '/messages', {
         kind: 'text',
         content: '@所有人 10k broadcast',
-        clientId: 'large-group-all'
+        clientId: 'large-group-all',
+        mentions: []
       });
     assert.strictEqual(response.status, 200, JSON.stringify(response.data));
     trackSlowest(latencySamples, '@all', response.elapsedMs);

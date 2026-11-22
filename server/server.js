@@ -10813,7 +10813,8 @@ function deliverMessage(user, chatId, kind, content, clientId, mentionHint, medi
   let mentionIds = [];
   let mentionAll = false;
   if (chat.type === 'group' && type === 'text') {
-    const want = Array.isArray(mentionHint)
+    const mentionHintProvided = Array.isArray(mentionHint);
+    const want = mentionHintProvided
       ? mentionHint.map((x) => String(x || '')).filter(Boolean).slice(0, 200)
       : [];
     const memberSet = new Set(chat.memberIds);
@@ -10821,7 +10822,7 @@ function deliverMessage(user, chatId, kind, content, clientId, mentionHint, medi
       .filter((id) => id !== user.id && memberSet.has(id));
     /* 新客户端直接带上被 @ 的成员 ID。只有老客户端不带 hint 时才按正文
        逐个成员匹配名字，避免每条万人群消息都遍历 10,000 个成员。 */
-    if (!want.length) {
+    if (!mentionHintProvided) {
       chat.memberIds.forEach((id) => {
         if (id === user.id) return;
         const other = findUser(id);

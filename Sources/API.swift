@@ -5801,7 +5801,7 @@ private struct StarredPayload: Decodable {
     func send(chatId: String, kind: String, content: String, mentions: [String] = [],
               imgW: Int = 0, imgH: Int = 0, quote: [String: Any]? = nil) async throws -> Message? {
         var body: [String: Any] = ["kind": kind, "content": content]
-        if !mentions.isEmpty { body["mentions"] = mentions }
+        body["mentions"] = mentions
 
         if imgW > 1, imgH > 1 { body["imgW"] = imgW; body["imgH"] = imgH }
 
@@ -5816,7 +5816,7 @@ private struct StarredPayload: Decodable {
               clientId: String, imgW: Int = 0, imgH: Int = 0,
               quote: [String: Any]? = nil) async throws -> Message? {
         var body: [String: Any] = ["kind": kind, "content": content, "clientId": clientId]
-        if !mentions.isEmpty { body["mentions"] = mentions }
+        body["mentions"] = mentions
         if imgW > 1, imgH > 1 { body["imgW"] = imgW; body["imgH"] = imgH }
         if let q = quote, !q.isEmpty { body["quote"] = q }
         let payload: MessagePayload = try await post("/api/chats/\(chatId)/messages",

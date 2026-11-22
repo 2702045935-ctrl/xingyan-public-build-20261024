@@ -37,6 +37,9 @@ require(
     "summaryContext.unreadIndex = unreadIndexForMessages(messageRows);" in SERVER
     and "recentMentionRows: chat.type === 'group' ? messageRows.slice(-40) : null" in SERVER
     and "if (mentionAll) message.mentionAll = true;" in SERVER
+    and "const mentionHintProvided = Array.isArray(mentionHint);" in SERVER
+    and "if (!mentionHintProvided) {" in SERVER
+    and "body[\"mentions\"] = mentions" in API
     and "if mentionAll == true { return true }" in API,
     "large-group fanout must share unread and mention state without copying all members",
 )
