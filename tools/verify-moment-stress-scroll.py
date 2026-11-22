@@ -32,10 +32,15 @@ require(
     "Moments stress data must consume one page and keep a bounded active window",
 )
 require(
-    "prefetchedMoments = MomentStressFixture.moments(" in VIEW
-    and "if let momentPrefetchTask {\n                await momentPrefetchTask.value" in VIEW
+    "momentPaging.moments = MomentStressFixture.moments(" in VIEW
+    and "if let task = momentPaging.task {\n                await task.value" in VIEW
     and "scheduleMomentPrefetch()" in VIEW,
     "Moments stress data must use the same one-page prefetch-and-consume contract as chat",
+)
+require(
+    "@StateObject private var momentPaging = MomentPrefetchStore()" in VIEW
+    and "@Published" not in VIEW.split("private final class MomentPrefetchStore", 1)[1].split("}", 1)[0],
+    "prefetch output must stay outside SwiftUI observation until a visible page commits",
 )
 
 print("moment-stress-scroll: passed")

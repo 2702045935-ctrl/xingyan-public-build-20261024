@@ -28,6 +28,7 @@ async def send_touch(
     height: float,
     duration: float,
     steps: int,
+    hold: float,
 ) -> None:
     x0 = normalized(start[0], width)
     y0 = normalized(start[1], height)
@@ -40,6 +41,8 @@ async def send_touch(
         y0,
         service_id=DIGITIZER_SURFACE_MAIN_TOUCHSCREEN,
     )
+    if hold > 0:
+        await asyncio.sleep(hold)
     for index in range(1, max(1, steps) + 1):
         ratio = index / max(1, steps)
         await touch.send_touchscreen(
@@ -70,6 +73,7 @@ async def run(args: argparse.Namespace) -> None:
                 args.height,
                 args.duration,
                 args.steps,
+                args.hold,
             )
     finally:
         await provider.close()
@@ -86,6 +90,7 @@ def main() -> None:
     parser.add_argument("--height", type=float, default=2736)
     parser.add_argument("--duration", type=float, default=0.08)
     parser.add_argument("--steps", type=int, default=4)
+    parser.add_argument("--hold", type=float, default=0.12)
     args = parser.parse_args()
     if args.to_x is None:
         args.to_x = args.x

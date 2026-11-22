@@ -271,6 +271,12 @@ where Item.ID: Hashable {
 
         func apply(_ next: [Item], animated: Bool) {
             guard let dataSource, let table else { return }
+            var next = next
+            let nextIDs = next.map(\.id)
+            if Set(nextIDs).count != nextIDs.count {
+                var seen = Set<Item.ID>()
+                next = next.filter { seen.insert($0.id).inserted }
+            }
             let isScrolling = table.isDragging || table.isTracking || table.isDecelerating
             if !order.isEmpty, isScrolling {
                 let oldCount = order.count
@@ -495,6 +501,11 @@ where Item.ID: Hashable {
 
         func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
             lastReportedOffsetY = scrollView.contentOffset.y
+            // A no-op end request can leave this latch set when the caller is
+            // processing a stale SwiftUI snapshot. Every new physical gesture
+            // must get one fresh runway opportunity; otherwise the list stops
+            // permanently at an arbitrary loaded boundary.
+            endRequestInFlight = false
             publishScrollState(true)
             applyGeneration += 1
             NotificationCenter.default.post(name: .chrisRowSwipe, object: nil)
@@ -505,6 +516,7 @@ where Item.ID: Hashable {
             if decelerate {
                 publishScrollState(true)
             } else {
+                endRequestInFlight = false
                 startRequestInFlight = false
                 publishScrollState(false)
                 flushPendingItems()
@@ -512,6 +524,7 @@ where Item.ID: Hashable {
         }
 
         func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+            endRequestInFlight = false
             startRequestInFlight = false
             publishScrollState(false)
             flushPendingItems()

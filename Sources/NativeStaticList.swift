@@ -769,6 +769,11 @@ where Item.ID: Hashable {
             ChatScrollHandle.shared.noteUserMotion()
             waitsForInitialBottom = false
             scrollView.alpha = 1
+            // A new finger can land while the previous flick is still
+            // decelerating. The aggregate scrolling state stays true, but the
+            // history runway is consumed per physical gesture and must be
+            // re-armed by this new touch.
+            lastScrollState = false
             publishScrollState(true)
         }
 

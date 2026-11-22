@@ -31,6 +31,11 @@ require(
     "group history must use a viewport-relative prefetch runway",
 )
 require(
+    "func scrollViewWillBeginDragging" in LIST
+    and "lastScrollState = false\n            publishScrollState(true)" in LIST,
+    "a new physical gesture must re-arm the history runway even during deceleration",
+)
+require(
     "olderRunwayConsumedForGesture" in CHAT
     and "if isGroup { autoLoadOlder() }" not in CHAT
     and ".onAppear { autoLoadOlder() }" not in CHAT
@@ -108,6 +113,12 @@ require(
     "the conversation list must prefetch one page three-and-a-half viewports before the tail",
 )
 require(
+    "scrollViewWillBeginDragging" in NATIVE_CHAT_LIST
+    and NATIVE_CHAT_LIST.count("endRequestInFlight = false") >= 3
+    and "结束拖动和减速必须释放预取锁" not in NATIVE_CHAT_LIST,
+    "each new conversation gesture must release a stale end-prefetch latch",
+)
+require(
     "self.prefetchEndRunwayIfNeeded(table)" in NATIVE_CHAT_LIST
     and NATIVE_CHAT_LIST.count("self.prefetchEndRunwayIfNeeded(table)") >= 2,
     "conversation appends must remeasure and refill the prefetch runway without another gesture",
@@ -160,8 +171,11 @@ require(
     "foreground recovery must repaint through the diffable snapshot without stale row paths",
 )
 require(
-    "updated.list.append(contentsOf: added)" in CHATS,
-    "stress conversation snapshots must append new pages without rescanning all loaded rows",
+    "let existingChatIDs = Set(updated.list.lazy.map(\\.id))" in CHATS
+    and "updated.list.append(contentsOf: freshChats)" in CHATS
+    and "let existingEntryIDs = Set(stressChatEntries.lazy.map(\\.id))" in CHATS
+    and ".filter { !existingEntryIDs.contains($0.id) }" in CHATS,
+    "stress conversation snapshots must append only non-duplicate page IDs",
 )
 require(
     ".onChange(of: app.chats) { _ in\n                guard !ChatStressFixture.isActive else { return }" in CHATS,
@@ -171,6 +185,11 @@ require(
     "let isPureAppend = !order.isEmpty" in NATIVE_CHAT_LIST
     and "snapshot.appendItems(addedIDs, toSection: 0)" in NATIVE_CHAT_LIST,
     "pure conversation-list appends must update only the new identifiers",
+)
+require(
+    "if Set(nextIDs).count != nextIDs.count" in NATIVE_CHAT_LIST
+    and "next = next.filter { seen.insert($0.id).inserted }" in NATIVE_CHAT_LIST,
+    "the native list must coalesce duplicate IDs before creating its diffable snapshot",
 )
 
 MOMENTS = (ROOT / "Sources" / "MomentStressFixture.swift").read_text(encoding="utf-8")

@@ -1373,15 +1373,20 @@ struct ChatsView: View {
             }
             stressCountedEnd = nextEnd
         }
+        let existingChatIDs = Set(updated.list.lazy.map(\.id))
+        let freshChats = added.filter { !existingChatIDs.contains($0.id) }
         if removedCount > 0 {
             updated.list.removeFirst(min(removedCount, updated.list.count))
         }
-        updated.list.append(contentsOf: added)
+        updated.list.append(contentsOf: freshChats)
         updated.unreadCounts = counts
+        let existingEntryIDs = Set(stressChatEntries.lazy.map(\.id))
         if removedCount > 0 {
             stressChatEntries.removeFirst(min(removedCount, stressChatEntries.count))
         }
-        stressChatEntries.append(contentsOf: added.map(nativeChatEntry(for:)))
+        stressChatEntries.append(contentsOf: added
+            .map(nativeChatEntry(for:))
+            .filter { !existingEntryIDs.contains($0.id) })
         cachedSnapshot = updated
     }
 

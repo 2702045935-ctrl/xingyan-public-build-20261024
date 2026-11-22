@@ -2,6 +2,15 @@ import SwiftUI
 import UniformTypeIdentifiers
 import CoreLocation
 
+/// Prefetch output is deliberately not published. Updating a page ahead of
+/// the viewport must not invalidate the visible Moments hierarchy.
+private final class MomentPrefetchStore: ObservableObject {
+    var task: Task<Void, Never>?
+    var moments: [Moment] = []
+    var hasMore = false
+    var running = false
+}
+
 private struct WorldGroupCard<Content: View>: View {
     let content: Content
     @Environment(\.colorScheme) private var scheme
@@ -1400,11 +1409,8 @@ struct MomentsView: View {
     @State private var stressWindowStart = 0
     @State private var stressLoadedCount = min(MomentStressFixture.count,
                                                Self.stressMomentWindow)
-    @State private var prefetchedMoments: [Moment] = []
-    @State private var prefetchedHasMore = false
-    @State private var prefetchingMoments = false
+    @StateObject private var momentPaging = MomentPrefetchStore()
     @State private var locallyDeletedMomentIds: Set<String> = []
-    @State private var momentPrefetchTask: Task<Void, Never>?
 
     @State private var confirmDiscard = false
     @State private var showPhoto = false
@@ -3071,9 +3077,11 @@ struct MomentsView: View {
     }
 
     private func reload() async {
-        momentPrefetchTask?.cancel()
-        prefetchedMoments.removeAll(keepingCapacity: true)
-        prefetchedHasMore = false
+        momentPaging.task?.cancel()
+        momentPaging.task = nil
+        momentPaging.moments.removeAll(keepingCapacity: true)
+        momentPaging.hasMore = false
+        momentPaging.running = false
         if MomentStressFixture.isActive {
             stressWindowStart = 0
             stressLoadedCount = min(MomentStressFixture.count, Self.stressMomentWindow)
@@ -3118,13 +3126,13 @@ struct MomentsView: View {
             guard hasMoreMoments, !loadingMore else { return }
             loadingMore = true
             defer { loadingMore = false }
-            if let momentPrefetchTask {
-                await momentPrefetchTask.value
+            if let task = momentPaging.task {
+                await task.value
             }
-            var page = prefetchedMoments
-            var more = prefetchedHasMore
-            prefetchedMoments.removeAll(keepingCapacity: true)
-            prefetchedHasMore = false
+            var page = momentPaging.moments
+            var more = momentPaging.hasMore
+            momentPaging.moments.removeAll(keepingCapacity: true)
+            momentPaging.hasMore = false
             if page.isEmpty {
                 let next = min(
                     MomentStressFixture.count,
@@ -3152,16 +3160,16 @@ struct MomentsView: View {
             scheduleMomentPrefetch()
             return
         }
-        if let momentPrefetchTask {
-            await momentPrefetchTask.value
+        if let task = momentPaging.task {
+            await task.value
         }
-        if !prefetchedMoments.isEmpty {
+        if !momentPaging.moments.isEmpty {
             loadingMore = true
             let known = Set(moments.map(\.id))
-            let page = prefetchedMoments.filter { !known.contains($0.id) }
-            let more = prefetchedHasMore
-            prefetchedMoments.removeAll(keepingCapacity: true)
-            prefetchedHasMore = false
+            let page = momentPaging.moments.filter { !known.contains($0.id) }
+            let more = momentPaging.hasMore
+            momentPaging.moments.removeAll(keepingCapacity: true)
+            momentPaging.hasMore = false
             loadingMore = false
             appendMomentPage(page, hasMore: more)
             return
@@ -3213,11 +3221,11 @@ struct MomentsView: View {
 
     private func scheduleMomentPrefetch() {
         guard hasMoreMoments,
-              prefetchedMoments.isEmpty,
-              !prefetchingMoments,
+              momentPaging.moments.isEmpty,
+              !momentPaging.running,
               MomentStressFixture.isActive || moments.last != nil else { return }
-        momentPrefetchTask?.cancel()
-        momentPrefetchTask = Task { @MainActor in
+        momentPaging.task?.cancel()
+        momentPaging.task = Task { @MainActor in
             try? await Task.sleep(nanoseconds: 120_000_000)
             if Task.isCancelled { return }
             await prefetchNextMomentsPage()
@@ -3226,19 +3234,19 @@ struct MomentsView: View {
 
     private func prefetchNextMomentsPage() async {
         guard hasMoreMoments,
-              !prefetchingMoments,
-              prefetchedMoments.isEmpty else { return }
-        prefetchingMoments = true
-        defer { prefetchingMoments = false }
+              !momentPaging.running,
+              momentPaging.moments.isEmpty else { return }
+        momentPaging.running = true
+        defer { momentPaging.running = false }
         if MomentStressFixture.isActive {
             let next = min(
                 MomentStressFixture.count,
                 stressLoadedCount + Self.stressMomentPageSize
             )
-            prefetchedMoments = MomentStressFixture.moments(
+            momentPaging.moments = MomentStressFixture.moments(
                 range: stressLoadedCount..<next
             )
-            prefetchedHasMore = next < MomentStressFixture.count
+            momentPaging.hasMore = next < MomentStressFixture.count
             return
         }
         guard let last = moments.last else { return }
@@ -3250,10 +3258,10 @@ struct MomentsView: View {
         ) else { return }
         guard moments.last?.id == last.id else { return }
         let known = Set(moments.map(\.id))
-        prefetchedMoments = feed.moments.filter {
+        momentPaging.moments = feed.moments.filter {
             !known.contains($0.id) && !locallyDeletedMomentIds.contains($0.id)
         }
-        prefetchedHasMore = feed.hasMore && !prefetchedMoments.isEmpty
+        momentPaging.hasMore = feed.hasMore && !momentPaging.moments.isEmpty
     }
 
     @discardableResult
@@ -3625,8 +3633,8 @@ struct MomentsView: View {
     private func forgetMomentLocally(_ id: String) {
         guard !id.isEmpty else { return }
         locallyDeletedMomentIds.insert(id)
-        momentPrefetchTask?.cancel()
-        prefetchedMoments.removeAll { $0.id == id }
+        momentPaging.task?.cancel()
+        momentPaging.moments.removeAll { $0.id == id }
         let next = moments.filter { $0.id != id }
         setMomentsWithoutAnimation(next)
         momentTotal = max(0, momentTotal - 1)
