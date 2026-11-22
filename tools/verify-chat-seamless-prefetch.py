@@ -46,14 +46,14 @@ require(
     "history cursors must skip leading system rows that have no sequence",
 )
 require(
-    "private let historyPageSize = 70" in CHAT
+    "private let historyPageSize = 120" in CHAT
     and "let target = historyPageSize" in CHAT
     and "let canContinue = explicitMore ?? hasOlder" in CHAT
     and "guard canContinue, olderPrefetch.isEmpty, olderPrefetchTask == nil" in CHAT
     and "olderPrefetch = visibleMessages(page.messages)" in CHAT
     and "before: seq" in CHAT
     and "let maxPages = 1" in CHAT,
-    "chat prefetch must keep a bounded 70-message runway",
+    "chat prefetch must keep a bounded 120-message runway",
 )
 require(
     "scheduleOlderPrefetch(before: nextCursor" in CHAT

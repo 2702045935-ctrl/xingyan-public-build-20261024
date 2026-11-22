@@ -46,7 +46,7 @@ require(
     and "if isGroup { autoLoadOlder() }" not in CHAT
     and ".onAppear { autoLoadOlder() }" not in CHAT
     and "nearTopIds.contains(message.id) { autoLoadOlder() }" not in CHAT
-    and "private let historyPageSize = 70" in CHAT
+    and "private let historyPageSize = 120" in CHAT
     and "let target = historyPageSize" in CHAT
     and "let canContinue = explicitMore ?? hasOlder" in CHAT
     and "guard canContinue, olderPrefetch.isEmpty, olderPrefetchTask == nil" in CHAT

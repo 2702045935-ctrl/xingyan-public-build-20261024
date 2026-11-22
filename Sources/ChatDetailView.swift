@@ -1572,7 +1572,7 @@ struct ChatDetailView: View {
     /* 首屏放最近 240 条，更早历史由用户继续上滑按页加载。
        这能避免进群时一次合并数千条消息造成明显掉帧。 */
     private let maxMessageWindow = 1_800
-    private let historyPageSize = 70
+    private let historyPageSize = 120
 
     private var activeInitialMessageWindow: Int {
         MessageStressFixture.isActive
