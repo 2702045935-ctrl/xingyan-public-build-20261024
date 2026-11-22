@@ -15,8 +15,10 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    'chatsIsDark ? Color(hex: 0x000000) : C.chatsPageBg' in CHATS,
-    "dark chat canvas must use the same true-black surface as native rows",
+    "chatsIsDark ? Color(hex: 0x0A0A0A) : C.chatsPageBg" in CHATS
+    and "if isDark { return Color(hex: 0x0A0A0A) }" in CHATS
+    and "let rowBg: UIColor = isDark ? UIColor(hex: 0x0A0A0A) : UIColor.white" in CHATS,
+    "dark chat canvas must match the latest WhatsApp near-black surface",
 )
 require(
     "showsDivider: true" in CHATS
@@ -71,11 +73,11 @@ require(
     "empty and filtered chat lists must stay inside the native list surface",
 )
 require(
-    "let previewColor = UIColor(hex: isDark ? 0x7C7C80 : 0x999999)" in CHATS
-    and "let timeColor = UIColor(hex: isDark ? 0x5F6368 : 0xB2B2B2)" in CHATS
+    "let previewColor = UIColor(hex: isDark ? 0x949393 : 0x999999)" in CHATS
+    and "let timeColor = UIColor(hex: isDark ? 0x949393 : 0xB2B2B2)" in CHATS
     and "let titleColor: UIColor = chat.showsOfficialMark" in CHATS
-    and "UIColor(hex: isDark ? 0xE9EDEF : 0x191919)" in CHATS,
-    "chat-list title, preview and time must use a restrained three-level hierarchy",
+    and "UIColor(hex: isDark ? 0xFAFAFA : 0x191919)" in CHATS,
+    "chat-list title, preview and time must match WhatsApp's measured hierarchy",
 )
 require(
     "static let avatarSize: CGFloat = 48" in CHATS

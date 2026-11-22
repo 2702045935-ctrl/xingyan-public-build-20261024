@@ -11,11 +11,11 @@ private enum ChatListVisual {
     static let avatarGap: CGFloat = 13
     static let dividerLeading: CGFloat = 77
 
-    static let ink = Color.dyn(0x1A1A1A, 0xE9EDEF)
+    static let ink = Color.dyn(0x1A1A1A, 0xFAFAFA)
     static let previewInk = Color.dyn(0x8A8A8A, 0x8A8F93)
-    static let conversationPreviewInk = Color.dyn(0x999999, 0x7C7C80)
+    static let conversationPreviewInk = Color.dyn(0x999999, 0x949393)
     static let previewAccentInk = Color.dyn(0xFA5151, 0xFA5151)
-    static let timeInk = Color.dyn(0xB2B2B2, 0x5F6368)
+    static let timeInk = Color.dyn(0xB2B2B2, 0x949393)
     static let rule = Color(UIColor { trait in
         // WeChat 8.0.80 measures 48,48,48 for the conversation separator.
         // Keep it one physical pixel high and begin at the 77pt text rail.
@@ -23,7 +23,7 @@ private enum ChatListVisual {
             ? UIColor(hex: 0x303030)
             : UIColor(hex: 0xE9EDEF)
     })
-    static let badgeRing = Color.dyn(0xFFFFFF, 0x000000)
+    static let badgeRing = Color.dyn(0xFFFFFF, 0x0A0A0A)
     static let chipInk = Color.dyn(0x62636A, 0xA8A9AF)
     static let selectedChipFill = Color.dyn(0x161823, 0xF1F1F3)
     static let selectedChipInk = Color.dyn(0xFFFFFF, 0x17171A)
@@ -825,7 +825,7 @@ struct SwipeChatRow: View {
     }
     private var rowBg: Color {
         if cardStyle { return .clear }
-        if isDark { return Color(hex: 0x000000) }
+        if isDark { return Color(hex: 0x0A0A0A) }
         return UIConfig.colorIfSet("chatsRowBg")
             ?? UIConfig.colorIfSet("chatRowBg")
             ?? .white
@@ -1238,9 +1238,9 @@ struct ChatsView: View {
         scheme == .dark || app.appearance == "dark"
     }
     private var chatsPageFill: Color {
-        // WhatsApp / iOS dark hierarchy: the list canvas and native row are
-        // the same true-black surface. Search and cards keep their raised tone.
-        chatsIsDark ? Color(hex: 0x000000) : C.chatsPageBg
+        // WhatsApp's current dark canvas and native row share one near-black
+        // surface. Search and cards keep their raised tone.
+        chatsIsDark ? Color(hex: 0x0A0A0A) : C.chatsPageBg
     }
     private var chatsRule: Color {
         ChatListVisual.rule
@@ -2759,11 +2759,11 @@ struct ChatsView: View {
         let isDark = chatsIsDark
         let titleColor: UIColor = chat.showsOfficialMark
             ? UIColor(hex: 0x25D366)
-            : UIColor(hex: isDark ? 0xE9EDEF : 0x191919)
-        let previewColor = UIColor(hex: isDark ? 0x7C7C80 : 0x999999)
+            : UIColor(hex: isDark ? 0xFAFAFA : 0x191919)
+        let previewColor = UIColor(hex: isDark ? 0x949393 : 0x999999)
         let memberColor = nativePeerColor(chat.memberColor)
-        let rowBg: UIColor = isDark ? UIColor(hex: 0x000000) : UIColor.white
-        let timeColor = UIColor(hex: isDark ? 0x5F6368 : 0xB2B2B2)
+        let rowBg: UIColor = isDark ? UIColor(hex: 0x0A0A0A) : UIColor.white
+        let timeColor = UIColor(hex: isDark ? 0x949393 : 0xB2B2B2)
         let levelText = (chat.qqLevel ?? 0) > 1 && GrowthFlags.showInChats == true
             ? "Lv\(chat.qqLevel ?? 0)" : ""
 
@@ -2783,7 +2783,7 @@ struct ChatsView: View {
                 ? UIColor(hex: 0x303030)
                 : UIColor(hex: 0xE9EDEF),
             showsDivider: true,
-            badgeRing: isDark ? .black : .white,
+            badgeRing: isDark ? UIColor(hex: 0x0A0A0A) : .white,
             chatId: chat.id,
             avatarPaths: avatarPaths,
             groupMemberIds: chat.memberIds ?? [],
