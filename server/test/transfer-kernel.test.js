@@ -110,7 +110,11 @@ async function main() {
       : login.headers.get('set-cookie') || '';
     const cookie = rawCookie.split(';')[0];
 
-    const payload = crypto.randomBytes(9 * 1024 * 1024 + 123);
+    const requestedBytes = Number(process.env.XINGYAN_TRANSFER_TEST_BYTES || 0);
+    const payloadBytes = Number.isSafeInteger(requestedBytes) && requestedBytes > 0
+      ? requestedBytes
+      : 9 * 1024 * 1024 + 123;
+    const payload = crypto.randomBytes(payloadBytes);
     const digest = sha256(payload);
     const initResponse = await fetch(base + '/api/transfer/init', {
       method: 'POST',
@@ -129,7 +133,8 @@ async function main() {
     assert.ok(transfer.chunkSize >= 256 * 1024, 'chunk size must be bounded');
     assert.equal(transfer.totalChunks, Math.ceil(payload.length / transfer.chunkSize));
 
-    const firstChunk = await uploadChunk(base, cookie, transfer, 2, payload);
+    const firstIndex = transfer.totalChunks - 1;
+    const firstChunk = await uploadChunk(base, cookie, transfer, firstIndex, payload);
     const firstChunkBody = await firstChunk.json();
     assert.equal(firstChunk.status, 200, JSON.stringify(firstChunkBody));
     transfer = firstChunkBody.data;
@@ -140,22 +145,42 @@ async function main() {
     const resumedBody = await resumedResponse.json();
     assert.equal(resumedResponse.status, 200, JSON.stringify(resumedBody));
     transfer = resumedBody.data.transfer;
-    assert.deepEqual(transfer.received, [2]);
-    assert.deepEqual(transfer.missing, [0, 1]);
+    const expectedMissing = Array.from(
+      { length: transfer.totalChunks - 1 },
+      (_, index) => index
+    );
+    assert.deepEqual(transfer.received, [firstIndex]);
+    assert.deepEqual(transfer.missing, expectedMissing);
 
-    const concurrent = await Promise.all([
-      uploadChunk(base, cookie, transfer, 0, payload),
-      uploadChunk(base, cookie, transfer, 1, payload)
-    ]);
+    const concurrentIndexes = expectedMissing.slice(0, 2);
+    const concurrent = await Promise.all(
+      concurrentIndexes.map((index) => uploadChunk(base, cookie, transfer, index, payload))
+    );
     for (const response of concurrent) {
       const body = await response.json();
       assert.equal(response.status, 200, JSON.stringify(body));
     }
 
-    const duplicateResponse = await uploadChunk(base, cookie, transfer, 0, payload);
+    const duplicateResponse = await uploadChunk(
+      base,
+      cookie,
+      transfer,
+      expectedMissing[0],
+      payload
+    );
     const duplicateBody = await duplicateResponse.json();
     assert.equal(duplicateResponse.status, 200, JSON.stringify(duplicateBody));
     assert.equal(duplicateBody.data.duplicate, true);
+
+    const remaining = await Promise.all(
+      expectedMissing
+        .slice(concurrentIndexes.length)
+        .map((index) => uploadChunk(base, cookie, transfer, index, payload))
+    );
+    for (const response of remaining) {
+      const body = await response.json();
+      assert.equal(response.status, 200, JSON.stringify(body));
+    }
 
     const readyStatus = await fetch(base + '/api/transfer/' + transfer.id, {
       headers: { Cookie: cookie }
