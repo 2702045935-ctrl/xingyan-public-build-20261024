@@ -38,6 +38,7 @@ private final class NativeStaticHostCell: UICollectionViewCell {
 final class NativeStaticListController {
     fileprivate var scrollToIDHandler: ((String, UICollectionView.ScrollPosition, Bool) -> Bool)?
     fileprivate var scrollToBottomHandler: ((Bool) -> Bool)?
+    fileprivate var frameForIDHandler: ((String) -> CGRect?)?
 
     @discardableResult
     func scrollToID(_ id: String,
@@ -51,9 +52,14 @@ final class NativeStaticListController {
         scrollToBottomHandler?(animated) ?? false
     }
 
+    func frameForID(_ id: String) -> CGRect? {
+        frameForIDHandler?(id)
+    }
+
     fileprivate func clear() {
         scrollToIDHandler = nil
         scrollToBottomHandler = nil
+        frameForIDHandler = nil
     }
 }
 
@@ -299,6 +305,18 @@ where Item.ID: Hashable {
                 collection.layoutIfNeeded()
                 self.setBottom(collection, animated: animated)
                 return true
+            }
+            controller.frameForIDHandler = { [weak self] id in
+                guard let self,
+                      let collection = self.collection,
+                      let itemIndex = self.order.firstIndex(where: {
+                          String(describing: $0) == id
+                      }) else { return nil }
+                let indexPath = IndexPath(item: itemIndex, section: 0)
+                collection.layoutIfNeeded()
+                guard let attributes = collection.collectionViewLayout
+                    .layoutAttributesForItem(at: indexPath) else { return nil }
+                return collection.convert(attributes.frame, to: nil)
             }
         }
 

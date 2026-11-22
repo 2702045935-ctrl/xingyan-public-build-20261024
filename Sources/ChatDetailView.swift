@@ -281,6 +281,7 @@ private struct DeliveryFailureCopy {
 private enum NativeGroupItemKind: Equatable {
     case securityNotice
     case older
+    case timestamp(Message)
     case message(Message)
     case outbox(PendingMsg)
     case sendingVideo
@@ -1122,7 +1123,9 @@ struct ChatDetailView: View {
 
     private func openActions(_ m: Message) {
         if selectMode { toggleSelect(m); return }
-        let contentRect = frameBox.frames[m.id] ?? .zero
+        let contentRect = usesNativeMessageList
+            ? (nativeMessageController.frameForID(m.id) ?? .zero)
+            : (frameBox.frames[m.id] ?? .zero)
         if isGroup, contentRect.width > 1 {
             // Group rows include an avatar and a full-width spacer. Anchoring
             // from the row center makes the card appear between the bubble and
@@ -1285,6 +1288,36 @@ struct ChatDetailView: View {
         case "text", "link": return m.body
         default: return ""
         }
+    }
+
+    private func messageAccessibilityLabel(_ message: Message) -> String {
+        let content: String = {
+            if message.isRecalled { return Tr("撤回了一条消息") }
+            let readable = readableText(message)
+            if !readable.isEmpty { return readable }
+            switch message.kindName {
+            case "image", "images", "livephoto": return Tr("图片")
+            case "video": return Tr("视频")
+            case "audio": return Tr("语音")
+            case "file": return Tr("文件")
+            case "location": return Tr("位置")
+            case "transfer": return Tr("转账")
+            case "redpacket": return Tr("红包")
+            case "gift": return Tr("礼物")
+            case "card": return Tr("名片")
+            case "music": return Tr("音乐")
+            case "mall": return Tr("商品")
+            case "miniapp": return Tr("小程序")
+            case "note": return Tr("笔记")
+            case "announce": return Tr("群公告")
+            case "system": return message.body
+            case "pat": return message.patText(myId: myId)
+            default: return Tr("消息")
+            }
+        }()
+        let sender = mineFor(message) ? Tr("我") : displayName(message)
+        let separator = (Lang.isEnglish || Lang.isRussian) ? ", " : "，"
+        return sender.isEmpty ? content : sender + separator + content
     }
 
     private func run(_ a: MsgAction, on m: Message) {
@@ -3583,6 +3616,10 @@ struct ChatDetailView: View {
             items.append(NativeGroupItem(id: "native-older", kind: .older))
         }
         for message in messages {
+            if showTime(for: message) {
+                items.append(NativeGroupItem(id: "native-time:\(message.id)",
+                                             kind: .timestamp(message)))
+            }
             items.append(NativeGroupItem(id: message.id,
                                          kind: .message(message)))
         }
@@ -3622,6 +3659,13 @@ struct ChatDetailView: View {
             return "security-notice"
         case .older:
             return "older:\(hasOlder)"
+        case .timestamp(let message):
+            return [
+                "timestamp",
+                TimeFmt.bubble(message.createdAt),
+                Lang.code,
+                nativeRowLayoutKey
+            ].joined(separator: "|")
         case .message(let message):
             return [
                 "message",
@@ -3673,9 +3717,19 @@ struct ChatDetailView: View {
                 .frame(height: 1)
                 .onAppear { autoLoadOlder() }
 
-        case .message(let message):
-            messageBlock(message)
+        case .timestamp(let message):
+            timeLine(message)
                 .padding(.horizontal, L.msgPad)
+
+        case .message(let message):
+            messageBlock(message, includesTime: false, capturesFrame: false)
+                .padding(.horizontal, L.msgPad)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(messageAccessibilityLabel(message))
+                .accessibilityAddTraits(.isButton)
+                .accessibilityAction(named: Tr("操作")) {
+                    openActions(message)
+                }
                 .onAppear {
                     if hasOlder, messages.prefix(24).contains(where: { $0.id == message.id }) {
                         autoLoadOlder()
@@ -4346,9 +4400,11 @@ struct ChatDetailView: View {
     }
 
     @ViewBuilder
-    private func messageBlock(_ message: Message) -> some View {
+    private func messageBlock(_ message: Message,
+                              includesTime: Bool = true,
+                              capturesFrame: Bool = true) -> some View {
         VStack(spacing: 0) {
-            if showTime(for: message) { timeLine(message) }
+            if includesTime, showTime(for: message) { timeLine(message) }
             if message.kindName == "pat" {
 
                 StarWhisperLine(
@@ -4367,7 +4423,7 @@ struct ChatDetailView: View {
             } else if message.kindName == "system" {
 
                 if message.isCallRecord && !message.callFrom.isEmpty {
-                    callRow(message)
+                    callRow(message, capturesFrame: capturesFrame)
                 } else {
                         SystemLine(message: message,
                                    usesLightInk: senderNameUsesLightInk,
@@ -4382,7 +4438,7 @@ struct ChatDetailView: View {
                 recallLine(message)
                     .padding(.bottom, gapAfter(message))
             } else {
-                messageRow(message)
+                messageRow(message, capturesFrame: capturesFrame)
 
                     .overlay(alignment: (message.senderId == myId) ? .leading : .trailing) {
                         if message.burn == true {
@@ -4509,7 +4565,8 @@ struct ChatDetailView: View {
     }
 
     @ViewBuilder
-    private func messageRow(_ message: Message) -> some View {
+    private func messageRow(_ message: Message,
+                            capturesFrame: Bool = true) -> some View {
         EquatableView(content: MessageRow(message: message,
                    mine: mineFor(message),
                    deliveryState: deliveryState(for: message),
@@ -4562,20 +4619,23 @@ struct ChatDetailView: View {
                     if !t.isEmpty { Speaker.shared.speak(t) }
                 }
             )
-            .background(GeometryReader { g in
-
-                let contentFrame = g.frame(in: .global)
-                Color.clear
-                    .onAppear { frameBox.frames[message.id] = contentFrame }
-                    .onChange(of: contentFrame) { f in
-                        if !ChatScrollHandle.shared.moving {
-                            frameBox.frames[message.id] = f
-                        }
+            .background {
+                if capturesFrame {
+                    GeometryReader { g in
+                        let contentFrame = g.frame(in: .global)
+                        Color.clear
+                            .onAppear { frameBox.frames[message.id] = contentFrame }
+                            .onChange(of: contentFrame) { f in
+                                if !ChatScrollHandle.shared.moving {
+                                    frameBox.frames[message.id] = f
+                                }
+                            }
+                            .onChange(of: frameCaptureTick) { _ in
+                                frameBox.frames[message.id] = contentFrame
+                            }
                     }
-                    .onChange(of: frameCaptureTick) { _ in
-                        frameBox.frames[message.id] = contentFrame
-                    }
-            })
+                }
+            }
     }
 
     private func mineFor(_ message: Message) -> Bool {
@@ -4622,7 +4682,8 @@ struct ChatDetailView: View {
     }
 
     @ViewBuilder
-    private func callRow(_ message: Message) -> some View {
+    private func callRow(_ message: Message,
+                         capturesFrame: Bool = true) -> some View {
         let mine = mineFor(message)
         let callerAvatar = app.contact(for: message.callFrom)?.avatarPath ?? ""
         HStack(alignment: .top, spacing: 0) {
@@ -4646,19 +4707,23 @@ struct ChatDetailView: View {
         .padding(.bottom, gapAfter(message))
 
         .onLongPressGesture { openActions(message) }
-        .background(GeometryReader { g in
-            let contentFrame = g.frame(in: .global)
-            Color.clear
-                .onAppear { frameBox.frames[message.id] = contentFrame }
-                .onChange(of: contentFrame) { f in
-                    if !ChatScrollHandle.shared.moving {
-                        frameBox.frames[message.id] = f
-                    }
+        .background {
+            if capturesFrame {
+                GeometryReader { g in
+                    let contentFrame = g.frame(in: .global)
+                    Color.clear
+                        .onAppear { frameBox.frames[message.id] = contentFrame }
+                        .onChange(of: contentFrame) { f in
+                            if !ChatScrollHandle.shared.moving {
+                                frameBox.frames[message.id] = f
+                            }
+                        }
+                        .onChange(of: frameCaptureTick) { _ in
+                            frameBox.frames[message.id] = contentFrame
+                        }
                 }
-                .onChange(of: frameCaptureTick) { _ in
-                    frameBox.frames[message.id] = contentFrame
-                }
-        })
+            }
+        }
     }
 
     private func pat(_ userId: String) {

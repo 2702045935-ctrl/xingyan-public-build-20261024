@@ -45,6 +45,22 @@ require(
     "native row height caches must invalidate on font, layout and visible state changes",
 )
 require(
+    "case timestamp(Message)" in CHAT
+    and 'id: "native-time:\\(message.id)"' in CHAT
+    and "messageBlock(message, includesTime: false, capturesFrame: false)" in CHAT
+    and "accessibilityElement(children: .ignore)" in CHAT
+    and "accessibilityLabel(messageAccessibilityLabel(message))" in CHAT,
+    "native messages must use separate time rows and one combined semantic row",
+)
+require(
+    "frameForIDHandler" in (ROOT / "Sources" / "NativeStaticList.swift").read_text(
+        encoding="utf-8"
+    )
+    and "nativeMessageController.frameForID(m.id)" in CHAT
+    and "capturesFrame: Bool = true" in CHAT,
+    "native rows must resolve action anchors on demand instead of observing every frame",
+)
+require(
     "collection.alpha = initiallyPinnedToBottom ? 0 : 1" in (ROOT / "Sources" / "NativeStaticList.swift").read_text(encoding="utf-8")
     and "completeInitialBottom" in (ROOT / "Sources" / "NativeStaticList.swift").read_text(encoding="utf-8"),
     "native chats must reveal only after the first bottom position is committed",
