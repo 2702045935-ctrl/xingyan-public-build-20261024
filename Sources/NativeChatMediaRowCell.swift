@@ -3,7 +3,7 @@ import UIKit
 enum NativeChatMediaKind {
     case image(path: String, pixel: CGSize)
     case images(paths: [String])
-    case video(cover: String, seconds: Int)
+    case video(cover: String, seconds: Int, w: Int, h: Int)
     case file(name: String, path: String, bytes: Int, type: String)
 }
 
@@ -217,7 +217,7 @@ final class NativeChatMediaRowView: UIView {
             }
             badgeLabel.isHidden = paths.count <= 4
             badgeLabel.text = paths.count > 4 ? "+\(paths.count - 4)" : ""
-        case .video(let cover, let seconds):
+        case .video(let cover, let seconds, _, _):
             imageView.isHidden = false
             imageView.configure(path: cover, maxPixel: 720)
             playView.isHidden = false
@@ -381,19 +381,27 @@ final class NativeChatMediaRowView: UIView {
 
     private static func bubbleWidth(for model: NativeChatMediaRowModel,
                                     available: CGFloat) -> CGFloat {
+        let tail: CGFloat = model.showTail ? 6 : 0
+        let usable = max(80, min(model.maxBubbleWidth,
+                                 available - model.avatarSize - model.avatarGap))
         switch model.kind {
         case .image(_, let pixel):
-            let usable = max(100, min(model.maxBubbleWidth,
-                                      available - model.avatarSize - model.avatarGap))
-            guard pixel.width > 1, pixel.height > 1 else { return min(180, usable) }
-            let portrait = pixel.height / max(1, pixel.width)
-            return portrait > 1.2 ? min(160, usable) : usable
+            let thumb: CGSize
+            if pixel.width > 1, pixel.height > 1 {
+                thumb = ImageBubble.looksLikeSticker(pixel)
+                    ? CGSize(width: 120, height: 120)
+                    : ImageBubble.thumb(pixel)
+            } else {
+                thumb = CGSize(width: 150, height: 150)
+            }
+            return min(usable, thumb.width + tail)
         case .images:
-            return min(180, max(120, available - model.avatarSize - model.avatarGap))
-        case .video:
-            return min(220, max(170, available - model.avatarSize - model.avatarGap))
+            return min(usable, 229 + tail)
+        case .video(_, _, let w, let h):
+            let size = videoBubbleSize(w: w, h: h)
+            return min(usable, size.width + tail)
         case .file:
-            return min(224, max(180, available - model.avatarSize - model.avatarGap))
+            return min(224 + tail, usable)
         }
     }
 
@@ -401,13 +409,16 @@ final class NativeChatMediaRowView: UIView {
                                      width: CGFloat) -> CGFloat {
         switch model.kind {
         case .image(_, let pixel):
-            guard pixel.width > 1, pixel.height > 1 else { return 160 }
-            let ratio = pixel.height / pixel.width
-            return min(230, max(96, (width - 6) * ratio))
-        case .images:
-            return 168
-        case .video:
-            return 136
+            guard pixel.width > 1, pixel.height > 1 else { return 150 }
+            return ImageBubble.looksLikeSticker(pixel)
+                ? 120
+                : ImageBubble.thumb(pixel).height
+        case .images(let paths):
+            if paths.count <= 1 { return 188 }
+            if paths.count == 2 { return 172 }
+            return 234.5
+        case .video(_, _, let w, let h):
+            return videoBubbleSize(w: w, h: h).height
         case .file:
             return 72
         }

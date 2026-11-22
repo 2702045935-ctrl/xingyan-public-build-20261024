@@ -91,6 +91,15 @@ require(
     "native multi-image messages must render a real 2/3/4-tile album grid",
 )
 require(
+    "ImageBubble.thumb(pixel)" in MEDIA_ROW
+    and "ImageBubble.looksLikeSticker(pixel)" in MEDIA_ROW
+    and "229 + tail" in MEDIA_ROW
+    and "case .video(_, _, let w, let h):" in MEDIA_ROW
+    and "videoBubbleSize(w: w, h: h)" in MEDIA_ROW
+    and "media = .video(cover: cover, seconds: seconds, w: width, h: height)" in CHAT,
+    "native image and video rows must preserve the original SwiftUI media sizes",
+)
+require(
     "case .file:\n                            openFile(message.body)" in CHAT
     and "path.hasPrefix(\"data:\")" in CHAT
     and "private func openInlineFile(dataURL: String, name: String)" in CHAT,

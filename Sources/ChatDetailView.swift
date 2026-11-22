@@ -3789,8 +3789,13 @@ struct ChatDetailView: View {
         let media: NativeChatMediaKind
         switch message.kindName {
         case "image":
-            media = .image(path: message.imagePath,
-                           pixel: message.imagePixelSize ?? CGSize(width: 4, height: 3))
+            let path = message.imagePath
+            media = .image(
+                path: path,
+                pixel: message.imagePixelSize
+                    ?? ImageSizeCache.get(path)
+                    ?? CGSize(width: 4, height: 3)
+            )
         case "images":
             let object = ((try? JSONSerialization.jsonObject(
                 with: Data(message.body.utf8)
@@ -3804,7 +3809,9 @@ struct ChatDetailView: View {
             )) as? [String: Any]) ?? [:]
             let cover = (object["cover"] as? String) ?? ""
             let seconds = (object["seconds"] as? NSNumber)?.intValue ?? 0
-            media = .video(cover: cover, seconds: seconds)
+            let width = (object["w"] as? NSNumber)?.intValue ?? 0
+            let height = (object["h"] as? NSNumber)?.intValue ?? 0
+            media = .video(cover: cover, seconds: seconds, w: width, h: height)
         case "file":
             let object = ((try? JSONSerialization.jsonObject(
                 with: Data(message.body.utf8)
@@ -3876,7 +3883,7 @@ struct ChatDetailView: View {
                 switch model.kind {
                 case .image(let imagePath, _): path = imagePath
                 case .images(let paths): path = paths.first ?? ""
-                case .video(let cover, _): path = cover
+                case .video(let cover, _, _, _): path = cover
                 case .file(_, let filePath, _, _): path = filePath
                 }
                 view.setActions(
