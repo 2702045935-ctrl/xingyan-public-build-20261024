@@ -31,6 +31,12 @@ require(
     "native chats must retain their single committed initial bottom placement",
 )
 require(
+    "!isGroup && messages.count + outbox.count <= 12" in CHAT
+    and "initialMessageTransaction.disablesAnimations = true" in CHAT
+    and "withTransaction(initialMessageTransaction)" in CHAT,
+    "group entry must keep one native surface and replace its first network page without implicit animation",
+)
+require(
     "private var usesNativeMessageList: Bool" in CHAT
     and "} else {\n            nativeMessageList" in CHAT
     and "initiallyPinnedToBottom: true" in CHAT,

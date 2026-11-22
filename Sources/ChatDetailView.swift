@@ -1622,7 +1622,10 @@ struct ChatDetailView: View {
     }
 
     private var usesShortConversationSurface: Bool {
-        messages.count + outbox.count <= 12
+        // Group entry must not swap SwiftUI short-chat and UIKit message-list
+        // surfaces after the first page arrives; that two-surface handoff is
+        // visible as a one-frame flash. Small direct chats may still use it.
+        !isGroup && messages.count + outbox.count <= 12
     }
 
     private var usesNativeMessageList: Bool {
@@ -7984,7 +7987,11 @@ struct ChatDetailView: View {
                     }.count
                     if incoming > 0 { unreadHere += incoming }
                 }
-                messages = nextMessages
+                var initialMessageTransaction = Transaction()
+                initialMessageTransaction.disablesAnimations = true
+                withTransaction(initialMessageTransaction) {
+                    messages = nextMessages
+                }
                 if initial {
                     hasOlder = result.hasMore
                         || nextMessages.count > result.messages.count
