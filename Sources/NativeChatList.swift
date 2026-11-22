@@ -506,6 +506,7 @@ where Item.ID: Hashable {
             // must get one fresh runway opportunity; otherwise the list stops
             // permanently at an arbitrary loaded boundary.
             endRequestInFlight = false
+            startRequestInFlight = false
             publishScrollState(true)
             applyGeneration += 1
             NotificationCenter.default.post(name: .chrisRowSwipe, object: nil)

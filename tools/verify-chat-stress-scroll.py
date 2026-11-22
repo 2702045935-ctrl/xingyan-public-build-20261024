@@ -122,8 +122,9 @@ require(
 require(
     "scrollViewWillBeginDragging" in NATIVE_CHAT_LIST
     and NATIVE_CHAT_LIST.count("endRequestInFlight = false") >= 3
+    and "endRequestInFlight = false\n            startRequestInFlight = false" in NATIVE_CHAT_LIST
     and "结束拖动和减速必须释放预取锁" not in NATIVE_CHAT_LIST,
-    "each new conversation gesture must release a stale end-prefetch latch",
+    "each new conversation gesture must release stale prefetch latches in both directions",
 )
 require(
     "self.prefetchEndRunwayIfNeeded(table)" in NATIVE_CHAT_LIST
