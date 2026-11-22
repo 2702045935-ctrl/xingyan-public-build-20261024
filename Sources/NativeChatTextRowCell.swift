@@ -81,6 +81,10 @@ private final class NativeChatAvatarView: UIImageView {
         addSubview(initials)
     }
 
+    convenience init() {
+        self.init(frame: .zero)
+    }
+
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
@@ -108,7 +112,7 @@ private final class NativeChatAvatarView: UIImageView {
             return
         }
         guard let url = API.shared.assetURL(path) else { return }
-        Task {
+        Task { @MainActor in
             let disk = await Task.detached(priority: .utility) {
                 ImageStore.shared.diskRead(key)
             }.value
@@ -161,6 +165,10 @@ final class NativeChatTextRowView: UIView {
         let avatarTap = UITapGestureRecognizer(target: self, action: #selector(handleAvatarTap))
         avatar.isUserInteractionEnabled = true
         avatar.addGestureRecognizer(avatarTap)
+    }
+
+    convenience init() {
+        self.init(frame: .zero)
     }
 
     required init?(coder: NSCoder) {

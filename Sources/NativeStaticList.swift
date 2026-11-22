@@ -670,8 +670,8 @@ where Item.ID: Hashable {
         }
 
         private func measuredHeight(_ item: Item, width: CGFloat) -> CGFloat {
-            if let nativeHeight {
-                return max(1, nativeHeight(item, width))
+            if let nativeHeight, let height = nativeHeight(item, width) {
+                return max(1, height)
             }
             let host = UIHostingController(
                 rootView: AnyView(row(item).frame(width: width))
