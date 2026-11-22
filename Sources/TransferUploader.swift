@@ -327,7 +327,7 @@ final class TransferUploader {
                             let chunkHash = SHA256.hash(data: chunk)
                                 .map { String(format: "%02x", $0) }
                                 .joined()
-                            try await putChunk(
+                            try await self.putChunk(
                                 id: remote.id,
                                 index: index,
                                 sha256: chunkHash,
