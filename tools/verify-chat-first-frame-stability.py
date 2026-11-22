@@ -37,6 +37,14 @@ require(
     "long chats must use the premeasured native list to avoid first-scroll stalls",
 )
 require(
+    "private var nativeRowLayoutKey: String" in CHAT
+    and "AppFontPrefs.family" in CHAT
+    and "nativeRowLayoutKey" in CHAT
+    and "asrBusy.contains(message.id) ? \"asr-busy\" : \"\"" in CHAT
+    and 'UIConfig.num("chatDeliveryTicks", 0) > 0' in CHAT,
+    "native row height caches must invalidate on font, layout and visible state changes",
+)
+require(
     "collection.alpha = initiallyPinnedToBottom ? 0 : 1" in (ROOT / "Sources" / "NativeStaticList.swift").read_text(encoding="utf-8")
     and "completeInitialBottom" in (ROOT / "Sources" / "NativeStaticList.swift").read_text(encoding="utf-8"),
     "native chats must reveal only after the first bottom position is committed",

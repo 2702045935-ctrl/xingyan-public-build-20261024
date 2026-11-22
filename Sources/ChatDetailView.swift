@@ -3601,6 +3601,21 @@ struct ChatDetailView: View {
         return items
     }
 
+    private var nativeRowLayoutKey: String {
+        [
+            String(format: "%.4f", fontScale),
+            String(format: "%.4f", CareMode.scale),
+            AppFontPrefs.family,
+            "\(chatTheme.version)",
+            String(format: "%.2f", L.msgPad),
+            String(format: "%.2f", L.chatAvatar),
+            String(format: "%.2f", L.chatGapMsg),
+            String(format: "%.2f", L.bubblePadH),
+            String(format: "%.2f", L.bubblePadV),
+            String(format: "%.2f", L.bubbleMaxW)
+        ].joined(separator: "|")
+    }
+
     private func nativeGroupSignature(_ item: NativeGroupItem) -> String {
         switch item.kind {
         case .securityNotice:
@@ -3615,10 +3630,14 @@ struct ChatDetailView: View {
                 selected.contains(message.id) ? "selected" : "",
                 senderNameFor(message),
                 senderAvatarFor(message),
-                deliveryState(for: message).accessibilityText,
+                UIConfig.num("chatDeliveryTicks", 0) > 0
+                    ? deliveryState(for: message).accessibilityText
+                    : "",
+                asrBusy.contains(message.id) ? "asr-busy" : "",
                 backgroundPath,
                 Lang.code,
-                usesPlainDefaultChatChrome ? "plain" : "styled"
+                usesPlainDefaultChatChrome ? "plain" : "styled",
+                nativeRowLayoutKey
             ].joined(separator: "|")
         case .outbox(let pending):
             // `sending` flips from false to true immediately after the bubble
