@@ -33,18 +33,20 @@ require(
     "UIScrollEdgeElementContainerInteraction" in NAV
     and "interaction.edge = .top" in NAV
     and "let edgeShape = UIView()" in NAV
-    and "NativeTopGlassMask(active: scrolled > 0)" in NAV
+    and 'if #available(iOS 26.0, *), !isDark' in NAV
+    and "NativeScrollEdgeElementBridge(" in NAV
     and ".ignoresSafeArea(edges: .top)" in NAV
     and "NativeChatsTopEdgeChrome(scrolled: chatTopScrolled," in CHATS
     and "dark: chatsIsDark" in CHATS
+    and "background: chatsPageFill" in CHATS
     and "onOffsetChange:" in CHATS
     and "NativeTopGlassMask(active: scrolled > 0)" not in CHATS,
-    "chat header must extend the native scroll edge and keep a native glass fallback",
+    "chat header must extend the native scroll edge over an opaque themed surface",
 )
 require(
     "NativeChatsTopEdgeChrome" in NAV
-    and "if isDark" in NAV
-    and ".opacity(scrolled > 0 ? 0.985 : 0)" in NAV,
+    and "(background ?? (isDark ? Color.black : Color(uiColor: .systemBackground)))" in NAV
+    and ".opacity(scrolled > 0 ? 1 : 0)" in NAV,
     "dark chat-list chrome must remain a continuous true-black surface",
 )
 require("NativeTopGlassMask(active: navScrolled > 0)" in CONTACTS
