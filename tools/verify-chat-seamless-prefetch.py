@@ -24,18 +24,18 @@ require(
     "foreground paging must reuse an in-flight prefetch instead of waiting twice",
 )
 require(
-    "guard isGroup, y < 4200" in CHAT,
-    "B2611191645 chat prefetch must use the fixed 4200-point trigger",
+    "consumeOlderRunway(requireActiveMotion: true, offsetY: y)" in CHAT
+    and "scroll.bounds.height * 2.75" in CHAT,
+    "chat prefetch must use a viewport-relative runway",
 )
 require(
-    "ChatScrollHandle.shared.moving else { return }" in CHAT
+    "olderRunwayConsumedForGesture" in CHAT
     and "if isGroup { autoLoadOlder() }" not in CHAT,
     "automatic history paging must be driven by the user scroll runway",
 )
 require(
     "ScrollGate.shared.setScrolling(false)" in CHAT
-    and "let y = ChatScrollHandle.shared.scroll?.contentOffset.y" in CHAT
-    and "y < 4200" in CHAT,
+    and "consumeOlderRunway(requireActiveMotion: false)" in CHAT,
     "history runway must also be consumed after deceleration ends",
 )
 require(

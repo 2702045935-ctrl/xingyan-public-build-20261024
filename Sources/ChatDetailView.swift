@@ -1471,6 +1471,7 @@ struct ChatDetailView: View {
     @State private var olderPrefetchHasMore = false
     @State private var olderPrefetchTask: Task<Void, Never>?
     @State private var olderPrefetchToken = UUID()
+    @State private var olderRunwayConsumedForGesture = false
 
     @State private var loadingAllGroupHistory = false
     @State private var holdScroll = false
@@ -3488,6 +3489,7 @@ struct ChatDetailView: View {
                     atBottom = false
                     wasAtBottom = false
                     initialOpenSettling = false
+                    olderRunwayConsumedForGesture = false
                     if !initialScrollReady {
                         initialScrollTask?.cancel()
                         initialScrollTask = nil
@@ -3503,23 +3505,12 @@ struct ChatDetailView: View {
                     }
                     ScrollGate.shared.setScrolling(false)
                     frameCaptureTick &+= 1
-                    if isGroup, initialScrollReady,
-                       let y = ChatScrollHandle.shared.scroll?.contentOffset.y,
-                       y < 4200 {
-                        // A fling can cross the runway exactly as deceleration
-                        // ends. Consume the already-prefetched page here so
-                        // reaching the top never leaves the history stranded.
-                        autoLoadOlder()
-                    }
+                    // A fling can cross the runway exactly as deceleration ends.
+                    consumeOlderRunway(requireActiveMotion: false)
                 }
             },
             onScrollOffset: { y in
-                guard isGroup, y < 4200,
-                      ChatScrollHandle.shared.moving else { return }
-                // Only the user's real scroll offset may consume history.
-                // Prefetch completion, row appearance and programmatic layout
-                // must never start the next page by themselves.
-                autoLoadOlder()
+                consumeOlderRunway(requireActiveMotion: true, offsetY: y)
             },
             onSizeChange: {
                 if initialOpenSettling {
@@ -4122,6 +4113,21 @@ struct ChatDetailView: View {
         guard Date().timeIntervalSince(lastOlderLoad) > 0.08 else { return }
         lastOlderLoad = Date()
         Task { await loadOlder() }
+    }
+
+    private func consumeOlderRunway(requireActiveMotion: Bool,
+                                    offsetY: CGFloat? = nil) {
+        guard isGroup, initialScrollReady, hasOlder,
+              !olderRunwayConsumedForGesture,
+              let scroll = ChatScrollHandle.shared.scroll,
+              let y = offsetY ?? scroll.contentOffset.y else { return }
+        let runway = max(2_200, min(4_200, scroll.bounds.height * 2.75))
+        guard y < runway else { return }
+        if requireActiveMotion, !ChatScrollHandle.shared.moving { return }
+        // Both the active runway and the end-of-deceleration fallback share
+        // this latch. One user gesture consumes at most one prefetched page.
+        olderRunwayConsumedForGesture = true
+        autoLoadOlder()
     }
 
     private func pinToBottomSoon(force: Bool = false) {

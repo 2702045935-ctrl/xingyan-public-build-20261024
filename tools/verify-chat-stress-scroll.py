@@ -25,11 +25,12 @@ require(
     "prepending must reuse unchanged row signatures and remeasure only the boundary",
 )
 require(
-    "guard isGroup, y < 4200" in CHAT,
-    "B2611191645 group history must use the fixed prefetch trigger",
+    "scroll.bounds.height * 2.75" in CHAT
+    and "consumeOlderRunway(requireActiveMotion: true, offsetY: y)" in CHAT,
+    "group history must use a viewport-relative prefetch runway",
 )
 require(
-    "ChatScrollHandle.shared.moving else { return }" in CHAT
+    "olderRunwayConsumedForGesture" in CHAT
     and "if isGroup { autoLoadOlder() }" not in CHAT
     and ".onAppear { autoLoadOlder() }" not in CHAT
     and "nearTopIds.contains(message.id) { autoLoadOlder() }" not in CHAT
