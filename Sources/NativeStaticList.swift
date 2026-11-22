@@ -9,24 +9,36 @@ struct NativeStaticItem: Identifiable, Equatable {
 private final class NativeStaticHostCell: UICollectionViewCell {
     private var host: UIHostingController<AnyView>?
     private var hostedID = ""
+    private var hostedSignature = ""
 
     override func prepareForReuse() {
         super.prepareForReuse()
     }
 
-    func setRootView(_ rootView: AnyView, id: String) {
+    func setRootView(_ rootView: AnyView, id: String, signature: String) {
         if host == nil {
             let next = UIHostingController(rootView: rootView)
             next.view.backgroundColor = .clear
             contentView.addSubview(next.view)
             host = next
-        } else if hostedID != id {
-            host?.rootView = rootView
-        } else {
+        } else if hostedID != id || hostedSignature != signature {
             host?.rootView = rootView
         }
         hostedID = id
+        hostedSignature = signature
         host?.view.frame = contentView.bounds
+    }
+
+    func adopt(_ next: UIHostingController<AnyView>, id: String, signature: String) {
+        if host !== next {
+            host?.view.removeFromSuperview()
+            host = next
+            next.view.backgroundColor = .clear
+            contentView.addSubview(next.view)
+        }
+        hostedID = id
+        hostedSignature = signature
+        next.view.frame = contentView.bounds
     }
 
     override func layoutSubviews() {
@@ -129,13 +141,20 @@ where Item.ID: Hashable {
         collection.isPrefetchingEnabled = true
         collection.alpha = initiallyPinnedToBottom ? 0 : 1
         collection.delegate = context.coordinator
+        collection.prefetchDataSource = context.coordinator
 
         let registration = UICollectionView.CellRegistration<NativeStaticHostCell, Item.ID> {
             [weak coordinator = context.coordinator] cell, _, id in
             guard let coordinator,
                   let item = coordinator.lookup[id],
                   let rootView = coordinator.rootView(for: item) else { return }
-            cell.setRootView(rootView, id: String(describing: id))
+            let itemID = String(describing: id)
+            let signature = coordinator.signatures[id] ?? ""
+            if let warm = coordinator.takeWarmHost(id, signature: signature) {
+                cell.adopt(warm, id: itemID, signature: signature)
+            } else {
+                cell.setRootView(rootView, id: itemID, signature: signature)
+            }
             cell.backgroundConfiguration = .clear()
             cell.backgroundColor = .clear
             cell.clipsToBounds = true
@@ -173,7 +192,9 @@ where Item.ID: Hashable {
         context.coordinator.apply(items, animated: false)
     }
 
-    final class Coordinator: NSObject, UICollectionViewDelegateFlowLayout {
+    final class Coordinator: NSObject,
+                             UICollectionViewDelegateFlowLayout,
+                             UICollectionViewDataSourcePrefetching {
         var lookup: [Item.ID: Item] = [:]
         var row: (Item) -> Row
         var signature: (Item) -> String
@@ -191,6 +212,8 @@ where Item.ID: Hashable {
         private var order: [Item.ID] = []
         private var signatures: [Item.ID: String] = [:]
         private var heights: [Item.ID: CGFloat] = [:]
+        private var warmHosts: [Item.ID: (signature: String,
+                                          host: UIHostingController<AnyView>)] = [:]
         private var width: CGFloat = 0
         private var pending: [Item]?
         private var applyGeneration = 0
@@ -396,12 +419,16 @@ where Item.ID: Hashable {
             }
             let nextLookup = Dictionary(uniqueKeysWithValues: next.map { ($0.id, $0) })
             let changed = nextOrder.filter { signatures[$0] != nextSignatures[$0] }
-            for id in changed { heights[id] = nil }
+            for id in changed {
+                heights[id] = nil
+                warmHosts.removeValue(forKey: id)
+            }
             let widthChanged = collection.bounds.width > 1
                 && abs(collection.bounds.width - width) > 0.5
             if widthChanged {
                 width = collection.bounds.width
                 heights.removeAll(keepingCapacity: true)
+                warmHosts.removeAll(keepingCapacity: true)
             }
             let knownOld = order
             lookup = nextLookup
@@ -411,6 +438,10 @@ where Item.ID: Hashable {
             premeasure(isPrepending
                 ? Array(Set(changed).union(nextOrder.filter { !knownOld.contains($0) }))
                 : nextOrder)
+            prewarm(
+                Array(nextOrder.suffix(waitsForInitialBottom ? 40 : 24)),
+                maxCount: waitsForInitialBottom ? 40 : 12
+            )
             let previousOffset = collection.contentOffset
             let prependAnchor: (id: Item.ID, delta: CGFloat)?
             if isPrepending,
@@ -592,12 +623,61 @@ where Item.ID: Hashable {
             return max(1, ceil(size.height.isFinite ? size.height : 240))
         }
 
+        func takeWarmHost(_ id: Item.ID,
+                          signature: String) -> UIHostingController<AnyView>? {
+            guard let cached = warmHosts[id],
+                  cached.signature == signature else {
+                warmHosts.removeValue(forKey: id)
+                return nil
+            }
+            return warmHosts.removeValue(forKey: id)?.host
+        }
+
+        private func prewarm(_ ids: [Item.ID], maxCount: Int = 8) {
+            guard !ids.isEmpty else { return }
+            let width = max(1, collection?.bounds.width ?? UIScreen.main.bounds.width)
+            let requested = Set(ids)
+            for id in ids.prefix(max(1, maxCount)) {
+                guard warmHosts[id] == nil,
+                      let item = lookup[id],
+                      let signature = signatures[id],
+                      let rootView = rootView(for: item) else { continue }
+                let host = UIHostingController(rootView: rootView)
+                host.view.backgroundColor = .clear
+                host.view.frame = CGRect(x: 0, y: 0, width: width, height: 240)
+                host.view.setNeedsLayout()
+                host.view.layoutIfNeeded()
+                _ = host.sizeThatFits(
+                    in: CGSize(width: width, height: .greatestFiniteMagnitude)
+                )
+                warmHosts[id] = (signature, host)
+            }
+            if warmHosts.count > 64 {
+                for id in Array(warmHosts.keys) where !requested.contains(id) {
+                    warmHosts.removeValue(forKey: id)
+                    if warmHosts.count <= 48 { break }
+                }
+            }
+        }
+
         func rootView(for item: Item) -> AnyView? {
             AnyView(
                 row(item)
                     .frame(maxWidth: .infinity, alignment: .top)
             )
         }
+
+        func collectionView(_ collectionView: UICollectionView,
+                            prefetchItemsAt indexPaths: [IndexPath]) {
+            let ids = indexPaths.compactMap { indexPath -> Item.ID? in
+                guard indexPath.item >= 0, indexPath.item < order.count else { return nil }
+                return order[indexPath.item]
+            }
+            prewarm(ids, maxCount: 8)
+        }
+
+        func collectionView(_ collectionView: UICollectionView,
+                            cancelPrefetchingForItemsAt indexPaths: [IndexPath]) {}
 
         private func flush() {
             guard let pending else { return }

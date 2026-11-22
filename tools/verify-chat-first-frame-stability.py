@@ -60,6 +60,15 @@ require(
     and "capturesFrame: Bool = true" in CHAT,
     "native rows must resolve action anchors on demand instead of observing every frame",
 )
+NATIVE_LIST = (ROOT / "Sources" / "NativeStaticList.swift").read_text(encoding="utf-8")
+require(
+    "UICollectionViewDataSourcePrefetching" in NATIVE_LIST
+    and "prefetchItemsAt" in NATIVE_LIST
+    and "warmHosts" in NATIVE_LIST
+    and "takeWarmHost" in NATIVE_LIST
+    and "cell.adopt" in NATIVE_LIST,
+    "native chat entry must prewarm reusable message hosts before first motion",
+)
 require(
     "collection.alpha = initiallyPinnedToBottom ? 0 : 1" in (ROOT / "Sources" / "NativeStaticList.swift").read_text(encoding="utf-8")
     and "completeInitialBottom" in (ROOT / "Sources" / "NativeStaticList.swift").read_text(encoding="utf-8"),
