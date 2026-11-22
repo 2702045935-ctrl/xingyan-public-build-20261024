@@ -4246,7 +4246,7 @@ struct ChatDetailView: View {
         if MessageStressFixture.isStressChat(chat.id) {
             return MessageStressFixture.count
         }
-        return max(messages.last?.seq ?? 0, liveChat.seq ?? 0)
+        return messages.last?.seq ?? 0
     }
 
     private var hasNewerMessages: Bool {
