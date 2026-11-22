@@ -31,10 +31,14 @@ require(
     "native chats must retain their single committed initial bottom placement",
 )
 require(
-    "!isGroup && messages.count + outbox.count <= 12" in CHAT
-    and "initialMessageTransaction.disablesAnimations = true" in CHAT
+    "initialMessageTransaction.disablesAnimations = true" in CHAT
     and "withTransaction(initialMessageTransaction)" in CHAT,
-    "group entry must keep one native surface and replace its first network page without implicit animation",
+    "the first network page must replace the native list without implicit animation",
+)
+require(
+    "private var usesShortConversationSurface: Bool {\n        // Every conversation" in CHAT
+    and "false\n    }" in CHAT,
+    "all conversations must use the same native message-list surface",
 )
 require(
     "private var usesNativeMessageList: Bool" in CHAT

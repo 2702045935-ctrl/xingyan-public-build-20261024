@@ -1622,10 +1622,10 @@ struct ChatDetailView: View {
     }
 
     private var usesShortConversationSurface: Bool {
-        // Group entry must not swap SwiftUI short-chat and UIKit message-list
-        // surfaces after the first page arrives; that two-surface handoff is
-        // visible as a one-frame flash. Small direct chats may still use it.
-        !isGroup && messages.count + outbox.count <= 12
+        // Every conversation uses the same native collection surface. Keeping
+        // a second short-chat implementation creates inconsistent first-frame,
+        // gesture and height behavior when message counts cross the threshold.
+        false
     }
 
     private var usesNativeMessageList: Bool {
