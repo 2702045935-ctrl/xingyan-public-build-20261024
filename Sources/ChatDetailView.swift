@@ -3741,11 +3741,69 @@ struct ChatDetailView: View {
         )
     }
 
+    private func nativeChatMediaModel(_ item: NativeGroupItem) -> NativeChatMediaRowModel? {
+        guard case .message(let message) = item.kind,
+              !message.isRecalled,
+              message.burn != true,
+              !selectMode else { return nil }
+        let media: NativeChatMediaKind
+        switch message.kindName {
+        case "image":
+            media = .image(path: message.imagePath,
+                           pixel: message.imagePixelSize ?? CGSize(width: 4, height: 3))
+        case "images":
+            let object = dict(message.body)
+            let paths = (object["paths"] as? [String]) ?? []
+            guard !paths.isEmpty else { return nil }
+            media = .images(paths: paths)
+        case "video":
+            let object = dict(message.body)
+            let cover = (object["cover"] as? String) ?? ""
+            let seconds = (object["seconds"] as? NSNumber)?.intValue ?? 0
+            media = .video(cover: cover, seconds: seconds)
+        case "file":
+            let object = dict(message.body)
+            let name = (object["name"] as? String) ?? Tr("文件")
+            let path = (object["url"] as? String) ?? ""
+            let bytes = (object["bytes"] as? NSNumber)?.intValue ?? 0
+            let ext = (name as NSString).pathExtension
+            let type = UTType(filenameExtension: ext)?.localizedDescription
+                ?? (ext.isEmpty ? Tr("文件") : ext.uppercased())
+            media = .file(name: name, path: path, bytes: bytes, type: type)
+        default:
+            return nil
+        }
+        let mine = mineFor(message)
+        return NativeChatMediaRowModel(
+            messageID: message.id,
+            kind: media,
+            mine: mine,
+            senderName: (!mine && isGroup) ? senderNameFor(message) : "",
+            senderNameColor: UIColor(groupSenderNameColor(message)),
+            avatarPath: senderAvatarFor(message),
+            avatarSize: L.chatAvatar,
+            maxBubbleWidth: isGroup ? groupBubbleMaxWidth : L.bubbleMaxW,
+            horizontalMargin: L.msgPad,
+            avatarGap: L.chatGapMsg,
+            bottomGap: gapAfter(message),
+            primaryColor: UIColor(mine ? ChatTheme.mineInk : ChatTheme.ink),
+            secondaryColor: UIColor(mine ? ChatTheme.mineSecondaryInk : ChatTheme.secondary),
+            bubbleColor: UIColor(mine ? ChatTheme.bubbleMine : ChatTheme.bubbleOther),
+            showTail: isRunEnd(message)
+        )
+    }
+
     private func nativeGroupUIKitEligible(_ item: NativeGroupItem) -> Bool {
         switch item.kind {
         case .timestamp:
             return true
         case .message(let message):
+            if ["image", "images", "video", "file"].contains(message.kindName) {
+                return !message.isRecalled
+                    && message.burn != true
+                    && !selectMode
+                    && UIConfig.num("chatDeliveryTicks", 0) <= 0
+            }
             return message.kindName == "text"
                 && !message.isRecalled
                 && message.quote == nil
@@ -3765,6 +3823,39 @@ struct ChatDetailView: View {
             view.configure(text: TimeFmt.bubble(message.createdAt))
             return view
         case .message(let message):
+            if let model = nativeChatMediaModel(item) {
+                let view = (reuse as? NativeChatMediaRowView) ?? NativeChatMediaRowView()
+                view.configure(model)
+                let path: String
+                switch model.kind {
+                case .image(let imagePath, _): path = imagePath
+                case .images(let paths): path = paths.first ?? ""
+                case .video(let cover, _): path = cover
+                case .file(_, let filePath, _, _): path = filePath
+                }
+                view.setActions(
+                    onTap: {
+                        switch model.kind {
+                        case .image(let imagePath, _):
+                            onOpenImage?(imagePath)
+                        case .images(_):
+                            if !path.isEmpty { onOpenImage?(path) }
+                        case .video:
+                            if let url = API.shared.assetURL(
+                                Self.firstJSONString(message.body, key: "url") ?? ""
+                            ) {
+                                onOpenVideo?(url)
+                            }
+                        case .file:
+                            onOpenFile?(message.body)
+                        }
+                    },
+                    onAvatar: {
+                        onOpenAvatar?(message.senderId ?? "")
+                    }
+                )
+                return view
+            }
             guard let model = nativeTextModel(item) else { return nil }
             let view = (reuse as? NativeChatTextRowView) ?? NativeChatTextRowView()
             view.configure(model)
@@ -3788,6 +3879,9 @@ struct ChatDetailView: View {
         case .timestamp:
             return NativeChatTimeRowView.height()
         case .message:
+            if let media = nativeChatMediaModel(item) {
+                return NativeChatMediaRowView.height(for: media, width: width)
+            }
             guard let model = nativeTextModel(item) else { return nil }
             return NativeChatTextRowView.height(for: model, width: width)
         default:

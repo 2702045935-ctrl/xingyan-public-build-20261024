@@ -559,23 +559,23 @@ where Item.ID: Hashable {
                     + collection.adjustedContentInset.bottom
             )
             let wasAtBottom = previousOffset.y >= maximumY - 16
-            let visibleAnchor: (id: Item.ID, delta: CGFloat)?
-            if let indexPath = collection.indexPathsForVisibleItems.min(by: {
-                $0.item < $1.item
-            }),
-               let id = dataSource.itemIdentifier(for: indexPath),
-               let attributes = collection.collectionViewLayout
-                   .layoutAttributesForItem(at: indexPath) {
-                visibleAnchor = (
-                    id,
-                    attributes.frame.minY - collection.contentOffset.y
-                )
-            } else {
-                visibleAnchor = nil
-            }
+            let visibleAnchors: [(id: Item.ID, delta: CGFloat)] =
+                collection.indexPathsForVisibleItems
+                    .sorted { $0.item < $1.item }
+                    .compactMap { indexPath in
+                        guard let id = dataSource.itemIdentifier(for: indexPath),
+                              let attributes = collection.collectionViewLayout
+                                  .layoutAttributesForItem(at: indexPath) else {
+                            return nil
+                        }
+                        return (
+                            id,
+                            attributes.frame.minY - collection.contentOffset.y
+                        )
+                    }
             let prependAnchor: (id: Item.ID, delta: CGFloat)?
             if isPrepending,
-               let anchor = visibleAnchor {
+               let anchor = visibleAnchors.first {
                 prependAnchor = anchor
             } else {
                 prependAnchor = nil
@@ -665,7 +665,9 @@ where Item.ID: Hashable {
                         self.setBottom(collection, animated: false)
                         return
                     }
-                    if let anchor = visibleAnchor,
+                    if let anchor = visibleAnchors.first(where: {
+                        nextSet.contains($0.id)
+                    }),
                        let indexPath = dataSource.indexPath(for: anchor.id),
                        let attributes = collection.collectionViewLayout
                            .layoutAttributesForItem(at: indexPath) {

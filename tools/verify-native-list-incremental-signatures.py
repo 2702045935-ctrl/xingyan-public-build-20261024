@@ -42,8 +42,11 @@ require(
     and "nativeEligible" in LIST
     and "nativeRow" in LIST
     and "NativeChatTextRowView" in TEXT_ROWS
+    and "NativeChatMediaRowView" in (
+        ROOT / "Sources" / "NativeChatMediaRowCell.swift"
+    ).read_text(encoding="utf-8")
     and "NativeChatTimeRowView" in TEXT_ROWS,
-    "text and complex message rows must use separate native cell paths",
+    "text and high-frequency media rows must use native cell paths",
 )
 
 print("native-list-incremental-signatures: passed")

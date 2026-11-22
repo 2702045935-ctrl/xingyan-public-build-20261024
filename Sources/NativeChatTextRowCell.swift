@@ -21,7 +21,7 @@ struct NativeChatTextRowModel {
     var showTail: Bool
 }
 
-private final class NativeChatBubbleBackground: UIView {
+final class NativeChatBubbleBackground: UIView {
     var fillColor: UIColor = .clear {
         didSet { setNeedsDisplay() }
     }
@@ -71,7 +71,7 @@ private final class NativeChatBubbleBackground: UIView {
     }
 }
 
-private final class NativeChatAvatarView: UIImageView {
+final class NativeChatAvatarView: UIImageView {
     private var requestedPath = ""
     private var requestToken = UUID()
     private let initials = UILabel()
