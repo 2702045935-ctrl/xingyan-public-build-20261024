@@ -8137,15 +8137,19 @@ struct ChatDetailView: View {
         loadingAllGroupHistory = true
         defer { loadingAllGroupHistory = false }
 
-        var olderById: [String: Message] = [:]
         var reachedStart = false
         var before = oldestHistorySeq
         var pages = 0
         var consecutiveFailures = 0
-        /* 每页 5000 条，并且客户端只保留最近 5000 条。这样后台同步
-           只有一个完整批次，低内存机型不会继续累积到两万条。 */
-        let pageSize = 5_000
-        while hasOlder, pages < 64, !Task.isCancelled, before > 0,
+        /* Backfill uses the same 120-row page and anchor path as interactive
+           paging, so a background page can never behave differently from a
+           finger-driven runway page. */
+        let pageSize = historyPageSize
+        let maxPages = max(
+            64,
+            Int(ceil(Double(maxMessageWindow) / Double(historyPageSize))) + 8
+        )
+        while hasOlder, pages < maxPages, !Task.isCancelled, before > 0,
               messages.count < maxMessageWindow,
               consecutiveFailures < 5 {
             do {
@@ -8157,17 +8161,23 @@ struct ChatDetailView: View {
                 )
                 consecutiveFailures = 0
                 if page.messages.isEmpty {
+                    if page.hasMore {
+                        consecutiveFailures += 1
+                        if consecutiveFailures >= 5 { break }
+                        try? await Task.sleep(nanoseconds: 700_000_000)
+                        continue
+                    }
                     reachedStart = true
                     break
                 }
-                for message in page.messages { olderById[message.id] = message }
                 /* 每拿到一页就先并入当前会话，用户能马上看到新增的
                    更早消息，而不是等所有页拉完才一次性“跳出来”。 */
                 let followBottom = atBottomNow
                 let keepAnchor = messages.first?.id
                 var mergedById = Dictionary(uniqueKeysWithValues: messages.map { ($0.id, $0) })
-                for (id, message) in olderById { mergedById[id] = message }
+                for message in page.messages { mergedById[message.id] = message }
                 let merged = mergedById.values.sorted(by: messageSortsBefore)
+                ChatScrollHandle.shared.prepareForPrepend()
                 messages = Array(visibleMessages(merged).suffix(maxMessageWindow))
                 hasOlder = true
                 rebuildIndex()
@@ -8212,31 +8222,8 @@ struct ChatDetailView: View {
             }
         }
 
-        guard !olderById.isEmpty, !Task.isCancelled else {
-            if reachedStart { hasOlder = false }
-            return
-        }
-
-        let followBottom = atBottomNow
-        let keepAnchor = messages.first?.id
-        var mergedById = Dictionary(uniqueKeysWithValues: messages.map { ($0.id, $0) })
-        for (id, message) in olderById { mergedById[id] = message }
-        let merged = mergedById.values.sorted(by: messageSortsBefore)
-        let visible = visibleMessages(merged)
-        messages = Array(visible.suffix(maxMessageWindow))
-        hasOlder = !reachedStart
-        rebuildIndex()
-
-        if !followBottom, let keepAnchor, usesNativeMessageList {
-            holdScroll = true
-            DispatchQueue.main.async {
-                nativeMessageController.scrollToID(keepAnchor, at: .top, animated: false)
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { holdScroll = false }
-        } else if !followBottom, let keepAnchor, let scroller {
-            holdScroll = true
-            DispatchQueue.main.async { scroller.scrollTo(keepAnchor, anchor: .top) }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { holdScroll = false }
+        if !Task.isCancelled {
+            hasOlder = !reachedStart
         }
     }
 }

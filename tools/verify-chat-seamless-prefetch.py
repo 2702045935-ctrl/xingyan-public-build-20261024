@@ -96,7 +96,9 @@ require(
 require(
     "private var shouldLoadCompleteGroupHistory: Bool" in CHAT
     and "!MessageStressFixture.isActive" in CHAT
-    and "loadAllGroupHistory()" in CHAT,
+    and "loadAllGroupHistory()" in CHAT
+    and "let pageSize = historyPageSize" in CHAT
+    and "ChatScrollHandle.shared.prepareForPrepend()" in CHAT,
     "ordinary conversations must backfill complete history without finger paging",
 )
 require(
