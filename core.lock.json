@@ -1,10 +1,10 @@
 {
-  "version": "B669",
+  "version": "B670",
   "files": [
     {
       "path": "Sources/API.swift",
-      "size": 225753,
-      "sha256": "811cb42c3f7f5ec51c3917053e91fedc7c6961f9f0be43b860261f3070938a9a"
+      "size": 226680,
+      "sha256": "12a8765e76c12da3d4224e08ef3c9c5a0d80ccaa501e2f216c4ce030d952e524"
     },
     {
       "path": "Sources/App.swift",
@@ -68,8 +68,8 @@
     },
     {
       "path": "Sources/ChatDetailView.swift",
-      "size": 405871,
-      "sha256": "cf3145e239566e6bea63c97fed60732f9bee74ba8c87f2836b4a1edd1e55ddfd"
+      "size": 405443,
+      "sha256": "cd4af9ed13f6089a4e6f1151617bc165dc5eb780524637a33e73d86349dfb8db"
     },
     {
       "path": "Sources/GroupInfoView.swift",
