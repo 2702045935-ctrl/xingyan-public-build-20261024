@@ -2443,7 +2443,6 @@ struct ChatDetailView: View {
         }
 
         .onChange(of: focused) { pinAfterFocusChange($0) }
-        .onChange(of: panel) { _ in pinToBottomSoon() }
 
         .safeAreaInset(edge: .top, spacing: 0) {
 
@@ -2981,6 +2980,10 @@ struct ChatDetailView: View {
             loadDeletedMessageIds()
             loadOutbox()
             await load(initial: true)
+            if plusItems.isEmpty {
+                let items = (try? await API.shared.plusPanel()) ?? []
+                plusItems = normalizedPlusItems(items)
+            }
             await refreshReceipts()
             historySyncTask?.cancel()
             if shouldLoadCompleteGroupHistory {
@@ -2996,10 +2999,6 @@ struct ChatDetailView: View {
 
             LocalNotify.clearChat(chat.id)
             await app.loadChats()
-            if plusItems.isEmpty {
-                let items = (try? await API.shared.plusPanel()) ?? []
-                plusItems = normalizedPlusItems(items)
-            }
             await loadMyStickers()
 
             await StickerCatalog.shared.loadIfNeeded()
@@ -4119,8 +4118,8 @@ struct ChatDetailView: View {
                                     offsetY: CGFloat? = nil) {
         guard isGroup, initialScrollReady, hasOlder,
               !olderRunwayConsumedForGesture,
-              let scroll = ChatScrollHandle.shared.scroll,
-              let y = offsetY ?? scroll.contentOffset.y else { return }
+              let scroll = ChatScrollHandle.shared.scroll else { return }
+        let y = offsetY ?? scroll.contentOffset.y
         let runway = max(2_200, min(4_200, scroll.bounds.height * 2.75))
         guard y < runway else { return }
         if requireActiveMotion, !ChatScrollHandle.shared.moving { return }
@@ -5134,6 +5133,20 @@ struct ChatDetailView: View {
         }
     }
 
+    private var displayedPlusItems: [PlusItem] {
+        if !plusItems.isEmpty { return plusItems }
+        return normalizedPlusItems([
+            PlusItem(id: "photo-fallback", label: Tr("照片"),
+                     icon: "photo", action: "photo", enabled: true),
+            PlusItem(id: "camera-fallback", label: Tr("拍摄"),
+                     icon: "camera", action: "camera", enabled: true),
+            PlusItem(id: "location-fallback", label: Tr("位置"),
+                     icon: "location", action: "location", enabled: true),
+            PlusItem(id: "file-fallback", label: Tr("文件"),
+                     icon: "file", action: "file", enabled: true)
+        ])
+    }
+
     private var sysTeamToolsBar: some View {
         Button {
             focused = false
@@ -5966,14 +5979,14 @@ struct ChatDetailView: View {
                             if panel == .plus && plusItems.isEmpty {
                                 Task {
                                     await recentPhotos.loadIfNeeded(force: true,
-                                                                    requestAccess: true)
+                                                                    requestAccess: false)
                                     let items = (try? await API.shared.plusPanel()) ?? []
                                     plusItems = normalizedPlusItems(items)
                                 }
                             } else if panel == .plus {
                                 Task {
                                     await recentPhotos.loadIfNeeded(force: true,
-                                                                    requestAccess: true)
+                                                                    requestAccess: false)
                                 }
                             }
                         } label: {
@@ -6109,7 +6122,7 @@ struct ChatDetailView: View {
                        mine: myStickers,
                        onExpandedChange: { emojiPanelExpanded = $0 })
         case .plus:
-            PlusPanel(items: plusItems,
+            PlusPanel(items: displayedPlusItems,
                       onTap: { item in handlePlus(item) },
                       onLongPress: { item in handlePlusLong(item) })
         case .mention:
