@@ -136,6 +136,7 @@ function createTransferKernel(options) {
       mime: job.mime,
       name: job.name,
       skipTranscode: job.skipTranscode === true,
+      processing: job.processing || { kind: 'none', status: 'idle' },
       url: job.url || '',
       error: job.error || '',
       createdAt: job.createdAt,
@@ -405,12 +406,22 @@ function createTransferKernel(options) {
     });
   }
 
+  async function update(ownerId, id, patch) {
+    return withJobLock(id, async () => {
+      const job = readJob(ownerId, id);
+      Object.assign(job, patch || {});
+      saveJob(job);
+      return publicStatus(job);
+    });
+  }
+
   return {
     init,
     status,
     putChunk,
     complete,
     cancel,
+    update,
     cleanupStaleJobs,
     publicStatus,
     TransferError

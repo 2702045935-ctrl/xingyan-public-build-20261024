@@ -1,5 +1,6 @@
 import CryptoKit
 import Foundation
+import Security
 
 enum TransferUploaderError: LocalizedError {
     case unsupported
@@ -76,6 +77,134 @@ private struct TransferStoredJob: Codable {
     var size: Int64
     var sha256: String
     var updatedAt: Date
+}
+
+final class TransferBackgroundSession: NSObject, URLSessionDataDelegate, URLSessionTaskDelegate {
+    static let shared = TransferBackgroundSession()
+
+    private let lock = NSLock()
+    private var continuations: [Int: CheckedContinuation<(Data, HTTPURLResponse), Error>] = [:]
+    private var progressHandlers: [Int: (Double) -> Void] = [:]
+    private var responseData: [Int: Data] = [:]
+    private var backgroundEventsCompletion: (() -> Void)?
+
+    private lazy var session: URLSession = {
+        let config = URLSessionConfiguration.background(
+            withIdentifier: "com.chris.chatnative.transfer"
+        )
+        config.sessionSendsLaunchEvents = true
+        config.isDiscretionary = false
+        config.waitsForConnectivity = true
+        config.timeoutIntervalForRequest = 180
+        config.timeoutIntervalForResource = 86_400
+        config.httpMaximumConnectionsPerHost = 3
+        return URLSession(configuration: config, delegate: self, delegateQueue: nil)
+    }()
+
+    func upload(_ request: URLRequest,
+                bodyFile: URL,
+                onProgress: @escaping (Double) -> Void) async throws -> (Data, HTTPURLResponse) {
+        let task = session.uploadTask(with: request, fromFile: bodyFile)
+        return try await withCheckedThrowingContinuation { continuation in
+            lock.lock()
+            continuations[task.taskIdentifier] = continuation
+            progressHandlers[task.taskIdentifier] = onProgress
+            responseData[task.taskIdentifier] = Data()
+            lock.unlock()
+            task.resume()
+        }
+    }
+
+    func stage(_ data: Data) throws -> URL {
+        let root = FileManager.default.urls(for: .cachesDirectory,
+                                            in: .userDomainMask).first
+            ?? FileManager.default.temporaryDirectory
+        let dir = root.appendingPathComponent("StarTransferChunks", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let file = dir.appendingPathComponent("chunk-\(UUID().uuidString.lowercased())")
+        try data.write(to: file, options: .atomic)
+        return file
+    }
+
+    func handleEventsCompletion(_ completion: @escaping () -> Void) {
+        lock.lock()
+        backgroundEventsCompletion = completion
+        lock.unlock()
+    }
+
+    func urlSession(_ session: URLSession,
+                    didReceive challenge: URLAuthenticationChallenge,
+                    completionHandler: @escaping (URLSession.AuthChallengeDisposition,
+                                                  URLCredential?) -> Void) {
+        if challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
+           let trust = challenge.protectionSpace.serverTrust {
+            if ServerTrustPolicy.canAccept(trust, host: challenge.protectionSpace.host) {
+                completionHandler(.useCredential, URLCredential(trust: trust))
+            } else {
+                completionHandler(.cancelAuthenticationChallenge, nil)
+            }
+            return
+        }
+        completionHandler(.performDefaultHandling, nil)
+    }
+
+    func urlSession(_ session: URLSession,
+                    task: URLSessionTask,
+                    didSendBodyData bytesSent: Int64,
+                    totalBytesSent: Int64,
+                    totalBytesExpectedToSend: Int64) {
+        guard totalBytesExpectedToSend > 0 else { return }
+        lock.lock()
+        let handler = progressHandlers[task.taskIdentifier]
+        lock.unlock()
+        handler?(min(1, max(0, Double(totalBytesSent) / Double(totalBytesExpectedToSend))))
+    }
+
+    func urlSession(_ session: URLSession,
+                    dataTask: URLSessionDataTask,
+                    didReceive response: URLResponse,
+                    completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
+        completionHandler(.allow)
+    }
+
+    func urlSession(_ session: URLSession,
+                    dataTask: URLSessionDataTask,
+                    didReceive data: Data) {
+        lock.lock()
+        responseData[dataTask.taskIdentifier, default: Data()].append(data)
+        lock.unlock()
+    }
+
+    func urlSession(_ session: URLSession,
+                    task: URLSessionTask,
+                    didCompleteWithError error: Error?) {
+        lock.lock()
+        let continuation = continuations.removeValue(forKey: task.taskIdentifier)
+        let progress = progressHandlers.removeValue(forKey: task.taskIdentifier)
+        let data = responseData.removeValue(forKey: task.taskIdentifier) ?? Data()
+        lock.unlock()
+        progress?(1)
+        guard let continuation else { return }
+        if let error {
+            continuation.resume(throwing: error)
+            return
+        }
+        guard let response = task.response as? HTTPURLResponse else {
+            continuation.resume(throwing: TransferUploaderError.badResponse)
+            return
+        }
+        continuation.resume(returning: (data, response))
+    }
+
+    func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession) {
+        lock.lock()
+        let completion = backgroundEventsCompletion
+        backgroundEventsCompletion = nil
+        lock.unlock()
+        if let completion {
+            DispatchQueue.main.async(execute: completion)
+        }
+    }
 }
 
 private final class TransferProgressBox {
@@ -439,6 +568,8 @@ final class TransferUploader {
                           session: URLSession,
                           onChunkProgress: @escaping (Double) -> Void) async throws {
         var lastError: Error?
+        let bodyFile = try TransferBackgroundSession.shared.stage(body)
+        defer { try? FileManager.default.removeItem(at: bodyFile) }
         for attempt in 0..<4 {
             do {
                 guard let url = URL(string: base + "/api/transfer/\(id)/chunk") else {
@@ -451,13 +582,11 @@ final class TransferUploader {
                 request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
                 request.setValue(String(index), forHTTPHeaderField: "x-transfer-chunk-index")
                 request.setValue(sha256, forHTTPHeaderField: "x-transfer-chunk-sha256")
-                let delegate = UploadProgressDelegate(onChunkProgress)
-                let (data, response) = try await session.upload(for: request,
-                                                                 from: body,
-                                                                 delegate: delegate)
-                guard let http = response as? HTTPURLResponse else {
-                    throw TransferUploaderError.badResponse
-                }
+                let (data, http) = try await TransferBackgroundSession.shared.upload(
+                    request,
+                    bodyFile: bodyFile,
+                    onProgress: onChunkProgress
+                )
                 guard (200...299).contains(http.statusCode) else {
                     throw wireError(data, status: http.statusCode)
                 }

@@ -1,5 +1,5 @@
 {
-  "version": "B670",
+  "version": "B671",
   "files": [
     {
       "path": "Sources/API.swift",
@@ -63,8 +63,8 @@
     },
     {
       "path": "Sources/PushCenter.swift",
-      "size": 9825,
-      "sha256": "2ee70b8787b578108a26fe37c5781bcfaf3b3eeed32ea30fa937091f1bab6e02"
+      "size": 10235,
+      "sha256": "a178f680060af169630a327ba9e8f0aa5a3bc1859f2060f394e2c79de8b3d469"
     },
     {
       "path": "Sources/ChatDetailView.swift",

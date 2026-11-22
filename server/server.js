@@ -5694,6 +5694,70 @@ async function inspectTransferFile(job) {
   job.storedBytes = final.length;
 }
 
+function queueTransferTranscode(job) {
+  if (job.mime.indexOf('video/') !== 0 || job.skipTranscode === true || job.size <= 2 * 1024 * 1024) {
+    return;
+  }
+  setImmediate(async () => {
+    const kernel = getTransferKernel();
+    const startedAt = new Date().toISOString();
+    let input = '';
+    let output = '';
+    try {
+      await kernel.update(job.ownerId, job.id, {
+        processing: { kind: 'video-transcode', status: 'running', startedAt: startedAt }
+      });
+      input = uploadTempPlain(job.fileName);
+      output = input + '.small.mp4';
+      const result = await runFfAsync(ffmpegExe(), [
+        '-y', '-loglevel', 'error', '-i', input,
+        '-vf', "scale='if(gt(iw,ih),min(1280,iw),-2)':'if(gt(iw,ih),-2,min(1280,ih))'",
+        '-c:v', 'libx264', '-profile:v', 'high', '-preset', 'veryfast',
+        '-b:v', '1200k', '-maxrate', '1500k', '-bufsize', '3000k',
+        '-r', '30', '-g', '60', '-keyint_min', '60', '-sc_threshold', '0',
+        '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '96k', '-ac', '1',
+        '-movflags', '+faststart', output
+      ], 600000);
+      if (!result.ok || !fs.existsSync(output)) {
+        throw new Error(String(result.err || 'ffmpeg failed').slice(0, 240));
+      }
+      const optimized = fs.readFileSync(output);
+      if (!optimized.length) throw new Error('转码结果为空');
+      const finalFile = path.join(UPLOAD_DIR, job.fileName);
+      const sealedTemp = path.join(UPLOAD_DIR, '.' + job.fileName + '.transcode.tmp');
+      fs.writeFileSync(sealedTemp, sealUploadBuffer(job.fileName, optimized));
+      fs.renameSync(sealedTemp, finalFile);
+      uploadPlainCache.delete(job.fileName);
+      await kernel.update(job.ownerId, job.id, {
+        storedBytes: optimized.length,
+        processing: {
+          kind: 'video-transcode',
+          status: 'done',
+          startedAt: startedAt,
+          finishedAt: new Date().toISOString(),
+          bytes: optimized.length
+        }
+      });
+    } catch (error) {
+      try {
+        await kernel.update(job.ownerId, job.id, {
+          processing: {
+            kind: 'video-transcode',
+            status: 'failed',
+            startedAt: startedAt,
+            finishedAt: new Date().toISOString(),
+            error: String(error && error.message || error).slice(0, 240)
+          }
+        });
+      } catch (_) { }
+      callTrace('传输后台转码失败：' + String(error && error.message || error).slice(0, 160));
+    } finally {
+      if (input) { try { fs.unlinkSync(input); } catch (_) { } }
+      if (output) { try { fs.unlinkSync(output); } catch (_) { } }
+    }
+  });
+}
+
 /** ffmpeg 读不了加密文件：先解到临时文件，跑完必须删掉（调用方负责） */
 function uploadTempPlain(name) {
   const base = path.basename(name).replace(/[^A-Za-z0-9._-]/g, '');
@@ -24432,6 +24496,7 @@ async function handleApi(req, res, pathname, query) {
           inspect: inspectTransferFile,
           onComplete: async (job) => {
             noteUpload(user.id, Math.max(0, Number(job.storedBytes) || job.size));
+            queueTransferTranscode(job);
           }
         });
         ok(res, result);

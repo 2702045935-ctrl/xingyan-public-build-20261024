@@ -40,6 +40,15 @@ require(
     "client hashing and chunk reads must stay bounded",
 )
 require(
+    "URLSessionConfiguration.background(" in CLIENT
+    and "sessionSendsLaunchEvents = true" in CLIENT
+    and "urlSessionDidFinishEvents(forBackgroundURLSession" in CLIENT
+    and "handleEventsForBackgroundURLSession" in (
+        ROOT / "Sources" / "PushCenter.swift"
+    ).read_text(encoding="utf-8"),
+    "chunk uploads must continue through a system background URLSession",
+)
+require(
     "parts[0] === 'transfer'" in SERVER
     and "'/api/transfer/init'" not in SERVER
     and "kernel.putChunk" in SERVER
@@ -56,6 +65,13 @@ require(
     and "verifyPlainHash" in KERNEL
     and "job.chunks[String(index)]" in KERNEL,
     "server chunks must be written directly into the encrypted final file",
+)
+require(
+    "queueTransferTranscode" in SERVER
+    and "setImmediate(async () =>" in SERVER
+    and "kind: 'video-transcode'" in SERVER
+    and "async function update(ownerId, id, patch)" in KERNEL,
+    "video processing must run asynchronously after media is sendable",
 )
 require(
     "TransferUploader.shared.uploadData" in API

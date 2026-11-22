@@ -132,6 +132,7 @@ async function main() {
     let transfer = initBody.data.transfer;
     assert.ok(transfer.chunkSize >= 256 * 1024, 'chunk size must be bounded');
     assert.equal(transfer.totalChunks, Math.ceil(payload.length / transfer.chunkSize));
+    assert.equal(transfer.processing.status, 'idle');
 
     const firstIndex = transfer.totalChunks - 1;
     const firstChunk = await uploadChunk(base, cookie, transfer, firstIndex, payload);
