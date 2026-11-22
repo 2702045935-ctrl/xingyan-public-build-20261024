@@ -39,7 +39,8 @@ require(
 )
 require(
     "collection.isDragging || collection.isTracking || collection.isDecelerating" in LIST
-    and "!isPrepending && (commonOrder != order || nextSignatures != signatures)" in LIST,
+    and "if !isPrepending, !isPureAppend" in LIST
+    and "(commonOrder != order || nextSignatures != signatures)" in LIST,
     "prepends must apply during touch motion through the native anchor compensation path",
 )
 require(

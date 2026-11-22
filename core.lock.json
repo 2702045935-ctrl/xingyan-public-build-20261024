@@ -1,5 +1,5 @@
 {
-  "version": "B675",
+  "version": "B676",
   "files": [
     {
       "path": "Sources/API.swift",
@@ -68,8 +68,8 @@
     },
     {
       "path": "Sources/ChatDetailView.swift",
-      "size": 406843,
-      "sha256": "0881ae3089d1ee4d8ecf92ddfadf746e0d93fa4b797602962e241b4e37ed3f99"
+      "size": 407181,
+      "sha256": "f50780636e359dc5c010a926ea12a480e2322d0e653d8a7d8bff511894ecc01d"
     },
     {
       "path": "Sources/GroupInfoView.swift",

@@ -15,7 +15,8 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "!isPrepending && (commonOrder != order || nextSignatures != signatures)" in LIST
+    "if !isPrepending, !isPureAppend" in LIST
+    and "(commonOrder != order || nextSignatures != signatures)" in LIST
     and "prependAnchor" in LIST,
     "history prepends must apply during touch motion with atomic anchor compensation",
 )

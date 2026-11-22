@@ -81,10 +81,13 @@ require(
 )
 require(
     "showsAvatar: true" in CHAT
-    and "showTail: true" in CHAT
+    and "showTail: isRunEnd(message)" in CHAT
+    and "bubble.showTail = next.showTail" in (
+        ROOT / "Sources" / "NativeChatTextRowCell.swift"
+    ).read_text(encoding="utf-8")
     and "return displayName(message)" in CHAT
     and 'UIConfig.num("chatDeliveryTicks", 0) > 0' in CHAT,
-    "WeChat rows must keep an avatar, tail and sender label on every message",
+    "WeChat rows must keep avatars and use tails only at message-run ends",
 )
 require(
     "var showsDeliveryTicks: Bool = true" in CHAT

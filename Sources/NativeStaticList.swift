@@ -424,11 +424,45 @@ where Item.ID: Hashable {
         func apply(_ next: [Item], animated: Bool) {
             guard let collection, let dataSource else { return }
             let nextOrder = next.map(\.id)
-            let isPureAppend = !order.isEmpty
+            var isPureAppend = !order.isEmpty
                 && next.count > order.count
                 && next.prefix(order.count).enumerated().allSatisfy { index, item in
                     order[index] == item.id && lookup[item.id] == item
                 }
+            if !isPureAppend, !order.isEmpty {
+                let nextByID = Dictionary(uniqueKeysWithValues: next.map { ($0.id, $0) })
+                var commonTail = 0
+                while commonTail < min(order.count, nextOrder.count),
+                      order[order.count - 1 - commonTail]
+                        == nextOrder[nextOrder.count - 1 - commonTail] {
+                    commonTail += 1
+                }
+                let oldCore = Array(order.prefix(order.count - commonTail))
+                let nextCore = Array(nextOrder.prefix(nextOrder.count - commonTail))
+                if commonTail > 0, !oldCore.isEmpty, !nextCore.isEmpty {
+                    var stable = 0
+                    for overlap in stride(
+                        from: min(oldCore.count, nextCore.count),
+                        through: 1,
+                        by: -1
+                    ) {
+                        if nextCore.prefix(overlap).elementsEqual(oldCore.suffix(overlap)) {
+                            stable = overlap
+                            break
+                        }
+                    }
+                    if stable > 0,
+                       nextCore.count >= stable,
+                       oldCore.suffix(stable).allSatisfy({ id in
+                           guard let old = lookup[id], let current = nextByID[id] else {
+                               return false
+                           }
+                           return old == current
+                       }) {
+                        isPureAppend = true
+                    }
+                }
+            }
             // The first item is often a permanent history sentinel. Detect a
             // prepend from any existing row that moved down, rather than only
             // checking item zero, otherwise the atomic offset compensation is
@@ -480,7 +514,8 @@ where Item.ID: Hashable {
                collection.isDragging || collection.isTracking || collection.isDecelerating {
                 let known = Set(order)
                 let commonOrder = nextOrder.filter { known.contains($0) }
-                if !isPrepending && (commonOrder != order || nextSignatures != signatures) {
+                if !isPrepending, !isPureAppend,
+                   (commonOrder != order || nextSignatures != signatures) {
                     pending = next
                     return
                 }

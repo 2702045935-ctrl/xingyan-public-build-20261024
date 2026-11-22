@@ -14,7 +14,9 @@ def require(condition: bool, message: str) -> None:
         raise SystemExit("native list incremental signature verification failed: " + message)
 
 
-require("let isPureAppend = !order.isEmpty" in LIST,
+require("var isPureAppend = !order.isEmpty" in LIST
+        and "order[order.count - 1 - commonTail]" in LIST
+        and "if !isPrepending, !isPureAppend" in LIST,
         "tail appends must avoid full prepend scans")
 require(
     "nextSignatures = Dictionary(uniqueKeysWithValues: next.map {" not in LIST,

@@ -1240,6 +1240,10 @@ struct ChatDetailView: View {
             hasOlder = true
         }
         rebuildIndex()
+        if message.senderId == myId {
+            followOwnSendUntil = Date().addingTimeInterval(2)
+            pinToBottomSoon(force: true)
+        }
     }
 
     private func upsertVisibleMessage(_ message: Message) {
@@ -3675,6 +3679,7 @@ struct ChatDetailView: View {
                 UIConfig.num("chatDeliveryTicks", 0) > 0
                     ? deliveryState(for: message).accessibilityText
                     : "",
+                isRunEnd(message) ? "tail" : "no-tail",
                 asrBusy.contains(message.id) ? "asr-busy" : "",
                 backgroundPath,
                 Lang.code,
@@ -3731,7 +3736,8 @@ struct ChatDetailView: View {
             textColor: UIColor(mine ? ChatTheme.mineInk : ChatTheme.ink),
             bubbleColor: UIColor(mine ? ChatTheme.bubbleMine : ChatTheme.bubbleOther),
             secondaryColor: UIColor(ChatTheme.secondary),
-            mentionColor: UIColor(mine ? ChatTheme.mentionMeOnMine : ChatTheme.mentionMe)
+            mentionColor: UIColor(mine ? ChatTheme.mentionMeOnMine : ChatTheme.mentionMe),
+            showTail: isRunEnd(message)
         )
     }
 
@@ -4141,8 +4147,10 @@ struct ChatDetailView: View {
         pinTask = Task { @MainActor in
             try? await Task.sleep(nanoseconds: force ? 24_000_000 : 280_000_000)
             if Task.isCancelled { return }
-            guard atBottomNow, !holdScroll, !ChatScrollHandle.shared.moving else { return }
+            guard !ChatScrollHandle.shared.moving else { return }
+            guard force || (atBottomNow && !holdScroll) else { return }
             atBottom = true
+            wasAtBottom = true
             if force {
                 ChatScrollHandle.shared.allowAutomaticPinning()
                 if usesNativeMessageList {
@@ -4675,7 +4683,7 @@ struct ChatDetailView: View {
                    reservesAvatarSpace: true,
                    currentNickname: app.me?.nickname ?? "",
                    currentUsername: app.me?.username ?? "",
-                   showTail: true,
+                   showTail: isRunEnd(message),
                    showsDeliveryTicks: UIConfig.num("chatDeliveryTicks", 0) > 0,
                    onTapTransfer: { info in billInfo = info },
                    onOpenImage: { path in openImage(path) },
