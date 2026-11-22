@@ -278,10 +278,27 @@ final class AppState: ObservableObject {
     /// the local snapshot into memory before the destination is pushed, while
     /// the tap pressing the source row is still visible on screen.
     func prepareChatForImmediatePresentation(_ chat: Chat) {
-        guard prefetched[chat.id]?.isEmpty != false else { return }
         let cached = LocalStore.cachedChat(chat.id)
-        if !cached.isEmpty {
-            prefetched[chat.id] = cached
+        rememberChatPageMessages(chat.id, cached)
+    }
+
+    /// Keep the in-memory first-frame page and the durable chat page in sync.
+    /// A sent message can be acknowledged before the delayed disk write, so a
+    /// quick exit/re-entry must merge both sources instead of trusting the old
+    /// in-memory page.
+    func rememberChatPageMessages(_ chatId: String, _ incoming: [Message]) {
+        guard !incoming.isEmpty else { return }
+        var byId: [String: Message] = [:]
+        for message in prefetched[chatId] ?? [] {
+            byId[message.id] = message
+        }
+        for message in incoming {
+            byId[message.id] = message
+        }
+        prefetched[chatId] = byId.values.sorted {
+            let left = ($0.seq ?? 0, $0.createdAt ?? "")
+            let right = ($1.seq ?? 0, $1.createdAt ?? "")
+            return left < right
         }
     }
 

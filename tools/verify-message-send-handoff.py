@@ -67,5 +67,12 @@ require(
     and "Only a non-regressing" in APP,
     "leaving chat must never overwrite a newer pending summary with messages.last",
 )
+require(
+    "func rememberChatPageMessages(" in APP
+    and "rememberChatPageMessages(chat.id, cached)" in APP
+    and "app.rememberChatPageMessages(chat.id, [message])" in CHAT
+    and "app.rememberChatPageMessages(chat.id, snapshot)" in CHAT,
+    "confirmed sends and exit/re-entry must merge the current chat page into the in-memory cache",
+)
 
 print("message-send-handoff: passed")

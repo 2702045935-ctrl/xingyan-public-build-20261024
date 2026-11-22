@@ -3241,6 +3241,7 @@ struct ChatDetailView: View {
             patAnimationTask?.cancel()
             patAnimationTask = nil
             let snapshot = messages
+            app.rememberChatPageMessages(chat.id, snapshot)
             let clearVersion = LocalStore.clearVersion(chat.id)
             Task.detached(priority: .utility) {
                 LocalStore.saveChat(
@@ -6915,6 +6916,7 @@ struct ChatDetailView: View {
                        两步在同一个 MainActor 事务里完成，避免同一条消息短暂出现两张气泡。 */
                     outbox.removeAll { $0.id == p.id }
                     appendVisibleMessage(message)
+                    app.rememberChatPageMessages(chat.id, [message])
                     app.ensureChatVisible(chat, latest: message)
                 } else if let i2 = outbox.firstIndex(where: { $0.id == p.id }) {
                     outbox[i2].sending = false
