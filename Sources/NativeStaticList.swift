@@ -171,6 +171,8 @@ where Item.ID: Hashable {
         collection.delaysContentTouches = false
         collection.canCancelContentTouches = true
         collection.scrollsToTop = true
+        collection.panGestureRecognizer.delaysTouchesBegan = false
+        collection.panGestureRecognizer.maximumNumberOfTouches = 1
         collection.isPrefetchingEnabled = true
         collection.alpha = initiallyPinnedToBottom ? 0 : 1
         collection.delegate = context.coordinator
@@ -269,6 +271,7 @@ where Item.ID: Hashable {
         private var waitsForInitialBottom = false
         private var sizeObservation: NSKeyValueObservation?
         private var lastScrollState: Bool?
+        private var lastReportedOffsetY = CGFloat.greatestFiniteMagnitude
         private var order: [Item.ID] = []
         fileprivate var signatures: [Item.ID: String] = [:]
         private var heights: [Item.ID: CGFloat] = [:]
@@ -367,6 +370,7 @@ where Item.ID: Hashable {
             publishScrollState(
                 scrollView.isDragging || scrollView.isDecelerating || scrollView.isTracking
             )
+            lastReportedOffsetY = scrollView.contentOffset.y
         }
 
         func publishScrollState(_ active: Bool) {
@@ -778,7 +782,11 @@ where Item.ID: Hashable {
             if scrollView.isDragging || scrollView.isTracking || scrollView.isDecelerating {
                 ChatScrollHandle.shared.noteUserMotion()
             }
-            onScrollOffset?(scrollView.contentOffset.y)
+            let y = scrollView.contentOffset.y
+            if abs(y - lastReportedOffsetY) >= 6 {
+                lastReportedOffsetY = y
+                onScrollOffset?(y)
+            }
             publishScrollState(
                 scrollView.isDragging || scrollView.isTracking || scrollView.isDecelerating
             )

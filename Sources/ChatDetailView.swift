@@ -3752,17 +3752,23 @@ struct ChatDetailView: View {
             media = .image(path: message.imagePath,
                            pixel: message.imagePixelSize ?? CGSize(width: 4, height: 3))
         case "images":
-            let object = dict(message.body)
+            let object = ((try? JSONSerialization.jsonObject(
+                with: Data(message.body.utf8)
+            )) as? [String: Any]) ?? [:]
             let paths = (object["paths"] as? [String]) ?? []
             guard !paths.isEmpty else { return nil }
             media = .images(paths: paths)
         case "video":
-            let object = dict(message.body)
+            let object = ((try? JSONSerialization.jsonObject(
+                with: Data(message.body.utf8)
+            )) as? [String: Any]) ?? [:]
             let cover = (object["cover"] as? String) ?? ""
             let seconds = (object["seconds"] as? NSNumber)?.intValue ?? 0
             media = .video(cover: cover, seconds: seconds)
         case "file":
-            let object = dict(message.body)
+            let object = ((try? JSONSerialization.jsonObject(
+                with: Data(message.body.utf8)
+            )) as? [String: Any]) ?? [:]
             let name = (object["name"] as? String) ?? Tr("文件")
             let path = (object["url"] as? String) ?? ""
             let bytes = (object["bytes"] as? NSNumber)?.intValue ?? 0
@@ -3837,21 +3843,22 @@ struct ChatDetailView: View {
                     onTap: {
                         switch model.kind {
                         case .image(let imagePath, _):
-                            onOpenImage?(imagePath)
+                            openImage(imagePath)
                         case .images(_):
-                            if !path.isEmpty { onOpenImage?(path) }
+                            if !path.isEmpty { openImage(path) }
                         case .video:
                             if let url = API.shared.assetURL(
                                 Self.firstJSONString(message.body, key: "url") ?? ""
                             ) {
-                                onOpenVideo?(url)
+                                videoToPlay = url
+                                videoPayload = message.body
                             }
                         case .file:
-                            onOpenFile?(message.body)
+                            openFile(message.body)
                         }
                     },
                     onAvatar: {
-                        onOpenAvatar?(message.senderId ?? "")
+                        openAvatar(message.senderId ?? "")
                     }
                 )
                 return view

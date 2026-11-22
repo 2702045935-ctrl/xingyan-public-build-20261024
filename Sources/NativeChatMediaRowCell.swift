@@ -230,11 +230,13 @@ final class NativeChatMediaRowView: UIView {
                     onAvatar: @escaping () -> Void) {
         if tapRecognizer == nil {
             let tap = UITapGestureRecognizer(target: self, action: #selector(tapped))
+            tap.cancelsTouchesInView = false
             addGestureRecognizer(tap)
             tapRecognizer = tap
         }
         if avatarRecognizer == nil {
             let tap = UITapGestureRecognizer(target: self, action: #selector(avatarTapped))
+            tap.cancelsTouchesInView = false
             avatar.addGestureRecognizer(tap)
             avatarRecognizer = tap
         }

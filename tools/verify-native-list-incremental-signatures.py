@@ -48,5 +48,12 @@ require(
     and "NativeChatTimeRowView" in TEXT_ROWS,
     "text and high-frequency media rows must use native cell paths",
 )
+require(
+    "lastReportedOffsetY" in LIST
+    and ">= 6" in LIST
+    and "panGestureRecognizer.delaysTouchesBegan = false" in LIST
+    and "long.cancelsTouchesInView = false" in TEXT_ROWS,
+    "scroll tracking must stay direct and avoid per-pixel SwiftUI callbacks",
+)
 
 print("native-list-incremental-signatures: passed")

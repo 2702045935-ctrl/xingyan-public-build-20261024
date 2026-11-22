@@ -169,11 +169,15 @@ final class NativeChatTextRowView: UIView {
         addSubview(bubble)
         bubble.addSubview(textLabel)
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
+        tap.cancelsTouchesInView = false
         addGestureRecognizer(tap)
         let long = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
         long.minimumPressDuration = 0.42
+        long.cancelsTouchesInView = false
+        long.delaysTouchesBegan = false
         addGestureRecognizer(long)
         let avatarTap = UITapGestureRecognizer(target: self, action: #selector(handleAvatarTap))
+        avatarTap.cancelsTouchesInView = false
         avatar.isUserInteractionEnabled = true
         avatar.addGestureRecognizer(avatarTap)
     }
