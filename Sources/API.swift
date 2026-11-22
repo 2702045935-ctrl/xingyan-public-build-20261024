@@ -354,6 +354,7 @@ struct Message: Codable, Identifiable, Hashable {
     var call: CallMeta?
 
     var mentions: [String]?
+    var mentionAll: Bool? = nil
 
     var imgW: Int?
     var imgH: Int?
@@ -384,8 +385,9 @@ struct Message: Codable, Identifiable, Hashable {
     }
 
     func mentionsUser(_ userId: String) -> Bool {
-        guard !userId.isEmpty, let ids = mentions else { return false }
-        return ids.contains(userId)
+        guard !userId.isEmpty else { return false }
+        if mentionAll == true { return true }
+        return mentions?.contains(userId) == true
     }
 
     private var patInfo: [String: Any]? {

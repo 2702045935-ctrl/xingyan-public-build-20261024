@@ -7264,9 +7264,22 @@ function rememberCachedUsers(users) {
   if (changed) saveUserCache();
 }
 
-const findUser = (id) => db.users.find((u) => u.id === id)
-  || (loadUserCache(), remoteUsers.get(String(id || '')))
-  || remoteCallUsers.get(String(id || '')) || null;
+let userIndexSource = null;
+let userIndexLength = -1;
+let userById = new Map();
+const findUser = (id) => {
+  if (userIndexSource !== db.users || userIndexLength !== db.users.length) {
+    userById = new Map();
+    db.users.forEach((user) => {
+      if (user && user.id && !userById.has(user.id)) userById.set(user.id, user);
+    });
+    userIndexSource = db.users;
+    userIndexLength = db.users.length;
+  }
+  return userById.get(String(id || ''))
+    || (loadUserCache(), remoteUsers.get(String(id || '')))
+    || remoteCallUsers.get(String(id || '')) || null;
+};
 setInterval(() => {
   const cutoff = Date.now() - 10 * 60 * 1000;
   remoteCallUsers.forEach((user, id) => {
@@ -7684,9 +7697,51 @@ function setClearedSeq(userId, chatId, seq) {
   return value;
 }
 
-function unreadCount(userId, chat) {
+function unreadIndexForMessages(messages) {
+  const eligibleSeqs = [];
+  const ownSeqs = new Map();
+  (messages || []).forEach((message) => {
+    if (!message || message.recalled) return;
+    const seq = Number(message.seq || 0);
+    eligibleSeqs.push(seq);
+    const senderId = String(message.senderId || '');
+    if (!senderId) return;
+    if (!ownSeqs.has(senderId)) ownSeqs.set(senderId, []);
+    ownSeqs.get(senderId).push(seq);
+  });
+  return { eligibleSeqs, ownSeqs };
+}
+
+function upperBound(values, target) {
+  let low = 0;
+  let high = values.length;
+  while (low < high) {
+    const mid = (low + high) >> 1;
+    if (values[mid] <= target) low = mid + 1;
+    else high = mid;
+  }
+  return low;
+}
+
+function unreadCountFromIndex(userId, chat, index) {
   const last = Math.max(lastReadSeq(userId, chat.id), clearedSeqFor(userId, chat.id));
-  const messages = loadMessages(chat.id);
+  const eligibleSeqs = index.eligibleSeqs;
+  const ownSeqs = index.ownSeqs.get(userId) || [];
+  const total = eligibleSeqs.length - upperBound(eligibleSeqs, last);
+  const own = ownSeqs.length - upperBound(ownSeqs, last);
+  const count = total - own;
+  if (count > 0) return count;
+  return (chat.flaggedUnread || []).includes(userId) ? 1 : 0;
+}
+
+function unreadCount(userId, chat, summaryContext) {
+  const last = Math.max(lastReadSeq(userId, chat.id), clearedSeqFor(userId, chat.id));
+  if (summaryContext && summaryContext.unreadIndex) {
+    return unreadCountFromIndex(userId, chat, summaryContext.unreadIndex);
+  }
+  const messages = (summaryContext && Array.isArray(summaryContext.messageRows))
+    ? summaryContext.messageRows
+    : loadMessages(chat.id);
   let n = 0;
   /* 绝大多数会话只有少量未读；从尾部扫到已读游标即可，不能每个收件人
      都把整个 5000 条消息缓存过滤一遍。 */
@@ -7930,12 +7985,15 @@ function chatSummary(chat, forUserId, lastHint, summaryContext) {
      点进会话（客户端报 read）才消失。 */
   let mentionMe = false;
   if (chat.type === 'group') {
-    const rows = loadMessages(chat.id);
+    const rows = summaryContext && Array.isArray(summaryContext.recentMentionRows)
+      ? summaryContext.recentMentionRows
+      : loadMessages(chat.id);
     const readSeq = (((db.reads || {})[forUserId]) || {})[chat.id] || 0;
     for (let i = rows.length - 1; i >= 0 && i >= rows.length - 40; i--) {
       const m = rows[i];
       if (Number(m.seq || 0) <= readSeq) break;
-      if (m.senderId !== forUserId && Array.isArray(m.mentions) && m.mentions.indexOf(forUserId) >= 0) {
+      if (m.senderId !== forUserId && (m.mentionAll === true
+          || (Array.isArray(m.mentions) && m.mentions.indexOf(forUserId) >= 0))) {
         mentionMe = true;
         break;
       }
@@ -7987,7 +8045,7 @@ function chatSummary(chat, forUserId, lastHint, summaryContext) {
       /* 时间是最后一条消息的时间（不受转账预览被跳过的影响） */
       createdAt: last.createdAt
     } : null,
-    unread: unreadCount(forUserId, chat),
+    unread: unreadCount(forUserId, chat, summaryContext),
     pinned: (chat.pinnedFor || []).includes(forUserId),
     /* 消息免打扰（群屏蔽）：列表里显示小铃铛划掉，红点不弹 */
     muted: (chat.mutedFor || []).includes(forUserId),
@@ -8647,13 +8705,11 @@ function relayToShardPorts(userId, payload, ports) {
   });
 }
 
-function relayToShardPeers(userId, payload) {
-  relayToShardPorts(userId, payload, shardPorts());
-}
-
 function sendTo(userId, payload) {
   const sent = sendToLocal(userId, payload);
-  relayToShardPeers(userId, payload);
+  /* 只把消息转发给「确实有这条用户连接」的分片。以前每个人都会向所有
+     分片各发一次请求，万人群广播时会平白产生几万次本地 HTTP 请求。 */
+  relayToShardPorts(userId, payload, onlineShardPorts(userId));
   return sent;
 }
 
@@ -8676,11 +8732,28 @@ function onlinePresenceSet() {
 
 function onlineShardPorts(userId) {
   const ports = [];
-  if (connections.has(userId)) ports.push(PORT);
+  const local = connections.get(userId);
+  if (local && Array.from(local).some((socket) => socket && !socket.destroyed)) {
+    ports.push(PORT);
+  }
   peerOnlineCache.forEach((set, port) => {
     if (set.has(userId)) ports.push(port);
   });
   return ports;
+}
+
+function onlineMembersOfChat(chat, online) {
+  const presence = online || onlinePresenceSet();
+  const memberIds = (chat && Array.isArray(chat.memberIds)) ? chat.memberIds : [];
+  if (memberIds.length <= presence.size) {
+    return memberIds.filter((id) => presence.has(id));
+  }
+  const members = new Set(memberIds);
+  const recipients = [];
+  presence.forEach((id) => {
+    if (members.has(id)) recipients.push(id);
+  });
+  return recipients;
 }
 
 function broadcastPresenceToPeers(userId, online) {
@@ -8778,7 +8851,7 @@ function sendToAll(payload) {
 
 function sendToChat(chat, payload, exceptUserId) {
   let sent = 0;
-  chat.memberIds.forEach((id) => {
+  onlineMembersOfChat(chat).forEach((id) => {
     if (exceptUserId && id === exceptUserId) return;
     sent += sendTo(id, payload);
   });
@@ -8790,10 +8863,21 @@ function fanoutChatMessage(chat, message, sender, clientId) {
   const memberPreviewIds = chat.type === 'group'
     ? chat.memberIds.slice(0, 64)
     : chat.memberIds;
-  const summaryContext = { online, memberPreviewIds };
+  const recipients = onlineMembersOfChat(chat, online);
+  const messageRows = loadMessages(chat.id);
+  const summaryContext = {
+    online,
+    memberPreviewIds,
+    messageRows,
+    recentMentionRows: chat.type === 'group' ? messageRows.slice(-40) : null
+  };
+  /* 多人同时在线时，把「哪些消息算未读、谁被 @」只建一次索引。
+     以前每个收件人都会重新遍历同一份消息缓存，1 万人群会放大成万倍。 */
+  if (recipients.length > 1) {
+    summaryContext.unreadIndex = unreadIndexForMessages(messageRows);
+  }
   let sent = 0;
-  for (const id of chat.memberIds) {
-    if (!online.has(id)) continue;
+  for (const id of recipients) {
     const out = chat.type === 'group'
       ? Object.assign({}, message, { senderName: groupNameFor(chat, id, sender) })
       : message;
@@ -9166,8 +9250,9 @@ function inQuietHours(n) {
 }
 
 function pushForMessage(sender, chat, message) {
-  const p = readPush().config;
-  if (!p.onMessage) return;
+  const push = readPush();
+  const p = push.config;
+  if (!p.onMessage || !pushReady()) return;
   /* 微信那套规则：系统消息、撤回提示不推；自己发的不推；在线的（长连接活着）不推 */
   if (!message || message.kind === 'system' || message.recalled) return;
   const title = chat.type === 'group'
@@ -9178,8 +9263,12 @@ function pushForMessage(sender, chat, message) {
     : pushPreview(message.kind, message.content);
   /* 这条消息 @ 了谁：被 @ 的人通知里带「有人@我」（微信就是这么提示的） */
   const atList = Array.isArray(message.mentions) ? message.mentions : [];
+  const tokens = push.tokens || {};
+  /* 离线推送只遍历真的有设备 token 的成员。以前会先把万人群所有成员
+     逐个查用户、查连接、写“未配置推送”日志，单条消息能卡到数秒。 */
   chat.memberIds.forEach((id) => {
     if (id === sender.id) return;
+    if (!Array.isArray(tokens[id]) || !tokens[id].length) return;
     const who = findUser(id);
     if (!who || who.bot) return;              // 机器人不用推
     if (isUserConnected(id)) return;          // 在线（连着长连接）就不推，避免重复提醒
@@ -9188,7 +9277,7 @@ function pushForMessage(sender, chat, message) {
     if ((chat.mutedFor || []).includes(id)) return;              // 这个会话开了消息免打扰
     if (inQuietHours(n)) return;                                 // 免打扰时段：不响不震也不打扰
     /* 「通知显示消息详情」关掉：只提示"你收到一条新消息"（微信就是这样） */
-    const atMe = atList.indexOf(id) >= 0;
+    const atMe = message.mentionAll === true || atList.indexOf(id) >= 0;
     const body = n.showDetail === false
       ? (atMe ? '有人@我' : '你收到一条新消息')
       : (atMe ? '[有人@我] ' + detail : detail);
@@ -10722,25 +10811,29 @@ function deliverMessage(user, chatId, kind, content, clientId, mentionHint, medi
      两条路合起来，不管哪个版本发的消息，被 @ 的人都能收到提示。
      @所有人 只有群主能用（微信的规矩）。 */
   let mentionIds = [];
+  let mentionAll = false;
   if (chat.type === 'group' && type === 'text') {
     const want = Array.isArray(mentionHint)
       ? mentionHint.map((x) => String(x || '')).filter(Boolean).slice(0, 200)
       : [];
-    chat.memberIds.forEach((id) => {
-      if (id === user.id) return;
-      if (want.indexOf(id) >= 0) { mentionIds.push(id); return; }
-      const other = findUser(id);
-      if (!other) return;
-      /* 备注名 / 昵称 / 微信号，三种写法都认 */
-      /* 群昵称 / 备注名 / 昵称 / 微信号，几种写法都认 */
-      const names = [memberAlias(chat, id), displayNameFor(user.id, other), other.nickname, other.username]
-        .filter((n) => n && String(n).trim());
-      if (names.some((n) => body.indexOf('@' + String(n).trim()) >= 0)) mentionIds.push(id);
-    });
-    if (body.indexOf('@所有人') >= 0 && chat.ownerId === user.id) {
+    const memberSet = new Set(chat.memberIds);
+    mentionIds = Array.from(new Set(want))
+      .filter((id) => id !== user.id && memberSet.has(id));
+    /* 新客户端直接带上被 @ 的成员 ID。只有老客户端不带 hint 时才按正文
+       逐个成员匹配名字，避免每条万人群消息都遍历 10,000 个成员。 */
+    if (!want.length) {
       chat.memberIds.forEach((id) => {
-        if (id !== user.id && mentionIds.indexOf(id) < 0) mentionIds.push(id);
+        if (id === user.id) return;
+        const other = findUser(id);
+        if (!other) return;
+        /* 群昵称 / 备注名 / 昵称 / 微信号，几种写法都认 */
+        const names = [memberAlias(chat, id), displayNameFor(user.id, other), other.nickname, other.username]
+          .filter((n) => n && String(n).trim());
+        if (names.some((n) => body.indexOf('@' + String(n).trim()) >= 0)) mentionIds.push(id);
       });
+    }
+    if (body.indexOf('@所有人') >= 0 && chat.ownerId === user.id) {
+      mentionAll = true;
     }
   }
 
@@ -10766,6 +10859,7 @@ function deliverMessage(user, chatId, kind, content, clientId, mentionHint, medi
   }
   /* 这条消息 @ 了谁：存下来，收消息的人靠它显示「有人@我」，也是老客户端的高亮依据 */
   if (mentionIds.length) message.mentions = mentionIds;
+  if (mentionAll) message.mentionAll = true;
   /* 客户端给的这条本地 id：离线重发时靠它去重（同一 clientId 只落一条） */
   if (clientId) message.clientId = String(clientId).slice(0, 60);
   /* 图片宽高（骨架落位）：发送端带上来的优先；没带（老客户端 / 服务端自己发的图）
@@ -23052,9 +23146,7 @@ async function handleApi(req, res, pathname, query) {
     else delete chat.aliases[targetId];
     saveChats();
     /* 群里其他人立刻看到新的群昵称（消息里那个名字跟着变） */
-    chat.memberIds.forEach((id) => {
-      sendTo(id, { type: 'group-alias', chatId: chat.id, userId: targetId, alias });
-    });
+    sendToChat(chat, { type: 'group-alias', chatId: chat.id, userId: targetId, alias });
     ok(res, { alias, userId: targetId,
       name: alias || displayNameFor(user.id, findUser(targetId)) });
     return;
@@ -23165,12 +23257,14 @@ async function handleApi(req, res, pathname, query) {
     const chat = db.chats.find((c) => c.id === chatId && c.type === 'group');
     if (!chat || chat.dismissed) return fail(res, 404, '这个群已经不在了');
     if (chat.memberIds.includes(user.id)) return ok(res, { joined: false, already: true, chat: chatSummary(chat, user.id) });
-    const joinCap = Math.max(2, Math.min(10000, Number(im.maxGroupMembers) || 100));
+    const joinCap = Math.max(2, Math.min(10000, Number(readIm().maxGroupMembers) || 100));
     if (chat.memberIds.length >= joinCap) return fail(res, 422, '群人数满了');
     chat.memberIds.push(user.id);
     buildGroupAvatar(chat);
     const sys = pushSystemMessage(chat, user.nickname + ' 通过群二维码加入了群聊');
-    chat.memberIds.forEach((id) => sendTo(id, { type: 'message', message: sys, chat: chatSummary(chat, id), clientId: null }));
+    onlineMembersOfChat(chat).forEach((id) => sendTo(id, {
+      type: 'message', message: sys, chat: chatSummary(chat, id), clientId: null
+    }));
     saveChats();
     ok(res, { joined: true, chat: chatSummary(chat, user.id) });
     return;
@@ -23187,7 +23281,9 @@ async function handleApi(req, res, pathname, query) {
     const body = await readBody(req);
     chat.muteAll = body.on !== false;
     const sys = pushSystemMessage(chat, chat.muteAll ? '群主开启了全员禁言' : '群主关闭了全员禁言');
-    chat.memberIds.forEach((id) => sendTo(id, { type: 'message', message: sys, chat: chatSummary(chat, id), clientId: null }));
+    onlineMembersOfChat(chat).forEach((id) => sendTo(id, {
+      type: 'message', message: sys, chat: chatSummary(chat, id), clientId: null
+    }));
     saveChats();
     ok(res, { muteAll: chat.muteAll });
     return;
@@ -23234,7 +23330,9 @@ async function handleApi(req, res, pathname, query) {
     }
     if (!changed) return fail(res, 422, '没有要修改的内容');
     saveChats();
-    chat.memberIds.forEach((id) => sendTo(id, { type: 'chat', action: 'updated', chat: chatSummary(chat, id) }));
+    onlineMembersOfChat(chat).forEach((id) => sendTo(id, {
+      type: 'chat', action: 'updated', chat: chatSummary(chat, id)
+    }));
     ok(res, { name: chat.name, announce: chat.announce || '' });
     return;
   }
@@ -23337,7 +23435,7 @@ async function handleApi(req, res, pathname, query) {
     const want = (Array.isArray(body.userIds) ? body.userIds : []).map((x) => String(x)).slice(0, 50);
     if (!want.length) return fail(res, 422, '先选要拉进来的人');
 
-    const MAX_MEMBERS = Math.max(2, Math.min(10000, Number(im.maxGroupMembers) || 100));
+    const MAX_MEMBERS = Math.max(2, Math.min(10000, Number(readIm().maxGroupMembers) || 100));
     const added = [];
     let skipped = 0;
     for (const id of want) {
@@ -23357,7 +23455,9 @@ async function handleApi(req, res, pathname, query) {
     buildGroupAvatar(chat);
     const names = added.map((u) => u.nickname || u.username).join('、');
     const sys = pushSystemMessage(chat, user.nickname + ' 邀请 ' + names + ' 加入了群聊');
-    chat.memberIds.forEach((id) => sendTo(id, { type: 'message', message: sys, chat: chatSummary(chat, id), clientId: null }));
+    onlineMembersOfChat(chat).forEach((id) => sendTo(id, {
+      type: 'message', message: sys, chat: chatSummary(chat, id), clientId: null
+    }));
     /* 新进来的人：推一下「你被拉进这个群了」，App 收到就刷新会话列表 */
     added.forEach((u) => sendTo(u.id, { type: 'chat', action: 'added', chatId: chat.id, chat: chatSummary(chat, u.id) }));
     saveChats();
@@ -23386,7 +23486,9 @@ async function handleApi(req, res, pathname, query) {
     chat.pinnedFor = (chat.pinnedFor || []).filter((id) => id !== target.id);
     buildGroupAvatar(chat);
     const sys = pushSystemMessage(chat, target.nickname + ' 被移出了群聊');
-    chat.memberIds.forEach((id) => sendTo(id, { type: 'message', message: sys, chat: chatSummary(chat, id), clientId: null }));
+    onlineMembersOfChat(chat).forEach((id) => sendTo(id, {
+      type: 'message', message: sys, chat: chatSummary(chat, id), clientId: null
+    }));
     sendTo(target.id, { type: 'chat', action: 'removed', chatId: chat.id });
     saveChats();
     observeShardShadow('chats.kick', { chatId: chat.id, userId: target.id });

@@ -13,7 +13,7 @@ def require(condition: bool, message: str) -> None:
 
 require(
     "adaptiveTopGlyphShadow" in DETAIL
-    and ".shadow(color: adaptiveTopGlyphShadow" in DETAIL,
+    and "? OfficialAccountVisual.glow : adaptiveTopGlyphShadow" in DETAIL,
     "top-bar glyphs need an adaptive contrast edge",
 )
 require(

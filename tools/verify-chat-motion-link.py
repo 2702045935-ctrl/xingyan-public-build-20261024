@@ -58,8 +58,7 @@ require(
     "plain chat links must use the stronger recipient-side blue",
 )
 require(
-    "WhatsAppMessageTicks(count: 1" in DETAIL
-    and "WhatsAppMessageTicks(count: deliveryState.tickCount" in DETAIL
+    "WhatsAppMessageTicks(count: deliveryState.tickCount" in DETAIL
     and "self == .sent ? 1 : 2" in DETAIL
     and "static let readReceipt = Color(hex: 0x53BDEB)" in DETAIL,
     "outgoing messages must use single and WhatsApp-style double ticks",

@@ -27,9 +27,27 @@ require(
 )
 require(
     "function fanoutChatMessage(chat, message, sender, clientId)" in SERVER
-    and "if (!online.has(id)) continue;" in SERVER
+    and "function onlineMembersOfChat(chat, online)" in SERVER
+    and "const recipients = onlineMembersOfChat(chat, online);" in SERVER
+    and "for (const id of recipients)" in SERVER
     and "fanoutChatMessage(chat, message, user, clientId);" in SERVER,
     "message fanout must personalize summaries only for currently online members",
+)
+require(
+    "summaryContext.unreadIndex = unreadIndexForMessages(messageRows);" in SERVER
+    and "recentMentionRows: chat.type === 'group' ? messageRows.slice(-40) : null" in SERVER
+    and "if (mentionAll) message.mentionAll = true;" in SERVER
+    and "if mentionAll == true { return true }" in API,
+    "large-group fanout must share unread and mention state without copying all members",
+)
+require(
+    "relayToShardPorts(userId, payload, onlineShardPorts(userId));" in SERVER
+    and "let userById = new Map();" in SERVER
+    and "return userById.get(String(id || ''))" in SERVER
+    and "if (!p.onMessage || !pushReady()) return;" in SERVER
+    and "if (!Array.isArray(tokens[id]) || !tokens[id].length) return;" in SERVER
+    and "Number(readIm().maxGroupMembers) || 100" in SERVER,
+    "large-group routing must avoid offline shard fanout and linear user lookup",
 )
 require(
     "Number(query.get('limit') || 0)" in SERVER
@@ -38,7 +56,7 @@ require(
     "the group member API must support bounded cursor pagination",
 )
 require(
-    "Math.min(10000, Number(im.maxGroupMembers) || 100)" in SERVER,
+    "Math.min(10000, Number(readIm().maxGroupMembers) || 100)" in SERVER,
     "configured large groups must support a 10000-member ceiling",
 )
 require(
@@ -56,6 +74,10 @@ require(
 require(
     "python3 tools/verify-large-group-runtime.py" in WORKFLOW,
     "large-group runtime regression must run in the iOS gate",
+)
+require(
+    "node server/test/large-group-10000.test.js" in WORKFLOW,
+    "the 10000-member end-to-end runtime test must run in the iOS gate",
 )
 require(
     'profile == "group-300000-members-10000"' in CONFIG
