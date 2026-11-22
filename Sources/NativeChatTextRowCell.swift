@@ -116,7 +116,12 @@ private final class NativeChatAvatarView: UIImageView {
             let disk = await Task.detached(priority: .utility) {
                 ImageStore.shared.diskRead(key)
             }.value
-            let data = disk ?? (try? await API.shared.imageData(url))
+            let data: Data?
+            if let disk {
+                data = disk
+            } else {
+                data = try? await API.shared.imageData(url)
+            }
             guard let data, let image = RemoteImage.downsampled(data, maxSide: 150) else {
                 return
             }
