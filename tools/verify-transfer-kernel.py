@@ -33,6 +33,12 @@ require(
     "client must persist jobs and resume acknowledged chunks with bounded concurrency",
 )
 require(
+    "allowsLegacyFallback" in CLIENT
+    and "TransferJobStore.shared.remove(key)" in CLIENT
+    and "error.allowsLegacyFallback" in API,
+    "rolling upgrades must recover from stale jobs and unavailable transfer routes",
+)
+require(
     "SHA256" in CLIENT
     and "fileFingerprint" in CLIENT
     and "readChunk" in CLIENT

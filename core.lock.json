@@ -1,10 +1,10 @@
 {
-  "version": "B671",
+  "version": "B672",
   "files": [
     {
       "path": "Sources/API.swift",
-      "size": 226680,
-      "sha256": "12a8765e76c12da3d4224e08ef3c9c5a0d80ccaa501e2f216c4ce030d952e524"
+      "size": 226701,
+      "sha256": "9a5b4ead5f71de076140fa56fdb92095e38693b8b9b9c82ecee74ae4edb85ed3"
     },
     {
       "path": "Sources/App.swift",

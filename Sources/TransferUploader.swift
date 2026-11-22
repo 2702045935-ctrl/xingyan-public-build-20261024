@@ -29,6 +29,17 @@ enum TransferUploaderError: LocalizedError {
         return false
     }
 
+    var allowsLegacyFallback: Bool {
+        switch self {
+        case .unsupported, .badResponse:
+            return true
+        case .http(let status, _):
+            return [404, 405, 426, 500, 501, 502, 503, 504].contains(status)
+        default:
+            return false
+        }
+    }
+
     var isRetryable: Bool {
         switch self {
         case .network:
@@ -397,16 +408,30 @@ final class TransferUploader {
         let existing = TransferJobStore.shared.job(for: key)
         var remote: TransferRemoteState
 
-        if let existing,
-           let resumed = try await fetchStatus(id: existing.remoteId,
-                                               base: base,
-                                               token: token,
-                                               session: session,
-                                               allowMissing: true),
-           resumed.status != "corrupt",
-           resumed.status != "failed",
-           resumed.status != "cancelled" {
-            remote = resumed
+        var reusable: TransferRemoteState?
+        if let existing {
+            do {
+                if let resumed = try await fetchStatus(id: existing.remoteId,
+                                                       base: base,
+                                                       token: token,
+                                                       session: session,
+                                                       allowMissing: true),
+                   resumed.status != "corrupt",
+                   resumed.status != "failed",
+                   resumed.status != "cancelled" {
+                    reusable = resumed
+                } else {
+                    TransferJobStore.shared.remove(key)
+                }
+            } catch {
+                // A job created before a server rollout can be unreadable by
+                // the new endpoint. It is safe to discard only the local
+                // pointer; acknowledged chunks remain authoritative remotely.
+                TransferJobStore.shared.remove(key)
+            }
+        }
+        if let reusable {
+            remote = reusable
         } else {
             remote = try await initialize(size: size,
                                           sha256: sha256,

@@ -5709,7 +5709,7 @@ private struct StarredPayload: Decodable {
                 session: session,
                 onProgress: { _ in }
             )
-        } catch let error as TransferUploaderError where error.isUnsupported {
+        } catch let error as TransferUploaderError where error.allowsLegacyFallback {
             return try await uploadBinaryLegacy(data, mime: mime)
         }
     }
@@ -5742,7 +5742,7 @@ private struct StarredPayload: Decodable {
                 session: session,
                 onProgress: onProgress
             )
-        } catch let error as TransferUploaderError where error.isUnsupported {
+        } catch let error as TransferUploaderError where error.allowsLegacyFallback {
             return try await uploadBinaryFileLegacy(file,
                                                     mime: mime,
                                                     skipTranscode: skipTranscode,
@@ -5801,7 +5801,7 @@ private struct StarredPayload: Decodable {
 
         do {
             return try await uploadRawJPEG(data, onProgress: onProgress)
-        } catch let error as TransferUploaderError where error.isUnsupported {
+        } catch let error as TransferUploaderError where error.allowsLegacyFallback {
             onProgress?(0.15)
             let b64 = data.base64EncodedString()
             let payload: UploadPayload = try await post("/api/upload",
