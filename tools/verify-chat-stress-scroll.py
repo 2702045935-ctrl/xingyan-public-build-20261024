@@ -53,6 +53,13 @@ require(
     "history prepend must restore the B2611191645 anchor compensation path",
 )
 require(
+    "private func consumeNewerRunway" in CHAT
+    and "private func loadNewer() async" in CHAT
+    and "API.shared.messagesSince(" in CHAT
+    and "Array(merged.suffix(maxMessageWindow))" in CHAT,
+    "scrolling back toward the present must refill newer messages bidirectionally",
+)
+require(
     all(f'kind = "{kind}"' in FIXTURE for kind in (
         "image", "pat", "system", "audio", "location", "video", "redpacket",
         "images", "file", "livephoto", "miniapp", "card", "gift", "transfer",

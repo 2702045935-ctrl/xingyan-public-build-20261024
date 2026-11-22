@@ -1476,6 +1476,9 @@ struct ChatDetailView: View {
     @State private var olderPrefetchTask: Task<Void, Never>?
     @State private var olderPrefetchToken = UUID()
     @State private var olderRunwayConsumedForGesture = false
+    @State private var newerRunwayConsumedForGesture = false
+    @State private var loadingNewer = false
+    @State private var lastNewerLoad = Date.distantPast
 
     @State private var loadingAllGroupHistory = false
     @State private var holdScroll = false
@@ -3493,6 +3496,7 @@ struct ChatDetailView: View {
                     wasAtBottom = false
                     initialOpenSettling = false
                     olderRunwayConsumedForGesture = false
+                    newerRunwayConsumedForGesture = false
                     if !initialScrollReady {
                         initialScrollTask?.cancel()
                         initialScrollTask = nil
@@ -3510,10 +3514,12 @@ struct ChatDetailView: View {
                     frameCaptureTick &+= 1
                     // A fling can cross the runway exactly as deceleration ends.
                     consumeOlderRunway(requireActiveMotion: false)
+                    consumeNewerRunway(requireActiveMotion: false)
                 }
             },
             onScrollOffset: { y in
                 consumeOlderRunway(requireActiveMotion: true, offsetY: y)
+                consumeNewerRunway(requireActiveMotion: true)
             },
             onSizeChange: {
                 if initialOpenSettling {
@@ -4234,6 +4240,62 @@ struct ChatDetailView: View {
         // this latch. One user gesture consumes at most one prefetched page.
         olderRunwayConsumedForGesture = true
         autoLoadOlder()
+    }
+
+    private var newestAvailableSeq: Int {
+        if MessageStressFixture.isStressChat(chat.id) {
+            return MessageStressFixture.count
+        }
+        return max(messages.last?.seq ?? 0, liveChat.seq ?? 0)
+    }
+
+    private var hasNewerMessages: Bool {
+        (messages.last?.seq ?? 0) < newestAvailableSeq
+    }
+
+    private func consumeNewerRunway(requireActiveMotion: Bool) {
+        guard initialScrollReady,
+              hasNewerMessages,
+              !newerRunwayConsumedForGesture,
+              !loadingNewer,
+              let scroll = ChatScrollHandle.shared.scroll else { return }
+        let runway = max(1_200, scroll.bounds.height * 1.6)
+        guard (ChatScrollHandle.shared.gap ?? .greatestFiniteMagnitude) < runway else {
+            return
+        }
+        if requireActiveMotion, !ChatScrollHandle.shared.moving { return }
+        newerRunwayConsumedForGesture = true
+        lastNewerLoad = Date()
+        Task { await loadNewer() }
+    }
+
+    private func loadNewer() async {
+        guard !loadingNewer, hasNewerMessages else { return }
+        loadingNewer = true
+        defer { loadingNewer = false }
+        let cursor = messages.compactMap(\.seq).max() ?? 0
+        guard cursor > 0 else { return }
+        do {
+            let page = try await API.shared.messagesSince(
+                chatId: chat.id,
+                since: cursor,
+                limit: 150
+            )
+            guard messages.compactMap(\.seq).max() == cursor else { return }
+            let incoming = page.messages.filter { ($0.seq ?? 0) > cursor }
+            guard !incoming.isEmpty else { return }
+            let merged = visibleMessages(messages + incoming)
+            let bounded = Array(merged.suffix(maxMessageWindow))
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) {
+                messages = bounded
+            }
+            hasOlder = (bounded.first?.seq ?? 0) > 1
+            rebuildIndex()
+        } catch {
+            lastNewerLoad = Date().addingTimeInterval(1.2)
+        }
     }
 
     private func pinToBottomSoon(force: Bool = false) {
