@@ -98,7 +98,7 @@ final class NativeChatMediaRowView: UIView {
     static let reuseID = "NativeChatMediaRowView"
 
     private var model: NativeChatMediaRowModel?
-    private let avatar = NativeChatAvatarView()
+    private let avatar = NativeStaticAvatarView()
     private let senderLabel = UILabel()
     private let bubble = NativeChatBubbleBackground()
     private let imageView = NativeMediaImageView()

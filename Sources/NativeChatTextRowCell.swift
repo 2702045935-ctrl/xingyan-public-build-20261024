@@ -71,7 +71,7 @@ final class NativeChatBubbleBackground: UIView {
     }
 }
 
-final class NativeChatAvatarView: UIImageView {
+final class NativeStaticAvatarView: UIImageView {
     private var requestedPath = ""
     private var requestToken = UUID()
     private let initials = UILabel()
@@ -147,7 +147,7 @@ final class NativeChatAvatarView: UIImageView {
 }
 
 final class NativeChatTextRowView: UIView {
-    private let avatar = NativeChatAvatarView()
+    private let avatar = NativeStaticAvatarView()
     private let senderLabel = UILabel()
     private let bubble = NativeChatBubbleBackground()
     private let textLabel = UILabel()
