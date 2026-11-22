@@ -260,20 +260,22 @@ where Item.ID: Hashable {
                 guard let self, let collection, self.collection === collection else { return }
                 self.flush()
                 collection.layoutIfNeeded()
-                let visible = collection.indexPathsForVisibleItems
-                if !visible.isEmpty {
-                    UIView.performWithoutAnimation {
-                        collection.reloadItems(at: visible)
-                    }
-                } else {
-                    let snapshot = dataSource.snapshot()
-                    let ids = snapshot.itemIdentifiers
-                    guard !ids.isEmpty else { return }
-                    var refreshed = snapshot
-                    refreshed.reloadItems(ids)
-                    dataSource.apply(refreshed, animatingDifferences: false)
+                let previousOffset = collection.contentOffset
+                var snapshot = dataSource.snapshot()
+                let visibleIDs = collection.indexPathsForVisibleItems.compactMap {
+                    indexPath -> Item.ID? in
+                    guard indexPath.section == 0,
+                          indexPath.item >= 0,
+                          indexPath.item < snapshot.numberOfItems else { return nil }
+                    return dataSource.itemIdentifier(for: indexPath)
                 }
-                collection.setNeedsLayout()
+                let ids = visibleIDs.isEmpty ? snapshot.itemIdentifiers : visibleIDs
+                guard !ids.isEmpty else { return }
+                snapshot.reloadItems(ids)
+                dataSource.apply(snapshot, animatingDifferences: false) {
+                    collection.layoutIfNeeded()
+                    collection.setContentOffset(previousOffset, animated: false)
+                }
             }
         }
 

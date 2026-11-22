@@ -1544,10 +1544,10 @@ struct ChatDetailView: View {
     /// 群历史按需分页，不在进群时一次性合并最多 5000 条。
     private var shouldLoadCompleteGroupHistory: Bool { false }
 
-    private let initialMessageWindow = 120
-    /* 首屏只放最近 120 条，更早历史由用户继续上滑按页加载。
+    private let initialMessageWindow = 240
+    /* 首屏放最近 240 条，更早历史由用户继续上滑按页加载。
        这能避免进群时一次合并数千条消息造成明显掉帧。 */
-    private let maxMessageWindow = 1_200
+    private let maxMessageWindow = 1_800
 
     private var activeInitialMessageWindow: Int {
         MessageStressFixture.isActive
