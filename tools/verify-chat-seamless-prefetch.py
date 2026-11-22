@@ -61,6 +61,11 @@ require(
     "each consumed history page must enqueue exactly one fresh prefetch page",
 )
 require(
+    "let refreshWindow = initial ? activeInitialMessageWindow : maxMessageWindow" in CHAT
+    and "Array(visible.suffix(refreshWindow))" in CHAT,
+    "realtime refreshes must preserve the user's loaded history window",
+)
+require(
     "prependAnchor =" in NATIVE
     and "attributes.frame.minY - anchor.delta" in NATIVE
     and "clearPendingPrepend()" in NATIVE,

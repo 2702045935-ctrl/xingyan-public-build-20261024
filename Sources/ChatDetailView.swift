@@ -7429,7 +7429,11 @@ struct ChatDetailView: View {
             let merged = mergedById.values.sorted(by: messageSortsBefore)
             let visible = visibleMessages(merged)
 
-            let nextMessages = Array(visible.suffix(activeInitialMessageWindow))
+            // Realtime refreshes must merge into the window the user has
+            // actually loaded. Rebuilding every refresh to the initial 240
+            // rows makes an up-scrolled conversation visibly swap content.
+            let refreshWindow = initial ? activeInitialMessageWindow : maxMessageWindow
+            let nextMessages = Array(visible.suffix(refreshWindow))
             let same = !initial && nextMessages.count == messages.count
                 && zip(nextMessages, messages).allSatisfy { $0.id == $1.id && $0.body == $1.body }
             if initial || !same {
