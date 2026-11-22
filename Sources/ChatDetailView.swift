@@ -7994,7 +7994,9 @@ struct ChatDetailView: View {
             withTransaction(transaction) {
                 messages = bounded
             }
-            if merged.count > maxMessageWindow || more { hasOlder = true }
+            // Once the server reports the actual beginning, a full visible
+            // window must not resurrect a phantom "older page".
+            hasOlder = more
             rebuildIndex()
             // NativeStaticList restores the exact visible-row anchor in the
             // same diffable apply. A second height-delta fallback here would

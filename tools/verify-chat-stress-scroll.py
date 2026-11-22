@@ -54,6 +54,11 @@ require(
     "every consumed history page must re-arm the runway during a long gesture",
 )
 require(
+    "if merged.count > maxMessageWindow || more { hasOlder = true }" not in CHAT
+    and "hasOlder = more" in CHAT,
+    "reaching the actual first message must clear the phantom older page",
+)
+require(
     "else if !olderPrefetch.isEmpty" in CHAT
     and "consumeOlderRunway(requireActiveMotion: false)" in CHAT,
     "completed prefetches must auto-consume without another finger gesture",
