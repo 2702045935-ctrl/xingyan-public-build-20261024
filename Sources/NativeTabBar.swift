@@ -328,9 +328,11 @@ struct NativeTabBar: UIViewRepresentable {
         if reduceTransparency {
             appearance.configureWithOpaqueBackground()
             appearance.backgroundEffect = nil
-            let themed = UIConfig.colorIfSet("tabBarColor")
-                ?? UIConfig.colorIfSet("tabBg")
-                ?? (scheme == .dark ? C.pageBg : C.tabBg)
+            let themed = scheme == .dark
+                ? C.pageBg
+                : (UIConfig.colorIfSet("tabBarColor")
+                    ?? UIConfig.colorIfSet("tabBg")
+                    ?? C.tabBg)
             appearance.backgroundColor = UIColor(themed)
             bar.isOpaque = true
         } else {
@@ -340,9 +342,7 @@ struct NativeTabBar: UIViewRepresentable {
         if scheme == .dark && !reduceTransparency {
             // 深色玻璃跟随管理端整套主题，不再固定成一个脱离页面的黑阶。
             appearance.backgroundEffect = UIBlurEffect(style: .systemUltraThinMaterialDark)
-            let themed = UIConfig.colorIfSet("tabBarColor")
-                ?? UIConfig.colorIfSet("tabBg")
-                ?? C.pageBg
+            let themed = C.pageBg
             appearance.backgroundColor = UIColor(themed).withAlphaComponent(0.72)
         }
         let normalTitle: [NSAttributedString.Key: Any] = [

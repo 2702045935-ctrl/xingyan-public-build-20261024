@@ -219,7 +219,7 @@ struct NativeChatsTopEdgeChrome: View {
 
     var body: some View {
         ZStack {
-            (background ?? (isDark ? Color.black : Color(uiColor: .systemBackground)))
+            (background ?? (isDark ? C.pageBg : Color(uiColor: .systemBackground)))
                 .opacity(scrolled > 0 ? 1 : 0)
             if #available(iOS 26.0, *), !isDark {
                 NativeScrollEdgeElementBridge(

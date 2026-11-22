@@ -45,9 +45,9 @@ require(
 )
 require(
     "NativeChatsTopEdgeChrome" in NAV
-    and "(background ?? (isDark ? Color.black : Color(uiColor: .systemBackground)))" in NAV
+    and "(background ?? (isDark ? C.pageBg : Color(uiColor: .systemBackground)))" in NAV
     and ".opacity(scrolled > 0 ? 1 : 0)" in NAV,
-    "dark chat-list chrome must remain a continuous true-black surface",
+    "dark chat-list chrome must remain a continuous near-black surface",
 )
 require("NativeTopGlassMask(active: navScrolled > 0)" in CONTACTS
         and "NativeTopScrollObserver" in CONTACTS

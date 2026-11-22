@@ -439,11 +439,11 @@ func colorDyn(_ raw: String?, light: UInt32, dark: UInt32) -> Color {
 
 enum C {
 
-    static var pageBg      : Color { UIConfig.fixedDark("pageBg", 0xFFFFFF, 0x000000) }
-    static var navBg       : Color { UIConfig.fixedDark("navBg", 0xFFFFFF, 0x000000) }
-    static var tabBg       : Color { UIConfig.fixedDark("tabBg", 0xFFFFFF, 0x000000) }
+    static var pageBg      : Color { UIConfig.fixedDark("pageBg", 0xFFFFFF, 0x0A0A0A) }
+    static var navBg       : Color { UIConfig.fixedDark("navBg", 0xFFFFFF, 0x0A0A0A) }
+    static var tabBg       : Color { UIConfig.fixedDark("tabBg", 0xFFFFFF, 0x0A0A0A) }
     static var cardBg      : Color { UIConfig.fixedDark("cardBg", 0xFFFFFF, 0x1C1C1E) }
-    static var chatRowBg   : Color { UIConfig.fixedDark("chatRowBg", 0xFFFFFF, 0x000000) }
+    static var chatRowBg   : Color { UIConfig.fixedDark("chatRowBg", 0xFFFFFF, 0x0A0A0A) }
     static var pinnedBg    : Color { UIConfig.fixedDark("pinnedBg", 0xF2F2F2, 0x1C1C1E) }
     static var searchBg    : Color { UIConfig.fixedDark("searchBg", 0xFFFFFF, 0x1C1C1E) }
 
@@ -472,14 +472,14 @@ enum C {
     static var orange      : Color { UIConfig.color("orangeColor", 0xB27C37, 0xE3B464) }
     static var tabInk      : Color { UIConfig.color("tabInkColor", 0x191919, 0xB5B5B5) }
 
-    static var chatsTopBg  : Color { UIConfig.fixedDark("chatsTopBg", 0xFFFFFF, 0x000000) }
+    static var chatsTopBg  : Color { UIConfig.fixedDark("chatsTopBg", 0xFFFFFF, 0x0A0A0A) }
 
-    static var chatsPageBg : Color { UIConfig.fixedDark("chatsPageBg", 0xFFFFFF, 0x000000) }
-    static var chatsRowBg  : Color { UIConfig.fixedDark("chatsRowBg", 0xFFFFFF, 0x000000) }
+    static var chatsPageBg : Color { UIConfig.fixedDark("chatsPageBg", 0xFFFFFF, 0x0A0A0A) }
+    static var chatsRowBg  : Color { UIConfig.fixedDark("chatsRowBg", 0xFFFFFF, 0x0A0A0A) }
 
-    static var contactsBg  : Color { UIConfig.fixedDark("contactsBg", 0xFFFFFF, 0x000000) }
+    static var contactsBg  : Color { UIConfig.fixedDark("contactsBg", 0xFFFFFF, 0x0A0A0A) }
 
-    static var discoverBg  : Color { UIConfig.fixedDark("discoverBg", 0xEDEDED, 0x000000) }
+    static var discoverBg  : Color { UIConfig.fixedDark("discoverBg", 0xEDEDED, 0x0A0A0A) }
 
     static var discoverCardBg: Color { UIConfig.fixedDark("discoverCardBg", 0xFFFFFF, 0x1C1C1E) }
 

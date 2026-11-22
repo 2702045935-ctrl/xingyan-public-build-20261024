@@ -43,7 +43,7 @@ require(
 require(
     "background: chatsPageFill" in CHATS
     and "opacity(scrolled > 0 ? 1 : 0)" in NAV
-    and "background ?? (isDark ? Color.black" in NAV,
+    and "background ?? (isDark ? C.pageBg" in NAV,
     "scrolled chat content must disappear behind an opaque top chrome",
 )
 require(
@@ -58,7 +58,7 @@ require(
     and "Color.white.opacity(0.045)" in CHATS
     and "Color(hex: 0x6E7378)" in CHATS
     and ".stroke(chatsSearchBorder, lineWidth: 0.5)" in CHATS,
-    "dark search must sit quietly on pure black instead of using a raised light card",
+    "dark search must sit quietly on the near-black canvas instead of using a raised light card",
 )
 require(
     '"\\(chatsIsDark)-\\(scheme)-\\(Lang.code)' in CHATS,

@@ -6,6 +6,9 @@ ROOT = Path(__file__).resolve().parents[1]
 ROW = (ROOT / "Sources" / "NativeChatRowCell.swift").read_text(encoding="utf-8")
 TAB = (ROOT / "Sources" / "NativeTabBar.swift").read_text(encoding="utf-8")
 CHATS = (ROOT / "Sources" / "ChatsView.swift").read_text(encoding="utf-8")
+CORE = (ROOT / "Sources" / "Core.swift").read_text(encoding="utf-8")
+NAV = (ROOT / "Sources" / "NavGlass.swift").read_text(encoding="utf-8")
+MAIN_TAB = (ROOT / "Sources" / "MainTab.swift").read_text(encoding="utf-8")
 
 
 def require(condition: bool, message: str) -> None:
@@ -21,5 +24,30 @@ require(ROW.count("private static func previewTokenColor") == 1
 require("unreadLabel.backgroundColor = .systemRed" in ROW
         and "systemBlue" not in CHATS,
         "unread counts must use the single red badge language")
+for key, light in (
+    ("pageBg", "0xFFFFFF"),
+    ("navBg", "0xFFFFFF"),
+    ("tabBg", "0xFFFFFF"),
+    ("chatRowBg", "0xFFFFFF"),
+    ("chatsTopBg", "0xFFFFFF"),
+    ("chatsPageBg", "0xFFFFFF"),
+    ("chatsRowBg", "0xFFFFFF"),
+    ("contactsBg", "0xFFFFFF"),
+    ("discoverBg", "0xEDEDED"),
+):
+    require(
+        f'UIConfig.fixedDark("{key}", {light}, 0x0A0A0A)' in CORE,
+        f"{key} must share the app-wide #0A0A0A dark canvas",
+    )
+require(
+    "background ?? (isDark ? C.pageBg" in NAV,
+    "the dark native chrome fallback must use the app-wide canvas",
+)
+require(
+    "let fill = scheme == .dark\n            ? C.tabBg" in MAIN_TAB
+    and "let themed = scheme == .dark\n                ? C.pageBg" in TAB
+    and "let themed = C.pageBg" in TAB,
+    "dark navigation and tab surfaces must ignore legacy remote black overrides",
+)
 
 print("dark-neutral-palette: passed")

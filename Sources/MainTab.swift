@@ -711,9 +711,11 @@ struct TabBar: View {
     }
 
     private var tabMaskLayer: some View {
-        let fill = UIConfig.colorIfSet("tabBarColor")
-            ?? UIConfig.colorIfSet("tabBg")
-            ?? C.tabBg
+        let fill = scheme == .dark
+            ? C.tabBg
+            : (UIConfig.colorIfSet("tabBarColor")
+                ?? UIConfig.colorIfSet("tabBg")
+                ?? C.tabBg)
 
         if scheme == .dark {
             return AnyView(ZStack {
