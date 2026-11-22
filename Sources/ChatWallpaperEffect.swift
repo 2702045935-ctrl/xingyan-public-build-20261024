@@ -135,6 +135,8 @@ struct ChatThemeBackdrop: View {
             wechatScene(size: size)
         case .whatsapp:
             whatsappScene(size: size)
+        case .glass:
+            glassScene(size: size)
         case .midnight:
             midnightScene(size: size)
         case .rose:
@@ -223,6 +225,65 @@ struct ChatThemeBackdrop: View {
                 }
             }
             .opacity(0.95)
+        }
+    }
+
+    private func glassScene(size: CGSize) -> some View {
+        ZStack {
+            LinearGradient(
+                colors: dark
+                    ? [Color(hex: 0x06100D), Color(hex: 0x0A1713), Color(hex: 0x07100D)]
+                    : [Color(hex: 0xF1F8F4), Color(hex: 0xE7F1EC), Color(hex: 0xEDF5F1)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            RadialGradient(
+                colors: [
+                    Color(hex: 0x2F8F78).opacity(dark ? 0.22 : 0.18),
+                    Color.clear
+                ],
+                center: UnitPoint(x: 0.12, y: 0.08),
+                startRadius: 0,
+                endRadius: max(size.width, size.height) * 0.78
+            )
+
+            RadialGradient(
+                colors: [
+                    Color(hex: 0x5BC8B0).opacity(dark ? 0.12 : 0.10),
+                    Color.clear
+                ],
+                center: UnitPoint(x: 0.88, y: 0.72),
+                startRadius: 0,
+                endRadius: max(size.width, size.height) * 0.62
+            )
+
+            Canvas { context, canvas in
+                let line = Color.white.opacity(dark ? 0.035 : 0.10)
+                for index in 0..<7 {
+                    let inset = CGFloat(index) * 28
+                    let rect = CGRect(
+                        x: canvas.width * 0.56 + inset,
+                        y: -canvas.height * 0.10 + inset * 0.42,
+                        width: canvas.width * 0.50,
+                        height: canvas.height * 0.54
+                    )
+                    context.stroke(
+                        Path(roundedRect: rect, cornerRadius: canvas.width * 0.20),
+                        with: .color(line),
+                        lineWidth: 0.55
+                    )
+                }
+                let grain = Color.black.opacity(dark ? 0.055 : 0.025)
+                for x in stride(from: CGFloat(9), through: canvas.width, by: CGFloat(34)) {
+                    for y in stride(from: CGFloat(11), through: canvas.height, by: CGFloat(34)) {
+                        context.fill(
+                            Path(ellipseIn: CGRect(x: x, y: y, width: 0.9, height: 0.9)),
+                            with: .color(grain)
+                        )
+                    }
+                }
+            }
         }
     }
 

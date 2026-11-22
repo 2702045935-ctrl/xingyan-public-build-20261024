@@ -37,10 +37,11 @@ require(
 )
 require(
     "var glass: Bool = false" in CHAT
-    and "if glass {" in CHAT
+    and "private var activeGlass: Bool { glass || ChatTheme.usesGlass }" in CHAT
+    and "if activeGlass {" in CHAT
     and ".fill(ChatTheme.bubbleMine)" in CHAT
     and "BubbleFill(mine: mine, tail: showTail, glass: false)" in CHAT,
-    "bubble surfaces must default to the flat WeChat fill instead of a gradient",
+    "classic bubbles must stay flat while the glass preset opts into translucent fills",
 )
 require(
     "return min(3.2, max(2.8, L.msgLineSpacing * 0.6))" in CHAT

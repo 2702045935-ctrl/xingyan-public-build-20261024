@@ -23,6 +23,7 @@ struct NativeChatMediaRowModel {
     var secondaryColor: UIColor
     var bubbleColor: UIColor
     var showTail: Bool
+    var bubbleGlass: Bool
 }
 
 private final class NativeMediaImageView: UIImageView {
@@ -193,6 +194,7 @@ final class NativeChatMediaRowView: UIView {
         bubble.fillColor = next.bubbleColor
         bubble.mine = next.mine
         bubble.showTail = next.showTail
+        bubble.glass = next.bubbleGlass
 
         imageView.isHidden = true
         extraImageViews.forEach { $0.isHidden = true }

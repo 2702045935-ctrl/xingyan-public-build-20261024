@@ -19,6 +19,7 @@ struct NativeChatTextRowModel {
     var secondaryColor: UIColor
     var mentionColor: UIColor
     var showTail: Bool
+    var bubbleGlass: Bool
 }
 
 final class NativeChatBubbleBackground: UIView {
@@ -29,6 +30,9 @@ final class NativeChatBubbleBackground: UIView {
         didSet { setNeedsDisplay() }
     }
     var showTail = true {
+        didSet { setNeedsDisplay() }
+    }
+    var glass = false {
         didSet { setNeedsDisplay() }
     }
 
@@ -52,7 +56,10 @@ final class NativeChatBubbleBackground: UIView {
             width: max(0, bounds.width - tail),
             height: bounds.height
         )
-        let path = UIBezierPath(roundedRect: body, cornerRadius: 7)
+        let path = UIBezierPath(
+            roundedRect: body,
+            cornerRadius: glass ? min(22, body.height / 2) : 7
+        )
         if showTail {
             let tipY = min(22, max(13, body.height * 0.28))
             if mine {
@@ -68,6 +75,31 @@ final class NativeChatBubbleBackground: UIView {
         path.close()
         fillColor.setFill()
         path.fill()
+        guard glass, let context = UIGraphicsGetCurrentContext() else { return }
+        context.saveGState()
+        path.addClip()
+        let colors = [
+            UIColor.white.withAlphaComponent(mine ? 0.16 : 0.12).cgColor,
+            UIColor.white.withAlphaComponent(0.025).cgColor,
+            UIColor.clear.cgColor,
+            UIColor.black.withAlphaComponent(0.065).cgColor
+        ] as CFArray
+        if let gradient = CGGradient(
+            colorsSpace: CGColorSpaceCreateDeviceRGB(),
+            colors: colors,
+            locations: [0, 0.34, 0.66, 1]
+        ) {
+            context.drawLinearGradient(
+                gradient,
+                start: CGPoint(x: 0, y: 0),
+                end: CGPoint(x: 0, y: bounds.height),
+                options: []
+            )
+        }
+        context.restoreGState()
+        UIColor.white.withAlphaComponent(mine ? 0.17 : 0.12).setStroke()
+        path.lineWidth = 0.8
+        path.stroke()
     }
 }
 
@@ -198,6 +230,7 @@ final class NativeChatTextRowView: UIView {
         bubble.fillColor = next.bubbleColor
         bubble.mine = next.mine
         bubble.showTail = next.showTail
+        bubble.glass = next.bubbleGlass
         textLabel.attributedText = attributedText(next)
         accessibilityLabel = next.text
         accessibilityTraits = .button

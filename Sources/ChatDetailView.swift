@@ -126,12 +126,15 @@ private final class UploadRateMeter: @unchecked Sendable {
 
 private enum ChatTheme {
     static var preset: ChatAppearancePreset { ChatThemeStore.shared.selected() }
+    static var usesGlass: Bool { preset == .glass }
     static var page: Color { preset.canvas }
     static var panel: Color { preset.panel }
     static var bubbleMine: Color {
-        preset.mine
+        usesGlass ? preset.mine.opacity(0.84) : preset.mine
     }
-    static var bubbleOther: Color { preset.other }
+    static var bubbleOther: Color {
+        usesGlass ? preset.other.opacity(0.74) : preset.other
+    }
     static let ink = Color.dyn(0x111B21, 0xE9EDEF)
     static var mineInk: Color {
         preset == .wechat
@@ -375,7 +378,7 @@ struct BubbleShape: Shape {
     var pill: Bool = false
 
     func path(in rect: CGRect) -> Path {
-        let r = min(pill ? min(rect.height / 2, 18) : radius, rect.height / 2, rect.width / 2)
+        let r = min(pill ? min(rect.height / 2, 24) : radius, rect.height / 2, rect.width / 2)
 
         let out: CGFloat = tail ? 5 : 0
         let h: CGFloat = 9
@@ -451,6 +454,8 @@ struct BubbleFill: View {
     @Environment(\.colorScheme) private var scheme
     @Environment(\.bubbleUsesLightInk) private var wallpaperUsesLightInk
     private var usesDarkBackdrop: Bool { wallpaperUsesLightInk ?? (scheme == .dark) }
+    private var activeGlass: Bool { glass || ChatTheme.usesGlass }
+    private var capsule: Bool { pill || ChatTheme.usesGlass }
 
     private var gloss: Color {
         return Color.white.opacity(UIConfig.num("bubbleGloss", 0))
@@ -465,7 +470,18 @@ struct BubbleFill: View {
         LinearGradient(
             colors: [
                 ChatTheme.bubbleMine,
-                ChatTheme.bubbleMine.opacity(0.88)
+                ChatTheme.bubbleMine.opacity(0.74)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+
+    private var otherFill: LinearGradient {
+        LinearGradient(
+            colors: [
+                ChatTheme.bubbleOther,
+                ChatTheme.bubbleOther.opacity(0.70)
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
@@ -475,21 +491,50 @@ struct BubbleFill: View {
     var body: some View {
         ZStack {
             if mine {
-                if glass {
-                    BubbleShape(mine: mine, tail: tail, pill: pill)
+                if activeGlass {
+                    BubbleShape(mine: mine, tail: tail, pill: capsule)
                         .fill(mineFill)
                 } else {
-                    BubbleShape(mine: mine, tail: tail, pill: pill)
+                    BubbleShape(mine: mine, tail: tail, pill: capsule)
                         .fill(ChatTheme.bubbleMine)
                 }
             } else {
-                BubbleShape(mine: mine, tail: tail, pill: pill)
-                    .fill(ChatTheme.bubbleOther)
+                if activeGlass {
+                    BubbleShape(mine: mine, tail: tail, pill: capsule)
+                        .fill(otherFill)
+                } else {
+                    BubbleShape(mine: mine, tail: tail, pill: capsule)
+                        .fill(ChatTheme.bubbleOther)
+                }
+            }
+
+            if activeGlass {
+                BubbleShape(mine: mine, tail: tail, pill: capsule)
+                    .fill(LinearGradient(
+                        stops: [
+                            .init(color: Color.white.opacity(usesDarkBackdrop ? 0.13 : 0.34),
+                                  location: 0),
+                            .init(color: Color.white.opacity(0.035), location: 0.33),
+                            .init(color: Color.clear, location: 0.62),
+                            .init(color: Color.black.opacity(usesDarkBackdrop ? 0.07 : 0.035),
+                                  location: 1)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    ))
+
+                BubbleShape(mine: mine, tail: tail, pill: capsule)
+                    .stroke(
+                        (mine
+                            ? Color.white.opacity(usesDarkBackdrop ? 0.17 : 0.42)
+                            : Color.white.opacity(usesDarkBackdrop ? 0.12 : 0.72)),
+                        lineWidth: 0.8
+                    )
             }
 
             if UIConfig.num("bubbleGloss", 0) > 0
                 || UIConfig.num("bubbleShade", 0) > 0 {
-                BubbleShape(mine: mine, tail: tail, pill: pill)
+                BubbleShape(mine: mine, tail: tail, pill: capsule)
                     .fill(LinearGradient(stops: [
                         .init(color: gloss, location: 0),
                         .init(color: Color.clear, location: 0.42),
@@ -499,12 +544,12 @@ struct BubbleFill: View {
             }
 
             if edgeAlpha > 0 {
-                BubbleShape(mine: mine, tail: tail, pill: pill)
+                BubbleShape(mine: mine, tail: tail, pill: capsule)
                     .stroke(Color.white.opacity(edgeAlpha), lineWidth: 0.9)
             }
 
             if UIConfig.num("bubbleIridescent", 0) > 0 {
-                BubbleShape(mine: mine, tail: tail, pill: pill)
+                BubbleShape(mine: mine, tail: tail, pill: capsule)
                     .stroke(AngularGradient(
                         colors: [
                             Color(red: 0.32, green: 0.86, blue: 1.00).opacity(0.55),
@@ -3821,7 +3866,8 @@ struct ChatDetailView: View {
             bubbleColor: UIColor(mine ? ChatTheme.bubbleMine : ChatTheme.bubbleOther),
             secondaryColor: UIColor(ChatTheme.secondary),
             mentionColor: UIColor(mine ? ChatTheme.mentionMeOnMine : ChatTheme.mentionMe),
-            showTail: isRunEnd(message)
+            showTail: isRunEnd(message),
+            bubbleGlass: ChatTheme.usesGlass
         )
     }
 
@@ -3886,7 +3932,8 @@ struct ChatDetailView: View {
             primaryColor: UIColor(mine ? ChatTheme.mineInk : ChatTheme.ink),
             secondaryColor: UIColor(mine ? ChatTheme.mineSecondaryInk : ChatTheme.secondary),
             bubbleColor: UIColor(mine ? ChatTheme.bubbleMine : ChatTheme.bubbleOther),
-            showTail: isRunEnd(message)
+            showTail: isRunEnd(message),
+            bubbleGlass: ChatTheme.usesGlass
         )
     }
 

@@ -3,6 +3,7 @@ import SwiftUI
 enum ChatAppearancePreset: String, CaseIterable, Identifiable {
     case wechat
     case whatsapp
+    case glass
     case midnight
     case rose
     case ocean
@@ -19,6 +20,7 @@ enum ChatAppearancePreset: String, CaseIterable, Identifiable {
         switch self {
         case .wechat: return Tr("微信经典")
         case .whatsapp: return Tr("WhatsApp")
+        case .glass: return Tr("玻璃")
         case .midnight: return Tr("午夜蓝")
         case .rose: return Tr("玫瑰")
         case .ocean: return Tr("海洋")
@@ -35,6 +37,7 @@ enum ChatAppearancePreset: String, CaseIterable, Identifiable {
         switch self {
         case .wechat: return Tr("浅绿气泡与中性聊天底色")
         case .whatsapp: return Tr("经典绿色收发气泡")
+        case .glass: return Tr("柔光胶囊与通透玻璃层次")
         case .midnight: return Tr("深色聊天与苹果蓝气泡")
         case .rose: return Tr("柔和暖色聊天氛围")
         case .ocean: return Tr("清爽蓝色收发层级")
@@ -51,6 +54,7 @@ enum ChatAppearancePreset: String, CaseIterable, Identifiable {
         switch self {
         case .wechat: return "bubble.left.and.bubble.right.fill"
         case .whatsapp: return "message.fill"
+        case .glass: return "circle.hexagongrid.fill"
         case .midnight: return "moon.stars.fill"
         case .rose: return "heart.fill"
         case .ocean: return "water.waves"
@@ -67,6 +71,7 @@ enum ChatAppearancePreset: String, CaseIterable, Identifiable {
         switch self {
         case .wechat: return Color.dyn(0x95EC69, 0x3EB575)
         case .whatsapp: return Color.dyn(0x0C7A70, 0x005C4B)
+        case .glass: return Color.dyn(0x2F8F78, 0x0B6B58)
         case .midnight: return Color.dyn(0x0A84FF, 0x0A84FF)
         case .rose: return Color.dyn(0xD94A6A, 0xB83A58)
         case .ocean: return Color.dyn(0x007AFF, 0x1263C7)
@@ -83,6 +88,7 @@ enum ChatAppearancePreset: String, CaseIterable, Identifiable {
         switch self {
         case .wechat: return Color.dyn(0xFFFFFF, 0x2C2C2E)
         case .whatsapp: return Color.dyn(0xFFFFFF, 0x202C33)
+        case .glass: return Color.dyn(0xF7FBF9, 0x1A2421)
         case .midnight: return Color.dyn(0xFFFFFF, 0x1C1C1E)
         case .rose: return Color.dyn(0xFFF8FA, 0x241E22)
         case .ocean: return Color.dyn(0xF5FAFF, 0x182431)
@@ -99,6 +105,7 @@ enum ChatAppearancePreset: String, CaseIterable, Identifiable {
         switch self {
         case .wechat: return Color.dyn(0xEDEDED, 0x111111)
         case .whatsapp: return Color.dyn(0xEFEAE2, 0x0B141A)
+        case .glass: return Color.dyn(0xE9F3EF, 0x07100D)
         case .midnight: return Color.dyn(0xF2F2F7, 0x000000)
         case .rose: return Color.dyn(0xF8F0F3, 0x090607)
         case .ocean: return Color.dyn(0xEFF6FA, 0x00131F)
@@ -115,6 +122,7 @@ enum ChatAppearancePreset: String, CaseIterable, Identifiable {
         switch self {
         case .wechat: return Color.dyn(0xF7F7F7, 0x1C1C1E)
         case .whatsapp: return Color.dyn(0xF0F2F5, 0x1C1C1E)
+        case .glass: return Color.dyn(0xF2F8F5, 0x101917)
         case .midnight: return Color.dyn(0xF2F2F7, 0x121212)
         case .rose: return Color.dyn(0xF7EDF1, 0x171113)
         case .ocean: return Color.dyn(0xEAF3F9, 0x0C1B27)
@@ -131,6 +139,7 @@ enum ChatAppearancePreset: String, CaseIterable, Identifiable {
         switch self {
         case .wechat: return Color(hex: 0xEDEDED)
         case .whatsapp: return Color(hex: 0xEFEAE2)
+        case .glass: return Color(hex: 0xE9F3EF)
         case .midnight: return Color(hex: 0x050505)
         case .rose: return Color(hex: 0xF8EDF1)
         case .ocean: return Color(hex: 0xE7F2F8)
@@ -148,7 +157,7 @@ final class ChatThemeStore: ObservableObject {
     static let shared = ChatThemeStore()
 
     @Published private(set) var version = 0
-    @Published private(set) var currentPreset: ChatAppearancePreset = .wechat
+    @Published private(set) var currentPreset: ChatAppearancePreset = .glass
     private var activeChatId = ""
 
     private init() {}
@@ -186,7 +195,7 @@ final class ChatThemeStore: ObservableObject {
 
     private func loadPreset(_ chatId: String) -> ChatAppearancePreset {
         let raw = UserDefaults.standard.string(forKey: key(chatId)) ?? ""
-        return ChatAppearancePreset(rawValue: raw) ?? .wechat
+        return ChatAppearancePreset(rawValue: raw) ?? .glass
     }
 
     func set(_ preset: ChatAppearancePreset, chatId: String = "") {
@@ -204,7 +213,7 @@ final class ChatThemeStore: ObservableObject {
         guard !id.isEmpty else { return }
         UserDefaults.standard.removeObject(forKey: key(id))
         if id == activeChatId {
-            currentPreset = .wechat
+            currentPreset = .glass
         }
         version &+= 1
     }
@@ -215,7 +224,7 @@ final class ChatThemeStore: ObservableObject {
         where key.hasPrefix("chris.chatTheme.") {
             defaults.removeObject(forKey: key)
         }
-        currentPreset = .wechat
+        currentPreset = .glass
         version &+= 1
     }
 }
@@ -225,7 +234,7 @@ struct ChatThemePickerView: View {
 
     @ObservedObject private var store = ChatThemeStore.shared
     @Environment(\.dismiss) private var dismiss
-    @State private var previewPreset: ChatAppearancePreset = .wechat
+    @State private var previewPreset: ChatAppearancePreset = .glass
 
     private var selected: ChatAppearancePreset {
         previewPreset
