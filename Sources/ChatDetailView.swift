@@ -322,7 +322,7 @@ func bubbleSeed(_ id: String) -> Double {
 
 struct BubbleShape: Shape {
     let mine: Bool
-    var radius: CGFloat = 8
+    var radius: CGFloat = 7
     var tail: Bool = true
 
     var pill: Bool = false

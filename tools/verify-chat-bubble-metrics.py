@@ -23,8 +23,8 @@ require(
     and 'static var bubblePadH: CGFloat { o("bubblePadH", 9) }' in CORE
     and 'static var bubblePadHPill: CGFloat { bubblePadH + 3 }' in CORE
     and 'max(232, width * 0.70)' in CORE
-    and 'var radius: CGFloat = 8' in CHAT,
-    "text-bubble geometry must remain 17pt / 12pt / 70% / 8pt",
+    and 'var radius: CGFloat = 7' in CHAT,
+    "text-bubble geometry must remain 17pt / 12pt / 70% / 7pt",
 )
 require(
     'case .wechat: return Color.dyn(0x95EC69, 0x3EB575)' in THEMES
