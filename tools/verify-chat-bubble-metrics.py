@@ -134,11 +134,12 @@ require(
     "conversation rows must use close same-sender and distinct cross-sender spacing",
 )
 require(
-    "ChatUnreadRollingBadge(value: unreadHere)" in CHAT
-    and 'if unreadHere > 0, !atBottomNow, !initialOpenSettling' in CHAT
-    and ".frame(width: 36, height: 36)" in CHAT
-    and "Circle().fill(.regularMaterial)" in CHAT,
-    "new-message jump control must be a circular unread-only control",
+    "ChatUnreadRollingBadge" not in CHAT
+    and ".contentTransition(.numericText" not in CHAT
+    and 'if !atBottomNow, !initialOpenSettling' in CHAT
+    and "\\(unreadHere) 条新消息" in CHAT
+    and "Capsule().fill(.regularMaterial)" in CHAT,
+    "the jump control must keep the cheaper text capsule without rolling-number animations",
 )
 require(
     "python3 tools/verify-chat-bubble-metrics.py" in WORKFLOW,

@@ -32,30 +32,6 @@ private struct ChatTypingDots: View {
     }
 }
 
-private struct ChatUnreadRollingBadge: View {
-    let value: Int
-
-    private var label: String {
-        value > 99 ? "99+" : "\(value)"
-    }
-
-    var body: some View {
-        if #available(iOS 17.0, *) {
-            Text(label)
-                .contentTransition(.numericText(value: Double(value)))
-                .animation(.snappy(duration: 0.20), value: value)
-        } else {
-            Text(label)
-                .id(label)
-                .transition(.asymmetric(
-                    insertion: .move(edge: .bottom).combined(with: .opacity),
-                    removal: .move(edge: .top).combined(with: .opacity)
-                ))
-                .animation(.easeOut(duration: 0.16), value: value)
-        }
-    }
-}
-
 private final class ActualUploadProgress: @unchecked Sendable {
     private let lock = NSLock()
     private let totalBytes: Int64
@@ -2432,61 +2408,55 @@ struct ChatDetailView: View {
                 .zIndex(60)
             }
 
-            if unreadHere > 0, !atBottomNow, !initialOpenSettling {
+            if !atBottomNow, !initialOpenSettling {
                 VStack {
                     Spacer(minLength: 0)
                     HStack {
                         Spacer(minLength: 0)
-                        ZStack(alignment: .topTrailing) {
-                            Button {
-                                if usesNativeMessageList {
-                                    nativeMessageController.scrollToBottom(animated: true)
-                                } else if let lastMsg = messages.last?.id {
-                                    withAnimation(.easeOut(duration: 0.26)) {
-                                        scroller?.scrollTo(lastMsg, anchor: .bottom)
+                        VStack(spacing: 8) {
+                            if let lastMsg = messages.last?.id {
+                                Button {
+                                    if usesNativeMessageList {
+                                        nativeMessageController.scrollToBottom(animated: true)
+                                    } else {
+                                        withAnimation(.easeOut(duration: 0.26)) {
+                                            scroller?.scrollTo(lastMsg, anchor: .bottom)
+                                        }
                                     }
-                                }
-                                withAnimation(.easeOut(duration: 0.16)) {
                                     unreadHere = 0
+                                } label: {
+                                    HStack(spacing: 5) {
+                                        if unreadHere > 0 {
+                                            Text(Lang.isRussian
+                                                 ? "\(unreadHere) новых сообщений"
+                                                 : (Lang.isEnglish
+                                                    ? "\(unreadHere) new messages"
+                                                    : "\(unreadHere) 条新消息"))
+                                                .font(pf(11.5, .medium))
+                                                .foregroundColor(C.label)
+                                        }
+                                        Image(systemName: "chevron.down")
+                                            .font(.system(size: 15, weight: .semibold))
+                                            .foregroundColor(C.label)
+                                    }
+                                    .padding(.horizontal, unreadHere > 0 ? 11 : 0)
+                                    .frame(minWidth: 34, minHeight: 34)
+                                    .background(Capsule().fill(.regularMaterial))
+                                    .overlay(Capsule().stroke(Color.white.opacity(0.16),
+                                                              lineWidth: 0.5))
+                                    .shadow(color: Color.black.opacity(0.18),
+                                            radius: 8, y: 3)
                                 }
-                            } label: {
-                                Image(systemName: "chevron.down")
-                                    .font(.system(size: 15, weight: .semibold))
-                                    .foregroundColor(C.label)
-                                    .frame(width: 36, height: 36)
-                                    .background(Circle().fill(.regularMaterial))
-                                    .overlay(
-                                        Circle().stroke(Color.primary.opacity(0.09),
-                                                        lineWidth: 0.5)
-                                    )
-                                    .shadow(color: Color.black.opacity(0.09),
-                                            radius: 5, y: 2)
+                                .buttonStyle(.plain)
+                                .accessibilityLabel(Tr("回到底部"))
+                                .accessibilityValue("\(unreadHere)")
                             }
-                            .buttonStyle(.plain)
-
-                            ChatUnreadRollingBadge(value: unreadHere)
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(.white)
-                                .monospacedDigit()
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.7)
-                                .padding(.horizontal, unreadHere > 9 ? 4 : 0)
-                                .frame(minWidth: 18, minHeight: 18)
-                                .background(Capsule().fill(Color(.systemRed)))
-                                .overlay(Capsule().stroke(C.label, lineWidth: 1.2))
-                                .offset(x: 7, y: -7)
-                                .transition(.scale(scale: 0.72).combined(with: .opacity))
                         }
-                        .padding(.trailing, 14)
-                        .padding(.bottom, 8)
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel(Tr("回到底部"))
-                        .accessibilityValue("\(unreadHere)")
+                        .padding(.trailing, 12)
+                        .padding(.bottom, 10)
                     }
                 }
                 .zIndex(55)
-                .transition(.scale(scale: 0.86, anchor: .bottomTrailing)
-                    .combined(with: .opacity))
             }
 
         }
