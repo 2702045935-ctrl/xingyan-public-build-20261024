@@ -53,6 +53,11 @@ require(
     "every consumed history page must re-arm the runway during a long gesture",
 )
 require(
+    "else if !olderPrefetch.isEmpty" in CHAT
+    and "consumeOlderRunway(requireActiveMotion: false)" in CHAT,
+    "completed prefetches must auto-consume without another finger gesture",
+)
+require(
     "ChatScrollHandle.shared.prepareForPrepend()" in CHAT
     and "_ = ChatScrollHandle.shared.compensatePendingPrepend()" in LIST
     and "attributes.frame.minY - anchor.delta" in LIST,

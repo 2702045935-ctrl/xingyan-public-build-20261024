@@ -1235,6 +1235,7 @@ struct ChatDetailView: View {
             }
         }
         messages.insert(message, at: low)
+        newestKnownSeq = max(newestKnownSeq, message.seq ?? 0)
         if messages.count > maxMessageWindow {
             messages.removeFirst(messages.count - maxMessageWindow)
             hasOlder = true
@@ -1479,6 +1480,11 @@ struct ChatDetailView: View {
     @State private var newerRunwayConsumedForGesture = false
     @State private var loadingNewer = false
     @State private var lastNewerLoad = Date.distantPast
+    @State private var newerPrefetch: [Message] = []
+    @State private var newerPrefetchHasMore = false
+    @State private var newerPrefetchTask: Task<Void, Never>?
+    @State private var newerPrefetchToken = UUID()
+    @State private var newestKnownSeq = 0
 
     @State private var loadingAllGroupHistory = false
     @State private var holdScroll = false
@@ -2847,6 +2853,13 @@ struct ChatDetailView: View {
             persistTask = nil
             messages.removeAll()
             outbox.removeAll()
+            olderPrefetch.removeAll()
+            newerPrefetch.removeAll()
+            olderPrefetchTask?.cancel()
+            newerPrefetchTask?.cancel()
+            olderPrefetchTask = nil
+            newerPrefetchTask = nil
+            newestKnownSeq = 0
             selected.removeAll()
             selectMode = false
             hasOlder = false
@@ -3154,6 +3167,9 @@ struct ChatDetailView: View {
             olderPrefetchTask?.cancel()
             olderPrefetchTask = nil
             olderPrefetchToken = UUID()
+            newerPrefetchTask?.cancel()
+            newerPrefetchTask = nil
+            newerPrefetchToken = UUID()
             persistTask?.cancel()
             persistTask = nil
             draftSaveTask?.cancel()
@@ -4246,11 +4262,11 @@ struct ChatDetailView: View {
         if MessageStressFixture.isStressChat(chat.id) {
             return MessageStressFixture.count
         }
-        return messages.last?.seq ?? 0
+        return max(newestKnownSeq, messages.compactMap(\.seq).max() ?? 0)
     }
 
     private var hasNewerMessages: Bool {
-        (messages.last?.seq ?? 0) < newestAvailableSeq
+        (messages.compactMap(\.seq).max() ?? 0) < newestAvailableSeq
     }
 
     private func consumeNewerRunway(requireActiveMotion: Bool) {
@@ -4271,18 +4287,40 @@ struct ChatDetailView: View {
 
     private func loadNewer() async {
         guard !loadingNewer, hasNewerMessages else { return }
-        loadingNewer = true
-        defer { loadingNewer = false }
         let cursor = messages.compactMap(\.seq).max() ?? 0
         guard cursor > 0 else { return }
+        loadingNewer = true
+        var loadedUsefulPage = false
+        defer {
+            loadingNewer = false
+            guard loadedUsefulPage else { return }
+            newerRunwayConsumedForGesture = false
+            lastNewerLoad = .distantPast
+            DispatchQueue.main.async {
+                consumeNewerRunway(requireActiveMotion: true)
+            }
+        }
         do {
-            let page = try await API.shared.messagesSince(
-                chatId: chat.id,
-                since: cursor,
-                limit: 150
-            )
+            if newerPrefetch.isEmpty, let pending = newerPrefetchTask {
+                await pending.value
+            }
+            var incoming = takeNewerPrefetch()
+                .filter { ($0.seq ?? 0) > cursor }
+            var more = newerPrefetchHasMore
+            if incoming.isEmpty {
+                let page = try await API.shared.messagesSince(
+                    chatId: chat.id,
+                    since: cursor,
+                    limit: 150
+                )
+                incoming = page.messages.filter { ($0.seq ?? 0) > cursor }
+                more = page.hasMore
+                newestKnownSeq = max(
+                    newestKnownSeq,
+                    page.messages.compactMap(\.seq).max() ?? 0
+                )
+            }
             guard messages.compactMap(\.seq).max() == cursor else { return }
-            let incoming = page.messages.filter { ($0.seq ?? 0) > cursor }
             guard !incoming.isEmpty else { return }
             let merged = visibleMessages(messages + incoming)
             let bounded = Array(merged.suffix(maxMessageWindow))
@@ -4292,10 +4330,75 @@ struct ChatDetailView: View {
                 messages = bounded
             }
             hasOlder = (bounded.first?.seq ?? 0) > 1
+            let nextCursor = bounded.compactMap(\.seq).max() ?? cursor
+            newestKnownSeq = max(newestKnownSeq, nextCursor)
+            loadedUsefulPage = more
             rebuildIndex()
+            scheduleNewerPrefetch(
+                since: nextCursor,
+                knownIds: Set(bounded.map(\.id)),
+                continues: more
+            )
         } catch {
             lastNewerLoad = Date().addingTimeInterval(1.2)
         }
+    }
+
+    private func scheduleNewerPrefetch(since explicitSeq: Int? = nil,
+                                       knownIds: Set<String>? = nil,
+                                       continues explicitMore: Bool? = nil) {
+        let canContinue = explicitMore ?? hasNewerMessages
+        guard canContinue,
+              newerPrefetch.isEmpty,
+              newerPrefetchTask == nil else { return }
+        let seq = explicitSeq ?? messages.compactMap(\.seq).max() ?? 0
+        guard seq > 0 else { return }
+        let known = knownIds ?? Set(messages.map(\.id))
+        let token = UUID()
+        newerPrefetchToken = token
+        newerPrefetchTask = Task {
+            defer {
+                if newerPrefetchToken == token {
+                    newerPrefetchTask = nil
+                }
+            }
+            do {
+                let page = try await API.shared.messagesSince(
+                    chatId: chat.id,
+                    since: seq,
+                    limit: 150
+                )
+                guard !Task.isCancelled, newerPrefetchToken == token else { return }
+                newerPrefetchHasMore = page.hasMore
+                newerPrefetch = visibleMessages(page.messages)
+                    .filter {
+                        ($0.seq ?? 0) > seq && !known.contains($0.id)
+                    }
+                newestKnownSeq = max(
+                    newestKnownSeq,
+                    page.messages.compactMap(\.seq).max() ?? 0
+                )
+                guard !newerPrefetch.isEmpty else { return }
+                newerRunwayConsumedForGesture = false
+                lastNewerLoad = .distantPast
+                DispatchQueue.main.async {
+                    consumeNewerRunway(requireActiveMotion: false)
+                }
+            } catch {
+                if newerPrefetchToken == token {
+                    newerPrefetchTask = nil
+                }
+            }
+        }
+    }
+
+    private func takeNewerPrefetch() -> [Message] {
+        newerPrefetchTask?.cancel()
+        newerPrefetchTask = nil
+        newerPrefetchToken = UUID()
+        let rows = newerPrefetch
+        newerPrefetch = []
+        return rows
     }
 
     private func pinToBottomSoon(force: Bool = false) {
@@ -7548,6 +7651,7 @@ struct ChatDetailView: View {
         if initial, messages.isEmpty, let cached = app.prefetched[chat.id], !cached.isEmpty {
             let rows = visibleMessages(cached)
             messages = Array(rows.suffix(activeInitialMessageWindow))
+            newestKnownSeq = max(newestKnownSeq, messages.compactMap(\.seq).max() ?? 0)
             hasOlder = rows.count > messages.count
             prefetchRecentFiles()
         } else if initial, messages.isEmpty {
@@ -7559,6 +7663,7 @@ struct ChatDetailView: View {
             if !local.isEmpty {
                 let rows = visibleMessages(local)
                 messages = Array(rows.suffix(activeInitialMessageWindow))
+                newestKnownSeq = max(newestKnownSeq, messages.compactMap(\.seq).max() ?? 0)
                 hasOlder = rows.count > messages.count
                 prefetchRecentFiles()
             }
@@ -7596,6 +7701,16 @@ struct ChatDetailView: View {
             for m in result.messages { mergedById[m.id] = m }
             let merged = mergedById.values.sorted(by: messageSortsBefore)
             let visible = visibleMessages(merged)
+            newestKnownSeq = max(
+                newestKnownSeq,
+                max(
+                    messages.compactMap(\.seq).max() ?? 0,
+                    max(
+                        result.messages.compactMap(\.seq).max() ?? 0,
+                        visible.compactMap(\.seq).max() ?? 0
+                    )
+                )
+            )
 
             // Realtime refreshes must merge into the window the user has
             // actually loaded. Rebuilding every refresh to the initial 240
@@ -7644,6 +7759,7 @@ struct ChatDetailView: View {
         }
         rebuildIndex()
         scheduleOlderPrefetch()
+        scheduleNewerPrefetch()
         prefetchRecentFiles()
         loading = false
         autoOpenShopCard()
@@ -7811,6 +7927,7 @@ struct ChatDetailView: View {
             scheduleOlderPrefetch(before: nextCursor,
                                   knownIds: Set(bounded.map(\.id)),
                                   continues: more)
+            scheduleNewerPrefetch()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { holdScroll = false }
         } catch {
             // Continuous scroll events must not turn one failed prefetch into a
@@ -7851,6 +7968,15 @@ struct ChatDetailView: View {
                     .filter { !known.contains($0.id) }
                 if page.messages.isEmpty, !page.hasMore {
                     hasOlder = false
+                } else if !olderPrefetch.isEmpty {
+                    // If the finger stopped while waiting for this request, the
+                    // completed page must still enter the window. Otherwise the
+                    // user has to pull again for every page after the first two.
+                    olderRunwayConsumedForGesture = false
+                    lastOlderLoad = .distantPast
+                    DispatchQueue.main.async {
+                        consumeOlderRunway(requireActiveMotion: false)
+                    }
                 }
             } catch {
                 if olderPrefetchToken == token {

@@ -68,6 +68,26 @@ require(
     "a continuous gesture must re-arm and consume every history page",
 )
 require(
+    "else if !olderPrefetch.isEmpty" in CHAT
+    and "consumeOlderRunway(requireActiveMotion: false)" in CHAT,
+    "a prefetched page must enter the runway after the finger has stopped",
+)
+require(
+    "private var newerPrefetch: [Message]" in CHAT
+    and "private func scheduleNewerPrefetch(" in CHAT
+    and "private func takeNewerPrefetch()" in CHAT
+    and "newestKnownSeq" in CHAT
+    and "messagesSince(" in CHAT,
+    "newer history must prefetch and retain a cursor after older pages trim the window",
+)
+require(
+    CHAT.count("consumeNewerRunway(requireActiveMotion: false)") >= 2
+    and "newerPrefetchTask" in CHAT
+    and "newerRunwayConsumedForGesture = false" in CHAT
+    and "scheduleNewerPrefetch(" in CHAT,
+    "completed newer prefetches must continuously return pages without extra finger gestures",
+)
+require(
     "let refreshWindow = initial ? activeInitialMessageWindow : maxMessageWindow" in CHAT
     and "Array(visible.suffix(refreshWindow))" in CHAT,
     "realtime refreshes must preserve the user's loaded history window",
