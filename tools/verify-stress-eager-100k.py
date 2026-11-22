@@ -40,15 +40,16 @@ require(
     "private var activeInitialMessageWindow: Int" in CHAT
     and "MessageStressFixture.count" in CHAT
     and CHAT.count("activeInitialMessageWindow") >= 6,
-    "eager mode must bypass the normal 200-row initial window",
+    "eager mode must bypass the normal bounded initial window",
 )
 require(
-    "private let maxMessageWindow = 2_400" in CHAT
+    "private let initialMessageWindow = 120" in CHAT
+    and "private let maxMessageWindow = 1_200" in CHAT
     and "if olderPrefetch.isEmpty, let pending = olderPrefetchTask" in CHAT
-    and "let target = isGroup ? 300 : 200" in CHAT
+    and "let target = isGroup ? 150 : 200" in CHAT
     and "olderPrefetch = visibleMessages(page.messages)" in CHAT
     and CHAT.count("scheduleOlderPrefetch(before: nextCursor") >= 1,
-    "chat history must keep a 2400-row active window without changing one-page prefetch consumption",
+    "chat history must keep a bounded 1200-row active window and one-page prefetch",
 )
 require(
     "python3 tools/verify-stress-eager-100k.py" in WORKFLOW,

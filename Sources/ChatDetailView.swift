@@ -1544,10 +1544,10 @@ struct ChatDetailView: View {
     /// 群历史按需分页，不在进群时一次性合并最多 5000 条。
     private var shouldLoadCompleteGroupHistory: Bool { false }
 
-    private let initialMessageWindow = 200
-    /* 首屏只放最近 200 条，更早历史由用户继续上滑按页加载。
+    private let initialMessageWindow = 120
+    /* 首屏只放最近 120 条，更早历史由用户继续上滑按页加载。
        这能避免进群时一次合并数千条消息造成明显掉帧。 */
-    private let maxMessageWindow = 2_400
+    private let maxMessageWindow = 1_200
 
     private var activeInitialMessageWindow: Int {
         MessageStressFixture.isActive
@@ -7463,8 +7463,8 @@ struct ChatDetailView: View {
                 var olderIds = Set<String>()
                 more = true
                 /* 首屏之外始终保持一页预取；只有预取尚未完成时才现场补拉。 */
-                let target = isGroup ? 300 : 200
-                let maxPages = isGroup ? 2 : 3
+                let target = isGroup ? 150 : 200
+                let maxPages = isGroup ? 1 : 2
                 for _ in 0..<maxPages {
                     let page = try await API.shared.messages(
                         chatId: chat.id,
@@ -7530,7 +7530,7 @@ struct ChatDetailView: View {
         guard canContinue, olderPrefetch.isEmpty, olderPrefetchTask == nil else { return }
         let seq = explicitSeq ?? oldestHistorySeq
         guard seq > 0 else { return }
-        let target = isGroup ? 300 : 200
+        let target = isGroup ? 150 : 200
         let known = knownIds ?? Set(messages.map(\.id))
         let token = UUID()
         olderPrefetchToken = token
