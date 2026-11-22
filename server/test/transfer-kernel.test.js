@@ -129,12 +129,10 @@ async function main() {
     assert.ok(transfer.chunkSize >= 256 * 1024, 'chunk size must be bounded');
     assert.equal(transfer.totalChunks, Math.ceil(payload.length / transfer.chunkSize));
 
-    for (const index of [2, 0]) {
-      const uploaded = await uploadChunk(base, cookie, transfer, index, payload);
-      const body = await uploaded.json();
-      assert.equal(uploaded.status, 200, JSON.stringify(body));
-      transfer = body.data;
-    }
+    const firstChunk = await uploadChunk(base, cookie, transfer, 2, payload);
+    const firstChunkBody = await firstChunk.json();
+    assert.equal(firstChunk.status, 200, JSON.stringify(firstChunkBody));
+    transfer = firstChunkBody.data;
 
     const resumedResponse = await fetch(base + '/api/transfer/' + transfer.id, {
       headers: { Cookie: cookie }
@@ -142,18 +140,28 @@ async function main() {
     const resumedBody = await resumedResponse.json();
     assert.equal(resumedResponse.status, 200, JSON.stringify(resumedBody));
     transfer = resumedBody.data.transfer;
-    assert.deepEqual(transfer.received, [0, 2]);
-    assert.deepEqual(transfer.missing, [1]);
+    assert.deepEqual(transfer.received, [2]);
+    assert.deepEqual(transfer.missing, [0, 1]);
+
+    const concurrent = await Promise.all([
+      uploadChunk(base, cookie, transfer, 0, payload),
+      uploadChunk(base, cookie, transfer, 1, payload)
+    ]);
+    for (const response of concurrent) {
+      const body = await response.json();
+      assert.equal(response.status, 200, JSON.stringify(body));
+    }
 
     const duplicateResponse = await uploadChunk(base, cookie, transfer, 0, payload);
     const duplicateBody = await duplicateResponse.json();
     assert.equal(duplicateResponse.status, 200, JSON.stringify(duplicateBody));
     assert.equal(duplicateBody.data.duplicate, true);
 
-    const finalChunkResponse = await uploadChunk(base, cookie, transfer, 1, payload);
-    const finalChunkBody = await finalChunkResponse.json();
-    assert.equal(finalChunkResponse.status, 200, JSON.stringify(finalChunkBody));
-    transfer = finalChunkBody.data;
+    const readyStatus = await fetch(base + '/api/transfer/' + transfer.id, {
+      headers: { Cookie: cookie }
+    });
+    const readyStatusBody = await readyStatus.json();
+    transfer = readyStatusBody.data.transfer;
     assert.equal(transfer.receivedBytes, payload.length);
 
     const completeResponse = await fetch(base + '/api/transfer/' + transfer.id + '/complete', {

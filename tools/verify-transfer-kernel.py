@@ -27,8 +27,10 @@ require(
     "TransferJobStore" in CLIENT
     and "jobs.json" in CLIENT
     and "fetchStatus(id: existing.remoteId" in CLIENT
-    and "let completed = Set(remote.received)" in CLIENT,
-    "client must persist remote jobs and resume from acknowledged chunks",
+    and "let pending = remote.missing" in CLIENT
+    and "let workerCount = min(3, pending.count)" in CLIENT
+    and "withThrowingTaskGroup" in CLIENT,
+    "client must persist jobs and resume acknowledged chunks with bounded concurrency",
 )
 require(
     "SHA256" in CLIENT

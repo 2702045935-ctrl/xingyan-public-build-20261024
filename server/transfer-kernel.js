@@ -239,65 +239,74 @@ function createTransferKernel(options) {
     const digest = String(input.sha256 || '').toLowerCase();
     if (!sha256Text(digest)) throw new TransferError(422, '分片哈希不正确');
 
+    const job = readJob(ownerId, id);
+    if (job.status === 'ready') throw new TransferError(409, '文件已经上传完成', publicStatus(job));
+    if (!Number.isInteger(index) || index < 0 || index >= job.totalChunks) {
+      throw new TransferError(416, '分片编号超出范围');
+    }
+    const existing = job.chunks[String(index)];
+    if (existing) {
+      if (existing.sha256 !== digest) {
+        throw new TransferError(409, '同一分片已存在但内容不同');
+      }
+      input.req.resume();
+      return { duplicate: true, ...publicStatus(job) };
+    }
+
+    const offset = index * job.chunkSize;
+    const expectedBytes = Math.min(job.chunkSize, job.size - offset);
+    const contentLength = Number(input.req.headers['content-length']);
+    if (Number.isFinite(contentLength) && contentLength > 0 && contentLength !== expectedBytes) {
+      input.req.resume();
+      throw new TransferError(422, '分片长度与任务声明不一致');
+    }
+
+    const hash = crypto.createHash('sha256');
+    let received = 0;
+    const meter = new Transform({
+      transform(chunk, encoding, callback) {
+        received += chunk.length;
+        if (received > expectedBytes) {
+          callback(new TransferError(413, '分片内容超过声明长度'));
+          return;
+        }
+        hash.update(chunk);
+        callback(null, chunk);
+      }
+    });
+    const ivRaw = Buffer.from(job.iv, 'hex');
+    const cipher = crypto.createCipheriv(
+      'aes-256-ctr',
+      fileKey(job.fileName),
+      counterAt(ivRaw, Math.floor(offset / 16))
+    );
+    const output = fs.createWriteStream(path.join(uploadDir, job.fileName), {
+      flags: 'r+',
+      start: 20 + offset
+    });
+    try {
+      await pipeline(input.req, meter, cipher, output);
+    } catch (error) {
+      if (error instanceof TransferError) throw error;
+      throw new TransferError(422, '分片上传中断，请重试');
+    }
+    if (received !== expectedBytes) throw new TransferError(422, '分片不完整，请重试');
+    if (hash.digest('hex') !== digest) throw new TransferError(422, '分片完整性校验失败');
+
     return withJobLock(id, async () => {
-      const job = readJob(ownerId, id);
-      if (job.status === 'ready') throw new TransferError(409, '文件已经上传完成', publicStatus(job));
-      if (!Number.isInteger(index) || index < 0 || index >= job.totalChunks) {
-        throw new TransferError(416, '分片编号超出范围');
+      const latest = readJob(ownerId, id);
+      if (latest.status === 'cancelled') throw new TransferError(409, '传输任务已取消');
+      if (latest.status === 'ready') {
+        return { duplicate: true, ...publicStatus(latest) };
       }
-      const existing = job.chunks[String(index)];
-      if (existing) {
-        if (existing.sha256 !== digest) {
-          throw new TransferError(409, '同一分片已存在但内容不同');
-        }
-        input.req.resume();
-        return { duplicate: true, ...publicStatus(job) };
+      const committed = latest.chunks[String(index)];
+      if (committed && committed.sha256 !== digest) {
+        throw new TransferError(409, '同一分片已存在但内容不同');
       }
-
-      const offset = index * job.chunkSize;
-      const expectedBytes = Math.min(job.chunkSize, job.size - offset);
-      const contentLength = Number(input.req.headers['content-length']);
-      if (Number.isFinite(contentLength) && contentLength > 0 && contentLength !== expectedBytes) {
-        input.req.resume();
-        throw new TransferError(422, '分片长度与任务声明不一致');
-      }
-
-      const hash = crypto.createHash('sha256');
-      let received = 0;
-      const meter = new Transform({
-        transform(chunk, encoding, callback) {
-          received += chunk.length;
-          if (received > expectedBytes) {
-            callback(new TransferError(413, '分片内容超过声明长度'));
-            return;
-          }
-          hash.update(chunk);
-          callback(null, chunk);
-        }
-      });
-      const ivRaw = Buffer.from(job.iv, 'hex');
-      const cipher = crypto.createCipheriv(
-        'aes-256-ctr',
-        fileKey(job.fileName),
-        counterAt(ivRaw, Math.floor(offset / 16))
-      );
-      const output = fs.createWriteStream(path.join(uploadDir, job.fileName), {
-        flags: 'r+',
-        start: 20 + offset
-      });
-      try {
-        await pipeline(input.req, meter, cipher, output);
-      } catch (error) {
-        if (error instanceof TransferError) throw error;
-        throw new TransferError(422, '分片上传中断，请重试');
-      }
-      if (received !== expectedBytes) throw new TransferError(422, '分片不完整，请重试');
-      if (hash.digest('hex') !== digest) throw new TransferError(422, '分片完整性校验失败');
-
-      job.chunks[String(index)] = { bytes: received, sha256: digest };
-      job.error = '';
-      saveJob(job);
-      return { duplicate: false, ...publicStatus(job) };
+      latest.chunks[String(index)] = { bytes: received, sha256: digest };
+      latest.error = '';
+      saveJob(latest);
+      return { duplicate: Boolean(committed), ...publicStatus(latest) };
     });
   }
 

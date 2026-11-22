@@ -78,6 +78,37 @@ private struct TransferStoredJob: Codable {
     var updatedAt: Date
 }
 
+private final class TransferProgressBox {
+    private let lock = NSLock()
+    private let total: Int64
+    private let onProgress: (Double) -> Void
+    private var completed: Int64
+    private var partial: [Int: Int64] = [:]
+
+    init(completed: Int64, total: Int64, onProgress: @escaping (Double) -> Void) {
+        self.completed = completed
+        self.total = max(1, total)
+        self.onProgress = onProgress
+    }
+
+    func update(index: Int, sent: Int64) {
+        lock.lock()
+        partial[index] = max(0, sent)
+        let current = completed + partial.values.reduce(0, +)
+        lock.unlock()
+        onProgress(min(0.995, Double(current) / Double(total)))
+    }
+
+    func finish(index: Int, bytes: Int64) {
+        lock.lock()
+        partial[index] = nil
+        completed += max(0, bytes)
+        let current = completed
+        lock.unlock()
+        onProgress(min(0.995, Double(current) / Double(total)))
+    }
+}
+
 private final class TransferJobStore {
     static let shared = TransferJobStore()
 
@@ -272,35 +303,52 @@ final class TransferUploader {
             updatedAt: Date()
         ))
 
-        let completed = Set(remote.received)
-        var uploadedBytes = remote.receivedBytes
-        onProgress(Double(uploadedBytes) / Double(max(1, size)))
-
-        for index in remote.missing {
-            let offset = Int64(index) * Int64(remote.chunkSize)
-            let length = Int(min(Int64(remote.chunkSize), size - offset))
-            let chunk = try readChunk(index, length)
-            guard chunk.count == length else {
-                throw TransferUploaderError.invalidFile("文件分片长度不正确")
-            }
-            if completed.contains(index) { continue }
-            let chunkHash = SHA256.hash(data: chunk).map { String(format: "%02x", $0) }.joined()
-            let before = uploadedBytes
-            try await putChunk(
-                id: remote.id,
-                index: index,
-                sha256: chunkHash,
-                body: chunk,
-                base: base,
-                token: token,
-                session: session,
-                onChunkProgress: { fraction in
-                    let current = before + Int64(fraction * Double(chunk.count))
-                    onProgress(min(0.995, Double(current) / Double(max(1, size))))
+        let progress = TransferProgressBox(
+            completed: remote.receivedBytes,
+            total: size,
+            onProgress: onProgress
+        )
+        progress.update(index: -1, sent: 0)
+        let pending = remote.missing
+        let workerCount = min(3, pending.count)
+        if workerCount > 0 {
+            try await withThrowingTaskGroup(of: Void.self) { group in
+                for worker in 0..<workerCount {
+                    group.addTask {
+                        var position = worker
+                        while position < pending.count {
+                            let index = pending[position]
+                            let offset = Int64(index) * Int64(remote.chunkSize)
+                            let length = Int(min(Int64(remote.chunkSize), size - offset))
+                            let chunk = try readChunk(index, length)
+                            guard chunk.count == length else {
+                                throw TransferUploaderError.invalidFile("文件分片长度不正确")
+                            }
+                            let chunkHash = SHA256.hash(data: chunk)
+                                .map { String(format: "%02x", $0) }
+                                .joined()
+                            try await putChunk(
+                                id: remote.id,
+                                index: index,
+                                sha256: chunkHash,
+                                body: chunk,
+                                base: base,
+                                token: token,
+                                session: session,
+                                onChunkProgress: { fraction in
+                                    progress.update(
+                                        index: index,
+                                        sent: Int64(fraction * Double(chunk.count))
+                                    )
+                                }
+                            )
+                            progress.finish(index: index, bytes: Int64(chunk.count))
+                            position += workerCount
+                        }
+                    }
                 }
-            )
-            uploadedBytes += Int64(chunk.count)
-            onProgress(min(0.995, Double(uploadedBytes) / Double(max(1, size))))
+                try await group.waitForAll()
+            }
         }
 
         let url = try await complete(id: remote.id,
