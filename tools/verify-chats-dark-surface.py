@@ -20,10 +20,12 @@ require(
 )
 require(
     "showsDivider: true" in CHATS
-    and "UIColor.white.withAlphaComponent(0.025)" in CHATS
-    and "UIColor.white.withAlphaComponent(0.032)" in CHATS
+    and "? UIColor(hex: 0x303030)" in CHATS
+    and "dividerColor: isDark\n                ? UIColor(hex: 0x303030)" in CHATS
+    and ".fill(ChatListVisual.rule)" in CHATS
+    and ".fill(isDark ? Color.clear : ChatListVisual.rule)" not in CHATS
     and "dividerLeading: CGFloat = 77" in ROW,
-    "dark chat rows must use the subtle 77pt structural hairline",
+    "dark chat rows must use the visible 77pt WeChat-sized structural hairline",
 )
 require(
     'divider.isHidden = !configuration.showsDivider' in ROW,

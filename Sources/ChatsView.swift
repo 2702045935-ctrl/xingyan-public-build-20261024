@@ -17,8 +17,10 @@ private enum ChatListVisual {
     static let previewAccentInk = Color.dyn(0xFA5151, 0xFA5151)
     static let timeInk = Color.dyn(0xB2B2B2, 0x5F6368)
     static let rule = Color(UIColor { trait in
+        // WeChat 8.0.80 measures 48,48,48 for the conversation separator.
+        // Keep it one physical pixel high and begin at the 77pt text rail.
         trait.userInterfaceStyle == .dark
-            ? UIColor.white.withAlphaComponent(0.032)
+            ? UIColor(hex: 0x303030)
             : UIColor(hex: 0xE9EDEF)
     })
     static let badgeRing = Color.dyn(0xFFFFFF, 0x000000)
@@ -883,7 +885,7 @@ struct SwipeChatRow: View {
                 .background(rowBg)
                 .overlay(alignment: .bottom) {
                     Rectangle()
-                        .fill(isDark ? Color.clear : ChatListVisual.rule)
+                        .fill(ChatListVisual.rule)
                         .frame(height: 0.5)
                         .padding(.leading, ChatListVisual.dividerLeading)
                 }
@@ -2778,7 +2780,7 @@ struct ChatsView: View {
             timeColor: timeColor,
             rowBackground: rowBg,
             dividerColor: isDark
-                ? UIColor.white.withAlphaComponent(0.025)
+                ? UIColor(hex: 0x303030)
                 : UIColor(hex: 0xE9EDEF),
             showsDivider: true,
             badgeRing: isDark ? .black : .white,
