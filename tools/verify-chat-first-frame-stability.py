@@ -16,13 +16,11 @@ def require(condition: bool, message: str) -> None:
 
 require(
     "private var initialOpenSettling" in CHAT
-    and CHAT.count("if initialOpenSettling { return }") >= 2,
+    and CHAT.count("if initialOpenSettling {") >= 1,
     "first-frame settling must suppress direct and native size-change pinning",
 )
 require(
-    "ChatInitialBottomAnchor(enabled: !initialScrollReady)" in CHAT
-    and "defaultScrollAnchor(enabled ? UnitPoint.bottom : nil)" in CHAT
-    and "if #available(iOS 17.0, *)" in CHAT
+    "initiallyPinnedToBottom: true" in CHAT
     and "for delay in [0, 24, 70, 150, 260]" not in CHAT,
     "chat entry must use one native bottom anchor instead of repeated visible pinning",
 )
@@ -36,15 +34,12 @@ require(
     "the first network page must replace the native list without implicit animation",
 )
 require(
-    "private var usesShortConversationSurface: Bool {\n        // Every conversation" in CHAT
-    and "false\n    }" in CHAT,
-    "all conversations must use the same native message-list surface",
-)
-require(
-    "private var usesNativeMessageList: Bool" in CHAT
-    and "} else {\n            nativeMessageList" in CHAT
+    "private var conversationSurface: some View {\n        nativeMessageList" in CHAT
+    and "private var shortConversationSurface" not in CHAT
+    and "private var legacyNativeMessageList" not in CHAT
+    and "private var messageList: some View" not in CHAT
     and "initiallyPinnedToBottom: true" in CHAT,
-    "long chats must use the premeasured native list to avoid first-scroll stalls",
+    "all chats must use the single native message-list surface",
 )
 require(
     "private var nativeRowLayoutKey: String" in CHAT
@@ -58,7 +53,7 @@ require(
 require(
     "case timestamp(Message)" in CHAT
     and 'id: "native-time:\\(message.id)"' in CHAT
-    and "messageBlock(message, includesTime: false, capturesFrame: false)" in CHAT
+    and "messageBlock(message, includesTime: false)" in CHAT
     and "accessibilityElement(children: .ignore)" in CHAT
     and "accessibilityLabel(messageAccessibilityLabel(message))" in CHAT,
     "native messages must use separate time rows and one combined semantic row",
@@ -68,8 +63,9 @@ require(
         encoding="utf-8"
     )
     and "nativeMessageController.frameForID(m.id)" in CHAT
-    and "capturesFrame: Bool = true" in CHAT,
-    "native rows must resolve action anchors on demand instead of observing every frame",
+    and "frameCaptureTick" not in CHAT
+    and "frameBox" not in CHAT,
+    "native rows must resolve action anchors on demand without per-row frame capture",
 )
 NATIVE_LIST = (ROOT / "Sources" / "NativeStaticList.swift").read_text(encoding="utf-8")
 require(

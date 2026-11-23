@@ -119,13 +119,11 @@ require(
     and "available - avatarReserve" in MEDIA_ROW,
     "text and media bubbles must share the same left and right alignment rails",
 )
-short_start = CHAT.index("private var shortConversationSurface")
-short_end = CHAT.index("private func scrollShortConversationToBottom", short_start)
-short_surface = CHAT[short_start:short_end]
 require(
-    ".padding(.horizontal, L.msgPad)" not in short_surface
-    and ".padding(.trailing, 6)" not in short_surface,
-    "short conversations must use one shared edge rail for text, pending and upload bubbles",
+    "private var conversationSurface: some View {\n        nativeMessageList" in CHAT
+    and "private var shortConversationSurface" not in CHAT
+    and "private var legacyNativeMessageList" not in CHAT,
+    "every message surface must use the same native edge rail",
 )
 require(
     "private let extraImageViews" in MEDIA_ROW
@@ -192,8 +190,7 @@ require(
     "avatar runs stay aligned and every sender group keeps one WhatsApp tail",
 )
 require(
-    "var showsDeliveryTicks: Bool = true" in CHAT
-    and ".overlay(alignment: .bottomTrailing)" in CHAT
+    ".overlay(alignment: .bottomTrailing)" in CHAT
     and "TimeFmt.messageClock(message.createdAt)" in CHAT
     and "count: deliveryState.tickCount" in CHAT,
     "delivery time and receipt ticks must share the bubble footer",

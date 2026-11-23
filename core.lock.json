@@ -58,8 +58,8 @@
     },
     {
       "path": "Sources/MsgFrameKey.swift",
-      "size": 651,
-      "sha256": "fdf3a779255614d9915d9bcf528868ac2517b5feafbfa1180956cd162403993a"
+      "size": 348,
+      "sha256": "adda7e9360ae7073c28567dd4f3d16813ea03e3a13889ddb5ce50ff4b0a08f22"
     },
     {
       "path": "Sources/PushCenter.swift",
@@ -68,8 +68,8 @@
     },
     {
       "path": "Sources/ChatDetailView.swift",
-      "size": 449010,
-      "sha256": "1ea1c0c49ac3b9c4ea2caae6de5215451610ddce1a0e58a6b52b5080d9863108"
+      "size": 420790,
+      "sha256": "6f5a63e07e636b3a3b4dd0a63da3284bc60a22fe17f9485db7a903b6cc7c055c"
     },
     {
       "path": "Sources/GroupInfoView.swift",
@@ -158,8 +158,8 @@
     },
     {
       "path": "Sources/TransferUploader.swift",
-      "size": 30401,
-      "sha256": "1dbaa5e95e847d5bd7119308bfcad5bc75b1ba40d580d94728e034207c5cadd1"
+      "size": 29996,
+      "sha256": "e9e67305c0b83049bbea343eede595b72d2f1578941987d9383832831173d04f"
     }
   ]
 }

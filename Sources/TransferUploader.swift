@@ -24,22 +24,6 @@ enum TransferUploaderError: LocalizedError {
         }
     }
 
-    var isUnsupported: Bool {
-        if case .unsupported = self { return true }
-        return false
-    }
-
-    var allowsLegacyFallback: Bool {
-        switch self {
-        case .unsupported, .badResponse:
-            return true
-        case .http(let status, _):
-            return [404, 405, 426, 500, 501, 502, 503, 504].contains(status)
-        default:
-            return false
-        }
-    }
-
     var isRetryable: Bool {
         switch self {
         case .network:

@@ -36,7 +36,7 @@ require(
     "client must persist jobs and resume acknowledged chunks with adaptive concurrency",
 )
 require(
-    "allowsLegacyFallback" in CLIENT
+    "allowsLegacyFallback" not in CLIENT
     and "TransferJobStore.shared.remove(key)" in CLIENT
     and "error.allowsLegacyFallback" not in API
     and "uploadBinaryFileLegacy" not in API
