@@ -5747,7 +5747,7 @@ private struct StarredPayload: Decodable {
                                                       onProgress: onProgress) {
             return url
         }
-        try await TransferUploader.shared.uploadFile(
+        return try await TransferUploader.shared.uploadFile(
             file,
             mime: mime,
             skipTranscode: skipTranscode,
