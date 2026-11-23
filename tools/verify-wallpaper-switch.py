@@ -1,0 +1,47 @@
+#!/usr/bin/env python3
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+SHEET = (ROOT / "Sources" / "ChatBackgroundSheet.swift").read_text(encoding="utf-8")
+CROP = (ROOT / "Sources" / "WallpaperSystem.swift").read_text(encoding="utf-8")
+WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
+    encoding="utf-8"
+)
+
+
+def require(condition: bool, message: str) -> None:
+    if not condition:
+        raise SystemExit("wallpaper-switch verification failed: " + message)
+
+
+start = SHEET.index("private func beginComposing")
+end = SHEET.index("private func applyChatBackground", start)
+block = SHEET[start:end]
+require(
+    "composingImage = image" in block
+    and "showingComposer = true" in block
+    and "downsampledWallpaper" not in block
+    and "Task.detached" not in block,
+    "photo selection must open crop immediately without a second decode wait",
+)
+require(
+    "@State private var applying = false" in CROP
+    and "private func applyCrop(viewport: CGSize)" in CROP
+    and "await Task.detached(priority: .userInitiated)" in CROP
+    and "private nonisolated static func render(" in CROP
+    and "await MainActor.run {\n                applying = false\n                onApply(rendered)"
+    in CROP,
+    "wallpaper crop rendering must run off the main actor and apply atomically",
+)
+require(
+    "if applying {\n                        ProgressView()" in CROP
+    and ".disabled(applying)" in CROP,
+    "the crop action must stay responsive and expose a clear applying state",
+)
+require(
+    "python3 tools/verify-wallpaper-switch.py" in WORKFLOW,
+    "wallpaper responsiveness regression must run in the iOS gate",
+)
+
+print("wallpaper-switch: passed")
