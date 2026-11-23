@@ -58,6 +58,7 @@ const ENTRY_FILES = [
   'tools/dual-cell-failover-drill.js',
   'tools/dual-cell-tls-proxy.js',
   'tools/fleet-metrics-merge.js',
+  'tools/collect-runtime-fleet-metrics.js',
   'tools/physical-auto-scale-service.js',
   'tools/physical-scale-target.js'
 ];

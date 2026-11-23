@@ -1,0 +1,17 @@
+[Unit]
+Description=Xingyan production Fleet metrics collector
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/xingyan-runtime-metrics.sh
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/var/lib/xingyan-dual-cell
+
+[Install]
+WantedBy=multi-user.target

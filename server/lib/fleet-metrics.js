@@ -12,6 +12,11 @@ function buildFleetMetrics(inputs, options) {
   const cells = (Array.isArray(inputs) ? inputs : []).map((entry) => {
     const input = entry && entry.input && typeof entry.input === 'object'
       ? entry.input : entry;
+    if (input && input.version === 2 && input.cell) {
+      return Object.assign({}, input.cell, {
+        id: String(entry.cellId || input.cell.id || '')
+      });
+    }
     const report = input.report || input;
     const capacity = report.input || report;
     const host = capacity.host || {};
