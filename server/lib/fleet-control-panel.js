@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { validateFleetPlan } = require('./fleet-release-plan');
 
 function readJson(file) {
   try {
@@ -92,6 +93,10 @@ function loadFleetControlPanel(options) {
   const config = readJson(configFile) || {};
   const state = readJson(stateFile) || {};
   const metrics = readJson(metricsFile);
+  const sourcePlan = readJson(config.sourcePlanFile);
+  const targetPlan = readJson(config.targetPlanFile);
+  const sourceValidation = sourcePlan ? validateFleetPlan(sourcePlan) : null;
+  const targetValidation = targetPlan ? validateFleetPlan(targetPlan) : null;
   return {
     control: controlStatus({
       config,
@@ -101,7 +106,25 @@ function loadFleetControlPanel(options) {
       metricsFile,
       lockActive: fs.existsSync(lockFile)
     }, opts.now),
-    recentAudit: tailJsonl(auditFile, Number(opts.auditLimit) || 20)
+    recentAudit: tailJsonl(auditFile, Number(opts.auditLimit) || 20),
+    migration: {
+      sourceTopology: sourceValidation && sourceValidation.ok
+        ? sourceValidation.normalized.topologyId : '',
+      targetTopology: targetValidation && targetValidation.ok
+        ? targetValidation.normalized.topologyId : '',
+      sourceCellCount: sourceValidation && sourceValidation.ok
+        ? sourceValidation.normalized.cells.length : 0,
+      targetCellCount: targetValidation && targetValidation.ok
+        ? targetValidation.normalized.cells.length : 0,
+      shardCount: targetValidation && targetValidation.ok
+        ? targetValidation.normalized.shardCount : 0,
+      targetValid: !!targetValidation && targetValidation.ok,
+      targetEligible: !!targetValidation
+        && targetValidation.deploymentEligible,
+      targetWarnings: targetValidation ? targetValidation.warnings : [],
+      targetFailures: targetValidation ? targetValidation.failures : [],
+      lastResult: state.lastResult || null
+    }
   };
 }
 

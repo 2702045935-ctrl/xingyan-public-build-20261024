@@ -155,6 +155,11 @@ class PhysicalAutoScaleController {
         error: String(error && error.message || error)
       };
     }
+    result.sourceTopologyId = sourcePlan.topologyId || '';
+    result.targetTopologyId = targetPlan.topologyId || '';
+    result.planFingerprint = result.planFingerprint || scalePlan.fingerprint;
+    result.moveCount = Array.isArray(scalePlan.moves)
+      ? scalePlan.moves.length : 0;
     this.state.busy = false;
     this.state.lastResult = result;
     if (result.ok) {
