@@ -2220,6 +2220,63 @@ PAGES.shardmaintenance = async () => {
     + '<div class="kv"><b>稳定代码 SHA</b><span class="maint-hash">' + frozen.stableCodeSha256 + '</span></div>'
     + '</div>';
 
+  const fleet = d.fleetControl || {};
+  const fleetControl = fleet.control || {};
+  const fleetStatusText = {
+    disabled: '自动扩容未启用',
+    healthy: '容量正常',
+    pressured: '容量已超线',
+    degraded: 'Cell 异常',
+    'blocked-stale': '指标已过期，已阻断',
+    running: '扩容任务执行中'
+  };
+  const fleetCells = (fleetControl.cells || []).map((cell) => {
+    const pressure = Number(cell.memoryUsedRatio) >= 0.82
+      || Number(cell.loadPerCore) >= 0.9
+      || Number(cell.fdUtilization) >= 0.85
+      || Number(cell.p99Ms) >= 2000
+      || Number(cell.diskUsedRatio) >= 0.85;
+    return '<tr><td>' + esc(cell.id) + '</td>'
+      + '<td>' + (cell.ok === false ? '<span style="color:#b42318">异常</span>'
+        : pressure ? '<span style="color:#b54708">高压</span>'
+          : '<span style="color:#067647">正常</span>') + '</td>'
+      + '<td>' + (Number(cell.memoryUsedRatio) * 100).toFixed(1) + '%</td>'
+      + '<td>' + Number(cell.loadPerCore || 0).toFixed(2) + '</td>'
+      + '<td>' + (Number(cell.fdUtilization) * 100).toFixed(1) + '%</td>'
+      + '<td>' + (Number(cell.diskUsedRatio) * 100).toFixed(1) + '%</td>'
+      + '<td>' + Number(cell.p99Ms || 0).toFixed(0) + 'ms</td></tr>';
+  }).join('');
+  const fleetAudit = (fleet.recentAudit || []).slice().reverse().slice(0, 8)
+    .map((row) => '<tr><td>' + esc(row.at || '') + '</td><td>'
+      + (row.ok ? '成功' : '失败') + '</td><td>'
+      + esc(row.reason || row.error || '') + '</td><td>'
+      + esc(String(row.planFingerprint || '').slice(0, 16)) + '</td></tr>').join('');
+  const fleetPanel =
+    '<div class="panel"><h3>物理分片自动扩容控制面</h3>'
+    + '<div class="maint-grid"><div>'
+    + '<div class="kv"><b>控制状态</b><span>' + esc(fleetStatusText[fleetControl.status] || fleetControl.status || '未配置') + '</span></div>'
+    + '<div class="kv"><b>执行开关</b><span>' + (fleetControl.execute ? '已启用' : '只读 / 未执行') + '</span></div>'
+    + '<div class="kv"><b>任务锁</b><span>' + (fleetControl.lockActive ? '运行中' : '空闲') + '</span></div>'
+    + '<div class="kv"><b>指标新鲜度</b><span>' + (fleetControl.metricsFresh
+      ? '正常，' + esc(fleetControl.metricsAgeSeconds) + ' 秒前'
+      : fleetControl.metricsAgeSeconds == null ? '无指标'
+        : '已过期，' + esc(fleetControl.metricsAgeSeconds) + ' 秒前') + '</span></div>'
+    + '<div class="kv"><b>连续压力</b><span>' + esc(fleetControl.pressureStreak || 0) + ' 次</span></div>'
+    + '<div class="kv"><b>最近完成</b><span>' + (fleetControl.lastCompletedAt
+      ? esc(new Date(fleetControl.lastCompletedAt).toLocaleString()) : '—') + '</span></div>'
+    + '<div class="kv"><b>最近结果</b><span class="maint-hash">'
+      + esc((fleetControl.lastResult && (fleetControl.lastResult.reason || fleetControl.lastResult.error)) || '—')
+      + '</span></div>'
+    + '<div class="hint">这里只读。自动扩容执行由 physical-auto-scale.service 负责，面板不提供直接切生产按钮。</div>'
+    + '</div><div>'
+    + '<table class="maint-table"><thead><tr><th>Cell</th><th>状态</th><th>内存</th><th>CPU/核</th><th>FD</th><th>磁盘</th><th>P99</th></tr></thead><tbody>'
+    + (fleetCells || '<tr><td colspan="7" class="hint">尚无 Cell 指标</td></tr>')
+    + '</tbody></table></div></div>'
+    + '<h4 style="margin:14px 0 8px">最近扩容审计</h4>'
+    + '<table class="maint-table"><thead><tr><th>时间</th><th>结果</th><th>原因</th><th>计划指纹</th></tr></thead><tbody>'
+    + (fleetAudit || '<tr><td colspan="4" class="hint">暂无自动扩容记录</td></tr>')
+    + '</tbody></table></div>';
+
   const currentShard = flow ? flow.shards[flow.currentShard] : null;
   $('content').innerHTML =
     '<div class="maint-hero">'
@@ -2228,6 +2285,7 @@ PAGES.shardmaintenance = async () => {
     + '<div class="maint-stat"><span>当前分片</span><b>' + (currentShard ? currentShard.id + ' / 6' : '—') + '</b></div>'
     + '<div class="maint-stat"><span>已健康</span><b>' + (flow ? flow.shards.filter((s) => s.status === 'healthy').length : 0) + ' / 7</b></div>'
     + '</div>'
+    + fleetPanel
     + '<div class="panel"><div class="row" style="margin:0;justify-content:space-between">'
     + '<div><b>发布记录</b><div class="hint">历史只追加，不提供删除入口</div></div>'
     + '<div>' + history + '</div></div></div>'

@@ -36,6 +36,7 @@ const {
 const {
   runSingleCellCapacityCollector
 } = require('./lib/single-cell-capacity-runner');
+const { loadFleetControlPanel } = require('./lib/fleet-control-panel');
 const { MessageReliabilityStore } = require('./lib/message-reliability');
 const { ShardAuthorityStore } = require('./lib/shard-authority-store');
 const { ShardAuthorityRuntime } = require('./lib/shard-authority-runtime');
@@ -29208,7 +29209,17 @@ async function handleOps(req, res, parts, query) {
       ok(res, {
         frozen: SHARD_MAINTENANCE_TARGET,
         checklist: SHARD_READY_CHECKLIST,
-        rollouts: shardMaintenanceStore.list()
+        rollouts: shardMaintenanceStore.list(),
+        fleetControl: loadFleetControlPanel({
+          configFile: process.env.PHYSICAL_AUTO_SCALE_CONFIG
+            || '/etc/xingyan-dual-cell/auto-scale.json',
+          stateFile: process.env.PHYSICAL_AUTO_SCALE_STATE
+            || '/var/lib/xingyan-dual-cell/auto-scale-state.json',
+          metricsFile: process.env.PHYSICAL_FLEET_METRICS
+            || '/var/lib/xingyan-dual-cell/fleet-metrics.json',
+          auditFile: process.env.PHYSICAL_AUTO_SCALE_AUDIT
+            || '/var/lib/xingyan-dual-cell/auto-scale-audit.jsonl'
+        })
       });
       return;
     }

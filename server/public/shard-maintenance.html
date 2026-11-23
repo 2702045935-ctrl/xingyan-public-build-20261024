@@ -135,7 +135,22 @@ function render() {
 
   const steps = selected ? '<div class="card"><h2>放行轨迹</h2><div class="steps">' + selected.shards.map((shard) => '<div class="step ' + esc(shard.status) + '"><i>' + shard.id + '</i><div><b>' + esc(shard.service) + '</b><div class="mono">' + esc(shardText(shard.status)) + ' · ' + shard.backendPort + '</div></div></div>').join('') + '</div></div>' : '';
   const target = '<div class="card"><h2>冻结目标</h2><div class="mono">manifest ' + frozen.runtimeManifestHash + '<br>plan ' + frozen.routePlanHash + '<br>file ' + frozen.routePlanFileSha256 + '</div></div>';
-  $('app').innerHTML = '<div class="hero"><div class="stat"><small>状态</small><b>' + esc(selected ? statusText(selected.status) : '未开始') + '</b></div><div class="stat"><small>阶段</small><b>' + esc(selected ? selected.phase : '—') + '</b></div><div class="stat"><small>当前分片</small><b>' + (current ? current.id + ' / 6' : '—') + '</b></div><div class="stat"><small>已健康</small><b>' + (selected ? selected.shards.filter((s) => s.status === 'healthy').length : 0) + ' / 7</b></div></div>' + controls + '<div class="grid"><div>' + target + '</div><div>' + steps + '</div></div>';
+  const fleet = DATA.fleetControl || {};
+  const fc = fleet.control || {};
+  const fleetCells = (fc.cells || []).map((cell) => '<tr><td>' + esc(cell.id) + '</td><td>'
+    + (cell.ok === false ? '异常' : '正常') + '</td><td>'
+    + (Number(cell.memoryUsedRatio) * 100).toFixed(1) + '%</td><td>'
+    + Number(cell.loadPerCore || 0).toFixed(2) + '</td><td>'
+    + (Number(cell.fdUtilization) * 100).toFixed(1) + '%</td><td>'
+    + Number(cell.p99Ms || 0).toFixed(0) + 'ms</td></tr>').join('');
+  const fleetCard = '<div class="card"><h2>自动扩容控制面</h2>'
+    + '<div class="hero"><div class="stat"><small>状态</small><b>' + esc(fc.status || '未配置') + '</b></div>'
+    + '<div class="stat"><small>执行</small><b>' + (fc.execute ? '启用' : '只读') + '</b></div>'
+    + '<div class="stat"><small>任务锁</small><b>' + (fc.lockActive ? '运行中' : '空闲') + '</b></div>'
+    + '<div class="stat"><small>指标</small><b>' + (fc.metricsFresh ? '新鲜' : '过期/缺失') + '</b></div></div>'
+    + '<table style="width:100%;border-collapse:collapse"><thead><tr><th>Cell</th><th>状态</th><th>内存</th><th>CPU/核</th><th>FD</th><th>P99</th></tr></thead><tbody>'
+    + (fleetCells || '<tr><td colspan="6">尚无指标</td></tr>') + '</tbody></table></div>';
+  $('app').innerHTML = '<div class="hero"><div class="stat"><small>状态</small><b>' + esc(selected ? statusText(selected.status) : '未开始') + '</b></div><div class="stat"><small>阶段</small><b>' + esc(selected ? selected.phase : '—') + '</b></div><div class="stat"><small>当前分片</small><b>' + (current ? current.id + ' / 6' : '—') + '</b></div><div class="stat"><small>已健康</small><b>' + (selected ? selected.shards.filter((s) => s.status === 'healthy').length : 0) + ' / 7</b></div></div>' + fleetCard + controls + '<div class="grid"><div>' + target + '</div><div>' + steps + '</div></div>';
   bind(selected);
 }
 

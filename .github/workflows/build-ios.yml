@@ -198,6 +198,7 @@ jobs:
           node server/test/physical-auto-scale-controller.test.js
           node server/test/physical-scale-production-adapters.test.js
           node server/test/physical-auto-scale-runtime.test.js
+          node server/test/fleet-control-panel.test.js
           node server/test/logical-shard-directory.test.js
           python3 tools/verify-physical-auto-scale-foundation.py
           node server/test/shard-write-freeze.test.js

@@ -27,6 +27,11 @@ REPLICATION = (ROOT / "deploy" / "fleet" / "fleet-replication-sync.js").read_tex
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
 )
+SERVER = (ROOT / "server" / "server.js").read_text(encoding="utf-8")
+MANAGE = (ROOT / "server" / "public" / "manage.html").read_text(encoding="utf-8")
+MAINT = (ROOT / "server" / "public" / "shard-maintenance.html").read_text(
+    encoding="utf-8"
+)
 
 
 def require(condition: bool, message: str) -> None:
@@ -43,6 +48,14 @@ require(
     and "ownerTargets" in ADAPTER
     and "restart" not in ADAPTER,
     "production adapters must stage routing and use gateway hot reload",
+)
+require(
+    "loadFleetControlPanel" in SERVER
+    and "fleetControl: loadFleetControlPanel" in SERVER
+    and "物理分片自动扩容控制面" in MANAGE
+    and "自动扩容控制面" in MAINT
+    and "最近扩容审计" in MANAGE,
+    "the operations panel must display live fleet control state and audit",
 )
 require(
     "writeAtomic" in AGENT

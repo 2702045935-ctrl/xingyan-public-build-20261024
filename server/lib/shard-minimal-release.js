@@ -34,6 +34,7 @@ const ENTRY_FILES = [
   'lib/dual-cell-failover-drill.js',
   'lib/dual-cell-lease-agent.js',
   'lib/fleet-metrics.js',
+  'lib/fleet-control-panel.js',
   'lib/physical-remote-runner.js',
   'lib/physical-scale-production-adapters.js',
   'lib/physical-scale-target.js',
