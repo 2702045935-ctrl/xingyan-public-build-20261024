@@ -34,6 +34,18 @@ require(
     "the first network page must replace the native list without implicit animation",
 )
 require(
+    "self.chat = chat\n        // Resolve this conversation's theme before the first body evaluation."
+    in CHAT
+    and "ChatThemeStore.shared.activate(chat.id)" in CHAT,
+    "the destination chat palette must be active before its first body evaluation",
+)
+require(
+    "let same = nextMessages.count == messages.count" in CHAT
+    and "if !same {\n                if !initial, !messages.isEmpty" in CHAT
+    and "if initial {\n                unreadHere = chat.unreadCount" in CHAT,
+    "an unchanged cached first page must not trigger a second visible list snapshot",
+)
+require(
     "private var conversationSurface: some View {\n        nativeMessageList" in CHAT
     and "private var shortConversationSurface" not in CHAT
     and "private var legacyNativeMessageList" not in CHAT

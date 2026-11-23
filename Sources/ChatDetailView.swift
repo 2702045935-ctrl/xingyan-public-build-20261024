@@ -1036,6 +1036,9 @@ struct ChatDetailView: View {
 
     init(chat: Chat, initialMessages: [Message] = []) {
         self.chat = chat
+        // Resolve this conversation's theme before the first body evaluation.
+        // Waiting for onAppear paints the previous chat's palette for one frame.
+        ChatThemeStore.shared.activate(chat.id)
         let hidden = Set(
             UserDefaults.standard.stringArray(forKey: "chris.deleted." + chat.id) ?? []
         )
@@ -8008,17 +8011,14 @@ struct ChatDetailView: View {
             // rows makes an up-scrolled conversation visibly swap content.
             let refreshWindow = initial ? activeInitialMessageWindow : maxMessageWindow
             let nextMessages = Array(visible.suffix(refreshWindow))
-            let same = !initial && nextMessages.count == messages.count
+            let same = nextMessages.count == messages.count
                 && zip(nextMessages, messages).allSatisfy { $0.id == $1.id && $0.body == $1.body }
-            if initial || !same {
-
-                if initial {
-                    unreadHere = chat.unreadCount
-                } else if !messages.isEmpty {
-
+            if !same {
+                if !initial, !messages.isEmpty {
                     let oldLastSeq = messages.last?.seq ?? 0
                     let incoming = result.messages.filter {
-                        ($0.seq ?? 0) > oldLastSeq && $0.senderId != myId && $0.kindName != "system"
+                        ($0.seq ?? 0) > oldLastSeq && $0.senderId != myId
+                            && $0.kindName != "system"
                     }.count
                     if incoming > 0 { unreadHere += incoming }
                 }
@@ -8027,15 +8027,15 @@ struct ChatDetailView: View {
                 withTransaction(initialMessageTransaction) {
                     messages = nextMessages
                 }
-                if initial {
-                    hasOlder = result.hasMore
-                        || nextMessages.count > result.messages.count
-                        || (nextMessages.first?.seq ?? 0) < (result.messages.first?.seq ?? 0)
-                }
-
-                if let last = result.messages.last, let sq = last.seq {
-                    Realtime.shared.ackDelivery(chatId: chat.id, seq: sq)
-                }
+            }
+            if initial {
+                unreadHere = chat.unreadCount
+                hasOlder = result.hasMore
+                    || nextMessages.count > result.messages.count
+                    || (nextMessages.first?.seq ?? 0) < (result.messages.first?.seq ?? 0)
+            }
+            if let last = result.messages.last, let sq = last.seq {
+                Realtime.shared.ackDelivery(chatId: chat.id, seq: sq)
             }
         } catch {
             ChatScrollDiag.shared.note("聊天记录加载失败，静默重试")
