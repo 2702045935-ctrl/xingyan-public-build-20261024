@@ -2536,6 +2536,16 @@ final class AppState: ObservableObject {
         }
         finishLoginTransition()
         rememberLastUser()
+        if switchingAccount {
+            Realtime.shared.start()
+            GrowthStore.shared.start()
+            Task {
+                await refreshAll()
+                await syncRecentMessages()
+                await syncDeviceChats()
+            }
+            return true
+        }
         await refreshAll()
         Realtime.shared.start()
         GrowthStore.shared.start()
