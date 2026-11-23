@@ -68,6 +68,79 @@ private final class NativeStaticUIKitCell: UICollectionViewCell {
     }
 }
 
+private final class NativeVirtualScrollIndicator: UIView {
+    private let thumb = CALayer()
+    private var topProgress: CGFloat = 1
+    private var scrolling = false
+    private var fadeWork: DispatchWorkItem?
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        isUserInteractionEnabled = false
+        isOpaque = false
+        backgroundColor = .clear
+        alpha = 0
+        thumb.cornerRadius = 2
+        thumb.backgroundColor = UIColor.label.withAlphaComponent(0.38).cgColor
+        layer.addSublayer(thumb)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        layoutThumb()
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        thumb.backgroundColor = UIColor.label.withAlphaComponent(0.38).cgColor
+    }
+
+    func update(top: Double, bottom: Double) {
+        topProgress = min(1, max(0, CGFloat(top)))
+        let extent = min(1, max(0, CGFloat(bottom) - topProgress))
+        thumb.opacity = extent > 0 ? 1 : 0
+        layoutThumb()
+    }
+
+    func setScrolling(_ active: Bool) {
+        scrolling = active
+        fadeWork?.cancel()
+        fadeWork = nil
+        if active {
+            alpha = 1
+            return
+        }
+        let fade = DispatchWorkItem { [weak self] in
+            guard let self, !self.scrolling else { return }
+            UIView.animate(withDuration: 0.24,
+                           delay: 0,
+                           options: [.allowUserInteraction, .beginFromCurrentState]) {
+                self.alpha = 0
+            }
+        }
+        fadeWork = fade
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.55, execute: fade)
+    }
+
+    private func layoutThumb() {
+        guard bounds.height > 1 else { return }
+        let minimumHeight: CGFloat = 36
+        let height = min(bounds.height, max(minimumHeight, bounds.height * 0.04))
+        let travel = max(0, bounds.height - height)
+        let width: CGFloat = 4
+        thumb.frame = CGRect(
+            x: (bounds.width - width) / 2,
+            y: topProgress * travel,
+            width: width,
+            height: height
+        )
+    }
+}
+
 final class NativeStaticListController {
     fileprivate var scrollToIDHandler: ((String, UICollectionView.ScrollPosition, Bool) -> Bool)?
     fileprivate var scrollToBottomHandler: ((Bool) -> Bool)?
@@ -106,6 +179,7 @@ where Item.ID: Hashable {
     let onSizeChange: (() -> Void)?
     let initiallyPinnedToBottom: Bool
     let keepsBottomOnItemChange: Bool
+    let virtualHistoryPosition: ((Item) -> Double?)?
     let signature: (Item) -> String
     let nativeEligible: ((Item) -> Bool)?
     let nativeRow: ((Item, UIView?) -> UIView?)?
@@ -120,6 +194,7 @@ where Item.ID: Hashable {
          onSizeChange: (() -> Void)? = nil,
          initiallyPinnedToBottom: Bool = false,
          keepsBottomOnItemChange: Bool = false,
+         virtualHistoryPosition: ((Item) -> Double?)? = nil,
          signature: @escaping (Item) -> String,
          nativeEligible: ((Item) -> Bool)? = nil,
          nativeRow: ((Item, UIView?) -> UIView?)? = nil,
@@ -133,6 +208,7 @@ where Item.ID: Hashable {
         self.onSizeChange = onSizeChange
         self.initiallyPinnedToBottom = initiallyPinnedToBottom
         self.keepsBottomOnItemChange = keepsBottomOnItemChange
+        self.virtualHistoryPosition = virtualHistoryPosition
         self.signature = signature
         self.nativeEligible = nativeEligible
         self.nativeRow = nativeRow
@@ -148,6 +224,7 @@ where Item.ID: Hashable {
                     onSizeChange: onSizeChange,
                     initiallyPinnedToBottom: initiallyPinnedToBottom,
                     keepsBottomOnItemChange: keepsBottomOnItemChange,
+                    virtualHistoryPosition: virtualHistoryPosition,
                     signature: signature,
                     nativeEligible: nativeEligible,
                     nativeRow: nativeRow,
@@ -234,6 +311,10 @@ where Item.ID: Hashable {
         context.coordinator.attachController()
         context.coordinator.attachScroll(collection)
         context.coordinator.apply(items, animated: false)
+        context.coordinator.installVirtualIndicatorIfNeeded(
+            on: controller.view,
+            collection: collection
+        )
         return controller
     }
 
@@ -244,6 +325,7 @@ where Item.ID: Hashable {
         context.coordinator.nativeEligible = nativeEligible
         context.coordinator.nativeRow = nativeRow
         context.coordinator.nativeHeight = nativeHeight
+        context.coordinator.virtualHistoryPosition = virtualHistoryPosition
         context.coordinator.onScrollViewReady = onScrollViewReady
         context.coordinator.onScrollStateChange = onScrollStateChange
         context.coordinator.onScrollOffset = onScrollOffset
@@ -251,6 +333,10 @@ where Item.ID: Hashable {
         context.coordinator.attachController()
         if let collection = controller.collectionView {
             context.coordinator.attachScroll(collection)
+            context.coordinator.installVirtualIndicatorIfNeeded(
+                on: controller.view,
+                collection: collection
+            )
         }
         context.coordinator.apply(items, animated: false)
     }
@@ -264,6 +350,7 @@ where Item.ID: Hashable {
         var nativeEligible: ((Item) -> Bool)?
         var nativeRow: ((Item, UIView?) -> UIView?)?
         var nativeHeight: ((Item, CGFloat) -> CGFloat?)?
+        var virtualHistoryPosition: ((Item) -> Double?)?
         weak var collection: UICollectionView?
         var dataSource: UICollectionViewDiffableDataSource<Int, Item.ID>?
         let controller: NativeStaticListController?
@@ -290,6 +377,7 @@ where Item.ID: Hashable {
         private var applyGeneration = 0
         private var sizeChangeScheduled = false
         private var foregroundObserver: NSObjectProtocol?
+        private weak var virtualScrollIndicator: NativeVirtualScrollIndicator?
 
         init(controller: NativeStaticListController?,
              onScrollViewReady: ((UIScrollView) -> Void)?,
@@ -298,6 +386,7 @@ where Item.ID: Hashable {
              onSizeChange: (() -> Void)?,
              initiallyPinnedToBottom: Bool,
              keepsBottomOnItemChange: Bool,
+             virtualHistoryPosition: ((Item) -> Double?)?,
              signature: @escaping (Item) -> String,
              nativeEligible: ((Item) -> Bool)?,
              nativeRow: ((Item, UIView?) -> UIView?)?,
@@ -311,6 +400,7 @@ where Item.ID: Hashable {
             self.initiallyPinnedToBottom = initiallyPinnedToBottom
             self.keepsBottomOnItemChange = keepsBottomOnItemChange
             self.waitsForInitialBottom = initiallyPinnedToBottom
+            self.virtualHistoryPosition = virtualHistoryPosition
             self.signature = signature
             self.nativeEligible = nativeEligible
             self.nativeRow = nativeRow
@@ -380,11 +470,56 @@ where Item.ID: Hashable {
                 scrollView.isDragging || scrollView.isDecelerating || scrollView.isTracking
             )
             lastReportedOffsetY = scrollView.contentOffset.y
+            updateVirtualScrollIndicator()
+        }
+
+        func installVirtualIndicatorIfNeeded(
+            on host: UIView,
+            collection: UICollectionView
+        ) {
+            guard virtualHistoryPosition != nil else { return }
+            collection.showsVerticalScrollIndicator = false
+            if virtualScrollIndicator != nil { return }
+            let indicator = NativeVirtualScrollIndicator()
+            indicator.translatesAutoresizingMaskIntoConstraints = false
+            host.addSubview(indicator)
+            NSLayoutConstraint.activate([
+                indicator.topAnchor.constraint(equalTo: host.topAnchor, constant: 6),
+                indicator.bottomAnchor.constraint(equalTo: host.bottomAnchor, constant: -6),
+                indicator.trailingAnchor.constraint(equalTo: host.trailingAnchor, constant: -2),
+                indicator.widthAnchor.constraint(equalToConstant: 8)
+            ])
+            virtualScrollIndicator = indicator
+            updateVirtualScrollIndicator()
+        }
+
+        private func updateVirtualScrollIndicator() {
+            guard virtualHistoryPosition != nil,
+                  let collection,
+                  let dataSource,
+                  let indicator = virtualScrollIndicator else {
+                virtualScrollIndicator?.update(top: 1, bottom: 1)
+                return
+            }
+            var values: [Double] = []
+            values.reserveCapacity(collection.indexPathsForVisibleItems.count)
+            for indexPath in collection.indexPathsForVisibleItems {
+                guard let id = dataSource.itemIdentifier(for: indexPath),
+                      let item = lookup[id],
+                      let value = virtualHistoryPosition?(item) else { continue }
+                values.append(min(1, max(0, value)))
+            }
+            guard let top = values.min(), let bottom = values.max() else {
+                indicator.update(top: 1, bottom: 1)
+                return
+            }
+            indicator.update(top: top, bottom: bottom)
         }
 
         func publishScrollState(_ active: Bool) {
             guard lastScrollState != active else { return }
             lastScrollState = active
+            virtualScrollIndicator?.setScrolling(active)
             onScrollStateChange?(active)
         }
 
@@ -563,7 +698,12 @@ where Item.ID: Hashable {
                     idsToPrepare.filter { heights[$0] == nil }
                 )
             }
-            let warmIDs = Array(nextOrder.suffix(waitsForInitialBottom ? 40 : 24))
+            let warmIDs: [Item.ID]
+            if isPrepending {
+                warmIDs = Array(nextOrder.prefix(24))
+            } else {
+                warmIDs = Array(nextOrder.suffix(waitsForInitialBottom ? 40 : 24))
+            }
             if moving {
                 enqueueWarm(warmIDs)
             } else {
@@ -817,6 +957,7 @@ where Item.ID: Hashable {
             publishScrollState(
                 scrollView.isDragging || scrollView.isTracking || scrollView.isDecelerating
             )
+            updateVirtualScrollIndicator()
         }
 
         private func premeasure(_ ids: [Item.ID], nativeOnly: Bool = false) {

@@ -68,8 +68,8 @@
     },
     {
       "path": "Sources/ChatDetailView.swift",
-      "size": 422333,
-      "sha256": "06d927faa3a0dbfea77cfed138407aca57a1d3435563e77e572c97669f1e4d04"
+      "size": 423153,
+      "sha256": "4c620a3b3212d7ec9b1dc2a0b3d825d083ada1325d37472998d2990a036d7b4b"
     },
     {
       "path": "Sources/GroupInfoView.swift",
@@ -113,8 +113,8 @@
     },
     {
       "path": "Sources/MessageStressFixture.swift",
-      "size": 11892,
-      "sha256": "044e64a1099579bd48637d80b3f245b88cae44fda1d9d4d476cd380006ac8760"
+      "size": 12105,
+      "sha256": "0f8311f055289d02f26d824bf1f264543e320f1ad52f1e98e67bd63be2f257ee"
     },
     {
       "path": "Sources/MomentStressFixture.swift",

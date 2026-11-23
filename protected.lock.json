@@ -1,10 +1,10 @@
 {
-  "baseline": "candidate: rolling two-page history prefetch + native prepend commit barrier",
+  "baseline": "candidate: QQ-like virtual history scrollbar + gesture-scoped history runway",
   "files": [
     {
       "path": "Sources/ChatDetailView.swift",
-      "size": 422333,
-      "sha256": "06d927faa3a0dbfea77cfed138407aca57a1d3435563e77e572c97669f1e4d04"
+      "size": 423153,
+      "sha256": "4c620a3b3212d7ec9b1dc2a0b3d825d083ada1325d37472998d2990a036d7b4b"
     },
     {
       "path": "Sources/ChatDeferred.swift",
@@ -18,8 +18,8 @@
     },
     {
       "path": "Sources/ScrollProbe.swift",
-      "size": 10441,
-      "sha256": "4bc8352edd468aedf769acc2134ff3f4b8afc1676e5f58407257dd2071383127"
+      "size": 10491,
+      "sha256": "129a86a0d7e35794f6589257931073298caab2fe9707343d13214332bd58f179"
     }
   ]
 }

@@ -3384,6 +3384,7 @@ struct ChatDetailView: View {
                     // A fling can cross the runway exactly as deceleration ends.
                     consumeOlderRunway(requireActiveMotion: false)
                     consumeNewerRunway(requireActiveMotion: false)
+                    ChatScrollHandle.shared.endOlderRunwayIntent()
                 }
             },
             onScrollOffset: { y in
@@ -3408,6 +3409,7 @@ struct ChatDetailView: View {
             },
             initiallyPinnedToBottom: true,
             keepsBottomOnItemChange: true,
+            virtualHistoryPosition: nativeHistoryPosition,
             signature: nativeGroupSignature,
             nativeEligible: nativeGroupUIKitEligible,
             nativeRow: nativeGroupUIKitRow,
@@ -3586,6 +3588,22 @@ struct ChatDetailView: View {
         case .spacer:
             return "spacer:\(L.msgPad)"
         }
+    }
+
+    /// Keep the scroll thumb on the conversation's full sequence axis even
+    /// while the collection view only materializes a bounded message window.
+    private func nativeHistoryPosition(_ item: NativeGroupItem) -> Double? {
+        guard case .message(let message) = item.kind,
+              let seq = message.seq,
+              seq > 0 else { return nil }
+        let total: Int
+        if MessageStressFixture.isStressChat(chat.id) {
+            total = MessageStressFixture.messageCount(for: chat.id)
+        } else {
+            total = newestAvailableSeq
+        }
+        guard total > 1 else { return nil }
+        return min(1, max(0, Double(seq - 1) / Double(total - 1)))
     }
 
     private func nativeTextModel(_ item: NativeGroupItem) -> NativeChatTextRowModel? {
@@ -4087,7 +4105,7 @@ struct ChatDetailView: View {
               !loadingOlder,
               let scroll = ChatScrollHandle.shared.scroll else { return }
         let y = offsetY ?? scroll.contentOffset.y
-        let runway = max(2_200, min(4_200, scroll.bounds.height * 2.75))
+        let runway = max(2_800, min(5_600, scroll.bounds.height * 3.5))
         guard y < runway else { return }
         if requireActiveMotion, !ChatScrollHandle.shared.moving { return }
         if requireActiveMotion, ChatScrollHandle.shared.moving {

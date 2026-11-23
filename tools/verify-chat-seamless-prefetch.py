@@ -34,7 +34,7 @@ require(
 )
 require(
     "consumeOlderRunway(requireActiveMotion: true, offsetY: y)" in CHAT
-    and "scroll.bounds.height * 2.75" in CHAT,
+    and "scroll.bounds.height * 3.5" in CHAT,
     "chat prefetch must use a viewport-relative runway",
 )
 require(
@@ -82,6 +82,16 @@ require(
     and "olderRunwayBatchRemaining" not in CHAT
     and "consumeOlderRunway(requireActiveMotion: false)" in CHAT,
     "continuous scrolling must fetch one page at a time while the gesture is active",
+)
+require(
+    "ChatScrollHandle.shared.endOlderRunwayIntent()" in CHAT
+    and "private var olderRunwayGestureActive = false" in (
+        ROOT / "Sources" / "ScrollProbe.swift"
+    ).read_text(encoding="utf-8")
+    and "olderRunwayIntentUntil" not in (
+        ROOT / "Sources" / "ScrollProbe.swift"
+    ).read_text(encoding="utf-8"),
+    "history runway intent must follow the physical gesture instead of a timer",
 )
 require(
     "defer {\n            loadingNewer = false\n            if loadedUsefulPage" in CHAT

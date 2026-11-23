@@ -8,23 +8,28 @@ final class ChatScrollHandle {
     /// 不能在这一小段时间里抢走滚动位置。
     private var lastUserMotionAt = Date.distantPast
     private var pendingPrepend: (height: CGFloat, offset: CGPoint)?
-    private var olderRunwayIntentUntil = Date.distantPast
+    private var olderRunwayGestureActive = false
 
     func noteUserMotion() {
         lastUserMotionAt = Date()
     }
 
-    func markOlderRunwayIntent(duration: TimeInterval = 2.5) {
-        olderRunwayIntentUntil = Date().addingTimeInterval(duration)
+    func markOlderRunwayIntent() {
+        olderRunwayGestureActive = true
+    }
+
+    func endOlderRunwayIntent() {
+        olderRunwayGestureActive = false
     }
 
     var olderRunwayIntentActive: Bool {
-        Date() < olderRunwayIntentUntil
+        olderRunwayGestureActive
     }
 
     /// 用户点输入框/键盘弹出时允许立即回到最新消息。
     func allowAutomaticPinning() {
         lastUserMotionAt = .distantPast
+        olderRunwayGestureActive = false
     }
 
     /// 在向聊天顶部插入旧消息前记录当前内容高度与位置。

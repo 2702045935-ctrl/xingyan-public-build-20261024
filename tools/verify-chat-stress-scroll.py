@@ -26,7 +26,7 @@ require(
     "prepending must reuse unchanged row signatures and remeasure only the boundary",
 )
 require(
-    "scroll.bounds.height * 2.75" in CHAT
+    "scroll.bounds.height * 3.5" in CHAT
     and "consumeOlderRunway(requireActiveMotion: true, offsetY: y)" in CHAT,
     "group history must use a viewport-relative prefetch runway",
 )

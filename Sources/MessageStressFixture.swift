@@ -72,6 +72,12 @@ enum MessageStressFixture {
         id.hasPrefix(prefix)
     }
 
+    static func messageCount(for chatId: String) -> Int {
+        guard isStressChat(chatId),
+              let group = Int(chatId.dropFirst(prefix.count)) else { return 0 }
+        return groupSize(group)
+    }
+
     static func chatID(_ group: Int) -> String {
         prefix + String(group)
     }
