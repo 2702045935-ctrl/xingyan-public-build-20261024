@@ -4443,6 +4443,9 @@ struct ChatDetailView: View {
             let nextCursor = max(cursor, historyRuntime.newestLoadedSeq)
             newestKnownSeq = max(newestKnownSeq, nextCursor)
             loadedUsefulPage = more
+            if !ChatScrollHandle.shared.moving {
+                historyRuntime.pendingNewerHandoff = false
+            }
             scheduleNewerPrefetch(
                 since: nextCursor,
                 knownIds: Set(bounded.map(\.id)),
@@ -8236,6 +8239,9 @@ struct ChatDetailView: View {
 
             ChatScrollDiag.shared.note("上翻加载完 → 原子补偿当前位置")
             let nextCursor = bounded.lazy.compactMap(\.seq).first(where: { $0 > 0 }) ?? 0
+            if !ChatScrollHandle.shared.moving {
+                historyRuntime.pendingOlderHandoff = false
+            }
             scheduleOlderPrefetch(before: nextCursor,
                                   knownIds: Set(bounded.map(\.id)),
                                   continues: more)
