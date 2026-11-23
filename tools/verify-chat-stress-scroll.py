@@ -42,7 +42,8 @@ require(
     "a new physical gesture must re-arm the history runway even during deceleration",
 )
 require(
-    "olderRunwayConsumedForGesture" in CHAT
+    "olderRunwayConsumedForGesture" not in CHAT
+    and "!loadingOlder,\n              let scroll = ChatScrollHandle.shared.scroll" in CHAT
     and "if isGroup { autoLoadOlder() }" not in CHAT
     and ".onAppear { autoLoadOlder() }" not in CHAT
     and "nearTopIds.contains(message.id) { autoLoadOlder() }" not in CHAT
@@ -56,8 +57,8 @@ require(
 require(
     "loadedUsefulPage = more" in CHAT
     and "lastOlderLoad = .distantPast" in CHAT
-    and "consumeOlderRunway(requireActiveMotion: true)" in CHAT,
-    "every consumed history page must re-arm the runway during a long gesture",
+    and "consumeOlderRunway(requireActiveMotion: false)" in CHAT,
+    "every consumed history page must immediately continue while inside the runway",
 )
 require(
     "if merged.count > maxMessageWindow || more { hasOlder = true }" not in CHAT

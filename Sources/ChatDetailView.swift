@@ -1567,8 +1567,6 @@ struct ChatDetailView: View {
     @State private var olderPrefetchHasMore = false
     @State private var olderPrefetchTask: Task<Void, Never>?
     @State private var olderPrefetchToken = UUID()
-    @State private var olderRunwayConsumedForGesture = false
-    @State private var newerRunwayConsumedForGesture = false
     @State private var loadingNewer = false
     @State private var lastNewerLoad = Date.distantPast
     @State private var newerPrefetch: [Message] = []
@@ -3619,8 +3617,6 @@ struct ChatDetailView: View {
                     atBottom = false
                     wasAtBottom = false
                     initialOpenSettling = false
-                    olderRunwayConsumedForGesture = false
-                    newerRunwayConsumedForGesture = false
                     if !initialScrollReady {
                         initialScrollTask?.cancel()
                         initialScrollTask = nil
@@ -4370,7 +4366,6 @@ struct ChatDetailView: View {
 
     private func scheduleOlderRunwayRetry() {
         guard hasOlder else { return }
-        olderRunwayConsumedForGesture = false
         lastOlderLoad = Date().addingTimeInterval(0.8)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
             consumeOlderRunway(requireActiveMotion: false)
@@ -4380,15 +4375,12 @@ struct ChatDetailView: View {
     private func consumeOlderRunway(requireActiveMotion: Bool,
                                     offsetY: CGFloat? = nil) {
         guard isGroup, initialScrollReady, hasOlder,
-              !olderRunwayConsumedForGesture,
+              !loadingOlder,
               let scroll = ChatScrollHandle.shared.scroll else { return }
         let y = offsetY ?? scroll.contentOffset.y
         let runway = max(2_200, min(4_200, scroll.bounds.height * 2.75))
         guard y < runway else { return }
         if requireActiveMotion, !ChatScrollHandle.shared.moving { return }
-        // Both the active runway and the end-of-deceleration fallback share
-        // this latch. One user gesture consumes at most one prefetched page.
-        olderRunwayConsumedForGesture = true
         autoLoadOlder()
     }
 
@@ -4406,7 +4398,6 @@ struct ChatDetailView: View {
     private func consumeNewerRunway(requireActiveMotion: Bool) {
         guard initialScrollReady,
               hasNewerMessages,
-              !newerRunwayConsumedForGesture,
               !loadingNewer,
               let scroll = ChatScrollHandle.shared.scroll else { return }
         let runway = max(1_200, scroll.bounds.height * 1.6)
@@ -4414,14 +4405,12 @@ struct ChatDetailView: View {
             return
         }
         if requireActiveMotion, !ChatScrollHandle.shared.moving { return }
-        newerRunwayConsumedForGesture = true
         lastNewerLoad = Date()
         Task { await loadNewer() }
     }
 
     private func scheduleNewerRunwayRetry() {
         guard hasNewerMessages else { return }
-        newerRunwayConsumedForGesture = false
         lastNewerLoad = Date().addingTimeInterval(0.8)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
             consumeNewerRunway(requireActiveMotion: false)
@@ -4437,10 +4426,9 @@ struct ChatDetailView: View {
         defer {
             loadingNewer = false
             if loadedUsefulPage {
-                newerRunwayConsumedForGesture = false
                 lastNewerLoad = .distantPast
                 DispatchQueue.main.async {
-                    consumeNewerRunway(requireActiveMotion: true)
+                    consumeNewerRunway(requireActiveMotion: false)
                 }
             }
         }
@@ -4530,7 +4518,6 @@ struct ChatDetailView: View {
                     if page.hasMore { scheduleNewerRunwayRetry() }
                     return
                 }
-                newerRunwayConsumedForGesture = false
                 lastNewerLoad = .distantPast
                 DispatchQueue.main.async {
                     consumeNewerRunway(requireActiveMotion: false)
@@ -8140,10 +8127,9 @@ struct ChatDetailView: View {
                 // A long fling can cross more than one history page. Re-arm the
                 // runway after every consumed page so the next page starts loading
                 // while the finger is still moving, matching the initial pages.
-                olderRunwayConsumedForGesture = false
                 lastOlderLoad = .distantPast
                 DispatchQueue.main.async {
-                    consumeOlderRunway(requireActiveMotion: true)
+                    consumeOlderRunway(requireActiveMotion: false)
                 }
             }
         }
@@ -8263,7 +8249,6 @@ struct ChatDetailView: View {
                     // If the finger stopped while waiting for this request, the
                     // completed page must still enter the window. Otherwise the
                     // user has to pull again for every page after the first two.
-                    olderRunwayConsumedForGesture = false
                     lastOlderLoad = .distantPast
                     DispatchQueue.main.async {
                         consumeOlderRunway(requireActiveMotion: false)

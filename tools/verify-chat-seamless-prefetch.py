@@ -29,7 +29,8 @@ require(
     "chat prefetch must use a viewport-relative runway",
 )
 require(
-    "olderRunwayConsumedForGesture" in CHAT
+    "olderRunwayConsumedForGesture" not in CHAT
+    and "newerRunwayConsumedForGesture" not in CHAT
     and "if isGroup { autoLoadOlder() }" not in CHAT
     and "guard hasOlder, !loadingOlder, !loadingAllGroupHistory, !loading" not in CHAT
     and "guard !loadingOlder, !loadingAllGroupHistory" not in CHAT,
@@ -65,10 +66,9 @@ require(
 )
 require(
     "var loadedUsefulPage = false" in CHAT
-    and "olderRunwayConsumedForGesture = false" in CHAT
     and "lastOlderLoad = .distantPast" in CHAT
-    and "consumeOlderRunway(requireActiveMotion: true)" in CHAT,
-    "a continuous gesture must re-arm and consume every history page",
+    and "consumeOlderRunway(requireActiveMotion: false)" in CHAT,
+    "each completed page must immediately re-check the edge-distance runway",
 )
 require(
     "defer {\n            loadingNewer = false\n            if loadedUsefulPage" in CHAT
@@ -92,7 +92,6 @@ require(
 require(
     CHAT.count("consumeNewerRunway(requireActiveMotion: false)") >= 2
     and "newerPrefetchTask" in CHAT
-    and "newerRunwayConsumedForGesture = false" in CHAT
     and "scheduleNewerPrefetch(" in CHAT,
     "completed newer prefetches must continuously return pages without extra finger gestures",
 )
