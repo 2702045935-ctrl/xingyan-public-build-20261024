@@ -123,13 +123,15 @@ require(
     "text and media bubbles must share the same left and right alignment rails",
 )
 require(
-    "let out: CGFloat = 0" in CHAT
+    "return Path(roundedRect: rect, cornerRadius: r, style: .continuous)" in CHAT
     and "tail: Bool = true" in CHAT
     and "roundedRect: bounds," in TEXT_ROW
     and "let tail: CGFloat = showTail ? WhatsAppChatLayout.tailInset : 0"
         not in TEXT_ROW
     and "path.addLine(to: CGPoint(x: bounds.maxX, y: tipY))" not in TEXT_ROW
-    and "path.addLine(to: CGPoint(x: bounds.minX, y: tipY))" not in TEXT_ROW,
+    and "path.addLine(to: CGPoint(x: bounds.minX, y: tipY))" not in TEXT_ROW
+    and "p.addLine(to: CGPoint(x: x1 + out, y: y0 + h / 2))" not in CHAT
+    and "p.addLine(to: CGPoint(x: x0 - out, y: y0 + h / 2))" not in CHAT,
     "every text and media bubble must render one continuous rounded container",
 )
 require(

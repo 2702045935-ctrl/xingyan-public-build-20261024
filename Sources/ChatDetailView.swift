@@ -394,48 +394,7 @@ struct BubbleShape: Shape {
 
     func path(in rect: CGRect) -> Path {
         let r = min(pill ? min(rect.height / 2, 24) : radius, rect.height / 2, rect.width / 2)
-
-        /* The native text/media rows use one continuous 8pt container without
-           a protruding tail. Keep every SwiftUI fallback bubble identical. */
-        let out: CGFloat = 0
-        let h: CGFloat = 9
-        let y0 = rect.minY + 6
-        let x0 = rect.minX, x1 = rect.maxX, yA = rect.minY, yB = rect.maxY
-        var p = Path()
-
-        if mine {
-            p.move(to: CGPoint(x: x0 + r, y: yA))
-            p.addLine(to: CGPoint(x: x1 - r, y: yA))
-            p.addQuadCurve(to: CGPoint(x: x1, y: yA + r), control: CGPoint(x: x1, y: yA))
-            if out > 0 {
-                p.addLine(to: CGPoint(x: x1, y: y0))
-                p.addLine(to: CGPoint(x: x1 + out, y: y0 + h / 2))
-                p.addLine(to: CGPoint(x: x1, y: y0 + h))
-            }
-            p.addLine(to: CGPoint(x: x1, y: yB - r))
-            p.addQuadCurve(to: CGPoint(x: x1 - r, y: yB), control: CGPoint(x: x1, y: yB))
-            p.addLine(to: CGPoint(x: x0 + r, y: yB))
-            p.addQuadCurve(to: CGPoint(x: x0, y: yB - r), control: CGPoint(x: x0, y: yB))
-            p.addLine(to: CGPoint(x: x0, y: yA + r))
-            p.addQuadCurve(to: CGPoint(x: x0 + r, y: yA), control: CGPoint(x: x0, y: yA))
-        } else {
-            p.move(to: CGPoint(x: x1 - r, y: yA))
-            p.addLine(to: CGPoint(x: x0 + r, y: yA))
-            p.addQuadCurve(to: CGPoint(x: x0, y: yA + r), control: CGPoint(x: x0, y: yA))
-            if out > 0 {
-                p.addLine(to: CGPoint(x: x0, y: y0))
-                p.addLine(to: CGPoint(x: x0 - out, y: y0 + h / 2))
-                p.addLine(to: CGPoint(x: x0, y: y0 + h))
-            }
-            p.addLine(to: CGPoint(x: x0, y: yB - r))
-            p.addQuadCurve(to: CGPoint(x: x0 + r, y: yB), control: CGPoint(x: x0, y: yB))
-            p.addLine(to: CGPoint(x: x1 - r, y: yB))
-            p.addQuadCurve(to: CGPoint(x: x1, y: yB - r), control: CGPoint(x: x1, y: yB))
-            p.addLine(to: CGPoint(x: x1, y: yA + r))
-            p.addQuadCurve(to: CGPoint(x: x1 - r, y: yA), control: CGPoint(x: x1, y: yA))
-        }
-        p.closeSubpath()
-        return p
+        return Path(roundedRect: rect, cornerRadius: r, style: .continuous)
     }
 }
 
