@@ -209,7 +209,7 @@ struct MomentCommentsSheet: View {
                 }
             }
             .frame(width: 48, height: 48)
-            .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(live.author?.name ?? "")
@@ -256,10 +256,10 @@ struct MomentCommentsSheet: View {
     }
 
     private var frostedCard: some View {
-        RoundedRectangle(cornerRadius: 17, style: .continuous)
+        RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
             .fill(Color(uiColor: .secondarySystemGroupedBackground))
             .overlay {
-                RoundedRectangle(cornerRadius: 17, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                     .stroke(Color.primary.opacity(0.055), lineWidth: 0.6)
             }
             .shadow(color: .black.opacity(0.035), radius: 8, y: 3)
@@ -315,7 +315,7 @@ struct MomentCommentsSheet: View {
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
             .frame(height: previewHeight)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
             .contentShape(Rectangle())
             .simultaneousGesture(
                 LongPressGesture(minimumDuration: 0.45).onEnded { _ in
@@ -366,7 +366,7 @@ struct MomentCommentsSheet: View {
                 }
             }
             .frame(height: previewHeight)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
             .padding(.top, 12)
             .onTapGesture {
                 let full = raw.hasPrefix("http") ? raw : API.shared.base + raw
@@ -922,7 +922,7 @@ struct MomentImageActions: View {
             .foregroundColor(C.label)
             .frame(maxWidth: .infinity)
             .frame(height: 82)
-            .background(RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                 .fill(Color.dyn(0xF3F3F1, 0x292929)))
         }
         .buttonStyle(.plain)

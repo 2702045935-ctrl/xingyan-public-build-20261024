@@ -106,7 +106,7 @@ struct FontSettingsView: View {
                                 .foregroundStyle(OrbitTheme.jade)
                                 .frame(width: 30, height: 30)
                                 .background(OrbitTheme.jadeSoft)
-                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(Tr("字体样式"))
                                     .foregroundStyle(C.label)

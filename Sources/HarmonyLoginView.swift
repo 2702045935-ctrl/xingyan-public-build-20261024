@@ -108,7 +108,7 @@ struct HarmonyLoginView: View {
                     .padding(.horizontal, 24)
                     .padding(.vertical, 18)
                     .background(.ultraThinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
                 }
                 .allowsHitTesting(true)
                 .transition(.opacity)
@@ -140,7 +140,7 @@ struct HarmonyLoginView: View {
                     .resizable()
                     .interpolation(.high)
                     .frame(width: 66, height: 66)
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
                     .shadow(color: Color.black.opacity(0.08), radius: 10, y: 5)
             } else {
                 Image(systemName: "message.fill")
@@ -148,7 +148,7 @@ struct HarmonyLoginView: View {
                     .foregroundStyle(.white)
                     .frame(width: 66, height: 66)
                     .background(accent)
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
             }
 
             Text(brandName)
@@ -189,11 +189,11 @@ struct HarmonyLoginView: View {
             }
             .frame(height: 54)
             .padding(.horizontal, 14)
-            .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                 .fill(fieldFill))
-            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                 .stroke(fieldStroke, lineWidth: 0.6))
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
 
             if codeSent {
                 HStack(spacing: 12) {
@@ -217,11 +217,11 @@ struct HarmonyLoginView: View {
                 }
                 .frame(height: 54)
                 .padding(.horizontal, 14)
-                .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                     .fill(fieldFill))
-                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                     .stroke(fieldStroke, lineWidth: 0.6))
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
             }
         }
             .frame(maxWidth: 360)
@@ -239,11 +239,11 @@ struct HarmonyLoginView: View {
                 .tint(accent)
                 .padding(.horizontal, 14)
                 .frame(height: 54)
-                .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                     .fill(fieldFill))
-                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                     .stroke(fieldStroke, lineWidth: 0.6))
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
 
             HStack {
                 Group {
@@ -271,11 +271,11 @@ struct HarmonyLoginView: View {
             }
             .padding(.horizontal, 14)
             .frame(height: 54)
-            .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                 .fill(fieldFill))
-            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                 .stroke(fieldStroke, lineWidth: 0.6))
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
         }
         .frame(maxWidth: 360)
     }
@@ -296,7 +296,7 @@ struct HarmonyLoginView: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: 52)
                 .background(canPrimary ? accent : accent.opacity(0.34))
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
             }
             .buttonStyle(.plain)
             .frame(maxWidth: 360)
@@ -324,9 +324,9 @@ struct HarmonyLoginView: View {
                 .foregroundColor(accent)
                 .frame(maxWidth: .infinity)
                 .frame(height: 50)
-                .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                     .stroke(accent.opacity(0.72), lineWidth: 1))
-                .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .contentShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
             }
             .buttonStyle(.plain)
             .frame(maxWidth: 360)

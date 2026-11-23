@@ -130,14 +130,14 @@ struct MiniAppCardBubble: View {
         WeChatMessageCard {
             HStack(spacing: 10) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                         .fill(C.fieldBg)
                     Text(info.icon?.isEmpty == false ? info.icon! : (info.isGame ? "🕹️" : "🧩"))
                         .font(pfStyled(size: 25))
                     if let cv = info.cover, !cv.isEmpty {
                         RemoteImage(path: cv)
                             .frame(width: 54, height: 54)
-                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
                     }
                 }
                 .frame(width: 54, height: 54)
@@ -415,7 +415,7 @@ struct MiniAppsView: View {
 
     private func appIcon(_ item: MiniApp) -> some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                 .fill(Color(uiColor: .tertiarySystemFill))
 
             Text(item.iconText)
@@ -424,11 +424,11 @@ struct MiniAppsView: View {
             if let cover = item.cover, !cover.isEmpty {
                 RemoteImage(path: cover)
                     .frame(width: 44, height: 44)
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
             }
         }
         .frame(width: 44, height: 44)
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
     }
 
     private var emptyServiceRow: some View {
@@ -535,7 +535,7 @@ private struct MiniAppCategoryListView: View {
                     .foregroundStyle(tint)
                     .frame(width: 32, height: 32)
                     .background(tint.opacity(0.12))
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)

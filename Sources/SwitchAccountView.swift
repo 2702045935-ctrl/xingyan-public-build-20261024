@@ -79,10 +79,10 @@ struct SwitchAccountView: View {
                     }
                 }
                 .background(sectionBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
                 .overlay {
                     if scheme == .dark {
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                             .stroke(C.hairline, lineWidth: 0.8)
                     }
                 }
@@ -94,10 +94,10 @@ struct SwitchAccountView: View {
                 }
                 .buttonStyle(.plain)
                 .background(sectionBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
                 .overlay {
                     if scheme == .dark {
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                             .stroke(C.hairline, lineWidth: 0.8)
                     }
                 }
@@ -116,7 +116,7 @@ struct SwitchAccountView: View {
                     .padding(13)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(C.red.opacity(scheme == .dark ? 0.12 : 0.07))
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
                 }
 
                 HStack(alignment: .top, spacing: 9) {
@@ -296,7 +296,7 @@ struct SwitchAccountView: View {
                             .padding(.vertical, 11)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .background(C.red.opacity(0.08))
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
                         }
 
                         securityNote
@@ -321,7 +321,7 @@ struct SwitchAccountView: View {
 
     private var identityHero: some View {
         ZStack(alignment: .topLeading) {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                 .fill(
                     LinearGradient(
                         colors: [
@@ -410,9 +410,9 @@ struct SwitchAccountView: View {
             .padding(16)
         }
         .frame(height: 182)
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                 .stroke(Color.white.opacity(0.11), lineWidth: 0.8)
         }
         .shadow(color: OrbitTheme.jade.opacity(0.13), radius: 18, y: 8)
@@ -459,7 +459,7 @@ struct SwitchAccountView: View {
                            radius: 17,
                            level: levelOf(account))
                         .overlay {
-                            RoundedRectangle(cornerRadius: 17, style: .continuous)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                                 .stroke(current ? OrbitTheme.jade.opacity(0.75)
                                                 : OrbitTheme.divider,
                                         lineWidth: current ? 1.1 : 0.7)
@@ -527,15 +527,15 @@ struct SwitchAccountView: View {
                 .frame(height: 92)
             }
             .background(OrbitTheme.raised)
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                     .stroke(current ? OrbitTheme.jade.opacity(0.34) : OrbitTheme.divider,
                             lineWidth: current ? 1 : 0.7)
             }
             .shadow(color: Color.black.opacity(0.035), radius: 10, y: 3)
             .opacity(busy.isEmpty || loading ? 1 : 0.58)
-            .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
         }
         .buttonStyle(StarAccountPressStyle())
         .disabled(!busy.isEmpty)
@@ -556,7 +556,7 @@ struct SwitchAccountView: View {
         } label: {
             HStack(spacing: 13) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 17, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                         .fill(OrbitTheme.jadeSoft)
                         .frame(width: 54, height: 54)
                     Circle()
@@ -583,13 +583,13 @@ struct SwitchAccountView: View {
             .padding(.horizontal, 14)
             .frame(height: 78)
             .background(OrbitTheme.raised.opacity(0.72))
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                     .stroke(OrbitTheme.jade.opacity(0.28),
                             style: StrokeStyle(lineWidth: 1, dash: [5, 5]))
             }
-            .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
         }
         .buttonStyle(StarAccountPressStyle())
     }
@@ -614,9 +614,9 @@ struct SwitchAccountView: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 11)
         .background(OrbitTheme.field.opacity(0.58))
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                 .stroke(OrbitTheme.divider, lineWidth: 0.6)
         }
     }

@@ -532,13 +532,13 @@ struct DDMallFloor: View {
                 .frame(height: 36)
                 .background {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                             .fill(.thinMaterial)
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                             .fill(L2.cardFill.opacity(0.24))
                     }
                 }
-                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                     .stroke(L2.cardStroke, lineWidth: 0.6))
                 .padding(.horizontal, 33)
                 .contentShape(Rectangle())
@@ -617,13 +617,13 @@ struct DDMallFloor: View {
                 .padding(.vertical, 12)
                 .background {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                             .fill(.regularMaterial)
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                             .fill(L2.cardFill.opacity(0.22))
                     }
                 }
-                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                     .stroke(L2.cardStroke.opacity(0.82), lineWidth: 0.6))
                 .padding(.horizontal, 14)
                 .offset(y: (1 - rise) * 34).opacity(Double(rise))
@@ -707,14 +707,14 @@ struct DDMallFloor: View {
         .padding(.vertical, 13)
         .background {
             ZStack {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                     .fill(.regularMaterial)
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                     .fill(l.cardFill.opacity(0.20))
             }
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(l.cardStroke.opacity(0.82), lineWidth: 0.6)
         }
         .shadow(color: Color.black.opacity(0.06), radius: 12, y: 4)
@@ -726,13 +726,13 @@ struct DDMallFloor: View {
         VStack(spacing: 0) { content() }
             .background {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                         .fill(.regularMaterial)
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                         .fill(l.cardFill.opacity(0.22))
                 }
             }
-            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                 .stroke(l.cardStroke.opacity(0.82), lineWidth: 0.6))
             .padding(.horizontal, 14)
             .shadow(color: Color.black.opacity(0.06), radius: 12, y: 4)

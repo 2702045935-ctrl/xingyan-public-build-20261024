@@ -245,9 +245,9 @@ struct SharePreviewCard<Content: View>: View {
         content
             .padding(12)
             .background(ShareSheetTheme.card(scheme))
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                     .stroke(Color.primary.opacity(scheme == .dark ? 0.08 : 0.05),
                             lineWidth: 0.7)
             }
@@ -455,7 +455,7 @@ struct ShareSheet: View {
                         .resizable()
                         .scaledToFill()
                         .frame(width: 78, height: 92)
-                        .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
                 } else if let remoteImageURL {
                     AsyncImage(url: remoteImageURL) { phase in
                         if let value = phase.image {
@@ -465,7 +465,7 @@ struct ShareSheet: View {
                         }
                     }
                     .frame(width: 78, height: 92)
-                    .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
                 } else {
                     previewPlaceholder
                         .frame(width: 78, height: 92)
@@ -497,7 +497,7 @@ struct ShareSheet: View {
 
     private var previewPlaceholder: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 13, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                 .fill(
                     LinearGradient(
                         colors: [
@@ -620,7 +620,7 @@ struct ShareSheet: View {
             .padding(.horizontal, 14)
             .frame(height: 66)
             .background(ShareSheetTheme.card(scheme),
-                        in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        in: RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
         }
         .buttonStyle(MenuPressStyle())
         .disabled(copyText == nil)

@@ -45,7 +45,7 @@ struct VideoShareSheet: View {
                     RemoteImage(path: item.cover ?? "", icon: "play.rectangle.fill",
                                 mode: .fill, maxSide: 360)
                         .frame(width: 76, height: 92)
-                        .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
                     VStack(alignment: .leading, spacing: 7) {
                         Text(Tr("视频"))
                             .font(pfStyled(size: 9, weight: .bold))

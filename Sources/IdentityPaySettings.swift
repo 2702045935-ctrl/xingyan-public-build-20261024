@@ -59,7 +59,7 @@ struct IdentityView: View {
                             Text(Tr("立即认证"))
                                 .font(pf(17, .medium)).foregroundColor(.white)
                                 .frame(maxWidth: .infinity).frame(height: 48)
-                                .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(C.green))
+                                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.green))
                         }
                         .buttonStyle(.plain)
                         .padding(.horizontal, 16).padding(.top, 18)
@@ -78,7 +78,7 @@ struct IdentityView: View {
                         Text(busy ? Tr("保存中…") : Tr("保存"))
                             .font(pf(16, .medium)).foregroundColor(.white)
                             .frame(maxWidth: .infinity).frame(height: 46)
-                            .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(C.green))
+                            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.green))
                     }
                     .buttonStyle(.plain)
                     .padding(.horizontal, 16).padding(.top, 10)

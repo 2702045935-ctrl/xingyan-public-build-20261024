@@ -500,7 +500,7 @@ struct StarAvatarPhotoStudioView: View {
     private var photoPanel: some View {
         VStack(spacing: 14) {
             ZStack {
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                     .fill(
                         LinearGradient(
                             colors: [
@@ -536,7 +536,7 @@ struct StarAvatarPhotoStudioView: View {
                     }
                 }
 
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                     .stroke(
                         LinearGradient(
                             colors: [
@@ -557,12 +557,12 @@ struct StarAvatarPhotoStudioView: View {
                             .tint(.white)
                             .scaleEffect(1.2)
                     }
-                    .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
                 }
             }
             .frame(maxWidth: .infinity)
             .frame(height: 300)
-            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
 
             HStack(spacing: 10) {
                 actionButton(Tr("拍照"), icon: "camera.fill") {
@@ -582,10 +582,10 @@ struct StarAvatarPhotoStudioView: View {
         }
         .padding(14)
         .background(
-            RoundedRectangle(cornerRadius: 32, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.hero, style: .continuous)
                 .fill(C.cardBg)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 32, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.hero, style: .continuous)
                         .stroke(C.hairline, lineWidth: 0.6)
                 )
         )
@@ -605,7 +605,7 @@ struct StarAvatarPhotoStudioView: View {
             Spacer()
         }
         .padding(14)
-        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(C.cardBg))
+        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous).fill(C.cardBg))
     }
 
     private var editor: some View {
@@ -622,7 +622,7 @@ struct StarAvatarPhotoStudioView: View {
                 sliderRow(Tr("嘴宽"), value: $draft.mouthWidth, range: 0.84...1.18)
             }
             .padding(16)
-            .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(C.cardBg))
+            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous).fill(C.cardBg))
 
             sectionTitle(Tr("肤色与发型"), subtitle: Tr("自动取样，可随时重新捏"))
 
@@ -644,7 +644,7 @@ struct StarAvatarPhotoStudioView: View {
                 }
             }
             .padding(16)
-            .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(C.cardBg))
+            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous).fill(C.cardBg))
 
             sectionTitle(Tr("眼镜"), subtitle: Tr("照片里检测到眼镜时会默认保留"))
 
@@ -680,7 +680,7 @@ struct StarAvatarPhotoStudioView: View {
                 }
             }
             .padding(16)
-            .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(C.cardBg))
+            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous).fill(C.cardBg))
 
             Button {
                 save()
@@ -696,7 +696,7 @@ struct StarAvatarPhotoStudioView: View {
                             startPoint: .leading,
                             endPoint: .trailing
                         ),
-                        in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        in: RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                     )
             }
             .buttonStyle(.plain)
@@ -774,7 +774,7 @@ struct StarAvatarPhotoStudioView: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: 44)
                 .background(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                         .fill(C.fieldBg)
                 )
         }

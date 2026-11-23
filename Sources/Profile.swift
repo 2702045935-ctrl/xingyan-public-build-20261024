@@ -306,62 +306,6 @@ struct ProfileEditViewOld: View {
     }
 }
 
-private struct PeopleFlowPanel<Content: View>: View {
-    let content: Content
-
-    init(@ViewBuilder content: () -> Content) {
-        self.content = content()
-    }
-
-    var body: some View {
-        content
-            .background(OrbitTheme.cardBackground())
-            .clipShape(OrbitTheme.card)
-    }
-}
-
-private struct PeopleFlowDivider: View {
-    var leading: CGFloat = 62
-
-    var body: some View {
-        Rectangle()
-            .fill(OrbitTheme.divider)
-            .frame(height: 0.5)
-            .padding(.leading, leading)
-    }
-}
-
-private struct PeopleFlowEmptyState: View {
-    let symbol: String
-    let title: String
-    let detail: String
-
-    var body: some View {
-        VStack(spacing: 9) {
-            ZStack {
-                Circle()
-                    .fill(OrbitTheme.jadeSoft)
-                Image(systemName: symbol)
-                    .font(.system(size: 21, weight: .medium))
-                    .foregroundStyle(OrbitTheme.jadeDeep)
-            }
-            .frame(width: 48, height: 48)
-
-            Text(title)
-                .font(pf(16, .semibold))
-                .foregroundStyle(OrbitTheme.ink)
-
-            Text(detail)
-                .font(pf(13))
-                .foregroundStyle(OrbitTheme.secondary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.horizontal, 24)
-        .padding(.vertical, 30)
-    }
-}
-
 struct NewFriendsView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -410,7 +354,7 @@ struct NewFriendsView: View {
                 LazyVStack(spacing: 14) {
                     orbitHeader
 
-                    PeopleFlowPanel {
+                    AppFlowPanel {
                         VStack(spacing: 0) {
                             NavigationLink(value: "addFriend") {
                                 addFriendRow
@@ -418,7 +362,7 @@ struct NewFriendsView: View {
                             .buttonStyle(MenuPressStyle())
 
                             if !clearableFriends.isEmpty {
-                                PeopleFlowDivider(leading: 62)
+                                AppFlowDivider(leading: 62)
                                 Button {
                                     confirmClearFriends = true
                                 } label: {
@@ -431,7 +375,7 @@ struct NewFriendsView: View {
                     }
 
                     if loading && incoming.isEmpty && outgoing.isEmpty && added.isEmpty {
-                        PeopleFlowPanel {
+                        AppFlowPanel {
                             HStack(spacing: 10) {
                                 ProgressView().controlSize(.small)
                                 Text(Tr("正在加载…"))
@@ -443,8 +387,8 @@ struct NewFriendsView: View {
                         }
                     } else if !loading && shownIncoming.isEmpty
                                 && shownOutgoing.isEmpty && shownAdded.isEmpty {
-                        PeopleFlowPanel {
-                            PeopleFlowEmptyState(
+                        AppFlowPanel {
+                            AppEmptyState(
                                 symbol: "person.crop.circle.badge.checkmark",
                                 title: keyword.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                                     ? Tr("暂无朋友验证消息")
@@ -458,12 +402,12 @@ struct NewFriendsView: View {
 
                     if !shownIncoming.isEmpty {
                         sectionHeader(Tr("朋友验证"), count: shownIncoming.count)
-                        PeopleFlowPanel {
+                        AppFlowPanel {
                             LazyVStack(spacing: 0) {
                                 ForEach(Array(shownIncoming.enumerated()), id: \.element.id) { index, user in
                                     requestRow(user)
                                     if index < shownIncoming.count - 1 {
-                                        PeopleFlowDivider(leading: 76)
+                                        AppFlowDivider(leading: 76)
                                     }
                                 }
                             }
@@ -482,12 +426,12 @@ struct NewFriendsView: View {
                     }
                     if !shownOutgoing.isEmpty {
                         sectionHeader(Tr("我发出的申请"), count: shownOutgoing.count)
-                        PeopleFlowPanel {
+                        AppFlowPanel {
                             LazyVStack(spacing: 0) {
                                 ForEach(Array(shownOutgoing.enumerated()), id: \.element.id) { index, user in
                                     waitingRow(user)
                                     if index < shownOutgoing.count - 1 {
-                                        PeopleFlowDivider(leading: 76)
+                                        AppFlowDivider(leading: 76)
                                     }
                                 }
                             }
@@ -550,12 +494,12 @@ struct NewFriendsView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 10) {
                 Text(Tr("新的朋友"))
-                    .font(pf(21, .semibold))
+                    .font(AppDesign.Type.pageTitle)
                     .foregroundStyle(OrbitTheme.ink)
                 Spacer(minLength: 0)
                 if !shownIncoming.isEmpty {
                     Text("\(shownIncoming.count) " + Tr("待处理"))
-                        .font(pf(11.5, .semibold))
+                        .font(AppDesign.Type.status)
                         .foregroundStyle(OrbitTheme.jadeDeep)
                         .padding(.horizontal, 9)
                         .frame(height: 24)
@@ -575,7 +519,10 @@ struct NewFriendsView: View {
     private var addFriendRow: some View {
         HStack(spacing: 12) {
             ZStack {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(
+                    cornerRadius: AppDesign.Radius.small,
+                    style: .continuous
+                )
                     .fill(OrbitTheme.jadeSoft)
                 Image(systemName: "person.badge.plus")
                     .font(.system(size: 17, weight: .semibold))
@@ -583,7 +530,7 @@ struct NewFriendsView: View {
             }
             .frame(width: 36, height: 36)
             Text(Tr("添加朋友"))
-                .font(pf(16, .medium))
+                .font(AppDesign.Type.rowTitle)
                 .foregroundStyle(OrbitTheme.ink)
             Spacer(minLength: 0)
             Image(systemName: "chevron.right")
@@ -598,7 +545,10 @@ struct NewFriendsView: View {
     private var clearFriendsRow: some View {
         HStack(spacing: 12) {
             ZStack {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(
+                    cornerRadius: AppDesign.Radius.small,
+                    style: .continuous
+                )
                     .fill(C.red.opacity(0.10))
                 Image(systemName: "person.badge.minus")
                     .font(.system(size: 17, weight: .semibold))
@@ -606,7 +556,7 @@ struct NewFriendsView: View {
             }
             .frame(width: 36, height: 36)
             Text(Tr("清除已添加的朋友"))
-                .font(pf(16, .medium))
+                .font(AppDesign.Type.rowTitle)
                 .foregroundStyle(C.red)
             Spacer(minLength: 0)
             if clearingFriends {
@@ -641,8 +591,7 @@ struct NewFriendsView: View {
     }
 
     private func sectionHeader(_ t: String, count: Int? = nil) -> some View {
-        OrbitSectionLabel(text: t, count: count)
-        .frame(height: 30)
+        AppSectionHeader(title: t, count: count)
     }
 
     private func requestRow(_ user: User) -> some View {
@@ -651,14 +600,18 @@ struct NewFriendsView: View {
                 if locallyAccepted[user.id] != nil { openChat(user) }
             } label: {
                 HStack(spacing: 12) {
-                    Avatar(path: user.avatarPath, size: 44, radius: 10)
+                    Avatar(
+                        path: user.avatarPath,
+                        size: AppDesign.Avatar.standard,
+                        radius: 10
+                    )
                     VStack(alignment: .leading, spacing: 4) {
                         Text(user.name)
-                            .font(pf(15.5, .semibold))
+                            .font(AppDesign.Type.rowTitle)
                             .foregroundStyle(OrbitTheme.ink)
                             .lineLimit(1)
                         Text(noteOf(user))
-                            .font(pf(12.5))
+                            .font(AppDesign.Type.caption)
                             .foregroundStyle(OrbitTheme.secondary)
                             .lineLimit(1)
                     }
@@ -670,57 +623,53 @@ struct NewFriendsView: View {
             .disabled(locallyAccepted[user.id] == nil)
 
             if locallyAccepted[user.id] != nil {
-                Label(Tr("已添加"), systemImage: "checkmark")
-                    .font(pf(12.5, .semibold))
-                    .foregroundStyle(OrbitTheme.jadeDeep)
-                    .padding(.horizontal, 9)
-                    .frame(height: 28)
-                    .background(Capsule().fill(OrbitTheme.jadeSoft))
+                AppStatusPill(
+                    title: Tr("已添加"),
+                    symbol: "checkmark",
+                    tone: .primary
+                )
             } else if busy.contains(user.id) {
                 ProgressView()
                     .controlSize(.small)
                     .frame(width: 76)
             } else {
                 HStack(spacing: 7) {
-                    Button { respond(user, true) } label: {
-                        Text(Tr("接受"))
-                            .font(pf(13, .semibold))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 13)
-                            .frame(height: 30)
-                            .background(Capsule().fill(OrbitTheme.jadeDeep))
+                    AppCompactButton(title: Tr("接受"), tone: .primary) {
+                        respond(user, true)
                     }
-                    .buttonStyle(MenuPressStyle())
 
-                    Button { respond(user, false) } label: {
-                        Text(Tr("拒绝"))
-                            .font(pf(12.5, .medium))
-                            .foregroundStyle(OrbitTheme.secondary)
-                            .padding(.horizontal, 7)
-                            .frame(height: 30)
-                            .contentShape(Rectangle())
+                    AppCompactButton(title: Tr("拒绝"), tone: .secondary) {
+                        respond(user, false)
                     }
-                    .buttonStyle(.plain)
                 }
             }
         }
         .padding(.horizontal, 14)
-        .frame(height: 76)
+        .frame(height: AppDesign.Control.rowHeight)
     }
 
     private func doneRow(_ user: User) -> some View {
-        HStack(spacing: L.ctGap) {
-            Avatar(path: user.avatarPath, size: L.ctAvatar, radius: 6)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(user.name).font(pf(L.ctNameSize)).foregroundColor(C.label).lineLimit(1)
-                Text(noteOf(user)).font(pf(13)).foregroundColor(C.subLabel).lineLimit(1)
+        HStack(spacing: 12) {
+            Avatar(
+                path: user.avatarPath,
+                size: AppDesign.Avatar.standard,
+                radius: 10
+            )
+            VStack(alignment: .leading, spacing: 4) {
+                Text(user.name)
+                    .font(AppDesign.Type.rowTitle)
+                    .foregroundColor(OrbitTheme.ink)
+                    .lineLimit(1)
+                Text(noteOf(user))
+                    .font(AppDesign.Type.caption)
+                    .foregroundColor(OrbitTheme.secondary)
+                    .lineLimit(1)
             }
             Spacer(minLength: 8)
-            Text(Tr("已添加")).font(pf(14)).foregroundColor(C.subLabel)
+            AppStatusPill(title: Tr("已添加"), tone: .primary)
         }
-        .padding(.leading, L.ctPadL)
-        .padding(.trailing, 16)
-        .frame(height: 68)
+        .padding(.horizontal, 14)
+        .frame(height: AppDesign.Control.rowHeight)
         .contentShape(Rectangle())
     }
 
@@ -751,30 +700,29 @@ struct NewFriendsView: View {
 
     private func waitingRow(_ user: User) -> some View {
         HStack(spacing: 12) {
-            Avatar(path: user.avatarPath, size: 44, radius: 10)
+            Avatar(
+                path: user.avatarPath,
+                size: AppDesign.Avatar.standard,
+                radius: 10
+            )
             VStack(alignment: .leading, spacing: 4) {
                 Text(user.name)
-                    .font(pf(15.5, .semibold))
+                    .font(AppDesign.Type.rowTitle)
                     .foregroundStyle(OrbitTheme.ink)
                     .lineLimit(1)
                 let n = (user.requestMessage ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
                 if !n.isEmpty {
                     Text(n)
-                        .font(pf(12.5))
+                        .font(AppDesign.Type.caption)
                         .foregroundStyle(OrbitTheme.secondary)
                         .lineLimit(1)
                 }
             }
             Spacer(minLength: 8)
-            Text(Tr("等待验证"))
-                .font(pf(12.5, .medium))
-                .foregroundStyle(OrbitTheme.secondary)
-                .padding(.horizontal, 9)
-                .frame(height: 28)
-                .background(Capsule().fill(OrbitTheme.fieldRaised))
+            AppStatusPill(title: Tr("等待验证"))
         }
         .padding(.horizontal, 14)
-        .frame(height: 72)
+        .frame(height: AppDesign.Control.rowHeight)
         .contentShape(Rectangle())
     }
 
@@ -882,7 +830,7 @@ private struct SwipeDeleteFriendRow: View {
     @State private var startOffset: CGFloat = 0
     @State private var crossedOpen = false
 
-    private let rowHeight: CGFloat = 72
+    private let rowHeight: CGFloat = AppDesign.Control.rowHeight
     private let deleteWidth: CGFloat = 80
     private let haptic = UIImpactFeedbackGenerator(style: .light)
 
@@ -922,7 +870,10 @@ private struct SwipeDeleteFriendRow: View {
         }
         .frame(height: rowHeight)
         .background(OrbitTheme.cardBackground())
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .clipShape(RoundedRectangle(
+            cornerRadius: AppDesign.Radius.row,
+            style: .continuous
+        ))
         .overlay(alignment: .leading) {
             GeometryReader { geo in
                 RowSwipeCatcher(
@@ -980,24 +931,23 @@ private struct SwipeDeleteFriendRow: View {
 
     private var rowContent: some View {
         HStack(spacing: 12) {
-            Avatar(path: user.avatarPath, size: 44, radius: 10)
+            Avatar(
+                path: user.avatarPath,
+                size: AppDesign.Avatar.standard,
+                radius: 10
+            )
             VStack(alignment: .leading, spacing: 4) {
                 Text(user.name)
-                    .font(pf(15.5, .semibold))
+                    .font(AppDesign.Type.rowTitle)
                     .foregroundColor(OrbitTheme.ink)
                     .lineLimit(1)
                 Text(note)
-                    .font(pf(12.5))
+                    .font(AppDesign.Type.caption)
                     .foregroundColor(OrbitTheme.secondary)
                     .lineLimit(1)
             }
             Spacer(minLength: 8)
-            Text(Tr("已添加"))
-                .font(pf(12.5, .semibold))
-                .foregroundColor(OrbitTheme.jadeDeep)
-                .padding(.horizontal, 9)
-                .frame(height: 28)
-                .background(Capsule().fill(OrbitTheme.jadeSoft))
+            AppStatusPill(title: Tr("已添加"), tone: .primary)
         }
         .padding(.horizontal, 14)
     }
@@ -1030,71 +980,78 @@ struct AddFriendView: View {
             NavBar(title: Tr("添加朋友"), back: { dismiss() })
 
             ScrollView(showsIndicators: false) {
-                LazyVStack(spacing: 18) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text(Tr("查找星言用户"))
-                            .font(pf(13, .semibold))
-                            .foregroundStyle(C.subLabel)
-                            .padding(.horizontal, 4)
-                        searchRow
-                        Text(Tr("输入星言号或手机号，确认身份后再发送朋友申请。"))
-                            .font(pf(12.5))
-                            .foregroundStyle(C.subLabel)
-                            .padding(.horizontal, 5)
+                LazyVStack(spacing: 14) {
+                    AppFlowPanel {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text(Tr("查找星言用户"))
+                                .font(AppDesign.Type.section)
+                                .foregroundStyle(OrbitTheme.secondary)
+                            StarOrbitSearchField(
+                                placeholder: Tr("星言号/手机号"),
+                                text: $keyword
+                            )
+                            Text(Tr("输入星言号或手机号，确认身份后再发送朋友申请。"))
+                                .font(AppDesign.Type.caption)
+                                .foregroundStyle(OrbitTheme.secondary)
+                        }
+                        .padding(14)
                     }
-                    .padding(.horizontal, 16)
 
                     if let errorText = errorText {
-                        Text(errorText)
-                            .font(pf(14))
-                            .foregroundColor(C.red)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 20)
+                        AppFlowPanel {
+                            Label(errorText, systemImage: "exclamationmark.circle.fill")
+                                .font(AppDesign.Type.body)
+                                .foregroundStyle(C.red)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(14)
+                        }
                     }
 
                     if searching {
-                        HStack(spacing: 10) {
-                            ProgressView()
-                            Text(Tr("正在搜索…"))
-                                .font(pf(14))
-                                .foregroundStyle(C.subLabel)
+                        AppFlowPanel {
+                            HStack(spacing: 10) {
+                                ProgressView().controlSize(.small)
+                                Text(Tr("正在搜索…"))
+                                    .font(AppDesign.Type.body)
+                                    .foregroundStyle(OrbitTheme.secondary)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 82)
                         }
-                        .frame(maxWidth: .infinity, minHeight: 108)
                     } else if searched && results.isEmpty {
-                        addFriendEmptyState
+                        AppFlowPanel {
+                            AppEmptyState(
+                                symbol: "person.crop.circle.badge.questionmark",
+                                title: Tr("未找到相关用户"),
+                                detail: Tr("检查星言号或手机号后再试")
+                            )
+                        }
                     }
 
                     if !results.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(Tr("搜索结果"))
-                                .font(pf(13, .semibold))
-                                .foregroundColor(C.subLabel)
-                                .padding(.horizontal, 4)
-
-                            addFriendSurface {
-                                VStack(spacing: 0) {
-                                    ForEach(Array(results.enumerated()),
-                                            id: \.element.id) { index, user in
-                                        resultRow(user)
-                                        if index < results.count - 1 {
-                                            HairLine(inset: 78)
-                                        }
+                        AppSectionHeader(title: Tr("搜索结果"), count: results.count)
+                        AppFlowPanel {
+                            LazyVStack(spacing: 0) {
+                                ForEach(Array(results.enumerated()),
+                                        id: \.element.id) { index, user in
+                                    resultRow(user)
+                                    if index < results.count - 1 {
+                                        AppFlowDivider(leading: 70)
                                     }
                                 }
                             }
                         }
-                        .padding(.horizontal, 16)
                     } else {
                         addFriendActions
                     }
 
                     Color.clear.frame(height: max(18, L.safeBottom))
                 }
+                .padding(.horizontal, 16)
                 .padding(.top, 8)
             }
         }
-        .background(C.pageBg.ignoresSafeArea(edges: .bottom))
-        .background(C.pageBg.ignoresSafeArea(edges: .top))
+        .background(OrbitTheme.canvas.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .swipeBack { dismiss() }
         .hidesTabBar()
@@ -1130,109 +1087,55 @@ struct AddFriendView: View {
             searchDebounce?.cancel()
             searchDebounce = nil
         }
-    }
-
-    private var searchRow: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 15, weight: .medium))
-                .foregroundColor(C.subLabel)
-            TextField(Tr("星言号/手机号"), text: $keyword)
-                .font(pf(15.5))
-                .foregroundColor(C.label)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled(true)
-                .submitLabel(.search)
-                .onSubmit { search() }
-                .onChange(of: keyword) { value in
-                    scheduleSearch(value)
-                }
-            if !keyword.isEmpty {
-                Button {
-                    keyword = ""
-                    results = []
-                    searched = false
-                    errorText = nil
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 15))
-                        .foregroundColor(C.searchIcon)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(.horizontal, 13)
-        .frame(height: 46)
-        .background(C.fieldBg,
-                    in: RoundedRectangle(cornerRadius: 13, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 13, style: .continuous)
-                .stroke(C.hairline.opacity(0.48), lineWidth: 0.55)
+        .onChange(of: keyword) { value in
+            scheduleSearch(value)
         }
     }
 
     private func resultRow(_ u: User) -> some View {
-        HStack(spacing: 12) {
-            Avatar(path: u.avatarPath, size: 50, radius: 25, circle: true)
-            VStack(alignment: .leading, spacing: 3) {
+        AppFlowRow {
+            Avatar(path: u.avatarPath, size: 44, radius: 22, circle: true)
+        } content: {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(u.name)
-                    .font(pf(16.5, .semibold))
-                    .foregroundColor(C.label)
+                    .font(AppDesign.Type.rowTitle)
+                    .foregroundColor(OrbitTheme.ink)
                     .lineLimit(1)
                 if let un = u.username, !un.isEmpty {
                     Text(Tr("星言号") + "：" + un)
-                        .font(pf(13))
-                        .foregroundColor(C.subLabel)
+                        .font(AppDesign.Type.caption)
+                        .foregroundColor(OrbitTheme.secondary)
                         .lineLimit(1)
                 }
             }
-            Spacer(minLength: 8)
+        } trailing: {
             resultAction(u)
         }
-        .padding(.horizontal, 16)
-        .frame(height: 72)
-        .contentShape(Rectangle())
     }
 
     @ViewBuilder
     private func resultAction(_ u: User) -> some View {
         let rel = u.relation ?? "none"
         if sentTo.contains(u.id) || rel == "requested" {
-            Text(Tr("等待验证")).font(pf(14)).foregroundColor(C.subLabel)
+            AppStatusPill(title: Tr("等待验证"))
         } else if rel == "friend" || rel == "self" {
-            Text(Tr("已添加")).font(pf(14)).foregroundColor(C.subLabel)
+            AppStatusPill(title: Tr("已添加"), tone: .primary)
         } else if rel == "incoming" {
-            Button { accept(u) } label: {
-                greenChip(Tr("接受"))
+            AppCompactButton(title: Tr("接受"), tone: .primary) {
+                accept(u)
             }
-            .buttonStyle(MenuPressStyle())
         } else {
-            Button { openApply(u) } label: {
-                greenChip(Tr("添加到通讯录"))
+            AppCompactButton(title: Tr("添加到通讯录"), tone: .primary) {
+                openApply(u)
             }
-            .buttonStyle(MenuPressStyle())
         }
     }
 
-    private func greenChip(_ t: String) -> some View {
-        Text(t)
-            .font(pf(13, .semibold))
-            .foregroundColor(.white)
-            .padding(.horizontal, 13)
-            .frame(height: 30)
-            .background(Color(hex: 0x25D366),
-                        in: RoundedRectangle(cornerRadius: 9,
-                                             style: .continuous))
-    }
-
     private var addFriendActions: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(Tr("添加朋友"))
-                .font(pf(13, .semibold))
-                .foregroundColor(C.subLabel)
-                .padding(.horizontal, 4)
+        VStack(alignment: .leading, spacing: 10) {
+            AppSectionHeader(title: Tr("添加朋友"))
 
-            addFriendSurface {
+            AppFlowPanel {
                 VStack(spacing: 0) {
                     addFriendActionRow(
                         icon: "qrcode.viewfinder",
@@ -1241,7 +1144,7 @@ struct AddFriendView: View {
                     ) {
                         showScan = true
                     }
-                    HairLine(inset: 62)
+                    AppFlowDivider(leading: 62)
 
                     addFriendActionRow(
                         icon: "person.text.rectangle",
@@ -1250,7 +1153,7 @@ struct AddFriendView: View {
                     ) {
                         showPhoneContacts = true
                     }
-                    HairLine(inset: 62)
+                    AppFlowDivider(leading: 62)
 
                     NavigationLink(value: "myQR") {
                         addFriendActionLabel(
@@ -1259,8 +1162,8 @@ struct AddFriendView: View {
                             detail: Tr("让朋友扫码添加我")
                         )
                     }
-                    .buttonStyle(.plain)
-                    HairLine(inset: 62)
+                    .buttonStyle(AppPressStyle())
+                    AppFlowDivider(leading: 62)
 
                     NavigationLink(value: "newFriends") {
                         addFriendActionLabel(
@@ -1269,8 +1172,8 @@ struct AddFriendView: View {
                             detail: Tr("查看朋友申请")
                         )
                     }
-                    .buttonStyle(.plain)
-                    HairLine(inset: 62)
+                    .buttonStyle(AppPressStyle())
+                    AppFlowDivider(leading: 62)
 
                     addFriendActionRow(
                         icon: "square.and.arrow.up",
@@ -1282,7 +1185,6 @@ struct AddFriendView: View {
                 }
             }
         }
-        .padding(.horizontal, 16)
     }
 
     private func addFriendActionRow(icon: String,
@@ -1292,84 +1194,28 @@ struct AddFriendView: View {
         Button(action: action) {
             addFriendActionLabel(icon: icon, title: title, detail: detail)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(AppPressStyle())
     }
 
     private func addFriendActionLabel(icon: String,
                                       title: String,
                                       detail: String) -> some View {
-        HStack(spacing: 13) {
-            Image(systemName: icon)
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(width: 38, height: 38)
-                .background(Color(hex: 0x25D366), in: Circle())
+        AppFlowRow(height: AppDesign.Control.compactRowHeight) {
+            AppIconTile(symbol: icon, size: 38)
+        } content: {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(pf(16, .medium))
-                    .foregroundColor(C.label)
+                    .font(AppDesign.Type.rowTitle)
+                    .foregroundColor(OrbitTheme.ink)
                 Text(detail)
-                    .font(pf(12.5))
-                    .foregroundColor(C.subLabel)
+                    .font(AppDesign.Type.caption)
+                    .foregroundColor(OrbitTheme.secondary)
             }
-            Spacer(minLength: 8)
+        } trailing: {
             Image(systemName: "chevron.right")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(C.subLabel.opacity(0.72))
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(OrbitTheme.tertiary)
         }
-        .padding(.horizontal, 14)
-        .frame(height: 64)
-        .contentShape(Rectangle())
-    }
-
-    private func addFriendSurface<Content: View>(
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        VStack(spacing: 0) { content() }
-            .background(C.cardBg)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(C.hairline.opacity(0.45), lineWidth: 0.55)
-            }
-    }
-
-    private var addFriendEmptyState: some View {
-        VStack(spacing: 9) {
-            Image(systemName: "person.crop.circle.badge.questionmark")
-                .font(.system(size: 32, weight: .light))
-                .foregroundColor(C.subLabel)
-            Text(Tr("未找到相关用户"))
-                .font(pf(15, .medium))
-                .foregroundColor(C.label)
-            Text(Tr("检查星言号或手机号后再试"))
-                .font(pf(12.5))
-                .foregroundColor(C.subLabel)
-        }
-        .frame(maxWidth: .infinity, minHeight: 180)
-    }
-
-    private func otherRow(icon: String, title: String, tap: @escaping () -> Void) -> some View {
-        Button(action: tap) { otherRowLabel(icon: icon, title: title) }
-            .buttonStyle(MenuPressStyle())
-    }
-
-    private func otherRowLabel(icon: String, title: String) -> some View {
-        HStack(spacing: L.ctGap) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Color(hex: 0x4C93DD))
-                Image(systemName: icon).font(.system(size: 17)).foregroundColor(.white)
-            }
-            .frame(width: L.ctIcon, height: L.ctIcon)
-            Text(title).font(pf(L.ctNameSize)).foregroundColor(C.label)
-            Spacer(minLength: 0)
-            Image(systemName: "chevron.right").font(.system(size: 13)).foregroundColor(C.subLabel)
-        }
-        .padding(.leading, L.ctPadL)
-        .padding(.trailing, 16)
-        .frame(height: L.ctRowH)
-        .background(C.cardBg)
-        .contentShape(Rectangle())
     }
 
     private func search() {
@@ -1788,18 +1634,6 @@ struct FriendPermSheet: View {
     }
 }
 
-private struct GroupMemberChipPressStyle: ButtonStyle {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(reduceMotion ? 1 : (configuration.isPressed ? 0.97 : 1))
-            .opacity(configuration.isPressed ? 0.80 : 1)
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.09),
-                       value: configuration.isPressed)
-    }
-}
-
 struct GroupCreateView: View {
     private enum Step: Equatable { case participants, details }
 
@@ -1933,9 +1767,15 @@ struct GroupCreateView: View {
                         }
                     }
                     .background(C.cardBg)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .clipShape(RoundedRectangle(
+                        cornerRadius: AppDesign.Radius.row,
+                        style: .continuous
+                    ))
                     .overlay {
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        RoundedRectangle(
+                            cornerRadius: AppDesign.Radius.row,
+                            style: .continuous
+                        )
                             .stroke(C.hairline, lineWidth: 0.6)
                     }
                     .padding(.horizontal, 16)
@@ -1989,7 +1829,10 @@ struct GroupCreateView: View {
         .padding(16)
         .background {
             GlassBackground(
-                shape: RoundedRectangle(cornerRadius: 22, style: .continuous),
+                shape: RoundedRectangle(
+                    cornerRadius: AppDesign.Radius.panel,
+                    style: .continuous
+                ),
                 opacity: 0.90,
                 edgeAlpha: 0.22,
                 seed: 0.23,
@@ -1997,7 +1840,10 @@ struct GroupCreateView: View {
             )
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
+            RoundedRectangle(
+                cornerRadius: AppDesign.Radius.panel,
+                style: .continuous
+            )
                 .stroke(Color.primary.opacity(0.055), lineWidth: 0.7)
         }
     }
@@ -2048,7 +1894,10 @@ struct GroupCreateView: View {
         .padding(.vertical, 11)
         .background {
             GlassBackground(
-                shape: RoundedRectangle(cornerRadius: 22, style: .continuous),
+                shape: RoundedRectangle(
+                    cornerRadius: AppDesign.Radius.panel,
+                    style: .continuous
+                ),
                 opacity: 0.92,
                 edgeAlpha: 0.24,
                 seed: 0.31,
@@ -2056,7 +1905,10 @@ struct GroupCreateView: View {
             )
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
+            RoundedRectangle(
+                cornerRadius: AppDesign.Radius.panel,
+                style: .continuous
+            )
                 .stroke(Color.primary.opacity(0.06), lineWidth: 0.7)
         }
         .padding(.horizontal, 14)
@@ -2067,7 +1919,10 @@ struct GroupCreateView: View {
         VStack(alignment: .leading, spacing: 13) {
             HStack(spacing: 12) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    RoundedRectangle(
+                        cornerRadius: AppDesign.Radius.compact,
+                        style: .continuous
+                    )
                         .fill(C.green.opacity(picked.isEmpty ? 0.11 : 0.17))
                     Image(systemName: picked.isEmpty ? "person.2.fill" : "checkmark")
                         .font(.system(size: 15, weight: .semibold))
@@ -2135,7 +1990,10 @@ struct GroupCreateView: View {
         .padding(16)
         .background {
             GlassBackground(
-                shape: RoundedRectangle(cornerRadius: 20, style: .continuous),
+                shape: RoundedRectangle(
+                    cornerRadius: AppDesign.Radius.panel,
+                    style: .continuous
+                ),
                 opacity: 0.88,
                 edgeAlpha: 0.20,
                 seed: 0.19,
@@ -2143,7 +2001,10 @@ struct GroupCreateView: View {
             )
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
+            RoundedRectangle(
+                cornerRadius: AppDesign.Radius.panel,
+                style: .continuous
+            )
                 .stroke(C.hairline, lineWidth: 0.6)
         }
     }
@@ -2189,7 +2050,7 @@ struct GroupCreateView: View {
                                 Capsule().fill(Color.dyn(0xF2F2F7, 0x2C2C2E))
                             )
                         }
-                        .buttonStyle(GroupMemberChipPressStyle())
+                        .buttonStyle(AppPressStyle())
                     }
                 }
             }
@@ -2220,7 +2081,10 @@ struct GroupCreateView: View {
         .padding(.horizontal, 12)
         .frame(height: 36)
         .background {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            RoundedRectangle(
+                cornerRadius: AppDesign.Radius.small,
+                style: .continuous
+            )
                 .fill(Color.dyn(0xF0F2F5, 0x2C2C2E))
         }
     }
@@ -2277,7 +2141,10 @@ struct GroupCreateView: View {
                     .padding(.horizontal, 16)
                     .frame(height: 54)
                     .background(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        RoundedRectangle(
+                            cornerRadius: AppDesign.Radius.control,
+                            style: .continuous
+                        )
                             .fill(C.cardBg)
                     )
 
@@ -2307,7 +2174,10 @@ struct GroupCreateView: View {
                     .padding(.horizontal, 16)
                     .frame(height: 64)
                     .background(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        RoundedRectangle(
+                            cornerRadius: AppDesign.Radius.control,
+                            style: .continuous
+                        )
                             .fill(C.cardBg)
                     )
                 }
@@ -2329,7 +2199,10 @@ struct GroupCreateView: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: 52)
                     .background(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        RoundedRectangle(
+                            cornerRadius: AppDesign.Radius.control,
+                            style: .continuous
+                        )
                             .fill(canContinue ? C.green : C.subLabel.opacity(0.28))
                     )
                 }
@@ -2510,11 +2383,17 @@ struct FaceGroupView: View {
                         .padding(.horizontal, 14)
                         .frame(maxWidth: .infinity, minHeight: 42, alignment: .leading)
                         .background(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            RoundedRectangle(
+                                cornerRadius: AppDesign.Radius.control,
+                                style: .continuous
+                            )
                                 .fill(C.red.opacity(0.10))
                         )
                         .overlay {
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            RoundedRectangle(
+                                cornerRadius: AppDesign.Radius.control,
+                                style: .continuous
+                            )
                                 .stroke(C.red.opacity(0.16), lineWidth: 0.7)
                         }
                         .transition(.opacity)
@@ -2535,10 +2414,13 @@ struct FaceGroupView: View {
     }
 
     private var introPanel: some View {
-        PeopleFlowPanel {
+        AppFlowPanel {
             HStack(alignment: .top, spacing: 14) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                    RoundedRectangle(
+                        cornerRadius: AppDesign.Radius.control,
+                        style: .continuous
+                    )
                         .fill(OrbitTheme.jadeSoft)
                     Image(systemName: "person.3.fill")
                         .font(.system(size: 22, weight: .semibold))
@@ -2548,10 +2430,10 @@ struct FaceGroupView: View {
 
                 VStack(alignment: .leading, spacing: 6) {
                     Text(Tr("和附近的人一起进群"))
-                        .font(pf(17.5, .semibold))
+                        .font(AppDesign.Type.title)
                         .foregroundStyle(OrbitTheme.ink)
                     Text(Tr("输入同样的 4 位数字"))
-                        .font(pf(13.5))
+                        .font(AppDesign.Type.body)
                         .foregroundStyle(OrbitTheme.secondary)
                 }
 
@@ -2562,11 +2444,11 @@ struct FaceGroupView: View {
     }
 
     private var codePanel: some View {
-        PeopleFlowPanel {
+        AppFlowPanel {
             VStack(spacing: 15) {
                 HStack {
                     Text(Tr("输入同样的 4 位数字"))
-                        .font(pf(14.5, .semibold))
+                        .font(AppDesign.Type.rowTitle)
                         .foregroundStyle(OrbitTheme.ink)
                     Spacer(minLength: 0)
                     Text("\(digits.count)/4")
@@ -2604,9 +2486,15 @@ struct FaceGroupView: View {
         let entered = index < chars.count
         let active = index == digits.count && digits.count < 4
         return ZStack {
-            RoundedRectangle(cornerRadius: 15, style: .continuous)
+            RoundedRectangle(
+                cornerRadius: AppDesign.Radius.control,
+                style: .continuous
+            )
                 .fill(active ? OrbitTheme.jadeSoft : OrbitTheme.field)
-            RoundedRectangle(cornerRadius: 15, style: .continuous)
+            RoundedRectangle(
+                cornerRadius: AppDesign.Radius.control,
+                style: .continuous
+            )
                 .stroke(
                     active ? OrbitTheme.jade : OrbitTheme.divider,
                     lineWidth: active ? 1.5 : 0.7
@@ -2614,7 +2502,7 @@ struct FaceGroupView: View {
 
             if entered {
                 Text(String(chars[index]))
-                    .font(pf(28, .semibold))
+                    .font(AppDesign.Type.code)
                     .foregroundStyle(OrbitTheme.ink)
                     .monospacedDigit()
                     .transition(.scale(scale: 0.72).combined(with: .opacity))
@@ -2633,35 +2521,14 @@ struct FaceGroupView: View {
 
     private var keypadDock: some View {
         VStack(spacing: 11) {
-            Button { enter() } label: {
-                HStack(spacing: 8) {
-                    if busy {
-                        ProgressView()
-                            .tint(digits.count == 4 ? Color.white : OrbitTheme.secondary)
-                            .controlSize(.small)
-                    } else {
-                        Image(systemName: "arrow.right.circle.fill")
-                            .font(.system(size: 17, weight: .semibold))
-                    }
-                    Text(busy ? Tr("正在进入…") : Tr("进入群聊"))
-                        .font(pf(16.5, .semibold))
-                }
-                .foregroundStyle(digits.count == 4 ? Color.white : OrbitTheme.secondary)
-                .frame(maxWidth: .infinity)
-                .frame(height: 50)
-                .background(
-                    RoundedRectangle(cornerRadius: 15, style: .continuous)
-                        .fill(digits.count == 4
-                              ? OrbitTheme.jadeDeep
-                              : OrbitTheme.fieldRaised)
-                )
-                .overlay {
-                    RoundedRectangle(cornerRadius: 15, style: .continuous)
-                        .stroke(OrbitTheme.divider, lineWidth: digits.count == 4 ? 0 : 0.7)
-                }
+            AppPrimaryButton(
+                title: busy ? Tr("正在进入…") : Tr("进入群聊"),
+                symbol: "arrow.right.circle.fill",
+                busy: busy,
+                enabled: digits.count == 4
+            ) {
+                enter()
             }
-            .buttonStyle(MenuPressStyle())
-            .disabled(digits.count != 4 || busy)
 
             LazyVGrid(
                 columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3),
@@ -2678,7 +2545,7 @@ struct FaceGroupView: View {
                                         .font(.system(size: 19, weight: .medium))
                                 } else {
                                     Text(key)
-                                        .font(pf(22, .medium))
+                                        .font(AppDesign.Type.keypad)
                                         .monospacedDigit()
                                 }
                             }
@@ -2686,11 +2553,17 @@ struct FaceGroupView: View {
                             .frame(maxWidth: .infinity)
                             .frame(height: 50)
                             .background(
-                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                RoundedRectangle(
+                                    cornerRadius: AppDesign.Radius.control,
+                                    style: .continuous
+                                )
                                     .fill(OrbitTheme.field)
                             )
                             .overlay {
-                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                RoundedRectangle(
+                                    cornerRadius: AppDesign.Radius.control,
+                                    style: .continuous
+                                )
                                     .stroke(OrbitTheme.divider, lineWidth: 0.7)
                             }
                             .contentShape(Rectangle())
@@ -2913,9 +2786,15 @@ struct ServiceView: View {
         let bg = Color(hexString: c?.bg ?? "#E02F24", fallback: 0xE02F24)
         let s = st
         return ZStack(alignment: .top) {
-            RoundedRectangle(cornerRadius: 16, style: .continuous).fill(bg)
+            RoundedRectangle(
+                cornerRadius: AppDesign.Radius.row,
+                style: .continuous
+            ).fill(bg)
 
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(
+                cornerRadius: AppDesign.Radius.row,
+                style: .continuous
+            )
                 .fill(LinearGradient(colors: [Color.white.opacity(0.18), Color.clear, Color.black.opacity(0.07)],
                                      startPoint: .topLeading, endPoint: .bottomTrailing))
 
@@ -2923,7 +2802,10 @@ struct ServiceView: View {
                 RemoteImage(path: img)
                     .frame(maxWidth: .infinity)
                     .frame(height: s.cardHeight)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .clipShape(RoundedRectangle(
+                        cornerRadius: AppDesign.Radius.row,
+                        style: .continuous
+                    ))
             }
             HStack(alignment: .top, spacing: 0) {
                 halfView(c?.left, label: "收付款", icon: "svc.pay", action: "pay", sub: "")

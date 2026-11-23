@@ -521,7 +521,7 @@ struct ChannelsView: View {
                             }
                             .padding(.vertical, 11)
                             .padding(.horizontal, 14)
-                            .background(RoundedRectangle(cornerRadius: 10).fill(Color.gray.opacity(0.12)))
+                            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small).fill(Color.gray.opacity(0.12)))
                         }
                         .buttonStyle(.plain)
                     }
@@ -658,7 +658,7 @@ struct ChannelsView: View {
                             .padding(.horizontal, 13)
                             .frame(height: 40)
                             .background(
-                                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                                     .fill(Color.white.opacity(0.10))
                             )
                         Button { sendComment(item) } label: {
@@ -750,7 +750,7 @@ struct ChannelsView: View {
                                 }
                                 .padding(12)
                                 .background(Color(hex: 0xFF4D4F).opacity(0.10),
-                                            in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                            in: RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
                             }
 
                             Text(Tr("发布后将自动转码并生成清晰封面，稍后即可在作品页查看。"))
@@ -911,9 +911,9 @@ struct ChannelsView: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: height)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                 .stroke(Color.white.opacity(0.10), lineWidth: 0.7)
         }
     }
@@ -975,9 +975,9 @@ struct ChannelsView: View {
         }
         .padding(14)
         .background(Color.white.opacity(0.065),
-                    in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    in: RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                 .stroke(Color.white.opacity(0.07), lineWidth: 0.7)
         }
     }
@@ -1048,9 +1048,9 @@ struct ChannelsView: View {
             }
         }
         .background(Color.white.opacity(0.065),
-                    in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    in: RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                 .stroke(Color.white.opacity(0.07), lineWidth: 0.7)
         }
     }
@@ -1080,7 +1080,7 @@ struct ChannelsView: View {
         }
         .padding(13)
         .background(Color.white.opacity(0.065),
-                    in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    in: RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
     }
 
     private func publishQuickToken(_ token: String) -> some View {

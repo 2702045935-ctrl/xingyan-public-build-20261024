@@ -1150,7 +1150,10 @@ private struct ChatSearchPressStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .overlay {
-                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                RoundedRectangle(
+                    cornerRadius: AppDesign.Radius.small,
+                    style: .continuous
+                )
                     .fill(Color.primary.opacity(configuration.isPressed ? 0.055 : 0))
                     .allowsHitTesting(false)
             }
@@ -1779,10 +1782,16 @@ struct ChatsView: View {
             .frame(maxWidth: .infinity)
             .frame(height: 36)
             .background {
-                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                RoundedRectangle(
+                    cornerRadius: AppDesign.Radius.small,
+                    style: .continuous
+                )
                     .fill(chatsSearchFill)
                     .overlay {
-                        RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        RoundedRectangle(
+                            cornerRadius: AppDesign.Radius.small,
+                            style: .continuous
+                        )
                             .stroke(chatsSearchBorder, lineWidth: 0.5)
                     }
             }
@@ -1920,8 +1929,14 @@ struct ChatsView: View {
             .foregroundColor(look.inkSoft)
             .padding(.horizontal, 10)
             .frame(height: 38)
-            .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(look.cardFill))
-            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .background(RoundedRectangle(
+                cornerRadius: AppDesign.Radius.compact,
+                style: .continuous
+            ).fill(look.cardFill))
+            .overlay(RoundedRectangle(
+                cornerRadius: AppDesign.Radius.compact,
+                style: .continuous
+            )
                 .stroke(look.cardStroke, lineWidth: 0.6))
             .padding(.horizontal, 22)
             .contentShape(Rectangle())
@@ -2003,8 +2018,14 @@ struct ChatsView: View {
                                                  @ViewBuilder _ content: () -> V) -> some View {
         VStack(spacing: 0) { content() }
             .padding(.vertical, 12)
-            .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(look.cardFill))
-            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .background(RoundedRectangle(
+                cornerRadius: AppDesign.Radius.row,
+                style: .continuous
+            ).fill(look.cardFill))
+            .overlay(RoundedRectangle(
+                cornerRadius: AppDesign.Radius.row,
+                style: .continuous
+            )
                 .stroke(look.cardStroke, lineWidth: 0.6))
             .padding(.horizontal, 14)
     }
@@ -2087,14 +2108,20 @@ struct ChatsView: View {
         Button { app.launchMiniApp(mini) } label: {
             VStack(spacing: 11) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    RoundedRectangle(
+                        cornerRadius: AppDesign.Radius.compact,
+                        style: .continuous
+                    )
                         .fill(LinearGradient(colors: [Color(hex: 0x2B2F3A), Color(hex: 0x171B22)],
                                              startPoint: .topLeading, endPoint: .bottomTrailing))
                     Text(mini.iconText).font(pfStyled(size: 24))
                     if let cv = mini.cover, !cv.isEmpty {
                         RemoteImage(path: cv)
                             .frame(width: 48, height: 48)
-                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .clipShape(RoundedRectangle(
+                                cornerRadius: AppDesign.Radius.compact,
+                                style: .continuous
+                            ))
                     }
                 }
                 .frame(width: 48, height: 48)
@@ -2117,7 +2144,10 @@ struct ChatsView: View {
         Button { runMiniApp(it.0) } label: {
             VStack(spacing: 11) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    RoundedRectangle(
+                        cornerRadius: AppDesign.Radius.compact,
+                        style: .continuous
+                    )
                         .fill(look.darkInk ? Color.white.opacity(0.72) : Color.white.opacity(0.14))
                     Image(systemName: it.2)
                         .font(.system(size: 22, weight: .medium))
@@ -3585,7 +3615,10 @@ struct MiniAppSearchView: View {
                 }
                 .padding(.horizontal, 10)
                 .frame(height: 36)
-                .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .background(RoundedRectangle(
+                    cornerRadius: AppDesign.Radius.small,
+                    style: .continuous
+                )
                     .fill(Color.dyn(0xEDEDED, 0x2C2C2E)))
 
                 Button(Tr("取消")) { dismiss() }
@@ -3605,14 +3638,20 @@ struct MiniAppSearchView: View {
                         } label: {
                             HStack(spacing: 12) {
                                 ZStack {
-                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    RoundedRectangle(
+                                        cornerRadius: AppDesign.Radius.mini,
+                                        style: .continuous
+                                    )
                                         .fill(LinearGradient(colors: [Color(hex: 0x2B2F3A), Color(hex: 0x171B22)],
                                                              startPoint: .topLeading, endPoint: .bottomTrailing))
                                     Text(m.iconText).font(pfStyled(size: 18))
                                     if let cv = m.cover, !cv.isEmpty {
                                         RemoteImage(path: cv)
                                             .frame(width: 36, height: 36)
-                                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                            .clipShape(RoundedRectangle(
+                                                cornerRadius: AppDesign.Radius.mini,
+                                                style: .continuous
+                                            ))
                                     }
                                 }
                                 .frame(width: 36, height: 36)

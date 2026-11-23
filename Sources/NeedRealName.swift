@@ -43,7 +43,7 @@ struct NeedRealNameView: View {
     private var identityHeader: some View {
         VStack(spacing: 14) {
             ZStack {
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                     .fill(Color.primary)
                     .frame(width: 88, height: 88)
                     .shadow(color: .black.opacity(0.16), radius: 18, y: 8)
@@ -82,9 +82,9 @@ struct NeedRealNameView: View {
                      detail: Tr("验证完成后自动返回钱包"))
         }
         .background(C.cardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(C.hairline, lineWidth: 0.5)
         )
     }
@@ -99,7 +99,7 @@ struct NeedRealNameView: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: 52)
                 .background(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                         .fill(Color.primary)
                 )
         }
@@ -118,13 +118,13 @@ struct NeedRealNameView: View {
         }
         .padding(16)
         .background(C.cardBg.opacity(0.72),
-                    in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    in: RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
     }
 
     private func setupRow(number: String, symbol: String, title: String, detail: String) -> some View {
         HStack(spacing: 14) {
             ZStack {
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                     .fill(Color.primary.opacity(0.06))
                     .frame(width: 38, height: 38)
                 Image(systemName: symbol)

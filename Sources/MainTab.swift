@@ -1295,7 +1295,7 @@ struct MenuRow: View {
                         )
                     } else {
                         ZStack {
-                            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous)
                                 .fill(iconColor)
                             if !sf.isEmpty {
                                 Image(systemName: sf)
@@ -1335,7 +1335,7 @@ struct MenuRow: View {
                     ZStack(alignment: .topTrailing) {
                         RemoteImage(path: thumb)
                             .frame(width: 32, height: 32)
-                            .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous))
                         if badge {
                             Circle().fill(Color(.systemRed)).frame(width: 9, height: 9).offset(x: 4.5, y: -4.5)
                         }
@@ -1364,12 +1364,13 @@ struct MenuPressStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .contentShape(Rectangle())
+            .scaleEffect(reduceMotion ? 1 : (configuration.isPressed ? 0.995 : 1))
             .overlay {
                 Color.primary
-                    .opacity(configuration.isPressed ? 0.055 : 0)
+                    .opacity(configuration.isPressed ? 0.045 : 0)
                     .allowsHitTesting(false)
             }
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.09),
+            .animation(reduceMotion ? nil : AppDesign.Motion.press,
                        value: configuration.isPressed)
     }
 }
@@ -1417,17 +1418,17 @@ struct GroupCard<Content: View>: View {
             VStack(spacing: 0) { content }
                 .background {
                     ZStack {
-                        GlassBackground(shape: RoundedRectangle(cornerRadius: 16, style: .continuous),
+                        GlassBackground(shape: RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous),
                                         opacity: UIConfig.num("meGlassAlpha", 0.62),
                                         edgeAlpha: UIConfig.num("meGlassEdge", 0.55),
                                         shadow: true,
                                         seed: 0.42,
                                         native: true)
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                             .fill(C.cardBg.opacity(0.42))
                     }
                 }
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
                 .padding(.horizontal, UIConfig.num("meGlassInset", 12))
                 .padding(.bottom, 10)
         } else {

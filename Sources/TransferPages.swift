@@ -256,7 +256,7 @@ struct TransferPasswordView: View {
             HStack(spacing: 12) {
                 ForEach(0..<pwdLength, id: \.self) { index in
                     ZStack {
-                        RoundedRectangle(cornerRadius: 8)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.mini)
                             .stroke(index == pwd.count && focused ? TransferTheme.accent : Color(.systemGray4), lineWidth: 1)
                             .frame(width: 44, height: 48)
                         if index < pwd.count {

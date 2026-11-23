@@ -239,13 +239,13 @@ struct TeenModeView: View {
                     .font(pf(16))
                     .keyboardType(.numberPad)
                     .padding(.horizontal, 12).frame(height: 44)
-                    .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(C.searchBg))
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.searchBg))
                 Text(Tr("只保存脱敏后的号码（如 138****8888），不会外发。"))
                     .font(pf(12)).foregroundColor(C.subLabel)
             }
             .padding(16)
             .background { CardGlassBox(radius: 14) }
-            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
+            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
             .padding(.horizontal, 14).padding(.top, 10)
             Spacer(minLength: 0)
         }
@@ -479,7 +479,7 @@ struct TeenSetupWizard: View {
             Text(title)
                 .font(pf(17, .medium)).foregroundColor(.white)
                 .frame(maxWidth: .infinity).frame(height: 48)
-                .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                     .fill(enabled ? C.green : C.green.opacity(0.4)))
         }
         .buttonStyle(.plain)
@@ -551,7 +551,7 @@ struct CareModeView: View {
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
                         .background(
-                            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous)
                                 .fill(Color(uiColor: .secondarySystemGroupedBackground))
                         )
                     Spacer(minLength: 0)

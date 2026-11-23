@@ -386,7 +386,7 @@ private struct PlayerPage: View {
         .padding(.horizontal, 24)
         .padding(.vertical, 20)
         .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                 .fill(Color.black.opacity(0.38))
         )
     }
@@ -581,7 +581,7 @@ struct FeedCommentSheet: View {
                     .font(pf(15))
                     .padding(.horizontal, 12)
                     .padding(.vertical, 9)
-                    .background(RoundedRectangle(cornerRadius: 18).fill(C.searchBg))
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.panel).fill(C.searchBg))
                 Button { send() } label: {
                     Text(Tr("发送"))
                         .font(pf(15, .semibold))

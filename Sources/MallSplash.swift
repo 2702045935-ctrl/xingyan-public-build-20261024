@@ -65,7 +65,7 @@ struct MallSplashAdView: View {
                         .font(pf(10.5))
                         .foregroundColor(.white.opacity(0.8))
                         .padding(.horizontal, 6).frame(height: 18)
-                        .background(RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous)
                             .fill(Color.white.opacity(0.18)))
                     Text(Tr("点封面可以去看看"))
                         .font(pf(11)).foregroundColor(.white.opacity(0.6))

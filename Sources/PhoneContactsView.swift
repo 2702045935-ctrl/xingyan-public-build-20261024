@@ -32,7 +32,7 @@ private struct PhoneContactMark: View {
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                 .fill(accent)
             HStack(spacing: 4) {
                 Capsule().fill(Color(hex: 0x07351C)).frame(width: 2.8, height: 7)
@@ -229,7 +229,7 @@ struct PhoneContactsView: View {
         .padding(.horizontal, 12)
         .frame(height: 40)
         .background(C.fieldBg,
-                    in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                    in: RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
         .background(C.pageBg)
@@ -329,7 +329,7 @@ struct PhoneContactsView: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: 46)
                     .background(Color(hex: 0x25D366),
-                                in: RoundedRectangle(cornerRadius: 13,
+                                in: RoundedRectangle(cornerRadius: AppDesign.Radius.compact,
                                                      style: .continuous))
             }
             .buttonStyle(.plain)
@@ -453,7 +453,7 @@ struct PhoneContactsView: View {
             ctx.strokeEllipse(in: CGRect(x: 670, y: 940, width: 520, height: 520))
 
             let card = CGRect(x: 80, y: 72, width: 920, height: 1236)
-            let cardPath = UIBezierPath(roundedRect: card, cornerRadius: 48)
+            let cardPath = UIBezierPath(roundedRect: card, cornerRadius: AppDesign.Radius.hero)
             UIColor.white.setFill()
             cardPath.fill()
 
@@ -478,7 +478,7 @@ struct PhoneContactsView: View {
             if let icon = UIImage(named: "AppIcon60x60@3x")
                 ?? UIImage(named: "AppIcon60x60@2x") {
                 let iconRect = CGRect(x: 480, y: 314, width: 120, height: 120)
-                let iconPath = UIBezierPath(roundedRect: iconRect, cornerRadius: 28)
+                let iconPath = UIBezierPath(roundedRect: iconRect, cornerRadius: AppDesign.Radius.overlay)
                 ctx.saveGState()
                 iconPath.addClip()
                 icon.draw(in: iconRect)
@@ -487,7 +487,7 @@ struct PhoneContactsView: View {
 
             let qrFrame = CGRect(x: 170, y: 474, width: 740, height: 740)
             let qrPath = UIBezierPath(roundedRect: qrFrame.insetBy(dx: -22, dy: -22),
-                                      cornerRadius: 34)
+                                      cornerRadius: AppDesign.Radius.hero)
             UIColor(white: 0.96, alpha: 1).setFill()
             qrPath.fill()
             qr.draw(in: qrFrame)
@@ -528,7 +528,7 @@ struct PhoneContactsView: View {
             }
 
             let card = CGRect(x: 28, y: 28, width: 584, height: 584)
-            let cardPath = UIBezierPath(roundedRect: card, cornerRadius: 38)
+            let cardPath = UIBezierPath(roundedRect: card, cornerRadius: AppDesign.Radius.hero)
             UIColor.white.setFill()
             cardPath.fill()
 
@@ -546,7 +546,7 @@ struct PhoneContactsView: View {
             let qrFrame = CGRect(x: 124, y: 128, width: 392, height: 392)
             UIColor(white: 0.985, alpha: 1).setFill()
             UIBezierPath(roundedRect: qrFrame.insetBy(dx: -12, dy: -12),
-                         cornerRadius: 22).fill()
+                         cornerRadius: AppDesign.Radius.panel).fill()
             qr.draw(in: qrFrame)
 
             ("扫码下载星言" as NSString).draw(
@@ -593,7 +593,7 @@ private struct PhoneInviteSheet: View {
                         .resizable()
                         .scaledToFit()
                         .frame(maxWidth: 220, maxHeight: 282)
-                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
                         .shadow(color: Color.black.opacity(0.12), radius: 14, y: 6)
                         .padding(.horizontal, 18)
 
@@ -658,11 +658,11 @@ private struct PhoneInviteSheet: View {
         .frame(maxWidth: .infinity)
         .frame(height: 46)
         .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                 .fill(filled ? C.green : C.cardBg)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                 .stroke(filled ? Color.clear : C.green.opacity(0.35), lineWidth: 0.8)
         )
     }

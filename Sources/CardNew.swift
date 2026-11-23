@@ -52,7 +52,7 @@ struct ContactCardNew: View {
                                     onMoments?()
                                 } label: {
                                     HStack(spacing: 12) {
-                                        RoundedRectangle(cornerRadius: 8)
+                                        RoundedRectangle(cornerRadius: AppDesign.Radius.mini)
                                             .fill(hBlueBg)
                                             .frame(width: 44, height: 44)
                                             .overlay(Image(systemName: "photo.on.rectangle.angled")
@@ -144,7 +144,7 @@ struct ContactCardNew: View {
         }
         .frame(maxWidth: .infinity)
         .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact))
         .shadow(color: Color(hex: 0x20000000), radius: 8, x: 0, y: 2)
         .padding(.horizontal, 16)
         .padding(.top, 12)
@@ -164,7 +164,7 @@ struct ContactCardNew: View {
     private func card<C: View>(@ViewBuilder _ content: () -> C) -> some View {
         content()
             .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact))
             .shadow(color: Color(hex: 0x20000000), radius: 8, x: 0, y: 2)
             .padding(.horizontal, 16)
     }

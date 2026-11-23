@@ -55,7 +55,7 @@ struct StarForwardHero: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                 .fill(
                     LinearGradient(
                         colors: [
@@ -130,9 +130,9 @@ struct StarForwardHero: View {
             .padding(16)
         }
         .frame(height: 148)
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                 .stroke(Color.white.opacity(0.11), lineWidth: 0.8)
         }
         .shadow(color: OrbitTheme.jade.opacity(0.13), radius: 18, y: 8)
@@ -166,9 +166,9 @@ struct StarForwardSearch: View {
         .padding(.horizontal, 13)
         .frame(height: 43)
         .background(OrbitTheme.raised)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                 .stroke(OrbitTheme.divider, lineWidth: 0.7)
         }
     }
@@ -238,7 +238,7 @@ struct StarForwardTargetRow: View {
                    radius: 16,
                    group: isGroup)
                 .overlay {
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                         .stroke(selected ? OrbitTheme.jade.opacity(0.45) : OrbitTheme.divider,
                                 lineWidth: 0.8)
                 }
@@ -297,16 +297,16 @@ struct StarForwardTargetRow: View {
         .padding(.horizontal, 12)
         .frame(height: 72)
         .background(selected ? OrbitTheme.jadeSoft.opacity(0.72) : OrbitTheme.raised)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(selected ? OrbitTheme.jade.opacity(0.34) : OrbitTheme.divider,
                         lineWidth: selected ? 1 : 0.7)
         }
         .shadow(color: Color.black.opacity(selected ? 0.045 : 0.025),
                 radius: 9,
                 y: 3)
-        .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
     }
 }
 

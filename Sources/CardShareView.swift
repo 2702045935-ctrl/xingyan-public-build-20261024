@@ -113,8 +113,8 @@ struct CardShareView: View {
             }
         }
         .padding(.horizontal, 12).frame(height: 38)
-        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(C.searchBg))
-        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
+        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.searchBg))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
         .padding(.horizontal, 14).padding(.top, 10)
     }
 
@@ -180,7 +180,7 @@ struct CardShareView: View {
             VStack(spacing: 0) {
                 HStack(spacing: 12) {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                             .fill(C.green.opacity(0.10))
                         Avatar(path: user.avatarPath, size: 48, radius: 13)
                     }
@@ -251,7 +251,7 @@ struct CardShareView: View {
                     .font(pf(15, .medium))
                     .foregroundColor(.white)
                     .padding(.horizontal, 18).frame(minWidth: 82, minHeight: 36)
-                    .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                         .fill(picked.isEmpty || sending ? C.green.opacity(0.5) : C.green))
                 }
                 .buttonStyle(.plain)

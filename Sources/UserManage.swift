@@ -274,7 +274,7 @@ struct UserManageView: View {
         } label: {
             HStack(spacing: 12) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 9, style: .continuous).fill(tint)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(tint)
                     Image(systemName: icon)
                         .font(.system(size: 15.5, weight: .semibold))
                         .foregroundColor(.white)
@@ -305,10 +305,10 @@ struct UserManageView: View {
                     if i > 0 { HairLine(inset: 70) }
                     HStack(spacing: 12) {
                         ZStack {
-                            RoundedRectangle(cornerRadius: 10, style: .continuous).fill(C.pageBg)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.pageBg)
                             if let img = it.img, !img.isEmpty {
                                 RemoteImage(path: img).frame(width: 46, height: 46)
-                                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
                             } else {
                                 Image(systemName: "shippingbox.fill")
                                     .font(.system(size: 18)).foregroundColor(C.subLabel)
@@ -514,7 +514,7 @@ struct UserManageView: View {
                 .font(pf(12.5))
                 .foregroundColor(logKind == kind ? .white : C.label)
                 .padding(.horizontal, 10).frame(height: 28)
-                .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                     .fill(logKind == kind ? C.green : C.pageBg))
         }
         .buttonStyle(.plain)
@@ -745,17 +745,17 @@ struct UserManageView: View {
                         Task { await applyDarkPagePreset(preset) }
                     } label: {
                         HStack(spacing: 12) {
-                            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                                 .fill(Color(hex: preset.hex))
                                 .frame(width: 42, height: 42)
                                 .overlay(alignment: .bottomLeading) {
-                                    RoundedRectangle(cornerRadius: 3, style: .continuous)
+                                    RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous)
                                         .fill(Color(hex: preset.surface))
                                         .frame(width: 25, height: 12)
                                         .padding(5)
                                 }
                                 .overlay {
-                                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                    RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                                         .stroke(C.hairline, lineWidth: 0.6)
                                 }
 
@@ -897,11 +897,11 @@ struct UserManageView: View {
                     if i > 0 { HairLine(inset: 70) }
                     HStack(spacing: 12) {
                         ZStack {
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                                 .fill(Color(hexString: c.color ?? "#B3241C", fallback: 0xB3241C))
                             if let img = (c.thumb?.isEmpty == false ? c.thumb : c.image), !img.isEmpty {
                                 RemoteImage(path: img).frame(width: 46, height: 46)
-                                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
                             }
                         }
                         .frame(width: 46, height: 46)
@@ -912,7 +912,7 @@ struct UserManageView: View {
                                     Text(Tr("默认"))
                                         .font(pf(10.5)).foregroundColor(.white)
                                         .padding(.horizontal, 5).padding(.vertical, 1.5)
-                                        .background(RoundedRectangle(cornerRadius: 4).fill(C.green))
+                                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.micro).fill(C.green))
                                 }
                             }
                             Text((c.enabled == false ? Tr("已停用") : Tr("在用")) + " · " + (c.color ?? ""))
@@ -1141,12 +1141,12 @@ struct UserManageView: View {
                     Button { editingOfficial = o } label: {
                         HStack(spacing: 12) {
                             ZStack {
-                                RoundedRectangle(cornerRadius: 10, style: .continuous).fill(C.pageBg)
+                                RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.pageBg)
                                 Text(o.name.isEmpty ? "★" : String(o.name.prefix(1)))
                                     .font(pf(20)).foregroundColor(C.subLabel)
                                 if let av = o.avatar, !av.isEmpty {
                                     RemoteImage(path: av).frame(width: 48, height: 48)
-                                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
                                 }
                             }
                             .frame(width: 48, height: 48)
@@ -1182,11 +1182,11 @@ struct UserManageView: View {
                     Button { editing = a } label: {
                         HStack(spacing: 12) {
                             ZStack {
-                                RoundedRectangle(cornerRadius: 10, style: .continuous).fill(C.pageBg)
+                                RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.pageBg)
                                 Text(a.iconText).font(pfStyled(size: 22))
                                 if let cv = a.cover, !cv.isEmpty {
                                     RemoteImage(path: cv).frame(width: 46, height: 46)
-                                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
                                 }
                             }
                             .frame(width: 46, height: 46)
@@ -1237,11 +1237,11 @@ struct UserManageView: View {
                         .foregroundColor(picked ? C.green : C.subLabel)
                 }
                 ZStack {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous).fill(C.pageBg)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.pageBg)
                     Text("🖼").font(pf(18))
                     if !cover.isEmpty {
                         RemoteImage(path: cover).frame(width: 46, height: 46)
-                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
                     }
                 }
                 .frame(width: 46, height: 46)
@@ -1270,7 +1270,7 @@ struct UserManageView: View {
             .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 6)
             VStack(spacing: 0) { content() }
                 .background(C.cardBg)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
                 .padding(.horizontal, 12)
         }
     }
@@ -1511,11 +1511,11 @@ struct MiniAppEditSheet: View {
                     Button { showPic = true } label: {
                         HStack(spacing: 12) {
                             ZStack {
-                                RoundedRectangle(cornerRadius: 12, style: .continuous).fill(C.pageBg)
+                                RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous).fill(C.pageBg)
                                 Text(icon.isEmpty ? "🧩" : icon).font(pfStyled(size: 26))
                                 if !cover.isEmpty {
                                     RemoteImage(path: cover).frame(width: 56, height: 56)
-                                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
                                 }
                             }
                             .frame(width: 56, height: 56)
@@ -1641,12 +1641,12 @@ struct OfficialEditSheet: View {
                     Button { pickAvatar() } label: {
                         HStack(spacing: 12) {
                             ZStack {
-                                RoundedRectangle(cornerRadius: 12, style: .continuous).fill(C.pageBg)
+                                RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous).fill(C.pageBg)
                                 Text(name.isEmpty ? "★" : String(name.prefix(1)))
                                     .font(pf(24)).foregroundColor(C.subLabel)
                                 if !avatar.isEmpty {
                                     RemoteImage(path: avatar).frame(width: 64, height: 64)
-                                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
                                 }
                             }
                             .frame(width: 64, height: 64)
@@ -1798,13 +1798,13 @@ struct ShopItemEditSheet: View {
                                     ProgressView().scaleEffect(0.7)
                                 }
                                 ZStack {
-                                    RoundedRectangle(cornerRadius: 8, style: .continuous).fill(C.pageBg)
+                                    RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.pageBg)
                                     if img.isEmpty {
                                         Image(systemName: "photo")
                                             .font(.system(size: 16)).foregroundColor(C.subLabel)
                                     } else {
                                         RemoteImage(path: img).frame(width: 44, height: 44)
-                                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
                                     }
                                 }
                                 .frame(width: 44, height: 44)
@@ -1855,7 +1855,7 @@ struct ShopItemEditSheet: View {
                         }
                         .buttonStyle(.plain)
                         .background(C.cardBg)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
                         .padding(.horizontal, 12)
                     }
 
@@ -1895,7 +1895,7 @@ struct ShopItemEditSheet: View {
                 .font(pf(13.5))
                 .foregroundColor(kind == id ? .white : C.label)
                 .padding(.horizontal, 12).frame(height: 30)
-                .background(RoundedRectangle(cornerRadius: 15, style: .continuous)
+                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                     .fill(kind == id ? C.green : C.pageBg))
         }
         .buttonStyle(.plain)
@@ -2039,7 +2039,7 @@ struct CardAdminSheet: View {
                                         .font(pf(13))
                                         .foregroundColor(kind == k.0 ? .white : C.label)
                                         .padding(.horizontal, 10).frame(height: 30)
-                                        .background(RoundedRectangle(cornerRadius: 15, style: .continuous)
+                                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                                             .fill(kind == k.0 ? C.green : C.pageBg))
                                 }
                                 .buttonStyle(.plain)
@@ -2062,7 +2062,7 @@ struct CardAdminSheet: View {
                             Text(busy ? Tr("发送中…") : Tr("发卡"))
                                 .font(pf(16, .medium)).foregroundColor(.white)
                                 .frame(maxWidth: .infinity).frame(height: 46)
-                                .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(C.green))
+                                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.green))
                         }
                         .buttonStyle(.plain)
                         .disabled(busy)
@@ -2094,7 +2094,7 @@ struct CardAdminSheet: View {
             .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 6)
             VStack(spacing: 0) { content() }
                 .background(C.cardBg)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
                 .padding(.horizontal, 12)
         }
     }
@@ -2212,7 +2212,7 @@ struct AppLogDetailSheet: View {
         }
         .padding(12)
         .background(C.cardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         .padding(.horizontal, 12)
     }
 

@@ -54,7 +54,7 @@ struct FeedbackView: View {
                             .foregroundColor(C.green)
                             .frame(maxWidth: .infinity)
                             .frame(height: 48)
-                            .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                                 .stroke(C.green.opacity(0.55), lineWidth: 1.2))
                     }
                     .buttonStyle(.plain)
@@ -65,7 +65,7 @@ struct FeedbackView: View {
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 48)
-                            .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                                 .fill(LinearGradient(colors: [C.green, C.green.opacity(0.78)],
                                                      startPoint: .topLeading, endPoint: .bottomTrailing)))
                             .shadow(color: C.green.opacity(0.30), radius: 10, y: 4)
@@ -115,7 +115,7 @@ struct FeedbackView: View {
                                     Button { category = c } label: {
                                         HStack(spacing: 10) {
                                             ZStack {
-                                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                                RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                                                     .fill(LinearGradient(colors: catColors(c),
                                                                          startPoint: .topLeading,
                                                                          endPoint: .bottomTrailing))
@@ -137,9 +137,9 @@ struct FeedbackView: View {
                                         }
                                         .padding(.horizontal, 12)
                                         .frame(height: 58)
-                                        .background(RoundedRectangle(cornerRadius: 13, style: .continuous)
+                                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                                             .fill(category == c ? C.green.opacity(0.07) : C.cardBg))
-                                        .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous)
+                                        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                                             .stroke(category == c ? C.green.opacity(0.6) : C.hairline,
                                                     lineWidth: category == c ? 1.2 : 0.6))
                                         .contentShape(Rectangle())
@@ -189,7 +189,7 @@ struct FeedbackView: View {
                                         Image(uiImage: img)
                                             .resizable().scaledToFill()
                                             .frame(width: 74, height: 74)
-                                            .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+                                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
                                         Image(systemName: "xmark")
                                             .font(.system(size: 9, weight: .bold))
                                             .foregroundColor(.white)
@@ -212,9 +212,9 @@ struct FeedbackView: View {
                                                 .foregroundColor(C.subLabel)
                                         }
                                         .frame(width: 74, height: 74)
-                                        .background(RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                                             .fill(C.green.opacity(0.06)))
-                                        .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                                             .stroke(style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
                                             .foregroundColor(C.green.opacity(0.5)))
                                     }
@@ -230,7 +230,7 @@ struct FeedbackView: View {
                                                 .foregroundColor(C.subLabel)
                                         }
                                         .frame(width: 74, height: 74)
-                                        .background(RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                                             .fill(C.fieldBg.opacity(0.65)))
                                     }
                                     .buttonStyle(.plain)
@@ -240,7 +240,7 @@ struct FeedbackView: View {
                             .padding(.horizontal, 16).padding(.vertical, 12)
                         }
                         .background { CardGlassBox(radius: 13) }
-                        .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous)
+                        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                             .stroke(C.hairline, lineWidth: 0.6))
 
                         HStack(spacing: 10) {
@@ -253,14 +253,14 @@ struct FeedbackView: View {
                         .padding(.horizontal, 14)
                         .frame(height: 54)
                         .background { CardGlassBox(radius: 13) }
-                        .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous)
+                        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                             .stroke(C.hairline, lineWidth: 0.6))
                         .padding(.top, 10)
 
                         NavigationLink(value: "feedback.history") {
                             HStack(spacing: 10) {
                                 ZStack {
-                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                                         .fill(LinearGradient(colors: [Color(hex: 0x7FA6E8), Color(hex: 0x3F66B8)],
                                                              startPoint: .topLeading, endPoint: .bottomTrailing))
                                         .frame(width: 34, height: 34)
@@ -278,7 +278,7 @@ struct FeedbackView: View {
                             .padding(.horizontal, 14)
                             .frame(height: 62)
                             .background { CardGlassBox(radius: 13) }
-                            .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous)
+                            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                                 .stroke(C.hairline, lineWidth: 0.6))
                             .contentShape(Rectangle())
                         }
@@ -391,7 +391,7 @@ struct FeedbackHistoryView: View {
                                         ForEach(Array(imgs.prefix(3).enumerated()), id: \.offset) { _, s in
                                             RemoteImage(path: s, mode: .fill, maxSide: 400)
                                                 .frame(width: 62, height: 62)
-                                                .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                                                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous))
                                         }
                                         Spacer(minLength: 0)
                                     }
@@ -404,12 +404,12 @@ struct FeedbackHistoryView: View {
                                     }
                                     .padding(10)
                                     .frame(maxWidth: .infinity, alignment: .leading)
-                                    .background(RoundedRectangle(cornerRadius: 8).fill(C.fieldBg))
+                                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini).fill(C.fieldBg))
                                 }
                             }
                             .padding(14)
                             .background(C.cardBg)
-                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
                             .padding(.horizontal, 12).padding(.top, 10)
                         }
                     }

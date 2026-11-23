@@ -14,7 +14,7 @@ def require(condition: bool, message: str) -> None:
 require("Color(hex: 0x06C755)" in VIEW, "onboarding must use the LINE brand green")
 require("VStack(spacing: 10)" in VIEW, "feature guidance must use separate LINE-style cards")
 require(
-    "RoundedRectangle(cornerRadius: 14, style: .continuous).fill(LinearGradient(" in VIEW,
+    "AppDesign.Radius.control" in VIEW,
     "the primary onboarding action must use the LINE rounded button",
 )
 require("0x25D366" not in VIEW, "legacy WhatsApp green must be removed from onboarding")

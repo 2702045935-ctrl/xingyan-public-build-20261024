@@ -384,8 +384,8 @@ struct CallView: View {
     private func pipBody(w: CGFloat, h: CGFloat) -> some View {
         VideoSurface(track: call.localVideo)
         .frame(width: w, height: h)
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 10)
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.small)
             .stroke(Color.white.opacity(0.22), lineWidth: 1))
 
         .overlay {
@@ -408,7 +408,7 @@ struct CallView: View {
                 .font(.system(size: 18, weight: .medium))
                 .foregroundColor(on ? .black : .white)
                 .frame(width: 30, height: 52)
-                .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                     .fill(on ? Color.white : Color.black.opacity(0.28)))
         }
         .buttonStyle(.plain)
@@ -429,7 +429,7 @@ struct CallView: View {
                             Avatar(path: m.avatar, size: 62, radius: 12)
 
                             if speakOn(m) {
-                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                                     .stroke(C.green, lineWidth: 2.5)
                                     .frame(width: 68, height: 68)
                                     .shadow(color: C.green.opacity(0.65), radius: 8)
@@ -652,7 +652,7 @@ struct CallView: View {
         }
         .padding(.horizontal, 13)
         .padding(.vertical, 10)
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
+        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
             .fill(Color(hex: 0xE08A10).opacity(0.95)))
         .padding(.horizontal, 16)
         .padding(.bottom, 10)
@@ -928,8 +928,8 @@ struct CallMiniWindow: View {
                 }
             }
             .frame(width: w, height: h)
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                 .stroke(Color.black.opacity(0.18), lineWidth: 0.5))
             .contentShape(Rectangle())
             .onTapGesture { call.restore() }

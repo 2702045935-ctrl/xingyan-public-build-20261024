@@ -104,8 +104,8 @@ struct BillSearchView: View {
             }
             .padding(.horizontal, 11)
             .frame(height: 36)
-            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(fieldBg))
-            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(fieldBg))
+            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                 .stroke(fieldEdge, lineWidth: 0.5))
 
             Button { dismiss() } label: {

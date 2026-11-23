@@ -80,9 +80,9 @@ struct SliderCaptchaView: View {
             SliderScene(seed: challenge?.seed ?? 1)
                 .frame(width: w, height: h)
 
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous)
                 .fill(Color.black.opacity(done ? 0.12 : 0.36))
-                .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous)
                     .stroke(Color.white.opacity(0.85), lineWidth: 1))
                 .frame(width: pw, height: pw)
                 .offset(x: tx, y: ty)
@@ -91,8 +91,8 @@ struct SliderCaptchaView: View {
                 .offset(x: dragX, y: ty)
         }
         .frame(width: w, height: h)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
             .stroke(C.hairline, lineWidth: 0.5))
         .offset(x: shakeFlip ? 5 : 0)
     }
@@ -103,8 +103,8 @@ struct SliderCaptchaView: View {
             .offset(x: -tx, y: -ty)
             .frame(width: pw, height: pw, alignment: .topLeading)
             .clipped()
-            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous)
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous)
                 .stroke(Color.white.opacity(0.9), lineWidth: 1))
             .shadow(color: .black.opacity(0.25), radius: 2, x: 0, y: 1)
     }
@@ -114,11 +114,11 @@ struct SliderCaptchaView: View {
         let pw = CGFloat(challenge?.piece ?? 44)
         let maxX = max(1, w - pw)
         return ZStack(alignment: .leading) {
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous)
                 .fill(Color.dyn(0xF2F2F3, 0x2A2A2C))
                 .frame(height: trackH)
 
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous)
                 .fill((done ? C.green : Color.dyn(0x19A47A, 0x1DC9BD)).opacity(0.16))
                 .frame(width: dragX + pw, height: trackH)
 
@@ -127,9 +127,9 @@ struct SliderCaptchaView: View {
                 .foregroundColor(done ? C.green : C.subLabel)
                 .frame(maxWidth: .infinity)
 
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous)
                 .fill(Color.dyn(0xFFFFFF, 0x3A3A3C))
-                .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous)
                     .stroke(C.hairline, lineWidth: 0.5))
                 .overlay(
                     Image(systemName: done ? "checkmark" : "chevron.right.2")

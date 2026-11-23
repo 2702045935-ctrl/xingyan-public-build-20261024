@@ -47,7 +47,7 @@ struct FullScreenComposerView: View {
     }
 
     private var editorShape: RoundedRectangle {
-        RoundedRectangle(cornerRadius: 30, style: .continuous)
+        RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
     }
 
     private var header: some View {

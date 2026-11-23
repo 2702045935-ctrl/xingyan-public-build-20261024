@@ -599,7 +599,7 @@ struct EmojiPanel: View {
                 .frame(width: 46, height: 36)
                 .background {
                     if tab == i {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                             .fill(C.label.opacity(0.07))
                     }
                 }
@@ -619,7 +619,7 @@ struct EmojiPanel: View {
                 .frame(width: 46, height: 36)
                 .background {
                     if tab == i {
-                        RoundedRectangle(cornerRadius: 11, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                             .fill(C.label.opacity(0.07))
                     }
                 }
@@ -1120,7 +1120,7 @@ struct MentionPanel: View {
                     .frame(height: 30)
             }
             .padding(.horizontal, 10)
-            .background(RoundedRectangle(cornerRadius: 6, style: .continuous)
+            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous)
                 .fill(Color.dyn(0xF2F2F2, 0x2C2C2E)))
             .padding(.horizontal, 14)
             .padding(.top, 10)

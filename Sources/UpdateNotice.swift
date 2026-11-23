@@ -38,7 +38,7 @@ struct CenterCard: View {
                                 .font(pf(15))
                                 .foregroundColor(C.subLabel)
                                 .frame(maxWidth: .infinity).frame(height: 42)
-                                .background(RoundedRectangle(cornerRadius: 10).fill(C.fieldBg))
+                                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small).fill(C.fieldBg))
                         }
                         .buttonStyle(.plain)
                     }
@@ -47,7 +47,7 @@ struct CenterCard: View {
                             .font(pf(15, .medium))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity).frame(height: 42)
-                            .background(RoundedRectangle(cornerRadius: 10).fill(C.green))
+                            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small).fill(C.green))
                     }
                     .buttonStyle(.plain)
                 }
@@ -56,7 +56,7 @@ struct CenterCard: View {
             .padding(20)
             .frame(maxWidth: 320)
             .background(C.cardBg)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
             .shadow(color: Color.black.opacity(0.18), radius: 24, x: 0, y: 10)
             .padding(.horizontal, 28)
         }
@@ -76,7 +76,7 @@ struct ForceUpdateView: View {
                     Image(uiImage: img)
                         .resizable()
                         .frame(width: 76, height: 76)
-                        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
                 }
                 Text(Tr("需要更新后才能继续使用"))
                     .font(pf(18, .semibold))
@@ -95,7 +95,7 @@ struct ForceUpdateView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(14)
                             .background(C.cardBg)
-                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
                     }
                     .frame(maxHeight: 260)
                     .padding(.top, 18)
@@ -108,7 +108,7 @@ struct ForceUpdateView: View {
                         .font(pf(16, .medium))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity).frame(height: 48)
-                        .background(RoundedRectangle(cornerRadius: 12).fill(C.green))
+                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact).fill(C.green))
                 }
                 .buttonStyle(.plain)
                 .padding(.bottom, 40)

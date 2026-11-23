@@ -116,7 +116,7 @@ struct PayCodePage: View {
         .padding(.horizontal, 16)
         .frame(height: 70)
         .background(PayVisual.card)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
     }
 
     private var codeCard: some View {
@@ -164,7 +164,7 @@ struct PayCodePage: View {
         }
         .frame(maxWidth: .infinity)
         .background(PayVisual.card)
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
     }
 
     private var receiveButton: some View {
@@ -197,7 +197,7 @@ struct PayCodePage: View {
         }
         .padding(15)
         .background(PayVisual.card)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
     }
 
     private func load(force: Bool) async {
@@ -232,7 +232,7 @@ struct ReceiveCodePage: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 18) {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 24, style: .continuous).fill(Color.white)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous).fill(Color.white)
                         if let info = info, let rows = info.rows, !rows.isEmpty {
 
                             QRCanvas(rows: rows).frame(width: 226, height: 226)
@@ -267,7 +267,7 @@ struct ReceiveCodePage: View {
                     .padding(.horizontal, 16)
                     .frame(height: 70)
                     .background(PayVisual.card)
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
 
                     VStack(spacing: 0) {
                         row(Tr("设置金额"), amt > 0 ? Tr("改一下") : Tr("填一个数，扫码的人直接按这个付")) {
@@ -282,7 +282,7 @@ struct ReceiveCodePage: View {
                         }
                     }
                     .background(PayVisual.card)
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
 
                     Text(Tr("收款码长期有效；带金额的那种 24 小时后失效，重新设置一次就行。"))
                         .font(pf(12.5))

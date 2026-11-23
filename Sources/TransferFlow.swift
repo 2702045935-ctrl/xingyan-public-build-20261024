@@ -184,10 +184,10 @@ struct TransferView: View {
             .frame(height: 54)
             .background(
                 amount > 0 ? C.label : PayVisual.secondaryInk.opacity(0.12),
-                in: RoundedRectangle(cornerRadius: 17, style: .continuous)
+                in: RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
             )
             .overlay {
-                RoundedRectangle(cornerRadius: 17, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                     .stroke(Color.white.opacity(scheme == .dark ? 0.17 : 0.06),
                             lineWidth: 0.6)
             }
@@ -259,7 +259,7 @@ struct TransferView: View {
                     digitCells
                 }
                 if caretOn {
-                    RoundedRectangle(cornerRadius: 1)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.hairline)
                         .fill(C.green)
                         .frame(width: L.tfCaretW, height: L.tfCaretH)
                 }
@@ -304,9 +304,9 @@ struct TransferView: View {
                 PayVisual.card.opacity(scheme == .dark ? 0.84 : 0.90)
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(Color.white.opacity(scheme == .dark ? 0.10 : 0.46),
                         lineWidth: 0.65)
         }
@@ -577,7 +577,7 @@ struct TransferView: View {
 
     private var paymentMethodMark: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                 .fill(Color.black)
             Image(systemName: method == "card"
                   ? "creditcard.fill" : "wallet.bifold.fill")
@@ -586,7 +586,7 @@ struct TransferView: View {
         }
         .frame(width: 38, height: 38)
         .overlay {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                 .stroke(.white.opacity(0.15), lineWidth: 0.6)
         }
     }
@@ -623,10 +623,10 @@ struct TransferView: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: 54)
                 .background(C.label,
-                            in: RoundedRectangle(cornerRadius: 14,
+                            in: RoundedRectangle(cornerRadius: AppDesign.Radius.control,
                                                  style: .continuous))
                 .overlay {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                         .stroke(.white.opacity(scheme == .dark ? 0.16 : 0.05),
                                 lineWidth: 0.6)
                 }
@@ -748,9 +748,9 @@ struct TransferView: View {
     ) -> some View {
         VStack(spacing: 0) { content() }
             .background(PayVisual.card)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                     .stroke(C.hairline.opacity(0.54), lineWidth: 0.55)
             }
     }
@@ -811,7 +811,7 @@ struct TransferView: View {
                         .frame(maxWidth: .infinity)
                         .frame(height: 48)
                         .background(PayVisual.card,
-                                    in: RoundedRectangle(cornerRadius: 14,
+                                    in: RoundedRectangle(cornerRadius: AppDesign.Radius.control,
                                                          style: .continuous))
                     }
                     .buttonStyle(.plain)
@@ -842,7 +842,7 @@ struct TransferView: View {
         } label: {
             HStack(spacing: 12) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                         .fill(
                             LinearGradient(
                                 colors: [Color(hex: 0x303034), Color(hex: 0x08080A)],
@@ -857,7 +857,7 @@ struct TransferView: View {
                 }
                 .frame(width: 40, height: 40)
                 .overlay {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                         .stroke(.white.opacity(0.16), lineWidth: 0.65)
                 }
 
@@ -890,13 +890,13 @@ struct TransferView: View {
             .padding(.horizontal, 14)
             .frame(height: 66)
             .background {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                     .fill(method == key
                           ? PayVisual.tint.opacity(scheme == .dark ? 0.14 : 0.08)
                           : PayVisual.card.opacity(scheme == .dark ? 0.76 : 0.82))
             }
             .overlay {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                     .stroke(method == key
                             ? PayVisual.tint.opacity(0.36)
                             : C.hairline.opacity(0.58),
@@ -1010,9 +1010,9 @@ struct TransferView: View {
                         .frame(maxWidth: .infinity)
                         .frame(height: 50)
                         .background(.ultraThinMaterial,
-                                    in: RoundedRectangle(cornerRadius: 15, style: .continuous))
+                                    in: RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
                         .overlay {
-                            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                                 .stroke(C.hairline.opacity(0.76), lineWidth: 0.65)
                         }
                 }
@@ -1027,9 +1027,9 @@ struct TransferView: View {
                         .frame(maxWidth: .infinity)
                         .frame(height: 54)
                         .background(C.label,
-                                    in: RoundedRectangle(cornerRadius: 17, style: .continuous))
+                                    in: RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
                         .overlay {
-                            RoundedRectangle(cornerRadius: 17, style: .continuous)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                                 .stroke(Color.white.opacity(scheme == .dark ? 0.18 : 0.06),
                                         lineWidth: 0.6)
                         }

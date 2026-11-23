@@ -33,7 +33,7 @@ struct MyQRViewOld: View {
             ScrollView {
                 VStack(spacing: 14) {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 12).fill(Color.white)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.compact).fill(Color.white)
                         if loading {
                             ProgressView()
                         } else if rows.isEmpty {
@@ -115,7 +115,7 @@ struct MyQRViewOld: View {
                 QRCanvas(rows: rows).frame(width: 520, height: 520)
                 Avatar(path: avatar, size: 100, radius: 18)
                     .padding(9)
-                    .background(RoundedRectangle(cornerRadius: 24).fill(Color.white))
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(Color.white))
             }
             .frame(width: 520, height: 520)
             Text(name).font(pfStyled(size: 26, weight: .semibold))

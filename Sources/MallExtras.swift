@@ -158,7 +158,7 @@ struct DDAdCard: View {
             }
             .padding(8)
             .background(DDColor.card)
-            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -186,7 +186,7 @@ struct DDAdStrip: View {
                         .padding(3)
                 }
                 .frame(width: 54, height: 54)
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
                 VStack(alignment: .leading, spacing: 3) {
                     Text(Tr(title)).font(pf(14, .medium)).foregroundColor(DDColor.ink).lineLimit(1)
                     Text(Tr(sub)).font(pf(11.5)).foregroundColor(DDColor.sub).lineLimit(1)
@@ -198,7 +198,7 @@ struct DDAdStrip: View {
             }
             .padding(10)
             .background(DDColor.card)
-            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -236,8 +236,8 @@ struct DDChannelRow: View {
         .padding(.vertical, 14)
         .background(DDColor.cardGrad)
 
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
             .stroke(DDColor.cardEdge.opacity(0.7), lineWidth: 0.6))
         .shadow(color: Color.black.opacity(0.05), radius: 2, y: 1)
         .shadow(color: DDColor.cardShadow, radius: 14, y: 5)
@@ -252,11 +252,11 @@ struct DDChannelRow: View {
             VStack(spacing: 7) {
                 ZStack {
 
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                         .fill(LinearGradient(colors: [tint.opacity(0.17), tint.opacity(0.07)],
                                              startPoint: .topLeading, endPoint: .bottomTrailing))
                         .frame(width: 46, height: 46)
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                         .stroke(Color.white.opacity(0.55), lineWidth: 0.7)
                         .frame(width: 46, height: 46)
                     if item.emojiText.isEmpty {
@@ -418,7 +418,7 @@ struct DDChannelView: View {
         }
         .padding(12)
         .background(DDColor.card)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
         .padding(.horizontal, 10)
     }
 
@@ -456,7 +456,7 @@ struct DDSearchHotBoard: View {
                         .padding(.horizontal, 10)
                         .frame(height: 34)
                         .frame(maxWidth: .infinity)
-                        .background(RoundedRectangle(cornerRadius: 9).fill(DDColor.card))
+                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini).fill(DDColor.card))
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)

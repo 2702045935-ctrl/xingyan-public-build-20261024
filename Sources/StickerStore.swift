@@ -67,7 +67,7 @@ struct StickerStore: View {
         PanelHeroCard(glow: C.green) {
             HStack(alignment: .center, spacing: 12) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                         .fill(Color.white.opacity(0.12))
                         .frame(width: 54, height: 54)
                     Group {
@@ -83,7 +83,7 @@ struct StickerStore: View {
                     }
                     .frame(width: 42, height: 42)
                 }
-                .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                     .stroke(Color.white.opacity(0.22), lineWidth: 0.8))
 
                 VStack(alignment: .leading, spacing: 4) {
@@ -131,8 +131,8 @@ struct StickerStore: View {
             }
             .padding(.horizontal, 12)
             .frame(height: 40)
-            .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.white.opacity(0.14)))
-            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous).fill(Color.white.opacity(0.14)))
+            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                 .stroke(Color.white.opacity(0.16), lineWidth: 0.8))
         }
     }
@@ -182,7 +182,7 @@ struct StickerStore: View {
             }
             .frame(width: 62, height: 62)
             .background { CardGlassBox(radius: 15) }
-            .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
+            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
             .shadow(color: Color.black.opacity(0.05), radius: 6, y: 2)
 
             Text(p.name)
@@ -234,7 +234,7 @@ struct StickerStore: View {
                                 }
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 56)
-                                .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(C.pageBg))
+                                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.pageBg))
                             }
                             .buttonStyle(.plain)
                         }
@@ -320,9 +320,9 @@ struct StickerStore: View {
             .padding(.top, 9)
             .padding(.bottom, 11)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
         .background { CardGlassBox(radius: 16) }
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(C.hairline, lineWidth: 0.7))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous).stroke(C.hairline, lineWidth: 0.7))
         .shadow(color: Color.black.opacity(0.05), radius: 8, y: 3)
     }
 
@@ -413,7 +413,7 @@ struct StickerStore: View {
                             .frame(width: 52, height: 52)
                         }
                         .frame(width: 72, height: 72)
-                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
 
                         VStack(alignment: .leading, spacing: 4) {
                             Text(p.name).font(pf(18, .semibold)).foregroundColor(C.label).lineLimit(1)
@@ -424,7 +424,7 @@ struct StickerStore: View {
                     .padding(14)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background { CardGlassBox(radius: 18) }
-                    .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(C.hairline, lineWidth: 0.7))
+                    .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous).stroke(C.hairline, lineWidth: 0.7))
                     .shadow(color: Color.black.opacity(0.05), radius: 8, y: 3)
                     .padding(.horizontal, 14)
 
@@ -440,7 +440,7 @@ struct StickerStore: View {
                             .frame(maxWidth: .infinity)
                             .frame(height: 62)
                             .background { CardGlassBox(radius: 12) }
-                            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                                 .stroke(C.hairline, lineWidth: 0.6))
                         }
                     }
@@ -460,14 +460,14 @@ struct StickerStore: View {
                         .frame(maxWidth: .infinity)
                         .frame(height: 50)
                         .background(
-                            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                                 .fill(added
                                       ? AnyShapeStyle(C.cardBg)
                                       : AnyShapeStyle(LinearGradient(colors: PanelTint.green,
                                                                      startPoint: .topLeading,
                                                                      endPoint: .bottomTrailing)))
                         )
-                        .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                             .stroke(added ? C.red.opacity(0.35) : Color.clear, lineWidth: 1))
                         .shadow(color: Color.black.opacity(added ? 0.03 : 0.14), radius: 8, y: 3)
                     }

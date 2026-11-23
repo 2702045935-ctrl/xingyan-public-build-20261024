@@ -58,7 +58,7 @@ struct GameDetailView: View {
         }
         .frame(height: 196)
         .frame(maxWidth: .infinity)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
     }
 
     private var titleRow: some View {
@@ -85,7 +85,7 @@ struct GameDetailView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(cardBg))
+        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).fill(cardBg))
     }
 
     private var rankCard: some View {
@@ -135,7 +135,7 @@ struct GameDetailView: View {
             }
         }
         .padding(14)
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(cardBg))
+        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).fill(cardBg))
     }
 
     private var topRows: [GameRankRow] {
@@ -160,7 +160,7 @@ struct GameDetailView: View {
                     .font(.system(size: 18, weight: .medium))
                     .foregroundColor(ink)
                     .frame(width: 48, height: 46)
-                    .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(cardBg))
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous).fill(cardBg))
             }
             .buttonStyle(.plain)
 
@@ -170,7 +170,7 @@ struct GameDetailView: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 46)
-                    .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                         .fill(LinearGradient(colors: [C.green, C.green.opacity(0.78)],
                                              startPoint: .topLeading, endPoint: .bottomTrailing)))
             }
@@ -230,10 +230,10 @@ struct GameRankBoardView: View {
                                     rankedRow(item.app, rank: item.rank)
                                 }
                             }
-                            .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(cardBg))
-                            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous).fill(cardBg))
+                            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                                 .stroke(C.hairline, lineWidth: 0.5))
-                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
                         }
 
                         if !waitingScored.isEmpty {
@@ -250,10 +250,10 @@ struct GameRankBoardView: View {
                                     waitingRow(item.app)
                                 }
                             }
-                            .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(cardBg))
-                            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous).fill(cardBg))
+                            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                                 .stroke(C.hairline, lineWidth: 0.5))
-                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
                         }
                     }
                     Color.clear.frame(height: 20)
@@ -362,7 +362,7 @@ struct GameRankBoardView: View {
         .padding(.horizontal, 15)
         .padding(.vertical, 16)
         .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .fill(LinearGradient(colors: [Color(hex: 0x171B2C),
                                               Color(hex: 0x242B40),
                                               Color(hex: 0x30394F)],
@@ -413,9 +413,9 @@ struct GameRankBoardView: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: place == 1 ? 148 : 134)
-        .background(RoundedRectangle(cornerRadius: 13, style: .continuous)
+        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
             .fill(Color.white.opacity(0.08)))
-        .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous)
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
             .stroke(Color.white.opacity(0.15), lineWidth: 0.5))
     }
 
@@ -514,7 +514,7 @@ struct GameRankBoardView: View {
             }
         }
         .padding(14)
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(cardBg))
+        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).fill(cardBg))
     }
 
     private func boardCard(_ g: MiniApp) -> some View {
@@ -523,13 +523,13 @@ struct GameRankBoardView: View {
         return VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 11) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                         .fill(LinearGradient(colors: [Color(hex: 0x2B2F3A), Color(hex: 0x171B22)],
                                              startPoint: .topLeading, endPoint: .bottomTrailing))
                     Text(g.iconText).font(pfStyled(size: 22))
                     if let cv = g.cover, !cv.isEmpty {
                         RemoteImage(path: cv).frame(width: 42, height: 42)
-                            .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
                     }
                 }
                 .frame(width: 42, height: 42)
@@ -566,7 +566,7 @@ struct GameRankBoardView: View {
             }
         }
         .padding(14)
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(cardBg))
+        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).fill(cardBg))
     }
 
     private func loadAll() async {

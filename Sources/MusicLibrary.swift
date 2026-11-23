@@ -254,8 +254,8 @@ struct MusicMineBar: View {
                     }
                     .frame(maxWidth: .infinity)
                     .frame(height: 40)
-                    .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(C.cardBg))
-                    .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.cardBg))
+                    .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                         .stroke(C.hairline, lineWidth: 0.5))
                     .contentShape(Rectangle())
                 }
@@ -491,7 +491,7 @@ struct MusicPlaylistsPage: View {
             } label: {
                 HStack(spacing: 12) {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                             .fill(LinearGradient(colors: [Color(hex: 0xB98CFF), Color(hex: 0x7A45D6)],
                                                  startPoint: .topLeading, endPoint: .bottomTrailing))
                         Image(systemName: "music.note.list")
@@ -600,7 +600,7 @@ struct MusicPlaylistPage: View {
     private var head: some View {
         HStack(spacing: 12) {
             ZStack {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                     .fill(LinearGradient(colors: [Color(hex: 0xB98CFF), Color(hex: 0x7A45D6)],
                                          startPoint: .topLeading, endPoint: .bottomTrailing))
                 MusicCover(path: songs.first?.cover ?? "", size: 62, radius: 10)

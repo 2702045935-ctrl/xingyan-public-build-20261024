@@ -86,7 +86,7 @@ struct WalletView: View {
                             }
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
-                            .background(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                                 .fill(Color.dyn(0xFFF7E6, 0x3A2E17)))
                             .padding(.horizontal, 16)
                             .padding(.bottom, 14)
@@ -138,7 +138,7 @@ struct WalletView: View {
         }
         .padding(.horizontal, 16)
         .background(PayVisual.card)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
     }
 
     private func row(_ it: WalletItem) -> some View {
@@ -155,7 +155,7 @@ struct WalletView: View {
                 SVGIcon(markup: WalletIcon.markup(it.icon, it.svg), size: 18, color: tint)
                     .frame(width: 34, height: 34)
                     .background(tint.opacity(0.12),
-                                in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                in: RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
 
                 Text(Tr(it.label))
                     .font(pf(16.5))

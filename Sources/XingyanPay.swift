@@ -214,8 +214,8 @@ struct XYPaySheet: View {
                         .fill(i < pwd.count ? C.label : C.subLabel.opacity(0.35))
                         .frame(width: 11, height: 11)
                         .frame(width: 42, height: 46)
-                        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(C.cardBg))
-                        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.cardBg))
+                        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                             .stroke(bad ? C.red : C.hairline, lineWidth: 0.6))
                 }
             }

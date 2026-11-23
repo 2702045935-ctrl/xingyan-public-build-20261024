@@ -87,7 +87,7 @@ struct ContactsSearchView: View {
                 .padding(.horizontal, 8)
                 .frame(height: 34)
                 .background {
-                    GlassBackground(shape: RoundedRectangle(cornerRadius: 10, style: .continuous),
+                    GlassBackground(shape: RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous),
                                     opacity: 0.90,
                                     edgeAlpha: 0.52,
                                     shadow: false,

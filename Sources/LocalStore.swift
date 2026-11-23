@@ -269,18 +269,18 @@ struct StorageSpaceView: View {
         return GeometryReader { geo in
             HStack(spacing: 2) {
                 if chatBytes > 0 {
-                    RoundedRectangle(cornerRadius: 3, style: .continuous).fill(chatColor)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous).fill(chatColor)
                         .frame(width: max(4, geo.size.width * CGFloat(chatBytes) / CGFloat(total)))
                 }
                 if cacheBytes > 0 {
-                    RoundedRectangle(cornerRadius: 3, style: .continuous).fill(cacheColor)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous).fill(cacheColor)
                         .frame(width: max(4, geo.size.width * CGFloat(cacheBytes) / CGFloat(total)))
                 }
             }
             .frame(maxHeight: .infinity)
         }
         .frame(height: 12)
-        .background(RoundedRectangle(cornerRadius: 3, style: .continuous).fill(Color.dyn(0xEDEDF0, 0x2C2C31)))
+        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous).fill(Color.dyn(0xEDEDF0, 0x2C2C31)))
     }
 
     private func legendDot(_ title: String, _ bytes: Int, _ color: Color) -> some View {

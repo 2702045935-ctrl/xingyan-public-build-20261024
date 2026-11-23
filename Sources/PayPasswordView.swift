@@ -83,7 +83,7 @@ struct PayPasswordView: View {
                     ProgressView()
                         .padding(18)
                         .background(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                                 .fill(.regularMaterial)
                         )
                 }

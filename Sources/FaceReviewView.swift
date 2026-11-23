@@ -122,7 +122,7 @@ struct FaceReviewView: View {
 
     private func head(_ t: String) -> some View {
         HStack {
-            RoundedRectangle(cornerRadius: 2).fill(DDColor.red).frame(width: 3.5, height: 14)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.micro).fill(DDColor.red).frame(width: 3.5, height: 14)
             Text(t).font(pf(15.5, .semibold)).foregroundColor(C.label)
             Spacer(minLength: 0)
         }
@@ -135,8 +135,8 @@ struct FaceReviewView: View {
                 Button { if let img = r.image, !img.isEmpty { zoom = img } } label: {
                     RemoteImage(path: r.image ?? "", icon: "person.crop.square", mode: .fill, maxSide: 300)
                         .frame(width: 88, height: 88)
-                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -161,15 +161,15 @@ struct FaceReviewView: View {
                         Text(busy == r.id ? Tr("提交中…") : Tr("驳回"))
                             .font(pf(14.5, .medium)).foregroundColor(C.label)
                             .frame(maxWidth: .infinity).frame(height: 38)
-                            .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(C.pageBg))
-                            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
+                            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.pageBg))
+                            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
                     }
                     .buttonStyle(.plain)
                     Button { Task { await review(r, pass: true) } } label: {
                         Text(busy == r.id ? Tr("提交中…") : Tr("通过"))
                             .font(pf(14.5, .medium)).foregroundColor(.white)
                             .frame(maxWidth: .infinity).frame(height: 38)
-                            .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(C.green))
+                            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.green))
                     }
                     .buttonStyle(.plain)
                 }
@@ -186,7 +186,7 @@ struct FaceReviewView: View {
         }
         .padding(12)
         .background(C.cardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
         .padding(.horizontal, 14)
     }
 

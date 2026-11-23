@@ -157,7 +157,7 @@ struct AIWorkspaceView: View {
                     .padding(.horizontal, 26)
                     .padding(.vertical, 20)
                     .background(C.cardBg)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
                     .shadow(color: .black.opacity(0.16), radius: 20, y: 8)
                 }
             }
@@ -335,7 +335,7 @@ struct AIWorkspaceView: View {
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
                 .background(C.fieldBg.opacity(0.72))
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
             }
 
             if wallet?.tier != "starter" {
@@ -416,7 +416,7 @@ struct AIWorkspaceView: View {
                         .padding(.vertical, 10)
                         .background(accent)
                         .foregroundColor(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
                 }
                 Avatar(path: app.me?.avatarPath ?? "", size: 32, radius: 11)
             }
@@ -434,14 +434,14 @@ struct AIWorkspaceView: View {
                             .padding(.horizontal, 12)
                             .padding(.vertical, 9)
                             .background {
-                                GlassBackground(shape: RoundedRectangle(cornerRadius: 15,
+                                GlassBackground(shape: RoundedRectangle(cornerRadius: AppDesign.Radius.control,
                                                                         style: .continuous),
                                                 opacity: 0.72,
                                                 shadow: false,
                                                 seed: 0.24)
                             }
-                            .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous)
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                                 .stroke(C.hairline.opacity(0.55), lineWidth: 0.5))
                     }
                     Spacer(minLength: 12)
@@ -491,7 +491,7 @@ struct AIWorkspaceView: View {
             case "image":
                 RemoteImage(path: message.imagePath, mode: .fill, maxSide: 1000)
                     .frame(width: 220, height: 164)
-                    .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
             case "file":
                 fileCard(message, mine: mine)
             default:
@@ -545,7 +545,7 @@ struct AIWorkspaceView: View {
             .padding(10)
             .frame(width: 220, alignment: .leading)
             .background(mine ? Color.white.opacity(0.10) : C.cardBg)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -564,13 +564,13 @@ struct AIWorkspaceView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 9)
             .background {
-                GlassBackground(shape: RoundedRectangle(cornerRadius: 15,
+                GlassBackground(shape: RoundedRectangle(cornerRadius: AppDesign.Radius.control,
                                                         style: .continuous),
                                 opacity: 0.68,
                                 shadow: false,
                                 seed: 0.44)
             }
-            .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
             Spacer(minLength: 12)
         }
         .padding(.bottom, 16)
@@ -1044,8 +1044,8 @@ private struct AIWorkspaceLinkCard: View {
             }
             .frame(width: 280, alignment: .leading)
             .background(C.cardBg)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                 .stroke(C.hairline, lineWidth: 0.7))
         }
         .buttonStyle(.plain)
@@ -1086,8 +1086,8 @@ private struct AIWorkspacePlainLinkCard: View {
             }
             .padding(10)
             .background(C.cardBg)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                 .stroke(C.hairline, lineWidth: 0.7))
         }
         .buttonStyle(.plain)
@@ -1157,8 +1157,8 @@ private struct AIRechargeView: View {
                     }
                     .padding(16)
                     .background(C.cardBg)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                         .stroke(C.hairline, lineWidth: 0.7))
 
                     Text(Tr("选择套餐"))
@@ -1265,8 +1265,8 @@ private struct AIRechargeView: View {
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(C.cardBg)
-            .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 17, style: .continuous)
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                 .stroke(recommended ? accent.opacity(0.46) : C.hairline,
                         lineWidth: recommended ? 1 : 0.7))
         }
@@ -1362,7 +1362,7 @@ private struct AIPaymentSheet: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(15)
             .background(accent.opacity(0.07))
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
             .padding(.horizontal, 20)
 
             SecureField(Tr("输入 6 位支付密码"), text: $password)
@@ -1373,7 +1373,7 @@ private struct AIPaymentSheet: View {
                 .padding(.horizontal, 14)
                 .frame(height: 50)
                 .background(C.fieldBg)
-                .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
                 .padding(.horizontal, 20)
                 .padding(.top, 18)
                 .onChange(of: password) { value in
@@ -1402,7 +1402,7 @@ private struct AIPaymentSheet: View {
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
                 .frame(height: 48)
-                .background(RoundedRectangle(cornerRadius: 13, style: .continuous)
+                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                     .fill(valid ? accent : accent.opacity(0.35)))
             }
             .buttonStyle(.plain)
@@ -1506,7 +1506,7 @@ private struct AIProfileSheet: View {
                                 .padding(.horizontal, 12)
                                 .frame(height: 44)
                                 .background(C.fieldBg)
-                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
                             Button {
                                 saveName()
                             } label: {
@@ -1514,7 +1514,7 @@ private struct AIProfileSheet: View {
                                     .font(pf(12.5, .semibold))
                                     .foregroundColor(.white)
                                     .frame(width: 66, height: 44)
-                                    .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                                         .fill(savingName ? accent.opacity(0.4) : accent))
                             }
                             .buttonStyle(.plain)
@@ -1697,8 +1697,8 @@ private struct AIProfileSheet: View {
         }
         .padding(15)
         .background(C.pageBg)
-        .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous)
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
             .stroke(C.hairline, lineWidth: 0.7))
     }
 
@@ -1803,13 +1803,13 @@ private struct AIWorkspaceMark: View {
                                startPoint: .topLeading,
                                endPoint: .bottomTrailing)
             )
-            .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
             .shadow(color: Color(hex: 0x356FF4).opacity(0.16), radius: 8, y: 3)
     }
 }
 
 private struct AIChatSystemGlass: View {
-    private let shape = RoundedRectangle(cornerRadius: 29, style: .continuous)
+    private let shape = RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
 
     var body: some View {
         #if compiler(>=6.2)

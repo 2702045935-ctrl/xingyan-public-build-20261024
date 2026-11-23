@@ -1777,12 +1777,12 @@ struct ListenView: View {
                        alignment: .bottomTrailing)
             }
             .frame(width: width, height: height)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                     .stroke(.white.opacity(0.12), lineWidth: 0.6)
             }
-            .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -1808,8 +1808,8 @@ struct ListenView: View {
             .padding(.horizontal, 9)
             .frame(width: 224, height: 64)
             .background(.thinMaterial,
-                        in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        in: RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -1905,12 +1905,12 @@ struct ListenView: View {
                 }
             }
             .frame(width: categoryGridSide, height: categoryGridSide)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                     .stroke(.white.opacity(0.13), lineWidth: 0.6)
             }
-            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -1958,13 +1958,13 @@ struct ListenView: View {
                        alignment: .topTrailing)
             }
             .frame(width: side, height: side)
-            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                     .stroke(.white.opacity(0.15), lineWidth: 0.7)
             }
             .shadow(color: .black.opacity(0.16), radius: 20, y: 10)
-            .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -2146,7 +2146,7 @@ struct ListenView: View {
             .padding(.horizontal, 16)
             .frame(height: 62)
             .background(Color.primary.opacity(0.035),
-                        in: RoundedRectangle(cornerRadius: 15, style: .continuous))
+                        in: RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         }
         .buttonStyle(.plain)
         .padding(.horizontal, 18)
@@ -2239,9 +2239,9 @@ struct ListenView: View {
                     .padding(24)
                 }
                 .frame(height: 420)
-                .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
                 .overlay {
-                    RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                         .stroke(Color.white.opacity(0.18), lineWidth: 0.8)
                 }
                 .shadow(color: .black.opacity(scheme == .dark ? 0.32 : 0.18),
@@ -2275,9 +2275,9 @@ struct ListenView: View {
             }
             .padding(.horizontal, 16)
             .frame(height: 66)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                     .stroke(Color.primary.opacity(0.06), lineWidth: 0.6)
             }
         }
@@ -2374,13 +2374,13 @@ struct ListenView: View {
                 .padding(20)
             }
             .frame(width: width, height: height)
-            .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                     .stroke(.white.opacity(0.16), lineWidth: 0.7)
             }
             .shadow(color: .black.opacity(0.34), radius: 24, y: 14)
-            .contentShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -2410,12 +2410,12 @@ struct ListenView: View {
                     .padding(12)
                     .frame(height: 104)
                     .background(Color.primary.opacity(0.035),
-                                in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                                in: RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
                     .overlay {
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                             .stroke(Color.primary.opacity(0.045), lineWidth: 0.5)
                     }
-                    .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .contentShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
                 }
                 .buttonStyle(.plain)
             }
@@ -2750,12 +2750,12 @@ struct ListenView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
             .background(.regularMaterial,
-                        in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        in: RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                     .stroke(Color.primary.opacity(0.06), lineWidth: 0.6)
             }
-            .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -2783,7 +2783,7 @@ struct ListenView: View {
                 .padding(.horizontal, 14)
                 .frame(height: 44)
                 .background(Color.red.opacity(0.08),
-                            in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            in: RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
             }
             .buttonStyle(.plain)
             .disabled(pickedTracks.isEmpty)
@@ -2797,9 +2797,9 @@ struct ListenView: View {
         }
         .padding(14)
         .background(.regularMaterial,
-                    in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    in: RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(Color.primary.opacity(0.06), lineWidth: 0.6)
         }
     }
@@ -2818,7 +2818,7 @@ struct ListenView: View {
             .frame(maxWidth: .infinity)
             .frame(height: 82)
             .background(Color(uiColor: .secondarySystemGroupedBackground),
-                        in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        in: RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -3326,10 +3326,10 @@ struct ListenView: View {
     }
 
     private var cardFace: some View {
-        RoundedRectangle(cornerRadius: 14, style: .continuous)
+        RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
             .fill(C.cardBg)
             .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                     .stroke(C.hairline.opacity(scheme == .dark ? 1 : 0.65), lineWidth: 0.5)
             )
             .shadow(color: .black.opacity(scheme == .dark ? 0 : 0.06), radius: 7, x: 0, y: 2)
@@ -3699,9 +3699,9 @@ struct KTVSongPickerView: View {
         }
         .padding(.horizontal, 13)
         .frame(height: 46)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                 .stroke(.white.opacity(0.12), lineWidth: 0.7)
         }
     }
@@ -3780,10 +3780,10 @@ struct KTVSongPickerView: View {
             .frame(height: 74)
             .background(
                 selected?.id == track.id ? OrbitTheme.jade.opacity(0.10) : Color.white.opacity(0.045),
-                in: RoundedRectangle(cornerRadius: 15, style: .continuous)
+                in: RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
             )
             .overlay {
-                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                     .stroke(selected?.id == track.id
                             ? OrbitTheme.jade.opacity(0.42)
                             : Color.white.opacity(0.07),
@@ -3846,9 +3846,9 @@ struct KTVSongPickerView: View {
         }
         .padding(.horizontal, 12)
         .frame(height: 64)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(.white.opacity(0.13), lineWidth: 0.7)
         }
         .shadow(color: .black.opacity(0.22), radius: 18, y: 8)
@@ -4398,7 +4398,7 @@ struct MusicPlayingView: View {
                     .padding(18)
                     .frame(width: side, height: side)
                     .background {
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                             .fill(.regularMaterial)
                     }
                     .transition(.opacity)
@@ -4406,7 +4406,7 @@ struct MusicPlayingView: View {
                 MusicCover(path: t?.cover ?? "", size: side, radius: 24)
                     .scaleEffect(player.playing ? 1 + player.level * 0.012 : 1)
                     .overlay {
-                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                             .stroke(.white.opacity(0.18), lineWidth: 0.7)
                     }
                     .shadow(color: .black.opacity(0.22), radius: 34, y: 18)
@@ -4861,7 +4861,7 @@ struct MusicPlayingView: View {
                                      size.height - lyricHeight - 108))
         return VStack(spacing: 10) {
             artworkPanel(side: coverSide)
-                .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                .contentShape(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
                 .onTapGesture {
                     withAnimation(.easeInOut(duration: 0.22)) {
                         flipped.toggle()
@@ -4884,7 +4884,7 @@ struct MusicPlayingView: View {
         let side = artworkSize(in: size)
         return HStack(spacing: max(20, min(38, size.width * 0.035))) {
             artworkPanel(side: side)
-                .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                .contentShape(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
                 .onTapGesture {
                     withAnimation(.easeInOut(duration: 0.22)) {
                         flipped.toggle()

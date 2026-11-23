@@ -38,7 +38,7 @@ struct DDCategoryTab: View {
                             withAnimation(.easeOut(duration: 0.18)) { cate = (c == "全部") ? "" : c; tag = "" }
                         } label: {
                             HStack(spacing: 6) {
-                                RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+                                RoundedRectangle(cornerRadius: AppDesign.Radius.hairline, style: .continuous)
                                     .fill(on ? DDColor.red : Color.clear)
                                     .frame(width: 3, height: 15)
                                 Text(Tr(c))

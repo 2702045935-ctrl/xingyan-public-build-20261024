@@ -141,7 +141,7 @@ struct ShakePageView: View {
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 46)
-                        .background(RoundedRectangle(cornerRadius: 23, style: .continuous)
+                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                             .fill(Color(hex: 0x19A47A)))
                 }
                 .buttonStyle(.plain)
@@ -237,7 +237,7 @@ struct ShakePageView: View {
                         .font(pf(15))
                         .foregroundColor(.white)
                         .frame(width: 116, height: 38)
-                        .background(RoundedRectangle(cornerRadius: 19, style: .continuous)
+                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                             .fill(Color(hex: 0x19A47A)))
                 }
                 .buttonStyle(.plain)
@@ -248,7 +248,7 @@ struct ShakePageView: View {
                         .font(pf(15))
                         .foregroundColor(ink)
                         .frame(width: 116, height: 38)
-                        .background(RoundedRectangle(cornerRadius: 19, style: .continuous)
+                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                             .stroke(Color(white: 1, opacity: 0.25), lineWidth: 1))
                 }
                 .buttonStyle(.plain)

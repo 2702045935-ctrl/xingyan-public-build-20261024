@@ -337,7 +337,7 @@ struct GamesPageView: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: 178)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
         .overlay(alignment: .topLeading) {
             Text(Tr("精选"))
                 .font(pf(10.5, .medium))
@@ -409,7 +409,7 @@ struct GamesPageView: View {
                 Text("🏆")
                     .font(pfStyled(size: 19))
                     .frame(width: 36, height: 36)
-                    .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                         .fill(Color.dyn(0xFFF3D6, 0x2A2417)))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(Tr("游戏排行榜")).font(pf(15, .medium)).foregroundColor(ink)
@@ -420,7 +420,7 @@ struct GamesPageView: View {
             }
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(cardBg))
+            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).fill(cardBg))
         }
         .buttonStyle(.plain)
         .padding(.horizontal, 16)
@@ -490,10 +490,10 @@ struct GamesPageView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .frame(height: 184)
-            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(cardBg))
-            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).fill(cardBg))
+            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                 .stroke(C.hairline, lineWidth: 0.5))
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -565,7 +565,7 @@ struct GamesPageView: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(cardBg))
+        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).fill(cardBg))
     }
 }
 
@@ -808,8 +808,8 @@ struct GameWebPage: View {
             }
             .padding(11)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color(hex: 0x1B1B1D)))
-            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous).fill(Color(hex: 0x1B1B1D)))
+            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                 .stroke(Color.white.opacity(0.08), lineWidth: 1))
         }
         .buttonStyle(.plain)
@@ -839,7 +839,7 @@ struct GameWebPage: View {
                     if i == mySeat { Text(Tr("我")).font(pf(11.5)).foregroundColor(C.green) }
                 }
                 .padding(.horizontal, 12).frame(height: 34)
-                .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                     .fill(Color.white.opacity(i == mySeat ? 0.10 : 0.05)))
             }
             Button { startRoom() } label: {
@@ -855,7 +855,7 @@ struct GameWebPage: View {
             .buttonStyle(.plain)
         }
         .padding(14)
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color(hex: 0x1B1B1D)))
+        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).fill(Color(hex: 0x1B1B1D)))
     }
 
     private func loadTables() async {
@@ -1016,12 +1016,12 @@ struct GamesPageAdminSheet: View {
                     Text(Tr("默认壁纸（没封面的轮播用这张）"))
                         .font(pf(14, .semibold)).foregroundColor(C.label).padding(.top, 8)
                     HStack(spacing: 10) {
-                        RoundedRectangle(cornerRadius: 10, style: .continuous).fill(C.cardBg)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.cardBg)
                             .frame(width: 96, height: 56)
                             .overlay {
                                 if !wallpaper.isEmpty {
                                     RemoteImage(path: wallpaper, mode: .fill, maxSide: 480)
-                                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
                                 }
                             }
                         Button(Tr("上传壁纸")) { showPick = true }.font(pf(14)).foregroundColor(C.green)
@@ -1040,7 +1040,7 @@ struct GamesPageAdminSheet: View {
                     } label: {
                         Text(busy ? Tr("保存中…") : Tr("保存")).font(pf(16, .semibold)).foregroundColor(.white)
                             .frame(maxWidth: .infinity).frame(height: 46)
-                            .background(RoundedRectangle(cornerRadius: 23, style: .continuous)
+                            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                                 .fill(C.green.opacity(busy ? 0.5 : 1)))
                     }
                     .buttonStyle(.plain).padding(.top, 10)

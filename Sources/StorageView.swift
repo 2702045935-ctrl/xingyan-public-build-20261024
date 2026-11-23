@@ -202,7 +202,7 @@ struct StorageView: View {
             .foregroundColor(.white)
             .frame(width: 30, height: 30)
             .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                     .fill(color)
             )
     }
@@ -246,11 +246,11 @@ struct StorageView: View {
         return GeometryReader { geo in
             HStack(spacing: 2) {
                 if list.isEmpty {
-                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous)
                         .fill(Color(uiColor: .tertiarySystemFill))
                 } else {
                     ForEach(list.indices, id: \.self) { i in
-                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous)
                             .fill(list[i].color)
                             .frame(width: max(4, geo.size.width * CGFloat(list[i].bytes) / CGFloat(total)))
                     }
@@ -260,7 +260,7 @@ struct StorageView: View {
         }
         .frame(height: 14)
         .background(
-            RoundedRectangle(cornerRadius: 4, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous)
                 .fill(Color(uiColor: .tertiarySystemFill))
         )
         .animation(.easeInOut(duration: 0.22), value: list.map(\.bytes))

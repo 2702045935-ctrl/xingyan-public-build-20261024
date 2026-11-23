@@ -202,7 +202,7 @@ struct BillDetailView: View {
         }
         .padding(18)
         .background(PayVisual.card)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
     }
 
     private var transferAmountCard: some View {

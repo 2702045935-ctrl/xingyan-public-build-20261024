@@ -53,7 +53,7 @@ struct RPCoverEditSheet: View {
                                 Text(Tr("封面图")).font(pf(16)).foregroundColor(C.label)
                                 Spacer(minLength: 0)
                                 ZStack {
-                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                                         .fill(Color(hexString: color, fallback: 0xB3241C))
                                     if image.isEmpty {
                                         Image(systemName: "photo")
@@ -61,7 +61,7 @@ struct RPCoverEditSheet: View {
                                     } else {
                                         RemoteImage(path: thumb.isEmpty ? image : thumb)
                                             .frame(width: 52, height: 66)
-                                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
                                     }
                                 }
                                 .frame(width: 52, height: 66)
@@ -142,7 +142,7 @@ struct RPCoverEditSheet: View {
                         }
                         .buttonStyle(.plain)
                         .background(C.cardBg)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
                         .padding(.horizontal, 12)
                     }
 

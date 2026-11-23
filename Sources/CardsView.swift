@@ -131,7 +131,7 @@ struct CardsView: View {
                 Button { open = c } label: {
                     HStack(spacing: 12) {
                         ZStack {
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                                 .fill(c.tint.opacity(0.16))
                             Image(systemName: c.symbol)
                                 .font(.system(size: 19, weight: .semibold))
@@ -181,9 +181,9 @@ struct CardsView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 9)
-        .background(PayVisual.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(PayVisual.card, in: RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                 .stroke(PayVisual.separator, lineWidth: 0.6)
         }
         .padding(.horizontal, 16)
@@ -246,7 +246,7 @@ struct CardsView: View {
     private func walletCardFace(_ card: WalletCard, isFront: Bool) -> some View {
         let ink = Color.white
         return ZStack(alignment: .topLeading) {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                 .fill(
                     LinearGradient(
                         colors: [card.tint.opacity(0.96), card.tint, card.tint.opacity(0.72)],
@@ -260,7 +260,7 @@ struct CardsView: View {
                 .frame(width: walletCardHeight * 0.92, height: walletCardHeight * 0.92)
                 .offset(x: L.width * 0.38, y: -walletCardHeight * 0.42)
 
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(Color.white.opacity(0.10), lineWidth: 0.8)
                 .padding(10)
 
@@ -330,9 +330,9 @@ struct CardsView: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: walletCardHeight)
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                 .stroke(Color.white.opacity(isFront ? 0.20 : 0.12), lineWidth: 0.8)
         }
         .shadow(color: card.tint.opacity(isFront ? 0.24 : 0.14),
@@ -378,7 +378,7 @@ struct CardsView: View {
                         LinearGradient(colors: [c.tint, c.tint.opacity(0.72)],
                                        startPoint: .topLeading, endPoint: .bottomTrailing)
                     )
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
                     .padding(.horizontal, 16)
 
                     GroupCard {
@@ -423,7 +423,7 @@ struct CardsView: View {
                             Text(Tr("核销这张卡"))
                                 .font(pf(17, .semibold)).foregroundColor(.white)
                                 .frame(maxWidth: .infinity).frame(height: 48)
-                                .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(C.green))
+                                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.green))
                         }
                         .buttonStyle(.plain)
                         .padding(.horizontal, 16)

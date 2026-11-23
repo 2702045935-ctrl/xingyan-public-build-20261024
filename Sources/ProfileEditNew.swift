@@ -284,9 +284,9 @@ struct ProfileEditView: View {
                                center: .topTrailing, startRadius: 2, endRadius: 220)
             }
         )
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(Color.white.opacity(0.08), lineWidth: 1)
         )
     }
@@ -342,7 +342,7 @@ struct ProfileEditView: View {
             .padding(.bottom, 10)
         }
         .background { CardGlassBox(radius: 14) }
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
     }
 
     private var contactCard: some View {
@@ -350,7 +350,7 @@ struct ProfileEditView: View {
             Button { showPhone = true } label: {
                 HStack(spacing: 10) {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                             .fill(LinearGradient(colors: [C.green, C.green.opacity(0.78)],
                                                  startPoint: .topLeading, endPoint: .bottomTrailing))
                             .frame(width: 30, height: 30)
@@ -372,14 +372,14 @@ struct ProfileEditView: View {
             .buttonStyle(.plain)
         }
         .background { CardGlassBox(radius: 14) }
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
     }
 
     private var ringCard: some View {
         Button { showRingtone = true } label: {
             HStack(spacing: 10) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                         .fill(LinearGradient(colors: [Color(hex: 0xB98CFF), Color(hex: 0x7A45D6)],
                                              startPoint: .topLeading, endPoint: .bottomTrailing))
                         .frame(width: 30, height: 30)
@@ -397,7 +397,7 @@ struct ProfileEditView: View {
             .padding(.horizontal, 14)
             .frame(height: 60)
             .background { CardGlassBox(radius: 14) }
-            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
+            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -634,7 +634,7 @@ struct UsernameChangeSheet: View {
                     .padding(.top, 12)
                 }
                 .background(C.cardBg)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
                 .padding(.horizontal, 14)
                 .padding(.top, 12)
             }

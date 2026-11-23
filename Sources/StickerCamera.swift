@@ -509,8 +509,8 @@ struct StickerCamera: View {
                 }
                 .frame(width: camW, height: camH)
                 .background(Color(white: 0.12))
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                     .stroke(Color.white.opacity(0.10), lineWidth: 1))
 
                 Spacer(minLength: 10)

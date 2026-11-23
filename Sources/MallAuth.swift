@@ -52,7 +52,7 @@ struct MallAuthCard: View {
             VStack(spacing: 0) {
                 VStack(spacing: 9) {
 
-                    RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                         .fill(DDColor.gradBtn)
                         .frame(width: 56, height: 56)
                         .overlay(Image(systemName: "bag.fill")
@@ -88,7 +88,7 @@ struct MallAuthCard: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 12)
-                .background(RoundedRectangle(cornerRadius: 10).fill(C.pageBg))
+                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small).fill(C.pageBg))
                 .padding(.horizontal, 22)
                 .padding(.top, 16)
 
@@ -120,7 +120,7 @@ struct MallAuthCard: View {
             }
             .frame(width: 300)
             .background(C.meCardBg)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
         }
     }
 }

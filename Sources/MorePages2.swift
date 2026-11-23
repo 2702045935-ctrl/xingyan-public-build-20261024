@@ -75,7 +75,7 @@ struct GroupQRView: View {
             ScrollView {
                 VStack(spacing: 14) {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 12).fill(Color.white)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.compact).fill(Color.white)
                         if loading {
                             ProgressView()
                         } else if rows.isEmpty {
@@ -224,7 +224,7 @@ struct AvatarCropSheet: View {
                         .scaleEffect(scale)
                         .offset(offset)
                         .clipped()
-                    RoundedRectangle(cornerRadius: 12)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.compact)
                         .stroke(Color.white, lineWidth: 2)
                         .frame(width: side, height: side)
                 }

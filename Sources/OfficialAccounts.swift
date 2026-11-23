@@ -163,7 +163,7 @@ struct OfficialAccountsView: View {
                     .foregroundStyle(tint)
                     .frame(width: 38, height: 38)
                     .background(tint.opacity(0.10),
-                                in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                                in: RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title)
                         .font(pfStyled(size: 14.5, weight: .semibold))
@@ -179,12 +179,12 @@ struct OfficialAccountsView: View {
             .frame(maxWidth: .infinity)
             .frame(height: 64)
             .background(.regularMaterial,
-                        in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        in: RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                     .stroke(OrbitTheme.divider, lineWidth: 0.6)
             }
-            .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -237,7 +237,7 @@ struct OfficialAccountsView: View {
             .padding(.horizontal, 5)
             .padding(.vertical, 1.5)
             .background(
-                RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous)
                     .fill(a.isService ? OrbitTheme.jadeSoft : OrbitTheme.field)
             )
     }
@@ -341,7 +341,7 @@ struct OfficialAccountPage: View {
                                 .font(pf(11, .medium))
                                 .foregroundColor(a.isService ? .white : C.subLabel)
                                 .padding(.horizontal, 6).padding(.vertical, 2)
-                                .background(RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous)
                                     .fill(a.isService ? Color(hex: 0x2C7BE5) : C.hairline))
                             Text("· \(a.count) 篇文章").font(pf(12)).foregroundColor(C.subLabel)
                         }
@@ -371,7 +371,7 @@ struct OfficialAccountPage: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: 42)
                     .background(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                             .fill(account?.followed == true ? C.fieldBg : C.green)
                     )
             }
@@ -403,7 +403,7 @@ struct OfficialAccountPage: View {
                 if !a.coverPath.isEmpty {
                     RemoteImage(path: a.coverPath, maxSide: 600)
                         .frame(width: 96, height: 68)
-                        .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous))
                 }
             }
             .padding(.horizontal, 18)
@@ -597,7 +597,7 @@ private struct ArticleBody: View {
                 case .image(let p):
                     RemoteImage(path: p, maxSide: 1400)
                         .frame(maxWidth: .infinity)
-                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous))
                         .padding(.vertical, 12)
                 case .para(let t):
                     Text(t)
@@ -649,7 +649,7 @@ struct OAArticleCard: View {
                     if !cover.isEmpty {
                         RemoteImage(path: cover, maxSide: 700)
                             .frame(width: 76, height: 60)
-                            .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous))
                     }
                     VStack(alignment: .leading, spacing: 6) {
                         Text((o["title"] as? String) ?? "")

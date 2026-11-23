@@ -75,8 +75,8 @@ struct BottlePageView: View {
                         .padding(16)
                         .frame(maxWidth: .infinity)
                         .background(.ultraThinMaterial,
-                                    in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                    in: RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                             .stroke(Color.white.opacity(0.28), lineWidth: 0.9))
                         .shadow(color: Color.black.opacity(0.28), radius: 18, y: 8)
                         .padding(.horizontal, 24)
@@ -340,7 +340,7 @@ struct BottleSea: View {
                  with: .radialGradient(Gradient(colors: [Color(hex: 0x9FE0FF).opacity(0.16), Color.clear]),
                                        center: .zero, startRadius: 6, endRadius: w * 1.05))
 
-        let bodyPath = Path(roundedRect: body, cornerRadius: 17, style: .continuous)
+        let bodyPath = Path(roundedRect: body, cornerRadius: AppDesign.Radius.row, style: .continuous)
         ctx.fill(bodyPath, with: .linearGradient(
             Gradient(colors: [Color.white.opacity(0.42), Color(hex: 0xBEE7FF).opacity(0.26)]),
             startPoint: CGPoint(x: body.minX, y: body.minY),
@@ -348,10 +348,10 @@ struct BottleSea: View {
         ctx.stroke(bodyPath, with: .color(Color.white.opacity(0.62)), lineWidth: 1.6)
 
         let neck = CGRect(x: -7, y: -h / 2 - 16, width: 14, height: 20)
-        ctx.fill(Path(roundedRect: neck, cornerRadius: 4, style: .continuous),
+        ctx.fill(Path(roundedRect: neck, cornerRadius: AppDesign.Radius.micro, style: .continuous),
                  with: .color(Color.white.opacity(0.42)))
         let cork = CGRect(x: -9, y: -h / 2 - 26, width: 18, height: 12)
-        ctx.fill(Path(roundedRect: cork, cornerRadius: 3, style: .continuous),
+        ctx.fill(Path(roundedRect: cork, cornerRadius: AppDesign.Radius.micro, style: .continuous),
                  with: .color(Color(hex: 0xC08A4B)))
 
         for k in 0..<2 {
@@ -363,15 +363,15 @@ struct BottleSea: View {
         }
 
         let paper = CGRect(x: -13, y: -6, width: 26, height: 40)
-        ctx.fill(Path(roundedRect: paper, cornerRadius: 4, style: .continuous),
+        ctx.fill(Path(roundedRect: paper, cornerRadius: AppDesign.Radius.micro, style: .continuous),
                  with: .color(Color(hex: 0xF7F1DE).opacity(0.92)))
 
         let shine = CGRect(x: -w / 2 + 9, y: -h / 2 + 14, width: 8, height: 46)
-        ctx.fill(Path(roundedRect: shine, cornerRadius: 4, style: .continuous),
+        ctx.fill(Path(roundedRect: shine, cornerRadius: AppDesign.Radius.micro, style: .continuous),
                  with: .color(Color.white.opacity(0.55)))
 
         ctx.fill(Path(roundedRect: CGRect(x: w / 2 - 13, y: -h / 2 + 22, width: 3.5, height: 30),
-                      cornerRadius: 2, style: .continuous),
+                      cornerRadius: AppDesign.Radius.micro, style: .continuous),
                  with: .color(Color.white.opacity(0.30)))
     }
 }
@@ -418,7 +418,7 @@ struct ThrowBottleSheet: View {
                 }
             }
             .padding(14)
-            .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(C.cardBg))
+            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous).fill(C.cardBg))
             .padding(14)
             Spacer(minLength: 0)
         }

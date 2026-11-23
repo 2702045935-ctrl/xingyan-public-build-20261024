@@ -161,7 +161,7 @@ struct RealNameView: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 48)
-                    .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                         .fill(canSubmit ? C.green : Color.dyn(0xC8C8C8, 0x4A4A4A)))
             }
             .buttonStyle(.plain)

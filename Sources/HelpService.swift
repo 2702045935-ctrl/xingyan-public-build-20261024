@@ -82,7 +82,7 @@ struct FAQView: View {
         }
         .padding(.horizontal, 10)
         .frame(height: 36)
-        .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(C.searchBg))
+        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous).fill(C.searchBg))
         .padding(.horizontal, 8)
         .padding(.top, 8)
     }
@@ -150,7 +150,7 @@ struct FAQView: View {
                                     .font(.system(size: 16, weight: .medium))
                                     .foregroundColor(.white)
                                     .frame(width: 30, height: 30)
-                                    .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                                         .fill(C.green))
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(c.title).font(pf(16.5)).foregroundColor(C.label)
@@ -374,7 +374,7 @@ struct WalletUpgradeView: View {
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
                 .frame(height: 48)
-                .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                     .fill(info?.level == 2 ? C.subLabel : C.green))
         }
         .buttonStyle(.plain)

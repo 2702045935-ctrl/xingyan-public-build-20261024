@@ -114,7 +114,7 @@ struct AIPageView: View {
                     .padding(.horizontal, 24)
                     .padding(.vertical, 20)
                     .background(C.cardBg)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
                     .shadow(color: .black.opacity(0.16), radius: 18, y: 8)
                 }
             }
@@ -190,7 +190,7 @@ struct AIPageView: View {
     private var hero: some View {
         VStack(spacing: 11) {
             ZStack {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                     .fill(LinearGradient(colors: [Color(hex: 0x4A8BFF),
                                                   Color(hex: 0x7B61FF)],
                                          startPoint: .topLeading,
@@ -255,8 +255,8 @@ struct AIPageView: View {
         }
         .padding(16)
         .background(C.cardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous)
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
             .stroke(C.hairline.opacity(0.8), lineWidth: 0.7))
         .shadow(color: .black.opacity(0.06), radius: 20, y: 8)
     }
@@ -305,8 +305,8 @@ struct AIPageView: View {
         }
         .padding(14)
         .background(C.cardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
             .stroke(C.hairline.opacity(0.75), lineWidth: 0.6))
     }
 
@@ -350,8 +350,8 @@ struct AIPageView: View {
             .padding(14)
             .frame(maxWidth: .infinity, minHeight: 84, alignment: .leading)
             .background(C.cardBg)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                 .stroke(C.hairline.opacity(0.8), lineWidth: 0.6))
         }
         .buttonStyle(.plain)
@@ -409,8 +409,8 @@ struct AIPageView: View {
                             .padding(15)
                             .frame(width: 236, alignment: .leading)
                             .background(C.cardBg)
-                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                                 .stroke(index == 1 ? accent.opacity(0.48) : C.hairline.opacity(0.8),
                                         lineWidth: index == 1 ? 1 : 0.6))
                         }
@@ -442,8 +442,8 @@ struct AIPageView: View {
         .padding(15)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(C.cardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous)
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
             .stroke(C.hairline.opacity(0.75), lineWidth: 0.6))
     }
 
@@ -602,7 +602,7 @@ private struct BuyAITokensSheet: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)
             .background(accent.opacity(0.07))
-            .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
             .padding(.horizontal, 20)
 
             SecureField(Tr("输入 6 位支付密码"), text: $password)
@@ -613,7 +613,7 @@ private struct BuyAITokensSheet: View {
                 .padding(.horizontal, 14)
                 .frame(height: 50)
                 .background(C.fieldBg)
-                .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
                 .padding(.horizontal, 20)
                 .padding(.top, 16)
                 .onChange(of: password) { value in
@@ -642,7 +642,7 @@ private struct BuyAITokensSheet: View {
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
                 .frame(height: 48)
-                .background(RoundedRectangle(cornerRadius: 13, style: .continuous)
+                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                     .fill(valid ? accent : accent.opacity(0.35)))
             }
             .buttonStyle(.plain)

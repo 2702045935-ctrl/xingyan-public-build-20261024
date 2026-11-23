@@ -142,7 +142,7 @@ struct DDHelpCenterView: View {
             }
             .padding(12)
             .background(DDColor.card)
-            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
         } else if let o = order {
             HStack(spacing: 10) {
                 DDThumb(em: o.em, size: 46, radius: 6)
@@ -155,7 +155,7 @@ struct DDHelpCenterView: View {
             }
             .padding(12)
             .background(DDColor.card)
-            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
         }
     }
 
@@ -175,7 +175,7 @@ struct DDHelpCenterView: View {
                         .font(pf(13.5))
                         .foregroundColor(m.me ? .white : DDColor.ink)
                         .padding(.horizontal, 11).padding(.vertical, 8)
-                        .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                             .fill(m.me ? DDColor.red : DDColor.page))
                         .fixedSize(horizontal: false, vertical: true)
                     if !m.me { Spacer(minLength: 40) }
@@ -197,7 +197,7 @@ struct DDHelpCenterView: View {
         }
         .padding(12)
         .background(DDColor.card)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
     }
 
     private func ask(_ text: String) {
@@ -242,7 +242,7 @@ struct DDHelpCenterView: View {
             }
         }
         .background(DDColor.card)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
     }
 
     private var bottom: some View {
@@ -253,11 +253,11 @@ struct DDHelpCenterView: View {
                     .submitLabel(.send)
                     .onSubmit { ask(input) }
                     .padding(.horizontal, 12).frame(height: 38)
-                    .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(DDColor.page))
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(DDColor.page))
                 Button { ask(input) } label: {
                     Text(Tr("发送")).font(pf(14, .medium)).foregroundColor(.white)
                         .frame(width: 62, height: 38)
-                        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(DDColor.red))
+                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(DDColor.red))
                 }
                 .buttonStyle(.plain)
             }
@@ -277,7 +277,7 @@ struct DDHelpCenterView: View {
                 Text(busy ? Tr("正在接入…") : Tr("转人工客服"))
                     .font(pf(16, .medium)).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 44)
-                    .background(RoundedRectangle(cornerRadius: 22).fill(DDColor.gradBtn))
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.panel).fill(DDColor.gradBtn))
             }
             .buttonStyle(.plain)
             .disabled(busy)

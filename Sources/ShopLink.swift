@@ -168,7 +168,7 @@ struct ShopLinkCard: View {
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 3)
                                 .padding(.vertical, 1)
-                                .background(RoundedRectangle(cornerRadius: 3, style: .continuous).fill(C.red))
+                                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous).fill(C.red))
                             Text("¥" + p.price)
                                 .font(pf(15, .semibold))
                                 .foregroundColor(C.red)

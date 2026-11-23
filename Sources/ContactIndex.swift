@@ -159,10 +159,10 @@ struct LetterBubble: View {
             .foregroundColor(.white)
             .frame(width: 66, height: 66)
             .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                     .fill(Color.dyn(0x62666B, 0x4A4D52).opacity(0.88))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                             .stroke(Color.white.opacity(0.14), lineWidth: 0.6)
                     )
                     .shadow(color: Color.black.opacity(0.08), radius: 5, y: 2)

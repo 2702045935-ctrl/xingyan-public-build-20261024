@@ -26,11 +26,11 @@ require(
     "ads must share the regular card skeleton instead of creating a second feed layout",
 )
 require(
-    "RoundedRectangle(cornerRadius: 20, style: .continuous)" in CARD,
+    "cornerRadius: AppDesign.Radius.panel" in CARD,
     "the editorial feed must use the refined card surface",
 )
 require(
-    "cornerRadius: 16, style: .continuous" in CARD,
+    "cornerRadius: AppDesign.Radius.row" in CARD,
     "single photos and video must use the premium media treatment",
 )
 require(

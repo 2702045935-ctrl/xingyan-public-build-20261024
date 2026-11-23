@@ -31,7 +31,7 @@ struct MallHiddenView: View {
                             Text(Tr("全部恢复"))
                                 .font(pf(15.5, .medium)).foregroundColor(.white)
                                 .frame(maxWidth: .infinity).frame(height: 46)
-                                .background(RoundedRectangle(cornerRadius: 23).fill(C.green))
+                                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(C.green))
                         }
                         .buttonStyle(.plain)
                         .padding(.top, 4)
@@ -70,7 +70,7 @@ struct MallHiddenView: View {
                 .padding(.horizontal, 16).padding(.vertical, 10)
             }
         }
-        .background(C.cardBg).clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(C.cardBg).clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
     }
 
     private var cateCard: some View {
@@ -91,7 +91,7 @@ struct MallHiddenView: View {
                 .padding(.horizontal, 16).padding(.vertical, 10)
             }
         }
-        .background(C.cardBg).clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(C.cardBg).clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
     }
 
     private var adCard: some View {
@@ -113,7 +113,7 @@ struct MallHiddenView: View {
                 .padding(.horizontal, 16).padding(.vertical, 10)
             }
         }
-        .background(C.cardBg).clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(C.cardBg).clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
     }
 
     private func head(_ t: String, sub: String) -> some View {

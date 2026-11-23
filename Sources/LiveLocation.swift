@@ -264,7 +264,7 @@ struct SendLocationView: View {
         .frame(height: locationPanelHeight)
         .background {
             GlassBackground(
-                shape: RoundedRectangle(cornerRadius: 26, style: .continuous),
+                shape: RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous),
                 shadow: true
             )
         }
@@ -580,7 +580,7 @@ struct LiveLocationView: View {
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 44)
-                        .background(RoundedRectangle(cornerRadius: 8).fill(C.red))
+                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini).fill(C.red))
                 }
                 .buttonStyle(.plain)
             }

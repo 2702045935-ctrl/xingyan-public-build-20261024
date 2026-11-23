@@ -35,7 +35,7 @@ struct ShopView: View {
                     Button { showMall = true } label: {
                         HStack(spacing: 12) {
                             ZStack {
-                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                                     .fill(LinearGradient(colors: [Color(hex: 0xFF5A3C), Color(hex: 0xE02A0F)],
                                                          startPoint: .topLeading, endPoint: .bottomTrailing))
                                 Image(systemName: "bag.fill")
@@ -47,7 +47,7 @@ struct ShopView: View {
                                     Text(Tr("拼多多商城")).font(pf(16.5, .medium)).foregroundColor(C.label)
                                     Text(Tr("H5")).font(pf(10.5)).foregroundColor(.white)
                                         .padding(.horizontal, 5).padding(.vertical, 1.5)
-                                        .background(RoundedRectangle(cornerRadius: 4).fill(Color(hex: 0xE02A0F)))
+                                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.micro).fill(Color(hex: 0xE02A0F)))
                                 }
                                 Text(Tr("拼团 · 秒杀 · 种草 · 购物车（和商城后台同一套数据）"))
                                     .font(pf(12)).foregroundColor(C.subLabel).lineLimit(1)
@@ -57,7 +57,7 @@ struct ShopView: View {
                         }
                         .padding(.horizontal, 14).frame(height: 66)
                         .background(C.cardBg)
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
                         .padding(.horizontal, 12)
                         .contentShape(Rectangle())
                     }
@@ -137,14 +137,14 @@ struct ShopView: View {
     private func cell(_ it: API.ShopItem) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             ZStack {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                     .fill(C.fieldBg)
                 if let img = it.img, !img.isEmpty {
                     RemoteImage(path: img)
                         .scaledToFill()
                         .frame(maxWidth: .infinity)
                         .frame(height: 104)
-                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
                 } else {
                     Image(systemName: "shippingbox.fill")
                         .font(.system(size: 30))
@@ -165,7 +165,7 @@ struct ShopView: View {
                     .font(pf(10.5))
                     .foregroundColor(C.subLabel)
                     .padding(.horizontal, 5).padding(.vertical, 1.5)
-                    .background(RoundedRectangle(cornerRadius: 4, style: .continuous).fill(C.fieldBg))
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous).fill(C.fieldBg))
                 Spacer(minLength: 0)
                 Text(Tr("库存 ") + String(it.stock ?? 0))
                     .font(pf(11)).foregroundColor(C.subLabel)
@@ -175,7 +175,7 @@ struct ShopView: View {
         }
         .padding(8)
         .background(C.cardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
         .opacity((it.stock ?? 1) <= 0 ? 0.55 : 1)
     }
 
@@ -231,7 +231,7 @@ struct ShopItemSheet: View {
                         RemoteImage(path: img)
                             .scaledToFill()
                             .frame(maxWidth: .infinity).frame(height: 200)
-                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
                             .padding(.horizontal, 12)
                     }
 
@@ -269,7 +269,7 @@ struct ShopItemSheet: View {
                                     .font(.system(size: 14, weight: .semibold))
                                     .foregroundColor(C.label)
                                     .frame(width: 32, height: 30)
-                                    .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(C.fieldBg))
+                                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.fieldBg))
                             }
                             .buttonStyle(.plain)
                             Text("\(count)").font(pf(16)).foregroundColor(C.label).frame(minWidth: 26)
@@ -278,7 +278,7 @@ struct ShopItemSheet: View {
                                     .font(.system(size: 14, weight: .semibold))
                                     .foregroundColor(C.label)
                                     .frame(width: 32, height: 30)
-                                    .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(C.fieldBg))
+                                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.fieldBg))
                             }
                             .buttonStyle(.plain)
                         }
@@ -294,7 +294,7 @@ struct ShopItemSheet: View {
                         Text(soldOut ? Tr("已售罄") : Tr("立即购买"))
                             .font(pf(17, .semibold)).foregroundColor(.white)
                             .frame(maxWidth: .infinity).frame(height: 48)
-                            .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                                 .fill(soldOut ? Color.gray : C.green))
                     }
                     .buttonStyle(.plain)
@@ -469,7 +469,7 @@ struct ShopOrdersSheet: View {
                                     .font(pf(13.5))
                                     .foregroundColor(filter == i ? .white : C.label)
                                     .padding(.horizontal, 12).frame(height: 30)
-                                    .background(RoundedRectangle(cornerRadius: 15, style: .continuous)
+                                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                                         .fill(filter == i ? C.green : C.cardBg))
                             }
                             .buttonStyle(.plain)

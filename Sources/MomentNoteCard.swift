@@ -33,9 +33,9 @@ struct MomentNoteCard: View {
         VStack(alignment: .leading, spacing: 0) {
             if !images.isEmpty || isVideo {
                 media
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                             .stroke(Color.black.opacity(0.10), lineWidth: 0.45)
                     )
                     .shadow(color: Color.black.opacity(0.10), radius: 5, y: 2)
@@ -189,7 +189,7 @@ struct MomentNoteCard: View {
                 .font(pf(9.5, .medium))
                 .foregroundColor(C.subLabel)
                 .frame(width: 22, height: 22)
-                .background(RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous)
                     .fill(Color.dyn(0xEFEFEE, 0x2B2B2B)))
         } else {
             Avatar(path: path, size: 22, radius: 7)

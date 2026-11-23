@@ -89,7 +89,7 @@ struct OtherLoginCard: View {
                     }
                     .frame(width: 280)
                     .background(C.cardBg)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
                     .shadow(color: .black.opacity(0.22), radius: 22, y: 8)
                 }
             }

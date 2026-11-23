@@ -45,7 +45,7 @@ struct MyFilesPickerView: View {
             }
             .padding(.horizontal, 10)
             .frame(height: 36)
-            .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(C.searchBg))
+            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous).fill(C.searchBg))
             .padding(.horizontal, 12)
             .padding(.top, 8)
             .padding(.bottom, 6)
@@ -96,7 +96,7 @@ struct MyFilesPickerView: View {
                     }
                     .foregroundColor(C.link)
                     .frame(maxWidth: .infinity).frame(height: 46)
-                    .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(C.cardBg))
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.cardBg))
                     .padding(.horizontal, 12)
                     .padding(.bottom, 10)
                 }
@@ -121,7 +121,7 @@ struct MyFilesPickerView: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
                 .frame(width: 44, height: 44)
-                .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(fileColor(f.ext)))
+                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(fileColor(f.ext)))
             VStack(alignment: .leading, spacing: 3) {
                 Text(f.fileName)
                     .font(pf(15.5)).foregroundColor(C.label)
@@ -154,7 +154,7 @@ struct MyFilesPickerView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 11)
-        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(C.cardBg))
+        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous).fill(C.cardBg))
         .contentShape(Rectangle())
     }
 

@@ -161,28 +161,28 @@ struct ChatRecentPhotoStrip: View {
             LazyHStack(spacing: 7) {
                 Button(action: onOpenLibrary) {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                             .fill(Color.primary.opacity(0.065))
                         Image(systemName: "photo.on.rectangle.angled")
                             .font(.system(size: 20, weight: .medium))
                             .foregroundStyle(Color.primary.opacity(0.72))
                     }
                     .frame(width: tile, height: tile)
-                    .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .contentShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Tr("打开相册"))
 
                 if store.isLoading && store.assets.isEmpty {
                     ForEach(0..<7, id: \.self) { _ in
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                             .fill(Color.primary.opacity(0.10))
                             .frame(width: tile, height: tile)
                     }
                 } else if store.assets.isEmpty {
                     ForEach(0..<5, id: \.self) { _ in
                         ZStack {
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                                 .fill(Color.primary.opacity(0.075))
                             Image(systemName: "photo")
                                 .font(.system(size: 15, weight: .medium))
@@ -204,14 +204,14 @@ struct ChatRecentPhotoStrip: View {
                             ZStack {
                                 RecentAssetThumbnail(asset: asset, store: store, side: tile)
                                 if loadingId == asset.localIdentifier {
-                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                                         .fill(Color.black.opacity(0.34))
                                     ProgressView().tint(.white)
                                 }
                             }
                             .frame(width: tile, height: tile)
-                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
+                            .contentShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel(Tr("照片"))

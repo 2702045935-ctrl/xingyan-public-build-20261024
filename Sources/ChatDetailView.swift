@@ -850,7 +850,7 @@ private struct QuickIconButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .background {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                     .fill(configuration.isPressed ? ink.opacity(0.10) : Color.clear)
             }
             .scaleEffect(configuration.isPressed ? 0.92 : 1)
@@ -4222,14 +4222,14 @@ struct ChatDetailView: View {
         .padding(.vertical, 9)
         .background(
             ZStack {
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                     .fill(Color.dyn(0xF7F6ED, 0x18231D))
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                     .fill(noticeInk.opacity(scheme == .dark ? 0.055 : 0.035))
             }
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 11, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                 .stroke(Color.dyn(0xE2E1D8, 0x2C3A32).opacity(0.82),
                         lineWidth: 0.55)
         )
@@ -4772,10 +4772,10 @@ struct ChatDetailView: View {
         .padding(.vertical, 9)
         .frame(maxWidth: min(L.bubbleMaxW, L.width * 0.82), alignment: .leading)
         .background {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                 .fill(C.cardBg.opacity(0.96))
                 .overlay {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                         .stroke(failure.tint.opacity(0.16), lineWidth: 0.7)
                 }
         }
@@ -5021,9 +5021,9 @@ struct ChatDetailView: View {
                 .padding(.vertical, 4)
                 .background(
                     ZStack {
-                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous)
                             .fill(.ultraThinMaterial)
-                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous)
                             .fill(adaptiveSystemSurface)
                     }
                 )
@@ -5442,7 +5442,7 @@ struct ChatDetailView: View {
                         radius: 1.2, x: 0, y: 0.8)
                 .frame(maxWidth: .infinity)
                 .frame(height: 42)
-                .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .contentShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
         }
         .frame(maxWidth: .infinity)
         .buttonStyle(QuickIconButtonStyle(ink: quickChipInk))
@@ -5510,7 +5510,7 @@ struct ChatDetailView: View {
                     .foregroundColor(C.green)
                     .frame(width: 30, height: 30)
                     .background(C.green.opacity(0.12))
-                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(Tr("自助工具"))
                         .font(pf(13.5, .semibold))
@@ -5526,8 +5526,8 @@ struct ChatDetailView: View {
             .padding(.horizontal, 12)
             .frame(height: 46)
             .background(C.cardBg.opacity(0.96))
-            .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous)
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                 .stroke(ChatTheme.separator, lineWidth: 0.6))
             .padding(.horizontal, 12)
             .padding(.bottom, 4)
@@ -5717,7 +5717,7 @@ struct ChatDetailView: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 42)
-                    .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(C.green))
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.green))
             }
             .buttonStyle(.plain)
             .padding(.horizontal, 24)
@@ -5834,7 +5834,7 @@ struct ChatDetailView: View {
                             .scaledToFill()
                             .frame(width: 68, height: 68)
                             .clipped()
-                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
 
                         Text("\(index + 1)")
                             .font(.system(size: 9.5, weight: .bold, design: .rounded))
@@ -5899,8 +5899,8 @@ struct ChatDetailView: View {
                     if !quotePreviewThumb(q).isEmpty {
                         RemoteImage(path: quotePreviewThumb(q), mode: .fill, maxSide: 240)
                             .frame(width: 38, height: 38)
-                            .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: 5, style: .continuous)
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous)
                                 .stroke(Color.black.opacity(0.08), lineWidth: 0.5))
                     }
                     Button { quote = nil } label: {
@@ -6219,7 +6219,7 @@ struct ChatDetailView: View {
                         .background(
                             recorder.willCancel ? C.red.opacity(0.09)
                                                 : Color.white.opacity(0.72),
-                            in: RoundedRectangle(cornerRadius: 19, style: .continuous)
+                            in: RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                         )
                     } else {
                         ChatComposerTextField(text: $input,
@@ -8490,9 +8490,9 @@ struct SystemLine: View {
             Group {
                 if !plain {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                             .fill(.ultraThinMaterial)
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                             .fill(usesLightInk
                                   ? Color.black.opacity(0.42)
                                   : Color.white.opacity(0.82))
@@ -8502,7 +8502,7 @@ struct SystemLine: View {
         )
         .overlay {
             if !plain {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                     .stroke(promptTint.opacity(0.14), lineWidth: 0.6)
             }
         }
@@ -8699,7 +8699,7 @@ struct QuoteInspectSheet: View {
                         .foregroundStyle(OrbitTheme.jade)
                         .frame(width: 32, height: 32)
                         .background(OrbitTheme.jadeSoft)
-                        .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
                     VStack(alignment: .leading, spacing: 2) {
                         Text(Tr("引用内容"))
                             .font(pfStyled(size: 17, weight: .semibold))
@@ -8729,12 +8729,12 @@ struct QuoteInspectSheet: View {
                             RemoteImage(path: quote.thumbPath, mode: .fit, maxSide: 900)
                                 .frame(maxWidth: .infinity)
                                 .frame(maxHeight: 190)
-                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
                                 .overlay {
-                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                                         .stroke(C.hairline, lineWidth: 0.7)
                                 }
-                                .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                .contentShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
                                 .onTapGesture {
                                     onOpenImage(quote.thumbPath)
                                 }
@@ -9127,9 +9127,9 @@ struct MessageRow: View {
         .padding(.vertical, 9)
         .background(
             ZStack {
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                     .fill(.thinMaterial)
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                     .fill(
                         LinearGradient(colors: [C.green.opacity(0.16), C.green.opacity(0.04)],
                                        startPoint: .topLeading, endPoint: .bottomTrailing)
@@ -9137,7 +9137,7 @@ struct MessageRow: View {
             }
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 11, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                 .stroke(C.green.opacity(0.22), lineWidth: 0.8)
         )
         .shadow(color: Color.black.opacity(0.06), radius: 5, x: 0, y: 2)
@@ -9165,9 +9165,9 @@ struct MessageRow: View {
                 .padding(.vertical, 8)
                 .background(
                     ZStack {
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                             .fill(.ultraThinMaterial)
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                             .fill(senderNameUsesLightInk
                                   ? Color.black.opacity(0.40)
                                   : Color.white.opacity(0.76))
@@ -9438,7 +9438,7 @@ struct MessageRow: View {
                 }
             } label: {
                 HStack(alignment: .top, spacing: 8) {
-                    RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.hairline, style: .continuous)
                         .fill(bubbleLinkInk.opacity(0.88))
                         .frame(width: 3)
 
@@ -9468,11 +9468,11 @@ struct MessageRow: View {
             .padding(.horizontal, 7)
             .padding(.vertical, 6)
             .background(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous)
                     .fill(quoteSurface)
             )
             .overlay {
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous)
                     .stroke(quoteBorder, lineWidth: 0.5)
             }
 
@@ -9734,7 +9734,7 @@ struct MessageRow: View {
         .frame(width: min(maxBubbleWidth, UIConfig.num("transferCardW", 240)),
                alignment: .leading)
         .background(card)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
     }
 
     @ViewBuilder
@@ -9748,7 +9748,7 @@ struct MessageRow: View {
                 .foregroundColor(ChatTheme.secondary)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
-                .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(ChatTheme.separator))
+                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous).fill(ChatTheme.separator))
         }
     }
 
@@ -10383,7 +10383,7 @@ private struct NativeFileThumbnail: View {
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                 .fill(Color(uiColor: .secondarySystemBackground))
 
             if let thumbnail {
@@ -10405,9 +10405,9 @@ private struct NativeFileThumbnail: View {
             }
         }
         .frame(width: 48, height: 56)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                 .stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
         }
         .task(id: path) { await loadThumbnail() }
@@ -10559,9 +10559,9 @@ struct FilePreviewSheet: View {
 
                     QuickLookView(url: local, title: displayName)
                         .background(Color(uiColor: .secondarySystemGroupedBackground))
-                        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
                         .overlay {
-                            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                                 .stroke(Color.primary.opacity(0.075), lineWidth: 0.7)
                         }
                         .shadow(color: Color.black.opacity(0.055), radius: 12, y: 5)
@@ -10629,7 +10629,7 @@ struct FilePreviewSheet: View {
     private var fileHero: some View {
         HStack(spacing: 14) {
             ZStack {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                     .fill(
                         LinearGradient(
                             colors: [fileAccent, fileAccent.opacity(0.72)],
@@ -10670,11 +10670,11 @@ struct FilePreviewSheet: View {
         }
         .padding(13)
         .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .fill(Color(uiColor: .secondarySystemGroupedBackground))
         )
         .overlay {
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(Color.primary.opacity(0.07), lineWidth: 0.7)
         }
         .padding(.horizontal, 12)
@@ -10698,7 +10698,7 @@ struct FilePreviewSheet: View {
                 .foregroundColor(C.green)
                 .frame(maxWidth: .infinity)
                 .frame(height: 50)
-                .background(RoundedRectangle(cornerRadius: 15, style: .continuous)
+                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                     .fill(Color.primary.opacity(0.045)))
             }
             .buttonStyle(.plain)
@@ -10714,7 +10714,7 @@ struct FilePreviewSheet: View {
                 .foregroundColor(C.label)
                 .frame(maxWidth: .infinity)
                 .frame(height: 50)
-                .background(RoundedRectangle(cornerRadius: 15, style: .continuous)
+                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                     .fill(Color.primary.opacity(0.045)))
             }
             .buttonStyle(.plain)
@@ -10735,7 +10735,7 @@ struct FilePreviewSheet: View {
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ),
-                    in: RoundedRectangle(cornerRadius: 15, style: .continuous)
+                    in: RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                 )
                 .shadow(color: C.green.opacity(0.18), radius: 7, y: 3)
             }

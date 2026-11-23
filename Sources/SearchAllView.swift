@@ -101,7 +101,7 @@ struct SearchAllView: View {
                 }
                 .padding(.horizontal, 10)
                 .frame(height: 36)
-                .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(C.searchBg))
+                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.searchBg))
                 Button(Tr("取消")) { dismiss() }
                     .font(pf(16)).foregroundColor(C.label)
                     .buttonStyle(MenuPressStyle())
@@ -285,7 +285,7 @@ struct SearchAllView: View {
                         .foregroundColor(C.green)
                         .frame(width: 40, height: 40)
                         .background(C.green.opacity(0.10))
-                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
                     VStack(alignment: .leading, spacing: 2) {
                         highlightMatch(tool.title, q).font(pf(15.5)).foregroundColor(C.label)
                         Text(tool.sub).font(pf(13)).foregroundColor(C.subLabel).lineLimit(1)

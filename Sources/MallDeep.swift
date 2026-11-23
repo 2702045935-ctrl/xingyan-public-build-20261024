@@ -178,7 +178,7 @@ struct DDReviewSection: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(12)
-                .background(RoundedRectangle(cornerRadius: 11, style: .continuous)
+                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                     .fill(DDColor.page.opacity(0.72)))
             } else {
                 HStack(spacing: 14) {
@@ -202,7 +202,7 @@ struct DDReviewSection: View {
                     Spacer(minLength: 0)
                 }
                 .padding(12)
-                .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                     .fill(DDColor.redLight.opacity(0.66)))
                 ForEach(list.prefix(2)) { r in
                     DDReviewRow(review: r)
@@ -211,8 +211,8 @@ struct DDReviewSection: View {
         }
         .padding(14)
         .background(DDColor.card)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
             .stroke(DDColor.cardEdge, lineWidth: 0.6))
         .padding(.horizontal, 10)
         .padding(.top, 10)
@@ -235,7 +235,7 @@ struct DDReviewRow: View {
                 if review.isDemo {
                     Text(Tr("示例")).font(pf(10)).foregroundColor(DDColor.sub)
                         .padding(.horizontal, 4).frame(height: 14)
-                        .background(RoundedRectangle(cornerRadius: 3).fill(DDColor.page))
+                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.micro).fill(DDColor.page))
                 }
             }
             DDStars(value: Double(review.rating), size: 11)
@@ -249,7 +249,7 @@ struct DDReviewRow: View {
                     ForEach(review.images.prefix(3), id: \.self) { u in
                         RemoteImage(path: u, icon: "photo")
                             .frame(width: 72, height: 72)
-                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
                     }
                 }
             }
@@ -357,8 +357,8 @@ struct DDParamSection: View {
             Spacer().frame(height: 8)
         }
         .background(DDColor.card)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
             .stroke(DDColor.cardEdge, lineWidth: 0.6))
         .padding(.horizontal, 10)
         .padding(.top, 10)
@@ -402,12 +402,12 @@ struct DDDetailLongSection: View {
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(DDColor.page.opacity(0.6))
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
         }
         .padding(14)
         .background(DDColor.card)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
             .stroke(DDColor.cardEdge, lineWidth: 0.6))
         .padding(.horizontal, 10)
         .padding(.top, 10)
@@ -425,7 +425,7 @@ private struct DDDetailRemoteImage: View {
             ratio = max(0.25, min(3.2, image.size.width / image.size.height))
         }
         .frame(width: width, height: max(180, width / ratio))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
     }
 }
 
@@ -464,9 +464,9 @@ struct DDSpecSheet: View {
                                         .font(pf(13.5, picked == v.name ? .semibold : .regular))
                                         .foregroundColor(picked == v.name ? DDColor.red : DDColor.ink)
                                         .padding(.horizontal, 14).frame(height: 32)
-                                        .background(RoundedRectangle(cornerRadius: 6)
+                                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny)
                                             .fill(picked == v.name ? DDColor.redLight : DDColor.page))
-                                        .overlay(RoundedRectangle(cornerRadius: 6)
+                                        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny)
                                             .stroke(picked == v.name ? DDColor.red : Color.clear, lineWidth: 1))
                                 }
                                 .buttonStyle(.plain)
@@ -483,7 +483,7 @@ struct DDSpecSheet: View {
                 Text(Tr("确定"))
                     .font(pf(16, .medium)).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
-                    .background(RoundedRectangle(cornerRadius: 23).fill(DDColor.gradBtn))
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(DDColor.gradBtn))
                     .padding(.horizontal, 14)
             }
             .buttonStyle(.plain)
@@ -565,7 +565,7 @@ struct DDServiceSheet: View {
                         }
                         .padding(12)
                         .background(DDColor.card)
-                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
                     }
                     VStack(alignment: .leading, spacing: 0) {
                         Text(Tr("常见问题")).font(pf(14, .semibold)).foregroundColor(DDColor.ink)
@@ -584,7 +584,7 @@ struct DDServiceSheet: View {
                         }
                     }
                     .background(DDColor.card)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
                     Spacer().frame(height: 8)
                 }
                 .padding(10)
@@ -605,7 +605,7 @@ struct DDServiceSheet: View {
                 Text(busy ? Tr("正在接入…") : Tr("转人工客服"))
                     .font(pf(16, .medium)).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
-                    .background(RoundedRectangle(cornerRadius: 23).fill(DDColor.gradBtn))
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(DDColor.gradBtn))
                     .padding(.horizontal, 14)
             }
             .buttonStyle(.plain)
@@ -816,7 +816,7 @@ struct DDOrderDetailView: View {
                             .padding(14)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .background(DDColor.card)
-                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
                         }
                         Spacer().frame(height: 8)
                     }
@@ -871,7 +871,7 @@ struct DDOrderDetailView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
         .background(DDColor.card)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
     }
 
     private func logisticsCard(_ o: DDOrder) -> some View {
@@ -887,7 +887,7 @@ struct DDOrderDetailView: View {
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(DDColor.card)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
     }
 
     private func goodsCard(_ o: DDOrder) -> some View {
@@ -905,7 +905,7 @@ struct DDOrderDetailView: View {
         }
         .padding(12)
         .background(DDColor.card)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
     }
 
     private func priceCard(_ o: DDOrder) -> some View {
@@ -923,7 +923,7 @@ struct DDOrderDetailView: View {
         }
         .padding(14)
         .background(DDColor.card)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
     }
 
     private func infoCard(_ title: String, _ lines: [String]) -> some View {
@@ -938,7 +938,7 @@ struct DDOrderDetailView: View {
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(DDColor.card)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
     }
 
     private func row(_ l: String, _ r: String, red: Bool = false) -> some View {
@@ -1075,7 +1075,7 @@ struct DDAfterSaleSheet: View {
                     }
                     .padding(12)
                     .background(DDColor.card)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text(Tr("售后类型")).font(pf(14, .medium)).foregroundColor(DDColor.ink)
@@ -1086,7 +1086,7 @@ struct DDAfterSaleSheet: View {
                                         .font(pf(13.5, kind == k ? .semibold : .regular))
                                         .foregroundColor(kind == k ? DDColor.red : DDColor.ink)
                                         .padding(.horizontal, 14).frame(height: 32)
-                                        .background(RoundedRectangle(cornerRadius: 6)
+                                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny)
                                             .fill(kind == k ? DDColor.redLight : DDColor.page))
                                 }
                                 .buttonStyle(.plain)
@@ -1095,7 +1095,7 @@ struct DDAfterSaleSheet: View {
                     }
                     .padding(14).frame(maxWidth: .infinity, alignment: .leading)
                     .background(DDColor.card)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
 
                     VStack(alignment: .leading, spacing: 0) {
                         Text(Tr("退款原因")).font(pf(14, .medium)).foregroundColor(DDColor.ink)
@@ -1116,12 +1116,12 @@ struct DDAfterSaleSheet: View {
                         }
                     }
                     .background(DDColor.card)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
 
                     TextField(Tr("补充说明（可不填）"), text: $text)
                         .font(pf(14))
                         .padding(.horizontal, 12).frame(height: 44)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(DDColor.card))
+                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small).fill(DDColor.card))
                     Spacer().frame(height: 6)
                 }
                 .padding(10)
@@ -1136,7 +1136,7 @@ struct DDAfterSaleSheet: View {
                 Text(Tr("提交申请"))
                     .font(pf(16, .medium)).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
-                    .background(RoundedRectangle(cornerRadius: 23).fill(DDColor.gradBtn))
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(DDColor.gradBtn))
                     .padding(.horizontal, 14)
             }
             .buttonStyle(.plain)
@@ -1167,7 +1167,7 @@ struct DDReviewEditSheet: View {
                     }
                     .padding(12)
                     .background(DDColor.card)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
 
                     VStack(alignment: .leading, spacing: 10) {
                         Text(Tr("给个评价")).font(pf(14, .medium)).foregroundColor(DDColor.ink)
@@ -1177,7 +1177,7 @@ struct DDReviewEditSheet: View {
                             .frame(minHeight: 110)
                             .scrollContentBackground(.hidden)
                             .background(Color.clear)
-                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(DDColor.sub.opacity(0.25), lineWidth: 1))
+                            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.small).stroke(DDColor.sub.opacity(0.25), lineWidth: 1))
                             .overlay(alignment: .topLeading) {
                                 if text.isEmpty {
                                     Text(Tr("说说这件商品怎么样，给后面的人一个参考"))
@@ -1188,7 +1188,7 @@ struct DDReviewEditSheet: View {
                     }
                     .padding(14).frame(maxWidth: .infinity, alignment: .leading)
                     .background(DDColor.card)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
                     Spacer().frame(height: 6)
                 }
                 .padding(10)
@@ -1209,7 +1209,7 @@ struct DDReviewEditSheet: View {
                 Text(Tr("发布评价"))
                     .font(pf(16, .medium)).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
-                    .background(RoundedRectangle(cornerRadius: 23).fill(DDColor.gradBtn))
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(DDColor.gradBtn))
                     .padding(.horizontal, 14)
             }
             .buttonStyle(.plain)
@@ -1239,7 +1239,7 @@ struct DDCouponSheet: View {
                                 .foregroundColor(DDColor.sub.opacity(0.6))
                         }
                         .padding(14).background(DDColor.card)
-                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
                     }
                     .buttonStyle(.plain)
                     ForEach(store.coupons) { c in
@@ -1263,7 +1263,7 @@ struct DDCouponSheet: View {
                             }
                             .padding(12)
                             .background(DDColor.card)
-                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
                             .opacity(ok ? 1 : 0.55)
                         }
                         .buttonStyle(.plain)
@@ -1323,7 +1323,7 @@ struct DDAfterSaleListView: View {
                             }
                             .padding(12)
                             .background(DDColor.card)
-                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
                         }
                     }
                     .padding(10)
@@ -1361,7 +1361,7 @@ struct DDInvoiceSheet: View {
                         }.buttonStyle(.plain)
                     }
                     .background(DDColor.card)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
                     if kind > 0 {
                         VStack(spacing: 0) {
                             HStack(spacing: 10) {
@@ -1379,7 +1379,7 @@ struct DDInvoiceSheet: View {
                             }
                         }
                         .background(DDColor.card)
-                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
                     }
                     Spacer().frame(height: 6)
                 }
@@ -1392,7 +1392,7 @@ struct DDInvoiceSheet: View {
             } label: {
                 Text(Tr("确定")).font(pf(16, .medium)).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
-                    .background(RoundedRectangle(cornerRadius: 23).fill(DDColor.gradBtn))
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(DDColor.gradBtn))
                     .padding(.horizontal, 14)
             }
             .buttonStyle(.plain)
@@ -1470,7 +1470,7 @@ struct DDShopFollowListView: View {
                             }
                             .padding(12)
                             .background(DDColor.card)
-                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
                         }
                     }
                     .padding(10)

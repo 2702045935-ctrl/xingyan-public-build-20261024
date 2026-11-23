@@ -427,7 +427,7 @@ struct GestureSetupView: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 22)
         .background(C.cardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         .padding(.horizontal, 12)
     }
 

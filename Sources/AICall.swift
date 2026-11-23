@@ -283,7 +283,7 @@ private struct LegacyAICallView: View {
                             .padding(14)
                     }
                     .frame(maxHeight: 210)
-                    .background(RoundedRectangle(cornerRadius: 12).fill(Color.white.opacity(0.08)))
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact).fill(Color.white.opacity(0.08)))
                     .padding(.horizontal, 24)
                     .padding(.top, 14)
                 }
@@ -326,7 +326,7 @@ private struct LegacyAICallView: View {
                         .font(pf(17))
                         .foregroundColor(.white)
                         .frame(width: 150, height: 48)
-                        .background(RoundedRectangle(cornerRadius: 24).fill(Color(hex: 0xFA5151)))
+                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(Color(hex: 0xFA5151)))
                 }
                 .buttonStyle(.plain)
                 .padding(.top, 26)

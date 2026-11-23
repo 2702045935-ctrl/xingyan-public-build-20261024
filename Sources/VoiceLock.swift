@@ -408,7 +408,7 @@ struct VoiceReadButton: View {
             .font(pf(17, .medium))
             .foregroundColor(.white)
             .frame(maxWidth: .infinity, minHeight: 50)
-            .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
+            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                 .fill(listening ? C.green.opacity(0.75) : C.green))
             .contentShape(Rectangle())
             .gesture(
@@ -491,7 +491,7 @@ struct VoiceLockSetupView: View {
                         .font(pf(17, .medium))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity, minHeight: 48)
-                        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(C.green))
+                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.green))
                 }
                 .buttonStyle(.plain)
                 .padding(.horizontal, 30)

@@ -337,7 +337,7 @@ struct ContactCardWechat: View {
                         ForEach(thumbs.prefix(3).indices, id: \.self) { i in
                             RemoteImage(path: thumbs[i])
                                 .frame(width: thumbSize, height: thumbSize)
-                                .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
                         }
                     }
                 }
@@ -455,7 +455,7 @@ struct ContactCardWechat: View {
     private func card<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
         VStack(spacing: 0) { content() }
             .background(cardBg)
-            .clipShape(RoundedRectangle(cornerRadius: 2, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous))
 
             .shadow(color: .black.opacity(scheme == .dark ? 0.45 : 0.045), radius: 7, y: 1.5)
     }
@@ -474,7 +474,7 @@ private struct ContactIdentityMark: View {
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous)
                 .fill(accent)
             HStack(spacing: 4) {
                 Capsule().fill(Color(hex: 0x07351C)).frame(width: 2.6, height: 6.5)

@@ -48,7 +48,7 @@ struct RechargeView: View {
                                     .font(pf(14.5, .semibold))
                                     .foregroundColor(amount == Double(v) ? .white : C.label)
                                     .frame(maxWidth: .infinity).frame(height: 42)
-                                    .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                                         .fill(amount == Double(v) ? PayVisual.tint : PayVisual.card))
                             }
                             .buttonStyle(.plain)
@@ -64,7 +64,7 @@ struct RechargeView: View {
                                     .foregroundColor(PayVisual.tint)
                                     .frame(width: 34, height: 34)
                                     .background(PayVisual.tint.opacity(0.12),
-                                                in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                                in: RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
                                 Text(Tr("到账银行卡")).font(pf(16)).foregroundColor(C.label)
                                 Spacer(minLength: 8)
                                 Text(bankLabel).font(pf(14)).foregroundColor(PayVisual.secondaryInk).lineLimit(1)

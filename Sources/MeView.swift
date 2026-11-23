@@ -176,7 +176,7 @@ struct MeView: View {
                 .foregroundStyle(.white)
                 .frame(width: 29, height: 29)
                 .background(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                         .fill(
                             LinearGradient(
                                 colors: [color.opacity(0.96), color],
@@ -185,7 +185,7 @@ struct MeView: View {
                             )
                         )
                         .overlay(
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                                 .stroke(Color.white.opacity(0.18), lineWidth: 0.5)
                         )
                 )
@@ -650,7 +650,7 @@ struct MeView: View {
         .frame(height: 96)
         .frame(maxWidth: .infinity)
         .background(C.meCardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
     }
 
     private var meProfileCard: some View {
@@ -718,17 +718,17 @@ struct MeView: View {
         .frame(maxWidth: .infinity)
         .background {
             ZStack {
-                GlassBackground(shape: RoundedRectangle(cornerRadius: 20, style: .continuous),
+                GlassBackground(shape: RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous),
                                 opacity: UIConfig.num("meGlassAlpha", 0.62),
                                 edgeAlpha: UIConfig.num("meGlassEdge", 0.55),
                                 shadow: true,
                                 seed: 0.42,
                                 native: true)
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                     .fill(C.meCardBg.opacity(0.42))
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
 
         .overlay(alignment: .top) {
             Button { path.append("profile") } label: {
@@ -872,7 +872,7 @@ struct MeView: View {
                         .font(pf(L.v(10.5, 2.9, 11.5)))
                         .foregroundColor(Color.dyn(0xE0393B, 0xFF8A8D))
                         .padding(.horizontal, L.v(5, 1.6, 7))
-                        .background(RoundedRectangle(cornerRadius: 4).fill(Color.dyn(0xFFECEB, 0x4A1F20)))
+                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.micro).fill(Color.dyn(0xFFECEB, 0x4A1F20)))
                     Text(Tr("添加第1个作品"))
                         .font(pf(L.v(14, 3.9, 15.5)))
                         .foregroundColor(C.label)
@@ -1253,10 +1253,10 @@ struct SettingsView: View {
                 ZStack {
                     if scheme == .dark,
                        let themed = UIConfig.colorIfSet("searchBg") {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                             .fill(themed)
                     }
-                    GlassBackground(shape: RoundedRectangle(cornerRadius: 12, style: .continuous),
+                    GlassBackground(shape: RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous),
                                     opacity: 0.88,
                                     edgeAlpha: 0.55,
                                     shadow: false,

@@ -502,9 +502,9 @@ struct PhotoEditorView: View {
                             .foregroundStyle(.white.opacity(0.88))
                     }
                 }
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
                 .overlay {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                         .stroke(selected ? C.green : Color.white.opacity(0.10),
                                 lineWidth: selected ? 2 : 0.7)
                 }

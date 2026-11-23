@@ -404,7 +404,7 @@ struct NearbyPageView: View {
         }
         .padding(14)
         .background(rowBg)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
         .padding(.horizontal, 14)
         .padding(.bottom, 18)
     }

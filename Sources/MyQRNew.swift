@@ -30,7 +30,7 @@ private struct XingyanMark: View {
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous)
                 .fill(accent)
             HStack(spacing: 4) {
                 Capsule().fill(Color(hex: 0x07351C)).frame(width: 2.8, height: 7)
@@ -39,7 +39,7 @@ private struct XingyanMark: View {
             .offset(y: 1)
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous)
                 .stroke(Color.white.opacity(0.36), lineWidth: 0.6)
         }
     }
@@ -133,7 +133,7 @@ struct MyQRView: View {
     }
     private var identityCardFill: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 30, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                 .fill(
                     LinearGradient(
                         colors: scheme == .dark
@@ -143,7 +143,7 @@ struct MyQRView: View {
                         endPoint: .bottomTrailing
                     )
                 )
-            RoundedRectangle(cornerRadius: 30, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                 .fill(
                     RadialGradient(
                         colors: [OrbitTheme.jade.opacity(scheme == .dark ? 0.13 : 0.10), .clear],
@@ -272,9 +272,9 @@ struct MyQRView: View {
             .frame(height: 38)
             .background(cardFooterFill)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 30, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                 .stroke(cardHairline, lineWidth: 0.8)
         }
         .shadow(color: Color.black.opacity(scheme == .dark ? 0.34 : 0.10),
@@ -309,7 +309,7 @@ struct MyQRView: View {
 
             HStack(alignment: .center, spacing: 15) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                         .fill(cardAvatarFill)
                     Avatar(path: avatar.isEmpty ? (app.me?.avatarPath ?? "") : avatar,
                            size: 68, radius: 21, circle: false, level: growth.shownLevel)
@@ -317,7 +317,7 @@ struct MyQRView: View {
                 }
                 .frame(width: 78, height: 78)
                 .overlay {
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                         .stroke(OrbitTheme.jade.opacity(0.28), lineWidth: 0.8)
                 }
 
@@ -349,7 +349,7 @@ struct MyQRView: View {
     private var qrPanel: some View {
         VStack(spacing: 12) {
             ZStack {
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                     .fill(Color(hex: 0xFCFDFC))
                 if loading {
                     ProgressView()
@@ -370,7 +370,7 @@ struct MyQRView: View {
             }
             .frame(width: 244, height: 244)
             .overlay {
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                     .stroke(Color.white.opacity(0.98), lineWidth: 1)
             }
             .shadow(color: Color.black.opacity(scheme == .dark ? 0.25 : 0.08),
@@ -434,9 +434,9 @@ struct MyQRView: View {
             .frame(maxWidth: .infinity)
             .frame(height: 96)
             .background(OrbitTheme.raised)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                     .stroke(OrbitTheme.divider, lineWidth: 0.7)
             }
             .contentShape(Rectangle())
@@ -493,10 +493,10 @@ struct MyQRView: View {
                 QRCanvas(rows: rows, avatar: avatar, ink: ink.color)
                     .frame(width: 490, height: 490)
                     .padding(26)
-                    .background(RoundedRectangle(cornerRadius: 32, style: .continuous)
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.hero, style: .continuous)
                         .fill(Color(hex: 0xFCFDFC)))
                     .overlay {
-                        RoundedRectangle(cornerRadius: 32, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.hero, style: .continuous)
                             .stroke(Color.white, lineWidth: 1.2)
                     }
                     .shadow(color: Color.black.opacity(0.07), radius: 18, y: 8)
@@ -513,9 +513,9 @@ struct MyQRView: View {
             .padding(.vertical, 30)
         }
         .frame(width: 640)
-        .clipShape(RoundedRectangle(cornerRadius: 36, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.hero, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 36, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.hero, style: .continuous)
                 .stroke(Color.black.opacity(0.06), lineWidth: 1)
         }
         let renderer = ImageRenderer(content: card)

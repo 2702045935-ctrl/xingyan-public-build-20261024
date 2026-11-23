@@ -53,12 +53,12 @@ struct MusicDockedPlayerBar: View {
         .padding(.horizontal, 12)
         .frame(height: 64)
         .background {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                 .fill(.thinMaterial)
                 .opacity(fadesBackgroundWhilePlaying && player.playing ? 0.12 : 1)
                 .animation(.easeInOut(duration: 0.38), value: player.playing)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
         .contentShape(Rectangle())
         .onTapGesture {
             if let track = player.current { MusicSheet.shared.open(track) }

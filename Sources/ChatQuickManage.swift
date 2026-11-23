@@ -75,7 +75,7 @@ struct ChatQuickAdminSection: View {
                 .buttonStyle(.plain)
             }
             .background(C.cardBg)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
             .padding(.horizontal, 12)
 
             HStack {
@@ -113,7 +113,7 @@ struct ChatQuickAdminSection: View {
                             if hex.isEmpty {
                                 Text(Tr("默认")).font(pf(12)).foregroundColor(C.subLabel)
                                     .frame(width: 40, height: 26)
-                                    .background(RoundedRectangle(cornerRadius: 6).fill(C.fieldBg))
+                                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny).fill(C.fieldBg))
                             } else {
                                 Circle().fill(optionalHexColor(hex) ?? C.green)
                                     .frame(width: 26, height: 26)
@@ -168,7 +168,7 @@ struct ChatQuickAdminSection: View {
                 .buttonStyle(.plain)
             }
             .background(C.cardBg)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
             .padding(.horizontal, 12)
 
             HStack {
@@ -204,7 +204,7 @@ struct ChatQuickAdminSection: View {
                 .padding(.horizontal, 16).frame(minHeight: 62)
             }
             .background(C.cardBg)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
             .padding(.horizontal, 12)
 
             if !msg.isEmpty {
@@ -286,7 +286,7 @@ struct ChatQuickAdminSection: View {
                             .padding(.horizontal, 16).frame(height: 52)
                         }
                         .background(C.cardBg)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
                         .padding(.horizontal, 12)
 
                         VStack(spacing: 0) {
@@ -303,7 +303,7 @@ struct ChatQuickAdminSection: View {
                             .buttonStyle(.plain)
                         }
                         .background(C.cardBg)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
                         .padding(.horizontal, 12)
 
                         Button {
@@ -314,7 +314,7 @@ struct ChatQuickAdminSection: View {
                             Text(Tr("删除这个按钮")).font(pf(16)).foregroundColor(C.red)
                                 .frame(maxWidth: .infinity).frame(height: 50)
                                 .background(C.cardBg)
-                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
                                 .padding(.horizontal, 12)
                         }
                         .buttonStyle(.plain)

@@ -129,7 +129,7 @@ struct LookView: View {
             if let cover = v.cover, !cover.isEmpty {
                 RemoteImage(path: cover, mode: .fill, maxSide: 900)
                     .frame(height: 180)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
             }
             HStack(spacing: 12) {
                 Text(v.author ?? "").font(pf(12.5)).foregroundColor(C.subLabel)
@@ -139,7 +139,7 @@ struct LookView: View {
         }
         .padding(14)
         .background(C.cardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
         .padding(.horizontal, 12)
         .padding(.bottom, 10)
     }
@@ -170,7 +170,7 @@ struct LookView: View {
                     ForEach(Array(imgs.prefix(3).enumerated()), id: \.offset) { _, s in
                         RemoteImage(path: s, mode: .fill, maxSide: 600)
                             .frame(width: 96, height: 96)
-                            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous))
                     }
                     Spacer(minLength: 0)
                 }
@@ -183,7 +183,7 @@ struct LookView: View {
         }
         .padding(14)
         .background(C.cardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
         .padding(.horizontal, 12)
         .padding(.bottom, 10)
     }

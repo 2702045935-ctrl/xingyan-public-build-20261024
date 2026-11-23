@@ -66,17 +66,17 @@ struct MsgMenuBox: View {
 
         .background {
             ZStack {
-                GlassBackground(shape: RoundedRectangle(cornerRadius: 10, style: .continuous),
+                GlassBackground(shape: RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous),
                                 opacity: UIConfig.num("menuGlassAlpha", 0.92),
                                 edgeAlpha: UIConfig.num("menuGlassEdge", 0.28),
                                 shadow: false,
                                 seed: 0.85,
                                 native: true)
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                     .fill(bg.opacity(0.55))
             }
         }
-        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
             .stroke(Color.white.opacity(scheme == .dark ? 0.16 : 0.30), lineWidth: 0.6))
         .shadow(color: Color.black.opacity(0.18), radius: 12, y: 4)
     }

@@ -1006,10 +1006,10 @@ struct StarMapView: View {
             .padding(.horizontal, 13)
             .frame(height: 40)
             .background(.regularMaterial,
-                        in: RoundedRectangle(cornerRadius: 14,
+                        in: RoundedRectangle(cornerRadius: AppDesign.Radius.control,
                                              style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                     .stroke(Color.white.opacity(scheme == .dark ? 0.12 : 0.36),
                             lineWidth: 0.6)
             }
@@ -1061,10 +1061,10 @@ struct StarMapView: View {
             }
         }
         .background(.regularMaterial,
-                    in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    in: RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(Color.white.opacity(scheme == .dark ? 0.11 : 0.40),
                         lineWidth: 0.6)
         }
@@ -1126,13 +1126,13 @@ struct StarMapView: View {
                             .background(
                                 .regularMaterial,
                                 in: RoundedRectangle(
-                                    cornerRadius: 16,
+                                    cornerRadius: AppDesign.Radius.row,
                                     style: .continuous
                                 )
                             )
                             .overlay {
                                 RoundedRectangle(
-                                    cornerRadius: 16,
+                                    cornerRadius: AppDesign.Radius.row,
                                     style: .continuous
                                 )
                                 .stroke(
@@ -1151,10 +1151,10 @@ struct StarMapView: View {
         .padding(11)
         .background(
             .thinMaterial,
-            in: RoundedRectangle(cornerRadius: 20, style: .continuous)
+            in: RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
         )
         .overlay {
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(Color.white.opacity(scheme == .dark ? 0.10 : 0.38),
                         lineWidth: 0.6)
         }
@@ -1190,9 +1190,9 @@ struct StarMapView: View {
         .padding(.trailing, 10)
         .frame(minHeight: 66)
         .background(.regularMaterial,
-                    in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    in: RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(Color.white.opacity(scheme == .dark ? 0.10 : 0.42),
                         lineWidth: 0.6)
         }
@@ -1342,9 +1342,9 @@ struct StarMapView: View {
         }
         .padding(16)
         .background(.regularMaterial,
-                    in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+                    in: RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                 .stroke(Color.white.opacity(scheme == .dark ? 0.12 : 0.44),
                         lineWidth: 0.6)
         }
@@ -1404,10 +1404,10 @@ struct StarMapView: View {
         .padding(16)
         .background(
             .regularMaterial,
-            in: RoundedRectangle(cornerRadius: 25, style: .continuous)
+            in: RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
         )
         .overlay {
-            RoundedRectangle(cornerRadius: 25, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                 .stroke(Color.white.opacity(scheme == .dark ? 0.13 : 0.46),
                         lineWidth: 0.6)
         }
@@ -1455,13 +1455,13 @@ struct StarMapView: View {
                                 ? Color(hex: 0x0A84FF).opacity(0.12)
                                 : Color.primary.opacity(0.045),
                             in: RoundedRectangle(
-                                cornerRadius: 15,
+                                cornerRadius: AppDesign.Radius.control,
                                 style: .continuous
                             )
                         )
                         .overlay {
                             RoundedRectangle(
-                                cornerRadius: 15,
+                                cornerRadius: AppDesign.Radius.control,
                                 style: .continuous
                             )
                             .stroke(
@@ -1532,9 +1532,9 @@ struct StarMapView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
         .background(.regularMaterial,
-                    in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+                    in: RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                 .stroke(Color.white.opacity(scheme == .dark ? 0.13 : 0.46),
                         lineWidth: adaptiveStrokeWidth)
         }
@@ -1559,9 +1559,9 @@ struct StarMapView: View {
         .padding(.horizontal, 11)
         .frame(height: 48)
         .background(.thinMaterial,
-                    in: RoundedRectangle(cornerRadius: 17, style: .continuous))
+                    in: RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 17, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                 .stroke(Color.white.opacity(scheme == .dark ? 0.11 : 0.42),
                         lineWidth: adaptiveStrokeWidth)
         }
@@ -1645,9 +1645,9 @@ struct StarMapView: View {
         .padding(.top, 13)
         .padding(.bottom, 14)
         .background(.regularMaterial,
-                    in: RoundedRectangle(cornerRadius: 25, style: .continuous))
+                    in: RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 25, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                 .stroke(Color.white.opacity(scheme == .dark ? 0.13 : 0.46),
                         lineWidth: adaptiveStrokeWidth)
         }
@@ -2059,7 +2059,7 @@ private struct StarNavigationHUD: View {
                     .padding(.horizontal, 17)
                     .frame(height: 52)
                     .background(.white.opacity(0.08),
-                                in: RoundedRectangle(cornerRadius: 17,
+                                in: RoundedRectangle(cornerRadius: AppDesign.Radius.row,
                                                      style: .continuous))
                 }
 

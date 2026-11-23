@@ -27,7 +27,7 @@ struct NavPlusCard: View {
                 } label: {
                     HStack(spacing: 12) {
                         ZStack {
-                            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                                 .fill(OrbitTheme.field)
                             Image(systemName: item.symbol)
                                 .font(.system(size: 14.5, weight: .semibold))
@@ -35,7 +35,7 @@ struct NavPlusCard: View {
                         }
                         .frame(width: 34, height: 34)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                                 .stroke(OrbitTheme.divider, lineWidth: 0.6)
                         )
 
@@ -54,11 +54,11 @@ struct NavPlusCard: View {
         .frame(width: 194)
 
         .background {
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .fill(OrbitTheme.raised)
         }
         .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(OrbitTheme.divider, lineWidth: 0.7)
         )
         .shadow(color: Color.black.opacity(0.16), radius: 18, y: 9)

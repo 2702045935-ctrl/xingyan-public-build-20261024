@@ -2246,9 +2246,9 @@ struct DDHomeTab: View {
                         endPoint: .bottomTrailing
                     )
                 )
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                         .stroke(
                             LinearGradient(
                                 colors: [DDColor.red.opacity(0.20),
@@ -2318,7 +2318,7 @@ struct DDHomeTab: View {
             }
             .padding(.vertical, 12)
             .background(DDColor.card)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
             .padding(.horizontal, 10)
         }
     }
@@ -2382,8 +2382,8 @@ struct DDHomeTab: View {
                                                    startPoint: .leading,
                                                    endPoint: .trailing)
                                 )
-                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
+                                .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                                     .stroke(DDColor.red.opacity(0.16), lineWidth: 0.7))
                             }
                             .buttonStyle(.plain)
@@ -2394,7 +2394,7 @@ struct DDHomeTab: View {
             }
             .padding(.vertical, 12)
             .background(DDColor.card)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
             .padding(.horizontal, 10)
         }
     }
@@ -2429,8 +2429,8 @@ struct DDHomeTab: View {
             .padding(.horizontal, 12)
             .frame(height: 38)
             .background(DDColor.cardGrad)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                 .stroke(DDColor.cardEdge, lineWidth: 0.6))
             .padding(.horizontal, 12)
         }
@@ -2484,7 +2484,7 @@ struct DDHomeTab: View {
             if let img = p.img, !img.isEmpty {
                 RemoteImage(path: img, icon: "photo", mode: .fill)
                     .frame(width: 56, height: 56)
-                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous))
                     .padding(.trailing, 8)
             } else {
                 Text(p.em)
@@ -2499,7 +2499,7 @@ struct DDHomeTab: View {
             colors: index % 4 == 3 ? [Color(hex: 0xFFF8E3), .white]
                                    : [Color(hex: 0xF2F7FF), .white],
             startPoint: .topLeading, endPoint: .bottomTrailing))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
     }
 
     private func promoBoard(onViewAll: @escaping () -> Void) -> some View {
@@ -2539,8 +2539,8 @@ struct DDHomeTab: View {
             .padding(10)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .background(DDColor.cardGrad)
-            .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous)
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                 .stroke(DDColor.cardEdge, lineWidth: 0.7))
             .shadow(color: DDColor.cardShadow, radius: 10, y: 3)
         }
@@ -2567,12 +2567,12 @@ struct DDHomeTab: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 7)
                     .frame(height: 20)
-                    .background(RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous)
                         .fill(DDColor.red.opacity(0.85)))
                     .padding(8)
             }
             .frame(height: 102)
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
 
             Text(p.title)
                 .font(pf(12, .medium))
@@ -2602,12 +2602,12 @@ struct DDHomeTab: View {
             if let img = p.img, !img.isEmpty {
                 RemoteImage(path: img, icon: "photo", mode: .fill)
                     .frame(width: 62, height: 62)
-                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
             } else {
                 Text(p.em).font(pfStyled(size: 30))
                     .frame(width: 62, height: 62)
                     .background(Color(hex: 0xF1F4F8))
-                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
             }
             VStack(alignment: .leading, spacing: 4) {
                 Text(p.title)
@@ -2630,7 +2630,7 @@ struct DDHomeTab: View {
         .frame(height: 78)
         .padding(7)
         .background(DDColor.page)
-        .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
     }
 
     @State private var bannerPage = 0
@@ -2666,7 +2666,7 @@ struct DDHomeTab: View {
                                     .padding(.bottom, 14)
                                 }
                             }
-                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
                             .padding(.horizontal, 12)
                         }
                         .buttonStyle(.plain)
@@ -2773,8 +2773,8 @@ struct DDHomeTab: View {
                 .frame(maxWidth: 250, maxHeight: .infinity, alignment: .leading)
             }
             .frame(height: 184)
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous)
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(Color.white.opacity(0.08), lineWidth: 0.8))
             .contentShape(Rectangle())
         }
@@ -2824,8 +2824,8 @@ struct DDHomeTab: View {
         }
         .padding(.vertical, 10)
         .background(DDColor.cardGrad)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
         .shadow(color: DDColor.cardShadow, radius: 10, y: 3)
         .padding(.horizontal, 10)
     }
@@ -2894,13 +2894,13 @@ struct DDHomeTab: View {
             .frame(maxWidth: .infinity, minHeight: 118, alignment: .leading)
             .background(LinearGradient(colors: colors,
                                        startPoint: .topLeading, endPoint: .bottomTrailing))
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
             .overlay(
                 Circle()
                     .stroke(Color.white.opacity(0.10), lineWidth: 18)
                     .frame(width: 110, height: 110)
                     .offset(x: 58, y: -48)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
             )
             .contentShape(Rectangle())
         }
@@ -2923,7 +2923,7 @@ struct DDHomeTab: View {
                             Text(Tr(c))
                                 .font(pf(15, on ? .semibold : .regular))
                                 .foregroundColor(on ? DDColor.blueDeep : DDColor.ink)
-                            RoundedRectangle(cornerRadius: 1.5)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.hairline)
                                 .fill(on ? DDColor.blueDeep : Color.clear)
                                 .frame(width: 18, height: 2.5)
                         }
@@ -2937,8 +2937,8 @@ struct DDHomeTab: View {
         .padding(.top, 8)
         .padding(.bottom, 6)
         .background(DDColor.cardGrad)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
         .shadow(color: DDColor.cardShadow, radius: 10, y: 3)
         .padding(.horizontal, 10)
     }
@@ -2993,7 +2993,7 @@ struct DDHomeTab: View {
                               action: (() -> Void)? = nil) -> some View {
 
         HStack(alignment: .firstTextBaseline, spacing: 8) {
-            RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.hairline, style: .continuous)
                 .fill(LinearGradient(colors: [DDColor.red, Color(hex: 0xD4A44A)],
                                      startPoint: .top, endPoint: .bottom))
                 .frame(width: 3, height: 17)
@@ -3249,7 +3249,7 @@ struct DDProductCard: View {
             }
             .aspectRatio(1, contentMode: .fit)
             .frame(maxWidth: .infinity)
-            .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
             .overlay(alignment: .topTrailing) {
                 if !product.galleryVideos.isEmpty {
                     Image(systemName: "play.fill")
@@ -3349,10 +3349,10 @@ struct DDProductCard: View {
             .padding(.bottom, 10)
         }
         .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous)
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
             .stroke(DDColor.cardEdge, lineWidth: 0.6))
-        .contentShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
         .mallOptionalTap(onOpen)
     }
 }
@@ -3394,7 +3394,7 @@ struct DDRecTab: View {
                         ForEach(p.tags.prefix(2), id: \.self) { t in
                             Text(t).font(pf(10.5)).foregroundColor(DDColor.red)
                                 .padding(.horizontal, 5).frame(height: 17)
-                                .background(RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous)
                                     .fill(DDColor.redLight))
                         }
                     }
@@ -3409,8 +3409,8 @@ struct DDRecTab: View {
         }
         .padding(12)
         .background(DDColor.cardGrad)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
         .shadow(color: DDColor.cardShadow, radius: 10, y: 3)
         .padding(.horizontal, 10)
     }
@@ -3496,8 +3496,8 @@ struct DDMsgTab: View {
         }
         .padding(12)
         .background(DDColor.cardGrad)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
         .shadow(color: DDColor.cardShadow, radius: 10, y: 3)
         .contentShape(Rectangle())
     }
@@ -3547,8 +3547,8 @@ struct DDMsgTab: View {
         }
         .padding(12)
         .background(DDColor.cardGrad)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
         .shadow(color: DDColor.cardShadow, radius: 10, y: 3)
         .padding(.horizontal, 10)
         .contentShape(Rectangle())
@@ -3642,7 +3642,7 @@ struct DDCartTab: View {
                                         Text("📦").font(pfStyled(size: 20))
                                             .frame(width: 46, height: 46)
                                             .background(DDColor.page)
-                                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini))
                                         Text(store.product(l.pid)?.title ?? Tr("商品已下架"))
                                             .font(pf(12.5)).foregroundColor(DDColor.sub).lineLimit(1)
                                         Spacer(minLength: 0)
@@ -3655,8 +3655,8 @@ struct DDCartTab: View {
                                 }
                             }
                             .background(DDColor.cardGrad)
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
                             .shadow(color: DDColor.cardShadow, radius: 10, y: 3)
                             .padding(.horizontal, 10)
                         }
@@ -3702,8 +3702,8 @@ struct DDCartTab: View {
         }
         .padding(12)
         .background(DDColor.cardGrad)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
         .shadow(color: DDColor.cardShadow, radius: 10, y: 3)
         .padding(.horizontal, 10)
 
@@ -3737,7 +3737,7 @@ struct DDCartTab: View {
             Text(t).font(pf(15, .medium))
                 .foregroundColor(t == "+" ? DDColor.blue : DDColor.ink)
                 .frame(width: 26, height: 26)
-                .background(RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous)
                     .fill(t == "+" ? DDColor.blueLight : DDColor.page))
         }
         .buttonStyle(.plain)
@@ -3813,8 +3813,8 @@ struct DDCartTab: View {
                         }
                         .padding(14)
                         .background(DDColor.cardGrad)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
                         .shadow(color: DDColor.cardShadow, radius: 10, y: 3)
                         .contentShape(Rectangle())
                     }
@@ -3830,8 +3830,8 @@ struct DDCartTab: View {
                         }
                         .padding(12)
                         .background(DDColor.cardGrad)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
                         .shadow(color: DDColor.cardShadow, radius: 10, y: 3)
                     }
                     Text(Tr("合计 ") + "¥" + moneyFmt(total))
@@ -3849,15 +3849,15 @@ struct DDCartTab: View {
 
                     DDPayWayList(payWay: $store.payWay)
                         .background(DDColor.cardGrad)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
                         .shadow(color: DDColor.cardShadow, radius: 10, y: 3)
                     Spacer().frame(height: 8)
 
                     DDDeliveryList(goods: total)
                         .background(DDColor.cardGrad)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
                         .shadow(color: DDColor.cardShadow, radius: 10, y: 3)
                     Spacer().frame(height: 8)
                 }
@@ -3869,7 +3869,7 @@ struct DDCartTab: View {
                 Text(Tr("提交订单"))
                     .font(pf(16, .medium)).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
-                    .background(RoundedRectangle(cornerRadius: 23, style: .continuous).fill(DDColor.gradBtn))
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous).fill(DDColor.gradBtn))
                     .padding(.horizontal, 14)
             }
             .buttonStyle(.plain)
@@ -4085,8 +4085,8 @@ struct DDMineTab: View {
             .padding(.vertical, 14)
         }
         .background(DDColor.mineCardGrad)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
             .stroke(DDColor.cardEdge.opacity(0.7), lineWidth: 0.6))
         .shadow(color: Color.black.opacity(0.05), radius: 2, y: 1)
         .shadow(color: DDColor.cardShadow, radius: 14, y: 5)
@@ -4137,8 +4137,8 @@ struct DDMineTab: View {
             .padding(.vertical, 14)
         }
         .background(DDColor.cardGrad)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
             .stroke(DDColor.cardEdge.opacity(0.7), lineWidth: 0.6))
         .shadow(color: Color.black.opacity(0.05), radius: 2, y: 1)
         .shadow(color: DDColor.cardShadow, radius: 14, y: 5)
@@ -4151,7 +4151,7 @@ struct DDMineTab: View {
                 ZStack(alignment: .topTrailing) {
 
                     ZStack {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                             .fill(LinearGradient(colors: [DDColor.red.opacity(0.16), DDColor.red.opacity(0.07)],
                                                  startPoint: .topLeading, endPoint: .bottomTrailing))
                             .frame(width: 40, height: 40)
@@ -4199,8 +4199,8 @@ struct DDMineTab: View {
             toolRow("联系客服", "bubble.left.and.bubble.right", "") { showService = true }
         }
         .background(DDColor.cardGrad)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
             .stroke(DDColor.cardEdge.opacity(0.7), lineWidth: 0.6))
         .shadow(color: Color.black.opacity(0.05), radius: 2, y: 1)
         .shadow(color: DDColor.cardShadow, radius: 14, y: 5)
@@ -4213,7 +4213,7 @@ struct DDMineTab: View {
             HStack(spacing: 12) {
 
                 ZStack {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                         .fill(LinearGradient(colors: [DDColor.blue.opacity(0.15), DDColor.blue.opacity(0.06)],
                                              startPoint: .topLeading, endPoint: .bottomTrailing))
                         .frame(width: 32, height: 32)
@@ -4346,8 +4346,8 @@ struct DDDetailView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 4)
-        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color.white))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous).fill(Color.white))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
             .stroke(DDColor.cardEdge, lineWidth: 0.7))
         .shadow(color: Color.black.opacity(0.035), radius: 8, y: 3)
         .padding(.horizontal, 12)
@@ -4381,7 +4381,7 @@ struct DDDetailView: View {
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(DDColor.redDeep)
                     .frame(width: 34, height: 34)
-                    .background(RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                         .fill(DDColor.redLight))
                 Text(pickedSpec.isEmpty ? (selectedVariant?.name ?? Tr("标准款")) : pickedSpec)
                     .font(pf(15, .medium))
@@ -4402,8 +4402,8 @@ struct DDDetailView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
             .stroke(DDColor.cardEdge, lineWidth: 0.6))
         .padding(.horizontal, 10)
         .padding(.top, 10)
@@ -4733,8 +4733,8 @@ struct DDDetailView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous)
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
             .stroke(Color.white.opacity(0.92), lineWidth: 0.8))
         .shadow(color: Color.black.opacity(0.07), radius: 18, y: 7)
         .padding(.horizontal, 10)
@@ -4800,7 +4800,7 @@ struct DDDetailView: View {
                 }
                 .padding(.horizontal, 12)
                 .frame(height: 40)
-                .background(RoundedRectangle(cornerRadius: 11, style: .continuous)
+                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                     .fill(DDColor.redLight))
                 .contentShape(Rectangle())
             }
@@ -4808,8 +4808,8 @@ struct DDDetailView: View {
         }
         .padding(14)
         .background(DDColor.card)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
             .stroke(DDColor.cardEdge, lineWidth: 0.6))
         .padding(.horizontal, 10)
     }
@@ -4830,7 +4830,7 @@ struct DDDetailView: View {
         }
         .padding(11)
         .frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
+        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
             .fill(DDColor.page.opacity(0.72)))
     }
 
@@ -4871,15 +4871,15 @@ struct DDDetailView: View {
                         }
                         .padding(.horizontal, 9)
                         .frame(height: 36)
-                        .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                             .fill(DDColor.redLight.opacity(0.72)))
                     }
                 }
             }
             .padding(14)
             .background(DDColor.card)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                 .stroke(DDColor.cardEdge, lineWidth: 0.6))
             .padding(.horizontal, 10)
             .padding(.top, 10)
@@ -4920,8 +4920,8 @@ struct DDDetailView: View {
         }
         .padding(14)
         .background(DDColor.cardGrad)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
         .shadow(color: DDColor.cardShadow, radius: 10, y: 3)
         .padding(.horizontal, 10)
         .padding(.top, 10)
@@ -4932,7 +4932,7 @@ struct DDDetailView: View {
         return VStack(alignment: .leading, spacing: 10) {
             Button { showShop = true } label: {
                 HStack(spacing: 11) {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                         .fill(LinearGradient(colors: [shopTint.opacity(0.15), shopTint.opacity(0.04)],
                                              startPoint: .topLeading, endPoint: .bottomTrailing))
                         .frame(width: 46, height: 46)
@@ -4987,8 +4987,8 @@ struct DDDetailView: View {
         }
         .padding(14)
         .background(DDColor.card)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
             .stroke(DDColor.cardEdge, lineWidth: 0.6))
         .padding(.horizontal, 10)
         .padding(.top, 10)
@@ -5002,7 +5002,7 @@ struct DDDetailView: View {
         .foregroundColor(tint)
         .frame(maxWidth: .infinity)
         .frame(height: 34)
-        .background(RoundedRectangle(cornerRadius: 9, style: .continuous)
+        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
             .fill(tint.opacity(0.07)))
     }
 
@@ -5074,10 +5074,10 @@ struct DDDetailView: View {
         .foregroundColor(soft ? DDColor.redDeep : .white)
         .frame(maxWidth: .infinity).frame(height: 44)
         .background {
-            if let solid { RoundedRectangle(cornerRadius: 22, style: .continuous).fill(solid) }
-            else if soft { RoundedRectangle(cornerRadius: 22, style: .continuous).fill(DDColor.redLight) }
+            if let solid { RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous).fill(solid) }
+            else if soft { RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous).fill(DDColor.redLight) }
             else {
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                     .fill(LinearGradient(colors: [DDColor.red, DDColor.redDeep],
                                          startPoint: .leading, endPoint: .trailing))
             }
@@ -5273,8 +5273,8 @@ struct DDOrderSheet: View {
                     }
                     .padding(12)
                     .background(DDColor.cardGrad)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
                     .shadow(color: DDColor.cardShadow, radius: 10, y: 3)
 
                     if DDStore.groupOn {
@@ -5284,8 +5284,8 @@ struct DDOrderSheet: View {
                             pick(Tr("单独购买"), Tr("按单买价，不用等人"), false)
                         }
                         .background(DDColor.cardGrad)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
                         .shadow(color: DDColor.cardShadow, radius: 10, y: 3)
                     }
 
@@ -5295,21 +5295,21 @@ struct DDOrderSheet: View {
                         Button { if count > 1 { count -= 1 } } label: {
                             Text("−").font(pf(16, .medium)).foregroundColor(DDColor.ink)
                                 .frame(width: 30, height: 30)
-                                .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(DDColor.page))
+                                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous).fill(DDColor.page))
                         }
                         .buttonStyle(.plain)
                         Text(String(count)).font(pf(14)).frame(width: 36)
                         Button { count += 1 } label: {
                             Text("+").font(pf(16, .medium)).foregroundColor(DDColor.ink)
                                 .frame(width: 30, height: 30)
-                                .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(DDColor.page))
+                                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous).fill(DDColor.page))
                         }
                         .buttonStyle(.plain)
                     }
                     .padding(14)
                     .background(DDColor.cardGrad)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
                     .shadow(color: DDColor.cardShadow, radius: 10, y: 3)
 
                     Button { showAddrList = true } label: {
@@ -5343,8 +5343,8 @@ struct DDOrderSheet: View {
                         }
                         .padding(14)
                         .background(DDColor.cardGrad)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
                         .shadow(color: DDColor.cardShadow, radius: 10, y: 3)
                         .contentShape(Rectangle())
                     }
@@ -5371,8 +5371,8 @@ struct DDOrderSheet: View {
                         DDPayWayList(payWay: $store.payWay)
                     }
                     .background(DDColor.cardGrad)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
                     .shadow(color: DDColor.cardShadow, radius: 10, y: 3)
 
                     HStack(spacing: 10) {
@@ -5382,8 +5382,8 @@ struct DDOrderSheet: View {
                     }
                     .padding(.horizontal, 14).frame(height: 48)
                     .background(DDColor.cardGrad)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
                     .shadow(color: DDColor.cardShadow, radius: 10, y: 3)
 
                     HStack {
@@ -5401,7 +5401,7 @@ struct DDOrderSheet: View {
                 Text((DDStore.groupOn && group) ? Tr("发起拼单") : Tr("立即支付"))
                     .font(pf(16, .medium)).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
-                    .background(RoundedRectangle(cornerRadius: 23, style: .continuous).fill(DDColor.gradBtn))
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous).fill(DDColor.gradBtn))
                     .padding(.horizontal, 14)
             }
             .buttonStyle(.plain)
@@ -5745,8 +5745,8 @@ struct DDOrdersView: View {
         }
         .padding(12)
         .background(DDColor.cardGrad)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
         .shadow(color: DDColor.cardShadow, radius: 10, y: 3)
         .padding(.horizontal, 10)
 
@@ -5935,7 +5935,7 @@ struct DDSearchView: View {
                     }
                 }
                 .padding(.horizontal, 12).frame(height: 36)
-                .background(RoundedRectangle(cornerRadius: 10).fill(DDColor.card))
+                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small).fill(DDColor.card))
             }
             .padding(.horizontal, 10)
         }
@@ -6010,7 +6010,7 @@ struct DDSearchView: View {
                         .font(pf(13)).foregroundColor(fill ? DDColor.ink : DDColor.red)
                         .padding(.horizontal, 10).frame(height: 30)
                         .frame(maxWidth: .infinity)
-                        .background(RoundedRectangle(cornerRadius: 8)
+                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini)
                             .fill(fill ? DDColor.card : DDColor.redLight))
                 }
                 .buttonStyle(.plain)
@@ -6044,8 +6044,8 @@ struct DDSearchView: View {
         }
         .padding(12)
         .background(DDColor.cardGrad)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
         .shadow(color: DDColor.cardShadow, radius: 10, y: 3)
         .padding(.horizontal, 10)
     }
@@ -6073,7 +6073,7 @@ struct DDSwipeRow<Content: View>: View {
                 .frame(width: actW)
                 .frame(maxHeight: .infinity)
                 .background(DDColor.red)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)

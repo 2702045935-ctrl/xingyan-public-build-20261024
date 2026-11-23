@@ -67,7 +67,7 @@ struct PayKeypadView: View {
             .frame(maxWidth: .infinity)
             .frame(height: keyHeight)
             .background(PayVisual.card)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
             .allowsHitTesting(false)
         } else {
             Button {
@@ -121,8 +121,8 @@ struct PayDotField: View {
             }
         }
         .background(PayVisual.card)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
             .stroke(PayVisual.separator, lineWidth: 0.8))
 
         .padding(.horizontal, 20)
@@ -153,7 +153,7 @@ struct BankKeyStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .background(configuration.isPressed ? Color.dyn(0xE5E5EA, 0x3A3A3C) : PayVisual.card)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
             .animation(.easeOut(duration: 0.08), value: configuration.isPressed)
     }
@@ -194,7 +194,7 @@ struct PayBusyOverlay: View {
                     .foregroundColor(.white)
             }
             .frame(width: 118, height: 118)
-            .background(RoundedRectangle(cornerRadius: 20, style: .continuous)
+            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .fill(Color.black.opacity(0.76)))
             .shadow(color: Color.black.opacity(0.22), radius: 20, y: 8)
         }

@@ -97,7 +97,7 @@ struct RegionPickerSheet: View {
             }
             .frame(maxWidth: .infinity)
             .background { CardGlassBox(radius: 16) }
-            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                 .stroke(C.hairline, lineWidth: 0.6))
             .padding(.horizontal, 14)
 

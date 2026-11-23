@@ -16,7 +16,7 @@ struct StarOrbitHero: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                 .fill(LinearGradient(
                     colors: [
                         accent.opacity(0.86),
@@ -82,9 +82,9 @@ struct StarOrbitHero: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: 170)
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                 .stroke(Color.white.opacity(0.10), lineWidth: 0.8)
         }
     }
@@ -411,7 +411,7 @@ struct StarOrbitCard<Content: View>: View {
     var body: some View {
         content
             .background(OrbitTheme.cardBackground())
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
     }
 }
 
@@ -437,11 +437,17 @@ struct StarOrbitSearchField: View {
             }
         }
         .padding(.horizontal, 13)
-        .frame(height: 42)
+        .frame(height: AppDesign.Control.searchHeight)
         .background(OrbitTheme.field)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .clipShape(RoundedRectangle(
+            cornerRadius: AppDesign.Radius.control,
+            style: .continuous
+        ))
         .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(
+                cornerRadius: AppDesign.Radius.control,
+                style: .continuous
+            )
                 .stroke(OrbitTheme.divider, lineWidth: 0.7)
         }
     }

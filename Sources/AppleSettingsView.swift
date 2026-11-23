@@ -267,7 +267,7 @@ struct AppleSettingsView: View {
                 .foregroundStyle(.white)
                 .frame(width: 28, height: 28)
                 .background(
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous)
                         .fill(color)
                 )
         }

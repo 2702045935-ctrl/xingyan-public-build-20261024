@@ -54,7 +54,7 @@ struct PhoneChangeSheet: View {
                         .font(pfStyled(size: 17, weight: .medium)).foregroundColor(.white)
                         .frame(maxWidth: .infinity).frame(height: 48)
                         .background(phoneOK && !busy ? C.loginGreen : C.subLabel)
-                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
                 }
                 .disabled(busy || !phoneOK)
 

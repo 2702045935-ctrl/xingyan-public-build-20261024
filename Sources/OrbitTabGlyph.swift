@@ -38,7 +38,7 @@ struct OrbitTabGlyph: View {
     private func drawChat(_ context: GraphicsContext,
                           line: StrokeStyle, fine: StrokeStyle) {
         let bubbleRect = CGRect(x: 2.6, y: 3.1, width: 18.8, height: 14.1)
-        let bubble = Path(roundedRect: bubbleRect, cornerRadius: 7,
+        let bubble = Path(roundedRect: bubbleRect, cornerRadius: AppDesign.Radius.tiny,
                           style: .continuous)
         var tail = Path()
         tail.move(to: CGPoint(x: 7.1, y: 16.2))

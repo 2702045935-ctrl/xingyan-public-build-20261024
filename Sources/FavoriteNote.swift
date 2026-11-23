@@ -87,7 +87,7 @@ struct FavoriteNoteComposeSheet: View {
                                 RemoteImage(path: p, mode: .fill, maxSide: 600)
                                     .frame(height: 88)
                                     .frame(maxWidth: .infinity)
-                                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
                                 Button { pics.removeAll { $0 == p } } label: {
                                     Image(systemName: "xmark.circle.fill")
                                         .font(.system(size: 17))

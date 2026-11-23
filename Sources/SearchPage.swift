@@ -414,7 +414,7 @@ struct SearchPage: View {
             .frame(height: 40)
             .background(
                 xhsField,
-                in: RoundedRectangle(cornerRadius: 11, style: .continuous)
+                in: RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
             )
 
             Button(Tr("取消")) { dismiss() }
@@ -495,7 +495,7 @@ struct SearchPage: View {
                             }
                         }
                         .background(xhsCard)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
                     }
                 }
 
@@ -561,7 +561,7 @@ struct SearchPage: View {
                             }
                         }
                         .background(xhsCard)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
                     }
                 }
 
@@ -695,7 +695,7 @@ struct SearchPage: View {
                     .foregroundStyle(xhsRed)
                     .frame(width: 40, height: 40)
                     .background(xhsRed.opacity(0.10),
-                                in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                in: RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
                 Text(tool.title)
                     .font(pfStyled(size: 15, weight: .semibold))
                     .foregroundStyle(C.label)
@@ -708,7 +708,7 @@ struct SearchPage: View {
             }
             .padding(12)
             .frame(maxWidth: .infinity, minHeight: 124, alignment: .topLeading)
-            .background(xhsCard, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .background(xhsCard, in: RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -768,7 +768,7 @@ struct SearchPage: View {
                 content()
             }
             .background(xhsCard)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         }
     }
 
@@ -998,7 +998,7 @@ struct SearchPage: View {
             }
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(xhsCard, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .background(xhsCard, in: RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -1040,7 +1040,7 @@ struct SearchPage: View {
                 .padding(10)
             }
             .background(xhsCard)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -1087,7 +1087,7 @@ struct SearchPage: View {
                 .padding(10)
             }
             .background(xhsCard)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -1812,7 +1812,7 @@ struct SearchPage: View {
         .padding(.horizontal, 14)
         .frame(height: 48)
         .background {
-            GlassBackground(shape: RoundedRectangle(cornerRadius: 16, style: .continuous),
+            GlassBackground(shape: RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous),
                             opacity: 0.78,
                             edgeAlpha: 0.42,
                             shadow: true,
@@ -1821,7 +1821,7 @@ struct SearchPage: View {
                             tint: OrbitTheme.jadeSoft.opacity(0.34))
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                 .stroke(OrbitTheme.jade.opacity(focused ? 0.58 : 0.24), lineWidth: 1)
         }
         .padding(.horizontal, 12)
@@ -2069,9 +2069,9 @@ struct SearchPage: View {
             }
             .padding(.horizontal, 13)
             .frame(height: 34)
-            .background(RoundedRectangle(cornerRadius: 11, style: .continuous)
+            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                 .fill(OrbitTheme.fieldRaised))
-            .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous)
+            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                 .stroke(OrbitTheme.divider, lineWidth: 0.8))
         }
         .buttonStyle(.plain)

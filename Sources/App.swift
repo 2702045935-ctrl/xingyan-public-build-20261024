@@ -2710,7 +2710,7 @@ struct SavedLoginConfirm: View {
 
             VStack(spacing: 16) {
                 Avatar(path: app.lastAvatar, size: 88, radius: 12, circle: false)
-                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                         .stroke(C.hairline, lineWidth: 0.6))
                     .shadow(color: Color.black.opacity(0.14), radius: 14, y: 6)
 
@@ -2825,7 +2825,7 @@ struct RootView: View {
                             .foregroundColor(.white)
                             .padding(.horizontal, 16)
                             .padding(.vertical, 10)
-                            .background(RoundedRectangle(cornerRadius: 6).fill(Color.black.opacity(0.78)))
+                            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny).fill(Color.black.opacity(0.78)))
                             .padding(.bottom, L.tabH + L.safeBottom + 40)
                     }
                     .allowsHitTesting(false)
@@ -3093,9 +3093,9 @@ struct LoginViewOld: View {
                 }
             }
         }
-        .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
+        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
             .fill(LoginTheme.cardBg(scheme)))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
             .stroke(LoginTheme.ink(scheme).opacity(0.06), lineWidth: 0.8))
         .shadow(color: Color.black.opacity(LoginTheme.pageBg == nil ? 0 : 0.12), radius: 12, y: 5)
         .padding(.horizontal, 16)
@@ -3141,7 +3141,7 @@ struct LoginViewOld: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 48)
-                    .background(RoundedRectangle(cornerRadius: 8)
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini)
                         .fill(busy ? LoginTheme.accent.opacity(0.6) : LoginTheme.accent))
             }
             .disabled(busy)
@@ -3364,15 +3364,15 @@ struct LoginView: View {
 
                         .background {
                             ZStack {
-                                GlassBackground(shape: RoundedRectangle(cornerRadius: 16, style: .continuous),
+                                GlassBackground(shape: RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous),
                                                 opacity: 1, seed: 0.28)
-                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                                     .fill(LoginTheme.accent.opacity(isAgree ? 0.88 : 0.38))
                             }
                         }
-                        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                             .stroke(Color.white.opacity(isAgree ? 0.50 : 0.25), lineWidth: 0.9))
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
                     }
 
                     Button { openWay(.password) } label: {
@@ -3385,11 +3385,11 @@ struct LoginView: View {
                         .foregroundColor(LoginTheme.ink(colorScheme))
                         .frame(maxWidth: .infinity, minHeight: 46)
                         .background {
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                                 .fill(LoginTheme.cardBg(colorScheme).opacity(0.82))
                         }
                         .overlay {
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                                 .stroke(LoginTheme.ink(colorScheme).opacity(0.08), lineWidth: 0.7)
                         }
                         .contentShape(Rectangle())
@@ -3432,9 +3432,9 @@ struct LoginView: View {
 
                     HStack(alignment: .top, spacing: 8) {
                         Button { isAgree.toggle() } label: {
-                            RoundedRectangle(cornerRadius: 3)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.micro)
                                 .stroke(isAgree ? LoginTheme.accent : LoginTheme.disabledGray, lineWidth: 1.4)
-                                .background(RoundedRectangle(cornerRadius: 3)
+                                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.micro)
                                     .fill(isAgree ? LoginTheme.accent : Color.clear))
                                 .frame(width: 16, height: 16)
                                 .overlay(isAgree
@@ -3500,7 +3500,7 @@ struct LoginView: View {
                             .multilineTextAlignment(.leading)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(10)
-                            .background(RoundedRectangle(cornerRadius: 8).fill(Color.black.opacity(0.06)))
+                            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini).fill(Color.black.opacity(0.06)))
                             .padding(.top, 8)
                     }
 
@@ -4215,7 +4215,7 @@ struct RegisterSheet: View {
                 }
             }
             .frame(width: 72, height: 72)
-            .clipShape(RoundedRectangle(cornerRadius: 21, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
             .shadow(color: registrationGreen.opacity(0.18), radius: 14, y: 6)
 
             VStack(spacing: 7) {
@@ -4352,8 +4352,8 @@ struct RegisterSheet: View {
                             .padding(.horizontal, 14)
                             .frame(height: 54)
                             .background(registrationField)
-                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                                 .stroke(registrationLine, lineWidth: 0.6))
 
                         Button { loadCaptcha() } label: {
@@ -4373,8 +4373,8 @@ struct RegisterSheet: View {
                                 }
                             }
                             .frame(width: 116, height: 46)
-                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
+                            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                                 .stroke(registrationLine, lineWidth: 0.6))
                         }
                         .buttonStyle(.plain)
@@ -4496,8 +4496,8 @@ struct RegisterSheet: View {
                 .padding(.horizontal, 14)
                 .frame(minHeight: 54)
                 .background(registrationField)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                     .stroke(registrationLine, lineWidth: 0.6))
                 .shadow(color: Color.black.opacity(scheme == .dark ? 0 : 0.035),
                         radius: 7, y: 2)
@@ -4518,7 +4518,7 @@ struct RegisterSheet: View {
             .foregroundColor(.white)
             .frame(maxWidth: .infinity, minHeight: 52)
             .background(canSubmit ? registrationGreen : LoginTheme.disabledGray.opacity(0.72))
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
             .shadow(color: canSubmit ? registrationGreen.opacity(0.20) : .clear,
                     radius: 10, y: 4)
         }
@@ -4659,8 +4659,8 @@ struct PairSheet: View {
                         .frame(width: 190, height: 190)
                         .padding(10)
                         .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                             .stroke(Color.black.opacity(0.08), lineWidth: 0.5))
                         .opacity(code.isEmpty || fail ? 0.22 : 1)
                 } else {
@@ -4929,9 +4929,9 @@ struct PhoneLoginView: View {
 
                     HStack(alignment: .top, spacing: 8) {
                         Button { isAgree.toggle() } label: {
-                            RoundedRectangle(cornerRadius: 3)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.micro)
                                 .stroke(isAgree ? LoginTheme.accent2 : LoginTheme.disabledGray, lineWidth: 1.4)
-                                .background(RoundedRectangle(cornerRadius: 3)
+                                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.micro)
                                     .fill(isAgree ? LoginTheme.accent2 : Color.clear))
                                 .frame(width: 16, height: 16)
                                 .overlay(isAgree

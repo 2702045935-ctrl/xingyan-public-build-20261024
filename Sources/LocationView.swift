@@ -134,7 +134,7 @@ struct LocationDetailView: View {
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 42)
-                        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(C.green))
+                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.green))
                     }
                     .buttonStyle(.plain)
                     Button {

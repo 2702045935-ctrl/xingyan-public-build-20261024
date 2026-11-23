@@ -65,7 +65,7 @@ struct LoginWaysSheet: View {
                         } label: {
                             HStack(spacing: 12) {
                                 ZStack {
-                                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                    RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                                         .fill(w.color)
                                     Image(systemName: w.symbol)
                                         .font(.system(size: 16, weight: .semibold))
@@ -87,14 +87,14 @@ struct LoginWaysSheet: View {
                     }
                 }
                 .background(C.cardBg)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
 
                 Button { dismiss() } label: {
                     Text(Tr("取消"))
                         .font(pf(17)).foregroundColor(C.label)
                         .frame(maxWidth: .infinity).frame(height: 56)
                         .background(C.cardBg)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
                 }
                 .buttonStyle(.plain)
             }

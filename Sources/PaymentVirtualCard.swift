@@ -78,7 +78,7 @@ struct VirtualCardView: View {
         }
         .padding(14)
         .background(PayVisual.warning.opacity(0.10),
-                    in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    in: RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
     }
 
     private var issueBlock: some View {

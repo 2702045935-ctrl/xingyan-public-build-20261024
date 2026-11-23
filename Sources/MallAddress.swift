@@ -54,7 +54,7 @@ struct DDAddressListView: View {
                 Text(Tr("新增收货地址"))
                     .font(pf(16, .medium)).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
-                    .background(RoundedRectangle(cornerRadius: 23).fill(DDColor.gradBtn))
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(DDColor.gradBtn))
                     .padding(.horizontal, 14)
             }
             .buttonStyle(.plain)
@@ -84,7 +84,7 @@ struct DDAddressListView: View {
                         Text(Tr("默认"))
                             .font(pf(10.5, .semibold)).foregroundColor(.white)
                             .padding(.horizontal, 5).frame(height: 16)
-                            .background(RoundedRectangle(cornerRadius: 3).fill(DDColor.red))
+                            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.micro).fill(DDColor.red))
                     }
                 }
                 Text(a.full.isEmpty ? Tr("还没填详细地址") : a.full)
@@ -108,7 +108,7 @@ struct DDAddressListView: View {
         }
         .padding(12)
         .background(DDColor.card)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         .contentShape(Rectangle())
         .onTapGesture {
             if let p = pick {
@@ -183,7 +183,7 @@ struct DDAddressEditView: View {
                         field(Tr("详细地址（街道 门牌）"), $detail, 3, keyboard: .default)
                     }
                     .background(DDColor.card)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
 
                     if let m = locMsg {
                         HStack(spacing: 6) {
@@ -208,7 +208,7 @@ struct DDAddressEditView: View {
                     }
                     .padding(14)
                     .background(DDColor.card)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
 
                     if !isNew {
                         Button {
@@ -218,7 +218,7 @@ struct DDAddressEditView: View {
                             Text(Tr("删除这条地址"))
                                 .font(pf(15)).foregroundColor(Color(hex: 0xFA5151))
                                 .frame(maxWidth: .infinity).frame(height: 46)
-                                .background(RoundedRectangle(cornerRadius: 14).fill(DDColor.card))
+                                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control).fill(DDColor.card))
                         }
                         .buttonStyle(.plain)
                     }
@@ -231,7 +231,7 @@ struct DDAddressEditView: View {
                 Text(Tr("保存"))
                     .font(pf(16, .medium)).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
-                    .background(RoundedRectangle(cornerRadius: 23).fill(canSave ? DDColor.gradBtn : LinearGradient(
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(canSave ? DDColor.gradBtn : LinearGradient(
                         colors: [Color(hex: 0xF0C9BE), Color(hex: 0xE7B7AA)],
                         startPoint: .leading, endPoint: .trailing)))
                     .padding(.horizontal, 14)

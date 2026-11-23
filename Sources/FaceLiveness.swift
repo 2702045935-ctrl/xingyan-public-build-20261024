@@ -76,7 +76,7 @@ struct FacePrepView: View {
                             if i < tips.count - 1 { HairLine(inset: 54) }
                         }
                     }
-                    .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(C.cardBg))
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous).fill(C.cardBg))
                     .padding(.horizontal, 14)
 
                     Text(Tr("人脸信息只在这台手机的摄像头里做判定，不会上传、也不会保存。\n整个过程大概 10 秒。"))
@@ -92,7 +92,7 @@ struct FacePrepView: View {
                 Text(Tr("开始识别"))
                     .font(pf(17, .medium)).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 48)
-                    .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(green))
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(green))
                     .padding(.horizontal, 16)
             }
             .buttonStyle(.plain)

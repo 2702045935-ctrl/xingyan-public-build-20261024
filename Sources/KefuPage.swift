@@ -117,14 +117,14 @@ struct KefuPage: View {
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(12)
-                    .background(.background, in: RoundedRectangle(cornerRadius: 14,
+                    .background(.background, in: RoundedRectangle(cornerRadius: AppDesign.Radius.control,
                                                                   style: .continuous))
             }
         }
         .padding(16)
-        .background(.background, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .background(.background, in: RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(Color.primary.opacity(0.06), lineWidth: 0.6)
         }
         .padding(.top, 8)
@@ -159,9 +159,9 @@ struct KefuPage: View {
                     .padding(.horizontal, 13)
                     .padding(.vertical, 9)
                     .background(Color(uiColor: .secondarySystemGroupedBackground),
-                                in: RoundedRectangle(cornerRadius: 19, style: .continuous))
+                                in: RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
                     .overlay {
-                        RoundedRectangle(cornerRadius: 19, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                             .stroke(Color.primary.opacity(0.07), lineWidth: 0.6)
                     }
 
@@ -210,7 +210,7 @@ struct KefuPage: View {
                     .padding(.vertical, 9)
                     .background(
                         mine ? Color.accentColor : Color(uiColor: .secondarySystemGroupedBackground),
-                        in: RoundedRectangle(cornerRadius: 17, style: .continuous)
+                        in: RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                     )
                     .fixedSize(horizontal: false, vertical: true)
                 if !mine { Spacer(minLength: 54) }

@@ -21,7 +21,7 @@ require(
     "the registration header must use the centered LINE-style brand lockup",
 )
 require(
-    "RoundedRectangle(cornerRadius: 14, style: .continuous)" in APP,
+    "AppDesign.Radius.control" in APP,
     "LINE-style registration fields must use soft rounded cards",
 )
 

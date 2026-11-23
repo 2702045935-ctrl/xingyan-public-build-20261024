@@ -235,8 +235,8 @@ struct ChatSearchView: View {
             }
             .padding(.horizontal, 12)
             .frame(height: 40)
-            .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(C.searchBg))
-            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous).fill(C.searchBg))
+            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                 .stroke(C.hairline, lineWidth: 0.6))
 
             Button { dismiss() } label: {
@@ -358,7 +358,7 @@ struct ChatSearchView: View {
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 46)
-                        .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                             .fill(LinearGradient(colors: PanelTint.green,
                                                  startPoint: .topLeading,
                                                  endPoint: .bottomTrailing)))
@@ -368,8 +368,8 @@ struct ChatSearchView: View {
             }
             .padding(.top, 18)
             .padding(.bottom, 16)
-            .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(C.cardBg))
-            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous)
+            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous).fill(C.cardBg))
+            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(C.hairline, lineWidth: 0.7))
             .padding(.horizontal, 24)
         }
@@ -399,7 +399,7 @@ struct ChatSearchView: View {
                 Button { choose(c) } label: {
                     VStack(spacing: 9) {
                         ZStack {
-                            RoundedRectangle(cornerRadius: 13, style: .continuous)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                                 .fill(LinearGradient(colors: c.tint, startPoint: .topLeading,
                                                      endPoint: .bottomTrailing))
                                 .frame(width: 48, height: 48)
@@ -817,7 +817,7 @@ struct BankCardsView: View {
                                         .font(.system(size: 20))
                                         .foregroundColor(C.green)
                                         .frame(width: 34, height: 34)
-                                        .background(RoundedRectangle(cornerRadius: 7).fill(C.searchBg))
+                                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny).fill(C.searchBg))
                                     VStack(alignment: .leading, spacing: 3) {
                                         Text(c.bank ?? "银行卡")
                                             .font(pf(16))
@@ -880,15 +880,15 @@ struct BankCardsView: View {
                                                 .font(pf(13, .semibold))
                                                 .foregroundColor(.white)
                                                 .frame(width: 22, height: 22)
-                                                .background(RoundedRectangle(cornerRadius: 5, style: .continuous)
+                                                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous)
                                                     .fill(bankColor(name)))
                                             Text(name).font(pf(14)).foregroundColor(on ? C.label : C.subLabel)
                                         }
                                         .padding(.horizontal, 10)
                                         .frame(height: 36)
-                                        .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                                             .fill(on ? C.searchBg : C.cardBg))
-                                        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                                             .stroke(on ? C.green : C.hairline, lineWidth: on ? 1.4 : 0.5))
                                     }
                                     .buttonStyle(.plain)
@@ -1125,14 +1125,14 @@ struct AboutView: View {
                 if let img = AppIconImage.image {
                     Image(uiImage: img).resizable()
                 } else {
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                         .fill(LinearGradient(colors: [C.green, C.green.opacity(0.72)],
                                              startPoint: .topLeading, endPoint: .bottomTrailing))
                 }
             }
             .frame(width: 84, height: 84)
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous)
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(Color.white.opacity(0.85), lineWidth: 2))
             .shadow(color: C.green.opacity(0.20), radius: 16, y: 6)
             Text(appName).font(pf(21, .semibold)).foregroundColor(C.label)
@@ -1158,8 +1158,8 @@ struct AboutView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 22)
-        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(C.cardBg))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous).fill(C.cardBg))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
             .stroke(C.hairline.opacity(0.7), lineWidth: 0.6))
     }
 
@@ -1168,7 +1168,7 @@ struct AboutView: View {
         Button(action: tap) {
             HStack(spacing: 12) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                         .fill(tint.opacity(0.10)).frame(width: 30, height: 30)
                     Image(systemName: icon).font(.system(size: 14.5)).foregroundColor(tint)
                 }
@@ -1305,8 +1305,8 @@ struct DeleteAccountView: View {
                     TextField(Tr("注销"), text: $input)
                         .font(pf(15))
                         .padding(.horizontal, 14).frame(height: 46)
-                        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(C.cardBg))
-                        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.cardBg))
+                        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                             .stroke(C.hairline, lineWidth: 0.6))
                     Button {
                         guard input.trimmingCharacters(in: .whitespacesAndNewlines) == "注销", !busy else { return }
@@ -1326,7 +1326,7 @@ struct DeleteAccountView: View {
                         Text(busy ? Tr("正在注销…") : Tr("永久注销账号"))
                             .font(pf(16, .semibold)).foregroundColor(.white)
                             .frame(maxWidth: .infinity).frame(height: 48)
-                            .background(RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                                 .fill(DDColor.red.opacity(input == "注销" ? 1 : 0.35)))
                     }
                     .buttonStyle(.plain)

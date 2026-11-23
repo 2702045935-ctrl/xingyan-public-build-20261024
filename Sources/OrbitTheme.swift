@@ -14,8 +14,14 @@ enum OrbitTheme {
     static let jadeSoft = Color.dyn(0xDDF8EB, 0x123A2A)
     static let gold = Color.dyn(0xC18A32, 0xE3B464)
 
-    static let card = RoundedRectangle(cornerRadius: 20, style: .continuous)
-    static let control = RoundedRectangle(cornerRadius: 13, style: .continuous)
+    static let card = RoundedRectangle(
+        cornerRadius: AppDesign.Radius.panel,
+        style: .continuous
+    )
+    static let control = RoundedRectangle(
+        cornerRadius: AppDesign.Radius.control,
+        style: .continuous
+    )
 
     static func cardBackground(_ fill: Color = raised) -> some View {
         card

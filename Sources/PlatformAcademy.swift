@@ -203,7 +203,7 @@ struct OfficialNoticeCenterView: View {
                             .foregroundStyle(OrbitTheme.jade)
                             .frame(width: 34, height: 34)
                             .background(OrbitTheme.jade.opacity(0.10),
-                                        in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                                        in: RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
                         VStack(alignment: .leading, spacing: 3) {
                             Text(Tr("安全学堂"))
                                 .font(.headline)
@@ -319,7 +319,7 @@ struct OfficialNoticeCenterView: View {
                 .foregroundStyle(article.tint)
                 .frame(width: 42, height: 42)
                 .background(article.tint.opacity(0.10),
-                            in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                            in: RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
         }
         .padding(.vertical, 5)
     }
@@ -349,9 +349,9 @@ struct OfficialNoticeCenterView: View {
             .padding(20)
         }
         .frame(height: 168)
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                 .stroke(.white.opacity(0.18), lineWidth: 0.7)
         }
     }
@@ -376,9 +376,9 @@ struct OfficialNoticeCenterView: View {
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.regularMaterial,
-                    in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    in: RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(OrbitTheme.divider, lineWidth: 0.6)
         }
     }
@@ -390,7 +390,7 @@ struct OfficialNoticeCenterView: View {
                 .foregroundStyle(tint)
                 .frame(width: 38, height: 38)
                 .background(tint.opacity(0.10),
-                            in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                            in: RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
             VStack(alignment: .leading, spacing: 5) {
                 Text(Tr(title))
                     .font(pfStyled(size: 15.5, weight: .semibold))
@@ -404,9 +404,9 @@ struct OfficialNoticeCenterView: View {
         }
         .padding(14)
         .background(.regularMaterial,
-                    in: RoundedRectangle(cornerRadius: 17, style: .continuous))
+                    in: RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 17, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                 .stroke(OrbitTheme.divider, lineWidth: 0.6)
         }
     }
@@ -748,11 +748,11 @@ struct WeatherOfficialView: View {
         .foregroundStyle(.primary)
         .padding(14)
         .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .fill(.ultraThinMaterial)
         )
         .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(Color.primary.opacity(0.08), lineWidth: 0.7)
         }
         .weatherRainImpacts(current.isWet, seed: 0.11)
@@ -831,11 +831,11 @@ struct WeatherOfficialView: View {
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                 .fill(.thinMaterial)
         )
         .overlay {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                 .stroke(Color.primary.opacity(0.08), lineWidth: 0.6)
         }
     }
@@ -848,7 +848,7 @@ struct WeatherOfficialView: View {
                 .foregroundStyle(current.accent)
                 .frame(width: 44, height: 44)
                 .background(.thinMaterial,
-                            in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            in: RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
             VStack(alignment: .leading, spacing: 4) {
                 Text(info.title)
                     .font(.headline)
@@ -862,11 +862,11 @@ struct WeatherOfficialView: View {
         .foregroundStyle(.primary)
         .padding(15)
         .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .fill(.regularMaterial)
         )
         .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(Color.primary.opacity(0.08), lineWidth: 0.7)
         }
         .weatherRainImpacts(current.isWet, seed: 0.81)
@@ -906,11 +906,11 @@ struct WeatherOfficialView: View {
         }
         .padding(15)
         .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .fill(.regularMaterial)
         )
         .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(Color.primary.opacity(0.08), lineWidth: 0.7)
         }
         .foregroundStyle(.primary)
@@ -955,11 +955,11 @@ struct WeatherOfficialView: View {
         }
         .padding(15)
         .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .fill(.regularMaterial)
         )
         .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(Color.primary.opacity(0.08), lineWidth: 0.7)
         }
         .foregroundStyle(.primary)
@@ -1068,7 +1068,7 @@ private struct SecurityLessonDetailView: View {
                         .foregroundStyle(lesson.tint)
                         .frame(width: 46, height: 46)
                         .background(lesson.tint.opacity(0.10),
-                                    in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+                                    in: RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
                     VStack(alignment: .leading, spacing: 4) {
                         Text(Tr(lesson.title))
                             .font(.headline)
@@ -1177,7 +1177,7 @@ private struct OfficialNoticeArticleView: View {
                     .foregroundStyle(article.tint)
                     .frame(width: 52, height: 52)
                     .background(article.tint.opacity(0.10),
-                                in: RoundedRectangle(cornerRadius: 15, style: .continuous))
+                                in: RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
                 Text(Tr(article.title))
                     .font(.title2.bold())
                 Text(Tr(article.summary))
@@ -1341,7 +1341,7 @@ struct SecurityAcademyView: View {
                 .foregroundStyle(.white)
                 .frame(width: 72, height: 72)
                 .background(.white.opacity(0.11),
-                            in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                            in: RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
             VStack(alignment: .leading, spacing: 6) {
                 Text(Tr("先停一下，再核实"))
                     .font(pfStyled(size: 22, weight: .bold, design: .rounded))
@@ -1360,9 +1360,9 @@ struct SecurityAcademyView: View {
                 endPoint: .bottomTrailing
             )
         }
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                 .stroke(.white.opacity(0.14), lineWidth: 0.7)
         }
     }
@@ -1374,7 +1374,7 @@ struct SecurityAcademyView: View {
                 .foregroundStyle(lesson.tint)
                 .frame(width: 34, height: 34)
                 .background(lesson.tint.opacity(0.10),
-                            in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                            in: RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
             VStack(alignment: .leading, spacing: 3) {
                 Text(Tr(lesson.title))
                     .font(.body)
@@ -1397,7 +1397,7 @@ struct SecurityAcademyView: View {
                         .foregroundStyle(lesson.tint)
                         .frame(width: 52, height: 52)
                         .background(lesson.tint.opacity(0.10),
-                                    in: RoundedRectangle(cornerRadius: 15, style: .continuous))
+                                    in: RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
                     VStack(alignment: .leading, spacing: 4) {
                         Text(Tr(lesson.title))
                             .font(pfStyled(size: 22, weight: .bold, design: .rounded))

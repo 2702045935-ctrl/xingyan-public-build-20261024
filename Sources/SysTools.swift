@@ -87,7 +87,7 @@ struct SysToolsView: View {
                         }
                     }
                     .background(C.cardBg)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
                     .padding(.horizontal, 12)
 
                     Spacer().frame(height: 30)

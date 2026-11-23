@@ -296,7 +296,7 @@ struct ScannedTextResultView: View {
                             .frame(maxWidth: .infinity)
                             .frame(height: 46)
                             .background(C.cardBg)
-                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
                     }
                     .buttonStyle(.plain)
 
@@ -309,7 +309,7 @@ struct ScannedTextResultView: View {
                             .frame(maxWidth: .infinity)
                             .frame(height: 46)
                             .background(C.green)
-                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
                     }
                     .buttonStyle(.plain)
                 }
@@ -415,7 +415,7 @@ struct ScannerView: View {
                     }
                     .padding(.horizontal, 20)
                     .padding(.vertical, 14)
-                    .background(RoundedRectangle(cornerRadius: 16).fill(Color.black.opacity(0.28)))
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.row).fill(Color.black.opacity(0.28)))
                 }
 
                 VStack(spacing: 0) {
@@ -603,7 +603,7 @@ struct ScannerView: View {
         }
         .padding(14)
         .background { CardGlassBox(radius: 14) }
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
             .stroke(hot ? C.green.opacity(0.45) : C.hairline, lineWidth: hot ? 1.2 : 0.6))
     }
 
@@ -650,7 +650,7 @@ private struct ScanFrame: View {
         GeometryReader { geo in
             let w = geo.size.width, h = geo.size.height, len: CGFloat = 34, lw: CGFloat = 3
             ZStack {
-                RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.28), lineWidth: 1)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.control).stroke(Color.white.opacity(0.28), lineWidth: 1)
                 corner(w: len, lw: lw).position(x: len / 2, y: len / 2)
                 corner(w: len, lw: lw).rotationEffect(.degrees(90)).position(x: w - len / 2, y: len / 2)
                 corner(w: len, lw: lw).rotationEffect(.degrees(180)).position(x: w - len / 2, y: h - len / 2)

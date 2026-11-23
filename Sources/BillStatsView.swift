@@ -100,7 +100,7 @@ struct BillsStatsView: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 16)
         .background(C.cardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         .padding(.horizontal, 14)
     }
 
@@ -132,7 +132,7 @@ struct BillsStatsView: View {
                                 .frame(height: 16)
                             VStack(spacing: 0) {
                                 Spacer(minLength: 0)
-                                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous)
                                     .fill((kind == 0 ? expColor : incColor)
                                             .opacity(m == month ? 1 : 0.22))
                                     .frame(width: 18, height: barHeight(v, top))
@@ -152,7 +152,7 @@ struct BillsStatsView: View {
         }
         .padding(16)
         .background(C.cardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         .padding(.horizontal, 14)
     }
 
@@ -173,7 +173,7 @@ struct BillsStatsView: View {
                 VStack(spacing: 8) {
                     HStack(spacing: 10) {
                         ZStack {
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                                 .fill(catColor(c.name).opacity(0.14))
                                 .frame(width: 30, height: 30)
                             Image(systemName: catIcon(c.name))
@@ -212,7 +212,7 @@ struct BillsStatsView: View {
         }
         .padding(16)
         .background(C.cardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         .padding(.horizontal, 14)
     }
 
@@ -250,7 +250,7 @@ struct BillsStatsView: View {
         }
         .padding(16)
         .background(C.cardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         .padding(.horizontal, 14)
     }
 

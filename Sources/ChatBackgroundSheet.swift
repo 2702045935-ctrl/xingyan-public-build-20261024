@@ -257,9 +257,9 @@ struct ChatBackgroundSheet: View {
                     }
                 }
                 .background(wallpaperCardFill)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
                 .overlay {
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                         .stroke(wallpaperCardLine, lineWidth: wallpaperCardLineWidth)
                 }
 
@@ -286,9 +286,9 @@ struct ChatBackgroundSheet: View {
                     }
                 }
                 .background(wallpaperCardFill)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
                 .overlay {
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                         .stroke(wallpaperCardLine, lineWidth: wallpaperCardLineWidth)
                 }
 
@@ -393,7 +393,7 @@ struct ChatBackgroundSheet: View {
                     .foregroundStyle(.white)
                     .frame(width: 34, height: 34)
                     .background(
-                        RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                             .fill(tint)
                     )
 
@@ -470,9 +470,9 @@ struct ChatBackgroundSheet: View {
             }
             .frame(maxWidth: .infinity)
             .frame(height: 112)
-            .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 17, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                     .stroke(selected
                             ? Color(hex: 0x128C7E)
                             : Color.primary.opacity(0.10),
@@ -659,7 +659,7 @@ struct ChatBackgroundSheet: View {
         .padding(14)
         .background {
             GlassBackground(
-                shape: RoundedRectangle(cornerRadius: 24, style: .continuous),
+                shape: RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous),
                 opacity: scheme == .dark ? 0.90 : 0.84,
                 edgeAlpha: 0.44,
                 shadow: true,
@@ -684,11 +684,11 @@ struct ChatBackgroundSheet: View {
             .frame(maxWidth: .infinity)
             .frame(height: 40)
             .background {
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                     .fill(Color.primary.opacity(0.055))
             }
             .overlay {
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                     .stroke(Color.primary.opacity(0.075), lineWidth: 0.6)
             }
         }
@@ -771,7 +771,7 @@ struct ChatBackgroundSheet: View {
                     .padding(.horizontal, 11)
                     .padding(.vertical, 8)
                     .background(Color.white.opacity(0.97),
-                                in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                                in: RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
 
                     Spacer(minLength: 54)
                 }
@@ -794,7 +794,7 @@ struct ChatBackgroundSheet: View {
                     .padding(.horizontal, 11)
                     .padding(.vertical, 8)
                     .background(Color(hex: 0x0C7A70),
-                                in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                                in: RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
                 }
 
                 Spacer(minLength: 0)
@@ -807,7 +807,7 @@ struct ChatBackgroundSheet: View {
             .padding(14)
         }
         .frame(width: 214, height: 408)
-        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
         .overlay(alignment: .top) {
             Capsule()
                 .fill(Color.black.opacity(0.90))
@@ -815,7 +815,7 @@ struct ChatBackgroundSheet: View {
                 .padding(.top, 8)
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                 .stroke(Color.black.opacity(0.84), lineWidth: 5)
         }
         .shadow(color: Color.black.opacity(scheme == .dark ? 0.30 : 0.08),

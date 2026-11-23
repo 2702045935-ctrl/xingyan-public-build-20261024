@@ -86,7 +86,7 @@ struct LiveListView: View {
     private func roomCard(_ r: LiveRoom) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             ZStack(alignment: .topLeading) {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                     .fill(r.isLive
                           ? LinearGradient(colors: [Color(hex: 0x2B3A55), Color(hex: 0x14161C)],
                                            startPoint: .topLeading, endPoint: .bottomTrailing)
@@ -94,7 +94,7 @@ struct LiveListView: View {
                                            startPoint: .topLeading, endPoint: .bottomTrailing))
                     .frame(height: 132)
                 if !(r.cover ?? "").isEmpty {
-                    RemoteImage(path: r.cover ?? "").frame(height: 132).clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    RemoteImage(path: r.cover ?? "").frame(height: 132).clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
                 }
                 HStack(spacing: 6) {
                     if r.isLive {
@@ -134,7 +134,7 @@ struct LiveListView: View {
             }
         }
         .padding(10)
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(cardBg))
+        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).fill(cardBg))
     }
 }
 
@@ -184,7 +184,7 @@ struct LiveRoomView: View {
                         Spacer()
                         VideoSurface(track: live.localVideo)
                             .frame(width: 104, height: 148)
-                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
                             .padding(.trailing, 14)
                             .padding(.bottom, 120)
                     }
@@ -306,7 +306,7 @@ struct LiveRoomView: View {
                         .foregroundColor(.white.opacity(0.95))
                 }
                 .padding(.horizontal, 8).padding(.vertical, 4)
-                .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(Color.black.opacity(0.28)))
+                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(Color.black.opacity(0.28)))
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

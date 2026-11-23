@@ -165,7 +165,7 @@ struct RedPacketCard: View {
             }
             .opacity(pale ? 0.86 : 1)
         )
-        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous))
     }
 }
 
@@ -222,7 +222,7 @@ struct RedPacketCoverPicker: View {
                         VStack(spacing: 10) {
                             RPCoverView(path: c.image ?? "", colorHex: c.color ?? "#B3241C")
                                 .frame(width: 236, height: 314)
-                                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
                                 .shadow(color: Color.black.opacity(0.18), radius: 10, y: 4)
                             Text(c.name ?? "")
                                 .font(pf(15, .medium))
@@ -242,7 +242,7 @@ struct RedPacketCoverPicker: View {
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 48)
-                        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(C.green))
+                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.green))
                 }
                 .buttonStyle(.plain)
                 .padding(.horizontal, 16)
@@ -534,9 +534,9 @@ struct RedPacketSendView: View {
             .padding(20)
         }
         .frame(height: 244)
-        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                 .stroke(
                     LinearGradient(
                         colors: [.white.opacity(0.28), .white.opacity(0.055),
@@ -637,9 +637,9 @@ struct RedPacketSendView: View {
             }
             .padding(13)
             .frame(maxWidth: .infinity, minHeight: 112, alignment: .topLeading)
-            .background(redPacketCard, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .background(redPacketCard, in: RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                     .stroke(selected
                             ? Color(hex: 0xE33A2F).opacity(0.78)
                             : C.hairline,
@@ -681,9 +681,9 @@ struct RedPacketSendView: View {
                     .foregroundStyle(C.label)
             }
         }
-        .background(redPacketCard, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(redPacketCard, in: RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(C.hairline, lineWidth: 0.7)
         }
     }
@@ -699,7 +699,7 @@ struct RedPacketSendView: View {
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(tint)
                 .frame(width: 30, height: 30)
-                .background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                .background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
             Text(title)
                 .font(pf(15.5, .medium))
                 .foregroundStyle(C.label)
@@ -730,7 +730,7 @@ struct RedPacketSendView: View {
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ),
-                    in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    in: RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                 )
                 .shadow(color: Color(hex: 0xC71F17).opacity(0.28),
                         radius: 14, y: 7)
@@ -801,8 +801,8 @@ struct RedPacketSendView: View {
                                            startPoint: .topLeading, endPoint: .center)
                         }
                     )
-                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                         .stroke(LinearGradient(colors: [Color(hex: 0xF3D08A).opacity(0.95),
                                                         Color(hex: 0xB98A3C).opacity(0.75)],
                                                startPoint: .topLeading, endPoint: .bottomTrailing),
@@ -858,7 +858,7 @@ struct RedPacketSendView: View {
                         }
                     }
                     .background { CardGlassBox(radius: 16) }
-                    .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                         .stroke(C.hairline, lineWidth: 0.6))
                     .padding(.horizontal, 14)
                     .padding(.top, 14)
@@ -958,7 +958,7 @@ struct RedPacketSendView: View {
                                   @ViewBuilder content: () -> T) -> some View {
         HStack(spacing: 12) {
             ZStack {
-                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                     .fill(tint.opacity(0.15))
                     .frame(width: 30, height: 30)
                 Image(systemName: icon)
@@ -1037,7 +1037,7 @@ struct RedPacketSendView: View {
                         .foregroundStyle(.white)
                         .frame(width: 38, height: 38)
                         .background(PayVisual.success,
-                                    in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                    in: RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
                     VStack(alignment: .leading, spacing: 3) {
                         Text(Tr("付款方式"))
                             .font(pf(11.5, .medium))
@@ -1594,9 +1594,9 @@ struct RedPacketDetailView: View {
                                center: .topTrailing, startRadius: 2, endRadius: 230)
             }
         )
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(Color.white.opacity(0.10), lineWidth: 1)
         )
     }
@@ -1628,9 +1628,9 @@ struct RedPacketDetailView: View {
         }
         .padding(16)
         .background(PayVisual.card)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(gold.opacity(0.24), lineWidth: 0.8)
         )
     }
@@ -1706,7 +1706,7 @@ struct RedPacketDetailView: View {
             }
         }
         .background(PayVisual.card)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
     }
 
     private func summaryLine(_ info: RedPacketInfo) -> String {
@@ -1748,7 +1748,7 @@ struct RPAvatar: View {
             }
         }
         .frame(width: size, height: size)
-        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous))
     }
 }
 

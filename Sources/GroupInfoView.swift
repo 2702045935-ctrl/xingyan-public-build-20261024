@@ -625,7 +625,7 @@ struct GroupInfoView: View {
                         Avatar(path: chat.avatar ?? "", size: 68, radius: 16, group: true)
                     }
                 }
-                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                     .stroke(Color.primary.opacity(0.07), lineWidth: 0.6))
 
                 VStack(alignment: .leading, spacing: 5) {
@@ -752,7 +752,7 @@ struct GroupInfoView: View {
                                 showAllMembers = true
                             } label: {
                                 ZStack {
-                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                                         .fill(Color.dyn(0xF2F2F2, 0x2C2C31))
                                         .frame(width: 52, height: 52)
                                     Text(Tr("更多"))
@@ -772,7 +772,7 @@ struct GroupInfoView: View {
                     VStack(spacing: 6) {
                         Button { showAdd = true } label: {
                             ZStack {
-                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                                     .stroke(C.hairline, lineWidth: 1)
                                     .frame(width: 52, height: 52)
                                 Text(Tr("添加"))
@@ -791,8 +791,8 @@ struct GroupInfoView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(ChatInfoCardTint.group))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
+        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).fill(ChatInfoCardTint.group))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
     }
 
     private var infoCard: some View {
@@ -1020,8 +1020,8 @@ struct GroupMembersPage: View {
                     }
                     .padding(.horizontal, 13)
                     .frame(height: 44)
-                    .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(C.cardBg))
-                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous).fill(C.cardBg))
+                    .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                         .stroke(C.hairline, lineWidth: 0.6))
 
                     GroupCard {
@@ -1284,7 +1284,7 @@ struct GroupAnnounceEditor: View {
                 VStack(spacing: 16) {
                     HStack(alignment: .top, spacing: 13) {
                         ZStack {
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                                 .fill(C.green.opacity(0.13))
                             Image(systemName: "megaphone.fill")
                                 .font(.system(size: 17, weight: .semibold))
@@ -1307,11 +1307,11 @@ struct GroupAnnounceEditor: View {
                     }
                     .padding(16)
                     .background(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                             .fill(C.cardBg)
                     )
                     .overlay {
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                             .stroke(C.hairline.opacity(0.7), lineWidth: 0.6)
                     }
 
@@ -1365,11 +1365,11 @@ struct GroupAnnounceEditor: View {
                         }
                     }
                     .background(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                             .fill(C.cardBg)
                     )
                     .overlay {
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                             .stroke(C.hairline.opacity(0.7), lineWidth: 0.6)
                     }
                 }
@@ -1410,7 +1410,7 @@ struct GroupAnnounceEditor: View {
                             LinearGradient(colors: PanelTint.green,
                                            startPoint: .topLeading,
                                            endPoint: .bottomTrailing),
-                            in: RoundedRectangle(cornerRadius: 15, style: .continuous)
+                            in: RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                         )
                     }
                     .buttonStyle(.plain)
@@ -1473,7 +1473,7 @@ struct GroupAnnounceView: View {
                 VStack(spacing: 16) {
                     HStack(spacing: 14) {
                         ZStack {
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                                 .fill(
                                     LinearGradient(colors: PanelTint.green,
                                                    startPoint: .topLeading,
@@ -1508,11 +1508,11 @@ struct GroupAnnounceView: View {
                     }
                     .padding(18)
                     .background(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                             .fill(C.cardBg)
                     )
                     .overlay {
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                             .stroke(C.hairline.opacity(0.7), lineWidth: 0.6)
                     }
 
@@ -1553,8 +1553,8 @@ struct GroupAnnounceView: View {
                                 .padding(.vertical, 22)
                         }
                     }
-                    .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(C.cardBg))
-                    .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous).fill(C.cardBg))
+                    .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                         .stroke(C.hairline.opacity(0.72), lineWidth: 0.6))
 
                     if editable, !trimmed.isEmpty, onDelete != nil {
@@ -1573,11 +1573,11 @@ struct GroupAnnounceView: View {
                             .frame(maxWidth: .infinity)
                             .frame(height: 52)
                             .background(
-                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                                     .fill(C.cardBg)
                             )
                             .overlay(
-                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                                     .stroke(C.hairline.opacity(0.72), lineWidth: 0.6)
                             )
                         }
@@ -1912,7 +1912,7 @@ struct DirectChatInfoView: View {
             GroupCard {
                 HStack(spacing: 12) {
                 Avatar(path: peer?.avatarPath ?? "", size: 68, radius: 16, level: peer?.qqLevel ?? 0)
-                    .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                         .stroke(Color.white.opacity(0.35), lineWidth: 0.8))
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 6) {
@@ -2007,7 +2007,7 @@ struct DirectChatInfoView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
         .background(ChatInfoCardTint.direct)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         .padding(.top, 14)
     }
 
@@ -2048,7 +2048,7 @@ struct DirectChatInfoView: View {
             .frame(maxWidth: .infinity)
             .frame(height: 58)
             .background(ChatInfoCardTint.direct)
-            .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(MenuPressStyle())

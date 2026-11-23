@@ -536,7 +536,7 @@ struct MediaSendSheet: View {
                             .font(pfStyled(size: 16))
                             .foregroundColor(C.label)
                             .frame(maxWidth: .infinity).frame(height: 46)
-                            .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.dyn(0xEFEFF1, 0x2C2C2E)))
+                            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(Color.dyn(0xEFEFF1, 0x2C2C2E)))
                     }
                     .buttonStyle(.plain)
 
@@ -548,7 +548,7 @@ struct MediaSendSheet: View {
                             .font(pfStyled(size: 16, weight: .medium))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity).frame(height: 46)
-                            .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(C.green))
+                            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.green))
                     }
                     .buttonStyle(.plain)
                 }

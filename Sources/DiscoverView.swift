@@ -20,7 +20,7 @@ private struct WorldGroupCard<Content: View>: View {
     }
 
     private var shape: RoundedRectangle {
-        RoundedRectangle(cornerRadius: 22, style: .continuous)
+        RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
     }
 
     var body: some View {
@@ -456,13 +456,13 @@ struct DiscoverView: View {
         } label: {
             HStack(spacing: 12) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                         .fill(accent)
 
                     if !artwork.isEmpty {
                         RemoteImage(path: artwork, mode: .fill, maxSide: 180)
                             .frame(width: 42, height: 42)
-                            .clipShape(RoundedRectangle(cornerRadius: 12,
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact,
                                                        style: .continuous))
                     } else {
                         Image(systemName: RowIcon.sf(action: item.action,
@@ -973,10 +973,10 @@ struct DiscoverView: View {
                                         id: \.offset) { index, media in
                                     RemoteImage(path: media, mode: .fill, maxSide: 260)
                                         .frame(width: 62, height: 76)
-                                        .clipShape(RoundedRectangle(cornerRadius: 12,
+                                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact,
                                                                     style: .continuous))
                                         .overlay {
-                                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                                                 .stroke(Color.white.opacity(0.28), lineWidth: 0.8)
                                         }
                                         .rotationEffect(.degrees(index == 0 ? -4 : 4))
@@ -1003,9 +1003,9 @@ struct DiscoverView: View {
                     .padding(18)
             }
             .frame(height: 232)
-            .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                     .stroke(Color.white.opacity(0.13), lineWidth: 0.8)
             }
             .shadow(color: Color(hex: 0x14231D).opacity(0.20), radius: 18, y: 10)
@@ -1051,9 +1051,9 @@ struct DiscoverView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     HStack {
                         ZStack {
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                                 .fill(Color.white.opacity(artwork.isEmpty ? 0.18 : 0.20))
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                                 .stroke(Color.white.opacity(0.20), lineWidth: 0.7)
                             Image(systemName: RowIcon.sf(action: item.action, label: item.label))
                                 .font(.system(size: 18.5, weight: .semibold))
@@ -1088,9 +1088,9 @@ struct DiscoverView: View {
                     .padding(14)
             }
             .frame(maxWidth: .infinity, minHeight: 148, maxHeight: 148)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                     .stroke(Color.white.opacity(0.12), lineWidth: 0.7)
             }
             .shadow(color: accent.opacity(0.10), radius: 10, y: 5)
@@ -1122,9 +1122,9 @@ struct DiscoverView: View {
 
                 HStack(spacing: 14) {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                             .fill(Color.white.opacity(0.14))
-                        RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                             .stroke(Color.white.opacity(0.13), lineWidth: 0.7)
                         Image(systemName: "bag.fill")
                             .font(.system(size: 21, weight: .semibold))
@@ -1162,7 +1162,7 @@ struct DiscoverView: View {
                     .padding(.horizontal, 16)
             }
             .frame(height: 96)
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(MenuPressStyle())
@@ -1946,10 +1946,10 @@ struct MomentsView: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 18)
                 .frame(maxWidth: 286)
-                .background(RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                     .fill(Color.black.opacity(0.58)))
                 .overlay {
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                         .stroke(Color.white.opacity(0.24), lineWidth: 0.7)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -2044,7 +2044,7 @@ struct MomentsView: View {
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 3)
-                            .background(RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous)
                                 .fill(Color.dyn(0xFFFFFF, 0x000000).opacity(0.62)))
                             .frame(width: L.coverAvatar + 56, alignment: .center)
                     }
@@ -2396,7 +2396,7 @@ struct MomentsView: View {
                     .tint(C.green)
                     .padding(10)
                     .background(.regularMaterial,
-                                in: RoundedRectangle(cornerRadius: 20,
+                                in: RoundedRectangle(cornerRadius: AppDesign.Radius.panel,
                                                      style: .continuous))
 
                     if !timelineAvailableDays.isEmpty {
@@ -2459,7 +2459,7 @@ struct MomentsView: View {
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 48)
                                 .background(.ultraThinMaterial,
-                                            in: RoundedRectangle(cornerRadius: 15,
+                                            in: RoundedRectangle(cornerRadius: AppDesign.Radius.control,
                                                                  style: .continuous))
                         }
                         .buttonStyle(.plain)
@@ -2903,7 +2903,7 @@ struct MomentsView: View {
                     }
                     .frame(width: side, height: side)
                     .clipped()
-                    .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous))
                     if !uploading {
                         Button {
                             pickedVideo = nil
@@ -2930,7 +2930,7 @@ struct MomentsView: View {
                         .scaledToFill()
                         .frame(width: side, height: side)
                         .clipped()
-                        .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous))
                         .contentShape(Rectangle())
                         .onDrag {
                             dragIndex = i
@@ -2954,7 +2954,7 @@ struct MomentsView: View {
             if picked.count < 9 && pickedVideo == nil {
 
                 ZStack {
-                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous)
                         .fill(C.searchBg)
                     Image(systemName: "plus")
                         .font(.system(size: 26, weight: .light))
@@ -3890,7 +3890,7 @@ struct MomentRow: View {
                     }
                 }
                 .frame(width: 28, height: 19)
-                .background(RoundedRectangle(cornerRadius: 4, style: .continuous)
+                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous)
                     .fill(Color.dyn(0xF2F2F7, 0x1C1C1E)))
                 .frame(width: 44, height: 44)
                 .contentShape(Rectangle())
@@ -3917,7 +3917,7 @@ struct MomentRow: View {
             }
             .padding(.horizontal, 8)
             .background(
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous)
                     .fill(Color.dyn(0xF7F7F7, 0x2A2A2C))
             )
             .padding(.top, 8)
@@ -4015,7 +4015,7 @@ struct MomentRow: View {
                 }
             }
             .frame(width: size.width, height: size.height)
-            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -4100,7 +4100,7 @@ struct MomentRow: View {
             }
         }
 
-        .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
+        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
             .fill(Color.dyn(0x1C1C1E, 0x2C2C2E)))
     }
 }

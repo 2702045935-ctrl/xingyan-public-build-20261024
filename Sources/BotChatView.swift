@@ -142,7 +142,7 @@ struct BotChatView: View {
                     .padding(.horizontal, 12)
                     .padding(.vertical, 9)
                     .background(Color(hex: 0xD7F3C6))
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
             }
             .padding(.bottom, 14)
         } else {
@@ -174,7 +174,7 @@ struct BotChatView: View {
                     .font(pfStyled(15.5))
                     .padding(.horizontal, 14)
                     .padding(.vertical, 9)
-                    .background(RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                         .fill(Color.dyn(0xFFFFFF, 0x2C2C2E)))
                 Button { sendText() } label: {
                     Image(systemName: "arrow.up")

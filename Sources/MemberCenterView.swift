@@ -166,7 +166,7 @@ struct MemberCenterView: View {
                 .blendMode(.plusLighter)
                 .allowsHitTesting(false)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
     }
 
     private var expireText: String {
@@ -214,12 +214,12 @@ struct MemberCenterView: View {
                         .padding(12)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                                 .fill(on ? AnyShapeStyle(LinearGradient(colors: [c1, c2],
                                                                         startPoint: .topLeading, endPoint: .bottomTrailing))
                                          : AnyShapeStyle(C.cardBg))
                         )
-                        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                             .stroke(on ? Color.clear : C.hairline, lineWidth: 0.7))
                         .scaleEffect(on ? 1.02 : 1)
                         .shadow(color: Color.black.opacity(on ? 0.16 : 0.05), radius: 8, y: 3)
@@ -244,12 +244,12 @@ struct MemberCenterView: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: 46)
                     .background(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                             .fill(on ? AnyShapeStyle(LinearGradient(colors: [gold, gold2],
                                                                     startPoint: .topLeading, endPoint: .bottomTrailing))
                                      : AnyShapeStyle(C.cardBg))
                     )
-                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                         .stroke(on ? Color.clear : C.hairline, lineWidth: 0.7))
                 }
                 .buttonStyle(.plain)
@@ -288,7 +288,7 @@ struct MemberCenterView: View {
         }
         .padding(14)
         .background { CardGlassBox(radius: 16) }
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(C.hairline, lineWidth: 0.7))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous).stroke(C.hairline, lineWidth: 0.7))
     }
 
     private var benefitsCard: some View {

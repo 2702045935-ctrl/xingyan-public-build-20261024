@@ -85,9 +85,9 @@ struct MomentFeedCard: View {
         .padding(.bottom, 11)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(C.cardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(Color.primary.opacity(0.065), lineWidth: 0.7)
         }
         .padding(.horizontal, cardInset)
@@ -122,11 +122,11 @@ struct MomentFeedCard: View {
         .padding(.horizontal, 10)
         .frame(height: 31)
         .background(
-            RoundedRectangle(cornerRadius: 11, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                 .fill(Color.dyn(0xFBF7F1, 0x211C16))
         )
         .overlay {
-            RoundedRectangle(cornerRadius: 11, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                 .stroke(Color(hex: 0xA66B28).opacity(0.12), lineWidth: 0.6)
         }
     }
@@ -258,9 +258,9 @@ struct MomentFeedCard: View {
                 }
             }
             .frame(width: size.width, height: size.height)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                     .stroke(Color.primary.opacity(0.075), lineWidth: 0.6)
             }
             .contentShape(Rectangle())
@@ -369,11 +369,11 @@ struct MomentFeedCard: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
             .background(
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                     .fill(socialSurface)
             )
             .overlay {
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                     .stroke(Color.primary.opacity(0.055), lineWidth: 0.6)
             }
         }
@@ -567,7 +567,7 @@ struct MomentLikesSheet: View {
                 }
                 .padding(.horizontal, 11)
                 .frame(height: 38)
-                .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                     .fill(Color.dyn(0xF1F1F4, 0x1C1C1E)))
                 .padding(.horizontal, 16)
                 .padding(.bottom, 8)

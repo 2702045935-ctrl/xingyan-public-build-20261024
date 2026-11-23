@@ -183,7 +183,7 @@ struct SupportView: View {
     private var supportHero: some View {
         HStack(spacing: 16) {
             ZStack {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                     .fill(
                         LinearGradient(
                             colors: [Color(hex: 0x28B8F6), Color(hex: 0x087CF0)],
@@ -217,7 +217,7 @@ struct SupportView: View {
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(.white)
                 .frame(width: 32, height: 32)
-                .background(color, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .background(color, in: RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
                     .font(.body)
@@ -326,7 +326,7 @@ struct SupportView: View {
         }
         .padding(.horizontal, 10)
         .frame(height: 36)
-        .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(C.searchBg))
+        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous).fill(C.searchBg))
         .padding(.horizontal, 8)
         .padding(.top, 8)
     }
@@ -418,7 +418,7 @@ struct SupportView: View {
                                         .font(.system(size: 16, weight: .medium))
                                         .foregroundColor(.white)
                                         .frame(width: 30, height: 30)
-                                        .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                                             .fill(catColor(idx)))
                                     VStack(alignment: .leading, spacing: 3) {
                                         Text(c.title)
@@ -454,7 +454,7 @@ struct SupportView: View {
                             .font(.system(size: 15, weight: .medium))
                             .foregroundColor(.white)
                             .frame(width: 30, height: 30)
-                            .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                                 .fill(Color(hexString: "#1180E0", fallback: 0x1180E0)))
                         Text(Tr("提交问题"))
                             .font(pf(16.5))

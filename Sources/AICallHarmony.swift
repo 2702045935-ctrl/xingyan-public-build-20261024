@@ -86,7 +86,7 @@ struct AICallView: View {
                     .padding(.horizontal, 28)
                     .padding(.vertical, 24)
                     .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
                     .shadow(color: .black.opacity(0.16), radius: 22, y: 10)
                 }
             }
@@ -237,7 +237,7 @@ struct AICallView: View {
                         .padding(.horizontal, 12)
                         .frame(minHeight: 44)
                         .background(Color.white.opacity(0.72))
-                        .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
                     Button {
                         sendTyped()
                     } label: {
@@ -253,7 +253,7 @@ struct AICallView: View {
                 }
                 .padding(8)
                 .background(Color.white.opacity(0.36))
-                .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
             }
 
             HStack(alignment: .top, spacing: 20) {
@@ -314,14 +314,14 @@ struct AICallView: View {
         .padding(15)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
-            GlassBackground(shape: RoundedRectangle(cornerRadius: 18,
+            GlassBackground(shape: RoundedRectangle(cornerRadius: AppDesign.Radius.panel,
                                                     style: .continuous),
                             opacity: 0.78,
                             shadow: true,
                             seed: 0.30)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous)
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
             .stroke(Color.white.opacity(0.72), lineWidth: 0.7))
     }
 
@@ -335,7 +335,7 @@ struct AICallView: View {
                 .padding(.horizontal, 6)
                 .padding(.vertical, 2)
                 .background(labelBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous))
             Text(text)
                 .font(pf(maxLines > 3 ? 13 : 12))
                 .foregroundColor(ink)

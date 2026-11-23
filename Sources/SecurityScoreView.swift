@@ -91,7 +91,7 @@ struct SecurityScoreView: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(sheetBg))
+        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).fill(sheetBg))
         .padding(.horizontal, 14)
     }
 

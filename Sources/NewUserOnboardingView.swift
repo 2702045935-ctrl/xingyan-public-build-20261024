@@ -241,11 +241,11 @@ struct NewUserOnboardingView: View {
                 }
                 .padding(14)
                 .background(
-                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                         .fill(onboardingGreen.opacity(0.06))
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                         .stroke(onboardingGreen.opacity(0.16), lineWidth: 0.7)
                 )
                 .padding(.top, 18)
@@ -261,7 +261,7 @@ struct NewUserOnboardingView: View {
                 .foregroundColor(onboardingGreen)
                 .frame(width: 42, height: 42)
                 .background(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                         .fill(onboardingGreen.opacity(0.10))
                 )
             VStack(alignment: .leading, spacing: 3) {
@@ -278,8 +278,8 @@ struct NewUserOnboardingView: View {
         .padding(.horizontal, 14)
         .frame(minHeight: 72)
         .background(Color.dyn(0xFFFFFF, 0x1E1E1E))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
             .stroke(C.hairline, lineWidth: 0.6))
         .shadow(color: Color.black.opacity(0.035), radius: 8, y: 3)
     }
@@ -319,7 +319,7 @@ struct NewUserOnboardingView: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: 54)
                 .background(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous).fill(LinearGradient(
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).fill(LinearGradient(
                         colors: canContinue
                               ? [onboardingGreen, onboardingGreenDeep]
                               : [C.subLabel.opacity(0.28), C.subLabel.opacity(0.28)],

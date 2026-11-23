@@ -233,7 +233,7 @@ struct ChatHistoryView: View {
                     .foregroundStyle(.white)
                     .frame(width: 30, height: 30)
                     .background(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                             .fill(color)
                     )
                 VStack(alignment: .leading, spacing: 3) {

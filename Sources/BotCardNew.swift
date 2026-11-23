@@ -108,7 +108,7 @@ struct BotCardNew: View {
         }
         .frame(maxWidth: .infinity)
         .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact))
         .shadow(color: Color(hex: 0x20000000), radius: 8, x: 0, y: 2)
         .padding(.horizontal, 16).padding(.top, 12)
     }
@@ -121,7 +121,7 @@ struct BotCardNew: View {
     private func card<C: View>(@ViewBuilder _ content: () -> C) -> some View {
         content()
             .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact))
             .shadow(color: Color(hex: 0x20000000), radius: 8, x: 0, y: 2)
             .padding(.horizontal, 16)
     }

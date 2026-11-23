@@ -185,8 +185,8 @@ struct BotCardView: View {
             if isEyesBot {
                 JarvisEyesAvatar(size: 74)
                     .frame(width: 88, height: 88)
-                    .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(sheetBg))
-                    .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(sheetBg))
+                    .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                         .stroke(lineColor, lineWidth: 0.6))
             } else {
                 Avatar(path: chat.avatar ?? "", size: 88, radius: 8)

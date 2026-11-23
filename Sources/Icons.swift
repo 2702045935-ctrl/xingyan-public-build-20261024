@@ -415,7 +415,7 @@ struct FuncIcon: View {
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 8, style: .continuous).fill(bg)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(bg)
             SVGIcon(markup: markup, size: iconSize, color: .white)
         }
         .frame(width: size, height: size)

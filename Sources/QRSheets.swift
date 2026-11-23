@@ -126,7 +126,7 @@ struct FaceToFaceFileSheet: View {
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 46)
-                            .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                                 .fill(C.green))
                         }
                         .buttonStyle(.plain)
@@ -216,7 +216,7 @@ struct FaceToFaceFileSheet: View {
         .padding(.horizontal, 14)
         .frame(minHeight: 66)
         .background(C.cardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
     }
 
     private var hostQRCode: some View {
@@ -226,7 +226,7 @@ struct FaceToFaceFileSheet: View {
                 .foregroundColor(C.subLabel)
 
             ZStack {
-                RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.white)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous).fill(Color.white)
                 if let inv = drop.invite, let image = qrImage(inv.link, size: 512) {
                     Image(uiImage: image)
                         .interpolation(.none)
@@ -263,7 +263,7 @@ struct FaceToFaceFileSheet: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 28)
         .background(C.cardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
     }
 
     private var connectedActions: some View {
@@ -304,7 +304,7 @@ struct FaceToFaceFileSheet: View {
         .padding(.horizontal, 15)
         .frame(height: 66)
         .background(C.cardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
     }
 
     private var instructions: some View {

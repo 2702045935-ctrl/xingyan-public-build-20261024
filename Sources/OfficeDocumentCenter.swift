@@ -77,7 +77,7 @@ struct OfficeDocumentHeader: View {
     var body: some View {
         HStack(spacing: 12) {
             ZStack {
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                     .fill(kind.color)
                 VStack(spacing: 1) {
                     Image(systemName: kind.symbol)
@@ -151,7 +151,7 @@ struct OfficeDocumentActionBar: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: 46)
                 .background(
-                    RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                         .fill(C.cardBg)
                 )
             }
@@ -184,7 +184,7 @@ struct OfficeDocumentActionBar: View {
             .frame(maxWidth: .infinity)
             .frame(height: 46)
             .background(
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                     .fill(filled ? C.green : C.cardBg)
             )
         }
@@ -231,7 +231,7 @@ struct OfficeDocumentInfoSheet: View {
                 Section {
                     HStack(spacing: 14) {
                         ZStack {
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                                 .fill(kind.color)
                             Text(kind.badge)
                                 .font(pfStyled(size: 27, weight: .bold, design: .rounded))

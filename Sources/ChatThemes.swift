@@ -273,9 +273,9 @@ struct ChatThemePickerView: View {
                         }
                     }
                     .background(Color(uiColor: .secondarySystemGroupedBackground),
-                                in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                                in: RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
                     .overlay {
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                             .stroke(Color.primary.opacity(0.06), lineWidth: 0.6)
                     }
                 }
@@ -301,9 +301,9 @@ struct ChatThemePickerView: View {
     private func themePreview(_ preset: ChatAppearancePreset) -> some View {
         ZStack {
             ChatThemeBackdrop(preset: preset)
-                .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
 
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                 .fill(
                     RadialGradient(
                         colors: [
@@ -317,7 +317,7 @@ struct ChatThemePickerView: View {
                     )
                 )
 
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                 .stroke(
                     LinearGradient(
                         colors: [
@@ -362,10 +362,10 @@ struct ChatThemePickerView: View {
                         .padding(.horizontal, 13)
                         .padding(.vertical, 9)
                         .background {
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                                 .fill(preset.other)
                                 .overlay {
-                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                                         .stroke(Color.white.opacity(0.24), lineWidth: 0.5)
                                 }
                                 .shadow(color: Color.black.opacity(0.07), radius: 5, y: 2)
@@ -381,7 +381,7 @@ struct ChatThemePickerView: View {
                         .padding(.horizontal, 13)
                         .padding(.vertical, 9)
                         .background {
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                                 .fill(
                                     LinearGradient(
                                         colors: [
@@ -393,7 +393,7 @@ struct ChatThemePickerView: View {
                                     )
                                 )
                                 .overlay(alignment: .top) {
-                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                                         .fill(
                                             LinearGradient(
                                                 colors: [
@@ -429,10 +429,10 @@ struct ChatThemePickerView: View {
                 .padding(.horizontal, 13)
                 .frame(height: 42)
                 .background {
-                    RoundedRectangle(cornerRadius: 21, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                         .fill(preset.panel)
                         .overlay {
-                            RoundedRectangle(cornerRadius: 21, style: .continuous)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                                 .stroke(Color.white.opacity(0.16), lineWidth: 0.5)
                         }
                         .shadow(color: Color.black.opacity(0.08), radius: 7, y: 3)
@@ -448,7 +448,7 @@ struct ChatThemePickerView: View {
                 .padding(.top, 8)
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                 .stroke(Color.black.opacity(0.82), lineWidth: 5)
         }
         .shadow(color: Color.black.opacity(0.10), radius: 18, y: 8)
@@ -458,7 +458,7 @@ struct ChatThemePickerView: View {
                           isSelected: Bool) -> some View {
         HStack(spacing: 13) {
             ZStack {
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                     .fill(preset.previewBackground)
 
                 RadialGradient(
@@ -483,19 +483,19 @@ struct ChatThemePickerView: View {
 
                     HStack(spacing: 3) {
                         Circle().fill(preset.other).frame(width: 5, height: 5)
-                        RoundedRectangle(cornerRadius: 3, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous)
                             .fill(preset.other)
                             .frame(width: 24, height: 8)
                         Spacer(minLength: 0)
                     }
                     HStack {
                         Spacer(minLength: 12)
-                        RoundedRectangle(cornerRadius: 3, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous)
                             .fill(preset.mine)
                             .frame(width: 25, height: 8)
                     }
                     HStack(spacing: 3) {
-                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous)
                             .fill(preset.panel)
                             .frame(height: 9)
                         Circle().fill(preset.mine).frame(width: 6, height: 6)
@@ -512,9 +512,9 @@ struct ChatThemePickerView: View {
                 .padding(6)
             }
             .frame(width: 54, height: 86)
-            .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                     .stroke(
                         isSelected
                             ? Color.accentColor.opacity(0.82)

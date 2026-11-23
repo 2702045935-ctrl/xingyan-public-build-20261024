@@ -69,7 +69,7 @@ struct NewsFeedView: View {
                             Text(Tr(ch.label))
                                 .font(pf(16, tab == ch.id ? .semibold : .regular))
                                 .foregroundColor(tab == ch.id ? C.label : C.subLabel)
-                            RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.hairline, style: .continuous)
                                 .fill(tab == ch.id ? accent : Color.clear)
                                 .frame(width: 20, height: 2.5)
                         }
@@ -202,9 +202,9 @@ struct NewsFeedView: View {
                 }
             }
             .background(Color(uiColor: .systemBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                     .stroke(Color.primary.opacity(0.055), lineWidth: 0.5)
             }
             .padding(.horizontal, 12)
@@ -239,7 +239,7 @@ struct NewsFeedView: View {
             if !item.cover.isEmpty {
                 RemoteImage(path: item.cover, mode: .fill, maxSide: 420)
                     .frame(width: 62, height: 46)
-                    .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous))
             }
         }
         .padding(.horizontal, 16)
@@ -351,9 +351,9 @@ struct NewsFeedView: View {
                     }
                 }
                 .background(Color(uiColor: .systemBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
                 .overlay {
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                         .stroke(Color.primary.opacity(0.065), lineWidth: 0.6)
                 }
             }
@@ -452,9 +452,9 @@ struct NewsFeedView: View {
                     .frame(height: 252)
                 }
             }
-            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                     .stroke(Color.primary.opacity(0.08), lineWidth: 0.6)
             }
             .shadow(color: Color.black.opacity(0.10), radius: 18, y: 7)
@@ -485,7 +485,7 @@ struct NewsFeedView: View {
             if !item.cover.isEmpty {
                 RemoteImage(path: item.cover, mode: .fill, maxSide: 700)
                     .frame(width: 108, height: 82)
-                    .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
             }
         }
         .padding(.horizontal, 16)
@@ -546,9 +546,9 @@ struct NewsFeedView: View {
                 }
             }
             .background(Color(uiColor: .secondarySystemGroupedBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                     .stroke(C.hairline, lineWidth: 0.5)
             }
             premiumFooter
@@ -697,7 +697,7 @@ struct NewsFeedView: View {
                 .fixedSize(horizontal: false, vertical: true)
             RemoteImage(path: it.cover, maxSide: 1400)
                 .frame(height: compact ? 168 : 200)
-                .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous))
                 .padding(.top, 10)
             meta(it)
                 .padding(.top, 9)
@@ -722,7 +722,7 @@ struct NewsFeedView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             RemoteImage(path: it.cover, maxSide: 800)
                 .frame(width: compact ? 76 : 96, height: compact ? 57 : 72)
-                .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous))
         }
         .padding(.horizontal, compact ? 14 : 16)
         .padding(.vertical, compact ? 11 : 14)
@@ -808,7 +808,7 @@ struct NewsFeedView: View {
             .padding(.horizontal, 4)
             .padding(.vertical, 1)
             .background(
-                RoundedRectangle(cornerRadius: 3, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous)
                     .fill(C.red.opacity(0.12))
             )
     }

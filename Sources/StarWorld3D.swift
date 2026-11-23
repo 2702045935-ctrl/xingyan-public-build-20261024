@@ -46,9 +46,9 @@ struct StarWorld3DEntryCard: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: 148)
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                 .stroke(Color.white.opacity(0.12), lineWidth: 0.8)
         }
         .shadow(color: Color.black.opacity(0.16), radius: 18, y: 9)

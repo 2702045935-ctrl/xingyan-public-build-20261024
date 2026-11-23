@@ -80,7 +80,7 @@ struct AliPayWaitingSheet: View {
                 Text(checking ? Tr("查询中…") : Tr("我已付好，立刻查一下"))
                     .font(pf(15.5, .medium)).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
-                    .background(RoundedRectangle(cornerRadius: 23, style: .continuous).fill(aliBlue))
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous).fill(aliBlue))
             }
             .buttonStyle(.plain)
             .disabled(checking)

@@ -260,7 +260,7 @@ private struct StarWorldLoadingArtwork: View {
             height: size.height * 0.70
         )
         context.fill(
-            Path(roundedRect: roomRect, cornerRadius: 24),
+            Path(roundedRect: roomRect, cornerRadius: AppDesign.Radius.overlay),
             with: .linearGradient(
                 Gradient(colors: [
                     Color(hex: 0x18353A).opacity(0.72),
@@ -271,7 +271,7 @@ private struct StarWorldLoadingArtwork: View {
             )
         )
         context.stroke(
-            Path(roundedRect: roomRect, cornerRadius: 24),
+            Path(roundedRect: roomRect, cornerRadius: AppDesign.Radius.overlay),
             with: .color(Color.white.opacity(0.08)),
             lineWidth: 0.8
         )
@@ -283,7 +283,7 @@ private struct StarWorldLoadingArtwork: View {
             height: 84
         )
         context.fill(
-            Path(roundedRect: windowRect, cornerRadius: 8),
+            Path(roundedRect: windowRect, cornerRadius: AppDesign.Radius.mini),
             with: .linearGradient(
                 Gradient(colors: [
                     Color(hex: 0x76B9C8).opacity(0.45),
@@ -307,11 +307,11 @@ private struct StarWorldLoadingArtwork: View {
             height: 45
         )
         context.fill(
-            Path(roundedRect: bed, cornerRadius: 12),
+            Path(roundedRect: bed, cornerRadius: AppDesign.Radius.compact),
             with: .color(Color(hex: 0xD9D4C5).opacity(0.64))
         )
         context.fill(
-            Path(roundedRect: bed.insetBy(dx: 8, dy: 7), cornerRadius: 8),
+            Path(roundedRect: bed.insetBy(dx: 8, dy: 7), cornerRadius: AppDesign.Radius.mini),
             with: .color(Color(hex: 0x6FA99B).opacity(0.42))
         )
 
@@ -333,7 +333,7 @@ private struct StarWorldLoadingArtwork: View {
             height: 72
         )
         context.fill(
-            Path(roundedRect: doorRect, cornerRadius: 6),
+            Path(roundedRect: doorRect, cornerRadius: AppDesign.Radius.tiny),
             with: .linearGradient(
                 Gradient(colors: [
                     Color(hex: 0xE1C37F).opacity(0.48),
@@ -344,7 +344,7 @@ private struct StarWorldLoadingArtwork: View {
             )
         )
         context.stroke(
-            Path(roundedRect: doorRect, cornerRadius: 6),
+            Path(roundedRect: doorRect, cornerRadius: AppDesign.Radius.tiny),
             with: .color(Color(hex: 0xF1D698).opacity(0.48)),
             lineWidth: 0.8
         )

@@ -152,7 +152,7 @@ struct DDCityPickerView: View {
             }
             .padding(.horizontal, 12)
             .frame(height: 38)
-            .background(RoundedRectangle(cornerRadius: 19, style: .continuous)
+            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .fill(Color.dyn(0xF2F2F5, 0x2A2A2E)))
             .padding(.horizontal, 14)
 

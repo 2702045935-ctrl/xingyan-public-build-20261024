@@ -137,7 +137,7 @@ struct BalancePageView: View {
                     .foregroundColor(C.label)
                     .padding(16)
                     .background(Color.dyn(0xFFF7E6, 0x2D2417))
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
                 }
                 .buttonStyle(.plain)
             }

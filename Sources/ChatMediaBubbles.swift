@@ -355,7 +355,7 @@ struct VideoPlayerSheet: View {
                     .padding(14)
                     .background {
                         GlassBackground(
-                            shape: RoundedRectangle(cornerRadius: 14, style: .continuous),
+                            shape: RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous),
                             shadow: true
                         )
                     }
@@ -870,9 +870,9 @@ struct SendingFileBubble: View {
                         .minimumScaleFactor(0.65)
                 }
                 .frame(width: 40, height: 40)
-                .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                     .fill(look.color.opacity(0.13)))
-                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                     .stroke(look.color.opacity(0.18), lineWidth: 0.6))
 
                 VStack(alignment: .leading, spacing: 3) {

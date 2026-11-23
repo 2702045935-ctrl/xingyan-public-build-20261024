@@ -604,7 +604,7 @@ struct PayGroupCard<Content: View>: View {
     var body: some View {
         VStack(spacing: 0) { content }
             .background(PayVisual.card)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
     }
 }
 
@@ -716,7 +716,7 @@ struct PayPrimaryButtonStyle: ButtonStyle {
             .frame(maxWidth: .infinity)
             .frame(height: 52)
             .background(enabled ? tint : PayVisual.secondaryInk.opacity(0.34))
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
             .scaleEffect(configuration.isPressed ? 0.985 : 1)
             .opacity(configuration.isPressed ? 0.88 : 1)
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
@@ -733,9 +733,9 @@ struct PaySecondaryButtonStyle: ButtonStyle {
             .frame(maxWidth: .infinity)
             .frame(height: 50)
             .background(PayVisual.card)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                     .stroke(tint.opacity(0.24), lineWidth: 0.8)
             }
             .scaleEffect(configuration.isPressed ? 0.985 : 1)
@@ -879,7 +879,7 @@ private struct StarPayGuideView: View {
         switch index {
         case 0:
             ZStack(alignment: .top) {
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                     .fill(PayVisual.gold.opacity(0.24))
                     .frame(width: 236, height: 148)
                     .offset(y: 38)
@@ -928,7 +928,7 @@ private struct StarPayGuideView: View {
         default:
             ZStack {
                 PayVisual.card
-                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
                     .frame(width: 258, height: 176)
                     .shadow(color: Color.black.opacity(0.08), radius: 14, y: 7)
                 VStack(alignment: .leading, spacing: 13) {
@@ -964,9 +964,9 @@ private struct StarPayGuideView: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: 168)
-        .background(fill, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .background(fill, in: RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(Color.primary.opacity(0.055), lineWidth: 0.6)
         }
     }
@@ -1234,12 +1234,12 @@ struct PayOfficialView: View {
         }
         .padding(.horizontal, 14)
         .frame(maxWidth: .infinity, minHeight: 74)
-        .background(fill, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(fill, in: RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(Color.primary.opacity(0.055), lineWidth: 0.6)
         }
-        .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
     }
 
     private var goldCardSection: some View {
@@ -1292,7 +1292,7 @@ struct PayOfficialView: View {
                 }
                 .padding(14)
                 .background(PayVisual.card,
-                            in: RoundedRectangle(cornerRadius: 14,
+                            in: RoundedRectangle(cornerRadius: AppDesign.Radius.control,
                                                  style: .continuous))
             }
         }

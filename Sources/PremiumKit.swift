@@ -28,12 +28,12 @@ struct PanelCard<Content: View>: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background {
                 if solid {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous).fill(C.cardBg)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).fill(C.cardBg)
                 } else {
                     CardGlassBox(radius: 14)
                 }
             }
-            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                 .stroke(C.hairline, lineWidth: 0.6))
             .shadow(color: Color.black.opacity(0.05), radius: 8, y: 2)
     }
@@ -63,12 +63,12 @@ struct PanelHeroCard<Content: View>: View {
                                    center: .topLeading, startRadius: 1, endRadius: 260)
                 }
             )
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous)
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(Color.white.opacity(0.11), lineWidth: 1))
             .overlay(
 
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                     .stroke(LinearGradient(colors: [Color.white.opacity(0.22), Color.clear],
                                            startPoint: .top, endPoint: .center),
                             lineWidth: 0.8)
@@ -220,7 +220,7 @@ struct PanelDangerRow: View {
         Button(action: tap) {
             HStack(spacing: 11) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                         .fill(dangerInk.opacity(0.10))
                         .frame(width: 30, height: 30)
                     Image(systemName: symbol)
@@ -323,9 +323,9 @@ struct PanelConfirmDialog: View {
                 }
             }
             .background(C.cardBg)
-            .clipShape(RoundedRectangle(cornerRadius: 21, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 21, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                     .stroke(Color.white.opacity(0.08), lineWidth: 0.7)
             )
             .frame(width: 300)

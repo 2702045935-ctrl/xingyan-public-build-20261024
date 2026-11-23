@@ -138,7 +138,7 @@ struct EyesSettingsView: View {
                         }
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity).frame(height: 48)
-                        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(C.green))
+                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.green))
                     }
                     .buttonStyle(.plain)
                     .padding(.horizontal, 16)

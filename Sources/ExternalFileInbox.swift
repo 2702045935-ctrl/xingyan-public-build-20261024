@@ -264,9 +264,9 @@ struct ExternalFileSendView: View {
                     .minimumScaleFactor(0.7)
             }
             .frame(width: 44, height: 44)
-            .background(RoundedRectangle(cornerRadius: 13, style: .continuous)
+            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                 .fill(look.color.opacity(0.13)))
-            .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous)
+            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                 .stroke(look.color.opacity(0.20), lineWidth: 0.7))
 
             VStack(alignment: .leading, spacing: 4) {
@@ -287,9 +287,9 @@ struct ExternalFileSendView: View {
         .padding(.horizontal, 11)
         .frame(width: 218, height: 66)
         .background(OrbitTheme.raised)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(OrbitTheme.divider, lineWidth: 0.7)
         }
         .shadow(color: Color.black.opacity(0.035), radius: 8, y: 3)
@@ -327,9 +327,9 @@ struct ExternalFileSendView: View {
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(tint)
                     .frame(width: 38, height: 38)
-                    .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                         .fill(tint.opacity(0.13)))
-                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                         .stroke(tint.opacity(0.18), lineWidth: 0.7))
                 Text(title)
                     .font(pfStyled(size: 10.5, weight: .medium))
@@ -339,9 +339,9 @@ struct ExternalFileSendView: View {
             .frame(maxWidth: .infinity)
             .frame(height: 65)
             .background(OrbitTheme.raised)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                     .stroke(OrbitTheme.divider, lineWidth: 0.7)
             }
         }

@@ -19,7 +19,7 @@ struct MomentCommentBar: View {
                 .lineLimit(1...4)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
-                .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(C.fieldBg))
+                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.fieldBg))
                 .focused($focused)
                 .submitLabel(.send)
                 .onSubmit { if canSend { onSend() } }

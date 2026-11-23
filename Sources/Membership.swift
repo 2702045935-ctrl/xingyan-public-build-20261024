@@ -338,7 +338,7 @@ struct MemberPayDoneView: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 48)
-                    .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                         .fill(LinearGradient(colors: [C.green, C.green.opacity(0.78)],
                                              startPoint: .topLeading, endPoint: .bottomTrailing)))
             }

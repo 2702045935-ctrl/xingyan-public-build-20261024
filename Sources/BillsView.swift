@@ -103,7 +103,7 @@ struct BillsView: View {
                                         }
                                     }
                                     .background(PayVisual.card)
-                                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
                                     .padding(.horizontal, 16)
                                 }
                             } header: {
@@ -236,8 +236,8 @@ struct BillsView: View {
                     DownChevron(size: 9, color: fieldInk)
                 }
                 .frame(width: 92, height: 36)
-                .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(fieldBg))
-                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(fieldBg))
+                .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                     .stroke(fieldEdge, lineWidth: 0.5))
             }
             .buttonStyle(.plain)
@@ -253,8 +253,8 @@ struct BillsView: View {
                 }
                 .padding(.horizontal, 11)
                 .frame(width: 126, height: 36)
-                .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(fieldBg))
-                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(fieldBg))
+                .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                     .stroke(fieldEdge, lineWidth: 0.5))
             }
             .buttonStyle(.plain)
@@ -316,7 +316,7 @@ struct BillsView: View {
         }
         .frame(width: 178)
         .background(C.cardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
         .shadow(color: .black.opacity(0.16), radius: 20, y: 8)
     }
 
@@ -339,7 +339,7 @@ struct BillsView: View {
         }
         .frame(width: 190)
         .background(C.cardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
         .shadow(color: .black.opacity(0.16), radius: 20, y: 8)
     }
 
@@ -480,7 +480,7 @@ struct BillsView: View {
             .padding(.bottom, 12)
         }
         .background(C.cardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
         .padding(.horizontal, 12)
         .padding(.top, 8)
         .transition(.opacity.combined(with: .move(edge: .top)))

@@ -308,7 +308,7 @@ struct BizSettingsView: View {
                             Text(busy ? Tr("保存中…") : Tr("保存"))
                                 .font(pf(17, .medium)).foregroundColor(.white)
                                 .frame(maxWidth: .infinity).frame(height: 48)
-                                .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(C.green))
+                                .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.green))
                         }
                         .buttonStyle(.plain)
                         .padding(.horizontal, 16).padding(.top, 20)
@@ -428,7 +428,7 @@ struct BizWithdrawView: View {
                 Text(busy ? Tr("处理中…") : Tr("提现到零钱"))
                     .font(pf(17, .medium)).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 48)
-                    .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                         .fill(balance <= 0 ? C.subLabel : C.green))
             }
             .buttonStyle(.plain)
@@ -533,7 +533,7 @@ struct BizInvoiceView: View {
                         Text(busy ? Tr("保存中…") : Tr("保存开票信息"))
                             .font(pf(16, .medium)).foregroundColor(.white)
                             .frame(maxWidth: .infinity).frame(height: 46)
-                            .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(C.green))
+                            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.green))
                     }
                     .buttonStyle(.plain)
                     .padding(.horizontal, 16).padding(.top, 14)
@@ -576,7 +576,7 @@ struct BizInvoiceView: View {
                         Text(busy ? Tr("提交中…") : Tr("申请开票"))
                             .font(pf(17, .medium)).foregroundColor(.white)
                             .frame(maxWidth: .infinity).frame(height: 48)
-                            .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                                 .fill(leftAmount > 0 ? C.green : C.subLabel))
                     }
                     .buttonStyle(.plain)

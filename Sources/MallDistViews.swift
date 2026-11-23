@@ -55,7 +55,7 @@ struct DistMeView: View {
                 .font(pf(12.5)).foregroundColor(C.subLabel).multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity).padding(20)
-        .background(C.cardBg).clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(C.cardBg).clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
     }
 
     private var codeCard: some View {
@@ -87,7 +87,7 @@ struct DistMeView: View {
             }
         }
         .padding(16).frame(maxWidth: .infinity)
-        .background(C.cardBg).clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(C.cardBg).clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
     }
 
     private var statCard: some View {
@@ -96,7 +96,7 @@ struct DistMeView: View {
             stat(Tr("推广成交"), String(me?.orders ?? 0) + Tr(" 单"))
             stat(Tr("待结算"), String(me?.pending ?? 0) + Tr(" 单"))
         }
-        .background(C.cardBg).clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(C.cardBg).clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
     }
 
     private func stat(_ t: String, _ v: String) -> some View {
@@ -117,7 +117,7 @@ struct DistMeView: View {
                     .font(pf(14)).autocorrectionDisabled(true)
                     .textInputAutocapitalization(.never)
                     .padding(.horizontal, 12).frame(height: 42)
-                    .background(RoundedRectangle(cornerRadius: 10).fill(C.fieldBg))
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small).fill(C.fieldBg))
                 Button { Task { await help() } } label: {
                     Text(busy ? Tr("处理中…") : Tr("助力")).font(pf(14, .medium)).foregroundColor(.white)
                         .padding(.horizontal, 16).frame(height: 42)
@@ -127,7 +127,7 @@ struct DistMeView: View {
             }
         }
         .padding(16).frame(maxWidth: .infinity, alignment: .leading)
-        .background(C.cardBg).clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(C.cardBg).clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
     }
 
     private var logCard: some View {
@@ -157,7 +157,7 @@ struct DistMeView: View {
                 }
             }
         }
-        .background(C.cardBg).clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(C.cardBg).clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
     }
 
     private func load() async {
@@ -212,11 +212,11 @@ struct DistAdminCard: View {
                     .font(pf(14)).autocorrectionDisabled(true)
                     .textInputAutocapitalization(.never)
                     .padding(.horizontal, 12).frame(height: 42)
-                    .background(RoundedRectangle(cornerRadius: 10).fill(C.fieldBg))
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small).fill(C.fieldBg))
                 TextField(Tr("佣金%"), text: $rate)
                     .font(pf(14)).keyboardType(.decimalPad)
                     .frame(width: 66).padding(.horizontal, 8).frame(height: 42)
-                    .background(RoundedRectangle(cornerRadius: 10).fill(C.fieldBg))
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small).fill(C.fieldBg))
                 Button { Task { await setDist(true) } } label: {
                     Text(Tr("开通")).font(pf(14, .medium)).foregroundColor(.white)
                         .padding(.horizontal, 14).frame(height: 42)
@@ -259,7 +259,7 @@ struct DistAdminCard: View {
             }
         }
         .background(C.cardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
         .task { await load() }
     }
 

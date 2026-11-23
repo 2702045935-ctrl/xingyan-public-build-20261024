@@ -37,7 +37,7 @@ struct NoteCardBubble: View {
                         .foregroundColor(C.green)
                         .frame(width: 44, height: 44)
                         .background(C.green.opacity(0.10))
-                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous))
                     VStack(alignment: .leading, spacing: 5) {
                         Text(title.isEmpty ? Tr("笔记") : title)
                             .font(pfStyled(size: 15.5, weight: .medium))
@@ -107,7 +107,7 @@ struct NoteViewerSheet: View {
                 }
                 .padding(14)
                 .background(C.cardBg)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
                 .padding(.horizontal, 12)
                 .padding(.top, 12)
                 Spacer().frame(height: 30)
@@ -141,7 +141,7 @@ struct NoteImageBlock: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: height)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
         .contentShape(Rectangle())
         .onTapGesture { onTap?(path) }
     }

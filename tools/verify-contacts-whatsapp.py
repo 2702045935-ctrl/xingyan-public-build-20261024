@@ -16,8 +16,8 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "private var contactAvatarSize: CGFloat {\n        40" in VIEW
-    and ".frame(height: 64)" in VIEW
+    "private var contactAvatarSize: CGFloat {\n        AppDesign.Avatar.row" in VIEW
+    and ".frame(height: AppDesign.Control.compactRowHeight)" in VIEW
     and ".padding(.leading, 68)" in VIEW,
     "contact rows must use the compact 40pt avatar and 64pt WeChat-style rhythm",
 )
@@ -28,10 +28,10 @@ require(
     "contacts must use a centered native title with the add control on the trailing edge",
 )
 require(
-    "nativeQuickIcon(item, size: 30)" in VIEW
-    and ".frame(height: 56)" in VIEW
-    and ".padding(.leading, 58)" in VIEW,
-    "contact utility rows must use compact WeChat-style icon and divider geometry",
+    "nativeQuickIcon(item, size: 34)" in VIEW
+    and "AppFlowRow(height: AppDesign.Control.compactRowHeight)" in VIEW
+    and "AppFlowDivider(leading: 62)" in VIEW,
+    "contact utility rows must reuse the shared compact row and divider geometry",
 )
 require(
     ".background(contactsSectionFill)" in VIEW,
@@ -39,8 +39,9 @@ require(
 )
 require(
     "private var funcStrip" in VIEW
-    and "RoundedRectangle(cornerRadius: 16, style: .continuous)" not in VIEW,
-    "utility contact entries must use dividers without a surrounding selection card",
+    and "AppFlowPanel {" in VIEW
+    and "AppFlowDivider(leading: 62)" in VIEW,
+    "utility contact entries must use the shared grouped panel",
 )
 require(
     'Image(systemName: symbol)' in VIEW
@@ -49,9 +50,9 @@ require(
 )
 require(
     "contactSubtitle(" not in VIEW
-    and ".frame(height: 36)" in VIEW
-    and "RoundedRectangle(cornerRadius: 8, style: .continuous)" in VIEW,
-    "contacts must use single-line native rows and the compact WeChat search field",
+    and "AppDesign.Control.searchHeight" in VIEW
+    and "AppDesign.Radius.control" in VIEW,
+    "contacts must use single-line native rows and the shared search field",
 )
 require(
     'Tr("未找到相关联系人")' in VIEW
@@ -72,10 +73,10 @@ require(
     "index dragging must scroll only when the target letter actually changes",
 )
 require(
-    "ContactAvatarPressStyle" in VIEW
-    and "ContactTopIconPressStyle" in VIEW
-    and "ContactSearchPressStyle" in VIEW
-    and "buttonStyle(ContactSearchPressStyle())" in VIEW
+    "ContactAvatarPressStyle" not in VIEW
+    and "ContactTopIconPressStyle" not in VIEW
+    and "ContactSearchPressStyle" not in VIEW
+    and "buttonStyle(AppPressStyle())" in VIEW
     and "buttonStyle(MenuPressStyle())" in VIEW,
     "contact rows and controls must expose a restrained pressed state",
 )
@@ -85,8 +86,8 @@ require(
     "alphabet index jumps must stay immediate instead of animating across the list",
 )
 require(
-    "opacity(configuration.isPressed ? 0.055 : 0)" in MENU
-    and ".easeOut(duration: 0.09)" in MENU
+    "opacity(configuration.isPressed ? 0.045 : 0)" in MENU
+    and "AppDesign.Motion.press" in MENU
     and "Color.gray.opacity(0.16)" not in MENU,
     "shared menu press feedback must be subtle and animated",
 )
@@ -106,7 +107,10 @@ require(
 )
 require(
     "private var addFriendActions" in PROFILE
-    and "private func addFriendSurface" in PROFILE
+    and "AppFlowPanel {" in PROFILE
+    and "AppEmptyState(" in PROFILE
+    and "StarOrbitSearchField(" in PROFILE
+    and "private func addFriendSurface" not in PROFILE
     and "private func scheduleSearch" in PROFILE
     and "showPhoneContacts" in PROFILE
     and "showShareInvite" in PROFILE

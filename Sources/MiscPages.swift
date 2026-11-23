@@ -103,14 +103,14 @@ struct FavoritesView: View {
             if let thumb = thumbOf(item) {
                 RemoteImage(path: thumb)
                     .frame(width: 46, height: 46)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
             } else {
                 Image(systemName: iconName(kind))
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Color.accentColor)
                     .frame(width: 36, height: 36)
                     .background(Color.accentColor.opacity(0.10),
-                                in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                in: RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
             }
 
             VStack(alignment: .leading, spacing: 5) {
@@ -616,7 +616,7 @@ struct StickerViewOld: View {
                                         }
                                         .frame(maxWidth: .infinity)
                                         .frame(height: 62)
-                                        .background(RoundedRectangle(cornerRadius: 8).fill(C.searchBg))
+                                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini).fill(C.searchBg))
                                     }
                                     .buttonStyle(.plain)
                                 }
@@ -647,7 +647,7 @@ struct StickerViewOld: View {
                                         Text(Tr("移除"))
                                             .font(pf(14)).foregroundColor(C.subLabel)
                                             .padding(.horizontal, 12).frame(height: 28)
-                                            .background(RoundedRectangle(cornerRadius: 5).fill(C.searchBg))
+                                            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.micro).fill(C.searchBg))
                                     }
                                     .buttonStyle(.plain)
                                 } else {
@@ -655,7 +655,7 @@ struct StickerViewOld: View {
                                         Text(Tr("添加"))
                                             .font(pf(14, .medium)).foregroundColor(.white)
                                             .padding(.horizontal, 12).frame(height: 28)
-                                            .background(RoundedRectangle(cornerRadius: 5).fill(C.green))
+                                            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.micro).fill(C.green))
                                     }
                                     .buttonStyle(.plain)
                                 }
@@ -740,7 +740,7 @@ struct StickerViewOld: View {
                     .foregroundColor(added ? C.subLabel : .white)
                     .padding(.horizontal, 12)
                     .frame(height: 28)
-                    .background(RoundedRectangle(cornerRadius: 5).fill(added ? C.searchBg : C.green))
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.micro).fill(added ? C.searchBg : C.green))
             }
             .buttonStyle(.plain)
         }
@@ -953,7 +953,7 @@ struct StatusView: View {
                 Capsule().fill(Color(hexString: statusTint)).frame(width: 3).padding(.vertical, 12)
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
         .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 3)
         .padding(.horizontal, 12)
     }
@@ -982,7 +982,7 @@ struct StatusView: View {
         .padding(.vertical, 10)
 
         .background(C.cardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
         .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 3)
         .padding(.horizontal, 12)
     }
@@ -991,7 +991,7 @@ struct StatusView: View {
         let icon = picked?.icon ?? ""
         let on = picked != nil
         return ZStack {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                 .fill(on ? AnyShapeStyle(tileGradient(picked?.color ?? pickedColor))
                          : AnyShapeStyle(C.cardBg))
                 .frame(width: 44, height: 44)
@@ -1029,7 +1029,7 @@ struct StatusView: View {
         .padding(.top, 14)
         .padding(.bottom, 16)
         .background(C.cardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
         .padding(.horizontal, 12)
     }
 
@@ -1053,9 +1053,9 @@ struct StatusView: View {
             .frame(maxWidth: .infinity)
             .frame(height: 86)
             .background(tileGradient(base))
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
 
-            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                 .stroke(Color.white, lineWidth: on ? 2 : 0))
             .overlay(alignment: .topTrailing) {
                 if on {
@@ -1093,7 +1093,7 @@ struct StatusView: View {
                 .background(C.cardBg)
         }
         .buttonStyle(.plain)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
         .padding(.horizontal, 12)
     }
 
@@ -1209,7 +1209,7 @@ struct StatusDetailView: View {
         .background(LinearGradient(colors: [Color(hexString: base),
                                             Color(hexString: second.isEmpty ? base : second)],
                                    startPoint: .topLeading, endPoint: .bottomTrailing))
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         .padding(.horizontal, 12)
     }
 
@@ -1247,7 +1247,7 @@ struct StatusDetailView: View {
             }
         }
         .background(C.cardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
         .padding(.horizontal, 12)
     }
 
@@ -1278,7 +1278,7 @@ struct StatusDetailView: View {
                 .background(C.cardBg)
         }
         .buttonStyle(.plain)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
         .padding(.horizontal, 12)
         .padding(.top, 8)
         .padding(.bottom, max(10, L.safeBottom))
@@ -1339,7 +1339,7 @@ struct FriendStatusView: View {
                     .background(LinearGradient(colors: [Color(hexString: base),
                                                         Color(hexString: second.isEmpty ? base : second)],
                                                startPoint: .topLeading, endPoint: .bottomTrailing))
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
                     .padding(.horizontal, 12)
                     Spacer().frame(height: 20)
                 }

@@ -100,7 +100,7 @@ struct DDVipPageView: View {
             LinearGradient(colors: [Color(hex: 0x3A2B18), Color(hex: 0x6B4A1E), Color(hex: 0x2A1F12)],
                            startPoint: .topLeading, endPoint: .bottomTrailing)
         )
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
     }
 
     private var rightsCard: some View {
@@ -130,7 +130,7 @@ struct DDVipPageView: View {
         }
         .padding(12)
         .background(DDColor.card)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
     }
 
     private var planCard: some View {
@@ -152,9 +152,9 @@ struct DDVipPageView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
-                        .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                             .fill(picked == p.months ? Color(hex: 0xFFF8E8) : DDColor.page))
-                        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                             .stroke(picked == p.months ? Color(hex: 0xD9A94A) : Color.clear, lineWidth: 1.2))
                         .contentShape(Rectangle())
                     }
@@ -166,7 +166,7 @@ struct DDVipPageView: View {
                 Text((store.isVip ? Tr("立即续费") : Tr("立即开通")) + " · " + Tr(plan.title))
                     .font(pf(16, .medium)).foregroundColor(Color(hex: 0x3A2B18))
                     .frame(maxWidth: .infinity).frame(height: 44)
-                    .background(RoundedRectangle(cornerRadius: 22)
+                    .background(RoundedRectangle(cornerRadius: AppDesign.Radius.panel)
                         .fill(LinearGradient(colors: [Color(hex: 0xFFE7B0), Color(hex: 0xD9A94A)],
                                              startPoint: .leading, endPoint: .trailing)))
             }
@@ -190,7 +190,7 @@ struct DDVipPageView: View {
         }
         .padding(12)
         .background(DDColor.card)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
     }
 
     private var goodsCard: some View {
@@ -225,7 +225,7 @@ struct DDVipPageView: View {
         }
         .padding(12)
         .background(DDColor.card)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
     }
 
     private var noteCard: some View {
@@ -240,7 +240,7 @@ struct DDVipPageView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
         .background(DDColor.card)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
     }
 }
 
@@ -271,10 +271,10 @@ struct DDVipBanner: View {
             }
             .padding(12)
 
-            .background(RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .background(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                 .fill(LinearGradient(colors: [Color(hex: 0xFFF6E0), Color(hex: 0xFFE9BE)],
                                      startPoint: .leading, endPoint: .trailing)))
-            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                 .stroke(Color(hex: 0xE8CFA0).opacity(0.7), lineWidth: 0.6))
             .shadow(color: Color(hex: 0xD9A94A).opacity(0.14), radius: 12, y: 4)
             .contentShape(Rectangle())

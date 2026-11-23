@@ -1195,7 +1195,7 @@ private struct BrowserStartSection: View {
             }
             .padding(.horizontal, 13)
             .background(C.cardBg, in: RoundedRectangle(
-                cornerRadius: 18,
+                cornerRadius: AppDesign.Radius.panel,
                 style: .continuous
             ))
         }

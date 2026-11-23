@@ -60,7 +60,7 @@ struct DiagView: View {
                         action(copied ? Tr("已复制") : Tr("复制全部信息"), "doc.on.doc") { copyAll() }
                     }
                     .background(C.cardBg)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
                     .padding(.horizontal, 12)
 
                     if !msg.isEmpty {
@@ -129,7 +129,7 @@ struct DiagView: View {
             }
         }
         .background(C.cardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         .padding(.horizontal, 12)
     }
 
@@ -157,7 +157,7 @@ struct DiagView: View {
             .textSelection(.enabled)
             .padding(12)
             .background(C.cardBg)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
             .padding(.horizontal, 12)
     }
 

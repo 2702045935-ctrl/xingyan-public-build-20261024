@@ -63,44 +63,6 @@ private func contactDetailLine(_ label: String, _ value: String) -> String {
     return "\(Tr(label))：\(value)"
 }
 
-private struct ContactAvatarPressStyle: ButtonStyle {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.985 : 1)
-            .opacity(configuration.isPressed ? 0.78 : 1)
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.09),
-                       value: configuration.isPressed)
-    }
-}
-
-private struct ContactTopIconPressStyle: ButtonStyle {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .background {
-                Circle()
-                    .fill(Color.primary.opacity(configuration.isPressed ? 0.065 : 0))
-            }
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.10),
-                       value: configuration.isPressed)
-    }
-}
-
-private struct ContactSearchPressStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .overlay {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(Color.primary.opacity(configuration.isPressed ? 0.055 : 0))
-                    .allowsHitTesting(false)
-            }
-            .animation(.easeOut(duration: 0.09), value: configuration.isPressed)
-    }
-}
-
 struct ContactsView: View {
 
     @ObservedObject private var lang = LangStore.shared
@@ -159,7 +121,7 @@ struct ContactsView: View {
         contactsCanvas
     }
     private var contactAvatarSize: CGFloat {
-        40
+        AppDesign.Avatar.row
     }
     private let contactsAccent = Color(hex: 0x25D366)
 
@@ -243,7 +205,7 @@ private var funcs: [(String, String, Color, String)] {
                 .frame(width: 42, height: 42)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(ContactTopIconPressStyle())
+        .buttonStyle(AppPressStyle())
         .zIndex(20)
         .accessibilityLabel(Tr("添加"))
     }
@@ -519,28 +481,33 @@ private var funcs: [(String, String, Color, String)] {
             }
             .padding(.horizontal, 13)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .frame(height: 36)
-            .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
+            .frame(height: AppDesign.Control.searchHeight)
+            .background(RoundedRectangle(
+                cornerRadius: AppDesign.Radius.control,
+                style: .continuous
+            )
                 .fill(contactsField))
-            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .contentShape(RoundedRectangle(
+                cornerRadius: AppDesign.Radius.control,
+                style: .continuous
+            ))
         }
-        .buttonStyle(ContactSearchPressStyle())
+        .buttonStyle(AppPressStyle())
         .accessibilityLabel(Tr("搜索"))
     }
 
     private var funcStrip: some View {
-        VStack(spacing: 0) {
-            ForEach(Array(ctFuncs.enumerated()), id: \.offset) { index, item in
-                entryRow(item)
-                if index < ctFuncs.count - 1 {
-                    Rectangle()
-                        .fill(contactsRule)
-                        .frame(height: 0.5)
-                        .padding(.leading, 58)
+        AppFlowPanel {
+            VStack(spacing: 0) {
+                ForEach(Array(ctFuncs.enumerated()), id: \.offset) { index, item in
+                    entryRow(item)
+                    if index < ctFuncs.count - 1 {
+                        AppFlowDivider(leading: 62)
+                    }
                 }
             }
         }
-        .background(contactsCanvas)
+        .padding(.horizontal, 16)
         .padding(.bottom, 4)
     }
 
@@ -548,15 +515,13 @@ private var funcs: [(String, String, Color, String)] {
         return Button {
             openFunc(item.3)
         } label: {
-            HStack(spacing: 13) {
-                nativeQuickIcon(item, size: 30)
-
+            AppFlowRow(height: AppDesign.Control.compactRowHeight) {
+                nativeQuickIcon(item, size: 34)
+            } content: {
                 Text(item.0)
-                    .font(pfStyled(size: 16.5, weight: .regular))
+                    .font(AppDesign.Type.rowTitle)
                     .foregroundColor(contactsLabel)
-
-                Spacer(minLength: 8)
-
+            } trailing: {
                 if item.3 == "newFriends" && app.showDot("newFriends", auto: app.friendRequests > 0) {
                     Text(app.friendRequests > 99 ? "99+" : "\(app.friendRequests)")
                         .font(pf(12, .medium))
@@ -566,13 +531,8 @@ private var funcs: [(String, String, Color, String)] {
                         .background(Capsule().fill(Color(.systemRed)))
                 }
             }
-            .padding(.leading, 16)
-            .padding(.trailing, 18)
-            .frame(height: 56)
-            .background(Color.clear)
-            .contentShape(Rectangle())
         }
-        .buttonStyle(MenuPressStyle())
+        .buttonStyle(AppPressStyle())
     }
 
     private var ctFuncs: [(String, String, Color, String)] {
@@ -613,7 +573,7 @@ private var funcs: [(String, String, Color, String)] {
                                     .frame(width: 58)
                             }
                         }
-                        .buttonStyle(ContactAvatarPressStyle())
+                        .buttonStyle(AppPressStyle())
                     }
                 }
                 .padding(.vertical, 1)
@@ -762,7 +722,7 @@ private var funcs: [(String, String, Color, String)] {
                    level: (user.qqLevel ?? 0) > 1 ? (user.qqLevel ?? 0) : 0)
             HStack(spacing: 5) {
                 Text(user.name)
-                    .font(pfStyled(size: 17, weight: .regular))
+                    .font(AppDesign.Type.listTitle)
                     .foregroundColor(contactsLabel)
                     .lineLimit(1)
 
@@ -788,7 +748,7 @@ private var funcs: [(String, String, Color, String)] {
         }
         .padding(.leading, 16)
         .padding(.trailing, 16)
-        .frame(height: 64)
+        .frame(height: AppDesign.Control.compactRowHeight)
         .background(contactsRowFill)
         .overlay(alignment: .bottom) {
             Rectangle()
@@ -1143,7 +1103,10 @@ struct ContactCardView: View {
                     if isEyesBot {
                         JarvisEyesAvatar(size: 34)
                             .frame(width: 40, height: 40)
-                            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(sheetBg))
+                            .background(RoundedRectangle(
+                                cornerRadius: AppDesign.Radius.small,
+                                style: .continuous
+                            ).fill(sheetBg))
                     } else {
                         Avatar(path: avatarPath, size: 40, radius: 10,
                                level: (u.qqLevel ?? 0) > 1 ? (u.qqLevel ?? 0) : 0)
@@ -1164,8 +1127,14 @@ struct ContactCardView: View {
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 12)
-                .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(C.cardBg))
-                .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .background(RoundedRectangle(
+                    cornerRadius: AppDesign.Radius.control,
+                    style: .continuous
+                ).fill(C.cardBg))
+                .overlay(RoundedRectangle(
+                    cornerRadius: AppDesign.Radius.control,
+                    style: .continuous
+                )
                     .stroke(C.hairline, lineWidth: 0.6))
 
                 PanelCard(solid: true) {
@@ -1236,7 +1205,10 @@ struct ContactCardView: View {
                         .frame(maxWidth: .infinity)
                         .frame(height: 52)
                         .background { CardGlassBox(radius: 14) }
-                        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .overlay(RoundedRectangle(
+                            cornerRadius: AppDesign.Radius.control,
+                            style: .continuous
+                        )
                             .stroke(C.hairline, lineWidth: 0.6))
                 }
                 .buttonStyle(.plain)
@@ -1420,7 +1392,10 @@ struct ContactCardView: View {
                         ForEach(thumbs.prefix(3).indices, id: \.self) { i in
                             RemoteImage(path: thumbs[i])
                                 .frame(width: 38, height: 38)
-                                .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                                .clipShape(RoundedRectangle(
+                                    cornerRadius: AppDesign.Radius.small,
+                                    style: .continuous
+                                ))
                         }
                     }
                     Chevron(size: 9, line: 1.6)

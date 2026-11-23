@@ -576,12 +576,12 @@ private struct NativeZoomCompass: View {
         .padding(.bottom, 7)
         .frame(maxWidth: 342)
         .background(
-            RoundedRectangle(cornerRadius: 19, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .fill(.ultraThinMaterial)
                 .environment(\.colorScheme, .dark)
         )
         .overlay {
-            RoundedRectangle(cornerRadius: 19, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(Color.white.opacity(0.12), lineWidth: 0.7)
         }
         .shadow(color: .black.opacity(0.20), radius: 12, y: 5)
@@ -666,7 +666,7 @@ struct NativeCameraView: View {
                     if showGrid { gridOverlay }
 
                     if let focusPoint {
-                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous)
                             .stroke(Color.yellow, lineWidth: 1.4)
                             .frame(width: 62, height: 62)
                             .position(focusPoint)
@@ -755,11 +755,11 @@ struct NativeCameraView: View {
                         .foregroundStyle(.white)
                         .frame(width: 46, height: 46)
                         .background(
-                            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                                 .fill(Color.black.opacity(0.22))
                         )
                         .overlay {
-                            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                                 .stroke(Color.white.opacity(0.15), lineWidth: 0.7)
                         }
                 }

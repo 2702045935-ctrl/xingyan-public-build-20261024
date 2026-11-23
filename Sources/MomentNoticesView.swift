@@ -80,7 +80,7 @@ struct MomentNoticesView: View {
             HStack(alignment: .top, spacing: 11) {
                 RemoteImage(path: n.avatar ?? "", mode: .fill, maxSide: 200)
                     .frame(width: 40, height: 40)
-                    .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 5) {
@@ -119,7 +119,7 @@ struct MomentNoticesView: View {
                 if let thumb = n.thumb, !thumb.isEmpty {
                     RemoteImage(path: thumb, mode: .fill, maxSide: 260)
                         .frame(width: 44, height: 44)
-                        .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous))
                 }
             }
             .padding(.horizontal, 16)

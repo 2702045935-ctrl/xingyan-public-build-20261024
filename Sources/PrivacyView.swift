@@ -379,7 +379,7 @@ private struct AppearanceHomePreview: View {
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 30, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                 .fill(
                     LinearGradient(
                         colors: [
@@ -393,11 +393,11 @@ private struct AppearanceHomePreview: View {
                     )
                 )
                 .overlay {
-                    RoundedRectangle(cornerRadius: 30, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                         .stroke(Color.white.opacity(0.28), lineWidth: 0.8)
                 }
 
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
+            RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                 .fill(
                     LinearGradient(
                         colors: dark
@@ -415,7 +415,7 @@ private struct AppearanceHomePreview: View {
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
-                    .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
                 }
                 .padding(6)
 
@@ -463,7 +463,7 @@ private struct AppearanceHomePreview: View {
                 .padding(.horizontal, 10)
                 .frame(height: 42)
                 .background(panel.opacity(0.62),
-                            in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            in: RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
                 .padding(.horizontal, 9)
 
                 Capsule()
@@ -511,7 +511,7 @@ private struct AppearanceHomePreview: View {
                 .font(.system(size: 9, weight: .semibold))
                 .foregroundStyle(.white)
                 .frame(width: 20, height: 20)
-                .background(tint, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+                .background(tint, in: RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous))
             VStack(alignment: .leading, spacing: 3) {
                 Capsule().fill(Color.primary.opacity(0.25)).frame(width: 26, height: 3)
                 Capsule().fill(Color.primary.opacity(0.13)).frame(width: 18, height: 3)
@@ -521,11 +521,11 @@ private struct AppearanceHomePreview: View {
         .padding(.horizontal, 6)
         .frame(maxWidth: .infinity)
         .frame(height: 31)
-        .background(panel.opacity(0.90), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(panel.opacity(0.90), in: RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
     }
 
     private func miniAppIcon(_ symbol: String, tint: Color) -> some View {
-        RoundedRectangle(cornerRadius: 6, style: .continuous)
+        RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous)
             .fill(tint.opacity(0.86))
             .frame(width: 19, height: 19)
             .overlay {
