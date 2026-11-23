@@ -37,6 +37,25 @@ function freePort() {
   });
 }
 
+function portAvailable(port) {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    server.once('error', () => resolve(false));
+    server.listen(port, '0.0.0.0', () => server.close(() => resolve(true)));
+  });
+}
+
+async function freePortBlock(count) {
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const base = await freePort();
+    const ports = Array.from({ length: count }, (_, index) => base + index * 100);
+    if (ports[ports.length - 1] > 65000) continue;
+    const available = await Promise.all(ports.map(portAvailable));
+    if (available.every(Boolean)) return base;
+  }
+  throw new Error('unable to allocate server port block');
+}
+
 function signToken(userId) {
   const payload = Buffer.from(JSON.stringify({
     sub: userId,
@@ -108,6 +127,7 @@ function openSocket(base, user, host = '127.0.0.1', sourceHost = '127.0.0.1',
   const netSocket = net.createConnection(connectOptions);
   const connection = {
     userId: user.id,
+    base,
     host,
     sourceHost,
     socket: {
@@ -119,7 +139,10 @@ function openSocket(base, user, host = '127.0.0.1', sourceHost = '127.0.0.1',
     closed: false,
     closeCode: 0,
     closeReason: '',
-    received: new Set()
+    received: new Set(),
+    duplicateCount: 0,
+    orderViolations: 0,
+    lastSeq: 0
   };
   connection.readyPromise = new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error(`websocket ready timeout: ${user.id}`)), 90000);
@@ -155,6 +178,16 @@ function openSocket(base, user, host = '127.0.0.1', sourceHost = '127.0.0.1',
       if (eventPayload.type === 'message' && eventPayload.message) {
         const clientId = String(eventPayload.message.clientId || '');
         if (clientId) {
+          if (connection.received.has(clientId)) {
+            connection.duplicateCount += 1;
+          }
+          const seq = Number(eventPayload.message.seq || 0);
+          if (seq > 0) {
+            if (connection.lastSeq > 0 && seq < connection.lastSeq) {
+              connection.orderViolations += 1;
+            }
+            connection.lastSeq = Math.max(connection.lastSeq, seq);
+          }
           connection.received.add(clientId);
           deliverWaiter(clientId, connection, Date.now());
         }
@@ -247,6 +280,7 @@ function openSocket(base, user, host = '127.0.0.1', sourceHost = '127.0.0.1',
 }
 
 const waiters = new Map();
+const sentClientIds = new Set();
 
 function deliverWaiter(clientId, connection, at) {
   const waiter = waiters.get(clientId);
@@ -299,7 +333,7 @@ async function sendMessage(base, sender, clientId) {
   return clientId;
 }
 
-async function openConnections(base, users, target, existing, batchSize, hosts, sources) {
+async function openConnections(bases, users, target, existing, batchSize, hosts, sources) {
   let cursor = existing.length;
   while (cursor < target) {
     const batch = users.slice(cursor, Math.min(target, cursor + batchSize));
@@ -310,7 +344,7 @@ async function openConnections(base, users, target, existing, batchSize, hosts, 
           ? 10000 + ((cursor + offset + attempt * 7919) % 50000)
           : 0;
         const connection = openSocket(
-          base,
+          bases[(cursor + offset) % bases.length],
           user,
           hosts[(cursor + offset) % hosts.length],
           sources[(cursor + offset) % sources.length],
@@ -339,6 +373,7 @@ async function openConnections(base, users, target, existing, batchSize, hosts, 
 
 async function runBroadcast(base, sender, connections, round) {
   const clientId = `capacity-${Date.now()}-${round}-${crypto.randomBytes(3).toString('hex')}`;
+  sentClientIds.add(clientId);
   const delivery = waitForDelivery(
     clientId,
     connections.map((connection) => ({ id: connection.userId })),
@@ -357,8 +392,95 @@ async function runBroadcast(base, sender, connections, round) {
   };
 }
 
+function strictDeliverySummary(connections) {
+  const expectedIds = Array.from(sentClientIds);
+  const expectedSet = new Set(expectedIds);
+  let missing = 0;
+  let duplicates = 0;
+  let orderViolations = 0;
+  let extra = 0;
+  let inconsistentConnections = 0;
+  for (const connection of connections) {
+    let connectionMissing = 0;
+    for (const id of expectedIds) {
+      if (!connection.received.has(id)) connectionMissing += 1;
+    }
+    missing += connectionMissing;
+    duplicates += connection.duplicateCount;
+    orderViolations += connection.orderViolations;
+    extra += Array.from(connection.received).filter((id) => !expectedSet.has(id)).length;
+    if (connectionMissing || connection.received.size !== expectedIds.length) {
+      inconsistentConnections += 1;
+    }
+  }
+  return {
+    expectedPerConnection: expectedIds.length,
+    connectionsChecked: connections.length,
+    missing,
+    duplicates,
+    orderViolations,
+    extra,
+    inconsistentConnections,
+    pass: missing === 0 && duplicates === 0 && orderViolations === 0
+      && extra === 0 && inconsistentConnections === 0
+  };
+}
+
+async function auditStoredHistory(base, sender) {
+  const expected = Array.from(sentClientIds);
+  const url = `${base}/api/chats/${CHAT_ID}/messages`
+    + `?limit=${Math.max(100, expected.length + 20)}&all=1`;
+  const response = await fetch(url, {
+    headers: {
+      Cookie: `${TOKEN_COOKIE}=${encodeURIComponent(signToken(sender.id))}`,
+      'x-device-kind': 'desktop',
+      'x-device-id': 'capacity-audit'
+    }
+  });
+  if (!response.ok) {
+    return { pass: false, error: `history HTTP ${response.status}` };
+  }
+  const payload = await response.json();
+  const rows = Array.isArray(payload?.data?.messages) ? payload.data.messages : [];
+  const ids = new Set();
+  const clientIds = new Set();
+  let idDuplicates = 0;
+  let clientIdDuplicates = 0;
+  let orderViolations = 0;
+  let lastSeq = 0;
+  for (const row of rows) {
+    const id = String(row.id || '');
+    const clientId = String(row.clientId || '');
+    const seq = Number(row.seq || 0);
+    if (ids.has(id)) idDuplicates += 1;
+    ids.add(id);
+    if (clientId) {
+      if (clientIds.has(clientId)) clientIdDuplicates += 1;
+      clientIds.add(clientId);
+    }
+    if (seq > 0) {
+      if (lastSeq > 0 && seq < lastSeq) orderViolations += 1;
+      lastSeq = Math.max(lastSeq, seq);
+    }
+  }
+  const missing = expected.filter((id) => !clientIds.has(id)).length;
+  return {
+    rows: rows.length,
+    expected: expected.length,
+    missing,
+    idDuplicates,
+    clientIdDuplicates,
+    orderViolations,
+    pass: missing === 0 && idDuplicates === 0
+      && clientIdDuplicates === 0 && orderViolations === 0
+  };
+}
+
 async function runWorker() {
   const base = String(process.env.CAPACITY_LOAD_BASE || '');
+  const bases = String(process.env.CAPACITY_LOAD_BASES || base)
+    .split(',')
+    .filter(Boolean);
   const start = Math.max(0, Number(process.env.CAPACITY_LOAD_START) || 0);
   const count = Math.max(1, Number(process.env.CAPACITY_LOAD_COUNT) || 1);
   const batch = Math.max(1, Number(process.env.CAPACITY_LOAD_BATCH) || 200);
@@ -374,7 +496,7 @@ async function runWorker() {
   const users = Array.from({ length: count }, (_, index) => account(start + index));
   const connections = [];
   try {
-    await openConnections(base, users, count, connections, batch, hosts, sources);
+    await openConnections(bases, users, count, connections, batch, hosts, sources);
     process.send({ type: 'ready', count, pid: process.pid });
     process.on('message', async (message) => {
       if (!message || message.type !== 'expect') return;
@@ -548,6 +670,7 @@ async function main() {
   const rounds = Math.max(1, Number(arg('rounds', '3')));
   const connectionBatch = Math.max(1, Math.min(1000, Number(arg('batch', '200'))));
   const workerCount = Math.max(0, Number(arg('workers', '0')));
+  const serverCount = Math.max(1, Math.min(8, Number(arg('servers', '1'))));
   const targetHosts = String(arg('targets', '127.0.0.1'))
     .split(',')
     .map((value) => value.trim())
@@ -558,13 +681,20 @@ async function main() {
     .filter(Boolean);
   const reconnectFraction = Math.min(0.2, Math.max(0, Number(arg('reconnect', '0.1'))));
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xingyan-capacity-load-'));
-  const port = await freePort();
-  const base = `http://127.0.0.1:${port}`;
+  const serverBasePort = serverCount > 1
+    ? await freePortBlock(serverCount)
+    : await freePort();
+  const serverPorts = Array.from(
+    { length: serverCount },
+    (_, index) => serverBasePort + index * 100
+  );
+  const bases = serverPorts.map((port) => `http://127.0.0.1:${port}`);
+  const base = bases[0];
   const logs = [];
   activeLogs = logs;
   const users = Array.from({ length: maxConnections }, (_, index) => account(index));
   const connections = [];
-  let child;
+  const children = [];
 
   try {
     fs.mkdirSync(path.join(dataDir, 'messages'), { recursive: true });
@@ -603,32 +733,41 @@ async function main() {
       maxGroupMembers: Math.max(10000, maxConnections)
     }), 'utf8');
 
-    child = spawn(process.execPath, ['server.js'], {
-      cwd: SERVER_DIR,
-      env: Object.assign({}, process.env, {
-        DATA_DIR: dataDir,
-        PORT: String(port),
-        HOST: targetHosts.length > 1 ? '0.0.0.0' : '127.0.0.1',
-        TURN_PORT: String(await freePort()),
-        CHRIS_LOCAL_ONLY: '1',
-        ALLOW_PLAIN_WS: '1',
-        AML_RUNTIME_ENABLED: '0',
-        DISABLE_STARTUP_BOT_BACKFILL: '1',
-        MESSAGE_RELIABILITY_ENABLED: '1',
-        SHARD_COUNT: '1',
-        // Isolated load harness only. Production keeps its normal limits.
-        WS_MAX_PER_IP: String(maxConnections + 1000),
-        WS_NEW_PER_SEC: String(maxConnections + 1000),
-        API_MAX_PER_WINDOW: String(Math.max(1_000_000, maxConnections * 1000)),
-        MSG_MAX_PER_WINDOW: String(Math.max(1_000_000, maxConnections * 1000)),
-        GLOBAL_MSG_PER_SEC: '1000000'
-      }),
-      stdio: ['ignore', 'pipe', 'pipe'],
-      windowsHide: true
-    });
-    child.stdout.on('data', (chunk) => logs.push(chunk.toString()));
-    child.stderr.on('data', (chunk) => logs.push(chunk.toString()));
-    await waitForHealth(base, child, logs);
+    for (let serverId = 0; serverId < serverCount; serverId += 1) {
+      const child = spawn(process.execPath, ['server.js'], {
+        cwd: SERVER_DIR,
+        env: Object.assign({}, process.env, {
+          DATA_DIR: dataDir,
+          PORT: String(serverPorts[serverId]),
+          HOST: targetHosts.length > 1 ? '0.0.0.0' : '127.0.0.1',
+          TURN_PORT: String(await freePort()),
+          CHRIS_LOCAL_ONLY: '1',
+          ALLOW_PLAIN_WS: '1',
+          AML_RUNTIME_ENABLED: '0',
+          DISABLE_STARTUP_BOT_BACKFILL: '1',
+          MESSAGE_RELIABILITY_ENABLED: '1',
+          SHARD_COUNT: String(serverCount),
+          SHARD_BASE_PORT: String(serverBasePort),
+          SHARD_RUNTIME_BASE_PORT: String(serverBasePort),
+          SHARD_ID: String(serverId),
+          // Isolated load harness only. Production keeps its normal limits.
+          WS_MAX_PER_IP: String(maxConnections + 1000),
+          WS_NEW_PER_SEC: String(maxConnections + 1000),
+          API_MAX_PER_WINDOW: String(Math.max(1_000_000, maxConnections * 1000)),
+          MSG_MAX_PER_WINDOW: String(Math.max(1_000_000, maxConnections * 1000)),
+          GLOBAL_MSG_PER_SEC: '1000000'
+        }),
+        stdio: ['ignore', 'pipe', 'pipe'],
+        windowsHide: true
+      });
+      child.stdout.on('data', (chunk) => logs.push(chunk.toString()));
+      child.stderr.on('data', (chunk) => logs.push(chunk.toString()));
+      children.push(child);
+    }
+    await Promise.all(children.map((child, index) =>
+      waitForHealth(bases[index], child, logs)
+    ));
+    const child = children[0];
     if (workerCount > 1) {
       await runDistributed(
         base,
@@ -644,7 +783,7 @@ async function main() {
     for (const target of stages) {
       const startedAt = Date.now();
       await openConnections(
-        base,
+        bases,
         users,
         target,
         connections,
@@ -652,10 +791,17 @@ async function main() {
         targetHosts,
         sourceHosts
       );
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, serverCount > 1 ? 1600 : 500));
       const active = connections.filter((connection) =>
         connection.ready && !connection.closed
       );
+      active.forEach((connection) => {
+        connection.received.clear();
+        connection.duplicateCount = 0;
+        connection.orderViolations = 0;
+        connection.lastSeq = 0;
+      });
+      sentClientIds.clear();
       const memoryBefore = processMemoryMb(child.pid);
       const broadcasts = [];
       for (let round = 0; round < rounds; round += 1) {
@@ -669,7 +815,7 @@ async function main() {
         await new Promise((resolve) => setTimeout(resolve, 250));
         const replacements = reconnecting.map((connection) => {
           const user = users.find((row) => row.id === connection.userId);
-          return openSocket(base, user, connection.host, connection.sourceHost);
+          return openSocket(connection.base, user, connection.host, connection.sourceHost);
         });
         await Promise.all(replacements.map((connection) => connection.readyPromise));
         for (let index = 0; index < active.length; index += 1) {
@@ -677,6 +823,10 @@ async function main() {
         }
       }
       const reconnectBroadcast = await runBroadcast(base, users[0], active, 99);
+      const strict = reconnectCount === 0 ? strictDeliverySummary(active) : null;
+      const stored = reconnectCount === 0
+        ? await auditStoredHistory(base, users[0])
+        : null;
       const expected = active.length * (rounds + 1);
       const delivered = broadcasts.reduce((sum, row) => sum + row.delivered, 0)
         + reconnectBroadcast.delivered;
@@ -700,11 +850,14 @@ async function main() {
         p99Ms: Math.max(...p99s),
         broadcasts,
         reconnectBroadcast,
+        strict,
+        stored,
         serverMemoryBeforeMb: memoryBefore,
         serverMemoryAfterMb: processMemoryMb(child.pid)
       };
       stage.pass = stage.deliveryRate >= 0.999 && stage.p99Ms <= 2000
-        && stage.connections === target;
+        && stage.connections === target && (!strict || strict.pass)
+        && (!stored || stored.pass);
       results.push(stage);
       console.log(JSON.stringify(stage));
       if (!stage.pass) break;
@@ -714,6 +867,7 @@ async function main() {
     console.log(JSON.stringify({
       isolated: true,
       dataDir,
+      serverCount,
       stages,
       passed,
       results
@@ -723,7 +877,9 @@ async function main() {
     connections.forEach((connection) => {
       try { connection.socket.close(); } catch (_) {}
     });
-    if (child && child.exitCode === null) child.kill();
+    children.forEach((child) => {
+      if (child && child.exitCode === null) child.kill();
+    });
     await new Promise((resolve) => setTimeout(resolve, 250));
     fs.rmSync(dataDir, { recursive: true, force: true });
   }

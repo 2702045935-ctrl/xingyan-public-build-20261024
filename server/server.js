@@ -8180,6 +8180,88 @@ function chatSummary(chat, forUserId, lastHint, summaryContext) {
   };
 }
 
+function fanoutGroupSummary(chat, userId, message, summaryContext,
+                            common, cache) {
+  const rows = summaryContext.messageRows;
+  const mentionIndex = summaryContext.mentionIndex
+    || mentionIndexForChat(chat.id, rows);
+  const readSeq = Math.max(
+    lastReadSeq(userId, chat.id),
+    clearedSeqFor(userId, chat.id)
+  );
+  const mentionMe = hasUnreadMention(mentionIndex, userId, readSeq);
+  const sender = findUser(message.senderId);
+  const shownSender = sender ? groupNameFor(chat, userId, sender) : '';
+  const previewSender = message.senderId === userId ? '' : shownSender;
+  let preview = previewTextOf(message);
+  if (message.recalled) {
+    preview = (previewSender ? previewSender + ' ' : '') + '撤回了一条消息';
+  } else if (previewSender && preview) {
+    preview = previewSender + '：' + preview;
+  }
+  if (mentionMe && preview && message.kind === 'text') {
+    preview = '[有人@我] ' + preview;
+  }
+  const unread = unreadCount(userId, chat, summaryContext);
+  const pinned = common.pinnedFor.has(userId);
+  const muted = common.mutedFor.has(userId);
+  const flagged = common.flaggedUnread.has(userId);
+  const meMuted = common.muteMembers.has(userId);
+  const lastSenderName = sender ? displayNameFor(userId, sender) : '';
+  const key = [
+    unread,
+    mentionMe ? 1 : 0,
+    previewSender,
+    lastSenderName,
+    preview,
+    pinned ? 1 : 0,
+    muted ? 1 : 0,
+    flagged ? 1 : 0,
+    meMuted ? 1 : 0
+  ].join('\u0000');
+  let summary = cache.get(key);
+  if (summary) return { summary, key };
+  summary = {
+    id: chat.id,
+    type: chat.type,
+    title: chat.name,
+    avatar: chat.avatar || '',
+    moodIcon: '',
+    moodText: '',
+    botRank: null,
+    bot: null,
+    sysTeam: false,
+    oaId: '',
+    oaDigest: false,
+    qqLevel: 0,
+    memberIds: common.memberPreviewIds,
+    memberIdsTruncated: chat.memberIds.length > common.memberPreviewIds.length,
+    onlineMemberIds: common.onlineMemberIds,
+    memberCount: chat.memberIds.length,
+    lastMessage: {
+      id: message.id,
+      senderId: message.senderId,
+      senderName: lastSenderName,
+      kind: message.kind,
+      preview,
+      mentionMe,
+      createdAt: message.createdAt
+    },
+    unread,
+    pinned,
+    muted,
+    burn: !!chat.burn,
+    flagged,
+    ownerId: chat.ownerId || '',
+    announce: chat.announce || '',
+    muteAll: !!chat.muteAll,
+    meMuted,
+    updatedAt: message.createdAt
+  };
+  cache.set(key, summary);
+  return { summary, key };
+}
+
 /* ---------------------------------------------------------------- 朋友圈 */
 
 function momentAudience(authorId) {
@@ -9046,6 +9128,26 @@ function fanoutChatMessage(chat, message, sender, clientId) {
     : chat.memberIds;
   const recipients = onlineMembersOfChat(chat, online);
   const sharedOnlineMemberIds = memberPreviewIds.filter((id) => online.has(id));
+  if (chat.type === 'group' && recipients.length > 512) {
+    const senderName = memberAlias(chat, sender.id)
+      || sender.nickname
+      || sender.username
+      || '';
+    const out = Object.assign({}, message, { senderName });
+    const payload = { type: 'message', message: out };
+    const textCache = new Map();
+    const relayBatch = new Map();
+    let sent = 0;
+    for (const id of recipients) {
+      sent += sendTo(id, payload, {
+        textCache,
+        textCacheKey: 'large-group-message',
+        relayBatch
+      });
+    }
+    flushFanoutRelays(relayBatch);
+    return sent;
+  }
   const messageRows = loadMessages(chat.id);
   const summaryContext = {
     online,
@@ -9063,6 +9165,15 @@ function fanoutChatMessage(chat, message, sender, clientId) {
   let sent = 0;
   const textCache = chat.type === 'group' ? new Map() : null;
   const relayBatch = new Map();
+  const groupCommon = chat.type === 'group' ? {
+    pinnedFor: new Set(chat.pinnedFor || []),
+    mutedFor: new Set(chat.mutedFor || []),
+    flaggedUnread: new Set(chat.flaggedUnread || []),
+    muteMembers: new Set(chat.muteMembers || []),
+    memberPreviewIds,
+    onlineMemberIds: sharedOnlineMemberIds
+  } : null;
+  const groupSummaryCache = chat.type === 'group' ? new Map() : null;
   for (const id of recipients) {
     const senderName = chat.type === 'group'
       ? groupNameFor(chat, id, sender)
@@ -9070,20 +9181,23 @@ function fanoutChatMessage(chat, message, sender, clientId) {
     const out = chat.type === 'group'
       ? Object.assign({}, message, { senderName })
       : message;
-    const summary = chatSummary(chat, id, message, summaryContext);
-    summary.onlineMemberIds = sharedOnlineMemberIds;
-    const last = summary.lastMessage;
-    const textCacheKey = [
-      summary.unread,
-      last && last.mentionMe ? 1 : 0,
-      last ? (last.senderName || '') : '',
-      last ? (last.preview || '') : '',
-      summary.pinned ? 1 : 0,
-      summary.muted ? 1 : 0,
-      summary.meMuted ? 1 : 0,
-      senderName,
-      id === sender.id ? (clientId || '') : ''
-    ].join('\u0000');
+    let summary;
+    let textCacheKey;
+    if (chat.type === 'group') {
+      const built = fanoutGroupSummary(
+        chat,
+        id,
+        message,
+        summaryContext,
+        groupCommon,
+        groupSummaryCache
+      );
+      summary = built.summary;
+      textCacheKey = built.key + '\u0000' + (id === sender.id ? (clientId || '') : '');
+    } else {
+      summary = chatSummary(chat, id, message, summaryContext);
+      textCacheKey = '';
+    }
     sent += sendTo(id, {
       type: 'message',
       message: out,
