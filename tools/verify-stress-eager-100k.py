@@ -48,10 +48,12 @@ require(
     and "MessageStressFixture.isActive ? stressMessageWindow : 50_000" in CHAT
     and "if olderPrefetch.isEmpty, let pending = olderPrefetchTask" in CHAT
     and "private let historyPageSize = 120" in CHAT
-    and "let target = historyPageSize" in CHAT
-    and "olderPrefetch = visibleMessages(page.messages)" in CHAT
+    and "private let historyPrefetchPages = 3" in CHAT
+    and "let target = historyRunwayTarget" in CHAT
+    and "olderPrefetch = visibleMessages(collected)" in CHAT
+    and "olderPrefetch.count < target" in CHAT
     and CHAT.count("scheduleOlderPrefetch(before: nextCursor") >= 1,
-    "stress history must stay bounded while ordinary groups retain their loaded history",
+    "stress history must stay bounded with a three-page runway while ordinary groups retain their loaded history",
 )
 require(
     "python3 tools/verify-stress-eager-100k.py" in WORKFLOW,
