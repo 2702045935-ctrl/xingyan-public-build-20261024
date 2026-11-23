@@ -1698,25 +1698,6 @@ final class SecureURLSessionDelegate: NSObject, URLSessionDelegate {
     }
 }
 
-final class UploadProgressDelegate: NSObject, URLSessionTaskDelegate {
-    private let onProgress: (Double) -> Void
-    private var last = -1.0
-
-    init(_ onProgress: @escaping (Double) -> Void) { self.onProgress = onProgress }
-
-    func urlSession(_ session: URLSession, task: URLSessionTask,
-                    didSendBodyData bytesSent: Int64,
-                    totalBytesSent: Int64, totalBytesExpectedToSend: Int64) {
-        guard totalBytesExpectedToSend > 0 else { return }
-        let p = min(1, max(0, Double(totalBytesSent) / Double(totalBytesExpectedToSend)))
-
-        if p >= 1 || p - last >= 0.02 {
-            last = p
-            onProgress(p)
-        }
-    }
-}
-
 struct PaymentDeviceChallengePayload: Decodable {
     var challenge: String
     var tokenId: String
@@ -5712,85 +5693,30 @@ private struct StarredPayload: Decodable {
     }
 
     func uploadBinary(_ data: Data, mime: String) async throws -> String {
-        do {
-            return try await TransferUploader.shared.uploadData(
-                data,
-                name: "file.bin",
-                mime: mime,
-                skipTranscode: true,
-                base: transferBase,
-                token: token,
-                session: session,
-                onProgress: { _ in }
-            )
-        } catch let error as TransferUploaderError where error.allowsLegacyFallback {
-            return try await uploadBinaryLegacy(data, mime: mime)
-        }
-    }
-
-    private func uploadBinaryLegacy(_ data: Data, mime: String) async throws -> String {
-        guard let url = URL(string: base + "/api/upload/raw") else { throw APIError.message("服务器地址不正确") }
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.timeoutInterval = 180
-        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        req.setValue(mime, forHTTPHeaderField: "Content-Type")
-        req.httpBody = data
-        let (d, resp) = try await session.data(for: req)
-        guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            throw APIError.message("上传失败，请检查网络后再试")
-        }
-        return try Self.rawUploadURL(from: d)
+        try await TransferUploader.shared.uploadData(
+            data,
+            name: "file.bin",
+            mime: mime,
+            skipTranscode: true,
+            base: transferBase,
+            token: token,
+            session: session,
+            onProgress: { _ in }
+        )
     }
 
     func uploadBinaryFile(_ file: URL, mime: String,
                           skipTranscode: Bool = false,
                           onProgress: @escaping (Double) -> Void) async throws -> String {
-        do {
-            return try await TransferUploader.shared.uploadFile(
-                file,
-                mime: mime,
-                skipTranscode: skipTranscode,
-                base: transferBase,
-                token: token,
-                session: session,
-                onProgress: onProgress
-            )
-        } catch let error as TransferUploaderError where error.allowsLegacyFallback {
-            return try await uploadBinaryFileLegacy(file,
-                                                    mime: mime,
-                                                    skipTranscode: skipTranscode,
-                                                    onProgress: onProgress)
-        }
-    }
-
-    private func uploadBinaryFileLegacy(_ file: URL, mime: String,
-                                        skipTranscode: Bool,
-                                        onProgress: @escaping (Double) -> Void) async throws -> String {
-        guard let url = URL(string: base + "/api/upload/raw") else { throw APIError.message("服务器地址不正确") }
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-
-        req.timeoutInterval = 600
-        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        req.setValue(mime, forHTTPHeaderField: "Content-Type")
-
-        if skipTranscode { req.setValue("1", forHTTPHeaderField: "x-chris-compressed") }
-        let delegate = UploadProgressDelegate(onProgress)
-        let (d, resp) = try await session.upload(for: req, fromFile: file, delegate: delegate)
-        guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            throw APIError.message("上传失败，请检查网络后再试")
-        }
-        return try Self.rawUploadURL(from: d)
-    }
-
-    private static func rawUploadURL(from d: Data) throws -> String {
-        struct RawUpload: Decodable { var url: String? }
-        if let parsed = try? JSONDecoder().decode(RawUpload.self, from: d),
-           let u = parsed.url, !u.isEmpty { return u }
-        struct Wrapper: Decodable { struct D: Decodable { var url: String? }; var data: D? }
-        if let w = try? JSONDecoder().decode(Wrapper.self, from: d), let u = w.data?.url, !u.isEmpty { return u }
-        throw APIError.message("上传返回异常")
+        try await TransferUploader.shared.uploadFile(
+            file,
+            mime: mime,
+            skipTranscode: skipTranscode,
+            base: transferBase,
+            token: token,
+            session: session,
+            onProgress: onProgress
+        )
     }
 
     func uploadOriginal(image: UIImage) async throws -> String {
@@ -5813,19 +5739,7 @@ private struct StarredPayload: Decodable {
             throw APIError.message("图片处理失败")
         }
 
-        do {
-            return try await uploadRawJPEG(data, onProgress: onProgress)
-        } catch let error as TransferUploaderError where error.allowsLegacyFallback {
-            onProgress?(0.15)
-            let b64 = data.base64EncodedString()
-            let payload: UploadPayload = try await post("/api/upload",
-                                                        ["dataUrl": "data:image/jpeg;base64," + b64,
-                                                         "filename": "photo.jpg"],
-                                                        as: UploadPayload.self)
-            guard let url = payload.url else { throw APIError.message("上传失败") }
-            onProgress?(1)
-            return url
-        }
+        return try await uploadRawJPEG(data, onProgress: onProgress)
     }
 
     private func uploadRawJPEG(_ data: Data,

@@ -1625,6 +1625,9 @@ struct ChatDetailView: View {
     @State private var sendingFileProgress: Double? = nil
     @State private var fileUploadPhase: UploadVisualPhase = .preparing
     @State private var fileUploadDetail = ""
+    @State private var fileUploadFailed = false
+    @State private var fileUploadFailureText = ""
+    @State private var fileRetryURL: URL?
     @State private var fileUploadRateMeter = UploadRateMeter()
     @State private var fileProcessingStartedAt = Date()
     @State private var fileProcessingHeartbeatTask: Task<Void, Never>?
@@ -3856,7 +3859,7 @@ struct ChatDetailView: View {
         if !sendingMedia.isEmpty {
             items.append(NativeGroupItem(id: "native-sending-video", kind: .sendingVideo))
         }
-        if uploading && !sendingFileName.isEmpty {
+        if !sendingFileName.isEmpty {
             items.append(NativeGroupItem(id: "native-sending-file", kind: .sendingFile))
         }
         items.append(NativeGroupItem(id: "__bottom", kind: .bottom))
@@ -3927,7 +3930,7 @@ struct ChatDetailView: View {
         case .sendingVideo:
             return "sending-video:\(sendProgress):\(sendingPreview != nil)"
         case .sendingFile:
-            return "sending-file:\(sendingFileName):\(sendingFileBytes):\(sendingFileProgress ?? 0)"
+            return "sending-file:\(sendingFileName):\(sendingFileBytes):\(sendingFileProgress ?? 0):\(fileUploadFailed):\(fileUploadFailureText):\(fileUploadDetail)"
         case .bottom:
             return "bottom"
         case .spacer:
@@ -4286,7 +4289,11 @@ struct ChatDetailView: View {
                                   bytes: sendingFileBytes,
                                   progress: sendingFileProgress,
                                   phase: fileUploadPhase,
-                                  detailText: fileUploadDetail)
+                                  detailText: fileUploadFailed
+                                      ? fileUploadFailureText
+                                      : fileUploadDetail,
+                                  onRetry: retryFailedFileUpload,
+                                  onCancel: cancelFailedFileUpload)
             }
             .padding(.horizontal, L.msgPad)
             .padding(.bottom, 12)
@@ -7815,16 +7822,13 @@ struct ChatDetailView: View {
                 temporaryCopy = copy
             }
         }
-        defer {
-            if let temporaryCopy {
-                try? FileManager.default.removeItem(at: temporaryCopy)
-            }
-        }
         let uploadedValues = try? uploadURL.resourceValues(
             forKeys: [.fileSizeKey, .nameKey, .isRegularFileKey]
         )
         let sizeBytes = uploadedValues?.fileSize ?? values?.fileSize ?? 0
-        let name = values?.name ?? url.lastPathComponent
+        let name = fileUploadFailed && !sendingFileName.isEmpty
+            ? sendingFileName
+            : (values?.name ?? url.lastPathComponent)
         if sizeBytes > 100 * 1024 * 1024 {
             app.show(Tr("这个文件超过 100MB，先压缩一下再发"))
             return
@@ -7834,6 +7838,9 @@ struct ChatDetailView: View {
             return
         }
         uploading = true
+        fileUploadFailed = false
+        fileUploadFailureText = ""
+        fileRetryURL = uploadURL
         sendingFileName = name
         sendingFileBytes = sizeBytes
         sendingFileProgress = nil
@@ -7844,11 +7851,6 @@ struct ChatDetailView: View {
         defer {
             stopFileProcessingHeartbeat()
             uploading = false
-            sendingFileName = ""
-            sendingFileBytes = 0
-            sendingFileProgress = nil
-            fileUploadPhase = .preparing
-            fileUploadDetail = ""
         }
 
         let sourceMime = UTType(filenameExtension: url.pathExtension)?.preferredMIMEType
@@ -7916,13 +7918,66 @@ struct ChatDetailView: View {
                 appendVisibleMessage(message)
                 app.rememberChatPageMessages(chat.id, [message])
             }
-            sendingFileProgress = nil
-            sendingFileName = ""
-            sendingFileBytes = 0
+            clearFileUploadState()
         } catch {
-            app.show((error as? APIError)?.errorDescription ?? "文件发送失败")
+            let text = (error as? APIError)?.errorDescription
+                ?? (error as? LocalizedError)?.errorDescription
+                ?? "文件发送失败"
+            if let temporaryCopy {
+                fileRetryURL = temporaryCopy
+            } else if uploadURL.lastPathComponent.hasPrefix("xingyan-upload-") {
+                fileRetryURL = uploadURL
+            } else {
+                fileRetryURL = stageFileRetryCopy(url) ?? uploadURL
+            }
+            fileUploadFailureText = text
+            fileUploadFailed = true
+            fileUploadPhase = .failed
+            app.show(text)
         }
         await app.loadChats()
+    }
+
+    private func retryFailedFileUpload() {
+        guard let url = fileRetryURL else { return }
+        Task { await uploadAndSendFile(url) }
+    }
+
+    private func cancelFailedFileUpload() {
+        clearFileUploadState()
+    }
+
+    private func clearFileUploadState() {
+        let retry = fileRetryURL
+        fileUploadFailed = false
+        fileUploadFailureText = ""
+        fileRetryURL = nil
+        sendingFileProgress = nil
+        sendingFileName = ""
+        sendingFileBytes = 0
+        fileUploadPhase = .preparing
+        fileUploadDetail = ""
+        if let retry,
+           retry.lastPathComponent.hasPrefix("xingyan-upload-"),
+           retry.deletingLastPathComponent() == FileManager.default.temporaryDirectory {
+            try? FileManager.default.removeItem(at: retry)
+        }
+    }
+
+    private func stageFileRetryCopy(_ source: URL) -> URL? {
+        let copy = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "xingyan-upload-\(UUID().uuidString)-\(source.lastPathComponent)"
+            )
+        var coordinationError: NSError?
+        NSFileCoordinator().coordinate(
+            readingItemAt: source,
+            options: .withoutChanges,
+            error: &coordinationError
+        ) { readableURL in
+            try? FileManager.default.copyItem(at: readableURL, to: copy)
+        }
+        return FileManager.default.fileExists(atPath: copy.path) ? copy : nil
     }
 
     private func startFileProcessingHeartbeat() {

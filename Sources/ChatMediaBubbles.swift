@@ -8,6 +8,7 @@ enum UploadVisualPhase {
     case connecting
     case uploading
     case processing
+    case failed
 }
 
 private func jsonDict(_ s: String) -> [String: Any] {
@@ -827,6 +828,7 @@ struct SendingVideoBubble: View {
         case .connecting: return Tr("连接中")
         case .uploading: return Tr("上传中")
         case .processing: return Tr("处理中")
+        case .failed: return Tr("上传失败")
         }
     }
 }
@@ -837,6 +839,8 @@ struct SendingFileBubble: View {
     let progress: Double?
     var phase: UploadVisualPhase = .preparing
     var detailText: String = ""
+    var onRetry: (() -> Void)? = nil
+    var onCancel: (() -> Void)? = nil
 
     private var value: Double { min(1, max(0, progress ?? 0)) }
     private var look: (symbol: String, color: Color, badge: String) {
@@ -883,6 +887,36 @@ struct SendingFileBubble: View {
                             .foregroundColor(ChatTheme.mineSecondaryInk)
                             .lineLimit(1)
                     }
+                    if phase == .failed {
+                        HStack(spacing: 8) {
+                            Button {
+                                onRetry?()
+                            } label: {
+                                Label(Tr("继续上传"), systemImage: "arrow.clockwise")
+                                    .font(pf(11.5, .semibold))
+                                    .foregroundColor(ChatTheme.mineInk)
+                                    .padding(.horizontal, 10)
+                                    .frame(height: 26)
+                                    .background(
+                                        Capsule().fill(
+                                            ChatTheme.mineInk.opacity(0.15)
+                                        )
+                                    )
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(onRetry == nil)
+
+                            Button {
+                                onCancel?()
+                            } label: {
+                                Text(Tr("取消"))
+                                    .font(pf(11.5, .medium))
+                                    .foregroundColor(ChatTheme.mineSecondaryInk)
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(onCancel == nil)
+                        }
+                    }
                 }
             }
 
@@ -917,6 +951,8 @@ struct SendingFileBubble: View {
             return Tr("连接中…")
         case .processing:
             return Tr("服务器处理中…")
+        case .failed:
+            return detailText.isEmpty ? Tr("上传失败，可重试") : detailText
         case .uploading:
             break
         }

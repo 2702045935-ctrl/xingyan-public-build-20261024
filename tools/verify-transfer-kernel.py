@@ -21,7 +21,6 @@ require(
     '"/api/transfer/init"' in CLIENT
     and '"/api/transfer/\\(id)/chunk"' in CLIENT
     and '"/api/transfer/\\(id)/complete"' in CLIENT
-    and '"/api/transfer/capabilities"' in CLIENT
     and "x-transfer-chunk-index" in CLIENT
     and "x-transfer-chunk-sha256" in CLIENT,
     "client must use the declared resumable transfer protocol",
@@ -39,14 +38,17 @@ require(
 require(
     "allowsLegacyFallback" in CLIENT
     and "TransferJobStore.shared.remove(key)" in CLIENT
-    and "error.allowsLegacyFallback" in API,
-    "rolling upgrades must recover from stale jobs and unavailable transfer routes",
+    and "error.allowsLegacyFallback" not in API
+    and "uploadBinaryFileLegacy" not in API
+    and "uploadBinaryLegacy" not in API,
+    "large media uploads must never silently fall back to a single whole-file request",
 )
 require(
-    "TransferCapabilityCache" in CLIENT
-    and "guard await TransferCapabilityCache.shared.supports" in CLIENT
+    "TransferCapabilityCache" not in CLIENT
+    and "private func initialize(" in CLIENT
+    and '"/api/transfer/init"' in CLIENT
     and "parts[1] === 'capabilities'" in SERVER,
-    "legacy servers must be detected before hashing or staging large files",
+    "uploads must enter the transfer kernel directly without an extra capability round trip",
 )
 require(
     "SHA256" in CLIENT
@@ -133,6 +135,15 @@ require(
     "file uploads must show live server-processing elapsed time",
 )
 require(
+    "fileUploadFailed = true" in CHAT
+    and "fileUploadPhase = .failed" in CHAT
+    and "onRetry: retryFailedFileUpload" in CHAT
+    and "stageFileRetryCopy" in CHAT
+    and "Label(Tr(\"继续上传\")" in MEDIA
+    and "fileUploadFailureText" in CHAT,
+    "failed file uploads must retain a resumable job and expose a real retry action",
+)
+require(
     "queueTransferTranscode" in SERVER
     and "setImmediate(async () =>" in SERVER
     and "kind: 'video-transcode'" in SERVER
@@ -142,8 +153,8 @@ require(
 require(
     "TransferUploader.shared.uploadData" in API
     and "TransferUploader.shared.uploadFile" in API
-    and API.count("/api/upload/raw") == 2,
-    "API upload entry points must use the kernel; raw upload remains legacy-only",
+    and API.count("/api/upload/raw") == 0,
+    "all chunk-capable upload entry points must use the resumable kernel exclusively",
 )
 require(
     "node server/test/transfer-kernel.test.js" in WORKFLOW,
