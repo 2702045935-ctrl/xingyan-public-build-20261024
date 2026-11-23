@@ -9,10 +9,10 @@ struct SecurityScoreView: View {
     @State private var failed = false
     @State private var openDim: String?
 
-    private var sheetBg: Color { scheme == .dark ? Color(hex: 0x1C1C1E) : .white }
+    private var sheetBg: Color { scheme == .dark ? AppPalette.darkRaised : .white }
 
     private var pageBg: Color { C.pageBg }
-    private var ink: Color { scheme == .dark ? AppPalette.neutralSurface : Color(hex: 0x1A1A1A) }
+    private var ink: Color { scheme == .dark ? AppPalette.neutralSurface : AppPalette.title }
     private var gray: Color { scheme == .dark ? AppPalette.systemSecondary : Color(hex: 0x737373) }
     private var line: Color { scheme == .dark ? Color(white: 1, opacity: 0.09) : Color(hex: 0xE6E6E6) }
 

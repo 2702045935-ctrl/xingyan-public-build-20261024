@@ -168,7 +168,7 @@ struct HarmonyDarkMask: View {
             HarmonyDarkBlur()
                 .opacity(max(0, min(1, 0.94 * strength)))
 
-            Color(hex: 0x111111)
+            AppPalette.title
                 .opacity(max(0, min(1, 0.62 * strength)))
 
             LinearGradient(

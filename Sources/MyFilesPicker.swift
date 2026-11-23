@@ -249,7 +249,7 @@ struct MyFilesPickerView: View {
         case "mp4", "mov", "avi": return Color(hex: 0x1F6FB2)
         case "jpg", "jpeg", "png", "gif", "heic", "webp": return Color(hex: 0x2E9B5B)
         case "txt", "md", "log": return Color(hex: 0x6C7A89)
-        default: return Color(hex: 0x8A8A8E)
+        default: return AppPalette.secondaryMuted
         }
     }
 

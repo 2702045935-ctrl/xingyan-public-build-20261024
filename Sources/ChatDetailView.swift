@@ -1918,7 +1918,7 @@ struct ChatDetailView: View {
         .overlay(alignment: .bottomTrailing) {
             if navAvatarOnline {
                 Circle()
-                    .fill(Color(hex: 0x4FD229))
+                    .fill(AppPalette.online)
                     .frame(width: 13, height: 13)
                     .overlay {
                         Circle()
@@ -5762,7 +5762,7 @@ struct ChatDetailView: View {
     private var liveChat: Chat { app.chats.first(where: { $0.id == chat.id }) ?? chat }
 
     private var mutedComposerInk: Color {
-        scheme == .dark ? C.subLabel : Color(hex: 0x191919)
+        scheme == .dark ? C.subLabel : AppPalette.title
     }
 
     private var mutedComposer: some View {
@@ -8572,7 +8572,7 @@ struct SystemLine: View {
         if raw.contains("邀请") || raw.contains("加入") || raw.contains("退出") {
             return .blue
         }
-        return usesLightInk ? Color.white.opacity(0.72) : Color(hex: 0x667781)
+        return usesLightInk ? Color.white.opacity(0.72) : AppPalette.secondaryInk
     }
 
     @ViewBuilder
@@ -8930,7 +8930,7 @@ struct MessageRow: View {
             .overlay(alignment: .bottomTrailing) {
                 if senderOnline {
                     Circle()
-                        .fill(Color(hex: 0x4FD229))
+                        .fill(AppPalette.online)
                         .frame(width: max(9, avatarSize * 0.27),
                                height: max(9, avatarSize * 0.27))
                         .overlay {
@@ -10355,7 +10355,7 @@ enum FileKind {
         case "zip", "rar", "7z", "tar", "gz":
             return ("doc.zipper", Color(hex: 0xC79A2A), "压缩包")
         case "txt", "md", "log", "json", "xml":
-            return ("doc.plaintext", Color(hex: 0x8A8A8E), "文本")
+            return ("doc.plaintext", AppPalette.secondaryMuted, "文本")
         case "mp3", "m4a", "wav", "aac", "flac":
             return ("music.note", Color(hex: 0x8A6FE8), "音频")
         case "mp4", "mov", "m4v", "avi", "mkv", "webm":

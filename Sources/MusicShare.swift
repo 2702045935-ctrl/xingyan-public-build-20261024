@@ -1058,7 +1058,7 @@ struct MusicCover: View {
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: radius, style: .continuous)
-                .fill(LinearGradient(colors: [Color(hex: 0xB98CFF), Color(hex: 0x7A45D6)],
+                .fill(LinearGradient(colors: [AppPalette.violet, AppPalette.violetDeep],
                                      startPoint: .topLeading, endPoint: .bottomTrailing))
             Image(systemName: "music.note")
                 .font(.system(size: size * 0.42, weight: .semibold))
@@ -2429,7 +2429,7 @@ struct ListenView: View {
         case .recents:
             return [Color(hex: 0x60A5FA), Color(hex: 0x2563EB)]
         case .playlists:
-            return [Color(hex: 0xB98CFF), Color(hex: 0x7A45D6)]
+            return [AppPalette.violet, AppPalette.violetDeep]
         }
     }
 

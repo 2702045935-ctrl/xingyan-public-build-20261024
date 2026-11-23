@@ -175,7 +175,7 @@ struct UserManageView: View {
                             switchSection
                         }
                         HairLine(inset: 52)
-                        linkRow(icon: "stethoscope", tint: Color(hex: 0x8A8A8E),
+                        linkRow(icon: "stethoscope", tint: AppPalette.secondaryMuted,
                                 title: Tr("日志与崩溃"),
                                 sub: Tr("App 汇上来的日志、崩溃堆栈")) {
                             logsSection

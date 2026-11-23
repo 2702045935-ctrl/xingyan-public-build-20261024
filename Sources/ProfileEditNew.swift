@@ -380,7 +380,7 @@ struct ProfileEditView: View {
             HStack(spacing: 10) {
                 ZStack {
                     RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
-                        .fill(LinearGradient(colors: [Color(hex: 0xB98CFF), Color(hex: 0x7A45D6)],
+                        .fill(LinearGradient(colors: [AppPalette.violet, AppPalette.violetDeep],
                                              startPoint: .topLeading, endPoint: .bottomTrailing))
                         .frame(width: 30, height: 30)
                     Image(systemName: "music.note")

@@ -247,7 +247,7 @@ struct ChatBackgroundSheet: View {
                         wallpaperDivider
                         wallpaperChoiceRow(
                             symbol: "arrow.triangle.2.circlepath",
-                            tint: Color(hex: 0x667781),
+                            tint: AppPalette.secondaryInk,
                             title: Tr("使用全局背景"),
                             subtitle: Tr("跟随聊天背景设置自动变化"),
                             selected: current == "auto"
@@ -765,7 +765,7 @@ struct ChatBackgroundSheet: View {
                             .foregroundStyle(Color(hex: 0x111B21))
                         Text("09:41")
                             .font(pfStyled(size: 9.5))
-                            .foregroundStyle(Color(hex: 0x667781))
+                            .foregroundStyle(AppPalette.secondaryInk)
                             .frame(maxWidth: .infinity, alignment: .trailing)
                     }
                     .padding(.horizontal, 11)
@@ -789,7 +789,7 @@ struct ChatBackgroundSheet: View {
                             Image(systemName: "checkmark")
                                 .font(.system(size: 8.5, weight: .bold))
                         }
-                        .foregroundStyle(Color(hex: 0x667781))
+                        .foregroundStyle(AppPalette.secondaryInk)
                     }
                     .padding(.horizontal, 11)
                     .padding(.vertical, 8)

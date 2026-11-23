@@ -399,7 +399,7 @@ struct WithdrawView: View {
         if bank.contains("招商") { return Color(hex: 0xC7302C) }
         if bank.contains("交通") { return Color(hex: 0x1D4E9B) }
         if bank.contains("邮储") || bank.contains("邮政") { return Color(hex: 0x2B7A3D) }
-        return Color(hex: 0x8A8A8E)
+        return AppPalette.secondaryMuted
     }
 
     private func faqRow(_ q: String, _ a: String, _ tap: @escaping () -> Void) -> some View {

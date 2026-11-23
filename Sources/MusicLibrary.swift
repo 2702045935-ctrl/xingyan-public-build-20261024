@@ -492,7 +492,7 @@ struct MusicPlaylistsPage: View {
                 HStack(spacing: 12) {
                     ZStack {
                         RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
-                            .fill(LinearGradient(colors: [Color(hex: 0xB98CFF), Color(hex: 0x7A45D6)],
+                            .fill(LinearGradient(colors: [AppPalette.violet, AppPalette.violetDeep],
                                                  startPoint: .topLeading, endPoint: .bottomTrailing))
                         Image(systemName: "music.note.list")
                             .font(.system(size: 20, weight: .semibold)).foregroundColor(.white.opacity(0.95))
@@ -601,7 +601,7 @@ struct MusicPlaylistPage: View {
         HStack(spacing: 12) {
             ZStack {
                 RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
-                    .fill(LinearGradient(colors: [Color(hex: 0xB98CFF), Color(hex: 0x7A45D6)],
+                    .fill(LinearGradient(colors: [AppPalette.violet, AppPalette.violetDeep],
                                          startPoint: .topLeading, endPoint: .bottomTrailing))
                 MusicCover(path: songs.first?.cover ?? "", size: 62, radius: 10)
             }

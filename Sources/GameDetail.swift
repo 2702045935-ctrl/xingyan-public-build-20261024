@@ -47,7 +47,7 @@ struct GameDetailView: View {
 
     private var cover: some View {
         ZStack {
-            LinearGradient(colors: [Color(hex: 0x2B2F3A), Color(hex: 0x171B22)],
+            LinearGradient(colors: [AppPalette.tileStart, AppPalette.tileEnd],
                            startPoint: .topLeading, endPoint: .bottomTrailing)
             Text(game.iconText).font(pfStyled(size: 76))
             if let cv = game.cover, !cv.isEmpty {
@@ -376,7 +376,7 @@ struct GameRankBoardView: View {
             ZStack(alignment: .topTrailing) {
                 ZStack {
                     Circle()
-                        .fill(LinearGradient(colors: [Color(hex: 0x2B2F3A), Color(hex: 0x171B22)],
+                        .fill(LinearGradient(colors: [AppPalette.tileStart, AppPalette.tileEnd],
                                              startPoint: .topLeading, endPoint: .bottomTrailing))
                     Text(g.iconText).font(pfStyled(size: place == 1 ? 28 : 24))
                     if let cv = g.cover, !cv.isEmpty {
@@ -455,7 +455,7 @@ struct GameRankBoardView: View {
 
     private func gameRankCircle(_ g: MiniApp, size: CGFloat) -> some View {
         ZStack {
-            Circle().fill(LinearGradient(colors: [Color(hex: 0x2B2F3A), Color(hex: 0x171B22)],
+            Circle().fill(LinearGradient(colors: [AppPalette.tileStart, AppPalette.tileEnd],
                                          startPoint: .topLeading, endPoint: .bottomTrailing))
             Text(g.iconText).font(pfStyled(size: size * 0.42))
             if let cv = g.cover, !cv.isEmpty {
@@ -488,7 +488,7 @@ struct GameRankBoardView: View {
                 .frame(width: 22)
             ZStack {
                 Circle()
-                    .fill(LinearGradient(colors: [Color(hex: 0x2B2F3A), Color(hex: 0x171B22)],
+                    .fill(LinearGradient(colors: [AppPalette.tileStart, AppPalette.tileEnd],
                                          startPoint: .topLeading, endPoint: .bottomTrailing))
                 Text(g.iconText).font(pfStyled(size: 22))
                 if let cv = g.cover, !cv.isEmpty {
@@ -524,7 +524,7 @@ struct GameRankBoardView: View {
             HStack(spacing: 11) {
                 ZStack {
                     RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
-                        .fill(LinearGradient(colors: [Color(hex: 0x2B2F3A), Color(hex: 0x171B22)],
+                        .fill(LinearGradient(colors: [AppPalette.tileStart, AppPalette.tileEnd],
                                              startPoint: .topLeading, endPoint: .bottomTrailing))
                     Text(g.iconText).font(pfStyled(size: 22))
                     if let cv = g.cover, !cv.isEmpty {

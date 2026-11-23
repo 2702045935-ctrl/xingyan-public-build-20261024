@@ -117,7 +117,7 @@ struct VideoShareSheet: View {
                     ShareActionTile(title: "保存本地",
                                     subtitle: "下载内容",
                                     symbol: "arrow.down.to.line.compact",
-                                    tint: Color(hex: 0x8A8A8E)) {
+                                    tint: AppPalette.secondaryMuted) {
                         dismiss()
                         onSaveLocal?()
                     }

@@ -511,8 +511,8 @@ enum C {
     static var tabTitle2: String { UIConfig.text("tabTitleWorld", "世界") }
     static var tabTitle3: String { UIConfig.text("tabTitleMe", "我的") }
 
-    static let loginBg     = Color(hex: 0x111111)
-    static let loginCard   = Color(hex: 0x191919)
+    static let loginBg     = AppPalette.title
+    static let loginCard   = AppPalette.title
     static let loginText   = AppPalette.neutralSurface
     static let loginGray   = Color(hex: 0x7F7F7F)
     static let loginLink   = Color(hex: 0x7D90A9)
@@ -3012,7 +3012,7 @@ enum LoginTheme {
     static func cardBg(_ scheme: ColorScheme) -> Color {
         if scheme == .dark, let d = darkCard { return d }
         if let c = card { return c }
-        return scheme == .dark ? Color(hex: 0x1C1C1E) : Color.white
+        return scheme == .dark ? AppPalette.darkRaised : Color.white
     }
 
     static func onBg(_ scheme: ColorScheme) -> Color {

@@ -4,10 +4,13 @@ import UIKit
 enum AppPalette {
     static let online = Color.dyn(0x4FD229, 0x4FD229)
     static let appleBlue = Color(hex: 0x0A84FF)
+    static let darkRaised = Color(hex: 0x1C1C1E)
     static let danger = Color.dyn(0xFA5151, 0xFA5151)
     static let legacyLink = Color.dyn(0x576B95, 0x7D90A9)
     static let neutralSurface = Color.dyn(0xEDEDED, 0x1C1C1E)
     static let systemSecondary = Color.dyn(0x8E8E93, 0x8E8E93)
+    static let secondaryMuted = Color.dyn(0x8A8A8E, 0x8A8A8E)
+    static let secondaryInk = Color.dyn(0x667781, 0x8696A0)
     static let warmHighlight = Color.dyn(0xFFE7B0, 0xFFE7B0)
     static let teal = Color.dyn(0x128C7E, 0x128C7E)
     static let success = Color.dyn(0x19A47A, 0x19A47A)

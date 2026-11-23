@@ -3,7 +3,7 @@ import SwiftUI
 private let aBlue   = Color(hex: 0x007DFF)
 private let aBlueBg = Color(hex: 0xE8F3FF)
 private let aInk    = Color(hex: 0x181818)
-private let aInk3   = Color(hex: 0x999999)
+private let aInk3   = AppPalette.conversationPreview
 private let aBg     = Color(hex: 0xF5F6F7)
 private let aLine   = Color(hex: 0xE8EAED)
 

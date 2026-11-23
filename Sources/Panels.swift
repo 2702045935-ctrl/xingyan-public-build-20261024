@@ -877,7 +877,7 @@ struct PlusPanel: View {
         case "card":                     return [Color(hex: 0xA0A4AE), Color(hex: 0x6E7280)]
         case "favorite", "star":         return [Color(hex: 0xFFD34B), Color(hex: 0xE09A10)]
         case "coupon":                   return [Color(hex: 0xFF9F6B), Color(hex: 0xE0692A)]
-        case "music":                    return [Color(hex: 0xB98CFF), Color(hex: 0x7A45D6)]
+        case "music":                    return [AppPalette.violet, AppPalette.violetDeep]
         case "screen":                   return [Color(hex: 0x7FA6E8), Color(hex: 0x3F66B8)]
         case "chain", "link":            return [Color(hex: 0x74C0FC), Color(hex: 0x2F7FD1)]
         case "vote":                     return [Color(hex: 0x6FD3A8), Color(hex: 0x1E9B6B)]

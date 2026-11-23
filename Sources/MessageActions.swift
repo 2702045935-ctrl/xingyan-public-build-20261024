@@ -14,7 +14,7 @@ struct MsgMenuBox: View {
 
     @Environment(\.colorScheme) private var scheme
     private var bg: Color { scheme == .dark ? Color(hex: 0x3A3A3C) : .white }
-    private var ink: Color { scheme == .dark ? AppPalette.neutralSurface : Color(hex: 0x1A1A1A) }
+    private var ink: Color { scheme == .dark ? AppPalette.neutralSurface : AppPalette.title }
 
     static let itemW: CGFloat = 56
     static let itemH: CGFloat = 62
@@ -413,7 +413,7 @@ struct MultiSelectBar: View {
     var onDelete: () -> Void
 
     @Environment(\.colorScheme) private var scheme
-    private var ink: Color { scheme == .dark ? AppPalette.neutralSurface : Color(hex: 0x1A1A1A) }
+    private var ink: Color { scheme == .dark ? AppPalette.neutralSurface : AppPalette.title }
 
     var body: some View {
         HStack(spacing: 0) {

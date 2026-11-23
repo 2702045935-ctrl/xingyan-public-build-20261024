@@ -90,7 +90,7 @@ struct LiveListView: View {
                     .fill(r.isLive
                           ? LinearGradient(colors: [Color(hex: 0x2B3A55), Color(hex: 0x14161C)],
                                            startPoint: .topLeading, endPoint: .bottomTrailing)
-                          : LinearGradient(colors: [Color(hex: 0x222225), Color(hex: 0x191919)],
+                          : LinearGradient(colors: [Color(hex: 0x222225), AppPalette.title],
                                            startPoint: .topLeading, endPoint: .bottomTrailing))
                     .frame(height: 132)
                 if !(r.cover ?? "").isEmpty {

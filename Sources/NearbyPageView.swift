@@ -99,7 +99,7 @@ struct NearbyPageView: View {
     private let radarD: CGFloat = 142
 
     private let pageBg = Color.dyn(0x111111, 0x141419)
-    private let rowBg = Color(hex: 0x191919)
+    private let rowBg = AppPalette.title
     private let nameInk = Color.white
     private let subInk = Color(hex: 0x929292)
 

@@ -163,7 +163,7 @@ struct ChatThemeBackdrop: View {
         ZStack {
             LinearGradient(
                 colors: dark
-                    ? [Color(hex: 0x111111), Color(hex: 0x0B0B0B)]
+                    ? [AppPalette.title, Color(hex: 0x0B0B0B)]
                     : [Color(hex: 0xF4F4F4), AppPalette.neutralSurface],
                 startPoint: .top,
                 endPoint: .bottom

@@ -138,7 +138,7 @@ struct BotChatView: View {
                 Text(RichText.lines(shownText(m), size: 15.5))
                     .font(AppDesign.Type.bodyLarge)
                     .lineSpacing(3)
-                    .foregroundColor(Color(hex: 0x1A1A1A))
+                    .foregroundColor(AppPalette.title)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 9)
                     .background(Color(hex: 0xD7F3C6))

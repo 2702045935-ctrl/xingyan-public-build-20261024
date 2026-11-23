@@ -304,7 +304,7 @@ struct GamesPageView: View {
 
     private func bannerCard(_ g: MiniApp) -> some View {
         ZStack(alignment: .bottomLeading) {
-            LinearGradient(colors: [Color(hex: 0x2B2F3A), Color(hex: 0x171B22)],
+            LinearGradient(colors: [AppPalette.tileStart, AppPalette.tileEnd],
                            startPoint: .topLeading, endPoint: .bottomTrailing)
             if let cv = g.cover, !cv.isEmpty {
                 RemoteImage(path: cv, mode: .fill, maxSide: 1200)
@@ -441,7 +441,7 @@ struct GamesPageView: View {
     private func gameCircle(_ g: MiniApp, size: CGFloat) -> some View {
         ZStack {
             Circle()
-                .fill(LinearGradient(colors: [Color(hex: 0x2B2F3A), Color(hex: 0x171B22)],
+                .fill(LinearGradient(colors: [AppPalette.tileStart, AppPalette.tileEnd],
                                      startPoint: .topLeading, endPoint: .bottomTrailing))
             Text(g.iconText).font(pfStyled(size: size * 0.42))
             if let cv = g.cover, !cv.isEmpty {
@@ -457,7 +457,7 @@ struct GamesPageView: View {
         Button { openDetail(g) } label: {
             VStack(alignment: .leading, spacing: 0) {
                 ZStack(alignment: .bottomLeading) {
-                    LinearGradient(colors: [Color(hex: 0x2B2F3A), Color(hex: 0x171B22)],
+                    LinearGradient(colors: [AppPalette.tileStart, AppPalette.tileEnd],
                                    startPoint: .topLeading, endPoint: .bottomTrailing)
                     Text(g.iconText).font(pfStyled(size: 46))
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -506,7 +506,7 @@ struct GamesPageView: View {
                     ZStack {
 
                         Circle()
-                            .fill(LinearGradient(colors: [Color(hex: 0x2B2F3A), Color(hex: 0x171B22)],
+                            .fill(LinearGradient(colors: [AppPalette.tileStart, AppPalette.tileEnd],
                                                  startPoint: .topLeading, endPoint: .bottomTrailing))
                         Text(g.iconText).font(pfStyled(size: 30))
                         if let cv = g.cover, !cv.isEmpty {

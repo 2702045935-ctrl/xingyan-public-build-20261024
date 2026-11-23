@@ -72,7 +72,7 @@ struct MiniAppCapabilityCategory: Identifiable {
               examples: ["翻译", "OCR", "扫描", "PDF", "记账"]),
         .init(id: "social", title: "社交互动", subtitle: "报名与投票", symbol: "person.3.fill", tint: Color(hex: 0x14A38B),
               examples: ["投票", "报名", "问卷", "抽奖", "活动签到"]),
-        .init(id: "games", title: "娱乐游戏", subtitle: "小游戏", symbol: "gamecontroller.fill", tint: Color(hex: 0x7A45D6),
+        .init(id: "games", title: "娱乐游戏", subtitle: "小游戏", symbol: "gamecontroller.fill", tint: AppPalette.violetDeep,
               examples: ["休闲游戏", "答题", "互动游戏", "抽奖", "虚拟宠物"]),
         .init(id: "member", title: "会员营销", subtitle: "卡券与积分", symbol: "crown.fill", tint: Color(hex: 0xD9A326),
               examples: ["会员卡", "积分", "优惠券", "储值", "秒杀"]),

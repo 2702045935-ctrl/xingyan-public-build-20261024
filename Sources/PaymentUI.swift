@@ -909,7 +909,7 @@ private struct StarPayGuideView: View {
         case 2:
             HStack(spacing: 12) {
                 guideActionPreview(Tr("付款"), symbol: "wave.3.right.circle.fill",
-                                   fill: Color(hex: 0x111111), ink: .white)
+                                   fill: AppPalette.title, ink: .white)
                 guideActionPreview(Tr("收款"), symbol: "qrcode",
                                    fill: PayVisual.card, ink: C.label)
             }
