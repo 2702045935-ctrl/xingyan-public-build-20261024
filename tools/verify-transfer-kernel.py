@@ -153,8 +153,10 @@ require(
 require(
     "TransferUploader.shared.uploadData" in API
     and "TransferUploader.shared.uploadFile" in API
-    and API.count("/api/upload/raw") == 0,
-    "all chunk-capable upload entry points must use the resumable kernel exclusively",
+    and 'base + "/api/upload/raw"' in API
+    and "uploadBaselineRaw(data:" in API
+    and "uploadBaselineRawFile(file:" in API,
+    "images and ordinary files must keep the proven 11/16 raw path while large files use the kernel",
 )
 require(
     "node server/test/transfer-kernel.test.js" in WORKFLOW,

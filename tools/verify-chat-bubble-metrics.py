@@ -29,12 +29,15 @@ def require(condition: bool, message: str) -> None:
 
 require(
     'static var chatFontSize: CGFloat { o("chatFontSize", 16) }' in CORE
-    and "static let bubblePadH: CGFloat = 9" in LAYOUT
-    and "static let bubblePadV: CGFloat = 5" in LAYOUT
+    and 'static var bubblePadH: CGFloat { o("bubblePadH", 13) }' in CORE
+    and 'static var bubblePadV: CGFloat { o("bubblePadV", 10) }' in CORE
+    and "static var bubblePadH: CGFloat { L.bubblePadH }" in LAYOUT
+    and "static var bubblePadV: CGFloat { L.bubblePadV }" in LAYOUT
     and "static let senderHeight: CGFloat = 16" in LAYOUT
-    and "min(300, max(224, L.width * 0.76))" in LAYOUT
+    and "L.bubbleMaxW" in LAYOUT
+    and 'static var bubbleMaxW: CGFloat { o("bubbleMaxW", min(324, max(252, width * 0.73))) }' in CORE
     and "var radius: CGFloat = 8" in CHAT,
-    "WhatsApp text geometry must use compact type, padding and an eight-point bubble",
+    "native text geometry must use the stable 11/16 baseline padding and width",
 )
 require(
     'case .wechat: return Color.dyn(0x95EC69, 0x3EB575)' in THEMES
@@ -180,14 +183,14 @@ require(
     "the chat overflow control must use restrained dots in a 44pt hit target",
 )
 require(
-    "showsAvatar: isRunStart(message)" in CHAT
+    "showsAvatar: true" in CHAT
     and "reservesAvatarSpace: true" in CHAT
-    and "showTail: isRunEnd(message)" in CHAT
+    and "showTail: isRunStart(message)" in CHAT
     and "showTail: pendingShowsTail(pending)" in CHAT
     and "bubble.showTail = next.showTail" in TEXT_ROW
     and "return displayName(message)" in CHAT
     and "private func pendingShowsAvatar" in CHAT,
-    "avatar runs stay aligned and every sender group keeps one WhatsApp tail",
+    "confirmed rows must keep the stable 11/16 avatar and tail anchors",
 )
 require(
     ".overlay(alignment: .bottomTrailing)" in CHAT
@@ -196,10 +199,10 @@ require(
     "delivery time and receipt ticks must share the bubble footer",
 )
 require(
-    "WhatsAppChatLayout.sameRunGap" in CHAT
-    and "WhatsAppChatLayout.runGap" in CHAT
-    and "return mineFor(message) && isRunEnd(message) ? 6 : 3" in CHAT,
-    "conversation rows must use close same-sender and distinct cross-sender spacing",
+    "return same ? 4 : 10" in CHAT
+    and 'UIConfig.num("msgGapSame", 7)' in CHAT
+    and 'UIConfig.num("msgGapOther", 15)' in CHAT,
+    "conversation rows must use the stable 11/16 group and direct spacing",
 )
 require(
     "ChatUnreadRollingBadge" not in CHAT

@@ -3596,7 +3596,9 @@ struct ChatDetailView: View {
             avatarName: mine
                 ? (app.me?.nickname ?? "")
                 : displayName(message),
-            avatarSize: WhatsAppChatLayout.avatarSide,
+            avatarSize: isGroup
+                ? WhatsAppChatLayout.groupAvatarSide
+                : WhatsAppChatLayout.avatarSide,
             maxBubbleWidth: WhatsAppChatLayout.maxBubbleWidth,
             horizontalMargin: L.msgPad,
             avatarGap: WhatsAppChatLayout.avatarGap,
@@ -3607,9 +3609,9 @@ struct ChatDetailView: View {
             bubbleColor: UIColor(mine ? ChatTheme.bubbleMine : ChatTheme.bubbleOther),
             secondaryColor: UIColor(ChatTheme.secondary),
             mentionColor: UIColor(mine ? ChatTheme.mentionMeOnMine : ChatTheme.mentionMe),
-            showTail: isRunEnd(message),
+            showTail: isRunStart(message),
             bubbleGlass: ChatTheme.usesGlass,
-            showsAvatar: isRunStart(message),
+            showsAvatar: true,
             reservesAvatarSpace: true,
             metaText: TimeFmt.messageClock(message.createdAt),
             metaColor: UIColor(mine ? ChatTheme.mineSecondaryInk : ChatTheme.secondary),
@@ -3631,7 +3633,9 @@ struct ChatDetailView: View {
             senderNameColor: .clear,
             avatarPath: app.me?.avatarPath ?? "",
             avatarName: app.me?.nickname ?? "",
-            avatarSize: WhatsAppChatLayout.avatarSide,
+            avatarSize: isGroup
+                ? WhatsAppChatLayout.groupAvatarSide
+                : WhatsAppChatLayout.avatarSide,
             maxBubbleWidth: WhatsAppChatLayout.maxBubbleWidth,
             horizontalMargin: L.msgPad,
             avatarGap: WhatsAppChatLayout.avatarGap,
@@ -3728,7 +3732,9 @@ struct ChatDetailView: View {
             avatarName: mine
                 ? (app.me?.nickname ?? "")
                 : displayName(message),
-            avatarSize: WhatsAppChatLayout.avatarSide,
+            avatarSize: isGroup
+                ? WhatsAppChatLayout.groupAvatarSide
+                : WhatsAppChatLayout.avatarSide,
             maxBubbleWidth: WhatsAppChatLayout.maxBubbleWidth,
             horizontalMargin: L.msgPad,
             avatarGap: WhatsAppChatLayout.avatarGap,
@@ -3736,9 +3742,9 @@ struct ChatDetailView: View {
             primaryColor: UIColor(mine ? ChatTheme.mineInk : ChatTheme.ink),
             secondaryColor: UIColor(mine ? ChatTheme.mineSecondaryInk : ChatTheme.secondary),
             bubbleColor: UIColor(mine ? ChatTheme.bubbleMine : ChatTheme.bubbleOther),
-            showTail: isRunEnd(message),
+            showTail: isRunStart(message),
             bubbleGlass: ChatTheme.usesGlass,
-            showsAvatar: isRunStart(message),
+            showsAvatar: true,
             reservesAvatarSpace: true,
             metaText: TimeFmt.messageClock(message.createdAt),
             metaColor: UIColor(mine ? ChatTheme.mineSecondaryInk : ChatTheme.secondary),
@@ -3951,8 +3957,12 @@ struct ChatDetailView: View {
             Spacer().frame(width: WhatsAppChatLayout.avatarGap)
             Avatar(
                 path: app.me?.avatarPath ?? "",
-                size: WhatsAppChatLayout.avatarSide,
-                radius: WhatsAppChatLayout.avatarSide / 2,
+                size: isGroup
+                    ? WhatsAppChatLayout.groupAvatarSide
+                    : WhatsAppChatLayout.avatarSide,
+                radius: (isGroup
+                    ? WhatsAppChatLayout.groupAvatarSide
+                    : WhatsAppChatLayout.avatarSide) / 2,
                 circle: true,
                 level: GrowthStore.shared.shownLevel
             )
@@ -4411,15 +4421,23 @@ struct ChatDetailView: View {
             if showsAvatar {
                 Avatar(
                     path: app.me?.avatarPath ?? "",
-                    size: WhatsAppChatLayout.avatarSide,
-                    radius: WhatsAppChatLayout.avatarSide / 2,
+                    size: isGroup
+                        ? WhatsAppChatLayout.groupAvatarSide
+                        : WhatsAppChatLayout.avatarSide,
+                    radius: (isGroup
+                        ? WhatsAppChatLayout.groupAvatarSide
+                        : WhatsAppChatLayout.avatarSide) / 2,
                     circle: true,
                     level: GrowthStore.shared.shownLevel
                 )
             } else {
                 Color.clear.frame(
-                    width: WhatsAppChatLayout.avatarSide,
-                    height: WhatsAppChatLayout.avatarSide
+                    width: isGroup
+                        ? WhatsAppChatLayout.groupAvatarSide
+                        : WhatsAppChatLayout.avatarSide,
+                    height: isGroup
+                        ? WhatsAppChatLayout.groupAvatarSide
+                        : WhatsAppChatLayout.avatarSide
                 )
             }
         }
@@ -4763,13 +4781,15 @@ struct ChatDetailView: View {
                    senderAvatarPath: senderAvatarFor(message),
                    senderQQLevel: app.contact(for: message.senderId ?? "")?.qqLevel ?? 0,
                    senderOnline: senderIsOnline(message),
-                   avatarSize: WhatsAppChatLayout.avatarSide,
+                   avatarSize: isGroup
+                       ? WhatsAppChatLayout.groupAvatarSide
+                       : WhatsAppChatLayout.avatarSide,
                    maxBubbleWidth: WhatsAppChatLayout.maxBubbleWidth,
-                   showsAvatar: isRunStart(message),
+                   showsAvatar: true,
                    reservesAvatarSpace: true,
                    currentNickname: app.me?.nickname ?? "",
                    currentUsername: app.me?.username ?? "",
-                   showTail: isRunEnd(message),
+                   showTail: isRunStart(message),
                    onTapTransfer: { info in billInfo = info },
                    onOpenImage: { path in openImage(path) },
                    onOpenAvatar: { id in openAvatar(id) },
@@ -5002,18 +5022,19 @@ struct ChatDetailView: View {
     private func gapAfter(_ message: Message) -> CGFloat {
         guard let i = indexOf(message) else { return 15 }
         guard i + 1 < messages.count else {
-            return mineFor(message) && isRunEnd(message) ? 6 : 3
+            return 4
         }
         let next = messages[i + 1]
         if showTime(for: next) { return 0 }
-        if next.kindName == "system" || next.kindName == "pat" || next.isRecalled { return 11 }
-        if message.kindName == "system" || message.kindName == "pat" || message.isRecalled { return 11 }
+        if next.kindName == "system" || next.kindName == "pat" || next.isRecalled { return 12 }
+        if message.kindName == "system" || message.kindName == "pat" || message.isRecalled { return 12 }
         let same = (next.senderId ?? "") == (message.senderId ?? "")
-
-        let gap: CGFloat = same
-            ? WhatsAppChatLayout.sameRunGap
-            : WhatsAppChatLayout.runGap
-        return gap
+        if isGroup {
+            return same ? 4 : 10
+        }
+        return same
+            ? UIConfig.num("msgGapSame", 7)
+            : UIConfig.num("msgGapOther", 15)
     }
 
     private var leftUnreadBadge: AnyView? {

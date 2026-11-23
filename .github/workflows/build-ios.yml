@@ -168,6 +168,7 @@ jobs:
           node server/test/security-vault.test.js
           node server/test/chat-actions.test.js
           node server/test/mention-index.test.js
+          node server/test/upload-raw-integrity.test.js
           node server/test/large-group-10000.test.js
           node server/test/media-object-routing.test.js
           node server/test/messages-since.test.js

@@ -1,23 +1,25 @@
 import UIKit
 
 enum WhatsAppChatLayout {
-    static let version = 1
-    static let avatarSide: CGFloat = 32
-    static let avatarGap: CGFloat = 7
-    static let bubblePadH: CGFloat = 9
-    static let bubblePadV: CGFloat = 5
+    static let version = 2
+    static let directAvatarSide: CGFloat = L.chatAvatar
+    static let groupAvatarSide: CGFloat = 34
+    static var avatarSide: CGFloat { directAvatarSide }
+    static var avatarGap: CGFloat { L.chatGapMsg }
+    static var bubblePadH: CGFloat { L.bubblePadH }
+    static var bubblePadV: CGFloat { L.bubblePadV }
     static let senderHeight: CGFloat = 16
     static let metadataHeight: CGFloat = 13
     static let metadataGap: CGFloat = 1
     static let inlineMetadataGap: CGFloat = 7
-    static let tailInset: CGFloat = 5
+    static let tailInset: CGFloat = 0
     static let sameRunGap: CGFloat = 3
     static let runGap: CGFloat = 9
     static let metadataFont = UIFontMetrics(forTextStyle: .caption2)
         .scaledFont(for: .systemFont(ofSize: 10.5, weight: .regular))
 
     static var maxBubbleWidth: CGFloat {
-        min(300, max(224, L.width * 0.76))
+        L.bubbleMaxW
     }
 
     static func metadataWidth(time: String, tickCount: Int) -> CGFloat {
