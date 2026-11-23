@@ -3105,7 +3105,8 @@ struct ChatDetailView: View {
             }
             await refreshReceipts()
             historySyncTask?.cancel()
-            if shouldLoadCompleteGroupHistory {
+            if shouldLoadCompleteGroupHistory,
+               UIConfig.num("chatEagerHistorySync", 0) > 0 {
                 historySyncTask = Task { @MainActor in
                     try? await Task.sleep(nanoseconds: 800_000_000)
                     guard !Task.isCancelled else { return }
@@ -3845,7 +3846,8 @@ struct ChatDetailView: View {
               message.burn != true,
               !selectMode,
               UIConfig.num("chatDeliveryTicks", 0) <= 0,
-              !message.body.hasPrefix("{") else { return nil }
+              !message.body.hasPrefix("{"),
+              !needsSwiftUIRichText(message.body) else { return nil }
         let mine = mineFor(message)
         return NativeChatTextRowModel(
             messageID: message.id,
@@ -3954,9 +3956,18 @@ struct ChatDetailView: View {
                 && !selectMode
                 && UIConfig.num("chatDeliveryTicks", 0) <= 0
                 && !message.body.hasPrefix("{")
+                && !needsSwiftUIRichText(message.body)
         default:
             return false
         }
+    }
+
+    private func needsSwiftUIRichText(_ raw: String) -> Bool {
+        if raw.contains("@") { return true }
+        let lower = raw.lowercased()
+        return lower.contains("http://")
+            || lower.contains("https://")
+            || lower.contains("www.")
     }
 
     private func nativeGroupUIKitRow(_ item: NativeGroupItem, reuse: UIView?) -> UIView? {
@@ -9110,6 +9121,14 @@ struct MessageRow: View {
         mine ? ChatTheme.mineLinkInk : ChatTheme.link
     }
 
+    private var chatOpenURLAction: OpenURLAction {
+        OpenURLAction { url in
+            guard let onOpenWeb else { return .systemAction }
+            onOpenWeb(url)
+            return .handled
+        }
+    }
+
     private var quoteSurface: Color {
         mine
             ? Color.white.opacity(0.14)
@@ -9300,6 +9319,7 @@ struct MessageRow: View {
                 .lineSpacing(textLineSpacing(message.body))
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
+                .environment(\.openURL, chatOpenURLAction)
                 .padding(.horizontal, L.bubblePadHPill)
                 .padding(.vertical, L.bubblePadV)
                 .background(
@@ -9317,6 +9337,7 @@ struct MessageRow: View {
                 .lineSpacing(textLineSpacing(raw))
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
+                .environment(\.openURL, chatOpenURLAction)
                 .padding(.horizontal, L.bubblePadHPill)
                 .padding(.vertical, L.bubblePadV)
                 .background(BubbleFill(mine: mine, tail: showTail, glass: false))

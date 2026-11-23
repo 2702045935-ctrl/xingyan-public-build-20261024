@@ -100,6 +100,17 @@ require(
     "native image and video rows must preserve the original SwiftUI media sizes",
 )
 require(
+    "private func needsSwiftUIRichText(_ raw: String) -> Bool" in CHAT
+    and 'lower.contains("https://")' in CHAT
+    and "!needsSwiftUIRichText(message.body)" in CHAT
+    and "private var chatOpenURLAction: OpenURLAction" in CHAT
+    and ".environment(\\.openURL, chatOpenURLAction)" in CHAT
+    and "ceil(pfUIFont(11.5).lineHeight + 8)" in (
+        ROOT / "Sources" / "NativeChatTextRowCell.swift"
+    ).read_text(encoding="utf-8"),
+    "rich text, links and timestamp rows must keep adaptive SwiftUI sizing and in-app routing",
+)
+require(
     "case .file:\n                            openFile(message.body)" in CHAT
     and "path.hasPrefix(\"data:\")" in CHAT
     and "private func openInlineFile(dataURL: String, name: String)" in CHAT,

@@ -385,5 +385,7 @@ final class NativeChatTimeRowView: UIView {
         label.frame = bounds
     }
 
-    static func height() -> CGFloat { 28 }
+    static func height() -> CGFloat {
+        max(28, ceil(pfUIFont(11.5).lineHeight + 8))
+    }
 }
