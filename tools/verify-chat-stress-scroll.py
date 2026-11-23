@@ -26,7 +26,7 @@ require(
     "prepending must reuse unchanged row signatures and remeasure only the boundary",
 )
 require(
-    "scroll.bounds.height * 3.5" in CHAT
+    "scroll.bounds.height * 6.0" in CHAT
     and "consumeOlderRunway(requireActiveMotion: true, offsetY: y)" in CHAT,
     "group history must use a viewport-relative prefetch runway",
 )
@@ -58,9 +58,10 @@ require(
     and ".onAppear { autoLoadOlder() }" not in CHAT
     and "nearTopIds.contains(message.id) { autoLoadOlder() }" not in CHAT
     and "private let historyPageSize = 120" in CHAT
-    and "let target = historyPageSize" in CHAT
+    and "let target = historyRunwayTarget" in CHAT
     and "let canContinue = explicitMore ?? hasOlder" in CHAT
-    and "guard canContinue, olderPrefetch.isEmpty, olderPrefetchTask == nil" in CHAT
+    and "olderPrefetch.count < target" in CHAT
+    and "olderPrefetchTask == nil" in CHAT
     and "scheduleOlderPrefetch(before: nextCursor" in CHAT,
     "group history must only be consumed from the user's runway offset",
 )
@@ -74,8 +75,9 @@ require(
 require(
     "var olderNextCursor = 0" in CHAT
     and "olderNextCursor = advanced" in CHAT
-    and "else if page.hasMore" in CHAT
-    and "before: next," in CHAT,
+    and "while collected.count < target" in CHAT
+    and "emptyPages < 3" in CHAT
+    and "if advanced <= 0 || advanced >= cursor { break }" in CHAT,
     "hidden or duplicate pages must advance without latching the history cursor",
 )
 require(
@@ -187,9 +189,9 @@ require(
     "private func slideWindowDuringScroll" in NATIVE_CHAT_LIST
     and "next.count == oldCount,\n                   slideWindowDuringScroll(next)" in NATIVE_CHAT_LIST
     and "snapshot.deleteItems(removedIDs)" in NATIVE_CHAT_LIST
-    and "snapshot.appendItems(addedIDs, toSection: 0)" in NATIVE_CHAT_LIST
+    and "snapshot.insertItems(addedIDs, beforeItem: insertionAnchor)" in NATIVE_CHAT_LIST
     and "table.rectForRow(at: indexPath).minY - delta" in NATIVE_CHAT_LIST,
-    "bounded conversation windows must recycle leading rows during motion with an exact visible anchor",
+    "bounded conversation windows must recycle rows in both directions with an exact visible anchor",
 )
 require(
     "let prefetchLead = max(4_200, scrollView.bounds.height * 3.5)" in NATIVE_CHAT_LIST
@@ -201,6 +203,7 @@ require(
     "scrollViewWillBeginDragging" in NATIVE_CHAT_LIST
     and NATIVE_CHAT_LIST.count("endRequestInFlight = false") >= 3
     and "endRequestInFlight = false\n            startRequestInFlight = false" in NATIVE_CHAT_LIST
+    and "startRequestContentHeight + 120" in NATIVE_CHAT_LIST
     and "结束拖动和减速必须释放预取锁" not in NATIVE_CHAT_LIST,
     "each new conversation gesture must release stale prefetch latches in both directions",
 )

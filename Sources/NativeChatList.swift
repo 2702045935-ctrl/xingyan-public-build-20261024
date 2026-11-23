@@ -199,6 +199,7 @@ where Item.ID: Hashable {
         private var applyGeneration = 0
         private var endRequestInFlight = false
         private var startRequestInFlight = false
+        private var startRequestContentHeight: CGFloat = 0
         private var appliedItemCount = 0
         private var layoutObservers: [NSObjectProtocol] = []
 
@@ -432,22 +433,64 @@ where Item.ID: Hashable {
         @discardableResult
         private func slideWindowDuringScroll(_ next: [Item]) -> Bool {
             guard next.count == order.count,
-                  let nextFirst = next.first?.id,
-                  nextFirst != order.first,
-                  let removedCount = order.firstIndex(of: nextFirst),
-                  removedCount > 0,
                   let dataSource,
                   let table else { return false }
 
             let nextOrder = next.map(\.id)
-            let retained = order[removedCount...]
-            guard nextOrder.count >= retained.count,
-                  nextOrder.prefix(retained.count).elementsEqual(retained) else {
-                return false
+            let count = order.count
+            var lead = 0
+            while lead < count, order[lead] == nextOrder[lead] {
+                lead += 1
             }
-            let removedIDs = Array(order.prefix(removedCount))
-            let addedIDs = Array(nextOrder.suffix(removedCount))
-            let added = Array(next.suffix(removedCount))
+            guard lead < count else { return false }
+            var trail = 0
+            while trail < count - lead,
+                  order[count - 1 - trail] == nextOrder[count - 1 - trail] {
+                trail += 1
+            }
+            let oldCoreEnd = count - trail
+            let nextCoreEnd = count - trail
+            guard oldCoreEnd > lead else { return false }
+
+            let oldPivotID = order[lead]
+            let newPivotID = nextOrder[lead]
+            let oldCoreCount = oldCoreEnd - lead
+            let nextCoreCount = nextCoreEnd - lead
+            var removedIDs: [Item.ID] = []
+            var addedIDs: [Item.ID] = []
+            var insertionAnchor: Item.ID?
+            var upward = false
+
+            if let pivotInNext = nextOrder.firstIndex(of: oldPivotID),
+               pivotInNext > lead {
+                // Older rows are prepended and the previous tail is removed.
+                let inserted = pivotInNext - lead
+                let retained = oldCoreCount - inserted
+                guard retained >= 0,
+                      nextOrder[pivotInNext..<nextCoreEnd]
+                        .elementsEqual(order[lead..<(lead + retained)]) else {
+                    return false
+                }
+                addedIDs = Array(nextOrder[lead..<pivotInNext])
+                removedIDs = Array(order[(lead + retained)..<oldCoreEnd])
+                insertionAnchor = oldPivotID
+                upward = true
+            } else if let pivotInOld = order.firstIndex(of: newPivotID),
+                      pivotInOld > lead {
+                // Older rows are removed and newer rows are inserted before
+                // the permanent bottom sentinels.
+                let removed = pivotInOld - lead
+                let retained = oldCoreCount - removed
+                guard retained >= 0,
+                      nextCoreCount >= retained,
+                      nextOrder[lead..<(lead + retained)]
+                        .elementsEqual(order[pivotInOld..<oldCoreEnd]) else {
+                    return false
+                }
+                removedIDs = Array(order[lead..<pivotInOld])
+                addedIDs = Array(nextOrder[(lead + retained)..<nextCoreEnd])
+                insertionAnchor = trail > 0 ? order[oldCoreEnd] : nil
+            }
             guard !addedIDs.isEmpty else { return false }
 
             let visibleRow = table.indexPathsForVisibleRows?.min()
@@ -457,17 +500,26 @@ where Item.ID: Hashable {
             }
             let previousOffset = table.contentOffset
             for id in removedIDs { lookup.removeValue(forKey: id) }
-            for item in added { lookup[item.id] = item }
+            let addedSet = Set(addedIDs)
+            for item in next where addedSet.contains(item.id) {
+                lookup[item.id] = item
+            }
             order = nextOrder
             appliedItemCount = order.count
             endRequestInFlight = false
+            startRequestInFlight = false
             pendingItems = nil
             applyGeneration += 1
             let generation = applyGeneration
 
             var snapshot = dataSource.snapshot()
             snapshot.deleteItems(removedIDs)
-            snapshot.appendItems(addedIDs, toSection: 0)
+            if let insertionAnchor,
+               snapshot.itemIdentifiers.contains(insertionAnchor) {
+                snapshot.insertItems(addedIDs, beforeItem: insertionAnchor)
+            } else {
+                snapshot.appendItems(addedIDs, toSection: 0)
+            }
             dataSource.apply(snapshot, animatingDifferences: false) {
                 [weak self, weak table] in
                 guard let self, let table,
@@ -482,6 +534,8 @@ where Item.ID: Hashable {
                         CGPoint(x: previousOffset.x, y: targetY),
                         animated: false
                     )
+                } else if upward {
+                    _ = ChatScrollHandle.shared.compensatePendingPrepend()
                 }
             }
             return true
@@ -526,9 +580,17 @@ where Item.ID: Hashable {
                (scrollView.isDragging || scrollView.isDecelerating),
                fromTop < max(1_600, scrollView.bounds.height * 1.5) {
                 startRequestInFlight = true
+                startRequestContentHeight = scrollView.contentSize.height
                 DispatchQueue.main.async { [weak self] in
                     self?.onApproachingStart()
                 }
+            }
+            if startRequestInFlight,
+               scrollView.contentSize.height > startRequestContentHeight + 120 {
+                // Re-arm the upward runway after the previous prepend has
+                // actually changed the content size. A long fling can then
+                // cross several pages without lifting the finger.
+                startRequestInFlight = false
             }
             prefetchEndRunwayIfNeeded(scrollView)
             let zone: Int
@@ -570,6 +632,7 @@ where Item.ID: Hashable {
             // permanently at an arbitrary loaded boundary.
             endRequestInFlight = false
             startRequestInFlight = false
+            startRequestContentHeight = scrollView.contentSize.height
             publishScrollState(true)
             applyGeneration += 1
             NotificationCenter.default.post(name: .chrisRowSwipe, object: nil)

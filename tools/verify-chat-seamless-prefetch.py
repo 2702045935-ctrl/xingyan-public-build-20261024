@@ -21,8 +21,9 @@ require(
 require(
     "var olderNextCursor = 0" in CHAT
     and "let rawNext = page.messages.compactMap(\\.seq).min() ?? 0" in CHAT
-    and "olderNextCursor = rawNext > 0 && rawNext < seq" in CHAT
-    and "before: olderNextCursor > 0 ? olderNextCursor" in CHAT,
+    and "let advanced = rawNext > 0 && rawNext < cursor" in CHAT
+    and "olderNextCursor = cursor" in CHAT
+    and "before: cursor" in CHAT,
     "history paging must retain a forward-only server cursor across hidden pages",
 )
 require(
@@ -41,7 +42,7 @@ require(
 )
 require(
     "consumeOlderRunway(requireActiveMotion: true, offsetY: y)" in CHAT
-    and "scroll.bounds.height * 3.5" in CHAT,
+    and "scroll.bounds.height * 6.0" in CHAT,
     "chat prefetch must use a viewport-relative runway",
 )
 require(
@@ -69,19 +70,22 @@ require(
 )
 require(
     "private let historyPageSize = 120" in CHAT
-    and "let target = historyPageSize" in CHAT
+    and "private let historyPrefetchPages = 3" in CHAT
+    and "private var historyRunwayTarget: Int" in CHAT
+    and "let target = historyRunwayTarget" in CHAT
     and "let canContinue = explicitMore ?? hasOlder" in CHAT
-    and "guard canContinue, olderPrefetch.isEmpty, olderPrefetchTask == nil" in CHAT
-    and "olderPrefetch = visibleMessages(page.messages)" in CHAT
-    and "before: seq" in CHAT
+    and "olderPrefetch.count < target" in CHAT
+    and "olderPrefetchTask == nil" in CHAT
+    and "olderPrefetch = visibleMessages(collected)" in CHAT
+    and "before: cursor" in CHAT
     and "let maxPages = 1" in CHAT,
-    "chat prefetch must keep a bounded 120-message runway",
+    "chat prefetch must keep a bounded three-page runway",
 )
 require(
     "scheduleOlderPrefetch(before: nextCursor" in CHAT
     and "knownIds: Set(bounded.map(\\.id))" in CHAT
     and "continues: more" in CHAT,
-    "each consumed history page must enqueue exactly one fresh prefetch page",
+    "each consumed history runway must enqueue a fresh bounded prefetch batch",
 )
 require(
     "var loadedUsefulPage = false" in CHAT
