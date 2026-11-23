@@ -180,6 +180,7 @@ where Item.ID: Hashable {
     let initiallyPinnedToBottom: Bool
     let keepsBottomOnItemChange: Bool
     let virtualHistoryPosition: ((Item) -> Double?)?
+    let layoutRevision: String
     let signature: (Item) -> String
     let nativeEligible: ((Item) -> Bool)?
     let nativeRow: ((Item, UIView?) -> UIView?)?
@@ -195,6 +196,7 @@ where Item.ID: Hashable {
          initiallyPinnedToBottom: Bool = false,
          keepsBottomOnItemChange: Bool = false,
          virtualHistoryPosition: ((Item) -> Double?)? = nil,
+         layoutRevision: String = "",
          signature: @escaping (Item) -> String,
          nativeEligible: ((Item) -> Bool)? = nil,
          nativeRow: ((Item, UIView?) -> UIView?)? = nil,
@@ -209,6 +211,7 @@ where Item.ID: Hashable {
         self.initiallyPinnedToBottom = initiallyPinnedToBottom
         self.keepsBottomOnItemChange = keepsBottomOnItemChange
         self.virtualHistoryPosition = virtualHistoryPosition
+        self.layoutRevision = layoutRevision
         self.signature = signature
         self.nativeEligible = nativeEligible
         self.nativeRow = nativeRow
@@ -225,6 +228,7 @@ where Item.ID: Hashable {
                     initiallyPinnedToBottom: initiallyPinnedToBottom,
                     keepsBottomOnItemChange: keepsBottomOnItemChange,
                     virtualHistoryPosition: virtualHistoryPosition,
+                    layoutRevision: layoutRevision,
                     signature: signature,
                     nativeEligible: nativeEligible,
                     nativeRow: nativeRow,
@@ -326,6 +330,10 @@ where Item.ID: Hashable {
         context.coordinator.nativeRow = nativeRow
         context.coordinator.nativeHeight = nativeHeight
         context.coordinator.virtualHistoryPosition = virtualHistoryPosition
+        if context.coordinator.layoutRevision != layoutRevision {
+            context.coordinator.layoutRevision = layoutRevision
+            context.coordinator.invalidateRowsForLayoutChange()
+        }
         context.coordinator.onScrollViewReady = onScrollViewReady
         context.coordinator.onScrollStateChange = onScrollStateChange
         context.coordinator.onScrollOffset = onScrollOffset
@@ -351,6 +359,7 @@ where Item.ID: Hashable {
         var nativeRow: ((Item, UIView?) -> UIView?)?
         var nativeHeight: ((Item, CGFloat) -> CGFloat?)?
         var virtualHistoryPosition: ((Item) -> Double?)?
+        var layoutRevision: String
         weak var collection: UICollectionView?
         var dataSource: UICollectionViewDiffableDataSource<Int, Item.ID>?
         let controller: NativeStaticListController?
@@ -387,6 +396,7 @@ where Item.ID: Hashable {
              initiallyPinnedToBottom: Bool,
              keepsBottomOnItemChange: Bool,
              virtualHistoryPosition: ((Item) -> Double?)?,
+             layoutRevision: String,
              signature: @escaping (Item) -> String,
              nativeEligible: ((Item) -> Bool)?,
              nativeRow: ((Item, UIView?) -> UIView?)?,
@@ -401,6 +411,7 @@ where Item.ID: Hashable {
             self.keepsBottomOnItemChange = keepsBottomOnItemChange
             self.waitsForInitialBottom = initiallyPinnedToBottom
             self.virtualHistoryPosition = virtualHistoryPosition
+            self.layoutRevision = layoutRevision
             self.signature = signature
             self.nativeEligible = nativeEligible
             self.nativeRow = nativeRow
@@ -421,6 +432,14 @@ where Item.ID: Hashable {
             if let foregroundObserver {
                 NotificationCenter.default.removeObserver(foregroundObserver)
             }
+        }
+
+        func invalidateRowsForLayoutChange() {
+            signatures.removeAll(keepingCapacity: true)
+            heights.removeAll(keepingCapacity: true)
+            warmHosts.removeAll(keepingCapacity: true)
+            deferredWarmIDs.removeAll(keepingCapacity: true)
+            deferredMeasureIDs.removeAll(keepingCapacity: true)
         }
 
         private func refreshAfterForeground() {

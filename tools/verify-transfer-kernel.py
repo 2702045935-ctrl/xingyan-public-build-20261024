@@ -42,20 +42,19 @@ require(
     "images must try raw JPEG first and retain the baseline base64 fallback",
 )
 require(
-    "func uploadPreparedJPEGForSend(" in API
-    and "private final class ActualUploadProgress" in CHAT
-    and "let totalBytes = prepared.reduce(Int64(0))" in CHAT
-    and "value: p," in CHAT,
-    "the 11/21 transport must keep real prepared-image progress aggregation",
+    "private final class ImageUploadProgress" in CHAT
+    and "sendProgress = 0.02" in CHAT
+    and "sendProgress = min(0.82, 0.02 + state.progress * 0.80)" in CHAT,
+    "image sends must restore the 11/21 upload percentage mapping",
 )
 require(
     "let progress: Double?" in MEDIA
     and "ProgressView()" in MEDIA
     and 'return Tr("准备上传…")' in MEDIA
     and 'return Tr("连接中…")' in MEDIA
-    and "sendProgress = 0.02" not in CHAT
-    and "sendingFileProgress = 0.01" not in CHAT,
-    "preparing, hashing and compression must not masquerade as upload percentages",
+    and "sendProgress = 0.02" in CHAT
+    and "sendingFileProgress = 0.01" in CHAT,
+    "the restored 11/21 flow must start image and file progress at its original values",
 )
 require(
     "enum UploadVisualPhase" in MEDIA
@@ -68,18 +67,19 @@ require(
     "upload cards must expose phases, byte totals, smoothed speed and ETA",
 )
 require(
-    "sendProgress = min(1, max(0, p))" in CHAT
-    and "let value = min(1, max(0, p))" in CHAT,
-    "upload percentages must come from actual sent chunk bytes",
+    "sendProgress = 0.02" in CHAT
+    and "sendProgress = min(0.82, 0.02 + p * 0.80)" in CHAT
+    and "sendProgress = 0.9" in CHAT
+    and "let value = min(1, max(0.01, p))" in CHAT
+    and "uploadFrom = 0.45" in CHAT
+    and "uploadFrom = 0.25" in CHAT,
+    "image, video, live photo and file percentages must use the 11/21 scale",
 )
 require(
-    "func uploadPreparedJPEGForSend(" in API
-    and "private final class ActualUploadProgress" in CHAT
-    and "let totalBytes = prepared.reduce(Int64(0))" in CHAT
-    and "value: p," in CHAT
-    and "bytes: Int64(item.data.count)" in CHAT
-    and "ImageUploadProgress" not in CHAT,
-    "multi-image progress must aggregate actual prepared and sent bytes",
+    "let progress = ImageUploadProgress(count: list.count)" in CHAT
+    and "let state = progress.update(index: i, value: p)" in CHAT
+    and "while nextIdx < min(3, list.count)" in CHAT,
+    "multi-image sends must restore the original three-lane upload flow",
 )
 require(
     "URLSessionConfiguration.default" in CLIENT

@@ -81,6 +81,14 @@ require(
 )
 NATIVE_LIST = (ROOT / "Sources" / "NativeStaticList.swift").read_text(encoding="utf-8")
 require(
+    "layoutRevision: nativeRowLayoutKey" in CHAT
+    and "let layoutRevision: String" in NATIVE_LIST
+    and "context.coordinator.layoutRevision != layoutRevision" in NATIVE_LIST
+    and "func invalidateRowsForLayoutChange()" in NATIVE_LIST
+    and "signatures.removeAll(keepingCapacity: true)" in NATIVE_LIST,
+    "theme and layout changes must invalidate native row caches in the same update",
+)
+require(
     "UICollectionViewDataSourcePrefetching" in NATIVE_LIST
     and "prefetchItemsAt" in NATIVE_LIST
     and "warmHosts" in NATIVE_LIST

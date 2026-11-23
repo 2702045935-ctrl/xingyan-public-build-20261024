@@ -32,38 +32,6 @@ private struct ChatTypingDots: View {
     }
 }
 
-private final class ActualUploadProgress: @unchecked Sendable {
-    private let lock = NSLock()
-    private let totalBytes: Int64
-    private var partial: [Int: Int64] = [:]
-    private var completedBytes: Int64 = 0
-    private var finished: Set<Int> = []
-    private var completed = 0
-
-    init(totalBytes: Int64) {
-        self.totalBytes = max(1, totalBytes)
-    }
-
-    func update(index: Int, value: Double, bytes: Int64) -> (progress: Double, completed: Int) {
-        lock.lock()
-        defer { lock.unlock() }
-        partial[index] = Int64(min(1, max(0, value)) * Double(max(0, bytes)))
-        let sent = completedBytes + partial.values.reduce(0, +)
-        return (min(1, Double(sent) / Double(totalBytes)), completed)
-    }
-
-    func finish(index: Int, bytes: Int64) -> (progress: Double, completed: Int) {
-        lock.lock()
-        defer { lock.unlock() }
-        if finished.insert(index).inserted {
-            partial[index] = nil
-            completedBytes += max(0, bytes)
-            completed += 1
-        }
-        return (min(1, Double(completedBytes) / Double(totalBytes)), completed)
-    }
-}
-
 private final class UploadRateMeter: @unchecked Sendable {
     private let lock = NSLock()
     private var startedAt: Date?
@@ -208,6 +176,28 @@ struct PendingMsg: Identifiable, Hashable {
         case "note": return "[笔记]"
         default: return "[" + kind + "]"
         }
+    }
+}
+
+private final class ImageUploadProgress: @unchecked Sendable {
+    private let lock = NSLock()
+    private var values: [Double]
+    private var completed = 0
+
+    init(count: Int) {
+        values = Array(repeating: 0, count: max(1, count))
+    }
+
+    func update(index: Int, value: Double) -> (progress: Double, completed: Int) {
+        lock.lock()
+        defer { lock.unlock() }
+        if values.indices.contains(index) {
+            if values[index] < 0.999, value >= 0.999 {
+                completed += 1
+            }
+            values[index] = min(1, max(0, value))
+        }
+        return (values.reduce(0, +) / Double(values.count), completed)
     }
 }
 
@@ -3605,6 +3595,7 @@ struct ChatDetailView: View {
             initiallyPinnedToBottom: true,
             keepsBottomOnItemChange: true,
             virtualHistoryPosition: nativeHistoryPosition,
+            layoutRevision: nativeRowLayoutKey,
             signature: nativeGroupSignature,
             nativeEligible: nativeGroupUIKitEligible,
             nativeRow: nativeGroupUIKitRow,
@@ -7007,8 +6998,8 @@ struct ChatDetailView: View {
             uploading = true
             sendingPreview = img
             sendingPreviews = [img]
-            sendingMedia = Tr("图片处理中…")
-            sendProgress = 0
+            sendingMedia = Tr("图片上传中…")
+            sendProgress = 0.02
             mediaUploadPhase = .preparing
             scrollTick += 1
             let px = img.sendPixelSize
@@ -7020,15 +7011,14 @@ struct ChatDetailView: View {
                         preserveResolution: nativeCamera,
                         onProgress: { p in
                             DispatchQueue.main.async {
-                                sendProgress = min(1, max(0, p))
-                                sendingMedia = Tr("图片上传中…")
-                                mediaUploadPhase = p <= 0.001 ? .connecting : .uploading
+                                sendProgress = min(0.82, 0.02 + p * 0.80)
+                                mediaUploadPhase = .uploading
                             }
                         })
                     let url = up.url
                     seedLocalImage(url, img, data: up.data)
                     sendingMedia = Tr("正在发送…")
-                    sendProgress = 1
+                    sendProgress = 0.9
                     mediaUploadPhase = .processing
                     let tUp = Date()
                     if let m = try await API.shared.send(chatId: chat.id, kind: "image", content: url,
@@ -7057,33 +7047,13 @@ struct ChatDetailView: View {
             uploading = true
             sendingPreview = list.first
             sendingPreviews = list
-            sendingMedia = Tr("图片处理中…") + " 0/\(list.count)"
-            sendProgress = 0
+            sendingMedia = Tr("图片上传中…") + " 0/\(list.count)"
+            sendProgress = 0.02
             mediaUploadPhase = .preparing
             scrollTick += 1
+            let progress = ImageUploadProgress(count: list.count)
             Task {
                 do {
-                    var prepared: [(idx: Int, data: Data, w: Int, h: Int)] = []
-                    for (i, img) in list.enumerated() {
-                        sendingMedia = Tr("图片处理中…") + " \(i + 1)/\(list.count)"
-                        let px = img.sendPixelSize
-                        let data = await Task.detached(priority: .userInitiated) {
-                            img.resizedJPEG(
-                                maxSide: original ? 1920 : 1280,
-                                quality: original ? 0.88 : 0.75
-                            )
-                        }.value
-                        guard let data, !data.isEmpty else {
-                            throw APIError.message("图片处理失败")
-                        }
-                        prepared.append((i, data, px.w, px.h))
-                    }
-                    let totalBytes = prepared.reduce(Int64(0)) {
-                        $0 + Int64($1.data.count)
-                    }
-                    let progress = ActualUploadProgress(totalBytes: totalBytes)
-                    sendProgress = 0
-                    sendingMedia = Tr("图片上传中…") + " 0/\(list.count)"
                     var urls: [String] = []
                     var dims: [(w: Int, h: Int)] = []
 
@@ -7092,46 +7062,36 @@ struct ChatDetailView: View {
                     await withTaskGroup(of: (Int, String, Int, Int, Data, String?).self) { group in
                         var nextIdx = 0
                         func addUpload(_ i: Int) {
-                            let item = prepared[i]
+                            let img = list[i]
+                            let px = img.sendPixelSize
                             group.addTask {
                                 do {
-                                    let url = try await API.shared.uploadPreparedJPEGForSend(
-                                        item.data,
+                                    let up = try await API.shared.uploadImageForSend(
+                                        img,
+                                        original: original,
                                         onProgress: { p in
-                                            let state = progress.update(
-                                                index: item.idx,
-                                                value: p,
-                                                bytes: Int64(item.data.count)
-                                            )
+                                            let state = progress.update(index: i, value: p)
                                             DispatchQueue.main.async {
-                                                sendProgress = state.progress
+                                                sendProgress = min(0.82, 0.02 + state.progress * 0.80)
                                                 sendingMedia = Tr("图片上传中…") + " \(state.completed)/\(list.count)"
-                                                mediaUploadPhase = p <= 0.001 ? .connecting : .uploading
+                                                mediaUploadPhase = .uploading
                                             }
                                         })
-                                    let state = progress.finish(
-                                        index: item.idx,
-                                        bytes: Int64(item.data.count)
-                                    )
-                                    DispatchQueue.main.async {
-                                        sendProgress = state.progress
-                                        sendingMedia = Tr("图片上传中…") + " \(state.completed)/\(list.count)"
-                                    }
-                                    return (item.idx, url, item.w, item.h, item.data, nil)
+                                    return (i, up.url, px.w, px.h, up.data, nil)
                                 } catch {
                                     return (i, "", 0, 0, Data(),
                                             (error as? APIError)?.errorDescription ?? "图片上传失败")
                                 }
                             }
                         }
-                        while nextIdx < min(3, prepared.count) { addUpload(nextIdx); nextIdx += 1 }
+                        while nextIdx < min(3, list.count) { addUpload(nextIdx); nextIdx += 1 }
                         for await r in group {
                             if let e = r.5 {
                                 if upError == nil { upError = e }
                             } else {
                                 upResults.append((idx: r.0, url: r.1, w: r.2, h: r.3, data: r.4))
                             }
-                            if nextIdx < prepared.count { addUpload(nextIdx); nextIdx += 1 }
+                            if nextIdx < list.count { addUpload(nextIdx); nextIdx += 1 }
                         }
                     }
                     if let e = upError, upResults.count != list.count { throw APIError.message(e) }
@@ -7142,7 +7102,7 @@ struct ChatDetailView: View {
                     }
                     if urls.count >= 2 {
                         sendingMedia = Tr("正在发送…")
-                        sendProgress = 1
+                        sendProgress = 0.9
                         mediaUploadPhase = .processing
                         CrashCatcher.note("发图", "合成一条相册消息（\(urls.count) 张）")
                         let body = "{\"paths\":" + Self.jsonStringArray(urls) + "}"
@@ -7173,7 +7133,7 @@ struct ChatDetailView: View {
 
         case .video(let url, let preview):
             uploading = true
-            sendProgress = 0
+            sendProgress = 0.02
             sendingPreview = preview
             sendingPreviews = [preview].compactMap { $0 }
             sendingMedia = Tr("视频准备中…")
@@ -7195,10 +7155,15 @@ struct ChatDetailView: View {
 
                 var file = url
 
+                var uploadFrom = 0.0
                 if !original, await MediaTool.needsCompress(url) {
                     sendingMedia = Tr("视频压缩中…")
-                    sendProgress = 0
-                    file = (await MediaTool.compress(url) { _ in }) ?? url
+                    uploadFrom = 0.45
+                    file = (await MediaTool.compress(url) { p in
+                        DispatchQueue.main.async {
+                            sendProgress = min(0.45, p * 0.45)
+                        }
+                    }) ?? url
                     sendingMedia = Tr("视频发送中…")
                 }
 
@@ -7206,9 +7171,10 @@ struct ChatDetailView: View {
 
                 let wh = await MediaTool.aspect(file)
                 mediaUploadPhase = .connecting
+                let from = uploadFrom
                 guard let up = await MediaTool.upload(file, onProgress: { p in
                     DispatchQueue.main.async {
-                        sendProgress = min(1, max(0, p))
+                        sendProgress = from + p * (1 - from)
                         if p >= 0.999 {
                             sendingMedia = Tr("服务器处理中…")
                             mediaUploadPhase = .processing
@@ -7251,7 +7217,7 @@ struct ChatDetailView: View {
 
             if !live { sendImage(img); return }
             uploading = true
-            sendProgress = 0
+            sendProgress = 0.02
             sendingPreview = img
             sendingPreviews = [img]
             sendingMedia = Tr("实况处理中…")
@@ -7263,19 +7229,26 @@ struct ChatDetailView: View {
                     let iurl = up.url
                     seedLocalImage(iurl, img, data: up.data)
                     DispatchQueue.main.async {
-                        sendProgress = 0
+                        sendProgress = 0.25
                         sendingMedia = Tr("实况视频上传中…")
                         mediaUploadPhase = .connecting
                     }
                     var file = url
+                    var uploadFrom = 0.25
                     if !original, await MediaTool.needsCompress(url) {
                         sendingMedia = Tr("实况压缩中…")
-                        file = (await MediaTool.compress(url) { _ in }) ?? url
+                        file = (await MediaTool.compress(url) { p in
+                            DispatchQueue.main.async {
+                                sendProgress = 0.25 + p * 0.15
+                            }
+                        }) ?? url
+                        uploadFrom = 0.4
                         sendingMedia = Tr("实况发送中…")
                     }
+                    let from = uploadFrom
                     guard let vurl = await MediaTool.upload(file, onProgress: { p in
                         DispatchQueue.main.async {
-                            sendProgress = min(1, max(0, p))
+                            sendProgress = from + p * (1 - from)
                             mediaUploadPhase = p <= 0.001 ? .connecting : .uploading
                         }
                     }, skipServerTranscode: true) else { throw APIError.message("实况上传失败") }
@@ -7555,7 +7528,7 @@ struct ChatDetailView: View {
         fileRetryURL = uploadURL
         sendingFileName = name
         sendingFileBytes = sizeBytes
-        sendingFileProgress = nil
+        sendingFileProgress = 0.01
         fileUploadPhase = .preparing
         fileUploadDetail = ""
         fileUploadRateMeter.reset()
@@ -7570,7 +7543,7 @@ struct ChatDetailView: View {
         do {
             let uploadedURL = try await API.shared.uploadBinaryFile(
                 uploadURL, mime: "application/octet-stream", skipTranscode: true, onProgress: { p in
-                    let value = min(1, max(0, p))
+                    let value = min(1, max(0.01, p))
                     DispatchQueue.main.async {
                         guard sendingFileName == name else { return }
                         sendingFileProgress = value
