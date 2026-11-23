@@ -215,6 +215,7 @@ private final class ChatHistoryRuntime {
     var loadingOlder = false
     var olderPrefetch: [Message] = []
     var olderPrefetchHasMore = false
+    var olderNextCursor = 0
     var olderPrefetchTask: Task<Void, Never>?
     var olderPrefetchToken = UUID()
 
@@ -1642,6 +1643,11 @@ struct ChatDetailView: View {
     private var olderPrefetchHasMore: Bool {
         get { historyRuntime.olderPrefetchHasMore }
         nonmutating set { historyRuntime.olderPrefetchHasMore = newValue }
+    }
+
+    private var olderNextCursor: Int {
+        get { historyRuntime.olderNextCursor }
+        nonmutating set { historyRuntime.olderNextCursor = newValue }
     }
 
     private var olderPrefetchTask: Task<Void, Never>? {
@@ -7906,7 +7912,9 @@ struct ChatDetailView: View {
             var older = takeOlderPrefetch()
             var more = olderPrefetchHasMore
             if older.isEmpty {
-                var cursor = seq
+                var cursor = olderNextCursor > 0 && olderNextCursor < seq
+                    ? olderNextCursor
+                    : seq
                 var olderIds = Set<String>()
                 more = true
                 /* 首屏之外始终保持一页预取；只有预取尚未完成时才现场补拉。 */
@@ -7928,8 +7936,12 @@ struct ChatDetailView: View {
                     }
                     more = page.hasMore
                     let next = page.messages.compactMap(\.seq).min() ?? 0
-                    if !more || next <= 0 || next >= cursor { break }
-                    cursor = next
+                    let advanced = next > 0 && next < cursor
+                        ? next
+                        : max(1, cursor - 1)
+                    olderNextCursor = advanced
+                    if !more || !advanced { break }
+                    cursor = advanced
                     if older.count >= target { break }
                 }
             }
@@ -7937,7 +7949,14 @@ struct ChatDetailView: View {
 
             guard !older.isEmpty else {
                 hasOlder = more
-                if more { scheduleOlderRunwayRetry() }
+                if more {
+                    scheduleOlderPrefetch(
+                        before: olderNextCursor > 0 ? olderNextCursor : max(1, seq - 1),
+                        knownIds: Set(messages.map(\.id)),
+                        continues: true
+                    )
+                    scheduleOlderRunwayRetry()
+                }
                 return
             }
             loadedUsefulPage = more
@@ -7984,6 +8003,7 @@ struct ChatDetailView: View {
         guard canContinue, olderPrefetch.isEmpty, olderPrefetchTask == nil else { return }
         let seq = explicitSeq ?? oldestHistorySeq
         guard seq > 0 else { return }
+        olderNextCursor = seq
         let target = historyPageSize
         let known = knownIds ?? Set(messages.map(\.id))
         let token = UUID()
@@ -8003,6 +8023,10 @@ struct ChatDetailView: View {
                 )
                 guard !Task.isCancelled, olderPrefetchToken == token else { return }
                 olderPrefetchHasMore = page.hasMore
+                let rawNext = page.messages.compactMap(\.seq).min() ?? 0
+                olderNextCursor = rawNext > 0 && rawNext < seq
+                    ? rawNext
+                    : max(1, seq - 1)
                 olderPrefetch = visibleMessages(page.messages)
                     .filter { !known.contains($0.id) }
                 if page.messages.isEmpty, !page.hasMore {
@@ -8016,6 +8040,15 @@ struct ChatDetailView: View {
                     lastOlderLoad = .distantPast
                     DispatchQueue.main.async {
                         consumeOlderRunway(requireActiveMotion: false)
+                    }
+                } else if page.hasMore {
+                    let next = olderNextCursor
+                    DispatchQueue.main.async {
+                        scheduleOlderPrefetch(
+                            before: next,
+                            knownIds: known,
+                            continues: true
+                        )
                     }
                 }
             } catch {

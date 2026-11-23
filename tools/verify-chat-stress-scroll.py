@@ -61,6 +61,13 @@ require(
     "every consumed history page must immediately continue while inside the runway",
 )
 require(
+    "var olderNextCursor = 0" in CHAT
+    and "olderNextCursor = advanced" in CHAT
+    and "else if page.hasMore" in CHAT
+    and "before: next," in CHAT,
+    "hidden or duplicate pages must advance without latching the history cursor",
+)
+require(
     "if merged.count > maxMessageWindow || more { hasOlder = true }" not in CHAT
     and "hasOlder = more" in CHAT,
     "reaching the actual first message must clear the phantom older page",
@@ -73,7 +80,8 @@ require(
 require(
     "private func scheduleOlderRunwayRetry()" in CHAT
     and "private func scheduleNewerRunwayRetry()" in CHAT
-    and "if more { scheduleOlderRunwayRetry() }" in CHAT
+    and "if more {" in CHAT
+    and "scheduleOlderRunwayRetry()" in CHAT
     and "if more { scheduleNewerRunwayRetry() }" in CHAT,
     "failed or empty pages must auto-unlock both directions before the server confirms an end",
 )

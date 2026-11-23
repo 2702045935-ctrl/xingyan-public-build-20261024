@@ -19,6 +19,13 @@ require(
     "older history must stay prefetched ahead of the viewport",
 )
 require(
+    "var olderNextCursor = 0" in CHAT
+    and "let rawNext = page.messages.compactMap(\\.seq).min() ?? 0" in CHAT
+    and "olderNextCursor = rawNext > 0 && rawNext < seq" in CHAT
+    and "before: olderNextCursor > 0 ? olderNextCursor" in CHAT,
+    "history paging must retain a forward-only server cursor across hidden pages",
+)
+require(
     "private final class ChatHistoryRuntime" in CHAT
     and "@State private var historyRuntime = ChatHistoryRuntime()" in CHAT
     and "nonmutating set { historyRuntime.lastOlderLoad = newValue }" in CHAT
