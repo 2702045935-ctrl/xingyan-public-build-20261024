@@ -360,14 +360,49 @@ final class NativeChatTextRowView: UIView {
 
 final class NativeChatTimeRowView: UIView {
     private let label = UILabel()
+    private let capsule = UIView()
+    private let blur = UIVisualEffectView(effect: nil)
+    private let tint = UIView()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
         backgroundColor = .clear
+        capsule.clipsToBounds = true
+        capsule.layer.cornerCurve = .continuous
+        blur.isUserInteractionEnabled = false
+        tint.isUserInteractionEnabled = false
+        capsule.addSubview(blur)
+        capsule.addSubview(tint)
         label.textAlignment = .center
         label.font = pfUIFont(11.5)
         label.textColor = .secondaryLabel
-        addSubview(label)
+        capsule.addSubview(label)
+        addSubview(capsule)
+        updateAppearance()
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        if previousTraitCollection?.userInterfaceStyle != traitCollection.userInterfaceStyle
+            || previousTraitCollection?.accessibilityContrast
+                != traitCollection.accessibilityContrast {
+            updateAppearance()
+        }
+    }
+
+    private func updateAppearance() {
+        if UIAccessibility.isReduceTransparencyEnabled {
+            blur.effect = nil
+            tint.backgroundColor = .secondarySystemBackground
+        } else {
+            blur.effect = UIBlurEffect(style: traitCollection.userInterfaceStyle == .dark
+                                       ? .systemUltraThinMaterialDark
+                                       : .systemUltraThinMaterialLight)
+            tint.backgroundColor = traitCollection.userInterfaceStyle == .dark
+                ? UIColor.black.withAlphaComponent(0.18)
+                : UIColor.white.withAlphaComponent(0.36)
+        }
+        setNeedsLayout()
     }
 
     required init?(coder: NSCoder) {
@@ -382,10 +417,21 @@ final class NativeChatTimeRowView: UIView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        label.frame = bounds
+        let textSize = label.sizeThatFits(CGSize(width: max(1, bounds.width - 24),
+                                                 height: .greatestFiniteMagnitude))
+        let width = min(bounds.width, ceil(textSize.width) + 18)
+        let height = ceil(textSize.height) + 8
+        capsule.frame = CGRect(x: (bounds.width - width) / 2,
+                               y: (bounds.height - height) / 2,
+                               width: width,
+                               height: height)
+        capsule.layer.cornerRadius = height / 2
+        blur.frame = capsule.bounds
+        tint.frame = capsule.bounds
+        label.frame = capsule.bounds.insetBy(dx: 9, dy: 4)
     }
 
     static func height() -> CGFloat {
-        max(28, ceil(pfUIFont(11.5).lineHeight + 8))
+        max(34, ceil(pfUIFont(11.5).lineHeight + 18))
     }
 }

@@ -5016,37 +5016,27 @@ struct ChatDetailView: View {
 
     @ViewBuilder
     private func timeLine(_ message: Message) -> some View {
-        if isGroup || usesPlainDefaultChatChrome {
-            Text(TimeFmt.bubble(message.createdAt))
-                .font(pfStyled(11.5, .regular))
-                .monospacedDigit()
-                .foregroundColor(adaptiveSystemSecondaryInk.opacity(0.92))
-                .frame(maxWidth: .infinity)
-                .padding(.top, 8)
-                .padding(.bottom, 7)
-        } else {
-            Text(TimeFmt.bubble(message.createdAt))
-                .font(pfStyled(12, .regular))
-                .monospacedDigit()
-                .foregroundColor(adaptiveSystemSecondaryInk)
-                .padding(.horizontal, L.o("chatTimePadX", 9))
-                .padding(.vertical, L.o("chatTimePadY", 4))
-                .background {
-                    ZStack {
-                        Capsule(style: .continuous)
-                            .fill(.ultraThinMaterial)
-                        Capsule(style: .continuous)
-                            .fill(adaptiveSystemSurface)
-                    }
-                }
-                .overlay {
+        Text(TimeFmt.bubble(message.createdAt))
+            .font(pfStyled(isGroup ? 11.5 : 12, .regular))
+            .monospacedDigit()
+            .foregroundColor(adaptiveSystemSecondaryInk)
+            .padding(.horizontal, L.o("chatTimePadX", 9))
+            .padding(.vertical, L.o("chatTimePadY", 4))
+            .background {
+                ZStack {
                     Capsule(style: .continuous)
-                        .stroke(adaptiveSystemBorder, lineWidth: 0.6)
+                        .fill(.ultraThinMaterial)
+                    Capsule(style: .continuous)
+                        .fill(adaptiveSystemSurface)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.top, L.o("chatTimeGapTop", 10))
-                .padding(.bottom, L.o("chatTimeGapBottom", 10))
-        }
+            }
+            .overlay {
+                Capsule(style: .continuous)
+                    .stroke(adaptiveSystemBorder, lineWidth: 0.6)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, L.o("chatTimeGapTop", isGroup ? 8 : 10))
+            .padding(.bottom, L.o("chatTimeGapBottom", isGroup ? 7 : 10))
     }
 
     @ViewBuilder

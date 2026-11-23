@@ -105,9 +105,16 @@ require(
     and "!needsSwiftUIRichText(message.body)" in CHAT
     and "private var chatOpenURLAction: OpenURLAction" in CHAT
     and ".environment(\\.openURL, chatOpenURLAction)" in CHAT
-    and "ceil(pfUIFont(11.5).lineHeight + 8)" in (
+    and "ceil(pfUIFont(11.5).lineHeight + 18)" in (
         ROOT / "Sources" / "NativeChatTextRowCell.swift"
-    ).read_text(encoding="utf-8"),
+    ).read_text(encoding="utf-8")
+    and "private let blur = UIVisualEffectView(effect: nil)" in (
+        ROOT / "Sources" / "NativeChatTextRowCell.swift"
+    ).read_text(encoding="utf-8")
+    and "label.sizeThatFits(" in (
+        ROOT / "Sources" / "NativeChatTextRowCell.swift"
+    ).read_text(encoding="utf-8")
+    and ".fill(.ultraThinMaterial)" in CHAT,
     "rich text, links and timestamp rows must keep adaptive SwiftUI sizing and in-app routing",
 )
 require(
