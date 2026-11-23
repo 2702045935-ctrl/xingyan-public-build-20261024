@@ -1586,7 +1586,6 @@ struct ChatDetailView: View {
     @State private var nativeMessageController = NativeStaticListController()
 
     @State private var lastOlderLoad = Date.distantPast
-    @State private var olderRunwayGestureUntil = Date.distantPast
 
     @State private var lastReadSyncAt = Date.distantPast
 
@@ -4401,7 +4400,7 @@ struct ChatDetailView: View {
         guard y < runway else { return }
         if requireActiveMotion, !ChatScrollHandle.shared.moving { return }
         if requireActiveMotion, ChatScrollHandle.shared.moving {
-            olderRunwayGestureUntil = Date().addingTimeInterval(2.5)
+            ChatScrollHandle.shared.markOlderRunwayIntent()
         }
         autoLoadOlder()
     }
@@ -8171,7 +8170,7 @@ struct ChatDetailView: View {
                 lastOlderLoad = .distantPast
                 DispatchQueue.main.async {
                     if ChatScrollHandle.shared.moving
-                        || Date() < olderRunwayGestureUntil {
+                        || ChatScrollHandle.shared.olderRunwayIntentActive {
                         autoLoadOlder()
                     } else {
                         consumeOlderRunway(requireActiveMotion: false)

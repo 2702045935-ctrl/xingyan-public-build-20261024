@@ -68,8 +68,8 @@ require(
 require(
     "var loadedUsefulPage = false" in CHAT
     and "lastOlderLoad = .distantPast" in CHAT
-    and "olderRunwayGestureUntil = Date().addingTimeInterval(2.5)" in CHAT
-    and "Date() < olderRunwayGestureUntil" in CHAT
+    and "ChatScrollHandle.shared.markOlderRunwayIntent()" in CHAT
+    and "ChatScrollHandle.shared.olderRunwayIntentActive" in CHAT
     and "olderRunwayBatchRemaining" not in CHAT
     and "consumeOlderRunway(requireActiveMotion: false)" in CHAT,
     "continuous scrolling must fetch one page at a time while the gesture is active",

@@ -139,6 +139,10 @@ NATIVE_CHAT_LIST = (ROOT / "Sources" / "NativeChatList.swift").read_text(encodin
 NATIVE_CHAT_CELL = (ROOT / "Sources" / "NativeChatRowCell.swift").read_text(encoding="utf-8")
 NATIVE_STATIC_LIST = (ROOT / "Sources" / "NativeStaticList.swift").read_text(encoding="utf-8")
 require(
+    "abs(y - lastReportedOffsetY) >= 16" in NATIVE_STATIC_LIST,
+    "native message rows must not publish scroll offsets into SwiftUI every few pixels",
+)
+require(
     "allowInsertionDuringScroll,\n                   next.count > oldCount" in NATIVE_CHAT_LIST
     and "table.isDragging || table.isTracking || table.isDecelerating" in NATIVE_CHAT_LIST
     and "pendingItems = next" in NATIVE_CHAT_LIST,

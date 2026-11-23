@@ -22,8 +22,8 @@ require(
 )
 require(
     "showsDivider: true" in CHATS
-    and "? UIColor(hex: 0x303030)" in CHATS
-    and "dividerColor: isDark\n                ? UIColor(hex: 0x303030)" in CHATS
+    and "? UIColor(hex: 0x222222)" in CHATS
+    and "dividerColor: isDark\n                ? UIColor(hex: 0x222222)" in CHATS
     and ".fill(ChatListVisual.rule)" in CHATS
     and ".fill(isDark ? Color.clear : ChatListVisual.rule)" not in CHATS
     and "dividerLeading: CGFloat = 77" in ROW,

@@ -788,7 +788,7 @@ where Item.ID: Hashable {
                 ChatScrollHandle.shared.noteUserMotion()
             }
             let y = scrollView.contentOffset.y
-            if abs(y - lastReportedOffsetY) >= 6 {
+            if abs(y - lastReportedOffsetY) >= 16 {
                 lastReportedOffsetY = y
                 onScrollOffset?(y)
             }

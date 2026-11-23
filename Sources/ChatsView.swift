@@ -17,10 +17,10 @@ private enum ChatListVisual {
     static let previewAccentInk = Color.dyn(0xFA5151, 0xFA5151)
     static let timeInk = Color.dyn(0xB2B2B2, 0x949393)
     static let rule = Color(UIColor { trait in
-        // WeChat 8.0.80 measures 48,48,48 for the conversation separator.
-        // Keep it one physical pixel high and begin at the 77pt text rail.
+        // WeChat measures 48,48,48 on its 25,25,25 canvas. Our canvas is
+        // 10,10,10, so the same perceived weight needs a darker separator.
         trait.userInterfaceStyle == .dark
-            ? UIColor(hex: 0x303030)
+            ? UIColor(hex: 0x222222)
             : UIColor(hex: 0xE9EDEF)
     })
     static let badgeRing = Color.dyn(0xFFFFFF, 0x0A0A0A)
@@ -2780,7 +2780,7 @@ struct ChatsView: View {
             timeColor: timeColor,
             rowBackground: rowBg,
             dividerColor: isDark
-                ? UIColor(hex: 0x303030)
+                ? UIColor(hex: 0x222222)
                 : UIColor(hex: 0xE9EDEF),
             showsDivider: true,
             badgeRing: isDark ? UIColor(hex: 0x0A0A0A) : .white,

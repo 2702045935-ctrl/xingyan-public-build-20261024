@@ -8,9 +8,18 @@ final class ChatScrollHandle {
     /// 不能在这一小段时间里抢走滚动位置。
     private var lastUserMotionAt = Date.distantPast
     private var pendingPrepend: (height: CGFloat, offset: CGPoint)?
+    private var olderRunwayIntentUntil = Date.distantPast
 
     func noteUserMotion() {
         lastUserMotionAt = Date()
+    }
+
+    func markOlderRunwayIntent(duration: TimeInterval = 2.5) {
+        olderRunwayIntentUntil = Date().addingTimeInterval(duration)
+    }
+
+    var olderRunwayIntentActive: Bool {
+        Date() < olderRunwayIntentUntil
     }
 
     /// 用户点输入框/键盘弹出时允许立即回到最新消息。
