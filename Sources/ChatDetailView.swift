@@ -1291,6 +1291,7 @@ struct ChatDetailView: View {
     }
 
     private func appendVisibleMessage(_ message: Message) {
+        retirePendingEcho(for: message)
         guard !hiddenMessageIds.contains(message.id) else { return }
         if let index = messages.firstIndex(where: { $0.id == message.id }) {
             messages.remove(at: index)
@@ -1333,6 +1334,22 @@ struct ChatDetailView: View {
             followOwnSendUntil = Date().addingTimeInterval(2)
             pinToBottomSoon(force: true)
         }
+    }
+
+    /// Realtime echoes can beat the HTTP send acknowledgement. Retire the
+    /// matching local pending row in the same state transaction so the list
+    /// never renders two bubbles for one outgoing message.
+    private func retirePendingEcho(for message: Message) {
+        guard let clientId = message.clientId?
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+            !clientId.isEmpty,
+            outbox.contains(where: { $0.id == clientId }) else { return }
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            outbox.removeAll { $0.id == clientId }
+        }
+        persistOutboxAfterFrame()
     }
 
     private func upsertVisibleMessage(_ message: Message) {
