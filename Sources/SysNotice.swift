@@ -23,11 +23,18 @@ struct SysNoticeInfo {
 
 struct SysNoticeBubble: View {
     let info: SysNoticeInfo
+    var mine: Bool = false
+    var showTail: Bool = false
     var onOpen: () -> Void
     @State private var expanded = false
 
     var body: some View {
-        WeChatMessageCard(width: 252, padding: 0) {
+        WeChatMessageCard(
+            width: 252,
+            padding: 0,
+            mine: mine,
+            showTail: showTail
+        ) {
         VStack(alignment: .leading, spacing: 0) {
             Button {
                 withAnimation(.easeOut(duration: 0.18)) {

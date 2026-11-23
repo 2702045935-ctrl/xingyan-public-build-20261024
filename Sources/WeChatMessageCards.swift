@@ -30,41 +30,57 @@ enum ChatMessageSurface {
 struct WeChatMessageCard<Content: View>: View {
     var width: CGFloat = 268
     var padding: CGFloat = 13
+    var mine: Bool? = nil
+    var showTail: Bool = false
     let content: Content
 
     init(width: CGFloat = 268,
          padding: CGFloat = 13,
+         mine: Bool? = nil,
+         showTail: Bool = false,
          @ViewBuilder content: () -> Content) {
         self.width = width
         self.padding = padding
+        self.mine = mine
+        self.showTail = showTail
         self.content = content()
     }
 
+    @ViewBuilder
     var body: some View {
-        content
-            .padding(padding)
-            .frame(width: width, alignment: .leading)
-            .background {
-                ZStack {
-                    if ChatTheme.usesGlass {
+        if let mine {
+            content
+                .padding(padding)
+                .frame(width: width, alignment: .leading)
+                .background(BubbleFill(mine: mine, tail: showTail))
+                .clipShape(BubbleShape(mine: mine, tail: showTail))
+                .contentShape(BubbleShape(mine: mine, tail: showTail))
+        } else {
+            content
+                .padding(padding)
+                .frame(width: width, alignment: .leading)
+                .background {
+                    ZStack {
+                        if ChatTheme.usesGlass {
+                            RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
+                                             style: .continuous)
+                                .fill(.ultraThinMaterial)
+                        }
                         RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
                                          style: .continuous)
-                            .fill(.ultraThinMaterial)
+                            .fill(ChatMessageSurface.cardFill)
                     }
+                }
+                .clipShape(RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
+                                            style: .continuous))
+                .overlay {
                     RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
                                      style: .continuous)
-                        .fill(ChatMessageSurface.cardFill)
+                        .stroke(ChatMessageSurface.cardBorder, lineWidth: 0.5)
                 }
-            }
-            .clipShape(RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
-                                        style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
-                                 style: .continuous)
-                    .stroke(ChatMessageSurface.cardBorder, lineWidth: 0.5)
-            }
-            .contentShape(RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
-                                           style: .continuous))
+                .contentShape(RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
+                                               style: .continuous))
+        }
     }
 }
 

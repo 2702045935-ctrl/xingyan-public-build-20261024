@@ -86,13 +86,17 @@ require(
 )
 require(
     "ChatMessageSurface.mediaRadius" in CHAT
-    and "ChatMessageSurface.cardRadius" in CHAT
-    and ".fill(ChatMessageSurface.cardFill(mine: mine))" in CHAT
-    and ".stroke(ChatMessageSurface.cardBorder," in CHAT,
-    "media cards, file cards and quotes must share the message surface tokens",
+    and ".background(BubbleFill(mine: mine, tail: showTail))" in CHAT
+    and ".clipShape(BubbleShape(mine: mine, tail: showTail))" in CHAT
+    and "var mine: Bool? = nil" in CARDS
+    and "mine: mine,\n            showTail: showTail" in (
+        ROOT / "Sources" / "ChatMediaBubbles.swift"
+    ).read_text(encoding="utf-8"),
+    "chat cards and file cards must reuse the shared bubble shell",
 )
 require(
-    "WeChatMessageCard(width: 258, padding: 0)" in MEDIA
+    "width: 258" in MEDIA
+    and "showTail: showTail" in MEDIA
     and "PremiumGlassCard(radius: 18" not in MEDIA
     and "ChatMessageSurface.cardRadius" in MEDIA,
     "contact and upload cards must use the same flat message shell",

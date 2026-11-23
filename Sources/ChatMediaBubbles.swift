@@ -40,10 +40,17 @@ struct UserCardInfo {
 
 struct UserCardBubble: View {
     let info: UserCardInfo
+    var mine: Bool = false
+    var showTail: Bool = false
     @Environment(\.colorScheme) private var scheme
 
     var body: some View {
-        WeChatMessageCard(width: 258, padding: 0) {
+        WeChatMessageCard(
+            width: 258,
+            padding: 0,
+            mine: mine,
+            showTail: showTail
+        ) {
             VStack(spacing: 0) {
                 HStack(spacing: 12) {
                     ZStack {
@@ -107,11 +114,18 @@ struct UserCardBubble: View {
 
 struct AnnounceBubble: View {
     let text: String
+    var mine: Bool = false
+    var showTail: Bool = false
 
     var onOpen: (() -> Void)? = nil
 
     var body: some View {
-        WeChatMessageCard(width: 250, padding: 0) {
+        WeChatMessageCard(
+            width: 250,
+            padding: 0,
+            mine: mine,
+            showTail: showTail
+        ) {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 5) {
                 Image(systemName: "megaphone.fill")

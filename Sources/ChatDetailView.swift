@@ -9490,7 +9490,11 @@ struct MessageRow: View {
         case "card":
 
             if let info = UserCardInfo(json: message.body) {
-                UserCardBubble(info: info)
+                UserCardBubble(
+                    info: info,
+                    mine: mine,
+                    showTail: showTail
+                )
                     .onTapGesture { onOpenUserCard?(info.userId) }
             } else {
 
@@ -9538,7 +9542,11 @@ struct MessageRow: View {
 
         case "announce":
 
-            AnnounceBubble(text: message.body) {
+            AnnounceBubble(
+                text: message.body,
+                mine: mine,
+                showTail: showTail
+            ) {
                 onOpenAnnounce?(message.body)
             }
 
@@ -9563,7 +9571,13 @@ struct MessageRow: View {
         case "sysnotice":
 
             if let n = SysNoticeInfo(json: message.body) {
-                SysNoticeBubble(info: n) { onOpenAnnounce?(n.fullText) }
+                SysNoticeBubble(
+                    info: n,
+                    mine: mine,
+                    showTail: showTail
+                ) {
+                    onOpenAnnounce?(n.fullText)
+                }
             } else {
                 Text(Tr("[通知]"))
                     .font(pf(L.chatFontSize))
@@ -9842,11 +9856,9 @@ struct MessageRow: View {
             .padding(.vertical, 9)
         }
         .frame(width: 216)
-
-        .clipShape(RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
-                                    style: .continuous))
-
-        .background(BubbleFill(mine: false, tail: showTail))
+        .background(BubbleFill(mine: mine, tail: showTail))
+        .clipShape(BubbleShape(mine: mine, tail: showTail))
+        .contentShape(BubbleShape(mine: mine, tail: showTail))
     }
 
     private var transferBubble: some View {
@@ -10336,26 +10348,9 @@ struct MessageRow: View {
         }
         .padding(.horizontal, 13)
         .frame(width: min(224, maxBubbleWidth), height: 72, alignment: .leading)
-        .background {
-            ZStack {
-                if ChatTheme.usesGlass {
-                    RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
-                                     style: .continuous)
-                        .fill(.ultraThinMaterial)
-                }
-                RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
-                                 style: .continuous)
-                    .fill(ChatMessageSurface.cardFill(mine: mine))
-            }
-        }
-        .overlay {
-            RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
-                             style: .continuous)
-                .stroke(ChatMessageSurface.cardBorder,
-                        lineWidth: 0.5)
-        }
-        .contentShape(RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
-                                       style: .continuous))
+        .background(BubbleFill(mine: mine, tail: showTail))
+        .clipShape(BubbleShape(mine: mine, tail: showTail))
+        .contentShape(BubbleShape(mine: mine, tail: showTail))
         .onTapGesture { onOpenFile?(message.body) }
     }
 
