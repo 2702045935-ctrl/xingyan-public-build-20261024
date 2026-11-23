@@ -59,6 +59,7 @@ function adapters(log, failShard) {
     switchGateway: noop('switchGateway'),
     unfreezeOwner: noop('unfreezeOwner'),
     verifyOwner: noop('verifyOwner'),
+    switchReplication: noop('switchReplication'),
     soak: async () => log.push('soak')
   };
 }

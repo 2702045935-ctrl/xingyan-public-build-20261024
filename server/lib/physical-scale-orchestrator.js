@@ -11,6 +11,7 @@ const REQUIRED = [
   'switchGateway',
   'unfreezeOwner',
   'verifyOwner',
+  'switchReplication',
   'soak'
 ];
 
@@ -74,6 +75,7 @@ async function executePhysicalScale(plan, adapters, options) {
     let leaseAcquired = false;
     let routesSwitched = false;
     let gatewaySwitched = false;
+    let replicationSwitched = false;
     try {
       record({ phase: 'seed-replica', shard: move.shard, cellId: move.toCellId });
       await attempt(() => adapters.seedReplica(move), retries);
@@ -105,6 +107,10 @@ async function executePhysicalScale(plan, adapters, options) {
 
       record({ phase: 'verify-owner', shard: move.shard });
       await attempt(() => adapters.verifyOwner(move), retries);
+
+      record({ phase: 'switch-replication', shard: move.shard });
+      await attempt(() => adapters.switchReplication(move), retries);
+      replicationSwitched = true;
       record({ phase: 'cutover-complete', shard: move.shard });
     } catch (error) {
       record({
@@ -114,11 +120,12 @@ async function executePhysicalScale(plan, adapters, options) {
         gatewaySwitched,
         routesSwitched,
         leaseAcquired,
-        frozen
+        frozen,
+        replicationSwitched
       });
       try {
-        if (gatewaySwitched || routesSwitched) {
-          await adapters.switchGateway(Object.assign({}, move, {
+        if (replicationSwitched) {
+          await adapters.switchReplication(Object.assign({}, move, {
             rollback: true,
             toCellId: move.fromCellId,
             toHost: move.fromHost
@@ -126,6 +133,13 @@ async function executePhysicalScale(plan, adapters, options) {
         }
         if (routesSwitched) {
           await adapters.switchRoutes(Object.assign({}, move, {
+            rollback: true,
+            toCellId: move.fromCellId,
+            toHost: move.fromHost
+          }));
+        }
+        if (gatewaySwitched) {
+          await adapters.switchGateway(Object.assign({}, move, {
             rollback: true,
             toCellId: move.fromCellId,
             toHost: move.fromHost

@@ -33,6 +33,11 @@ const ENTRY_FILES = [
   'lib/dual-cell-replication.js',
   'lib/dual-cell-failover-drill.js',
   'lib/dual-cell-lease-agent.js',
+  'lib/fleet-metrics.js',
+  'lib/physical-remote-runner.js',
+  'lib/physical-scale-production-adapters.js',
+  'lib/physical-scale-target.js',
+  'lib/physical-auto-scale-runtime.js',
   'tools/shard-maintenance-executor.js',
   'tools/import-shard-authority.js',
   'tools/audit-shard-authority.js',
@@ -50,7 +55,10 @@ const ENTRY_FILES = [
   'tools/shard-user-lookup.js',
   'tools/dual-cell-active-plan.js',
   'tools/dual-cell-failover-drill.js',
-  'tools/dual-cell-tls-proxy.js'
+  'tools/dual-cell-tls-proxy.js',
+  'tools/fleet-metrics-merge.js',
+  'tools/physical-auto-scale-service.js',
+  'tools/physical-scale-target.js'
 ];
 const ADDITIONAL_FILES = [
   'public/shard-maintenance.html',
@@ -58,6 +66,14 @@ const ADDITIONAL_FILES = [
   'shard-topologies.json',
   'run-shard-candidate.sh',
   'run-dual-cell-shard.sh'
+];
+const ROOT_ADDITIONAL_FILES = [
+  'deploy/fleet/fleet-node-control.js',
+  'deploy/fleet/fleet-replication-sync.js',
+  'deploy/fleet/physical-auto-scale.service',
+  'deploy/fleet/physical-replication-sync.service',
+  'deploy/fleet/physical-auto-scale.example.json',
+  'docs/PHYSICAL_AUTO_SCALE.md'
 ];
 
 function sha256(buffer) {
@@ -115,6 +131,15 @@ function buildMinimalRelease(options) {
       throw new Error('missing release file: ' + file);
     }
   }
+  const rootDir = path.dirname(root);
+  const rootAdditional = ROOT_ADDITIONAL_FILES.map(
+    (relative) => path.resolve(rootDir, relative)
+  );
+  for (const file of rootAdditional) {
+    if (!fs.existsSync(file) || !fs.statSync(file).isFile()) {
+      throw new Error('missing release file: ' + file);
+    }
+  }
   const temporary = outDir + '.tmp-' + process.pid;
   if (fs.existsSync(temporary)) throw new Error('temporary output already exists');
   try {
@@ -138,6 +163,19 @@ function buildMinimalRelease(options) {
           : relative.startsWith('public/') ? 'page'
             : relative.endsWith('.json') ? 'config'
               : relative.endsWith('.sh') ? 'launcher' : 'module',
+        sha256: sha256(fs.readFileSync(file))
+      });
+    }
+    for (const file of rootAdditional) {
+      const relative = path.relative(rootDir, file).replace(/\\/g, '/');
+      const target = path.join(temporary, relative);
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.copyFileSync(file, target);
+      if (relative.endsWith('.sh')) fs.chmodSync(target, 0o755);
+      manifestFiles.push({
+        path: relative,
+        kind: relative.endsWith('.service') ? 'unit'
+          : relative.endsWith('.css') ? 'style' : 'deploy',
         sha256: sha256(fs.readFileSync(file))
       });
     }
@@ -183,6 +221,7 @@ function buildMinimalRelease(options) {
 module.exports = {
   ENTRY_FILES,
   ADDITIONAL_FILES,
+  ROOT_ADDITIONAL_FILES,
   localDependencies,
   dependencyClosure,
   buildMinimalRelease

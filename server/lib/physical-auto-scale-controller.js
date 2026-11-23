@@ -57,6 +57,9 @@ class PhysicalAutoScaleController {
     const opts = options || {};
     this.policy = Object.assign({}, DEFAULT_POLICY, opts.policy || {});
     this.adapters = opts.adapters || {};
+    this.adapterFactory = typeof opts.adapterFactory === 'function'
+      ? opts.adapterFactory
+      : null;
     this.targetPlanFor = opts.targetPlanFor;
     this.now = typeof opts.now === 'function' ? opts.now : () => Date.now();
     this.loadState = typeof opts.loadState === 'function'
@@ -136,9 +139,22 @@ class PhysicalAutoScaleController {
     this.state.busy = true;
     this.state.lastPlanFingerprint = scalePlan.fingerprint;
     await this.persist();
-    const result = await executePhysicalScale(scalePlan, this.adapters, {
-      retries: this.policy.retries || 2
-    });
+    let result;
+    try {
+      const adapters = this.adapterFactory
+        ? await this.adapterFactory(scalePlan, targetPlan)
+        : this.adapters;
+      result = await executePhysicalScale(scalePlan, adapters, {
+        retries: this.policy.retries || 2
+      });
+    } catch (error) {
+      result = {
+        version: 1,
+        ok: false,
+        reason: 'scale-execution-error',
+        error: String(error && error.message || error)
+      };
+    }
     this.state.busy = false;
     this.state.lastResult = result;
     if (result.ok) {

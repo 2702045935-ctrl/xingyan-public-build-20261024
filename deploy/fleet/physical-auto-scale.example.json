@@ -1,0 +1,47 @@
+{
+  "execute": false,
+  "promoteOnSuccess": false,
+  "intervalSeconds": 60,
+  "metricsMaxAgeSeconds": 180,
+  "targetPlanMaxAgeSeconds": 86400,
+  "sourcePlanFile": "/var/lib/xingyan-dual-cell/current-fleet.json",
+  "targetPlanFile": "/var/lib/xingyan-dual-cell/fleet-target.json",
+  "metricsFile": "/var/lib/xingyan-dual-cell/fleet-metrics.json",
+  "stateFile": "/var/lib/xingyan-dual-cell/auto-scale-state.json",
+  "auditFile": "/var/lib/xingyan-dual-cell/auto-scale-audit.jsonl",
+  "routePlanFile": "/opt/xingyan-dual-cell/route-plan.json",
+  "routePlanFileSha256": "c02d3ccb14304371044aad4096cc9501d072566c232fb51700d8e228e68d519c",
+  "remoteRoutePlanFile": "/opt/xingyan-dual-cell/route-plan.json",
+  "secretFile": "/opt/xingyan-dual-cell/key-domain/secret.key",
+  "soakMinutes": 30,
+  "minimumFreeBytes": 10737418240,
+  "minimumFreeInodes": 100000,
+  "ssh": {
+    "sshBin": "ssh",
+    "keyFile": "/root/.ssh/xingyan-cluster",
+    "knownHostsFile": "/root/.ssh/known_hosts",
+    "connectTimeout": 10
+  },
+  "remote": {
+    "user": "root",
+    "nodePath": "/opt/node24/bin/node",
+    "agentPath": "/opt/xingyan-dual-cell/release-r1/deploy/fleet/fleet-node-control.js"
+  },
+  "gateway": {
+    "host": "43.242.194.89",
+    "service": "xingyan-dual-cell-tls-live",
+    "healthPort": 5443,
+    "routingFile": "/opt/xingyan-dual-cell/gateway-routing.json"
+  },
+  "policy": {
+    "windowSamples": 3,
+    "minimumSignals": 2,
+    "maxMemoryUsedRatio": 0.82,
+    "maxLoadPerCore": 0.9,
+    "maxFdUtilization": 0.85,
+    "maxP99Ms": 2000,
+    "maxDiskUsedRatio": 0.85,
+    "cooldownMinutes": 60,
+    "soakMinutes": 30
+  }
+}

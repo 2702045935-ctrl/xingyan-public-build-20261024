@@ -11,18 +11,56 @@ const PORT = Number(process.env.TLS_PORT || 5443);
 const CERT = process.env.TLS_CERT || '/opt/chris/tls/u.crt';
 const KEY = process.env.TLS_KEY || '/opt/chris/tls/u.key';
 const SHARDS = Math.max(1, Number(process.env.SHARD_COUNT || 7));
-const OWNER_PORTS = String(process.env.SHARD_OWNER_PORTS || '')
+let OWNER_PORTS = String(process.env.SHARD_OWNER_PORTS || '')
   .split(',').map((value) => Number(value.trim()));
+let OWNER_TARGETS = [];
+const GATEWAY_ROUTING_FILE = String(process.env.GATEWAY_ROUTING_FILE || '');
 const ROUTE_PLAN_FILE = String(process.env.ROUTE_PLAN_FILE || '');
 const ROUTE_PLAN_FILE_SHA256 = String(process.env.ROUTE_PLAN_FILE_SHA256 || '').toLowerCase();
 const USER_DIRECTORY_FILE = String(process.env.USER_DIRECTORY_FILE || '');
 const PAYMENT_FAIL_CLOSED = process.env.PAYMENT_FAIL_CLOSED !== '0';
 const PAYMENT_UPSTREAM_PORT = Number(process.env.PAYMENT_UPSTREAM_PORT || 0);
 
-if (OWNER_PORTS.length !== SHARDS
-    || OWNER_PORTS.some((port) => !Number.isInteger(port) || port <= 0 || port > 65535)) {
+function validOwnerPorts(ports) {
+  return Array.isArray(ports)
+    && ports.length === SHARDS
+    && ports.every((port) => Number.isInteger(port) && port > 0 && port <= 65535);
+}
+
+function ownerTarget(value) {
+  const url = new URL(String(value || ''));
+  if (!['http:', 'https:'].includes(url.protocol)
+      || !url.hostname || !url.port || url.pathname !== '/'
+      || url.username || url.password || url.search || url.hash) {
+    throw new Error('invalid owner target: ' + value);
+  }
+  return {
+    protocol: url.protocol,
+    hostname: url.hostname,
+    port: Number(url.port),
+    origin: url.origin
+  };
+}
+
+function applyOwnerRouting(ownerPorts, ownerTargets) {
+  const targets = Array.isArray(ownerTargets) && ownerTargets.length
+    ? ownerTargets.map(ownerTarget)
+    : ownerPorts.map((port) => ownerTarget('http://127.0.0.1:' + port));
+  if (targets.length !== SHARDS) {
+    throw new Error('owner targets must contain one valid target per shard');
+  }
+  OWNER_PORTS = ownerPorts.slice();
+  OWNER_TARGETS = targets;
+}
+
+if (!validOwnerPorts(OWNER_PORTS)) {
   throw new Error('SHARD_OWNER_PORTS must contain one valid port per shard');
 }
+applyOwnerRouting(
+  OWNER_PORTS,
+  String(process.env.SHARD_OWNER_TARGETS || '')
+    .split(',').map((value) => value.trim()).filter(Boolean)
+);
 
 function routeHash(value) {
   let hash = 2166136261;
@@ -46,6 +84,31 @@ if (ROUTE_PLAN_FILE) {
       || Number(routePlan.shardCount) !== SHARDS || !routePlan.assignments) {
     throw new Error('invalid route plan');
   }
+}
+
+function reloadGatewayRouting() {
+  if (!GATEWAY_ROUTING_FILE) return false;
+  const raw = fs.readFileSync(GATEWAY_ROUTING_FILE);
+  const next = JSON.parse(raw.toString('utf8'));
+  if (!next || next.version !== 1 || !validOwnerPorts(next.ownerPorts)) {
+    throw new Error('invalid gateway routing update');
+  }
+  if (routePlan && next.routePlanHash
+      && String(next.routePlanHash) !== String(routePlan.hash)) {
+    throw new Error('gateway routing route-plan hash mismatch');
+  }
+  applyOwnerRouting(next.ownerPorts, next.ownerTargets);
+  console.log(JSON.stringify({
+    service: 'dual-cell-tls-proxy',
+    event: 'routing-reloaded',
+    ownerPorts: OWNER_PORTS,
+    routePlanHash: routePlan ? routePlan.hash : ''
+  }));
+  return true;
+}
+
+if (GATEWAY_ROUTING_FILE && fs.existsSync(GATEWAY_ROUTING_FILE)) {
+  reloadGatewayRouting();
 }
 
 let userDirectory = null;
@@ -88,20 +151,20 @@ function tokenFrom(req, url) {
 }
 
 function backFor(req, url, body) {
-  if (isMediaObjectPath(req.method, url.pathname)) return OWNER_PORTS[0];
+  if (isMediaObjectPath(req.method, url.pathname)) return 0;
   const chat = String(url.pathname || '').match(/^\/api\/chats\/([^/]+)/);
   if (chat && !['direct', 'group', 'face', 'export', 'import'].includes(chat[1])) {
-    return OWNER_PORTS[shardFor('chat', decodeURIComponent(chat[1]))];
+    return shardFor('chat', decodeURIComponent(chat[1]));
   }
   if (/^\/api\/messages\/[^/]+\/recall$/.test(String(url.pathname || ''))) {
     const chatId = body && typeof body === 'object' ? String(body.chatId || '') : '';
-    if (chatId) return OWNER_PORTS[shardFor('chat', chatId)];
+    if (chatId) return shardFor('chat', chatId);
   }
   try {
     const token = tokenFrom(req, url);
     const body = token ? Buffer.from(token.split('.')[0], 'base64url').toString('utf8') : '';
     const claims = body ? JSON.parse(body) : null;
-    if (claims && claims.sub) return OWNER_PORTS[shardFor('user', claims.sub)];
+    if (claims && claims.sub) return shardFor('user', claims.sub);
   } catch (_) { /* fall through to shard 0 */ }
   if (userDirectory) {
     const candidate = body && typeof body === 'object' ? body : {};
@@ -113,11 +176,21 @@ function backFor(req, url, body) {
     for (const [kind, value] of values) {
       const entry = value ? userDirectory.byAlias(kind, value) : null;
       if (entry && Number.isInteger(entry.shard) && entry.shard < SHARDS) {
-        return OWNER_PORTS[entry.shard];
+        return entry.shard;
       }
     }
   }
-  return OWNER_PORTS[0];
+  return 0;
+}
+
+function upstreamRequest(target, options, callback) {
+  const client = target.protocol === 'https:' ? https : http;
+  return client.request(Object.assign({}, options, {
+    protocol: target.protocol,
+    hostname: target.hostname,
+    host: target.hostname,
+    port: target.port
+  }), callback);
 }
 
 function headers(req) {
@@ -147,9 +220,8 @@ function isPaymentPath(pathname) {
 }
 
 function forward(req, res, body, url, parsedBody) {
-  const upstream = http.request({
-    host: '127.0.0.1',
-    port: backFor(req, url, parsedBody),
+  const target = OWNER_TARGETS[backFor(req, url, parsedBody)];
+  const upstream = upstreamRequest(target, {
     path: req.url,
     method: req.method,
     headers: headers(req)
@@ -234,9 +306,10 @@ const server = https.createServer({
 
 server.on('upgrade', (req, socket, head) => {
   safeSocket(socket);
-  const upstream = http.request({
-    host: '127.0.0.1',
-    port: backFor(req, new URL(req.url || '/', 'http://x'), null),
+  const target = OWNER_TARGETS[
+    backFor(req, new URL(req.url || '/', 'http://x'), null)
+  ];
+  const upstream = upstreamRequest(target, {
     path: req.url,
     method: req.method,
     headers: headers(req)
@@ -278,12 +351,25 @@ server.requestTimeout = 0;
 server.timeout = 0;
 server.maxConnections = Number(process.env.TLS_MAX_CONNECTIONS || 20000);
 
+process.on('SIGHUP', () => {
+  try {
+    reloadGatewayRouting();
+  } catch (error) {
+    console.error(JSON.stringify({
+      service: 'dual-cell-tls-proxy',
+      event: 'routing-reload-failed',
+      error: String(error && error.message || error)
+    }));
+  }
+});
+
 server.listen(PORT, '0.0.0.0', () => {
   console.log(JSON.stringify({
     service: 'dual-cell-tls-proxy',
     port: PORT,
     shards: SHARDS,
     ownerPorts: OWNER_PORTS,
+    ownerTargets: OWNER_TARGETS.map((target) => target.origin),
     routePlanHash: routePlan ? routePlan.hash : ''
   }));
 });

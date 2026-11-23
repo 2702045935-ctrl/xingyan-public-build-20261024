@@ -128,7 +128,8 @@ function buildPhysicalScalePlan(sourceInput, targetInput, options) {
         'switch-gateway-mapping',
         'unfreeze-target-owner',
         'verify-single-owner',
-        'verify-message-continuity'
+        'verify-message-continuity',
+        'switch-replication-topology'
       ],
       rollback: [
         'freeze-target-owner-writes',
@@ -136,6 +137,7 @@ function buildPhysicalScalePlan(sourceInput, targetInput, options) {
         'restore-chat-owner-routes',
         'release-target-lease',
         'unfreeze-old-owner',
+        'restore-replication-topology',
         'verify-old-owner-health'
       ]
     }]);
