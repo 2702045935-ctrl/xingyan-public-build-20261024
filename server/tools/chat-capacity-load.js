@@ -142,7 +142,12 @@ function openSocket(base, user, host = '127.0.0.1', sourceHost = '127.0.0.1',
     received: new Set(),
     duplicateCount: 0,
     orderViolations: 0,
-    lastSeq: 0
+    lastSeq: 0,
+    momentIds: new Set(),
+    momentEvents: 0,
+    momentDuplicateCount: 0,
+    momentUnread: null,
+    momentBatched: false
   };
   connection.readyPromise = new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error(`websocket ready timeout: ${user.id}`)), 90000);
@@ -190,6 +195,28 @@ function openSocket(base, user, host = '127.0.0.1', sourceHost = '127.0.0.1',
           }
           connection.received.add(clientId);
           deliverWaiter(clientId, connection, Date.now());
+        }
+      }
+      if (eventPayload.type === 'moment'
+          && ['new', 'newBatch'].includes(eventPayload.action)) {
+        const momentId = String(eventPayload.moment?.id || '');
+        const batchCount = eventPayload.action === 'newBatch'
+          ? Math.max(1, Number(eventPayload.count) || 1)
+          : 1;
+        connection.momentEvents += batchCount;
+        if (eventPayload.action === 'newBatch') connection.momentBatched = true;
+        if (momentId && eventPayload.action === 'new') {
+          if (connection.momentIds.has(momentId)) {
+            connection.momentDuplicateCount += 1;
+          }
+          connection.momentIds.add(momentId);
+        }
+        const delta = Number(eventPayload.momentUnreadDelta);
+        if (Number.isFinite(delta)) {
+          connection.momentUnread = Math.max(0, (connection.momentUnread || 0) + delta);
+        } else {
+          const unread = Number(eventPayload.momentUnread ?? eventPayload.unread);
+          if (Number.isFinite(unread)) connection.momentUnread = unread;
         }
       }
     }
@@ -340,14 +367,17 @@ async function openConnections(bases, users, target, existing, batchSize, hosts,
     const opened = await Promise.all(batch.map(async (user, offset) => {
       let lastError;
       for (let attempt = 0; attempt < 24; attempt += 1) {
+        const globalIndex = cursor + offset;
+        const sourceIndex = globalIndex % sources.length;
+        const sourceSlot = Math.floor(globalIndex / sources.length);
         const sourcePort = attempt < 16
-          ? 10000 + ((cursor + offset + attempt * 7919) % 50000)
+          ? 20000 + ((sourceSlot + attempt * 7919) % 35000)
           : 0;
         const connection = openSocket(
           bases[(cursor + offset) % bases.length],
           user,
           hosts[(cursor + offset) % hosts.length],
-          sources[(cursor + offset) % sources.length],
+          sources[sourceIndex],
           sourcePort
         );
         try {
@@ -473,6 +503,111 @@ async function auditStoredHistory(base, sender) {
     orderViolations,
     pass: missing === 0 && idDuplicates === 0
       && clientIdDuplicates === 0 && orderViolations === 0
+  };
+}
+
+async function createMoment(base, author, index) {
+  const response = await fetch(`${base}/api/moments`, {
+    method: 'POST',
+    headers: {
+      Cookie: `${TOKEN_COOKIE}=${encodeURIComponent(signToken(author.id))}`,
+      'Content-Type': 'application/json',
+      'x-device-kind': 'desktop',
+      'x-device-id': 'moment-storm'
+    },
+    body: JSON.stringify({
+      content: `moment storm ${index}`,
+      images: []
+    })
+  });
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(`moment create failed HTTP ${response.status}: ${JSON.stringify(payload)}`);
+  }
+  return String(payload?.data?.moment?.id || '');
+}
+
+async function runMomentStorm(base, authors, viewers, count, concurrency, auditUser,
+                              dataDir) {
+  const startedAt = Date.now();
+  const createStartedAt = Date.now();
+  const ids = [];
+  for (let start = 0; start < count; start += concurrency) {
+    const end = Math.min(count, start + concurrency);
+    const batch = await Promise.all(
+      Array.from({ length: end - start }, (_, offset) =>
+        createMoment(base, authors[(start + offset) % authors.length], start + offset)
+      )
+    );
+    ids.push(...batch.filter(Boolean));
+  }
+  const createDurationMs = Date.now() - createStartedAt;
+  const created = new Set(ids);
+  const deliveryStartedAt = Date.now();
+  const deadline = Date.now() + 30000;
+  while (Date.now() < deadline
+         && viewers.some((connection) => (connection.momentUnread || 0) < created.size)) {
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  const deliveryDurationMs = Date.now() - deliveryStartedAt;
+  let missing = 0;
+  let duplicates = 0;
+  let extra = 0;
+  let unreadMismatch = 0;
+  let eventCountMismatch = 0;
+  for (const connection of viewers) {
+    if (!connection.momentBatched) {
+      for (const id of created) {
+        if (!connection.momentIds.has(id)) missing += 1;
+      }
+      extra += Array.from(connection.momentIds).filter((id) => !created.has(id)).length;
+    }
+    duplicates += connection.momentDuplicateCount;
+    if (connection.momentUnread !== created.size) unreadMismatch += 1;
+    if (connection.momentEvents !== created.size) eventCountMismatch += 1;
+  }
+  const auditStartedAt = Date.now();
+  const feedIds = new Set();
+  try {
+    const base = JSON.parse(fs.readFileSync(path.join(dataDir, 'moments.json'), 'utf8'));
+    (Array.isArray(base.moments) ? base.moments : []).forEach((row) => {
+      if (row && row.id) feedIds.add(String(row.id));
+    });
+  } catch (_) {}
+  try {
+    const lines = fs.readFileSync(path.join(dataDir, 'moments-log.jsonl'), 'utf8')
+      .split('\n');
+    lines.forEach((line) => {
+      if (!line.trim()) return;
+      try {
+        const record = JSON.parse(line);
+        if (record.op === 'delete') feedIds.delete(String(record.id || ''));
+        else if (record.moment && record.moment.id) {
+          feedIds.add(String(record.moment.id));
+        }
+      } catch (_) {}
+    });
+  } catch (_) {}
+  const storedMissing = Array.from(created).filter((id) => !feedIds.has(id)).length;
+  const auditDurationMs = Date.now() - auditStartedAt;
+  return {
+    mode: 'moment-instant-peak',
+    viewers: viewers.length,
+    moments: created.size,
+    expectedDeliveries: viewers.length * created.size,
+    deliveredUnique: viewers.reduce((sum, connection) => sum + connection.momentIds.size, 0),
+    missing,
+    duplicates,
+    extra,
+    unreadMismatch,
+    eventCountMismatch,
+    storedMissing,
+    durationMs: Date.now() - startedAt,
+    createDurationMs,
+    deliveryDurationMs,
+    auditDurationMs,
+    pass: missing === 0 && duplicates === 0 && extra === 0
+      && unreadMismatch === 0 && eventCountMismatch === 0 && storedMissing === 0
   };
 }
 
@@ -671,6 +806,9 @@ async function main() {
   const connectionBatch = Math.max(1, Math.min(1000, Number(arg('batch', '200'))));
   const workerCount = Math.max(0, Number(arg('workers', '0')));
   const serverCount = Math.max(1, Math.min(8, Number(arg('servers', '1'))));
+  const momentStorm = Math.max(0, Number(arg('moments', '0')));
+  const momentConcurrency = Math.max(1, Number(arg('moment-concurrency', '100')));
+  const momentAuthors = Math.max(0, Number(arg('moment-authors', '0')));
   const targetHosts = String(arg('targets', '127.0.0.1'))
     .split(',')
     .map((value) => value.trim())
@@ -701,7 +839,23 @@ async function main() {
     fs.writeFileSync(path.join(dataDir, 'secret.key'), secret, 'utf8');
     fs.writeFileSync(path.join(dataDir, 'users.json'), JSON.stringify({ users }), 'utf8');
     fs.writeFileSync(path.join(dataDir, 'friendships.json'), JSON.stringify({
-      friendships: []
+      friendships: momentStorm > 0
+        ? (momentAuthors > 0
+          ? users.slice(1, 1 + momentAuthors).map((user, index) => ({
+            id: `capacity-friend-${index}`,
+            fromId: user.id,
+            toId: users[0].id,
+            status: 'accepted',
+            createdAt: '2026-01-01T00:00:00.000Z'
+          }))
+          : users.slice(1).map((user, index) => ({
+            id: `capacity-friend-${index}`,
+            fromId: users[0].id,
+            toId: user.id,
+            status: 'accepted',
+            createdAt: '2026-01-01T00:00:00.000Z'
+          })))
+        : []
     }), 'utf8');
     fs.writeFileSync(path.join(dataDir, 'chats.json'), JSON.stringify({
       chats: [{
@@ -755,7 +909,9 @@ async function main() {
           WS_NEW_PER_SEC: String(maxConnections + 1000),
           API_MAX_PER_WINDOW: String(Math.max(1_000_000, maxConnections * 1000)),
           MSG_MAX_PER_WINDOW: String(Math.max(1_000_000, maxConnections * 1000)),
-          GLOBAL_MSG_PER_SEC: '1000000'
+          GLOBAL_MSG_PER_SEC: '1000000',
+          MOMENT_MAX_PER_MINUTE: '1000000',
+          MOMENT_MAX_PER_DAY: '1000000'
         }),
         stdio: ['ignore', 'pipe', 'pipe'],
         windowsHide: true
@@ -768,6 +924,40 @@ async function main() {
       waitForHealth(bases[index], child, logs)
     ));
     const child = children[0];
+    if (momentStorm > 0) {
+      const inboxPeak = momentAuthors > 0;
+      const authors = inboxPeak
+        ? users.slice(1, 1 + momentAuthors)
+        : [users[0]];
+      const viewers = inboxPeak ? [users[0]] : users.slice(1);
+      await openConnections(
+        bases,
+        viewers,
+        viewers.length,
+        connections,
+        connectionBatch,
+        targetHosts,
+        sourceHosts
+      );
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      const result = await runMomentStorm(
+        base,
+        authors,
+        connections,
+        momentStorm,
+        momentConcurrency,
+        users[0],
+        dataDir
+      );
+      console.log(JSON.stringify({
+        isolated: true,
+        serverCount,
+        serverMemoryMb: processMemoryMb(child.pid),
+        ...result
+      }, null, 2));
+      if (!result.pass) process.exitCode = 2;
+      return;
+    }
     if (workerCount > 1) {
       await runDistributed(
         base,

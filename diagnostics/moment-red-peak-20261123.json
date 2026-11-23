@@ -1,0 +1,54 @@
+{
+  "scope": "Isolated temporary server, one viewer and 1000-10000 synthetic friend authors; no production data",
+  "results": [
+    {
+      "authors": 1000,
+      "moments": 1000,
+      "createMs": 1549,
+      "redDotCatchUpMs": 54,
+      "finalUnread": 1000,
+      "missing": 0,
+      "duplicates": 0,
+      "extra": 0,
+      "unreadMismatch": 0,
+      "eventCountMismatch": 0,
+      "storedMissing": 0,
+      "pass": true
+    },
+    {
+      "authors": 5000,
+      "moments": 5000,
+      "createMs": 7897,
+      "redDotCatchUpMs": 57,
+      "finalUnread": 5000,
+      "missing": 0,
+      "duplicates": 0,
+      "extra": 0,
+      "unreadMismatch": 0,
+      "eventCountMismatch": 0,
+      "storedMissing": 0,
+      "pass": true
+    },
+    {
+      "authors": 10000,
+      "moments": 10000,
+      "createMs": 17239,
+      "redDotCatchUpMs": 63,
+      "finalUnread": 10000,
+      "missing": 0,
+      "duplicates": 0,
+      "extra": 0,
+      "unreadMismatch": 0,
+      "eventCountMismatch": 0,
+      "storedMissing": 0,
+      "serverMemoryMb": 182,
+      "pass": true
+    }
+  ],
+  "changes": [
+    "moment live red dot uses incremental delta instead of rescanning all history",
+    "new moments are coalesced into 40ms red-dot batches",
+    "1000-10000 posts persist through the append log without replication-outbox rewrite storms",
+    "strict tests verify unread count, event count, duplicates, missing IDs and persisted IDs"
+  ]
+}

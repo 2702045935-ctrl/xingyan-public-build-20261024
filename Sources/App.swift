@@ -520,6 +520,9 @@ final class AppState: ObservableObject {
             show("系统公告：" + ev.announce)
         }
         if let n = ev.momentUnread { momentsUnread = n }
+        if let n = ev.momentUnreadDelta {
+            momentsUnread = max(0, momentsUnread + n)
+        }
         if let n = ev.momentNoticeUnread { momentNoticeUnread = n }
         if let n = ev.friendRequests {
 

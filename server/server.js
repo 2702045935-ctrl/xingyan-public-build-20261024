@@ -3339,10 +3339,12 @@ const momentsLogPath = () => path.join(DATA_DIR, MOMENTS_LOG);
 const MOMENT_REPLICATION_FILE = 'moment-replication-outbox.json';
 let momentsLogCount = 0;
 let momentsDiskSignature = '';
+let momentLastAppendAt = 0;
 let momentReplicationState = null;
 let momentReplicationOutbox = null;
 let momentReplicationPromise = null;
 let momentReplicationRetryTimer = null;
+let momentReplicationSaveTimer = null;
 
 function momentsStorageSignature() {
   const fileSig = (file) => {
@@ -3369,6 +3371,7 @@ function applyMomentLogRecord(rows, record) {
 }
 
 function refreshMomentsFromDisk(force) {
+  if (!force && Date.now() - momentLastAppendAt < 250) return false;
   const signature = momentsStorageSignature();
   if (!signature || (!force && signature === momentsDiskSignature)) return false;
   const rows = new Map();
@@ -3428,6 +3431,7 @@ function appendMoment(moment) {
     momentsLogCount++;
   } catch (err) { /* 写不进日志就让下次整体保存兜底 */ }
   db.moments.unshift(moment);
+  momentLastAppendAt = Date.now();
   momentsDiskSignature = momentsStorageSignature();
   queueMomentReplicationRecords([{ moment }]);
   if (momentReplicationState != null) {
@@ -3448,6 +3452,10 @@ function momentReplicationMap() {
 }
 
 function saveMomentReplicationOutbox() {
+  if (momentReplicationSaveTimer) {
+    clearTimeout(momentReplicationSaveTimer);
+    momentReplicationSaveTimer = null;
+  }
   const records = Array.from(momentReplicationMap().values());
   if (!records.length) {
     try { fs.unlinkSync(path.join(DATA_DIR, MOMENT_REPLICATION_FILE)); } catch (_) { }
@@ -3456,13 +3464,22 @@ function saveMomentReplicationOutbox() {
   writeJson(path.join(DATA_DIR, MOMENT_REPLICATION_FILE), { records });
 }
 
+function scheduleMomentReplicationSave() {
+  if (momentReplicationSaveTimer) return;
+  momentReplicationSaveTimer = setTimeout(() => {
+    momentReplicationSaveTimer = null;
+    saveMomentReplicationOutbox();
+  }, 120);
+  if (momentReplicationSaveTimer.unref) momentReplicationSaveTimer.unref();
+}
+
 function queueMomentReplicationRecords(records) {
   const outbox = momentReplicationMap();
   (records || []).forEach((record) => {
     const id = String(record && (record.id || (record.moment && record.moment.id)) || '');
     if (id) outbox.set(id, record);
   });
-  saveMomentReplicationOutbox();
+  scheduleMomentReplicationSave();
 }
 
 function flushMomentReplication() {
@@ -8418,12 +8435,43 @@ function momentUnread(userId) {
 function broadcastMoment(authorId, payload) {
   momentAudience(authorId).forEach((id) => {
     if (!connections.has(id)) return;          // 离线的人本来也收不到，别再花 CPU 算未读数
-    const body = Object.assign({}, payload);
+    if (payload.type === 'moment' && payload.action === 'new'
+        && !momentVisibleTo(payload.moment, id)) return;
     if (payload.type === 'moment' && payload.action === 'new') {
-      body.unread = momentUnread(id);
+      queueMomentRedDot(id, id === authorId ? 0 : 1);
+      return;
     }
+    const body = Object.assign({}, payload);
     sendTo(id, body);
   });
+}
+
+const momentRedDotQueue = new Map();
+let momentRedDotTimer = null;
+
+function queueMomentRedDot(userId, delta) {
+  let row = momentRedDotQueue.get(userId);
+  if (!row) {
+    row = { delta: 0, count: 0 };
+    momentRedDotQueue.set(userId, row);
+  }
+  row.delta += Math.max(0, Number(delta) || 0);
+  row.count += 1;
+  if (momentRedDotTimer) return;
+  momentRedDotTimer = setTimeout(() => {
+    momentRedDotTimer = null;
+    const batch = Array.from(momentRedDotQueue.entries());
+    momentRedDotQueue.clear();
+    batch.forEach(([id, item]) => {
+      sendTo(id, {
+        type: 'moment',
+        action: 'newBatch',
+        count: item.count,
+        momentUnreadDelta: item.delta
+      });
+    });
+  }, 40);
+  if (momentRedDotTimer.unref) momentRedDotTimer.unref();
 }
 
 /* ---------------------------------------------- 朋友圈「消息列表」（微信那个小信封）
@@ -26625,6 +26673,8 @@ function sanitizeText(input) {
 
 /* 朋友圈限流：每人 1 分钟最多 20 条、1 天最多 300 条（防刷爆数据和 CPU） */
 const momentHits = new Map();       // userId -> { t, n, day, dayN }
+const MOMENT_MAX_PER_MINUTE = Number(process.env.MOMENT_MAX_PER_MINUTE) || 20;
+const MOMENT_MAX_PER_DAY = Number(process.env.MOMENT_MAX_PER_DAY) || 300;
 function momentRateAllow(userId) {
   const now = Date.now();
   const day = Math.floor(now / 86400000);
@@ -26634,7 +26684,9 @@ function momentRateAllow(userId) {
   if (r.day !== day) { r.day = day; r.dayN = 0; }
   momentHits.set(userId, r);
   if (momentHits.size > 5000) momentHits.clear();
-  return r.n < 20 && r.dayN < 300 ? (r.n += 1, r.dayN += 1, true) : false;
+  return r.n < MOMENT_MAX_PER_MINUTE && r.dayN < MOMENT_MAX_PER_DAY
+    ? (r.n += 1, r.dayN += 1, true)
+    : false;
 }
 
 /* 搜索限流：每人 10 秒最多 30 次。

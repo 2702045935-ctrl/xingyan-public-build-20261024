@@ -158,6 +158,7 @@ jobs:
           python3 tools/verify-large-group-runtime.py
           python3 tools/verify-large-group-fast-broadcast.py
           python3 tools/verify-moment-own-publish.py
+          python3 tools/verify-moment-red-peak.py
           python3 tools/verify-me-current.py
           python3 tools/verify-me-native.py
           python3 tools/verify-works-topbar.py
