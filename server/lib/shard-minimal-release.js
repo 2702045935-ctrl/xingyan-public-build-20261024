@@ -35,12 +35,15 @@ const ENTRY_FILES = [
   'lib/dual-cell-lease-agent.js',
   'lib/fleet-metrics.js',
   'lib/fleet-control-panel.js',
+  'lib/fleet-node-provision.js',
+  'lib/fleet-plan-mutation.js',
   'lib/physical-remote-runner.js',
   'lib/physical-scale-production-adapters.js',
   'lib/physical-scale-target.js',
   'lib/physical-auto-scale-runtime.js',
   'lib/physical-failover-controller.js',
   'lib/physical-failover-runtime.js',
+  'lib/physical-migration-runtime.js',
   'tools/shard-maintenance-executor.js',
   'tools/import-shard-authority.js',
   'tools/audit-shard-authority.js',
@@ -63,6 +66,7 @@ const ENTRY_FILES = [
   'tools/collect-runtime-fleet-metrics.js',
   'tools/physical-auto-scale-service.js',
   'tools/physical-failover-service.js',
+  'tools/physical-migration-service.js',
   'tools/physical-scale-target.js'
 ];
 const ADDITIONAL_FILES = [
@@ -77,6 +81,7 @@ const ROOT_ADDITIONAL_FILES = [
   'deploy/fleet/fleet-replication-sync.js',
   'deploy/fleet/physical-auto-scale.service',
   'deploy/fleet/physical-failover.service',
+  'deploy/fleet/physical-migration.service',
   'deploy/fleet/physical-replication-sync.service',
   'deploy/fleet/physical-auto-scale.example.json',
   'deploy/fleet/physical-failover.example.json',

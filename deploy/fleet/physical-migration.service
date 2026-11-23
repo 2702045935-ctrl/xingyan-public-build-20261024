@@ -1,0 +1,19 @@
+[Unit]
+Description=Xingyan physical node add remove and shard migration worker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/xingyan-dual-cell/auto-scale.env
+ExecStart=/opt/node24/bin/node /opt/xingyan-dual-cell/release-r1/tools/physical-migration-service.js --config=/etc/xingyan-dual-cell/auto-scale.json
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/xingyan-dual-cell
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

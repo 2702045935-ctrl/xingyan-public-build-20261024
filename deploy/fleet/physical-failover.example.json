@@ -27,6 +27,18 @@
     "nodePath": "/opt/node24/bin/node",
     "agentPath": "/opt/xingyan-dual-cell/release-r1/deploy/fleet/fleet-node-control.js"
   },
+  "provisioning": {
+    "enabled": false,
+    "seedCellId": "cell-a-43",
+    "sourceUser": "root",
+    "releaseRoot": "/opt/xingyan-dual-cell/release-r1",
+    "clusterKeyFile": "/root/.ssh/xingyan-cluster",
+    "envDir": "/etc/xingyan-dual-cell",
+    "unitDir": "/etc/systemd/system",
+    "routeSourceFile": "/opt/xingyan-dual-cell/route-plan.json",
+    "secretSourceFile": "/opt/xingyan-dual-cell/key-domain/secret.key",
+    "busAddr": "127.0.0.1:16400"
+  },
   "gateway": {
     "host": "43.242.194.89",
     "service": "xingyan-dual-cell-tls-live",

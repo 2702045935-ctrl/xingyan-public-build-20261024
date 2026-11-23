@@ -35,11 +35,17 @@ function buildPhysicalScalePlan(sourceInput, targetInput, options) {
   const targetCells = new Map(target.cells.map((cell) => [cell.id, cell]));
   const addedCells = target.cells.filter((cell) => !sourceCells.has(cell.id));
   const removedCells = source.cells.filter((cell) => !targetCells.has(cell.id));
-  if (target.cells.length <= source.cells.length) {
+  const allowScaleIn = opts.allowScaleIn === true;
+  if (target.cells.length === source.cells.length
+      && !addedCells.length && !removedCells.length) {
     failures.push({ code: 'no-physical-expansion' });
   }
-  if (!addedCells.length) failures.push({ code: 'no-new-cells' });
-  if (removedCells.length) failures.push({ code: 'source-cell-removed' });
+  if (!addedCells.length && !removedCells.length) {
+    failures.push({ code: 'no-cell-topology-change' });
+  }
+  if (removedCells.length && !allowScaleIn) {
+    failures.push({ code: 'source-cell-removed' });
+  }
   if (source.shardCount !== target.shardCount) {
     failures.push({ code: 'logical-shard-count-changed' });
   }

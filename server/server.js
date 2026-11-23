@@ -29216,13 +29216,16 @@ async function handleOps(req, res, parts, query) {
         || readJson(path.join(path.dirname(ROOT), 'deploy', 'fleet',
           'fleet-production.json'), null);
       if (!plan) return fail(res, 404, '没有 Fleet 计划文件');
+      const candidatePlan = readJson(targetPath, null);
       ok(res, {
         path: fleetPath,
         targetPath,
         plan,
         currentPlan: plan,
-        candidatePlan: readJson(targetPath, null),
-        validation: validateFleetPlan(plan)
+        candidatePlan,
+        validation: validateFleetPlan(plan),
+        candidateValidation: candidatePlan
+          ? validateFleetPlan(candidatePlan) : null
       });
       return;
     }
@@ -29270,7 +29273,11 @@ async function handleOps(req, res, parts, query) {
           failoverStateFile: process.env.PHYSICAL_FAILOVER_STATE
             || '/var/lib/xingyan-dual-cell/failover-state.json',
           failoverAuditFile: process.env.PHYSICAL_FAILOVER_AUDIT
-            || '/var/lib/xingyan-dual-cell/failover-audit.jsonl'
+            || '/var/lib/xingyan-dual-cell/failover-audit.jsonl',
+          migrationStateFile: process.env.PHYSICAL_MIGRATION_STATE
+            || '/var/lib/xingyan-dual-cell/migration-state.json',
+          migrationRequestFile: process.env.PHYSICAL_MIGRATION_REQUEST
+            || '/var/lib/xingyan-dual-cell/migration-request.json'
         })
       });
       return;

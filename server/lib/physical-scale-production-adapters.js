@@ -86,6 +86,13 @@ function createPhysicalScaleProductionAdapters(options) {
     || '/opt/xingyan-dual-cell/key-domain/secret.key', 'secretFile');
   const remoteFleetPlanFile = absolute(opts.remoteFleetPlanFile
     || '/etc/xingyan-dual-cell/current-fleet.json', 'remoteFleetPlanFile');
+  const provisioning = Object.assign({
+    enabled: false,
+    sourceUser: 'root',
+    clusterKeyFile: '/root/.ssh/xingyan-cluster',
+    envDir: '/etc/xingyan-dual-cell',
+    unitDir: '/etc/systemd/system'
+  }, opts.provisioning || {});
   const timeoutMs = Math.max(5000, Number(opts.timeoutMs) || 300000);
   const routeSha = crypto.createHash('sha256').update(routePlan.bytes).digest('hex');
   if (routePlan.fileSha256 && routeSha !== routePlan.fileSha256) {
@@ -115,6 +122,51 @@ function createPhysicalScaleProductionAdapters(options) {
   return {
     async prepareNode(row) {
       const cell = targetCell(row.cellId);
+      if (provisioning.enabled === true) {
+        const seedCell = sourceCell(provisioning.seedCellId
+          || (source.cells[0] && source.cells[0].id));
+        const servicePrefix = text(cell.servicePrefix, 'servicePrefix');
+        const envFile = absolute(provisioning.envDir + '/' + servicePrefix + '.env',
+          'provision envFile');
+        const unitFile = absolute(provisioning.unitDir + '/'
+          + servicePrefix + '@.service', 'provision unitFile');
+        const sourcePlanBytes = Buffer.from(JSON.stringify(source, null, 2) + '\n');
+        const fleetPlanSha256 = crypto.createHash('sha256')
+          .update(sourcePlanBytes).digest('hex');
+        const result = await call(cell.host, 'provision', {
+          cellId: cell.id,
+          sourceHost: seedCell.host,
+          sourceUser: provisioning.sourceUser,
+          sourceRoot: absolute(seedCell.dataRoot, 'sourceRoot'),
+          releaseRoot: target.releaseRoot || '/opt/xingyan-dual-cell/release-r1',
+          dataRoot: absolute(cell.dataRoot, 'dataRoot'),
+          servicePrefix,
+          envFile,
+          unitFile,
+          shardCount: target.shardCount,
+          ports: cell.ports,
+          ownerPorts: Array.from({ length: target.shardCount }, (_, shard) => {
+            const owner = target.cells.find((candidate) =>
+              candidate.ownerShards.includes(shard));
+            return portFor(owner, shard);
+          }),
+          routePlan: routeFile,
+          routePlanSha256: routeSha,
+          routeSourceFile: provisioning.routeSourceFile || routeFile,
+          secretFile,
+          secretSourceFile: provisioning.secretSourceFile || secretFile,
+          fleetPlan: remoteFleetPlanFile,
+          fleetPlanContentBase64: sourcePlanBytes.toString('base64'),
+          fleetPlanSha256,
+          nodeBin: nodePath,
+          busAddr: provisioning.busAddr || '127.0.0.1:16400',
+          clusterKeyFile: provisioning.clusterKeyFile,
+          minimumFreeBytes: Number(opts.minimumFreeBytes) || 10 * 1024 * 1024 * 1024,
+          minimumFreeInodes: Number(opts.minimumFreeInodes) || 100000
+        });
+        if (!result || result.ok !== true) throw new Error('provision-node failed');
+        return result;
+      }
       const result = await call(cell.host, 'prepare', {
         dataRoot: absolute(cell.dataRoot, 'dataRoot'),
         shardCount: target.shardCount,
@@ -277,6 +329,24 @@ function createPhysicalScaleProductionAdapters(options) {
         throw new Error('replication topology handoff failed');
       }
       return { ok: true, topologyId: plan.topologyId, sha256, hosts };
+    },
+
+    async decommissionNode(cell) {
+      const removed = sourceCells.get(cell.id) || cell;
+      if (!removed || !removed.host) {
+        throw new Error('decommission cell is invalid');
+      }
+      const result = await call(removed.host, 'decommission', {
+        cellId: removed.id,
+        servicePrefix: removed.servicePrefix,
+        dataRoot: absolute(removed.dataRoot, 'dataRoot'),
+        shardCount: target.shardCount,
+        fleetPlan: remoteFleetPlanFile
+      });
+      if (!result || result.ok !== true || result.dataPreserved !== true) {
+        throw new Error('decommission-node failed');
+      }
+      return result;
     },
 
     async soak(plan) {

@@ -92,6 +92,7 @@ class PhysicalAutoScaleRuntime {
       gateway: cfg.gateway,
       remote: cfg.remote,
       runner: createSshRunner(cfg.ssh || {}),
+      provisioning: cfg.provisioning,
       soakMinutes: cfg.soakMinutes || 30,
       minimumFreeBytes: cfg.minimumFreeBytes,
       minimumFreeInodes: cfg.minimumFreeInodes

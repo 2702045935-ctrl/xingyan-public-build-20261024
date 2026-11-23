@@ -1,5 +1,6 @@
 {
   "execute": false,
+  "allowExplicitMigration": false,
   "promoteOnSuccess": false,
   "intervalSeconds": 60,
   "metricsMaxAgeSeconds": 180,
@@ -9,6 +10,8 @@
   "metricsFile": "/var/lib/xingyan-dual-cell/fleet-metrics.json",
   "stateFile": "/var/lib/xingyan-dual-cell/auto-scale-state.json",
   "auditFile": "/var/lib/xingyan-dual-cell/auto-scale-audit.jsonl",
+  "requestFile": "/var/lib/xingyan-dual-cell/migration-request.json",
+  "workerIntervalSeconds": 5,
   "routePlanFile": "/opt/xingyan-dual-cell/route-plan.json",
   "routePlanFileSha256": "c02d3ccb14304371044aad4096cc9501d072566c232fb51700d8e228e68d519c",
   "remoteRoutePlanFile": "/opt/xingyan-dual-cell/route-plan.json",
@@ -26,6 +29,18 @@
     "user": "root",
     "nodePath": "/opt/node24/bin/node",
     "agentPath": "/opt/xingyan-dual-cell/release-r1/deploy/fleet/fleet-node-control.js"
+  },
+  "provisioning": {
+    "enabled": false,
+    "seedCellId": "cell-a-43",
+    "sourceUser": "root",
+    "releaseRoot": "/opt/xingyan-dual-cell/release-r1",
+    "clusterKeyFile": "/root/.ssh/xingyan-cluster",
+    "envDir": "/etc/xingyan-dual-cell",
+    "unitDir": "/etc/systemd/system",
+    "routeSourceFile": "/opt/xingyan-dual-cell/route-plan.json",
+    "secretSourceFile": "/opt/xingyan-dual-cell/key-domain/secret.key",
+    "busAddr": "127.0.0.1:16400"
   },
   "gateway": {
     "host": "43.242.194.89",

@@ -6,6 +6,20 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 
+function loadProvisionModule() {
+  const candidates = [
+    path.resolve(__dirname, '../../lib/fleet-node-provision'),
+    path.resolve(__dirname, '../../server/lib/fleet-node-provision')
+  ];
+  for (const candidate of candidates) {
+    try { return require(candidate); }
+    catch (error) {
+      if (!error || error.code !== 'MODULE_NOT_FOUND') throw error;
+    }
+  }
+  throw new Error('fleet-node-provision module is missing');
+}
+
 function fail(message) {
   throw new Error(String(message || 'fleet-node-control failed'));
 }
@@ -150,6 +164,136 @@ async function prepare(payload) {
   return { ok: true, root, freeBytes, freeInodes, shards: results };
 }
 
+async function provision(payload) {
+  const plan = loadProvisionModule().buildNodeProvisionPlan(payload);
+  const sourceUser = String(payload.sourceUser || 'root');
+  if (!/^[a-z_][a-z0-9_-]*$/i.test(sourceUser)) fail('invalid source user');
+  const sourceHost = String(plan.sourceHost || '');
+  if (!/^(?:\d{1,3}\.){3}\d{1,3}$/.test(sourceHost)
+      && !/^[a-z0-9][a-z0-9.-]*$/i.test(sourceHost)) {
+    fail('invalid source host');
+  }
+  const clusterKeyFile = safeAbsolute(payload.clusterKeyFile
+    || '/root/.ssh/xingyan-cluster', 'clusterKeyFile');
+  if (!fs.existsSync(clusterKeyFile)) fail('cluster SSH key is missing');
+  fs.mkdirSync(plan.dataRoot, { recursive: true });
+  const stats = fs.statfsSync(plan.dataRoot);
+  const freeBytes = Number(stats.bsize) * Number(stats.bavail);
+  const freeInodes = Number(stats.ffree);
+  if (freeBytes < Number(payload.minimumFreeBytes || 0)) fail('insufficient disk');
+  if (freeInodes < Number(payload.minimumFreeInodes || 0)) fail('insufficient inodes');
+  fs.mkdirSync(path.dirname(plan.envFile), { recursive: true });
+  fs.mkdirSync(path.dirname(plan.unitFile), { recursive: true });
+  fs.mkdirSync(plan.releaseRoot, { recursive: true });
+  const launcher = path.join(plan.releaseRoot, 'run-dual-cell-shard.sh');
+  const sshCommand = 'ssh -i ' + clusterKeyFile
+    + ' -o BatchMode=yes -o StrictHostKeyChecking=accept-new';
+  if (!fs.existsSync(launcher)) {
+    await run([
+      'rsync', '-aH', '--checksum', '--delete-delay',
+      '--exclude=*.tmp', '--exclude=*.part',
+      '-e', sshCommand,
+      sourceUser + '@' + sourceHost + ':' + plan.sourceRoot + '/',
+      plan.releaseRoot + '/'
+    ], 30 * 60 * 1000);
+  }
+  if (!fs.existsSync(launcher)) fail('release launcher is missing after bootstrap');
+  const copySeedFile = async (source, target, mode) => {
+    if (fs.existsSync(target)) return;
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    await run([
+      'scp', '-q', '-i', clusterKeyFile,
+      '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=accept-new',
+      sourceUser + '@' + sourceHost + ':' + source,
+      target
+    ], 5 * 60 * 1000);
+    fs.chmodSync(target, mode);
+  };
+  await copySeedFile(plan.routeSourceFile, plan.routePlan, 0o600);
+  await copySeedFile(plan.secretSourceFile, plan.secretFile, 0o600);
+  const routeSha = crypto.createHash('sha256')
+    .update(fs.readFileSync(plan.routePlan))
+    .digest('hex');
+  if (payload.routePlanSha256
+      && routeSha !== String(payload.routePlanSha256).toLowerCase()) {
+    fail('route plan hash mismatch after bootstrap');
+  }
+  if (payload.fleetPlanContentBase64) {
+    const bytes = Buffer.from(String(payload.fleetPlanContentBase64), 'base64');
+    const actual = crypto.createHash('sha256').update(bytes).digest('hex');
+    if (payload.fleetPlanSha256
+        && actual !== String(payload.fleetPlanSha256).toLowerCase()) {
+      fail('fleet plan hash mismatch');
+    }
+    const value = JSON.parse(bytes.toString('utf8'));
+    if (!value || value.version !== 1 || !Array.isArray(value.cells)) {
+      fail('invalid bootstrap fleet plan');
+    }
+    writeAtomic(plan.fleetPlan, bytes, 0o600);
+  } else if (!fs.existsSync(plan.fleetPlan)) {
+    fail('bootstrap fleet plan is required');
+  }
+  writeAtomic(plan.envFile, plan.env, 0o600);
+  writeAtomic(plan.unitFile, plan.unit, 0o644);
+  await run(['systemctl', 'daemon-reload'], 30000);
+  const services = [];
+  for (let shard = 0; shard < plan.shardCount; shard += 1) {
+    const service = plan.servicePrefix + '@' + shard + '.service';
+    await run(['systemctl', 'enable', '--now', service], 120000);
+    const port = Number(payload.ports[shard]);
+    const health = await health(port);
+    services.push({ shard, service, port, pid: health.pid || 0 });
+  }
+  return {
+    ok: true,
+    cellId: plan.cellId,
+    fingerprint: plan.fingerprint,
+    releaseRoot: plan.releaseRoot,
+    dataRoot: plan.dataRoot,
+    envFile: plan.envFile,
+    unitFile: plan.unitFile,
+    services
+  };
+}
+
+async function decommission(payload) {
+  const servicePrefix = safeName(payload.servicePrefix, 'servicePrefix');
+  const cellId = safeName(payload.cellId, 'cellId');
+  const dataRoot = safeAbsolute(payload.dataRoot, 'dataRoot');
+  const fleetPlan = safeAbsolute(payload.fleetPlan, 'fleetPlan');
+  const shardCount = positive(payload.shardCount, 'shardCount');
+  if (fs.existsSync(fleetPlan)) {
+    const plan = JSON.parse(fs.readFileSync(fleetPlan, 'utf8'));
+    const cell = (plan.cells || []).find((row) => row.id === cellId);
+    if (cell && Array.isArray(cell.ownerShards) && cell.ownerShards.length) {
+      fail('cell still owns shards and cannot be decommissioned');
+    }
+  }
+  const services = [];
+  for (let shard = shardCount - 1; shard >= 0; shard -= 1) {
+    const service = servicePrefix + '@' + shard + '.service';
+    await run(['systemctl', 'stop', service], 120000);
+    await run(['systemctl', 'disable', service], 120000);
+    services.push({ shard, service, stopped: true });
+  }
+  const marker = path.join(dataRoot, '.decommissioned', cellId + '.json');
+  writeAtomic(marker, JSON.stringify({
+    version: 1,
+    cellId,
+    servicePrefix,
+    dataRoot,
+    decommissionedAt: new Date().toISOString(),
+    services
+  }, null, 2) + '\n', 0o600);
+  return {
+    ok: true,
+    cellId,
+    marker,
+    dataPreserved: true,
+    services
+  };
+}
+
 function writeAtomic(file, content, mode) {
   const temporary = file + '.fleet-' + process.pid + '.tmp';
   fs.mkdirSync(path.dirname(file), { recursive: true });
@@ -251,6 +395,12 @@ async function main() {
   switch (action) {
     case 'prepare':
       result = await prepare(payload);
+      break;
+    case 'provision':
+      result = await provision(payload);
+      break;
+    case 'decommission':
+      result = await decommission(payload);
       break;
     case 'manifest': {
       const root = safeAbsolute(payload.root, 'root');

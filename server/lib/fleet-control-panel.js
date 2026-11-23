@@ -172,11 +172,17 @@ function loadFleetControlPanel(options) {
     || '/var/lib/xingyan-dual-cell/failover-state.json';
   const failoverAuditFile = opts.failoverAuditFile
     || '/var/lib/xingyan-dual-cell/failover-audit.jsonl';
+  const migrationStateFile = opts.migrationStateFile
+    || '/var/lib/xingyan-dual-cell/migration-state.json';
+  const migrationRequestFile = opts.migrationRequestFile
+    || '/var/lib/xingyan-dual-cell/migration-request.json';
   const lockFile = opts.lockFile || stateFile + '.lock';
   const config = readJson(configFile) || {};
   const state = readJson(stateFile) || {};
   const failoverConfig = readJson(failoverConfigFile) || {};
   const failoverState = readJson(failoverStateFile) || {};
+  const migrationState = readJson(migrationStateFile) || {};
+  const migrationRequest = readJson(migrationRequestFile) || {};
   const metrics = readJson(metricsFile);
   const sourcePlan = readJson(config.sourcePlanFile);
   const targetPlan = readJson(config.targetPlanFile);
@@ -208,7 +214,10 @@ function loadFleetControlPanel(options) {
         && targetValidation.deploymentEligible,
       targetWarnings: targetValidation ? targetValidation.warnings : [],
       targetFailures: targetValidation ? targetValidation.failures : [],
-      lastResult: state.lastResult || null
+      lastResult: state.lastResult || null,
+      job: Object.assign({}, migrationState, {
+        request: migrationRequest || migrationState.request || null
+      })
     },
     selfHealing: Object.assign(
       failoverStatus(

@@ -136,6 +136,7 @@ class PhysicalFailoverRuntime {
       gateway: cfg.gateway,
       remote: cfg.remote,
       runner: createSshRunner(cfg.ssh || {}),
+      provisioning: cfg.provisioning,
       soakMinutes: Math.max(1, Number(cfg.soakMinutes) || 1),
       minimumFreeBytes: cfg.minimumFreeBytes,
       minimumFreeInodes: cfg.minimumFreeInodes

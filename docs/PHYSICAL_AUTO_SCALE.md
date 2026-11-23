@@ -23,6 +23,11 @@ Cell，同时保证单写者、副本追平、网关无重启切流和失败自�
 11. 只有完整迁移和 30 分钟长稳都通过，才提升目标 Fleet 计划并清除压力计数。
 12. `physical-failover-service.js` 负责故障采样、owner 接管、自动回切和
     只追加审计；控制器按 fencing/quorum、失败样本和恢复冷却决定是否执行。
+13. `fleet-node-control.js` 支持新节点预检、发行目录复用、环境文件与
+    systemd 模板安装、分片启动和健康检查；删除节点时先确认 owner 已迁走，
+    再逐片停服、禁用服务，并在数据目录写入下线标记。
+14. `physical-migration-service.js` 消费控制台提交的迁移任务，支持扩容和
+    缩容；缩容会先迁走 owner，成功后对旧节点执行停服归档，不会直接删数据。
 
 ## 安全门禁
 
@@ -49,6 +54,7 @@ install -m 0600 deploy/fleet/fleet-production.json \
 systemctl daemon-reload
 systemctl enable --now physical-replication-sync.service
 systemctl enable --now physical-auto-scale.service
+systemctl enable --now physical-migration.service
 ```
 
 初次部署保持 `execute=false`。完成真实 2→4 Cell 副本、故障域、SSH
@@ -57,6 +63,12 @@ systemctl enable --now physical-auto-scale.service
 自愈服务额外要求部署 fencing 状态生产器，并创建
 `/etc/xingyan-dual-cell/failover-enabled` 后才会被 systemd 启动。没有
 外部 fencing/quorum 时不得绕过该门禁。
+
+显式迁移额外要求 `allowExplicitMigration=true`。控制台提交的任务只会进入
+`awaiting-worker`，由 `physical-migration-service` 独立执行并写入
+`migration-state.json` 与 `migration-audit.jsonl`。新增节点前必须把控制面
+SSH 公钥写入目标机的 `authorized_keys`，并保证目标机能访问 seed Cell 的
+发行目录和密钥文件。
 
 ## 指标文件
 

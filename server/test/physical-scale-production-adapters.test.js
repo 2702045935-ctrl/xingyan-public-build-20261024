@@ -107,6 +107,40 @@ async function main() {
   assert.ok(calls.some((row) => row.action === 'reload-gateway'));
   assert.ok(calls.some((row) => row.action === 'write-fleet-plan'));
   assert.ok(!calls.some((row) => row.action === 'restart'));
+
+  const provisionCalls = [];
+  const provisioningAdapters = createPhysicalScaleProductionAdapters({
+    sourcePlan: source,
+    targetPlan: target(),
+    runner: {
+      async run(request) {
+        provisionCalls.push({
+          host: request.host,
+          action: request.purpose,
+          payload: JSON.parse(Buffer.from(request.argv[3], 'base64').toString('utf8'))
+        });
+        return { ok: true, services: [], fingerprint: 'provisioned' };
+      }
+    },
+    routePlan: { hash: 'a'.repeat(64), fileSha256: routeSha, bytes: routeBytes },
+    gateway: {
+      host: '43.242.194.89',
+      service: 'xingyan-dual-cell-tls-live',
+      healthPort: 5443
+    },
+    provisioning: {
+      enabled: true,
+      seedCellId: 'cell-a-43'
+    }
+  });
+  await provisioningAdapters.prepareNode({ cellId: 'cell-c' });
+  const provision = provisionCalls.find((row) => row.action === 'provision');
+  assert.ok(provision);
+  assert.strictEqual(provision.host, '192.0.2.40');
+  assert.strictEqual(provision.payload.sourceHost, '43.242.194.89');
+  assert.strictEqual(provision.payload.cellId, 'cell-c');
+  assert.strictEqual(provision.payload.ports.length, 7);
+
   console.log('physical-scale-production-adapters: passed');
 }
 

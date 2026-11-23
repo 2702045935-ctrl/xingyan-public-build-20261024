@@ -11,10 +11,30 @@ ROUTE_PLAN=${DUAL_CELL_ROUTE_PLAN:?DUAL_CELL_ROUTE_PLAN is required}
 ROUTE_PLAN_SHA256=${DUAL_CELL_ROUTE_PLAN_SHA256:?DUAL_CELL_ROUTE_PLAN_SHA256 is required}
 OWNER_PORTS=${DUAL_CELL_OWNER_PORTS:?DUAL_CELL_OWNER_PORTS is required}
 OWNED_SHARDS=${DUAL_CELL_OWNED_SHARDS:-}
+FLEET_PLAN=${DUAL_CELL_FLEET_PLAN:-}
 NODE_BIN=${DUAL_CELL_NODE_BIN:-node}
 
-COUNT=7
-PORT=$((FIRST_PORT + ID * 100))
+COUNT=${DUAL_CELL_SHARD_COUNT:-7}
+if [ -n "${DUAL_CELL_SHARD_PORTS:-}" ]; then
+  IFS=',' read -r -a SHARD_PORTS <<< "$DUAL_CELL_SHARD_PORTS"
+  if [ "${#SHARD_PORTS[@]}" -ne "$COUNT" ]; then
+    echo "DUAL_CELL_SHARD_PORTS must contain $COUNT ports" >&2
+    exit 1
+  fi
+  PORT=${SHARD_PORTS[$ID]}
+else
+  PORT=$((FIRST_PORT + ID * 100))
+fi
+if [ -n "$FLEET_PLAN" ] && [ -f "$FLEET_PLAN" ]; then
+  OWNED_SHARDS=$("$NODE_BIN" -e '
+    const fs = require("fs");
+    const [file, cellId] = process.argv.slice(1);
+    const plan = JSON.parse(fs.readFileSync(file, "utf8"));
+    const cell = (plan.cells || []).find((row) => row.id === cellId);
+    if (!cell) process.exit(2);
+    process.stdout.write((cell.ownerShards || []).join(","));
+  ' "$FLEET_PLAN" "$CELL_ID")
+fi
 export NODE_ENV=production
 export HOST=127.0.0.1
 export PORT
