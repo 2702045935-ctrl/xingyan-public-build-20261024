@@ -4,6 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CHAT = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
+CHATS = (ROOT / "Sources" / "ChatsView.swift").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
 )
@@ -60,6 +61,12 @@ require(
 require(
     "python3 tools/verify-chat-chrome-contrast.py" in WORKFLOW,
     "chat chrome contrast regression must run in the iOS gate",
+)
+require(
+    CHATS.count("NativeChatsTopEdgeChrome(") >= 2
+    and "Cover the complete scrolling chrome region" in CHATS
+    and "background: chatsPageFill" in CHATS,
+    "the full chat-list chrome must mask scrolling rows instead of exposing clipped half-rows",
 )
 
 print("chat-chrome-contrast: passed")

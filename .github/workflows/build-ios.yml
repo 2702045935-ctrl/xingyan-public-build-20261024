@@ -119,6 +119,7 @@ jobs:
           python3 tools/verify-login-entry.py
           python3 tools/verify-chat-top-title.py
           python3 tools/verify-group-preview.py
+          python3 tools/verify-people-flow-design.py
           python3 tools/verify-contacts-whatsapp.py
           python3 tools/verify-chat-menu-icon.py
           python3 tools/verify-no-top-green-glow.py

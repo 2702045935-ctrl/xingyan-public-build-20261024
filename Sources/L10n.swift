@@ -492,6 +492,8 @@ enum L10n {
         "个文件": "files",
         "搜索会话或联系人": "Search chats or contacts",
         "没有匹配的会话或联系人": "No matching chats or contacts",
+        "新的好友申请会集中显示在这里": "New friend requests will appear here",
+        "换一个昵称或星言号试试": "Try another name or Xingyan ID",
         "选择接收人": "Choose a recipient",
         "选择一个朋友": "Choose a friend",
         "文件会保留原格式发送": "Files keep their original format",

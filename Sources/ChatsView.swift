@@ -3003,6 +3003,17 @@ struct ChatsView: View {
                     Spacer(minLength: 0)
                         .allowsHitTesting(false)
                 }
+                .background {
+                    // Cover the complete scrolling chrome region, including
+                    // the search/filter gaps. A transparent gap lets a native
+                    // row show through as a clipped half-row and reads like the
+                    // conversation row is being vertically compressed.
+                    NativeChatsTopEdgeChrome(
+                        scrolled: chatTopScrolled,
+                        dark: chatsIsDark,
+                        background: chatsPageFill
+                    )
+                }
                 .ignoresSafeArea(edges: .top)
                 .opacity(navFadeForFloor)
                 .allowsHitTesting(!floorUp)

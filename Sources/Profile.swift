@@ -306,6 +306,62 @@ struct ProfileEditViewOld: View {
     }
 }
 
+private struct PeopleFlowPanel<Content: View>: View {
+    let content: Content
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    var body: some View {
+        content
+            .background(OrbitTheme.cardBackground())
+            .clipShape(OrbitTheme.card)
+    }
+}
+
+private struct PeopleFlowDivider: View {
+    var leading: CGFloat = 62
+
+    var body: some View {
+        Rectangle()
+            .fill(OrbitTheme.divider)
+            .frame(height: 0.5)
+            .padding(.leading, leading)
+    }
+}
+
+private struct PeopleFlowEmptyState: View {
+    let symbol: String
+    let title: String
+    let detail: String
+
+    var body: some View {
+        VStack(spacing: 9) {
+            ZStack {
+                Circle()
+                    .fill(OrbitTheme.jadeSoft)
+                Image(systemName: symbol)
+                    .font(.system(size: 21, weight: .medium))
+                    .foregroundStyle(OrbitTheme.jadeDeep)
+            }
+            .frame(width: 48, height: 48)
+
+            Text(title)
+                .font(pf(16, .semibold))
+                .foregroundStyle(OrbitTheme.ink)
+
+            Text(detail)
+                .font(pf(13))
+                .foregroundStyle(OrbitTheme.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 30)
+    }
+}
+
 struct NewFriendsView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -351,54 +407,70 @@ struct NewFriendsView: View {
             NavBar(title: Tr("新的朋友"), back: { dismiss() })
 
             ScrollView {
-                LazyVStack(spacing: 10) {
+                LazyVStack(spacing: 14) {
                     orbitHeader
-                        .padding(.horizontal, 12)
 
-                    NavigationLink(value: "addFriend") { addFriendRow }
-                        .buttonStyle(MenuPressStyle())
-                        .padding(.horizontal, 12)
+                    PeopleFlowPanel {
+                        VStack(spacing: 0) {
+                            NavigationLink(value: "addFriend") {
+                                addFriendRow
+                            }
+                            .buttonStyle(MenuPressStyle())
 
-                    if !clearableFriends.isEmpty {
-                        Button {
-                            confirmClearFriends = true
-                        } label: {
-                            clearFriendsRow
+                            if !clearableFriends.isEmpty {
+                                PeopleFlowDivider(leading: 62)
+                                Button {
+                                    confirmClearFriends = true
+                                } label: {
+                                    clearFriendsRow
+                                }
+                                .buttonStyle(MenuPressStyle())
+                                .disabled(clearingFriends)
+                            }
                         }
-                        .buttonStyle(MenuPressStyle())
-                        .padding(.horizontal, 12)
-                        .disabled(clearingFriends)
                     }
 
                     if loading && incoming.isEmpty && outgoing.isEmpty && added.isEmpty {
-                        HStack { Spacer(); ProgressView(); Spacer() }
-                            .frame(height: 76)
-                            .background(OrbitTheme.cardBackground())
-                            .padding(.horizontal, 12)
-                    } else if !loading && shownIncoming.isEmpty && shownOutgoing.isEmpty && shownAdded.isEmpty {
-                        Text(keyword.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                             ? Tr("暂无朋友验证消息")
-                             : Tr("没有匹配的朋友验证消息"))
-                            .font(pf(15))
-                            .foregroundColor(C.subLabel)
+                        PeopleFlowPanel {
+                            HStack(spacing: 10) {
+                                ProgressView().controlSize(.small)
+                                Text(Tr("正在加载…"))
+                                    .font(pf(14))
+                                    .foregroundStyle(OrbitTheme.secondary)
+                            }
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 36)
-                            .background(OrbitTheme.cardBackground())
-                            .padding(.horizontal, 12)
+                            .frame(height: 82)
+                        }
+                    } else if !loading && shownIncoming.isEmpty
+                                && shownOutgoing.isEmpty && shownAdded.isEmpty {
+                        PeopleFlowPanel {
+                            PeopleFlowEmptyState(
+                                symbol: "person.crop.circle.badge.checkmark",
+                                title: keyword.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                    ? Tr("暂无朋友验证消息")
+                                    : Tr("没有匹配的朋友验证消息"),
+                                detail: keyword.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                    ? Tr("新的好友申请会集中显示在这里")
+                                    : Tr("换一个昵称或星言号试试")
+                            )
+                        }
                     }
 
                     if !shownIncoming.isEmpty {
                         sectionHeader(Tr("朋友验证"), count: shownIncoming.count)
-                            .padding(.horizontal, 16)
-                        ForEach(shownIncoming) { user in
-                            requestRow(user)
-                                .background(OrbitTheme.cardBackground())
-                                .padding(.horizontal, 12)
+                        PeopleFlowPanel {
+                            LazyVStack(spacing: 0) {
+                                ForEach(Array(shownIncoming.enumerated()), id: \.element.id) { index, user in
+                                    requestRow(user)
+                                    if index < shownIncoming.count - 1 {
+                                        PeopleFlowDivider(leading: 76)
+                                    }
+                                }
+                            }
                         }
                     }
                     if !shownAdded.isEmpty {
                         sectionHeader(Tr("已添加"), count: shownAdded.count)
-                            .padding(.horizontal, 16)
                         ForEach(shownAdded) { user in
                             SwipeDeleteFriendRow(
                                 user: user,
@@ -406,21 +478,25 @@ struct NewFriendsView: View {
                                 onOpen: { openChat(user) },
                                 onDelete: { pendingRemoveFriend = user }
                             )
-                                .padding(.horizontal, 12)
                         }
                     }
                     if !shownOutgoing.isEmpty {
                         sectionHeader(Tr("我发出的申请"), count: shownOutgoing.count)
-                            .padding(.horizontal, 16)
-                        ForEach(shownOutgoing) { user in
-                            waitingRow(user)
-                                .background(OrbitTheme.cardBackground())
-                                .padding(.horizontal, 12)
+                        PeopleFlowPanel {
+                            LazyVStack(spacing: 0) {
+                                ForEach(Array(shownOutgoing.enumerated()), id: \.element.id) { index, user in
+                                    waitingRow(user)
+                                    if index < shownOutgoing.count - 1 {
+                                        PeopleFlowDivider(leading: 76)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
-                .padding(.top, 10)
-                .padding(.bottom, 30)
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 34)
             }
             .refreshable { await load() }
         }
@@ -471,60 +547,78 @@ struct NewFriendsView: View {
     }
 
     private var orbitHeader: some View {
-        StarOrbitSearchField(
-            placeholder: Tr("搜索昵称、星言号或验证消息"),
-            text: $keyword
-        )
-        .padding(.horizontal, 12)
-        .padding(.top, 8)
-        .padding(.bottom, 2)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                Text(Tr("新的朋友"))
+                    .font(pf(21, .semibold))
+                    .foregroundStyle(OrbitTheme.ink)
+                Spacer(minLength: 0)
+                if !shownIncoming.isEmpty {
+                    Text("\(shownIncoming.count) " + Tr("待处理"))
+                        .font(pf(11.5, .semibold))
+                        .foregroundStyle(OrbitTheme.jadeDeep)
+                        .padding(.horizontal, 9)
+                        .frame(height: 24)
+                        .background(Capsule().fill(OrbitTheme.jadeSoft))
+                }
+            }
+
+            StarOrbitSearchField(
+                placeholder: Tr("搜索昵称、星言号或验证消息"),
+                text: $keyword
+            )
+        }
+        .padding(.horizontal, 2)
+        .padding(.top, 2)
     }
 
     private var addFriendRow: some View {
-        HStack(spacing: L.ctGap) {
+        HStack(spacing: 12) {
             ZStack {
-                RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Color(hex: 0x4C93DD))
-                Image(systemName: "person.badge.plus").font(.system(size: 18)).foregroundColor(.white)
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(OrbitTheme.jadeSoft)
+                Image(systemName: "person.badge.plus")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(OrbitTheme.jadeDeep)
             }
-            .frame(width: L.ctIcon, height: L.ctIcon)
-            Text(Tr("添加朋友")).font(pf(L.ctNameSize)).foregroundColor(C.label)
+            .frame(width: 36, height: 36)
+            Text(Tr("添加朋友"))
+                .font(pf(16, .medium))
+                .foregroundStyle(OrbitTheme.ink)
             Spacer(minLength: 0)
-            Image(systemName: "chevron.right").font(.system(size: 13)).foregroundColor(C.subLabel)
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12.5, weight: .semibold))
+                .foregroundStyle(OrbitTheme.tertiary)
         }
-        .padding(.leading, L.ctPadL)
-        .padding(.trailing, 16)
-        .frame(height: L.ctRowH)
-        .background(OrbitTheme.cardBackground())
-        .clipShape(OrbitTheme.card)
+        .padding(.horizontal, 14)
+        .frame(height: 62)
         .contentShape(Rectangle())
     }
 
     private var clearFriendsRow: some View {
-        HStack(spacing: L.ctGap) {
+        HStack(spacing: 12) {
             ZStack {
-                RoundedRectangle(cornerRadius: 6, style: .continuous).fill(C.red)
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(C.red.opacity(0.10))
                 Image(systemName: "person.badge.minus")
-                    .font(.system(size: 18))
-                    .foregroundColor(.white)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(C.red)
             }
-            .frame(width: L.ctIcon, height: L.ctIcon)
+            .frame(width: 36, height: 36)
             Text(Tr("清除已添加的朋友"))
-                .font(pf(L.ctNameSize))
-                .foregroundColor(C.red)
+                .font(pf(16, .medium))
+                .foregroundStyle(C.red)
             Spacer(minLength: 0)
             if clearingFriends {
                 ProgressView().scaleEffect(0.72)
             } else {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 13))
-                    .foregroundColor(C.subLabel)
+                    .font(.system(size: 12.5, weight: .semibold))
+                    .foregroundStyle(OrbitTheme.tertiary)
             }
         }
-        .padding(.leading, L.ctPadL)
-        .padding(.trailing, 16)
-        .frame(height: L.ctRowH)
-        .background(OrbitTheme.cardBackground())
-        .clipShape(OrbitTheme.card)
+        .padding(.horizontal, 14)
+        .frame(height: 62)
         .contentShape(Rectangle())
     }
 
@@ -552,44 +646,66 @@ struct NewFriendsView: View {
     }
 
     private func requestRow(_ user: User) -> some View {
-        HStack(spacing: L.ctGap) {
-            Avatar(path: user.avatarPath, size: L.ctAvatar, radius: 6)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(user.name).font(pf(L.ctNameSize)).foregroundColor(C.label).lineLimit(1)
-                Text(noteOf(user)).font(pf(13)).foregroundColor(C.subLabel).lineLimit(1)
-            }
-            Spacer(minLength: 8)
-            if locallyAccepted[user.id] != nil {
-                Text(Tr("已添加"))
-                    .font(pf(14, .medium))
-                    .foregroundColor(C.green)
-            } else if busy.contains(user.id) {
-                ProgressView().scaleEffect(0.72)
-            } else {
-                Button { respond(user, true) } label: {
-                    Text(Tr("接受"))
-                        .font(pf(14, .medium))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 13)
-                        .frame(height: 28)
-                        .background(RoundedRectangle(cornerRadius: 5, style: .continuous).fill(C.green))
+        HStack(spacing: 12) {
+            Button {
+                if locallyAccepted[user.id] != nil { openChat(user) }
+            } label: {
+                HStack(spacing: 12) {
+                    Avatar(path: user.avatarPath, size: 44, radius: 10)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(user.name)
+                            .font(pf(15.5, .semibold))
+                            .foregroundStyle(OrbitTheme.ink)
+                            .lineLimit(1)
+                        Text(noteOf(user))
+                            .font(pf(12.5))
+                            .foregroundStyle(OrbitTheme.secondary)
+                            .lineLimit(1)
+                    }
+                    Spacer(minLength: 8)
                 }
-                .buttonStyle(MenuPressStyle())
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(locallyAccepted[user.id] == nil)
 
-                Button { respond(user, false) } label: {
-                    Text(Tr("拒绝")).font(pf(14)).foregroundColor(C.subLabel)
+            if locallyAccepted[user.id] != nil {
+                Label(Tr("已添加"), systemImage: "checkmark")
+                    .font(pf(12.5, .semibold))
+                    .foregroundStyle(OrbitTheme.jadeDeep)
+                    .padding(.horizontal, 9)
+                    .frame(height: 28)
+                    .background(Capsule().fill(OrbitTheme.jadeSoft))
+            } else if busy.contains(user.id) {
+                ProgressView()
+                    .controlSize(.small)
+                    .frame(width: 76)
+            } else {
+                HStack(spacing: 7) {
+                    Button { respond(user, true) } label: {
+                        Text(Tr("接受"))
+                            .font(pf(13, .semibold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 13)
+                            .frame(height: 30)
+                            .background(Capsule().fill(OrbitTheme.jadeDeep))
+                    }
+                    .buttonStyle(MenuPressStyle())
+
+                    Button { respond(user, false) } label: {
+                        Text(Tr("拒绝"))
+                            .font(pf(12.5, .medium))
+                            .foregroundStyle(OrbitTheme.secondary)
+                            .padding(.horizontal, 7)
+                            .frame(height: 30)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
-                .padding(.leading, 8)
             }
         }
-        .padding(.leading, L.ctPadL)
-        .padding(.trailing, 16)
-        .frame(height: 68)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            if locallyAccepted[user.id] != nil { openChat(user) }
-        }
+        .padding(.horizontal, 14)
+        .frame(height: 76)
     }
 
     private func doneRow(_ user: User) -> some View {
@@ -634,21 +750,31 @@ struct NewFriendsView: View {
     }
 
     private func waitingRow(_ user: User) -> some View {
-        HStack(spacing: L.ctGap) {
-            Avatar(path: user.avatarPath, size: L.ctAvatar, radius: 6)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(user.name).font(pf(L.ctNameSize)).foregroundColor(C.label).lineLimit(1)
+        HStack(spacing: 12) {
+            Avatar(path: user.avatarPath, size: 44, radius: 10)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(user.name)
+                    .font(pf(15.5, .semibold))
+                    .foregroundStyle(OrbitTheme.ink)
+                    .lineLimit(1)
                 let n = (user.requestMessage ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
                 if !n.isEmpty {
-                    Text(n).font(pf(13)).foregroundColor(C.subLabel).lineLimit(1)
+                    Text(n)
+                        .font(pf(12.5))
+                        .foregroundStyle(OrbitTheme.secondary)
+                        .lineLimit(1)
                 }
             }
             Spacer(minLength: 8)
-            Text(Tr("等待验证")).font(pf(14)).foregroundColor(C.subLabel)
+            Text(Tr("等待验证"))
+                .font(pf(12.5, .medium))
+                .foregroundStyle(OrbitTheme.secondary)
+                .padding(.horizontal, 9)
+                .frame(height: 28)
+                .background(Capsule().fill(OrbitTheme.fieldRaised))
         }
-        .padding(.leading, L.ctPadL)
-        .padding(.trailing, 16)
-        .frame(height: 68)
+        .padding(.horizontal, 14)
+        .frame(height: 72)
         .contentShape(Rectangle())
     }
 
@@ -756,7 +882,7 @@ private struct SwipeDeleteFriendRow: View {
     @State private var startOffset: CGFloat = 0
     @State private var crossedOpen = false
 
-    private let rowHeight: CGFloat = 68
+    private let rowHeight: CGFloat = 72
     private let deleteWidth: CGFloat = 80
     private let haptic = UIImpactFeedbackGenerator(style: .light)
 
@@ -796,7 +922,7 @@ private struct SwipeDeleteFriendRow: View {
         }
         .frame(height: rowHeight)
         .background(OrbitTheme.cardBackground())
-        .clipShape(OrbitTheme.card)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(alignment: .leading) {
             GeometryReader { geo in
                 RowSwipeCatcher(
@@ -853,25 +979,27 @@ private struct SwipeDeleteFriendRow: View {
     }
 
     private var rowContent: some View {
-        HStack(spacing: L.ctGap) {
-            Avatar(path: user.avatarPath, size: L.ctAvatar, radius: 6)
-            VStack(alignment: .leading, spacing: 3) {
+        HStack(spacing: 12) {
+            Avatar(path: user.avatarPath, size: 44, radius: 10)
+            VStack(alignment: .leading, spacing: 4) {
                 Text(user.name)
-                    .font(pf(L.ctNameSize))
-                    .foregroundColor(C.label)
+                    .font(pf(15.5, .semibold))
+                    .foregroundColor(OrbitTheme.ink)
                     .lineLimit(1)
                 Text(note)
-                    .font(pf(13))
-                    .foregroundColor(C.subLabel)
+                    .font(pf(12.5))
+                    .foregroundColor(OrbitTheme.secondary)
                     .lineLimit(1)
             }
             Spacer(minLength: 8)
             Text(Tr("已添加"))
-                .font(pf(14))
-                .foregroundColor(C.subLabel)
+                .font(pf(12.5, .semibold))
+                .foregroundColor(OrbitTheme.jadeDeep)
+                .padding(.horizontal, 9)
+                .frame(height: 28)
+                .background(Capsule().fill(OrbitTheme.jadeSoft))
         }
-        .padding(.leading, L.ctPadL)
-        .padding(.trailing, 16)
+        .padding(.horizontal, 14)
     }
 
     private func close() {
@@ -2368,9 +2496,9 @@ struct FaceGroupView: View {
             NavBar(title: Tr("面对面建群"), back: { dismiss() }) { EmptyView() }
 
             ScrollView {
-                VStack(spacing: 22) {
-                    hero
-                    codeEntry
+                VStack(spacing: 14) {
+                    introPanel
+                    codePanel
 
                     if !tip.isEmpty {
                         HStack(spacing: 7) {
@@ -2379,137 +2507,209 @@ struct FaceGroupView: View {
                         }
                         .font(pf(13, .medium))
                         .foregroundColor(C.red)
-                        .padding(.horizontal, 13)
-                        .frame(minHeight: 36)
-                        .background(
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .fill(C.red.opacity(0.10))
-                        )
-                        .transition(.opacity)
-                    }
-
-                    Button { enter() } label: {
-                        HStack(spacing: 8) {
-                            if busy {
-                                ProgressView().tint(.white).scaleEffect(0.8)
-                            }
-                            Text(busy ? Tr("正在进入…") : Tr("进入群聊"))
-                                .font(pf(17, .semibold))
-                        }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 50)
+                        .padding(.horizontal, 14)
+                        .frame(maxWidth: .infinity, minHeight: 42, alignment: .leading)
                         .background(
                             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .fill(digits.count == 4 ? C.green : C.subLabel.opacity(0.28))
+                                .fill(C.red.opacity(0.10))
                         )
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(C.red.opacity(0.16), lineWidth: 0.7)
+                        }
+                        .transition(.opacity)
                     }
-                    .buttonStyle(.plain)
-                    .disabled(digits.count != 4 || busy)
-
-                    keypad
-                        .padding(.top, 2)
-                        .allowsHitTesting(!busy)
-                        .opacity(busy ? 0.6 : 1)
                 }
-                .padding(.horizontal, 22)
-                .padding(.top, 14)
-                .padding(.bottom, max(22, L.safeBottom + 14))
+                .padding(.horizontal, 16)
+                .padding(.top, 10)
+                .padding(.bottom, 18)
             }
             .scrollIndicators(.hidden)
+
+            keypadDock
         }
-        .background(C.pageBg.ignoresSafeArea())
+        .background(OrbitTheme.canvas.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .swipeBack { dismiss() }
         .hidesTabBar()
     }
 
-    private var hero: some View {
-        VStack(spacing: 11) {
-            ZStack {
-                Circle()
-                    .fill(C.green.opacity(0.12))
-                    .frame(width: 92, height: 92)
-                Circle()
-                    .stroke(C.green.opacity(0.20), lineWidth: 8)
-                    .frame(width: 68, height: 68)
-                Image(systemName: "person.3.fill")
-                    .font(.system(size: 28, weight: .semibold))
-                    .foregroundColor(C.green)
-            }
-
-            Text(Tr("和附近的人一起进群"))
-                .font(pf(22, .semibold))
-                .foregroundColor(C.label)
-                .multilineTextAlignment(.center)
-
-            Text(Tr("输入同样的 4 位数字"))
-                .font(pf(14.5))
-                .foregroundColor(C.subLabel)
-                .multilineTextAlignment(.center)
-        }
-        .padding(.top, 8)
-    }
-
-    private var codeEntry: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 11) {
-                ForEach(0..<4, id: \.self) { i in
-                    let chars = Array(digits)
-                    RoundedRectangle(cornerRadius: 13, style: .continuous)
-                        .fill(Color.dyn(0xF0F2F5, 0x1C1C1E))
-                        .frame(width: 58, height: 66)
-                        .overlay {
-                            Text(i < chars.count ? String(chars[i]) : "")
-                                .font(pf(28, .semibold))
-                                .foregroundColor(C.label)
-                        }
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 13, style: .continuous)
-                                .stroke(i == digits.count && digits.count < 4
-                                        ? C.green : C.hairline.opacity(0.72),
-                                        lineWidth: i == digits.count && digits.count < 4 ? 1.7 : 0.8)
-                        }
+    private var introPanel: some View {
+        PeopleFlowPanel {
+            HStack(alignment: .top, spacing: 14) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .fill(OrbitTheme.jadeSoft)
+                    Image(systemName: "person.3.fill")
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundStyle(OrbitTheme.jadeDeep)
                 }
-            }
+                .frame(width: 54, height: 54)
 
-            Label(Tr("数字 3 分钟内有效"), systemImage: "clock")
-                .font(pf(12.5))
-                .foregroundColor(C.subLabel)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(Tr("和附近的人一起进群"))
+                        .font(pf(17.5, .semibold))
+                        .foregroundStyle(OrbitTheme.ink)
+                    Text(Tr("输入同样的 4 位数字"))
+                        .font(pf(13.5))
+                        .foregroundStyle(OrbitTheme.secondary)
+                }
+
+                Spacer(minLength: 0)
+            }
+            .padding(16)
         }
     }
 
-    private var keypad: some View {
-        LazyVGrid(
-            columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3),
-            spacing: 8
-        ) {
-            ForEach(keys, id: \.self) { key in
-                if key.isEmpty {
-                    Color.clear.frame(height: 52)
-                } else {
-                    Button { press(key) } label: {
-                        Group {
-                            if key == "⌫" {
-                                Image(systemName: "delete.left")
-                                    .font(.system(size: 20, weight: .regular))
-                            } else {
-                                Text(key)
-                                    .font(pf(23, .medium))
-                            }
-                        }
-                        .foregroundColor(C.label)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .background(
-                            RoundedRectangle(cornerRadius: 13, style: .continuous)
-                                .fill(Color.dyn(0xF5F5F5, 0x1C1C1E))
-                        )
-                        .contentShape(Rectangle())
+    private var codePanel: some View {
+        PeopleFlowPanel {
+            VStack(spacing: 15) {
+                HStack {
+                    Text(Tr("输入同样的 4 位数字"))
+                        .font(pf(14.5, .semibold))
+                        .foregroundStyle(OrbitTheme.ink)
+                    Spacer(minLength: 0)
+                    Text("\(digits.count)/4")
+                        .font(pf(12, .semibold))
+                        .foregroundStyle(digits.count == 4
+                                         ? OrbitTheme.jadeDeep
+                                         : OrbitTheme.tertiary)
+                        .monospacedDigit()
+                }
+
+                HStack(spacing: 9) {
+                    ForEach(0..<4, id: \.self) { index in
+                        codeSlot(index)
                     }
-                    .buttonStyle(.plain)
+                }
+
+                HStack(spacing: 7) {
+                    Image(systemName: "clock")
+                    Text(Tr("数字 3 分钟内有效"))
+                    Spacer(minLength: 0)
+                    Image(systemName: digits.count == 4 ? "checkmark.circle.fill" : "circle.dashed")
+                        .foregroundStyle(digits.count == 4
+                                         ? OrbitTheme.jade
+                                         : OrbitTheme.tertiary)
+                }
+                .font(pf(12.5))
+                .foregroundStyle(OrbitTheme.secondary)
+            }
+            .padding(16)
+        }
+    }
+
+    private func codeSlot(_ index: Int) -> some View {
+        let chars = Array(digits)
+        let entered = index < chars.count
+        let active = index == digits.count && digits.count < 4
+        return ZStack {
+            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                .fill(active ? OrbitTheme.jadeSoft : OrbitTheme.field)
+            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                .stroke(
+                    active ? OrbitTheme.jade : OrbitTheme.divider,
+                    lineWidth: active ? 1.5 : 0.7
+                )
+
+            if entered {
+                Text(String(chars[index]))
+                    .font(pf(28, .semibold))
+                    .foregroundStyle(OrbitTheme.ink)
+                    .monospacedDigit()
+                    .transition(.scale(scale: 0.72).combined(with: .opacity))
+            } else {
+                Circle()
+                    .fill(active
+                          ? OrbitTheme.jade.opacity(0.42)
+                          : OrbitTheme.tertiary.opacity(0.22))
+                    .frame(width: active ? 7 : 5, height: active ? 7 : 5)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 72)
+        .animation(.spring(response: 0.24, dampingFraction: 0.82), value: digits)
+    }
+
+    private var keypadDock: some View {
+        VStack(spacing: 11) {
+            Button { enter() } label: {
+                HStack(spacing: 8) {
+                    if busy {
+                        ProgressView()
+                            .tint(digits.count == 4 ? Color.white : OrbitTheme.secondary)
+                            .controlSize(.small)
+                    } else {
+                        Image(systemName: "arrow.right.circle.fill")
+                            .font(.system(size: 17, weight: .semibold))
+                    }
+                    Text(busy ? Tr("正在进入…") : Tr("进入群聊"))
+                        .font(pf(16.5, .semibold))
+                }
+                .foregroundStyle(digits.count == 4 ? Color.white : OrbitTheme.secondary)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(
+                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .fill(digits.count == 4
+                              ? OrbitTheme.jadeDeep
+                              : OrbitTheme.fieldRaised)
+                )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .stroke(OrbitTheme.divider, lineWidth: digits.count == 4 ? 0 : 0.7)
                 }
             }
+            .buttonStyle(MenuPressStyle())
+            .disabled(digits.count != 4 || busy)
+
+            LazyVGrid(
+                columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3),
+                spacing: 8
+            ) {
+                ForEach(keys, id: \.self) { key in
+                    if key.isEmpty {
+                        Color.clear.frame(height: 50)
+                    } else {
+                        Button { press(key) } label: {
+                            Group {
+                                if key == "⌫" {
+                                    Image(systemName: "delete.left")
+                                        .font(.system(size: 19, weight: .medium))
+                                } else {
+                                    Text(key)
+                                        .font(pf(22, .medium))
+                                        .monospacedDigit()
+                                }
+                            }
+                            .foregroundStyle(OrbitTheme.ink)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .fill(OrbitTheme.field)
+                            )
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .stroke(OrbitTheme.divider, lineWidth: 0.7)
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(MenuPressStyle())
+                    }
+                }
+            }
+            .allowsHitTesting(!busy)
+            .opacity(busy ? 0.58 : 1)
+        }
+        .padding(.horizontal, 18)
+        .padding(.top, 11)
+        .padding(.bottom, max(10, L.safeBottom))
+        .background(OrbitTheme.canvas)
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(OrbitTheme.divider)
+                .frame(height: 0.5)
         }
     }
 
