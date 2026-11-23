@@ -77,6 +77,7 @@ async function main() {
       cwd: SERVER_DIR,
       env: Object.assign({}, process.env, {
         DATA_DIR: dataDir,
+        ENABLE_TRANSFER_KERNEL: '1',
         PORT: String(port),
         HTTPS_PORT: String(httpsPort),
         TURN_PORT: String(turnPort),

@@ -18,44 +18,35 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    '"/api/transfer/init"' in CLIENT
-    and '"/api/transfer/\\(id)/chunk"' in CLIENT
-    and '"/api/transfer/\\(id)/complete"' in CLIENT
-    and "x-transfer-chunk-index" in CLIENT
-    and "x-transfer-chunk-sha256" in CLIENT,
-    "client must use the declared resumable transfer protocol",
+    "TransferUploader" not in API
+    and "/api/transfer" not in API[API.index("func uploadBinary("):
+                                     API.index("func send(chatId: String")]
+    and 'base + "/api/upload/raw"' in API
+    and API.count('base + "/api/upload/raw"') >= 3,
+    "the app upload boundary must use only the 11/21 raw upload endpoints",
 )
 require(
-    "TransferJobStore" in CLIENT
-    and "jobs.json" in CLIENT
-    and "fetchStatus(id: existing.remoteId" in CLIENT
-    and "let pending = remote.missing" in CLIENT
-    and "let preferredWorkers = size >= 16 * 1024 * 1024 ? 6 : 3" in CLIENT
-    and "let workerCount = min(preferredWorkers, pending.count)" in CLIENT
-    and "withThrowingTaskGroup" in CLIENT,
-    "client must persist jobs and resume acknowledged chunks with adaptive concurrency",
+    "req.httpBody = data\n        let (d, resp) = try await session.data(for: req)"
+    in API
+    and "session.upload(\n            for: req,\n            fromFile: file,\n            delegate: delegate"
+    in API
+    and "req.timeoutInterval = 600" in API,
+    "binary and file uploads must use the original URLSession transfer mode",
 )
 require(
-    "allowsLegacyFallback" not in CLIENT
-    and "TransferJobStore.shared.remove(key)" in CLIENT
-    and "error.allowsLegacyFallback" not in API
-    and "uploadBinaryFileLegacy" not in API
-    and "uploadBinaryLegacy" not in API,
-    "large media uploads must never silently fall back to a single whole-file request",
+    "private func uploadRawJPEG(" in API
+    and 'req.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")'
+    in API
+    and 'req.setValue("1", forHTTPHeaderField: "x-chris-compressed")' in API
+    and '"/api/upload"' in API,
+    "images must try raw JPEG first and retain the baseline base64 fallback",
 )
 require(
-    "TransferCapabilityCache" not in CLIENT
-    and "private func initialize(" in CLIENT
-    and '"/api/transfer/init"' in CLIENT
-    and "parts[1] === 'capabilities'" in SERVER,
-    "uploads must enter the transfer kernel directly without an extra capability round trip",
-)
-require(
-    "SHA256" in CLIENT
-    and "fileFingerprint" in CLIENT
-    and "readChunk" in CLIENT
-    and "data.subdata(in: start..<end)" in CLIENT,
-    "client hashing and chunk reads must stay bounded",
+    "func uploadPreparedJPEGForSend(" in API
+    and "private final class ActualUploadProgress" in CHAT
+    and "let totalBytes = prepared.reduce(Int64(0))" in CHAT
+    and "value: p," in CHAT,
+    "the 11/21 transport must keep real prepared-image progress aggregation",
 )
 require(
     "let progress: Double?" in MEDIA
@@ -102,7 +93,8 @@ require(
     "active chunk uploads must start immediately on a foreground URLSession",
 )
 require(
-    "parts[0] === 'transfer'" in SERVER
+    "process.env.ENABLE_TRANSFER_KERNEL === '1'" in SERVER
+    and "parts[0] === 'transfer'" in SERVER
     and "'/api/transfer/init'" not in SERVER
     and "kernel.putChunk" in SERVER
     and "kernel.complete" in SERVER
@@ -152,11 +144,11 @@ require(
 )
 require(
     "TransferUploader" not in API
-    and 'base + "/api/upload/raw"' in API
-    and "uploadBaselineRaw(data:" in API
-    and "uploadBaselineRawFile(file:" in API
-    and API.count('base + "/api/upload/raw"') >= 2,
-    "media uploads must use only the proven 11/16 raw chain",
+    and "uploadBaselineRaw" not in API
+    and "transferBase" not in API
+    and "private func uploadRawJPEG(_ data:" in API
+    and "func uploadBinaryFile(_ file: URL" in API,
+    "media uploads must use only the proven 11/21 raw chain",
 )
 require(
     "node server/test/transfer-kernel.test.js" in WORKFLOW,

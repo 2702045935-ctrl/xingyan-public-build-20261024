@@ -24897,7 +24897,8 @@ async function handleApi(req, res, pathname, query) {
 
   /* 可恢复传输内核：先声明任务，再幂等写分片，最后统一校验。
      分片直接以 AES-256-CTR 写入最终加密文件，不会先落一份明文。 */
-  if (parts[0] === 'transfer' && parts.length >= 2) {
+  if (process.env.ENABLE_TRANSFER_KERNEL === '1'
+      && parts[0] === 'transfer' && parts.length >= 2) {
     const kernel = getTransferKernel();
     try {
       if (parts[1] === 'capabilities' && method === 'GET') {
@@ -24972,7 +24973,8 @@ async function handleApi(req, res, pathname, query) {
     }
   }
 
-  /* 旧版二进制直传。新版客户端走 /api/transfer，保留此入口用于滚动升级。
+  /* 11/21 稳定上传模式：App 的图片、视频、文件全部直接走这里。
+     分片内核仅作为显式诊断能力保留，生产默认关闭。
      视频/图片直接把原始字节 PUT 上来，不再塞 base64
      （base64 会多传 33%，一条 5MB 视频要多跑 1.7MB 流量 → 手机上就是多等十几秒） */
   if (parts[0] === 'upload' && parts[1] === 'raw' && method === 'POST') {
