@@ -29209,6 +29209,8 @@ async function handleOps(req, res, parts, query) {
     if (admin.role !== 'super') return fail(res, 403, 'Fleet 配置只有超级管理员能操作');
     const fleetPath = path.resolve(process.env.PHYSICAL_FLEET_PLAN
       || '/var/lib/xingyan-dual-cell/current-fleet.json');
+    const targetPath = path.resolve(process.env.PHYSICAL_FLEET_TARGET
+      || '/var/lib/xingyan-dual-cell/fleet-target.json');
     if (method === 'GET') {
       const plan = readJson(fleetPath, null)
         || readJson(path.join(path.dirname(ROOT), 'deploy', 'fleet',
@@ -29216,7 +29218,10 @@ async function handleOps(req, res, parts, query) {
       if (!plan) return fail(res, 404, '没有 Fleet 计划文件');
       ok(res, {
         path: fleetPath,
+        targetPath,
         plan,
+        currentPlan: plan,
+        candidatePlan: readJson(targetPath, null),
         validation: validateFleetPlan(plan)
       });
       return;
@@ -29228,13 +29233,13 @@ async function handleOps(req, res, parts, query) {
       if (!validation.ok) {
         return fail(res, 422, 'Fleet 计划校验失败', validation.failures);
       }
-      writeJson(fleetPath, plan);
-      audit(req, admin, '保存生产 Cell 节点计划', validation.normalized.topologyId,
+      writeJson(targetPath, plan);
+      audit(req, admin, '保存目标 Cell 节点计划', validation.normalized.topologyId,
         validation.normalized.cells.length + ' Cell / '
           + validation.normalized.shardCount + ' 分片'
           + (validation.deploymentEligible ? '' : ' / 故障域未验证'));
       ok(res, {
-        path: fleetPath,
+        path: targetPath,
         plan,
         validation
       });

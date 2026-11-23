@@ -33,6 +33,8 @@ function createFleetControlHttp(deps) {
     }
     const fleetPath = path.resolve(process.env.PHYSICAL_FLEET_PLAN
       || '/var/lib/xingyan-dual-cell/current-fleet.json');
+    const targetPath = path.resolve(process.env.PHYSICAL_FLEET_TARGET
+      || '/var/lib/xingyan-dual-cell/fleet-target.json');
     const fallbackPlan = () => {
       const candidates = [
         path.join(root, 'deploy', 'fleet', 'fleet-production.json'),
@@ -54,7 +56,17 @@ function createFleetControlHttp(deps) {
         fail(res, 404, '没有 Fleet 计划文件');
         return true;
       }
-      ok(res, { path: fleetPath, plan, validation: validateFleetPlan(plan) });
+      ok(res, {
+        path: fleetPath,
+        targetPath,
+        plan,
+        currentPlan: plan,
+        candidatePlan: (() => {
+          try { return JSON.parse(fs.readFileSync(targetPath, 'utf8')); }
+          catch (_) { return null; }
+        })(),
+        validation: validateFleetPlan(plan)
+      });
       return true;
     }
     if (parts[1] === 'fleet' && parts.length === 2 && method === 'PUT') {
@@ -69,12 +81,12 @@ function createFleetControlHttp(deps) {
         fail(res, 422, 'Fleet 计划校验失败', validation.failures);
         return true;
       }
-      writeJson(fleetPath, plan);
-      audit(req, admin, '保存生产 Cell 节点计划',
+      writeJson(targetPath, plan);
+      audit(req, admin, '保存目标 Cell 节点计划',
         validation.normalized.topologyId,
         validation.normalized.cells.length + ' Cell / '
           + validation.normalized.shardCount + ' 分片');
-      ok(res, { path: fleetPath, plan, validation });
+      ok(res, { path: targetPath, plan, validation });
       return true;
     }
     if (parts[1] === 'shardmaintenance'

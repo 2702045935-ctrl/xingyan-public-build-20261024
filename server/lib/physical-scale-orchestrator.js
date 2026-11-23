@@ -138,7 +138,7 @@ async function executePhysicalScale(plan, adapters, options) {
             toHost: move.fromHost
           }));
         }
-        if (gatewaySwitched) {
+        if (gatewaySwitched || routesSwitched) {
           await adapters.switchGateway(Object.assign({}, move, {
             rollback: true,
             toCellId: move.fromCellId,

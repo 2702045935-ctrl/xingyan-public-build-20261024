@@ -68,6 +68,7 @@ async function stop(child) {
 async function main() {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xingyan-maintenance-api-'));
   const fleetFile = path.join(dataDir, 'current-fleet.json');
+  const fleetTargetFile = path.join(dataDir, 'fleet-target.json');
   const port = await freePort();
   const base = 'http://127.0.0.1:' + port;
   const logs = [];
@@ -82,6 +83,7 @@ async function main() {
       DISABLE_STARTUP_BOT_BACKFILL: '1',
       AML_RUNTIME_ENABLED: '0',
       PHYSICAL_FLEET_PLAN: fleetFile,
+      PHYSICAL_FLEET_TARGET: fleetTargetFile,
       ADMIN_PASSWORD
     }),
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -112,7 +114,7 @@ async function main() {
       confirmPassword: ADMIN_PASSWORD
     });
     assert.strictEqual(response.status, 200, JSON.stringify(response.payload));
-    assert.ok(fs.existsSync(fleetFile));
+    assert.ok(fs.existsSync(fleetTargetFile));
 
     response = await call(base, cookie, 'GET', '/api/ops/shardmaintenance');
     assert.strictEqual(response.status, 200, JSON.stringify(response.payload));

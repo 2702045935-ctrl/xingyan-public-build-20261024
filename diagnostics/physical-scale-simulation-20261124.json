@@ -1,0 +1,677 @@
+{
+  "version": 1,
+  "generatedAt": "2026-11-23T21:32:08.806Z",
+  "scope": "in-memory orchestration simulation; no production mutation",
+  "sourceCellCount": 2,
+  "targetCellCount": 4,
+  "shardCount": 7,
+  "moveCount": 5,
+  "planFingerprint": "604f0267c3654c44138ff9ab8b1829d734ea4d69debb8215ab63b15b1708a110",
+  "targetOwnershipComplete": true,
+  "success": {
+    "ok": true,
+    "reason": "complete",
+    "movedShards": 5,
+    "events": [
+      {
+        "at": "2026-11-23T21:32:08.804Z",
+        "phase": "prepare-node",
+        "cellId": "cell-c"
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "prepare-node",
+        "cellId": "cell-d"
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "seed-replica",
+        "shard": 1,
+        "cellId": "cell-b-192"
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "catch-up",
+        "shard": 1
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "shadow-read",
+        "shard": 1
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "freeze-old-owner",
+        "shard": 1
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "acquire-target-lease",
+        "shard": 1
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "switch-routes",
+        "shard": 1
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "switch-gateway",
+        "shard": 1
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "unfreeze-target-owner",
+        "shard": 1
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "verify-owner",
+        "shard": 1
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "switch-replication",
+        "shard": 1
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "cutover-complete",
+        "shard": 1
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "seed-replica",
+        "shard": 2,
+        "cellId": "cell-c"
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "catch-up",
+        "shard": 2
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "shadow-read",
+        "shard": 2
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "freeze-old-owner",
+        "shard": 2
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "acquire-target-lease",
+        "shard": 2
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "switch-routes",
+        "shard": 2
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "switch-gateway",
+        "shard": 2
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "unfreeze-target-owner",
+        "shard": 2
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "verify-owner",
+        "shard": 2
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "switch-replication",
+        "shard": 2
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "cutover-complete",
+        "shard": 2
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "seed-replica",
+        "shard": 3,
+        "cellId": "cell-d"
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "catch-up",
+        "shard": 3
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "shadow-read",
+        "shard": 3
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "freeze-old-owner",
+        "shard": 3
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "acquire-target-lease",
+        "shard": 3
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "switch-routes",
+        "shard": 3
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "switch-gateway",
+        "shard": 3
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "unfreeze-target-owner",
+        "shard": 3
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "verify-owner",
+        "shard": 3
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "switch-replication",
+        "shard": 3
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "cutover-complete",
+        "shard": 3
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "seed-replica",
+        "shard": 4,
+        "cellId": "cell-a-43"
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "catch-up",
+        "shard": 4
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "shadow-read",
+        "shard": 4
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "freeze-old-owner",
+        "shard": 4
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "acquire-target-lease",
+        "shard": 4
+      },
+      {
+        "at": "2026-11-23T21:32:08.805Z",
+        "phase": "switch-routes",
+        "shard": 4
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "switch-gateway",
+        "shard": 4
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "unfreeze-target-owner",
+        "shard": 4
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "verify-owner",
+        "shard": 4
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "switch-replication",
+        "shard": 4
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "cutover-complete",
+        "shard": 4
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "seed-replica",
+        "shard": 6,
+        "cellId": "cell-c"
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "catch-up",
+        "shard": 6
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "shadow-read",
+        "shard": 6
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "freeze-old-owner",
+        "shard": 6
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "acquire-target-lease",
+        "shard": 6
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "switch-routes",
+        "shard": 6
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "switch-gateway",
+        "shard": 6
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "unfreeze-target-owner",
+        "shard": 6
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "verify-owner",
+        "shard": 6
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "switch-replication",
+        "shard": 6
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "cutover-complete",
+        "shard": 6
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "soak",
+        "minutes": 1
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "complete"
+      }
+    ]
+  },
+  "failureInjection": {
+    "ok": false,
+    "reason": "cutover-failed",
+    "failedShard": 3,
+    "rolledBack": true,
+    "events": [
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "prepare-node",
+        "cellId": "cell-c"
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "prepare-node",
+        "cellId": "cell-d"
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "seed-replica",
+        "shard": 1,
+        "cellId": "cell-b-192"
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "catch-up",
+        "shard": 1
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "shadow-read",
+        "shard": 1
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "freeze-old-owner",
+        "shard": 1
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "acquire-target-lease",
+        "shard": 1
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "switch-routes",
+        "shard": 1
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "switch-gateway",
+        "shard": 1
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "unfreeze-target-owner",
+        "shard": 1
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "verify-owner",
+        "shard": 1
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "switch-replication",
+        "shard": 1
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "cutover-complete",
+        "shard": 1
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "seed-replica",
+        "shard": 2,
+        "cellId": "cell-c"
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "catch-up",
+        "shard": 2
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "shadow-read",
+        "shard": 2
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "freeze-old-owner",
+        "shard": 2
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "acquire-target-lease",
+        "shard": 2
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "switch-routes",
+        "shard": 2
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "switch-gateway",
+        "shard": 2
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "unfreeze-target-owner",
+        "shard": 2
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "verify-owner",
+        "shard": 2
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "switch-replication",
+        "shard": 2
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "cutover-complete",
+        "shard": 2
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "seed-replica",
+        "shard": 3,
+        "cellId": "cell-d"
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "catch-up",
+        "shard": 3
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "shadow-read",
+        "shard": 3
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "freeze-old-owner",
+        "shard": 3
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "acquire-target-lease",
+        "shard": 3
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "switch-routes",
+        "shard": 3
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "switch-gateway",
+        "shard": 3
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "cutover-failed",
+        "shard": 3,
+        "reason": "simulated-switchGateway-failure",
+        "gatewaySwitched": false,
+        "routesSwitched": true,
+        "leaseAcquired": true,
+        "frozen": true,
+        "replicationSwitched": false
+      },
+      {
+        "at": "2026-11-23T21:32:08.806Z",
+        "phase": "rollback-complete",
+        "shard": 3
+      }
+    ],
+    "adapterEvents": [
+      {
+        "name": "prepareNode",
+        "cellId": "cell-c",
+        "rollback": false
+      },
+      {
+        "name": "prepareNode",
+        "cellId": "cell-d",
+        "rollback": false
+      },
+      {
+        "name": "seedReplica",
+        "shard": 1,
+        "rollback": false
+      },
+      {
+        "name": "waitReplicaCaughtUp",
+        "shard": 1,
+        "rollback": false
+      },
+      {
+        "name": "shadowRead",
+        "shard": 1,
+        "rollback": false
+      },
+      {
+        "name": "freezeOwner",
+        "shard": 1,
+        "rollback": false
+      },
+      {
+        "name": "acquireLease",
+        "shard": 1,
+        "rollback": false
+      },
+      {
+        "name": "switchRoutes",
+        "shard": 1,
+        "rollback": false
+      },
+      {
+        "name": "switchGateway",
+        "shard": 1,
+        "rollback": false
+      },
+      {
+        "name": "unfreezeOwner",
+        "shard": 1,
+        "rollback": false
+      },
+      {
+        "name": "verifyOwner",
+        "shard": 1,
+        "rollback": false
+      },
+      {
+        "name": "switchReplication",
+        "shard": 1,
+        "rollback": false
+      },
+      {
+        "name": "seedReplica",
+        "shard": 2,
+        "rollback": false
+      },
+      {
+        "name": "waitReplicaCaughtUp",
+        "shard": 2,
+        "rollback": false
+      },
+      {
+        "name": "shadowRead",
+        "shard": 2,
+        "rollback": false
+      },
+      {
+        "name": "freezeOwner",
+        "shard": 2,
+        "rollback": false
+      },
+      {
+        "name": "acquireLease",
+        "shard": 2,
+        "rollback": false
+      },
+      {
+        "name": "switchRoutes",
+        "shard": 2,
+        "rollback": false
+      },
+      {
+        "name": "switchGateway",
+        "shard": 2,
+        "rollback": false
+      },
+      {
+        "name": "unfreezeOwner",
+        "shard": 2,
+        "rollback": false
+      },
+      {
+        "name": "verifyOwner",
+        "shard": 2,
+        "rollback": false
+      },
+      {
+        "name": "switchReplication",
+        "shard": 2,
+        "rollback": false
+      },
+      {
+        "name": "seedReplica",
+        "shard": 3,
+        "rollback": false
+      },
+      {
+        "name": "waitReplicaCaughtUp",
+        "shard": 3,
+        "rollback": false
+      },
+      {
+        "name": "shadowRead",
+        "shard": 3,
+        "rollback": false
+      },
+      {
+        "name": "freezeOwner",
+        "shard": 3,
+        "rollback": false
+      },
+      {
+        "name": "acquireLease",
+        "shard": 3,
+        "rollback": false
+      },
+      {
+        "name": "switchRoutes",
+        "shard": 3,
+        "rollback": false
+      },
+      {
+        "name": "switchGateway",
+        "shard": 3,
+        "rollback": false
+      },
+      {
+        "name": "switchRoutes",
+        "shard": 3,
+        "rollback": true
+      },
+      {
+        "name": "switchGateway",
+        "shard": 3,
+        "rollback": true
+      },
+      {
+        "name": "acquireLease",
+        "shard": 3,
+        "rollback": true
+      },
+      {
+        "name": "unfreezeOwner",
+        "shard": 3,
+        "rollback": true
+      },
+      {
+        "name": "verifyOwner",
+        "shard": 3,
+        "rollback": true
+      }
+    ]
+  },
+  "checks": {
+    "allMovesExecuted": true,
+    "replicationHandoff": true,
+    "rollbackOrder": true
+  },
+  "ok": true
+}
