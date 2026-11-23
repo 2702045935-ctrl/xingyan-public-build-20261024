@@ -295,6 +295,11 @@ where Item.ID: Hashable {
                    appendPureTail(next, from: oldCount, keepPending: true) {
                     return
                 }
+                if allowInsertionDuringScroll,
+                   next.count == oldCount,
+                   slideWindowDuringScroll(next) {
+                    return
+                }
                 pendingItems = next
                 return
             }
@@ -424,6 +429,64 @@ where Item.ID: Hashable {
             return true
         }
 
+        @discardableResult
+        private func slideWindowDuringScroll(_ next: [Item]) -> Bool {
+            guard next.count == order.count,
+                  let nextFirst = next.first?.id,
+                  nextFirst != order.first,
+                  let removedCount = order.firstIndex(of: nextFirst),
+                  removedCount > 0,
+                  let dataSource,
+                  let table else { return false }
+
+            let nextOrder = next.map(\.id)
+            let retained = order[removedCount...]
+            guard nextOrder.count >= retained.count,
+                  nextOrder.prefix(retained.count).elementsEqual(retained) else {
+                return false
+            }
+            let removedIDs = Array(order.prefix(removedCount))
+            let addedIDs = Array(nextOrder.suffix(removedCount))
+            let added = Array(next.suffix(removedCount))
+            guard !addedIDs.isEmpty else { return false }
+
+            let visibleRow = table.indexPathsForVisibleRows?.min()
+            let visibleID = visibleRow.flatMap { dataSource.itemIdentifier(for: $0) }
+            let visibleDelta = visibleRow.map {
+                table.rectForRow(at: $0).minY - table.contentOffset.y
+            }
+            let previousOffset = table.contentOffset
+            for id in removedIDs { lookup.removeValue(forKey: id) }
+            for item in added { lookup[item.id] = item }
+            order = nextOrder
+            appliedItemCount = order.count
+            endRequestInFlight = false
+            pendingItems = nil
+            applyGeneration += 1
+            let generation = applyGeneration
+
+            var snapshot = dataSource.snapshot()
+            snapshot.deleteItems(removedIDs)
+            snapshot.appendItems(addedIDs, toSection: 0)
+            dataSource.apply(snapshot, animatingDifferences: false) {
+                [weak self, weak table] in
+                guard let self, let table,
+                      generation == self.applyGeneration,
+                      self.table === table else { return }
+                table.layoutIfNeeded()
+                self.prefetchEndRunwayIfNeeded(table)
+                if let visibleID, let indexPath = dataSource.indexPath(for: visibleID),
+                   let delta = visibleDelta {
+                    let targetY = table.rectForRow(at: indexPath).minY - delta
+                    table.setContentOffset(
+                        CGPoint(x: previousOffset.x, y: targetY),
+                        animated: false
+                    )
+                }
+            }
+            return true
+        }
+
         func tableView(_ tableView: UITableView,
                        heightForRowAt indexPath: IndexPath) -> CGFloat {
             let resolvedId = dataSource?.itemIdentifier(for: indexPath)
@@ -446,7 +509,7 @@ where Item.ID: Hashable {
                                || scrollView.isTracking
                                || scrollView.isDecelerating)
             let y = scrollView.contentOffset.y
-            if abs(y - lastReportedOffsetY) >= 6 {
+            if abs(y - lastReportedOffsetY) >= 12 {
                 lastReportedOffsetY = y
                 onOffsetChange(max(0, y))
             }

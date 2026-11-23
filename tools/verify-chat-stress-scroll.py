@@ -126,7 +126,7 @@ require(
     and "lastReportedOffsetY" in (
         ROOT / "Sources" / "NativeChatList.swift"
     ).read_text(encoding="utf-8")
-    and "abs(y - lastReportedOffsetY) >= 6" in (
+    and "abs(y - lastReportedOffsetY) >= 12" in (
         ROOT / "Sources" / "NativeChatList.swift"
     ).read_text(encoding="utf-8")
     and "panGestureRecognizer.delaysTouchesBegan = false" in (
@@ -147,6 +147,14 @@ require(
     and "table.isDragging || table.isTracking || table.isDecelerating" in NATIVE_CHAT_LIST
     and "pendingItems = next" in NATIVE_CHAT_LIST,
     "only non-append changes may defer during touch motion",
+)
+require(
+    "private func slideWindowDuringScroll" in NATIVE_CHAT_LIST
+    and "next.count == oldCount,\n                   slideWindowDuringScroll(next)" in NATIVE_CHAT_LIST
+    and "snapshot.deleteItems(removedIDs)" in NATIVE_CHAT_LIST
+    and "snapshot.appendItems(addedIDs, toSection: 0)" in NATIVE_CHAT_LIST
+    and "table.rectForRow(at: indexPath).minY - delta" in NATIVE_CHAT_LIST,
+    "bounded conversation windows must recycle leading rows during motion with an exact visible anchor",
 )
 require(
     "let prefetchLead = max(4_200, scrollView.bounds.height * 3.5)" in NATIVE_CHAT_LIST
