@@ -24,20 +24,20 @@ require(ROW.count("private static func previewTokenColor") == 1
 require("unreadLabel.backgroundColor = .systemRed" in ROW
         and "systemBlue" not in CHATS,
         "unread counts must use the single red badge language")
-for key, light in (
-    ("pageBg", "0xFFFFFF"),
-    ("navBg", "0xFFFFFF"),
-    ("tabBg", "0xFFFFFF"),
-    ("chatRowBg", "0xFFFFFF"),
-    ("chatsTopBg", "0xFFFFFF"),
-    ("chatsPageBg", "0xFFFFFF"),
-    ("chatsRowBg", "0xFFFFFF"),
-    ("contactsBg", "0xFFFFFF"),
-    ("discoverBg", "0xEDEDED"),
+for key, light, dark in (
+    ("pageBg", "0xFFFFFF", "0x0E0F12"),
+    ("navBg", "0xFFFFFF", "0x15161A"),
+    ("tabBg", "0xFFFFFF", "0x121317"),
+    ("chatRowBg", "0xFFFFFF", "0x121317"),
+    ("chatsTopBg", "0xFFFFFF", "0x15161A"),
+    ("chatsPageBg", "0xFFFFFF", "0x0E0F12"),
+    ("chatsRowBg", "0xFFFFFF", "0x121317"),
+    ("contactsBg", "0xFFFFFF", "0x0E0F12"),
+    ("discoverBg", "0xEDEDED", "0x0E0F12"),
 ):
     require(
-        f'UIConfig.fixedDark("{key}", {light}, 0x0A0A0A)' in CORE,
-        f"{key} must share the app-wide #0A0A0A dark canvas",
+        f'UIConfig.fixedDark("{key}", {light}, {dark})' in CORE,
+        f"{key} must use its explicit dark elevation level",
     )
 require(
     "background ?? (isDark ? C.pageBg" in NAV,

@@ -15,15 +15,15 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "chatsIsDark ? Color(hex: 0x0A0A0A) : C.chatsPageBg" in CHATS
-    and "if isDark { return Color(hex: 0x0A0A0A) }" in CHATS
-    and "let rowBg: UIColor = isDark ? UIColor(hex: 0x0A0A0A) : UIColor.white" in CHATS,
-    "dark chat canvas must match the latest WhatsApp near-black surface",
+    "chatsIsDark ? Color(hex: 0x0E0F12) : C.chatsPageBg" in CHATS
+    and "if isDark { return Color(hex: 0x121317) }" in CHATS
+    and "let rowBg: UIColor = isDark ? UIColor(hex: 0x121317) : UIColor.white" in CHATS,
+    "dark chat canvas, rows and chrome must use distinct neutral elevation levels",
 )
 require(
     "showsDivider: true" in CHATS
-    and "? UIColor(hex: 0x222222)" in CHATS
-    and "dividerColor: isDark\n                ? UIColor(hex: 0x222222)" in CHATS
+    and "? UIColor(hex: 0x2A2D33)" in CHATS
+    and "dividerColor: isDark\n                ? UIColor(hex: 0x2A2D33)" in CHATS
     and ".fill(ChatListVisual.rule)" in CHATS
     and ".fill(isDark ? Color.clear : ChatListVisual.rule)" not in CHATS
     and "dividerLeading: CGFloat = 77" in ROW,
@@ -54,7 +54,7 @@ require(
     "reused native rows must clear old text and render on an opaque surface",
 )
 require(
-    "? Color(hex: 0x111111)" in CHATS
+    "? Color(hex: 0x1D2026)" in CHATS
     and "Color.white.opacity(0.045)" in CHATS
     and "Color(hex: 0x6E7378)" in CHATS
     and ".stroke(chatsSearchBorder, lineWidth: 0.5)" in CHATS,
@@ -73,10 +73,10 @@ require(
     "empty and filtered chat lists must stay inside the native list surface",
 )
 require(
-    "let previewColor = UIColor(hex: isDark ? 0x949393 : 0x999999)" in CHATS
-    and "let timeColor = UIColor(hex: isDark ? 0x949393 : 0xB2B2B2)" in CHATS
+    "let previewColor = UIColor(hex: isDark ? 0x9CA3AA : 0x999999)" in CHATS
+    and "let timeColor = UIColor(hex: isDark ? 0x8B929A : 0xB2B2B2)" in CHATS
     and "let titleColor: UIColor = chat.showsOfficialMark" in CHATS
-    and "UIColor(hex: isDark ? 0xFAFAFA : 0x191919)" in CHATS,
+    and "UIColor(hex: isDark ? 0xF2F4F6 : 0x191919)" in CHATS,
     "chat-list title, preview and time must match WhatsApp's measured hierarchy",
 )
 require(
