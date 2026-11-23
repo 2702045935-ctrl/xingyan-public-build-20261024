@@ -23,7 +23,7 @@ block = PICKERS[start:end]
 require(
     "var maxSide: CGFloat = 2048" in block
     and "provider.loadDataRepresentation(" in block
-    and "RemoteImage.downsampled(data, maxSide: maxSide)" in block
+    and "RemoteImage.downsampled(data, maxSide: decodeSide)" in block
     and "DispatchQueue.global(qos: .userInitiated).async" in block,
     "single-photo picking must downsample source data off the main thread",
 )
