@@ -17,6 +17,32 @@ def require(condition: bool, message: str) -> None:
         raise SystemExit("glass chat theme verification failed: " + message)
 
 
+def relative_luminance(hex_color: str) -> float:
+    channels = [
+        int(hex_color[index:index + 2], 16) / 255
+        for index in (0, 2, 4)
+    ]
+    linear = [
+        value / 12.92
+        if value <= 0.04045
+        else ((value + 0.055) / 1.055) ** 2.4
+        for value in channels
+    ]
+    return (
+        0.2126 * linear[0]
+        + 0.7152 * linear[1]
+        + 0.0722 * linear[2]
+    )
+
+
+def contrast(foreground: str, background: str) -> float:
+    values = sorted(
+        [relative_luminance(foreground), relative_luminance(background)],
+        reverse=True,
+    )
+    return (values[0] + 0.05) / (values[1] + 0.05)
+
+
 require(
     "case glass" in THEMES
     and 'case .glass: return Tr("玻璃")' in THEMES
@@ -51,6 +77,50 @@ require(
     and "path.lineWidth = 0.8" in TEXT_ROW
     and "bubble.glass = next.bubbleGlass" in MEDIA_ROW,
     "UIKit text and media bubbles must pre-render glass highlights on WhatsApp paths",
+)
+require(
+    "static let mention = Color.dyn(0x007A63, 0x82D9C7)" in CHAT
+    and "static let code = Color.dyn(0x5A3A7D, 0xD2B2FF)" in CHAT
+    and "static let link = Color.dyn(0x0A5FC2, 0x8FC7FF)" in CHAT
+    and "Color.dyn(0x8F261C, 0x5D1A14)" in CHAT
+    and "seg.foregroundColor = bubbleCodeInk" in CHAT
+    and "seg.foregroundColor = bubbleMentionMeInk" in CHAT
+    and "seg.foregroundColor = bubbleMentionInk" in CHAT
+    and "ChatTheme.preset.rawValue," in CHAT
+    and "senderNameUsesLightInk ? \"light-ink\" : \"adaptive-ink\"" in CHAT
+    and "mineNames.joined(separator: \",\")" in CHAT,
+    "special text must use semantic mention, self-mention and code colors with theme-aware caching",
+)
+for foreground, background in [
+    ("007A63", "FFFFFF"),
+    ("82D9C7", "2C2C2E"),
+    ("B42318", "FFFFFF"),
+    ("FF9E91", "2C2C2E"),
+    ("0A5FC2", "FFFFFF"),
+    ("8FC7FF", "2C2C2E"),
+    ("5A3A7D", "FFFFFF"),
+    ("D2B2FF", "2C2C2E"),
+    ("075E54", "95EC69"),
+    ("0B3D32", "3EB575"),
+    ("8F261C", "95EC69"),
+    ("5D1A14", "3EB575"),
+    ("0A4C96", "95EC69"),
+    ("0A2F57", "3EB575"),
+    ("4F2A75", "95EC69"),
+    ("3C2457", "3EB575"),
+    ("111111", "95EC69"),
+    ("4C5B50", "95EC69"),
+    ("0B1A12", "3EB575"),
+    ("1D3429", "3EB575"),
+]:
+    require(
+        contrast(foreground, background) >= 4.5,
+        f"special text {foreground} on {background} must meet 4.5:1 contrast",
+    )
+require(
+    "if raw.split(separator: \"\\n\", omittingEmptySubsequences: false)" in CHAT
+    and ".contains(where: { RichText.looksLikeCode(String($0)) })" in CHAT,
+    "code-like messages must use the themed rich-text renderer",
 )
 require(
     "python3 tools/verify-glass-chat-theme.py" in WORKFLOW,

@@ -74,7 +74,7 @@ require(
     "shared links must expose a high-contrast host to every recipient",
 )
 require(
-    "0x0056D6" in DETAIL,
+    "Color.dyn(0x0A5FC2, 0x8FC7FF)" in DETAIL,
     "plain chat links must use the stronger recipient-side blue",
 )
 require(

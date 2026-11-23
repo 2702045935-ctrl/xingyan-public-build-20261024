@@ -2384,7 +2384,7 @@ enum RichText {
 
                 if !looksBadLink(u) {
                     seg.link = u
-                    seg.foregroundColor = Color.dyn(0x576B95, 0x7D90B8)
+                    seg.foregroundColor = Color.dyn(0x0A5FC2, 0x8FC7FF)
                 }
             }
             out += seg

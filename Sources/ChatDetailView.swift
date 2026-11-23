@@ -102,17 +102,17 @@ enum ChatTheme {
     static let ink = Color.dyn(0x111B21, 0xE9EDEF)
     static var mineInk: Color {
         preset == .wechat
-            ? Color.dyn(0x111111, 0xE9EDEF)
+            ? Color.dyn(0x111111, 0x0B1A12)
             : Color.white.opacity(0.98)
     }
     static var mineSecondaryInk: Color {
         preset == .wechat
-            ? Color.dyn(0x5D6B60, 0xB8C4BC)
+            ? Color.dyn(0x4C5B50, 0x1D3429)
             : Color(hex: 0xD4F5EF).opacity(0.92)
     }
     static var mineLinkInk: Color {
         preset == .wechat
-            ? Color.dyn(0x576B95, 0x8FC7FF)
+            ? Color.dyn(0x0A4C96, 0x0A2F57)
             : Color(hex: 0xEFFFFC)
     }
     static let secondary = Color.dyn(0x667781, 0x8696A0)
@@ -122,11 +122,27 @@ enum ChatTheme {
     static let timeInk = Color.dyn(0x667781, 0x8696A0)
     static var composerBg: Color { preset.panel }
     static let separator = Color.dyn(0xE9EDEF, 0x38383A)
-    static let link = Color.dyn(0x0056D6, 0x8FD3FF)
+    static let link = Color.dyn(0x0A5FC2, 0x8FC7FF)
     static let linkOnMine = Color.dyn(0xEFFFFC, 0xD9FFF8)
+    static let mention = Color.dyn(0x007A63, 0x82D9C7)
+    static let code = Color.dyn(0x5A3A7D, 0xD2B2FF)
+    static var mentionOnMine: Color {
+        preset == .wechat
+            ? Color.dyn(0x075E54, 0x0B3D32)
+            : Color(hex: 0xEFFFFB).opacity(0.96)
+    }
+    static var mentionMeOnMine: Color {
+        preset == .wechat
+            ? Color.dyn(0x8F261C, 0x5D1A14)
+            : Color(hex: 0xFFE2DC).opacity(0.98)
+    }
+    static var codeOnMine: Color {
+        preset == .wechat
+            ? Color.dyn(0x4F2A75, 0x3C2457)
+            : Color(hex: 0xF2E9FF).opacity(0.98)
+    }
     static let readReceipt = Color(hex: 0x53BDEB)
-    static let mentionMe = Color.dyn(0xE53935, 0xFF9E91)
-    static let mentionMeOnMine = Color.dyn(0x7A1717, 0xFFD2CA)
+    static let mentionMe = Color.dyn(0xB42318, 0xFF9E91)
 }
 
 enum AlbumFold {
@@ -3985,6 +4001,10 @@ struct ChatDetailView: View {
 
     private func needsSwiftUIRichText(_ raw: String) -> Bool {
         if raw.contains("@") { return true }
+        if raw.split(separator: "\n", omittingEmptySubsequences: false)
+            .contains(where: { RichText.looksLikeCode(String($0)) }) {
+            return true
+        }
         let lower = raw.lowercased()
         return lower.contains("http://")
             || lower.contains("https://")
@@ -9169,11 +9189,15 @@ struct MessageRow: View {
     }
 
     private var bubbleMentionInk: Color {
-        mine
-            ? (ChatTheme.preset == .wechat
-               ? Color.dyn(0x576B95, 0xFFD2CA)
-               : Color.white.opacity(0.96))
-            : Color.dyn(0x576B95, 0x7D90A9)
+        mine ? ChatTheme.mentionOnMine : ChatTheme.mention
+    }
+
+    private var bubbleMentionMeInk: Color {
+        mine ? ChatTheme.mentionMeOnMine : ChatTheme.mentionMe
+    }
+
+    private var bubbleCodeInk: Color {
+        mine ? ChatTheme.codeOnMine : ChatTheme.code
     }
 
     private var bubbleLinkInk: Color {
@@ -9534,10 +9558,6 @@ struct MessageRow: View {
     }
 
     private func richBody(_ raw: String) -> AttributedString {
-
-        let cacheKey = message.id + "|" + raw
-        if let hit = RichBodyCache.get(cacheKey) { return hit }
-
         let s = ClassicEmojiSet.expand(raw).trimmingCharacters(in: .whitespacesAndNewlines)
         let atMe = message.mentionsUser(myId)
         let mineNames = atMe ? myMentionNames : []
@@ -9546,6 +9566,18 @@ struct MessageRow: View {
         let baseSize = max(12, UIFontMetrics(forTextStyle: .body)
             .scaledValue(for: preferredSize)
             .rounded())
+        let cacheKey = [
+            message.id,
+            ChatTheme.preset.rawValue,
+            mine ? "mine" : "other",
+            senderNameUsesLightInk ? "light-ink" : "adaptive-ink",
+            atMe ? "at-me" : "no-at-me",
+            mineNames.joined(separator: ","),
+            String(Int((baseSize * 10).rounded())),
+            raw
+        ].joined(separator: "|")
+        if let hit = RichBodyCache.get(cacheKey) { return hit }
+
         let mono = Font.system(size: baseSize, weight: .regular, design: .monospaced)
         let base = pfStyled(baseSize)
         var out = AttributedString()
@@ -9555,6 +9587,7 @@ struct MessageRow: View {
             if RichText.looksLikeCode(line) {
                 var seg = AttributedString(line)
                 seg.font = mono
+                seg.foregroundColor = bubbleCodeInk
                 out += seg
             } else if line.contains("@") || line.contains("http") {
                 var seg = decorateLine(line, atMe: atMe, mineNames: mineNames)
@@ -9582,9 +9615,9 @@ struct MessageRow: View {
                 var seg = AttributedString(token)
                 let name = String(token.dropFirst())
                 if atMe && mineNames.contains(name) {
-                    seg.foregroundColor = bubbleMentionInk
+                    seg.foregroundColor = bubbleMentionMeInk
                 } else {
-                    seg.foregroundColor = bubbleLinkInk
+                    seg.foregroundColor = bubbleMentionInk
                 }
                 out += seg
                 i = j
