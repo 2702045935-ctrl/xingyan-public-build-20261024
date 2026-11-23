@@ -14,6 +14,7 @@ struct NativeChatMediaRowModel {
     var senderName: String
     var senderNameColor: UIColor
     var avatarPath: String
+    var avatarName: String
     var avatarSize: CGFloat
     var maxBubbleWidth: CGFloat
     var horizontalMargin: CGFloat
@@ -97,7 +98,7 @@ private final class NativeMediaImageView: UIImageView {
     }
 }
 
-final class NativeChatMediaRowView: UIView {
+final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
     static let reuseID = "NativeChatMediaRowView"
 
     private var model: NativeChatMediaRowModel?
@@ -115,6 +116,7 @@ final class NativeChatMediaRowView: UIView {
     private let playView = UIImageView(image: UIImage(systemName: "play.fill"))
     private let durationLabel = UILabel()
     private var tapRecognizer: UITapGestureRecognizer?
+    private var longPressRecognizer: UILongPressGestureRecognizer?
     private var avatarRecognizer: UITapGestureRecognizer?
 
     override init(frame: CGRect) {
@@ -191,7 +193,7 @@ final class NativeChatMediaRowView: UIView {
         model = next
         avatar.isHidden = !next.showsAvatar
         if next.showsAvatar {
-            avatar.configure(path: next.avatarPath, name: next.senderName)
+            avatar.configure(path: next.avatarPath, name: next.avatarName)
         }
         senderLabel.text = next.senderName
         senderLabel.textColor = next.senderNameColor
@@ -244,12 +246,26 @@ final class NativeChatMediaRowView: UIView {
     }
 
     func setActions(onTap: @escaping () -> Void,
+                    onLongPress: @escaping () -> Void,
                     onAvatar: @escaping () -> Void) {
         if tapRecognizer == nil {
             let tap = UITapGestureRecognizer(target: self, action: #selector(tapped))
             tap.cancelsTouchesInView = false
+            tap.delegate = self
             addGestureRecognizer(tap)
             tapRecognizer = tap
+        }
+        if longPressRecognizer == nil {
+            let long = UILongPressGestureRecognizer(
+                target: self,
+                action: #selector(longPressed(_:))
+            )
+            long.minimumPressDuration = 0.42
+            long.cancelsTouchesInView = false
+            long.delaysTouchesBegan = false
+            long.delegate = self
+            addGestureRecognizer(long)
+            longPressRecognizer = long
         }
         if avatarRecognizer == nil {
             let tap = UITapGestureRecognizer(target: self, action: #selector(avatarTapped))
@@ -258,15 +274,31 @@ final class NativeChatMediaRowView: UIView {
             avatarRecognizer = tap
         }
         self.tapAction = onTap
+        self.longPressAction = onLongPress
         avatarAction = onAvatar
     }
 
     private var tapAction: (() -> Void)?
+    private var longPressAction: (() -> Void)?
     private var avatarAction: (() -> Void)?
 
     @objc private func tapped() { tapAction?() }
 
+    @objc private func longPressed(_ gesture: UILongPressGestureRecognizer) {
+        guard gesture.state == .began else { return }
+        longPressAction?()
+    }
+
     @objc private func avatarTapped() { avatarAction?() }
+
+    func bubbleWindowFrame() -> CGRect {
+        convert(bubble.frame, to: nil)
+    }
+
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
+                           shouldReceive touch: UITouch) -> Bool {
+        bubble.frame.contains(touch.location(in: self))
+    }
 
     override func layoutSubviews() {
         super.layoutSubviews()

@@ -7,6 +7,7 @@ struct NativeChatTextRowModel {
     var senderName: String
     var senderNameColor: UIColor
     var avatarPath: String
+    var avatarName: String
     var avatarSize: CGFloat
     var maxBubbleWidth: CGFloat
     var horizontalMargin: CGFloat
@@ -186,7 +187,11 @@ final class NativeStaticAvatarView: UIImageView {
     }
 }
 
-final class NativeChatTextRowView: UIView {
+final class NativeChatTextRowView: UIView, UIGestureRecognizerDelegate {
+    private static let mentionRegex = try? NSRegularExpression(
+        pattern: "@[^\\s，。！？,!?]+"
+    )
+
     private let avatar = NativeStaticAvatarView()
     private let senderLabel = UILabel()
     private let bubble = NativeChatBubbleBackground()
@@ -217,11 +222,13 @@ final class NativeChatTextRowView: UIView {
         bubble.addSubview(textLabel)
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
         tap.cancelsTouchesInView = false
+        tap.delegate = self
         addGestureRecognizer(tap)
         let long = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
         long.minimumPressDuration = 0.42
         long.cancelsTouchesInView = false
         long.delaysTouchesBegan = false
+        long.delegate = self
         addGestureRecognizer(long)
         let avatarTap = UITapGestureRecognizer(target: self, action: #selector(handleAvatarTap))
         avatarTap.cancelsTouchesInView = false
@@ -241,7 +248,7 @@ final class NativeChatTextRowView: UIView {
         model = next
         avatar.isHidden = !next.showsAvatar
         if next.showsAvatar {
-            avatar.configure(path: next.avatarPath, name: next.senderName)
+            avatar.configure(path: next.avatarPath, name: next.avatarName)
         }
         senderLabel.text = next.senderName
         senderLabel.textColor = next.senderNameColor
@@ -265,6 +272,10 @@ final class NativeChatTextRowView: UIView {
         self.onAvatarTap = onAvatarTap
     }
 
+    func bubbleWindowFrame() -> CGRect {
+        convert(bubble.frame, to: nil)
+    }
+
     @objc private func handleTap() {
         onTap?()
     }
@@ -276,6 +287,11 @@ final class NativeChatTextRowView: UIView {
 
     @objc private func handleAvatarTap() {
         onAvatarTap?()
+    }
+
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
+                           shouldReceive touch: UITouch) -> Bool {
+        bubble.frame.contains(touch.location(in: self))
     }
 
     private func attributedText(_ model: NativeChatTextRowModel) -> NSAttributedString {
@@ -291,13 +307,15 @@ final class NativeChatTextRowView: UIView {
                 .paragraphStyle: paragraph
             ]
         )
-        let raw = value.string as NSString
-        let regex = try? NSRegularExpression(pattern: "@[^\\s，。！？,!?]+")
-        regex?.enumerateMatches(in: value.string,
-                                range: NSRange(location: 0, length: raw.length)) {
-            match, _, _ in
-            guard let range = match?.range else { return }
-            value.addAttribute(.foregroundColor, value: model.mentionColor, range: range)
+        if value.string.contains("@") {
+            let raw = value.string as NSString
+            Self.mentionRegex?.enumerateMatches(
+                in: value.string,
+                range: NSRange(location: 0, length: raw.length)
+            ) { match, _, _ in
+                guard let range = match?.range else { return }
+                value.addAttribute(.foregroundColor, value: model.mentionColor, range: range)
+            }
         }
         return value
     }

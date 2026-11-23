@@ -379,6 +379,25 @@ private struct ChatInitialBottomAnchor: ViewModifier {
     }
 }
 
+private func chatKeyboardAnimation(_ notification: Notification) -> Animation {
+    let duration = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey]
+        as? Double ?? 0.25
+    let rawCurve = notification.userInfo?[UIResponder.keyboardAnimationCurveUserInfoKey]
+        as? Int ?? UIView.AnimationCurve.easeInOut.rawValue
+    switch UIView.AnimationCurve(rawValue: rawCurve) ?? .easeInOut {
+    case .easeIn:
+        return .easeIn(duration: duration)
+    case .easeOut:
+        return .easeOut(duration: duration)
+    case .linear:
+        return .linear(duration: duration)
+    case .easeInOut:
+        return .easeInOut(duration: duration)
+    @unknown default:
+        return .easeInOut(duration: duration)
+    }
+}
+
 func bubbleSeed(_ id: String) -> Double {
     var h = 5381
     for u in id.unicodeScalars { h = (h &* 33) &+ Int(u.value) }
@@ -1204,8 +1223,14 @@ struct ChatDetailView: View {
         )
     }
 
-    private func openActions(_ m: Message) {
+    private func openActions(_ m: Message, bubbleFrame: CGRect? = nil) {
         if selectMode { toggleSelect(m); return }
+        if let bubbleFrame, bubbleFrame.width > 1 {
+            menuRect = bubbleFrame
+            actionMessage = m
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            return
+        }
         let contentRect = usesNativeMessageList
             ? (nativeMessageController.frameForID(m.id) ?? .zero)
             : (frameBox.frames[m.id] ?? .zero)
@@ -2729,10 +2754,7 @@ struct ChatDetailView: View {
             let screenH = (UIApplication.shared.connectedScenes
                 .compactMap { ($0 as? UIWindowScene)?.screen.bounds.height }.first) ?? UIScreen.main.bounds.height
             let h = max(0, screenH - f.origin.y)
-            withAnimation(.easeOut(duration: 0.25)) { kbHeight = h }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
-            withAnimation(.easeOut(duration: 0.22)) { kbHeight = 0 }
+            withAnimation(chatKeyboardAnimation(n)) { kbHeight = h }
         }
         .onChange(of: panel) { next in
             if next != .none { kbHeight = 0 }
@@ -2763,10 +2785,19 @@ struct ChatDetailView: View {
                             run(a, on: m)
                         }
                         .offset(x: x, y: max(8, y))
+                        .transition(
+                            .asymmetric(
+                                insertion: .scale(scale: 0.92, anchor: .center)
+                                    .combined(with: .opacity),
+                                removal: .opacity
+                            )
+                        )
                     }
                 }
             }
             .zIndex(30)
+            .animation(.spring(response: 0.22, dampingFraction: 0.88),
+                       value: actionMessage?.id)
         }
     }
 
@@ -3573,8 +3604,10 @@ struct ChatDetailView: View {
                 }
                 ChatScrollDiag.shared.note("消息数变了=\(messages.count) atBottom=\(atBottomNow ? 1 : 0)")
                 guard !holdScroll else { return }
-                guard atBottomNow || messages.last?.senderId == myId else { return }
-                scrollToEnd(proxy, animated: Date() < followOwnSendUntil)
+                let followingOwnSend = Date() < followOwnSendUntil
+                    && messages.last?.senderId == myId
+                guard atBottomNow || followingOwnSend else { return }
+                scrollToEnd(proxy, animated: followingOwnSend)
                 scheduleSettledBottom()
                 markConversationReadSoon()
             }
@@ -3724,9 +3757,11 @@ struct ChatDetailView: View {
                 return
             }
             guard !holdScroll else { return }
-            guard atBottomNow || messages.last?.senderId == myId else { return }
+            let followingOwnSend = Date() < followOwnSendUntil
+                && messages.last?.senderId == myId
+            guard atBottomNow || followingOwnSend else { return }
             nativeMessageController.scrollToBottom(
-                animated: Date() < followOwnSendUntil
+                animated: followingOwnSend
             )
             scheduleSettledBottom()
             markConversationReadSoon()
@@ -3905,6 +3940,7 @@ struct ChatDetailView: View {
                 : "",
             senderNameColor: UIColor(groupSenderNameColor(message)),
             avatarPath: senderAvatarFor(message),
+            avatarName: !mine ? displayName(message) : "",
             avatarSize: L.chatAvatar,
             maxBubbleWidth: isGroup ? groupBubbleMaxWidth : L.bubbleMaxW,
             horizontalMargin: L.msgPad,
@@ -3935,6 +3971,7 @@ struct ChatDetailView: View {
             senderName: "",
             senderNameColor: .clear,
             avatarPath: app.me?.avatarPath ?? "",
+            avatarName: "",
             avatarSize: L.chatAvatar,
             maxBubbleWidth: isGroup ? groupBubbleMaxWidth : L.bubbleMaxW,
             horizontalMargin: L.msgPad,
@@ -4019,6 +4056,7 @@ struct ChatDetailView: View {
                 : "",
             senderNameColor: UIColor(groupSenderNameColor(message)),
             avatarPath: senderAvatarFor(message),
+            avatarName: !mine ? displayName(message) : "",
             avatarSize: L.chatAvatar,
             maxBubbleWidth: isGroup ? groupBubbleMaxWidth : L.bubbleMaxW,
             horizontalMargin: L.msgPad,
@@ -4106,6 +4144,10 @@ struct ChatDetailView: View {
                             openFile(message.body)
                         }
                     },
+                    onLongPress: { [weak view] in
+                        guard let view else { return }
+                        openActions(message, bubbleFrame: view.bubbleWindowFrame())
+                    },
                     onAvatar: {
                         openAvatar(message.senderId ?? "")
                     }
@@ -4121,7 +4163,10 @@ struct ChatDetailView: View {
                     let text = readableText(message)
                     if !text.isEmpty { Speaker.shared.speak(text) }
                 },
-                onLongPress: { openActions(message) },
+                onLongPress: { [weak view] in
+                    guard let view else { return }
+                    openActions(message, bubbleFrame: view.bubbleWindowFrame())
+                },
                 onAvatarTap: { openAvatar(message.senderId ?? "") }
             )
             return view
@@ -4392,8 +4437,10 @@ struct ChatDetailView: View {
                     return
                 }
                 guard !holdScroll else { return }
-                guard atBottomNow || messages.last?.senderId == myId else { return }
-                scrollToEnd(proxy, animated: Date() < followOwnSendUntil)
+                let followingOwnSend = Date() < followOwnSendUntil
+                    && messages.last?.senderId == myId
+                guard atBottomNow || followingOwnSend else { return }
+                scrollToEnd(proxy, animated: followingOwnSend)
                 scheduleSettledBottom()
                 markConversationReadSoon()
             }
@@ -5226,20 +5273,9 @@ struct ChatDetailView: View {
                    onLayoutChanged: { scheduleSettledBottom() },
 
                    onOpenQuote: { ref in quoteInspect = QuoteInspectItem(quote: ref) },
-                   onShowToast: { text in app.show(text) }))
+                   onShowToast: { text in app.show(text) },
+                   onRequestActions: { openActions(message) }))
             .padding(.bottom, gapAfter(message))
-
-            .simultaneousGesture(
-                LongPressGesture(minimumDuration: 0.42).onEnded { _ in openActions(message) }
-            )
-
-            .simultaneousGesture(
-                TapGesture().onEnded {
-                    guard CareMode.on, CareMode.speakText else { return }
-                    let t = readableText(message)
-                    if !t.isEmpty { Speaker.shared.speak(t) }
-                }
-            )
             .background {
                 if capturesFrame {
                     GeometryReader { g in
@@ -8989,6 +9025,7 @@ struct MessageRow: View {
 
     var onOpenQuote: ((QuoteRef) -> Void)? = nil
     var onShowToast: ((String) -> Void)? = nil
+    var onRequestActions: (() -> Void)? = nil
 
     @ObservedObject private var voicePlayer = VoicePlayer.shared
 
@@ -9097,6 +9134,18 @@ struct MessageRow: View {
                 .padding(.leading, 4)
             }
             content
+                .simultaneousGesture(
+                    LongPressGesture(minimumDuration: 0.42).onEnded { _ in
+                        onRequestActions?()
+                    }
+                )
+                .simultaneousGesture(
+                    TapGesture().onEnded {
+                        guard CareMode.on, CareMode.speakText else { return }
+                        let text = readableMessageText
+                        if !text.isEmpty { Speaker.shared.speak(text) }
+                    }
+                )
                 .overlay(alignment: .bottomTrailing) {
                     if mine,
                        showsDeliveryTicks,
@@ -9118,6 +9167,16 @@ struct MessageRow: View {
             }
         }
         .frame(maxWidth: maxBubbleWidth, alignment: mine ? .trailing : .leading)
+    }
+
+    private var readableMessageText: String {
+        if message.isCallRecord { return message.callText }
+        switch message.kindName {
+        case "text", "link", "announce":
+            return message.body
+        default:
+            return ""
+        }
     }
 
     private var asrLine: some View {

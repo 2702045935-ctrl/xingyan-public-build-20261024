@@ -6,6 +6,8 @@ ROOT = Path(__file__).resolve().parents[1]
 DETAIL = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
 CHATS = (ROOT / "Sources" / "ChatsView.swift").read_text(encoding="utf-8")
 LIST = (ROOT / "Sources" / "NativeStaticList.swift").read_text(encoding="utf-8")
+TEXT_ROW = (ROOT / "Sources" / "NativeChatTextRowCell.swift").read_text(encoding="utf-8")
+MEDIA_ROW = (ROOT / "Sources" / "NativeChatMediaRowCell.swift").read_text(encoding="utf-8")
 LINK = (ROOT / "Sources" / "ShopLink.swift").read_text(encoding="utf-8")
 API = (ROOT / "Sources" / "API.swift").read_text(encoding="utf-8")
 APP = (ROOT / "Sources" / "App.swift").read_text(encoding="utf-8")
@@ -45,6 +47,24 @@ require(
     and "officialRowTime(\"pay\")" in CHATS
     and "officialRowTime(\"weather\")" in CHATS,
     "official account rows must use conversation time instead of chevrons",
+)
+require(
+    "withAnimation(chatKeyboardAnimation(n)) { kbHeight = h }" in DETAIL
+    and "keyboardAnimationDurationUserInfoKey" in DETAIL
+    and "keyboardAnimationCurveUserInfoKey" in DETAIL
+    and "private func openActions(_ m: Message, bubbleFrame: CGRect? = nil)" in DETAIL
+    and "onLongPress: { [weak view] in" in DETAIL,
+    "composer and message menus must follow native keyboard and bubble geometry",
+)
+require(
+    "final class NativeChatTextRowView: UIView, UIGestureRecognizerDelegate" in TEXT_ROW
+    and "final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate" in MEDIA_ROW
+    and "bubble.frame.contains(touch.location(in: self))" in TEXT_ROW
+    and "bubble.frame.contains(touch.location(in: self))" in MEDIA_ROW
+    and "private var longPressRecognizer" in MEDIA_ROW
+    and "func bubbleWindowFrame() -> CGRect" in TEXT_ROW
+    and "func bubbleWindowFrame() -> CGRect" in MEDIA_ROW,
+    "native message gestures must start on the bubble and media rows must support long press",
 )
 require(
     "var displayHost: String" in LINK
