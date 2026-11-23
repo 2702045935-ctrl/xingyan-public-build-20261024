@@ -212,13 +212,13 @@ final class NativeChatMediaRowView: UIView {
         case .images(let paths):
             imageView.isHidden = false
             imageView.configure(path: paths.first ?? "", maxPixel: 720)
+            let visible = MultiImageMosaic.visibleCount(for: paths.count)
             for (index, view) in extraImageViews.enumerated()
-                where index + 1 < min(4, paths.count) {
+                where index + 1 < visible {
                 view.isHidden = false
                 view.configure(path: paths[index + 1], maxPixel: 720)
             }
-            badgeLabel.isHidden = paths.count <= 4
-            badgeLabel.text = paths.count > 4 ? "+\(paths.count - 4)" : ""
+            badgeLabel.isHidden = true
         case .video(let cover, let seconds, _, _):
             imageView.isHidden = false
             imageView.configure(path: cover, maxPixel: 720)
@@ -316,8 +316,12 @@ final class NativeChatMediaRowView: UIView {
         )
         durationLabel.frame = CGRect(x: body.maxX - 44, y: body.maxY - 24,
                                      width: 38, height: 18)
-        badgeLabel.frame = CGRect(x: body.maxX - 32, y: body.maxY - 32,
-                                  width: 26, height: 24)
+        if case .images = model.kind {
+            // The mosaic owns the badge frame because it covers the final tile.
+        } else {
+            badgeLabel.frame = CGRect(x: body.maxX - 32, y: body.maxY - 32,
+                                      width: 26, height: 24)
+        }
 
         fileIcon.frame = CGRect(x: body.minX + 12, y: body.midY - 20,
                                 width: 40, height: 40)
@@ -330,47 +334,34 @@ final class NativeChatMediaRowView: UIView {
 
     private func layoutImageGrid(paths: [String], in body: CGRect) {
         let views = [imageView] + extraImageViews
-        let count = min(4, paths.count)
-        let gap: CGFloat = 3
-        switch count {
-        case 0:
-            imageView.frame = body
-        case 1:
-            imageView.frame = body
-        case 2:
-            let tileWidth = floor((body.width - gap) / 2)
-            imageView.frame = CGRect(x: body.minX, y: body.minY,
-                                     width: tileWidth, height: body.height)
-            views[1].frame = CGRect(x: body.minX + tileWidth + gap, y: body.minY,
-                                    width: body.width - tileWidth - gap,
-                                    height: body.height)
-        case 3:
-            let largeWidth = floor((body.width - gap) * 0.62)
-            let sideWidth = body.width - largeWidth - gap
-            let sideHeight = floor((body.height - gap) / 2)
-            imageView.frame = CGRect(x: body.minX, y: body.minY,
-                                     width: largeWidth, height: body.height)
-            views[1].frame = CGRect(x: body.minX + largeWidth + gap, y: body.minY,
-                                    width: sideWidth, height: sideHeight)
-            views[2].frame = CGRect(x: body.minX + largeWidth + gap,
-                                    y: body.minY + sideHeight + gap,
-                                    width: sideWidth,
-                                    height: body.height - sideHeight - gap)
-        default:
-            let tileWidth = floor((body.width - gap) / 2)
-            let tileHeight = floor((body.height - gap) / 2)
-            imageView.frame = CGRect(x: body.minX, y: body.minY,
-                                     width: tileWidth, height: tileHeight)
-            views[1].frame = CGRect(x: body.minX + tileWidth + gap, y: body.minY,
-                                    width: body.width - tileWidth - gap,
-                                    height: tileHeight)
-            views[2].frame = CGRect(x: body.minX, y: body.minY + tileHeight + gap,
-                                    width: tileWidth,
-                                    height: body.height - tileHeight - gap)
-            views[3].frame = CGRect(x: body.minX + tileWidth + gap,
-                                    y: body.minY + tileHeight + gap,
-                                    width: body.width - tileWidth - gap,
-                                    height: body.height - tileHeight - gap)
+        let visible = MultiImageMosaic.visibleCount(for: paths.count)
+        let frames = MultiImageMosaic.frames(count: paths.count, in: body)
+        for (index, view) in views.enumerated() {
+            guard index < visible, index < frames.count else {
+                view.isHidden = true
+                continue
+            }
+            view.isHidden = false
+            let frame = frames[index]
+            view.frame = frame
+            view.layer.cornerRadius = min(12, min(frame.width, frame.height) * 0.18)
+            view.layer.cornerCurve = .continuous
+            view.clipsToBounds = true
+        }
+
+        if paths.count > visible, let last = frames.last {
+            badgeLabel.isHidden = false
+            badgeLabel.text = "+\(paths.count - visible)"
+            badgeLabel.font = pfUIFont(20, .semibold)
+            badgeLabel.textColor = .white
+            badgeLabel.textAlignment = .center
+            badgeLabel.backgroundColor = UIColor.black.withAlphaComponent(0.34)
+            badgeLabel.layer.cornerRadius = min(12, min(last.width, last.height) * 0.18)
+            badgeLabel.layer.cornerCurve = .continuous
+            badgeLabel.clipsToBounds = true
+            badgeLabel.frame = last
+        } else {
+            badgeLabel.isHidden = true
         }
     }
 
@@ -416,9 +407,9 @@ final class NativeChatMediaRowView: UIView {
                 ? 120
                 : ImageBubble.thumb(pixel).height
         case .images(let paths):
-            if paths.count <= 1 { return 188 }
-            if paths.count == 2 { return 172 }
-            return 234.5
+            return MultiImageMosaic
+                .containerSize(for: paths.count, width: 229)
+                .height
         case .video(_, _, let w, let h):
             return videoBubbleSize(w: w, h: h).height
         case .file:

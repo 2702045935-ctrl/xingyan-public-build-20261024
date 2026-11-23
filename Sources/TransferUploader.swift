@@ -689,36 +689,101 @@ final class TransferUploader {
                           token: String,
                           session: URLSession) async throws -> String {
         var lastError: Error?
-        for attempt in 0..<4 {
+        for attempt in 0..<3 {
             do {
-                let (data, response) = try await send(
-                    path: "/api/transfer/\(id)/complete",
-                    method: "POST",
-                    body: Data("{}".utf8),
-                    contentType: "application/json",
-                    base: base,
-                    token: token,
-                    session: session
-                )
-                guard (200...299).contains(response.statusCode) else {
-                    throw wireError(data, status: response.statusCode)
+                return try await withThrowingTaskGroup(of: String.self) { group in
+                    group.addTask {
+                        try await self.sendComplete(
+                            id: id,
+                            base: base,
+                            token: token,
+                            session: session
+                        )
+                    }
+                    group.addTask {
+                        try await self.pollComplete(
+                            id: id,
+                            base: base,
+                            token: token,
+                            session: session
+                        )
+                    }
+                    defer { group.cancelAll() }
+                    guard let first = try await group.next() else {
+                        throw TransferUploaderError.badResponse
+                    }
+                    return first
                 }
-                guard let envelope = try? JSONDecoder().decode(
-                    TransferEnvelope<TransferCompleteEnvelope>.self,
-                    from: data
-                ), let url = envelope.data?.transfer.url, !url.isEmpty else {
-                    throw TransferUploaderError.badResponse
-                }
-                return url
             } catch {
                 lastError = error
+                if let state = try? await fetchStatus(
+                    id: id,
+                    base: base,
+                    token: token,
+                    session: session,
+                    allowMissing: true
+                ), state.status == "ready", !state.url.isEmpty {
+                    return state.url
+                }
                 let retryable = (error as? TransferUploaderError)?.isRetryable == true
                     || (error as? URLError) != nil
-                guard retryable, attempt < 3 else { throw error }
-                try await Task.sleep(nanoseconds: UInt64(450_000_000 * (attempt + 1)))
+                guard retryable, attempt < 2 else { throw error }
+                try await Task.sleep(nanoseconds: UInt64(700_000_000 * (attempt + 1)))
             }
         }
         throw lastError ?? TransferUploaderError.network("上传完成确认失败")
+    }
+
+    private func sendComplete(id: String,
+                              base: String,
+                              token: String,
+                              session: URLSession) async throws -> String {
+        let (data, response) = try await send(
+            path: "/api/transfer/\(id)/complete",
+            method: "POST",
+            body: Data("{}".utf8),
+            contentType: "application/json",
+            base: base,
+            token: token,
+            session: session,
+            timeout: 600
+        )
+        guard (200...299).contains(response.statusCode) else {
+            throw wireError(data, status: response.statusCode)
+        }
+        guard let envelope = try? JSONDecoder().decode(
+            TransferEnvelope<TransferCompleteEnvelope>.self,
+            from: data
+        ), let url = envelope.data?.transfer.url, !url.isEmpty else {
+            throw TransferUploaderError.badResponse
+        }
+        return url
+    }
+
+    private func pollComplete(id: String,
+                              base: String,
+                              token: String,
+                              session: URLSession) async throws -> String {
+        for _ in 0..<600 {
+            try await Task.sleep(nanoseconds: 1_000_000_000)
+            try Task.checkCancellation()
+            guard let state = try? await fetchStatus(
+                id: id,
+                base: base,
+                token: token,
+                session: session,
+                allowMissing: true
+            ) else {
+                continue
+            }
+            if state.status == "ready", !state.url.isEmpty {
+                return state.url
+            }
+            if ["failed", "corrupt", "cancelled"].contains(state.status) {
+                throw TransferUploaderError.http(422, state.error)
+            }
+        }
+        throw TransferUploaderError.network("服务器处理超时，进度已保留")
     }
 
     private func send(path: String,
@@ -727,13 +792,14 @@ final class TransferUploader {
                       contentType: String?,
                       base: String,
                       token: String,
-                      session: URLSession) async throws -> (Data, HTTPURLResponse) {
+                      session: URLSession,
+                      timeout: TimeInterval = 90) async throws -> (Data, HTTPURLResponse) {
         guard let url = URL(string: base + path) else {
             throw TransferUploaderError.badResponse
         }
         var request = URLRequest(url: url)
         request.httpMethod = method
-        request.timeoutInterval = 90
+        request.timeoutInterval = timeout
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         if let contentType {
             request.setValue(contentType, forHTTPHeaderField: "Content-Type")

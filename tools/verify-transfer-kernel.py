@@ -118,6 +118,21 @@ require(
     "server chunks must be written directly into the encrypted final file",
 )
 require(
+    "job.status = 'processing';" in KERNEL
+    and "private func pollComplete(id: String" in CLIENT
+    and "timeout: 600" in CLIENT
+    and 'state.status == "ready", !state.url.isEmpty' in CLIENT
+    and '["failed", "corrupt", "cancelled"].contains(state.status)' in CLIENT
+    and "服务器处理超时，进度已保留" in CLIENT,
+    "completion must expose processing state and recover from a lost complete response",
+)
+require(
+    "private func startFileProcessingHeartbeat()" in CHAT
+    and "private func stopFileProcessingHeartbeat()" in CHAT
+    and 'fileUploadDetail = Tr("服务器处理中…") + " · \\(elapsed)s"' in CHAT,
+    "file uploads must show live server-processing elapsed time",
+)
+require(
     "queueTransferTranscode" in SERVER
     and "setImmediate(async () =>" in SERVER
     and "kind: 'video-transcode'" in SERVER

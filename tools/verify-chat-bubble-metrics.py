@@ -63,13 +63,12 @@ require(
     "WeChat message cards must use the flat 8pt card surface",
 )
 require(
-    "ChatMessageSurface.gridRadius" in CHAT
-    and "ChatMessageSurface.mediaRadius" in CHAT
+    "ChatMessageSurface.mediaRadius" in CHAT
     and "ChatMessageSurface.innerRadius" in CHAT
     and ".fill(mine ? ChatTheme.bubbleMine : ChatMessageSurface.cardFill)" in CHAT
     and ".stroke(mine ? Color.white.opacity(0.08) : ChatMessageSurface.cardBorder"
     in CHAT,
-    "image grids, file cards and quotes must share the message surface tokens",
+    "media cards, file cards and quotes must share the message surface tokens",
 )
 require(
     "WeChatMessageCard(width: 258, padding: 0)" in MEDIA
@@ -87,9 +86,9 @@ require(
 require(
     "private let extraImageViews" in MEDIA_ROW
     and "layoutImageGrid(paths: paths, in: body)" in MEDIA_ROW
-    and "case 3:" in MEDIA_ROW
-    and "default:" in MEDIA_ROW,
-    "native multi-image messages must render a real 2/3/4-tile album grid",
+    and "MultiImageMosaic.frames(count: paths.count, in: body)" in MEDIA_ROW
+    and "MultiImageMosaic.visibleCount(for: paths.count)" in MEDIA_ROW,
+    "native multi-image messages must render the shared adaptive mosaic",
 )
 require(
     "ImageBubble.thumb(pixel)" in MEDIA_ROW

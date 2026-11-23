@@ -1615,6 +1615,8 @@ struct ChatDetailView: View {
     @State private var fileUploadPhase: UploadVisualPhase = .preparing
     @State private var fileUploadDetail = ""
     @State private var fileUploadRateMeter = UploadRateMeter()
+    @State private var fileProcessingStartedAt = Date()
+    @State private var fileProcessingHeartbeatTask: Task<Void, Never>?
     @State private var voiceMode = false
     @ObservedObject private var voicePlayer = VoicePlayer.shared
     @State private var pendingVoiceURL: URL?
@@ -7586,6 +7588,7 @@ struct ChatDetailView: View {
         fileUploadRateMeter.reset()
         scrollTick += 1
         defer {
+            stopFileProcessingHeartbeat()
             uploading = false
             sendingFileName = ""
             sendingFileBytes = 0
@@ -7605,7 +7608,7 @@ struct ChatDetailView: View {
                         sendingFileProgress = value
                         if p >= 0.995 {
                             fileUploadPhase = .processing
-                            fileUploadDetail = ""
+                            startFileProcessingHeartbeat()
                         } else if p <= 0.001 {
                             fileUploadPhase = .connecting
                             fileUploadDetail = ""
@@ -7654,6 +7657,7 @@ struct ChatDetailView: View {
                 throw APIError.message("文件信息生成失败")
             }
             fileUploadPhase = .processing
+            startFileProcessingHeartbeat()
             if let message = try await API.shared.send(chatId: chat.id, kind: "file", content: content) {
                 appendVisibleMessage(message)
             }
@@ -7664,6 +7668,25 @@ struct ChatDetailView: View {
             app.show((error as? APIError)?.errorDescription ?? "文件发送失败")
         }
         await app.loadChats()
+    }
+
+    private func startFileProcessingHeartbeat() {
+        guard fileProcessingHeartbeatTask == nil else { return }
+        fileProcessingStartedAt = Date()
+        fileUploadDetail = Tr("服务器处理中…")
+        fileProcessingHeartbeatTask = Task { @MainActor in
+            while !Task.isCancelled {
+                let elapsed = max(0, Int(Date().timeIntervalSince(fileProcessingStartedAt)))
+                fileUploadDetail = Tr("服务器处理中…") + " · \(elapsed)s"
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+            }
+        }
+    }
+
+    private func stopFileProcessingHeartbeat() {
+        fileProcessingHeartbeatTask?.cancel()
+        fileProcessingHeartbeatTask = nil
+        fileUploadDetail = ""
     }
 
     private func openFile(_ body: String) {
@@ -9887,96 +9910,69 @@ struct MessageRow: View {
     @ViewBuilder
     private func albumGridBubble(_ paths: [String]) -> some View {
         let total = paths.count
-        let gap: CGFloat = 2.5
         let width: CGFloat = 229
 
         if total == 0 {
             EmptyView()
-        } else if total == 1 {
-            Button {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                onOpenImage?(paths[0])
-            } label: {
-                RemoteImage(path: paths[0], maxSide: 1200)
-                    .frame(width: width, height: 188)
-                    .clipped()
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .clipShape(RoundedRectangle(cornerRadius: ChatMessageSurface.mediaRadius,
-                                        style: .continuous))
-        } else if total == 2 {
-            let tileWidth = (width - gap) / 2
-            HStack(spacing: gap) {
-                ForEach(Array(paths.enumerated()), id: \.offset) { index, path in
-                    Button {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        onOpenImage?(path)
-                    } label: {
-                        RemoteImage(path: path, maxSide: 900)
-                            .frame(width: tileWidth, height: 172)
-                            .clipped()
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(Tr("预览图片") + " \(index + 1)")
-                }
-            }
-            .frame(width: width)
-            .clipShape(RoundedRectangle(cornerRadius: ChatMessageSurface.gridRadius,
-                                        style: .continuous))
         } else {
-            let strip = Array(paths.dropFirst().prefix(3))
-            let tileWidth = (width - CGFloat(strip.count - 1) * gap) / CGFloat(max(1, strip.count))
+            let visible = MultiImageMosaic.visibleCount(for: total)
+            let size = MultiImageMosaic.containerSize(for: total, width: width)
+            let frames = MultiImageMosaic.frames(
+                count: total,
+                in: CGRect(origin: .zero, size: size)
+            )
+            let outerRadius: CGFloat = total == 1 ? 12 : 18
 
-            VStack(spacing: gap) {
-                Button {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    onOpenImage?(paths[0])
-                } label: {
-                    RemoteImage(path: paths[0], maxSide: 1200)
-                        .frame(width: width, height: 156)
-                        .clipped()
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Tr("预览图片") + " 1")
+            ZStack(alignment: .topLeading) {
+                RoundedRectangle(cornerRadius: outerRadius, style: .continuous)
+                    .fill(Color.black.opacity(mine ? 0.18 : 0.10))
 
-                HStack(spacing: gap) {
-                    ForEach(Array(strip.enumerated()), id: \.offset) { offset, path in
+                ForEach(0..<visible, id: \.self) { index in
+                    if index < paths.count, index < frames.count {
+                        let frame = frames[index]
+                        let tileRadius = min(12, min(frame.width, frame.height) * 0.18)
                         Button {
                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            onOpenImage?(path)
+                            onOpenImage?(paths[index])
                         } label: {
-                            ZStack(alignment: .bottomTrailing) {
-                                RemoteImage(path: path, maxSide: 900)
-                                    .frame(width: tileWidth, height: 76)
-                                    .clipped()
-
-                                if offset == strip.count - 1 && total > strip.count + 1 {
-                                    Text("+\(total - strip.count - 1)")
-                                        .font(.system(size: 12.5, weight: .semibold, design: .rounded))
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 8)
-                                        .frame(height: 25)
-                                        .background(
-                                            Capsule(style: .continuous)
-                                                .fill(Color.black.opacity(0.52))
-                                        )
-                                        .padding(6)
-                                }
-                            }
-                            .frame(width: tileWidth, height: 76)
-                            .contentShape(Rectangle())
+                            RemoteImage(path: paths[index], maxSide: 1200)
+                                .frame(width: frame.width, height: frame.height)
+                                .clipped()
+                                .clipShape(RoundedRectangle(cornerRadius: tileRadius,
+                                                            style: .continuous))
+                                .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel(Tr("预览图片") + " \(offset + 2)")
+                        .offset(x: frame.minX, y: frame.minY)
+                        .accessibilityLabel(Tr("预览图片") + " \(index + 1)")
                     }
                 }
+
+                if total > visible, let last = frames.last {
+                    ZStack {
+                        Color.black.opacity(0.34)
+                        Text("+\(total - visible)")
+                            .font(.system(size: 20, weight: .semibold, design: .rounded))
+                            .foregroundColor(.white)
+                            .monospacedDigit()
+                    }
+                    .frame(width: last.width, height: last.height)
+                    .clipShape(RoundedRectangle(
+                        cornerRadius: min(12, min(last.width, last.height) * 0.18),
+                        style: .continuous
+                    ))
+                    .offset(x: last.minX, y: last.minY)
+                    .allowsHitTesting(false)
+                }
             }
-            .frame(width: width)
-            .clipShape(RoundedRectangle(cornerRadius: ChatMessageSurface.gridRadius,
+            .frame(width: size.width, height: size.height)
+            .clipShape(RoundedRectangle(cornerRadius: outerRadius,
                                         style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: outerRadius, style: .continuous)
+                    .stroke(Color.white.opacity(ChatTheme.usesGlass ? 0.16 : 0.06),
+                            lineWidth: 0.7)
+            }
         }
     }
 

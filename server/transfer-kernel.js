@@ -352,6 +352,10 @@ function createTransferKernel(options) {
         });
       }
 
+      job.status = 'processing';
+      job.error = '';
+      saveJob(job);
+
       let actual = '';
       try {
         actual = await verifyPlainHash(job);
