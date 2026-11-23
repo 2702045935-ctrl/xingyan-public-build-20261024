@@ -60,7 +60,8 @@ require(
 )
 require(
     "private var oldestHistorySeq: Int" in CHAT
-    and "messages.lazy.compactMap(\\.seq).first(where: { $0 > 0 })" in CHAT
+    and "historyRuntime.oldestLoadedSeq" in CHAT
+    and "historyRuntime.oldestLoadedSeq = oldest" in CHAT
     and CHAT.count("oldestHistorySeq") >= 4
     and "let seq = messages.first?.seq" not in CHAT,
     "history cursors must skip leading system rows that have no sequence",

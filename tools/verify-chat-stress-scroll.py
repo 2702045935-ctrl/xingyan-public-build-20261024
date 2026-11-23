@@ -30,6 +30,16 @@ require(
     and "consumeOlderRunway(requireActiveMotion: true, offsetY: y)" in CHAT,
     "group history must use a viewport-relative prefetch runway",
 )
+hot_start = CHAT.index("private var newestAvailableSeq")
+hot_end = CHAT.index("private func loadNewer", hot_start)
+hot_path = CHAT[hot_start:hot_end]
+require(
+    "historyRuntime.newestLoadedSeq" in hot_path
+    and "messages.compactMap(\\.seq).max()" not in hot_path
+    and "now - historyRuntime.lastScrollRunwayCheck >= 0.033" in CHAT
+    and "historyRuntime.lastScrollRunwayCheck = now" in CHAT,
+    "scroll runway checks must be O(1) and capped at roughly thirty hertz",
+)
 require(
     'if chat.type == "group" { return true }' in CHAT
     and "if (chat.memberCount ?? 0) > 2 { return true }" in CHAT

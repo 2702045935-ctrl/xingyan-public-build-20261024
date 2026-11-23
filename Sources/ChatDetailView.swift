@@ -219,6 +219,9 @@ private struct TypingPeer: Equatable {
 
 private final class ChatHistoryRuntime {
     var loadingOlder = false
+    var lastScrollRunwayCheck = 0.0
+    var oldestLoadedSeq = 0
+    var newestLoadedSeq = 0
     var olderPrefetch: [Message] = []
     var olderPrefetchHasMore = false
     var olderNextCursor = 0
@@ -1755,7 +1758,7 @@ struct ChatDetailView: View {
     /// 群聊顶部可能先出现没有 seq 的系统提示。分页游标必须跳过这些行，
     /// 否则滚到系统提示处会静默停止预取，表现为几千条以后“上不去”。
     private var oldestHistorySeq: Int {
-        messages.lazy.compactMap(\.seq).first(where: { $0 > 0 }) ?? 0
+        historyRuntime.oldestLoadedSeq
     }
 
     private var navTitle: String {
@@ -3554,6 +3557,11 @@ struct ChatDetailView: View {
                 }
             },
             onScrollOffset: { y in
+                let now = ProcessInfo.processInfo.systemUptime
+                guard now - historyRuntime.lastScrollRunwayCheck >= 0.033 else {
+                    return
+                }
+                historyRuntime.lastScrollRunwayCheck = now
                 consumeOlderRunway(requireActiveMotion: true, offsetY: y)
                 consumeNewerRunway(requireActiveMotion: true)
             },
@@ -4299,11 +4307,11 @@ struct ChatDetailView: View {
         if MessageStressFixture.isStressChat(chat.id) {
             return MessageStressFixture.count
         }
-        return max(newestKnownSeq, messages.compactMap(\.seq).max() ?? 0)
+        return max(newestKnownSeq, historyRuntime.newestLoadedSeq)
     }
 
     private var hasNewerMessages: Bool {
-        (messages.compactMap(\.seq).max() ?? 0) < newestAvailableSeq
+        historyRuntime.newestLoadedSeq < newestAvailableSeq
     }
 
     private func consumeNewerRunway(requireActiveMotion: Bool) {
@@ -4330,7 +4338,7 @@ struct ChatDetailView: View {
 
     private func loadNewer() async {
         guard !loadingNewer, hasNewerMessages else { return }
-        let cursor = messages.compactMap(\.seq).max() ?? 0
+        let cursor = historyRuntime.newestLoadedSeq
         guard cursor > 0 else { return }
         loadingNewer = true
         var loadedUsefulPage = false
@@ -4363,7 +4371,7 @@ struct ChatDetailView: View {
                     page.messages.compactMap(\.seq).max() ?? 0
                 )
             }
-            guard messages.compactMap(\.seq).max() == cursor else { return }
+            guard historyRuntime.newestLoadedSeq == cursor else { return }
             guard !incoming.isEmpty else {
                 if more { scheduleNewerRunwayRetry() }
                 return
@@ -4376,10 +4384,10 @@ struct ChatDetailView: View {
                 messages = bounded
             }
             hasOlder = (bounded.first?.seq ?? 0) > 1
-            let nextCursor = bounded.compactMap(\.seq).max() ?? cursor
+            rebuildIndex()
+            let nextCursor = max(cursor, historyRuntime.newestLoadedSeq)
             newestKnownSeq = max(newestKnownSeq, nextCursor)
             loadedUsefulPage = more
-            rebuildIndex()
             scheduleNewerPrefetch(
                 since: nextCursor,
                 knownIds: Set(bounded.map(\.id)),
@@ -4398,7 +4406,7 @@ struct ChatDetailView: View {
         guard canContinue,
               newerPrefetch.isEmpty,
               newerPrefetchTask == nil else { return }
-        let seq = explicitSeq ?? messages.compactMap(\.seq).max() ?? 0
+        let seq = explicitSeq ?? historyRuntime.newestLoadedSeq
         guard seq > 0 else { return }
         let known = knownIds ?? Set(messages.map(\.id))
         let token = UUID()
@@ -5148,8 +5156,18 @@ struct ChatDetailView: View {
 
     private func rebuildIndex() {
         var m = [String: Int](minimumCapacity: messages.count)
-        for (i, x) in messages.enumerated() { m[x.id] = i }
+        var oldest = 0
+        var newest = 0
+        for (i, x) in messages.enumerated() {
+            m[x.id] = i
+            let seq = x.seq ?? 0
+            if seq <= 0 { continue }
+            if oldest == 0 || seq < oldest { oldest = seq }
+            if seq > newest { newest = seq }
+        }
         msgIndex = m
+        historyRuntime.oldestLoadedSeq = oldest
+        historyRuntime.newestLoadedSeq = newest
     }
 
     private func isRunStart(_ message: Message) -> Bool {
