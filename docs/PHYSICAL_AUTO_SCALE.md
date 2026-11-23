@@ -21,6 +21,8 @@ Cell，同时保证单写者、副本追平、网关无重启切流和失败自�
    owner 分片。
 10. 任一步失败时，先恢复复制计划和旧路由，再热加载网关，再恢复租约和旧 owner。
 11. 只有完整迁移和 30 分钟长稳都通过，才提升目标 Fleet 计划并清除压力计数。
+12. `physical-failover-service.js` 负责故障采样、owner 接管、自动回切和
+    只追加审计；控制器按 fencing/quorum、失败样本和恢复冷却决定是否执行。
 
 ## 安全门禁
 
@@ -32,6 +34,8 @@ Cell，同时保证单写者、副本追平、网关无重启切流和失败自�
 - 任意 Cell 不健康时不触发扩容。
 - `execute=false` 时只生成判断结果，不执行远程操作。
 - 同一时间只允许一个控制面进程持有任务锁。
+- 自愈执行要求 `enabled=true`、`execute=true`、生产资格通过，以及
+  新鲜且 quorum 有效的 fencing 状态；任何一项不满足都只观测不切 owner。
 
 ## 启用步骤
 
@@ -39,6 +43,7 @@ Cell，同时保证单写者、副本追平、网关无重启切流和失败自�
 cp deploy/fleet/physical-auto-scale.service /etc/systemd/system/
 cp deploy/fleet/physical-replication-sync.service /etc/systemd/system/
 cp deploy/fleet/physical-auto-scale.example.json /etc/xingyan-dual-cell/auto-scale.json
+cp deploy/fleet/physical-failover.example.json /etc/xingyan-dual-cell/failover.json
 install -m 0600 deploy/fleet/fleet-production.json \
   /var/lib/xingyan-dual-cell/current-fleet.json
 systemctl daemon-reload
@@ -48,6 +53,10 @@ systemctl enable --now physical-auto-scale.service
 
 初次部署保持 `execute=false`。完成真实 2→4 Cell 副本、故障域、SSH
 免密、网关热加载和回滚演练后，再改为 `execute=true`。
+
+自愈服务额外要求部署 fencing 状态生产器，并创建
+`/etc/xingyan-dual-cell/failover-enabled` 后才会被 systemd 启动。没有
+外部 fencing/quorum 时不得绕过该门禁。
 
 ## 指标文件
 

@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "completedAt": "2026-11-24T05:50:00+08:00",
+  "scope": [
+    "physical failover controller",
+    "failback controller",
+    "fencing gate",
+    "self-healing runtime",
+    "systemd unit",
+    "Flutter self-healing center",
+    "production read-only API rollout"
+  ],
+  "tests": {
+    "physical-failover-controller": "passed",
+    "physical-failover-runtime": "passed",
+    "fleet-control-panel": "passed",
+    "physical-scale-orchestrator": "passed",
+    "physical-scale-production-adapters": "passed",
+    "shard-maintenance-api": "passed",
+    "shard-minimal-release": "passed",
+    "flutter-test": "passed",
+    "flutter-analyze": "passed",
+    "windows-release-build": "passed",
+    "web-release-build": "passed"
+  },
+  "production": {
+    "apiHealth": 200,
+    "cellsReported": 2,
+    "activeShardServices": 14,
+    "healthyShardServices": 14,
+    "autoScaleService": "inactive",
+    "failoverService": "inactive",
+    "selfHealingStatus": "disabled",
+    "execute": false,
+    "fencingReady": false,
+    "fencingReason": "fencing-not-configured"
+  },
+  "safety": {
+    "ownerFailoverDefaultEnabled": false,
+    "singleOwnerPlanValidation": true,
+    "fencingRequired": true,
+    "verifiedFailureDomainsRequired": true,
+    "rollbackOnExecutionFailure": true,
+    "controllerBusyResetOnException": true,
+    "samplingPersistedAcrossRestart": true
+  },
+  "remainingForElasticProduction": [
+    "deploy and validate external fencing/quorum producer",
+    "verify production failure domains",
+    "enable physical-failover only after fault injection and failback drill",
+    "add automated provisioning for new physical hosts and service instances"
+  ],
+  "controlCenterPackage": {
+    "file": "xingyan-control-center/星言控制台中心-20261124-selfhealing.zip",
+    "sha256": "11c661c3f9ee72291e0b6e4cdc8fb82dc5ac5088ac890270d9a20b5792571817"
+  }
+}

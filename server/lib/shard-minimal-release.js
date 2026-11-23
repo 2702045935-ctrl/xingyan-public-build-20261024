@@ -39,6 +39,8 @@ const ENTRY_FILES = [
   'lib/physical-scale-production-adapters.js',
   'lib/physical-scale-target.js',
   'lib/physical-auto-scale-runtime.js',
+  'lib/physical-failover-controller.js',
+  'lib/physical-failover-runtime.js',
   'tools/shard-maintenance-executor.js',
   'tools/import-shard-authority.js',
   'tools/audit-shard-authority.js',
@@ -60,6 +62,7 @@ const ENTRY_FILES = [
   'tools/fleet-metrics-merge.js',
   'tools/collect-runtime-fleet-metrics.js',
   'tools/physical-auto-scale-service.js',
+  'tools/physical-failover-service.js',
   'tools/physical-scale-target.js'
 ];
 const ADDITIONAL_FILES = [
@@ -73,8 +76,10 @@ const ROOT_ADDITIONAL_FILES = [
   'deploy/fleet/fleet-node-control.js',
   'deploy/fleet/fleet-replication-sync.js',
   'deploy/fleet/physical-auto-scale.service',
+  'deploy/fleet/physical-failover.service',
   'deploy/fleet/physical-replication-sync.service',
   'deploy/fleet/physical-auto-scale.example.json',
+  'deploy/fleet/physical-failover.example.json',
   'docs/PHYSICAL_AUTO_SCALE.md'
 ];
 

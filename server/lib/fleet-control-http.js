@@ -103,7 +103,13 @@ function createFleetControlHttp(deps) {
           metricsFile: process.env.PHYSICAL_FLEET_METRICS
             || '/var/lib/xingyan-dual-cell/fleet-metrics.json',
           auditFile: process.env.PHYSICAL_AUTO_SCALE_AUDIT
-            || '/var/lib/xingyan-dual-cell/auto-scale-audit.jsonl'
+            || '/var/lib/xingyan-dual-cell/auto-scale-audit.jsonl',
+          failoverConfigFile: process.env.PHYSICAL_FAILOVER_CONFIG
+            || '/etc/xingyan-dual-cell/failover.json',
+          failoverStateFile: process.env.PHYSICAL_FAILOVER_STATE
+            || '/var/lib/xingyan-dual-cell/failover-state.json',
+          failoverAuditFile: process.env.PHYSICAL_FAILOVER_AUDIT
+            || '/var/lib/xingyan-dual-cell/failover-audit.jsonl'
         })
       });
       return true;

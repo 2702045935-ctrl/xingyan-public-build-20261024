@@ -1,0 +1,20 @@
+[Unit]
+Description=Xingyan physical shard failover and failback controller
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/etc/xingyan-dual-cell/failover-enabled
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/xingyan-dual-cell/failover.env
+ExecStart=/opt/node24/bin/node /opt/xingyan-dual-cell/release-r1/tools/physical-failover-service.js --config=/etc/xingyan-dual-cell/failover.json
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/xingyan-dual-cell
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
