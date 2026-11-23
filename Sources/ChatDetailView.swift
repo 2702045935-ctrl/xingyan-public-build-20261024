@@ -3603,7 +3603,17 @@ struct ChatDetailView: View {
             signature: nativeGroupSignature,
             nativeEligible: nativeGroupUIKitEligible,
             nativeRow: nativeGroupUIKitRow,
-            nativeHeight: nativeGroupUIKitHeight
+            nativeHeight: nativeGroupUIKitHeight,
+            onPrefetchStart: {
+                DispatchQueue.main.async {
+                    scheduleOlderPrefetch()
+                }
+            },
+            onPrefetchEnd: {
+                DispatchQueue.main.async {
+                    scheduleNewerPrefetch()
+                }
+            }
         ) { item in
             nativeGroupRow(item)
         }
@@ -8242,8 +8252,9 @@ struct ChatDetailView: View {
               olderPrefetch.count < target,
               olderPrefetchTask == nil else { return }
         let existing = olderPrefetch
-        let seq = explicitSeq
-            ?? (existing.isEmpty ? oldestHistorySeq : olderNextCursor)
+        let seq = existing.isEmpty
+            ? (explicitSeq ?? oldestHistorySeq)
+            : olderNextCursor
         guard seq > 0 else { return }
         let known = knownIds
             ?? Set(messages.map(\.id))

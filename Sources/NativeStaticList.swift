@@ -185,6 +185,8 @@ where Item.ID: Hashable {
     let nativeEligible: ((Item) -> Bool)?
     let nativeRow: ((Item, UIView?) -> UIView?)?
     let nativeHeight: ((Item, CGFloat) -> CGFloat?)?
+    let onPrefetchStart: (() -> Void)?
+    let onPrefetchEnd: (() -> Void)?
     @ViewBuilder let row: (Item) -> Row
 
     init(items: [Item],
@@ -201,6 +203,8 @@ where Item.ID: Hashable {
          nativeEligible: ((Item) -> Bool)? = nil,
          nativeRow: ((Item, UIView?) -> UIView?)? = nil,
          nativeHeight: ((Item, CGFloat) -> CGFloat?)? = nil,
+         onPrefetchStart: (() -> Void)? = nil,
+         onPrefetchEnd: (() -> Void)? = nil,
          @ViewBuilder row: @escaping (Item) -> Row) {
         self.items = items
         self.controller = controller
@@ -216,6 +220,8 @@ where Item.ID: Hashable {
         self.nativeEligible = nativeEligible
         self.nativeRow = nativeRow
         self.nativeHeight = nativeHeight
+        self.onPrefetchStart = onPrefetchStart
+        self.onPrefetchEnd = onPrefetchEnd
         self.row = row
     }
 
@@ -233,6 +239,8 @@ where Item.ID: Hashable {
                     nativeEligible: nativeEligible,
                     nativeRow: nativeRow,
                     nativeHeight: nativeHeight,
+                    onPrefetchStart: onPrefetchStart,
+                    onPrefetchEnd: onPrefetchEnd,
                     row: row)
     }
 
@@ -329,6 +337,8 @@ where Item.ID: Hashable {
         context.coordinator.nativeEligible = nativeEligible
         context.coordinator.nativeRow = nativeRow
         context.coordinator.nativeHeight = nativeHeight
+        context.coordinator.onPrefetchStart = onPrefetchStart
+        context.coordinator.onPrefetchEnd = onPrefetchEnd
         context.coordinator.virtualHistoryPosition = virtualHistoryPosition
         if context.coordinator.layoutRevision != layoutRevision {
             context.coordinator.layoutRevision = layoutRevision
@@ -358,6 +368,8 @@ where Item.ID: Hashable {
         var nativeEligible: ((Item) -> Bool)?
         var nativeRow: ((Item, UIView?) -> UIView?)?
         var nativeHeight: ((Item, CGFloat) -> CGFloat?)?
+        var onPrefetchStart: (() -> Void)?
+        var onPrefetchEnd: (() -> Void)?
         var virtualHistoryPosition: ((Item) -> Double?)?
         var layoutRevision: String
         weak var collection: UICollectionView?
@@ -401,6 +413,8 @@ where Item.ID: Hashable {
              nativeEligible: ((Item) -> Bool)?,
              nativeRow: ((Item, UIView?) -> UIView?)?,
              nativeHeight: ((Item, CGFloat) -> CGFloat?)?,
+             onPrefetchStart: (() -> Void)?,
+             onPrefetchEnd: (() -> Void)?,
              row: @escaping (Item) -> Row) {
             self.controller = controller
             self.onScrollViewReady = onScrollViewReady
@@ -416,6 +430,8 @@ where Item.ID: Hashable {
             self.nativeEligible = nativeEligible
             self.nativeRow = nativeRow
             self.nativeHeight = nativeHeight
+            self.onPrefetchStart = onPrefetchStart
+            self.onPrefetchEnd = onPrefetchEnd
             self.row = row
             super.init()
             foregroundObserver = NotificationCenter.default.addObserver(
@@ -1117,6 +1133,13 @@ where Item.ID: Hashable {
             let ids = indexPaths.compactMap { indexPath -> Item.ID? in
                 guard indexPath.item >= 0, indexPath.item < order.count else { return nil }
                 return order[indexPath.item]
+            }
+            if let first = indexPaths.map(\.item).min(), first <= 24 {
+                onPrefetchStart?()
+            }
+            if let last = indexPaths.map(\.item).max(),
+               last >= max(0, order.count - 25) {
+                onPrefetchEnd?()
             }
             if collectionView.isDragging || collectionView.isTracking
                 || collectionView.isDecelerating {

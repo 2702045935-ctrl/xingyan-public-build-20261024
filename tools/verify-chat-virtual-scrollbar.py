@@ -30,8 +30,12 @@ require(
 require(
     "UICollectionViewDiffableDataSource<Int, Item.ID>" in LIST
     and "NativeStaticUIKitCell" in LIST
-    and "prefetchItemsAt indexPaths: [IndexPath]" in LIST,
-    "chat rows must remain native reusable collection cells with prefetch callbacks",
+    and "prefetchItemsAt indexPaths: [IndexPath]" in LIST
+    and "onPrefetchStart?()" in LIST
+    and "onPrefetchEnd?()" in LIST
+    and "onPrefetchStart: {" in CHAT
+    and "scheduleOlderPrefetch()" in CHAT,
+    "native prefetch callbacks must request the next data page before scrolling reaches it",
 )
 require(
     "private let historyPageSize = 120" in CHAT

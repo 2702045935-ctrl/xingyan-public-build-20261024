@@ -78,6 +78,8 @@ require(
     and "olderPrefetchTask == nil" in CHAT
     and "let combined = visibleMessages(collected + existing)" in CHAT
     and "olderPrefetch = combined.count > target" in CHAT
+    and "let seq = existing.isEmpty" in CHAT
+    and ": olderNextCursor" in CHAT
     and "before: cursor" in CHAT
     and "let maxPages = 1" in CHAT,
     "chat prefetch must keep a bounded three-page runway",
