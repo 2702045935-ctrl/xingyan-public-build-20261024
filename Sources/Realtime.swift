@@ -6,6 +6,7 @@ struct PushEvent: Equatable {
     var type = ""
     var action = ""
     var userId = ""
+    var nickname = ""
     var chatId = ""
     var messageId = ""
     var seq = 0
@@ -397,6 +398,7 @@ final class Realtime: ObservableObject {
         }
         ev.action = (obj["action"] as? String) ?? ""
         ev.userId = (obj["userId"] as? String) ?? ""
+        ev.nickname = (obj["nickname"] as? String) ?? ""
         ev.chatId = (obj["chatId"] as? String) ?? ""
         ev.messageId = (obj["messageId"] as? String) ?? ""
         ev.seq = (obj["seq"] as? NSNumber)?.intValue ?? 0

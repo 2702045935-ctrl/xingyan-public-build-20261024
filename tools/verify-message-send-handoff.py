@@ -17,7 +17,7 @@ start = CHAT.index("if let message = try await API.shared.send(chatId: chat.id, 
 end = CHAT.index("} catch {", start)
 block = CHAT[start:end]
 remove = block.index("outbox.removeAll { $0.id == p.id }")
-append = block.index("appendVisibleMessage(message)")
+append = block.index("appendVisibleMessage(message, pinOwnMessage: false)")
 require(remove < append, "local send placeholder must be removed before confirmed bubble insertion")
 require(
     "var commitTransaction = Transaction()" in block
@@ -26,7 +26,10 @@ require(
     "pending removal and confirmed insertion must commit without animation",
 )
 require("UINotification.lightTap()" in CHAT, "send action must keep native tactile feedback")
-require("pinToBottomSoon(force: true)" in CHAT, "send action must keep bottom pinning")
+require(
+    "pinToBottomSoon(force: true, animated: false)" in CHAT,
+    "send action must keep one non-animated bottom pin",
+)
 
 flush_start = CHAT.index("private func flushOutbox")
 flush_end = CHAT.index("private func tapRedPacket", flush_start)

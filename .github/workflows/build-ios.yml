@@ -137,6 +137,7 @@ jobs:
           python3 tools/verify-group-membership-send.py
           python3 tools/verify-chat-unread-reconcile.py
           python3 tools/verify-realtime-chat-state.py
+          python3 tools/verify-typing-indicator.py
           python3 tools/verify-friend-removal-consistency.py
           python3 tools/verify-pin-owner-routing.py
           python3 tools/verify-dark-neutral-palette.py

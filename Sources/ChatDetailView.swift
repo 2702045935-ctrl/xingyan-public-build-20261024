@@ -211,6 +211,12 @@ struct PendingMsg: Identifiable, Hashable {
     }
 }
 
+private struct TypingPeer: Equatable {
+    var userId: String
+    var name: String
+    var updatedAt: Date
+}
+
 private final class ChatHistoryRuntime {
     var loadingOlder = false
     var olderPrefetch: [Message] = []
@@ -1049,6 +1055,7 @@ struct ChatDetailView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var messages: [Message] = []
     @State private var chatUnavailable = false
@@ -1291,16 +1298,21 @@ struct ChatDetailView: View {
         return a.id < b.id
     }
 
-    private func appendVisibleMessage(_ message: Message) {
+    private func appendVisibleMessage(_ message: Message,
+                                      pinOwnMessage: Bool = true) {
         guard !hiddenMessageIds.contains(message.id) else { return }
+        let pendingTwin = message.clientId.map { clientId in
+            outbox.contains { $0.id == clientId }
+        } ?? false
+        let shouldPinOwn = pinOwnMessage && !pendingTwin
         if let index = messages.firstIndex(where: { $0.id == message.id }) {
             guard messages[index] != message else { return }
             messages[index] = message
             newestKnownSeq = max(newestKnownSeq, message.seq ?? 0)
             rebuildIndex()
-            if message.senderId == myId {
+            if message.senderId == myId, shouldPinOwn {
                 followOwnSendUntil = Date().addingTimeInterval(2)
-                pinToBottomSoon(force: true)
+                pinToBottomSoon(force: true, animated: false)
             }
             return
         }
@@ -1311,9 +1323,9 @@ struct ChatDetailView: View {
             messages[index] = message
             newestKnownSeq = max(newestKnownSeq, message.seq ?? 0)
             rebuildIndex()
-            if message.senderId == myId {
+            if message.senderId == myId, shouldPinOwn {
                 followOwnSendUntil = Date().addingTimeInterval(2)
-                pinToBottomSoon(force: true)
+                pinToBottomSoon(force: true, animated: false)
             }
             return
         }
@@ -1339,9 +1351,9 @@ struct ChatDetailView: View {
             hasOlder = true
         }
         rebuildIndex()
-        if message.senderId == myId {
+        if message.senderId == myId, shouldPinOwn {
             followOwnSendUntil = Date().addingTimeInterval(2)
-            pinToBottomSoon(force: true)
+            pinToBottomSoon(force: true, animated: false)
         }
     }
 
@@ -1602,7 +1614,7 @@ struct ChatDetailView: View {
 
     @State private var videoPayload = ""
 
-    @State private var peerTyping = ""
+    @State private var typingPeers: [String: TypingPeer] = [:]
     @State private var peerMusic: FriendNowPlaying?
     @ObservedObject private var musicPresence = MusicPresenceStore.shared
     @State private var typingClear: Task<Void, Never>?
@@ -1759,14 +1771,103 @@ struct ChatDetailView: View {
 
     private var navTitleShown: String {
         if selectMode { return Tr("已选择") + " \(selected.count) " + Tr("项") }
-        guard !peerTyping.isEmpty else { return navTitle }
-        return isGroup ? "有人正在输入…" : "对方正在输入…"
+        return navTitle
+    }
+
+    private var sortedTypingPeers: [TypingPeer] {
+        typingPeers.values.sorted { $0.updatedAt > $1.updatedAt }
+    }
+
+    private var isPeerTyping: Bool {
+        !typingPeers.isEmpty
+    }
+
+    private var typingSummary: String {
+        let peers = sortedTypingPeers
+        guard !peers.isEmpty else { return "" }
+        if !isGroup { return Tr("正在输入") }
+        if peers.count == 1 {
+            return "\(peers[0].name)" + Tr("正在输入")
+        }
+        if peers.count == 2 {
+            return "\(peers[0].name)、\(peers[1].name)" + Tr("正在输入")
+        }
+        return "\(peers.count) " + Tr("人正在输入")
+    }
+
+    private var typingAccessibilityText: String {
+        let peers = sortedTypingPeers
+        guard !peers.isEmpty else { return "" }
+        if !isGroup { return Tr("对方正在输入") }
+        if peers.count <= 2 {
+            return peers.map(\.name).joined(separator: "、") + Tr("正在输入")
+        }
+        return "\(peers.count) " + Tr("人正在输入")
+    }
+
+    private var typingDots: some View {
+        Group {
+            if reduceMotion {
+                HStack(spacing: 3) {
+                    ForEach(0..<3, id: \.self) { index in
+                        Circle()
+                            .fill(adaptiveTopInk.opacity(index == 1 ? 0.9 : 0.58))
+                            .frame(width: 3.2, height: 3.2)
+                    }
+                }
+            } else {
+                TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
+                    let phase = context.date.timeIntervalSinceReferenceDate * 6.4
+                    HStack(spacing: 3) {
+                        ForEach(0..<3, id: \.self) { index in
+                            let wave = 0.5 + 0.5 * sin(
+                                phase - Double(index) * 0.82
+                            )
+                            Circle()
+                                .fill(adaptiveTopInk.opacity(0.50 + wave * 0.46))
+                                .frame(width: 3.2, height: 3.2)
+                                .offset(y: -2.1 * wave)
+                        }
+                    }
+                    .frame(height: 10, alignment: .bottom)
+                }
+            }
+        }
+        .frame(width: 17, height: 10)
+        .accessibilityHidden(true)
+    }
+
+    private var chatTypingIndicator: some View {
+        HStack(spacing: 5) {
+            typingDots
+            Text(typingSummary)
+                .font(pfStyled(10.2, .medium))
+                .foregroundStyle(adaptiveTopInk.opacity(0.72))
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 7)
+        .frame(height: 18)
+        .background {
+            Capsule(style: .continuous)
+                .fill(adaptiveTopInk.opacity(topBarUsesLightInk ? 0.09 : 0.075))
+        }
+        .overlay {
+            Capsule(style: .continuous)
+                .stroke(adaptiveTopInk.opacity(0.10), lineWidth: 0.55)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(typingAccessibilityText)
+        .transition(
+            reduceMotion
+                ? .opacity
+                : .opacity.combined(with: .scale(scale: 0.96, anchor: .leading))
+        )
     }
 
     private var chatNavigationStatus: String {
         guard !selectMode else { return "" }
-        if !peerTyping.isEmpty {
-            return isGroup ? "有人正在输入…" : "对方正在输入…"
+        if isPeerTyping {
+            return typingSummary
         }
         if let peerMusic {
             if peerMusic.playing == false {
@@ -1790,14 +1891,8 @@ struct ChatDetailView: View {
 
     private var whatsAppChatSubtitle: String {
         if loadingAllGroupHistory { return navTitle }
-        if !peerTyping.isEmpty {
-            return isGroup ? "有人正在输入…" : "对方正在输入…"
-        }
+        if isPeerTyping { return typingSummary }
         return chatNavigationStatus.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private var isPeerTyping: Bool {
-        !peerTyping.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private func loadPeerMusic() async {
@@ -1867,9 +1962,7 @@ struct ChatDetailView: View {
             ? "\(navTitle)(\(memberCount))"
             : navTitle
         let detail: String = {
-            if isPeerTyping {
-                return isGroup ? Tr("有人正在输入…") : Tr("对方正在输入…")
-            }
+            if isPeerTyping { return "" }
             if let music = peerMusic {
                 if music.playing == false {
                     return "\(music.name) " + Tr("最近在听") + "《\(music.title)》"
@@ -1977,12 +2070,19 @@ struct ChatDetailView: View {
                         .foregroundStyle(adaptiveTopInk)
                         .lineLimit(1)
                         .truncationMode(.tail)
-                    if !detail.isEmpty {
-                        Text(detail)
-                            .font(pfStyled(10.5))
-                            .foregroundStyle(adaptiveTopInk.opacity(0.62))
-                            .lineLimit(1)
+                    Group {
+                        if isPeerTyping {
+                            chatTypingIndicator
+                        } else if !detail.isEmpty {
+                            Text(detail)
+                                .font(pfStyled(10.5))
+                                .foregroundStyle(adaptiveTopInk.opacity(0.62))
+                                .lineLimit(1)
+                        } else {
+                            Color.clear
+                        }
                     }
+                    .frame(height: 18)
                 }
                 .frame(maxWidth: 238)
                 .contentShape(Rectangle())
@@ -2105,6 +2205,58 @@ struct ChatDetailView: View {
         showChatInfo = false
         app.returnToChatsList()
         dismiss()
+    }
+
+    private func markPeerTyping(userId: String, nickname: String) {
+        let peerId = userId.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !peerId.isEmpty, peerId != myId else { return }
+        let contactName = app.contact(for: peerId)?.name ?? ""
+        let resolved = [nickname, contactName]
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first { !$0.isEmpty } ?? Tr("有人")
+        let peer = TypingPeer(userId: peerId, name: resolved, updatedAt: Date())
+        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.16)) {
+            typingPeers[peerId] = peer
+        }
+        scheduleTypingExpiry()
+    }
+
+    private func clearTyping(_ userId: String? = nil) {
+        if let userId, !userId.isEmpty {
+            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.14)) {
+                typingPeers.removeValue(forKey: userId)
+            }
+        } else if !typingPeers.isEmpty {
+            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.14)) {
+                typingPeers.removeAll()
+            }
+        }
+        scheduleTypingExpiry()
+    }
+
+    private func scheduleTypingExpiry() {
+        typingClear?.cancel()
+        typingClear = nil
+        let now = Date()
+        let nextExpiry = typingPeers.values
+            .map { $0.updatedAt.addingTimeInterval(5) }
+            .min()
+        guard let nextExpiry else { return }
+        let delay = max(0.05, min(5, nextExpiry.timeIntervalSince(now)))
+        typingClear = Task { @MainActor in
+            try? await Task.sleep(
+                nanoseconds: UInt64(delay * 1_000_000_000)
+            )
+            guard !Task.isCancelled else { return }
+            let cutoff = Date().addingTimeInterval(-5)
+            let expired = typingPeers.filter { $0.value.updatedAt < cutoff }.keys
+            if !expired.isEmpty {
+                withAnimation(reduceMotion ? nil : .easeOut(duration: 0.16)) {
+                    expired.forEach { typingPeers.removeValue(forKey: $0) }
+                }
+            }
+            scheduleTypingExpiry()
+        }
     }
 
     private func reportTyping() {
@@ -3230,17 +3382,11 @@ struct ChatDetailView: View {
             }
 
             if ev.type == "typing", ev.chatId == chat.id {
-                peerTyping = "对方"
-                typingClear?.cancel()
-                typingClear = Task { @MainActor in
-                    try? await Task.sleep(nanoseconds: 5_000_000_000)
-                    if !Task.isCancelled { peerTyping = "" }
-                }
+                markPeerTyping(userId: ev.userId, nickname: ev.nickname)
             }
 
             if ev.type == "message", ev.chatId == chat.id {
-                typingClear?.cancel()
-                peerTyping = ""
+                clearTyping(ev.userId.isEmpty ? nil : ev.userId)
             }
 
             if ev.type == "pat", ev.chatId == chat.id {
@@ -3311,6 +3457,8 @@ struct ChatDetailView: View {
                     await load(initial: false)
                     await refreshReceipts()
                 }
+            } else {
+                clearTyping()
             }
         }
 
@@ -3338,6 +3486,9 @@ struct ChatDetailView: View {
             initialScrollTask = nil
             pinTask?.cancel()
             pinTask = nil
+            typingClear?.cancel()
+            typingClear = nil
+            typingPeers.removeAll()
             postSendRefreshTask?.cancel()
             postSendRefreshTask = nil
             patAnimationTask?.cancel()
@@ -3394,7 +3545,7 @@ struct ChatDetailView: View {
                     ScrollGate.shared.setScrolling(false)
                     if Date() < followOwnSendUntil,
                        messages.last?.senderId == myId {
-                        nativeMessageController.scrollToBottom(animated: true)
+                        nativeMessageController.scrollToBottom(animated: false)
                     }
                     // A fling can cross the runway exactly as deceleration ends.
                     consumeOlderRunway(requireActiveMotion: false)
@@ -3417,10 +3568,12 @@ struct ChatDetailView: View {
                 }
                 guard atBottomNow else { return }
                 if ChatScrollHandle.shared.moving { return }
+                if Date() < followOwnSendUntil,
+                   messages.last?.senderId == myId {
+                    return
+                }
                 ChatScrollDiag.shared.note("内容变高 → 原生消息列表贴底")
-                nativeMessageController.scrollToBottom(
-                    animated: Date() < followOwnSendUntil
-                )
+                nativeMessageController.scrollToBottom(animated: false)
             },
             initiallyPinnedToBottom: true,
             keepsBottomOnItemChange: true,
@@ -3444,9 +3597,9 @@ struct ChatDetailView: View {
             let followingOwnSend = Date() < followOwnSendUntil
                 && messages.last?.senderId == myId
             guard atBottomNow || followingOwnSend else { return }
-            nativeMessageController.scrollToBottom(
-                animated: followingOwnSend
-            )
+            if !followingOwnSend {
+                nativeMessageController.scrollToBottom(animated: false)
+            }
             scheduleSettledBottom()
             markConversationReadSoon()
         }
@@ -4297,7 +4450,8 @@ struct ChatDetailView: View {
         return rows
     }
 
-    private func pinToBottomSoon(force: Bool = false) {
+    private func pinToBottomSoon(force: Bool = false,
+                                 animated: Bool = true) {
 
         var stick = force || atBottomNow
 
@@ -4315,7 +4469,7 @@ struct ChatDetailView: View {
             wasAtBottom = true
             if force {
                 ChatScrollHandle.shared.allowAutomaticPinning()
-                nativeMessageController.scrollToBottom(animated: true)
+                nativeMessageController.scrollToBottom(animated: animated)
                 return
             }
             pinTick += 1
@@ -6644,7 +6798,7 @@ struct ChatDetailView: View {
         persistOutboxAfterFrame()
 
         UINotification.lightTap()
-        pinToBottomSoon(force: true)
+        pinToBottomSoon(force: true, animated: false)
         Task { await flushOutbox() }
     }
 
@@ -6672,7 +6826,7 @@ struct ChatDetailView: View {
                     commitTransaction.disablesAnimations = true
                     withTransaction(commitTransaction) {
                         outbox.removeAll { $0.id == p.id }
-                        appendVisibleMessage(message)
+                        appendVisibleMessage(message, pinOwnMessage: false)
                     }
                     app.rememberChatPageMessages(chat.id, [message])
                     app.ensureChatVisible(chat, latest: message)
