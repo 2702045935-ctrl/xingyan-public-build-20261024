@@ -5718,42 +5718,21 @@ private struct StarredPayload: Decodable {
     }
 
     func uploadBinary(_ data: Data, mime: String) async throws -> String {
-        if let url = try? await uploadBaselineRaw(data: data,
-                                                  mime: mime,
-                                                  compressed: true,
-                                                  onProgress: nil) {
-            return url
-        }
-        return try await TransferUploader.shared.uploadData(
-            data,
-            name: "file.bin",
+        try await uploadBaselineRaw(
+            data: data,
             mime: mime,
-            skipTranscode: true,
-            base: transferBase,
-            token: token,
-            session: session,
-            onProgress: { _ in }
+            compressed: true,
+            onProgress: nil
         )
     }
 
     func uploadBinaryFile(_ file: URL, mime: String,
                           skipTranscode: Bool = false,
                           onProgress: @escaping (Double) -> Void) async throws -> String {
-        let size = (try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
-        if size > 0, size <= 54 * 1024 * 1024,
-           let url = try? await uploadBaselineRawFile(file: file,
-                                                      mime: mime,
-                                                      compressed: skipTranscode,
-                                                      onProgress: onProgress) {
-            return url
-        }
-        return try await TransferUploader.shared.uploadFile(
-            file,
+        try await uploadBaselineRawFile(
+            file: file,
             mime: mime,
-            skipTranscode: skipTranscode,
-            base: transferBase,
-            token: token,
-            session: session,
+            compressed: skipTranscode,
             onProgress: onProgress
         )
     }
@@ -5787,10 +5766,6 @@ private struct StarredPayload: Decodable {
                                                   onProgress: effectiveProgress) {
             return url
         }
-        if let url = try? await uploadRawJPEG(data,
-                                              onProgress: effectiveProgress) {
-            return url
-        }
         effectiveProgress(0.15)
         let b64 = data.base64EncodedString()
         let payload: UploadPayload = try await post(
@@ -5804,20 +5779,6 @@ private struct StarredPayload: Decodable {
         guard let url = payload.url else { throw APIError.message("上传失败") }
         effectiveProgress(1)
         return url
-    }
-
-    private func uploadRawJPEG(_ data: Data,
-                               onProgress: ((Double) -> Void)? = nil) async throws -> String {
-        try await TransferUploader.shared.uploadData(
-            data,
-            name: "photo.jpg",
-            mime: "image/jpeg",
-            skipTranscode: true,
-            base: transferBase,
-            token: token,
-            session: session,
-            onProgress: onProgress ?? { _ in }
-        )
     }
 
     private func uploadBaselineRaw(data: Data,

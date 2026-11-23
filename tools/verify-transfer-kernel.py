@@ -151,12 +151,12 @@ require(
     "video processing must run asynchronously after media is sendable",
 )
 require(
-    "TransferUploader.shared.uploadData" in API
-    and "TransferUploader.shared.uploadFile" in API
+    "TransferUploader" not in API
     and 'base + "/api/upload/raw"' in API
     and "uploadBaselineRaw(data:" in API
-    and "uploadBaselineRawFile(file:" in API,
-    "images and ordinary files must keep the proven 11/16 raw path while large files use the kernel",
+    and "uploadBaselineRawFile(file:" in API
+    and API.count('base + "/api/upload/raw"') >= 2,
+    "media uploads must use only the proven 11/16 raw chain",
 )
 require(
     "node server/test/transfer-kernel.test.js" in WORKFLOW,
