@@ -176,6 +176,7 @@ jobs:
           node server/test/media-object-routing.test.js
           node server/test/messages-since.test.js
           node server/test/device-sync-state.test.js
+          node server/test/push-burst.test.js
           node server/test/moment-delete-persistence.test.js
           node server/test/moment-shard-replication.test.js
           node server/test/login-username.test.js

@@ -1,0 +1,22 @@
+connected 1/1
+{
+  "isolated": true,
+  "serverCount": 1,
+  "serverMemoryMb": 156,
+  "mode": "moment-instant-peak",
+  "viewers": 1,
+  "moments": 10000,
+  "expectedDeliveries": 10000,
+  "deliveredUnique": 0,
+  "missing": 0,
+  "duplicates": 0,
+  "extra": 0,
+  "unreadMismatch": 0,
+  "eventCountMismatch": 0,
+  "storedMissing": 0,
+  "durationMs": 18266,
+  "createDurationMs": 18202,
+  "deliveryDurationMs": 51,
+  "auditDurationMs": 12,
+  "pass": true
+}

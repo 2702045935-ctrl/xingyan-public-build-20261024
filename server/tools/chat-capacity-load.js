@@ -818,6 +818,8 @@ async function main() {
     .map((value) => value.trim())
     .filter(Boolean);
   const reconnectFraction = Math.min(0.2, Math.max(0, Number(arg('reconnect', '0.1'))));
+  const holdMs = Math.max(0, Number(arg('hold-ms', '0')));
+  const holdSampleMs = Math.max(1000, Number(arg('hold-sample-ms', '30000')));
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xingyan-capacity-load-'));
   const serverBasePort = serverCount > 1
     ? await freePortBlock(serverCount)
@@ -985,6 +987,45 @@ async function main() {
       const active = connections.filter((connection) =>
         connection.ready && !connection.closed
       );
+      if (holdMs > 0) {
+        const holdStartedAt = Date.now();
+        let minActive = active.length;
+        let maxClosed = 0;
+        let maxMemoryMb = processMemoryMb(child.pid);
+        const samples = [];
+        while (Date.now() - holdStartedAt < holdMs) {
+          await new Promise((resolve) =>
+            setTimeout(resolve, Math.min(holdSampleMs,
+              holdMs - (Date.now() - holdStartedAt)))
+          );
+          const alive = connections.filter((connection) =>
+            connection.ready && !connection.closed
+          ).length;
+          const closed = connections.length - alive;
+          const memoryMb = processMemoryMb(child.pid);
+          minActive = Math.min(minActive, alive);
+          maxClosed = Math.max(maxClosed, closed);
+          if (memoryMb != null) maxMemoryMb = Math.max(maxMemoryMb || 0, memoryMb);
+          samples.push({
+            atMs: Date.now() - holdStartedAt,
+            alive,
+            closed,
+            memoryMb
+          });
+        }
+        const soak = {
+          durationMs: Date.now() - holdStartedAt,
+          connections: target,
+          minActive,
+          maxClosed,
+          maxMemoryMb,
+          samples,
+          pass: minActive === target && maxClosed === 0
+        };
+        console.log(JSON.stringify({ type: 'long-connection-soak', ...soak }));
+        if (!soak.pass) throw new Error('long-connection soak failed: '
+          + JSON.stringify(soak));
+      }
       active.forEach((connection) => {
         connection.received.clear();
         connection.duplicateCount = 0;

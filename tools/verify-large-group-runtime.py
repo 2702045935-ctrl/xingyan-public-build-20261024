@@ -45,7 +45,10 @@ require(
     "large-group fanout must share unread and mention state without copying all members",
 )
 require(
-    "relayToShardPorts(userId, payload, onlineShardPorts(userId));" in SERVER
+    "if (shardPorts().length) {" in SERVER
+    and "const ports = onlineShardPorts(userId);" in SERVER
+    and "relayToShardPorts(userId, payload, ports);" in SERVER
+    and "queueFanoutRelay(fanoutContext.relayBatch, userId, payload, ports);" in SERVER
     and "let userById = new Map();" in SERVER
     and "return userById.get(String(id || ''))" in SERVER
     and "if (!p.onMessage || !pushReady()) return;" in SERVER

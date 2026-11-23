@@ -3339,7 +3339,6 @@ const momentsLogPath = () => path.join(DATA_DIR, MOMENTS_LOG);
 const MOMENT_REPLICATION_FILE = 'moment-replication-outbox.json';
 let momentsLogCount = 0;
 let momentsDiskSignature = '';
-let momentLastAppendAt = 0;
 let momentReplicationState = null;
 let momentReplicationOutbox = null;
 let momentReplicationPromise = null;
@@ -3371,7 +3370,6 @@ function applyMomentLogRecord(rows, record) {
 }
 
 function refreshMomentsFromDisk(force) {
-  if (!force && Date.now() - momentLastAppendAt < 250) return false;
   const signature = momentsStorageSignature();
   if (!signature || (!force && signature === momentsDiskSignature)) return false;
   const rows = new Map();
@@ -3431,7 +3429,6 @@ function appendMoment(moment) {
     momentsLogCount++;
   } catch (err) { /* 写不进日志就让下次整体保存兜底 */ }
   db.moments.unshift(moment);
-  momentLastAppendAt = Date.now();
   momentsDiskSignature = momentsStorageSignature();
   queueMomentReplicationRecords([{ moment }]);
   if (momentReplicationState != null) {
@@ -9384,6 +9381,57 @@ function isUserConnected(userId) {
   return alive;
 }
 
+const APNS_MAX_IN_FLIGHT = Math.max(
+  1, Math.min(512, Number(process.env.APNS_MAX_IN_FLIGHT) || 128)
+);
+const APNS_REQUEST_TIMEOUT_MS = Math.max(
+  1000, Number(process.env.APNS_REQUEST_TIMEOUT_MS) || 8000
+);
+const apnsSessions = new Map();
+const apnsWaiters = [];
+let apnsActiveStreams = 0;
+
+function apnsHost(sandbox) {
+  const override = String(process.env[
+    sandbox ? 'APNS_SANDBOX_HOST' : 'APNS_PRODUCTION_HOST'
+  ] || '').trim();
+  return override || (sandbox
+    ? 'https://api.sandbox.push.apple.com'
+    : 'https://api.push.apple.com');
+}
+
+function acquireApnsSlot() {
+  if (apnsActiveStreams < APNS_MAX_IN_FLIGHT) {
+    apnsActiveStreams += 1;
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => apnsWaiters.push(resolve));
+}
+
+function releaseApnsSlot() {
+  const next = apnsWaiters.shift();
+  if (next) next();
+  else apnsActiveStreams = Math.max(0, apnsActiveStreams - 1);
+}
+
+function apnsSession(host) {
+  const current = apnsSessions.get(host);
+  if (current && !current.closed && !current.destroyed) return current;
+  const session = http2.connect(host);
+  apnsSessions.set(host, session);
+  const forget = () => {
+    if (apnsSessions.get(host) === session) apnsSessions.delete(host);
+  };
+  session.on('error', forget);
+  session.on('close', forget);
+  session.on('goaway', forget);
+  session.setTimeout(10 * 60 * 1000, () => {
+    forget();
+    try { session.close(); } catch (e) { }
+  });
+  return session;
+}
+
 /* APNs 用的是 ES256 签的 JWT；苹果要求最多 1 小时换一次，这里 50 分钟换一次 */
 let jwtCache = { at: 0, token: '', key: '' };
 
@@ -9402,27 +9450,28 @@ function apnsJwt() {
   return jwtCache.token;
 }
 
-/** 真发一条 APNs 通知；返回 { ok, status, reason } */
-function apnsSend(deviceToken, sandbox, payload,
-                  pushType = 'alert', priority = '10', collapseId = '') {
-  return new Promise((resolve) => {
+/** 真发一条 APNs 通知；连接复用，流并发有上限。 */
+function apnsSendOnce(deviceToken, sandbox, payload,
+                      pushType = 'alert', priority = '10', collapseId = '') {
+  return acquireApnsSlot().then(() => new Promise((resolve) => {
     const c = readPush().config;
-    const host = sandbox ? 'https://api.sandbox.push.apple.com' : 'https://api.push.apple.com';
+    const host = apnsHost(sandbox);
     let done = false;
-    let client = null;
+    let timer = null;
     const finish = (r) => {
       if (done) return;
       done = true;
-      try { if (client) client.close(); } catch (e) { }
+      if (timer) clearTimeout(timer);
+      releaseApnsSlot();
       resolve(r);
     };
+    let session = null;
+    let req = null;
     try {
-      client = http2.connect(host);
+      session = apnsSession(host);
     } catch (e) {
       return finish({ ok: false, status: 0, reason: String(e && e.message || e) });
     }
-    client.on('error', (e) => finish({ ok: false, status: 0, reason: String(e && e.message || e) }));
-    let req = null;
     try {
       const headers = {
         ':method': 'POST',
@@ -9435,7 +9484,7 @@ function apnsSend(deviceToken, sandbox, payload,
         'content-type': 'application/json'
       };
       if (collapseId) headers['apns-collapse-id'] = String(collapseId).slice(0, 64);
-      req = client.request(headers);
+      req = session.request(headers);
     } catch (e) {
       return finish({ ok: false, status: 0, reason: String(e && e.message || e) });
     }
@@ -9445,10 +9494,45 @@ function apnsSend(deviceToken, sandbox, payload,
     req.setEncoding('utf8');
     req.on('data', (d) => { if (text.length < 400) text += d; });
     req.on('end', () => finish({ ok: status === 200, status, reason: text }));
-    req.on('error', (e) => finish({ ok: false, status: 0, reason: String(e && e.message || e) }));
+    req.on('error', (e) => finish({
+      ok: false,
+      status: 0,
+      reason: String(e && e.message || e)
+    }));
+    timer = setTimeout(() => {
+      try { req.close(); } catch (e) { }
+      finish({ ok: false, status: 0, reason: 'timeout' });
+    }, APNS_REQUEST_TIMEOUT_MS);
     req.end(JSON.stringify(payload));
-    setTimeout(() => finish({ ok: false, status: 0, reason: 'timeout' }), 8000);
-  });
+  }));
+}
+
+/** 429/5xx/网络错误做有限重试，避免一次抖动就把通知丢掉。 */
+async function apnsSend(deviceToken, sandbox, payload,
+                        pushType = 'alert', priority = '10', collapseId = '') {
+  let result = null;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    result = await apnsSendOnce(
+      deviceToken, sandbox, payload, pushType, priority, collapseId
+    );
+    if (result.ok || (result.status !== 429 && result.status < 500)) return result;
+    if (attempt < 2) {
+      await new Promise((resolve) =>
+        setTimeout(resolve, 100 * Math.pow(2, attempt))
+      );
+    }
+  }
+  return result;
+}
+
+let pushSaveTimer = null;
+function schedulePushSave() {
+  if (pushSaveTimer) return;
+  pushSaveTimer = setTimeout(() => {
+    pushSaveTimer = null;
+    savePush();
+  }, 120);
+  if (pushSaveTimer.unref) pushSaveTimer.unref();
 }
 
 function pushRemoveToken(userId, token) {
@@ -9456,19 +9540,50 @@ function pushRemoveToken(userId, token) {
   if (!p.tokens[userId]) return;
   p.tokens[userId] = p.tokens[userId].filter((d) => d.token !== token);
   if (!p.tokens[userId].length) delete p.tokens[userId];
-  savePush();
+  schedulePushSave();
 }
 
-/** 记一条推送日志（只留最近 300 条，后台页面能看到发没发出去） */
+/** 推送日志按批写，只保留最近 300 条，避免每条通知都重读整个文件。 */
+const pushLogPending = [];
+let pushLogTimer = null;
+let pushLogLineCount = null;
+
+function flushPushLogs() {
+  pushLogTimer = null;
+  if (!pushLogPending.length) return;
+  const rows = pushLogPending.splice(0, pushLogPending.length);
+  const file = path.join(DATA_DIR, 'push-log.jsonl');
+  try {
+    fs.appendFileSync(file, rows.join(''), 'utf8');
+  } catch (e) {
+    return;
+  }
+  try {
+    if (pushLogLineCount === null) {
+      const old = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
+      const total = old ? old.trim().split('\n').length : 0;
+      pushLogLineCount = Math.max(0, total - rows.length);
+    }
+    pushLogLineCount += rows.length;
+    if (pushLogLineCount > 300) {
+      const lines = fs.readFileSync(file, 'utf8').trim().split('\n');
+      const kept = lines.slice(-300);
+      fs.writeFileSync(file, kept.join('\n') + '\n', 'utf8');
+      pushLogLineCount = kept.length;
+    }
+  } catch (e) {
+    pushLogLineCount = null;
+  }
+}
+
 function pushLog(row) {
-  try {
-    fs.appendFileSync(path.join(DATA_DIR, 'push-log.jsonl'), JSON.stringify(Object.assign({ at: now() }, row)) + '\n', 'utf8');
-  } catch (e) { }
-  try {
-    const f = path.join(DATA_DIR, 'push-log.jsonl');
-    const lines = fs.readFileSync(f, 'utf8').trim().split('\n');
-    if (lines.length > 300) fs.writeFileSync(f, lines.slice(-300).join('\n') + '\n', 'utf8');
-  } catch (e) { }
+  pushLogPending.push(
+    JSON.stringify(Object.assign({ at: now() }, row)) + '\n'
+  );
+  if (pushLogPending.length > 1000) flushPushLogs();
+  if (pushLogTimer) return;
+  pushLogTimer = setTimeout(flushPushLogs, 100);
+  if (pushLogTimer.unref) pushLogTimer.unref();
 }
 
 /** 某个人所有会话的未读总数 —— 推到手机上就是「桌面图标右上角那个数字」 */
@@ -9559,6 +9674,39 @@ async function pushToUser(userId, opts) {
   }
   return { sent, reason: 'ok' };
 }
+
+const PUSH_USER_CONCURRENCY = Math.max(
+  1, Math.min(256, Number(process.env.PUSH_USER_CONCURRENCY) || 64)
+);
+const pushUserQueue = [];
+let pushUserActive = 0;
+
+function drainPushUserQueue() {
+  while (pushUserActive < PUSH_USER_CONCURRENCY && pushUserQueue.length) {
+    const item = pushUserQueue.shift();
+    pushUserActive += 1;
+    pushToUser(item.userId, item.opts)
+      .catch(() => {})
+      .finally(() => {
+        pushUserActive = Math.max(0, pushUserActive - 1);
+        drainPushUserQueue();
+      });
+  }
+}
+
+function queuePushToUser(userId, opts) {
+  pushUserQueue.push({ userId, opts });
+  drainPushUserQueue();
+}
+
+process.once('exit', () => {
+  flushPushLogs();
+  if (pushSaveTimer) {
+    clearTimeout(pushSaveTimer);
+    pushSaveTimer = null;
+    savePush();
+  }
+});
 
 const badgePushTimers = new Map();
 function scheduleBadgePush(userId) {
@@ -9658,13 +9806,13 @@ function pushForMessage(sender, chat, message) {
     const body = n.showDetail === false
       ? (atMe ? '有人@我' : '你收到一条新消息')
       : (atMe ? '[有人@我] ' + detail : detail);
-    pushToUser(id, {
+    queuePushToUser(id, {
       kind: 'message', title, body, chatId: chat.id, fromId: sender.id,
       sound: n.sound !== false,
       soundName: 'xingyan_message.wav',
       /* 同一个会话的推送折叠成一条（微信：同一个聊天连着来消息只留最新那条） */
       collapse: chat.id
-    }).catch(() => { });
+    });
   });
 }
 
@@ -24523,6 +24671,7 @@ async function handleApi(req, res, pathname, query) {
     if (liked) m.likes.push({ userId: user.id, at: now() });
     else m.likes.splice(idx, 1);
     saveMoments();
+    await flushMomentReplication();
     observeShardShadow('moments.like', {
       momentId: m.id,
       userId: user.id,
@@ -24561,6 +24710,7 @@ async function handleApi(req, res, pathname, query) {
     }
     if (on) m.pinned = true; else delete m.pinned;
     saveMoments();
+    await flushMomentReplication();
     ok(res, { pinned: on });
     return;
   }
@@ -24576,6 +24726,7 @@ async function handleApi(req, res, pathname, query) {
     if (c.userId !== user.id && m.authorId !== user.id) return fail(res, 403, '只能删自己的评论');
     m.comments.splice(idx, 1);
     saveMoments();
+    await flushMomentReplication();
     /* 评论删了，这条评论在「消息列表」里的那条通知也一起撤掉（微信也是删了就没） */
     for (let i = db.momentNotices.length - 1; i >= 0; i -= 1) {
       if (db.momentNotices[i].commentId === c.id) db.momentNotices.splice(i, 1);
@@ -24604,6 +24755,7 @@ async function handleApi(req, res, pathname, query) {
     if (liked) comment.likes.push({ userId: user.id, at: now() });
     else comment.likes.splice(at, 1);
     saveMoments();
+    await flushMomentReplication();
     observeShardShadow('moments.comment-like', {
       momentId: m.id,
       commentId: comment.id,
@@ -24643,6 +24795,7 @@ async function handleApi(req, res, pathname, query) {
     if (!m.comments) m.comments = [];
     m.comments.push({ id: uid('cm'), userId: user.id, content, replyTo, at: now(), likes: [] });
     saveMoments();
+    await flushMomentReplication();
     const shadowComment = m.comments[m.comments.length - 1];
     observeShardShadow('moments.comment', {
       momentId: m.id,
