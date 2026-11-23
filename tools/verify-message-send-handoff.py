@@ -19,6 +19,12 @@ block = CHAT[start:end]
 remove = block.index("outbox.removeAll { $0.id == p.id }")
 append = block.index("appendVisibleMessage(message)")
 require(remove < append, "local send placeholder must be removed before confirmed bubble insertion")
+require(
+    "var commitTransaction = Transaction()" in block
+    and "commitTransaction.disablesAnimations = true" in block
+    and "withTransaction(commitTransaction) {" in block,
+    "pending removal and confirmed insertion must commit without animation",
+)
 require("UINotification.lightTap()" in CHAT, "send action must keep native tactile feedback")
 require("pinToBottomSoon(force: true)" in CHAT, "send action must keep bottom pinning")
 
@@ -90,6 +96,14 @@ require(
     and "messages[index] = message" in CHAT
     and "if Date() < followOwnSendUntil,\n                       messages.last?.senderId == myId" in CHAT,
     "a confirmed client message must replace its echo and return into view when motion settles",
+)
+append_start = CHAT.index("private func appendVisibleMessage")
+append_end = CHAT.index("private var visiblePendingMessages", append_start)
+append_block = CHAT[append_start:append_end]
+require(
+    append_block.count("guard messages[index] != message else { return }") >= 2
+    and "messages[index] = message" in append_block,
+    "identical HTTP and WebSocket confirmations must update in place only once",
 )
 require(
     "private var visiblePendingMessages: [PendingMsg]" in CHAT

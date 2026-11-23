@@ -1294,11 +1294,20 @@ struct ChatDetailView: View {
     private func appendVisibleMessage(_ message: Message) {
         guard !hiddenMessageIds.contains(message.id) else { return }
         if let index = messages.firstIndex(where: { $0.id == message.id }) {
-            messages.remove(at: index)
+            guard messages[index] != message else { return }
+            messages[index] = message
+            newestKnownSeq = max(newestKnownSeq, message.seq ?? 0)
+            rebuildIndex()
+            if message.senderId == myId {
+                followOwnSendUntil = Date().addingTimeInterval(2)
+                pinToBottomSoon(force: true)
+            }
+            return
         }
         if let cid = message.clientId?.trimmingCharacters(in: .whitespacesAndNewlines),
            !cid.isEmpty,
            let index = messages.firstIndex(where: { $0.clientId == cid }) {
+            guard messages[index] != message else { return }
             messages[index] = message
             newestKnownSeq = max(newestKnownSeq, message.seq ?? 0)
             rebuildIndex()
@@ -6659,8 +6668,12 @@ struct ChatDetailView: View {
                                                            quote: Self.quoteDict(p.quoteJSON)) {
                     /* 先把本地发送占位撤掉，再落入服务端确认气泡。
                        两步在同一个 MainActor 事务里完成，避免同一条消息短暂出现两张气泡。 */
-                    outbox.removeAll { $0.id == p.id }
-                    appendVisibleMessage(message)
+                    var commitTransaction = Transaction()
+                    commitTransaction.disablesAnimations = true
+                    withTransaction(commitTransaction) {
+                        outbox.removeAll { $0.id == p.id }
+                        appendVisibleMessage(message)
+                    }
                     app.rememberChatPageMessages(chat.id, [message])
                     app.ensureChatVisible(chat, latest: message)
                 } else if let i2 = outbox.firstIndex(where: { $0.id == p.id }) {
