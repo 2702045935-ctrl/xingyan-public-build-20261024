@@ -91,11 +91,11 @@ require(
     "a confirmed client message must replace its echo and return into view when motion settles",
 )
 require(
-    "private func retirePendingEcho(for message: Message)" in CHAT
-    and "retirePendingEcho(for: message)\n        guard !hiddenMessageIds.contains" in CHAT
-    and "outbox.removeAll { $0.id == clientId }" in CHAT
-    and "persistOutboxAfterFrame()" in CHAT,
-    "a realtime echo must remove its matching pending row before inserting the confirmed bubble",
+    "private var visiblePendingMessages: [PendingMsg]" in CHAT
+    and "let confirmedClientIds = Set(messages.compactMap" in CHAT
+    and "return outbox.filter { !confirmedClientIds.contains($0.id) }" in CHAT
+    and "for pending in visiblePendingMessages" in CHAT,
+    "confirmed messages must structurally suppress matching pending rows in the render projection",
 )
 require(
     "private func nativeOutboxTextModel(_ pending: PendingMsg)" in CHAT

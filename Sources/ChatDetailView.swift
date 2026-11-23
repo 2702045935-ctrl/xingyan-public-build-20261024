@@ -1291,7 +1291,6 @@ struct ChatDetailView: View {
     }
 
     private func appendVisibleMessage(_ message: Message) {
-        retirePendingEcho(for: message)
         guard !hiddenMessageIds.contains(message.id) else { return }
         if let index = messages.firstIndex(where: { $0.id == message.id }) {
             messages.remove(at: index)
@@ -1336,20 +1335,17 @@ struct ChatDetailView: View {
         }
     }
 
-    /// Realtime echoes can beat the HTTP send acknowledgement. Retire the
-    /// matching local pending row in the same state transaction so the list
-    /// never renders two bubbles for one outgoing message.
-    private func retirePendingEcho(for message: Message) {
-        guard let clientId = message.clientId?
-            .trimmingCharacters(in: .whitespacesAndNewlines),
-            !clientId.isEmpty,
-            outbox.contains(where: { $0.id == clientId }) else { return }
-        var transaction = Transaction()
-        transaction.disablesAnimations = true
-        withTransaction(transaction) {
-            outbox.removeAll { $0.id == clientId }
-        }
-        persistOutboxAfterFrame()
+    /// The queue records transport work; the list renders one projection.
+    /// A confirmed message owns its clientId, so its pending twin is hidden
+    /// immediately regardless of whether the echo or HTTP response arrives first.
+    private var visiblePendingMessages: [PendingMsg] {
+        let confirmedClientIds = Set(messages.compactMap { message -> String? in
+            guard let clientId = message.clientId?
+                .trimmingCharacters(in: .whitespacesAndNewlines),
+                !clientId.isEmpty else { return nil }
+            return clientId
+        })
+        return outbox.filter { !confirmedClientIds.contains($0.id) }
     }
 
     private func upsertVisibleMessage(_ message: Message) {
@@ -3505,7 +3501,7 @@ struct ChatDetailView: View {
             items.append(NativeGroupItem(id: message.id,
                                          kind: .message(message)))
         }
-        for pending in outbox {
+        for pending in visiblePendingMessages {
             items.append(NativeGroupItem(id: "native-outbox:\(pending.id)",
                                          kind: .outbox(pending)))
         }
@@ -3675,7 +3671,7 @@ struct ChatDetailView: View {
     }
 
     private func pendingShowsTail(_ pending: PendingMsg) -> Bool {
-        let pendingIndex = outbox.firstIndex(where: { $0.id == pending.id }) ?? 0
+        let pendingIndex = visiblePendingMessages.firstIndex(where: { $0.id == pending.id }) ?? 0
         guard pendingIndex == 0, let last = messages.last else {
             return pendingIndex == 0
         }
@@ -3685,7 +3681,7 @@ struct ChatDetailView: View {
     }
 
     private func pendingShowsAvatar(_ pending: PendingMsg) -> Bool {
-        guard let index = outbox.firstIndex(where: { $0.id == pending.id }) else {
+        guard let index = visiblePendingMessages.firstIndex(where: { $0.id == pending.id }) else {
             return true
         }
         return index == 0
