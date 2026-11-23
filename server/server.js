@@ -9001,6 +9001,37 @@ function relayToShardPeers(userId, payload) {
   relayToShardPorts(userId, payload, shardPorts());
 }
 
+function broadcastCompactChatMessage(chat, payload) {
+  const textCache = new Map();
+  let sent = 0;
+  chat.memberIds.forEach((id) => {
+    if (!connections.has(id)) return;
+    sent += sendToLocal(
+      id, payload, textCache, 'large-group-message'
+    );
+  });
+  const body = JSON.stringify({ chatId: chat.id, payload });
+  shardPorts().forEach((port) => {
+    if (port === PORT) return;
+    const relay = http.request({
+      host: '127.0.0.1',
+      port,
+      path: '/__shard/chat-broadcast',
+      method: 'POST',
+      agent: chatOwnerAgent,
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+        'X-Shard-Relay': db.secret || ''
+      }
+    }, (response) => response.resume());
+    relay.setTimeout(2000, () => relay.destroy());
+    relay.on('error', () => {});
+    relay.end(body);
+  });
+  return sent;
+}
+
 function sendTo(userId, payload, fanoutContext) {
   const sent = sendToLocal(
     userId,
@@ -9173,25 +9204,14 @@ function fanoutChatMessage(chat, message, sender, clientId) {
     : chat.memberIds;
   const recipients = onlineMembersOfChat(chat, online);
   const sharedOnlineMemberIds = memberPreviewIds.filter((id) => online.has(id));
-  if (chat.type === 'group' && recipients.length > 512) {
+  if (chat.type === 'group' && chat.memberIds.length > 512) {
     const senderName = memberAlias(chat, sender.id)
       || sender.nickname
       || sender.username
       || '';
     const out = Object.assign({}, message, { senderName });
     const payload = { type: 'message', message: out };
-    const textCache = new Map();
-    const relayBatch = new Map();
-    let sent = 0;
-    for (const id of recipients) {
-      sent += sendTo(id, payload, {
-        textCache,
-        textCacheKey: 'large-group-message',
-        relayBatch
-      });
-    }
-    flushFanoutRelays(relayBatch);
-    return sent;
+    return broadcastCompactChatMessage(chat, payload);
   }
   const messageRows = loadMessages(chat.id);
   const summaryContext = {
@@ -26367,6 +26387,34 @@ async function handleHttpRequest(req, res) {
       if (refreshMoments) refreshMomentsFromDisk(true);
       if (refreshChats) refreshChatAccessStateFromDisk(true);
       return ok(res, { sent, items: items.length });
+    }
+    if (parsed.pathname === '/__shard/chat-broadcast') {
+      if (req.method !== 'POST') return fail(res, 405, 'Method Not Allowed');
+      const supplied = String(req.headers['x-shard-relay'] || '');
+      const expected = String(db.secret || '');
+      const a = Buffer.from(supplied);
+      const b = Buffer.from(expected);
+      if (!expected || a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+        return fail(res, 403, '禁止访问');
+      }
+      const body = await readBody(req);
+      const chatId = str(body.chatId, 80);
+      const payload = body.payload;
+      const chat = db.chats.find((row) => row && row.id === chatId);
+      if (!chat || !payload || typeof payload !== 'object') {
+        return fail(res, 422, '分片聊天广播不完整');
+      }
+      const textCache = new Map();
+      let sent = 0;
+      chat.memberIds.forEach((id) => {
+        if (!connections.has(id)) return;
+        sent += sendToLocal(
+          id, payload, textCache, 'large-group-message'
+        );
+      });
+      messageCache.delete(chatId);
+      invalidateMentionIndex(chatId);
+      return ok(res, { sent });
     }
     if (parsed.pathname === '/__shard/presence-event') {
       if (req.method !== 'POST') return fail(res, 405, 'Method Not Allowed');

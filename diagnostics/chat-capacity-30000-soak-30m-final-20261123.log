@@ -1,0 +1,126 @@
+connected 500/30000
+connected 1000/30000
+connected 1500/30000
+connected 2000/30000
+connected 2500/30000
+connected 3000/30000
+connected 3500/30000
+connected 4000/30000
+connected 4500/30000
+connected 5000/30000
+connected 5500/30000
+connected 6000/30000
+connected 6500/30000
+connected 7000/30000
+connected 7500/30000
+connected 8000/30000
+connected 8500/30000
+connected 9000/30000
+connected 9500/30000
+connected 10000/30000
+connected 10500/30000
+connected 11000/30000
+connected 11500/30000
+connected 12000/30000
+connected 12500/30000
+connected 13000/30000
+connected 13500/30000
+connected 14000/30000
+connected 14500/30000
+connected 15000/30000
+connected 15500/30000
+connected 16000/30000
+connected 16500/30000
+connected 17000/30000
+connected 17500/30000
+connected 18000/30000
+connected 18500/30000
+connected 19000/30000
+connected 19500/30000
+connected 20000/30000
+connected 20500/30000
+connected 21000/30000
+connected 21500/30000
+connected 22000/30000
+connected 22500/30000
+connected 23000/30000
+connected 23500/30000
+connected 24000/30000
+connected 24500/30000
+connected 25000/30000
+connected 25500/30000
+connected 26000/30000
+connected 26500/30000
+connected 27000/30000
+connected 27500/30000
+connected 28000/30000
+connected 28500/30000
+connected 29000/30000
+connected 29500/30000
+connected 30000/30000
+{"type":"long-connection-soak","durationMs":1801059,"connections":30000,"minActive":30000,"maxClosed":0,"maxMemoryMb":352,"samples":[{"atMs":32276,"alive":30000,"closed":0,"memoryMb":196},{"atMs":63325,"alive":30000,"closed":0,"memoryMb":197},{"atMs":94406,"alive":30000,"closed":0,"memoryMb":197},{"atMs":125541,"alive":30000,"closed":0,"memoryMb":245},{"atMs":156623,"alive":30000,"closed":0,"memoryMb":288},{"atMs":187673,"alive":30000,"closed":0,"memoryMb":288},{"atMs":218726,"alive":30000,"closed":0,"memoryMb":311},{"atMs":249827,"alive":30000,"closed":0,"memoryMb":311},{"atMs":280883,"alive":30000,"closed":0,"memoryMb":335},{"atMs":312163,"alive":30000,"closed":0,"memoryMb":335},{"atMs":343301,"alive":30000,"closed":0,"memoryMb":348},{"atMs":374367,"alive":30000,"closed":0,"memoryMb":348},{"atMs":405493,"alive":30000,"closed":0,"memoryMb":242},{"atMs":436643,"alive":30000,"closed":0,"memoryMb":242},{"atMs":467828,"alive":30000,"closed":0,"memoryMb":299},{"atMs":498898,"alive":30000,"closed":0,"memoryMb":299},{"atMs":529971,"alive":30000,"closed":0,"memoryMb":322},{"atMs":561022,"alive":30000,"closed":0,"memoryMb":200},{"atMs":592090,"alive":30000,"closed":0,"memoryMb":246},{"atMs":623158,"alive":30000,"closed":0,"memoryMb":246},{"atMs":654233,"alive":30000,"closed":0,"memoryMb":286},{"atMs":685324,"alive":30000,"closed":0,"memoryMb":286},{"atMs":716493,"alive":30000,"closed":0,"memoryMb":309},{"atMs":747546,"alive":30000,"closed":0,"memoryMb":309},{"atMs":778614,"alive":30000,"closed":0,"memoryMb":333},{"atMs":809676,"alive":30000,"closed":0,"memoryMb":333},{"atMs":840730,"alive":30000,"closed":0,"memoryMb":345},{"atMs":871862,"alive":30000,"closed":0,"memoryMb":200},{"atMs":902929,"alive":30000,"closed":0,"memoryMb":251},{"atMs":933984,"alive":30000,"closed":0,"memoryMb":251},{"atMs":965037,"alive":30000,"closed":0,"memoryMb":289},{"atMs":996139,"alive":30000,"closed":0,"memoryMb":312},{"atMs":1027323,"alive":30000,"closed":0,"memoryMb":312},{"atMs":1058386,"alive":30000,"closed":0,"memoryMb":246},{"atMs":1089501,"alive":30000,"closed":0,"memoryMb":246},{"atMs":1120606,"alive":30000,"closed":0,"memoryMb":286},{"atMs":1151657,"alive":30000,"closed":0,"memoryMb":286},{"atMs":1182716,"alive":30000,"closed":0,"memoryMb":309},{"atMs":1213777,"alive":30000,"closed":0,"memoryMb":309},{"atMs":1244838,"alive":30000,"closed":0,"memoryMb":243},{"atMs":1275948,"alive":30000,"closed":0,"memoryMb":243},{"atMs":1307017,"alive":30000,"closed":0,"memoryMb":291},{"atMs":1338163,"alive":30000,"closed":0,"memoryMb":291},{"atMs":1369204,"alive":30000,"closed":0,"memoryMb":313},{"atMs":1400224,"alive":30000,"closed":0,"memoryMb":313},{"atMs":1431348,"alive":30000,"closed":0,"memoryMb":247},{"atMs":1462394,"alive":30000,"closed":0,"memoryMb":247},{"atMs":1493480,"alive":30000,"closed":0,"memoryMb":286},{"atMs":1524593,"alive":30000,"closed":0,"memoryMb":286},{"atMs":1555681,"alive":30000,"closed":0,"memoryMb":309},{"atMs":1586747,"alive":30000,"closed":0,"memoryMb":309},{"atMs":1617867,"alive":30000,"closed":0,"memoryMb":333},{"atMs":1648941,"alive":30000,"closed":0,"memoryMb":333},{"atMs":1679982,"alive":30000,"closed":0,"memoryMb":346},{"atMs":1711019,"alive":30000,"closed":0,"memoryMb":346},{"atMs":1742097,"alive":30000,"closed":0,"memoryMb":340},{"atMs":1773162,"alive":30000,"closed":0,"memoryMb":340},{"atMs":1801059,"alive":30000,"closed":0,"memoryMb":352}],"pass":true}
+{"connections":30000,"closedConnections":[],"connectDurationMs":1826892,"rounds":2,"reconnectCount":0,"expectedDeliveries":60000,"delivered":60000,"deliveryRate":1,"p99Ms":354,"broadcasts":[{"clientId":"capacity-1795434193944-0-e2b38f","delivered":30000,"missing":0,"p50Ms":184,"p95Ms":315,"p99Ms":327,"maxMs":330}],"reconnectBroadcast":{"clientId":"capacity-1795434194285-99-4804ee","delivered":30000,"missing":0,"p50Ms":176,"p95Ms":342,"p99Ms":354,"maxMs":357},"strict":{"expectedPerConnection":2,"connectionsChecked":30000,"missing":0,"duplicates":0,"orderViolations":0,"extra":0,"inconsistentConnections":0,"pass":true},"stored":{"rows":2,"expected":2,"missing":0,"idDuplicates":0,"clientIdDuplicates":0,"orderViolations":0,"pass":true},"serverMemoryBeforeMb":352,"serverMemoryAfterMb":351,"pass":true}
+{
+  "isolated": true,
+  "dataDir": "C:\\Users\\ADMINI~1\\AppData\\Local\\Temp\\xingyan-capacity-load-PnnC9E",
+  "serverCount": 1,
+  "stages": [
+    30000
+  ],
+  "passed": true,
+  "results": [
+    {
+      "connections": 30000,
+      "closedConnections": [],
+      "connectDurationMs": 1826892,
+      "rounds": 2,
+      "reconnectCount": 0,
+      "expectedDeliveries": 60000,
+      "delivered": 60000,
+      "deliveryRate": 1,
+      "p99Ms": 354,
+      "broadcasts": [
+        {
+          "clientId": "capacity-1795434193944-0-e2b38f",
+          "delivered": 30000,
+          "missing": 0,
+          "p50Ms": 184,
+          "p95Ms": 315,
+          "p99Ms": 327,
+          "maxMs": 330
+        }
+      ],
+      "reconnectBroadcast": {
+        "clientId": "capacity-1795434194285-99-4804ee",
+        "delivered": 30000,
+        "missing": 0,
+        "p50Ms": 176,
+        "p95Ms": 342,
+        "p99Ms": 354,
+        "maxMs": 357
+      },
+      "strict": {
+        "expectedPerConnection": 2,
+        "connectionsChecked": 30000,
+        "missing": 0,
+        "duplicates": 0,
+        "orderViolations": 0,
+        "extra": 0,
+        "inconsistentConnections": 0,
+        "pass": true
+      },
+      "stored": {
+        "rows": 2,
+        "expected": 2,
+        "missing": 0,
+        "idDuplicates": 0,
+        "clientIdDuplicates": 0,
+        "orderViolations": 0,
+        "pass": true
+      },
+      "serverMemoryBeforeMb": 352,
+      "serverMemoryAfterMb": 351,
+      "pass": true
+    }
+  ]
+}

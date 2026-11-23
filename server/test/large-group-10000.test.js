@@ -278,7 +278,12 @@ async function main() {
     trackSlowest(latencySamples, 'message 1', response.elapsedMs);
     let event = await waitForEvent(recipientASocket.events, (row) =>
       row.type === 'message' && row.message && row.message.clientId === 'large-group-first');
-    assert.strictEqual(event.chat.unread, 1);
+    response = await call(base, recipientASession.cookie, 'GET', '/api/chats');
+    assert.strictEqual(response.status, 200, JSON.stringify(response.data));
+    assert.strictEqual(
+      (response.data.chats || []).find((chat) => chat.id === CHAT_ID).unread,
+      1
+    );
 
     response = await call(base, senderSession.cookie, 'POST',
       '/api/chats/' + CHAT_ID + '/messages', {
@@ -291,7 +296,12 @@ async function main() {
     trackSlowest(latencySamples, 'message 2', response.elapsedMs);
     event = await waitForEvent(recipientBSocket.events, (row) =>
       row.type === 'message' && row.message && row.message.clientId === 'large-group-second');
-    assert.strictEqual(event.chat.unread, 2);
+    response = await call(base, recipientBSession.cookie, 'GET', '/api/chats');
+    assert.strictEqual(response.status, 200, JSON.stringify(response.data));
+    assert.strictEqual(
+      (response.data.chats || []).find((chat) => chat.id === CHAT_ID).unread,
+      2
+    );
 
     response = await call(base, senderSession.cookie, 'POST',
       '/api/chats/' + CHAT_ID + '/messages', {
@@ -305,8 +315,10 @@ async function main() {
     event = await waitForEvent(recipientASocket.events, (row) =>
       row.type === 'message' && row.message && row.message.clientId === 'large-group-mention');
     assert.strictEqual(event.message.mentions.includes(recipientA.id), true);
-    assert.strictEqual(event.chat.lastMessage.mentionMe, true);
-    assert.strictEqual(event.chat.unread, 3);
+    response = await call(base, recipientASession.cookie, 'GET', '/api/chats');
+    const mentionChat = (response.data.chats || []).find((chat) => chat.id === CHAT_ID);
+    assert.strictEqual(mentionChat.lastMessage.mentionMe, true);
+    assert.strictEqual(mentionChat.unread, 3);
 
     response = await call(base, ownerSession.cookie, 'POST',
       '/api/chats/' + CHAT_ID + '/messages', {
@@ -321,8 +333,10 @@ async function main() {
       row.type === 'message' && row.message && row.message.clientId === 'large-group-all');
     assert.strictEqual(event.message.mentionAll, true);
     assert.strictEqual(event.message.mentions, undefined);
-    assert.strictEqual(event.chat.lastMessage.mentionMe, true);
-    assert.strictEqual(event.chat.unread, 4);
+    response = await call(base, recipientBSession.cookie, 'GET', '/api/chats');
+    const allChat = (response.data.chats || []).find((chat) => chat.id === CHAT_ID);
+    assert.strictEqual(allChat.lastMessage.mentionMe, true);
+    assert.strictEqual(allChat.unread, 4);
     assert.ok(event.message.content.indexOf('@所有人') >= 0);
 
     for (let index = 0; index < 45; index += 1) {

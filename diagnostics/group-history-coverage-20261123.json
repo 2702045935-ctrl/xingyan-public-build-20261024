@@ -1,0 +1,72 @@
+{
+  "scope": "Read-only production history coverage; no message bodies emitted",
+  "base": "https://mail.xingyanmail.site:443/xy",
+  "groups": [
+    {
+      "chatId": "c_e948891927e11277",
+      "title": "家人即刻2群",
+      "memberCount": 5,
+      "pages": 9,
+      "uniqueMessagesWithSeq": 814,
+      "firstSeq": 1,
+      "lastSeq": 814,
+      "earliestCreatedAt": "2026-11-13T04:26:06.518Z",
+      "latestCreatedAt": "2026-11-23T11:40:22.760Z",
+      "hasMoreAfterAudit": false,
+      "stoppedReason": "server-end"
+    },
+    {
+      "chatId": "c_a98842aa2d995b22",
+      "title": "nsjd",
+      "memberCount": 2,
+      "pages": 1,
+      "uniqueMessagesWithSeq": 4,
+      "firstSeq": 1,
+      "lastSeq": 4,
+      "earliestCreatedAt": "2026-11-23T03:20:52.286Z",
+      "latestCreatedAt": "2026-11-23T03:21:02.344Z",
+      "hasMoreAfterAudit": false,
+      "stoppedReason": "server-end"
+    },
+    {
+      "chatId": "c_9740a1866d6d825f",
+      "title": "海上搜救",
+      "memberCount": 2,
+      "pages": 1,
+      "uniqueMessagesWithSeq": 22,
+      "firstSeq": 1,
+      "lastSeq": 22,
+      "earliestCreatedAt": "2026-11-17T21:10:40.253Z",
+      "latestCreatedAt": "2026-11-23T03:20:02.201Z",
+      "hasMoreAfterAudit": false,
+      "stoppedReason": "server-end"
+    },
+    {
+      "chatId": "c_5196624124999b98",
+      "title": "黑死我",
+      "memberCount": 2,
+      "pages": 1,
+      "uniqueMessagesWithSeq": 31,
+      "firstSeq": 1,
+      "lastSeq": 31,
+      "earliestCreatedAt": "2026-11-16T07:32:48.949Z",
+      "latestCreatedAt": "2026-11-23T02:02:54.896Z",
+      "hasMoreAfterAudit": false,
+      "stoppedReason": "server-end"
+    },
+    {
+      "chatId": "c_7e1a26953227590a",
+      "title": "家人群",
+      "memberCount": 8,
+      "pages": 12,
+      "uniqueMessagesWithSeq": 1200,
+      "firstSeq": 6016,
+      "lastSeq": 7215,
+      "earliestCreatedAt": "2026-10-22T07:55:33.753Z",
+      "latestCreatedAt": "2026-11-23T01:37:21.140Z",
+      "hasMoreAfterAudit": true,
+      "stoppedReason": "max-pages"
+    }
+  ],
+  "pass": false
+}

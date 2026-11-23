@@ -1,0 +1,104 @@
+connected 1000/30000
+connected 2000/30000
+connected 3000/30000
+connected 4000/30000
+connected 5000/30000
+connected 6000/30000
+connected 7000/30000
+connected 8000/30000
+connected 9000/30000
+connected 10000/30000
+connected 11000/30000
+connected 12000/30000
+connected 13000/30000
+connected 14000/30000
+connected 15000/30000
+connected 16000/30000
+connected 17000/30000
+connected 18000/30000
+connected 19000/30000
+connected 20000/30000
+connected 21000/30000
+connected 22000/30000
+connected 23000/30000
+connected 24000/30000
+connected 25000/30000
+connected 26000/30000
+connected 27000/30000
+connected 28000/30000
+connected 29000/30000
+connected 30000/30000
+{"connections":30000,"closedConnections":[],"connectDurationMs":22394,"rounds":3,"reconnectCount":0,"expectedDeliveries":90000,"delivered":90000,"deliveryRate":1,"p99Ms":371,"broadcasts":[{"clientId":"capacity-1795434371722-0-72e9bf","delivered":30000,"missing":0,"p50Ms":180,"p95Ms":337,"p99Ms":349,"maxMs":352},{"clientId":"capacity-1795434372079-1-63f24a","delivered":30000,"missing":0,"p50Ms":180,"p95Ms":338,"p99Ms":350,"maxMs":353}],"reconnectBroadcast":{"clientId":"capacity-1795434372439-99-da5721","delivered":30000,"missing":0,"p50Ms":174,"p95Ms":359,"p99Ms":371,"maxMs":374},"strict":{"expectedPerConnection":3,"connectionsChecked":30000,"missing":0,"duplicates":0,"orderViolations":0,"extra":0,"inconsistentConnections":0,"pass":true},"stored":{"rows":3,"expected":3,"missing":0,"idDuplicates":0,"clientIdDuplicates":0,"orderViolations":0,"pass":true},"serverMemoryBeforeMb":342,"serverMemoryAfterMb":365,"pass":true}
+{
+  "isolated": true,
+  "dataDir": "C:\\Users\\ADMINI~1\\AppData\\Local\\Temp\\xingyan-capacity-load-h4TBW1",
+  "serverCount": 2,
+  "stages": [
+    30000
+  ],
+  "passed": true,
+  "results": [
+    {
+      "connections": 30000,
+      "closedConnections": [],
+      "connectDurationMs": 22394,
+      "rounds": 3,
+      "reconnectCount": 0,
+      "expectedDeliveries": 90000,
+      "delivered": 90000,
+      "deliveryRate": 1,
+      "p99Ms": 371,
+      "broadcasts": [
+        {
+          "clientId": "capacity-1795434371722-0-72e9bf",
+          "delivered": 30000,
+          "missing": 0,
+          "p50Ms": 180,
+          "p95Ms": 337,
+          "p99Ms": 349,
+          "maxMs": 352
+        },
+        {
+          "clientId": "capacity-1795434372079-1-63f24a",
+          "delivered": 30000,
+          "missing": 0,
+          "p50Ms": 180,
+          "p95Ms": 338,
+          "p99Ms": 350,
+          "maxMs": 353
+        }
+      ],
+      "reconnectBroadcast": {
+        "clientId": "capacity-1795434372439-99-da5721",
+        "delivered": 30000,
+        "missing": 0,
+        "p50Ms": 174,
+        "p95Ms": 359,
+        "p99Ms": 371,
+        "maxMs": 374
+      },
+      "strict": {
+        "expectedPerConnection": 3,
+        "connectionsChecked": 30000,
+        "missing": 0,
+        "duplicates": 0,
+        "orderViolations": 0,
+        "extra": 0,
+        "inconsistentConnections": 0,
+        "pass": true
+      },
+      "stored": {
+        "rows": 3,
+        "expected": 3,
+        "missing": 0,
+        "idDuplicates": 0,
+        "clientIdDuplicates": 0,
+        "orderViolations": 0,
+        "pass": true
+      },
+      "serverMemoryBeforeMb": 342,
+      "serverMemoryAfterMb": 365,
+      "pass": true
+    }
+  ]
+}

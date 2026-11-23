@@ -1,0 +1,20 @@
+{
+  "scope": "Read-only production history coverage; no message bodies emitted",
+  "base": "https://mail.xingyanmail.site:443/xy",
+  "groups": [
+    {
+      "chatId": "c_7e1a26953227590a",
+      "title": "家人群",
+      "memberCount": 8,
+      "pages": 73,
+      "uniqueMessagesWithSeq": 7215,
+      "firstSeq": 1,
+      "lastSeq": 7215,
+      "earliestCreatedAt": "2026-09-23T11:31:56.260Z",
+      "latestCreatedAt": "2026-11-23T01:37:21.140Z",
+      "hasMoreAfterAudit": false,
+      "stoppedReason": "server-end"
+    }
+  ],
+  "pass": true
+}

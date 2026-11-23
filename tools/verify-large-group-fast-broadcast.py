@@ -17,10 +17,11 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "recipients.length > 512" in SERVER
+    "chat.memberIds.length > 512" in SERVER
     and "const payload = { type: 'message', message: out }" in SERVER
-    and "textCacheKey: 'large-group-message'" in SERVER,
-    "large groups must reuse one compact message payload instead of personal summaries",
+    and "function broadcastCompactChatMessage(chat, payload)" in SERVER
+    and "path: '/__shard/chat-broadcast'" in SERVER,
+    "large groups must use chat-scoped cross-shard broadcast instead of presence fanout",
 )
 require(
     "function fanoutGroupSummary(" in SERVER
