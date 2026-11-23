@@ -20,11 +20,17 @@ struct PhotoPicker: UIViewControllerRepresentable {
 
     func updateUIViewController(_ uiViewController: PHPickerViewController, context: Context) { }
 
-    func makeCoordinator() -> Coordinator { Coordinator(onPick: onPick) }
+    func makeCoordinator() -> Coordinator {
+        Coordinator(maxSide: maxSide, onPick: onPick)
+    }
 
     final class Coordinator: NSObject, PHPickerViewControllerDelegate {
+        let maxSide: CGFloat
         let onPick: (UIImage) -> Void
-        init(onPick: @escaping (UIImage) -> Void) { self.onPick = onPick }
+        init(maxSide: CGFloat, onPick: @escaping (UIImage) -> Void) {
+            self.maxSide = maxSide
+            self.onPick = onPick
+        }
 
         func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
             picker.dismiss(animated: true)
