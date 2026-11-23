@@ -406,7 +406,7 @@ func bubbleSeed(_ id: String) -> Double {
 
 struct BubbleShape: Shape {
     let mine: Bool
-    var radius: CGFloat = 7
+    var radius: CGFloat = 8
     var tail: Bool = true
 
     var pill: Bool = false
@@ -489,7 +489,7 @@ struct BubbleFill: View {
     @Environment(\.bubbleUsesLightInk) private var wallpaperUsesLightInk
     private var usesDarkBackdrop: Bool { wallpaperUsesLightInk ?? (scheme == .dark) }
     private var activeGlass: Bool { glass || ChatTheme.usesGlass }
-    private var capsule: Bool { pill || ChatTheme.usesGlass }
+    private var capsule: Bool { pill }
 
     private var gloss: Color {
         return Color.white.opacity(UIConfig.num("bubbleGloss", 0))
@@ -3852,6 +3852,7 @@ struct ChatDetailView: View {
 
     private var nativeRowLayoutKey: String {
         [
+            "wa-chat-\(WhatsAppChatLayout.version)",
             String(format: "%.4f", fontScale),
             String(format: "%.4f", CareMode.scale),
             AppFontPrefs.family,
@@ -3886,9 +3887,7 @@ struct ChatDetailView: View {
                 selected.contains(message.id) ? "selected" : "",
                 senderNameFor(message),
                 senderAvatarFor(message),
-                UIConfig.num("chatDeliveryTicks", 0) > 0
-                    ? deliveryState(for: message).accessibilityText
-                    : "",
+                deliveryState(for: message).accessibilityText,
                 isRunStart(message) ? "run-start" : "run-mid",
                 isRunEnd(message) ? "tail" : "no-tail",
                 asrBusy.contains(message.id) ? "asr-busy" : "",
@@ -3907,7 +3906,9 @@ struct ChatDetailView: View {
                 pending.kind,
                 pending.content,
                 pending.failed ? "failed" : "ok",
-                pending.failureReason ?? ""
+                pending.failureReason ?? "",
+                pendingShowsAvatar(pending) ? "avatar" : "no-avatar",
+                pendingShowsTail(pending) ? "tail" : "no-tail"
             ].joined(separator: "|")
         case .sendingVideo:
             return "sending-video:\(sendProgress):\(sendingPreview != nil)"
@@ -3927,7 +3928,6 @@ struct ChatDetailView: View {
               message.quote == nil,
               message.burn != true,
               !selectMode,
-              UIConfig.num("chatDeliveryTicks", 0) <= 0,
               !message.body.hasPrefix("{"),
               !needsSwiftUIRichText(message.body) else { return nil }
         let mine = mineFor(message)
@@ -3940,22 +3940,28 @@ struct ChatDetailView: View {
                 : "",
             senderNameColor: UIColor(groupSenderNameColor(message)),
             avatarPath: senderAvatarFor(message),
-            avatarName: !mine ? displayName(message) : "",
-            avatarSize: L.chatAvatar,
-            maxBubbleWidth: isGroup ? groupBubbleMaxWidth : L.bubbleMaxW,
+            avatarName: mine
+                ? (app.me?.nickname ?? "")
+                : displayName(message),
+            avatarSize: WhatsAppChatLayout.avatarSide,
+            maxBubbleWidth: WhatsAppChatLayout.maxBubbleWidth,
             horizontalMargin: L.msgPad,
-            avatarGap: L.chatGapMsg,
-            bubblePadH: L.bubblePadHPill,
-            bubblePadV: L.bubblePadV,
+            avatarGap: WhatsAppChatLayout.avatarGap,
+            bubblePadH: WhatsAppChatLayout.bubblePadH,
+            bubblePadV: WhatsAppChatLayout.bubblePadV,
             bottomGap: gapAfter(message),
             textColor: UIColor(mine ? ChatTheme.mineInk : ChatTheme.ink),
             bubbleColor: UIColor(mine ? ChatTheme.bubbleMine : ChatTheme.bubbleOther),
             secondaryColor: UIColor(ChatTheme.secondary),
             mentionColor: UIColor(mine ? ChatTheme.mentionMeOnMine : ChatTheme.mentionMe),
-            showTail: !ChatTheme.usesGlass && isRunEnd(message),
+            showTail: isRunEnd(message),
             bubbleGlass: ChatTheme.usesGlass,
-            showsAvatar: !mine && isRunStart(message),
-            reservesAvatarSpace: !mine
+            showsAvatar: isRunStart(message),
+            reservesAvatarSpace: true,
+            metaText: TimeFmt.messageClock(message.createdAt),
+            metaColor: UIColor(mine ? ChatTheme.mineSecondaryInk : ChatTheme.secondary),
+            tickCount: mine ? deliveryState(for: message).tickCount : 0,
+            tickColor: UIColor(deliveryState(for: message).color)
         )
     }
 
@@ -3971,13 +3977,13 @@ struct ChatDetailView: View {
             senderName: "",
             senderNameColor: .clear,
             avatarPath: app.me?.avatarPath ?? "",
-            avatarName: "",
-            avatarSize: L.chatAvatar,
-            maxBubbleWidth: isGroup ? groupBubbleMaxWidth : L.bubbleMaxW,
+            avatarName: app.me?.nickname ?? "",
+            avatarSize: WhatsAppChatLayout.avatarSide,
+            maxBubbleWidth: WhatsAppChatLayout.maxBubbleWidth,
             horizontalMargin: L.msgPad,
-            avatarGap: L.chatGapMsg,
-            bubblePadH: L.bubblePadHPill,
-            bubblePadV: L.bubblePadV,
+            avatarGap: WhatsAppChatLayout.avatarGap,
+            bubblePadH: WhatsAppChatLayout.bubblePadH,
+            bubblePadV: WhatsAppChatLayout.bubblePadV,
             bottomGap: 12,
             textColor: UIColor(ChatTheme.mineInk),
             bubbleColor: UIColor(ChatTheme.bubbleMine),
@@ -3985,13 +3991,16 @@ struct ChatDetailView: View {
             mentionColor: UIColor(ChatTheme.mentionMeOnMine),
             showTail: pendingShowsTail(pending),
             bubbleGlass: ChatTheme.usesGlass,
-            showsAvatar: false,
-            reservesAvatarSpace: false
+            showsAvatar: pendingShowsAvatar(pending),
+            reservesAvatarSpace: true,
+            metaText: TimeFmt.messageClock(pending.at),
+            metaColor: UIColor(ChatTheme.mineSecondaryInk),
+            tickCount: 1,
+            tickColor: UIColor(MessageDeliveryState.sent.color)
         )
     }
 
     private func pendingShowsTail(_ pending: PendingMsg) -> Bool {
-        guard !ChatTheme.usesGlass else { return false }
         let pendingIndex = outbox.firstIndex(where: { $0.id == pending.id }) ?? 0
         guard pendingIndex == 0, let last = messages.last else {
             return pendingIndex == 0
@@ -3999,6 +4008,13 @@ struct ChatDetailView: View {
         if last.senderId != myId { return true }
         guard let date = TimeFmt.date(last.createdAt) else { return true }
         return pending.at.timeIntervalSince(date) >= 300
+    }
+
+    private func pendingShowsAvatar(_ pending: PendingMsg) -> Bool {
+        guard let index = outbox.firstIndex(where: { $0.id == pending.id }) else {
+            return true
+        }
+        return index == 0
     }
 
     private func nativeChatMediaModel(_ item: NativeGroupItem) -> NativeChatMediaRowModel? {
@@ -4056,19 +4072,25 @@ struct ChatDetailView: View {
                 : "",
             senderNameColor: UIColor(groupSenderNameColor(message)),
             avatarPath: senderAvatarFor(message),
-            avatarName: !mine ? displayName(message) : "",
-            avatarSize: L.chatAvatar,
-            maxBubbleWidth: isGroup ? groupBubbleMaxWidth : L.bubbleMaxW,
+            avatarName: mine
+                ? (app.me?.nickname ?? "")
+                : displayName(message),
+            avatarSize: WhatsAppChatLayout.avatarSide,
+            maxBubbleWidth: WhatsAppChatLayout.maxBubbleWidth,
             horizontalMargin: L.msgPad,
-            avatarGap: L.chatGapMsg,
+            avatarGap: WhatsAppChatLayout.avatarGap,
             bottomGap: gapAfter(message),
             primaryColor: UIColor(mine ? ChatTheme.mineInk : ChatTheme.ink),
             secondaryColor: UIColor(mine ? ChatTheme.mineSecondaryInk : ChatTheme.secondary),
             bubbleColor: UIColor(mine ? ChatTheme.bubbleMine : ChatTheme.bubbleOther),
-            showTail: !ChatTheme.usesGlass && isRunEnd(message),
+            showTail: isRunEnd(message),
             bubbleGlass: ChatTheme.usesGlass,
-            showsAvatar: !mine && isRunStart(message),
-            reservesAvatarSpace: !mine
+            showsAvatar: isRunStart(message),
+            reservesAvatarSpace: true,
+            metaText: TimeFmt.messageClock(message.createdAt),
+            metaColor: UIColor(mine ? ChatTheme.mineSecondaryInk : ChatTheme.secondary),
+            tickCount: mine ? deliveryState(for: message).tickCount : 0,
+            tickColor: UIColor(deliveryState(for: message).color)
         )
     }
 
@@ -4081,14 +4103,12 @@ struct ChatDetailView: View {
                 return !message.isRecalled
                     && message.burn != true
                     && !selectMode
-                    && UIConfig.num("chatDeliveryTicks", 0) <= 0
             }
             return message.kindName == "text"
                 && !message.isRecalled
                 && message.quote == nil
                 && message.burn != true
                 && !selectMode
-                && UIConfig.num("chatDeliveryTicks", 0) <= 0
                 && !message.body.hasPrefix("{")
                 && !needsSwiftUIRichText(message.body)
         case .outbox(let pending):
@@ -4112,7 +4132,7 @@ struct ChatDetailView: View {
             let view = (reuse as? NativeChatTimeRowView) ?? NativeChatTimeRowView()
             view.configure(
                 text: TimeFmt.bubble(message.createdAt),
-                plain: isGroup || usesPlainDefaultChatChrome
+                plain: ChatTheme.preset == .wechat
             )
             return view
         case .message(let message):
@@ -4189,7 +4209,7 @@ struct ChatDetailView: View {
         switch item.kind {
         case .timestamp:
             return NativeChatTimeRowView.height(
-                plain: isGroup || usesPlainDefaultChatChrome
+                plain: ChatTheme.preset == .wechat
             )
         case .message:
             if let media = nativeChatMediaModel(item) {
@@ -4861,6 +4881,7 @@ struct ChatDetailView: View {
 
     private func pendingBubble(_ p: PendingMsg) -> some View {
         let showsTail = pendingShowsTail(p)
+        let showsAvatar = pendingShowsAvatar(p)
         return HStack(alignment: .top, spacing: 0) {
             Spacer(minLength: 0)
             VStack(alignment: .trailing, spacing: 2) {
@@ -4881,28 +4902,59 @@ struct ChatDetailView: View {
                     .lineLimit(6)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, L.bubblePadHPill)
-                    .padding(.vertical, L.bubblePadV)
+                    .padding(.horizontal, WhatsAppChatLayout.bubblePadH)
+                    .padding(.top, WhatsAppChatLayout.bubblePadV)
+                    .padding(
+                        .bottom,
+                        WhatsAppChatLayout.bubblePadV
+                            + WhatsAppChatLayout.metadataHeight
+                            + WhatsAppChatLayout.metadataGap
+                    )
+                    .frame(
+                        minWidth: WhatsAppChatLayout.metadataWidth(
+                            time: TimeFmt.messageClock(p.at),
+                            tickCount: 1
+                        ) + WhatsAppChatLayout.bubblePadH * 2,
+                        alignment: .leading
+                    )
                     .background(BubbleFill(mine: true, tail: showsTail))
-                    .opacity(p.failed ? 0.9 : 1)
-                }
-                if !p.failed, UIConfig.num("chatDeliveryTicks", 0) > 0 {
-                    HStack(spacing: 0) {
-                        Spacer(minLength: 0)
-                        WhatsAppMessageTicks(
-                            count: 1,
-                            color: MessageDeliveryState.sent.color
-                        )
+                    .overlay(alignment: .bottomTrailing) {
+                        HStack(spacing: 3) {
+                            Text(TimeFmt.messageClock(p.at))
+                                .font(pf(10.5))
+                                .monospacedDigit()
+                            WhatsAppMessageTicks(
+                                count: MessageDeliveryState.sent.tickCount,
+                                color: MessageDeliveryState.sent.color
+                            )
+                        }
+                        .foregroundColor(ChatTheme.mineSecondaryInk)
+                        .padding(.trailing, WhatsAppChatLayout.bubblePadH)
+                        .padding(.bottom, WhatsAppChatLayout.bubblePadV)
                     }
-                    .padding(.trailing, 4)
-                    .offset(y: -2)
+                    .opacity(p.failed ? 0.9 : 1)
                 }
                 if p.failed, let reason = p.failureReason, !reason.isEmpty {
                     deliveryFailureCard(DeliveryFailureCopy.make(reason: reason))
                 }
             }
-            .frame(maxWidth: isGroup ? groupBubbleMaxWidth : L.bubbleMaxW,
+            .frame(maxWidth: WhatsAppChatLayout.maxBubbleWidth,
                    alignment: .trailing)
+            Spacer().frame(width: WhatsAppChatLayout.avatarGap)
+            if showsAvatar {
+                Avatar(
+                    path: app.me?.avatarPath ?? "",
+                    size: WhatsAppChatLayout.avatarSide,
+                    radius: WhatsAppChatLayout.avatarSide / 2,
+                    circle: true,
+                    level: GrowthStore.shared.shownLevel
+                )
+            } else {
+                Color.clear.frame(
+                    width: WhatsAppChatLayout.avatarSide,
+                    height: WhatsAppChatLayout.avatarSide
+                )
+            }
         }
         .padding(.vertical, 4)
         .id(p.id)
@@ -5164,7 +5216,7 @@ struct ChatDetailView: View {
 
     @ViewBuilder
     private func timeLine(_ message: Message) -> some View {
-        if isGroup || usesPlainDefaultChatChrome {
+        if ChatTheme.preset == .wechat {
             Text(TimeFmt.bubble(message.createdAt))
                 .font(pf(11.5, .medium))
                 .foregroundColor(adaptiveSystemSecondaryInk.opacity(0.92))
@@ -5246,14 +5298,14 @@ struct ChatDetailView: View {
                    senderAvatarPath: senderAvatarFor(message),
                    senderQQLevel: app.contact(for: message.senderId ?? "")?.qqLevel ?? 0,
                    senderOnline: senderIsOnline(message),
-                   avatarSize: L.chatAvatar,
-                   maxBubbleWidth: isGroup ? groupBubbleMaxWidth : L.bubbleMaxW,
-                   showsAvatar: !mineFor(message) && isRunStart(message),
-                   reservesAvatarSpace: !mineFor(message),
+                   avatarSize: WhatsAppChatLayout.avatarSide,
+                   maxBubbleWidth: WhatsAppChatLayout.maxBubbleWidth,
+                   showsAvatar: isRunStart(message),
+                   reservesAvatarSpace: true,
                    currentNickname: app.me?.nickname ?? "",
                    currentUsername: app.me?.username ?? "",
-                   showTail: !ChatTheme.usesGlass && isRunEnd(message),
-                   showsDeliveryTicks: UIConfig.num("chatDeliveryTicks", 0) > 0,
+                   showTail: isRunEnd(message),
+                   showsDeliveryTicks: true,
                    onTapTransfer: { info in billInfo = info },
                    onOpenImage: { path in openImage(path) },
                    onOpenAvatar: { id in openAvatar(id) },
@@ -5347,7 +5399,7 @@ struct ChatDetailView: View {
             if mine { Spacer(minLength: 0) }
             if !mine {
                 Avatar(path: callerAvatar, size: L.chatAvatar, radius: L.chatAvatar / 2)
-                Spacer().frame(width: L.chatGapMsg)
+                Spacer().frame(width: WhatsAppChatLayout.avatarGap)
             }
             Button {
                 redialAsk = message
@@ -5468,8 +5520,8 @@ struct ChatDetailView: View {
 
     private func groupSenderNameColor(_ message: Message) -> Color {
         senderNameUsesLightInk
-            ? Color.white.opacity(0.62)
-            : Color.dyn(0x8A8A8E, 0x8E9296)
+            ? Color(hex: 0x82D9C7)
+            : Color(hex: 0x008069)
     }
 
     private func senderAvatarFor(_ message: Message) -> String {
@@ -5521,15 +5573,17 @@ struct ChatDetailView: View {
     private func gapAfter(_ message: Message) -> CGFloat {
         guard let i = indexOf(message) else { return 15 }
         guard i + 1 < messages.count else {
-            return mineFor(message) && isRunEnd(message) ? 8 : 4
+            return mineFor(message) && isRunEnd(message) ? 6 : 3
         }
         let next = messages[i + 1]
         if showTime(for: next) { return 0 }
-        if next.kindName == "system" || next.kindName == "pat" || next.isRecalled { return 13 }
-        if message.kindName == "system" || message.kindName == "pat" || message.isRecalled { return 13 }
+        if next.kindName == "system" || next.kindName == "pat" || next.isRecalled { return 11 }
+        if message.kindName == "system" || message.kindName == "pat" || message.isRecalled { return 11 }
         let same = (next.senderId ?? "") == (message.senderId ?? "")
 
-        let gap: CGFloat = same ? 7 : (isGroup ? 14 : 15)
+        let gap: CGFloat = same
+            ? WhatsAppChatLayout.sameRunGap
+            : WhatsAppChatLayout.runGap
         return gap
     }
 
@@ -9055,10 +9109,12 @@ struct MessageRow: View {
 
             bubbleColumn
 
-            if mine {
+            if mine, reservesAvatarSpace {
+                Spacer().frame(width: WhatsAppChatLayout.avatarGap)
                 if showsAvatar {
-                    Spacer().frame(width: L.chatGapMsg)
                     avatarView
+                } else {
+                    Color.clear.frame(width: avatarSize, height: avatarSize)
                 }
             }
 
@@ -9115,25 +9171,70 @@ struct MessageRow: View {
 
     private var bubbleColumn: some View {
         VStack(alignment: mine ? .trailing : .leading,
-               spacing: senderName.isEmpty ? 0 : 3) {
-            if !senderName.isEmpty {
-
-                HStack(spacing: 4) {
-                    Text(senderName)
-                        .font(pfStyled(12.5, .regular))
-                        .foregroundColor(senderNameColor ?? (senderNameUsesLightInk
-                                         ? ChatTheme.groupSenderNameOnDark
-                                         : ChatTheme.groupSenderNameOnLight))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.78)
-                    if senderQQLevel > 0,
-                       GrowthFlags.showInChats == true {
-                        QQLevelBadge(level: senderQQLevel, size: 11, maxIcons: 2).fixedSize()
+               spacing: 0) {
+            content
+                .overlay(alignment: .topLeading) {
+                    if !senderName.isEmpty {
+                        HStack(spacing: 4) {
+                            Text(senderName)
+                                .font(pfStyled(12.5, .semibold))
+                                .foregroundColor(
+                                    senderOverlayUsesLightInk
+                                        ? .white
+                                        : (senderNameColor ?? ChatTheme.groupSenderNameOnLight)
+                                )
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.78)
+                            if senderQQLevel > 0,
+                               GrowthFlags.showInChats == true {
+                                QQLevelBadge(level: senderQQLevel,
+                                             size: 11,
+                                             maxIcons: 2)
+                                    .fixedSize()
+                            }
+                        }
+                        .padding(.horizontal, senderOverlayUsesLightInk ? 5 : 0)
+                        .padding(.vertical, senderOverlayUsesLightInk ? 2 : 0)
+                        .background {
+                            if senderOverlayUsesLightInk {
+                                Capsule(style: .continuous)
+                                    .fill(Color.black.opacity(0.30))
+                            }
+                        }
+                        .padding(.leading, WhatsAppChatLayout.bubblePadH)
+                        .padding(.top, WhatsAppChatLayout.bubblePadV)
                     }
                 }
-                .padding(.leading, 4)
-            }
-            content
+                .overlay(alignment: .bottomTrailing) {
+                    HStack(spacing: 3) {
+                        Text(TimeFmt.messageClock(message.createdAt))
+                            .font(metadataFont)
+                            .monospacedDigit()
+                            .foregroundColor(
+                                senderOverlayUsesLightInk
+                                    ? .white.opacity(0.94)
+                                    : bubbleSecondaryInk
+                            )
+                        if mine,
+                           deliveryState.tickCount > 0,
+                           !message.isRecalled {
+                            WhatsAppMessageTicks(
+                                count: deliveryState.tickCount,
+                                color: deliveryState.color
+                            )
+                        }
+                    }
+                    .padding(.horizontal, senderOverlayUsesLightInk ? 5 : 0)
+                    .padding(.vertical, senderOverlayUsesLightInk ? 2 : 0)
+                    .background {
+                        if senderOverlayUsesLightInk {
+                            Capsule(style: .continuous)
+                                .fill(Color.black.opacity(0.42))
+                        }
+                    }
+                    .padding(.trailing, WhatsAppChatLayout.bubblePadH)
+                    .padding(.bottom, WhatsAppChatLayout.bubblePadV)
+                }
                 .simultaneousGesture(
                     LongPressGesture(minimumDuration: 0.42).onEnded { _ in
                         onRequestActions?()
@@ -9146,27 +9247,39 @@ struct MessageRow: View {
                         if !text.isEmpty { Speaker.shared.speak(text) }
                     }
                 )
-                .overlay(alignment: .bottomTrailing) {
-                    if mine,
-                       showsDeliveryTicks,
-                       !message.isRecalled,
-                       !message.isCallRecord,
-                       message.kindName != "system",
-                       message.kindName != "pat" {
-                        WhatsAppMessageTicks(count: deliveryState.tickCount,
-                                             color: deliveryState.color)
-                            .padding(.trailing, 10)
-                            .offset(y: 8)
-                            .accessibilityElement(children: .ignore)
-                            .accessibilityLabel(deliveryState.accessibilityText)
-                    }
-                }
-
             if asrBusy || !asrText.isEmpty {
                 asrLine
             }
         }
         .frame(maxWidth: maxBubbleWidth, alignment: mine ? .trailing : .leading)
+    }
+
+    private var metadataFont: Font {
+        pf(10.5, .regular)
+    }
+
+    private var senderOverlayUsesLightInk: Bool {
+        ["image", "images", "video", "livephoto"].contains(message.kindName)
+    }
+
+    private var textBubbleTopPadding: CGFloat {
+        WhatsAppChatLayout.bubblePadV
+            + (senderName.isEmpty
+                ? 0
+                : WhatsAppChatLayout.senderHeight + 1)
+    }
+
+    private var textBubbleBottomPadding: CGFloat {
+        WhatsAppChatLayout.bubblePadV
+            + WhatsAppChatLayout.metadataHeight
+            + WhatsAppChatLayout.metadataGap
+    }
+
+    private var metadataMinimumWidth: CGFloat {
+        WhatsAppChatLayout.metadataWidth(
+            time: TimeFmt.messageClock(message.createdAt),
+            tickCount: mine ? deliveryState.tickCount : 0
+        ) + WhatsAppChatLayout.bubblePadH * 2
     }
 
     private var readableMessageText: String {
@@ -9491,8 +9604,10 @@ struct MessageRow: View {
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
                 .environment(\.openURL, chatOpenURLAction)
-                .padding(.horizontal, L.bubblePadHPill)
-                .padding(.vertical, L.bubblePadV)
+                .padding(.horizontal, WhatsAppChatLayout.bubblePadH)
+                .padding(.top, textBubbleTopPadding)
+                .padding(.bottom, textBubbleBottomPadding)
+                .frame(minWidth: metadataMinimumWidth, alignment: .leading)
                 .background(
                     BubbleFill(mine: mine, tail: showTail, glass: false)
                 )
@@ -9501,18 +9616,7 @@ struct MessageRow: View {
     }
 
     private func quotedTextBubble(_ q: QuoteRef, raw: String) -> some View {
-        VStack(alignment: mine ? .trailing : .leading, spacing: 4) {
-            Text(richBody(raw))
-                .font(pfStyled(L.chatFontSize))
-                .foregroundColor(bubblePrimaryInk)
-                .lineSpacing(textLineSpacing(raw))
-                .multilineTextAlignment(.leading)
-                .fixedSize(horizontal: false, vertical: true)
-                .environment(\.openURL, chatOpenURLAction)
-                .padding(.horizontal, L.bubblePadHPill)
-                .padding(.vertical, L.bubblePadV)
-                .background(BubbleFill(mine: mine, tail: showTail, glass: false))
-
+        VStack(alignment: .leading, spacing: 6) {
             Button {
                 if (q.kind == "image" || q.kind == "images"), !q.thumbPath.isEmpty {
                     onOpenImage?(q.thumbPath)
@@ -9521,11 +9625,15 @@ struct MessageRow: View {
                 }
             } label: {
                 HStack(alignment: .top, spacing: 8) {
+                    RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+                        .fill(bubbleLinkInk.opacity(0.88))
+                        .frame(width: 3)
+
                     VStack(alignment: .leading, spacing: 2) {
                         if !q.sender.isEmpty {
                             Text(q.sender)
-                                .font(pfStyled(12.5, .medium))
-                                .foregroundColor(bubbleSecondaryInk)
+                                .font(pfStyled(12.5, .semibold))
+                                .foregroundColor(bubbleLinkInk)
                                 .lineLimit(1)
                         }
                         Text(q.summary.isEmpty ? Tr("[引用]") : q.summary)
@@ -9547,17 +9655,27 @@ struct MessageRow: View {
             .padding(.horizontal, 7)
             .padding(.vertical, 6)
             .background(
-                RoundedRectangle(cornerRadius: ChatMessageSurface.innerRadius,
-                                 style: .continuous)
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
                     .fill(quoteSurface)
             )
             .overlay {
-                RoundedRectangle(cornerRadius: ChatMessageSurface.innerRadius,
-                                 style: .continuous)
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
                     .stroke(quoteBorder, lineWidth: 0.5)
             }
-            .frame(maxWidth: 250, alignment: mine ? .trailing : .leading)
+
+            Text(richBody(raw))
+                .font(pfStyled(L.chatFontSize))
+                .foregroundColor(bubblePrimaryInk)
+                .lineSpacing(textLineSpacing(raw))
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .environment(\.openURL, chatOpenURLAction)
         }
+        .padding(.horizontal, WhatsAppChatLayout.bubblePadH)
+        .padding(.top, textBubbleTopPadding)
+        .padding(.bottom, textBubbleBottomPadding)
+        .frame(minWidth: metadataMinimumWidth, alignment: .leading)
+        .background(BubbleFill(mine: mine, tail: showTail, glass: false))
     }
 
     private func quoteThumbnail(_ q: QuoteRef) -> some View {
@@ -9623,7 +9741,7 @@ struct MessageRow: View {
 
     private func textLineSpacing(_ raw: String) -> CGFloat {
         _ = raw
-        return min(3.2, max(2.8, L.msgLineSpacing * 0.6))
+        return 2.5
     }
 
     private func richBody(_ raw: String) -> AttributedString {

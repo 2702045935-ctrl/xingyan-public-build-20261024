@@ -11,6 +11,12 @@ MEDIA = (ROOT / "Sources" / "ChatMediaBubbles.swift").read_text(encoding="utf-8"
 MEDIA_ROW = (ROOT / "Sources" / "NativeChatMediaRowCell.swift").read_text(
     encoding="utf-8"
 )
+TEXT_ROW = (ROOT / "Sources" / "NativeChatTextRowCell.swift").read_text(
+    encoding="utf-8"
+)
+LAYOUT = (ROOT / "Sources" / "WhatsAppChatLayout.swift").read_text(
+    encoding="utf-8"
+)
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
 )
@@ -22,12 +28,13 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    'static var chatFontSize: CGFloat { o("chatFontSize", 17) }' in CORE
-    and 'static var bubblePadH: CGFloat { o("bubblePadH", 9) }' in CORE
-    and 'static var bubblePadHPill: CGFloat { bubblePadH + 3 }' in CORE
-    and 'max(232, width * 0.70)' in CORE
-    and 'var radius: CGFloat = 7' in CHAT,
-    "text-bubble geometry must remain 17pt / 12pt / 70% / 7pt",
+    'static var chatFontSize: CGFloat { o("chatFontSize", 16) }' in CORE
+    and "static let bubblePadH: CGFloat = 9" in LAYOUT
+    and "static let bubblePadV: CGFloat = 5" in LAYOUT
+    and "static let senderHeight: CGFloat = 16" in LAYOUT
+    and "min(300, max(224, L.width * 0.76))" in LAYOUT
+    and "var radius: CGFloat = 8" in CHAT,
+    "WhatsApp text geometry must use compact type, padding and an eight-point bubble",
 )
 require(
     'case .wechat: return Color.dyn(0x95EC69, 0x3EB575)' in THEMES
@@ -45,9 +52,20 @@ require(
     "classic bubbles must stay flat while the glass preset opts into translucent fills",
 )
 require(
-    "return min(3.2, max(2.8, L.msgLineSpacing * 0.6))" in CHAT
+    "return 2.5" in CHAT
     and "let isLong = raw.count >= 120" not in CHAT,
     "text line spacing must stay constant within short and long messages",
+)
+require(
+    "senderLabel.frame = CGRect(" in TEXT_ROW
+    and "x: bodyX + model.bubblePadH" in TEXT_ROW
+    and "metadata.frame = CGRect(" in TEXT_ROW
+    and "inlineMetadata" in TEXT_ROW
+    and "senderLabel.frame = CGRect(" in MEDIA_ROW
+    and "metadata.frame = CGRect(" in MEDIA_ROW
+    and ".overlay(alignment: .topLeading)" in CHAT
+    and ".overlay(alignment: .bottomTrailing)" in CHAT,
+    "sender, text, time and receipts must be laid out inside one WhatsApp bubble",
 )
 require(
     "Text(TimeFmt.bubble(message.createdAt))" in CHAT
@@ -56,8 +74,8 @@ require(
 )
 require(
     "static let cardRadius: CGFloat = 8" in CARDS
-    and "static let mediaRadius: CGFloat = 6" in CARDS
-    and "static let gridRadius: CGFloat = 4" in CARDS
+    and "static let mediaRadius: CGFloat = 8" in CARDS
+    and "static let gridRadius: CGFloat = 5" in CARDS
     and ".fill(ChatMessageSurface.cardFill)" in CARDS
     and ".stroke(ChatMessageSurface.cardBorder, lineWidth: 0.5)" in CARDS
     and "if ChatTheme.usesGlass {" in CARDS
@@ -68,7 +86,7 @@ require(
 )
 require(
     "ChatMessageSurface.mediaRadius" in CHAT
-    and "ChatMessageSurface.innerRadius" in CHAT
+    and "ChatMessageSurface.cardRadius" in CHAT
     and ".fill(ChatMessageSurface.cardFill(mine: mine))" in CHAT
     and ".stroke(ChatMessageSurface.cardBorder," in CHAT,
     "media cards, file cards and quotes must share the message surface tokens",
@@ -87,17 +105,13 @@ require(
     "native media content must stay anchored inside its message bubble",
 )
 require(
-    "model.horizontalMargin + available - resolved.bubbleWidth" in (
-        ROOT / "Sources" / "NativeChatTextRowCell.swift"
-    ).read_text(encoding="utf-8")
-    and "model.horizontalMargin + available - bubbleWidth" in MEDIA_ROW
-    and "model.horizontalMargin + avatarReserve" in (
-        ROOT / "Sources" / "NativeChatTextRowCell.swift"
-    ).read_text(encoding="utf-8")
+    "let bubbleRail = model.mine" in TEXT_ROW
+    and "let bubbleRail = model.mine" in MEDIA_ROW
+    and "? bubbleRail - resolved.bubbleWidth + tailInset" in TEXT_ROW
+    and "? bubbleRail - bubbleWidth + tailInset" in MEDIA_ROW
+    and "model.horizontalMargin + avatarReserve" in TEXT_ROW
     and "model.horizontalMargin + avatarReserve" in MEDIA_ROW
-    and "available - avatarReserve" in (
-        ROOT / "Sources" / "NativeChatTextRowCell.swift"
-    ).read_text(encoding="utf-8")
+    and "available - avatarReserve" in TEXT_ROW
     and "available - avatarReserve" in MEDIA_ROW,
     "text and media bubbles must share the same left and right alignment rails",
 )
@@ -143,7 +157,8 @@ require(
     and "capsule.isHidden = plain" in (
         ROOT / "Sources" / "NativeChatTextRowCell.swift"
     ).read_text(encoding="utf-8")
-    and "plain: isGroup || usesPlainDefaultChatChrome" in CHAT
+    and CHAT.count("plain: ChatTheme.preset == .wechat") >= 2
+    and "if ChatTheme.preset == .wechat {" in CHAT
     and "label.sizeThatFits(" in (
         ROOT / "Sources" / "NativeChatTextRowCell.swift"
     ).read_text(encoding="utf-8")
@@ -163,30 +178,26 @@ require(
     "the chat overflow control must use restrained dots in a 44pt hit target",
 )
 require(
-    "showsAvatar: !mine && isRunStart(message)" in CHAT
-    and "reservesAvatarSpace: !mine" in CHAT
-    and "showsAvatar: !mineFor(message) && isRunStart(message)" in CHAT
-    and "reservesAvatarSpace: !mineFor(message)" in CHAT
-    and "showTail: !ChatTheme.usesGlass && isRunEnd(message)" in CHAT
+    "showsAvatar: isRunStart(message)" in CHAT
+    and "reservesAvatarSpace: true" in CHAT
+    and "showTail: isRunEnd(message)" in CHAT
     and "showTail: pendingShowsTail(pending)" in CHAT
-    and "guard !ChatTheme.usesGlass else { return false }" in CHAT
-    and "bubble.showTail = next.showTail" in (
-        ROOT / "Sources" / "NativeChatTextRowCell.swift"
-    ).read_text(encoding="utf-8")
+    and "bubble.showTail = next.showTail" in TEXT_ROW
     and "return displayName(message)" in CHAT
-    and 'UIConfig.num("chatDeliveryTicks", 0) > 0' in CHAT,
-    "legacy rows keep run-end tails while glass bubbles stay uniform capsules",
+    and "private func pendingShowsAvatar" in CHAT,
+    "avatar runs stay aligned and every sender group keeps one WhatsApp tail",
 )
 require(
     "var showsDeliveryTicks: Bool = true" in CHAT
     and ".overlay(alignment: .bottomTrailing)" in CHAT
-    and ".offset(y: 8)" in CHAT
-    and "spacing: senderName.isEmpty ? 0 : 3" in CHAT,
-    "delivery ticks must overlay the bubble instead of occupying a separate row",
+    and "TimeFmt.messageClock(message.createdAt)" in CHAT
+    and "count: deliveryState.tickCount" in CHAT,
+    "delivery time and receipt ticks must share the bubble footer",
 )
 require(
-    "let gap: CGFloat = same ? 7 : (isGroup ? 14 : 15)" in CHAT
-    and "return mineFor(message) && isRunEnd(message) ? 8 : 4" in CHAT,
+    "WhatsAppChatLayout.sameRunGap" in CHAT
+    and "WhatsAppChatLayout.runGap" in CHAT
+    and "return mineFor(message) && isRunEnd(message) ? 6 : 3" in CHAT,
     "conversation rows must use close same-sender and distinct cross-sender spacing",
 )
 require(

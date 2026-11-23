@@ -32,7 +32,7 @@ require(
     and "ChatSurfaceMaterial.bubble(" in CHAT
     and "dark ? 0.17 : 0.42" in SURFACE
     and "let r = min(pill ? min(rect.height / 2, 24) : radius" in CHAT,
-    "glass bubbles must use capsule geometry and a restrained highlight layer",
+    "glass bubbles must use the unified WhatsApp geometry and restrained highlights",
 )
 require(
     "case .glass:\n            glassScene(size: size)" in WALLPAPER
@@ -44,13 +44,13 @@ require(
 require(
     "var bubbleGlass: Bool" in TEXT_ROW
     and "var glass = false" in TEXT_ROW
-    and "cornerRadius: glass ? min(22, body.height / 2) : 7" in TEXT_ROW
+    and "cornerRadius: 8" in TEXT_ROW
     and "context.drawLinearGradient(" in TEXT_ROW
     and "ChatSurfaceMaterial.uiBubble(" in TEXT_ROW
     and "UIColor.white.withAlphaComponent(mine" in SURFACE
     and "path.lineWidth = 0.8" in TEXT_ROW
     and "bubble.glass = next.bubbleGlass" in MEDIA_ROW,
-    "UIKit text and media bubbles must pre-render glass highlights on capsule paths",
+    "UIKit text and media bubbles must pre-render glass highlights on WhatsApp paths",
 )
 require(
     "python3 tools/verify-glass-chat-theme.py" in WORKFLOW,

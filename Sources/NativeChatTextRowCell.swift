@@ -23,6 +23,21 @@ struct NativeChatTextRowModel {
     var bubbleGlass: Bool
     var showsAvatar: Bool = true
     var reservesAvatarSpace: Bool = true
+    var metaText: String
+    var metaColor: UIColor
+    var tickCount: Int
+    var tickColor: UIColor
+}
+
+private struct NativeTextLayout {
+    var senderHeight: CGFloat
+    var textHeight: CGFloat
+    var metaHeight: CGFloat
+    var bubbleHeight: CGFloat
+    var bubbleWidth: CGFloat
+    var textWidth: CGFloat
+    var inlineMetadata: Bool
+    var tailInset: CGFloat
 }
 
 final class NativeChatBubbleBackground: UIView {
@@ -52,7 +67,7 @@ final class NativeChatBubbleBackground: UIView {
     }
 
     override func draw(_ rect: CGRect) {
-        let tail: CGFloat = showTail ? 6 : 0
+        let tail: CGFloat = showTail ? WhatsAppChatLayout.tailInset : 0
         let body = CGRect(
             x: mine ? 0 : tail,
             y: 0,
@@ -61,7 +76,7 @@ final class NativeChatBubbleBackground: UIView {
         )
         let path = UIBezierPath(
             roundedRect: body,
-            cornerRadius: glass ? min(22, body.height / 2) : 7
+            cornerRadius: 8
         )
         if showTail {
             let tipY = min(22, max(13, body.height * 0.28))
@@ -196,29 +211,26 @@ final class NativeChatTextRowView: UIView, UIGestureRecognizerDelegate {
     private let senderLabel = UILabel()
     private let bubble = NativeChatBubbleBackground()
     private let textLabel = UILabel()
+    private let metadata = NativeMessageMetadataView()
     private var model: NativeChatTextRowModel?
     private var onTap: (() -> Void)?
     private var onLongPress: (() -> Void)?
     private var onAvatarTap: (() -> Void)?
     private var cachedLayoutWidth: CGFloat = -1
-    private var cachedLayout: (
-        nameHeight: CGFloat,
-        textHeight: CGFloat,
-        bubbleHeight: CGFloat,
-        bubbleWidth: CGFloat
-    )?
+    private var cachedLayout: NativeTextLayout?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
         backgroundColor = .clear
         senderLabel.numberOfLines = 1
         senderLabel.lineBreakMode = .byTruncatingTail
-        senderLabel.font = UIFont.systemFont(ofSize: 12.5, weight: .regular)
+        senderLabel.font = UIFont.systemFont(ofSize: 12.5, weight: .semibold)
         textLabel.numberOfLines = 0
         textLabel.lineBreakMode = .byWordWrapping
         addSubview(avatar)
-        addSubview(senderLabel)
         addSubview(bubble)
+        addSubview(senderLabel)
+        addSubview(metadata)
         bubble.addSubview(textLabel)
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
         tap.cancelsTouchesInView = false
@@ -257,6 +269,13 @@ final class NativeChatTextRowView: UIView, UIGestureRecognizerDelegate {
         bubble.showTail = next.showTail
         bubble.glass = next.bubbleGlass
         textLabel.attributedText = attributedText(next)
+        metadata.configure(
+            time: next.metaText,
+            tickCount: next.tickCount,
+            tickColor: next.tickColor,
+            textColor: next.metaColor,
+            mediaStyle: false
+        )
         cachedLayout = nil
         cachedLayoutWidth = -1
         accessibilityLabel = next.text
@@ -296,7 +315,7 @@ final class NativeChatTextRowView: UIView, UIGestureRecognizerDelegate {
 
     private func attributedText(_ model: NativeChatTextRowModel) -> NSAttributedString {
         let paragraph = NSMutableParagraphStyle()
-        paragraph.lineSpacing = 3
+        paragraph.lineSpacing = 2.5
         paragraph.lineBreakMode = .byWordWrapping
         let font = pfUIFont(L.chatFontSize)
         let value = NSMutableAttributedString(
@@ -324,12 +343,7 @@ final class NativeChatTextRowView: UIView, UIGestureRecognizerDelegate {
         super.layoutSubviews()
         guard let model else { return }
         let available = max(1, bounds.width - model.horizontalMargin * 2)
-        let resolved: (
-            nameHeight: CGFloat,
-            textHeight: CGFloat,
-            bubbleHeight: CGFloat,
-            bubbleWidth: CGFloat
-        )
+        let resolved: NativeTextLayout
         if let cachedLayout, abs(cachedLayoutWidth - available) < 0.5 {
             resolved = cachedLayout
         } else {
@@ -337,62 +351,101 @@ final class NativeChatTextRowView: UIView, UIGestureRecognizerDelegate {
             cachedLayout = resolved
             cachedLayoutWidth = available
         }
-        let top = resolved.nameHeight
         let avatarReserve = model.reservesAvatarSpace
             ? model.avatarSize + model.avatarGap
             : 0
         let avatarX = model.mine
             ? model.horizontalMargin + available - model.avatarSize
             : model.horizontalMargin
-        avatar.frame = CGRect(x: avatarX, y: top, width: model.avatarSize, height: model.avatarSize)
-        let tailInset: CGFloat = model.showTail ? 6 : 0
+        avatar.frame = CGRect(
+            x: avatarX,
+            y: 1,
+            width: model.avatarSize,
+            height: model.avatarSize
+        )
+        let tailInset = resolved.tailInset
+        let bubbleRail = model.mine
+            ? model.horizontalMargin + available - avatarReserve
+            : model.horizontalMargin + avatarReserve
         let bubbleX = model.mine
-            ? model.horizontalMargin + available - resolved.bubbleWidth + tailInset
-            : model.horizontalMargin + avatarReserve - tailInset
+            ? bubbleRail - resolved.bubbleWidth + tailInset
+            : bubbleRail - tailInset
         bubble.frame = CGRect(
             x: bubbleX,
-            y: top,
+            y: 0,
             width: resolved.bubbleWidth,
             height: resolved.bubbleHeight
         )
+        let bodyX = bubble.frame.minX + (model.mine ? 0 : tailInset)
+        let bodyWidth = resolved.bubbleWidth - tailInset
+        let textY = model.bubblePadV + resolved.senderHeight
+        let textX = bodyX + model.bubblePadH
         textLabel.frame = CGRect(
-            x: (model.mine ? 0 : tailInset) + model.bubblePadH,
-            y: model.bubblePadV,
-            width: resolved.bubbleWidth - tailInset - model.bubblePadH * 2,
+            x: textX - bubble.frame.minX,
+            y: textY,
+            width: resolved.textWidth,
             height: resolved.textHeight
         )
         senderLabel.isHidden = model.senderName.isEmpty
         senderLabel.textAlignment = model.mine ? .right : .left
-        let nameX = model.mine
-            ? model.horizontalMargin
-            : model.horizontalMargin + avatarReserve
-        let nameWidth = available - avatarReserve
-        senderLabel.frame = CGRect(x: nameX, y: 0, width: max(0, nameWidth), height: resolved.nameHeight)
+        senderLabel.frame = CGRect(
+            x: bodyX + model.bubblePadH,
+            y: model.bubblePadV,
+            width: max(0, bodyWidth - model.bubblePadH * 2),
+            height: resolved.senderHeight
+        )
+        let metaWidth = WhatsAppChatLayout.metadataWidth(
+            time: model.metaText,
+            tickCount: model.tickCount
+        )
+        if resolved.inlineMetadata {
+            metadata.frame = CGRect(
+                x: textX + resolved.textWidth + WhatsAppChatLayout.inlineMetadataGap,
+                y: textY + max(0, (resolved.textHeight - WhatsAppChatLayout.metadataHeight) / 2),
+                width: metaWidth,
+                height: WhatsAppChatLayout.metadataHeight
+            )
+        } else {
+            metadata.frame = CGRect(
+                x: bodyX + bodyWidth - model.bubblePadH - metaWidth,
+                y: bubble.frame.maxY - model.bubblePadV - WhatsAppChatLayout.metadataHeight,
+                width: metaWidth,
+                height: WhatsAppChatLayout.metadataHeight
+            )
+        }
     }
 
     static func height(for model: NativeChatTextRowModel, width: CGFloat) -> CGFloat {
         let available = max(1, width - model.horizontalMargin * 2)
         let resolved = resolvedLayout(model, width: available)
-        return resolved.nameHeight + resolved.bubbleHeight + model.bottomGap
+        return resolved.bubbleHeight + model.bottomGap
     }
 
     private static func resolvedLayout(
         _ model: NativeChatTextRowModel,
         width: CGFloat
-    ) -> (nameHeight: CGFloat, textHeight: CGFloat, bubbleHeight: CGFloat, bubbleWidth: CGFloat) {
-        let nameHeight: CGFloat = model.senderName.isEmpty ? 0 : 17
+    ) -> NativeTextLayout {
+        let senderHeight: CGFloat = model.senderName.isEmpty
+            ? 0
+            : WhatsAppChatLayout.senderHeight
         let usable = width - (model.reservesAvatarSpace
             ? model.avatarSize + model.avatarGap
             : 0)
         let maxBubble = max(80, min(model.maxBubbleWidth, usable))
-        let tailInset: CGFloat = model.showTail ? 6 : 0
-        let textWidth = max(1, maxBubble - tailInset - model.bubblePadH * 2)
+        let tailInset: CGFloat = model.showTail
+            ? WhatsAppChatLayout.tailInset
+            : 0
+        let maxBodyWidth = max(1, maxBubble - tailInset)
+        let maxTextWidth = max(
+            1,
+            maxBodyWidth - model.bubblePadH * 2
+        )
         let paragraph = NSMutableParagraphStyle()
-        paragraph.lineSpacing = 3
+        paragraph.lineSpacing = 2.5
         paragraph.lineBreakMode = .byWordWrapping
         let text = ClassicEmojiSet.expand(model.text) as NSString
         let bounds = text.boundingRect(
-            with: CGSize(width: textWidth, height: 10_000),
+            with: CGSize(width: maxTextWidth, height: 10_000),
             options: [.usesLineFragmentOrigin, .usesFontLeading],
             attributes: [
                 .font: pfUIFont(L.chatFontSize),
@@ -400,17 +453,64 @@ final class NativeChatTextRowView: UIView, UIGestureRecognizerDelegate {
             ],
             context: nil
         )
-        let textHeight = max(17, ceil(bounds.height))
+        let lineHeight = ceil(pfUIFont(L.chatFontSize).lineHeight)
+        let fullTextHeight = max(lineHeight, ceil(bounds.height))
         let textPixelWidth = min(
-            textWidth,
+            maxTextWidth,
             ceil(text.size(withAttributes: [.font: pfUIFont(L.chatFontSize)]).width)
         )
-        let bubbleWidth = min(
-            maxBubble,
-            max(44, textPixelWidth + model.bubblePadH * 2 + tailInset)
+        let metadataWidth = WhatsAppChatLayout.metadataWidth(
+            time: model.metaText,
+            tickCount: model.tickCount
         )
-        let bubbleHeight = textHeight + model.bubblePadV * 2
-        return (nameHeight, textHeight, bubbleHeight, bubbleWidth)
+        let singleLine = !model.text.contains("\n") && fullTextHeight <= lineHeight + 2
+        let canPlaceMetadataInline = singleLine
+            && textPixelWidth
+                + WhatsAppChatLayout.inlineMetadataGap
+                + metadataWidth <= maxTextWidth
+        let textWidth: CGFloat
+        let textHeight: CGFloat
+        let bodyWidth: CGFloat
+        let metaHeight: CGFloat
+        if canPlaceMetadataInline {
+            textWidth = max(1, textPixelWidth)
+            textHeight = lineHeight
+            bodyWidth = max(
+                56,
+                model.bubblePadH * 2
+                    + textPixelWidth
+                    + WhatsAppChatLayout.inlineMetadataGap
+                    + metadataWidth
+            )
+            metaHeight = lineHeight
+        } else {
+            textWidth = maxTextWidth
+            textHeight = fullTextHeight
+            bodyWidth = singleLine
+                ? min(
+                    maxBodyWidth,
+                    max(56, textPixelWidth + model.bubblePadH * 2)
+                )
+                : maxBodyWidth
+            metaHeight = WhatsAppChatLayout.metadataHeight
+        }
+        let bubbleWidth = min(maxBubble, bodyWidth + tailInset)
+        let bubbleHeight = model.bubblePadV * 2
+            + senderHeight
+            + textHeight
+            + (canPlaceMetadataInline
+                ? 0
+                : WhatsAppChatLayout.metadataGap + metaHeight)
+        return NativeTextLayout(
+            senderHeight: senderHeight,
+            textHeight: textHeight,
+            metaHeight: metaHeight,
+            bubbleHeight: bubbleHeight,
+            bubbleWidth: bubbleWidth,
+            textWidth: textWidth,
+            inlineMetadata: canPlaceMetadataInline,
+            tailInset: tailInset
+        )
     }
 }
 

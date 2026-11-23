@@ -68,8 +68,8 @@
     },
     {
       "path": "Sources/ChatDetailView.swift",
-      "size": 439707,
-      "sha256": "1d17068829939bc730ed47677083effef06d4757fd2f43abcc383598c8bef87f"
+      "size": 445010,
+      "sha256": "1963474256c1727c9bed281de69c9205ee811a5ec54de2b433158ea0eda2f214"
     },
     {
       "path": "Sources/GroupInfoView.swift",
@@ -150,6 +150,11 @@
       "path": "Sources/ChatSurfaceMaterial.swift",
       "size": 3502,
       "sha256": "b341f583ad3494549c58a26fa59df743ee9011a5b7665aa503cb71033b6a06f8"
+    },
+    {
+      "path": "Sources/WhatsAppChatLayout.swift",
+      "size": 4528,
+      "sha256": "1aa6e5dc833cba89ee188ba13d004d24f7a266dec0c67b687582ee977e7fdfbd"
     }
   ]
 }

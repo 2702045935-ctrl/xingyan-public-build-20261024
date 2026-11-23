@@ -51,7 +51,8 @@ require(
     and "AppFontPrefs.family" in CHAT
     and "nativeRowLayoutKey" in CHAT
     and "asrBusy.contains(message.id) ? \"asr-busy\" : \"\"" in CHAT
-    and 'UIConfig.num("chatDeliveryTicks", 0) > 0' in CHAT,
+    and "deliveryState(for: message).accessibilityText" in CHAT
+    and "metaText: TimeFmt.messageClock(message.createdAt)" in CHAT,
     "native row height caches must invalidate on font, layout and visible state changes",
 )
 require(

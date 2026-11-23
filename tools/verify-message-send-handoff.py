@@ -41,10 +41,11 @@ require(
     "Text(p.preview)" in pending
     and "BubbleFill(mine: true, tail: showsTail)" in pending
     and "MessageDeliveryState.sent.color" in pending
-    and "Avatar(path: app.me?.avatarPath" not in pending
+    and "Avatar(" in pending
+    and "path: app.me?.avatarPath" in pending
     and "private func pendingShowsTail(_ pending: PendingMsg) -> Bool" in CHAT
     and "showTail: pendingShowsTail(pending)" in CHAT,
-    "pending and confirmed outgoing bubbles must share their tail rule and omit self avatar",
+    "pending and confirmed outgoing bubbles must share the tail rule and self avatar rail",
 )
 send_start = CHAT.index("private func send(kind: String")
 send_end = CHAT.index("private func flushOutbox", send_start)

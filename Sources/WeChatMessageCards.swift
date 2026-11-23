@@ -3,8 +3,8 @@ import SwiftUI
 enum ChatMessageSurface {
     static let cardRadius: CGFloat = 8
     static let innerRadius: CGFloat = 6
-    static let mediaRadius: CGFloat = 6
-    static let gridRadius: CGFloat = 4
+    static let mediaRadius: CGFloat = 8
+    static let gridRadius: CGFloat = 5
 
     static var cardFill: Color {
         cardFill(mine: false)

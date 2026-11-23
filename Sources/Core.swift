@@ -341,7 +341,7 @@ enum L {
     static var composerIcon: CGFloat { o("composerIcon", 28) }
     static var inputH: CGFloat { o("inputH", 39) }
 
-    static var chatFontSize: CGFloat { o("chatFontSize", 17) }
+    static var chatFontSize: CGFloat { o("chatFontSize", 16) }
     static var msgTimeSize: CGFloat { o("msgTimeSize", 12.5) }
 
     static var coverH: CGFloat { o("coverH", 380) }
@@ -2164,6 +2164,15 @@ enum TimeFmt {
             ? fMonthDay.string(from: d)
             : fYearMonthDay.string(from: d)
         return day + " " + clock
+    }
+
+    static func messageClock(_ s: String?) -> String {
+        guard let d = date(s) else { return "" }
+        return fClock.string(from: d)
+    }
+
+    static func messageClock(_ date: Date) -> String {
+        fClock.string(from: date)
     }
 
     static func minutesBetween(_ a: String?, _ b: String?) -> Int {

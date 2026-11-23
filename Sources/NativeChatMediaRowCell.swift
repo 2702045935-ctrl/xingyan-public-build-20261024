@@ -27,6 +27,10 @@ struct NativeChatMediaRowModel {
     var bubbleGlass: Bool
     var showsAvatar: Bool = true
     var reservesAvatarSpace: Bool = true
+    var metaText: String
+    var metaColor: UIColor
+    var tickCount: Int
+    var tickColor: UIColor
 }
 
 private final class NativeMediaImageView: UIImageView {
@@ -105,6 +109,7 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
     private let avatar = NativeStaticAvatarView()
     private let senderLabel = UILabel()
     private let bubble = NativeChatBubbleBackground()
+    private let metadata = NativeMessageMetadataView()
     private let imageView = NativeMediaImageView()
     private let extraImageViews: [NativeMediaImageView] = (0..<3).map { _ in
         NativeMediaImageView()
@@ -135,7 +140,6 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
 
     private func contentViewSetup() {
         addSubview(avatar)
-        addSubview(senderLabel)
         addSubview(bubble)
         addSubview(imageView)
         extraImageViews.forEach { addSubview($0) }
@@ -145,8 +149,10 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
         addSubview(badgeLabel)
         addSubview(playView)
         addSubview(durationLabel)
+        addSubview(senderLabel)
+        addSubview(metadata)
 
-        senderLabel.font = pfUIFont(12.5, .regular)
+        senderLabel.font = pfUIFont(12.5, .semibold)
         senderLabel.numberOfLines = 1
         senderLabel.lineBreakMode = .byTruncatingTail
         titleLabel.font = pfUIFont(15, .semibold)
@@ -158,7 +164,7 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
         detailLabel.textColor = UIColor.secondaryLabel
         avatar.isUserInteractionEnabled = true
 
-        imageView.layer.cornerRadius = 7
+        imageView.layer.cornerRadius = 8
         imageView.layer.cornerCurve = .continuous
         fileIcon.tintColor = UIColor.white
         fileIcon.contentMode = .scaleAspectFit
@@ -195,13 +201,33 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
         if next.showsAvatar {
             avatar.configure(path: next.avatarPath, name: next.avatarName)
         }
+        let mediaStyle: Bool
+        switch next.kind {
+        case .image, .images, .video:
+            mediaStyle = true
+        case .file:
+            mediaStyle = false
+        }
         senderLabel.text = next.senderName
-        senderLabel.textColor = next.senderNameColor
-        senderLabel.textAlignment = next.mine ? .right : .left
+        senderLabel.textColor = mediaStyle ? .white : next.senderNameColor
+        senderLabel.textAlignment = .left
+        senderLabel.backgroundColor = mediaStyle && !next.senderName.isEmpty
+            ? UIColor.black.withAlphaComponent(0.30)
+            : .clear
+        senderLabel.layer.cornerRadius = 4
+        senderLabel.layer.cornerCurve = .continuous
+        senderLabel.clipsToBounds = true
         bubble.fillColor = next.bubbleColor
         bubble.mine = next.mine
         bubble.showTail = next.showTail
         bubble.glass = next.bubbleGlass
+        metadata.configure(
+            time: next.metaText,
+            tickCount: next.tickCount,
+            tickColor: next.tickColor,
+            textColor: mediaStyle ? .white : next.metaColor,
+            mediaStyle: mediaStyle
+        )
 
         imageView.isHidden = true
         extraImageViews.forEach { $0.isHidden = true }
@@ -304,33 +330,27 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
         super.layoutSubviews()
         guard let model else { return }
         let available = max(1, bounds.width - model.horizontalMargin * 2)
-        let nameHeight: CGFloat = model.senderName.isEmpty ? 0 : 17
         let avatarReserve = model.reservesAvatarSpace
             ? model.avatarSize + model.avatarGap
             : 0
         let avatarX = model.mine
             ? model.horizontalMargin + available - model.avatarSize
             : model.horizontalMargin
-        avatar.frame = CGRect(x: avatarX, y: nameHeight,
+        avatar.frame = CGRect(x: avatarX, y: 1,
                               width: model.avatarSize, height: model.avatarSize)
-        senderLabel.isHidden = model.senderName.isEmpty
-        let nameX = model.mine
-            ? model.horizontalMargin
-            : model.horizontalMargin + avatarReserve
-        senderLabel.frame = CGRect(
-            x: nameX,
-            y: 0,
-            width: max(0, available - avatarReserve),
-            height: nameHeight
-        )
 
         let bubbleWidth = Self.bubbleWidth(for: model, available: available)
         let bubbleHeight = Self.bubbleHeight(for: model, width: bubbleWidth)
-        let tailInset: CGFloat = model.showTail ? 6 : 0
+        let tailInset: CGFloat = model.showTail
+            ? WhatsAppChatLayout.tailInset
+            : 0
+        let bubbleRail = model.mine
+            ? model.horizontalMargin + available - avatarReserve
+            : model.horizontalMargin + avatarReserve
         let bubbleX = model.mine
-            ? model.horizontalMargin + available - bubbleWidth + tailInset
-            : model.horizontalMargin + avatarReserve - tailInset
-        bubble.frame = CGRect(x: bubbleX, y: nameHeight,
+            ? bubbleRail - bubbleWidth + tailInset
+            : bubbleRail - tailInset
+        bubble.frame = CGRect(x: bubbleX, y: 0,
                               width: bubbleWidth, height: bubbleHeight)
         // Native media subviews live in the row coordinate space, not inside
         // the bubble. Anchor their body to the bubble itself and reserve the
@@ -341,6 +361,64 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
             width: max(1, bubbleWidth - tailInset),
             height: bubbleHeight
         )
+        let overlaySender: Bool
+        let isFile: Bool
+        switch model.kind {
+        case .file:
+            overlaySender = false
+            isFile = true
+        case .image, .images, .video:
+            overlaySender = true
+            isFile = false
+        }
+        senderLabel.isHidden = model.senderName.isEmpty
+        if !model.senderName.isEmpty {
+            if overlaySender {
+                let font = senderLabel.font ?? UIFont.systemFont(
+                    ofSize: 12.5,
+                    weight: .semibold
+                )
+                let textWidth = ceil(
+                    (model.senderName as NSString).size(
+                        withAttributes: [.font: font]
+                    ).width
+                )
+                senderLabel.frame = CGRect(
+                    x: body.minX + 7,
+                    y: body.minY + 7,
+                    width: min(max(24, textWidth + 10), max(24, body.width - 14)),
+                    height: 18
+                )
+            } else {
+                senderLabel.frame = CGRect(
+                    x: body.minX + WhatsAppChatLayout.bubblePadH,
+                    y: body.minY + WhatsAppChatLayout.bubblePadV,
+                    width: max(
+                        0,
+                        body.width - WhatsAppChatLayout.bubblePadH * 2
+                    ),
+                    height: WhatsAppChatLayout.senderHeight
+                )
+            }
+        }
+        let contentBody: CGRect
+        if isFile {
+            let top = model.senderName.isEmpty
+                ? body.minY + 2
+                : body.minY + WhatsAppChatLayout.bubblePadV
+                    + WhatsAppChatLayout.senderHeight
+            contentBody = CGRect(
+                x: body.minX,
+                y: top,
+                width: body.width,
+                height: max(
+                    1,
+                    body.maxY - top - WhatsAppChatLayout.metadataHeight - 8
+                )
+            )
+        } else {
+            contentBody = body
+        }
         if case .images(let paths) = model.kind {
             layoutImageGrid(paths: paths, in: body)
         } else {
@@ -354,7 +432,7 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
             width: playSide,
             height: playSide
         )
-        durationLabel.frame = CGRect(x: body.maxX - 44, y: body.maxY - 24,
+        durationLabel.frame = CGRect(x: body.minX + 7, y: body.maxY - 24,
                                      width: 38, height: 18)
         if case .images = model.kind {
             // The mosaic owns the badge frame because it covers the final tile.
@@ -363,13 +441,32 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
                                       width: 26, height: 24)
         }
 
-        fileIcon.frame = CGRect(x: body.minX + 12, y: body.midY - 20,
+        fileIcon.frame = CGRect(x: contentBody.minX + 12,
+                                y: contentBody.midY - 20,
                                 width: 40, height: 40)
         let textX = fileIcon.frame.maxX + 11
-        titleLabel.frame = CGRect(x: textX, y: body.midY - 18,
-                                  width: max(20, body.maxX - textX - 14), height: 21)
-        detailLabel.frame = CGRect(x: textX, y: body.midY + 3,
-                                   width: max(20, body.maxX - textX - 14), height: 17)
+        titleLabel.frame = CGRect(
+            x: textX,
+            y: contentBody.midY - 18,
+            width: max(20, contentBody.maxX - textX - 14),
+            height: 21
+        )
+        detailLabel.frame = CGRect(
+            x: textX,
+            y: contentBody.midY + 3,
+            width: max(20, contentBody.maxX - textX - 14),
+            height: 17
+        )
+        let metaWidth = WhatsAppChatLayout.metadataWidth(
+            time: model.metaText,
+            tickCount: model.tickCount
+        )
+        metadata.frame = CGRect(
+            x: body.maxX - 7 - metaWidth,
+            y: body.maxY - (overlaySender ? 22 : 15),
+            width: metaWidth,
+            height: overlaySender ? 16 : WhatsAppChatLayout.metadataHeight
+        )
     }
 
     private func layoutImageGrid(paths: [String], in body: CGRect) {
@@ -407,14 +504,13 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
 
     static func height(for model: NativeChatMediaRowModel, width: CGFloat) -> CGFloat {
         let available = max(1, width - model.horizontalMargin * 2)
-        let nameHeight: CGFloat = model.senderName.isEmpty ? 0 : 17
         let bubbleWidth = bubbleWidth(for: model, available: available)
-        return nameHeight + bubbleHeight(for: model, width: bubbleWidth) + model.bottomGap
+        return bubbleHeight(for: model, width: bubbleWidth) + model.bottomGap
     }
 
     private static func bubbleWidth(for model: NativeChatMediaRowModel,
                                     available: CGFloat) -> CGFloat {
-        let tail: CGFloat = model.showTail ? 6 : 0
+        let tail: CGFloat = model.showTail ? WhatsAppChatLayout.tailInset : 0
         let avatarReserve = model.reservesAvatarSpace
             ? model.avatarSize + model.avatarGap
             : 0
@@ -456,7 +552,9 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
         case .video(_, _, let w, let h):
             return videoBubbleSize(w: w, h: h).height
         case .file:
-            return 72
+            return 86 + (model.senderName.isEmpty
+                ? 0
+                : WhatsAppChatLayout.senderHeight + 3)
         }
     }
 
