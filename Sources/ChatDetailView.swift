@@ -3407,6 +3407,7 @@ struct ChatDetailView: View {
                 )
             },
             initiallyPinnedToBottom: true,
+            keepsBottomOnItemChange: true,
             signature: nativeGroupSignature,
             nativeEligible: nativeGroupUIKitEligible,
             nativeRow: nativeGroupUIKitRow,

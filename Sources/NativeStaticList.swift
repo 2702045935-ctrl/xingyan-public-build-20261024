@@ -105,6 +105,7 @@ where Item.ID: Hashable {
     let onScrollOffset: ((CGFloat) -> Void)?
     let onSizeChange: (() -> Void)?
     let initiallyPinnedToBottom: Bool
+    let keepsBottomOnItemChange: Bool
     let signature: (Item) -> String
     let nativeEligible: ((Item) -> Bool)?
     let nativeRow: ((Item, UIView?) -> UIView?)?
@@ -118,6 +119,7 @@ where Item.ID: Hashable {
          onScrollOffset: ((CGFloat) -> Void)? = nil,
          onSizeChange: (() -> Void)? = nil,
          initiallyPinnedToBottom: Bool = false,
+         keepsBottomOnItemChange: Bool = false,
          signature: @escaping (Item) -> String,
          nativeEligible: ((Item) -> Bool)? = nil,
          nativeRow: ((Item, UIView?) -> UIView?)? = nil,
@@ -130,6 +132,7 @@ where Item.ID: Hashable {
         self.onScrollOffset = onScrollOffset
         self.onSizeChange = onSizeChange
         self.initiallyPinnedToBottom = initiallyPinnedToBottom
+        self.keepsBottomOnItemChange = keepsBottomOnItemChange
         self.signature = signature
         self.nativeEligible = nativeEligible
         self.nativeRow = nativeRow
@@ -144,6 +147,7 @@ where Item.ID: Hashable {
                     onScrollOffset: onScrollOffset,
                     onSizeChange: onSizeChange,
                     initiallyPinnedToBottom: initiallyPinnedToBottom,
+                    keepsBottomOnItemChange: keepsBottomOnItemChange,
                     signature: signature,
                     nativeEligible: nativeEligible,
                     nativeRow: nativeRow,
@@ -268,6 +272,7 @@ where Item.ID: Hashable {
         var onScrollOffset: ((CGFloat) -> Void)?
         var onSizeChange: (() -> Void)?
         var initiallyPinnedToBottom: Bool
+        var keepsBottomOnItemChange: Bool
         private var waitsForInitialBottom = false
         private var sizeObservation: NSKeyValueObservation?
         private var lastScrollState: Bool?
@@ -292,6 +297,7 @@ where Item.ID: Hashable {
              onScrollOffset: ((CGFloat) -> Void)?,
              onSizeChange: (() -> Void)?,
              initiallyPinnedToBottom: Bool,
+             keepsBottomOnItemChange: Bool,
              signature: @escaping (Item) -> String,
              nativeEligible: ((Item) -> Bool)?,
              nativeRow: ((Item, UIView?) -> UIView?)?,
@@ -303,6 +309,7 @@ where Item.ID: Hashable {
             self.onScrollOffset = onScrollOffset
             self.onSizeChange = onSizeChange
             self.initiallyPinnedToBottom = initiallyPinnedToBottom
+            self.keepsBottomOnItemChange = keepsBottomOnItemChange
             self.waitsForInitialBottom = initiallyPinnedToBottom
             self.signature = signature
             self.nativeEligible = nativeEligible
@@ -727,6 +734,14 @@ where Item.ID: Hashable {
                       !collection.isDecelerating else { return }
                 if self.waitsForInitialBottom {
                     self.completeInitialBottom(collection)
+                    return
+                }
+                if self.keepsBottomOnItemChange,
+                   wasAtBottom,
+                   !collection.isTracking,
+                   !collection.isDragging,
+                   !collection.isDecelerating {
+                    self.setBottom(collection, animated: false)
                     return
                 }
                 let minimumY = -collection.adjustedContentInset.top

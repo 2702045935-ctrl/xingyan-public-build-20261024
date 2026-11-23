@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CHAT = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
 APP = (ROOT / "Sources" / "App.swift").read_text(encoding="utf-8")
+NATIVE = (ROOT / "Sources" / "NativeStaticList.swift").read_text(encoding="utf-8")
 
 
 def require(condition: bool, message: str) -> None:
@@ -96,6 +97,13 @@ require(
     and "return outbox.filter { !confirmedClientIds.contains($0.id) }" in CHAT
     and "for pending in visiblePendingMessages" in CHAT,
     "confirmed messages must structurally suppress matching pending rows in the render projection",
+)
+require(
+    "let keepsBottomOnItemChange: Bool" in NATIVE
+    and "if self.keepsBottomOnItemChange,\n                   wasAtBottom"
+    in NATIVE
+    and "keepsBottomOnItemChange: true" in CHAT,
+    "a tail-row replacement must preserve bottom following in the native message list",
 )
 require(
     "private func nativeOutboxTextModel(_ pending: PendingMsg)" in CHAT
