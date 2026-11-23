@@ -164,7 +164,7 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
         detailLabel.textColor = UIColor.secondaryLabel
         avatar.isUserInteractionEnabled = true
 
-        imageView.layer.cornerRadius = 8
+        imageView.layer.cornerRadius = WhatsAppChatLayout.mediaRadius
         imageView.layer.cornerCurve = .continuous
         fileIcon.tintColor = UIColor.white
         fileIcon.contentMode = .scaleAspectFit
@@ -481,7 +481,10 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
             view.isHidden = false
             let frame = frames[index]
             view.frame = frame
-            view.layer.cornerRadius = min(12, min(frame.width, frame.height) * 0.18)
+            view.layer.cornerRadius = min(
+                WhatsAppChatLayout.mediaRadius,
+                min(frame.width, frame.height) * 0.18
+            )
             view.layer.cornerCurve = .continuous
             view.clipsToBounds = true
         }
@@ -493,7 +496,10 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
             badgeLabel.textColor = .white
             badgeLabel.textAlignment = .center
             badgeLabel.backgroundColor = UIColor.black.withAlphaComponent(0.34)
-            badgeLabel.layer.cornerRadius = min(12, min(last.width, last.height) * 0.18)
+            badgeLabel.layer.cornerRadius = min(
+                WhatsAppChatLayout.mediaRadius,
+                min(last.width, last.height) * 0.18
+            )
             badgeLabel.layer.cornerCurve = .continuous
             badgeLabel.clipsToBounds = true
             badgeLabel.frame = last

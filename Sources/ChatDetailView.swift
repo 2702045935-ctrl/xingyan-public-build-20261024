@@ -395,7 +395,9 @@ struct BubbleShape: Shape {
     func path(in rect: CGRect) -> Path {
         let r = min(pill ? min(rect.height / 2, 24) : radius, rect.height / 2, rect.width / 2)
 
-        let out: CGFloat = tail ? 5 : 0
+        /* The native text/media rows use one continuous 8pt container without
+           a protruding tail. Keep every SwiftUI fallback bubble identical. */
+        let out: CGFloat = 0
         let h: CGFloat = 9
         let y0 = rect.minY + 6
         let x0 = rect.minX, x1 = rect.maxX, yA = rect.minY, yB = rect.maxY
@@ -10057,7 +10059,7 @@ struct MessageRow: View {
                 count: total,
                 in: CGRect(origin: .zero, size: size)
             )
-            let outerRadius: CGFloat = total == 1 ? 12 : 18
+            let outerRadius = ChatMessageSurface.mediaRadius
 
             ZStack(alignment: .topLeading) {
                 RoundedRectangle(cornerRadius: outerRadius, style: .continuous)
@@ -10066,7 +10068,10 @@ struct MessageRow: View {
                 ForEach(0..<visible, id: \.self) { index in
                     if index < paths.count, index < frames.count {
                         let frame = frames[index]
-                        let tileRadius = min(12, min(frame.width, frame.height) * 0.18)
+                        let tileRadius = min(
+                            ChatMessageSurface.mediaRadius,
+                            min(frame.width, frame.height) * 0.18
+                        )
                         Button {
                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
                             onOpenImage?(paths[index])
@@ -10094,7 +10099,10 @@ struct MessageRow: View {
                     }
                     .frame(width: last.width, height: last.height)
                     .clipShape(RoundedRectangle(
-                        cornerRadius: min(12, min(last.width, last.height) * 0.18),
+                        cornerRadius: min(
+                            ChatMessageSurface.mediaRadius,
+                            min(last.width, last.height) * 0.18
+                        ),
                         style: .continuous
                     ))
                     .offset(x: last.minX, y: last.minY)

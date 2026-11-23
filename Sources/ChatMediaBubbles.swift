@@ -215,7 +215,10 @@ struct VideoBubble: View {
                 if info.seconds > 0 { timeBadge }
             }
             .frame(width: size.width, height: size.height)
-            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .clipShape(RoundedRectangle(
+                cornerRadius: ChatMessageSurface.mediaRadius,
+                style: .continuous
+            ))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -281,7 +284,10 @@ struct LivePhotoBubble: View {
                     .padding(7)
             }
             .frame(width: 150, height: 200)
-            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .clipShape(RoundedRectangle(
+                cornerRadius: ChatMessageSurface.mediaRadius,
+                style: .continuous
+            ))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -819,7 +825,10 @@ struct SendingVideoBubble: View {
             }
         }
         .frame(width: size.width, height: size.height)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .clipShape(RoundedRectangle(
+            cornerRadius: ChatMessageSurface.mediaRadius,
+            style: .continuous
+        ))
     }
 
     private var phaseLabel: String {

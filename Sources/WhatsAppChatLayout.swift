@@ -13,6 +13,8 @@ enum WhatsAppChatLayout {
     static let metadataGap: CGFloat = 1
     static let inlineMetadataGap: CGFloat = 7
     static let tailInset: CGFloat = 0
+    static let bubbleRadius: CGFloat = 8
+    static let mediaRadius: CGFloat = 8
     static let sameRunGap: CGFloat = 3
     static let runGap: CGFloat = 9
     static let metadataFont = UIFontMetrics(forTextStyle: .caption2)

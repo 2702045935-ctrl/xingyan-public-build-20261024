@@ -67,30 +67,10 @@ final class NativeChatBubbleBackground: UIView {
     }
 
     override func draw(_ rect: CGRect) {
-        let tail: CGFloat = showTail ? WhatsAppChatLayout.tailInset : 0
-        let body = CGRect(
-            x: mine ? 0 : tail,
-            y: 0,
-            width: max(0, bounds.width - tail),
-            height: bounds.height
-        )
         let path = UIBezierPath(
-            roundedRect: body,
-            cornerRadius: 8
+            roundedRect: bounds,
+            cornerRadius: WhatsAppChatLayout.bubbleRadius
         )
-        if showTail {
-            let tipY = min(22, max(13, body.height * 0.28))
-            if mine {
-                path.move(to: CGPoint(x: body.maxX - 1, y: tipY - 5))
-                path.addLine(to: CGPoint(x: bounds.maxX, y: tipY))
-                path.addLine(to: CGPoint(x: body.maxX - 1, y: tipY + 5))
-            } else {
-                path.move(to: CGPoint(x: body.minX + 1, y: tipY - 5))
-                path.addLine(to: CGPoint(x: bounds.minX, y: tipY))
-                path.addLine(to: CGPoint(x: body.minX + 1, y: tipY + 5))
-            }
-        }
-        path.close()
         let dark = traitCollection.userInterfaceStyle == .dark
         let surface = ChatSurfaceMaterial.uiBubble(
             base: fillColor,
