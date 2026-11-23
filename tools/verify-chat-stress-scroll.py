@@ -75,7 +75,7 @@ require(
 require(
     "var olderNextCursor = 0" in CHAT
     and "olderNextCursor = advanced" in CHAT
-    and "while collected.count < target" in CHAT
+    and "while collected.count < needed" in CHAT
     and "emptyPages < 3" in CHAT
     and "if advanced <= 0 || advanced >= cursor { break }" in CHAT,
     "hidden or duplicate pages must advance without latching the history cursor",

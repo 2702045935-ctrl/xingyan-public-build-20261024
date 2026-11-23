@@ -34,8 +34,9 @@ require(
     "private func loadOlder() async" in CHAT
     and "private func scheduleOlderPrefetch(" in CHAT
     and "consumeOlderRunway(" in CHAT
-    and "olderPrefetch = visibleMessages(collected)" in CHAT
-    and "while collected.count < target" in CHAT,
+    and "let combined = visibleMessages(collected + existing)" in CHAT
+    and "while collected.count < needed" in CHAT
+    and "return Array(rows.suffix(count))" in CHAT,
     "normal chat history must consume a bounded multi-page runway while scrolling",
 )
 require(

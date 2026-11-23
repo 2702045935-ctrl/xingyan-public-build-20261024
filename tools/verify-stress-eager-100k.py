@@ -50,7 +50,8 @@ require(
     and "private let historyPageSize = 120" in CHAT
     and "private let historyPrefetchPages = 3" in CHAT
     and "let target = historyRunwayTarget" in CHAT
-    and "olderPrefetch = visibleMessages(collected)" in CHAT
+    and "let combined = visibleMessages(collected + existing)" in CHAT
+    and "while collected.count < needed" in CHAT
     and "olderPrefetch.count < target" in CHAT
     and CHAT.count("scheduleOlderPrefetch(before: nextCursor") >= 1,
     "stress history must stay bounded with a three-page runway while ordinary groups retain their loaded history",

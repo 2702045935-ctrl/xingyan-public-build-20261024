@@ -3598,7 +3598,7 @@ struct ChatDetailView: View {
             },
             initiallyPinnedToBottom: true,
             keepsBottomOnItemChange: true,
-            virtualHistoryPosition: nativeHistoryPosition,
+            virtualHistoryPosition: nil,
             layoutRevision: nativeRowLayoutKey,
             signature: nativeGroupSignature,
             nativeEligible: nativeGroupUIKitEligible,
@@ -8241,12 +8241,13 @@ struct ChatDetailView: View {
         guard canContinue,
               olderPrefetch.count < target,
               olderPrefetchTask == nil else { return }
+        let existing = olderPrefetch
         let seq = explicitSeq
-            ?? (olderPrefetch.isEmpty ? oldestHistorySeq : olderNextCursor)
+            ?? (existing.isEmpty ? oldestHistorySeq : olderNextCursor)
         guard seq > 0 else { return }
         let known = knownIds
             ?? Set(messages.map(\.id))
-                .union(olderPrefetch.map(\.id))
+                .union(existing.map(\.id))
         let token = UUID()
         olderPrefetchToken = token
         olderPrefetchTask = Task {
@@ -8258,10 +8259,11 @@ struct ChatDetailView: View {
             do {
                 var cursor = seq
                 var more = explicitMore ?? hasOlder
-                var collected = olderPrefetch
-                var seen = Set(collected.map(\.id))
+                var collected: [Message] = []
+                let needed = max(0, target - existing.count)
+                var seen = Set<String>()
                 var emptyPages = 0
-                while collected.count < target,
+                while collected.count < needed,
                       more,
                       emptyPages < 3,
                       !Task.isCancelled {
@@ -8295,7 +8297,10 @@ struct ChatDetailView: View {
                 guard !Task.isCancelled, olderPrefetchToken == token else { return }
                 olderPrefetchHasMore = more
                 olderNextCursor = cursor
-                olderPrefetch = visibleMessages(collected)
+                let combined = visibleMessages(collected + existing)
+                olderPrefetch = combined.count > target
+                    ? Array(combined.suffix(target))
+                    : combined
                 if olderPrefetch.isEmpty, !more {
                     hasOlder = false
                 } else if olderPrefetch.isEmpty {
@@ -8321,8 +8326,10 @@ struct ChatDetailView: View {
         olderPrefetchTask = nil
         olderPrefetchToken = UUID()
         let rows = olderPrefetch
-        olderPrefetch = []
-        return rows
+        guard !rows.isEmpty else { return [] }
+        let count = min(historyPageSize, rows.count)
+        olderPrefetch = Array(rows.dropLast(count))
+        return Array(rows.suffix(count))
     }
 
     private func autoOpenShopCard() {
