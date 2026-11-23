@@ -59,8 +59,10 @@ require(
     and "static let gridRadius: CGFloat = 4" in CARDS
     and ".fill(ChatMessageSurface.cardFill)" in CARDS
     and ".stroke(ChatMessageSurface.cardBorder, lineWidth: 0.5)" in CARDS
+    and "ChatTheme.usesGlass\n            ? ChatTheme.bubbleOther" in CARDS
+    and ".fill(.ultraThinMaterial)" in CARDS
     and ".regularMaterial" not in CARDS,
-    "WeChat message cards must use the flat 8pt card surface",
+    "message cards must keep the flat theme and use the glass material when selected",
 )
 require(
     "ChatMessageSurface.mediaRadius" in CHAT

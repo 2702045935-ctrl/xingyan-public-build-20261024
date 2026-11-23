@@ -124,7 +124,7 @@ private final class UploadRateMeter: @unchecked Sendable {
     }
 }
 
-private enum ChatTheme {
+enum ChatTheme {
     static var preset: ChatAppearancePreset { ChatThemeStore.shared.selected() }
     static var usesGlass: Bool { preset == .glass }
     static var page: Color { preset.canvas }

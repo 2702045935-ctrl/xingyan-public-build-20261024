@@ -7,11 +7,15 @@ enum ChatMessageSurface {
     static let gridRadius: CGFloat = 4
 
     static var cardFill: Color {
-        Color.dyn(0xFFFFFF, 0x1C1C1E)
+        ChatTheme.usesGlass
+            ? ChatTheme.bubbleOther
+            : Color.dyn(0xFFFFFF, 0x1C1C1E)
     }
 
     static var cardBorder: Color {
-        Color.dyn(0xE7E7E8, 0x343436)
+        ChatTheme.usesGlass
+            ? Color.white.opacity(0.14)
+            : Color.dyn(0xE7E7E8, 0x343436)
     }
 }
 
@@ -33,9 +37,16 @@ struct WeChatMessageCard<Content: View>: View {
             .padding(padding)
             .frame(width: width, alignment: .leading)
             .background {
-                RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
-                                 style: .continuous)
-                    .fill(ChatMessageSurface.cardFill)
+                ZStack {
+                    if ChatTheme.usesGlass {
+                        RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
+                                         style: .continuous)
+                            .fill(.ultraThinMaterial)
+                    }
+                    RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
+                                     style: .continuous)
+                        .fill(ChatMessageSurface.cardFill)
+                }
             }
             .clipShape(RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
                                         style: .continuous))
