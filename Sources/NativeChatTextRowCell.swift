@@ -363,6 +363,7 @@ final class NativeChatTimeRowView: UIView {
     private let capsule = UIView()
     private let blur = UIVisualEffectView(effect: nil)
     private let tint = UIView()
+    private var plain = true
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -391,6 +392,8 @@ final class NativeChatTimeRowView: UIView {
     }
 
     private func updateAppearance() {
+        capsule.isHidden = plain
+        guard !plain else { return }
         if UIAccessibility.isReduceTransparencyEnabled {
             blur.effect = nil
             tint.backgroundColor = .secondarySystemBackground
@@ -409,14 +412,20 @@ final class NativeChatTimeRowView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
 
-    func configure(text: String) {
+    func configure(text: String, plain: Bool) {
+        self.plain = plain
         label.text = text
         accessibilityLabel = text
+        updateAppearance()
         setNeedsLayout()
     }
 
     override func layoutSubviews() {
         super.layoutSubviews()
+        guard !plain else {
+            label.frame = bounds
+            return
+        }
         let textSize = label.sizeThatFits(CGSize(width: max(1, bounds.width - 24),
                                                  height: .greatestFiniteMagnitude))
         let width = min(bounds.width, ceil(textSize.width) + 18)
@@ -431,7 +440,8 @@ final class NativeChatTimeRowView: UIView {
         label.frame = capsule.bounds.insetBy(dx: 9, dy: 4)
     }
 
-    static func height() -> CGFloat {
-        max(34, ceil(pfUIFont(11.5).lineHeight + 18))
+    static func height(plain: Bool) -> CGFloat {
+        let line = ceil(pfUIFont(11.5).lineHeight)
+        return plain ? max(28, line + 8) : max(34, line + 18)
     }
 }

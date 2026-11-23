@@ -105,12 +105,19 @@ require(
     and "!needsSwiftUIRichText(message.body)" in CHAT
     and "private var chatOpenURLAction: OpenURLAction" in CHAT
     and ".environment(\\.openURL, chatOpenURLAction)" in CHAT
-    and "ceil(pfUIFont(11.5).lineHeight + 18)" in (
+    and "let line = ceil(pfUIFont(11.5).lineHeight)" in (
+        ROOT / "Sources" / "NativeChatTextRowCell.swift"
+    ).read_text(encoding="utf-8")
+    and "plain ? max(28, line + 8) : max(34, line + 18)" in (
         ROOT / "Sources" / "NativeChatTextRowCell.swift"
     ).read_text(encoding="utf-8")
     and "private let blur = UIVisualEffectView(effect: nil)" in (
         ROOT / "Sources" / "NativeChatTextRowCell.swift"
     ).read_text(encoding="utf-8")
+    and "capsule.isHidden = plain" in (
+        ROOT / "Sources" / "NativeChatTextRowCell.swift"
+    ).read_text(encoding="utf-8")
+    and "plain: isGroup || usesPlainDefaultChatChrome" in CHAT
     and "label.sizeThatFits(" in (
         ROOT / "Sources" / "NativeChatTextRowCell.swift"
     ).read_text(encoding="utf-8")

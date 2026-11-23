@@ -3975,7 +3975,10 @@ struct ChatDetailView: View {
         switch item.kind {
         case .timestamp(let message):
             let view = (reuse as? NativeChatTimeRowView) ?? NativeChatTimeRowView()
-            view.configure(text: TimeFmt.bubble(message.createdAt))
+            view.configure(
+                text: TimeFmt.bubble(message.createdAt),
+                plain: isGroup || usesPlainDefaultChatChrome
+            )
             return view
         case .message(let message):
             if let model = nativeChatMediaModel(item) {
@@ -4033,7 +4036,9 @@ struct ChatDetailView: View {
     private func nativeGroupUIKitHeight(_ item: NativeGroupItem, width: CGFloat) -> CGFloat? {
         switch item.kind {
         case .timestamp:
-            return NativeChatTimeRowView.height()
+            return NativeChatTimeRowView.height(
+                plain: isGroup || usesPlainDefaultChatChrome
+            )
         case .message:
             if let media = nativeChatMediaModel(item) {
                 return NativeChatMediaRowView.height(for: media, width: width)
@@ -5016,27 +5021,35 @@ struct ChatDetailView: View {
 
     @ViewBuilder
     private func timeLine(_ message: Message) -> some View {
-        Text(TimeFmt.bubble(message.createdAt))
-            .font(pfStyled(isGroup ? 11.5 : 12, .regular))
-            .monospacedDigit()
-            .foregroundColor(adaptiveSystemSecondaryInk)
-            .padding(.horizontal, L.o("chatTimePadX", 9))
-            .padding(.vertical, L.o("chatTimePadY", 4))
-            .background {
-                ZStack {
-                    Capsule(style: .continuous)
-                        .fill(.ultraThinMaterial)
-                    Capsule(style: .continuous)
-                        .fill(adaptiveSystemSurface)
+        if isGroup || usesPlainDefaultChatChrome {
+            Text(TimeFmt.bubble(message.createdAt))
+                .font(pf(11.5, .medium))
+                .foregroundColor(adaptiveSystemSecondaryInk.opacity(0.92))
+                .frame(maxWidth: .infinity)
+                .padding(.top, 8)
+                .padding(.bottom, 7)
+        } else {
+            Text(TimeFmt.bubble(message.createdAt))
+                .font(pf(12, .medium))
+                .foregroundColor(adaptiveSystemSecondaryInk)
+                .padding(.horizontal, L.o("chatTimePadX", 9))
+                .padding(.vertical, L.o("chatTimePadY", 4))
+                .background {
+                    ZStack {
+                        Capsule(style: .continuous)
+                            .fill(.ultraThinMaterial)
+                        Capsule(style: .continuous)
+                            .fill(adaptiveSystemSurface)
+                    }
                 }
-            }
-            .overlay {
-                Capsule(style: .continuous)
-                    .stroke(adaptiveSystemBorder, lineWidth: 0.6)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.top, L.o("chatTimeGapTop", isGroup ? 8 : 10))
-            .padding(.bottom, L.o("chatTimeGapBottom", isGroup ? 7 : 10))
+                .overlay {
+                    Capsule(style: .continuous)
+                        .stroke(adaptiveSystemBorder, lineWidth: 0.6)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.top, L.o("chatTimeGapTop", 10))
+                .padding(.bottom, L.o("chatTimeGapBottom", 10))
+        }
     }
 
     @ViewBuilder
