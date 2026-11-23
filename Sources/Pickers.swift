@@ -39,12 +39,13 @@ struct PhotoPicker: UIViewControllerRepresentable {
                 guard let image else { return }
                 DispatchQueue.main.async { self.onPick(image) }
             }
+            let decodeSide = maxSide
             provider.loadDataRepresentation(
                 forTypeIdentifier: UTType.image.identifier
             ) { data, _ in
                 if let data {
                     DispatchQueue.global(qos: .userInitiated).async {
-                        deliver(RemoteImage.downsampled(data, maxSide: maxSide))
+                        deliver(RemoteImage.downsampled(data, maxSide: decodeSide))
                     }
                     return
                 }
