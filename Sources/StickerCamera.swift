@@ -53,7 +53,7 @@ let stickerEffectSource = "星言 Effect"
 
 struct StickerFace: Equatable {
 
-    var box: CGRect = CGRect(x: 0.25, y: 0.16, width: 0.5, height: AppDesign.Control.hairline)
+    var box: CGRect = CGRect(x: 0.25, y: 0.16, width: 0.5, height: 0.5)
 
     var leftEye: CGPoint = CGPoint(x: 0.40, y: 0.37)
 

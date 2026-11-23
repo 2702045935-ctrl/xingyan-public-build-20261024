@@ -94,7 +94,7 @@ require(
 require(
     "private var phoneSearchBar" in PHONE
     and 'TextField(Tr("搜索姓名或号码"), text: $keyword)' in PHONE
-    and ".frame(height: 64)" in PHONE
+    and ".frame(height: AppDesign.Control.compactRowHeight)" in PHONE
     and ".padding(.leading, 74)" in PHONE,
     "phone contacts must use a WhatsApp-style searchable alphabet list",
 )

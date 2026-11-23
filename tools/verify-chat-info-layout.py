@@ -40,7 +40,7 @@ require(
 )
 require(
     "private struct ChatInfoDangerRow" in INFO
-    and ".frame(maxWidth: .infinity)\n                .frame(height: 54)" in INFO,
+    and ".frame(maxWidth: .infinity)\n                .frame(height: AppDesign.Control.dialogRowHeight)" in INFO,
     "destructive chat actions must be isolated as centered red rows",
 )
 require(

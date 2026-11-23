@@ -38,13 +38,13 @@ require(
     "NativeChatRowMetrics.font(14," in ROW
     and "previewLabel.font = .systemFont(ofSize: 14, weight: .regular)" in ROW
     and ".font(pfStyled(size: 14," in CHATS
-    and "let previewColor = UIColor(hex: isDark ? 0x8F969E : 0x999999)" in CHATS
-    and "static let conversationPreviewInk = Color.dyn(0x999999, 0x8F969E)" in CHATS,
+    and "let previewColor = isDark ? AppPalette.previewDarkUI : AppPalette.previewLightUI" in CHATS
+    and "static let conversationPreviewInk = AppPalette.conversationPreview" in CHATS,
     "conversation previews must use WeChat's 14pt neutral-gray text",
 )
 require(
-    "private static let previewAccentInk = UIColor(hex: 0xFA5151)" in ROW
-    and "static let previewAccentInk = Color.dyn(0xFA5151, 0xFA5151)" in CHATS
+    "private static let previewAccentInk = AppPalette.dangerUI" in ROW
+    and "static let previewAccentInk = AppPalette.previewAccent" in CHATS
     and "foregroundColor: Self.previewAccentInk" in ROW,
     "mention and draft prefixes must use WeChat's red without tinting the body",
 )

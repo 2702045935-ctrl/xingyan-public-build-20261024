@@ -42,10 +42,10 @@ check(
     "the world page must use native centered hierarchy and restrained press feedback",
 )
 check(
-    ".frame(height: 30)" in DISCOVER
-    and ".frame(height: 72)" in DISCOVER
-    and ".frame(height: 64)" in DISCOVER
-    and "Color.clear.frame(height: 8)" in DISCOVER,
+    "AppDesign.Control.sectionHeaderHeight" in DISCOVER
+    and "AppDesign.Control.rowHeight" in DISCOVER
+    and "AppDesign.Control.compactRowHeight" in DISCOVER
+    and "Color.clear.frame(height: AppDesign.Spacing.xs)" in DISCOVER,
     "world sections and rows must use compact spacing with visible group separation",
 )
 check(

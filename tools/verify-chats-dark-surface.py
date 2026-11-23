@@ -15,15 +15,14 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "chatsIsDark ? Color(hex: 0x0E0F12) : C.chatsPageBg" in CHATS
-    and "if isDark { return Color(hex: 0x121317) }" in CHATS
-    and "let rowBg: UIColor = isDark ? UIColor(hex: 0x121317) : UIColor.white" in CHATS,
+    "chatsIsDark ? AppPalette.canvasDark : C.chatsPageBg" in CHATS
+    and "if isDark { return AppPalette.rowDark }" in CHATS
+    and "let rowBg: UIColor = isDark ? AppPalette.rowDarkUI : UIColor.white" in CHATS,
     "dark chat canvas, rows and chrome must use distinct neutral elevation levels",
 )
 require(
     "showsDivider: true" in CHATS
-    and "? UIColor(hex: 0x2A2D33)" in CHATS
-    and "dividerColor: isDark\n                ? UIColor(hex: 0x2A2D33)" in CHATS
+    and "AppPalette.dividerUI" in CHATS
     and ".fill(ChatListVisual.rule)" in CHATS
     and ".fill(isDark ? Color.clear : ChatListVisual.rule)" not in CHATS
     and "dividerLeading: CGFloat = 77" in ROW,
@@ -54,9 +53,9 @@ require(
     "reused native rows must clear old text and render on an opaque surface",
 )
 require(
-    "? Color(hex: 0x1D2026)" in CHATS
+    "AppPalette.searchFill" in CHATS
     and "Color.white.opacity(0.045)" in CHATS
-    and "Color(hex: 0x6E7378)" in CHATS
+    and "AppPalette.tertiary" in CHATS
     and ".stroke(chatsSearchBorder, lineWidth: 0.5)" in CHATS,
     "dark search must sit quietly on the near-black canvas instead of using a raised light card",
 )
@@ -73,10 +72,10 @@ require(
     "empty and filtered chat lists must stay inside the native list surface",
 )
 require(
-    "let previewColor = UIColor(hex: isDark ? 0x8F969E : 0x999999)" in CHATS
-    and "let timeColor = UIColor(hex: isDark ? 0x6F767E : 0xB2B2B2)" in CHATS
+    "let previewColor = isDark ? AppPalette.previewDarkUI : AppPalette.previewLightUI" in CHATS
+    and "let timeColor = isDark ? AppPalette.timeDarkUI : AppPalette.timeLightUI" in CHATS
     and "let titleColor: UIColor = chat.showsOfficialMark" in CHATS
-    and "UIColor(hex: isDark ? 0xF2F4F6 : 0x191919)" in CHATS,
+    and "isDark ? AppPalette.titleDarkUI : AppPalette.titleLightUI" in CHATS,
     "chat-list title, preview and time must match WhatsApp's measured hierarchy",
 )
 require(

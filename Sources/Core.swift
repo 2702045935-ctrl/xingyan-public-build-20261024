@@ -1468,29 +1468,29 @@ struct GroupAvatarMosaic: View {
         case 3:
             return [
                 CGRect(x: 0, y: 0, width: 0.64, height: 1),
-                CGRect(x: 0.64, y: 0, width: 0.36, height: AppDesign.Control.hairline),
-                CGRect(x: 0.64, y: 0.5, width: 0.36, height: AppDesign.Control.hairline)
+                CGRect(x: 0.64, y: 0, width: 0.36, height: 0.5),
+                CGRect(x: 0.64, y: 0.5, width: 0.36, height: 0.5)
             ]
         case 4:
             return [
-                CGRect(x: 0, y: 0, width: 0.5, height: AppDesign.Control.hairline),
-                CGRect(x: 0.5, y: 0, width: 0.5, height: AppDesign.Control.hairline),
-                CGRect(x: 0, y: 0.5, width: 0.5, height: AppDesign.Control.hairline),
-                CGRect(x: 0.5, y: 0.5, width: 0.5, height: AppDesign.Control.hairline)
+                CGRect(x: 0, y: 0, width: 0.5, height: 0.5),
+                CGRect(x: 0.5, y: 0, width: 0.5, height: 0.5),
+                CGRect(x: 0, y: 0.5, width: 0.5, height: 0.5),
+                CGRect(x: 0.5, y: 0.5, width: 0.5, height: 0.5)
             ]
         case 5:
             return [
-                CGRect(x: 0, y: 0, width: 0.5, height: AppDesign.Control.hairline),
-                CGRect(x: 0.5, y: 0, width: 0.5, height: AppDesign.Control.hairline),
-                CGRect(x: 0, y: 0.5, width: third, height: AppDesign.Control.hairline),
-                CGRect(x: third, y: 0.5, width: third, height: AppDesign.Control.hairline),
-                CGRect(x: third * 2, y: 0.5, width: third, height: AppDesign.Control.hairline)
+                CGRect(x: 0, y: 0, width: 0.5, height: 0.5),
+                CGRect(x: 0.5, y: 0, width: 0.5, height: 0.5),
+                CGRect(x: 0, y: 0.5, width: third, height: 0.5),
+                CGRect(x: third, y: 0.5, width: third, height: 0.5),
+                CGRect(x: third * 2, y: 0.5, width: third, height: 0.5)
             ]
         case 6:
             return (0..<6).map { index in
                 CGRect(x: CGFloat(index % 3) * third,
                        y: CGFloat(index / 3) * 0.5,
-                       width: third, height: AppDesign.Control.hairline)
+                       width: third, height: 0.5)
             }
         case 7:
             return [CGRect(x: 0, y: 0, width: 1, height: 0.4)]

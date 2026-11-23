@@ -44,7 +44,7 @@ require(
     "group creation must show selected members compactly and seed a usable default name",
 )
 require(
-    ".frame(height: 60)" in PROFILE
+    ".frame(height: AppDesign.Control.profileRowHeight)" in PROFILE
     and ".padding(.leading, 70)" in PROFILE
     and "buttonStyle(MenuPressStyle())" in PROFILE
     and ".safeAreaInset(edge: .bottom, spacing: 0) { createDock }" not in PROFILE,

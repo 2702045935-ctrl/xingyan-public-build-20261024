@@ -732,7 +732,7 @@ private struct ChatTopGlassBackdrop: View {
                             .fill(lightInk
                                   ? Color.white.opacity(0.07)
                                   : Color.black.opacity(0.05))
-                            .frame(height: AppDesign.Control.hairline5)
+                            .frame(height: 0.55)
                     }
                 }
                 .mask {
