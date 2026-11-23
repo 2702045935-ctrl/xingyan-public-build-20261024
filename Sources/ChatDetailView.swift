@@ -1586,6 +1586,7 @@ struct ChatDetailView: View {
     @State private var nativeMessageController = NativeStaticListController()
 
     @State private var lastOlderLoad = Date.distantPast
+    @State private var olderRunwayBatchRemaining = 0
 
     @State private var lastReadSyncAt = Date.distantPast
 
@@ -4387,13 +4388,16 @@ struct ChatDetailView: View {
 
     private func consumeOlderRunway(requireActiveMotion: Bool,
                                     offsetY: CGFloat? = nil) {
-        guard isGroup, initialScrollReady, hasOlder,
+        guard initialScrollReady, hasOlder,
               !loadingOlder,
               let scroll = ChatScrollHandle.shared.scroll else { return }
         let y = offsetY ?? scroll.contentOffset.y
         let runway = max(2_200, min(4_200, scroll.bounds.height * 2.75))
         guard y < runway else { return }
         if requireActiveMotion, !ChatScrollHandle.shared.moving { return }
+        if olderRunwayBatchRemaining == 0 {
+            olderRunwayBatchRemaining = 3
+        }
         autoLoadOlder()
     }
 
@@ -8162,8 +8166,13 @@ struct ChatDetailView: View {
                 // runway after every consumed page so the next page starts loading
                 // while the finger is still moving, matching the initial pages.
                 lastOlderLoad = .distantPast
+                olderRunwayBatchRemaining = max(0, olderRunwayBatchRemaining - 1)
                 DispatchQueue.main.async {
-                    consumeOlderRunway(requireActiveMotion: false)
+                    if olderRunwayBatchRemaining > 0 {
+                        autoLoadOlder()
+                    } else {
+                        consumeOlderRunway(requireActiveMotion: false)
+                    }
                 }
             }
         }

@@ -31,6 +31,7 @@ require(
 require(
     "olderRunwayConsumedForGesture" not in CHAT
     and "newerRunwayConsumedForGesture" not in CHAT
+    and "guard isGroup, initialScrollReady, hasOlder" not in CHAT
     and "if isGroup { autoLoadOlder() }" not in CHAT
     and "guard hasOlder, !loadingOlder, !loadingAllGroupHistory, !loading" not in CHAT
     and "guard !loadingOlder, !loadingAllGroupHistory" not in CHAT,
@@ -67,8 +68,11 @@ require(
 require(
     "var loadedUsefulPage = false" in CHAT
     and "lastOlderLoad = .distantPast" in CHAT
+    and "olderRunwayBatchRemaining = 3" in CHAT
+    and "olderRunwayBatchRemaining = max(0, olderRunwayBatchRemaining - 1)" in CHAT
+    and "if olderRunwayBatchRemaining > 0" in CHAT
     and "consumeOlderRunway(requireActiveMotion: false)" in CHAT,
-    "each completed page must immediately re-check the edge-distance runway",
+    "one runway trigger must prefill three pages without another finger gesture",
 )
 require(
     "defer {\n            loadingNewer = false\n            if loadedUsefulPage" in CHAT
