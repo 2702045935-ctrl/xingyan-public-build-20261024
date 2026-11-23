@@ -108,6 +108,15 @@ require(
     "ordinary conversations must backfill complete history without finger paging",
 )
 require(
+    "let commitEveryPages = 6" in CHAT
+    and "var staged: [String: Message] = [:]" in CHAT
+    and "commitStaged()" in CHAT
+    and "Task.sleep(nanoseconds: 35_000_000)" in CHAT
+    and 'loadingAllGroupHistory { return Tr("' not in CHAT
+    and "let text = selectMode ? navTitleShown : navTitle" in CHAT,
+    "background history sync must stay quiet and commit coalesced pages off the title",
+)
+require(
     "prependAnchor =" in NATIVE
     and "attributes.frame.minY - anchor.delta" in NATIVE
     and "clearPendingPrepend()" in NATIVE,

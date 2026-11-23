@@ -1695,7 +1695,6 @@ struct ChatDetailView: View {
 
     private var navTitleShown: String {
         if selectMode { return Tr("已选择") + " \(selected.count) " + Tr("项") }
-        if loadingAllGroupHistory { return Tr("正在同步全部消息…") }
         guard !peerTyping.isEmpty else { return navTitle }
         return isGroup ? "有人正在输入…" : "对方正在输入…"
     }
@@ -1800,9 +1799,9 @@ struct ChatDetailView: View {
 
     private var whatsAppChatHeader: some View {
         let memberCount = liveChat.memberCount ?? (liveChat.memberIds?.count ?? 0)
-        let title = loadingAllGroupHistory
-            ? Tr("正在同步全部消息…")
-            : (isGroup && memberCount > 0 ? "\(navTitle)(\(memberCount))" : navTitle)
+        let title = isGroup && memberCount > 0
+            ? "\(navTitle)(\(memberCount))"
+            : navTitle
         let detail: String = {
             if isPeerTyping {
                 return isGroup ? Tr("有人正在输入…") : Tr("对方正在输入…")
@@ -1962,7 +1961,7 @@ struct ChatDetailView: View {
     }
 
     private var chatNavigationTitle: AnyView {
-        let text = (selectMode || loadingAllGroupHistory) ? navTitleShown : navTitle
+        let text = selectMode ? navTitleShown : navTitle
         return AnyView(
             VStack(spacing: 1) {
                 HStack(spacing: 5) {
@@ -3108,6 +3107,8 @@ struct ChatDetailView: View {
             historySyncTask?.cancel()
             if shouldLoadCompleteGroupHistory {
                 historySyncTask = Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 800_000_000)
+                    guard !Task.isCancelled else { return }
                     await loadAllGroupHistory()
                 }
             }
@@ -8312,6 +8313,8 @@ struct ChatDetailView: View {
         var before = oldestHistorySeq
         var pages = 0
         var consecutiveFailures = 0
+        var staged: [String: Message] = [:]
+        let commitEveryPages = 6
         /* Backfill uses the same 120-row page and anchor path as interactive
            paging, so a background page can never behave differently from a
            finger-driven runway page. */
@@ -8320,8 +8323,52 @@ struct ChatDetailView: View {
             64,
             Int(ceil(Double(maxMessageWindow) / Double(historyPageSize))) + 8
         )
+
+        func commitStaged() {
+            guard !staged.isEmpty else { return }
+            let followBottom = atBottomNow
+            let keepAnchor = messages.first?.id
+            let known = Set(messages.map(\.id))
+            let additions = visibleMessages(
+                staged.values.filter { !known.contains($0.id) }
+            )
+            staged.removeAll(keepingCapacity: true)
+            guard !additions.isEmpty else { return }
+
+            ChatScrollHandle.shared.prepareForPrepend()
+            messages = Array((additions + messages).suffix(maxMessageWindow))
+            hasOlder = true
+            rebuildIndex()
+
+            if followBottom, usesNativeMessageList {
+                ChatScrollHandle.shared.allowAutomaticPinning()
+                DispatchQueue.main.async {
+                    nativeMessageController.scrollToBottom(animated: false)
+                }
+            } else if followBottom, let scroller {
+                ChatScrollHandle.shared.allowAutomaticPinning()
+                DispatchQueue.main.async {
+                    scroller.scrollTo("__bottom", anchor: .bottom)
+                }
+            } else if let keepAnchor, usesNativeMessageList {
+                holdScroll = true
+                DispatchQueue.main.async {
+                    nativeMessageController.scrollToID(keepAnchor, at: .top, animated: false)
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                    holdScroll = false
+                }
+            } else if let keepAnchor, let scroller {
+                holdScroll = true
+                DispatchQueue.main.async { scroller.scrollTo(keepAnchor, anchor: .top) }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                    holdScroll = false
+                }
+            }
+        }
+
         while hasOlder, pages < maxPages, !Task.isCancelled, before > 0,
-              messages.count < maxMessageWindow,
+              messages.count + staged.count < maxMessageWindow,
               consecutiveFailures < 5 {
             do {
                 let page = try await API.shared.messages(
@@ -8341,50 +8388,22 @@ struct ChatDetailView: View {
                     reachedStart = true
                     break
                 }
-                /* 每拿到一页就先并入当前会话，用户能马上看到新增的
-                   更早消息，而不是等所有页拉完才一次性“跳出来”。 */
-                let followBottom = atBottomNow
-                let keepAnchor = messages.first?.id
-                var mergedById = Dictionary(uniqueKeysWithValues: messages.map { ($0.id, $0) })
-                for message in page.messages { mergedById[message.id] = message }
-                let merged = mergedById.values.sorted(by: messageSortsBefore)
-                ChatScrollHandle.shared.prepareForPrepend()
-                messages = Array(visibleMessages(merged).suffix(maxMessageWindow))
-                hasOlder = true
-                rebuildIndex()
-                if followBottom, usesNativeMessageList {
-                    ChatScrollHandle.shared.allowAutomaticPinning()
-                    DispatchQueue.main.async {
-                        nativeMessageController.scrollToBottom(animated: false)
-                    }
-                } else if followBottom, let scroller {
-                    ChatScrollHandle.shared.allowAutomaticPinning()
-                    DispatchQueue.main.async {
-                        scroller.scrollTo("__bottom", anchor: .bottom)
-                    }
-                } else if let keepAnchor, usesNativeMessageList {
-                    holdScroll = true
-                    DispatchQueue.main.async {
-                        nativeMessageController.scrollToID(keepAnchor, at: .top, animated: false)
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-                        holdScroll = false
-                    }
-                } else if let keepAnchor, let scroller {
-                    holdScroll = true
-                    DispatchQueue.main.async { scroller.scrollTo(keepAnchor, anchor: .top) }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-                        holdScroll = false
-                    }
-                }
                 let next = page.messages.compactMap(\.seq).min() ?? 0
-                if !page.hasMore {
-                    reachedStart = true
-                    break
+                for message in page.messages {
+                    staged[message.id] = message
                 }
+                pages += 1
+                let reachedTip = !page.hasMore
+                if reachedTip {
+                    reachedStart = true
+                }
+                if pages % commitEveryPages == 0 || reachedTip {
+                    commitStaged()
+                    try? await Task.sleep(nanoseconds: 35_000_000)
+                }
+                if reachedTip { break }
                 if next <= 0 || next >= before { break }
                 before = next
-                pages += 1
                 await Task.yield()
             } catch {
                 consecutiveFailures += 1
@@ -8393,6 +8412,7 @@ struct ChatDetailView: View {
             }
         }
 
+        commitStaged()
         if !Task.isCancelled {
             hasOlder = !reachedStart
         }
