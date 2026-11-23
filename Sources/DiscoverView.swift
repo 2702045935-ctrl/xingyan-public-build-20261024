@@ -1908,7 +1908,6 @@ struct MomentsView: View {
                 }
             } else {
                 RemoteImage(path: cover, icon: "photo", maxSide: 2560)
-                    .id(cover)
             }
 
             if cover.isEmpty && coverEditable {

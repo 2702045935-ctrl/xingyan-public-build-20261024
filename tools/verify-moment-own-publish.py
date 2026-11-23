@@ -32,6 +32,11 @@ require(
     "a saved Moments cover must remain visible without leaving the page",
 )
 require(
+    "RemoteImage(path: cover, icon: \"photo\", maxSide: 2560)" in VIEW
+    and ".id(cover)" not in VIEW,
+    "cover replacement must not recreate the image view and expose a blank frame",
+)
+require(
     "pendingLocal + cleanPage.filter" in VIEW,
     "a stale server page must not erase a just-published moment",
 )

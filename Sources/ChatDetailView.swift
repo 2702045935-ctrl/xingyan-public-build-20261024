@@ -4558,7 +4558,6 @@ struct ChatDetailView: View {
                         RemoteImage(path: backgroundPath,
                                     mode: .fill,
                                     maxSide: chatWallpaperDecodeSide())
-                            .id(backgroundPath)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .clipped()
                     } else {

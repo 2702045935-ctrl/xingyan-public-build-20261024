@@ -63,6 +63,10 @@ require(
     "RemoteImage must paint a cached avatar on its first frame without a placeholder flash",
 )
 require(
+    "image = nil\n            await load()" not in CORE,
+    "RemoteImage must retain the previous image while a replacement is decoding",
+)
+require(
     "cacheKey: ImageCacheKey.stablePath(path)" in CORE
     and ".id(ImageCacheKey.stablePath(path))" in CORE
     and "private static func cacheIdentity" in CORE,

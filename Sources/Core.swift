@@ -1108,7 +1108,6 @@ struct RemoteImage: View {
                 onLoaded?(cached)
                 return
             }
-            image = nil
             await load()
         }
     }
