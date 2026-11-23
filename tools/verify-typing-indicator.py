@@ -38,7 +38,7 @@ require(
     "private var sortedTypingPeers: [TypingPeer]" in CHAT
     and "if peers.count == 1" in CHAT
     and "if peers.count == 2" in CHAT
-    and 'return "\\(peers.count) " + Tr("人正在输入")' in CHAT,
+    and 'return "\\(peers.count)" + Tr("人正在输入")' in CHAT,
     "group typing state must aggregate one, two and three-plus senders",
 )
 require(

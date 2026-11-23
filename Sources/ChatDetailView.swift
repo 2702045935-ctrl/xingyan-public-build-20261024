@@ -1792,7 +1792,7 @@ struct ChatDetailView: View {
         if peers.count == 2 {
             return "\(peers[0].name)、\(peers[1].name)" + Tr("正在输入")
         }
-        return "\(peers.count) " + Tr("人正在输入")
+        return "\(peers.count)" + Tr("人正在输入")
     }
 
     private var typingAccessibilityText: String {
@@ -1802,7 +1802,7 @@ struct ChatDetailView: View {
         if peers.count <= 2 {
             return peers.map(\.name).joined(separator: "、") + Tr("正在输入")
         }
-        return "\(peers.count) " + Tr("人正在输入")
+        return "\(peers.count)" + Tr("人正在输入")
     }
 
     private var typingDots: some View {

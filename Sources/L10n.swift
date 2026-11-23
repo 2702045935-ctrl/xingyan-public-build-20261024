@@ -33,7 +33,7 @@ enum L10n {
         "[语音]": "[Voice]",
         "正在输入": "typing",
         "对方正在输入": "The other person is typing",
-        "人正在输入": "people are typing",
+        "人正在输入": " people are typing",
         "有人": "Someone",
         "设置钱包": "Set Up Wallet",
         "身份验证": "Identity Verification",
