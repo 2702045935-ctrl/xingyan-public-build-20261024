@@ -4,6 +4,7 @@ import PhotosUI
 import UniformTypeIdentifiers
 
 struct PhotoPicker: UIViewControllerRepresentable {
+    var maxSide: CGFloat = 2048
     var onPick: (UIImage) -> Void
     @Environment(\.dismiss) private var dismiss
 
@@ -27,11 +28,27 @@ struct PhotoPicker: UIViewControllerRepresentable {
 
         func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
             picker.dismiss(animated: true)
-            guard let provider = results.first?.itemProvider,
-                  provider.canLoadObject(ofClass: UIImage.self) else { return }
-            provider.loadObject(ofClass: UIImage.self) { object, _ in
-                guard let image = object as? UIImage else { return }
+            guard let provider = results.first?.itemProvider else { return }
+            let deliver: (UIImage?) -> Void = { image in
+                guard let image else { return }
                 DispatchQueue.main.async { self.onPick(image) }
+            }
+            provider.loadDataRepresentation(
+                forTypeIdentifier: UTType.image.identifier
+            ) { data, _ in
+                if let data {
+                    DispatchQueue.global(qos: .userInitiated).async {
+                        deliver(RemoteImage.downsampled(data, maxSide: maxSide))
+                    }
+                    return
+                }
+                guard provider.canLoadObject(ofClass: UIImage.self) else {
+                    deliver(nil)
+                    return
+                }
+                provider.loadObject(ofClass: UIImage.self) { object, _ in
+                    deliver(object as? UIImage)
+                }
             }
         }
     }

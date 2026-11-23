@@ -333,7 +333,9 @@ struct ChatBackgroundSheet: View {
             }
         }
         .sheet(isPresented: $picking) {
-            PhotoPicker { image in beginComposing(image) }
+            PhotoPicker(maxSide: chatWallpaperDecodeSide()) { image in
+                beginComposing(image)
+            }
         }
         .fullScreenCover(isPresented: $showingComposer) {
             if let image = composingImage {
@@ -554,7 +556,9 @@ struct ChatBackgroundSheet: View {
         .toolbar(.hidden, for: .navigationBar)
         .preferredColorScheme(scheme)
         .sheet(isPresented: $picking) {
-            PhotoPicker { image in beginComposing(image) }
+            PhotoPicker(maxSide: chatWallpaperDecodeSide()) { image in
+                beginComposing(image)
+            }
         }
         .fullScreenCover(isPresented: $showingComposer) {
             if let image = composingImage {
