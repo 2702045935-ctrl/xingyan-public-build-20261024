@@ -225,8 +225,8 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
             time: next.metaText,
             tickCount: next.tickCount,
             tickColor: next.tickColor,
-            textColor: next.metaColor,
-            mediaStyle: false
+            textColor: mediaStyle ? .white : next.metaColor,
+            mediaStyle: mediaStyle
         )
 
         imageView.isHidden = true
@@ -411,7 +411,10 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
                 x: body.minX,
                 y: top,
                 width: body.width,
-                height: max(1, body.maxY - top)
+                height: max(
+                    1,
+                    body.maxY - top - WhatsAppChatLayout.metadataHeight - 8
+                )
             )
         } else {
             contentBody = body
@@ -460,9 +463,9 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
         )
         metadata.frame = CGRect(
             x: body.maxX - 7 - metaWidth,
-            y: body.maxY + WhatsAppChatLayout.metadataGap,
+            y: body.maxY - (overlaySender ? 22 : 15),
             width: metaWidth,
-            height: WhatsAppChatLayout.metadataHeight
+            height: overlaySender ? 16 : WhatsAppChatLayout.metadataHeight
         )
     }
 
@@ -502,10 +505,7 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
     static func height(for model: NativeChatMediaRowModel, width: CGFloat) -> CGFloat {
         let available = max(1, width - model.horizontalMargin * 2)
         let bubbleWidth = bubbleWidth(for: model, available: available)
-        return bubbleHeight(for: model, width: bubbleWidth)
-            + WhatsAppChatLayout.metadataGap
-            + WhatsAppChatLayout.metadataHeight
-            + model.bottomGap
+        return bubbleHeight(for: model, width: bubbleWidth) + model.bottomGap
     }
 
     private static func bubbleWidth(for model: NativeChatMediaRowModel,
@@ -552,7 +552,7 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
         case .video(_, _, let w, let h):
             return videoBubbleSize(w: w, h: h).height
         case .file:
-            return 72 + (model.senderName.isEmpty
+            return 86 + (model.senderName.isEmpty
                 ? 0
                 : WhatsAppChatLayout.senderHeight + 3)
         }

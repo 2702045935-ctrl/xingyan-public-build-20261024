@@ -4904,21 +4904,36 @@ struct ChatDetailView: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, WhatsAppChatLayout.bubblePadH)
                     .padding(.top, WhatsAppChatLayout.bubblePadV)
-                    .padding(.bottom, WhatsAppChatLayout.bubblePadV)
+                    .padding(
+                        .bottom,
+                        WhatsAppChatLayout.bubblePadV
+                            + WhatsAppChatLayout.metadataHeight
+                            + WhatsAppChatLayout.metadataGap
+                    )
+                    .frame(
+                        minWidth: WhatsAppChatLayout.metadataWidth(
+                            time: TimeFmt.messageClock(p.at),
+                            tickCount: 1
+                        ) + WhatsAppChatLayout.bubblePadH * 2,
+                        alignment: .leading
+                    )
                     .background(BubbleFill(mine: true, tail: showsTail))
+                    .overlay(alignment: .bottomTrailing) {
+                        HStack(spacing: 3) {
+                            Text(TimeFmt.messageClock(p.at))
+                                .font(pf(10.5))
+                                .monospacedDigit()
+                            WhatsAppMessageTicks(
+                                count: MessageDeliveryState.sent.tickCount,
+                                color: MessageDeliveryState.sent.color
+                            )
+                        }
+                        .foregroundColor(ChatTheme.mineSecondaryInk)
+                        .padding(.trailing, WhatsAppChatLayout.bubblePadH)
+                        .padding(.bottom, WhatsAppChatLayout.bubblePadV)
+                    }
                     .opacity(p.failed ? 0.9 : 1)
                 }
-                HStack(spacing: 3) {
-                    Text(TimeFmt.messageClock(p.at))
-                        .font(pf(10.5))
-                        .monospacedDigit()
-                    WhatsAppMessageTicks(
-                        count: MessageDeliveryState.sent.tickCount,
-                        color: MessageDeliveryState.sent.color
-                    )
-                }
-                .foregroundColor(ChatTheme.mineSecondaryInk)
-                .padding(.trailing, WhatsAppChatLayout.bubblePadH)
                 if p.failed, let reason = p.failureReason, !reason.isEmpty {
                     deliveryFailureCard(DeliveryFailureCopy.make(reason: reason))
                 }
@@ -9190,6 +9205,36 @@ struct MessageRow: View {
                         .padding(.top, WhatsAppChatLayout.bubblePadV)
                     }
                 }
+                .overlay(alignment: .bottomTrailing) {
+                    HStack(spacing: 3) {
+                        Text(TimeFmt.messageClock(message.createdAt))
+                            .font(metadataFont)
+                            .monospacedDigit()
+                            .foregroundColor(
+                                senderOverlayUsesLightInk
+                                    ? .white.opacity(0.94)
+                                    : bubbleSecondaryInk
+                            )
+                        if mine,
+                           deliveryState.tickCount > 0,
+                           !message.isRecalled {
+                            WhatsAppMessageTicks(
+                                count: deliveryState.tickCount,
+                                color: deliveryState.color
+                            )
+                        }
+                    }
+                    .padding(.horizontal, senderOverlayUsesLightInk ? 5 : 0)
+                    .padding(.vertical, senderOverlayUsesLightInk ? 2 : 0)
+                    .background {
+                        if senderOverlayUsesLightInk {
+                            Capsule(style: .continuous)
+                                .fill(Color.black.opacity(0.42))
+                        }
+                    }
+                    .padding(.trailing, WhatsAppChatLayout.bubblePadH)
+                    .padding(.bottom, WhatsAppChatLayout.bubblePadV)
+                }
                 .simultaneousGesture(
                     LongPressGesture(minimumDuration: 0.42).onEnded { _ in
                         onRequestActions?()
@@ -9202,8 +9247,6 @@ struct MessageRow: View {
                         if !text.isEmpty { Speaker.shared.speak(text) }
                     }
                 )
-            metadataLine
-                .padding(.top, WhatsAppChatLayout.metadataGap)
             if asrBusy || !asrText.isEmpty {
                 asrLine
             }
@@ -9213,24 +9256,6 @@ struct MessageRow: View {
 
     private var metadataFont: Font {
         pf(10.5, .regular)
-    }
-
-    private var metadataLine: some View {
-        HStack(spacing: 3) {
-            Text(TimeFmt.messageClock(message.createdAt))
-                .font(metadataFont)
-                .monospacedDigit()
-            if mine,
-               deliveryState.tickCount > 0,
-               !message.isRecalled {
-                WhatsAppMessageTicks(
-                    count: deliveryState.tickCount,
-                    color: deliveryState.color
-                )
-            }
-        }
-        .foregroundColor(bubbleSecondaryInk)
-        .padding(.horizontal, WhatsAppChatLayout.bubblePadH)
     }
 
     private var senderOverlayUsesLightInk: Bool {
@@ -9246,6 +9271,15 @@ struct MessageRow: View {
 
     private var textBubbleBottomPadding: CGFloat {
         WhatsAppChatLayout.bubblePadV
+            + WhatsAppChatLayout.metadataHeight
+            + WhatsAppChatLayout.metadataGap
+    }
+
+    private var metadataMinimumWidth: CGFloat {
+        WhatsAppChatLayout.metadataWidth(
+            time: TimeFmt.messageClock(message.createdAt),
+            tickCount: mine ? deliveryState.tickCount : 0
+        ) + WhatsAppChatLayout.bubblePadH * 2
     }
 
     private var readableMessageText: String {
@@ -9573,6 +9607,7 @@ struct MessageRow: View {
                 .padding(.horizontal, WhatsAppChatLayout.bubblePadH)
                 .padding(.top, textBubbleTopPadding)
                 .padding(.bottom, textBubbleBottomPadding)
+                .frame(minWidth: metadataMinimumWidth, alignment: .leading)
                 .background(
                     BubbleFill(mine: mine, tail: showTail, glass: false)
                 )
@@ -9639,6 +9674,7 @@ struct MessageRow: View {
         .padding(.horizontal, WhatsAppChatLayout.bubblePadH)
         .padding(.top, textBubbleTopPadding)
         .padding(.bottom, textBubbleBottomPadding)
+        .frame(minWidth: metadataMinimumWidth, alignment: .leading)
         .background(BubbleFill(mine: mine, tail: showTail, glass: false))
     }
 
