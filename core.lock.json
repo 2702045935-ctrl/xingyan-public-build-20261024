@@ -8,13 +8,13 @@
     },
     {
       "path": "Sources/App.swift",
-      "size": 199925,
-      "sha256": "cec7478d579d5effec1976fce5422cd56745f658bd9a80f96d8be484204535d0"
+      "size": 204636,
+      "sha256": "c11fb9533881e65d8574fb15adbd0eba30a39fd069927e83b953e65d5e9a0f57"
     },
     {
       "path": "Sources/Realtime.swift",
-      "size": 19907,
-      "sha256": "2dc30a9ed23a588c8f31f752ba25d7923766d2b50cc0609d1eebf0b4d2fd963f"
+      "size": 20639,
+      "sha256": "2909d44585aa2bfef09e988ad8f0385535f6911337347a18c430cf1b03f7a64f"
     },
     {
       "path": "Sources/CallAudio.swift",

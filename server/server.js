@@ -57,6 +57,11 @@ const {
   isOpsWebAuthPath,
   isProtectedOpsPath
 } = require('./lib/app-ops');
+const {
+  appendMentionIndex,
+  buildMentionIndex,
+  hasUnreadMention
+} = require('./lib/mention-index');
 
 const ROOT = __dirname;
 const PUBLIC_DIR = path.join(ROOT, 'public');
@@ -2783,6 +2788,7 @@ const DEFAULT_BRANDING = {
   updatedAt: ''
 };
 const messageCache = new Map();
+const mentionIndexCache = new Map();
 /* CHRIS_BURN_V1 观察名单：这几条会话里还有「带小火苗」的消息，定时器要盯着它们
    （哪怕开关后来被关掉，也要把已经发出去的那几条烧干净）。 */
 const burnWatch = new Set();
@@ -3204,6 +3210,7 @@ function burnSweepAll() {
     for (let i = list.length - 1; i >= 0; i--) {
       if (goneSet[list[i].id]) list.splice(i, 1);
     }
+    invalidateMentionIndex(chat.id);
     saveMessagesFile(chat.id, list);
     if (!list.some((m) => m && m.burn)) burnWatch.delete(chat.id);
     (chat.memberIds || []).forEach((id) => sendTo(id, { type: 'burn', chatId: chat.id, ids: gone }));
@@ -5958,6 +5965,23 @@ function loadMessages(chatId) {
   return trimmed;
 }
 
+function invalidateMentionIndex(chatId) {
+  if (chatId) mentionIndexCache.delete(chatId);
+}
+
+function mentionIndexForChat(chatId, rows) {
+  const messages = Array.isArray(rows) ? rows : loadMessages(chatId);
+  const cached = mentionIndexCache.get(chatId);
+  if (cached && cached.rows === messages) return cached.index;
+  const index = buildMentionIndex(messages);
+  mentionIndexCache.set(chatId, { rows: messages, index });
+  if (mentionIndexCache.size > 256) {
+    const oldest = mentionIndexCache.keys().next().value;
+    if (oldest && oldest !== chatId) mentionIndexCache.delete(oldest);
+  }
+  return index;
+}
+
 function appendMessage(chatId, message) {
   let duplicate = false;
   if (shardAuthorityRuntime && shardAuthorityRuntime.appliesTo(chatId)) {
@@ -5999,6 +6023,10 @@ function appendMessage(chatId, message) {
   const last = list[list.length - 1];
   if (!last || last.id !== message.id) list.push(message);   // 只看尾巴，几万条也不拖慢
   if (list.length > MAX_CACHE) list.splice(0, list.length - MAX_CACHE);
+  const cachedMentionIndex = mentionIndexCache.get(chatId);
+  if (cachedMentionIndex && cachedMentionIndex.rows === list) {
+    appendMentionIndex(cachedMentionIndex.index, message);
+  }
   captureShardSnapshots(['messageThreads'], {
     messages: { [chatId]: list }
   }, { replace: false });
@@ -8082,19 +8110,13 @@ function chatSummary(chat, forUserId, lastHint, summaryContext) {
      点进会话（客户端报 read）才消失。 */
   let mentionMe = false;
   if (chat.type === 'group') {
-    const rows = summaryContext && Array.isArray(summaryContext.recentMentionRows)
-      ? summaryContext.recentMentionRows
+    const rows = summaryContext && Array.isArray(summaryContext.messageRows)
+      ? summaryContext.messageRows
       : loadMessages(chat.id);
-    const readSeq = (((db.reads || {})[forUserId]) || {})[chat.id] || 0;
-    for (let i = rows.length - 1; i >= 0 && i >= rows.length - 40; i--) {
-      const m = rows[i];
-      if (Number(m.seq || 0) <= readSeq) break;
-      if (m.senderId !== forUserId && (m.mentionAll === true
-          || (Array.isArray(m.mentions) && m.mentions.indexOf(forUserId) >= 0))) {
-        mentionMe = true;
-        break;
-      }
-    }
+    const index = (summaryContext && summaryContext.mentionIndex)
+      || mentionIndexForChat(chat.id, rows);
+    const readSeq = Math.max(lastReadSeq(forUserId, chat.id), clearedSeqFor(forUserId, chat.id));
+    mentionMe = hasUnreadMention(index, forUserId, readSeq);
   }
   /* 位置/地图预览是独立卡片语义，不要把 @ 提示混进地图地址；只有文字消息才加。 */
   if (mentionMe && preview && previewSrc && previewSrc.kind === 'text') {
@@ -8969,9 +8991,11 @@ function fanoutChatMessage(chat, message, sender, clientId) {
   const summaryContext = {
     online,
     memberPreviewIds,
-    messageRows,
-    recentMentionRows: chat.type === 'group' ? messageRows.slice(-40) : null
+    messageRows
   };
+  if (chat.type === 'group') {
+    summaryContext.mentionIndex = mentionIndexForChat(chat.id, messageRows);
+  }
   /* 多人同时在线时，把「哪些消息算未读、谁被 @」只建一次索引。
      以前每个收件人都会重新遍历同一份消息缓存，1 万人群会放大成万倍。 */
   if (recipients.length > 1) {
@@ -12600,6 +12624,7 @@ function recallMessage(user, chatId, messageId) {
   msg.recalled = true;
   saveMessagesFile(chat.id, messages);
   messageCache.delete(chat.id);
+  invalidateMentionIndex(chat.id);
   if (messageReliability) {
     messageReliability.recordEvent('message.recalled', msg.id, Number(msg.seq) || 0, {
       chatId: chat.id,
@@ -23498,6 +23523,7 @@ async function handleApi(req, res, pathname, query) {
       for (let i = list.length - 1; i >= 0; i--) {
         if (goneSet[list[i].id]) list.splice(i, 1);
       }
+      invalidateMentionIndex(chat.id);
       saveMessagesFile(chat.id, list);
       chat.memberIds.forEach((id) => sendTo(id, { type: 'burn', chatId: chat.id, ids: gone }));
     } else if (changed) {
@@ -25888,6 +25914,7 @@ async function handleHttpRequest(req, res) {
            接收片必须丢掉旧缓存；否则离线后重进会话时看不到这张卡片，
            unreadCount() 也会按旧消息尾巴算出 0，红点不出现。 */
         messageCache.delete(relayChatId);
+        invalidateMentionIndex(relayChatId);
       }
       if (body.payload.type === 'moment') refreshMomentsFromDisk(true);
       if (body.payload.type === 'chat') refreshChatAccessStateFromDisk(true);
@@ -29141,6 +29168,7 @@ async function handleOps(req, res, parts, query) {
     const msg = messages.find((m) => m.id === parts[2]);
     if (!msg) return fail(res, 404, '消息不存在');
     msg.recalled = true;
+    invalidateMentionIndex(chat.id);
     try {
       saveMessagesFile(chat.id, messages);
     } catch (err) { return fail(res, 500, '写入失败'); }
@@ -29165,6 +29193,7 @@ async function handleOps(req, res, parts, query) {
     const file = path.join(DATA_DIR, 'messages', chat.id + '.jsonl');
     try { fs.writeFileSync(file, ''); } catch (err) { /* 忽略 */ }
     messageCache.delete(chat.id);
+    invalidateMentionIndex(chat.id);
     if (messageReliability) messageReliability.deleteChatMessages(chat.id);
     audit(req, admin, '清空会话', chat.id, '');
     ok(res, { cleared: true });

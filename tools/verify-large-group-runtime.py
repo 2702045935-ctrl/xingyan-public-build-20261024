@@ -35,7 +35,8 @@ require(
 )
 require(
     "summaryContext.unreadIndex = unreadIndexForMessages(messageRows);" in SERVER
-    and "recentMentionRows: chat.type === 'group' ? messageRows.slice(-40) : null" in SERVER
+    and "summaryContext.mentionIndex = mentionIndexForChat(chat.id, messageRows);" in SERVER
+    and "mentionMe = hasUnreadMention(index, forUserId, readSeq);" in SERVER
     and "if (mentionAll) message.mentionAll = true;" in SERVER
     and "const mentionHintProvided = Array.isArray(mentionHint);" in SERVER
     and "if (!mentionHintProvided) {" in SERVER

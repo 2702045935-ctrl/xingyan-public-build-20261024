@@ -325,6 +325,30 @@ async function main() {
     assert.strictEqual(event.chat.unread, 4);
     assert.ok(event.message.content.indexOf('@所有人') >= 0);
 
+    for (let index = 0; index < 45; index += 1) {
+      response = await call(base, senderSession.cookie, 'POST',
+        '/api/chats/' + CHAT_ID + '/messages', {
+          kind: 'text',
+          content: 'large group trailing message ' + index,
+          clientId: 'large-group-trailing-' + index,
+          mentions: []
+        });
+      assert.strictEqual(response.status, 200, JSON.stringify(response.data));
+    }
+    response = await call(base, recipientASession.cookie, 'GET', '/api/chats');
+    assert.strictEqual(response.status, 200, JSON.stringify(response.data));
+    let mentionRow = (response.data.chats || []).find((row) => row.id === CHAT_ID);
+    assert.strictEqual(mentionRow.lastMessage.mentionMe, true,
+      'an unread mention must survive more than forty newer group messages');
+    assert.ok(mentionRow.lastMessage.preview.indexOf('trailing message 44') >= 0,
+      'the preview must remain the latest message while the mention marker persists');
+
+    response = await call(base, recipientBSession.cookie, 'GET', '/api/chats');
+    assert.strictEqual(response.status, 200, JSON.stringify(response.data));
+    mentionRow = (response.data.chats || []).find((row) => row.id === CHAT_ID);
+    assert.strictEqual(mentionRow.lastMessage.mentionMe, true,
+      'an unread @all marker must also survive more than forty newer messages');
+
     response = await call(base, ownerSession.cookie, 'POST', '/api/chats/' + CHAT_ID + '/invite', {});
     assert.strictEqual(response.status, 200, JSON.stringify(response.data));
     const inviteCode = response.data.code;

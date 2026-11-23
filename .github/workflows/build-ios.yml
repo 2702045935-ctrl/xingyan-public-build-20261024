@@ -136,6 +136,7 @@ jobs:
           python3 tools/verify-native-top-masks.py
           python3 tools/verify-group-membership-send.py
           python3 tools/verify-chat-unread-reconcile.py
+          python3 tools/verify-realtime-chat-state.py
           python3 tools/verify-friend-removal-consistency.py
           python3 tools/verify-pin-owner-routing.py
           python3 tools/verify-dark-neutral-palette.py
@@ -166,6 +167,7 @@ jobs:
         run: |
           node server/test/security-vault.test.js
           node server/test/chat-actions.test.js
+          node server/test/mention-index.test.js
           node server/test/large-group-10000.test.js
           node server/test/media-object-routing.test.js
           node server/test/messages-since.test.js

@@ -25,9 +25,12 @@ final class AppState: ObservableObject {
     /// 刚读过的会话会短暂挡住分片旧快照，避免服务端尚未追上阅读游标时红点闪回。
     private var locallyReadAt: [String: Date] = [:]
     private var suspiciousChatDropCount = 0
+    private var chatSnapshotGeneration = 0
 
     init() {
-
+        Realtime.shared.setChatEventHandler { [weak self] event in
+            self?.handle(event)
+        }
         let cached = Self.cachedUser()
         if let cached, !cached.id.isEmpty {
             chats = LocalStore.cachedChatList(userId: cached.id)
@@ -430,6 +433,20 @@ final class AppState: ObservableObject {
             await work()
             self?.refreshTask = nil
         }
+    }
+
+    @discardableResult
+    private func beginChatSnapshot() -> Int {
+        chatSnapshotGeneration &+= 1
+        return chatSnapshotGeneration
+    }
+
+    private func invalidateChatSnapshots() {
+        chatSnapshotGeneration &+= 1
+    }
+
+    private func acceptsChatSnapshot(_ generation: Int) -> Bool {
+        generation == chatSnapshotGeneration
     }
 
     /// 切号时先清掉账号作用域的数据和旧任务，避免旧账号响应落到新账号界面。
@@ -1083,6 +1100,7 @@ final class AppState: ObservableObject {
 
     private func loadHomeDataParallel() async {
         let epoch = accountEpoch
+        let chatGeneration = beginChatSnapshot()
         loadingChats = true
         async let meRequest = API.shared.me()
         async let chatsRequest = API.shared.chats()
@@ -1097,9 +1115,11 @@ final class AppState: ObservableObject {
         do {
             let fresh = try await chatsRequest
             guard isCurrentAccount(epoch) else { return }
-            let merged = mergeServerChats(fresh)
-            if !AppState.sameChats(chats, merged) { chats = merged }
-            loadError = nil
+            if acceptsChatSnapshot(chatGeneration) {
+                let merged = mergeServerChats(fresh)
+                if !AppState.sameChats(chats, merged) { chats = merged }
+                loadError = nil
+            }
         } catch {
             loadError = nil
         }
@@ -1145,6 +1165,7 @@ final class AppState: ObservableObject {
     func syncRecentMessages(chatCount: Int = 20, limit: Int = 50) async {
         guard !syncInFlight else { return }
         let epoch = accountEpoch
+        let chatGeneration = beginChatSnapshot()
         guard isCurrentAccount(epoch) else { return }
         syncInFlight = true
         let showHint = !UserDefaults.standard.bool(forKey: syncHintKey)
@@ -1168,6 +1189,7 @@ final class AppState: ObservableObject {
         do {
             let r = try await API.shared.chatsWithRecentMessages(chats: chatCount, limit: limit)
             guard isCurrentAccount(epoch) else { return }
+            guard acceptsChatSnapshot(chatGeneration) else { return }
             let merged = mergeServerChats(r.chats)
             if !AppState.sameChats(chats, merged) { chats = merged }
             var total = 0
@@ -1346,6 +1368,7 @@ final class AppState: ObservableObject {
 
     func loadChats() async {
         let epoch = accountEpoch
+        let chatGeneration = beginChatSnapshot()
         let showInitialLoading = chats.isEmpty && !loadingChats
         if showInitialLoading { loadingChats = true }
         defer {
@@ -1356,6 +1379,7 @@ final class AppState: ObservableObject {
         do {
             let fresh = try await API.shared.chats()
             guard let userId = me?.id, !userId.isEmpty, isCurrentAccount(epoch) else { return }
+            guard acceptsChatSnapshot(chatGeneration) else { return }
             let merged = mergeServerChats(fresh)
             let suspiciousDrop = !chats.isEmpty
                 && (merged.isEmpty || merged.count < max(1, chats.count / 2))
@@ -1478,7 +1502,8 @@ final class AppState: ObservableObject {
             if let stamp,
                now.timeIntervalSince(stamp) >= 2,
                !(server.lastMessage?.id ?? "").isEmpty,
-               server.lastMessage?.id == local.lastMessage?.id {
+               server.lastMessage?.id == local.lastMessage?.id,
+               !hasUnresolvedMention(server: server, local: local) {
                 optimisticChats[server.id] = nil
                 optimisticAt[server.id] = nil
                 out = mergeServerChat(server, local: local)
@@ -1561,9 +1586,13 @@ final class AppState: ObservableObject {
                 // 撤回请求成功后，会话快照仍可能短暂返回同一条消息的旧正文。
                 // 已撤回摘要必须压住旧快照，直到服务端追上或出现新的末条消息。
                 out.lastMessage = localLast
-            } else if (server.lastMessage?.preview ?? "").isEmpty,
-                      !(localLast.preview ?? "").isEmpty {
-                out.lastMessage = localLast
+            } else if let serverLast = server.lastMessage {
+                out.lastMessage = mergeSameMessageSummary(
+                    server: serverLast,
+                    local: localLast,
+                    serverUnread: server.unreadCount,
+                    localUnread: local.unreadCount
+                )
             }
         } else if !serverNewer {
             out.lastMessage = localLast
@@ -1578,12 +1607,51 @@ final class AppState: ObservableObject {
         return out
     }
 
+    /// 同一末条消息下，服务端偶尔先返回没有 mention 标记的旧摘要。
+    /// 在服务端追上未读状态前，本地 `@` 只能升级不能降级。
+    private func mergeSameMessageSummary(server: LastMessage,
+                                         local: LastMessage,
+                                         serverUnread: Int,
+                                         localUnread: Int) -> LastMessage {
+        var out = server
+        if (out.id ?? "").isEmpty { out.id = local.id }
+        if (out.preview ?? "").isEmpty { out.preview = local.preview }
+        if (out.senderId ?? "").isEmpty { out.senderId = local.senderId }
+        if (out.senderName ?? "").isEmpty { out.senderName = local.senderName }
+        if (out.kind ?? "").isEmpty { out.kind = local.kind }
+        if (out.createdAt ?? "").isEmpty { out.createdAt = local.createdAt }
+
+        let serverMentioned = serverUnread > 0 && out.mentionMe == true
+        let localMentioned = localUnread > 0 && local.mentionMe == true
+        if serverUnread == 0 {
+            out.mentionMe = false
+        } else if localMentioned && !serverMentioned {
+            out.mentionMe = true
+        }
+        return out
+    }
+
+    private func hasPendingMention(_ chat: Chat) -> Bool {
+        chat.unreadCount > 0 && chat.lastMessage?.mentionMe == true
+    }
+
+    private func hasUnresolvedMention(server: Chat, local: Chat) -> Bool {
+        guard !(server.lastMessage?.id ?? "").isEmpty,
+              server.lastMessage?.id == local.lastMessage?.id else { return false }
+        return hasPendingMention(local)
+            && server.unreadCount > 0
+            && !hasPendingMention(server)
+    }
+
     private func serverCaughtUp(_ server: Chat, local: Chat) -> Bool {
         guard let serverLast = server.lastMessage,
               let localLast = local.lastMessage else {
             return local.lastMessage == nil
         }
         if serverLast.id == localLast.id {
+            if hasUnresolvedMention(server: server, local: local) {
+                return false
+            }
             if recallSummary(localLast), !recallSummary(serverLast) {
                 return false
             }
@@ -1624,6 +1692,7 @@ final class AppState: ObservableObject {
     }
 
     func markChatReadLocally(_ chatId: String) {
+        invalidateChatSnapshots()
         optimisticChats[chatId] = nil
         optimisticAt[chatId] = nil
         locallyReadAt[chatId] = Date()
@@ -1661,6 +1730,7 @@ final class AppState: ObservableObject {
     }
 
     func setChatUnreadLocally(_ chatId: String, unread: Int?, flagged: Bool?) {
+        invalidateChatSnapshots()
         guard let index = chats.firstIndex(where: { $0.id == chatId }) else { return }
         let before = chats[index]
         if (unread ?? 0) > 0 || flagged == true {
@@ -1679,6 +1749,7 @@ final class AppState: ObservableObject {
 
     func applyRecallSummaryLocally(_ chatId: String, messageId: String) {
         guard !chatId.isEmpty, !messageId.isEmpty else { return }
+        invalidateChatSnapshots()
         prefetched[chatId] = nil
         optimisticChats[chatId] = nil
         optimisticAt[chatId] = nil
@@ -1705,6 +1776,7 @@ final class AppState: ObservableObject {
     }
 
     func hideChatLocally(_ chatId: String) {
+        invalidateChatSnapshots()
         let hidden = chats.first(where: { $0.id == chatId })
         locallyHiddenChats.insert(chatId)
         locallyHiddenAt[chatId] = Date()
@@ -1745,6 +1817,7 @@ final class AppState: ObservableObject {
     /// 先在本地补上会话，列表才不会短暂或长期漏掉新聊天。
     func ensureChatVisible(_ chat: Chat, latest: Message? = nil) {
         guard let myId = me?.id, !myId.isEmpty else { return }
+        invalidateChatSnapshots()
         guard !isDismissedGroup(chat) else {
             hideChatLocally(chat.id)
             return
@@ -2067,6 +2140,7 @@ final class AppState: ObservableObject {
 
     /// WebSocket 已带会话摘要时先更新预览与红点，再等后台全量校准。
     private func applyRealtimeChat(_ incoming: Chat) {
+        invalidateChatSnapshots()
         guard !isDismissedGroup(incoming) else {
             hideChatLocally(incoming.id)
             return
@@ -2086,7 +2160,7 @@ final class AppState: ObservableObject {
             let current = rows[index]
             let currentMid = current.lastMessage?.id ?? ""
             let incomingMid = incoming.lastMessage?.id ?? ""
-            var merged = incoming
+            var merged = mergeServerChat(incoming, local: current)
             if let sender = incoming.lastMessage?.senderId, sender != me?.id,
                !incomingMid.isEmpty, incomingMid != currentMid,
                incoming.unreadCount <= current.unreadCount {
@@ -2133,12 +2207,27 @@ final class AppState: ObservableObject {
 
     private func applyRealtimeMessage(_ message: Message, chatId: String,
                                       countUnread: Bool = true) {
+        invalidateChatSnapshots()
         let ids = [message.chatId ?? "", chatId]
         guard let id = ids.first(where: { !$0.isEmpty }),
               let index = chats.firstIndex(where: { $0.id == id }) else { return }
         let before = chats[index]
+        let sameMessage = before.lastMessage?.id == message.id
+        let incomingAt = TimeFmt.date(message.createdAt)
+        let currentAt = TimeFmt.date(before.lastMessage?.createdAt ?? "")
+        let shouldAdvance: Bool
+        if before.lastMessage == nil || sameMessage {
+            shouldAdvance = true
+        } else if let incomingAt, let currentAt {
+            shouldAdvance = incomingAt >= currentAt
+        } else {
+            // 历史数据可能缺 createdAt；有完整新消息时宁可前进，不能永远丢预览。
+            shouldAdvance = true
+        }
+        guard shouldAdvance else { return }
+
         var row = before
-        if countUnread, row.lastMessage?.id != message.id, message.senderId != me?.id {
+        if countUnread, !sameMessage, message.senderId != me?.id {
             row.unread = row.unreadCount + 1
         }
         var preview = Self.realtimePreview(message)
@@ -2154,6 +2243,7 @@ final class AppState: ObservableObject {
             preview: preview,
             createdAt: message.createdAt,
             mentionMe: message.mentionsUser(me?.id ?? "")
+                || (row.unreadCount > 0 && before.lastMessage?.mentionMe == true)
         )
         row.updatedAt = message.createdAt ?? row.updatedAt
         var rows = chats
@@ -2249,6 +2339,7 @@ final class AppState: ObservableObject {
     /// 清空聊天记录后立即丢掉列表预览、预取缓存和本机底稿。
     /// 不能等下一次 loadChats：否则会短暂显示旧预览，重新进会话还会从本机缓存“复活”。
     func forgetChatHistory(_ chatId: String, notify: Bool = true) {
+        invalidateChatSnapshots()
         if let i = chats.firstIndex(where: { $0.id == chatId }) {
             let before = chats[i]
             var c = chats[i]
@@ -2281,8 +2372,14 @@ final class AppState: ObservableObject {
             if (x.avatar ?? "") != (y.avatar ?? "") { return false }
             if (x.moodIcon ?? "") != (y.moodIcon ?? "") { return false }
             if (x.onlineMemberIds ?? []) != (y.onlineMemberIds ?? []) { return false }
+            if (x.lastMessage?.id ?? "") != (y.lastMessage?.id ?? "") { return false }
+            if (x.lastMessage?.senderId ?? "") != (y.lastMessage?.senderId ?? "") { return false }
+            if (x.lastMessage?.senderName ?? "") != (y.lastMessage?.senderName ?? "") { return false }
+            if (x.lastMessage?.kind ?? "") != (y.lastMessage?.kind ?? "") { return false }
             if (x.lastMessage?.preview ?? "") != (y.lastMessage?.preview ?? "") { return false }
             if (x.lastMessage?.createdAt ?? "") != (y.lastMessage?.createdAt ?? "") { return false }
+            if (x.lastMessage?.mentionMe ?? false) != (y.lastMessage?.mentionMe ?? false) { return false }
+            if (x.updatedAt ?? "") != (y.updatedAt ?? "") { return false }
         }
         return true
     }
@@ -2766,6 +2863,11 @@ struct RootView: View {
             }
         }
         .onChange(of: realtime.event) { ev in
+            if Realtime.isChatStateEvent(ev.type) {
+                // AppState 通过逐条事件入口消费这些类型，避免高频消息被
+                // SwiftUI 对单个 @Published 值的合并刷新吃掉。
+                return
+            }
 
             if ev.type == "ui" {
                 Task { await app.refreshUI(force: true) }

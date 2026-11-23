@@ -126,12 +126,29 @@ final class Realtime: ObservableObject {
 
     private var pending: PushEvent?
     private var publishTask: Task<Void, Never>?
+    private var chatEventHandler: ((PushEvent) -> Void)?
 
     private var heartbeat: Task<Void, Never>?
     private let rxClock = RxClock()
 
     private var ackPending: [String: Int] = [:]
     private var ackTask: Task<Void, Never>?
+
+    /// 会话摘要不能走 `@Published event` 的单槽合并：高频群消息会在 SwiftUI
+    /// 合并刷新前覆盖中间事件。这里逐条同步交给 AppState，其他页面仍继续
+    /// 使用公开的 event 流。
+    func setChatEventHandler(_ handler: ((PushEvent) -> Void)?) {
+        chatEventHandler = handler
+    }
+
+    static func isChatStateEvent(_ type: String) -> Bool {
+        switch type {
+        case "message", "chat", "read", "receipt", "sync", "recall", "ready":
+            return true
+        default:
+            return false
+        }
+    }
 
     func ackDelivery(chatId: String, seq: Int) {
         guard !chatId.isEmpty, seq > 0 else { return }
@@ -497,6 +514,10 @@ final class Realtime: ObservableObject {
                 name: .chrisMusicPresenceChanged,
                 object: nil
             )
+        }
+
+        if Self.isChatStateEvent(ev.type) {
+            chatEventHandler?(ev)
         }
 
         let important = ["ui", "friend", "call", "transfer", "transferRemind",
