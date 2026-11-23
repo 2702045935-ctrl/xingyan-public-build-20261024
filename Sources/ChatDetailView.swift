@@ -129,12 +129,8 @@ enum ChatTheme {
     static var usesGlass: Bool { preset == .glass }
     static var page: Color { preset.canvas }
     static var panel: Color { preset.panel }
-    static var bubbleMine: Color {
-        usesGlass ? preset.mine.opacity(0.84) : preset.mine
-    }
-    static var bubbleOther: Color {
-        usesGlass ? preset.other.opacity(0.74) : preset.other
-    }
+    static var bubbleMine: Color { preset.mine }
+    static var bubbleOther: Color { preset.other }
     static let ink = Color.dyn(0x111B21, 0xE9EDEF)
     static var mineInk: Color {
         preset == .wechat
@@ -213,6 +209,25 @@ struct PendingMsg: Identifiable, Hashable {
         default: return "[" + kind + "]"
         }
     }
+}
+
+private final class ChatHistoryRuntime {
+    var loadingOlder = false
+    var olderPrefetch: [Message] = []
+    var olderPrefetchHasMore = false
+    var olderPrefetchTask: Task<Void, Never>?
+    var olderPrefetchToken = UUID()
+
+    var loadingNewer = false
+    var lastOlderLoad = Date.distantPast
+    var lastNewerLoad = Date.distantPast
+    var newerPrefetch: [Message] = []
+    var newerPrefetchHasMore = false
+    var newerPrefetchTask: Task<Void, Never>?
+    var newerPrefetchToken = UUID()
+    var newestKnownSeq = 0
+
+    var holdScroll = false
 }
 
 private enum DeliveryFailureAction {
@@ -466,23 +481,17 @@ struct BubbleFill: View {
 
     private var edgeAlpha: CGFloat { UIConfig.num("bubbleEdge", 0) }
 
-    private var mineFill: LinearGradient {
-        LinearGradient(
-            colors: [
-                ChatTheme.bubbleMine,
-                ChatTheme.bubbleMine.opacity(0.74)
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
+    private var surface: ChatSurfaceStyle {
+        ChatSurfaceMaterial.bubble(
+            mine: mine,
+            dark: usesDarkBackdrop,
+            glass: activeGlass
         )
     }
 
-    private var otherFill: LinearGradient {
+    private var surfaceFill: LinearGradient {
         LinearGradient(
-            colors: [
-                ChatTheme.bubbleOther,
-                ChatTheme.bubbleOther.opacity(0.70)
-            ],
+            colors: [surface.fill, surface.fillEnd],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
@@ -490,46 +499,29 @@ struct BubbleFill: View {
 
     var body: some View {
         ZStack {
-            if mine {
-                if activeGlass {
-                    BubbleShape(mine: mine, tail: tail, pill: capsule)
-                        .fill(mineFill)
-                } else {
-                    BubbleShape(mine: mine, tail: tail, pill: capsule)
-                        .fill(ChatTheme.bubbleMine)
-                }
+            if activeGlass {
+                BubbleShape(mine: mine, tail: tail, pill: capsule)
+                    .fill(surfaceFill)
             } else {
-                if activeGlass {
-                    BubbleShape(mine: mine, tail: tail, pill: capsule)
-                        .fill(otherFill)
-                } else {
-                    BubbleShape(mine: mine, tail: tail, pill: capsule)
-                        .fill(ChatTheme.bubbleOther)
-                }
+                BubbleShape(mine: mine, tail: tail, pill: capsule)
+                    .fill(surface.fill)
             }
 
             if activeGlass {
                 BubbleShape(mine: mine, tail: tail, pill: capsule)
                     .fill(LinearGradient(
                         stops: [
-                            .init(color: Color.white.opacity(usesDarkBackdrop ? 0.13 : 0.34),
-                                  location: 0),
-                            .init(color: Color.white.opacity(0.035), location: 0.33),
+                            .init(color: surface.highlight, location: 0),
+                            .init(color: surface.highlight.opacity(0.20), location: 0.33),
                             .init(color: Color.clear, location: 0.62),
-                            .init(color: Color.black.opacity(usesDarkBackdrop ? 0.07 : 0.035),
-                                  location: 1)
+                            .init(color: surface.shade, location: 1)
                         ],
                         startPoint: .top,
                         endPoint: .bottom
                     ))
 
                 BubbleShape(mine: mine, tail: tail, pill: capsule)
-                    .stroke(
-                        (mine
-                            ? Color.white.opacity(usesDarkBackdrop ? 0.17 : 0.42)
-                            : Color.white.opacity(usesDarkBackdrop ? 0.12 : 0.72)),
-                        lineWidth: 0.8
-                    )
+                    .stroke(surface.border, lineWidth: 0.8)
             }
 
             if UIConfig.num("bubbleGloss", 0) > 0
@@ -1562,21 +1554,9 @@ struct ChatDetailView: View {
 
     @State private var settleTask: Task<Void, Never>? = nil
     @State private var hasOlder = false
-    @State private var loadingOlder = false
-    @State private var olderPrefetch: [Message] = []
-    @State private var olderPrefetchHasMore = false
-    @State private var olderPrefetchTask: Task<Void, Never>?
-    @State private var olderPrefetchToken = UUID()
-    @State private var loadingNewer = false
-    @State private var lastNewerLoad = Date.distantPast
-    @State private var newerPrefetch: [Message] = []
-    @State private var newerPrefetchHasMore = false
-    @State private var newerPrefetchTask: Task<Void, Never>?
-    @State private var newerPrefetchToken = UUID()
-    @State private var newestKnownSeq = 0
+    @State private var historyRuntime = ChatHistoryRuntime()
 
     @State private var loadingAllGroupHistory = false
-    @State private var holdScroll = false
     @State private var allowSettledBottom = false
     @State private var atBottom = true
 
@@ -1584,8 +1564,6 @@ struct ChatDetailView: View {
 
     @State private var scroller: ScrollViewProxy?
     @State private var nativeMessageController = NativeStaticListController()
-
-    @State private var lastOlderLoad = Date.distantPast
 
     @State private var lastReadSyncAt = Date.distantPast
 
@@ -1629,6 +1607,76 @@ struct ChatDetailView: View {
     @State private var mentionIds: [String] = []
 
     @State private var lastInputSnapshot = ""
+
+    private var loadingOlder: Bool {
+        get { historyRuntime.loadingOlder }
+        nonmutating set { historyRuntime.loadingOlder = newValue }
+    }
+
+    private var olderPrefetch: [Message] {
+        get { historyRuntime.olderPrefetch }
+        nonmutating set { historyRuntime.olderPrefetch = newValue }
+    }
+
+    private var olderPrefetchHasMore: Bool {
+        get { historyRuntime.olderPrefetchHasMore }
+        nonmutating set { historyRuntime.olderPrefetchHasMore = newValue }
+    }
+
+    private var olderPrefetchTask: Task<Void, Never>? {
+        get { historyRuntime.olderPrefetchTask }
+        nonmutating set { historyRuntime.olderPrefetchTask = newValue }
+    }
+
+    private var olderPrefetchToken: UUID {
+        get { historyRuntime.olderPrefetchToken }
+        nonmutating set { historyRuntime.olderPrefetchToken = newValue }
+    }
+
+    private var loadingNewer: Bool {
+        get { historyRuntime.loadingNewer }
+        nonmutating set { historyRuntime.loadingNewer = newValue }
+    }
+
+    private var lastOlderLoad: Date {
+        get { historyRuntime.lastOlderLoad }
+        nonmutating set { historyRuntime.lastOlderLoad = newValue }
+    }
+
+    private var lastNewerLoad: Date {
+        get { historyRuntime.lastNewerLoad }
+        nonmutating set { historyRuntime.lastNewerLoad = newValue }
+    }
+
+    private var newerPrefetch: [Message] {
+        get { historyRuntime.newerPrefetch }
+        nonmutating set { historyRuntime.newerPrefetch = newValue }
+    }
+
+    private var newerPrefetchHasMore: Bool {
+        get { historyRuntime.newerPrefetchHasMore }
+        nonmutating set { historyRuntime.newerPrefetchHasMore = newValue }
+    }
+
+    private var newerPrefetchTask: Task<Void, Never>? {
+        get { historyRuntime.newerPrefetchTask }
+        nonmutating set { historyRuntime.newerPrefetchTask = newValue }
+    }
+
+    private var newerPrefetchToken: UUID {
+        get { historyRuntime.newerPrefetchToken }
+        nonmutating set { historyRuntime.newerPrefetchToken = newValue }
+    }
+
+    private var newestKnownSeq: Int {
+        get { historyRuntime.newestKnownSeq }
+        nonmutating set { historyRuntime.newestKnownSeq = newValue }
+    }
+
+    private var holdScroll: Bool {
+        get { historyRuntime.holdScroll }
+        nonmutating set { historyRuntime.holdScroll = newValue }
+    }
 
     private var myId: String { app.me?.id ?? "" }
     private var isGroup: Bool {
@@ -2244,15 +2292,17 @@ struct ChatDetailView: View {
     }
 
     private var adaptiveSystemSurface: Color {
-        senderNameUsesLightInk
-            ? Color.black.opacity(0.40)
-            : Color.white.opacity(0.76)
+        ChatSurfaceMaterial.system(
+            dark: senderNameUsesLightInk,
+            plain: false
+        ).fill
     }
 
     private var adaptiveSystemBorder: Color {
-        senderNameUsesLightInk
-            ? Color.white.opacity(0.16)
-            : Color.black.opacity(0.07)
+        ChatSurfaceMaterial.system(
+            dark: senderNameUsesLightInk,
+            plain: false
+        ).border
     }
 
     private var adaptiveMicInk: Color {
@@ -3325,12 +3375,10 @@ struct ChatDetailView: View {
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(spacing: 0) {
                         securityNotice
-                            .padding(.horizontal, L.msgPad)
 
                         ForEach(messages) { message in
                             messageBlock(message)
                                 .id(message.id)
-                                .padding(.horizontal, L.msgPad)
                         }
 
                         ForEach(outbox) { pending in
@@ -3345,7 +3393,6 @@ struct ChatDetailView: View {
                                                    phase: mediaUploadPhase)
                             }
                             .padding(.bottom, 12)
-                            .padding(.trailing, 6)
                         }
 
                         if !sendingFileName.isEmpty {
@@ -3358,7 +3405,6 @@ struct ChatDetailView: View {
                                                   detailText: fileUploadDetail)
                             }
                             .padding(.bottom, 12)
-                            .padding(.trailing, 6)
                         }
 
                         Color.clear
@@ -3808,6 +3854,7 @@ struct ChatDetailView: View {
                 UIConfig.num("chatDeliveryTicks", 0) > 0
                     ? deliveryState(for: message).accessibilityText
                     : "",
+                isRunStart(message) ? "run-start" : "run-mid",
                 isRunEnd(message) ? "tail" : "no-tail",
                 asrBusy.contains(message.id) ? "asr-busy" : "",
                 backgroundPath,
@@ -3853,7 +3900,9 @@ struct ChatDetailView: View {
             messageID: message.id,
             text: message.body,
             mine: mine,
-            senderName: (!mine && isGroup) ? senderNameFor(message) : "",
+            senderName: (!mine && isGroup && isRunStart(message))
+                ? senderNameFor(message)
+                : "",
             senderNameColor: UIColor(groupSenderNameColor(message)),
             avatarPath: senderAvatarFor(message),
             avatarSize: L.chatAvatar,
@@ -3867,8 +3916,10 @@ struct ChatDetailView: View {
             bubbleColor: UIColor(mine ? ChatTheme.bubbleMine : ChatTheme.bubbleOther),
             secondaryColor: UIColor(ChatTheme.secondary),
             mentionColor: UIColor(mine ? ChatTheme.mentionMeOnMine : ChatTheme.mentionMe),
-            showTail: isRunEnd(message),
-            bubbleGlass: ChatTheme.usesGlass
+            showTail: !ChatTheme.usesGlass && isRunEnd(message),
+            bubbleGlass: ChatTheme.usesGlass,
+            showsAvatar: !mine && isRunStart(message),
+            reservesAvatarSpace: !mine
         )
     }
 
@@ -3895,9 +3946,22 @@ struct ChatDetailView: View {
             bubbleColor: UIColor(ChatTheme.bubbleMine),
             secondaryColor: UIColor(ChatTheme.mineSecondaryInk),
             mentionColor: UIColor(ChatTheme.mentionMeOnMine),
-            showTail: true,
-            bubbleGlass: ChatTheme.usesGlass
+            showTail: pendingShowsTail(pending),
+            bubbleGlass: ChatTheme.usesGlass,
+            showsAvatar: false,
+            reservesAvatarSpace: false
         )
+    }
+
+    private func pendingShowsTail(_ pending: PendingMsg) -> Bool {
+        guard !ChatTheme.usesGlass else { return false }
+        let pendingIndex = outbox.firstIndex(where: { $0.id == pending.id }) ?? 0
+        guard pendingIndex == 0, let last = messages.last else {
+            return pendingIndex == 0
+        }
+        if last.senderId != myId { return true }
+        guard let date = TimeFmt.date(last.createdAt) else { return true }
+        return pending.at.timeIntervalSince(date) >= 300
     }
 
     private func nativeChatMediaModel(_ item: NativeGroupItem) -> NativeChatMediaRowModel? {
@@ -3950,7 +4014,9 @@ struct ChatDetailView: View {
             messageID: message.id,
             kind: media,
             mine: mine,
-            senderName: (!mine && isGroup) ? senderNameFor(message) : "",
+            senderName: (!mine && isGroup && isRunStart(message))
+                ? senderNameFor(message)
+                : "",
             senderNameColor: UIColor(groupSenderNameColor(message)),
             avatarPath: senderAvatarFor(message),
             avatarSize: L.chatAvatar,
@@ -3961,8 +4027,10 @@ struct ChatDetailView: View {
             primaryColor: UIColor(mine ? ChatTheme.mineInk : ChatTheme.ink),
             secondaryColor: UIColor(mine ? ChatTheme.mineSecondaryInk : ChatTheme.secondary),
             bubbleColor: UIColor(mine ? ChatTheme.bubbleMine : ChatTheme.bubbleOther),
-            showTail: isRunEnd(message),
-            bubbleGlass: ChatTheme.usesGlass
+            showTail: !ChatTheme.usesGlass && isRunEnd(message),
+            bubbleGlass: ChatTheme.usesGlass,
+            showsAvatar: !mine && isRunStart(message),
+            reservesAvatarSpace: !mine
         )
     }
 
@@ -4745,15 +4813,7 @@ struct ChatDetailView: View {
     private var atBottomNow: Bool { wasAtBottom || atBottom }
 
     private func pendingBubble(_ p: PendingMsg) -> some View {
-        let pendingIndex = outbox.firstIndex(where: { $0.id == p.id }) ?? 0
-        let showsTail: Bool = {
-            guard pendingIndex == 0, let last = messages.last else {
-                return pendingIndex == 0
-            }
-            if last.senderId != myId { return true }
-            guard let date = TimeFmt.date(last.createdAt) else { return true }
-            return p.at.timeIntervalSince(date) >= 300
-        }()
+        let showsTail = pendingShowsTail(p)
         return HStack(alignment: .top, spacing: 0) {
             Spacer(minLength: 0)
             VStack(alignment: .trailing, spacing: 2) {
@@ -4796,12 +4856,6 @@ struct ChatDetailView: View {
             }
             .frame(maxWidth: isGroup ? groupBubbleMaxWidth : L.bubbleMaxW,
                    alignment: .trailing)
-            Spacer().frame(width: L.chatGapMsg)
-            Avatar(path: app.me?.avatarPath ?? "",
-                   size: L.chatAvatar,
-                   radius: L.chatAvatar / 2,
-                   circle: true,
-                   level: GrowthStore.shared.shownLevel)
         }
         .padding(.vertical, 4)
         .id(p.id)
@@ -5136,7 +5190,9 @@ struct ChatDetailView: View {
                    mine: mineFor(message),
                    deliveryState: deliveryState(for: message),
                    myId: myId,
-                   senderName: senderNameFor(message),
+                   senderName: (!mineFor(message) && isGroup && isRunStart(message))
+                       ? senderNameFor(message)
+                       : "",
                    senderNameUsesLightInk: senderNameUsesLightInk,
                    senderNameColor: groupSenderNameColor(message),
                    wallpaperTint: wallpaperBottomTint,
@@ -5145,11 +5201,11 @@ struct ChatDetailView: View {
                    senderOnline: senderIsOnline(message),
                    avatarSize: L.chatAvatar,
                    maxBubbleWidth: isGroup ? groupBubbleMaxWidth : L.bubbleMaxW,
-                   showsAvatar: true,
-                   reservesAvatarSpace: true,
+                   showsAvatar: !mineFor(message) && isRunStart(message),
+                   reservesAvatarSpace: !mineFor(message),
                    currentNickname: app.me?.nickname ?? "",
                    currentUsername: app.me?.username ?? "",
-                   showTail: isRunEnd(message),
+                   showTail: !ChatTheme.usesGlass && isRunEnd(message),
                    showsDeliveryTicks: UIConfig.num("chatDeliveryTicks", 0) > 0,
                    onTapTransfer: { info in billInfo = info },
                    onOpenImage: { path in openImage(path) },
@@ -10104,14 +10160,21 @@ struct MessageRow: View {
         .padding(.horizontal, 13)
         .frame(width: min(224, maxBubbleWidth), height: 72, alignment: .leading)
         .background {
-            RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
-                             style: .continuous)
-                .fill(mine ? ChatTheme.bubbleMine : ChatMessageSurface.cardFill)
+            ZStack {
+                if ChatTheme.usesGlass {
+                    RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
+                                     style: .continuous)
+                        .fill(.ultraThinMaterial)
+                }
+                RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
+                                 style: .continuous)
+                    .fill(ChatMessageSurface.cardFill(mine: mine))
+            }
         }
         .overlay {
             RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
                              style: .continuous)
-                .stroke(mine ? Color.white.opacity(0.08) : ChatMessageSurface.cardBorder,
+                .stroke(ChatMessageSurface.cardBorder,
                         lineWidth: 0.5)
         }
         .contentShape(RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,

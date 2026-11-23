@@ -39,7 +39,8 @@ require(
     "var glass: Bool = false" in CHAT
     and "private var activeGlass: Bool { glass || ChatTheme.usesGlass }" in CHAT
     and "if activeGlass {" in CHAT
-    and ".fill(ChatTheme.bubbleMine)" in CHAT
+    and "ChatSurfaceMaterial.bubble(" in CHAT
+    and ".fill(surface.fill)" in CHAT
     and "BubbleFill(mine: mine, tail: showTail, glass: false)" in CHAT,
     "classic bubbles must stay flat while the glass preset opts into translucent fills",
 )
@@ -59,7 +60,8 @@ require(
     and "static let gridRadius: CGFloat = 4" in CARDS
     and ".fill(ChatMessageSurface.cardFill)" in CARDS
     and ".stroke(ChatMessageSurface.cardBorder, lineWidth: 0.5)" in CARDS
-    and "ChatTheme.usesGlass\n            ? ChatTheme.bubbleOther" in CARDS
+    and "if ChatTheme.usesGlass {" in CARDS
+    and ".opacity(mine ? 0.84 : 0.74)" in CARDS
     and ".fill(.ultraThinMaterial)" in CARDS
     and ".regularMaterial" not in CARDS,
     "message cards must keep the flat theme and use the glass material when selected",
@@ -67,9 +69,8 @@ require(
 require(
     "ChatMessageSurface.mediaRadius" in CHAT
     and "ChatMessageSurface.innerRadius" in CHAT
-    and ".fill(mine ? ChatTheme.bubbleMine : ChatMessageSurface.cardFill)" in CHAT
-    and ".stroke(mine ? Color.white.opacity(0.08) : ChatMessageSurface.cardBorder"
-    in CHAT,
+    and ".fill(ChatMessageSurface.cardFill(mine: mine))" in CHAT
+    and ".stroke(ChatMessageSurface.cardBorder," in CHAT,
     "media cards, file cards and quotes must share the message surface tokens",
 )
 require(
@@ -84,6 +85,29 @@ require(
     and "width: max(1, bubbleWidth - tailInset)" in MEDIA_ROW
     and "imageView.frame = body" in MEDIA_ROW,
     "native media content must stay anchored inside its message bubble",
+)
+require(
+    "model.horizontalMargin + available - resolved.bubbleWidth" in (
+        ROOT / "Sources" / "NativeChatTextRowCell.swift"
+    ).read_text(encoding="utf-8")
+    and "model.horizontalMargin + available - bubbleWidth" in MEDIA_ROW
+    and "model.horizontalMargin + avatarReserve" in (
+        ROOT / "Sources" / "NativeChatTextRowCell.swift"
+    ).read_text(encoding="utf-8")
+    and "model.horizontalMargin + avatarReserve" in MEDIA_ROW
+    and "available - avatarReserve" in (
+        ROOT / "Sources" / "NativeChatTextRowCell.swift"
+    ).read_text(encoding="utf-8")
+    and "available - avatarReserve" in MEDIA_ROW,
+    "text and media bubbles must share the same left and right alignment rails",
+)
+short_start = CHAT.index("private var shortConversationSurface")
+short_end = CHAT.index("private func scrollShortConversationToBottom", short_start)
+short_surface = CHAT[short_start:short_end]
+require(
+    ".padding(.horizontal, L.msgPad)" not in short_surface
+    and ".padding(.trailing, 6)" not in short_surface,
+    "short conversations must use one shared edge rail for text, pending and upload bubbles",
 )
 require(
     "private let extraImageViews" in MEDIA_ROW
@@ -139,14 +163,19 @@ require(
     "the chat overflow control must use restrained dots in a 44pt hit target",
 )
 require(
-    "showsAvatar: true" in CHAT
-    and "showTail: isRunEnd(message)" in CHAT
+    "showsAvatar: !mine && isRunStart(message)" in CHAT
+    and "reservesAvatarSpace: !mine" in CHAT
+    and "showsAvatar: !mineFor(message) && isRunStart(message)" in CHAT
+    and "reservesAvatarSpace: !mineFor(message)" in CHAT
+    and "showTail: !ChatTheme.usesGlass && isRunEnd(message)" in CHAT
+    and "showTail: pendingShowsTail(pending)" in CHAT
+    and "guard !ChatTheme.usesGlass else { return false }" in CHAT
     and "bubble.showTail = next.showTail" in (
         ROOT / "Sources" / "NativeChatTextRowCell.swift"
     ).read_text(encoding="utf-8")
     and "return displayName(message)" in CHAT
     and 'UIConfig.num("chatDeliveryTicks", 0) > 0' in CHAT,
-    "WeChat rows must keep avatars and use tails only at message-run ends",
+    "legacy rows keep run-end tails while glass bubbles stay uniform capsules",
 )
 require(
     "var showsDeliveryTicks: Bool = true" in CHAT

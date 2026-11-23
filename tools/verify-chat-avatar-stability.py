@@ -4,6 +4,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = (ROOT / "Sources" / "NativeChatRowCell.swift").read_text(encoding="utf-8")
+TEXT_ROW = (ROOT / "Sources" / "NativeChatTextRowCell.swift").read_text(encoding="utf-8")
+MEDIA_ROW = (ROOT / "Sources" / "NativeChatMediaRowCell.swift").read_text(encoding="utf-8")
 CORE = (ROOT / "Sources" / "Core.swift").read_text(encoding="utf-8")
 APP = (ROOT / "Sources" / "App.swift").read_text(encoding="utf-8")
 
@@ -64,6 +66,13 @@ require(
     and ".id(ImageCacheKey.stablePath(path))" in CORE
     and "private static func cacheIdentity" in CORE,
     "SwiftUI avatars must keep one cache identity across signed URL refreshes",
+)
+require(
+    "avatar.isHidden = !next.showsAvatar" in TEXT_ROW
+    and "avatar.isHidden = !next.showsAvatar" in MEDIA_ROW
+    and "if next.showsAvatar {\n            avatar.configure(" in TEXT_ROW
+    and "if next.showsAvatar {\n            avatar.configure(" in MEDIA_ROW,
+    "collapsed native message runs must not start avatar I/O while scrolling",
 )
 
 print("chat-avatar-stability: passed")

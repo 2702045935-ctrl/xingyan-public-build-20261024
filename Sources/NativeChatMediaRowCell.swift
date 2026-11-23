@@ -24,6 +24,8 @@ struct NativeChatMediaRowModel {
     var bubbleColor: UIColor
     var showTail: Bool
     var bubbleGlass: Bool
+    var showsAvatar: Bool = true
+    var reservesAvatarSpace: Bool = true
 }
 
 private final class NativeMediaImageView: UIImageView {
@@ -187,7 +189,10 @@ final class NativeChatMediaRowView: UIView {
 
     func configure(_ next: NativeChatMediaRowModel) {
         model = next
-        avatar.configure(path: next.avatarPath, name: next.senderName)
+        avatar.isHidden = !next.showsAvatar
+        if next.showsAvatar {
+            avatar.configure(path: next.avatarPath, name: next.senderName)
+        }
         senderLabel.text = next.senderName
         senderLabel.textColor = next.senderNameColor
         senderLabel.textAlignment = next.mine ? .right : .left
@@ -268,6 +273,9 @@ final class NativeChatMediaRowView: UIView {
         guard let model else { return }
         let available = max(1, bounds.width - model.horizontalMargin * 2)
         let nameHeight: CGFloat = model.senderName.isEmpty ? 0 : 17
+        let avatarReserve = model.reservesAvatarSpace
+            ? model.avatarSize + model.avatarGap
+            : 0
         let avatarX = model.mine
             ? model.horizontalMargin + available - model.avatarSize
             : model.horizontalMargin
@@ -276,25 +284,25 @@ final class NativeChatMediaRowView: UIView {
         senderLabel.isHidden = model.senderName.isEmpty
         let nameX = model.mine
             ? model.horizontalMargin
-            : model.horizontalMargin + model.avatarSize + model.avatarGap
+            : model.horizontalMargin + avatarReserve
         senderLabel.frame = CGRect(
             x: nameX,
             y: 0,
-            width: max(0, available - model.avatarSize - model.avatarGap),
+            width: max(0, available - avatarReserve),
             height: nameHeight
         )
 
         let bubbleWidth = Self.bubbleWidth(for: model, available: available)
         let bubbleHeight = Self.bubbleHeight(for: model, width: bubbleWidth)
+        let tailInset: CGFloat = model.showTail ? 6 : 0
         let bubbleX = model.mine
-            ? model.horizontalMargin + available - model.avatarSize - model.avatarGap - bubbleWidth
-            : model.horizontalMargin + model.avatarSize + model.avatarGap
+            ? model.horizontalMargin + available - bubbleWidth + tailInset
+            : model.horizontalMargin + avatarReserve - tailInset
         bubble.frame = CGRect(x: bubbleX, y: nameHeight,
                               width: bubbleWidth, height: bubbleHeight)
         // Native media subviews live in the row coordinate space, not inside
         // the bubble. Anchor their body to the bubble itself and reserve the
         // tail-only strip so images and file cards cannot drift out of frame.
-        let tailInset: CGFloat = model.showTail ? 6 : 0
         let body = CGRect(
             x: bubble.frame.minX + (model.mine ? 0 : tailInset),
             y: bubble.frame.minY,
@@ -375,8 +383,11 @@ final class NativeChatMediaRowView: UIView {
     private static func bubbleWidth(for model: NativeChatMediaRowModel,
                                     available: CGFloat) -> CGFloat {
         let tail: CGFloat = model.showTail ? 6 : 0
+        let avatarReserve = model.reservesAvatarSpace
+            ? model.avatarSize + model.avatarGap
+            : 0
         let usable = max(80, min(model.maxBubbleWidth,
-                                 available - model.avatarSize - model.avatarGap))
+                                 available - avatarReserve))
         switch model.kind {
         case .image(_, let pixel):
             let thumb: CGSize

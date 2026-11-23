@@ -278,6 +278,8 @@ where Item.ID: Hashable {
         private var warmHosts: [Item.ID: (signature: String,
                                           host: UIHostingController<AnyView>)] = [:]
         private var deferredWarmIDs: [Item.ID] = []
+        private var deferredMeasureIDs: [Item.ID] = []
+        private var deferredMeasureQueued = false
         private var width: CGFloat = 0
         private var pending: [Item]?
         private var applyGeneration = 0
@@ -545,10 +547,15 @@ where Item.ID: Hashable {
             pending = nil
             let moving = collection.isDragging || collection.isTracking
                 || collection.isDecelerating
-            premeasure(isPrepending
+            let idsToPrepare = isPrepending
                 ? Array(Set(changed).union(nextOrder.filter { !knownOld.contains($0) }))
-                : nextOrder,
-                nativeOnly: moving)
+                : nextOrder
+            premeasure(idsToPrepare, nativeOnly: moving)
+            if moving {
+                queueDeferredHeights(
+                    idsToPrepare.filter { heights[$0] == nil }
+                )
+            }
             let warmIDs = Array(nextOrder.suffix(waitsForInitialBottom ? 40 : 24))
             if moving {
                 enqueueWarm(warmIDs)
@@ -806,6 +813,42 @@ where Item.ID: Hashable {
                 if nativeOnly, nativeHeight?(item, width) == nil { continue }
                 heights[id] = measuredHeight(item, width: width)
             }
+        }
+
+        private func queueDeferredHeights(_ ids: [Item.ID]) {
+            guard !ids.isEmpty else { return }
+            var known = Set(deferredMeasureIDs)
+            for id in ids where heights[id] == nil && known.insert(id).inserted {
+                deferredMeasureIDs.append(id)
+            }
+            if deferredMeasureIDs.count > 240 {
+                deferredMeasureIDs.removeFirst(deferredMeasureIDs.count - 240)
+            }
+            scheduleDeferredHeightMeasurement()
+        }
+
+        private func scheduleDeferredHeightMeasurement() {
+            guard !deferredMeasureQueued, !deferredMeasureIDs.isEmpty else { return }
+            deferredMeasureQueued = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.004) { [weak self] in
+                self?.drainDeferredHeightMeasurement()
+            }
+        }
+
+        private func drainDeferredHeightMeasurement() {
+            deferredMeasureQueued = false
+            guard let collection else {
+                deferredMeasureIDs.removeAll(keepingCapacity: true)
+                return
+            }
+            let width = max(1, collection.bounds.width)
+            while let id = deferredMeasureIDs.first {
+                deferredMeasureIDs.removeFirst()
+                guard heights[id] == nil, let item = lookup[id] else { continue }
+                heights[id] = measuredHeight(item, width: width)
+                break
+            }
+            scheduleDeferredHeightMeasurement()
         }
 
         private func measuredHeight(_ item: Item, width: CGFloat) -> CGFloat {

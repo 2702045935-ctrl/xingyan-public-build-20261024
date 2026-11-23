@@ -19,6 +19,15 @@ require(
     "older history must stay prefetched ahead of the viewport",
 )
 require(
+    "private final class ChatHistoryRuntime" in CHAT
+    and "@State private var historyRuntime = ChatHistoryRuntime()" in CHAT
+    and "nonmutating set { historyRuntime.lastOlderLoad = newValue }" in CHAT
+    and "nonmutating set { historyRuntime.olderPrefetch = newValue }" in CHAT
+    and "@State private var lastOlderLoad" not in CHAT
+    and "@State private var olderPrefetch" not in CHAT,
+    "prefetch bookkeeping must not invalidate the SwiftUI message list while scrolling",
+)
+require(
     "if olderPrefetch.isEmpty, let pending = olderPrefetchTask" in CHAT
     and "await pending.value" in CHAT,
     "foreground paging must reuse an in-flight prefetch instead of waiting twice",
@@ -129,6 +138,13 @@ require(
     and "attributes.frame.minY - anchor.delta" in NATIVE
     and "clearPendingPrepend()" in NATIVE,
     "native prepend must restore the visible row before the next frame",
+)
+require(
+    "private var deferredMeasureIDs" in NATIVE
+    and "queueDeferredHeights(" in NATIVE
+    and "drainDeferredHeightMeasurement()" in NATIVE
+    and "queueDeferredHeights(\n                    idsToPrepare.filter { heights[$0] == nil }\n                )" in NATIVE,
+    "fallback row heights must warm up incrementally after a moving-page insert",
 )
 require(
     "ChatScrollHandle.shared.prepareForPrepend()" in CHAT

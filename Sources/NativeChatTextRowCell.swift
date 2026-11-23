@@ -20,6 +20,8 @@ struct NativeChatTextRowModel {
     var mentionColor: UIColor
     var showTail: Bool
     var bubbleGlass: Bool
+    var showsAvatar: Bool = true
+    var reservesAvatarSpace: Bool = true
 }
 
 final class NativeChatBubbleBackground: UIView {
@@ -73,21 +75,27 @@ final class NativeChatBubbleBackground: UIView {
             }
         }
         path.close()
-        fillColor.setFill()
+        let dark = traitCollection.userInterfaceStyle == .dark
+        let surface = ChatSurfaceMaterial.uiBubble(
+            base: fillColor,
+            mine: mine,
+            dark: dark,
+            glass: glass
+        )
+        surface.fill.setFill()
         path.fill()
         guard glass, let context = UIGraphicsGetCurrentContext() else { return }
         context.saveGState()
         path.addClip()
         let colors = [
-            UIColor.white.withAlphaComponent(mine ? 0.16 : 0.12).cgColor,
-            UIColor.white.withAlphaComponent(0.025).cgColor,
+            surface.highlight.cgColor,
             UIColor.clear.cgColor,
-            UIColor.black.withAlphaComponent(0.065).cgColor
+            surface.shade.cgColor
         ] as CFArray
         if let gradient = CGGradient(
             colorsSpace: CGColorSpaceCreateDeviceRGB(),
             colors: colors,
-            locations: [0, 0.34, 0.66, 1]
+            locations: [0, 0.52, 1]
         ) {
             context.drawLinearGradient(
                 gradient,
@@ -97,7 +105,7 @@ final class NativeChatBubbleBackground: UIView {
             )
         }
         context.restoreGState()
-        UIColor.white.withAlphaComponent(mine ? 0.17 : 0.12).setStroke()
+        surface.border.setStroke()
         path.lineWidth = 0.8
         path.stroke()
     }
@@ -187,6 +195,13 @@ final class NativeChatTextRowView: UIView {
     private var onTap: (() -> Void)?
     private var onLongPress: (() -> Void)?
     private var onAvatarTap: (() -> Void)?
+    private var cachedLayoutWidth: CGFloat = -1
+    private var cachedLayout: (
+        nameHeight: CGFloat,
+        textHeight: CGFloat,
+        bubbleHeight: CGFloat,
+        bubbleWidth: CGFloat
+    )?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -224,7 +239,10 @@ final class NativeChatTextRowView: UIView {
 
     func configure(_ next: NativeChatTextRowModel) {
         model = next
-        avatar.configure(path: next.avatarPath, name: next.senderName)
+        avatar.isHidden = !next.showsAvatar
+        if next.showsAvatar {
+            avatar.configure(path: next.avatarPath, name: next.senderName)
+        }
         senderLabel.text = next.senderName
         senderLabel.textColor = next.senderNameColor
         bubble.fillColor = next.bubbleColor
@@ -232,6 +250,8 @@ final class NativeChatTextRowView: UIView {
         bubble.showTail = next.showTail
         bubble.glass = next.bubbleGlass
         textLabel.attributedText = attributedText(next)
+        cachedLayout = nil
+        cachedLayoutWidth = -1
         accessibilityLabel = next.text
         accessibilityTraits = .button
         setNeedsLayout()
@@ -286,34 +306,49 @@ final class NativeChatTextRowView: UIView {
         super.layoutSubviews()
         guard let model else { return }
         let available = max(1, bounds.width - model.horizontalMargin * 2)
-        let resolved = Self.resolvedLayout(model, width: available)
+        let resolved: (
+            nameHeight: CGFloat,
+            textHeight: CGFloat,
+            bubbleHeight: CGFloat,
+            bubbleWidth: CGFloat
+        )
+        if let cachedLayout, abs(cachedLayoutWidth - available) < 0.5 {
+            resolved = cachedLayout
+        } else {
+            resolved = Self.resolvedLayout(model, width: available)
+            cachedLayout = resolved
+            cachedLayoutWidth = available
+        }
         let top = resolved.nameHeight
+        let avatarReserve = model.reservesAvatarSpace
+            ? model.avatarSize + model.avatarGap
+            : 0
         let avatarX = model.mine
             ? model.horizontalMargin + available - model.avatarSize
             : model.horizontalMargin
         avatar.frame = CGRect(x: avatarX, y: top, width: model.avatarSize, height: model.avatarSize)
+        let tailInset: CGFloat = model.showTail ? 6 : 0
         let bubbleX = model.mine
-            ? model.horizontalMargin + available - model.avatarSize - model.avatarGap - resolved.bubbleWidth
-            : model.horizontalMargin + model.avatarSize + model.avatarGap
+            ? model.horizontalMargin + available - resolved.bubbleWidth + tailInset
+            : model.horizontalMargin + avatarReserve - tailInset
         bubble.frame = CGRect(
             x: bubbleX,
             y: top,
             width: resolved.bubbleWidth,
             height: resolved.bubbleHeight
         )
-        let bodyInset: CGFloat = 6
         textLabel.frame = CGRect(
-            x: (model.mine ? 0 : bodyInset) + model.bubblePadH,
+            x: (model.mine ? 0 : tailInset) + model.bubblePadH,
             y: model.bubblePadV,
-            width: resolved.bubbleWidth - bodyInset - model.bubblePadH * 2,
+            width: resolved.bubbleWidth - tailInset - model.bubblePadH * 2,
             height: resolved.textHeight
         )
         senderLabel.isHidden = model.senderName.isEmpty
         senderLabel.textAlignment = model.mine ? .right : .left
         let nameX = model.mine
             ? model.horizontalMargin
-            : model.horizontalMargin + model.avatarSize + model.avatarGap
-        let nameWidth = available - model.avatarSize - model.avatarGap
+            : model.horizontalMargin + avatarReserve
+        let nameWidth = available - avatarReserve
         senderLabel.frame = CGRect(x: nameX, y: 0, width: max(0, nameWidth), height: resolved.nameHeight)
     }
 
@@ -328,9 +363,12 @@ final class NativeChatTextRowView: UIView {
         width: CGFloat
     ) -> (nameHeight: CGFloat, textHeight: CGFloat, bubbleHeight: CGFloat, bubbleWidth: CGFloat) {
         let nameHeight: CGFloat = model.senderName.isEmpty ? 0 : 17
-        let usable = width - model.avatarSize - model.avatarGap
+        let usable = width - (model.reservesAvatarSpace
+            ? model.avatarSize + model.avatarGap
+            : 0)
         let maxBubble = max(80, min(model.maxBubbleWidth, usable))
-        let textWidth = max(1, maxBubble - 6 - model.bubblePadH * 2)
+        let tailInset: CGFloat = model.showTail ? 6 : 0
+        let textWidth = max(1, maxBubble - tailInset - model.bubblePadH * 2)
         let paragraph = NSMutableParagraphStyle()
         paragraph.lineSpacing = 3
         paragraph.lineBreakMode = .byWordWrapping
@@ -351,7 +389,7 @@ final class NativeChatTextRowView: UIView {
         )
         let bubbleWidth = min(
             maxBubble,
-            max(44, textPixelWidth + model.bubblePadH * 2 + 6)
+            max(44, textPixelWidth + model.bubblePadH * 2 + tailInset)
         )
         let bubbleHeight = textHeight + model.bubblePadV * 2
         return (nameHeight, textHeight, bubbleHeight, bubbleWidth)
@@ -397,13 +435,18 @@ final class NativeChatTimeRowView: UIView {
         if UIAccessibility.isReduceTransparencyEnabled {
             blur.effect = nil
             tint.backgroundColor = .secondarySystemBackground
+            capsule.layer.borderWidth = 0
         } else {
             blur.effect = UIBlurEffect(style: traitCollection.userInterfaceStyle == .dark
                                        ? .systemUltraThinMaterialDark
                                        : .systemUltraThinMaterialLight)
-            tint.backgroundColor = traitCollection.userInterfaceStyle == .dark
-                ? UIColor.black.withAlphaComponent(0.18)
-                : UIColor.white.withAlphaComponent(0.36)
+            let surface = ChatSurfaceMaterial.uiSystem(
+                dark: traitCollection.userInterfaceStyle == .dark,
+                plain: false
+            )
+            tint.backgroundColor = surface.fill
+            capsule.layer.borderColor = surface.border.cgColor
+            capsule.layer.borderWidth = 0.6
         }
         setNeedsLayout()
     }

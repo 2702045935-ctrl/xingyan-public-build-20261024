@@ -7,8 +7,16 @@ enum ChatMessageSurface {
     static let gridRadius: CGFloat = 4
 
     static var cardFill: Color {
-        ChatTheme.usesGlass
-            ? ChatTheme.bubbleOther
+        cardFill(mine: false)
+    }
+
+    static func cardFill(mine: Bool) -> Color {
+        if ChatTheme.usesGlass {
+            return (mine ? ChatTheme.bubbleMine : ChatTheme.bubbleOther)
+                .opacity(mine ? 0.84 : 0.74)
+        }
+        return mine
+            ? ChatTheme.bubbleMine
             : Color.dyn(0xFFFFFF, 0x1C1C1E)
     }
 

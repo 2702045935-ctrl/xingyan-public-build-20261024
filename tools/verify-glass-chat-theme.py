@@ -7,6 +7,7 @@ THEMES = (ROOT / "Sources" / "ChatThemes.swift").read_text(encoding="utf-8")
 CHAT = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
 WALLPAPER = (ROOT / "Sources" / "ChatWallpaperEffect.swift").read_text(encoding="utf-8")
 TEXT_ROW = (ROOT / "Sources" / "NativeChatTextRowCell.swift").read_text(encoding="utf-8")
+SURFACE = (ROOT / "Sources" / "ChatSurfaceMaterial.swift").read_text(encoding="utf-8")
 MEDIA_ROW = (ROOT / "Sources" / "NativeChatMediaRowCell.swift").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(encoding="utf-8")
 
@@ -28,7 +29,8 @@ require(
 require(
     "static var usesGlass: Bool { preset == .glass }" in CHAT
     and "if activeGlass" in CHAT
-    and "usesDarkBackdrop ? 0.13 : 0.34" in CHAT
+    and "ChatSurfaceMaterial.bubble(" in CHAT
+    and "dark ? 0.17 : 0.42" in SURFACE
     and "let r = min(pill ? min(rect.height / 2, 24) : radius" in CHAT,
     "glass bubbles must use capsule geometry and a restrained highlight layer",
 )
@@ -44,7 +46,8 @@ require(
     and "var glass = false" in TEXT_ROW
     and "cornerRadius: glass ? min(22, body.height / 2) : 7" in TEXT_ROW
     and "context.drawLinearGradient(" in TEXT_ROW
-    and "mine ? 0.16 : 0.12" in TEXT_ROW
+    and "ChatSurfaceMaterial.uiBubble(" in TEXT_ROW
+    and "UIColor.white.withAlphaComponent(mine" in SURFACE
     and "path.lineWidth = 0.8" in TEXT_ROW
     and "bubble.glass = next.bubbleGlass" in MEDIA_ROW,
     "UIKit text and media bubbles must pre-render glass highlights on capsule paths",
