@@ -74,5 +74,13 @@ require(
     and "app.rememberChatPageMessages(chat.id, snapshot)" in CHAT,
     "confirmed sends and exit/re-entry must merge the current chat page into the in-memory cache",
 )
+require(
+    "private func nativeOutboxTextModel(_ pending: PendingMsg)" in CHAT
+    and "case .outbox(let pending):\n            return nativeOutboxTextModel(pending) != nil" in CHAT
+    and "case .outbox(let pending):\n            guard let model = nativeOutboxTextModel(pending)" in CHAT
+    and "withTransaction(sendTransaction)" in CHAT
+    and "DispatchQueue.main.async {\n            app.previewOutgoingMessage" in CHAT,
+    "plain pending text must use the native row first and defer list-preview work one frame",
+)
 
 print("message-send-handoff: passed")

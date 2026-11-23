@@ -3872,6 +3872,34 @@ struct ChatDetailView: View {
         )
     }
 
+    private func nativeOutboxTextModel(_ pending: PendingMsg) -> NativeChatTextRowModel? {
+        guard pending.kind == "text",
+              !pending.failed,
+              !pending.content.hasPrefix("{"),
+              !needsSwiftUIRichText(pending.content) else { return nil }
+        return NativeChatTextRowModel(
+            messageID: pending.id,
+            text: pending.content,
+            mine: true,
+            senderName: "",
+            senderNameColor: .clear,
+            avatarPath: app.me?.avatarPath ?? "",
+            avatarSize: L.chatAvatar,
+            maxBubbleWidth: isGroup ? groupBubbleMaxWidth : L.bubbleMaxW,
+            horizontalMargin: L.msgPad,
+            avatarGap: L.chatGapMsg,
+            bubblePadH: L.bubblePadHPill,
+            bubblePadV: L.bubblePadV,
+            bottomGap: 12,
+            textColor: UIColor(ChatTheme.mineInk),
+            bubbleColor: UIColor(ChatTheme.bubbleMine),
+            secondaryColor: UIColor(ChatTheme.mineSecondaryInk),
+            mentionColor: UIColor(ChatTheme.mentionMeOnMine),
+            showTail: true,
+            bubbleGlass: ChatTheme.usesGlass
+        )
+    }
+
     private func nativeChatMediaModel(_ item: NativeGroupItem) -> NativeChatMediaRowModel? {
         guard case .message(let message) = item.kind,
               !message.isRecalled,
@@ -3957,6 +3985,8 @@ struct ChatDetailView: View {
                 && UIConfig.num("chatDeliveryTicks", 0) <= 0
                 && !message.body.hasPrefix("{")
                 && !needsSwiftUIRichText(message.body)
+        case .outbox(let pending):
+            return nativeOutboxTextModel(pending) != nil
         default:
             return false
         }
@@ -4027,6 +4057,16 @@ struct ChatDetailView: View {
                 onAvatarTap: { openAvatar(message.senderId ?? "") }
             )
             return view
+        case .outbox(let pending):
+            guard let model = nativeOutboxTextModel(pending) else { return nil }
+            let view = (reuse as? NativeChatTextRowView) ?? NativeChatTextRowView()
+            view.configure(model)
+            view.setActions(
+                onTap: {},
+                onLongPress: {},
+                onAvatarTap: { openAvatar(myId) }
+            )
+            return view
         default:
             return nil
         }
@@ -4043,6 +4083,9 @@ struct ChatDetailView: View {
                 return NativeChatMediaRowView.height(for: media, width: width)
             }
             guard let model = nativeTextModel(item) else { return nil }
+            return NativeChatTextRowView.height(for: model, width: width)
+        case .outbox(let pending):
+            guard let model = nativeOutboxTextModel(pending) else { return nil }
             return NativeChatTextRowView.height(for: model, width: width)
         default:
             return nil
@@ -6930,16 +6973,18 @@ struct ChatDetailView: View {
         }
         let pending = PendingMsg(id: UUID().uuidString, kind: kind, content: content,
                                  mentions: mentions, quoteJSON: qJSON)
-        withAnimation(.spring(response: 0.24,
-                              dampingFraction: 0.92,
-                              blendDuration: 0.04)) {
+        var sendTransaction = Transaction()
+        sendTransaction.disablesAnimations = true
+        withTransaction(sendTransaction) {
             outbox.append(pending)
         }
-        app.previewOutgoingMessage(chat,
-                                   clientId: pending.id,
-                                   kind: kind,
-                                   content: content,
-                                   mentions: mentions)
+        DispatchQueue.main.async {
+            app.previewOutgoingMessage(chat,
+                                       clientId: pending.id,
+                                       kind: kind,
+                                       content: content,
+                                       mentions: mentions)
+        }
         followOwnSendUntil = Date().addingTimeInterval(5)
         persistOutboxAfterFrame()
 
