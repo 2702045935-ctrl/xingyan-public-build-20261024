@@ -19,7 +19,7 @@
 ### 服务端
 
 - `POST /api/transfer/init`：声明大小、MIME、文件名和内容哈希。
-- `PUT /api/transfer/:id/chunk`：幂等分片写入。
+- `POST /api/transfer/:id/chunk`：幂等分片写入。公网反代统一允许大请求 POST。
 - `POST /api/transfer/:id/complete`：校验分片和总哈希，返回媒体对象。
 - `GET /api/transfer/:id`：返回上传、扫描、转码、可播放状态。
 - 后端采用可替换存储适配器：本地磁盘优先，后续接对象存储。

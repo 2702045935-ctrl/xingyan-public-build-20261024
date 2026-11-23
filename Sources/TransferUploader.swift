@@ -100,9 +100,9 @@ final class TransferBackgroundSession: NSObject, URLSessionDataDelegate, URLSess
     }()
 
     func upload(_ request: URLRequest,
-                bodyFile: URL,
+                body: Data,
                 onProgress: @escaping (Double) -> Void) async throws -> (Data, HTTPURLResponse) {
-        let task = session.uploadTask(with: request, fromFile: bodyFile)
+        let task = session.uploadTask(with: request, from: body)
         return try await withCheckedThrowingContinuation { continuation in
             lock.lock()
             continuations[task.taskIdentifier] = continuation
@@ -111,17 +111,6 @@ final class TransferBackgroundSession: NSObject, URLSessionDataDelegate, URLSess
             lock.unlock()
             task.resume()
         }
-    }
-
-    func stage(_ data: Data) throws -> URL {
-        let root = FileManager.default.urls(for: .cachesDirectory,
-                                            in: .userDomainMask).first
-            ?? FileManager.default.temporaryDirectory
-        let dir = root.appendingPathComponent("StarTransferChunks", isDirectory: true)
-        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let file = dir.appendingPathComponent("chunk-\(UUID().uuidString.lowercased())")
-        try data.write(to: file, options: .atomic)
-        return file
     }
 
     func handleEventsCompletion(_ completion: @escaping () -> Void) {
@@ -583,15 +572,13 @@ final class TransferUploader {
                           session: URLSession,
                           onChunkProgress: @escaping (Double) -> Void) async throws {
         var lastError: Error?
-        let bodyFile = try TransferBackgroundSession.shared.stage(body)
-        defer { try? FileManager.default.removeItem(at: bodyFile) }
         for attempt in 0..<4 {
             do {
                 guard let url = URL(string: base + "/api/transfer/\(id)/chunk") else {
                     throw TransferUploaderError.badResponse
                 }
                 var request = URLRequest(url: url)
-                request.httpMethod = "PUT"
+                request.httpMethod = "POST"
                 request.timeoutInterval = 120
                 request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
                 request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
@@ -599,7 +586,7 @@ final class TransferUploader {
                 request.setValue(sha256, forHTTPHeaderField: "x-transfer-chunk-sha256")
                 let (data, http) = try await TransferBackgroundSession.shared.upload(
                     request,
-                    bodyFile: bodyFile,
+                    body: body,
                     onProgress: onChunkProgress
                 )
                 guard (200...299).contains(http.statusCode) else {

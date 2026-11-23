@@ -550,28 +550,18 @@ final class AppState: ObservableObject {
                 applyRealtimeMessage(message, chatId: ev.chatId)
             }
             let cid = ev.chatId
-            coalesce { [weak self] in
-                await self?.loadChats()
-                guard let self = self else { return }
-                if !cid.isEmpty, let c = self.chats.first(where: { $0.id == cid }) {
-                    if c.muted == true { return }
-
-                    let mid = c.lastMessage?.id ?? ""
-                    guard LocalNotify.shouldNotify(chatId: c.id, msgId: mid,
-                                                   at: c.lastMessage?.createdAt) else { return }
-                    let isGroup = c.type == "group" || (c.memberCount ?? 0) > 2
-                    let sender = (c.lastMessage?.senderName ?? "")
-                        .trimmingCharacters(in: .whitespacesAndNewlines)
-                    LocalNotify.incoming(title: c.name,
-                                         body: c.lastMessage?.preview ?? "你收到一条新消息",
-                                         chatId: c.id,
-                                         msgId: mid,
-                                         badge: unreadForIcon,
-                                         count: max(1, c.unreadCount),
-                                         isGroup: isGroup,
-                                         sender: sender)
-                } else {
-                    LocalNotify.incoming(title: "新消息", body: "你收到一条新消息", badge: unreadForIcon)
+            let immediate = ev.chat ?? (cid.isEmpty
+                ? nil
+                : chats.first(where: { $0.id == cid }))
+            if immediate != nil {
+                notifyIncomingRow(immediate)
+            } else {
+                coalesce { [weak self] in
+                    await self?.loadChats()
+                    guard let self else { return }
+                    self.notifyIncomingRow(cid.isEmpty
+                        ? nil
+                        : self.chats.first(where: { $0.id == cid }))
                 }
             }
         case "transfer":
@@ -671,6 +661,30 @@ final class AppState: ObservableObject {
             }
         default:
             break
+        }
+    }
+
+    private func notifyIncomingRow(_ c: Chat?) {
+        if let c {
+            if c.muted == true { return }
+            let mid = c.lastMessage?.id ?? ""
+            guard LocalNotify.shouldNotify(chatId: c.id, msgId: mid,
+                                           at: c.lastMessage?.createdAt) else { return }
+            let isGroup = c.type == "group" || (c.memberCount ?? 0) > 2
+            let sender = (c.lastMessage?.senderName ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            LocalNotify.incoming(title: c.name,
+                                 body: c.lastMessage?.preview ?? "你收到一条新消息",
+                                 chatId: c.id,
+                                 msgId: mid,
+                                 badge: unreadForIcon,
+                                 count: max(1, c.unreadCount),
+                                 isGroup: isGroup,
+                                 sender: sender)
+        } else {
+            LocalNotify.incoming(title: "新消息",
+                                 body: "你收到一条新消息",
+                                 badge: unreadForIcon)
         }
     }
 

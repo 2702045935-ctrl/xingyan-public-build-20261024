@@ -8440,7 +8440,7 @@ function buildOfSocket(socket) {
   const m = raw.match(/B(\d+)/);
   return m ? Number(m[1]) : 0;
 }
-function sendToLocal(userId, payload) {
+function sendToLocal(userId, payload, textCache, textCacheKey) {
   const set = connections.get(userId);
   if (!set) return 0;
   let sent = 0;
@@ -8448,21 +8448,33 @@ function sendToLocal(userId, payload) {
   set.forEach((socket) => {
     const build = buildOfSocket(socket);
     const key = String(build);
-    let text = cache.get(key);
-    if (text === undefined) {
-      text = applyMediaBase(signUploadsInText(JSON.stringify(degradedForBuild(payload, build))));
-      cache.set(key, text);
+    const compositeKey = textCache ? `${textCacheKey}\u0000${key}` : '';
+    let encoded = textCache ? textCache.get(compositeKey) : cache.get(key);
+    if (encoded === undefined) {
+      const text = applyMediaBase(
+        signUploadsInText(JSON.stringify(degradedForBuild(payload, build)))
+      );
+      encoded = {
+        text,
+        frame: ws.encodeFrame(0x1, Buffer.from(text, 'utf8'))
+      };
+      cache.set(key, encoded);
+      if (textCache) textCache.set(compositeKey, encoded);
     }
-    if (ws.sendText(socket, text)) sent += 1;
+    if (ws.sendFrame(socket, encoded.frame)) sent += 1;
   });
   return sent;
 }
 
+let shardPortsCache = null;
 function shardPorts() {
+  if (shardPortsCache) return shardPortsCache;
   const count = Math.max(1, Number(process.env.SHARD_COUNT) || 1);
   const base = Number(process.env.SHARD_BASE_PORT) || 5299;
-  if (count <= 1) return [];
-  return Array.from({ length: count }, (_, index) => base + index * 100);
+  shardPortsCache = count <= 1
+    ? []
+    : Array.from({ length: count }, (_, index) => base + index * 100);
+  return shardPortsCache;
 }
 
 const callSignalAgent = new http.Agent({ keepAlive: true, maxSockets: 256 });
@@ -8824,15 +8836,61 @@ function relayToShardPorts(userId, payload, ports) {
   });
 }
 
+const FANOUT_RELAY_BATCH_SIZE = 512;
+
+function queueFanoutRelay(batch, userId, payload, ports) {
+  Array.from(new Set(ports || [])).forEach((port) => {
+    if (port === PORT) return;
+    if (!batch.has(port)) batch.set(port, []);
+    batch.get(port).push({ userId: String(userId), payload });
+  });
+}
+
+function flushFanoutRelays(batch) {
+  batch.forEach((items, port) => {
+    for (let start = 0; start < items.length; start += FANOUT_RELAY_BATCH_SIZE) {
+      const chunk = items.slice(start, start + FANOUT_RELAY_BATCH_SIZE);
+      const body = JSON.stringify({ items: chunk });
+      const relay = http.request({
+        host: '127.0.0.1',
+        port,
+        path: '/__shard/relay-batch',
+        method: 'POST',
+        agent: chatOwnerAgent,
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(body),
+          'X-Shard-Relay': db.secret || ''
+        }
+      }, (response) => response.resume());
+      relay.setTimeout(2000, () => relay.destroy());
+      relay.on('error', () => {});
+      relay.end(body);
+    }
+  });
+}
+
 function relayToShardPeers(userId, payload) {
   relayToShardPorts(userId, payload, shardPorts());
 }
 
-function sendTo(userId, payload) {
-  const sent = sendToLocal(userId, payload);
+function sendTo(userId, payload, fanoutContext) {
+  const sent = sendToLocal(
+    userId,
+    payload,
+    fanoutContext && fanoutContext.textCache,
+    fanoutContext && fanoutContext.textCacheKey
+  );
   /* 只把消息转发给「确实有这条用户连接」的分片。以前每个人都会向所有
      分片各发一次请求，万人群广播时会平白产生几万次本地 HTTP 请求。 */
-  relayToShardPorts(userId, payload, onlineShardPorts(userId));
+  if (shardPorts().length) {
+    const ports = onlineShardPorts(userId);
+    if (fanoutContext && fanoutContext.relayBatch) {
+      queueFanoutRelay(fanoutContext.relayBatch, userId, payload, ports);
+    } else {
+      relayToShardPorts(userId, payload, ports);
+    }
+  }
   return sent;
 }
 
@@ -8987,6 +9045,7 @@ function fanoutChatMessage(chat, message, sender, clientId) {
     ? chat.memberIds.slice(0, 64)
     : chat.memberIds;
   const recipients = onlineMembersOfChat(chat, online);
+  const sharedOnlineMemberIds = memberPreviewIds.filter((id) => online.has(id));
   const messageRows = loadMessages(chat.id);
   const summaryContext = {
     online,
@@ -9002,17 +9061,41 @@ function fanoutChatMessage(chat, message, sender, clientId) {
     summaryContext.unreadIndex = unreadIndexForMessages(messageRows);
   }
   let sent = 0;
+  const textCache = chat.type === 'group' ? new Map() : null;
+  const relayBatch = new Map();
   for (const id of recipients) {
+    const senderName = chat.type === 'group'
+      ? groupNameFor(chat, id, sender)
+      : '';
     const out = chat.type === 'group'
-      ? Object.assign({}, message, { senderName: groupNameFor(chat, id, sender) })
+      ? Object.assign({}, message, { senderName })
       : message;
+    const summary = chatSummary(chat, id, message, summaryContext);
+    summary.onlineMemberIds = sharedOnlineMemberIds;
+    const last = summary.lastMessage;
+    const textCacheKey = [
+      summary.unread,
+      last && last.mentionMe ? 1 : 0,
+      last ? (last.senderName || '') : '',
+      last ? (last.preview || '') : '',
+      summary.pinned ? 1 : 0,
+      summary.muted ? 1 : 0,
+      summary.meMuted ? 1 : 0,
+      senderName,
+      id === sender.id ? (clientId || '') : ''
+    ].join('\u0000');
     sent += sendTo(id, {
       type: 'message',
       message: out,
-      chat: chatSummary(chat, id, message, summaryContext),
+      chat: summary,
       clientId: id === sender.id ? (clientId || null) : null
+    }, {
+      textCache,
+      textCacheKey: textCache ? textCacheKey : '',
+      relayBatch
     });
   }
+  flushFanoutRelays(relayBatch);
   return sent;
 }
 
@@ -9066,12 +9149,19 @@ function friendStatusMap(userId) {
   return out;
 }
 
+const PRESENCE_GROUP_FANOUT_LIMIT =
+  Number(process.env.PRESENCE_GROUP_FANOUT_LIMIT) || 512;
+
 function notifyPresence(userId, online) {
   const payload = { type: 'presence', userId, online, status: online ? visibleStatus(userId) : 'offline' };
   const targets = new Set(friendIds(userId));
   db.chats.forEach((chat) => {
     if (!chat || chat.type !== 'group' || !Array.isArray(chat.memberIds)
         || !chat.memberIds.includes(userId)) return;
+    /* 大群不能把每个上线/下线事件扇出给全部成员：万人群连续登录时
+       会形成 O(n²) 的小包风暴。大群在线人数由 ready/chat summary
+       刷新，小群继续保留逐成员 presence。 */
+    if (chat.memberIds.length > PRESENCE_GROUP_FANOUT_LIMIT) return;
     chat.memberIds.forEach((id) => {
       if (id && id !== userId) targets.add(id);
     });
@@ -24513,7 +24603,7 @@ async function handleApi(req, res, pathname, query) {
         ok(res, { transfer: transfer });
         return;
       }
-      if (parts[2] === 'chunk' && parts.length === 3 && method === 'PUT') {
+      if (parts[2] === 'chunk' && parts.length === 3 && method === 'POST') {
         const result = await kernel.putChunk({
           ownerId: user.id,
           id: transferId,
@@ -25921,6 +26011,48 @@ async function handleHttpRequest(req, res) {
       const sent = sendToLocal(userId, body.payload);
       return ok(res, { sent });
     }
+    if (parsed.pathname === '/__shard/relay-batch') {
+      if (req.method !== 'POST') return fail(res, 405, 'Method Not Allowed');
+      const supplied = String(req.headers['x-shard-relay'] || '');
+      const expected = String(db.secret || '');
+      const a = Buffer.from(supplied);
+      const b = Buffer.from(expected);
+      if (!expected || a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+        return fail(res, 403, '禁止访问');
+      }
+      const body = await readBody(req);
+      const items = Array.isArray(body.items) ? body.items : [];
+      if (!items.length || items.length > FANOUT_RELAY_BATCH_SIZE) {
+        return fail(res, 422, '分片批量事件不完整');
+      }
+      let sent = 0;
+      let invalidatedChat = '';
+      let refreshMoments = false;
+      let refreshChats = false;
+      for (const item of items) {
+        const userId = str(item.userId, 80);
+        const payload = item.payload;
+        if (!userId || !payload || typeof payload !== 'object') continue;
+        const relayType = String(payload.type || '');
+        const relayChatId = str(payload.chatId
+          || (payload.message && payload.message.chatId)
+          || '', 80);
+        if (relayChatId && !invalidatedChat
+            && ['message', 'transfer', 'redpacket', 'recall', 'burn'].includes(relayType)) {
+          invalidatedChat = relayChatId;
+        }
+        if (payload.type === 'moment') refreshMoments = true;
+        if (payload.type === 'chat') refreshChats = true;
+        sent += sendToLocal(userId, payload);
+      }
+      if (invalidatedChat) {
+        messageCache.delete(invalidatedChat);
+        invalidateMentionIndex(invalidatedChat);
+      }
+      if (refreshMoments) refreshMomentsFromDisk(true);
+      if (refreshChats) refreshChatAccessStateFromDisk(true);
+      return ok(res, { sent, items: items.length });
+    }
     if (parsed.pathname === '/__shard/presence-event') {
       if (req.method !== 'POST') return fail(res, 405, 'Method Not Allowed');
       const supplied = String(req.headers['x-shard-relay'] || '');
@@ -26344,7 +26476,7 @@ function apiRateAllow(ip, path) {
 /* 发消息限流：每个人 10 秒最多 120 条（约 12 条/秒）。
    正常聊天绝对够；脚本刷屏、拿客户端当短信轰炸机都会被拦住。 */
 const MSG_WINDOW_MS = 10 * 1000;
-const MSG_MAX_PER_WINDOW = 60;    // 10 秒 60 条（约 6 条/秒），正常聊天够，刷屏会被卡
+const MSG_MAX_PER_WINDOW = Number(process.env.MSG_MAX_PER_WINDOW) || 60;
 const msgHits = new Map();          // userId -> { t, n }
 
 function msgRateAllow(userId) {
@@ -26358,7 +26490,7 @@ function msgRateAllow(userId) {
 
 /* 全局消息吞吐闸门：防"多个账号一起刷"把硬盘写爆 / 把 CPU 打死 */
 let globalMsgWindow = { t: Date.now(), n: 0 };
-const GLOBAL_MSG_PER_SEC = 3000;
+const GLOBAL_MSG_PER_SEC = Number(process.env.GLOBAL_MSG_PER_SEC) || 3000;
 function globalMsgAllow() {
   const now = Date.now();
   if (now - globalMsgWindow.t > 1000) globalMsgWindow = { t: now, n: 0 };
@@ -26471,7 +26603,11 @@ function handleWsUpgrade(req, socket) {
   const rawPeerWs = String((req.socket && req.socket.remoteAddress) || '').replace('::ffff:', '');
   const proxyHttpsWs = /^(127\.0\.0\.1|::1)$/.test(rawPeerWs)
     && String(req.headers['x-forwarded-proto'] || '').toLowerCase() === 'https';
-  if (!req.socket.encrypted && !proxyHttpsWs && !isLocalOrLan(clientInfo(req).ip)) {
+  const isolatedPlainWs = process.env.CHRIS_LOCAL_ONLY === '1'
+    && process.env.ALLOW_PLAIN_WS === '1'
+    && /^127(?:\.\d{1,3}){3}$/.test(rawPeerWs);
+  if (!req.socket.encrypted && !proxyHttpsWs && !isolatedPlainWs
+      && !isLocalOrLan(clientInfo(req).ip)) {
     securityNotePlainWs(clientInfo(req).ip);
     strikeIp(clientInfo(req).ip, '明文 ws 连实时通道');
     socket.end('HTTP/1.1 403 Forbidden\r\n\r\n');
@@ -26496,7 +26632,7 @@ function handleWsUpgrade(req, socket) {
     try {
       const q = new URL(req.url, 'http://localhost');
       const data = verifyTokenData(q.searchParams.get('token'));
-      const u = data && db.users.find((x) => x.id === data.sub);
+      const u = data && findUser(data.sub);
       /* 被顶下线的旧手机：连长连接也不给连（不然它还能白收消息） */
       const phoneOk = !u ? false : (((data.k || 'phone') !== 'phone')
         || (Number(data.ps) || 0) === (Number(u.phoneSession) || 0));

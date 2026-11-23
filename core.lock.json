@@ -8,8 +8,8 @@
     },
     {
       "path": "Sources/App.swift",
-      "size": 204636,
-      "sha256": "c11fb9533881e65d8574fb15adbd0eba30a39fd069927e83b953e65d5e9a0f57"
+      "size": 204954,
+      "sha256": "b6ad412e238e9e1c4d9f83ef9d763377829702d17f704e5820d607fe5eebda1d"
     },
     {
       "path": "Sources/Realtime.swift",
@@ -158,8 +158,8 @@
     },
     {
       "path": "Sources/TransferUploader.swift",
-      "size": 29996,
-      "sha256": "e9e67305c0b83049bbea343eede595b72d2f1578941987d9383832831173d04f"
+      "size": 29255,
+      "sha256": "53f9511a89d571921cadd5270d3c273fa52e88a8250f0ccd16eae1fb5b99a938"
     }
   ]
 }

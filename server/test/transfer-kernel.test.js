@@ -30,7 +30,7 @@ async function uploadChunk(base, cookie, transfer, index, payload, digest) {
   const start = index * transfer.chunkSize;
   const end = Math.min(payload.length, start + transfer.chunkSize);
   return fetch(base + '/api/transfer/' + transfer.id + '/chunk', {
-    method: 'PUT',
+    method: 'POST',
     headers: {
       Cookie: cookie,
       'Content-Type': 'application/octet-stream',
