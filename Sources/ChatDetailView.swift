@@ -1586,7 +1586,7 @@ struct ChatDetailView: View {
     @State private var nativeMessageController = NativeStaticListController()
 
     @State private var lastOlderLoad = Date.distantPast
-    @State private var olderRunwayBatchRemaining = 0
+    @State private var olderRunwayGestureUntil = Date.distantPast
 
     @State private var lastReadSyncAt = Date.distantPast
 
@@ -4395,8 +4395,8 @@ struct ChatDetailView: View {
         let runway = max(2_200, min(4_200, scroll.bounds.height * 2.75))
         guard y < runway else { return }
         if requireActiveMotion, !ChatScrollHandle.shared.moving { return }
-        if olderRunwayBatchRemaining == 0 {
-            olderRunwayBatchRemaining = 3
+        if requireActiveMotion, ChatScrollHandle.shared.moving {
+            olderRunwayGestureUntil = Date().addingTimeInterval(2.5)
         }
         autoLoadOlder()
     }
@@ -8166,9 +8166,9 @@ struct ChatDetailView: View {
                 // runway after every consumed page so the next page starts loading
                 // while the finger is still moving, matching the initial pages.
                 lastOlderLoad = .distantPast
-                olderRunwayBatchRemaining = max(0, olderRunwayBatchRemaining - 1)
                 DispatchQueue.main.async {
-                    if olderRunwayBatchRemaining > 0 {
+                    if ChatScrollHandle.shared.moving
+                        || Date() < olderRunwayGestureUntil {
                         autoLoadOlder()
                     } else {
                         consumeOlderRunway(requireActiveMotion: false)

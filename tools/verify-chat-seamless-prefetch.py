@@ -68,11 +68,11 @@ require(
 require(
     "var loadedUsefulPage = false" in CHAT
     and "lastOlderLoad = .distantPast" in CHAT
-    and "olderRunwayBatchRemaining = 3" in CHAT
-    and "olderRunwayBatchRemaining = max(0, olderRunwayBatchRemaining - 1)" in CHAT
-    and "if olderRunwayBatchRemaining > 0" in CHAT
+    and "olderRunwayGestureUntil = Date().addingTimeInterval(2.5)" in CHAT
+    and "Date() < olderRunwayGestureUntil" in CHAT
+    and "olderRunwayBatchRemaining" not in CHAT
     and "consumeOlderRunway(requireActiveMotion: false)" in CHAT,
-    "one runway trigger must prefill three pages without another finger gesture",
+    "continuous scrolling must fetch one page at a time while the gesture is active",
 )
 require(
     "defer {\n            loadingNewer = false\n            if loadedUsefulPage" in CHAT
