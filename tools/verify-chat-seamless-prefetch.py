@@ -134,10 +134,11 @@ require(
     "private var shouldLoadCompleteGroupHistory: Bool" in CHAT
     and "!MessageStressFixture.isActive" in CHAT
     and "loadAllGroupHistory()" in CHAT
-    and "if shouldLoadCompleteGroupHistory {" in CHAT
+    and "if shouldLoadCompleteGroupHistory," in CHAT
+    and 'UIConfig.num("chatEagerHistorySync", 0) > 0' in CHAT
     and "let pageSize = historyPageSize" in CHAT
     and "ChatScrollHandle.shared.prepareForPrepend()" in CHAT,
-    "ordinary conversations must automatically backfill complete history",
+    "full-history sync must stay behind the diagnostic gate",
 )
 require(
     "let commitEveryPages = 6" in CHAT

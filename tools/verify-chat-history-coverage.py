@@ -18,9 +18,9 @@ def require(condition: bool, message: str) -> None:
 require(
     "private var shouldLoadCompleteGroupHistory: Bool {\n        !MessageStressFixture.isActive\n    }"
     in CHAT
-    and "if shouldLoadCompleteGroupHistory {" in CHAT
-    and 'UIConfig.num("chatEagerHistorySync", 0) > 0' not in CHAT,
-    "ordinary conversations must backfill complete history without a disabled-by-default flag",
+    and "if shouldLoadCompleteGroupHistory," in CHAT
+    and 'UIConfig.num("chatEagerHistorySync", 0) > 0' in CHAT,
+    "full-history bulk sync must remain behind an explicit diagnostic gate",
 )
 require(
     "private func loadAllGroupHistory() async" in CHAT
@@ -29,6 +29,13 @@ require(
     and "let page = try await API.shared.messages(" in CHAT
     and "before: before" in CHAT,
     "history backfill must page backwards until the server reports the actual start",
+)
+require(
+    "private func loadOlder() async" in CHAT
+    and "private func scheduleOlderPrefetch(" in CHAT
+    and "consumeOlderRunway(" in CHAT
+    and "olderPrefetch = visibleMessages(page.messages)" in CHAT,
+    "normal chat history must consume bounded preview pages while scrolling",
 )
 require(
     "const before = Number(query.get('before')) || Number.MAX_SAFE_INTEGER;" in SERVER
