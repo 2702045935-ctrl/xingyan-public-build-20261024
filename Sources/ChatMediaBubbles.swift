@@ -735,11 +735,22 @@ struct VideoPlayerSheet: View {
 
 struct SendingVideoBubble: View {
     var cover: UIImage?
+    var previews: [UIImage] = []
     var progress: Double
     var phase: UploadVisualPhase = .preparing
 
+    private var images: [UIImage] {
+        previews.isEmpty ? [cover].compactMap { $0 } : previews
+    }
+
     private var size: CGSize {
-        guard let c = cover, c.size.width > 0, c.size.height > 0 else {
+        if images.count > 1 {
+            return MultiImageMosaic.containerSize(
+                for: images.count,
+                width: 229
+            )
+        }
+        guard let c = images.first, c.size.width > 0, c.size.height > 0 else {
             return videoBubbleSize(w: 0, h: 0)
         }
         return videoBubbleSize(w: Int(c.size.width), h: Int(c.size.height))
@@ -747,7 +758,32 @@ struct SendingVideoBubble: View {
 
     var body: some View {
         ZStack {
-            if let c = cover {
+            if images.count > 1 {
+                GeometryReader { geo in
+                    let frames = MultiImageMosaic.frames(
+                        count: images.count,
+                        in: CGRect(origin: .zero, size: geo.size)
+                    )
+                    ZStack(alignment: .topLeading) {
+                        ForEach(Array(images.enumerated()), id: \.offset) { index, image in
+                            if index < frames.count {
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(
+                                        width: frames[index].width,
+                                        height: frames[index].height
+                                    )
+                                    .clipped()
+                                    .offset(
+                                        x: frames[index].minX,
+                                        y: frames[index].minY
+                                    )
+                            }
+                        }
+                    }
+                }
+            } else if let c = images.first {
                 Image(uiImage: c)
                     .resizable()
                     .scaledToFill()
@@ -782,7 +818,7 @@ struct SendingVideoBubble: View {
             }
         }
         .frame(width: size.width, height: size.height)
-        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 
     private var phaseLabel: String {
@@ -829,13 +865,13 @@ struct SendingFileBubble: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(name)
                         .font(pf(14))
-                        .foregroundColor(C.label)
+                        .foregroundColor(ChatTheme.mineInk)
                         .lineLimit(1)
                         .truncationMode(.middle)
                     HStack(spacing: 6) {
                         Text(byteText(Int64(bytes)))
                             .font(pf(11))
-                            .foregroundColor(C.subLabel)
+                            .foregroundColor(ChatTheme.mineSecondaryInk)
                         Spacer(minLength: 4)
                         Text(progressText)
                             .font(pf(10.5, .medium))
@@ -844,7 +880,7 @@ struct SendingFileBubble: View {
                     if !detailText.isEmpty {
                         Text(detailText)
                             .font(pf(10.5, .medium))
-                            .foregroundColor(C.subLabel)
+                            .foregroundColor(ChatTheme.mineSecondaryInk)
                             .lineLimit(1)
                     }
                 }
@@ -853,7 +889,7 @@ struct SendingFileBubble: View {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule()
-                        .fill(C.fieldBg)
+                        .fill(ChatTheme.mineInk.opacity(0.18))
                     Capsule()
                         .fill(look.color)
                         .frame(width: max(CGFloat(value > 0 ? 4 : 0),
@@ -866,16 +902,8 @@ struct SendingFileBubble: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 11)
         .frame(width: 218)
-        .background {
-            RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
-                             style: .continuous)
-                .fill(ChatMessageSurface.cardFill)
-        }
-        .overlay {
-            RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
-                             style: .continuous)
-                .stroke(ChatMessageSurface.cardBorder, lineWidth: 0.5)
-        }
+        .background(BubbleFill(mine: true, tail: true))
+        .clipShape(BubbleShape(mine: true, tail: true))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(Tr("上传中") + " " + name))
         .accessibilityValue(Text(progressText))

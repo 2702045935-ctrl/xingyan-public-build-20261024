@@ -1610,6 +1610,7 @@ struct ChatDetailView: View {
     @State private var sendingMedia = ""
 
     @State private var sendingPreview: UIImage?
+    @State private var sendingPreviews: [UIImage] = []
     @State private var sendProgress: Double = 0
     @State private var mediaUploadPhase: UploadVisualPhase = .preparing
     @State private var sendingFileName = ""
@@ -3420,6 +3421,7 @@ struct ChatDetailView: View {
                             HStack(spacing: 8) {
                                 Spacer(minLength: 0)
                                 SendingVideoBubble(cover: sendingPreview,
+                                                   previews: sendingPreviews,
                                                    progress: sendProgress,
                                                    phase: mediaUploadPhase)
                             }
@@ -3507,6 +3509,7 @@ struct ChatDetailView: View {
                             Spacer(minLength: 0)
 
                             SendingVideoBubble(cover: sendingPreview,
+                                               previews: sendingPreviews,
                                                progress: sendProgress,
                                                phase: mediaUploadPhase)
                         }
@@ -4257,9 +4260,9 @@ struct ChatDetailView: View {
                 .padding(.horizontal, L.msgPad)
 
         case .sendingVideo:
-            HStack(spacing: 8) {
-                Spacer(minLength: 0)
+            uploadingRow {
                 SendingVideoBubble(cover: sendingPreview,
+                                   previews: sendingPreviews,
                                    progress: sendProgress,
                                    phase: mediaUploadPhase)
             }
@@ -4267,8 +4270,7 @@ struct ChatDetailView: View {
             .padding(.bottom, 12)
 
         case .sendingFile:
-            HStack(spacing: 8) {
-                Spacer(minLength: 0)
+            uploadingRow {
                 SendingFileBubble(name: sendingFileName,
                                   bytes: sendingFileBytes,
                                   progress: sendingFileProgress,
@@ -4283,6 +4285,23 @@ struct ChatDetailView: View {
 
         case .spacer:
             Color.clear.frame(height: 8 + L.msgPad)
+        }
+    }
+
+    private func uploadingRow<Content: View>(
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        HStack(alignment: .top, spacing: 0) {
+            Spacer(minLength: 0)
+            content()
+            Spacer().frame(width: WhatsAppChatLayout.avatarGap)
+            Avatar(
+                path: app.me?.avatarPath ?? "",
+                size: WhatsAppChatLayout.avatarSide,
+                radius: WhatsAppChatLayout.avatarSide / 2,
+                circle: true,
+                level: GrowthStore.shared.shownLevel
+            )
         }
     }
 
@@ -4366,6 +4385,7 @@ struct ChatDetailView: View {
                     HStack(spacing: 8) {
                         Spacer(minLength: 0)
                         SendingVideoBubble(cover: sendingPreview,
+                                           previews: sendingPreviews,
                                            progress: sendProgress,
                                            phase: mediaUploadPhase)
                     }
@@ -7256,6 +7276,7 @@ struct ChatDetailView: View {
         case .image(let img, let nativeCamera):
             uploading = true
             sendingPreview = img
+            sendingPreviews = [img]
             sendingMedia = Tr("图片处理中…")
             sendProgress = 0
             mediaUploadPhase = .preparing
@@ -7292,6 +7313,7 @@ struct ChatDetailView: View {
                 uploading = false
                 sendingMedia = ""
                 sendingPreview = nil
+                sendingPreviews = []
                 sendProgress = 0
                 mediaUploadPhase = .preparing
                 await app.loadChats()
@@ -7303,6 +7325,7 @@ struct ChatDetailView: View {
             CrashCatcher.note("发图", "多选 \(list.count) 张，开始上传")
             uploading = true
             sendingPreview = list.first
+            sendingPreviews = list
             sendingMedia = Tr("图片处理中…") + " 0/\(list.count)"
             sendProgress = 0
             mediaUploadPhase = .preparing
@@ -7409,6 +7432,7 @@ struct ChatDetailView: View {
                 uploading = false
                 sendingMedia = ""
                 sendingPreview = nil
+                sendingPreviews = []
                 sendProgress = 0
                 mediaUploadPhase = .preparing
                 await app.loadChats()
@@ -7418,6 +7442,7 @@ struct ChatDetailView: View {
             uploading = true
             sendProgress = 0
             sendingPreview = preview
+            sendingPreviews = [preview].compactMap { $0 }
             sendingMedia = Tr("视频准备中…")
             mediaUploadPhase = .preparing
             scrollTick += 1
@@ -7426,6 +7451,7 @@ struct ChatDetailView: View {
                 let cover: UIImage?
                 if let p = preview { cover = p } else { cover = await MediaTool.firstFrame(url) }
                 if cover != nil { sendingPreview = cover }
+                sendingPreviews = [cover].compactMap { $0 }
 
                 let coverTask = Task { () -> String? in
                     guard let c = cover else { return nil }
@@ -7461,6 +7487,7 @@ struct ChatDetailView: View {
                     uploading = false
                     sendingMedia = ""
                     sendingPreview = nil
+                    sendingPreviews = []
                     mediaUploadPhase = .preparing
                     app.show(Tr("视频上传失败"))
                     return
@@ -7481,6 +7508,7 @@ struct ChatDetailView: View {
                 uploading = false
                 sendingMedia = ""
                 sendingPreview = nil
+                sendingPreviews = []
                 mediaUploadPhase = .preparing
                 await app.loadChats()
             }
@@ -7491,6 +7519,7 @@ struct ChatDetailView: View {
             uploading = true
             sendProgress = 0
             sendingPreview = img
+            sendingPreviews = [img]
             sendingMedia = Tr("实况处理中…")
             mediaUploadPhase = .preparing
             scrollTick += 1
@@ -7528,6 +7557,7 @@ struct ChatDetailView: View {
                 uploading = false
                 sendingMedia = ""
                 sendingPreview = nil
+                sendingPreviews = []
                 mediaUploadPhase = .preparing
                 await app.loadChats()
             }

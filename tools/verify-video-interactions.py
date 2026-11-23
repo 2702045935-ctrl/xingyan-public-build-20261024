@@ -58,5 +58,16 @@ require(
     and "pip.reset()" in MEDIA,
     "chat video PiP must never open before a frame is ready and must stop on dismissal",
 )
+require(
+    "var previews: [UIImage] = []" in MEDIA
+    and "MultiImageMosaic.containerSize(" in MEDIA
+    and "MultiImageMosaic.frames(" in MEDIA
+    and "SendingFileBubble" in MEDIA
+    and ".background(BubbleFill(mine: true, tail: true))" in MEDIA
+    and "private func uploadingRow<Content: View>" in (
+        ROOT / "Sources" / "ChatDetailView.swift"
+    ).read_text(encoding="utf-8"),
+    "pending uploads must use WeChat-style thumbnail progress, self avatar and shared bubbles",
+)
 
 print("video-interactions: passed")
