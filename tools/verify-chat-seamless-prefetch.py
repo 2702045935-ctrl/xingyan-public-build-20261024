@@ -30,7 +30,9 @@ require(
 )
 require(
     "olderRunwayConsumedForGesture" in CHAT
-    and "if isGroup { autoLoadOlder() }" not in CHAT,
+    and "if isGroup { autoLoadOlder() }" not in CHAT
+    and "guard hasOlder, !loadingOlder, !loadingAllGroupHistory, !loading" not in CHAT
+    and "guard !loadingOlder, !loadingAllGroupHistory" not in CHAT,
     "automatic history paging must be driven by the user scroll runway",
 )
 require(
@@ -112,6 +114,8 @@ require(
     and "var staged: [String: Message] = [:]" in CHAT
     and "commitStaged()" in CHAT
     and "Task.sleep(nanoseconds: 35_000_000)" in CHAT
+    and "while ChatScrollHandle.shared.moving, !Task.isCancelled" in CHAT
+    and "Task.sleep(nanoseconds: 50_000_000)" in CHAT
     and 'loadingAllGroupHistory { return Tr("' not in CHAT
     and "let text = selectMode ? navTitleShown : navTitle" in CHAT,
     "background history sync must stay quiet and commit coalesced pages off the title",

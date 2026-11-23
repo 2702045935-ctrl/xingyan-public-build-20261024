@@ -4362,7 +4362,7 @@ struct ChatDetailView: View {
     }
 
     private func autoLoadOlder() {
-        guard hasOlder, !loadingOlder, !loadingAllGroupHistory, !loading else { return }
+        guard hasOlder, !loadingOlder, !loading else { return }
         guard Date().timeIntervalSince(lastOlderLoad) > 0.08 else { return }
         lastOlderLoad = Date()
         Task { await loadOlder() }
@@ -8128,7 +8128,7 @@ struct ChatDetailView: View {
     }
 
     private func loadOlder() async {
-        guard !loadingOlder, !loadingAllGroupHistory,
+        guard !loadingOlder,
               oldestHistorySeq > 0 else { return }
         let seq = oldestHistorySeq
         loadingOlder = true
@@ -8398,6 +8398,10 @@ struct ChatDetailView: View {
                     reachedStart = true
                 }
                 if pages % commitEveryPages == 0 || reachedTip {
+                    while ChatScrollHandle.shared.moving, !Task.isCancelled {
+                        try? await Task.sleep(nanoseconds: 50_000_000)
+                    }
+                    guard !Task.isCancelled else { return }
                     commitStaged()
                     try? await Task.sleep(nanoseconds: 35_000_000)
                 }
