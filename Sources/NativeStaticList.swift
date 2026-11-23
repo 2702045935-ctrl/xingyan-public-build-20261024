@@ -1134,11 +1134,13 @@ where Item.ID: Hashable {
                 guard indexPath.item >= 0, indexPath.item < order.count else { return nil }
                 return order[indexPath.item]
             }
-            if let first = indexPaths.map(\.item).min(), first <= 24 {
+            let prefetchWindow = max(48, min(240, order.count / 8))
+            if let first = indexPaths.map(\.item).min(),
+               first <= prefetchWindow {
                 onPrefetchStart?()
             }
             if let last = indexPaths.map(\.item).max(),
-               last >= max(0, order.count - 25) {
+               last >= max(0, order.count - prefetchWindow - 1) {
                 onPrefetchEnd?()
             }
             if collectionView.isDragging || collectionView.isTracking
@@ -1146,6 +1148,18 @@ where Item.ID: Hashable {
                 enqueueWarm(ids)
             } else {
                 prewarm(ids, maxCount: 8)
+            }
+        }
+
+        func collectionView(_ collectionView: UICollectionView,
+                            willDisplay cell: UICollectionViewCell,
+                            forItemAt indexPath: IndexPath) {
+            let prefetchWindow = max(48, min(240, order.count / 8))
+            if indexPath.item <= prefetchWindow {
+                onPrefetchStart?()
+            }
+            if indexPath.item >= max(0, order.count - prefetchWindow - 1) {
+                onPrefetchEnd?()
             }
         }
 

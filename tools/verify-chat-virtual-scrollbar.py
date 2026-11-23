@@ -33,6 +33,8 @@ require(
     and "prefetchItemsAt indexPaths: [IndexPath]" in LIST
     and "onPrefetchStart?()" in LIST
     and "onPrefetchEnd?()" in LIST
+    and "let prefetchWindow = max(48, min(240, order.count / 8))" in LIST
+    and "willDisplay cell: UICollectionViewCell" in LIST
     and "onPrefetchStart: {" in CHAT
     and "scheduleOlderPrefetch()" in CHAT,
     "native prefetch callbacks must request the next data page before scrolling reaches it",
