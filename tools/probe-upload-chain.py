@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import io
 import os
 import plistlib
@@ -14,7 +15,7 @@ from PIL import Image, ImageDraw
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PREFS = ROOT / "outputs" / "upload-test" / "com.chris.chatnative.plist"
+DEFAULT_PREFS = ROOT / "diagnostics" / "chris-prefs.plist"
 FFMPEG = Path(r"C:\Users\Administrator\ffmpeg\bin\ffmpeg.exe")
 
 
@@ -23,7 +24,13 @@ def elapsed_ms(start: float) -> int:
 
 
 def main() -> None:
-    with PREFS.open("rb") as file:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--prefs", default=str(DEFAULT_PREFS))
+    parser.add_argument("--base", default="")
+    parser.add_argument("--sizes", default="")
+    args = parser.parse_args()
+
+    with Path(args.prefs).open("rb") as file:
         prefs = plistlib.load(file)
     token = str(prefs.get("chris.token") or "")
     host = str(prefs.get("chris.server") or "").strip()
@@ -41,7 +48,16 @@ def main() -> None:
     image_bytes = io.BytesIO()
     image.save(image_bytes, format="JPEG", quality=88, optimize=True)
 
-    file_bytes = b"xingyan-upload-probe\n" + secrets.token_bytes(5 * 1024 * 1024)
+    requested_sizes = {
+        int(value)
+        for value in str(args.sizes).split(",")
+        if value.strip().isdigit()
+    }
+    file_size_mb = next(iter(sorted(requested_sizes)), 5)
+    file_bytes = (
+        b"xingyan-upload-probe\n"
+        + secrets.token_bytes(file_size_mb * 1024 * 1024)
+    )
     with tempfile.TemporaryDirectory(prefix="xingyan-upload-") as td:
         video_path = Path(td) / "probe.mp4"
         subprocess.run(
@@ -68,11 +84,15 @@ def main() -> None:
 
     cases = [
         ("image_3mp", image_bytes.getvalue(), "image/jpeg"),
-        ("file_5mb", file_bytes, "application/octet-stream"),
+        (f"file_{file_size_mb}mb", file_bytes, "application/octet-stream"),
         ("video_3s", video_bytes, "video/mp4"),
     ]
 
-    base = "https://" + host
+    base = str(args.base or "").rstrip("/")
+    if not base:
+        base = host if host.startswith(("http://", "https://")) else "https://" + host
+        if host == "mail.xingyanmail.site:443":
+            base += "/xy"
     for name, payload, mime in cases:
         upload_headers = dict(headers)
         upload_headers["Content-Type"] = mime

@@ -7940,7 +7940,7 @@ struct ChatDetailView: View {
                         ? next
                         : max(1, cursor - 1)
                     olderNextCursor = advanced
-                    if !more || !advanced { break }
+                    if !more || advanced <= 0 { break }
                     cursor = advanced
                     if older.count >= target { break }
                 }
