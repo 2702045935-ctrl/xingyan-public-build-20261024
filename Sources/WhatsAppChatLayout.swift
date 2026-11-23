@@ -109,7 +109,7 @@ final class NativeMessageMetadataView: UIView {
         let textWidth = ceil(
             (text as NSString).size(withAttributes: [.font: font]).width
         )
-        let horizontal = mediaStyle ? 10 : 0
+        let horizontal: CGFloat = mediaStyle ? 10 : 0
         return horizontal + textWidth + (tickCount > 0 ? 15 : 0)
     }
 
