@@ -37,6 +37,7 @@ const {
   runSingleCellCapacityCollector
 } = require('./lib/single-cell-capacity-runner');
 const { loadFleetControlPanel } = require('./lib/fleet-control-panel');
+const { validateFleetPlan } = require('./lib/fleet-release-plan');
 const { MessageReliabilityStore } = require('./lib/message-reliability');
 const { ShardAuthorityStore } = require('./lib/shard-authority-store');
 const { ShardAuthorityRuntime } = require('./lib/shard-authority-runtime');
@@ -27902,13 +27903,15 @@ const DANGEROUS_OPS = [
   { re: /^POST \/api\/ops\/shardmaintenance\/deploy$/, label: '发布一个分片' },
   { re: /^POST \/api\/ops\/shardmaintenance\/approve$/, label: '批准进入下一分片' },
   { re: /^POST \/api\/ops\/shardmaintenance\/rollback$/, label: '停止并回滚分片发布' },
+  { re: /^PUT \/api\/ops\/fleet$/, label: '保存生产 Cell 节点计划' },
   /* 敏感词库不算高危：它可逆、且日常维护脚本（管控违法内容.js）要反复调用，不设卡 */
 ];
 /* 开了双人复核以后，这些「做完就回不了头」的操作必须别人点头 */
 const DUAL_REVIEW_LABELS = [
   '封禁 / 解封账号', '撤销交易', '处理提现申请', '解散群聊', '清空会话记录',
   '删除朋友圈动态', '删除视频号作品', '解除好友关系', '新增后台账号',
-  '停用 / 启用后台账号', '发布一个分片', '批准进入下一分片', '停止并回滚分片发布'
+  '停用 / 启用后台账号', '发布一个分片', '批准进入下一分片', '停止并回滚分片发布',
+  '保存生产 Cell 节点计划'
 ];
 function dangerousOpOf(method, pathStr) {
   const key = method + ' ' + pathStr;
@@ -29200,6 +29203,44 @@ async function handleOps(req, res, parts, query) {
       });
     }
     audit(req, admin, '高危操作二次确认通过', danger.label, opPath);
+  }
+
+  if (sub === 'fleet' && parts.length === 2) {
+    if (admin.role !== 'super') return fail(res, 403, 'Fleet 配置只有超级管理员能操作');
+    const fleetPath = path.resolve(process.env.PHYSICAL_FLEET_PLAN
+      || '/var/lib/xingyan-dual-cell/current-fleet.json');
+    if (method === 'GET') {
+      const plan = readJson(fleetPath, null)
+        || readJson(path.join(path.dirname(ROOT), 'deploy', 'fleet',
+          'fleet-production.json'), null);
+      if (!plan) return fail(res, 404, '没有 Fleet 计划文件');
+      ok(res, {
+        path: fleetPath,
+        plan,
+        validation: validateFleetPlan(plan)
+      });
+      return;
+    }
+    if (method === 'PUT') {
+      const body = await readBody(req);
+      const plan = body && body.plan;
+      const validation = validateFleetPlan(plan);
+      if (!validation.ok) {
+        return fail(res, 422, 'Fleet 计划校验失败', validation.failures);
+      }
+      writeJson(fleetPath, plan);
+      audit(req, admin, '保存生产 Cell 节点计划', validation.normalized.topologyId,
+        validation.normalized.cells.length + ' Cell / '
+          + validation.normalized.shardCount + ' 分片'
+          + (validation.deploymentEligible ? '' : ' / 故障域未验证'));
+      ok(res, {
+        path: fleetPath,
+        plan,
+        validation
+      });
+      return;
+    }
+    return fail(res, 405, 'Method Not Allowed');
   }
 
   /* ---------------- 分片维护中心：一次只放行一个分片 ---------------- */

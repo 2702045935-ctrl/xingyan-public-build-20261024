@@ -67,6 +67,7 @@ async function stop(child) {
 
 async function main() {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xingyan-maintenance-api-'));
+  const fleetFile = path.join(dataDir, 'current-fleet.json');
   const port = await freePort();
   const base = 'http://127.0.0.1:' + port;
   const logs = [];
@@ -80,6 +81,7 @@ async function main() {
       CHRIS_LOCAL_ONLY: '1',
       DISABLE_STARTUP_BOT_BACKFILL: '1',
       AML_RUNTIME_ENABLED: '0',
+      PHYSICAL_FLEET_PLAN: fleetFile,
       ADMIN_PASSWORD
     }),
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -95,6 +97,22 @@ async function main() {
     });
     assert.strictEqual(response.status, 200, JSON.stringify(response.payload));
     const cookie = response.cookie;
+
+    response = await call(base, cookie, 'GET', '/api/ops/fleet');
+    assert.strictEqual(response.status, 200, JSON.stringify(response.payload));
+    const fleetPlan = response.payload.data.plan;
+    assert.ok(Array.isArray(fleetPlan.cells) && fleetPlan.cells.length >= 2);
+
+    response = await call(base, cookie, 'PUT', '/api/ops/fleet', {
+      plan: fleetPlan
+    });
+    assert.strictEqual(response.status, 428, JSON.stringify(response.payload));
+    response = await call(base, cookie, 'PUT', '/api/ops/fleet', {
+      plan: fleetPlan,
+      confirmPassword: ADMIN_PASSWORD
+    });
+    assert.strictEqual(response.status, 200, JSON.stringify(response.payload));
+    assert.ok(fs.existsSync(fleetFile));
 
     response = await call(base, cookie, 'GET', '/api/ops/shardmaintenance');
     assert.strictEqual(response.status, 200, JSON.stringify(response.payload));
