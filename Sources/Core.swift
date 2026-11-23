@@ -459,11 +459,11 @@ enum C {
     })
     static var name        : Color { UIConfig.fixedDark("nameColor", 0x1C1C1E, 0xF2F4F6) }
     static var label       : Color { UIConfig.fixedDark("labelColor", 0x191919, 0xE8EBEF) }
-    static var preview     : Color { UIConfig.fixedDark("previewColor", 0xB2B2B2, 0x9CA3AA) }
-    static var time        : Color { UIConfig.fixedDark("timeColor", 0xC7C7CC, 0x8B929A) }
+    static var preview     : Color { UIConfig.fixedDark("previewColor", 0xB2B2B2, 0x8F969E) }
+    static var time        : Color { UIConfig.fixedDark("timeColor", 0xC7C7CC, 0x6F767E) }
 
     static var ctIdxColor  : Color { UIConfig.color("ctIdxColor", 0x555555, 0x8E8E93) }
-    static var subLabel    : Color { UIConfig.fixedDark("subLabelColor", 0x999999, 0x8B929A) }
+    static var subLabel    : Color { UIConfig.fixedDark("subLabelColor", 0x999999, 0x828990) }
     static var hairline    : Color { UIConfig.fixedDark("lineColor", 0xE5E5E5, 0x2A2D33) }
     static var navLine     : Color { UIConfig.fixedDark("navLineColor", 0xE8E8E8, 0x30343B) }
 

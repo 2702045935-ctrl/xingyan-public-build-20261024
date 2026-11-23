@@ -12,10 +12,10 @@ private enum ChatListVisual {
     static let dividerLeading: CGFloat = 77
 
     static let ink = Color.dyn(0x1A1A1A, 0xF2F4F6)
-    static let previewInk = Color.dyn(0x8A8A8A, 0x9CA3AA)
-    static let conversationPreviewInk = Color.dyn(0x999999, 0x9CA3AA)
+    static let previewInk = Color.dyn(0x8A8A8A, 0x8F969E)
+    static let conversationPreviewInk = Color.dyn(0x999999, 0x8F969E)
     static let previewAccentInk = Color.dyn(0xFA5151, 0xFA5151)
-    static let timeInk = Color.dyn(0xB2B2B2, 0x8B929A)
+    static let timeInk = Color.dyn(0xB2B2B2, 0x6F767E)
     static let rule = Color(UIColor { trait in
         // WeChat measures 48,48,48 on its 25,25,25 canvas. Our canvas is
         // 10,10,10, so the same perceived weight needs a darker separator.
@@ -2760,10 +2760,10 @@ struct ChatsView: View {
         let titleColor: UIColor = chat.showsOfficialMark
             ? UIColor(hex: 0x25D366)
             : UIColor(hex: isDark ? 0xF2F4F6 : 0x191919)
-        let previewColor = UIColor(hex: isDark ? 0x9CA3AA : 0x999999)
+        let previewColor = UIColor(hex: isDark ? 0x8F969E : 0x999999)
         let memberColor = nativePeerColor(chat.memberColor)
         let rowBg: UIColor = isDark ? UIColor(hex: 0x121317) : UIColor.white
-        let timeColor = UIColor(hex: isDark ? 0x8B929A : 0xB2B2B2)
+        let timeColor = UIColor(hex: isDark ? 0x6F767E : 0xB2B2B2)
         let levelText = (chat.qqLevel ?? 0) > 1 && GrowthFlags.showInChats == true
             ? "Lv\(chat.qqLevel ?? 0)" : ""
 

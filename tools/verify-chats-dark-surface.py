@@ -73,8 +73,8 @@ require(
     "empty and filtered chat lists must stay inside the native list surface",
 )
 require(
-    "let previewColor = UIColor(hex: isDark ? 0x9CA3AA : 0x999999)" in CHATS
-    and "let timeColor = UIColor(hex: isDark ? 0x8B929A : 0xB2B2B2)" in CHATS
+    "let previewColor = UIColor(hex: isDark ? 0x8F969E : 0x999999)" in CHATS
+    and "let timeColor = UIColor(hex: isDark ? 0x6F767E : 0xB2B2B2)" in CHATS
     and "let titleColor: UIColor = chat.showsOfficialMark" in CHATS
     and "UIColor(hex: isDark ? 0xF2F4F6 : 0x191919)" in CHATS,
     "chat-list title, preview and time must match WhatsApp's measured hierarchy",
