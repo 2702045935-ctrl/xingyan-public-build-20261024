@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 
 enum PayVisual {
-    static let tint = Color(hex: 0x0A84FF)
+    static let tint = AppPalette.appleBlue
     static let success = Color(hex: 0x30D158)
     static let warning = Color(hex: 0xFF9F0A)
     static let danger = Color(hex: 0xFF453A)
@@ -613,7 +613,7 @@ struct PaySectionLabel: View {
 
     var body: some View {
         Text(text)
-            .font(pf(13, .semibold))
+            .font(AppDesign.Type.compactButton)
             .foregroundColor(PayVisual.secondaryInk)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 4)
@@ -640,7 +640,7 @@ struct PayStatusPill: View {
 
     var body: some View {
         Text(text)
-            .font(pf(12.5, .semibold))
+            .font(AppDesign.Type.captionStrong)
             .foregroundColor(color)
             .padding(.horizontal, 10)
             .frame(height: 27)
@@ -690,7 +690,7 @@ struct PayEmptyState: View {
                 .font(.system(size: 32, weight: .regular))
                 .foregroundColor(PayVisual.secondaryInk)
             Text(title)
-                .font(pf(16, .semibold))
+                .font(AppDesign.Type.rowTitle)
                 .foregroundColor(C.label)
             if !detail.isEmpty {
                 Text(detail)
@@ -714,7 +714,7 @@ struct PayPrimaryButtonStyle: ButtonStyle {
             .font(pf(17, .semibold))
             .foregroundColor(.white)
             .frame(maxWidth: .infinity)
-            .frame(height: 52)
+            .frame(height: AppDesign.Control.largeControlHeight)
             .background(enabled ? tint : PayVisual.secondaryInk.opacity(0.34))
             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
             .scaleEffect(configuration.isPressed ? 0.985 : 1)
@@ -728,10 +728,10 @@ struct PaySecondaryButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(pf(16, .semibold))
+            .font(AppDesign.Type.rowTitle)
             .foregroundColor(tint)
             .frame(maxWidth: .infinity)
-            .frame(height: 50)
+            .frame(height: AppDesign.Control.buttonHeight)
             .background(PayVisual.card)
             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
             .overlay {
@@ -741,18 +741,6 @@ struct PaySecondaryButtonStyle: ButtonStyle {
             .scaleEffect(configuration.isPressed ? 0.985 : 1)
             .opacity(configuration.isPressed ? 0.82 : 1)
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
-    }
-}
-
-private struct PayPrimaryActionPressStyle: ButtonStyle {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(reduceMotion ? 1 : (configuration.isPressed ? 0.975 : 1))
-            .opacity(configuration.isPressed ? 0.84 : 1)
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.10),
-                       value: configuration.isPressed)
     }
 }
 
@@ -933,7 +921,7 @@ private struct StarPayGuideView: View {
                     .shadow(color: Color.black.opacity(0.08), radius: 14, y: 7)
                 VStack(alignment: .leading, spacing: 13) {
                     Label(Tr("交易成功"), systemImage: "checkmark.circle.fill")
-                        .font(pf(16, .semibold))
+                        .font(AppDesign.Type.rowTitle)
                         .foregroundStyle(PayVisual.success)
                     Text("− ¥ 128.00")
                         .font(pfMoney(26, .bold))
@@ -944,7 +932,7 @@ private struct StarPayGuideView: View {
                         Spacer()
                         Text("¥ 1,280.00")
                     }
-                    .font(pf(12.5, .medium))
+                    .font(AppDesign.Type.captionMedium)
                     .foregroundStyle(PayVisual.secondaryInk)
                 }
                 .padding(20)
@@ -1078,7 +1066,7 @@ struct PayOfficialView: View {
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(name)
-                            .font(pf(15.5, .semibold))
+                            .font(AppDesign.Type.rowTitle)
                             .foregroundStyle(.white)
                             .lineLimit(1)
                         Text("STAR PAY")
@@ -1097,7 +1085,7 @@ struct PayOfficialView: View {
                     .font(pf(11, .semibold))
                     .foregroundStyle(.white.opacity(0.82))
                     .padding(.horizontal, 10)
-                    .frame(height: 28)
+                    .frame(height: AppDesign.Control.statusHeight)
                     .background(.white.opacity(0.10), in: Capsule())
                 }
 
@@ -1108,7 +1096,7 @@ struct PayOfficialView: View {
                 } label: {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(Tr("可用余额"))
-                            .font(pf(12.5, .medium))
+                            .font(AppDesign.Type.captionMedium)
                             .foregroundStyle(.white.opacity(0.56))
 
                         Group {
@@ -1190,7 +1178,7 @@ struct PayOfficialView: View {
                     accent: Color.dyn(0xFFFFFF, 0x111111)
                 )
             }
-            .buttonStyle(PayPrimaryActionPressStyle())
+            .buttonStyle(AppPressStyle())
 
             NavigationLink {
                 ReceiveCodePage()
@@ -1204,7 +1192,7 @@ struct PayOfficialView: View {
                     accent: PayVisual.tint
                 )
             }
-            .buttonStyle(PayPrimaryActionPressStyle())
+            .buttonStyle(AppPressStyle())
         }
         .padding(.horizontal, 16)
     }
@@ -1281,10 +1269,10 @@ struct PayOfficialView: View {
                         .foregroundStyle(PayVisual.gold)
                     VStack(alignment: .leading, spacing: 5) {
                         Text(Tr("管理灰度预览"))
-                            .font(pf(13, .semibold))
+                            .font(AppDesign.Type.compactButton)
                             .foregroundStyle(C.label)
                         Text(Tr("普通用户累计消费满 ¥50,000 后自动解锁。"))
-                            .font(pf(12.5))
+                            .font(AppDesign.Type.caption)
                             .foregroundStyle(PayVisual.secondaryInk)
                         ProgressView(value: min(1, cumulativeSpend / Self.goldThreshold))
                             .tint(PayVisual.gold)
@@ -1437,7 +1425,7 @@ struct PayOfficialView: View {
                 ForEach(ledgerDays(entries)) { group in
                     VStack(alignment: .leading, spacing: 8) {
                         Text(dayTitle(group.day))
-                            .font(pf(13, .semibold))
+                            .font(AppDesign.Type.compactButton)
                             .foregroundStyle(PayVisual.secondaryInk)
                             .padding(.horizontal, 4)
 
@@ -1465,7 +1453,7 @@ struct PayOfficialView: View {
                     .font(pf(15, .semibold))
                     .foregroundColor(C.label)
                 Text(Tr("每一笔收付款、转账、红包和退款都会出现在这里"))
-                    .font(pf(12.5))
+                    .font(AppDesign.Type.caption)
                     .foregroundColor(PayVisual.secondaryInk)
             }
             .frame(maxWidth: .infinity)
@@ -1506,7 +1494,7 @@ struct PayOfficialView: View {
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(entry.reason.isEmpty ? (incoming ? Tr("收款") : Tr("付款")) : entry.reason)
-                        .font(pf(15.5, .semibold))
+                        .font(AppDesign.Type.rowTitle)
                         .foregroundColor(C.label)
                         .lineLimit(1)
                     Text(clock(entry.at) + " · " + Tr("交易成功"))

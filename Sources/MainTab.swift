@@ -107,11 +107,11 @@ struct MainTabView: View {
                                 .foregroundColor(C.green)
                         }
                         Text(app.syncing ? "正在同步…" : "同步完成")
-                            .font(pf(12.5, .medium))
+                            .font(AppDesign.Type.captionMedium)
                             .foregroundColor(C.label)
                     }
                     .padding(.horizontal, 14)
-                    .frame(height: 30)
+                    .frame(height: AppDesign.Control.sectionHeaderHeight)
                     .background(Capsule().fill(C.cardBg.opacity(0.96)))
                     .overlay(Capsule().stroke(C.hairline, lineWidth: 0.5))
                     .shadow(color: .black.opacity(0.10), radius: 8, y: 3)
@@ -1052,7 +1052,7 @@ struct NavBar<Right: View>: View {
                     .allowsHitTesting(!hideChromeExceptBack)
                     .animation(.easeOut(duration: 0.16), value: hideChromeExceptBack)
                     .padding(.horizontal, 14)
-                    .frame(height: 36)
+                    .frame(height: AppDesign.Control.floatingControlHeight)
                     .background {
                         if titleGlass {
                             GlassBackground(shape: Capsule(),
@@ -1102,7 +1102,7 @@ struct NavBar<Right: View>: View {
                     if useFloating && leftExtraGlass {
 
                         leftExtra
-                            .frame(height: 36)
+                            .frame(height: AppDesign.Control.floatingControlHeight)
                             .padding(.horizontal, 6)
                             .background { GlassBackground(shape: Capsule(), shadow: true, seed: 0.55) }
                             .padding(.leading, 6)
@@ -1119,7 +1119,7 @@ struct NavBar<Right: View>: View {
                 Spacer(minLength: 0)
                 if useFloating {
                     right
-                        .frame(height: 36)
+                        .frame(height: AppDesign.Control.floatingControlHeight)
                         .background {
                             if rightGlass {
                                 GlassBackground(shape: Capsule(),
@@ -1266,7 +1266,7 @@ struct MenuRow: View {
     let icon: String
     var iconColor: Color = C.green
 
-    var padLeading: CGFloat = 18
+    var padLeading: CGFloat = AppDesign.Spacing.md
     let title: String
     var detail: String = ""
     var showArrow: Bool = true
@@ -1323,13 +1323,13 @@ struct MenuRow: View {
                 }
 
                 Text(title)
-                    .font(pf(L.menuTextSize))
+                    .font(AppDesign.Type.listTitle)
                     .foregroundColor(C.label)
 
                 Spacer(minLength: 0)
 
                 if !detail.isEmpty {
-                    Text(detail).font(pf(15)).foregroundColor(C.subLabel)
+                    Text(detail).font(AppDesign.Type.bodyLarge).foregroundColor(C.subLabel)
                 }
                 if !thumb.isEmpty {
                     ZStack(alignment: .topTrailing) {
@@ -1349,29 +1349,12 @@ struct MenuRow: View {
                 }
             }
             .padding(.leading, padLeading)
-            .padding(.trailing, L.menuPadR)
-            .frame(height: L.menuH)
+            .padding(.trailing, AppDesign.Spacing.md)
+            .frame(height: AppDesign.Control.menuRowHeight)
             .background(clearBg ? Color.clear : C.cardBg)
             .contentShape(Rectangle())
         }
         .buttonStyle(MenuPressStyle())
-    }
-}
-
-struct MenuPressStyle: ButtonStyle {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .contentShape(Rectangle())
-            .scaleEffect(reduceMotion ? 1 : (configuration.isPressed ? 0.995 : 1))
-            .overlay {
-                Color.primary
-                    .opacity(configuration.isPressed ? 0.045 : 0)
-                    .allowsHitTesting(false)
-            }
-            .animation(reduceMotion ? nil : AppDesign.Motion.press,
-                       value: configuration.isPressed)
     }
 }
 
@@ -1412,40 +1395,51 @@ struct GroupCard<Content: View>: View {
     }
 
     var body: some View {
-        let themedCard = tone != .standard
-        let radius: CGFloat = themedCard ? 14 : (scheme == .dark ? 14 : 0)
-        if glass && scheme != .dark {
-            VStack(spacing: 0) { content }
-                .background {
+        VStack(spacing: 0) { content }
+            .background {
+                if glass && scheme != .dark {
                     ZStack {
-                        GlassBackground(shape: RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous),
-                                        opacity: UIConfig.num("meGlassAlpha", 0.62),
-                                        edgeAlpha: UIConfig.num("meGlassEdge", 0.55),
-                                        shadow: true,
-                                        seed: 0.42,
-                                        native: true)
-                        RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
-                            .fill(C.cardBg.opacity(0.42))
+                        GlassBackground(
+                            shape: RoundedRectangle(
+                                cornerRadius: AppDesign.Radius.panel,
+                                style: .continuous
+                            ),
+                            opacity: UIConfig.num("meGlassAlpha", 0.62),
+                            edgeAlpha: UIConfig.num("meGlassEdge", 0.55),
+                            shadow: true,
+                            seed: 0.42,
+                            native: true
+                        )
+                        RoundedRectangle(
+                            cornerRadius: AppDesign.Radius.panel,
+                            style: .continuous
+                        )
+                        .fill(C.cardBg.opacity(0.42))
                     }
+                } else {
+                    RoundedRectangle(
+                        cornerRadius: AppDesign.Radius.panel,
+                        style: .continuous
+                    )
+                    .fill(bg ?? resolvedBackground)
                 }
-                .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
-                .padding(.horizontal, UIConfig.num("meGlassInset", 12))
-                .padding(.bottom, 10)
-        } else {
-            VStack(spacing: 0) { content }
-                .background(bg ?? resolvedBackground)
-                .clipShape(RoundedRectangle(cornerRadius: radius,
-                                            style: .continuous))
-                .overlay {
-                    if themedCard || scheme == .dark {
-                        RoundedRectangle(cornerRadius: radius, style: .continuous)
-                            .stroke(Color.primary.opacity(scheme == .dark ? 0.10 : 0.065),
-                                    lineWidth: 0.7)
-                    }
-                }
-                .padding(.horizontal, themedCard ? 0 : (scheme == .dark ? 12 : 0))
-                .padding(.bottom, themedCard ? 10 : (scheme == .dark ? 8 : 0))
-        }
+            }
+            .clipShape(RoundedRectangle(
+                cornerRadius: AppDesign.Radius.panel,
+                style: .continuous
+            ))
+            .overlay {
+                RoundedRectangle(
+                    cornerRadius: AppDesign.Radius.panel,
+                    style: .continuous
+                )
+                .stroke(
+                    Color.primary.opacity(scheme == .dark ? 0.10 : 0.065),
+                    lineWidth: 0.7
+                )
+            }
+            .padding(.horizontal, AppDesign.Spacing.md)
+            .padding(.bottom, AppDesign.Spacing.sm)
     }
 
     private var resolvedBackground: Color {

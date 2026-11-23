@@ -26,7 +26,7 @@ struct GameDetailView: View {
                     cover
                     titleRow
                     rankCard
-                    Color.clear.frame(height: 8)
+                    Color.clear.frame(height: AppDesign.Spacing.xs)
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
@@ -74,12 +74,12 @@ struct GameDetailView: View {
                 Spacer(minLength: 0)
             }
             if let d = game.desc, !d.isEmpty {
-                Text(d).font(pf(13.5)).foregroundColor(subInk)
+                Text(d).font(AppDesign.Type.body).foregroundColor(subInk)
                     .fixedSize(horizontal: false, vertical: true)
             }
             if let line = myScoreLine {
                 Text(line)
-                    .font(pf(12.5))
+                    .font(AppDesign.Type.caption)
                     .foregroundColor(subInk)
             }
         }
@@ -115,7 +115,7 @@ struct GameDetailView: View {
                     HStack(spacing: 12) {
 
                         Text(r.rank.map { "\($0)" } ?? "—")
-                            .font(pf(13, .semibold))
+                            .font(AppDesign.Type.compactButton)
                             .foregroundColor(i == 0 ? Color(hex: 0xE8A33D) : subInk)
                             .frame(width: 18)
                         Avatar(path: r.avatar ?? "", size: 34, radius: 9)
@@ -166,7 +166,7 @@ struct GameDetailView: View {
 
             Button { onPlay(game); dismiss() } label: {
                 Text(Tr("开始游戏"))
-                    .font(pf(16, .semibold))
+                    .font(AppDesign.Type.rowTitle)
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 46)
@@ -256,7 +256,7 @@ struct GameRankBoardView: View {
                             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
                         }
                     }
-                    Color.clear.frame(height: 20)
+                    Color.clear.frame(height: AppDesign.Control.compactBadgeHeight)
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 10)
@@ -422,7 +422,7 @@ struct GameRankBoardView: View {
     private func rankedRow(_ g: MiniApp, rank: Int) -> some View {
         HStack(spacing: 11) {
             Text("\(rank)")
-                .font(pf(13.5, .medium))
+                .font(AppDesign.Type.bodyMedium)
                 .foregroundColor(rank <= 3 ? rankColor(rank) : subInk)
                 .frame(width: 24)
             gameRankCircle(g, size: 40)
@@ -434,23 +434,23 @@ struct GameRankBoardView: View {
             }
             Spacer(minLength: 0)
             Text("\(scoreOf(g))")
-                .font(pf(16, .medium))
-                .foregroundColor(Color(hex: 0x576B95))
+                .font(AppDesign.Type.rowTitle)
+                .foregroundColor(AppPalette.legacyLink)
                 .monospacedDigit()
         }
         .padding(.horizontal, 14)
-        .frame(height: 64)
+        .frame(height: AppDesign.Control.compactRowHeight)
     }
 
     private func waitingRow(_ g: MiniApp) -> some View {
         HStack(spacing: 11) {
             gameRankCircle(g, size: 36)
-            Text(g.name).font(pf(13.5)).foregroundColor(ink).lineLimit(1)
+            Text(g.name).font(AppDesign.Type.body).foregroundColor(ink).lineLimit(1)
             Spacer(minLength: 0)
             Text(Tr("暂无成绩")).font(pf(11.5)).foregroundColor(subInk)
         }
         .padding(.horizontal, 14)
-        .frame(height: 54)
+        .frame(height: AppDesign.Control.dialogRowHeight)
     }
 
     private func gameRankCircle(_ g: MiniApp, size: CGFloat) -> some View {
@@ -499,7 +499,7 @@ struct GameRankBoardView: View {
             }
             .frame(width: 44, height: 44)
             VStack(alignment: .leading, spacing: 3) {
-                Text(g.name).font(pf(15.5, .medium)).foregroundColor(ink).lineLimit(1)
+                Text(g.name).font(AppDesign.Type.rowTitleMedium).foregroundColor(ink).lineLimit(1)
                 Text(players > 0 ? (Lang.isEnglish ? "\(players) players" : "\(players) 人在玩")
                                  : Tr("还没有人玩过"))
                     .font(pf(12))
@@ -544,14 +544,14 @@ struct GameRankBoardView: View {
 
             if rows.isEmpty {
                 Text(Tr("还没有好友的成绩"))
-                    .font(pf(12.5)).foregroundColor(subInk)
+                    .font(AppDesign.Type.caption).foregroundColor(subInk)
                     .padding(.top, 6)
             } else {
                 ForEach(Array(rows.enumerated()), id: \.offset) { i, row in
                     HStack(spacing: 10) {
 
                         Text(row.rank.map { "\($0)" } ?? "—")
-                            .font(pf(12.5, .semibold))
+                            .font(AppDesign.Type.captionStrong)
                             .foregroundColor(i == 0 ? Color(hex: 0xE8A33D) : subInk)
                             .frame(width: 16)
                         Avatar(path: row.avatar ?? "", size: 28, radius: 8)

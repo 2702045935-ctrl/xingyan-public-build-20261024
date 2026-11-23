@@ -22,8 +22,8 @@ struct RealNameView: View {
     private var sheetBg: Color { scheme == .dark ? Color(hex: 0x1C1C1E) : .white }
 
     private var pageBg: Color { C.pageBg }
-    private var ink: Color { scheme == .dark ? Color(hex: 0xEDEDED) : Color(hex: 0x1A1A1A) }
-    private var gray: Color { scheme == .dark ? Color(hex: 0x8E8E93) : Color(hex: 0x737373) }
+    private var ink: Color { scheme == .dark ? AppPalette.neutralSurface : Color(hex: 0x1A1A1A) }
+    private var gray: Color { scheme == .dark ? AppPalette.systemSecondary : Color(hex: 0x737373) }
     private var line: Color { scheme == .dark ? Color(white: 1, opacity: 0.09) : Color(hex: 0xE6E6E6) }
 
     init(onVerified: (() -> Void)? = nil) {
@@ -91,7 +91,7 @@ struct RealNameView: View {
                         .font(pf(14)).foregroundColor(C.subLabel)
                     Chevron(size: 9, line: 1.6)
                 }
-                .padding(.horizontal, 16).frame(height: 52)
+                .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -113,7 +113,7 @@ struct RealNameView: View {
                     .autocorrectionDisabled()
             }
             .padding(.horizontal, 16)
-            .frame(height: 54)
+            .frame(height: AppDesign.Control.dialogRowHeight)
             .background(sheetBg)
 
             HairLine(inset: 16)
@@ -132,7 +132,7 @@ struct RealNameView: View {
                     .autocapitalization(.allCharacters)
             }
             .padding(.horizontal, 16)
-            .frame(height: 54)
+            .frame(height: AppDesign.Control.dialogRowHeight)
             .background(sheetBg)
 
             if !error.isEmpty {
@@ -160,7 +160,7 @@ struct RealNameView: View {
                     .font(pf(17, .medium))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 48)
+                    .frame(height: AppDesign.Control.mediumControlHeight)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                         .fill(canSubmit ? C.green : Color.dyn(0xC8C8C8, 0x4A4A4A)))
             }
@@ -227,7 +227,7 @@ struct RealNameView: View {
     private func bullet(_ t: String) -> some View {
         HStack(alignment: .top, spacing: 8) {
             Circle().fill(C.green).frame(width: 5, height: 5).padding(.top, 6)
-            Text(t).font(pf(13.5)).foregroundColor(gray)
+            Text(t).font(AppDesign.Type.body).foregroundColor(gray)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -239,7 +239,7 @@ struct RealNameView: View {
             Text(v).font(pf(16)).foregroundColor(gray)
         }
         .padding(.horizontal, 16)
-        .frame(height: 50)
+        .frame(height: AppDesign.Control.buttonHeight)
     }
 
     private func submit() {

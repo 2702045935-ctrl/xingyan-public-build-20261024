@@ -146,7 +146,7 @@ struct SendLocationView: View {
                 .font(pf(15, .semibold))
                 .foregroundColor(C.label)
                 .padding(.horizontal, 14)
-                .frame(height: 36)
+                .frame(height: AppDesign.Control.floatingControlHeight)
                 .background {
                     GlassBackground(shape: Capsule(style: .continuous), shadow: true)
                 }
@@ -158,7 +158,7 @@ struct SendLocationView: View {
                     .font(pf(14, .semibold))
                     .foregroundColor(places.isEmpty ? C.subLabel : .white)
                     .padding(.horizontal, 15)
-                    .frame(height: 42)
+                    .frame(height: AppDesign.Control.searchHeight)
                     .contentShape(Capsule())
             }
             .buttonStyle(.plain)
@@ -198,7 +198,7 @@ struct SendLocationView: View {
             Image(systemName: symbol)
                 .font(.system(size: 13, weight: .semibold))
             Text(title)
-                .font(pf(12.5, .medium))
+                .font(AppDesign.Type.captionMedium)
                 .lineLimit(1)
         }
         .foregroundColor(C.label)
@@ -245,7 +245,7 @@ struct SendLocationView: View {
                                 .font(.system(size: 26, weight: .light))
                                 .foregroundColor(C.subLabel)
                             Text(emptyText)
-                                .font(pf(13.5))
+                                .font(AppDesign.Type.body)
                                 .foregroundColor(C.subLabel)
                                 .multilineTextAlignment(.center)
                         }
@@ -303,7 +303,7 @@ struct SendLocationView: View {
             }
         }
         .padding(.horizontal, 12)
-        .frame(height: 42)
+        .frame(height: AppDesign.Control.searchHeight)
         .background {
             GlassBackground(shape: Capsule(style: .continuous), shadow: true)
         }
@@ -329,7 +329,7 @@ struct SendLocationView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(p.0).font(pf(16)).foregroundColor(C.label).lineLimit(1)
                     if !p.1.isEmpty {
-                        Text(p.1).font(pf(12.5)).foregroundColor(C.subLabel).lineLimit(1)
+                        Text(p.1).font(AppDesign.Type.caption).foregroundColor(C.subLabel).lineLimit(1)
                     }
                 }
                 Spacer(minLength: 8)
@@ -568,7 +568,7 @@ struct LiveLocationView: View {
                         HStack(spacing: 6) {
                             Image(systemName: "location.slash")
                             Text(hint).font(pf(13))
-                            Text(Tr("去设置")).font(pf(13, .medium)).foregroundColor(C.link)
+                            Text(Tr("去设置")).font(AppDesign.Type.compactButtonMedium).foregroundColor(C.link)
                         }
                         .foregroundColor(C.subLabel)
                     }
@@ -576,10 +576,10 @@ struct LiveLocationView: View {
                 }
                 Button { stopAndClose() } label: {
                     Text(Tr("停止共享"))
-                        .font(pf(16, .medium))
+                        .font(AppDesign.Type.rowTitle)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 44)
+                        .frame(height: AppDesign.Control.compactHeight)
                         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini).fill(C.red))
                 }
                 .buttonStyle(.plain)

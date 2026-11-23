@@ -80,10 +80,10 @@ struct MusicListeningRing: View {
                 .stroke(
                     AngularGradient(
                         colors: [
-                            Color(hex: 0x25D366),
+                            AppPalette.whatsApp,
                             Color(hex: 0x9BFFD1),
                             Color.clear,
-                            Color(hex: 0x25D366)
+                            AppPalette.whatsApp
                         ],
                         center: .center
                     ),
@@ -100,7 +100,7 @@ struct MusicListeningRing: View {
                 .foregroundStyle(.white)
                 .frame(width: max(13, size * 0.31),
                        height: max(13, size * 0.31))
-                .background(Circle().fill(Color(hex: 0x25D366)))
+                .background(Circle().fill(AppPalette.whatsApp))
                 .overlay(Circle().stroke(Color.white.opacity(0.75), lineWidth: 0.8))
                 .offset(y: -size * 0.47)
                 .rotationEffect(.degrees(rotating ? 360 : 0))

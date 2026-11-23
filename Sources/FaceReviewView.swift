@@ -58,7 +58,7 @@ struct FaceReviewView: View {
             NavBar(title: Tr("人脸比对"), back: { dismiss() }) {
                 Button { Task { await load() } } label: {
                     Text(Tr("刷新")).font(pf(15)).foregroundColor(C.green)
-                        .frame(height: 40).padding(.horizontal, 10).contentShape(Rectangle())
+                        .frame(height: AppDesign.Control.iconControlHeight).padding(.horizontal, 10).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
@@ -73,7 +73,7 @@ struct FaceReviewView: View {
                         .font(.system(size: 32)).foregroundColor(C.subLabel)
                     Text(Tr("还没有人传人脸比对")).font(pf(15)).foregroundColor(C.label)
                     Text(Tr("用户在实名认证 / 开小星的时候过了活体，照片会传到这里等你比对。"))
-                        .font(pf(12.5)).foregroundColor(C.subLabel)
+                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                         .multilineTextAlignment(.center).padding(.horizontal, 30)
                 }
                 .frame(maxWidth: .infinity).padding(.top, 60)
@@ -89,7 +89,7 @@ struct FaceReviewView: View {
                             head(Tr("已比对 ") + "\(done.count)")
                             ForEach(done) { r in card(r) }
                         }
-                        Spacer().frame(height: 20)
+                        Spacer().frame(height: AppDesign.Control.compactBadgeHeight)
                     }
                     .padding(.vertical, 10)
                 }
@@ -123,7 +123,7 @@ struct FaceReviewView: View {
     private func head(_ t: String) -> some View {
         HStack {
             RoundedRectangle(cornerRadius: AppDesign.Radius.micro).fill(DDColor.red).frame(width: 3.5, height: 14)
-            Text(t).font(pf(15.5, .semibold)).foregroundColor(C.label)
+            Text(t).font(AppDesign.Type.rowTitle).foregroundColor(C.label)
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 16).padding(.top, 4)
@@ -143,14 +143,14 @@ struct FaceReviewView: View {
 
                 VStack(alignment: .leading, spacing: 5) {
                     Text(r.name?.isEmpty == false ? r.name! : Tr("（没填姓名）"))
-                        .font(pf(16, .medium)).foregroundColor(C.label).lineLimit(1)
+                        .font(AppDesign.Type.rowTitle).foregroundColor(C.label).lineLimit(1)
                     Text(Tr("身份证 ") + (r.idCard ?? ""))
-                        .font(pf(12.5)).foregroundColor(C.subLabel).lineLimit(1)
+                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel).lineLimit(1)
                     Text(Tr("账号 ") + (r.nickname ?? r.userId ?? ""))
-                        .font(pf(12.5)).foregroundColor(C.subLabel).lineLimit(1)
+                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel).lineLimit(1)
                     Text(r.at ?? "").font(pf(11.5)).foregroundColor(C.subLabel.opacity(0.8)).lineLimit(1)
                     Text(Tr(r.avatarText)).font(pf(11.5, .medium)).foregroundColor(r.avatarColor).lineLimit(1)
-                    Text(Tr(r.statusText)).font(pf(12, .medium)).foregroundColor(r.statusColor)
+                    Text(Tr(r.statusText)).font(AppDesign.Type.sectionMedium).foregroundColor(r.statusColor)
                 }
                 Spacer(minLength: 0)
             }
@@ -160,7 +160,7 @@ struct FaceReviewView: View {
                     Button { Task { await review(r, pass: false) } } label: {
                         Text(busy == r.id ? Tr("提交中…") : Tr("驳回"))
                             .font(pf(14.5, .medium)).foregroundColor(C.label)
-                            .frame(maxWidth: .infinity).frame(height: 38)
+                            .frame(maxWidth: .infinity).frame(height: AppDesign.Control.iconSmallHeight)
                             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.pageBg))
                             .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
                     }
@@ -168,7 +168,7 @@ struct FaceReviewView: View {
                     Button { Task { await review(r, pass: true) } } label: {
                         Text(busy == r.id ? Tr("提交中…") : Tr("通过"))
                             .font(pf(14.5, .medium)).foregroundColor(.white)
-                            .frame(maxWidth: .infinity).frame(height: 38)
+                            .frame(maxWidth: .infinity).frame(height: AppDesign.Control.iconSmallHeight)
                             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.green))
                     }
                     .buttonStyle(.plain)
@@ -179,7 +179,7 @@ struct FaceReviewView: View {
                     Image(systemName: (r.status == "passed") ? "checkmark.seal.fill" : "xmark.seal.fill")
                         .font(.system(size: 13)).foregroundColor(r.statusColor)
                     Text(Tr(r.statusText) + (r.by?.isEmpty == false ? Tr(" · 由 ") + r.by! + Tr(" 比对") : ""))
-                        .font(pf(12.5)).foregroundColor(C.subLabel).lineLimit(1)
+                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel).lineLimit(1)
                     Spacer(minLength: 0)
                 }
             }

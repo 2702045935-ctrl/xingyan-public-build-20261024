@@ -51,7 +51,7 @@ struct StorageView: View {
                             .font(pfStyled(size: 12, weight: .semibold))
                             .foregroundStyle(.secondary)
                             .padding(.horizontal, 9)
-                            .frame(height: 24)
+                            .frame(height: AppDesign.Control.badgeHeight)
                             .background(
                                 Capsule().fill(Color(uiColor: .tertiarySystemFill))
                             )
@@ -227,7 +227,7 @@ struct StorageView: View {
             Seg(title: Tr("视频"), bytes: video, color: Color(hex: 0xA855F7), symbol: "play.rectangle.fill"),
             Seg(title: Tr("文件"), bytes: file, color: Color(hex: 0xF59E0B), symbol: "doc.fill"),
             Seg(title: Tr("语音"), bytes: audio, color: Color(hex: 0x22C55E), symbol: "waveform"),
-            Seg(title: Tr("其他记录"), bytes: other, color: Color(hex: 0x8E8E93), symbol: "ellipsis.message.fill")
+            Seg(title: Tr("其他记录"), bytes: other, color: AppPalette.systemSecondary, symbol: "ellipsis.message.fill")
         ].filter { $0.bytes > 0 }
     }
 

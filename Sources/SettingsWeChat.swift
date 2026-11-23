@@ -40,7 +40,7 @@ struct SettingRowLabel: View {
             Chevron(size: 9, line: 1.6).padding(.trailing, 3)
         }
         .padding(.horizontal, 16)
-        .frame(height: 56)
+        .frame(height: AppDesign.Control.menuRowHeight)
         .background(C.meCardBg)
         .contentShape(Rectangle())
     }
@@ -174,7 +174,7 @@ struct MoreSettingsView: View {
                         SettingRowButton(title: Tr("诊断工具")) { showDiag = true }
                     }
                     .padding(.top, 8)
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
             }
             .background(C.pageBg)

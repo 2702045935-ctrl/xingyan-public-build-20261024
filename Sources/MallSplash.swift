@@ -49,7 +49,7 @@ struct MallSplashAdView: View {
                     Text(splash.skip).font(pf(13)).foregroundColor(.white)
                 }
                 .padding(.horizontal, 11)
-                .frame(height: 30)
+                .frame(height: AppDesign.Control.sectionHeaderHeight)
                 .background(Capsule().fill(Color.black.opacity(0.38)))
                 .overlay(Capsule().stroke(Color.white.opacity(0.28), lineWidth: 0.6))
                 .contentShape(Rectangle())

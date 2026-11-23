@@ -140,15 +140,6 @@ func payShake(_ shake: Binding<CGFloat>) {
     }
 }
 
-struct KeyPressStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.94 : 1)
-            .opacity(configuration.isPressed ? 0.75 : 1)
-            .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
-    }
-}
-
 struct BankKeyStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -190,7 +181,7 @@ struct PayBusyOverlay: View {
             VStack(spacing: 14) {
                 PayDots()
                 Text(text)
-                    .font(pf(13.5, .medium))
+                    .font(AppDesign.Type.bodyMedium)
                     .foregroundColor(.white)
             }
             .frame(width: 118, height: 118)

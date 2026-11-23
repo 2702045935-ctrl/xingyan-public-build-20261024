@@ -133,7 +133,7 @@ struct LocationDetailView: View {
                         .font(pf(15, .medium))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 42)
+                        .frame(height: AppDesign.Control.searchHeight)
                         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.green))
                     }
                     .buttonStyle(.plain)
@@ -149,7 +149,7 @@ struct LocationDetailView: View {
                         .font(pf(15, .medium))
                         .foregroundColor(C.label)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 42)
+                        .frame(height: AppDesign.Control.searchHeight)
                         .background { CardGlassBox(radius: 8) }
                     }
                     .buttonStyle(.plain)

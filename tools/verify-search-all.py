@@ -15,8 +15,8 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "private struct SearchScopePressStyle" in SEARCH
-    and "buttonStyle(SearchScopePressStyle())" in SEARCH
+    "private struct SearchScopePressStyle" not in SEARCH
+    and "buttonStyle(AppSegmentPressStyle())" in SEARCH
     and ".buttonStyle(MenuPressStyle())" in SEARCH,
     "search scopes and result rows need the shared restrained press feedback",
 )

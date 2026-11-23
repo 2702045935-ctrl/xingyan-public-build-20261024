@@ -35,7 +35,7 @@ struct AccountSafetyCenterView: View {
                     }
                     .padding(.horizontal, 12)
 
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
                 .padding(.top, 6)
             }
@@ -56,7 +56,7 @@ struct AccountSafetyCenterView: View {
             Text(right).font(pf(13)).foregroundColor(C.subLabel)
             Chevron(size: 9, line: 1.6)
         }
-        .padding(.horizontal, 16).frame(height: 54)
+        .padding(.horizontal, 16).frame(height: AppDesign.Control.dialogRowHeight)
         .contentShape(Rectangle())
     }
 }
@@ -81,7 +81,7 @@ struct FreezeAccountSheet: View {
                         .fixedSize(horizontal: false, vertical: true)
                     TextField(Tr("登录密码（没设过就留空）"), text: $password)
                         .font(pf(15))
-                        .padding(.horizontal, 14).frame(height: 50)
+                        .padding(.horizontal, 14).frame(height: AppDesign.Control.buttonHeight)
                         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small).fill(C.fieldBg))
                     Toggle(isOn: $confirm) {
                         Text(Tr("我已了解，确定要冻结我的账号")).font(pf(14.5)).foregroundColor(C.label)
@@ -97,7 +97,7 @@ struct FreezeAccountSheet: View {
             }
             Button { Task { await doFreeze() } } label: {
                 Text(busy ? Tr("正在冻结…") : Tr("冻结账号"))
-                    .font(pf(16, .medium)).foregroundColor(.white)
+                    .font(AppDesign.Type.rowTitle).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay)
                         .fill(confirm ? C.red : C.subLabel))
@@ -146,15 +146,15 @@ struct UnfreezeSheet: View {
                         .fixedSize(horizontal: false, vertical: true)
                     TextField(Tr("账号（星言号或手机号）"), text: $username)
                         .font(pf(15)).textInputAutocapitalization(.never).autocorrectionDisabled()
-                        .padding(.horizontal, 14).frame(height: 50)
+                        .padding(.horizontal, 14).frame(height: AppDesign.Control.buttonHeight)
                         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small).fill(C.fieldBg))
                     SecureField(Tr("登录密码"), text: $password)
                         .font(pf(15))
-                        .padding(.horizontal, 14).frame(height: 50)
+                        .padding(.horizontal, 14).frame(height: AppDesign.Control.buttonHeight)
                         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small).fill(C.fieldBg))
                     TextField(Tr("实名身份证号（可选）"), text: $idCard)
                         .font(pf(15)).textInputAutocapitalization(.characters).autocorrectionDisabled()
-                        .padding(.horizontal, 14).frame(height: 50)
+                        .padding(.horizontal, 14).frame(height: AppDesign.Control.buttonHeight)
                         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small).fill(C.fieldBg))
                     if !error.isEmpty { Text(error).font(pf(13)).foregroundColor(C.red) }
                     Spacer().frame(height: 6)
@@ -164,7 +164,7 @@ struct UnfreezeSheet: View {
             }
             Button { Task { await submit() } } label: {
                 Text(busy ? Tr("正在解冻…") : Tr("解冻并登录"))
-                    .font(pf(16, .medium)).foregroundColor(.white)
+                    .font(AppDesign.Type.rowTitle).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(C.green))
                     .padding(.horizontal, 16)
@@ -223,11 +223,11 @@ struct AccountOpsSection: View {
             HStack(spacing: 8) {
                 TextField(Tr("星言号 / 手机号"), text: $name)
                     .font(pf(15)).textInputAutocapitalization(.never).autocorrectionDisabled()
-                    .padding(.horizontal, 12).frame(height: 44)
+                    .padding(.horizontal, 12).frame(height: AppDesign.Control.compactHeight)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small).fill(C.fieldBg))
                 Button { Task { await look() } } label: {
                     Text(Tr("查状态")).font(pf(15)).foregroundColor(.white)
-                        .padding(.horizontal, 14).frame(height: 44)
+                        .padding(.horizontal, 14).frame(height: AppDesign.Control.compactHeight)
                         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small).fill(C.green))
                 }
                 .buttonStyle(.plain)
@@ -237,7 +237,7 @@ struct AccountOpsSection: View {
 
             TextField(Tr("原因（封禁/冻结会写在提示里）"), text: $reason)
                 .font(pf(14))
-                .padding(.horizontal, 12).frame(height: 44)
+                .padding(.horizontal, 12).frame(height: AppDesign.Control.compactHeight)
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small).fill(C.fieldBg))
                 .padding(.horizontal, 16).padding(.top, 8)
 
@@ -277,7 +277,7 @@ struct AccountOpsSection: View {
     private func actBtn(_ t: String, _ action: String, _ color: Color) -> some View {
         Button { Task { await act(action) } } label: {
             Text(t).font(pf(14, .medium)).foregroundColor(.white)
-                .frame(maxWidth: .infinity).frame(height: 38)
+                .frame(maxWidth: .infinity).frame(height: AppDesign.Control.iconSmallHeight)
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small).fill(color))
         }
         .buttonStyle(.plain)

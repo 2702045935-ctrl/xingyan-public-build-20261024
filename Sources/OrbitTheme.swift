@@ -12,6 +12,10 @@ enum OrbitTheme {
     static let jade = Color.dyn(0x24C77F, 0x3AD48C)
     static let jadeDeep = Color.dyn(0x177D55, 0x52E09B)
     static let jadeSoft = Color.dyn(0xDDF8EB, 0x123A2A)
+    static let blue = Color.dyn(0x0A5FC2, 0x69A7FF)
+    static let blueSoft = Color.dyn(0xE8F2FF, 0x11243B)
+    static let male = Color.dyn(0x10AEFF, 0x5EC8FF)
+    static let female = Color.dyn(0xFF7BA9, 0xFF9EC1)
     static let gold = Color.dyn(0xC18A32, 0xE3B464)
 
     static let card = RoundedRectangle(

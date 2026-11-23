@@ -40,7 +40,7 @@ struct FAQView: View {
                         categoryCard
                         contactFoot
                     }
-                    Color.clear.frame(height: 24)
+                    Color.clear.frame(height: AppDesign.Control.badgeHeight)
                 }
             }
             .background(C.pageBg)
@@ -81,7 +81,7 @@ struct FAQView: View {
             }
         }
         .padding(.horizontal, 10)
-        .frame(height: 36)
+        .frame(height: AppDesign.Control.floatingControlHeight)
         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous).fill(C.searchBg))
         .padding(.horizontal, 8)
         .padding(.top, 8)
@@ -99,7 +99,7 @@ struct FAQView: View {
                         .font(pf(15, .medium))
                         .foregroundColor(.white)
                         .padding(.horizontal, 22)
-                        .frame(height: 40)
+                        .frame(height: AppDesign.Control.iconControlHeight)
                         .background(Capsule().fill(C.green))
                 }
                 .buttonStyle(.plain)
@@ -153,7 +153,7 @@ struct FAQView: View {
                                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                                         .fill(C.green))
                                 VStack(alignment: .leading, spacing: 3) {
-                                    Text(c.title).font(pf(16.5)).foregroundColor(C.label)
+                                    Text(c.title).font(AppDesign.Type.listTitle).foregroundColor(C.label)
                                     Text("\((c.items ?? []).count) " + Tr("个问题"))
                                         .font(pf(12)).foregroundColor(C.subLabel)
                                 }
@@ -161,7 +161,7 @@ struct FAQView: View {
                                 Chevron(size: 9, line: 1.6)
                             }
                             .padding(.horizontal, 14)
-                            .frame(height: 60)
+                            .frame(height: AppDesign.Control.profileRowHeight)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -182,7 +182,7 @@ struct FAQView: View {
                     .font(pf(15, .medium))
                     .foregroundColor(.white)
                     .padding(.horizontal, 24)
-                    .frame(height: 42)
+                    .frame(height: AppDesign.Control.searchHeight)
                     .background(Capsule().fill(C.green))
             }
             .buttonStyle(.plain)
@@ -256,7 +256,7 @@ struct WalletUpgradeView: View {
                 .font(pf(19, .medium))
                 .foregroundColor(.white)
             Text(info?.tip ?? "")
-                .font(pf(12.5))
+                .font(AppDesign.Type.caption)
                 .foregroundColor(Color.white.opacity(0.85))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 24)
@@ -361,10 +361,10 @@ struct WalletUpgradeView: View {
             }
             Spacer(minLength: 6)
             Text("单笔 " + money(lv.single) + " · 单日 " + money(lv.day))
-                .font(pf(12.5)).foregroundColor(C.subLabel)
+                .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
         }
         .padding(.horizontal, 16)
-        .frame(height: 52)
+        .frame(height: AppDesign.Control.largeControlHeight)
     }
 
     private var upgradeButton: some View {
@@ -373,7 +373,7 @@ struct WalletUpgradeView: View {
                 .font(pf(17, .medium))
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
-                .frame(height: 48)
+                .frame(height: AppDesign.Control.mediumControlHeight)
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                     .fill(info?.level == 2 ? C.subLabel : C.green))
         }
@@ -385,7 +385,7 @@ struct WalletUpgradeView: View {
 
     private var footNote: some View {
         Text(Tr("升级不收费，只是把身份信息补全：实名认证 + 绑定一张银行卡。信息只存在我们服务器，卡号只记末四位。"))
-            .font(pf(12.5))
+            .font(AppDesign.Type.caption)
             .foregroundColor(C.subLabel)
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)

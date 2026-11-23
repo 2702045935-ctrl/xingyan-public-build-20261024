@@ -3,8 +3,8 @@ import SwiftUI
 enum OfficialAccountVisual {
     static let name = LinearGradient(
         colors: [
-            Color(hex: 0x25D366),
-            Color(hex: 0x128C7E),
+            AppPalette.whatsApp,
+            AppPalette.teal,
             Color(hex: 0x075E54)
         ],
         startPoint: .leading,
@@ -14,15 +14,15 @@ enum OfficialAccountVisual {
     static let edge = LinearGradient(
         colors: [
             Color.white.opacity(0.82),
-            Color(hex: 0x25D366).opacity(0.76),
-            Color(hex: 0x128C7E).opacity(0.62),
+            AppPalette.whatsApp.opacity(0.76),
+            AppPalette.teal.opacity(0.62),
             Color.black.opacity(0.18)
         ],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
 
-    static let glow = Color(hex: 0x25D366).opacity(0.22)
+    static let glow = AppPalette.whatsApp.opacity(0.22)
 }
 
 /// 官方账号名称后的玻璃胶囊标识。
@@ -53,7 +53,7 @@ struct OfficialMark: View {
                         LinearGradient(
                             colors: [
                                 Color.white.opacity(scheme == .dark ? 0.22 : 0.82),
-                                Color(hex: 0x25D366).opacity(scheme == .dark ? 0.30 : 0.42),
+                                AppPalette.whatsApp.opacity(scheme == .dark ? 0.30 : 0.42),
                                 Color.white.opacity(scheme == .dark ? 0.12 : 0.58)
                             ],
                             startPoint: .topLeading,
@@ -74,8 +74,8 @@ struct OfficialVerifiedV: View {
 
     private let face = LinearGradient(
         colors: [
-            Color(hex: 0x25D366),
-            Color(hex: 0x128C7E)
+            AppPalette.whatsApp,
+            AppPalette.teal
         ],
         startPoint: .top,
         endPoint: .bottom
@@ -85,7 +85,7 @@ struct OfficialVerifiedV: View {
         colors: [
             Color.white.opacity(0.76),
             Color(hex: 0x9BE8B8).opacity(0.42),
-            Color(hex: 0x25D366).opacity(0.30),
+            AppPalette.whatsApp.opacity(0.30),
             Color.black.opacity(0.24)
         ],
         startPoint: .topLeading,

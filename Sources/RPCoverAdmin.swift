@@ -38,7 +38,7 @@ struct RPCoverEditSheet: View {
                     Text(busy ? Tr("保存中…") : Tr("保存"))
                         .font(pf(15, .medium))
                         .foregroundColor(image.isEmpty ? C.subLabel : C.green)
-                        .padding(.horizontal, 14).frame(height: 32)
+                        .padding(.horizontal, 14).frame(height: AppDesign.Control.smallButtonHeight)
                 }
                 .buttonStyle(.plain)
                 .disabled(busy || image.isEmpty)
@@ -77,10 +77,10 @@ struct RPCoverEditSheet: View {
                             Text(Tr("名字")).font(pf(16)).foregroundColor(C.label)
                                 .frame(width: 62, alignment: .leading)
                             TextField(Tr("金玉满堂"), text: $name)
-                                .font(pf(15.5))
+                                .font(AppDesign.Type.bodyLarge)
                                 .multilineTextAlignment(.trailing)
                         }
-                        .padding(.horizontal, 16).frame(height: 54)
+                        .padding(.horizontal, 16).frame(height: AppDesign.Control.dialogRowHeight)
                     }
                     .padding(.top, 10)
 
@@ -114,7 +114,7 @@ struct RPCoverEditSheet: View {
                             Spacer(minLength: 0)
                             Toggle("", isOn: $enabled).labelsHidden().tint(C.green)
                         }
-                        .padding(.horizontal, 16).frame(height: 56)
+                        .padding(.horizontal, 16).frame(height: AppDesign.Control.menuRowHeight)
 
                         HairLine(inset: 16)
                         Button { makeDefault.toggle() } label: {
@@ -125,7 +125,7 @@ struct RPCoverEditSheet: View {
                                     .font(.system(size: 20))
                                     .foregroundColor(makeDefault ? C.green : C.subLabel)
                             }
-                            .padding(.horizontal, 16).frame(height: 56)
+                            .padding(.horizontal, 16).frame(height: AppDesign.Control.menuRowHeight)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -138,7 +138,7 @@ struct RPCoverEditSheet: View {
                         } label: {
                             Text(Tr("删掉这张封面"))
                                 .font(pf(16)).foregroundColor(C.red)
-                                .frame(maxWidth: .infinity).frame(height: 48)
+                                .frame(maxWidth: .infinity).frame(height: AppDesign.Control.mediumControlHeight)
                         }
                         .buttonStyle(.plain)
                         .background(C.cardBg)
@@ -147,11 +147,11 @@ struct RPCoverEditSheet: View {
                     }
 
                     if !msg.isEmpty {
-                        Text(msg).font(pf(12.5)).foregroundColor(C.subLabel)
+                        Text(msg).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 18)
                     }
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
             }
             .background(C.pageBg)

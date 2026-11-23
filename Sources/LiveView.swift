@@ -101,7 +101,7 @@ struct LiveListView: View {
                         Text(Tr("直播中"))
                             .font(pf(11, .semibold)).foregroundColor(.white)
                             .padding(.horizontal, 7).padding(.vertical, 3)
-                            .background(Capsule().fill(Color(hex: 0xFA5151)))
+                            .background(Capsule().fill(AppPalette.danger))
                     } else {
                         Text(Tr("预告"))
                             .font(pf(11, .semibold)).foregroundColor(.white)
@@ -128,7 +128,7 @@ struct LiveListView: View {
                     Text(r.title ?? "")
                         .font(pf(15, .medium)).foregroundColor(ink).lineLimit(1)
                     Text(r.isLive ? "\(r.hostName) · \(r.hot ?? 0) 热度" : "\(r.hostName) · 待开播")
-                        .font(pf(12.5)).foregroundColor(subInk).lineLimit(1)
+                        .font(AppDesign.Type.caption).foregroundColor(subInk).lineLimit(1)
                 }
                 Spacer(minLength: 0)
             }
@@ -278,10 +278,10 @@ struct LiveRoomView: View {
                     }
                 } label: {
                     Text(live.publishing ? "结束直播" : "开始直播")
-                        .font(pf(13, .medium))
+                        .font(AppDesign.Type.compactButtonMedium)
                         .foregroundColor(.white)
                         .padding(.horizontal, 12).padding(.vertical, 6)
-                        .background(Capsule().fill(live.publishing ? Color(hex: 0xFA5151) : C.green))
+                        .background(Capsule().fill(live.publishing ? AppPalette.danger : C.green))
                 }
                 .buttonStyle(.plain)
                 .padding(.leading, 8)
@@ -299,7 +299,7 @@ struct LiveRoomView: View {
             ForEach(danmakus.suffix(9), id: \.text.hashValue) { d in
                 HStack(alignment: .top, spacing: 6) {
                     Text(d.who)
-                        .font(pf(12.5, .medium))
+                        .font(AppDesign.Type.captionMedium)
                         .foregroundColor(Color(hex: 0x7FD3FF))
                     Text(d.text)
                         .font(pf(13))
@@ -320,7 +320,7 @@ struct LiveRoomView: View {
                 .font(pf(14))
                 .foregroundColor(.white)
                 .padding(.horizontal, 14)
-                .frame(height: 38)
+                .frame(height: AppDesign.Control.iconSmallHeight)
                 .background(Capsule().fill(Color(white: 1, opacity: 0.14)))
                 .onSubmit { send() }
             Button { send() } label: {

@@ -10,7 +10,7 @@ struct BillsStatsView: View {
 
     @State private var month = ""
 
-    private let expColor = Color(hex: 0xFA5151)
+    private let expColor = AppPalette.danger
     private let incColor = Color(hex: 0xFFC406)
     private let barTrack = Color.dyn(0xF0F0F0, 0x2C2C2E)
 
@@ -34,7 +34,7 @@ struct BillsStatsView: View {
                         if !categories.isEmpty { categoryCard }
                         if !topPeers.isEmpty { peerCard }
                     }
-                    Color.clear.frame(height: 20)
+                    Color.clear.frame(height: AppDesign.Control.compactBadgeHeight)
                 }
                 .padding(.top, 4)
             }
@@ -225,7 +225,7 @@ struct BillsStatsView: View {
             ForEach(Array(topPeers.enumerated()), id: \.offset) { i, p in
                 HStack(spacing: 12) {
                     Text("\(i + 1)")
-                        .font(pf(13, .semibold))
+                        .font(AppDesign.Type.compactButton)
                         .foregroundColor(i == 0 ? expColor : C.subLabel)
                         .frame(width: 18)
                     Avatar(path: p.avatar, size: 34, radius: 9)
@@ -331,11 +331,11 @@ struct BillsStatsView: View {
 
     private func catColor(_ n: String) -> Color {
         switch n {
-        case "红包": return Color(hex: 0xFA5151)
+        case "红包": return AppPalette.danger
         case "充值": return Color(hex: 0x10AEFF)
         case "提现": return Color(hex: 0x07C160)
         case "会员": return Color(hex: 0xE8A33D)
-        default:     return Color(hex: 0x576B95)
+        default:     return AppPalette.legacyLink
         }
     }
 

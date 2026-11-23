@@ -462,7 +462,7 @@ struct MeView: View {
     private var rowLine: some View {
         Rectangle()
             .fill(OrbitTheme.divider)
-            .frame(height: 0.5)
+            .frame(height: AppDesign.Control.hairline)
             .padding(.leading, L.menuLineInset)
     }
 
@@ -541,7 +541,7 @@ struct MeView: View {
                                    startPoint: .top, endPoint: .bottom)
                         .frame(height: L.safeTop + 64)
                 } else {
-                    Color(hex: 0xFFFFFF)
+                    Color.white
                     Rectangle().fill(.ultraThinMaterial)
                     LinearGradient(colors: [Color.white.opacity(0.60), Color.clear],
                                    startPoint: .top, endPoint: .bottom)
@@ -620,14 +620,14 @@ struct MeView: View {
                                 .fixedSize()
                         }
                         Text(Tr("星言号") + "：" + (app.me?.username ?? "-"))
-                            .font(pf(13.5))
+                            .font(AppDesign.Type.body)
                             .foregroundColor(C.subLabel)
                             .lineLimit(1)
 
                             .copyOnLongPress(app.me?.username ?? "") { app.show($0) }
                         if moodOn {
                             Text((app.me?.moodIcon ?? "") + " " + (app.me?.moodText ?? ""))
-                                .font(pf(12.5))
+                                .font(AppDesign.Type.caption)
                                 .foregroundColor(C.subLabel)
                                 .lineLimit(1)
                         }
@@ -757,7 +757,7 @@ struct MeView: View {
     private func statCell(_ value: String, _ label: String, tap: Bool) -> some View {
         let body = VStack(spacing: 2) {
             Text(value)
-                .font(pf(16, .semibold))
+                .font(AppDesign.Type.rowTitle)
                 .foregroundColor(C.label)
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
@@ -796,7 +796,7 @@ struct MeView: View {
                     .lineLimit(1)
             }
             .padding(.horizontal, 11)
-            .frame(height: 28)
+            .frame(height: AppDesign.Control.statusHeight)
             .background(
                 Capsule().fill(LinearGradient(
                     colors: memberActive ? [gold, gold2]
@@ -973,7 +973,7 @@ struct SettingsView: View {
                                 .labelsHidden()
                                 .tint(C.green)
                         }
-                        .padding(.horizontal, 16).frame(height: 52)
+                        .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
                         HairLine(inset: 16)
 
                         settingLink(Tr("朋友权限"), "", key: "privacy")
@@ -1007,7 +1007,7 @@ struct SettingsView: View {
                                 Chevron(size: 9, line: 1.6).padding(.trailing, 3)
                             }
                             .padding(.horizontal, 16)
-                            .frame(height: 56)
+                            .frame(height: AppDesign.Control.menuRowHeight)
                             .background(C.meCardBg)
                             .contentShape(Rectangle())
                         }
@@ -1029,7 +1029,7 @@ struct SettingsView: View {
                         }
                         .padding(.horizontal, 16)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 52)
+                        .frame(height: AppDesign.Control.largeControlHeight)
                         .background(C.meCardBg)
                         .contentShape(Rectangle())
                     }
@@ -1043,13 +1043,13 @@ struct SettingsView: View {
                             .font(pf(17))
                             .foregroundColor(C.red)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 52)
+                            .frame(height: AppDesign.Control.largeControlHeight)
                             .background(C.meCardBg)
                     }
                     .disabled(busy)
                     .padding(.top, 8)
 
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
             }
             .background(C.pageBg)
@@ -1248,7 +1248,7 @@ struct SettingsView: View {
                 }
             }
             .padding(.horizontal, 12)
-            .frame(height: 38)
+            .frame(height: AppDesign.Control.iconSmallHeight)
             .background {
                 ZStack {
                     if scheme == .dark,
@@ -1301,7 +1301,7 @@ struct SettingsView: View {
                     }
                     .padding(.top, 4)
                 }
-                Spacer().frame(height: 30)
+                Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
             }
         }
         .background(C.pageBg)
@@ -1333,7 +1333,7 @@ struct SettingsView: View {
             Chevron(size: 9, line: 1.6).padding(.trailing, 3)
         }
         .padding(.horizontal, 16)
-        .frame(height: 56)
+        .frame(height: AppDesign.Control.menuRowHeight)
         .background(C.meCardBg)
         .contentShape(Rectangle())
     }
@@ -1349,7 +1349,7 @@ struct SettingsView: View {
                 Chevron(size: 9, line: 1.6).padding(.trailing, 3)
             }
             .padding(.horizontal, 16)
-            .frame(height: 56)
+            .frame(height: AppDesign.Control.menuRowHeight)
             .background(C.meCardBg)
             .contentShape(Rectangle())
         }
@@ -1358,7 +1358,7 @@ struct SettingsView: View {
 
     private func settingsGroupHeader(_ text: String) -> some View {
         Text(text)
-            .font(pf(13.5))
+            .font(AppDesign.Type.body)
             .foregroundColor(Color.dyn(0x767676, 0x8F8F8F))
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 16)
@@ -1377,7 +1377,7 @@ struct SettingsView: View {
                 Chevron(size: 9, line: 1.6).padding(.trailing, 3)
             }
             .padding(.horizontal, 16)
-            .frame(height: 56)
+            .frame(height: AppDesign.Control.menuRowHeight)
             .background(C.meCardBg)
             .contentShape(Rectangle())
         }

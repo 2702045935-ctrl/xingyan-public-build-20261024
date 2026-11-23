@@ -91,7 +91,7 @@ struct ContactCardWechat: View {
                         .font(pfStyled(size: 9.5, weight: .semibold))
                         .foregroundColor(gray)
                         .padding(.horizontal, 18)
-                        .frame(height: 38)
+                        .frame(height: AppDesign.Control.iconSmallHeight)
                         .background(scheme == .dark ? Color(hex: 0x0B110D) : Color(hex: 0xEDF5EF))
                     }
                     .clipShape(RoundedRectangle(cornerRadius: cardRadius, style: .continuous))
@@ -118,7 +118,7 @@ struct ContactCardWechat: View {
                 Text(c)
                     .font(pf(13))
                     .foregroundColor(.white)
-                    .padding(.horizontal, 14).frame(height: 32)
+                    .padding(.horizontal, 14).frame(height: AppDesign.Control.smallButtonHeight)
                     .background(Capsule().fill(Color.black.opacity(0.72)))
                     .padding(.bottom, 64)
                     .transition(.opacity)
@@ -276,7 +276,7 @@ struct ContactCardWechat: View {
         Button { onRemark() } label: {
             VStack(alignment: .leading, spacing: 3) {
                 Text(Tr("关系与备注"))
-                    .font(pf(15.5, .medium))
+                    .font(AppDesign.Type.rowTitleMedium)
                     .foregroundColor(ink)
                 Text(Tr("补充备注、电话和标签，并管理联系权限。"))
                     .font(pf(12))
@@ -299,9 +299,9 @@ struct ContactCardWechat: View {
             HStack(spacing: 10) {
                 Image(systemName: icon)
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(enabled ? Color(hex: 0x576B95) : gray)
+                    .foregroundColor(enabled ? AppPalette.legacyLink : gray)
                     .frame(width: 22)
-                Text(title).font(pf(16.5)).foregroundColor(enabled ? ink : gray)
+                Text(title).font(AppDesign.Type.listTitle).foregroundColor(enabled ? ink : gray)
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 16)
@@ -324,7 +324,7 @@ struct ContactCardWechat: View {
                 .frame(width: 32, height: 32)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(Tr("朋友圈"))
-                        .font(pf(15.5, .medium))
+                        .font(AppDesign.Type.rowTitleMedium)
                         .foregroundColor(ink)
                     Text(momentsHint.isEmpty ? Tr("最近动态") : Tr(momentsHint))
                         .font(pf(10.5))
@@ -357,7 +357,7 @@ struct ContactCardWechat: View {
                     Image(systemName: "bubble.left.and.bubble.right.fill")
                         .font(.system(size: 14, weight: .semibold))
                     Text(Tr("发消息"))
-                        .font(pf(15.5, .semibold))
+                        .font(AppDesign.Type.rowTitle)
                 }
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
@@ -403,7 +403,7 @@ struct ContactCardWechat: View {
     private var premiumDivider: some View {
         Rectangle()
             .fill(hair)
-            .frame(height: 0.5)
+            .frame(height: AppDesign.Control.hairline)
             .padding(.horizontal, 18)
     }
 
@@ -465,7 +465,7 @@ struct ContactCardWechat: View {
     }
 
     private var gap: some View {
-        Rectangle().fill(pageBg).frame(height: 8)
+        Rectangle().fill(pageBg).frame(height: AppDesign.Spacing.xs)
     }
 }
 
@@ -477,8 +477,8 @@ private struct ContactIdentityMark: View {
             RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous)
                 .fill(accent)
             HStack(spacing: 4) {
-                Capsule().fill(Color(hex: 0x07351C)).frame(width: 2.6, height: 6.5)
-                Capsule().fill(Color(hex: 0x07351C)).frame(width: 2.6, height: 6.5)
+                Capsule().fill(AppPalette.deepForest).frame(width: 2.6, height: 6.5)
+                Capsule().fill(AppPalette.deepForest).frame(width: 2.6, height: 6.5)
             }
             .offset(y: 1)
         }

@@ -20,7 +20,7 @@ struct MomentNoticesView: View {
                     if !items.isEmpty {
                         Button { confirmClear = true } label: {
                             Text(Tr("清空")).font(pf(15)).foregroundColor(C.subLabel)
-                                .frame(height: 40).padding(.horizontal, 10)
+                                .frame(height: AppDesign.Control.iconControlHeight).padding(.horizontal, 10)
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -109,7 +109,7 @@ struct MomentNoticesView: View {
                     }
                     if let p = n.preview, !p.isEmpty {
                         Text(p)
-                            .font(pf(12.5))
+                            .font(AppDesign.Type.caption)
                             .foregroundColor(C.subLabel)
                             .lineLimit(2)
                             .multilineTextAlignment(.leading)
@@ -129,7 +129,7 @@ struct MomentNoticesView: View {
         .buttonStyle(.plain)
         .background(C.cardBg)
         .overlay(alignment: .bottom) {
-            Rectangle().fill(C.hairline).frame(height: 0.5).padding(.leading, 67)
+            Rectangle().fill(C.hairline).frame(height: AppDesign.Control.hairline).padding(.leading, 67)
         }
     }
 

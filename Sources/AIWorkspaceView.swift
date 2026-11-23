@@ -35,7 +35,7 @@ struct AIWorkspaceView: View {
 
     @FocusState private var inputFocused: Bool
 
-    private let accent = Color(hex: 0x356FF4)
+    private let accent = AppPalette.info
 
     private var aiName: String {
         let value = wallet?.name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -70,7 +70,7 @@ struct AIWorkspaceView: View {
                 VStack(spacing: 12) {
                     ProgressView().tint(accent)
                     Text(Tr("正在进入 AI 工作台"))
-                        .font(pf(12.5))
+                        .font(AppDesign.Type.caption)
                         .foregroundColor(C.subLabel)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -151,7 +151,7 @@ struct AIWorkspaceView: View {
                     VStack(spacing: 12) {
                         ProgressView().tint(accent)
                         Text(Tr("正在上传…"))
-                            .font(pf(13, .medium))
+                            .font(AppDesign.Type.compactButtonMedium)
                             .foregroundColor(C.label)
                     }
                     .padding(.horizontal, 26)
@@ -172,7 +172,7 @@ struct AIWorkspaceView: View {
                     .foregroundColor(accent)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(aiName)
-                        .font(pf(16, .semibold))
+                        .font(AppDesign.Type.rowTitle)
                         .foregroundColor(C.label)
                         .lineLimit(1)
                     Text((messages.isEmpty ? Tr("快速回答") : Tr("正在对话"))
@@ -253,7 +253,7 @@ struct AIWorkspaceView: View {
             .font(pf(14, .medium))
             .foregroundColor(.white)
             .padding(.horizontal, 20)
-            .frame(height: 40)
+            .frame(height: AppDesign.Control.iconControlHeight)
             .background(Capsule().fill(accent))
             .buttonStyle(.plain)
         }
@@ -387,12 +387,12 @@ struct AIWorkspaceView: View {
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(accent)
                 Text(title)
-                    .font(pf(12, .medium))
+                    .font(AppDesign.Type.sectionMedium)
                     .foregroundColor(C.label)
                     .lineLimit(1)
             }
             .padding(.horizontal, 13)
-            .frame(height: 38)
+            .frame(height: AppDesign.Control.iconSmallHeight)
             .background {
                 GlassBackground(shape: Capsule(), opacity: 0.78,
                                 shadow: true, seed: 0.58)
@@ -476,7 +476,7 @@ struct AIWorkspaceView: View {
     private func messageContent(_ message: Message, mine: Bool) -> some View {
         if message.isRecalled {
             Text(Tr("这条消息已撤回"))
-                .font(pf(12.5))
+                .font(AppDesign.Type.caption)
                 .foregroundColor(mine ? Color.white.opacity(0.72) : C.subLabel)
         } else {
             switch message.kindName.lowercased() {
@@ -512,7 +512,7 @@ struct AIWorkspaceView: View {
     private func messageText(_ message: Message, mine: Bool) -> some View {
         let body = message.body.trimmingCharacters(in: .whitespacesAndNewlines)
         return Text(RichText.lines(body.isEmpty ? "[" + message.kindName + "]" : body, size: 15.5))
-            .font(pf(15.5))
+            .font(AppDesign.Type.bodyLarge)
             .lineSpacing(4)
             .foregroundColor(mine ? .white : C.label)
             .fixedSize(horizontal: false, vertical: true)
@@ -533,7 +533,7 @@ struct AIWorkspaceView: View {
                     .background(Circle().fill(mine ? Color.white.opacity(0.15) : accent.opacity(0.10)))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(info.name)
-                        .font(pf(13.5, .medium))
+                        .font(AppDesign.Type.bodyMedium)
                         .foregroundColor(mine ? .white : C.label)
                         .lineLimit(1)
                     Text(Tr("点击查看文件"))
@@ -595,7 +595,7 @@ struct AIWorkspaceView: View {
                           ? Tr("和小星简单聊聊")
                           : Tr("开启一天的工作之旅吧..."),
                           text: $prompt, axis: .vertical)
-                    .font(pf(15.5))
+                    .font(AppDesign.Type.bodyLarge)
                     .foregroundColor(C.label)
                     .tint(accent)
                     .lineLimit(1...4)
@@ -1072,7 +1072,7 @@ private struct AIWorkspacePlainLinkCard: View {
                     .background(Circle().fill(accent.opacity(0.09)))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(host)
-                        .font(pf(12.5, .medium))
+                        .font(AppDesign.Type.captionMedium)
                         .foregroundColor(C.label)
                         .lineLimit(1)
                     Text(Tr("在星言内打开链接"))
@@ -1102,7 +1102,7 @@ private struct AIRechargeView: View {
     @State private var selectedPlan: AITokenPlan?
 
     let onUpdate: (AIWalletStatus) -> Void
-    private let accent = Color(hex: 0x356FF4)
+    private let accent = AppPalette.info
 
     private var plans: [AITokenPlan] {
         if !wallet.plans.isEmpty {
@@ -1146,7 +1146,7 @@ private struct AIRechargeView: View {
                                 Image(systemName: "bolt.fill")
                                     .font(.system(size: 10, weight: .bold))
                                 Text(compact(wallet.tokens) + " Token")
-                                    .font(pf(12.5, .semibold))
+                                    .font(AppDesign.Type.captionStrong)
                             }
                             .foregroundColor(accent)
                         }
@@ -1162,7 +1162,7 @@ private struct AIRechargeView: View {
                         .stroke(C.hairline, lineWidth: 0.7))
 
                     Text(Tr("选择套餐"))
-                        .font(pf(16, .semibold))
+                        .font(AppDesign.Type.rowTitle)
                         .foregroundColor(C.label)
 
                     ForEach(plans) { plan in
@@ -1222,7 +1222,7 @@ private struct AIRechargeView: View {
 
                 HStack(spacing: 6) {
                     Text(compact(plan.granted) + " Token")
-                        .font(pf(12.5, .semibold))
+                        .font(AppDesign.Type.captionStrong)
                         .foregroundColor(accent)
                     if plan.bonus > 0 {
                         Text(Tr("含赠送") + compact(plan.bonus))
@@ -1255,7 +1255,7 @@ private struct AIRechargeView: View {
                     }
                     Spacer(minLength: 8)
                     Text(Tr("购买"))
-                        .font(pf(12, .semibold))
+                        .font(AppDesign.Type.section)
                         .foregroundColor(.white)
                         .padding(.horizontal, 15)
                         .frame(height: 31)
@@ -1353,10 +1353,10 @@ private struct AIPaymentSheet: View {
 
             VStack(alignment: .leading, spacing: 7) {
                 Text(plan.name)
-                    .font(pf(16, .semibold))
+                    .font(AppDesign.Type.rowTitle)
                     .foregroundColor(C.label)
                 Text(compact(plan.granted) + " Token · ¥" + moneyFmt(plan.price))
-                    .font(pf(13, .medium))
+                    .font(AppDesign.Type.compactButtonMedium)
                     .foregroundColor(accent)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -1371,7 +1371,7 @@ private struct AIPaymentSheet: View {
                 .focused($focused)
                 .font(pf(17, .medium))
                 .padding(.horizontal, 14)
-                .frame(height: 50)
+                .frame(height: AppDesign.Control.buttonHeight)
                 .background(C.fieldBg)
                 .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
                 .padding(.horizontal, 20)
@@ -1384,7 +1384,7 @@ private struct AIPaymentSheet: View {
 
             if !errorText.isEmpty {
                 Text(errorText)
-                    .font(pf(12.5))
+                    .font(AppDesign.Type.caption)
                     .foregroundColor(C.red)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 20)
@@ -1401,7 +1401,7 @@ private struct AIPaymentSheet: View {
                 }
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
-                .frame(height: 48)
+                .frame(height: AppDesign.Control.mediumControlHeight)
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                     .fill(valid ? accent : accent.opacity(0.35)))
             }
@@ -1477,7 +1477,7 @@ private struct AIProfileSheet: View {
     @State private var showClearChatConfirm = false
     @State private var showVoiceSettings = false
     @State private var clearingChat = false
-    private let accent = Color(hex: 0x356FF4)
+    private let accent = AppPalette.info
 
     private var voices: [AIVoiceOption] { wallet.voices ?? [] }
 
@@ -1489,7 +1489,7 @@ private struct AIProfileSheet: View {
                     .foregroundColor(C.label)
                 Spacer()
                 Button(Tr("完成")) { dismiss() }
-                    .font(pf(13.5, .medium))
+                    .font(AppDesign.Type.bodyMedium)
                     .foregroundColor(accent)
                     .buttonStyle(.plain)
             }
@@ -1504,14 +1504,14 @@ private struct AIProfileSheet: View {
                                 .font(pf(15))
                                 .foregroundColor(C.label)
                                 .padding(.horizontal, 12)
-                                .frame(height: 44)
+                                .frame(height: AppDesign.Control.compactHeight)
                                 .background(C.fieldBg)
                                 .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
                             Button {
                                 saveName()
                             } label: {
                                 Text(savingName ? Tr("保存中") : Tr("保存"))
-                                    .font(pf(12.5, .semibold))
+                                    .font(AppDesign.Type.captionStrong)
                                     .foregroundColor(.white)
                                     .frame(width: 66, height: 44)
                                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
@@ -1573,7 +1573,7 @@ private struct AIProfileSheet: View {
                                             .foregroundColor(selectedVoice == voice.id ? accent : C.subLabel)
                                         VStack(alignment: .leading, spacing: 2) {
                                             Text(voice.name)
-                                                .font(pf(13.5, .medium))
+                                                .font(AppDesign.Type.bodyMedium)
                                                 .foregroundColor(C.label)
                                             if let desc = voice.desc, !desc.isEmpty {
                                                 Text(desc)
@@ -1595,7 +1595,7 @@ private struct AIProfileSheet: View {
                         HStack(spacing: 12) {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(Tr("自动朗读回复"))
-                                    .font(pf(13.5, .medium))
+                                    .font(AppDesign.Type.bodyMedium)
                                     .foregroundColor(C.label)
                                 Text(Tr("每条回答下方也可以手动点「朗读」"))
                                     .font(pf(10.5))
@@ -1625,7 +1625,7 @@ private struct AIProfileSheet: View {
                         HStack(spacing: 12) {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(Tr("清除 AI 工作台对话"))
-                                    .font(pf(13.5, .medium))
+                                    .font(AppDesign.Type.bodyMedium)
                                     .foregroundColor(C.label)
                                 Text(Tr("只清空你和小星的工作台聊天，不影响其他会话"))
                                     .font(pf(10.5))
@@ -1639,7 +1639,7 @@ private struct AIProfileSheet: View {
                                     ProgressView().controlSize(.small).tint(C.red)
                                 } else {
                                     Text(Tr("清除"))
-                                        .font(pf(12, .medium))
+                                        .font(AppDesign.Type.sectionMedium)
                                         .foregroundColor(C.red)
                                 }
                             }
@@ -1804,7 +1804,7 @@ private struct AIWorkspaceMark: View {
                                endPoint: .bottomTrailing)
             )
             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
-            .shadow(color: Color(hex: 0x356FF4).opacity(0.16), radius: 8, y: 3)
+            .shadow(color: AppPalette.info.opacity(0.16), radius: 8, y: 3)
     }
 }
 

@@ -76,7 +76,7 @@ struct NativeChatRowConfiguration {
 }
 
 final class NativeChatRowCell: UITableViewCell {
-    private static let previewAccentInk = UIColor(hex: 0xFA5151)
+    private static let previewAccentInk = AppPalette.dangerUI
 
     private let foreground = UIView()
     private let avatarView = NativeChatAvatarView()
@@ -197,7 +197,7 @@ final class NativeChatRowCell: UITableViewCell {
                                   height: 16)
         layoutTitleBadges()
         divider.frame = CGRect(x: dividerLeading, y: bounds.height - 0.5,
-                               width: bounds.width - dividerLeading, height: 0.5)
+                               width: bounds.width - dividerLeading, height: AppDesign.Control.hairline)
     }
 
     func configure(_ configuration: NativeChatRowConfiguration) {
@@ -605,7 +605,7 @@ private final class NativeChatAvatarView: UIView {
         tileContainer.layer.cornerCurve = .continuous
         tileContainer.backgroundColor = UIColor.secondarySystemFill
         musicRing.fillColor = UIColor.clear.cgColor
-        musicRing.strokeColor = UIColor(hex: 0x25D366).cgColor
+        musicRing.strokeColor = AppPalette.whatsAppUI.cgColor
         musicRing.lineWidth = 2
         musicRing.lineCap = .round
         musicRing.isHidden = true
@@ -632,7 +632,7 @@ private final class NativeChatAvatarView: UIView {
         musicNote.image = UIImage(systemName: "music.note")
         musicNote.tintColor = .white
         musicNote.contentMode = .scaleAspectFit
-        musicNote.backgroundColor = UIColor(hex: 0x25D366)
+        musicNote.backgroundColor = AppPalette.whatsAppUI
         musicNote.layer.cornerRadius = 7.5
         musicNote.layer.borderColor = UIColor.white.withAlphaComponent(0.75).cgColor
         musicNote.layer.borderWidth = 0.8

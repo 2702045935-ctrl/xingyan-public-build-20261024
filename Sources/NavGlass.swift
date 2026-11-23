@@ -446,7 +446,7 @@ struct TopGlassLine: View {
     var body: some View {
         Rectangle()
             .fill(C.navLine)
-            .frame(height: 0.5)
+            .frame(height: AppDesign.Control.hairline)
             .opacity(scrolled > 6 ? 1 : 0)
     }
 }
@@ -536,7 +536,7 @@ struct NativeGlassIconButton: View {
                 .frame(width: 38, height: 38)
                 .contentShape(Circle())
         }
-        .buttonStyle(NavPlusPressStyle())
+        .buttonStyle(AppIconPressStyle())
         .background { NativeGlassCircleBackground() }
         .accessibilityLabel(label)
     }

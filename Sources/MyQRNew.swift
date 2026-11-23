@@ -33,8 +33,8 @@ private struct XingyanMark: View {
             RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous)
                 .fill(accent)
             HStack(spacing: 4) {
-                Capsule().fill(Color(hex: 0x07351C)).frame(width: 2.8, height: 7)
-                Capsule().fill(Color(hex: 0x07351C)).frame(width: 2.8, height: 7)
+                Capsule().fill(AppPalette.deepForest).frame(width: 2.8, height: 7)
+                Capsule().fill(AppPalette.deepForest).frame(width: 2.8, height: 7)
             }
             .offset(y: 1)
         }
@@ -250,7 +250,7 @@ struct MyQRView: View {
                     identityHeader
                     Rectangle()
                         .fill(cardHairline)
-                        .frame(height: 0.5)
+                        .frame(height: AppDesign.Control.hairline)
                         .padding(.top, 18)
                     qrPanel
                         .padding(.top, 17)
@@ -269,7 +269,7 @@ struct MyQRView: View {
             .font(pfStyled(size: 9.5, weight: .semibold))
             .foregroundStyle(cardSubInk)
             .padding(.horizontal, 18)
-            .frame(height: 38)
+            .frame(height: AppDesign.Control.iconSmallHeight)
             .background(cardFooterFill)
         }
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
@@ -378,7 +378,7 @@ struct MyQRView: View {
 
             VStack(spacing: 3) {
                 Text(Tr("扫码添加好友"))
-                    .font(pf(16, .semibold))
+                    .font(AppDesign.Type.rowTitle)
                     .foregroundStyle(cardInk)
                 Text(Tr("打开星言 · 发现 · 扫一扫"))
                     .font(pf(11.5))
@@ -475,7 +475,7 @@ struct MyQRView: View {
                         .font(pfStyled(size: 12, weight: .semibold))
                         .foregroundColor(exportInk)
                         .padding(.horizontal, 13)
-                        .frame(height: 32)
+                        .frame(height: AppDesign.Control.smallButtonHeight)
                         .background(Capsule().fill(Color.white.opacity(0.72)))
                         .overlay(Capsule().stroke(Color.black.opacity(0.07), lineWidth: 0.7))
                 }

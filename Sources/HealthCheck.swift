@@ -42,7 +42,7 @@ struct HealthCheckView: View {
                     Text(running ? Tr("检测中…") : Tr("全部检测"))
                         .font(pf(14.5))
                         .foregroundColor(running ? C.subLabel : C.green)
-                        .padding(.horizontal, 12).frame(height: 32)
+                        .padding(.horizontal, 12).frame(height: AppDesign.Control.smallButtonHeight)
                 }
                 .buttonStyle(.plain)
                 .disabled(running)
@@ -51,7 +51,7 @@ struct HealthCheckView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 10) {
                     Text(Tr("照微信「故障修复」那套：每项先检测、能修的当场修。修的都是本机缓存和连接，不会动服务器上的数据，也不会删聊天记录。"))
-                        .font(pf(12.5)).foregroundColor(C.subLabel)
+                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 20).padding(.top, 8)
 
@@ -67,10 +67,10 @@ struct HealthCheckView: View {
                         HStack(spacing: 8) {
                             Image(systemName: "paperplane.fill").font(.system(size: 15))
                             Text(uploading ? Tr("正在上传…") : Tr("上传日志（含崩溃）"))
-                                .font(pf(16, .medium))
+                                .font(AppDesign.Type.rowTitle)
                         }
                         .foregroundColor(.white)
-                        .frame(maxWidth: .infinity).frame(height: 48)
+                        .frame(maxWidth: .infinity).frame(height: AppDesign.Control.mediumControlHeight)
                         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.green))
                     }
                     .buttonStyle(.plain)
@@ -79,11 +79,11 @@ struct HealthCheckView: View {
                     .padding(.top, 6)
 
                     if !result.isEmpty {
-                        Text(result).font(pf(12.5)).foregroundColor(C.subLabel)
+                        Text(result).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 20).padding(.top, 4)
                     }
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
             }
             .background(C.pageBg)
@@ -107,9 +107,9 @@ struct HealthCheckView: View {
                 if !r.fixTitle.isEmpty {
                     Button { Task { await fix(r.id) } } label: {
                         Text(busyFix == r.id ? Tr("修复中…") : Tr(r.fixTitle))
-                            .font(pf(13.5))
+                            .font(AppDesign.Type.body)
                             .foregroundColor(busyFix == r.id ? C.subLabel : C.green)
-                            .padding(.horizontal, 10).frame(height: 28)
+                            .padding(.horizontal, 10).frame(height: AppDesign.Control.statusHeight)
                             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).fill(C.fieldBg))
                     }
                     .buttonStyle(.plain)

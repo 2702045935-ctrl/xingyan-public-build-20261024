@@ -48,7 +48,7 @@ struct DDCategoryTab: View {
                                 Spacer(minLength: 0)
                             }
                             .padding(.leading, 6).padding(.trailing, 8)
-                            .frame(height: 50)
+                            .frame(height: AppDesign.Control.buttonHeight)
                             .frame(maxWidth: .infinity)
                             .background(
                                 Group {
@@ -75,7 +75,7 @@ struct DDCategoryTab: View {
                                 .font(.system(size: 13.5, weight: .medium))
                                 .foregroundColor(DDColor.sub)
                             Text(Tr("搜商品 / 品牌 / 分类"))
-                                .font(pf(13.5)).foregroundColor(DDColor.sub)
+                                .font(AppDesign.Type.body).foregroundColor(DDColor.sub)
                             Spacer(minLength: 0)
                         }
                         .padding(.horizontal, 12)
@@ -88,7 +88,7 @@ struct DDCategoryTab: View {
 
                     HStack(spacing: 6) {
                         Text(Tr(cate.isEmpty ? "全部商品" : cate))
-                            .font(pf(16, .semibold)).foregroundColor(DDColor.ink)
+                            .font(AppDesign.Type.rowTitle).foregroundColor(DDColor.ink)
                         Text(String(list.count) + Tr(" 件"))
                             .font(pf(11.5)).foregroundColor(DDColor.sub)
                         Spacer(minLength: 0)

@@ -183,7 +183,7 @@ struct ShopLinkCard: View {
 
             Rectangle()
                 .fill(Color.primary.opacity(0.065))
-                .frame(height: 0.5)
+                .frame(height: AppDesign.Control.hairline)
                 .padding(.vertical, 10)
 
             WeChatMessageCardFooter(symbol: "link",
@@ -207,7 +207,7 @@ struct ShopLinkCard: View {
                                          style: .continuous)
                             .fill(Color(hexString: "#FF5000"))
                         Text("淘")
-                            .font(pf(16, .semibold))
+                            .font(AppDesign.Type.rowTitle)
                             .foregroundColor(.white)
                     }
                     .frame(width: 56, height: 56)
@@ -228,7 +228,7 @@ struct ShopLinkCard: View {
 
             Rectangle()
                 .fill(Color.primary.opacity(0.065))
-                .frame(height: 0.5)
+                .frame(height: AppDesign.Control.hairline)
                 .padding(.vertical, 10)
 
             WeChatMessageCardFooter(symbol: "link",

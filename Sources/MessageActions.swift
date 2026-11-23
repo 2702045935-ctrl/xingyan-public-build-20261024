@@ -14,7 +14,7 @@ struct MsgMenuBox: View {
 
     @Environment(\.colorScheme) private var scheme
     private var bg: Color { scheme == .dark ? Color(hex: 0x3A3A3C) : .white }
-    private var ink: Color { scheme == .dark ? Color(hex: 0xEDEDED) : Color(hex: 0x1A1A1A) }
+    private var ink: Color { scheme == .dark ? AppPalette.neutralSurface : Color(hex: 0x1A1A1A) }
 
     static let itemW: CGFloat = 56
     static let itemH: CGFloat = 62
@@ -150,7 +150,7 @@ struct ForwardPickerView: View {
                         .font(pfStyled(size: 13.5, weight: .semibold))
                         .foregroundStyle(picked.isEmpty ? OrbitTheme.secondary : OrbitTheme.jade)
                         .padding(.horizontal, 12)
-                        .frame(height: 32)
+                        .frame(height: AppDesign.Control.smallButtonHeight)
                 }
                 .buttonStyle(.plain)
             }
@@ -291,7 +291,7 @@ struct ForwardPickerView: View {
                     }
                     .foregroundStyle(.white)
                     .padding(.horizontal, 19)
-                    .frame(height: 42)
+                    .frame(height: AppDesign.Control.searchHeight)
                     .background {
                         Capsule()
                             .fill(
@@ -319,7 +319,7 @@ struct ForwardPickerView: View {
         .overlay(alignment: .top) {
             Rectangle()
                 .fill(OrbitTheme.divider.opacity(0.7))
-                .frame(height: 0.5)
+                .frame(height: AppDesign.Control.hairline)
         }
         .animation(.spring(response: 0.28, dampingFraction: 0.86), value: picked.count)
     }
@@ -413,7 +413,7 @@ struct MultiSelectBar: View {
     var onDelete: () -> Void
 
     @Environment(\.colorScheme) private var scheme
-    private var ink: Color { scheme == .dark ? Color(hex: 0xEDEDED) : Color(hex: 0x1A1A1A) }
+    private var ink: Color { scheme == .dark ? AppPalette.neutralSurface : Color(hex: 0x1A1A1A) }
 
     var body: some View {
         HStack(spacing: 0) {
@@ -421,7 +421,7 @@ struct MultiSelectBar: View {
             item("收藏", "star", onFavorite)
             item("删除", "trash", onDelete, danger: true)
         }
-        .frame(height: 54)
+        .frame(height: AppDesign.Control.dialogRowHeight)
         .background(C.tabBg)
         .overlay(alignment: .top) { HairLine() }
     }
@@ -435,7 +435,7 @@ struct MultiSelectBar: View {
             .foregroundColor(danger ? Color(hexString: "#FA5151") : ink)
             .opacity(count == 0 ? 0.45 : 1)
             .frame(maxWidth: .infinity)
-            .frame(height: 54)
+            .frame(height: AppDesign.Control.dialogRowHeight)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

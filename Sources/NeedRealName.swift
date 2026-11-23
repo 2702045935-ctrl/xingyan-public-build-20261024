@@ -21,7 +21,7 @@ struct NeedRealNameView: View {
                     setupSteps
                     continueButton
                     privacyNotice
-                    Color.clear.frame(height: 24)
+                    Color.clear.frame(height: AppDesign.Control.badgeHeight)
                 }
                 .padding(.horizontal, 20)
             }
@@ -97,7 +97,7 @@ struct NeedRealNameView: View {
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundColor(Color(uiColor: .systemBackground))
                 .frame(maxWidth: .infinity)
-                .frame(height: 52)
+                .frame(height: AppDesign.Control.largeControlHeight)
                 .background(
                     RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                         .fill(Color.primary)
@@ -112,7 +112,7 @@ struct NeedRealNameView: View {
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundColor(C.green)
             Text(Tr("身份资料只保存在星言服务器；身份证号加密保存，页面只显示脱敏信息。"))
-                .font(pf(12.5))
+                .font(AppDesign.Type.caption)
                 .foregroundColor(C.subLabel)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -136,7 +136,7 @@ struct NeedRealNameView: View {
                     .font(pf(15, .semibold))
                     .foregroundColor(C.label)
                 Text(detail)
-                    .font(pf(12.5))
+                    .font(AppDesign.Type.caption)
                     .foregroundColor(C.subLabel)
             }
             Spacer(minLength: 8)

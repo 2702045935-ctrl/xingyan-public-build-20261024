@@ -63,7 +63,7 @@ struct ContactCardNew: View {
                                         Image(systemName: "chevron.right")
                                             .font(.system(size: 13, weight: .semibold)).foregroundColor(hInk3)
                                     }
-                                    .padding(.horizontal, 16).frame(height: 60)
+                                    .padding(.horizontal, 16).frame(height: AppDesign.Control.profileRowHeight)
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -104,7 +104,7 @@ struct ContactCardNew: View {
             Image(systemName: "ellipsis").font(.system(size: 17)).foregroundColor(hInk)
         }
         .padding(.horizontal, 16)
-        .frame(height: 44)
+        .frame(height: AppDesign.Control.compactHeight)
         .background(Color.white)
     }
 
@@ -176,7 +176,7 @@ struct ContactCardNew: View {
             Text(v).font(pf(14)).foregroundColor(hInk3)
         }
         .padding(.horizontal, 16)
-        .frame(height: 56)
+        .frame(height: AppDesign.Control.menuRowHeight)
     }
 
     private var line: some View {
@@ -186,10 +186,10 @@ struct ContactCardNew: View {
     private func pill(_ text: String, primary: Bool, action: @escaping () -> Void) -> some View {
         Button { action() } label: {
             Text(text)
-                .font(pf(16, .medium))
+                .font(AppDesign.Type.rowTitle)
                 .foregroundColor(primary ? .white : hBlue)
                 .frame(maxWidth: .infinity)
-                .frame(height: 42)
+                .frame(height: AppDesign.Control.searchHeight)
                 .background(
                     Group {
                         if primary { Capsule().fill(hBlue) } else { Capsule().stroke(hBlue, lineWidth: 1.5) }

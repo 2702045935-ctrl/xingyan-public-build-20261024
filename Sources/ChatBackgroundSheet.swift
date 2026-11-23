@@ -233,7 +233,7 @@ struct ChatBackgroundSheet: View {
                 VStack(spacing: 0) {
                     wallpaperChoiceRow(
                         symbol: "photo.on.rectangle.angled",
-                        tint: Color(hex: 0x128C7E),
+                        tint: AppPalette.teal,
                         title: Tr("默认壁纸"),
                         subtitle: Tr("星言全景壁纸，上下连续"),
                         selected: usingDefaultWallpaper
@@ -276,7 +276,7 @@ struct ChatBackgroundSheet: View {
                 VStack(spacing: 0) {
                     wallpaperChoiceRow(
                         symbol: "photo.badge.plus",
-                        tint: Color(hex: 0x0A84FF),
+                        tint: AppPalette.appleBlue,
                         title: Tr("从相册选择"),
                         subtitle: Tr("选择一张照片作为聊天壁纸"),
                         selected: false,
@@ -359,7 +359,7 @@ struct ChatBackgroundSheet: View {
     private var wallpaperDivider: some View {
         Rectangle()
             .fill(scheme == .dark ? C.hairline : Color.primary.opacity(0.075))
-            .frame(height: 0.5)
+            .frame(height: AppDesign.Control.hairline)
             .padding(.leading, 60)
     }
 
@@ -412,7 +412,7 @@ struct ChatBackgroundSheet: View {
                 if selected {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle(Color(hex: 0x128C7E))
+                        .foregroundStyle(AppPalette.teal)
                 } else if showsChevron {
                     Image(systemName: "chevron.right")
                         .font(.system(size: 12, weight: .semibold))
@@ -474,7 +474,7 @@ struct ChatBackgroundSheet: View {
             .overlay {
                 RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                     .stroke(selected
-                            ? Color(hex: 0x128C7E)
+                            ? AppPalette.teal
                             : Color.primary.opacity(0.10),
                             lineWidth: selected ? 2.2 : 0.7)
             }
@@ -682,7 +682,7 @@ struct ChatBackgroundSheet: View {
             }
             .foregroundStyle(.primary)
             .frame(maxWidth: .infinity)
-            .frame(height: 40)
+            .frame(height: AppDesign.Control.iconControlHeight)
             .background {
                 RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                     .fill(Color.primary.opacity(0.055))

@@ -71,7 +71,7 @@ struct UserCardBubble: View {
                             .tracking(1.1)
                             .foregroundColor(C.green)
                         Text(info.name.isEmpty ? Tr("星言联系人") : info.name)
-                            .font(pf(16.5, .semibold))
+                            .font(AppDesign.Type.button)
                             .foregroundColor(C.label)
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
@@ -93,7 +93,7 @@ struct UserCardBubble: View {
 
                 Rectangle()
                     .fill(C.hairline)
-                    .frame(height: 0.5)
+                    .frame(height: AppDesign.Control.hairline)
                     .padding(.horizontal, 13)
 
                 HStack(spacing: 5) {
@@ -133,11 +133,11 @@ struct AnnounceBubble: View {
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(C.subLabel)
                 Text(Tr("群公告"))
-                    .font(pf(12.5, .medium))
+                    .font(AppDesign.Type.captionMedium)
                     .foregroundColor(C.label)
             }
             .padding(.horizontal, 12)
-            .frame(height: 36)
+            .frame(height: AppDesign.Control.floatingControlHeight)
 
             Text(text)
                 .font(pf(14))
@@ -159,7 +159,7 @@ struct AnnounceBubble: View {
             }
             .foregroundColor(C.green)
             .padding(.horizontal, 12)
-            .frame(height: 32)
+            .frame(height: AppDesign.Control.smallButtonHeight)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -402,14 +402,14 @@ struct VideoPlayerSheet: View {
                             Text(Self.speedLabel(speed))
                                 .font(pfStyled(size: 12, weight: .semibold))
                                 .foregroundColor(abs(speed - 1) > 0.01
-                                                 ? Color(hex: 0x0A84FF) : .white)
+                                                 ? AppPalette.appleBlue : .white)
                                 .frame(width: 42, height: 24)
                                 .background {
                                     GlassBackground(
                                         shape: Capsule(style: .continuous),
                                         shadow: false,
                                         tint: abs(speed - 1) > 0.01
-                                            ? Color(hex: 0x0A84FF).opacity(0.18) : nil
+                                            ? AppPalette.appleBlue.opacity(0.18) : nil
                                     )
                                 }
                         }

@@ -3,18 +3,6 @@ import UIKit
 
 func ctIdxWeight() -> Font.Weight { UIConfig.num("ctIdxBold", 1) > 0 ? .heavy : .regular }
 
-private struct ContactIndexSearchPressStyle: ButtonStyle {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(reduceMotion ? 1 : (configuration.isPressed ? 0.93 : 1))
-            .opacity(configuration.isPressed ? 0.78 : 1)
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.09),
-                       value: configuration.isPressed)
-    }
-}
-
 struct ContactIndexBar: View {
     static let letters: [String] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ#".map { String($0) }
 

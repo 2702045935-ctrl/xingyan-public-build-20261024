@@ -43,7 +43,7 @@ struct RegionPickerSheet: View {
                                 .font(pf(13))
                                 .foregroundColor(current.hasSuffix(name) ? .white : C.label)
                                 .padding(.horizontal, 12)
-                                .frame(height: 30)
+                                .frame(height: AppDesign.Control.sectionHeaderHeight)
                                 .background {
                                     if current.hasSuffix(name) {
                                         Capsule().fill(C.green)
@@ -103,7 +103,7 @@ struct RegionPickerSheet: View {
 
             Button { done() } label: {
                 Text(Tr("完成"))
-                    .font(pf(16, .medium))
+                    .font(AppDesign.Type.rowTitle)
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 46)

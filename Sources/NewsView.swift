@@ -160,7 +160,7 @@ struct NewsFeedView: View {
                 .foregroundColor(C.subLabel)
         }
         .padding(.horizontal, 16)
-        .frame(height: 42)
+        .frame(height: AppDesign.Control.searchHeight)
         .background(newsPageBg)
         .overlay(alignment: .bottom) { HairLine() }
         .onTapGesture {
@@ -294,7 +294,7 @@ struct NewsFeedView: View {
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 16)
-            .frame(height: 40)
+            .frame(height: AppDesign.Control.iconControlHeight)
             .background(newsPageBg)
             .overlay(alignment: .bottom) { HairLine() }
         }
@@ -755,7 +755,7 @@ struct NewsFeedView: View {
         let no = it.order > 0 ? it.order : (index + 1)
         return HStack(alignment: .top, spacing: 12) {
             Text("\(no)")
-                .font(pf(16, .semibold))
+                .font(AppDesign.Type.rowTitle)
                 .foregroundColor(rankColor(no))
                 .frame(width: 24, alignment: .leading)
                 .padding(.top, 1)

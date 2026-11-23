@@ -134,7 +134,7 @@ struct StarOrbitTrailingPill: View {
             .font(pfStyled(size: 10.5, weight: .semibold))
             .foregroundStyle(accent)
             .padding(.horizontal, 9)
-            .frame(height: 24)
+            .frame(height: AppDesign.Control.badgeHeight)
             .background(Capsule().fill(accent.opacity(0.12)))
             .overlay(Capsule().stroke(accent.opacity(0.20), lineWidth: 0.6))
     }
@@ -518,7 +518,7 @@ struct StarOrbitTagsView: View {
                             .padding(.horizontal, 12)
                         }
                     }
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
                 .padding(.top, 10)
             }
@@ -552,7 +552,7 @@ struct StarOrbitTagsView: View {
                     .foregroundStyle(OrbitTheme.tertiary)
             }
             .padding(.horizontal, 15)
-            .frame(height: 72)
+            .frame(height: AppDesign.Control.rowHeight)
             .contentShape(Rectangle())
         }
     }
@@ -631,7 +631,7 @@ struct StarOrbitTagDetailView: View {
                         .buttonStyle(MenuPressStyle())
                         .padding(.horizontal, 12)
                     }
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
                 .padding(.top, 10)
             }

@@ -878,11 +878,11 @@ struct StarMapView: View {
                 HStack(spacing: 9) {
                     ProgressView()
                     Text(model.searching ? Tr("正在搜索…") : Tr("正在规划星轨…"))
-                        .font(pf(13, .medium))
+                        .font(AppDesign.Type.compactButtonMedium)
                         .foregroundStyle(.primary)
                 }
                 .padding(.horizontal, 15)
-                .frame(height: 40)
+                .frame(height: AppDesign.Control.iconControlHeight)
                 .background(.regularMaterial, in: Capsule())
                 .shadow(color: .black.opacity(0.15), radius: 12, y: 5)
                 .padding(.top, max(72, L.safeTop + 62))
@@ -892,7 +892,7 @@ struct StarMapView: View {
                !model.searching,
                !model.routing {
                 Text(model.error)
-                    .font(pf(12.5, .medium))
+                    .font(AppDesign.Type.captionMedium)
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.primary)
                     .padding(.horizontal, 14)
@@ -1004,7 +1004,7 @@ struct StarMapView: View {
                 }
             }
             .padding(.horizontal, 13)
-            .frame(height: 40)
+            .frame(height: AppDesign.Control.iconControlHeight)
             .background(.regularMaterial,
                         in: RoundedRectangle(cornerRadius: AppDesign.Radius.control,
                                              style: .continuous))
@@ -1082,7 +1082,7 @@ struct StarMapView: View {
         VStack(alignment: .leading, spacing: 9) {
             HStack {
                 Text(Tr("常用地点"))
-                    .font(pf(13, .semibold))
+                    .font(AppDesign.Type.compactButton)
                 Spacer()
                 Text("\(shortcutPlaces.count)")
                     .font(pf(11.5, .medium))
@@ -1103,15 +1103,15 @@ struct StarMapView: View {
                                 Image(systemName: favorite
                                       ? "star.fill" : "clock.fill")
                                     .font(.system(size: 13, weight: .semibold))
-                                    .foregroundStyle(Color(hex: 0x0A84FF))
+                                    .foregroundStyle(AppPalette.appleBlue)
                                     .frame(width: 28, height: 28)
                                     .background(
-                                        Color(hex: 0x0A84FF).opacity(0.11),
+                                        AppPalette.appleBlue.opacity(0.11),
                                         in: Circle()
                                     )
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(place.name)
-                                        .font(pf(13, .semibold))
+                                        .font(AppDesign.Type.compactButton)
                                         .foregroundStyle(.primary)
                                         .lineLimit(1)
                                     Text(place.subtitle)
@@ -1122,7 +1122,7 @@ struct StarMapView: View {
                                 .frame(maxWidth: 150, alignment: .leading)
                             }
                             .padding(.horizontal, 10)
-                            .frame(height: 50)
+                            .frame(height: AppDesign.Control.buttonHeight)
                             .background(
                                 .regularMaterial,
                                 in: RoundedRectangle(
@@ -1165,7 +1165,7 @@ struct StarMapView: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(Tr("星轨地图"))
-                    .font(pf(16, .semibold))
+                    .font(AppDesign.Type.rowTitle)
                 Text(model.authorizationDenied
                      ? Tr("定位权限关闭，可搜索地点后继续")
                      : model.locationName)
@@ -1253,14 +1253,14 @@ struct StarMapView: View {
                             Image(systemName: mode.symbol)
                                 .font(.system(size: 13, weight: .semibold))
                             Text(mode.title)
-                                .font(pf(13, .semibold))
+                                .font(AppDesign.Type.compactButton)
                         }
                         .foregroundStyle(model.travelMode == mode
                                          ? Color(hex: 0x0A6ED1) : Color.primary)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 36)
+                        .frame(height: AppDesign.Control.floatingControlHeight)
                         .background(model.travelMode == mode
-                                    ? Color(hex: 0x0A84FF).opacity(0.13)
+                                    ? AppPalette.appleBlue.opacity(0.13)
                                     : Color.primary.opacity(0.055),
                                     in: Capsule())
                     }
@@ -1283,10 +1283,10 @@ struct StarMapView: View {
                                         : Color.secondary
                                 )
                                 .frame(maxWidth: .infinity)
-                                .frame(height: 28)
+                                .frame(height: AppDesign.Control.statusHeight)
                                 .background(
                                     model.routeRanking == ranking
-                                        ? Color(hex: 0x0A84FF).opacity(0.11)
+                                        ? AppPalette.appleBlue.opacity(0.11)
                                         : Color.clear,
                                     in: Capsule()
                                 )
@@ -1307,7 +1307,7 @@ struct StarMapView: View {
                         .monospacedDigit()
                     Text(routeDistance(route.distance)
                          + " · " + arrivalClock(route.expectedTravelTime))
-                        .font(pf(12.5, .medium))
+                        .font(AppDesign.Type.captionMedium)
                         .foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 8)
@@ -1365,7 +1365,7 @@ struct StarMapView: View {
                     Text(Tr("已到达目的地"))
                         .font(pf(20, .semibold))
                     Text(model.destination?.name ?? Tr("目的地"))
-                        .font(pf(13, .medium))
+                        .font(AppDesign.Type.compactButtonMedium)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
@@ -1438,11 +1438,11 @@ struct StarMapView: View {
                                 if selected {
                                     Image(systemName: "checkmark")
                                         .font(.system(size: 10, weight: .bold))
-                                        .foregroundStyle(Color(hex: 0x0A84FF))
+                                        .foregroundStyle(AppPalette.appleBlue)
                                 }
                             }
                             Text(routeClock(value.expectedTravelTime))
-                                .font(pf(16, .semibold))
+                                .font(AppDesign.Type.rowTitle)
                                 .monospacedDigit()
                             Text(routeDistance(value.distance))
                                 .font(pf(11.5, .medium))
@@ -1452,7 +1452,7 @@ struct StarMapView: View {
                         .frame(width: 118, height: 70, alignment: .leading)
                         .background(
                             selected
-                                ? Color(hex: 0x0A84FF).opacity(0.12)
+                                ? AppPalette.appleBlue.opacity(0.12)
                                 : Color.primary.opacity(0.045),
                             in: RoundedRectangle(
                                 cornerRadius: AppDesign.Radius.control,
@@ -1466,7 +1466,7 @@ struct StarMapView: View {
                             )
                             .stroke(
                                 selected
-                                    ? Color(hex: 0x0A84FF).opacity(0.35)
+                                    ? AppPalette.appleBlue.opacity(0.35)
                                     : Color.primary.opacity(0.04),
                                 lineWidth: 0.7
                             )
@@ -1490,13 +1490,13 @@ struct StarMapView: View {
                 HStack(spacing: 6) {
                     Text(routeDistance(model.nextDistance))
                         .font(navigationFont(14, .bold))
-                        .foregroundStyle(Color(hex: 0x0A84FF))
+                        .foregroundStyle(AppPalette.appleBlue)
                         .monospacedDigit()
                     Text(model.travelMode.title + Tr("导航"))
                         .font(pf(10.5, .semibold))
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 7)
-                        .frame(height: 20)
+                        .frame(height: AppDesign.Control.compactBadgeHeight)
                         .background(
                             Color.primary.opacity(0.055),
                             in: Capsule()
@@ -1557,7 +1557,7 @@ struct StarMapView: View {
             }
         }
         .padding(.horizontal, 11)
-        .frame(height: 48)
+        .frame(height: AppDesign.Control.mediumControlHeight)
         .background(.thinMaterial,
                     in: RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
         .overlay {
@@ -1631,10 +1631,10 @@ struct StarMapView: View {
                     model.endNavigation()
                 } label: {
                     Text(Tr("结束"))
-                        .font(pf(13.5, .semibold))
+                        .font(AppDesign.Type.bodyStrong)
                         .foregroundStyle(.red)
                         .padding(.horizontal, 13)
-                        .frame(height: 36)
+                        .frame(height: AppDesign.Control.floatingControlHeight)
                         .background(Color.red.opacity(0.10), in: Capsule())
                 }
                 .buttonStyle(.plain)
@@ -2002,7 +2002,7 @@ private struct StarNavigationHUD: View {
             VStack(spacing: 22) {
                 HStack {
                     Text(model.travelMode.title + Tr("导航"))
-                        .font(pf(13, .semibold))
+                        .font(AppDesign.Type.compactButton)
                         .foregroundStyle(.white.opacity(0.62))
                     Spacer()
                     Button(action: onClose) {
@@ -2057,7 +2057,7 @@ private struct StarNavigationHUD: View {
                     }
                     .foregroundStyle(.white.opacity(0.72))
                     .padding(.horizontal, 17)
-                    .frame(height: 52)
+                    .frame(height: AppDesign.Control.largeControlHeight)
                     .background(.white.opacity(0.08),
                                 in: RoundedRectangle(cornerRadius: AppDesign.Radius.row,
                                                      style: .continuous))

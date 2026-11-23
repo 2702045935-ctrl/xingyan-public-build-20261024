@@ -16,7 +16,7 @@ enum MenuIconKind: String {
         case .stickers:  return (Color(hex: 0x4EC3A6), Color(hex: 0x22997E))
         case .settings:  return (Color(hex: 0x8E9AA8), Color(hex: 0x5B6673))
         case .channels:  return (Color(hex: 0x2FA88A), Color(hex: 0x176A57))
-        case .live:      return (Color(hex: 0xFF6B6B), Color(hex: 0xD93A3A))
+        case .live:      return (AppPalette.dangerSoft, Color(hex: 0xD93A3A))
         case .shake:     return (Color(hex: 0x5AA0F2), Color(hex: 0x2C6FD1))
         case .nearby:    return (Color(hex: 0x4EC97A), Color(hex: 0x22995A))
         case .starworld: return (Color(hex: 0x6B7BFF), Color(hex: 0x3B4CE0))

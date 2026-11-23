@@ -130,7 +130,7 @@ struct StickerStore: View {
                 }
             }
             .padding(.horizontal, 12)
-            .frame(height: 40)
+            .frame(height: AppDesign.Control.iconControlHeight)
             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous).fill(Color.white.opacity(0.14)))
             .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                 .stroke(Color.white.opacity(0.16), lineWidth: 0.8))
@@ -197,13 +197,13 @@ struct StickerStore: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
                 Text(Tr("我添加的单个表情"))
-                    .font(pf(12.5, .medium))
+                    .font(AppDesign.Type.captionMedium)
                     .foregroundColor(C.subLabel)
                 Spacer(minLength: 0)
                 Button { addingPhoto = true } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "plus").font(.system(size: 11, weight: .semibold))
-                        Text(Tr("从相册添加")).font(pf(12.5))
+                        Text(Tr("从相册添加")).font(AppDesign.Type.caption)
                     }
                     .foregroundColor(C.green)
                 }
@@ -233,7 +233,7 @@ struct StickerStore: View {
                                     }
                                 }
                                 .frame(maxWidth: .infinity)
-                                .frame(height: 56)
+                                .frame(height: AppDesign.Control.menuRowHeight)
                                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.pageBg))
                             }
                             .buttonStyle(.plain)
@@ -254,7 +254,7 @@ struct StickerStore: View {
             if storePacks.isEmpty {
                 PanelCard {
                     Text(loading ? Tr("正在拉表情包…") : Tr("这个分类里没有可添加的包了"))
-                        .font(pf(13.5))
+                        .font(AppDesign.Type.body)
                         .foregroundColor(C.subLabel)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 16)
@@ -370,7 +370,7 @@ struct StickerStore: View {
                 .font(pf(13.5, on ? .medium : .regular))
                 .foregroundColor(on ? .white : C.label)
                 .padding(.horizontal, 14)
-                .frame(height: 32)
+                .frame(height: AppDesign.Control.smallButtonHeight)
                 .background(
                     Capsule().fill(on
                         ? AnyShapeStyle(LinearGradient(colors: PanelTint.green,
@@ -385,7 +385,7 @@ struct StickerStore: View {
 
     private func sectionHeader(_ title: String, sub: String) -> some View {
         HStack(spacing: 6) {
-            Text(title).font(pf(12.5, .medium)).foregroundColor(C.subLabel)
+            Text(title).font(AppDesign.Type.captionMedium).foregroundColor(C.subLabel)
             Spacer(minLength: 0)
             Text(sub).font(pf(11.5)).foregroundColor(C.subLabel.opacity(0.8))
         }
@@ -417,7 +417,7 @@ struct StickerStore: View {
 
                         VStack(alignment: .leading, spacing: 4) {
                             Text(p.name).font(pf(18, .semibold)).foregroundColor(C.label).lineLimit(1)
-                            Text("\(p.count) " + Tr("个表情")).font(pf(12.5)).foregroundColor(C.subLabel)
+                            Text("\(p.count) " + Tr("个表情")).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                         }
                         Spacer(minLength: 0)
                     }
@@ -454,11 +454,11 @@ struct StickerStore: View {
                             Image(systemName: added ? "trash" : "plus")
                                 .font(.system(size: 14, weight: .semibold))
                             Text(added ? Tr("移除这个表情包") : Tr("添加到我的表情"))
-                                .font(pf(16, .medium))
+                                .font(AppDesign.Type.rowTitle)
                         }
                         .foregroundColor(added ? C.red : .white)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 50)
+                        .frame(height: AppDesign.Control.buttonHeight)
                         .background(
                             RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                                 .fill(added

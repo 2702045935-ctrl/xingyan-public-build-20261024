@@ -330,7 +330,7 @@ struct ProfileEditView: View {
                     }
             }
             .padding(.horizontal, 14)
-            .frame(height: 56)
+            .frame(height: AppDesign.Control.menuRowHeight)
             HStack(spacing: 8) {
                 Text(Tr("显示在好友发来的星语提醒后，最多 10 个字"))
                     .font(pf(11.5)).foregroundColor(C.subLabel)
@@ -366,7 +366,7 @@ struct ProfileEditView: View {
                     Chevron(size: 8, line: 1.5)
                 }
                 .padding(.horizontal, 14)
-                .frame(height: 56)
+                .frame(height: AppDesign.Control.menuRowHeight)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -395,7 +395,7 @@ struct ProfileEditView: View {
                 Chevron(size: 8, line: 1.5)
             }
             .padding(.horizontal, 14)
-            .frame(height: 60)
+            .frame(height: AppDesign.Control.profileRowHeight)
             .background { CardGlassBox(radius: 14) }
             .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
             .contentShape(Rectangle())
@@ -413,7 +413,7 @@ struct ProfileEditView: View {
                 Chevron(size: 8, line: 1.5)
             }
             .padding(.horizontal, 14)
-            .frame(height: 72)
+            .frame(height: AppDesign.Control.rowHeight)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -431,7 +431,7 @@ struct ProfileEditView: View {
                 }
         }
         .padding(.horizontal, 14)
-        .frame(height: 56)
+        .frame(height: AppDesign.Control.menuRowHeight)
     }
 
     private var phoneRow: some View {
@@ -444,7 +444,7 @@ struct ProfileEditView: View {
                 Chevron(size: 8, line: 1.5)
             }
             .padding(.horizontal, 14)
-            .frame(height: 56)
+            .frame(height: AppDesign.Control.menuRowHeight)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -459,7 +459,7 @@ struct ProfileEditView: View {
                 Chevron(size: 8, line: 1.5)
             }
             .padding(.horizontal, 14)
-            .frame(height: 56)
+            .frame(height: AppDesign.Control.menuRowHeight)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -476,7 +476,7 @@ struct ProfileEditView: View {
                 .multilineTextAlignment(.trailing)
         }
         .padding(.horizontal, 14)
-        .frame(height: 56)
+        .frame(height: AppDesign.Control.menuRowHeight)
     }
 
     private func tapRow(_ title: String, _ value: String, _ tap: @escaping () -> Void) -> some View {
@@ -488,7 +488,7 @@ struct ProfileEditView: View {
                 Chevron(size: 8, line: 1.5)
             }
             .padding(.horizontal, 14)
-            .frame(height: 56)
+            .frame(height: AppDesign.Control.menuRowHeight)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -502,7 +502,7 @@ struct ProfileEditView: View {
             Chevron(size: 8, line: 1.5)
         }
         .padding(.horizontal, 14)
-        .frame(height: 56)
+        .frame(height: AppDesign.Control.menuRowHeight)
         .contentShape(Rectangle())
     }
 
@@ -617,16 +617,16 @@ struct UsernameChangeSheet: View {
                             .multilineTextAlignment(.trailing)
                     }
                     .padding(.horizontal, 16)
-                    .frame(height: 54)
+                    .frame(height: AppDesign.Control.dialogRowHeight)
                     HairLine(inset: 16)
                     VStack(alignment: .leading, spacing: 6) {
                         Text(Tr("3-24 位字母、数字或下划线；一年只能改一次。"))
-                            .font(pf(12.5)).foregroundColor(C.subLabel)
+                            .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                         if !nextChangeText.isEmpty {
-                            Text(nextChangeText).font(pf(12.5)).foregroundColor(C.subLabel)
+                            Text(nextChangeText).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                         }
                         if !err.isEmpty {
-                            Text(err).font(pf(12.5)).foregroundColor(C.red)
+                            Text(err).font(AppDesign.Type.caption).foregroundColor(C.red)
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)

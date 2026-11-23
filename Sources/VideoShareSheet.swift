@@ -77,7 +77,7 @@ struct VideoShareSheet: View {
             .padding(.top, 16)
 
             Text(Tr("更多操作"))
-                .font(pf(12, .semibold))
+                .font(AppDesign.Type.section)
                 .foregroundStyle(ShareSheetTheme.secondaryInk(scheme))
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 16)
@@ -126,7 +126,7 @@ struct VideoShareSheet: View {
             }
             .padding(.top, 18)
 
-            Rectangle().fill(C.hairline).frame(height: 0.5)
+            Rectangle().fill(C.hairline).frame(height: AppDesign.Control.hairline)
                 .padding(.horizontal, 16)
                 .padding(.top, 14)
 
@@ -142,10 +142,10 @@ struct VideoShareSheet: View {
 
             Button { dismiss() } label: {
                 Text(Tr("取消"))
-                    .font(pf(16, .semibold))
+                    .font(AppDesign.Type.rowTitle)
                     .foregroundColor(C.label)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 52)
+                    .frame(height: AppDesign.Control.largeControlHeight)
                     .background(C.cardBg)
             }
             .buttonStyle(.plain)
@@ -164,7 +164,7 @@ struct VideoShareSheet: View {
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 16)
-            .frame(height: 52)
+            .frame(height: AppDesign.Control.largeControlHeight)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -269,7 +269,7 @@ struct VideoForwardPicker: View {
             .overlay(alignment: .top) {
                 Rectangle()
                     .fill(OrbitTheme.divider.opacity(0.7))
-                    .frame(height: 0.5)
+                    .frame(height: AppDesign.Control.hairline)
             }
         }
         .swipeBack { dismiss() }

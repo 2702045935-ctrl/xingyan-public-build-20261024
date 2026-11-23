@@ -21,7 +21,7 @@ struct MyQRViewOld: View {
                     saveToAlbum()
                 } label: {
                     Text(saved ? Tr("已存") : Tr("保存"))
-                        .font(pf(16, .medium))
+                        .font(AppDesign.Type.rowTitle)
                         .foregroundColor(rows.isEmpty ? C.subLabel : C.green)
                         .frame(height: L.navH)
                         .padding(.trailing, 16)
@@ -38,7 +38,7 @@ struct MyQRViewOld: View {
                             ProgressView()
                         } else if rows.isEmpty {
                             Text(Tr("二维码生成失败，稍后再试"))
-                                .font(pf(13.5)).foregroundColor(C.subLabel)
+                                .font(AppDesign.Type.body).foregroundColor(C.subLabel)
                         } else {
 
                             QRCanvas(rows: rows).frame(width: 228, height: 228)
@@ -51,9 +51,9 @@ struct MyQRViewOld: View {
                     HStack(spacing: 12) {
                         Avatar(path: avatar, size: 46, radius: 6)
                         VStack(alignment: .leading, spacing: 3) {
-                            Text(name).font(pf(16, .medium)).foregroundColor(C.label).lineLimit(1)
+                            Text(name).font(AppDesign.Type.rowTitle).foregroundColor(C.label).lineLimit(1)
                             Text(Tr("星言号：") + (username.isEmpty ? "-" : username))
-                                .font(pf(12.5)).foregroundColor(C.subLabel)
+                                .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                         }
                         Spacer(minLength: 0)
                     }
@@ -63,7 +63,7 @@ struct MyQRViewOld: View {
                     .padding(.horizontal, 24)
 
                     Text(Tr("用 App 的「发现 → 扫一扫」扫这张，就能加我好友"))
-                        .font(pf(12.5)).foregroundColor(C.subLabel)
+                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 36)
 
@@ -77,12 +77,12 @@ struct MyQRViewOld: View {
                         .font(pf(15, .medium))
                         .foregroundColor(C.green)
                         .padding(.horizontal, 18)
-                        .frame(height: 40)
+                        .frame(height: AppDesign.Control.iconControlHeight)
                         .background { CardGlassBox(radius: 999) }
                     }
                     .buttonStyle(.plain)
                     .padding(.top, 4)
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
                 .padding(.top, 20)
             }

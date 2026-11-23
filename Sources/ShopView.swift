@@ -24,7 +24,7 @@ struct ShopView: View {
                     Text(Tr("我的订单"))
                         .font(pf(14.5))
                         .foregroundColor(C.green)
-                        .padding(.horizontal, 12).frame(height: 32)
+                        .padding(.horizontal, 12).frame(height: AppDesign.Control.smallButtonHeight)
                 }
                 .buttonStyle(.plain)
             }
@@ -44,7 +44,7 @@ struct ShopView: View {
                             .frame(width: 44, height: 44)
                             VStack(alignment: .leading, spacing: 3) {
                                 HStack(spacing: 6) {
-                                    Text(Tr("拼多多商城")).font(pf(16.5, .medium)).foregroundColor(C.label)
+                                    Text(Tr("拼多多商城")).font(AppDesign.Type.buttonMedium).foregroundColor(C.label)
                                     Text(Tr("H5")).font(pf(10.5)).foregroundColor(.white)
                                         .padding(.horizontal, 5).padding(.vertical, 1.5)
                                         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.micro).fill(Color(hex: 0xE02A0F)))
@@ -87,7 +87,7 @@ struct ShopView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 18).padding(.top, 4)
                     }
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
                 .padding(.top, 10)
             }
@@ -262,7 +262,7 @@ struct ShopItemSheet: View {
 
                         HairLine(inset: 16)
                         HStack(spacing: 12) {
-                            Text(Tr("数量")).font(pf(15.5)).foregroundColor(C.label)
+                            Text(Tr("数量")).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
                             Spacer(minLength: 0)
                             Button { if count > 1 { count -= 1 } } label: {
                                 Image(systemName: "minus")
@@ -282,7 +282,7 @@ struct ShopItemSheet: View {
                             }
                             .buttonStyle(.plain)
                         }
-                        .padding(.horizontal, 16).frame(height: 54)
+                        .padding(.horizontal, 16).frame(height: AppDesign.Control.dialogRowHeight)
                     }
 
                     Text(totalText)
@@ -293,7 +293,7 @@ struct ShopItemSheet: View {
                     } label: {
                         Text(soldOut ? Tr("已售罄") : Tr("立即购买"))
                             .font(pf(17, .semibold)).foregroundColor(.white)
-                            .frame(maxWidth: .infinity).frame(height: 48)
+                            .frame(maxWidth: .infinity).frame(height: AppDesign.Control.mediumControlHeight)
                             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                                 .fill(soldOut ? Color.gray : C.green))
                     }
@@ -301,7 +301,7 @@ struct ShopItemSheet: View {
                     .disabled(busy || soldOut)
                     .padding(.horizontal, 16)
 
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
                 .padding(.top, 12)
             }
@@ -466,9 +466,9 @@ struct ShopOrdersSheet: View {
                         ForEach(0..<names.count, id: \.self) { i in
                             Button { filter = i } label: {
                                 Text(Tr(names[i]))
-                                    .font(pf(13.5))
+                                    .font(AppDesign.Type.body)
                                     .foregroundColor(filter == i ? .white : C.label)
-                                    .padding(.horizontal, 12).frame(height: 30)
+                                    .padding(.horizontal, 12).frame(height: AppDesign.Control.sectionHeaderHeight)
                                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                                         .fill(filter == i ? C.green : C.cardBg))
                             }
@@ -487,16 +487,16 @@ struct ShopOrdersSheet: View {
                                 if i > 0 { HairLine(inset: 16) }
                                 VStack(alignment: .leading, spacing: 4) {
                                     HStack(spacing: 8) {
-                                        Text(o.name ?? Tr("订单")).font(pf(15.5)).foregroundColor(C.label)
+                                        Text(o.name ?? Tr("订单")).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
                                             .lineLimit(1)
                                         Spacer(minLength: 0)
                                         Text("¥" + moneyFmt(o.price ?? 0))
                                             .font(pfMoney(15)).foregroundColor(C.label)
                                     }
                                     HStack(spacing: 8) {
-                                        Text(o.status ?? Tr("已下单")).font(pf(12.5)).foregroundColor(C.subLabel)
+                                        Text(o.status ?? Tr("已下单")).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                                         Spacer(minLength: 0)
-                                        Text(TimeFmt.bill(o.at ?? "")).font(pf(12.5)).foregroundColor(C.subLabel)
+                                        Text(TimeFmt.bill(o.at ?? "")).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                                     }
                                     if let a = o.address, !a.isEmpty {
                                         Text(Tr("地址：") + a).font(pf(12)).foregroundColor(C.subLabel)
@@ -507,11 +507,11 @@ struct ShopOrdersSheet: View {
                             }
                         }
                         Text(Tr("零钱余额 ") + "¥" + moneyFmt(balance))
-                            .font(pf(12.5)).foregroundColor(C.subLabel)
+                            .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 22).padding(.top, 2)
                     }
-                        Spacer().frame(height: 30)
+                        Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
                 .padding(.top, 10)
             }

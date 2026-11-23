@@ -40,18 +40,6 @@ struct WalletCard: Decodable, Identifiable, Hashable {
     }
 }
 
-private struct WalletCardPressStyle: ButtonStyle {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(reduceMotion ? 1 : (configuration.isPressed ? 0.985 : 1))
-            .brightness(configuration.isPressed ? -0.025 : 0)
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.10),
-                       value: configuration.isPressed)
-    }
-}
-
 struct CardsView: View {
     @ObservedObject private var lang = LangStore.shared
     @EnvironmentObject var app: AppState
@@ -79,7 +67,7 @@ struct CardsView: View {
                     } else if cards.isEmpty {
                         Text(Tr("还没有卡券")).font(pf(14)).foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity).padding(.top, 40)
-                        Text(Tr("商家发卡、别人赠送之后会出现在这里")).font(pf(12.5)).foregroundColor(C.subLabel)
+                        Text(Tr("商家发卡、别人赠送之后会出现在这里")).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity).padding(.top, 6)
                         if !diagNote.isEmpty {
                             Text(diagNote).font(pf(11.5)).foregroundColor(C.subLabel)
@@ -104,7 +92,7 @@ struct CardsView: View {
                                 .padding(.horizontal, 22).padding(.top, 10)
                         }
                     }
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
                 .padding(.top, 10)
             }
@@ -140,7 +128,7 @@ struct CardsView: View {
                         .frame(width: 44, height: 44)
                         VStack(alignment: .leading, spacing: 3) {
                             Text(c.title ?? "").font(pf(16)).foregroundColor(C.label).lineLimit(1)
-                            Text(subText(c)).font(pf(12.5)).foregroundColor(C.subLabel).lineLimit(1)
+                            Text(subText(c)).font(AppDesign.Type.caption).foregroundColor(C.subLabel).lineLimit(1)
                         }
                         Spacer(minLength: 6)
                         Chevron(size: 9, line: 1.6).padding(.trailing, 3)
@@ -162,7 +150,7 @@ struct CardsView: View {
                 .background(PayVisual.gold.opacity(0.10), in: Circle())
 
             Text(Tr("点后面露出的卡片，可以先把它切到前面再查看"))
-                .font(pf(12.5))
+                .font(AppDesign.Type.caption)
                 .foregroundStyle(C.label)
                 .lineLimit(2)
 
@@ -223,7 +211,7 @@ struct CardsView: View {
                 } label: {
                     walletCardFace(card, isFront: index == 0)
                 }
-                .buttonStyle(WalletCardPressStyle())
+                .buttonStyle(AppCardPressStyle())
                 .scaleEffect(index == 0 ? 1 : 0.975, anchor: .top)
                 .opacity(index == 0 ? 1 : max(0.78, 1 - CGFloat(index) * 0.035))
                 .offset(y: index == 0
@@ -274,7 +262,7 @@ struct CardsView: View {
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(card.kindName)
-                            .font(pf(12, .semibold))
+                            .font(AppDesign.Type.section)
                             .foregroundStyle(ink.opacity(0.74))
                         Text(card.title ?? "")
                             .font(pf(19, .semibold))
@@ -301,7 +289,7 @@ struct CardsView: View {
                         .monospacedDigit()
                 } else if let sub = card.sub, !sub.isEmpty {
                     Text(sub)
-                        .font(pf(16, .medium))
+                        .font(AppDesign.Type.rowTitle)
                         .foregroundStyle(ink)
                         .lineLimit(1)
                     }
@@ -422,13 +410,13 @@ struct CardsView: View {
                         } label: {
                             Text(Tr("核销这张卡"))
                                 .font(pf(17, .semibold)).foregroundColor(.white)
-                                .frame(maxWidth: .infinity).frame(height: 48)
+                                .frame(maxWidth: .infinity).frame(height: AppDesign.Control.mediumControlHeight)
                                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.green))
                         }
                         .buttonStyle(.plain)
                         .padding(.horizontal, 16)
                     }
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
                 .padding(.top, 12)
             }

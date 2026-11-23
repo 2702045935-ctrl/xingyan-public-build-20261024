@@ -130,13 +130,13 @@ struct MemberCenterView: View {
                                     height: 14)
                     }
                     Text(store.active ? (store.me?.name ?? Tr("会员")) : Tr("还不是会员"))
-                        .font(pf(12.5))
+                        .font(AppDesign.Type.caption)
                         .foregroundColor(.white.opacity(0.72))
                 }
                 Spacer(minLength: 0)
                 VStack(alignment: .trailing, spacing: 3) {
                     Text("¥" + moneyFmt(store.balance))
-                        .font(pf(13, .medium))
+                        .font(AppDesign.Type.compactButtonMedium)
                         .foregroundColor(.white)
                     Text(Tr("零钱余额"))
                         .font(pf(11))
@@ -152,7 +152,7 @@ struct MemberCenterView: View {
                 }
             } else {
                 Text(store.info?.sub ?? Tr("开通会员，升级更快、标识更亮"))
-                    .font(pf(12.5))
+                    .font(AppDesign.Type.caption)
                     .foregroundColor(.white.opacity(0.72))
             }
         }
@@ -206,7 +206,7 @@ struct MemberCenterView: View {
                                 if on { Image(systemName: "checkmark.circle.fill").foregroundColor(.white) }
                             }
                             Text("¥" + String(format: "%.0f", t.price?.month ?? 0) + Tr(" / 月"))
-                                .font(pf(12.5)).foregroundColor(on ? .white.opacity(0.85) : C.subLabel)
+                                .font(AppDesign.Type.caption).foregroundColor(on ? .white.opacity(0.85) : C.subLabel)
                             Text(Tr("升级 ") + String(format: "%.1f", t.boost ?? 1) + "x · " + Tr("群上限 ")
                                  + "\(t.groupMax ?? 0)")
                                 .font(pf(11)).foregroundColor(on ? .white.opacity(0.7) : C.subLabel)
@@ -272,10 +272,10 @@ struct MemberCenterView: View {
                 showPay = true
             } label: {
                 Text(store.active ? Tr("立即续费") : Tr("立即开通"))
-                    .font(pf(16, .medium))
+                    .font(AppDesign.Type.rowTitle)
                     .foregroundColor(.white)
                     .padding(.horizontal, 24)
-                    .frame(height: 44)
+                    .frame(height: AppDesign.Control.compactHeight)
                     .background(
                         Capsule().fill(LinearGradient(colors: [gold, gold2],
                                                       startPoint: .topLeading, endPoint: .bottomTrailing))
@@ -299,7 +299,7 @@ struct MemberCenterView: View {
                     HStack(spacing: 11) {
                         PanelIcon(symbol: b.icon ?? "star.fill", colors: [gold, gold2])
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(b.title ?? "").font(pf(15.5)).foregroundColor(C.label)
+                            Text(b.title ?? "").font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
                             if let d = b.desc, !d.isEmpty {
                                 Text(d).font(pf(12)).foregroundColor(C.subLabel)
                             }
@@ -324,7 +324,7 @@ struct MemberCenterView: View {
             HStack(spacing: 11) {
                 PanelIcon(symbol: "arrow.triangle.2.circlepath", colors: [gold, gold2])
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(Tr("自动续费")).font(pf(15.5)).foregroundColor(C.label)
+                    Text(Tr("自动续费")).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
                     Text(Tr("到期前自动从零钱续上，随时能关")).font(pf(12)).foregroundColor(C.subLabel)
                 }
                 Spacer(minLength: 8)
@@ -363,7 +363,7 @@ struct MemberCenterView: View {
                         .font(pf(14, .medium))
                         .foregroundColor(.white)
                         .padding(.horizontal, 14)
-                        .frame(height: 32)
+                        .frame(height: AppDesign.Control.smallButtonHeight)
                         .background(Capsule().fill(LinearGradient(colors: [gold, gold2],
                                                                   startPoint: .topLeading, endPoint: .bottomTrailing)))
                 }

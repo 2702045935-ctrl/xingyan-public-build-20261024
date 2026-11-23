@@ -137,7 +137,7 @@ enum ChatAppearancePreset: String, CaseIterable, Identifiable {
 
     var previewBackground: Color {
         switch self {
-        case .wechat: return Color(hex: 0xEDEDED)
+        case .wechat: return AppPalette.neutralSurface
         case .whatsapp: return Color(hex: 0xEFEAE2)
         case .glass: return Color(hex: 0xE9F3EF)
         case .midnight: return Color(hex: 0x050505)
@@ -427,7 +427,7 @@ struct ChatThemePickerView: View {
                 }
                 .font(.system(size: 17, weight: .medium))
                 .padding(.horizontal, 13)
-                .frame(height: 42)
+                .frame(height: AppDesign.Control.searchHeight)
                 .background {
                     RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                         .fill(preset.panel)

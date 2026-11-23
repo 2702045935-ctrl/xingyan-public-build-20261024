@@ -513,7 +513,7 @@ enum C {
 
     static let loginBg     = Color(hex: 0x111111)
     static let loginCard   = Color(hex: 0x191919)
-    static let loginText   = Color(hex: 0xEDEDED)
+    static let loginText   = AppPalette.neutralSurface
     static let loginGray   = Color(hex: 0x7F7F7F)
     static let loginLink   = Color(hex: 0x7D90A9)
     static let loginGreen  = Color(hex: 0x1DC9BD)
@@ -1468,29 +1468,29 @@ struct GroupAvatarMosaic: View {
         case 3:
             return [
                 CGRect(x: 0, y: 0, width: 0.64, height: 1),
-                CGRect(x: 0.64, y: 0, width: 0.36, height: 0.5),
-                CGRect(x: 0.64, y: 0.5, width: 0.36, height: 0.5)
+                CGRect(x: 0.64, y: 0, width: 0.36, height: AppDesign.Control.hairline),
+                CGRect(x: 0.64, y: 0.5, width: 0.36, height: AppDesign.Control.hairline)
             ]
         case 4:
             return [
-                CGRect(x: 0, y: 0, width: 0.5, height: 0.5),
-                CGRect(x: 0.5, y: 0, width: 0.5, height: 0.5),
-                CGRect(x: 0, y: 0.5, width: 0.5, height: 0.5),
-                CGRect(x: 0.5, y: 0.5, width: 0.5, height: 0.5)
+                CGRect(x: 0, y: 0, width: 0.5, height: AppDesign.Control.hairline),
+                CGRect(x: 0.5, y: 0, width: 0.5, height: AppDesign.Control.hairline),
+                CGRect(x: 0, y: 0.5, width: 0.5, height: AppDesign.Control.hairline),
+                CGRect(x: 0.5, y: 0.5, width: 0.5, height: AppDesign.Control.hairline)
             ]
         case 5:
             return [
-                CGRect(x: 0, y: 0, width: 0.5, height: 0.5),
-                CGRect(x: 0.5, y: 0, width: 0.5, height: 0.5),
-                CGRect(x: 0, y: 0.5, width: third, height: 0.5),
-                CGRect(x: third, y: 0.5, width: third, height: 0.5),
-                CGRect(x: third * 2, y: 0.5, width: third, height: 0.5)
+                CGRect(x: 0, y: 0, width: 0.5, height: AppDesign.Control.hairline),
+                CGRect(x: 0.5, y: 0, width: 0.5, height: AppDesign.Control.hairline),
+                CGRect(x: 0, y: 0.5, width: third, height: AppDesign.Control.hairline),
+                CGRect(x: third, y: 0.5, width: third, height: AppDesign.Control.hairline),
+                CGRect(x: third * 2, y: 0.5, width: third, height: AppDesign.Control.hairline)
             ]
         case 6:
             return (0..<6).map { index in
                 CGRect(x: CGFloat(index % 3) * third,
                        y: CGFloat(index / 3) * 0.5,
-                       width: third, height: 0.5)
+                       width: third, height: AppDesign.Control.hairline)
             }
         case 7:
             return [CGRect(x: 0, y: 0, width: 1, height: 0.4)]
@@ -1928,7 +1928,7 @@ struct Glyph3D: View {
         switch kind {
         case .star:  return [Color(hex: 0xFFF8CC), Color(hex: 0xFFD23F), Color(hex: 0xE39A00)]
         case .sun:   return [Color(hex: 0xFFF2AE), Color(hex: 0xFFB01F), Color(hex: 0xE17000)]
-        case .moon:  return [Color(hex: 0xFFFFFF), Color(hex: 0xD8E6FA), Color(hex: 0x91AACF)]
+        case .moon:  return [Color.white, Color(hex: 0xD8E6FA), Color(hex: 0x91AACF)]
         case .crown: return [Color(hex: 0xFFFBE2), Color(hex: 0xFFD24A), Color(hex: 0xC8890C)]
         }
     }
@@ -2004,7 +2004,7 @@ struct MoonBadge: View {
                 .offset(y: size * 0.09)
 
             QQGlyphShape(kind: .moon)
-                .fill(LinearGradient(colors: [Color(hex: 0xFFFFFF), Color(hex: 0xD8E6FA), Color(hex: 0x91AACF)],
+                .fill(LinearGradient(colors: [Color.white, Color(hex: 0xD8E6FA), Color(hex: 0x91AACF)],
                                      startPoint: .topLeading, endPoint: .bottomTrailing),
                       style: FillStyle(eoFill: true))
                 .frame(width: size, height: size)
@@ -2259,7 +2259,7 @@ struct HairLine: View {
     var body: some View {
         Rectangle()
             .fill(color)
-            .frame(height: 0.5)
+            .frame(height: AppDesign.Control.hairline)
             .padding(.leading, inset)
             .padding(.trailing, trailingInset)
     }
@@ -2422,7 +2422,7 @@ struct UnreadBadge: View {
     var body: some View {
         if count > 0 {
             Text(count > 99 ? "99+" : "\(count)")
-                .font(pf(12, .semibold))
+                .font(AppDesign.Type.section)
                 .foregroundColor(.white)
                 .padding(.horizontal, count > 9 ? 5 : 0)
                 .frame(minWidth: 18, minHeight: 18)
@@ -2899,7 +2899,7 @@ struct PhotoPager: View {
             }
             .foregroundColor(.white)
             .frame(maxWidth: .infinity)
-            .frame(height: 54)
+            .frame(height: AppDesign.Control.dialogRowHeight)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

@@ -125,7 +125,7 @@ struct DDCityPickerView: View {
                 }
                 .buttonStyle(.plain)
                 Spacer(minLength: 0)
-                Text(Tr("选择城市")).font(pf(16.5, .semibold)).foregroundColor(DDColor.ink)
+                Text(Tr("选择城市")).font(AppDesign.Type.button).foregroundColor(DDColor.ink)
                 Spacer(minLength: 0)
                 Color.clear.frame(width: 44, height: 44)
             }
@@ -151,7 +151,7 @@ struct DDCityPickerView: View {
                 }
             }
             .padding(.horizontal, 12)
-            .frame(height: 38)
+            .frame(height: AppDesign.Control.iconSmallHeight)
             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .fill(Color.dyn(0xF2F2F5, 0x2A2A2E)))
             .padding(.horizontal, 14)
@@ -181,13 +181,13 @@ struct DDCityPickerView: View {
                         } label: {
                             HStack(spacing: 4) {
                                 Image(systemName: "arrow.clockwise").font(.system(size: 11.5, weight: .semibold))
-                                Text(Tr("重新定位")).font(pf(12.5))
+                                Text(Tr("重新定位")).font(AppDesign.Type.caption)
                             }
                             .foregroundColor(DDColor.red)
                         }
                         .buttonStyle(.plain)
                     }
-                    .padding(.horizontal, 16).frame(height: 52)
+                    .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
                     .contentShape(Rectangle())
 
                     .onTapGesture { city.useAuto(); dismiss() }
@@ -209,7 +209,7 @@ struct DDCityPickerView: View {
                         cityGrid(hot)
                     }
 
-                    Color.clear.frame(height: 30)
+                    Color.clear.frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
             }
             .background(DDColor.page)
@@ -222,7 +222,7 @@ struct DDCityPickerView: View {
 
     private func groupTitle(_ t: String) -> some View {
         Text(t)
-            .font(pf(13, .medium)).foregroundColor(DDColor.sub)
+            .font(AppDesign.Type.compactButtonMedium).foregroundColor(DDColor.sub)
             .padding(.horizontal, 16).padding(.top, 18).padding(.bottom, 8)
     }
 
@@ -240,7 +240,7 @@ struct DDCityPickerView: View {
                         .foregroundColor(city.name == c.name ? DDColor.red : DDColor.ink)
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .frame(height: 48)
+                        .frame(height: AppDesign.Control.mediumControlHeight)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)

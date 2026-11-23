@@ -152,8 +152,8 @@ struct DDAdCard: View {
                     .lineLimit(2).multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Text(Tr(cta))
-                    .font(pf(12, .medium)).foregroundColor(.white)
-                    .padding(.horizontal, 12).frame(height: 28)
+                    .font(AppDesign.Type.sectionMedium).foregroundColor(.white)
+                    .padding(.horizontal, 12).frame(height: AppDesign.Control.statusHeight)
                     .background(Capsule().fill(Color.black.opacity(0.22)))
             }
             .padding(8)
@@ -192,8 +192,8 @@ struct DDAdStrip: View {
                     Text(Tr(sub)).font(pf(11.5)).foregroundColor(DDColor.sub).lineLimit(1)
                 }
                 Spacer(minLength: 0)
-                Text(Tr(cta)).font(pf(12.5, .medium)).foregroundColor(.white)
-                    .padding(.horizontal, 12).frame(height: 30)
+                Text(Tr(cta)).font(AppDesign.Type.captionMedium).foregroundColor(.white)
+                    .padding(.horizontal, 12).frame(height: AppDesign.Control.sectionHeaderHeight)
                     .background(Capsule().fill(Color(hex: bottom)))
             }
             .padding(10)
@@ -351,7 +351,7 @@ struct DDChannelView: View {
                 .buttonStyle(.plain)
                 Text(Tr(kind.title)).font(pf(17, .semibold)).foregroundColor(DDColor.ink)
                 Spacer(minLength: 0)
-                Text("\(list.count) " + Tr("件")).font(pf(12.5)).foregroundColor(DDColor.sub)
+                Text("\(list.count) " + Tr("件")).font(AppDesign.Type.caption).foregroundColor(DDColor.sub)
             }
             HStack(spacing: 6) {
                 Image(systemName: kind.icon).font(.system(size: 11.5))
@@ -398,7 +398,7 @@ struct DDChannelView: View {
                 .background(Circle().fill(rankTint(n)))
             DDThumb(em: p.em, size: 68, radius: 10, img: p.img)
             VStack(alignment: .leading, spacing: 5) {
-                Text(p.title).font(pf(13.5)).foregroundColor(DDColor.ink).lineLimit(2)
+                Text(p.title).font(AppDesign.Type.body).foregroundColor(DDColor.ink).lineLimit(2)
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     DDPrice(value: p.price, size: 16)
                     Text("¥" + moneyFmt(p.orig))
@@ -487,7 +487,7 @@ struct DDSuggestList: View {
                             .font(.system(size: 12)).foregroundColor(DDColor.weak)
                     }
                     .padding(.horizontal, 14)
-                    .frame(height: 44)
+                    .frame(height: AppDesign.Control.compactHeight)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -518,7 +518,7 @@ struct DDSearchFilterBar: View {
                     Text(Tr("只看有货")).font(pf(12.5, onlyStock ? .medium : .regular))
                 }
                 .foregroundColor(onlyStock ? DDColor.red : DDColor.sub)
-                .frame(maxWidth: .infinity).frame(height: 38)
+                .frame(maxWidth: .infinity).frame(height: AppDesign.Control.iconSmallHeight)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -535,7 +535,7 @@ struct DDSearchFilterBar: View {
             Text(t)
                 .font(pf(12.5, on ? .semibold : .regular))
                 .foregroundColor(on ? DDColor.red : DDColor.sub)
-                .frame(maxWidth: .infinity).frame(height: 38)
+                .frame(maxWidth: .infinity).frame(height: AppDesign.Control.iconSmallHeight)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

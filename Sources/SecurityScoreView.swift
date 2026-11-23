@@ -12,8 +12,8 @@ struct SecurityScoreView: View {
     private var sheetBg: Color { scheme == .dark ? Color(hex: 0x1C1C1E) : .white }
 
     private var pageBg: Color { C.pageBg }
-    private var ink: Color { scheme == .dark ? Color(hex: 0xEDEDED) : Color(hex: 0x1A1A1A) }
-    private var gray: Color { scheme == .dark ? Color(hex: 0x8E8E93) : Color(hex: 0x737373) }
+    private var ink: Color { scheme == .dark ? AppPalette.neutralSurface : Color(hex: 0x1A1A1A) }
+    private var gray: Color { scheme == .dark ? AppPalette.systemSecondary : Color(hex: 0x737373) }
     private var line: Color { scheme == .dark ? Color(white: 1, opacity: 0.09) : Color(hex: 0xE6E6E6) }
 
     var body: some View {
@@ -72,17 +72,17 @@ struct SecurityScoreView: View {
             }
             if blocked {
                 Text(Tr("支付类功能已暂停：转账 / 红包 / 收付款 / 提现 / 商城付款都会被拦下来。"))
-                    .font(pf(13.5)).foregroundColor(Color(hex: 0xE24C3F))
+                    .font(AppDesign.Type.body).foregroundColor(Color(hex: 0xE24C3F))
                     .fixedSize(horizontal: false, vertical: true)
                 Text(Tr("怎么恢复：做完实名认证、做人脸核身、把支付密码重设一遍 —— 做完这几样分数就会上来，限制自动解除。"))
-                    .font(pf(12.5)).foregroundColor(gray)
+                    .font(AppDesign.Type.caption).foregroundColor(gray)
                     .fixedSize(horizontal: false, vertical: true)
             } else if let sl {
                 Text(Tr("单笔最多 ") + "¥" + moneyFmt(sl.single ?? 0)
                      + Tr(" · 单日最多 ") + "¥" + moneyFmt(sl.day ?? 0))
                     .font(pf(14)).foregroundColor(ink)
                 Text(Tr("分数越高额度越大（750 分以上：单笔 ¥20,000 / 单日 ¥50,000）。"))
-                    .font(pf(12.5)).foregroundColor(gray)
+                    .font(AppDesign.Type.caption).foregroundColor(gray)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
                 Text(Tr("服务器还没下发额度（老版本），先按账户等级那套走。"))
@@ -115,7 +115,7 @@ struct SecurityScoreView: View {
                         .font(pf(44, .semibold))
                         .foregroundColor(ink)
                     Text(Tr(data?.level ?? "算分中"))
-                        .font(pf(13, .medium))
+                        .font(AppDesign.Type.compactButtonMedium)
                         .foregroundColor(Color(hexString: "#19A47A"))
                 }
             }
@@ -150,7 +150,7 @@ struct SecurityScoreView: View {
                                 .foregroundColor(ink)
                             Spacer(minLength: 0)
                             Text("\(dim.score)")
-                                .font(pf(16, .medium))
+                                .font(AppDesign.Type.rowTitle)
                                 .foregroundColor(Color(hexString: "#19A47A"))
                             Text("/ \(dim.max)")
                                 .font(pf(12))
@@ -161,7 +161,7 @@ struct SecurityScoreView: View {
                                 .padding(.leading, 2)
                         }
                         .padding(.horizontal, 16)
-                        .frame(height: 50)
+                        .frame(height: AppDesign.Control.buttonHeight)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -190,7 +190,7 @@ struct SecurityScoreView: View {
                                         .foregroundColor(ink)
                                     Spacer(minLength: 6)
                                     Text(Tr(it.tip ?? ""))
-                                        .font(pf(12.5))
+                                        .font(AppDesign.Type.caption)
                                         .foregroundColor(gray)
                                         .lineLimit(2)
                                         .multilineTextAlignment(.trailing)
@@ -202,7 +202,7 @@ struct SecurityScoreView: View {
                         .padding(.bottom, 8)
                     }
                     if dim.key != d.dims.last?.key {
-                        Rectangle().fill(line).frame(height: 0.5).padding(.leading, 16)
+                        Rectangle().fill(line).frame(height: AppDesign.Control.hairline).padding(.leading, 16)
                     }
                 }
             }
@@ -219,7 +219,7 @@ struct SecurityScoreView: View {
                 HStack(alignment: .top, spacing: 8) {
                     Circle().fill(Color(hexString: "#19A47A")).frame(width: 5, height: 5).padding(.top, 6)
                     Text(Tr(t))
-                        .font(pf(13.5))
+                        .font(AppDesign.Type.body)
                         .foregroundColor(gray)
                         .fixedSize(horizontal: false, vertical: true)
                 }

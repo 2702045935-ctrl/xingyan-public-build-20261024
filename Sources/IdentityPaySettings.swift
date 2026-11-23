@@ -22,7 +22,7 @@ struct IdentityView: View {
 
                     VStack(spacing: 6) {
                         Text((info?.verified ?? false) ? Tr("已实名认证") : Tr("未实名认证"))
-                            .font(pf(16, .medium))
+                            .font(AppDesign.Type.rowTitle)
                             .foregroundColor(.white)
                         if let n = info?.realName, !n.isEmpty {
                             Text(n).font(pf(13)).foregroundColor(Color.white.opacity(0.9))
@@ -58,7 +58,7 @@ struct IdentityView: View {
                         Button { showRealName = true } label: {
                             Text(Tr("立即认证"))
                                 .font(pf(17, .medium)).foregroundColor(.white)
-                                .frame(maxWidth: .infinity).frame(height: 48)
+                                .frame(maxWidth: .infinity).frame(height: AppDesign.Control.mediumControlHeight)
                                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.green))
                         }
                         .buttonStyle(.plain)
@@ -66,7 +66,7 @@ struct IdentityView: View {
                     } else {
                         Button { showUpgrade = true } label: {
                             Text(Tr("账户升级服务"))
-                                .font(pf(16, .medium)).foregroundColor(C.green)
+                                .font(AppDesign.Type.rowTitle).foregroundColor(C.green)
                                 .frame(maxWidth: .infinity).frame(height: 46)
                                 .background { CardGlassBox(radius: 8) }
                         }
@@ -76,7 +76,7 @@ struct IdentityView: View {
 
                     Button { save() } label: {
                         Text(busy ? Tr("保存中…") : Tr("保存"))
-                            .font(pf(16, .medium)).foregroundColor(.white)
+                            .font(AppDesign.Type.rowTitle).foregroundColor(.white)
                             .frame(maxWidth: .infinity).frame(height: 46)
                             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.green))
                     }
@@ -85,7 +85,7 @@ struct IdentityView: View {
                     .disabled(busy)
 
                     Text(Tr("身份证号只保存打码后的，完整号码不留在服务器上。"))
-                        .font(pf(12.5)).foregroundColor(C.subLabel)
+                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 24).padding(.top, 12)
                     Color.clear.frame(height: 26)
@@ -120,7 +120,7 @@ struct IdentityView: View {
             Spacer(minLength: 6)
             Text(v).font(pf(15)).foregroundColor(C.subLabel)
         }
-        .padding(.horizontal, 16).frame(height: 52)
+        .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
     }
 
     private func editRow(_ t: String, _ text: Binding<String>, _ ph: String) -> some View {
@@ -130,7 +130,7 @@ struct IdentityView: View {
             TextField(ph, text: text)
                 .font(pf(15)).multilineTextAlignment(.trailing)
         }
-        .padding(.horizontal, 16).frame(height: 52)
+        .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
     }
 
     private func load() async {
@@ -183,7 +183,7 @@ struct PaySettingsView: View {
                                     .font(pf(15)).foregroundColor(C.subLabel)
                                 Chevron(size: 9, line: 1.6)
                             }
-                            .padding(.horizontal, 16).frame(height: 52)
+                            .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -194,7 +194,7 @@ struct PaySettingsView: View {
                             Text(Biometrics.available ? Tr("可用（付款时选「使用面容」）") : Tr("这台手机不支持"))
                                 .font(pf(13)).foregroundColor(C.subLabel)
                         }
-                        .padding(.horizontal, 16).frame(height: 52)
+                        .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
                     }
                     .padding(.top, 10)
 
@@ -225,7 +225,7 @@ struct PaySettingsView: View {
                                 .tint(C.green)
                                 .onChange(of: limit) { _ in save() }
                             }
-                            .padding(.horizontal, 16).frame(height: 52)
+                            .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
                         }
                     }
                     .padding(.top, 10)
@@ -242,7 +242,7 @@ struct PaySettingsView: View {
                             .frame(width: 170)
                             .onChange(of: payMethod) { _ in save() }
                         }
-                        .padding(.horizontal, 16).frame(height: 56)
+                        .padding(.horizontal, 16).frame(height: AppDesign.Control.menuRowHeight)
                     }
                     .padding(.top, 10)
 
@@ -261,13 +261,13 @@ struct PaySettingsView: View {
                                     if idx > 0 { HairLine(inset: 16) }
                                     HStack(spacing: 10) {
                                         VStack(alignment: .leading, spacing: 3) {
-                                            Text(a.name ?? Tr("免密服务")).font(pf(15.5)).foregroundColor(C.label)
+                                            Text(a.name ?? Tr("免密服务")).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
                                             Text((a.cycle ?? "") + ((a.amount ?? 0) > 0 ? (" · ¥" + moneyFmt(a.amount ?? 0)) : ""))
                                                 .font(pf(12)).foregroundColor(C.subLabel)
                                         }
                                         Spacer(minLength: 6)
                                         Button { cancel(a.id) } label: {
-                                            Text(Tr("解约")).font(pf(13.5)).foregroundColor(C.red)
+                                            Text(Tr("解约")).font(AppDesign.Type.body).foregroundColor(C.red)
                                         }
                                         .buttonStyle(.plain)
                                     }
@@ -279,7 +279,7 @@ struct PaySettingsView: View {
                     .padding(.horizontal, 8).padding(.top, 14)
 
                     Text(Tr("支付密码用于转账、发红包、提现；免密支付只对超过额度的那部分生效。"))
-                        .font(pf(12.5)).foregroundColor(C.subLabel)
+                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 24).padding(.top, 14)
                     Color.clear.frame(height: 26)

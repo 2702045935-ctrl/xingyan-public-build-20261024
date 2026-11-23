@@ -37,7 +37,7 @@ struct CenterCard: View {
                             Text(sec)
                                 .font(pf(15))
                                 .foregroundColor(C.subLabel)
-                                .frame(maxWidth: .infinity).frame(height: 42)
+                                .frame(maxWidth: .infinity).frame(height: AppDesign.Control.searchHeight)
                                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small).fill(C.fieldBg))
                         }
                         .buttonStyle(.plain)
@@ -46,7 +46,7 @@ struct CenterCard: View {
                         Text(primary)
                             .font(pf(15, .medium))
                             .foregroundColor(.white)
-                            .frame(maxWidth: .infinity).frame(height: 42)
+                            .frame(maxWidth: .infinity).frame(height: AppDesign.Control.searchHeight)
                             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small).fill(C.green))
                     }
                     .buttonStyle(.plain)
@@ -105,9 +105,9 @@ struct ForceUpdateView: View {
                     app.openUpdate(info)
                 } label: {
                     Text(Tr("立即更新"))
-                        .font(pf(16, .medium))
+                        .font(AppDesign.Type.rowTitle)
                         .foregroundColor(.white)
-                        .frame(maxWidth: .infinity).frame(height: 48)
+                        .frame(maxWidth: .infinity).frame(height: AppDesign.Control.mediumControlHeight)
                         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact).fill(C.green))
                 }
                 .buttonStyle(.plain)

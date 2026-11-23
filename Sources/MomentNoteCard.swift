@@ -212,7 +212,7 @@ struct MomentNoteCard: View {
                     ZStack {
                         Image(systemName: showingLiked ? "heart.fill" : "heart")
                             .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(showingLiked ? Color(hex: 0xFA5151) : C.subLabel)
+                            .foregroundColor(showingLiked ? AppPalette.danger : C.subLabel)
                             .scaleEffect(heartBounce ? 1.28 : 1)
                         if heartBounce { HeartBurst() }
                     }
@@ -222,7 +222,7 @@ struct MomentNoteCard: View {
                             .foregroundColor(C.subLabel)
                     }
                 }
-                .frame(height: 28)
+                .frame(height: AppDesign.Control.statusHeight)
             }
             .buttonStyle(.plain)
 
@@ -236,7 +236,7 @@ struct MomentNoteCard: View {
                     }
                 }
                 .foregroundColor(C.subLabel)
-                .frame(height: 28)
+                .frame(height: AppDesign.Control.statusHeight)
             }
             .buttonStyle(.plain)
 

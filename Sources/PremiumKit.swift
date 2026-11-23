@@ -5,7 +5,7 @@ struct PanelSectionTitle: View {
 
     var body: some View {
         Text(text)
-            .font(pf(12.5, .medium))
+            .font(AppDesign.Type.captionMedium)
             .foregroundColor(C.subLabel)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.leading, 6)
@@ -90,12 +90,12 @@ struct PanelPill: View {
                 Image(systemName: symbol)
                     .font(.system(size: 12, weight: .semibold))
                 Text(title)
-                    .font(pf(13, .medium))
+                    .font(AppDesign.Type.compactButtonMedium)
                     .lineLimit(1)
             }
             .foregroundColor(.white)
             .padding(.horizontal, 12)
-            .frame(height: 32)
+            .frame(height: AppDesign.Control.smallButtonHeight)
             .background(
                 Capsule().fill(LinearGradient(colors: colors.map { $0.opacity(0.9) },
                                               startPoint: .topLeading, endPoint: .bottomTrailing))
@@ -154,7 +154,7 @@ struct PanelRow: View {
                         .lineLimit(1)
                     if let s = subtitle, !s.isEmpty {
                         Text(s)
-                            .font(pf(12.5))
+                            .font(AppDesign.Type.caption)
                             .foregroundColor(C.subLabel)
                             .lineLimit(1)
                     }
@@ -194,7 +194,7 @@ struct PanelToggleRow: View {
                     .foregroundColor(C.label)
                 if let s = subtitle, !s.isEmpty {
                     Text(s)
-                        .font(pf(12.5))
+                        .font(AppDesign.Type.caption)
                         .foregroundColor(C.subLabel)
                 }
             }
@@ -234,7 +234,7 @@ struct PanelDangerRow: View {
                         .lineLimit(1)
                     if let subtitle, !subtitle.isEmpty {
                         Text(subtitle)
-                            .font(pf(12.5))
+                            .font(AppDesign.Type.caption)
                             .foregroundColor(C.subLabel)
                             .lineLimit(2)
                     }
@@ -290,7 +290,7 @@ struct PanelConfirmDialog: View {
                         .fixedSize(horizontal: false, vertical: true)
                     if let message, !message.isEmpty {
                         Text(message)
-                            .font(pf(13.5))
+                            .font(AppDesign.Type.body)
                             .foregroundColor(C.subLabel)
                             .multilineTextAlignment(.center)
                             .fixedSize(horizontal: false, vertical: true)
@@ -301,22 +301,22 @@ struct PanelConfirmDialog: View {
                 .padding(.top, symbol == nil ? 24 : 20)
                 .padding(.bottom, 20)
 
-                Rectangle().fill(C.hairline).frame(height: 0.5)
+                Rectangle().fill(C.hairline).frame(height: AppDesign.Control.hairline)
                 HStack(spacing: 0) {
                     Button { onCancel() } label: {
                         Text(Tr("取消"))
-                            .font(pf(16.5))
+                            .font(AppDesign.Type.listTitle)
                             .foregroundColor(C.label)
-                            .frame(maxWidth: .infinity).frame(height: 52)
+                            .frame(maxWidth: .infinity).frame(height: AppDesign.Control.largeControlHeight)
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     Rectangle().fill(C.hairline).frame(width: 0.5, height: 52)
                     Button { onOk() } label: {
                         Text(okText)
-                            .font(pf(16.5, .semibold))
+                            .font(AppDesign.Type.button)
                             .foregroundColor(okColor)
-                            .frame(maxWidth: .infinity).frame(height: 52)
+                            .frame(maxWidth: .infinity).frame(height: AppDesign.Control.largeControlHeight)
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)

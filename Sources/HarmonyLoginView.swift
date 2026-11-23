@@ -57,7 +57,7 @@ struct HarmonyLoginView: View {
 
     private var ink: Color { LoginTheme.ink(scheme) }
     private var subInk: Color { LoginTheme.inkSub(scheme) }
-    private var accent: Color { Color(hex: 0x25D366) }
+    private var accent: Color { AppPalette.whatsApp }
     private var fieldFill: Color {
         scheme == .dark ? Color(hex: 0x202C33) : Color(hex: 0xF0F2F5)
     }
@@ -73,7 +73,7 @@ struct HarmonyLoginView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
                     brandArea
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
 
                     if mode == .phone {
                         phoneFields
@@ -187,7 +187,7 @@ struct HarmonyLoginView: View {
                         message = ""
                     }
             }
-            .frame(height: 54)
+            .frame(height: AppDesign.Control.dialogRowHeight)
             .padding(.horizontal, 14)
             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                 .fill(fieldFill))
@@ -215,7 +215,7 @@ struct HarmonyLoginView: View {
                     .foregroundColor(countdown > 0 ? subInk : accent)
                     .disabled(countdown > 0)
                 }
-                .frame(height: 54)
+                .frame(height: AppDesign.Control.dialogRowHeight)
                 .padding(.horizontal, 14)
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                     .fill(fieldFill))
@@ -238,7 +238,7 @@ struct HarmonyLoginView: View {
                 .foregroundColor(ink)
                 .tint(accent)
                 .padding(.horizontal, 14)
-                .frame(height: 54)
+                .frame(height: AppDesign.Control.dialogRowHeight)
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                     .fill(fieldFill))
                 .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
@@ -270,7 +270,7 @@ struct HarmonyLoginView: View {
                 .buttonStyle(.plain)
             }
             .padding(.horizontal, 14)
-            .frame(height: 54)
+            .frame(height: AppDesign.Control.dialogRowHeight)
             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                 .fill(fieldFill))
             .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
@@ -294,7 +294,7 @@ struct HarmonyLoginView: View {
                 }
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
-                .frame(height: 52)
+                .frame(height: AppDesign.Control.largeControlHeight)
                 .background(canPrimary ? accent : accent.opacity(0.34))
                 .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
             }
@@ -323,7 +323,7 @@ struct HarmonyLoginView: View {
                 }
                 .foregroundColor(accent)
                 .frame(maxWidth: .infinity)
-                .frame(height: 50)
+                .frame(height: AppDesign.Control.buttonHeight)
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                     .stroke(accent.opacity(0.72), lineWidth: 1))
                 .contentShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))

@@ -420,7 +420,7 @@ struct MusicLyricsView: View {
                         .font(.system(size: 30)).foregroundColor(C.subLabel)
                     Text(Tr("这首歌还没有歌词")).font(pf(15)).foregroundColor(C.label)
                     Text(Tr("后台「音乐（听一听）」里，每首歌后面点「歌词」就能贴上去"))
-                        .font(pf(12.5)).foregroundColor(C.subLabel)
+                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                         .multilineTextAlignment(.center)
                 }
                 .padding(.horizontal, 30)
@@ -1126,7 +1126,7 @@ struct MusicBubble: View {
 
             Rectangle()
                 .fill(Color.primary.opacity(0.065))
-                .frame(height: 0.5)
+                .frame(height: AppDesign.Control.hairline)
                 .padding(.vertical, 10)
 
             WeChatMessageCardFooter(symbol: "music.note", title: Tr("星言听一听"),
@@ -1276,7 +1276,7 @@ struct ListenView: View {
                             .font(pf(14, .semibold))
                             .foregroundStyle(.black)
                             .padding(.horizontal, 18)
-                            .frame(height: 38)
+                            .frame(height: AppDesign.Control.iconSmallHeight)
                             .background(.white, in: Capsule())
                     }
                     .buttonStyle(.plain)
@@ -1645,7 +1645,7 @@ struct ListenView: View {
                         .font(pfStyled(size: 13.5, weight: tab == index ? .semibold : .medium))
                         .foregroundStyle(tab == index ? Color.black : Color.white.opacity(0.82))
                         .padding(.horizontal, 14)
-                        .frame(height: 30)
+                        .frame(height: AppDesign.Control.sectionHeaderHeight)
                         .background {
                             if tab == index {
                                 Capsule(style: .continuous).fill(.white)
@@ -2196,7 +2196,7 @@ struct ListenView: View {
                                 .tracking(0.8)
                                 .foregroundStyle(.white.opacity(0.94))
                                 .padding(.horizontal, 12)
-                                .frame(height: 28)
+                                .frame(height: AppDesign.Control.statusHeight)
                                 .background(.black.opacity(0.22), in: Capsule())
                                 .overlay(Capsule().stroke(.white.opacity(0.18), lineWidth: 0.7))
 
@@ -2637,7 +2637,7 @@ struct ListenView: View {
                 }
             }
             .padding(.horizontal, 16)
-            .frame(height: 72)
+            .frame(height: AppDesign.Control.rowHeight)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -2781,7 +2781,7 @@ struct ListenView: View {
                 .font(pfStyled(size: 15, weight: .medium))
                 .foregroundStyle(.red)
                 .padding(.horizontal, 14)
-                .frame(height: 44)
+                .frame(height: AppDesign.Control.compactHeight)
                 .background(Color.red.opacity(0.08),
                             in: RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
             }
@@ -2816,7 +2816,7 @@ struct ListenView: View {
                     .foregroundStyle(.primary)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 82)
+            .frame(height: AppDesign.Control.loadingPanelHeight)
             .background(Color(uiColor: .secondarySystemGroupedBackground),
                         in: RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         }
@@ -3152,7 +3152,7 @@ struct ListenView: View {
                                     ForEach(Array(artists.enumerated()), id: \.offset) { _, a in
                                         VStack(spacing: 6) {
                                             MusicCover(path: a.1, size: 58, radius: 29)
-                                            Text(a.0).font(pf(12.5)).foregroundColor(C.label).lineLimit(1)
+                                            Text(a.0).font(AppDesign.Type.caption).foregroundColor(C.label).lineLimit(1)
                                                 .frame(width: 68)
                                         }
                                     }
@@ -3185,13 +3185,13 @@ struct ListenView: View {
                             VStack(spacing: 8) {
                                 Text(Tr("朋友推荐还没有内容")).font(pf(14)).foregroundColor(C.subLabel)
                                 Text(Tr("你在这一页放一首歌，好友的「朋友推荐」里就会看到你在听什么；\n反过来，好友在听的时候这里也会出现。"))
-                                    .font(pf(12.5)).foregroundColor(C.subLabel.opacity(0.8))
+                                    .font(AppDesign.Type.caption).foregroundColor(C.subLabel.opacity(0.8))
                                     .multilineTextAlignment(.center)
                             }
                             .frame(maxWidth: .infinity).padding(.top, 50)
                         }
                     }
-                    Spacer().frame(height: 24)
+                    Spacer().frame(height: AppDesign.Control.badgeHeight)
                 }
             }
             .background(C.pageBg)
@@ -3310,9 +3310,9 @@ struct ListenView: View {
             HStack(spacing: 12) {
                 Avatar(path: f.avatar ?? "", size: 52, radius: 12)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(f.name).font(pf(16, .medium)).foregroundColor(C.label).lineLimit(1)
+                    Text(f.name).font(AppDesign.Type.rowTitle).foregroundColor(C.label).lineLimit(1)
                     Text(f.line)
-                        .font(pf(12.5)).foregroundColor(C.subLabel).lineLimit(1)
+                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel).lineLimit(1)
                 }
                 Spacer(minLength: 6)
                 playDot(playing: player.isPlaying(t.id), loading: player.loadingId == t.id)
@@ -3412,7 +3412,7 @@ struct ListenView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
                 }
                 Text(t.title).font(pf(15, .medium)).foregroundColor(C.label).lineLimit(1)
-                Text(t.artistText).font(pf(12.5)).foregroundColor(C.subLabel).lineLimit(1)
+                Text(t.artistText).font(AppDesign.Type.caption).foregroundColor(C.subLabel).lineLimit(1)
             }
             .frame(width: side, alignment: .leading)
             .contentShape(Rectangle())
@@ -3443,8 +3443,8 @@ struct ListenView: View {
                     if let rank, !manageMode { rankBadge(rank) }
                 }
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(t.title).font(pf(16, .medium)).foregroundColor(C.label).lineLimit(1)
-                    Text(t.artistText).font(pf(12.5)).foregroundColor(C.subLabel).lineLimit(1)
+                    Text(t.title).font(AppDesign.Type.rowTitle).foregroundColor(C.label).lineLimit(1)
+                    Text(t.artistText).font(AppDesign.Type.caption).foregroundColor(C.subLabel).lineLimit(1)
                 }
                 Spacer(minLength: 8)
                 playDot(playing: player.isPlaying(t.id), loading: player.loadingId == t.id)
@@ -3824,7 +3824,7 @@ struct KTVSongPickerView: View {
                     .font(pfStyled(size: 14.5, weight: .semibold))
                     .foregroundStyle(.black)
                     .padding(.horizontal, 16)
-                    .frame(height: 42)
+                    .frame(height: AppDesign.Control.searchHeight)
                     .background(
                         LinearGradient(
                             colors: [Color(hex: 0xDDF7B7), OrbitTheme.jade],
@@ -3845,7 +3845,7 @@ struct KTVSongPickerView: View {
             }
         }
         .padding(.horizontal, 12)
-        .frame(height: 64)
+        .frame(height: AppDesign.Control.compactRowHeight)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
@@ -4226,7 +4226,7 @@ struct MusicPlayingView: View {
                 ScrollViewReader { proxy in
                     ScrollView(showsIndicators: false) {
                         LazyVStack(alignment: .leading, spacing: 13) {
-                            Color.clear.frame(height: 42)
+                            Color.clear.frame(height: AppDesign.Control.searchHeight)
                             ForEach(lyricLines) { line in
                                 KaraokeLyricText(
                                     text: line.text,
@@ -4246,7 +4246,7 @@ struct MusicPlayingView: View {
                                 .contentShape(Rectangle())
                                 .onTapGesture { seekTo(line.time) }
                             }
-                            Color.clear.frame(height: 48)
+                            Color.clear.frame(height: AppDesign.Control.mediumControlHeight)
                         }
                         .padding(.horizontal, 12)
                     }
@@ -4306,7 +4306,7 @@ struct MusicPlayingView: View {
             .accessibilityLabel(Tr("分享"))
         }
         .padding(.horizontal, 16)
-        .frame(height: 60)
+        .frame(height: AppDesign.Control.profileRowHeight)
     }
 
     private var queueSheet: some View {
@@ -4440,7 +4440,7 @@ struct MusicPlayingView: View {
         return VStack(spacing: 0) {
             HStack(spacing: 6) {
                 Image(systemName: "text.alignleft").font(.system(size: 11)).foregroundColor(C.subLabel)
-                Text(t?.title ?? "").font(pf(12.5, .medium)).foregroundColor(C.label).lineLimit(1)
+                Text(t?.title ?? "").font(AppDesign.Type.captionMedium).foregroundColor(C.label).lineLimit(1)
                 Spacer(minLength: 0)
                 if aiBusy {
                     ProgressView().scaleEffect(0.6)
@@ -4594,7 +4594,7 @@ struct MusicPlayingView: View {
                         .font(pfStyled(size: 11, weight: .semibold))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 9)
-                        .frame(height: 32)
+                        .frame(height: AppDesign.Control.smallButtonHeight)
                         .background(.black.opacity(0.20), in: Capsule())
                 }
                 .buttonStyle(.plain)
@@ -4730,7 +4730,7 @@ struct MusicPlayingView: View {
                     }
                 }
             }
-            .frame(height: 44)
+            .frame(height: AppDesign.Control.compactHeight)
 
             HStack {
                 Text(musicTime(dragging ? dragValue * player.total : player.seconds))

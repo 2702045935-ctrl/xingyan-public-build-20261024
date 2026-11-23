@@ -35,7 +35,8 @@ require(
     "paymentPrimaryActions" in PAY
     and "PayCodePage()" in PAY
     and "ReceiveCodePage()" in PAY
-    and "private struct PayPrimaryActionPressStyle" in PAY,
+    and "private struct PayPrimaryActionPressStyle" not in PAY
+    and "buttonStyle(AppPressStyle())" in PAY,
     "Star Pay home must lead with dedicated pay and receive actions",
 )
 require(

@@ -47,7 +47,7 @@ struct SysNoticeBubble: View {
                             .font(.system(size: 13, weight: .semibold))
                             .foregroundColor(C.green)
                         Text(info.title)
-                            .font(pf(15.5, .medium))
+                            .font(AppDesign.Type.rowTitleMedium)
                             .foregroundColor(C.label)
                             .lineLimit(expanded ? 3 : 1)
                         Spacer(minLength: 0)
@@ -87,7 +87,7 @@ struct SysNoticeBubble: View {
                             .font(.system(size: 10, weight: .semibold))
                         Spacer(minLength: 0)
                     }
-                    .foregroundColor(Color(hex: 0x576B95))
+                    .foregroundColor(AppPalette.legacyLink)
                     .padding(.horizontal, 13).padding(.vertical, 9)
                     .contentShape(Rectangle())
                 }

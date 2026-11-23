@@ -35,8 +35,8 @@ private struct PhoneContactMark: View {
             RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                 .fill(accent)
             HStack(spacing: 4) {
-                Capsule().fill(Color(hex: 0x07351C)).frame(width: 2.8, height: 7)
-                Capsule().fill(Color(hex: 0x07351C)).frame(width: 2.8, height: 7)
+                Capsule().fill(AppPalette.deepForest).frame(width: 2.8, height: 7)
+                Capsule().fill(AppPalette.deepForest).frame(width: 2.8, height: 7)
             }
             .offset(y: 1)
         }
@@ -157,13 +157,13 @@ struct PhoneContactsView: View {
                                             .font(pfStyled(size: 12, weight: .semibold))
                                             .foregroundStyle(
                                                 section.letter == "#"
-                                                ? Color(hex: 0x25D366)
+                                                ? AppPalette.whatsApp
                                                 : C.subLabel
                                             )
                                         Spacer()
                                     }
                                     .padding(.horizontal, 18)
-                                    .frame(height: 28)
+                                    .frame(height: AppDesign.Control.statusHeight)
                                     .background(C.pageBg)
                                 }
                             }
@@ -172,7 +172,7 @@ struct PhoneContactsView: View {
 
                     if !errorText.isEmpty {
                         Text(errorText)
-                            .font(pf(12.5))
+                            .font(AppDesign.Type.caption)
                             .foregroundColor(C.red)
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
@@ -181,7 +181,7 @@ struct PhoneContactsView: View {
 
                     if state == .ready {
                         Text(Tr("仅在你选择联系人后查询号码，不会批量上传通讯录。"))
-                            .font(pf(12.5))
+                            .font(AppDesign.Type.caption)
                             .foregroundStyle(C.subLabel)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 34)
@@ -227,7 +227,7 @@ struct PhoneContactsView: View {
             }
         }
         .padding(.horizontal, 12)
-        .frame(height: 40)
+        .frame(height: AppDesign.Control.iconControlHeight)
         .background(C.fieldBg,
                     in: RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
         .padding(.horizontal, 14)
@@ -241,7 +241,7 @@ struct PhoneContactsView: View {
                 .font(.system(size: 22, weight: .semibold))
                 .foregroundStyle(.white)
                 .frame(width: 48, height: 48)
-                .background(Color(hex: 0x25D366), in: Circle())
+                .background(AppPalette.whatsApp, in: Circle())
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(Tr("从手机通讯录添加朋友"))
@@ -286,20 +286,20 @@ struct PhoneContactsView: View {
 
             Spacer(minLength: 6)
             if searchingPhone == contact.phone {
-                ProgressView().tint(Color(hex: 0x25D366))
+                ProgressView().tint(AppPalette.whatsApp)
             } else {
                 Image(systemName: "person.crop.circle.badge.plus")
                     .font(.system(size: 19, weight: .medium))
-                    .foregroundStyle(Color(hex: 0x25D366))
+                    .foregroundStyle(AppPalette.whatsApp)
             }
         }
         .padding(.horizontal, 18)
-        .frame(height: 64)
+        .frame(height: AppDesign.Control.compactRowHeight)
         .background(C.pageBg)
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(C.hairline)
-                .frame(height: 0.5)
+                .frame(height: AppDesign.Control.hairline)
                 .padding(.leading, 74)
         }
         .contentShape(Rectangle())
@@ -309,12 +309,12 @@ struct PhoneContactsView: View {
         VStack(spacing: 14) {
             Image(systemName: "person.crop.circle.badge.questionmark")
                 .font(.system(size: 42, weight: .light))
-                .foregroundStyle(Color(hex: 0x25D366))
+                .foregroundStyle(AppPalette.whatsApp)
             Text(Tr("读取手机联系人"))
                 .font(pf(17, .semibold))
                 .foregroundStyle(C.label)
             Text(Tr("仅在你选择联系人后查询号码，不会批量上传通讯录。"))
-                .font(pf(13.5))
+                .font(AppDesign.Type.body)
                 .foregroundStyle(C.subLabel)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 22)
@@ -324,11 +324,11 @@ struct PhoneContactsView: View {
                 Text(state == .denied
                      ? Tr("去系统设置开启通讯录权限")
                      : Tr("读取手机联系人"))
-                    .font(pf(15.5, .semibold))
+                    .font(AppDesign.Type.rowTitle)
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 46)
-                    .background(Color(hex: 0x25D366),
+                    .background(AppPalette.whatsApp,
                                 in: RoundedRectangle(cornerRadius: AppDesign.Radius.compact,
                                                      style: .continuous))
             }
@@ -582,7 +582,7 @@ private struct PhoneInviteSheet: View {
                             .font(pf(18, .semibold))
                             .foregroundColor(C.label)
                         Text(phone)
-                            .font(pf(12.5))
+                            .font(AppDesign.Type.caption)
                             .foregroundColor(C.subLabel)
                         Text(Tr("这个号码还没有注册星言"))
                             .font(pf(13))

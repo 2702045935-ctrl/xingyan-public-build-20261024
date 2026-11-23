@@ -51,7 +51,7 @@ struct MusicDockedPlayerBar: View {
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 12)
-        .frame(height: 64)
+        .frame(height: AppDesign.Control.compactRowHeight)
         .background {
             RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                 .fill(.thinMaterial)

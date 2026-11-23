@@ -407,7 +407,7 @@ struct ScannerView: View {
                                     .font(pf(14, .medium))
                                     .foregroundColor(.white)
                                     .padding(.horizontal, 18)
-                                    .frame(height: 36)
+                                    .frame(height: AppDesign.Control.floatingControlHeight)
                                     .background(Capsule().fill(Color.black.opacity(0.42)))
                             }
                             .buttonStyle(.plain)
@@ -449,7 +449,7 @@ struct ScannerView: View {
                     Spacer()
 
                     Text(hint)
-                        .font(pf(13.5))
+                        .font(AppDesign.Type.body)
                         .foregroundColor(.white.opacity(0.9))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 14)
@@ -594,7 +594,7 @@ struct ScannerView: View {
 
     private func resultCard(_ title: String, _ text: String, hot: Bool) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(pf(12.5)).foregroundColor(C.subLabel)
+            Text(title).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
             Text(text.isEmpty ? "—" : text)
                 .font(pf(16))
                 .foregroundColor(C.label)

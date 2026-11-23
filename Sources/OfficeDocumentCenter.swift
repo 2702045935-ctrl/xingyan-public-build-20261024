@@ -162,7 +162,7 @@ struct OfficeDocumentActionBar: View {
         .padding(.vertical, 8)
         .background(.bar)
         .overlay(alignment: .top) {
-            Rectangle().fill(C.hairline).frame(height: 0.5)
+            Rectangle().fill(C.hairline).frame(height: AppDesign.Control.hairline)
         }
         .accessibilityElement(children: .contain)
     }

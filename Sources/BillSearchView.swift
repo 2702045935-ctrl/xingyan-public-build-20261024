@@ -56,7 +56,7 @@ struct BillSearchView: View {
                             .background(C.cardBg)
                         }
                     }
-                    Color.clear.frame(height: 24)
+                    Color.clear.frame(height: AppDesign.Control.badgeHeight)
                 }
             }
             .background(PayVisual.canvas)
@@ -103,7 +103,7 @@ struct BillSearchView: View {
                 }
             }
             .padding(.horizontal, 11)
-            .frame(height: 36)
+            .frame(height: AppDesign.Control.floatingControlHeight)
             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(fieldBg))
             .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                 .stroke(fieldEdge, lineWidth: 0.5))
@@ -143,7 +143,7 @@ struct BillSearchView: View {
                 .font(pf(13, on ? .medium : .regular))
                 .foregroundColor(on ? C.green : ink)
                 .padding(.horizontal, 12)
-                .frame(height: 30)
+                .frame(height: AppDesign.Control.sectionHeaderHeight)
                 .background(Capsule().fill(on ? C.green.opacity(0.12) : chipBg))
         }
         .buttonStyle(.plain)
@@ -153,7 +153,7 @@ struct BillSearchView: View {
         VStack(alignment: .leading, spacing: 0) {
             if !history.isEmpty {
                 HStack {
-                    Text(Tr("最近搜索")).font(pf(13.5)).foregroundColor(subInk)
+                    Text(Tr("最近搜索")).font(AppDesign.Type.body).foregroundColor(subInk)
                     Spacer(minLength: 0)
                     Button {
                         SearchHistory.clear()
@@ -176,7 +176,7 @@ struct BillSearchView: View {
                 .padding(.horizontal, 16)
             }
             Text(Tr("可以搜好友名字、备注，也可以搜「转账」「红包」「充值」"))
-                .font(pf(12.5))
+                .font(AppDesign.Type.caption)
                 .foregroundColor(subInk)
                 .padding(.horizontal, 16)
                 .padding(.top, 22)
@@ -194,7 +194,7 @@ struct BillSearchView: View {
                 .font(pf(14))
                 .foregroundColor(subInk)
             Text(Tr("换个关键词，或者把时间范围放宽一点"))
-                .font(pf(12.5))
+                .font(AppDesign.Type.caption)
                 .foregroundColor(subInk.opacity(0.8))
         }
         .frame(maxWidth: .infinity)
@@ -268,7 +268,7 @@ struct BillSearchView: View {
                 VStack(alignment: .leading, spacing: 7) {
                     Text(rowTitle(b)).font(pf(16)).foregroundColor(ink).lineLimit(1)
                     Text((TimeFmt.bill(b.createdAt)) + ((b.status ?? "pending") == "pending" ? (" · " + b.stateText) : ""))
-                        .font(pf(12.5))
+                        .font(AppDesign.Type.caption)
                         .foregroundColor(subInk)
                         .lineLimit(1)
                 }
@@ -280,7 +280,7 @@ struct BillSearchView: View {
                            weight: .regular)
                     .padding(.trailing, 18)
             }
-            .frame(height: 72)
+            .frame(height: AppDesign.Control.rowHeight)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -337,7 +337,7 @@ struct FlowChips: View {
                                 .foregroundColor(C.label)
                                 .lineLimit(1)
                                 .padding(.horizontal, 12)
-                                .frame(height: 30)
+                                .frame(height: AppDesign.Control.sectionHeaderHeight)
                                 .background(Capsule().fill(Color.dyn(0xF1F2F5, 0x2C2C2E)))
                         }
                         .buttonStyle(.plain)

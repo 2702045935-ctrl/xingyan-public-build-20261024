@@ -118,7 +118,7 @@ struct WallpaperCropView: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(Tr("移动和缩放"))
-                    .font(pf(16, .semibold))
+                    .font(AppDesign.Type.rowTitle)
                     .foregroundStyle(.white)
                 Text(Tr("双指缩放，拖动调整显示范围"))
                     .font(pf(11.5))
@@ -141,7 +141,7 @@ struct WallpaperCropView: View {
                     }
                 }
                 .padding(.horizontal, 16)
-                .frame(height: 36)
+                .frame(height: AppDesign.Control.floatingControlHeight)
                 .background(Capsule().fill(Color.white.opacity(0.17)))
                 .overlay(Capsule().stroke(Color.white.opacity(0.18), lineWidth: 0.7))
             }
@@ -161,7 +161,7 @@ struct WallpaperCropView: View {
             Text(Tr(scheme == .dark
                     ? "深色模式会自动生成自然黑模糊"
                     : "浅色模式保留完整全景"))
-                .font(pf(12, .medium))
+                .font(AppDesign.Type.sectionMedium)
                 .foregroundStyle(.white.opacity(0.78))
             Spacer(minLength: 0)
             Text("\(Int((zoom * 100).rounded()))%")

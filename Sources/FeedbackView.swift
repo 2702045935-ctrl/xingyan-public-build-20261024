@@ -41,7 +41,7 @@ struct FeedbackView: View {
                     .foregroundColor(C.label)
                     .padding(.top, 22)
                 Text(Tr("我们会尽快处理，处理结果可以在「我的反馈」里看。"))
-                    .font(pf(13.5))
+                    .font(AppDesign.Type.body)
                     .foregroundColor(C.subLabel)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 46)
@@ -50,10 +50,10 @@ struct FeedbackView: View {
                 VStack(spacing: 10) {
                     NavigationLink(value: "feedback.history") {
                         Text(Tr("查看我的反馈"))
-                            .font(pf(16, .medium))
+                            .font(AppDesign.Type.rowTitle)
                             .foregroundColor(C.green)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 48)
+                            .frame(height: AppDesign.Control.mediumControlHeight)
                             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                                 .stroke(C.green.opacity(0.55), lineWidth: 1.2))
                     }
@@ -61,10 +61,10 @@ struct FeedbackView: View {
 
                     Button { dismiss() } label: {
                         Text(Tr("返回"))
-                            .font(pf(16, .medium))
+                            .font(AppDesign.Type.rowTitle)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 48)
+                            .frame(height: AppDesign.Control.mediumControlHeight)
                             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                                 .fill(LinearGradient(colors: [C.green, C.green.opacity(0.78)],
                                                      startPoint: .topLeading, endPoint: .bottomTrailing)))
@@ -88,7 +88,7 @@ struct FeedbackView: View {
                             .font(pf(14.5, .medium))
                             .foregroundColor(content.isEmpty || busy ? C.subLabel : .white)
                             .padding(.horizontal, 15)
-                            .frame(height: 32)
+                            .frame(height: AppDesign.Control.smallButtonHeight)
                             .background(
                                 Capsule().fill(content.isEmpty || busy
                                     ? AnyShapeStyle(Color.dyn(0xEDEDED, 0x2C2C2E))
@@ -106,7 +106,7 @@ struct FeedbackView: View {
 
                         VStack(alignment: .leading, spacing: 9) {
                             Text(Tr("问题类型"))
-                                .font(pf(12.5))
+                                .font(AppDesign.Type.caption)
                                 .foregroundColor(C.subLabel)
                                 .padding(.leading, 4)
                             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 2),
@@ -151,7 +151,7 @@ struct FeedbackView: View {
                         .padding(.top, 10)
 
                         Text(Tr("问题描述"))
-                            .font(pf(12.5))
+                            .font(AppDesign.Type.caption)
                             .foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.leading, 4)
@@ -194,7 +194,7 @@ struct FeedbackView: View {
                                             .font(.system(size: 9, weight: .bold))
                                             .foregroundColor(.white)
                                             .frame(width: 18, height: 18)
-                                            .background(Circle().fill(Color(hex: 0xFA5151)))
+                                            .background(Circle().fill(AppPalette.danger))
                                             .offset(x: 6, y: -6)
                                     }
                                     .onTapGesture {
@@ -251,7 +251,7 @@ struct FeedbackView: View {
                                 .font(pf(15))
                         }
                         .padding(.horizontal, 14)
-                        .frame(height: 54)
+                        .frame(height: AppDesign.Control.dialogRowHeight)
                         .background { CardGlassBox(radius: 13) }
                         .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                             .stroke(C.hairline, lineWidth: 0.6))
@@ -269,7 +269,7 @@ struct FeedbackView: View {
                                         .foregroundColor(.white)
                                 }
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(Tr("我的反馈")).font(pf(15.5, .medium)).foregroundColor(C.label)
+                                    Text(Tr("我的反馈")).font(AppDesign.Type.rowTitleMedium).foregroundColor(C.label)
                                     Text(Tr("看处理进度和官方回复")).font(pf(12)).foregroundColor(C.subLabel)
                                 }
                                 Spacer(minLength: 0)
@@ -289,7 +289,7 @@ struct FeedbackView: View {
                             .font(pf(12)).foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 18).padding(.top, 10)
-                        Spacer().frame(height: 30)
+                        Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                     }
                 }
                 .background(C.pageBg)
@@ -399,7 +399,7 @@ struct FeedbackHistoryView: View {
                                 Text(fmt(r.createdAt)).font(pf(12)).foregroundColor(C.subLabel)
                                 if let reply = r.reply, !reply.isEmpty {
                                     VStack(alignment: .leading, spacing: 4) {
-                                        Text(Tr("官方回复")).font(pf(12.5, .medium)).foregroundColor(C.green)
+                                        Text(Tr("官方回复")).font(AppDesign.Type.captionMedium).foregroundColor(C.green)
                                         Text(reply).font(pf(14)).foregroundColor(C.label)
                                     }
                                     .padding(10)
@@ -413,7 +413,7 @@ struct FeedbackHistoryView: View {
                             .padding(.horizontal, 12).padding(.top, 10)
                         }
                     }
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
             }
             .background(C.pageBg)

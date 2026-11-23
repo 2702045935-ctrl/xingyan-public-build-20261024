@@ -15,7 +15,7 @@ struct MomentCommentBar: View {
         HStack(spacing: 10) {
             TextField(replyTo.isEmpty ? Tr("评论") : (Tr("回复 ") + replyTo + "："),
                       text: $text, axis: .vertical)
-                .font(pf(15.5))
+                .font(AppDesign.Type.bodyLarge)
                 .lineLimit(1...4)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
@@ -26,9 +26,9 @@ struct MomentCommentBar: View {
 
             Button { onSend() } label: {
                 Text(Tr("发送"))
-                    .font(pf(15.5, .medium))
+                    .font(AppDesign.Type.rowTitleMedium)
                     .foregroundColor(canSend ? C.green : C.subLabel)
-                    .frame(height: 36)
+                    .frame(height: AppDesign.Control.floatingControlHeight)
                     .padding(.horizontal, 4)
                     .contentShape(Rectangle())
             }
@@ -37,9 +37,9 @@ struct MomentCommentBar: View {
 
             Button { onCancel() } label: {
                 Text(Tr("取消"))
-                    .font(pf(15.5))
+                    .font(AppDesign.Type.bodyLarge)
                     .foregroundColor(C.subLabel)
-                    .frame(height: 36)
+                    .frame(height: AppDesign.Control.floatingControlHeight)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)

@@ -132,9 +132,9 @@ struct BotCardView: View {
     private var sheetBg: Color { scheme == .dark ? Color(hex: 0x1C1C1E) : .white }
 
     private var pageBg: Color { C.pageBg }
-    private var ink: Color { scheme == .dark ? Color(hex: 0xEDEDED) : Color(hex: 0x1A1A1A) }
-    private var gray: Color { scheme == .dark ? Color(hex: 0x8E8E93) : Color(hex: 0x737373) }
-    private var link: Color { scheme == .dark ? Color(hex: 0x7D90B8) : Color(hex: 0x576B95) }
+    private var ink: Color { scheme == .dark ? AppPalette.neutralSurface : Color(hex: 0x1A1A1A) }
+    private var gray: Color { scheme == .dark ? AppPalette.systemSecondary : Color(hex: 0x737373) }
+    private var link: Color { scheme == .dark ? Color(hex: 0x7D90B8) : AppPalette.legacyLink }
     private var lineColor: Color { scheme == .dark ? Color(white: 1, opacity: 0.09) : Color(hex: 0xE5E5E5) }
 
     private var bio: String {
@@ -217,12 +217,12 @@ struct BotCardView: View {
     private var acts: some View {
         VStack(spacing: 0) {
             row("发消息", key: "msg")
-            Rectangle().fill(lineColor).frame(height: 0.5).padding(.leading, 18)
+            Rectangle().fill(lineColor).frame(height: AppDesign.Control.hairline).padding(.leading, 18)
             row("语音通话", key: "call")
         }
         .background(sheetBg)
-        .overlay(alignment: .top) { Rectangle().fill(lineColor).frame(height: 0.5) }
-        .overlay(alignment: .bottom) { Rectangle().fill(lineColor).frame(height: 0.5) }
+        .overlay(alignment: .top) { Rectangle().fill(lineColor).frame(height: AppDesign.Control.hairline) }
+        .overlay(alignment: .bottom) { Rectangle().fill(lineColor).frame(height: AppDesign.Control.hairline) }
     }
 
     private func row(_ title: String, key: String) -> some View {
@@ -237,7 +237,7 @@ struct BotCardView: View {
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 18)
-            .frame(height: 52)
+            .frame(height: AppDesign.Control.largeControlHeight)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

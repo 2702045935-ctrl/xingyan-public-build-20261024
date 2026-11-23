@@ -2720,7 +2720,7 @@ struct SavedLoginConfirm: View {
                         .foregroundColor(C.label)
                         .lineLimit(1)
                     Text(Tr("上次登录的账号"))
-                        .font(pf(12.5))
+                        .font(AppDesign.Type.caption)
                         .foregroundColor(C.subLabel)
                 }
             }
@@ -2734,7 +2734,7 @@ struct SavedLoginConfirm: View {
                     go()
                 } label: {
                     Text(Tr("登录"))
-                        .font(pf(16, .medium))
+                        .font(AppDesign.Type.rowTitle)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 46)
@@ -2950,7 +2950,7 @@ struct LoginViewOld: View {
                         panel
                         if let error = error {
                             Text(error)
-                                .font(pf(13.5))
+                                .font(AppDesign.Type.body)
                                 .foregroundColor(LoginTheme.pageBg == nil ? C.red : Color(hex: 0xFF8E8E))
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.horizontal, 18)
@@ -2958,7 +2958,7 @@ struct LoginViewOld: View {
                         }
                         if !usePassword {
                             Text(Tr("仅上述手机号用于登录验证"))
-                                .font(pf(13.5))
+                                .font(AppDesign.Type.body)
                                 .foregroundColor(LoginTheme.onBgSub(scheme))
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.horizontal, 18)
@@ -3028,7 +3028,7 @@ struct LoginViewOld: View {
                 Spacer()
             }
         }
-        .frame(height: 52)
+        .frame(height: AppDesign.Control.largeControlHeight)
     }
 
     private var panel: some View {
@@ -3046,7 +3046,7 @@ struct LoginViewOld: View {
                         .focused($focus, equals: .phone)
                         .keyboardType(.numberPad)
                         .textContentType(.telephoneNumber)
-                        .font(pf(17.5))
+                        .font(AppDesign.Type.titleRegular)
                         .foregroundColor(LoginTheme.ink(scheme))
                         .frame(height: 46)
                 }
@@ -3057,7 +3057,7 @@ struct LoginViewOld: View {
                         .keyboardType(.numberPad)
 
                         .textContentType(.oneTimeCode)
-                        .font(pf(17.5))
+                        .font(AppDesign.Type.titleRegular)
                         .foregroundColor(LoginTheme.ink(scheme))
                         .frame(height: 46)
                     Button {
@@ -3075,7 +3075,7 @@ struct LoginViewOld: View {
                         .focused($focus, equals: .user)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled(true)
-                        .font(pf(17.5))
+                        .font(AppDesign.Type.titleRegular)
                         .foregroundColor(LoginTheme.ink(scheme))
                         .frame(height: 46)
                 }
@@ -3087,7 +3087,7 @@ struct LoginViewOld: View {
                         .autocorrectionDisabled(true)
                         .textInputAutocapitalization(.never)
                         .privacySensitive()
-                        .font(pf(17.5))
+                        .font(AppDesign.Type.titleRegular)
                         .foregroundColor(LoginTheme.ink(scheme))
                         .frame(height: 46)
                 }
@@ -3110,7 +3110,7 @@ struct LoginViewOld: View {
             content()
         }
         .padding(.horizontal, 18)
-        .frame(height: 60)
+        .frame(height: AppDesign.Control.profileRowHeight)
     }
 
     private var foot: some View {
@@ -3123,7 +3123,7 @@ struct LoginViewOld: View {
                         .font(pf(15))
                         .foregroundColor(syncHistory ? LoginTheme.accent : LoginTheme.onBgSub(scheme))
                     Text(Tr("登录后同步最近的聊天记录"))
-                        .font(pf(13.5))
+                        .font(AppDesign.Type.body)
                         .foregroundColor(LoginTheme.onBgSub(scheme))
                 }
                 .frame(maxWidth: .infinity)
@@ -3140,7 +3140,7 @@ struct LoginViewOld: View {
                     .font(pf(17, .medium))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 48)
+                    .frame(height: AppDesign.Control.mediumControlHeight)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini)
                         .fill(busy ? LoginTheme.accent.opacity(0.6) : LoginTheme.accent))
             }
@@ -3487,7 +3487,7 @@ struct LoginView: View {
                             .font(pfStyled(size: 12.5, weight: .medium))
                             .foregroundColor(LoginTheme.accent)
                             .padding(.horizontal, 12)
-                            .frame(height: 30)
+                            .frame(height: AppDesign.Control.sectionHeaderHeight)
                             .background(Capsule().stroke(LoginTheme.accent.opacity(0.5), lineWidth: 1))
                     }
                     .buttonStyle(.plain)
@@ -3922,7 +3922,7 @@ struct AccountLoginSheet: View {
     private func row<C: View>(@ViewBuilder _ c: () -> C) -> some View {
         HStack(spacing: 8) { c() }
             .font(pfStyled(15))
-            .frame(height: 54).padding(.horizontal, 14)
+            .frame(height: AppDesign.Control.dialogRowHeight).padding(.horizontal, 14)
             .background(Color.dyn(0xFFFFFF, 0x1C1C1E))
     }
 
@@ -4044,7 +4044,7 @@ struct UnbanSheet: View {
     private func field<C: View>(@ViewBuilder _ c: () -> C) -> some View {
         HStack(spacing: 8) { c() }
             .font(pfStyled(15))
-            .frame(height: 54).padding(.horizontal, 14)
+            .frame(height: AppDesign.Control.dialogRowHeight).padding(.horizontal, 14)
             .background(Color.dyn(0xFFFFFF, 0x1C1C1E))
     }
 
@@ -4350,7 +4350,7 @@ struct RegisterSheet: View {
                                 error = nil
                             }
                             .padding(.horizontal, 14)
-                            .frame(height: 54)
+                            .frame(height: AppDesign.Control.dialogRowHeight)
                             .background(registrationField)
                             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
                             .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
@@ -4874,7 +4874,7 @@ struct PhoneLoginView: View {
                                     .font(.system(size: 11, weight: .semibold))
                                     .foregroundColor(Color.dyn(0xC0C0C6, 0x6B6B70))
                             }
-                            .frame(height: 54)
+                            .frame(height: AppDesign.Control.dialogRowHeight)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -4883,7 +4883,7 @@ struct PhoneLoginView: View {
                         TextField(Tr("请输入手机号"), text: $phone)
                             .keyboardType(.numberPad)
                             .font(pfStyled(16.5))
-                            .frame(height: 54)
+                            .frame(height: AppDesign.Control.dialogRowHeight)
                             .focused($focused)
                             .overlay(alignment: .bottom) { hairline }
 
@@ -4900,7 +4900,7 @@ struct PhoneLoginView: View {
                             .buttonStyle(.plain)
                             .disabled(countDown > 0 || !phoneLenOK)
                         }
-                        .frame(height: 54)
+                        .frame(height: AppDesign.Control.dialogRowHeight)
                         .overlay(alignment: .bottom) { hairline }
                     }
 

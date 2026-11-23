@@ -60,7 +60,7 @@ struct BotCardNew: View {
             Image(systemName: "ellipsis").font(.system(size: 17)).foregroundColor(aInk)
         }
         .padding(.horizontal, 16)
-        .frame(height: 44)
+        .frame(height: AppDesign.Control.compactHeight)
         .background(Color.white)
     }
 
@@ -93,13 +93,13 @@ struct BotCardNew: View {
             HStack(spacing: 12) {
                 Button { onMessage() } label: {
                     Text(Tr("发消息")).font(pf(17, .medium)).foregroundColor(.white)
-                        .frame(maxWidth: .infinity).frame(height: 44)
+                        .frame(maxWidth: .infinity).frame(height: AppDesign.Control.compactHeight)
                         .background(Capsule().fill(aBlue))
                 }
                 .buttonStyle(.plain)
                 Button { onCall() } label: {
                     Text(Tr("打电话")).font(pf(17, .medium)).foregroundColor(aBlue)
-                        .frame(maxWidth: .infinity).frame(height: 44)
+                        .frame(maxWidth: .infinity).frame(height: AppDesign.Control.compactHeight)
                         .background(Capsule().stroke(aBlue, lineWidth: 1.5))
                 }
                 .buttonStyle(.plain)
@@ -132,7 +132,7 @@ struct BotCardNew: View {
             Spacer()
             Text(v).font(pf(14)).foregroundColor(aInk3)
         }
-        .padding(.horizontal, 16).frame(height: 56)
+        .padding(.horizontal, 16).frame(height: AppDesign.Control.menuRowHeight)
     }
 
     private var line: some View { Rectangle().fill(aLine).frame(height: 1).padding(.leading, 16) }

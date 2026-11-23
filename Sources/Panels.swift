@@ -420,7 +420,7 @@ struct EmojiPanel: View {
                             .font(.system(size: 22, weight: .light))
                             .foregroundStyle(C.subLabel)
                         Text(Tr("搜索表情和表情包"))
-                            .font(pf(12.5))
+                            .font(AppDesign.Type.caption)
                             .foregroundStyle(C.subLabel)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -449,7 +449,7 @@ struct EmojiPanel: View {
                     .font(.system(size: 24, weight: .light))
                     .foregroundColor(C.subLabel)
                 Text(Tr("用过的表情会出现在这里"))
-                    .font(pf(12.5))
+                    .font(AppDesign.Type.caption)
                     .foregroundColor(C.subLabel)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -513,11 +513,11 @@ struct EmojiPanel: View {
                 Image(systemName: symbol)
                     .font(.system(size: 12.5, weight: .semibold))
                 Text(title)
-                    .font(pf(12.5, .medium))
+                    .font(AppDesign.Type.captionMedium)
             }
             .foregroundStyle(C.label)
             .padding(.horizontal, 10)
-            .frame(height: 32)
+            .frame(height: AppDesign.Control.smallButtonHeight)
             .background(Capsule().fill(Color.dyn(0xF2F2F3, 0x2A2A2D)))
             .overlay(Capsule().stroke(C.hairline.opacity(0.55), lineWidth: 0.5))
         }
@@ -786,7 +786,7 @@ struct EmojiPanel: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel(expanded ? Tr("收起") : Tr("展开"))
             }
-            .frame(height: 44)
+            .frame(height: AppDesign.Control.compactHeight)
 
             TabView(selection: $tab) {
                 emojiSearchPage.tag(0)
@@ -930,7 +930,7 @@ struct PlusPanel: View {
             }
         }
         .frame(height: max(panelH, neededH))
-        .overlay(alignment: .top) { Rectangle().fill(C.hairline).frame(height: 0.5) }
+        .overlay(alignment: .top) { Rectangle().fill(C.hairline).frame(height: AppDesign.Control.hairline) }
     }
 
     private func tile(_ item: PlusItem) -> some View {
@@ -1117,7 +1117,7 @@ struct MentionPanel: View {
                 TextField(Tr("搜索"), text: $query)
                     .font(pf(14))
                     .foregroundColor(C.label)
-                    .frame(height: 30)
+                    .frame(height: AppDesign.Control.sectionHeaderHeight)
             }
             .padding(.horizontal, 10)
             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous)
@@ -1169,7 +1169,7 @@ struct MentionPanel: View {
                                     .foregroundColor(C.subLabel)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .padding(.horizontal, 14)
-                                    .frame(height: 24)
+                                    .frame(height: AppDesign.Control.badgeHeight)
                                     .background(C.tabBg)
                                     .id(group.letter)
                             }
@@ -1213,7 +1213,7 @@ struct MentionPanel: View {
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 14)
-            .frame(height: 50)
+            .frame(height: AppDesign.Control.buttonHeight)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

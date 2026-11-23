@@ -161,7 +161,7 @@ struct ShareBrandRail: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(Tr("常用应用"))
-                .font(pf(12, .semibold))
+                .font(AppDesign.Type.section)
                 .foregroundStyle(ShareSheetTheme.secondaryInk(scheme))
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -183,24 +183,12 @@ struct ShareBrandRail: View {
                             .frame(width: 72)
                             .contentShape(Rectangle())
                         }
-                        .buttonStyle(ShareBrandPressStyle())
+                        .buttonStyle(AppCardPressStyle())
                         .accessibilityLabel(Tr("分享到") + Tr(brand.label))
                     }
                 }
             }
         }
-    }
-}
-
-private struct ShareBrandPressStyle: ButtonStyle {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(reduceMotion ? 1 : (configuration.isPressed ? 0.93 : 1))
-            .opacity(configuration.isPressed ? 0.78 : 1)
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.10),
-                       value: configuration.isPressed)
     }
 }
 
@@ -577,7 +565,7 @@ struct ShareSheet: View {
 
     private func shareSectionTitle(_ title: String) -> some View {
         Text(title)
-            .font(pf(12, .semibold))
+            .font(AppDesign.Type.section)
             .foregroundStyle(ShareSheetTheme.secondaryInk(scheme))
             .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -630,10 +618,10 @@ struct ShareSheet: View {
     private var cancelButton: some View {
         Button { dismiss() } label: {
             Text(Tr("取消"))
-                .font(pf(16, .semibold))
+                .font(AppDesign.Type.rowTitle)
                 .foregroundStyle(ShareSheetTheme.ink(scheme))
                 .frame(maxWidth: .infinity)
-                .frame(height: 52)
+                .frame(height: AppDesign.Control.largeControlHeight)
                 .background(ShareSheetTheme.card(scheme))
         }
         .buttonStyle(MenuPressStyle())

@@ -52,7 +52,7 @@ struct ChatHistoryView: View {
                             .font(pfStyled(size: 12, weight: .semibold))
                             .foregroundStyle(.secondary)
                             .padding(.horizontal, 9)
-                            .frame(height: 24)
+                            .frame(height: AppDesign.Control.badgeHeight)
                             .background(
                                 Capsule().fill(Color(uiColor: .tertiarySystemFill))
                             )

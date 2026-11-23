@@ -309,7 +309,7 @@ struct NearbyPageView: View {
                                  : (tip.isEmpty
                                     ? Tr("\(Int(maxKm)) 公里内还没有其他人\n（对方也要打开「附近的人」，并且就在你附近）")
                                     : tip))
-                        .font(pf(13.5)).foregroundColor(subInk)
+                        .font(AppDesign.Type.body).foregroundColor(subInk)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 30)
                         .padding(.top, 8)
@@ -369,10 +369,10 @@ struct NearbyPageView: View {
                 HStack(spacing: 12) {
                     Avatar(path: p.avatar ?? "", size: 44, radius: 22)
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(p.name).font(pf(16, .medium)).foregroundColor(nameInk).lineLimit(1)
+                        Text(p.name).font(AppDesign.Type.rowTitle).foregroundColor(nameInk).lineLimit(1)
                         Text(signature(p).isEmpty ? p.distanceText
                                                   : p.distanceText + " · " + signature(p))
-                            .font(pf(12.5)).foregroundColor(subInk).lineLimit(1)
+                            .font(AppDesign.Type.caption).foregroundColor(subInk).lineLimit(1)
                     }
                     Spacer(minLength: 0)
                     Button { openCard(p) } label: {
@@ -382,8 +382,8 @@ struct NearbyPageView: View {
                     }
                     .buttonStyle(.plain)
                     Button { helloFor = p } label: {
-                        Text(Tr("打招呼")).font(pf(13.5, .medium)).foregroundColor(.white)
-                            .padding(.horizontal, 12).frame(height: 32)
+                        Text(Tr("打招呼")).font(AppDesign.Type.bodyMedium).foregroundColor(.white)
+                            .padding(.horizontal, 12).frame(height: AppDesign.Control.smallButtonHeight)
                             .background(Capsule().fill(C.green))
                     }
                     .buttonStyle(.plain)
@@ -393,10 +393,10 @@ struct NearbyPageView: View {
                     Image(systemName: "dot.radiowaves.left.and.right")
                         .font(.system(size: 14)).foregroundColor(C.green)
                     Text(loading ? Tr("正在扫描…") : Tr("点上面亮着的头看看是谁"))
-                        .font(pf(13.5)).foregroundColor(subInk)
+                        .font(AppDesign.Type.body).foregroundColor(subInk)
                     Spacer(minLength: 0)
                     Button { Task { await reload(force: true) } } label: {
-                        Text(Tr("重新扫描")).font(pf(13, .medium)).foregroundColor(C.green)
+                        Text(Tr("重新扫描")).font(AppDesign.Type.compactButtonMedium).foregroundColor(C.green)
                     }
                     .buttonStyle(.plain)
                 }
@@ -433,7 +433,7 @@ struct NearbyPageView: View {
 
                 if !signature(p).isEmpty {
                     Text(signature(p))
-                        .font(pf(13.5))
+                        .font(AppDesign.Type.body)
                         .foregroundColor(subInk)
                         .multilineTextAlignment(.trailing)
                         .lineLimit(2)

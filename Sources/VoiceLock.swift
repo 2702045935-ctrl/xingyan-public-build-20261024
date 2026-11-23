@@ -392,7 +392,7 @@ struct VoiceLevelBars: View {
                     .frame(width: 3.5, height: active ? max(5, base[i] * (0.4 + level)) : base[i] * 0.55)
             }
         }
-        .frame(height: 36)
+        .frame(height: AppDesign.Control.floatingControlHeight)
         .animation(.easeOut(duration: 0.12), value: level)
     }
 }
@@ -535,7 +535,7 @@ struct VoiceLockSetupView: View {
                 Image(systemName: "chevron.right").font(.system(size: 13)).foregroundColor(C.subLabel)
             }
             .padding(.horizontal, 16)
-            .frame(height: 50)
+            .frame(height: AppDesign.Control.buttonHeight)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

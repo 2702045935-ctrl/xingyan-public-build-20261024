@@ -184,7 +184,7 @@ struct MemberPaySheet: View {
                 Text(Tr("支付方式"))
                 Text(Tr("零钱")).foregroundColor(C.label)
             }
-            .font(pf(12.5))
+            .font(AppDesign.Type.caption)
             .foregroundColor(C.subLabel)
             .padding(.top, 8)
 
@@ -201,10 +201,10 @@ struct MemberPaySheet: View {
                         .font(.system(size: 22))
                         .foregroundColor(C.green)
                     Text("还没设置支付密码")
-                        .font(pf(16, .medium))
+                        .font(AppDesign.Type.rowTitle)
                         .foregroundColor(C.label)
                     Text("为了安全，付款前要先设一个 6 位支付密码\n（我 → 设置 → 账号与安全 → 支付密码）")
-                        .font(pf(13.5))
+                        .font(AppDesign.Type.body)
                         .foregroundColor(C.subLabel)
                         .multilineTextAlignment(.center)
                 }
@@ -337,7 +337,7 @@ struct MemberPayDoneView: View {
                     .font(pf(17, .medium))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 48)
+                    .frame(height: AppDesign.Control.mediumControlHeight)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                         .fill(LinearGradient(colors: [C.green, C.green.opacity(0.78)],
                                              startPoint: .topLeading, endPoint: .bottomTrailing)))
@@ -358,6 +358,6 @@ struct MemberPayDoneView: View {
             Text(value).font(pf(14.5)).foregroundColor(C.label).lineLimit(1)
         }
         .padding(.horizontal, 14)
-        .frame(height: 48)
+        .frame(height: AppDesign.Control.mediumControlHeight)
     }
 }

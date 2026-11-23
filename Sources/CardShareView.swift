@@ -112,7 +112,7 @@ struct CardShareView: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 12).frame(height: 38)
+        .padding(.horizontal, 12).frame(height: AppDesign.Control.iconSmallHeight)
         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.searchBg))
         .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
         .padding(.horizontal, 14).padding(.top, 10)
@@ -141,7 +141,7 @@ struct CardShareView: View {
                         .font(.system(size: 19)).foregroundColor(C.green)
                 }
             }
-            .padding(.horizontal, 16).frame(height: 60)
+            .padding(.horizontal, 16).frame(height: AppDesign.Control.profileRowHeight)
             .background(C.cardBg).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -159,7 +159,7 @@ struct CardShareView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(u.name).font(pf(16)).foregroundColor(C.label).lineLimit(1)
                     if let username = u.username, !username.isEmpty {
-                        Text(username).font(pf(12.5)).foregroundColor(C.subLabel).lineLimit(1)
+                        Text(username).font(AppDesign.Type.caption).foregroundColor(C.subLabel).lineLimit(1)
                     }
                 }
                 Spacer(minLength: 8)
@@ -168,7 +168,7 @@ struct CardShareView: View {
                         .font(.system(size: 19)).foregroundColor(C.green)
                 }
             }
-            .padding(.horizontal, 16).frame(height: 60)
+            .padding(.horizontal, 16).frame(height: AppDesign.Control.profileRowHeight)
             .background(C.cardBg).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -192,7 +192,7 @@ struct CardShareView: View {
                             .tracking(1.1)
                             .foregroundColor(C.green)
                         Text(decode(user.name))
-                            .font(pf(16.5, .semibold))
+                            .font(AppDesign.Type.button)
                             .foregroundColor(C.label)
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
@@ -213,7 +213,7 @@ struct CardShareView: View {
 
                 Rectangle()
                     .fill(C.hairline)
-                    .frame(height: 0.5)
+                    .frame(height: AppDesign.Control.hairline)
                     .padding(.horizontal, 13)
 
                 HStack(spacing: 5) {

@@ -157,7 +157,7 @@ struct OfficialNoticeCenterView: View {
                         ProgressView()
                         Spacer()
                     }
-                    .frame(height: 72)
+                    .frame(height: AppDesign.Control.rowHeight)
                 } else if let latest {
                     platformMessage(latest)
                 } else {
@@ -661,7 +661,7 @@ struct WeatherOfficialView: View {
                                 .padding(.vertical, 12)
                         }
                         adviceCard(current)
-                        Color.clear.frame(height: 24)
+                        Color.clear.frame(height: AppDesign.Control.badgeHeight)
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 8)

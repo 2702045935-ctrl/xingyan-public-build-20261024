@@ -56,7 +56,7 @@ struct FacePrepView: View {
                     VStack(spacing: 6) {
                         Text(Tr("请本人操作")).font(pf(19, .semibold)).foregroundColor(C.label)
                         Text(Tr("为了确认是你本人，接下来会请你做几个动作"))
-                            .font(pf(13.5)).foregroundColor(C.subLabel)
+                            .font(AppDesign.Type.body).foregroundColor(C.subLabel)
                             .multilineTextAlignment(.center).padding(.horizontal, 26)
                     }
 
@@ -80,7 +80,7 @@ struct FacePrepView: View {
                     .padding(.horizontal, 14)
 
                     Text(Tr("人脸信息只在这台手机的摄像头里做判定，不会上传、也不会保存。\n整个过程大概 10 秒。"))
-                        .font(pf(12.5)).foregroundColor(C.subLabel)
+                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 30)
                     Spacer().frame(height: 6)
@@ -91,7 +91,7 @@ struct FacePrepView: View {
             Button { onStart() } label: {
                 Text(Tr("开始识别"))
                     .font(pf(17, .medium)).foregroundColor(.white)
-                    .frame(maxWidth: .infinity).frame(height: 48)
+                    .frame(maxWidth: .infinity).frame(height: AppDesign.Control.mediumControlHeight)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(green))
                     .padding(.horizontal, 16)
             }

@@ -305,7 +305,7 @@ private struct LegacyAICallView: View {
                 } label: {
                     ZStack {
                         Circle()
-                            .fill(voice.listening ? Color(hex: 0x19A47A) : Color.white.opacity(0.16))
+                            .fill(voice.listening ? AppPalette.success : Color.white.opacity(0.16))
                             .frame(width: 84, height: 84)
                         SVGIcon(markup: I.voice, size: 38, color: .white)
                     }
@@ -326,7 +326,7 @@ private struct LegacyAICallView: View {
                         .font(pf(17))
                         .foregroundColor(.white)
                         .frame(width: 150, height: 48)
-                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(Color(hex: 0xFA5151)))
+                        .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(AppPalette.danger))
                 }
                 .buttonStyle(.plain)
                 .padding(.top, 26)

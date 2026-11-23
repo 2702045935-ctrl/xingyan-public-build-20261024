@@ -165,7 +165,7 @@ struct MusicEmptyState: View {
                 .foregroundColor(C.subLabel.opacity(0.85))
             Text(title).font(pf(15)).foregroundColor(C.label)
             if !hint.isEmpty {
-                Text(hint).font(pf(12.5)).foregroundColor(C.subLabel)
+                Text(hint).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 34)
             }
@@ -195,8 +195,8 @@ struct MusicSongRow: View {
                 HStack(spacing: 12) {
                     MusicCover(path: track.cover ?? "", size: 52, radius: 10)
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(track.title).font(pf(15.5, .medium)).foregroundColor(C.label).lineLimit(1)
-                        Text(track.artistText).font(pf(12.5)).foregroundColor(C.subLabel).lineLimit(1)
+                        Text(track.title).font(AppDesign.Type.rowTitleMedium).foregroundColor(C.label).lineLimit(1)
+                        Text(track.artistText).font(AppDesign.Type.caption).foregroundColor(C.subLabel).lineLimit(1)
                     }
                     Spacer(minLength: 6)
                     ZStack {
@@ -218,7 +218,7 @@ struct MusicSongRow: View {
             trailing
         }
         .padding(.horizontal, 14)
-        .frame(height: 72)
+        .frame(height: AppDesign.Control.rowHeight)
     }
 }
 
@@ -250,10 +250,10 @@ struct MusicMineBar: View {
                         Image(systemName: k.icon)
                             .font(.system(size: 13.5, weight: .medium))
                             .foregroundColor(C.green)
-                        Text(Tr(k.title)).font(pf(13.5, .medium)).foregroundColor(C.label).lineLimit(1)
+                        Text(Tr(k.title)).font(AppDesign.Type.bodyMedium).foregroundColor(C.label).lineLimit(1)
                     }
                     .frame(maxWidth: .infinity)
-                    .frame(height: 40)
+                    .frame(height: AppDesign.Control.iconControlHeight)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.cardBg))
                     .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                         .stroke(C.hairline, lineWidth: 0.5))
@@ -500,8 +500,8 @@ struct MusicPlaylistsPage: View {
                     .frame(width: 52, height: 52)
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(pl.name).font(pf(15.5, .medium)).foregroundColor(C.label).lineLimit(1)
-                        Text("\(pl.songs.count) " + Tr("首")).font(pf(12.5)).foregroundColor(C.subLabel)
+                        Text(pl.name).font(AppDesign.Type.rowTitleMedium).foregroundColor(C.label).lineLimit(1)
+                        Text("\(pl.songs.count) " + Tr("首")).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                     }
                     Spacer(minLength: 6)
                     Image(systemName: "chevron.right")
@@ -609,7 +609,7 @@ struct MusicPlaylistPage: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(pl?.name ?? "").font(pf(17, .semibold)).foregroundColor(C.label).lineLimit(1)
-                Text("\(lib.songs(in: listId).count) " + Tr("首")).font(pf(12.5)).foregroundColor(C.subLabel)
+                Text("\(lib.songs(in: listId).count) " + Tr("首")).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                 HStack(spacing: 8) {
                     Button {
                         guard let first = songs.first else { return }
@@ -618,10 +618,10 @@ struct MusicPlaylistPage: View {
                     } label: {
                         HStack(spacing: 4) {
                             Image(systemName: "play.fill").font(.system(size: 11, weight: .bold))
-                            Text(Tr("播放全部")).font(pf(12.5, .medium))
+                            Text(Tr("播放全部")).font(AppDesign.Type.captionMedium)
                         }
                         .foregroundColor(.white)
-                        .padding(.horizontal, 12).frame(height: 30)
+                        .padding(.horizontal, 12).frame(height: AppDesign.Control.sectionHeaderHeight)
                         .background(Capsule().fill(C.green))
                     }
                     .buttonStyle(.plain)
@@ -630,10 +630,10 @@ struct MusicPlaylistPage: View {
                     Button { showPick = true } label: {
                         HStack(spacing: 4) {
                             Image(systemName: "plus").font(.system(size: 11, weight: .bold))
-                            Text(Tr("加入歌曲")).font(pf(12.5, .medium))
+                            Text(Tr("加入歌曲")).font(AppDesign.Type.captionMedium)
                         }
                         .foregroundColor(C.green)
-                        .padding(.horizontal, 12).frame(height: 30)
+                        .padding(.horizontal, 12).frame(height: AppDesign.Control.sectionHeaderHeight)
                         .background(Capsule().fill(C.green.opacity(0.12)))
                     }
                     .buttonStyle(.plain)
@@ -728,7 +728,7 @@ struct MusicPickPage: View {
                 MusicCover(path: t.cover ?? "", size: 46, radius: 9)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(t.title).font(pf(15, .medium)).foregroundColor(C.label).lineLimit(1)
-                    Text(t.artistText).font(pf(12.5)).foregroundColor(C.subLabel).lineLimit(1)
+                    Text(t.artistText).font(AppDesign.Type.caption).foregroundColor(C.subLabel).lineLimit(1)
                 }
                 Spacer(minLength: 6)
                 Image(systemName: on ? "checkmark.circle.fill" : "circle")
@@ -737,7 +737,7 @@ struct MusicPickPage: View {
                     .padding(.trailing, 2)
             }
             .padding(.horizontal, 14)
-            .frame(height: 64)
+            .frame(height: AppDesign.Control.compactRowHeight)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -756,12 +756,12 @@ struct AddToPlaylistSheet: View {
             NavBar(title: Tr("加入歌单"), back: { dismiss() }) {
                 Button { name = ""; showNew = true } label: {
                     Text(Tr("新建")).font(pf(15, .medium)).foregroundColor(C.green)
-                        .frame(height: 40).padding(.horizontal, 10).contentShape(Rectangle())
+                        .frame(height: AppDesign.Control.iconControlHeight).padding(.horizontal, 10).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
 
-            Text(track.title).font(pf(12.5)).foregroundColor(C.subLabel)
+            Text(track.title).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 16).padding(.bottom, 8)
 
@@ -779,21 +779,21 @@ struct AddToPlaylistSheet: View {
                                 dismiss()
                             } label: {
                                 HStack(spacing: 10) {
-                                    Text(pl.name).font(pf(15.5)).foregroundColor(C.label).lineLimit(1)
+                                    Text(pl.name).font(AppDesign.Type.bodyLarge).foregroundColor(C.label).lineLimit(1)
                                     Spacer(minLength: 6)
-                                    Text("\(pl.songs.count) " + Tr("首")).font(pf(12.5)).foregroundColor(C.subLabel)
+                                    Text("\(pl.songs.count) " + Tr("首")).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                                     if lib.has(track.id, in: pl.id) {
                                         Image(systemName: "checkmark").font(.system(size: 14, weight: .semibold))
                                             .foregroundColor(C.green)
                                     }
                                 }
                                 .padding(.horizontal, 16)
-                                .frame(height: 56)
+                                .frame(height: AppDesign.Control.menuRowHeight)
                                 .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
                         }
-                        Color.clear.frame(height: 20)
+                        Color.clear.frame(height: AppDesign.Control.compactBadgeHeight)
                     }
                 }
             }

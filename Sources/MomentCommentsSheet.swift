@@ -178,7 +178,7 @@ struct MomentCommentsSheet: View {
                         .font(pf(18, .semibold))
                         .foregroundColor(C.label)
                     Text("\(comments.count)")
-                        .font(pf(12, .medium))
+                        .font(AppDesign.Type.sectionMedium)
                         .foregroundColor(C.subLabel)
                 }
                 Spacer(minLength: 8)
@@ -213,13 +213,13 @@ struct MomentCommentsSheet: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(live.author?.name ?? "")
-                    .font(pf(12.5, .semibold))
+                    .font(AppDesign.Type.captionStrong)
                     .foregroundColor(C.label.opacity(0.76))
                     .lineLimit(1)
                 Text(live.content?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
                      ? (live.content ?? "")
                      : Tr("分享了动态"))
-                    .font(pf(13.5))
+                    .font(AppDesign.Type.body)
                     .foregroundColor(C.label)
                     .lineLimit(2)
                 Text(TimeFmt.ago(live.createdAt))
@@ -235,7 +235,7 @@ struct MomentCommentsSheet: View {
                         Text("\(likes.count)").font(pf(10.5))
                     }
                 }
-                .foregroundColor(live.likedByMe == true ? Color(hex: 0xFA5151) : C.subLabel)
+                .foregroundColor(live.likedByMe == true ? AppPalette.danger : C.subLabel)
                 .frame(width: 38, height: 38)
             }
             .buttonStyle(.plain)
@@ -380,7 +380,7 @@ struct MomentCommentsSheet: View {
             Avatar(path: live.author?.avatarPath ?? "", size: 32, radius: 10)
             VStack(alignment: .leading, spacing: 2) {
                 Text(live.author?.name ?? "")
-                    .font(pf(12.5, .medium))
+                    .font(AppDesign.Type.captionMedium)
                     .foregroundColor(C.label)
                     .lineLimit(1)
                 Text((live.location?.isEmpty == false ? ((live.location ?? "") + "  ·  ") : "")
@@ -395,7 +395,7 @@ struct MomentCommentsSheet: View {
                     ZStack {
                         Image(systemName: live.likedByMe == true ? "heart.fill" : "heart")
                             .font(.system(size: 15, weight: .medium))
-                            .foregroundColor(live.likedByMe == true ? Color(hex: 0xFA5151) : C.subLabel)
+                            .foregroundColor(live.likedByMe == true ? AppPalette.danger : C.subLabel)
                         if heartBurst { HeartBurst() }
                     }
                     if likes.count > 0 {
@@ -404,7 +404,7 @@ struct MomentCommentsSheet: View {
                             .foregroundColor(C.subLabel)
                     }
                 }
-                .frame(height: 32)
+                .frame(height: AppDesign.Control.smallButtonHeight)
             }
             .buttonStyle(.plain)
             .disabled(likeBusy)
@@ -416,7 +416,7 @@ struct MomentCommentsSheet: View {
         HStack(alignment: .top, spacing: 6) {
             Image(systemName: "heart.fill")
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(Color(hex: 0xFA5151))
+                .foregroundColor(AppPalette.danger)
                 .padding(.top, 2)
             Text(likes.compactMap { $0.nickname }.joined(separator: "，"))
                 .font(pf(13))
@@ -458,7 +458,7 @@ struct MomentCommentsSheet: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 6) {
                     Text(item.nickname ?? "")
-                        .font(pf(13.5, .medium))
+                        .font(AppDesign.Type.bodyMedium)
                         .foregroundColor(C.subLabel)
                         .lineLimit(1)
                     if isAuthor {
@@ -634,7 +634,7 @@ struct MomentCommentsSheet: View {
                     .foregroundColor(C.label)
                     .focused($commentFocused)
                     .padding(.horizontal, 14)
-                    .frame(height: 44)
+                    .frame(height: AppDesign.Control.compactHeight)
                     .background {
                         GlassBackground(
                             shape: Capsule(style: .continuous),
@@ -778,7 +778,7 @@ struct MomentCommentsSheet: View {
         let path = avatar(for: item.userId ?? "")
         if path.isEmpty {
             Text(String((item.nickname ?? Tr("友")).prefix(1)))
-                .font(pf(12, .medium))
+                .font(AppDesign.Type.sectionMedium)
                 .foregroundColor(Color.dyn(0x676C68, 0xD6DAD7))
                 .frame(width: 34, height: 34)
                 .background(Circle().fill(Color.dyn(0xF0F1EE, 0x2B2B2B)))
@@ -821,7 +821,7 @@ private struct SwipeDeleteCommentRow<Content: View>: View {
                     Image(systemName: "trash.fill")
                         .font(.system(size: 16, weight: .semibold))
                     Text(Tr("删除"))
-                        .font(pf(12, .medium))
+                        .font(AppDesign.Type.sectionMedium)
                 }
                 .foregroundColor(.white)
                 .frame(width: actionWidth)
@@ -917,11 +917,11 @@ struct MomentImageActions: View {
             VStack(spacing: 7) {
                 Image(systemName: symbol)
                     .font(.system(size: 21, weight: .medium))
-                Text(title).font(pf(12.5, .medium))
+                Text(title).font(AppDesign.Type.captionMedium)
             }
             .foregroundColor(C.label)
             .frame(maxWidth: .infinity)
-            .frame(height: 82)
+            .frame(height: AppDesign.Control.loadingPanelHeight)
             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                 .fill(Color.dyn(0xF3F3F1, 0x292929)))
         }

@@ -302,7 +302,7 @@ struct GroupInfoView: View {
                             .font(pf(14.5, .medium))
                             .foregroundColor(.white)
                             .padding(.horizontal, 15)
-                            .frame(height: 32)
+                            .frame(height: AppDesign.Control.smallButtonHeight)
                             .background(Capsule().fill(over
                                 ? AnyShapeStyle(C.subLabel.opacity(0.5))
                                 : AnyShapeStyle(LinearGradient(colors: PanelTint.green,
@@ -323,7 +323,7 @@ struct GroupInfoView: View {
                             PanelIcon(symbol: icon, colors: colors)
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(title)
-                                    .font(pf(16, .medium))
+                                    .font(AppDesign.Type.rowTitle)
                                     .foregroundColor(C.label)
                                 Text(hint)
                                     .font(pf(12))
@@ -332,7 +332,7 @@ struct GroupInfoView: View {
                             }
                             Spacer(minLength: 8)
                             Text("\(count)/\(limit)")
-                                .font(pf(12.5, .medium))
+                                .font(AppDesign.Type.captionMedium)
                                 .foregroundColor(over ? C.red : C.subLabel)
                         }
                         .padding(.horizontal, 14)
@@ -605,7 +605,7 @@ struct GroupInfoView: View {
         case "danger":
             VStack(spacing: 0) {
                 dangerCard
-                Color.clear.frame(height: 30)
+                Color.clear.frame(height: AppDesign.Control.sectionHeaderHeight)
             }
             .padding(.horizontal, 14)
         default:
@@ -695,7 +695,7 @@ struct GroupInfoView: View {
                                             .font(pf(9.5, .medium))
                                             .foregroundColor(.white)
                                             .padding(.horizontal, 7)
-                                            .frame(height: 20)
+                                            .frame(height: AppDesign.Control.compactBadgeHeight)
                                             .background(Capsule().fill(C.red))
                                     }
                                     .buttonStyle(MenuPressStyle())
@@ -808,7 +808,7 @@ struct GroupInfoView: View {
             ChatInfoTextRow(title: Tr("我在本群的昵称"),
                             value: myAlias.isEmpty ? Tr("未设置") : myAlias,
                             symbol: "at",
-                            symbolTint: Color(hex: 0x0A84FF)) {
+                            symbolTint: AppPalette.appleBlue) {
                 editAlias(nil)
             }
             ChatInfoDivider()
@@ -833,7 +833,7 @@ struct GroupInfoView: View {
                               subtitle: pinned ? Tr("已置顶，会排在会话列表最上面") : nil,
                               isOn: pinned,
                               symbol: "pin.fill",
-                              symbolTint: Color(hex: 0x0A84FF)) { v in
+                              symbolTint: AppPalette.appleBlue) { v in
                 pinned = v
                 app.applyPinnedLocally(chatId: chat.id, pinned: v)
                 Task {
@@ -869,7 +869,7 @@ struct GroupInfoView: View {
                               subtitle: muted ? Tr("这个群来消息不响也不弹") : nil,
                               isOn: muted,
                               symbol: "bell.slash.fill",
-                              symbolTint: Color(hex: 0x8E8E93)) { v in
+                              symbolTint: AppPalette.systemSecondary) { v in
                 muted = v
                 app.applyMutedLocally(chatId: chat.id, muted: v)
                 Task {
@@ -890,7 +890,7 @@ struct GroupInfoView: View {
     private var groupToolCard: some View {
         GroupCard {
             ChatInfoTextRow(title: Tr("查找聊天记录"), symbol: "magnifyingglass",
-                            symbolTint: Color(hex: 0x0A84FF)) { showSearch = true }
+                            symbolTint: AppPalette.appleBlue) { showSearch = true }
             ChatInfoDivider()
             ChatInfoTextRow(title: Tr("聊天主题"), symbol: "paintpalette.fill",
                             symbolTint: Color(hex: 0xAF52DE)) { showGroupTheme = true }
@@ -907,7 +907,7 @@ struct GroupInfoView: View {
             ChatInfoDivider()
             ChatInfoTextRow(title: Tr("群视频通话"),
                             symbol: "video.fill",
-                            symbolTint: Color(hex: 0x0A84FF)) {
+                            symbolTint: AppPalette.appleBlue) {
                 CallCenter.shared.startGroupCall(chatId: chat.id, title: chat.name, video: true)
                 dismiss()
             }
@@ -996,7 +996,7 @@ struct GroupMembersPage: View {
         VStack(spacing: 0) {
             NavBar(title: Tr("全部群成员"), back: { dismiss() }) {
                 Text("\(max(totalMembers, members.count))")
-                    .font(pf(13, .semibold))
+                    .font(AppDesign.Type.compactButton)
                     .foregroundColor(C.subLabel)
                     .padding(.trailing, 14)
             }
@@ -1019,7 +1019,7 @@ struct GroupMembersPage: View {
                         }
                     }
                     .padding(.horizontal, 13)
-                    .frame(height: 44)
+                    .frame(height: AppDesign.Control.compactHeight)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous).fill(C.cardBg))
                     .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                         .stroke(C.hairline, lineWidth: 0.6))
@@ -1121,7 +1121,7 @@ struct GroupComplaintView: View {
                         .font(pf(14.5, .medium))
                         .foregroundColor(.white)
                         .padding(.horizontal, 15)
-                        .frame(height: 32)
+                        .frame(height: AppDesign.Control.smallButtonHeight)
                         .background(Capsule().fill(busy ? C.subLabel : C.green))
                         .padding(.trailing, 14)
                 }
@@ -1134,14 +1134,14 @@ struct GroupComplaintView: View {
                     GroupCard {
                         VStack(alignment: .leading, spacing: 5) {
                             Text(Tr("投诉对象"))
-                                .font(pf(12.5, .medium))
+                                .font(AppDesign.Type.captionMedium)
                                 .foregroundColor(C.subLabel)
                             Text(groupName)
                                 .font(pf(17, .semibold))
                                 .foregroundColor(C.label)
                                 .lineLimit(2)
                             Text(Tr("投诉信息仅用于安全审核，群成员不会看到。"))
-                                .font(pf(12.5))
+                                .font(AppDesign.Type.caption)
                                 .foregroundColor(C.subLabel)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
@@ -1152,7 +1152,7 @@ struct GroupComplaintView: View {
 
                     VStack(alignment: .leading, spacing: 6) {
                         Text(Tr("问题类型"))
-                            .font(pf(13, .medium))
+                            .font(AppDesign.Type.compactButtonMedium)
                             .foregroundColor(C.subLabel)
                             .padding(.leading, 4)
                         GroupCard {
@@ -1163,7 +1163,7 @@ struct GroupComplaintView: View {
                                 } label: {
                                     HStack(spacing: 10) {
                                         Text(Tr(reasons[index]))
-                                            .font(pf(15.5))
+                                            .font(AppDesign.Type.bodyLarge)
                                             .foregroundColor(C.label)
                                         Spacer(minLength: 0)
                                         Text(reason == reasons[index] ? Tr("已选择") : Tr("选择"))
@@ -1171,7 +1171,7 @@ struct GroupComplaintView: View {
                                             .foregroundColor(reason == reasons[index] ? C.green : C.subLabel)
                                     }
                                     .padding(.horizontal, 16)
-                                    .frame(height: 48)
+                                    .frame(height: AppDesign.Control.mediumControlHeight)
                                     .background(reason == reasons[index]
                                         ? C.green.opacity(0.06)
                                         : Color.clear)
@@ -1184,7 +1184,7 @@ struct GroupComplaintView: View {
 
                     VStack(alignment: .leading, spacing: 6) {
                         Text(Tr("事实说明"))
-                            .font(pf(13, .medium))
+                            .font(AppDesign.Type.compactButtonMedium)
                             .foregroundColor(C.subLabel)
                             .padding(.leading, 4)
                         GroupCard {
@@ -1216,14 +1216,14 @@ struct GroupComplaintView: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text(Tr("提交须知"))
-                            .font(pf(13, .semibold))
+                            .font(AppDesign.Type.compactButton)
                             .foregroundColor(C.label)
                         Text(Tr("· 请如实提供可核实的信息，安全团队会结合聊天记录审核。"))
                         Text(Tr("· 审核期间可能需要补充说明，请留意系统通知。"))
                         Text(Tr("· 恶意投诉或重复提交不实信息会被记录。"))
                         Text(Tr("· 除执法或安全审核需要外，不会向被投诉方披露投诉人身份。"))
                     }
-                    .font(pf(12.5))
+                    .font(AppDesign.Type.caption)
                     .foregroundColor(C.subLabel)
                     .lineSpacing(3)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -1294,12 +1294,12 @@ struct GroupAnnounceEditor: View {
 
                         VStack(alignment: .leading, spacing: 4) {
                             Text(Tr(editable ? "写公告给全群成员" : "群公告"))
-                                .font(pf(16, .semibold))
+                                .font(AppDesign.Type.rowTitle)
                                 .foregroundColor(C.label)
                             Text(Tr(editable
                                     ? "发布后所有群成员会收到提示"
                                     : "群公告仅群成员可见"))
-                                .font(pf(12.5))
+                                .font(AppDesign.Type.caption)
                                 .foregroundColor(C.subLabel)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
@@ -1318,15 +1318,15 @@ struct GroupAnnounceEditor: View {
                     VStack(spacing: 0) {
                         HStack(spacing: 8) {
                             Text(Tr("正文"))
-                                .font(pf(13, .semibold))
+                                .font(AppDesign.Type.compactButton)
                                 .foregroundColor(C.subLabel)
                             Spacer(minLength: 0)
                             Text("\(text.count)/\(limit)")
-                                .font(pf(12, .medium))
+                                .font(AppDesign.Type.sectionMedium)
                                 .foregroundColor(over ? C.red : C.subLabel)
                         }
                         .padding(.horizontal, 16)
-                        .frame(height: 44)
+                        .frame(height: AppDesign.Control.compactHeight)
 
                         HairLine(inset: 16)
 
@@ -1401,11 +1401,11 @@ struct GroupAnnounceEditor: View {
                             Image(systemName: "paperplane.fill")
                                 .font(.system(size: 14, weight: .semibold))
                             Text(Tr("发布群公告"))
-                                .font(pf(16, .semibold))
+                                .font(AppDesign.Type.rowTitle)
                         }
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 50)
+                        .frame(height: AppDesign.Control.buttonHeight)
                         .background(
                             LinearGradient(colors: PanelTint.green,
                                            startPoint: .topLeading,
@@ -1519,7 +1519,7 @@ struct GroupAnnounceView: View {
                     VStack(alignment: .leading, spacing: 0) {
                         HStack {
                             Text(Tr("公告内容"))
-                                .font(pf(13, .semibold))
+                                .font(AppDesign.Type.compactButton)
                                 .foregroundColor(C.subLabel)
                             Spacer(minLength: 0)
                         }
@@ -1533,10 +1533,10 @@ struct GroupAnnounceView: View {
                                     .font(.system(size: 28, weight: .light))
                                     .foregroundColor(C.subLabel.opacity(0.62))
                                 Text(Tr("暂时没有群公告"))
-                                    .font(pf(16, .medium))
+                                    .font(AppDesign.Type.rowTitle)
                                     .foregroundColor(C.label)
                                 Text(editable ? Tr("点右上角“编辑”添加公告") : Tr("群主发布后会显示在这里"))
-                                    .font(pf(12.5))
+                                    .font(AppDesign.Type.caption)
                                     .foregroundColor(C.subLabel)
                             }
                             .frame(maxWidth: .infinity)
@@ -1565,13 +1565,13 @@ struct GroupAnnounceView: View {
                                 Image(systemName: "trash")
                                     .font(.system(size: 15, weight: .semibold))
                                 Text(Tr("删除公告"))
-                                    .font(pf(16, .medium))
+                                    .font(AppDesign.Type.rowTitle)
                                 Spacer(minLength: 0)
                             }
                             .foregroundColor(C.red)
                             .padding(.horizontal, 18)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 52)
+                            .frame(height: AppDesign.Control.largeControlHeight)
                             .background(
                                 RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                                     .fill(C.cardBg)
@@ -1861,7 +1861,7 @@ struct DirectChatInfoView: View {
         case "danger":
             VStack(spacing: 0) {
                 dangerCard
-                Color.clear.frame(height: 30)
+                Color.clear.frame(height: AppDesign.Control.sectionHeaderHeight)
             }
             .padding(.horizontal, 14)
         default:
@@ -1881,10 +1881,10 @@ struct DirectChatInfoView: View {
                     .background(C.red.opacity(0.10), in: Circle())
                 VStack(alignment: .leading, spacing: 4) {
                     Text(friendMeta?.block == true ? Tr("已加入黑名单") : Tr("账号已被封禁"))
-                        .font(pf(15.5, .semibold))
+                        .font(AppDesign.Type.rowTitle)
                         .foregroundColor(C.label)
                     Text(relationshipStatusDetail)
-                        .font(pf(12.5))
+                        .font(AppDesign.Type.caption)
                         .foregroundColor(C.subLabel)
                         .lineSpacing(2)
                         .fixedSize(horizontal: false, vertical: true)
@@ -1926,7 +1926,7 @@ struct DirectChatInfoView: View {
                     }
                     if let un = peer?.username, !un.isEmpty {
                         Text(Tr("星言号") + "：" + un)
-                            .font(pf(12.5))
+                            .font(AppDesign.Type.caption)
                             .foregroundColor(C.subLabel)
                             .lineLimit(1)
 
@@ -1955,7 +1955,7 @@ struct DirectChatInfoView: View {
                               subtitle: pinned ? Tr("已置顶，会排在会话列表最上面") : nil,
                               isOn: pinned,
                               symbol: "pin.fill",
-                              symbolTint: Color(hex: 0x0A84FF)) { v in
+                              symbolTint: AppPalette.appleBlue) { v in
                 pinned = v
                 app.applyPinnedLocally(chatId: chat.id, pinned: v)
                 Task {
@@ -1975,7 +1975,7 @@ struct DirectChatInfoView: View {
                               subtitle: muted ? Tr("这个人来消息不响也不弹") : nil,
                               isOn: muted,
                               symbol: "bell.slash.fill",
-                              symbolTint: Color(hex: 0x8E8E93)) { v in
+                              symbolTint: AppPalette.systemSecondary) { v in
                 muted = v
                 app.applyMutedLocally(chatId: chat.id, muted: v)
                 Task {
@@ -2084,10 +2084,10 @@ struct DirectChatInfoView: View {
                             symbolTint: Color(hex: 0x34C759)) { start(video: false) }
             ChatInfoDivider()
             ChatInfoTextRow(title: Tr("视频通话"), symbol: "video.fill",
-                            symbolTint: Color(hex: 0x0A84FF)) { start(video: true) }
+                            symbolTint: AppPalette.appleBlue) { start(video: true) }
             ChatInfoDivider()
             ChatInfoTextRow(title: Tr("查找聊天记录"), symbol: "magnifyingglass",
-                            symbolTint: Color(hex: 0x0A84FF)) { showSearch = true }
+                            symbolTint: AppPalette.appleBlue) { showSearch = true }
             ChatInfoDivider()
             ChatInfoTextRow(title: Tr("聊天主题"), symbol: "paintpalette.fill",
                             symbolTint: Color(hex: 0xAF52DE)) { showChatTheme = true }
@@ -2152,10 +2152,10 @@ struct DirectChatInfoView: View {
                     .frame(width: 24)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title)
-                        .font(pf(15.5, .medium))
+                        .font(AppDesign.Type.rowTitleMedium)
                         .foregroundColor(destructive ? C.red : C.label)
                     Text(subtitle)
-                        .font(pf(12.5))
+                        .font(AppDesign.Type.caption)
                         .foregroundColor(C.subLabel)
                         .lineLimit(2)
                 }
@@ -2313,7 +2313,7 @@ struct GroupAddMembersView: View {
                                         .foregroundColor(picked.contains(u.id) ? C.green : C.subLabel)
                                 }
                                 .padding(.horizontal, 16)
-                                .frame(height: 60)
+                                .frame(height: AppDesign.Control.profileRowHeight)
                                 .background(C.cardBg)
                                 .contentShape(Rectangle())
                             }
@@ -2338,7 +2338,7 @@ struct GroupAddMembersView: View {
                                         .foregroundColor(OrbitTheme.gold.opacity(0.86))
                                 }
                                 .frame(maxWidth: .infinity)
-                                .frame(height: 52)
+                                .frame(height: AppDesign.Control.largeControlHeight)
                                 .background(C.cardBg)
                                 .contentShape(Rectangle())
                             }
@@ -2406,7 +2406,7 @@ private struct ChatInfoTextRow: View {
                         .lineLimit(1)
                     if let subtitle, !subtitle.isEmpty {
                         Text(subtitle)
-                            .font(pf(12.5))
+                            .font(AppDesign.Type.caption)
                             .foregroundColor(C.subLabel)
                             .lineLimit(1)
                     }
@@ -2448,7 +2448,7 @@ private struct ChatInfoToggleRow: View {
                     .foregroundColor(C.label)
                 if let subtitle, !subtitle.isEmpty {
                     Text(subtitle)
-                        .font(pf(12.5))
+                        .font(AppDesign.Type.caption)
                         .foregroundColor(C.subLabel)
                         .lineLimit(1)
                 }
@@ -2475,10 +2475,10 @@ private struct ChatInfoTextButton: View {
     var body: some View {
         Button(action: tap) {
             Text(title)
-                .font(pf(13.5, .medium))
+                .font(AppDesign.Type.bodyMedium)
                 .foregroundColor(color)
                 .padding(.horizontal, 12)
-                .frame(height: 30)
+                .frame(height: AppDesign.Control.sectionHeaderHeight)
         }
         .buttonStyle(MenuPressStyle())
     }
@@ -2491,10 +2491,10 @@ private struct ChatInfoDangerRow: View {
     var body: some View {
         Button(action: tap) {
             Text(title)
-                .font(pf(16, .medium))
+                .font(AppDesign.Type.rowTitle)
                 .foregroundColor(Color.dyn(0xE03A3A, 0xFF6B6B))
                 .frame(maxWidth: .infinity)
-                .frame(height: 54)
+                .frame(height: AppDesign.Control.dialogRowHeight)
                 .contentShape(Rectangle())
         }
         .buttonStyle(MenuPressStyle())

@@ -17,7 +17,7 @@ struct AIPageView: View {
     @State private var loadError = ""
     @FocusState private var inputFocused: Bool
 
-    private let accent = Color(hex: 0x356FF4)
+    private let accent = AppPalette.info
 
     private var modelName: String {
         let value = wallet?.model?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -54,7 +54,7 @@ struct AIPageView: View {
                 VStack(spacing: 12) {
                     ProgressView().tint(accent)
                     Text(Tr("正在连接小星"))
-                        .font(pf(12.5))
+                        .font(AppDesign.Type.caption)
                         .foregroundColor(C.subLabel)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -140,7 +140,7 @@ struct AIPageView: View {
             .font(pf(14, .medium))
             .foregroundColor(.white)
             .padding(.horizontal, 20)
-            .frame(height: 40)
+            .frame(height: AppDesign.Control.iconControlHeight)
             .background(Capsule().fill(accent))
             .buttonStyle(.plain)
         }
@@ -209,7 +209,7 @@ struct AIPageView: View {
                 .font(pf(10, .medium))
                 .foregroundColor(accent)
                 .padding(.horizontal, 8)
-                .frame(height: 20)
+                .frame(height: AppDesign.Control.compactBadgeHeight)
                 .background(Capsule().fill(accent.opacity(0.09)))
             Text(Tr("有什么可以帮你？"))
                 .font(pf(16))
@@ -294,10 +294,10 @@ struct AIPageView: View {
                 }
             } label: {
                 Text(Tr("购买"))
-                    .font(pf(12, .medium))
+                    .font(AppDesign.Type.sectionMedium)
                     .foregroundColor(accent)
                     .padding(.horizontal, 13)
-                    .frame(height: 30)
+                    .frame(height: AppDesign.Control.sectionHeaderHeight)
                     .background(Capsule().fill(accent.opacity(0.10)))
             }
             .buttonStyle(.plain)
@@ -391,7 +391,7 @@ struct AIPageView: View {
                                     }
                                 }
                                 Text(Self.compactTokens(plan.granted) + " Token")
-                                    .font(pf(12.5))
+                                    .font(AppDesign.Type.caption)
                                     .foregroundColor(C.subLabel)
                                 HStack {
                                     Text("¥" + moneyFmt(plan.price))
@@ -402,7 +402,7 @@ struct AIPageView: View {
                                         .font(pf(11.5, .medium))
                                         .foregroundColor(.white)
                                         .padding(.horizontal, 12)
-                                        .frame(height: 28)
+                                        .frame(height: AppDesign.Control.statusHeight)
                                         .background(Capsule().fill(accent))
                                 }
                             }
@@ -429,14 +429,14 @@ struct AIPageView: View {
             ForEach(purchases.prefix(5)) { item in
                 HStack {
                     Text(item.name)
-                        .font(pf(12.5))
+                        .font(AppDesign.Type.caption)
                         .foregroundColor(C.subLabel)
                     Spacer()
                     Text("+ " + Self.compactTokens(item.granted))
-                        .font(pf(12.5, .medium))
+                        .font(AppDesign.Type.captionMedium)
                         .foregroundColor(accent)
                 }
-                .frame(height: 28)
+                .frame(height: AppDesign.Control.statusHeight)
             }
         }
         .padding(15)
@@ -596,7 +596,7 @@ private struct BuyAITokensSheet: View {
                     .font(pf(15, .medium))
                     .foregroundColor(C.label)
                 Text(AIPageView.compactTokenValue(plan.granted) + " Token · ¥" + moneyFmt(plan.price))
-                    .font(pf(12.5, .medium))
+                    .font(AppDesign.Type.captionMedium)
                     .foregroundColor(accent)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -611,7 +611,7 @@ private struct BuyAITokensSheet: View {
                 .focused($focused)
                 .font(pf(17, .medium))
                 .padding(.horizontal, 14)
-                .frame(height: 50)
+                .frame(height: AppDesign.Control.buttonHeight)
                 .background(C.fieldBg)
                 .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
                 .padding(.horizontal, 20)
@@ -624,7 +624,7 @@ private struct BuyAITokensSheet: View {
 
             if !errorText.isEmpty {
                 Text(errorText)
-                    .font(pf(12.5))
+                    .font(AppDesign.Type.caption)
                     .foregroundColor(C.red)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 20)
@@ -641,7 +641,7 @@ private struct BuyAITokensSheet: View {
                 }
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
-                .frame(height: 48)
+                .frame(height: AppDesign.Control.mediumControlHeight)
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                     .fill(valid ? accent : accent.opacity(0.35)))
             }

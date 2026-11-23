@@ -48,7 +48,7 @@ struct ProfileEditViewOld: View {
                                 Chevron(size: 9, line: 1.6).padding(.trailing, 3)
                             }
                             .padding(.horizontal, 16)
-                            .frame(height: 72)
+                            .frame(height: AppDesign.Control.rowHeight)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -74,10 +74,10 @@ struct ProfileEditViewOld: View {
                                 .frame(maxWidth: .infinity, alignment: .trailing)
                         }
                         .padding(.horizontal, 16)
-                        .frame(height: 56)
+                        .frame(height: AppDesign.Control.menuRowHeight)
                     }
 
-                    Rectangle().fill(C.pageBg).frame(height: 8)
+                    Rectangle().fill(C.pageBg).frame(height: AppDesign.Spacing.xs)
 
                     GroupCard {
                         HStack(spacing: 12) {
@@ -91,7 +91,7 @@ struct ProfileEditViewOld: View {
                             .frame(width: 140)
                         }
                         .padding(.horizontal, 16)
-                        .frame(height: 56)
+                        .frame(height: AppDesign.Control.menuRowHeight)
                         HairLine(inset: 16)
 
                         Button {
@@ -105,7 +105,7 @@ struct ProfileEditViewOld: View {
                                 Chevron(size: 9, line: 1.6).padding(.trailing, 3)
                             }
                             .padding(.horizontal, 16)
-                            .frame(height: 56)
+                            .frame(height: AppDesign.Control.menuRowHeight)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -123,7 +123,7 @@ struct ProfileEditViewOld: View {
                                 Chevron(size: 9, line: 1.6).padding(.trailing, 3)
                             }
                             .padding(.horizontal, 16)
-                            .frame(height: 56)
+                            .frame(height: AppDesign.Control.menuRowHeight)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -131,7 +131,7 @@ struct ProfileEditViewOld: View {
                         field("个性签名", $bio)
                     }
 
-                    Rectangle().fill(C.pageBg).frame(height: 8)
+                    Rectangle().fill(C.pageBg).frame(height: AppDesign.Spacing.xs)
 
                     GroupCard {
 
@@ -148,7 +148,7 @@ struct ProfileEditViewOld: View {
                                 Chevron(size: 9, line: 1.6).padding(.trailing, 3)
                             }
                             .padding(.horizontal, 16)
-                            .frame(height: 56)
+                            .frame(height: AppDesign.Control.menuRowHeight)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -167,20 +167,20 @@ struct ProfileEditViewOld: View {
                                 Chevron(size: 9, line: 1.6).padding(.trailing, 3)
                             }
                             .padding(.horizontal, 16)
-                            .frame(height: 56)
+                            .frame(height: AppDesign.Control.menuRowHeight)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                     }
 
                     Text(Tr("手机号一年只能改一次；头像、昵称、地区、签名想改就改。"))
-                        .font(pf(12.5))
+                        .font(AppDesign.Type.caption)
                         .foregroundColor(C.subLabel)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 18)
                         .padding(.top, 10)
 
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
             }
             .background(C.pageBg)
@@ -241,7 +241,7 @@ struct ProfileEditViewOld: View {
                 .multilineTextAlignment(.trailing)
         }
         .padding(.horizontal, 16)
-        .frame(height: 56)
+        .frame(height: AppDesign.Control.menuRowHeight)
     }
 
     private func changeAvatar(_ image: UIImage) {
@@ -383,7 +383,7 @@ struct NewFriendsView: View {
                                     .foregroundStyle(OrbitTheme.secondary)
                             }
                             .frame(maxWidth: .infinity)
-                            .frame(height: 82)
+                            .frame(height: AppDesign.Control.loadingPanelHeight)
                         }
                     } else if !loading && shownIncoming.isEmpty
                                 && shownOutgoing.isEmpty && shownAdded.isEmpty {
@@ -502,7 +502,7 @@ struct NewFriendsView: View {
                         .font(AppDesign.Type.status)
                         .foregroundStyle(OrbitTheme.jadeDeep)
                         .padding(.horizontal, 9)
-                        .frame(height: 24)
+                        .frame(height: AppDesign.Control.statusHeight)
                         .background(Capsule().fill(OrbitTheme.jadeSoft))
                 }
             }
@@ -538,7 +538,7 @@ struct NewFriendsView: View {
                 .foregroundStyle(OrbitTheme.tertiary)
         }
         .padding(.horizontal, 14)
-        .frame(height: 62)
+        .frame(height: AppDesign.Control.compactRowHeight)
         .contentShape(Rectangle())
     }
 
@@ -568,7 +568,7 @@ struct NewFriendsView: View {
             }
         }
         .padding(.horizontal, 14)
-        .frame(height: 62)
+        .frame(height: AppDesign.Control.compactRowHeight)
         .contentShape(Rectangle())
     }
 
@@ -1016,7 +1016,7 @@ struct AddFriendView: View {
                                     .foregroundStyle(OrbitTheme.secondary)
                             }
                             .frame(maxWidth: .infinity)
-                            .frame(height: 82)
+                            .frame(height: AppDesign.Control.loadingPanelHeight)
                         }
                     } else if searched && results.isEmpty {
                         AppFlowPanel {
@@ -1322,7 +1322,7 @@ struct FriendApplySheet: View {
                     Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 16)
-                .frame(height: 76)
+                .frame(height: AppDesign.Control.rowHeight)
                 .background(C.cardBg)
 
                 HStack(spacing: 12) {
@@ -1339,7 +1339,7 @@ struct FriendApplySheet: View {
                     }
                 }
                 .padding(.horizontal, 16)
-                .frame(height: 52)
+                .frame(height: AppDesign.Control.buttonHeight)
                 .background(C.cardBg)
                 .padding(.top, 12)
             }
@@ -1435,7 +1435,7 @@ struct FriendRemarkSheet: View {
                     }
                 }
                 .padding(.horizontal, 16)
-                .frame(height: 52)
+                .frame(height: AppDesign.Control.buttonHeight)
                 .background(C.cardBg)
 
                 HairLine(inset: 16)
@@ -1446,13 +1446,13 @@ struct FriendRemarkSheet: View {
                         .font(pf(16)).foregroundColor(C.label)
                 }
                 .padding(.horizontal, 16)
-                .frame(height: 52)
+                .frame(height: AppDesign.Control.buttonHeight)
                 .background(C.cardBg)
             }
             .padding(.top, 12)
 
             Text(Tr("备注名只你自己看得见：设了以后通讯录和会话列表都显示备注。"))
-                .font(pf(12.5))
+                .font(AppDesign.Type.caption)
                 .foregroundColor(C.subLabel)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 18)
@@ -1552,7 +1552,7 @@ struct FriendPermSheet: View {
             .padding(.horizontal, 16)
 
             Text(Tr("加入黑名单后，你将不再收到对方的消息，对方也无法查看你的朋友圈。"))
-                .font(pf(12.5))
+                .font(AppDesign.Type.caption)
                 .foregroundColor(C.subLabel)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 18)
@@ -1601,7 +1601,7 @@ struct FriendPermSheet: View {
             }
         }
         .padding(.horizontal, 16)
-        .frame(height: 52)
+        .frame(height: AppDesign.Control.buttonHeight)
     }
 
     private func save() {
@@ -1674,7 +1674,7 @@ struct GroupCreateView: View {
                             .font(pf(15, .semibold))
                             .foregroundColor(picked.isEmpty ? C.subLabel : C.green)
                             .padding(.horizontal, 12)
-                            .frame(height: 32)
+                            .frame(height: AppDesign.Control.smallButtonHeight)
                             .background {
                                 Capsule(style: .continuous)
                                     .fill(picked.isEmpty
@@ -1714,7 +1714,7 @@ struct GroupCreateView: View {
                     selectedPeopleStrip
                     Rectangle()
                         .fill(C.hairline)
-                        .frame(height: 0.5)
+                        .frame(height: AppDesign.Control.hairline)
                         .padding(.leading, 16)
                 }
 
@@ -1725,16 +1725,16 @@ struct GroupCreateView: View {
 
                 HStack {
                     Text(Tr("联系人"))
-                        .font(pf(13, .semibold))
+                        .font(AppDesign.Type.compactButton)
                         .foregroundColor(C.subLabel)
                     Spacer(minLength: 0)
                     Text("\(filteredContacts.count)")
-                        .font(pf(12, .medium))
+                        .font(AppDesign.Type.sectionMedium)
                         .foregroundColor(C.subLabel.opacity(0.8))
                         .monospacedDigit()
                 }
                 .padding(.horizontal, 16)
-                .frame(height: 30)
+                .frame(height: AppDesign.Control.sectionHeaderHeight)
 
                 if filteredContacts.isEmpty {
                     VStack(spacing: 7) {
@@ -1745,7 +1745,7 @@ struct GroupCreateView: View {
                             .font(pf(15, .medium))
                             .foregroundColor(C.label)
                         Text(Tr("换一个姓名或号码试试"))
-                            .font(pf(12.5))
+                            .font(AppDesign.Type.caption)
                             .foregroundColor(C.subLabel)
                     }
                     .frame(maxWidth: .infinity)
@@ -1761,7 +1761,7 @@ struct GroupCreateView: View {
                             if index < filteredContacts.count - 1 {
                                 Rectangle()
                                     .fill(C.hairline)
-                                    .frame(height: 0.5)
+                                    .frame(height: AppDesign.Control.hairline)
                                     .padding(.leading, 70)
                             }
                         }
@@ -1796,7 +1796,7 @@ struct GroupCreateView: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(Tr("群名称"))
-                    .font(pf(12.5, .semibold))
+                    .font(AppDesign.Type.captionStrong)
                     .foregroundColor(C.subLabel)
 
                 HStack(spacing: 7) {
@@ -1852,7 +1852,7 @@ struct GroupCreateView: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(canContinue ? Tr("群聊详情") : Tr("选择联系人"))
-                    .font(pf(13.5, .semibold))
+                    .font(AppDesign.Type.bodyStrong)
                     .foregroundColor(C.label)
                 Text("\(picked.count) · \(name.isEmpty ? Tr("群名称") : name)")
                     .font(pf(11.5))
@@ -1875,11 +1875,11 @@ struct GroupCreateView: View {
                 }
                 .foregroundColor(.white)
                 .padding(.horizontal, 17)
-                .frame(height: 44)
+                .frame(height: AppDesign.Control.compactHeight)
                 .background(
                     LinearGradient(
                         colors: canContinue
-                            ? [Color(hex: 0x45D483), C.green]
+                            ? [OrbitTheme.jade, OrbitTheme.jadeDeep]
                             : [C.subLabel.opacity(0.42), C.subLabel.opacity(0.30)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -1934,10 +1934,10 @@ struct GroupCreateView: View {
                     Text(picked.isEmpty
                          ? Tr("选择联系人")
                          : String(format: Tr("已选择 %d 位联系人"), picked.count))
-                        .font(pf(16, .semibold))
+                        .font(AppDesign.Type.rowTitle)
                         .foregroundColor(C.label)
                     Text(picked.isEmpty ? Tr("至少选择一位好友开始群聊") : Tr("可以继续添加或移除联系人"))
-                        .font(pf(12.5))
+                        .font(AppDesign.Type.caption)
                         .foregroundColor(C.subLabel)
                 }
 
@@ -1948,10 +1948,10 @@ struct GroupCreateView: View {
                         withAnimation(.easeOut(duration: 0.18)) { picked.removeAll() }
                     } label: {
                         Text(Tr("清除"))
-                            .font(pf(13, .semibold))
+                            .font(AppDesign.Type.compactButton)
                             .foregroundColor(C.green)
                             .padding(.horizontal, 10)
-                            .frame(height: 30)
+                            .frame(height: AppDesign.Control.sectionHeaderHeight)
                             .background(Capsule().fill(C.green.opacity(0.1)))
                     }
                     .buttonStyle(.plain)
@@ -1966,7 +1966,7 @@ struct GroupCreateView: View {
                                 HStack(spacing: 7) {
                                     Avatar(path: user.avatarPath, size: 30, circle: true)
                                     Text(user.name)
-                                        .font(pf(13, .medium))
+                                        .font(AppDesign.Type.compactButtonMedium)
                                         .foregroundColor(C.label)
                                         .lineLimit(1)
                                     Image(systemName: "xmark")
@@ -1975,7 +1975,7 @@ struct GroupCreateView: View {
                                 }
                                 .padding(.leading, 4)
                                 .padding(.trailing, 10)
-                                .frame(height: 38)
+                                .frame(height: AppDesign.Control.iconControlHeight)
                                 .background(
                                     Capsule().fill(Color.dyn(0xF2F2F7, 0x2C2C2E))
                                 )
@@ -2013,17 +2013,17 @@ struct GroupCreateView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 Text(String(format: Tr("已选择 %d 位联系人"), picked.count))
-                    .font(pf(12.5, .semibold))
+                    .font(AppDesign.Type.captionStrong)
                     .foregroundColor(C.subLabel)
                 Spacer(minLength: 0)
                 Button {
                     withAnimation(.easeOut(duration: 0.18)) { picked.removeAll() }
                 } label: {
                     Text(Tr("清除"))
-                        .font(pf(12.5, .semibold))
+                        .font(AppDesign.Type.captionStrong)
                         .foregroundColor(C.green)
                         .padding(.horizontal, 9)
-                        .frame(height: 28)
+                        .frame(height: AppDesign.Control.statusHeight)
                         .background(Capsule().fill(C.green.opacity(0.09)))
                 }
                 .buttonStyle(MenuPressStyle())
@@ -2036,7 +2036,7 @@ struct GroupCreateView: View {
                             HStack(spacing: 7) {
                                 Avatar(path: user.avatarPath, size: 30, circle: true)
                                 Text(user.name)
-                                    .font(pf(13, .medium))
+                                    .font(AppDesign.Type.compactButtonMedium)
                                     .foregroundColor(C.label)
                                     .lineLimit(1)
                                 Image(systemName: "xmark")
@@ -2045,7 +2045,7 @@ struct GroupCreateView: View {
                             }
                             .padding(.leading, 4)
                             .padding(.trailing, 10)
-                            .frame(height: 38)
+                            .frame(height: AppDesign.Control.iconControlHeight)
                             .background(
                                 Capsule().fill(Color.dyn(0xF2F2F7, 0x2C2C2E))
                             )
@@ -2079,7 +2079,7 @@ struct GroupCreateView: View {
             }
         }
         .padding(.horizontal, 12)
-        .frame(height: 36)
+        .frame(height: AppDesign.Control.searchHeight)
         .background {
             RoundedRectangle(
                 cornerRadius: AppDesign.Radius.small,
@@ -2115,7 +2115,7 @@ struct GroupCreateView: View {
             .frame(width: 23, height: 23)
         }
         .padding(.horizontal, 16)
-        .frame(height: 60)
+        .frame(height: AppDesign.Control.profileRowHeight)
         .background(selected ? C.green.opacity(0.045) : Color.clear)
         .contentShape(Rectangle())
     }
@@ -2139,7 +2139,7 @@ struct GroupCreateView: View {
                             .onSubmit { nameFocused = false }
                     }
                     .padding(.horizontal, 16)
-                    .frame(height: 54)
+                    .frame(height: AppDesign.Control.dialogRowHeight)
                     .background(
                         RoundedRectangle(
                             cornerRadius: AppDesign.Radius.control,
@@ -2149,7 +2149,7 @@ struct GroupCreateView: View {
                     )
 
                     Text(Tr("群名称创建后仍可修改"))
-                        .font(pf(12.5))
+                        .font(AppDesign.Type.caption)
                         .foregroundColor(C.subLabel)
                         .padding(.horizontal, 4)
                 }
@@ -2172,7 +2172,7 @@ struct GroupCreateView: View {
                             .foregroundColor(C.subLabel)
                     }
                     .padding(.horizontal, 16)
-                    .frame(height: 64)
+                    .frame(height: AppDesign.Control.compactRowHeight)
                     .background(
                         RoundedRectangle(
                             cornerRadius: AppDesign.Radius.control,
@@ -2197,7 +2197,7 @@ struct GroupCreateView: View {
                     }
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 52)
+                    .frame(height: AppDesign.Control.buttonHeight)
                     .background(
                         RoundedRectangle(
                             cornerRadius: AppDesign.Radius.control,
@@ -2378,7 +2378,7 @@ struct FaceGroupView: View {
                             Image(systemName: "exclamationmark.circle.fill")
                             Text(tip)
                         }
-                        .font(pf(13, .medium))
+                        .font(AppDesign.Type.compactButtonMedium)
                         .foregroundColor(C.red)
                         .padding(.horizontal, 14)
                         .frame(maxWidth: .infinity, minHeight: 42, alignment: .leading)
@@ -2452,7 +2452,7 @@ struct FaceGroupView: View {
                         .foregroundStyle(OrbitTheme.ink)
                     Spacer(minLength: 0)
                     Text("\(digits.count)/4")
-                        .font(pf(12, .semibold))
+                        .font(AppDesign.Type.section)
                         .foregroundStyle(digits.count == 4
                                          ? OrbitTheme.jadeDeep
                                          : OrbitTheme.tertiary)
@@ -2474,7 +2474,7 @@ struct FaceGroupView: View {
                                          ? OrbitTheme.jade
                                          : OrbitTheme.tertiary)
                 }
-                .font(pf(12.5))
+                .font(AppDesign.Type.caption)
                 .foregroundStyle(OrbitTheme.secondary)
             }
             .padding(16)
@@ -2515,7 +2515,7 @@ struct FaceGroupView: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 72)
+        .frame(height: AppDesign.Control.rowHeight)
         .animation(.spring(response: 0.24, dampingFraction: 0.82), value: digits)
     }
 
@@ -2536,7 +2536,7 @@ struct FaceGroupView: View {
             ) {
                 ForEach(keys, id: \.self) { key in
                     if key.isEmpty {
-                        Color.clear.frame(height: 50)
+                        Color.clear.frame(height: AppDesign.Control.buttonHeight)
                     } else {
                         Button { press(key) } label: {
                             Group {
@@ -2551,7 +2551,7 @@ struct FaceGroupView: View {
                             }
                             .foregroundStyle(OrbitTheme.ink)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 50)
+                            .frame(height: AppDesign.Control.buttonHeight)
                             .background(
                                 RoundedRectangle(
                                     cornerRadius: AppDesign.Radius.control,
@@ -2582,7 +2582,7 @@ struct FaceGroupView: View {
         .overlay(alignment: .top) {
             Rectangle()
                 .fill(OrbitTheme.divider)
-                .frame(height: 0.5)
+                .frame(height: AppDesign.Control.hairline)
         }
     }
 
@@ -2732,7 +2732,7 @@ struct ServiceView: View {
                         groupCard(g).padding(.top, topGap(idx))
                     }
                     billsCard.padding(.top, 8)
-                    Color.clear.frame(height: 24)
+                    Color.clear.frame(height: AppDesign.Control.statusHeight)
                 }
             }
             .background(C.pageBg)
@@ -2937,7 +2937,7 @@ struct ServiceView: View {
                 .buttonStyle(.plain)
             }
             .padding(.horizontal, 16.7)
-            .frame(height: 48)
+            .frame(height: AppDesign.Control.mediumControlHeight)
 
             if loading {
                 ProgressView().padding(.vertical, 26)
@@ -2958,14 +2958,14 @@ struct ServiceView: View {
                             HStack(spacing: 12) {
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(bill.title).font(pf(16)).foregroundColor(C.label)
-                                    Text(bill.date).font(pf(12.5)).foregroundColor(C.subLabel)
+                                    Text(bill.date).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                                 }
                                 Spacer(minLength: 0)
                                 VStack(alignment: .trailing, spacing: 3) {
                                     Text("¥\(moneyFmt(bill.amount))")
                                         .font(pfMoney(16))
                                         .foregroundColor(C.label)
-                                    Text(bill.status).font(pf(12.5)).foregroundColor(C.subLabel)
+                                    Text(bill.status).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                                 }
                                 Chevron(size: 9, line: 1.6)
                             }

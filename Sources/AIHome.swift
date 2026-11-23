@@ -64,7 +64,7 @@ struct AIHomeCardView: View {
                                     .foregroundColor(C.subLabel)
                             }
                             .padding(.horizontal, 16)
-                            .frame(height: 50)
+                            .frame(height: AppDesign.Control.buttonHeight)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -131,7 +131,7 @@ struct AIHomeCardView: View {
         }
         .padding(.horizontal, 14)
         .frame(maxWidth: .infinity)
-        .frame(height: 54)
+        .frame(height: AppDesign.Control.dialogRowHeight)
         .contentShape(Rectangle())
     }
 }

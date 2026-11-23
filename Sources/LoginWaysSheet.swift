@@ -73,7 +73,7 @@ struct LoginWaysSheet: View {
                                 }
                                 .frame(width: 34, height: 34)
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(w.title).font(pf(16.5)).foregroundColor(C.label)
+                                    Text(w.title).font(AppDesign.Type.listTitle).foregroundColor(C.label)
                                     Text(w.sub).font(pf(12)).foregroundColor(C.subLabel)
                                 }
                                 Spacer(minLength: 0)
@@ -92,7 +92,7 @@ struct LoginWaysSheet: View {
                 Button { dismiss() } label: {
                     Text(Tr("取消"))
                         .font(pf(17)).foregroundColor(C.label)
-                        .frame(maxWidth: .infinity).frame(height: 56)
+                        .frame(maxWidth: .infinity).frame(height: AppDesign.Control.menuRowHeight)
                         .background(C.cardBg)
                         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
                 }

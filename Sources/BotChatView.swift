@@ -125,7 +125,7 @@ struct BotChatView: View {
             }
         }
         .padding(.horizontal, 4)
-        .frame(height: 52)
+        .frame(height: AppDesign.Control.largeControlHeight)
         .background(Color.dyn(0xFFFFFF, 0x1C1C1E).opacity(0.96))
     }
 
@@ -136,7 +136,7 @@ struct BotChatView: View {
             HStack {
                 Spacer(minLength: 44)
                 Text(RichText.lines(shownText(m), size: 15.5))
-                    .font(pf(15.5))
+                    .font(AppDesign.Type.bodyLarge)
                     .lineSpacing(3)
                     .foregroundColor(Color(hex: 0x1A1A1A))
                     .padding(.horizontal, 12)
@@ -149,7 +149,7 @@ struct BotChatView: View {
             HStack(alignment: .top, spacing: 10) {
                 JarvisEyesAvatar(size: eyesSize(26), tint: eyesTintOrClear, staticOnly: eyesStill).padding(.top, 2)
                 Text(RichText.lines(shownText(m), size: 15.5))
-                    .font(pf(15.5))
+                    .font(AppDesign.Type.bodyLarge)
                     .lineSpacing(3)
                     .foregroundColor(C.label)
                     .fixedSize(horizontal: false, vertical: true)

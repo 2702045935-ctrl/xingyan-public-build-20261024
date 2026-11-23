@@ -66,7 +66,7 @@ struct LyricsView: View {
             VStack(spacing: 6) {
                 Image(systemName: "music.note.list")
                     .font(.system(size: 30, weight: .light)).foregroundColor(C.subLabel.opacity(0.7))
-                Text(Tr("暂无歌词")).font(pf(13.5)).foregroundColor(C.subLabel)
+                Text(Tr("暂无歌词")).font(AppDesign.Type.body).foregroundColor(C.subLabel)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {

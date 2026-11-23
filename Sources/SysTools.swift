@@ -15,7 +15,7 @@ struct SysTeamMenuBar: View {
             Rectangle().fill(C.hairline).frame(width: 0.5, height: 22)
             button(Tr("联系客服"), onKefu)
         }
-        .frame(height: 44)
+        .frame(height: AppDesign.Control.compactHeight)
         .background(C.cardBg)
         .overlay(alignment: .top) { HairLine() }
     }
@@ -26,7 +26,7 @@ struct SysTeamMenuBar: View {
                 .font(pf(15))
                 .foregroundColor(C.label)
                 .frame(maxWidth: .infinity)
-                .frame(height: 44)
+                .frame(height: AppDesign.Control.compactHeight)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -56,7 +56,7 @@ struct SysToolsView: View {
                 VStack(spacing: 0) {
                     HStack {
                         Text(Tr("账号相关的事，在这儿自己办或者找客服"))
-                            .font(pf(12.5)).foregroundColor(C.subLabel)
+                            .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                         Spacer(minLength: 0)
                     }
                     .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 8)
@@ -71,7 +71,7 @@ struct SysToolsView: View {
                                         .foregroundColor(C.green)
                                         .frame(width: 28)
                                     VStack(alignment: .leading, spacing: 3) {
-                                        Text(Tr(it.title)).font(pf(15.5)).foregroundColor(C.label)
+                                        Text(Tr(it.title)).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
                                         Text(Tr(it.sub)).font(pf(12)).foregroundColor(C.subLabel)
                                             .lineLimit(1)
                                     }
@@ -90,7 +90,7 @@ struct SysToolsView: View {
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
                     .padding(.horizontal, 12)
 
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
             }
             .background(C.pageBg)

@@ -102,8 +102,8 @@ struct MallAuthCard: View {
                 HStack(spacing: 0) {
                     Button(action: onDeny) {
                         Text(Tr("拒绝"))
-                            .font(pf(16.5)).foregroundColor(C.subLabel)
-                            .frame(maxWidth: .infinity).frame(height: 50)
+                            .font(AppDesign.Type.listTitle).foregroundColor(C.subLabel)
+                            .frame(maxWidth: .infinity).frame(height: AppDesign.Control.buttonHeight)
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -111,8 +111,8 @@ struct MallAuthCard: View {
                     Button(action: onAllow) {
 
                         Text(Tr("允许"))
-                            .font(pf(16.5, .medium)).foregroundColor(C.green)
-                            .frame(maxWidth: .infinity).frame(height: 50)
+                            .font(AppDesign.Type.buttonMedium).foregroundColor(C.green)
+                            .frame(maxWidth: .infinity).frame(height: AppDesign.Control.buttonHeight)
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)

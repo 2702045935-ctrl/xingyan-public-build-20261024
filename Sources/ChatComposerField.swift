@@ -89,7 +89,7 @@ struct FullScreenComposerView: View {
                 }
                 .foregroundStyle(.white)
                 .padding(.horizontal, 15)
-                .frame(height: 42)
+                .frame(height: AppDesign.Control.searchHeight)
                 .background {
                     ZStack {
                         GlassBackground(shape: Capsule(),
@@ -167,7 +167,7 @@ struct FullScreenComposerView: View {
     private var footer: some View {
         HStack(spacing: 10) {
             Text("\(text.count) \(Tr("字"))")
-                .font(pf(12.5, .medium).monospacedDigit())
+                .font(AppDesign.Type.captionMedium.monospacedDigit())
             Spacer(minLength: 8)
             HStack(spacing: 6) {
                 Image(systemName: "checkmark.circle.fill")
@@ -179,7 +179,7 @@ struct FullScreenComposerView: View {
         }
         .foregroundStyle(C.subLabel)
         .padding(.horizontal, 16)
-        .frame(height: 42)
+        .frame(height: AppDesign.Control.searchHeight)
         .background {
             GlassBackground(shape: Capsule(),
                             opacity: scheme == .dark ? 0.78 : 0.90,

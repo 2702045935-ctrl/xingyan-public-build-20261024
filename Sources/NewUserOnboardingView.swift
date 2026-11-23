@@ -16,7 +16,6 @@ private struct OnboardingFeature: Identifiable {
               title: "账号与安全", detail: "登录设备、隐私权限和安全设置可随时管理")
     ]
 }
-
 struct NewUserOnboardingView: View {
     @EnvironmentObject private var app: AppState
     @State private var step = 0
@@ -177,7 +176,7 @@ struct NewUserOnboardingView: View {
                     }
                     .padding(.top, 48)
                 }
-                .buttonStyle(OnboardingPressStyle())
+                .buttonStyle(AppCardPressStyle())
                 .disabled(uploading)
 
                 Text(avatar == nil ? Tr("点击上传你的专属头像") : Tr("头像已就绪，可以继续了"))
@@ -317,7 +316,7 @@ struct NewUserOnboardingView: View {
                 }
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
-                .frame(height: 54)
+                .frame(height: AppDesign.Control.dialogRowHeight)
                 .background(
                     RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).fill(LinearGradient(
                         colors: canContinue
@@ -328,7 +327,7 @@ struct NewUserOnboardingView: View {
                 .shadow(color: canContinue ? onboardingGreen.opacity(0.18) : .clear,
                         radius: 12, y: 5)
             }
-            .buttonStyle(OnboardingPressStyle())
+            .buttonStyle(AppCardPressStyle())
             .disabled(saving || uploading)
 
             if step == 1 {
@@ -394,11 +393,3 @@ struct NewUserOnboardingView: View {
     }
 }
 
-private struct OnboardingPressStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.975 : 1)
-            .opacity(configuration.isPressed ? 0.86 : 1)
-            .animation(.easeOut(duration: 0.14), value: configuration.isPressed)
-    }
-}

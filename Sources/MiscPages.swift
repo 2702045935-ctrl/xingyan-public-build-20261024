@@ -564,7 +564,7 @@ struct StickerViewOld: View {
 
                     if mine.packList.isEmpty && mine.singleList.isEmpty {
                         Text(Tr("还没有添加表情，去下面的「表情商店」加几个"))
-                            .font(pf(13.5))
+                            .font(AppDesign.Type.body)
                             .foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 16)
@@ -601,7 +601,7 @@ struct StickerViewOld: View {
                             .buttonStyle(.plain)
                         }
                         .padding(.horizontal, 16)
-                        .frame(height: 44)
+                        .frame(height: AppDesign.Control.compactHeight)
 
                         if !mine.singleList.isEmpty {
                             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 5), spacing: 8) {
@@ -639,14 +639,14 @@ struct StickerViewOld: View {
                                     Text(p.name ?? "表情包").font(pf(16)).foregroundColor(C.label)
                                     Text(Lang.isEnglish ? "\((p.stickers ?? []).count) stickers"
                                                        : "\((p.stickers ?? []).count) 个表情")
-                                        .font(pf(12.5)).foregroundColor(C.subLabel)
+                                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                                 }
                                 Spacer(minLength: 8)
                                 if isAdded(p) {
                                     Button { removePack(p) } label: {
                                         Text(Tr("移除"))
                                             .font(pf(14)).foregroundColor(C.subLabel)
-                                            .padding(.horizontal, 12).frame(height: 28)
+                                            .padding(.horizontal, 12).frame(height: AppDesign.Control.statusHeight)
                                             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.micro).fill(C.searchBg))
                                     }
                                     .buttonStyle(.plain)
@@ -654,7 +654,7 @@ struct StickerViewOld: View {
                                     Button { addPack(p) } label: {
                                         Text(Tr("添加"))
                                             .font(pf(14, .medium)).foregroundColor(.white)
-                                            .padding(.horizontal, 12).frame(height: 28)
+                                            .padding(.horizontal, 12).frame(height: AppDesign.Control.statusHeight)
                                             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.micro).fill(C.green))
                                     }
                                     .buttonStyle(.plain)
@@ -671,7 +671,7 @@ struct StickerViewOld: View {
                         builtinRow(p, added: false)
                     }
 
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
             }
             .background(C.pageBg)
@@ -710,7 +710,7 @@ struct StickerViewOld: View {
             Spacer()
         }
         .padding(.horizontal, 16)
-        .frame(height: 30)
+        .frame(height: AppDesign.Control.sectionHeaderHeight)
         .background(C.pageBg)
     }
 
@@ -728,7 +728,7 @@ struct StickerViewOld: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(p.name).font(pf(16)).foregroundColor(C.label)
                 Text(Lang.isEnglish ? "\(p.stickers.count) stickers" : "\(p.stickers.count) 个表情")
-                    .font(pf(12.5)).foregroundColor(C.subLabel)
+                    .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
             }
             Spacer(minLength: 8)
             Button {
@@ -739,7 +739,7 @@ struct StickerViewOld: View {
                     .font(pf(14, added ? .regular : .medium))
                     .foregroundColor(added ? C.subLabel : .white)
                     .padding(.horizontal, 12)
-                    .frame(height: 28)
+                    .frame(height: AppDesign.Control.statusHeight)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.micro).fill(added ? C.searchBg : C.green))
             }
             .buttonStyle(.plain)
@@ -758,7 +758,7 @@ struct StickerViewOld: View {
             Chevron(size: 9, line: 1.6)
         }
         .padding(.horizontal, 16)
-        .frame(height: 56)
+        .frame(height: AppDesign.Control.menuRowHeight)
         .background(C.cardBg)
         .contentShape(Rectangle())
     }
@@ -778,7 +778,7 @@ struct StickerViewOld: View {
                             }
                         }
                         .frame(maxWidth: .infinity)
-                        .frame(height: 72)
+                        .frame(height: AppDesign.Control.rowHeight)
                         .background { CardGlassBox(radius: 8) }
                     }
                 }
@@ -790,7 +790,7 @@ struct StickerViewOld: View {
             } label: {
                 Text(Tr("移除这个表情包"))
                     .font(pf(16)).foregroundColor(C.red)
-                    .frame(maxWidth: .infinity).frame(height: 50)
+                    .frame(maxWidth: .infinity).frame(height: AppDesign.Control.buttonHeight)
                     .background(C.cardBg)
             }
             .buttonStyle(.plain)
@@ -893,7 +893,7 @@ struct StatusView: View {
                         section(cats[i])
                     }
                     if hasMood { endRow }
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
                 .padding(.top, 10)
             }
@@ -917,12 +917,12 @@ struct StatusView: View {
                 Spacer(minLength: 6)
                 if let h = ms.hoursLeft {
                     Text(h <= 0 ? Tr("马上过期") : (Tr("还剩 ") + "\(h)" + Tr(" 小时")))
-                        .font(pf(12.5)).foregroundColor(C.subLabel)
+                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                 }
             }
             if let views = ms.views, !views.isEmpty {
                 Text(Tr("谁看过我的状态") + "（\(views.count)）")
-                    .font(pf(12.5)).foregroundColor(C.subLabel)
+                    .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 10) {
                         ForEach(views, id: \.self) { v in
@@ -935,7 +935,7 @@ struct StatusView: View {
                     }
                 }
             } else {
-                Text(Tr("还没有人看过")).font(pf(12.5)).foregroundColor(C.subLabel)
+                Text(Tr("还没有人看过")).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
             }
         }
         .padding(14)
@@ -972,7 +972,7 @@ struct StatusView: View {
                 .foregroundColor(C.label)
                 .focused($typing)
                 .padding(.horizontal, 14)
-                .frame(height: 44)
+                .frame(height: AppDesign.Control.compactHeight)
                 .background(Capsule().fill(C.fieldBg))
                 .onChange(of: caption) { v in
                     if v.count > 30 { caption = String(v.prefix(30)) }
@@ -1014,7 +1014,7 @@ struct StatusView: View {
                     .fill(Color(hexString: catColor.isEmpty ? "#8A8F99" : catColor))
                     .frame(width: 6, height: 6)
                 Text(Tr(title))
-                    .font(pf(13, .medium))
+                    .font(AppDesign.Type.compactButtonMedium)
                     .foregroundColor(C.subLabel)
                 Spacer(minLength: 0)
             }
@@ -1045,7 +1045,7 @@ struct StatusView: View {
                     Text(it.icon ?? "🙂").font(pf(19))
                 }
                 Text(Tr(it.label ?? "状态"))
-                    .font(pf(12.5, .medium))
+                    .font(AppDesign.Type.captionMedium)
                     .foregroundColor(.white)
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
@@ -1086,10 +1086,10 @@ struct StatusView: View {
     private var endRow: some View {
         Button { endMood() } label: {
             Text(Tr("结束状态"))
-                .font(pf(15.5))
+                .font(AppDesign.Type.bodyLarge)
                 .foregroundColor(C.red)
                 .frame(maxWidth: .infinity)
-                .frame(height: 50)
+                .frame(height: AppDesign.Control.buttonHeight)
                 .background(C.cardBg)
         }
         .buttonStyle(.plain)
@@ -1170,7 +1170,7 @@ struct StatusDetailView: View {
                 VStack(spacing: 12) {
                     bigCard
                     viewersCard
-                    Spacer().frame(height: 20)
+                    Spacer().frame(height: AppDesign.Control.compactBadgeHeight)
                 }
                 .padding(.top, 12)
             }
@@ -1198,7 +1198,7 @@ struct StatusDetailView: View {
                 Text(Tr(label)).font(pf(17, .medium)).foregroundColor(.white).lineLimit(1)
             }
             if !note.isEmpty {
-                Text(note).font(pf(13.5)).foregroundColor(.white.opacity(0.92))
+                Text(note).font(AppDesign.Type.body).foregroundColor(.white.opacity(0.92))
                     .multilineTextAlignment(.center).lineLimit(3)
             }
             Text(leftText).font(pf(11.5)).foregroundColor(.white.opacity(0.82))
@@ -1265,16 +1265,16 @@ struct StatusDetailView: View {
                 .fixedSize()
         }
         .padding(.horizontal, 15)
-        .frame(height: 54)
+        .frame(height: AppDesign.Control.dialogRowHeight)
     }
 
     private var endButton: some View {
         Button { endIt() } label: {
             Text(Tr("结束状态"))
-                .font(pf(15.5))
+                .font(AppDesign.Type.bodyLarge)
                 .foregroundColor(C.red)
                 .frame(maxWidth: .infinity)
-                .frame(height: 50)
+                .frame(height: AppDesign.Control.buttonHeight)
                 .background(C.cardBg)
         }
         .buttonStyle(.plain)
@@ -1328,7 +1328,7 @@ struct FriendStatusView: View {
                             Text(Tr(label)).font(pf(17, .medium)).foregroundColor(.white)
                         }
                         if !note.isEmpty {
-                            Text(note).font(pf(13.5)).foregroundColor(.white.opacity(0.92))
+                            Text(note).font(AppDesign.Type.body).foregroundColor(.white.opacity(0.92))
                                 .multilineTextAlignment(.center)
                         }
                         Text(leftText).font(pf(11.5)).foregroundColor(.white.opacity(0.82))
@@ -1341,7 +1341,7 @@ struct FriendStatusView: View {
                                                startPoint: .topLeading, endPoint: .bottomTrailing))
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
                     .padding(.horizontal, 12)
-                    Spacer().frame(height: 20)
+                    Spacer().frame(height: AppDesign.Control.compactBadgeHeight)
                 }
                 .padding(.top, 12)
             }
@@ -1398,7 +1398,7 @@ struct FriendsStatusView: View {
                     Text("🙂").font(pf(30))
                     Text(Tr("朋友们现在都没挂状态")).font(pf(15)).foregroundColor(C.label)
                     Text(Tr("等好友在「我 → 状态」里挂一个，这里就会显示"))
-                        .font(pf(12.5)).foregroundColor(C.subLabel)
+                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                         .multilineTextAlignment(.center)
                 }
                 .frame(maxWidth: .infinity)
@@ -1420,7 +1420,7 @@ struct FriendsStatusView: View {
                             }
                         }
                     }
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
                 .background(C.pageBg)
             }
@@ -1453,7 +1453,7 @@ struct FriendsStatusView: View {
                         Text(Tr("在听《") + f.title + "》").lineLimit(1)
                     }
                     .font(pf(12))
-                    .foregroundColor(Color(hex: 0x576B95))
+                    .foregroundColor(AppPalette.legacyLink)
                 }
                 Text(left(u)).font(pf(12)).foregroundColor(C.subLabel).lineLimit(1)
             }
@@ -1583,7 +1583,7 @@ struct FriendsStatusView: View {
             if !g.icon.isEmpty { Text(g.icon).font(pf(14)) }
             Text("\(g.users.count) " + Tr("个朋友在") + g.key)
                 .font(pf(14))
-                .foregroundColor(Color(hex: 0x576B95))
+                .foregroundColor(AppPalette.legacyLink)
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 16)
@@ -1763,7 +1763,7 @@ struct WalletCardView: View {
                         row("单笔转账限额", "¥20000")
                     }
                     .padding(.top, 8)
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
             }
             .background(C.pageBg)
@@ -1781,7 +1781,7 @@ struct WalletCardView: View {
             Text(value).font(pf(15)).foregroundColor(C.subLabel)
         }
         .padding(.horizontal, 16)
-        .frame(height: 56)
+        .frame(height: AppDesign.Control.menuRowHeight)
     }
 }
 
@@ -1905,7 +1905,7 @@ struct WorksView: View {
                         .foregroundColor(C.label)
                         .lineLimit(1)
                     Text("@" + (app.me?.username ?? "—"))
-                        .font(pf(12.5, .medium))
+                        .font(AppDesign.Type.captionMedium)
                         .foregroundColor(C.subLabel)
                         .lineLimit(1)
                 }
@@ -1928,7 +1928,7 @@ struct WorksView: View {
 
             let bio = (app.me?.bio ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             Text(bio.isEmpty ? Tr("记录生活，也记录作品") : bio)
-                .font(pf(13.5))
+                .font(AppDesign.Type.body)
                 .foregroundColor(C.subLabel)
                 .lineLimit(2)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -1996,7 +1996,7 @@ struct WorksView: View {
                 }
                 .foregroundColor(.white)
                 .padding(.horizontal, 11)
-                .frame(height: 30)
+                .frame(height: AppDesign.Control.sectionHeaderHeight)
                 .background(.ultraThinMaterial, in: Capsule())
                 .overlay(Capsule().stroke(Color.white.opacity(0.22), lineWidth: 0.6))
             }
@@ -2076,7 +2076,7 @@ struct WorksView: View {
                             .frame(width: 28, height: 2)
                     }
                     .frame(maxWidth: .infinity)
-                    .frame(height: 50)
+                    .frame(height: AppDesign.Control.buttonHeight)
                     .background(C.pageBg)
                 }
                 .buttonStyle(.plain)
@@ -2086,7 +2086,7 @@ struct WorksView: View {
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(C.hairline)
-                .frame(height: 0.5)
+                .frame(height: AppDesign.Control.hairline)
         }
     }
 
@@ -2109,7 +2109,7 @@ struct WorksView: View {
                 .font(pf(15, .medium))
                 .foregroundColor(C.label)
             Text(loadError)
-                .font(pf(12.5))
+                .font(AppDesign.Type.caption)
                 .foregroundColor(C.subLabel)
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
@@ -2120,7 +2120,7 @@ struct WorksView: View {
                     .font(pf(14, .semibold))
                     .foregroundColor(C.label)
                     .padding(.horizontal, 20)
-                    .frame(height: 36)
+                    .frame(height: AppDesign.Control.floatingControlHeight)
                     .background(C.fieldBg, in: Capsule())
             }
             .buttonStyle(.plain)
@@ -2138,7 +2138,7 @@ struct WorksView: View {
                 .font(pf(15, .medium))
                 .foregroundColor(C.label)
             Text(emptySubtitle)
-                .font(pf(12.5))
+                .font(AppDesign.Type.caption)
                 .foregroundColor(C.subLabel)
                 .multilineTextAlignment(.center)
         }

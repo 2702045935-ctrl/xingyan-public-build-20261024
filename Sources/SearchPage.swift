@@ -277,7 +277,7 @@ struct SearchPage: View {
     }
 
     private var xhsRed: Color {
-        Color(hex: 0x25D366)
+        AppPalette.whatsApp
     }
 
     private var xhsSearchBody: some View {
@@ -411,7 +411,7 @@ struct SearchPage: View {
                 }
             }
             .padding(.horizontal, 12)
-            .frame(height: 40)
+            .frame(height: AppDesign.Control.iconControlHeight)
             .background(
                 xhsField,
                 in: RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
@@ -481,7 +481,7 @@ struct SearchPage: View {
                                         }
                                     }
                                     .padding(.horizontal, 14)
-                                    .frame(height: 48)
+                                    .frame(height: AppDesign.Control.mediumControlHeight)
                                     .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
@@ -489,7 +489,7 @@ struct SearchPage: View {
                                 if index < hot.count - 1 {
                                     Rectangle()
                                         .fill(C.hairline)
-                                        .frame(height: 0.5)
+                                        .frame(height: AppDesign.Control.hairline)
                                         .padding(.leading, 50)
                                 }
                             }
@@ -555,7 +555,7 @@ struct SearchPage: View {
                                 xhsToolRow(tool)
                                 if index < matchedTools.count - 1 {
                                     Rectangle().fill(C.hairline)
-                                        .frame(height: 0.5)
+                                        .frame(height: AppDesign.Control.hairline)
                                         .padding(.leading, 58)
                                 }
                             }
@@ -730,7 +730,7 @@ struct SearchPage: View {
                         }
                         .foregroundStyle(selected ? Color.white : C.subLabel)
                         .padding(.horizontal, 12)
-                        .frame(height: 32)
+                        .frame(height: AppDesign.Control.smallButtonHeight)
                         .background(selected ? xhsRed : xhsCard, in: Capsule())
                     }
                     .buttonStyle(.plain)
@@ -851,7 +851,7 @@ struct SearchPage: View {
             .overlay(alignment: .bottom) {
                 Rectangle()
                     .fill(C.hairline)
-                    .frame(height: 0.5)
+                    .frame(height: AppDesign.Control.hairline)
                     .padding(.leading, 71)
             }
             .contentShape(Rectangle())
@@ -886,7 +886,7 @@ struct SearchPage: View {
             .overlay(alignment: .bottom) {
                 Rectangle()
                     .fill(C.hairline)
-                    .frame(height: 0.5)
+                    .frame(height: AppDesign.Control.hairline)
                     .padding(.leading, 71)
             }
             .contentShape(Rectangle())
@@ -921,7 +921,7 @@ struct SearchPage: View {
             .overlay(alignment: .bottom) {
                 Rectangle()
                     .fill(C.hairline)
-                    .frame(height: 0.5)
+                    .frame(height: AppDesign.Control.hairline)
                     .padding(.leading, 71)
             }
             .contentShape(Rectangle())
@@ -955,7 +955,7 @@ struct SearchPage: View {
             .overlay(alignment: .bottom) {
                 Rectangle()
                     .fill(C.hairline)
-                    .frame(height: 0.5)
+                    .frame(height: AppDesign.Control.hairline)
                     .padding(.leading, 71)
             }
             .contentShape(Rectangle())
@@ -1683,7 +1683,7 @@ struct SearchPage: View {
                             emptyResult
                         }
                     }
-                    Color.clear.frame(height: 24)
+                    Color.clear.frame(height: AppDesign.Control.badgeHeight)
                 }
             }
             .background(Color.clear)
@@ -1780,7 +1780,7 @@ struct SearchPage: View {
                     .font(pfStyled(size: 11, weight: .bold))
                     .foregroundStyle(OrbitTheme.jade)
                     .padding(.horizontal, 9)
-                    .frame(height: 24)
+                    .frame(height: AppDesign.Control.badgeHeight)
                     .background(Capsule().fill(OrbitTheme.jadeSoft))
             }
         }
@@ -1810,7 +1810,7 @@ struct SearchPage: View {
             }
         }
         .padding(.horizontal, 14)
-        .frame(height: 48)
+        .frame(height: AppDesign.Control.mediumControlHeight)
         .background {
             GlassBackground(shape: RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous),
                             opacity: 0.78,
@@ -2118,7 +2118,7 @@ struct SearchPage: View {
                                     .font(.system(size: 11, weight: .semibold))
                                     .foregroundStyle(OrbitTheme.tertiary)
                             }
-                            .padding(.horizontal, 14).frame(height: 64)
+                            .padding(.horizontal, 14).frame(height: AppDesign.Control.compactRowHeight)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -2163,7 +2163,7 @@ struct SearchPage: View {
                                     .font(.system(size: 11, weight: .semibold))
                                     .foregroundStyle(OrbitTheme.tertiary)
                             }
-                            .padding(.horizontal, 14).frame(height: 64)
+                            .padding(.horizontal, 14).frame(height: AppDesign.Control.compactRowHeight)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)

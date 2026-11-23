@@ -55,15 +55,6 @@ struct StarWorld3DEntryCard: View {
     }
 }
 
-struct World3DEntryPressStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.985 : 1)
-            .brightness(configuration.isPressed ? -0.035 : 0)
-            .animation(.easeOut(duration: 0.14), value: configuration.isPressed)
-    }
-}
-
 struct StarWorldExperienceView: View {
     @EnvironmentObject private var app: AppState
     @Environment(\.dismiss) private var dismiss
@@ -639,7 +630,7 @@ private struct StarWorldSceneView: UIViewRepresentable {
                        material: denim)
             addCapsule(to: figure,
                        radius: 0.158,
-                       height: 0.56,
+                       height: AppDesign.Control.hairline6,
                        position: SCNVector3(x, 0.84, 0),
                        scale: SCNVector3(0.94, 1, 0.94),
                        material: denim)
@@ -689,7 +680,7 @@ private struct StarWorldSceneView: UIViewRepresentable {
         for (x, angle) in [(-0.36, CGFloat(0.12)), (0.36, CGFloat(-0.12))] {
             let sleeve = addCapsule(to: figure,
                                     radius: 0.115,
-                                    height: 0.57,
+                                    height: AppDesign.Control.hairline7,
                                     position: SCNVector3(x, 1.45, 0.02),
                                     scale: SCNVector3(1, 1, 0.92),
                                     material: hoodie)

@@ -154,7 +154,7 @@ struct GamesPageView: View {
                                 .font(pf(14, .medium))
                                 .foregroundColor(subInk)
                                 .padding(.horizontal, 15)
-                                .frame(height: 40)
+                                .frame(height: AppDesign.Control.iconControlHeight)
                                 .background(cardBg, in: Capsule())
                         }
                         .buttonStyle(.plain)
@@ -329,7 +329,7 @@ struct GamesPageView: View {
                            startPoint: .center, endPoint: .bottom)
             VStack(alignment: .leading, spacing: 3) {
                 Text(g.name).font(pf(19, .semibold)).foregroundColor(.white).lineLimit(1)
-                Text(g.desc ?? "").font(pf(12.5)).foregroundColor(.white.opacity(0.85))
+                Text(g.desc ?? "").font(AppDesign.Type.caption).foregroundColor(.white.opacity(0.85))
                     .lineLimit(1)
             }
             .padding(.horizontal, 14)
@@ -356,7 +356,7 @@ struct GamesPageView: View {
     private var recentRow: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
-                Text(Tr("最近在玩")).font(pf(15.5, .semibold)).foregroundColor(ink)
+                Text(Tr("最近在玩")).font(AppDesign.Type.rowTitle).foregroundColor(ink)
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 16)
@@ -367,12 +367,12 @@ struct GamesPageView: View {
                         Button { play(g) } label: {
                             HStack(spacing: 8) {
                                 gameCircle(g, size: 30)
-                                Text(g.name).font(pf(12.5, .medium)).foregroundColor(ink)
+                                Text(g.name).font(AppDesign.Type.captionMedium).foregroundColor(ink)
                                     .lineLimit(1).frame(maxWidth: 112, alignment: .leading)
                             }
                             .padding(.leading, 6)
                             .padding(.trailing, 13)
-                            .frame(height: 44)
+                            .frame(height: AppDesign.Control.compactHeight)
                             .background(Capsule().fill(cardBg))
                             .overlay(Capsule().stroke(C.hairline, lineWidth: 0.5))
                         }
@@ -478,7 +478,7 @@ struct GamesPageView: View {
                     Text((g.desc?.isEmpty == false) ? (g.desc ?? "") : Tr("小游戏"))
                         .font(pf(11.5)).foregroundColor(subInk).lineLimit(1)
                     HStack(spacing: 4) {
-                        Text(g.actionText).font(pf(11.5)).foregroundColor(Color(hex: 0x576B95))
+                        Text(g.actionText).font(pf(11.5)).foregroundColor(AppPalette.legacyLink)
                         Spacer(minLength: 0)
                         Image(systemName: "chevron.right")
                             .font(.system(size: 9, weight: .semibold))
@@ -518,8 +518,8 @@ struct GamesPageView: View {
                     .frame(width: 72, height: 72)
 
                     VStack(alignment: .leading, spacing: 5) {
-                        Text(g.name).font(pf(16, .medium)).foregroundColor(ink).lineLimit(1)
-                        Text(g.desc ?? "").font(pf(12.5)).foregroundColor(subInk)
+                        Text(g.name).font(AppDesign.Type.rowTitle).foregroundColor(ink).lineLimit(1)
+                        Text(g.desc ?? "").font(AppDesign.Type.caption).foregroundColor(subInk)
                             .lineLimit(2).fixedSize(horizontal: false, vertical: true)
                     }
                     Spacer(minLength: 0)
@@ -553,11 +553,11 @@ struct GamesPageView: View {
             .buttonStyle(.plain)
             Button { play(g) } label: {
                 Text(g.actionText)
-                    .font(pf(13.5, .medium))
+                    .font(AppDesign.Type.bodyMedium)
 
                     .foregroundColor(Color.dyn(0x111111, 0x111111))
                     .padding(.horizontal, 14)
-                    .frame(height: 32)
+                    .frame(height: AppDesign.Control.smallButtonHeight)
                     .background(Capsule().fill(Color.white))
                     .overlay(Capsule().stroke(Color.black.opacity(0.10), lineWidth: 0.5))
             }
@@ -673,7 +673,7 @@ struct GameWebPage: View {
                 } else if loading {
                     VStack(spacing: 10) {
                         ProgressView().tint(.white)
-                        Text(Tr("正在准备游戏…")).font(pf(13.5)).foregroundColor(.white.opacity(0.7))
+                        Text(Tr("正在准备游戏…")).font(AppDesign.Type.body).foregroundColor(.white.opacity(0.7))
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
@@ -684,7 +684,7 @@ struct GameWebPage: View {
                         Button { Task { await prepare(force: true) } } label: {
                             Text(Tr("重试"))
                                 .font(pf(15, .medium)).foregroundColor(.white)
-                                .padding(.horizontal, 22).frame(height: 40)
+                                .padding(.horizontal, 22).frame(height: AppDesign.Control.iconControlHeight)
                                 .background(Capsule().fill(C.green))
                         }
                         .buttonStyle(.plain)
@@ -747,7 +747,7 @@ struct GameWebPage: View {
                     Text(Tr("四国军棋 · 棋牌大厅")).font(pf(17, .semibold)).foregroundColor(.white)
                     Text(myRoom.isEmpty ? Tr("点一张桌子坐下，缺的位置由电脑顶上")
                                         : (Tr("你在 ") + myRoom + Tr(" 号桌（") + "\(mySeat + 1)" + Tr(" 号位）")))
-                        .font(pf(12.5)).foregroundColor(.white.opacity(0.6))
+                        .font(AppDesign.Type.caption).foregroundColor(.white.opacity(0.6))
 
                     if !myRoom.isEmpty {
                         roomCard
@@ -758,7 +758,7 @@ struct GameWebPage: View {
                                 Text(Tr("自己开一桌"))
                             }
                             .font(pf(15, .medium)).foregroundColor(.white)
-                            .frame(maxWidth: .infinity).frame(height: 44)
+                            .frame(maxWidth: .infinity).frame(height: AppDesign.Control.compactHeight)
                             .background(Capsule().fill(C.green))
                         }
                         .buttonStyle(.plain)
@@ -774,9 +774,9 @@ struct GameWebPage: View {
                         }
                     }
                     if !lobbyMsg.isEmpty {
-                        Text(lobbyMsg).font(pf(12.5)).foregroundColor(.white.opacity(0.7))
+                        Text(lobbyMsg).font(AppDesign.Type.caption).foregroundColor(.white.opacity(0.7))
                     }
-                    Spacer().frame(height: 20)
+                    Spacer().frame(height: AppDesign.Control.compactBadgeHeight)
                 }
                 .padding(16)
             }
@@ -845,7 +845,7 @@ struct GameWebPage: View {
             Button { startRoom() } label: {
                 Text(roomStarted ? Tr("开局啦") : Tr("开始（缺的人电脑顶上）"))
                     .font(pf(15, .medium)).foregroundColor(.white)
-                    .frame(maxWidth: .infinity).frame(height: 44)
+                    .frame(maxWidth: .infinity).frame(height: AppDesign.Control.compactHeight)
                     .background(Capsule().fill(C.green))
             }
             .buttonStyle(.plain)
@@ -1003,10 +1003,10 @@ struct GamesPageAdminSheet: View {
                             Button {
                                 if let i = picked.firstIndex(of: g.id) { picked.remove(at: i) } else { picked.append(g.id) }
                             } label: {
-                                Text(g.name).font(pf(12.5))
+                                Text(g.name).font(AppDesign.Type.caption)
                                     .foregroundColor(picked.contains(g.id) ? .white : C.label)
                                     .lineLimit(1)
-                                    .padding(.horizontal, 8).frame(height: 30)
+                                    .padding(.horizontal, 8).frame(height: AppDesign.Control.sectionHeaderHeight)
                                     .frame(maxWidth: .infinity)
                                     .background(Capsule().fill(picked.contains(g.id) ? C.green : C.cardBg))
                             }
@@ -1038,7 +1038,7 @@ struct GamesPageAdminSheet: View {
                             dismiss()
                         }
                     } label: {
-                        Text(busy ? Tr("保存中…") : Tr("保存")).font(pf(16, .semibold)).foregroundColor(.white)
+                        Text(busy ? Tr("保存中…") : Tr("保存")).font(AppDesign.Type.rowTitle).foregroundColor(.white)
                             .frame(maxWidth: .infinity).frame(height: 46)
                             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                                 .fill(C.green.opacity(busy ? 0.5 : 1)))

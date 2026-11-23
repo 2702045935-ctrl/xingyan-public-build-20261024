@@ -304,7 +304,7 @@ struct MomentFeedCard: View {
                     }
                     .foregroundColor(showingLiked ? Color(hex: 0xFF3B4D) : C.subLabel)
                     .padding(.horizontal, 8)
-                    .frame(height: 30)
+                    .frame(height: AppDesign.Control.sectionHeaderHeight)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -321,7 +321,7 @@ struct MomentFeedCard: View {
                     }
                     .foregroundColor(C.subLabel)
                     .padding(.horizontal, 8)
-                    .frame(height: 30)
+                    .frame(height: AppDesign.Control.sectionHeaderHeight)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -566,7 +566,7 @@ struct MomentLikesSheet: View {
                     }
                 }
                 .padding(.horizontal, 11)
-                .frame(height: 38)
+                .frame(height: AppDesign.Control.iconSmallHeight)
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                     .fill(Color.dyn(0xF1F1F4, 0x1C1C1E)))
                 .padding(.horizontal, 16)
@@ -658,7 +658,7 @@ struct MomentLikesSheet: View {
             Spacer(minLength: 8)
         }
         .padding(.horizontal, 18)
-        .frame(height: 60)
+        .frame(height: AppDesign.Control.profileRowHeight)
     }
 }
 

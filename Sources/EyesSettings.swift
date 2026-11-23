@@ -108,7 +108,7 @@ struct EyesSettingsView: View {
                     .padding(.top, 10)
 
                     Text(Tr("会话页顶栏那颗眼睛已经按你的要求去掉了（那台机器上顶栏会闪退）。\n现在这三档只管 AI 助手页里那颗眼睛：开启会眨眼会瞟、静态照样画但不跑动画、\n关闭就不画了。进 AI 助手：我 → 服务 → AI 助手。"))
-                        .font(pf(12.5))
+                        .font(AppDesign.Type.caption)
                         .foregroundColor(C.subLabel)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 22)
@@ -123,7 +123,7 @@ struct EyesSettingsView: View {
                                 .foregroundColor(C.subLabel)
                         }
                         .padding(.horizontal, 16)
-                        .frame(height: 50)
+                        .frame(height: AppDesign.Control.buttonHeight)
                     }
                     .padding(.top, 4)
 
@@ -134,17 +134,17 @@ struct EyesSettingsView: View {
                             Image(systemName: "sparkles")
                                 .font(.system(size: 16, weight: .medium))
                             Text(Tr("进入 AI 助手"))
-                                .font(pf(16, .medium))
+                                .font(AppDesign.Type.rowTitle)
                         }
                         .foregroundColor(.white)
-                        .frame(maxWidth: .infinity).frame(height: 48)
+                        .frame(maxWidth: .infinity).frame(height: AppDesign.Control.mediumControlHeight)
                         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.green))
                     }
                     .buttonStyle(.plain)
                     .padding(.horizontal, 16)
                     .padding(.top, 6)
 
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
                 .padding(.top, 6)
             }
@@ -183,8 +183,8 @@ struct EyesSettingsView: View {
         } label: {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(title).font(pf(16.5)).foregroundColor(C.label)
-                    Text(value + " · " + tag).font(pf(12.5)).foregroundColor(C.subLabel)
+                    Text(title).font(AppDesign.Type.listTitle).foregroundColor(C.label)
+                    Text(value + " · " + tag).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                 }
                 Spacer(minLength: 0)
                 if eyes.tier == id {

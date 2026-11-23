@@ -398,7 +398,7 @@ struct InAppBrowserView: View {
                 .font(pf(17, .semibold))
                 .foregroundColor(C.label)
             Text(loadError)
-                .font(pf(12.5))
+                .font(AppDesign.Type.caption)
                 .foregroundColor(C.subLabel)
                 .multilineTextAlignment(.center)
                 .lineLimit(3)
@@ -410,7 +410,7 @@ struct InAppBrowserView: View {
                 .buttonStyle(.plain)
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
-                .frame(height: 42)
+                .frame(height: AppDesign.Control.searchHeight)
                 .background(Capsule().fill(C.green))
 
                 if let currentURL {
@@ -420,7 +420,7 @@ struct InAppBrowserView: View {
                     .buttonStyle(.plain)
                     .foregroundColor(C.label)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 42)
+                    .frame(height: AppDesign.Control.searchHeight)
                     .background(Capsule().fill(C.cardBg))
                 }
             }
@@ -458,12 +458,12 @@ struct InAppBrowserView: View {
                 .buttonStyle(.plain)
             }
             Button(Tr("关闭")) { showAddress = false }
-                .font(pf(13.5, .medium))
+                .font(AppDesign.Type.bodyMedium)
                 .foregroundColor(.secondary)
                 .buttonStyle(.plain)
         }
         .padding(.horizontal, 13)
-        .frame(height: 42)
+        .frame(height: AppDesign.Control.searchHeight)
         .background(.ultraThinMaterial, in: Capsule(style: .continuous))
         .overlay(
             Capsule(style: .continuous)
@@ -494,11 +494,11 @@ struct InAppBrowserView: View {
                 showFind = false
                 findText = ""
             }
-            .font(pf(13, .medium))
+            .font(AppDesign.Type.compactButtonMedium)
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 13)
-        .frame(height: 42)
+        .frame(height: AppDesign.Control.searchHeight)
         .background(.regularMaterial, in: Capsule())
         .padding(.top, max(58, top + 56))
     }
@@ -532,7 +532,7 @@ struct InAppBrowserView: View {
                     Text(displayAddress)
                         .lineLimit(1)
                 }
-                .font(pf(12.5, .medium))
+                .font(AppDesign.Type.captionMedium)
                 .foregroundStyle(.primary)
                 .padding(.horizontal, 12)
                 .frame(maxWidth: 220)
@@ -565,7 +565,7 @@ struct InAppBrowserView: View {
         .font(.system(size: 17, weight: .semibold))
         .foregroundStyle(.primary)
         .padding(.horizontal, 18)
-        .frame(height: 56)
+        .frame(height: AppDesign.Control.menuRowHeight)
         .background(.regularMaterial, in: Capsule())
         .overlay {
             Capsule().stroke(
@@ -1081,7 +1081,7 @@ private struct BrowserStartPage: View {
                         .font(pf(15, .medium))
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 16)
-                        .frame(height: 48)
+                        .frame(height: AppDesign.Control.mediumControlHeight)
                         .background(
                             Color.primary.opacity(0.055),
                             in: Capsule()
@@ -1184,7 +1184,7 @@ private struct BrowserStartSection: View {
                             }
                             Spacer()
                         }
-                        .frame(height: 52)
+                        .frame(height: AppDesign.Control.largeControlHeight)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)

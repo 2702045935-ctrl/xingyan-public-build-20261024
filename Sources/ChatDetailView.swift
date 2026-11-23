@@ -681,7 +681,7 @@ private struct ChatCleanEdgeMask: View {
             .overlay(alignment: edge == .top ? .bottom : .top) {
                 Rectangle()
                     .fill(Color.black.opacity(0.045))
-                    .frame(height: 0.5)
+                    .frame(height: AppDesign.Control.hairline)
             }
             .allowsHitTesting(false)
     }
@@ -732,7 +732,7 @@ private struct ChatTopGlassBackdrop: View {
                             .fill(lightInk
                                   ? Color.white.opacity(0.07)
                                   : Color.black.opacity(0.05))
-                            .frame(height: 0.55)
+                            .frame(height: AppDesign.Control.hairline5)
                     }
                 }
                 .mask {
@@ -2092,7 +2092,7 @@ struct ChatDetailView: View {
                         exitSelectMode()
                     } label: {
                         Text(Tr("取消"))
-                            .font(pf(15.5))
+                            .font(AppDesign.Type.bodyLarge)
                             .foregroundColor(adaptiveTopInk)
                             .frame(width: 52, height: 36)
                     }
@@ -2156,7 +2156,7 @@ struct ChatDetailView: View {
             }
         }
         .padding(.horizontal, 8)
-        .frame(height: 36)
+        .frame(height: AppDesign.Control.floatingControlHeight)
     }
 
     private func chatSectionButton(_ title: String,
@@ -2168,7 +2168,7 @@ struct ChatDetailView: View {
                 .font(pf(13, active ? .semibold : .medium))
                 .foregroundColor(adaptiveTopInk.opacity(active ? 1 : (enabled ? 0.72 : 0.32)))
                 .frame(maxWidth: .infinity)
-                .frame(height: 36)
+                .frame(height: AppDesign.Control.floatingControlHeight)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -2786,7 +2786,7 @@ struct ChatDetailView: View {
                         .background(C.red.opacity(0.10), in: Circle())
                     VStack(alignment: .leading, spacing: 3) {
                         Text(Tr("该账号已被管理员封禁"))
-                            .font(pf(13.5, .semibold))
+                            .font(AppDesign.Type.bodyStrong)
                             .foregroundColor(C.label)
                         if !peerBanReason.isEmpty {
                             Text(Tr("原因：") + peerBanReason)
@@ -2810,7 +2810,7 @@ struct ChatDetailView: View {
                     }
                 }
                 .overlay(alignment: .bottom) {
-                    Rectangle().fill(C.red.opacity(0.16)).frame(height: 0.5)
+                    Rectangle().fill(C.red.opacity(0.16)).frame(height: AppDesign.Control.hairline)
                 }
             }
 
@@ -2821,18 +2821,18 @@ struct ChatDetailView: View {
                     HStack(spacing: 8) {
                         Circle().fill(C.green).frame(width: 7, height: 7)
                         Text(callBarText)
-                            .font(pf(13.5))
+                            .font(AppDesign.Type.body)
                             .foregroundColor(C.green)
                         Spacer(minLength: 0)
                         Text(Tr("回到通话 ›"))
-                            .font(pf(13.5))
+                            .font(AppDesign.Type.body)
                             .foregroundColor(C.green.opacity(0.9))
                     }
                     .padding(.horizontal, 14)
                     .frame(height: 34)
                     .background(.regularMaterial)
                     .overlay(alignment: .bottom) {
-                        Rectangle().fill(C.green.opacity(0.18)).frame(height: 0.5)
+                        Rectangle().fill(C.green.opacity(0.18)).frame(height: AppDesign.Control.hairline)
                     }
                     .contentShape(Rectangle())
                 }
@@ -4735,7 +4735,7 @@ struct ChatDetailView: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(failure.title)
-                    .font(pf(12.5, .semibold))
+                    .font(AppDesign.Type.captionStrong)
                     .foregroundStyle(failure.tint)
                 Text(failure.detail)
                     .font(pf(11))
@@ -4981,7 +4981,7 @@ struct ChatDetailView: View {
                 .padding(.bottom, 7)
         } else {
             Text(TimeFmt.bubble(message.createdAt))
-                .font(pf(12, .medium))
+                .font(AppDesign.Type.sectionMedium)
                 .foregroundColor(adaptiveSystemSecondaryInk)
                 .padding(.horizontal, L.o("chatTimePadX", 9))
                 .padding(.vertical, L.o("chatTimePadY", 4))
@@ -5334,7 +5334,7 @@ struct ChatDetailView: View {
                     .frame(minWidth: 20, minHeight: 20)
                     .background(
                         Capsule(style: .continuous)
-                            .fill(Color(hex: 0x25D366))
+                            .fill(AppPalette.whatsApp)
                     )
                     .overlay(
                         Capsule(style: .continuous)
@@ -5441,7 +5441,7 @@ struct ChatDetailView: View {
                         : Color.clear,
                         radius: 1.2, x: 0, y: 0.8)
                 .frame(maxWidth: .infinity)
-                .frame(height: 42)
+                .frame(height: AppDesign.Control.searchHeight)
                 .contentShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
         }
         .frame(maxWidth: .infinity)
@@ -5513,7 +5513,7 @@ struct ChatDetailView: View {
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(Tr("自助工具"))
-                        .font(pf(13.5, .semibold))
+                        .font(AppDesign.Type.bodyStrong)
                         .foregroundColor(C.label)
                     Text(Tr("改密码 · 登录设备 · 找回 · 安全"))
                         .font(pf(10))
@@ -5648,7 +5648,7 @@ struct ChatDetailView: View {
                 Text(peerBanReason.isEmpty
                      ? Tr("暂时无法发送消息")
                      : Tr("原因：") + peerBanReason)
-                    .font(pf(12.5))
+                    .font(AppDesign.Type.caption)
                     .foregroundColor(C.subLabel)
             }
             Spacer(minLength: 0)
@@ -5683,7 +5683,7 @@ struct ChatDetailView: View {
                         .font(pf(14.5, .semibold))
                         .foregroundColor(C.label)
                     Text(Tr("你将不再收到对方的消息。点按这里移出黑名单。"))
-                        .font(pf(12.5))
+                        .font(AppDesign.Type.caption)
                         .foregroundColor(C.subLabel)
                         .multilineTextAlignment(.leading)
                 }
@@ -5706,7 +5706,7 @@ struct ChatDetailView: View {
     private var verifyComposer: some View {
         VStack(spacing: 10) {
             Text(Tr("你们还不是朋友。发送朋友验证申请，对方通过后可以继续聊天。"))
-                .font(pf(13.5))
+                .font(AppDesign.Type.body)
                 .foregroundColor(C.subLabel)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 24)
@@ -5716,7 +5716,7 @@ struct ChatDetailView: View {
                     .font(pf(15, .medium))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 42)
+                    .frame(height: AppDesign.Control.searchHeight)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.green))
             }
             .buttonStyle(.plain)
@@ -5889,7 +5889,7 @@ struct ChatDetailView: View {
                             .font(pf(11.5))
                             .foregroundColor(adaptiveMicInk)
                         Text(quoteComposerSummary(q))
-                            .font(pf(12.5))
+                            .font(AppDesign.Type.caption)
                             .foregroundColor(composerUsesLightInk
                                              ? Color.white.opacity(0.84)
                                              : Color(hex: 0x4B5055))
@@ -5923,7 +5923,7 @@ struct ChatDetailView: View {
                         .font(.system(size: 13.5, weight: .medium))
                         .foregroundColor(C.green)
                     Text(Tr("重新编辑"))
-                        .font(pf(13.5))
+                        .font(AppDesign.Type.body)
                         .foregroundColor(C.label)
                     Spacer(minLength: 0)
                     Button { reEditDraft = nil } label: {
@@ -5937,7 +5937,7 @@ struct ChatDetailView: View {
                 }
                 .padding(.leading, 12)
                 .padding(.trailing, 6)
-                .frame(height: 36)
+                .frame(height: AppDesign.Control.floatingControlHeight)
                 .background(ChatTheme.panel)
                 .contentShape(Rectangle())
                 .onTapGesture {
@@ -6095,7 +6095,7 @@ struct ChatDetailView: View {
                                     Text(recorder.willCancel
                                          ? Tr("上滑取消")
                                          : (recorder.willTranscribe ? Tr("松手转文字") : Tr("松手发送")))
-                                        .font(pf(12.5, .semibold))
+                                        .font(AppDesign.Type.captionStrong)
                                         .foregroundStyle(recorder.willCancel ? C.red : OrbitTheme.jadeDeep)
                                         .padding(.horizontal, 9)
                                         .frame(height: 26)
@@ -6117,7 +6117,7 @@ struct ChatDetailView: View {
                                     .frame(width: 28, height: 28)
 
                                     Text(voiceStarting ? Tr("正在开始录音…") : Tr("按住 说话"))
-                                        .font(pf(15.5, .medium))
+                                        .font(AppDesign.Type.rowTitleMedium)
                                         .foregroundColor(composerTextInk)
                                 }
                             }
@@ -6211,7 +6211,7 @@ struct ChatDetailView: View {
                                 .monospacedDigit()
                             Spacer(minLength: 0)
                             Text(recorder.willCancel ? Tr("松手取消") : Tr("松手发送"))
-                                .font(pf(12.5, .medium))
+                                .font(AppDesign.Type.captionMedium)
                                 .foregroundStyle(recorder.willCancel ? C.red : OrbitTheme.jadeDeep)
                         }
                         .padding(.horizontal, 12)
@@ -8474,10 +8474,10 @@ struct SystemLine: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(promptTitle)
-                    .font(pf(12.5, .semibold))
+                    .font(AppDesign.Type.captionStrong)
                     .foregroundStyle(promptTint)
                 displayText
-                    .font(pf(12.5))
+                    .font(AppDesign.Type.caption)
                     .multilineTextAlignment(.leading)
                     .lineLimit(nil)
                     .fixedSize(horizontal: false, vertical: true)
@@ -9712,7 +9712,7 @@ struct MessageRow: View {
 
             Rectangle()
                 .fill(Color.white.opacity(0.22))
-                .frame(height: 0.5)
+                .frame(height: AppDesign.Control.hairline)
 
             HStack(spacing: 5) {
                 Image(systemName: "arrow.left.arrow.right")
@@ -9728,7 +9728,7 @@ struct MessageRow: View {
                     .lineLimit(1)
             }
             .padding(.horizontal, 11)
-            .frame(height: 28)
+            .frame(height: AppDesign.Control.statusHeight)
         }
 
         .frame(width: min(maxBubbleWidth, UIConfig.num("transferCardW", 240)),
@@ -10527,7 +10527,7 @@ struct FilePreviewSheet: View {
         case "ppt", "pptx", "key": return Color(hex: 0xF59E0B)
         case "zip", "rar", "7z": return Color(hex: 0x8B5CF6)
         case "txt", "md", "rtf": return Color(hex: 0x6B7280)
-        default: return Color(hex: 0x0A84FF)
+        default: return AppPalette.appleBlue
         }
     }
 
@@ -10646,7 +10646,7 @@ struct FilePreviewSheet: View {
 
             VStack(alignment: .leading, spacing: 5) {
                 Text(displayName)
-                    .font(pf(15.5, .semibold))
+                    .font(AppDesign.Type.rowTitle)
                     .foregroundStyle(C.label)
                     .lineLimit(2)
                 HStack(spacing: 7) {
@@ -10697,7 +10697,7 @@ struct FilePreviewSheet: View {
                 }
                 .foregroundColor(C.green)
                 .frame(maxWidth: .infinity)
-                .frame(height: 50)
+                .frame(height: AppDesign.Control.buttonHeight)
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                     .fill(Color.primary.opacity(0.045)))
             }
@@ -10713,7 +10713,7 @@ struct FilePreviewSheet: View {
                 }
                 .foregroundColor(C.label)
                 .frame(maxWidth: .infinity)
-                .frame(height: 50)
+                .frame(height: AppDesign.Control.buttonHeight)
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                     .fill(Color.primary.opacity(0.045)))
             }
@@ -10728,7 +10728,7 @@ struct FilePreviewSheet: View {
                 }
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
-                .frame(height: 50)
+                .frame(height: AppDesign.Control.buttonHeight)
                 .background(
                     LinearGradient(
                         colors: [Color(hex: 0x4EDC7C), C.green],

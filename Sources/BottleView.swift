@@ -36,7 +36,7 @@ struct BottlePageView: View {
                     Text(picked == nil
                          ? (emptyNote.isEmpty ? Tr("海里漂着 ") + String(total) + Tr(" 个瓶子") : emptyNote)
                          : Tr("捞到一个瓶子"))
-                        .font(pf(13.5, .medium))
+                        .font(AppDesign.Type.bodyMedium)
                         .foregroundColor(.white.opacity(0.95))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 30)
@@ -56,7 +56,7 @@ struct BottlePageView: View {
                                         .foregroundColor(.white.opacity(0.9)))
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text((b.fromName ?? "").isEmpty ? Tr("一个陌生人") : (b.fromName ?? ""))
-                                        .font(pf(13.5, .medium)).foregroundColor(C.label)
+                                        .font(AppDesign.Type.bodyMedium).foregroundColor(C.label)
                                     Text(shortTime(b.at ?? ""))
                                         .font(pf(11.5)).foregroundColor(C.subLabel)
                                 }
@@ -66,7 +66,7 @@ struct BottlePageView: View {
                                     .foregroundColor(C.subLabel.opacity(0.7))
                             }
                             Text(b.text)
-                                .font(pf(16.5))
+                                .font(AppDesign.Type.listTitle)
                                 .foregroundColor(C.label)
                                 .lineSpacing(4)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -91,8 +91,8 @@ struct BottlePageView: View {
                                 Image(systemName: "paperplane.fill").font(.system(size: 14, weight: .semibold))
                                 Text(Tr("扔一个"))
                             }
-                            .font(pf(16, .medium)).foregroundColor(.white)
-                            .frame(maxWidth: .infinity).frame(height: 50)
+                            .font(AppDesign.Type.rowTitle).foregroundColor(.white)
+                            .frame(maxWidth: .infinity).frame(height: AppDesign.Control.buttonHeight)
                             .background(Capsule().fill(.ultraThinMaterial))
                             .overlay(Capsule().stroke(Color.white.opacity(0.34), lineWidth: 0.9))
                         }
@@ -107,8 +107,8 @@ struct BottlePageView: View {
                                 }
                                 Text(picking ? Tr("正在捞…") : Tr("捞一个"))
                             }
-                            .font(pf(16, .semibold)).foregroundColor(.white)
-                            .frame(maxWidth: .infinity).frame(height: 50)
+                            .font(AppDesign.Type.rowTitle).foregroundColor(.white)
+                            .frame(maxWidth: .infinity).frame(height: AppDesign.Control.buttonHeight)
                             .background(Capsule().fill(LinearGradient(colors: [Color(hex: 0x45BEFF),
                                                                                Color(hex: 0x1B63D6)],
                                                                       startPoint: .top, endPoint: .bottom)))
@@ -397,8 +397,8 @@ struct ThrowBottleSheet: View {
                     }
                 } label: {
                     Text(busy ? Tr("发送中…") : Tr("扔出去"))
-                        .font(pf(16, .medium)).foregroundColor(C.green)
-                        .frame(height: 32).padding(.horizontal, 12)
+                        .font(AppDesign.Type.rowTitle).foregroundColor(C.green)
+                        .frame(height: AppDesign.Control.smallButtonHeight).padding(.horizontal, 12)
                 }
                 .buttonStyle(.plain)
                 .disabled(busy || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)

@@ -22,7 +22,7 @@ enum VoiceOrbMode: Int {
                     Color(hex: 0x91EE75), Color(hex: 0x54DDFF)]
         case .cancelling:
             return [Color(hex: 0xFF4A3C), Color(hex: 0xFF6A3C),
-                    Color(hex: 0xFF6B6B), Color(hex: 0xFFB03C)]
+                    AppPalette.dangerSoft, Color(hex: 0xFFB03C)]
         case .thinking:
             return [Color(hex: 0x3C72FF), Color(hex: 0x726CFF),
                     Color(hex: 0xC56DFF), Color(hex: 0x45D8FF)]
@@ -365,7 +365,7 @@ struct VoiceHUD: View {
                             : (willTranscribe ? Color(hex: 0x2BD07A) : Color(hex: 0x3B7CFF))
         let c2 = willCancel ? Color(hex: 0xFF6A3C)
                             : (willTranscribe ? Color(hex: 0x3FD9C0) : Color(hex: 0x8A5BFF))
-        let c3 = willCancel ? Color(hex: 0xFF6B6B)
+        let c3 = willCancel ? AppPalette.dangerSoft
                             : (willTranscribe ? Color(hex: 0x7CF0B0) : Color(hex: 0xFF5AA8))
         let c4 = willCancel ? Color(hex: 0xFFB03C)
                             : (willTranscribe ? Color(hex: 0xB7F06A) : Color(hex: 0x3AD6FF))

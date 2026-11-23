@@ -53,7 +53,7 @@ let stickerEffectSource = "星言 Effect"
 
 struct StickerFace: Equatable {
 
-    var box: CGRect = CGRect(x: 0.25, y: 0.16, width: 0.5, height: 0.5)
+    var box: CGRect = CGRect(x: 0.25, y: 0.16, width: 0.5, height: AppDesign.Control.hairline)
 
     var leftEye: CGPoint = CGPoint(x: 0.40, y: 0.37)
 
@@ -470,7 +470,7 @@ struct StickerCamera: View {
                     .buttonStyle(.plain)
                     Spacer()
                     Text(Tr("拍摄表情"))
-                        .font(pf(16, .medium))
+                        .font(AppDesign.Type.rowTitle)
                         .foregroundColor(.white)
                     Spacer()
                     Color.clear.frame(width: 34, height: 34)
@@ -480,7 +480,7 @@ struct StickerCamera: View {
 
                 if shot == nil {
                     Text(Tr("表情将会上传保存，在其他设备也可查看"))
-                        .font(pf(12.5))
+                        .font(AppDesign.Type.caption)
                         .foregroundColor(.white.opacity(0.62))
                         .padding(.top, 6)
                 }
@@ -498,7 +498,7 @@ struct StickerCamera: View {
                                 .font(.system(size: 24))
                                 .foregroundColor(.white.opacity(0.7))
                             Text(Tr("打不开相机，去系统设置里给星言开一下相机权限"))
-                                .font(pf(12.5))
+                                .font(AppDesign.Type.caption)
                                 .foregroundColor(.white.opacity(0.8))
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal, 18)
@@ -525,7 +525,7 @@ struct StickerCamera: View {
                                 .font(pf(15, .medium))
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
-                                .frame(height: 44)
+                                .frame(height: AppDesign.Control.compactHeight)
                                 .background(Capsule().fill(Color.white.opacity(0.18)))
                         }
                         .buttonStyle(.plain)
@@ -538,7 +538,7 @@ struct StickerCamera: View {
                                 .font(pf(15, .semibold))
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
-                                .frame(height: 44)
+                                .frame(height: AppDesign.Control.compactHeight)
                                 .background(Capsule().fill(C.green))
                         }
                         .buttonStyle(.plain)

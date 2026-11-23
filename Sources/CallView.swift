@@ -31,7 +31,7 @@ struct CallDialogOverlay: View {
                 VStack(spacing: 0) {
                     VStack(spacing: 6) {
                         Text(d.title)
-                            .font(pf(16, .medium))
+                            .font(AppDesign.Type.rowTitle)
                             .foregroundColor(C.chatTimeInk)
                             .multilineTextAlignment(.center)
                         if !d.detail.isEmpty {
@@ -47,13 +47,13 @@ struct CallDialogOverlay: View {
 
                     Rectangle()
                         .fill(C.chatTimeInk.opacity(0.18))
-                        .frame(height: 0.5)
+                        .frame(height: AppDesign.Control.hairline)
 
                     Button {
                         call.dismissDialog()
                     } label: {
                         Text(d.okText)
-                            .font(pf(16, .medium))
+                            .font(AppDesign.Type.rowTitle)
                             .foregroundColor(C.chatTimeInk)
                             .frame(maxWidth: .infinity)
                             .frame(height: 46)
@@ -230,7 +230,7 @@ struct CallView: View {
         } label: {
             HStack(spacing: 7) {
                 Image(systemName: "message.fill").font(.system(size: 12, weight: .semibold))
-                Text(b.name).font(pf(13, .medium)).lineLimit(1)
+                Text(b.name).font(AppDesign.Type.compactButtonMedium).lineLimit(1)
                 Text(b.text).font(pf(13)).lineLimit(1).foregroundColor(.white.opacity(0.82))
                 Spacer(minLength: 0)
             }
@@ -444,7 +444,7 @@ struct CallView: View {
                             }
                         }
                         Text(m.name.isEmpty ? Tr("成员") : m.name)
-                            .font(pf(12.5))
+                            .font(AppDesign.Type.caption)
                             .foregroundColor(.white.opacity(0.85))
                             .lineLimit(1)
                     }
@@ -452,7 +452,7 @@ struct CallView: View {
             }
             .padding(.horizontal, 34)
             Text("\(call.roster.count) " + Tr("人在通话中"))
-                .font(pf(12.5))
+                .font(AppDesign.Type.caption)
                 .foregroundColor(.white.opacity(0.6))
         }
     }
@@ -505,8 +505,8 @@ struct CallView: View {
             if call.phase == .incoming {
                 VStack(spacing: 16) {
                     HStack(spacing: 51) {
-                        roundKey(label: "拒绝", bg: Color(hex: 0xFA5151)) { call.reject() }
-                        roundKey(label: "接听", bg: Color(hex: 0x19A47A), ink: .white,
+                        roundKey(label: "拒绝", bg: AppPalette.danger) { call.reject() }
+                        roundKey(label: "接听", bg: AppPalette.success, ink: .white,
                                  action: {
                                      if call.isGroupCall { call.acceptGroupCall() } else { call.accept() }
                                  }) {
@@ -569,7 +569,7 @@ struct CallView: View {
                                 .font(pf(14))
                                 .foregroundColor(.white.opacity(0.9))
                                 .padding(.horizontal, 16)
-                                .frame(height: 32)
+                                .frame(height: AppDesign.Control.smallButtonHeight)
                                 .background(Capsule().fill(Color.white.opacity(call.blurBackground ? 0.34 : 0.16)))
                         }
                         .buttonStyle(.plain)
@@ -609,7 +609,7 @@ struct CallView: View {
             .font(pf(14))
             .foregroundColor(.white.opacity(0.9))
             .padding(.horizontal, 16)
-            .frame(height: 32)
+            .frame(height: AppDesign.Control.smallButtonHeight)
             .background(Capsule().fill(Color.white.opacity(0.16)))
     }
 
@@ -674,7 +674,7 @@ struct CallView: View {
 
     private var hangupKey: some View {
         roundKey(label: call.phase == .active ? "挂断" : "取消",
-                 bg: Color(hex: 0xFA5151)) { call.hangup() }
+                 bg: AppPalette.danger) { call.hangup() }
     }
 
     private var flipKey: some View {
@@ -772,7 +772,7 @@ struct CallView: View {
             Button {
                 call.restore()
             } label: {
-                Text(Tr("回到通话")).font(pfExact(14)).foregroundColor(Color(hex: 0x19A47A))
+                Text(Tr("回到通话")).font(pfExact(14)).foregroundColor(AppPalette.success)
             }
             .buttonStyle(.plain)
             Button {
@@ -784,7 +784,7 @@ struct CallView: View {
             .padding(.leading, 8)
         }
         .padding(.horizontal, 14)
-        .frame(height: 42)
+        .frame(height: AppDesign.Control.searchHeight)
         .background(Capsule().fill(Color.black.opacity(0.72)))
         .overlay(Capsule().stroke(Color.white.opacity(0.12), lineWidth: 0.5))
         .padding(.horizontal, 12)
@@ -812,7 +812,7 @@ struct CallView: View {
                         Text(call.isGroupCall
                              ? Tr("这个群里没有可以再拉的人了（要么已经在通话里，要么只有你自己）。想拉别人先把人加进群。")
                              : Tr("还没有好友可以邀请"))
-                            .font(pf(13.5)).foregroundColor(C.subLabel)
+                            .font(AppDesign.Type.body).foregroundColor(C.subLabel)
                     }
                     ForEach(inviteList) { u in
                         Button {
@@ -924,7 +924,7 @@ struct CallMiniWindow: View {
                         Spacer(minLength: 0)
                     }
                     .padding(.horizontal, 10)
-                    .background(Color(hex: 0x19A47A))
+                    .background(AppPalette.success)
                 }
             }
             .frame(width: w, height: h)

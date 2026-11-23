@@ -234,7 +234,7 @@ struct KefuPage: View {
                                 .foregroundStyle(.primary)
                                 .lineLimit(1)
                                 .padding(.horizontal, 12)
-                                .frame(height: 30)
+                                .frame(height: AppDesign.Control.sectionHeaderHeight)
                                 .background(Color(uiColor: .secondarySystemGroupedBackground),
                                             in: Capsule())
                                 .overlay {
@@ -266,7 +266,7 @@ struct KefuPage: View {
                     .font(pf(15, .medium))
                     .foregroundColor(.white)
                     .padding(.horizontal, 16)
-                    .frame(height: 36)
+                    .frame(height: AppDesign.Control.floatingControlHeight)
                     .background(Capsule().fill(input.trimmingCharacters(in: .whitespaces).isEmpty ? C.subLabel : C.green))
             }
             .buttonStyle(.plain)

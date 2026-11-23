@@ -35,9 +35,9 @@ check(
     "the first world frame must render before the network catalog returns",
 )
 check(
-    "private struct WorldTopIconPressStyle" in DISCOVER
+    "private struct WorldTopIconPressStyle" not in DISCOVER
     and "systemTextFont(17, .semibold, relativeTo: .headline)" in DISCOVER
-    and "buttonStyle(WorldTopIconPressStyle())" in DISCOVER
+    and "buttonStyle(AppIconPressStyle())" in DISCOVER
     and "buttonStyle(MenuPressStyle())" in DISCOVER,
     "the world page must use native centered hierarchy and restrained press feedback",
 )

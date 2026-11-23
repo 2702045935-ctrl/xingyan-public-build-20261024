@@ -11,22 +11,18 @@ private enum ChatListVisual {
     static let avatarGap: CGFloat = 13
     static let dividerLeading: CGFloat = 77
 
-    static let ink = Color.dyn(0x1A1A1A, 0xF2F4F6)
-    static let previewInk = Color.dyn(0x8A8A8A, 0x8F969E)
-    static let conversationPreviewInk = Color.dyn(0x999999, 0x8F969E)
-    static let previewAccentInk = Color.dyn(0xFA5151, 0xFA5151)
-    static let timeInk = Color.dyn(0xB2B2B2, 0x6F767E)
-    static let rule = Color(UIColor { trait in
-        // WeChat measures 48,48,48 on its 25,25,25 canvas. Our canvas is
-        // 10,10,10, so the same perceived weight needs a darker separator.
-        trait.userInterfaceStyle == .dark
-            ? UIColor(hex: 0x2A2D33)
-            : UIColor(hex: 0xE9EDEF)
-    })
-    static let badgeRing = Color.dyn(0xFFFFFF, 0x121317)
-    static let chipInk = Color.dyn(0x62636A, 0xA8A9AF)
-    static let selectedChipFill = Color.dyn(0x161823, 0xF1F1F3)
-    static let selectedChipInk = Color.dyn(0xFFFFFF, 0x17171A)
+    static let ink = AppPalette.title
+    static let previewInk = AppPalette.preview
+    static let conversationPreviewInk = AppPalette.conversationPreview
+    static let previewAccentInk = AppPalette.previewAccent
+    static let timeInk = AppPalette.time
+    // WeChat measures 48,48,48 on its 25,25,25 canvas. Our canvas is
+    // 10,10,10, so the same perceived weight needs a darker separator.
+    static let rule = Color(AppPalette.dividerUI)
+    static let badgeRing = AppPalette.badgeRing
+    static let chipInk = AppPalette.chipInk
+    static let selectedChipFill = AppPalette.selectedChipFill
+    static let selectedChipInk = AppPalette.selectedChipInk
 }
 
 private struct XingyanMainStarTitle: View {
@@ -37,7 +33,7 @@ private struct XingyanMainStarTitle: View {
             Circle()
                 .fill(
                     LinearGradient(
-                        colors: [Color(hex: 0x188BFF), Color(hex: 0x325DFF)],
+                        colors: [OrbitTheme.blue, AppPalette.blueDeep],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
@@ -56,7 +52,7 @@ private struct XingyanMainStarTitle: View {
                 .stroke(Color.white.opacity(0.20), lineWidth: 0.8)
         }
         .frame(width: size, height: size)
-        .shadow(color: Color(hex: 0x286DFF).opacity(0.22),
+        .shadow(color: AppPalette.blueShadow.opacity(0.22),
                 radius: 5, y: 2)
     }
 }
@@ -250,7 +246,7 @@ private struct OfficialRowAdminEditor: View {
 private struct XingyanPresenceDot: View {
     var body: some View {
         Circle()
-            .fill(Color(hex: 0x4FD229))
+            .fill(AppPalette.online)
             .frame(width: 14, height: 14)
             .accessibilityHidden(true)
     }
@@ -782,11 +778,11 @@ struct SwipeChatRow: View {
     }
 
     private var blueBg: Color {
-        UIConfig.colorIfSet("swipeUnread") ?? Color(hex: 0x28986C)
+        UIConfig.colorIfSet("swipeUnread") ?? AppPalette.unreadAction
     }
 
     private var yellowBg: Color {
-        UIConfig.colorIfSet("swipeHide") ?? Color(hex: 0x7B8087)
+        UIConfig.colorIfSet("swipeHide") ?? AppPalette.mutedAction
     }
 
     private var redBg: Color {
@@ -794,7 +790,7 @@ struct SwipeChatRow: View {
     }
 
     private var pinBg: Color {
-        UIConfig.colorIfSet("swipePin") ?? Color(hex: 0x0A84FF)
+        UIConfig.colorIfSet("swipePin") ?? AppPalette.pinAction
     }
 
     @State private var crossedOpen = false
@@ -825,7 +821,7 @@ struct SwipeChatRow: View {
     }
     private var rowBg: Color {
         if cardStyle { return .clear }
-        if isDark { return Color(hex: 0x121317) }
+        if isDark { return AppPalette.rowDark }
         return UIConfig.colorIfSet("chatsRowBg")
             ?? UIConfig.colorIfSet("chatRowBg")
             ?? .white
@@ -886,7 +882,7 @@ struct SwipeChatRow: View {
                 .overlay(alignment: .bottom) {
                     Rectangle()
                         .fill(ChatListVisual.rule)
-                        .frame(height: 0.5)
+                        .frame(height: AppDesign.Control.hairline)
                         .padding(.leading, ChatListVisual.dividerLeading)
                 }
                 .offset(x: offset)
@@ -1119,48 +1115,6 @@ private struct RowSwipeActionButtonStyle: ButtonStyle {
     }
 }
 
-private struct ChatChromeIconPressStyle: ButtonStyle {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .background {
-                Circle()
-                    .fill(Color.primary.opacity(configuration.isPressed ? 0.06 : 0))
-            }
-            .scaleEffect(configuration.isPressed ? 0.94 : 1)
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.10),
-                       value: configuration.isPressed)
-    }
-}
-
-private struct ChatFilterChipPressStyle: ButtonStyle {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .opacity(configuration.isPressed ? 0.82 : 1)
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.09),
-                       value: configuration.isPressed)
-    }
-}
-
-private struct ChatSearchPressStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .overlay {
-                RoundedRectangle(
-                    cornerRadius: AppDesign.Radius.small,
-                    style: .continuous
-                )
-                    .fill(Color.primary.opacity(configuration.isPressed ? 0.055 : 0))
-                    .allowsHitTesting(false)
-            }
-            .animation(.easeOut(duration: 0.09), value: configuration.isPressed)
-    }
-}
-
 private struct NativeChatEntry: Identifiable, Equatable {
     enum Kind: Equatable {
         case top
@@ -1243,22 +1197,16 @@ struct ChatsView: View {
     private var chatsPageFill: Color {
         // WhatsApp's current dark canvas and native row share one near-black
         // surface. Search and cards keep their raised tone.
-        chatsIsDark ? Color(hex: 0x0E0F12) : C.chatsPageBg
+        chatsIsDark ? AppPalette.canvasDark : C.chatsPageBg
     }
     private var chatsRule: Color {
         ChatListVisual.rule
     }
-    private var chatsSearchFill: Color {
-        chatsIsDark
-            ? Color(hex: 0x1D2026)
-            : Color(hex: 0xF0F2F5)
-    }
+    private var chatsSearchFill: Color { AppPalette.searchFill }
     private var chatsSearchBorder: Color {
         chatsIsDark ? Color.white.opacity(0.045) : Color.clear
     }
-    private var chatsSearchInk: Color {
-        chatsIsDark ? Color(hex: 0x6E7378) : Color(hex: 0x8A8A8A)
-    }
+    private var chatsSearchInk: Color { AppPalette.tertiary }
     private var chatsCardFill: Color { chatsPageFill }
 
     @State private var scrolled: CGFloat = 0
@@ -1593,7 +1541,7 @@ struct ChatsView: View {
                             }
                             .contentShape(Capsule())
                         }
-                        .buttonStyle(ChatFilterChipPressStyle())
+                        .buttonStyle(AppSegmentPressStyle())
                     }
                 }
                 .padding(.horizontal, 8)
@@ -1699,7 +1647,7 @@ struct ChatsView: View {
                         )
                         .frame(width: 44, height: 44)
                 }
-                .buttonStyle(ChatChromeIconPressStyle())
+                .buttonStyle(AppIconPressStyle())
                 .accessibilityLabel(Tr("切换账号"))
 
                 if app.offline {
@@ -1729,7 +1677,7 @@ struct ChatsView: View {
                         JarvisEyesAvatar(size: 26, tint: eyesTint)
                             .frame(width: 34, height: 34)
                     }
-                    .buttonStyle(ChatChromeIconPressStyle())
+                    .buttonStyle(AppIconPressStyle())
                 }
 
                 Button {
@@ -1743,7 +1691,7 @@ struct ChatsView: View {
                         .frame(width: 40, height: 40)
                         .contentShape(Rectangle())
                 }
-                .buttonStyle(NavPlusPressStyle())
+                .buttonStyle(AppIconPressStyle())
                 .accessibilityLabel(Tr("更多"))
             }
         }
@@ -1780,16 +1728,16 @@ struct ChatsView: View {
             }
             .foregroundStyle(chatsSearchInk)
             .frame(maxWidth: .infinity)
-            .frame(height: 36)
+            .frame(height: AppDesign.Control.searchHeight)
             .background {
                 RoundedRectangle(
-                    cornerRadius: AppDesign.Radius.small,
+                    cornerRadius: AppDesign.Radius.control,
                     style: .continuous
                 )
                     .fill(chatsSearchFill)
                     .overlay {
                         RoundedRectangle(
-                            cornerRadius: AppDesign.Radius.small,
+                            cornerRadius: AppDesign.Radius.control,
                             style: .continuous
                         )
                             .stroke(chatsSearchBorder, lineWidth: 0.5)
@@ -1797,7 +1745,7 @@ struct ChatsView: View {
             }
             .contentShape(Rectangle())
         }
-        .buttonStyle(ChatSearchPressStyle())
+        .buttonStyle(AppPressStyle())
         .accessibilityLabel(Tr("搜索"))
         .padding(.horizontal, 16)
         .frame(maxWidth: chatsContentMaxWidth)
@@ -1896,7 +1844,7 @@ struct ChatsView: View {
                     Text(floorGreeting).font(pf(17, .medium)).foregroundColor(look.ink)
                     HStack(spacing: 4) {
                         Image(systemName: look.icon).font(.system(size: 11.5, weight: .semibold))
-                        Text(floorWeatherLine(look)).font(pf(12.5))
+                        Text(floorWeatherLine(look)).font(AppDesign.Type.caption)
                     }
                     .foregroundColor(look.inkSoft)
                 }
@@ -1908,7 +1856,7 @@ struct ChatsView: View {
                         Image(systemName: "chevron.down").font(.system(size: 9, weight: .bold))
                     }
                     .foregroundColor(look.ink)
-                    .padding(.horizontal, 11).frame(height: 30)
+                    .padding(.horizontal, 11).frame(height: AppDesign.Control.sectionHeaderHeight)
                     .background(Capsule().fill(look.cardFill))
                     .overlay(Capsule().stroke(look.cardStroke, lineWidth: 0.6))
                     .contentShape(Rectangle())
@@ -1928,7 +1876,7 @@ struct ChatsView: View {
             }
             .foregroundColor(look.inkSoft)
             .padding(.horizontal, 10)
-            .frame(height: 38)
+            .frame(height: AppDesign.Control.iconSmallHeight)
             .background(RoundedRectangle(
                 cornerRadius: AppDesign.Radius.compact,
                 style: .continuous
@@ -2072,11 +2020,11 @@ struct ChatsView: View {
         }
         return VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 0) {
-                Text(title).font(pf(12.5)).foregroundColor(look.inkSoft)
+                Text(title).font(AppDesign.Type.caption).foregroundColor(look.inkSoft)
                 Spacer(minLength: 0)
                 if more {
                     Text(Tr("更多") + " ›")
-                        .font(pf(12.5))
+                        .font(AppDesign.Type.caption)
                         .foregroundColor(look.inkSoft)
                         .contentShape(Rectangle())
                         .onTapGesture { path.append("miniapps") }
@@ -2112,7 +2060,7 @@ struct ChatsView: View {
                         cornerRadius: AppDesign.Radius.compact,
                         style: .continuous
                     )
-                        .fill(LinearGradient(colors: [Color(hex: 0x2B2F3A), Color(hex: 0x171B22)],
+                        .fill(LinearGradient(colors: [AppPalette.tileStart, AppPalette.tileEnd],
                                              startPoint: .topLeading, endPoint: .bottomTrailing))
                     Text(mini.iconText).font(pfStyled(size: 24))
                     if let cv = mini.cover, !cv.isEmpty {
@@ -2278,7 +2226,7 @@ struct ChatsView: View {
                     if officialRowAvatar.isEmpty {
                         ZStack {
                             Circle()
-                                .fill(Color(hex: 0x25D366))
+                                .fill(AppPalette.whatsApp)
                             Image(systemName: "checkmark.seal.fill")
                                 .font(.system(size: ChatListVisual.avatarSize * 0.42, weight: .semibold))
                                 .foregroundStyle(.white)
@@ -2323,7 +2271,7 @@ struct ChatsView: View {
                 .overlay(alignment: .bottom) {
                     Rectangle()
                         .fill(chatsRule)
-                        .frame(height: 0.5)
+                        .frame(height: AppDesign.Control.hairline)
                         .padding(.leading, ChatListVisual.dividerLeading)
                 }
             }
@@ -2435,7 +2383,7 @@ struct ChatsView: View {
                 .overlay(alignment: .bottom) {
                     Rectangle()
                         .fill(chatsRule)
-                        .frame(height: 0.5)
+                        .frame(height: AppDesign.Control.hairline)
                         .padding(.leading, ChatListVisual.dividerLeading)
                 }
             }
@@ -2479,12 +2427,12 @@ struct ChatsView: View {
                         Image(systemName: "cloud.sun.fill")
                             .font(.system(size: ChatListVisual.avatarSize * 0.42, weight: .semibold))
                             .symbolRenderingMode(.palette)
-                            .foregroundStyle(.white, Color(hex: 0xFFD35C))
+                            .foregroundStyle(.white, OrbitTheme.gold)
                             .frame(width: ChatListVisual.avatarSize,
                                    height: ChatListVisual.avatarSize)
                             .background(
                                 LinearGradient(
-                                    colors: [Color(hex: 0x4C9DFF), Color(hex: 0x1558B8)],
+                                    colors: [OrbitTheme.blue, AppPalette.blueDeep],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 ),
@@ -2525,7 +2473,7 @@ struct ChatsView: View {
                 .overlay(alignment: .bottom) {
                     Rectangle()
                         .fill(chatsRule)
-                        .frame(height: 0.5)
+                        .frame(height: AppDesign.Control.hairline)
                         .padding(.leading, ChatListVisual.dividerLeading)
                 }
             }
@@ -2788,12 +2736,12 @@ struct ChatsView: View {
 
         let isDark = chatsIsDark
         let titleColor: UIColor = chat.showsOfficialMark
-            ? UIColor(hex: 0x25D366)
-            : UIColor(hex: isDark ? 0xF2F4F6 : 0x191919)
-        let previewColor = UIColor(hex: isDark ? 0x8F969E : 0x999999)
+            ? AppPalette.whatsAppUI
+            : (isDark ? AppPalette.titleDarkUI : AppPalette.titleLightUI)
+        let previewColor = isDark ? AppPalette.previewDarkUI : AppPalette.previewLightUI
         let memberColor = nativePeerColor(chat.memberColor)
-        let rowBg: UIColor = isDark ? UIColor(hex: 0x121317) : UIColor.white
-        let timeColor = UIColor(hex: isDark ? 0x6F767E : 0xB2B2B2)
+        let rowBg: UIColor = isDark ? AppPalette.rowDarkUI : UIColor.white
+        let timeColor = isDark ? AppPalette.timeDarkUI : AppPalette.timeLightUI
         let levelText = (chat.qqLevel ?? 0) > 1 && GrowthFlags.showInChats == true
             ? "Lv\(chat.qqLevel ?? 0)" : ""
 
@@ -2809,11 +2757,9 @@ struct ChatsView: View {
             time: TimeFmt.listApple(chat.listTimestamp),
             timeColor: timeColor,
             rowBackground: rowBg,
-            dividerColor: isDark
-                ? UIColor(hex: 0x2A2D33)
-                : UIColor(hex: 0xE9EDEF),
+            dividerColor: AppPalette.dividerUI,
             showsDivider: true,
-            badgeRing: isDark ? UIColor(hex: 0x121317) : .white,
+            badgeRing: isDark ? AppPalette.rowDarkUI : .white,
             chatId: chat.id,
             avatarPaths: avatarPaths,
             groupMemberIds: chat.memberIds ?? [],
@@ -3161,21 +3107,21 @@ struct ChatsView: View {
 
         .navPlusOverlay($plusMenu, items: [
             NavPlusItem(title: Tr("筛选会话"), symbol: "line.3.horizontal.decrease.circle",
-                        colors: [Color(hex: 0x8A8F98), Color(hex: 0x5F6670)]) {
+                        colors: [OrbitTheme.secondary, AppPalette.mutedAction]) {
                 showChatFilterSheet = true
             },
             NavPlusItem(title: Tr("发起群聊"), symbol: "person.2.fill",
                         colors: [C.green, C.green.opacity(0.78)]) { path.append("newGroup") },
             NavPlusItem(title: Tr("面对面建群"), symbol: "person.3.sequence.fill",
-                        colors: [Color(hex: 0x5FD38A), Color(hex: 0x178A58)]) {
+                        colors: [OrbitTheme.jade, OrbitTheme.jadeDeep]) {
                 path.append("faceGroup")
             },
             NavPlusItem(title: Tr("添加朋友"), symbol: "person.badge.plus",
-                        colors: [Color(hex: 0x64B5F6), Color(hex: 0x2A6BC4)]) { path.append("addFriend") },
+                        colors: [OrbitTheme.blue, AppPalette.blueDeep]) { path.append("addFriend") },
             NavPlusItem(title: Tr("扫一扫"), symbol: "qrcode.viewfinder",
                         colors: [C.green, C.green.opacity(0.78)]) { showScan = true },
             NavPlusItem(title: Tr("收付款"), symbol: "creditcard.fill",
-                        colors: [Color(hex: 0xB98CFF), Color(hex: 0x7A45D6)]) { showPayCode = true }
+                        colors: [AppPalette.violet, AppPalette.violetDeep]) { showPayCode = true }
         ])
 
         .fullScreenCover(item: $botChat) { c in
@@ -3521,33 +3467,6 @@ struct ChatsView: View {
     }
 }
 
-struct NavPlusPressStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.92 : 1)
-
-            .overlay {
-                ZStack {
-                    RadialGradient(colors: [Color.white.opacity(0.95),
-                                            Color.white.opacity(0.30),
-                                            Color.white.opacity(0)],
-                                   center: .center, startRadius: 0, endRadius: 34)
-                    Circle()
-                        .fill(Color.white.opacity(0.55))
-                        .frame(width: 16, height: 16)
-                        .blur(radius: 7)
-                }
-                .blendMode(.plusLighter)
-                .opacity(configuration.isPressed ? 1 : 0)
-                .clipShape(Capsule(style: .continuous))
-                .allowsHitTesting(false)
-            }
-            .brightness(configuration.isPressed ? 0.10 : 0)
-            .shadow(color: Color.white.opacity(configuration.isPressed ? 0.5 : 0), radius: 10)
-            .animation(.easeOut(duration: 0.13), value: configuration.isPressed)
-    }
-}
-
 private struct FloorPop: ViewModifier {
     var up: Bool
     var t: CGFloat
@@ -3614,7 +3533,7 @@ struct MiniAppSearchView: View {
                     }
                 }
                 .padding(.horizontal, 10)
-                .frame(height: 36)
+                .frame(height: AppDesign.Control.floatingControlHeight)
                 .background(RoundedRectangle(
                     cornerRadius: AppDesign.Radius.small,
                     style: .continuous
@@ -3642,7 +3561,7 @@ struct MiniAppSearchView: View {
                                         cornerRadius: AppDesign.Radius.mini,
                                         style: .continuous
                                     )
-                                        .fill(LinearGradient(colors: [Color(hex: 0x2B2F3A), Color(hex: 0x171B22)],
+                                        .fill(LinearGradient(colors: [AppPalette.tileStart, AppPalette.tileEnd],
                                                              startPoint: .topLeading, endPoint: .bottomTrailing))
                                     Text(m.iconText).font(pfStyled(size: 18))
                                     if let cv = m.cover, !cv.isEmpty {
@@ -3663,7 +3582,7 @@ struct MiniAppSearchView: View {
                                 Chevron(size: 9, line: 1.6)
                             }
                             .padding(.horizontal, 16)
-                            .frame(height: 56)
+                            .frame(height: AppDesign.Control.menuRowHeight)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)

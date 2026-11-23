@@ -166,7 +166,7 @@ struct ExternalFileSendView: View {
                                                  ? OrbitTheme.tertiary
                                                  : OrbitTheme.secondary)
                                 .padding(.horizontal, 12)
-                                .frame(height: 32)
+                                .frame(height: AppDesign.Control.smallButtonHeight)
                         }
                         .buttonStyle(.plain)
                         .disabled(sending || favoriteBusy)
@@ -446,7 +446,7 @@ struct ExternalFileSendView: View {
                     }
                     .foregroundStyle(.white)
                     .padding(.horizontal, 19)
-                    .frame(height: 42)
+                    .frame(height: AppDesign.Control.searchHeight)
                     .background(Capsule().fill(
                         LinearGradient(
                             colors: selectedId.isEmpty || sending || favoriteBusy
@@ -468,7 +468,7 @@ struct ExternalFileSendView: View {
         .overlay(alignment: .top) {
             Rectangle()
                 .fill(OrbitTheme.divider.opacity(0.72))
-                .frame(height: 0.5)
+                .frame(height: AppDesign.Control.hairline)
         }
         .animation(.easeOut(duration: 0.18), value: sending)
         .animation(.linear(duration: 0.16), value: transferFraction)

@@ -76,7 +76,7 @@ struct ChatDefaultWallpaper: View {
 
                 RadialGradient(
                     colors: [
-                        Color(hex: 0x8E8E93).opacity(0.020),
+                        AppPalette.systemSecondary.opacity(0.020),
                         Color.clear
                     ],
                     center: UnitPoint(x: 0.92, y: 0.84),
@@ -164,7 +164,7 @@ struct ChatThemeBackdrop: View {
             LinearGradient(
                 colors: dark
                     ? [Color(hex: 0x111111), Color(hex: 0x0B0B0B)]
-                    : [Color(hex: 0xF4F4F4), Color(hex: 0xEDEDED)],
+                    : [Color(hex: 0xF4F4F4), AppPalette.neutralSurface],
                 startPoint: .top,
                 endPoint: .bottom
             )
@@ -193,7 +193,7 @@ struct ChatThemeBackdrop: View {
             )
 
             RadialGradient(
-                colors: [Color(hex: 0x25D366).opacity(dark ? 0.09 : 0.13), Color.clear],
+                colors: [AppPalette.whatsApp.opacity(dark ? 0.09 : 0.13), Color.clear],
                 center: UnitPoint(x: 0.86, y: 0.10),
                 startRadius: 2,
                 endRadius: max(size.width, size.height) * 0.72
@@ -306,7 +306,7 @@ struct ChatThemeBackdrop: View {
             )
 
             RadialGradient(
-                colors: [Color(hex: 0x0A84FF).opacity(dark ? 0.19 : 0.15), Color.clear],
+                colors: [AppPalette.appleBlue.opacity(dark ? 0.19 : 0.15), Color.clear],
                 center: UnitPoint(x: 0.84, y: 0.10),
                 startRadius: 2,
                 endRadius: max(size.width, size.height) * 0.78

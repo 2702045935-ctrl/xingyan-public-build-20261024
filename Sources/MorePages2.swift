@@ -63,7 +63,7 @@ struct GroupQRView: View {
                     saveToAlbum()
                 } label: {
                     Text(saved ? "已存" : "保存")
-                        .font(pf(16, .medium))
+                        .font(AppDesign.Type.rowTitle)
                         .foregroundColor(C.green)
                         .frame(height: L.navH)
                         .padding(.trailing, 16)
@@ -80,7 +80,7 @@ struct GroupQRView: View {
                             ProgressView()
                         } else if rows.isEmpty {
                             Text(Tr("二维码生成失败，稍后再试"))
-                                .font(pf(13.5))
+                                .font(AppDesign.Type.body)
                                 .foregroundColor(C.subLabel)
                         } else {
                             QRCanvas(rows: rows, avatar: chat.avatar ?? "")
@@ -93,24 +93,24 @@ struct GroupQRView: View {
                     HStack(spacing: 10) {
                         Avatar(path: chat.avatar ?? "", size: 40, radius: 6)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(chat.name).font(pf(15.5, .medium)).foregroundColor(C.label)
+                            Text(chat.name).font(AppDesign.Type.rowTitleMedium).foregroundColor(C.label)
                             Text(Lang.isEnglish ? "\(chat.memberCount ?? 0) members"
                                                 : "\(chat.memberCount ?? 0) 位成员")
-                                .font(pf(12.5)).foregroundColor(C.subLabel)
+                                .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                         }
                         Spacer(minLength: 0)
                     }
                     .padding(.horizontal, 16)
-                    .frame(height: 60)
+                    .frame(height: AppDesign.Control.profileRowHeight)
                     .background { CardGlassBox(radius: 7) }
                     .padding(.horizontal, 24)
 
                     Text(Tr("用手机扫码打开链接就能进群；没登录会先跳到登录页，登录完自动进群"))
-                        .font(pf(12.5))
+                        .font(AppDesign.Type.caption)
                         .foregroundColor(C.subLabel)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 36)
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
                 .padding(.top, 20)
             }
@@ -210,7 +210,7 @@ struct AvatarCropSheet: View {
         NavigationStack {
             VStack(spacing: 18) {
                 Text(Tr("拖动调整位置，双指缩放，圈里的就是要当头像的部分"))
-                    .font(pf(12.5))
+                    .font(AppDesign.Type.caption)
                     .foregroundColor(C.subLabel)
                     .multilineTextAlignment(.center)
                     .padding(.top, 12)
@@ -248,7 +248,7 @@ struct AvatarCropSheet: View {
                     dismiss()
                 } label: {
                     Text(Tr("就用这张"))
-                        .font(pf(16, .medium))
+                        .font(AppDesign.Type.rowTitle)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity, minHeight: 50)
                         .background(C.green)

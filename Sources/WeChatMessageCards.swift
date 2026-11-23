@@ -107,7 +107,7 @@ struct WeChatMessageCardFooter: View {
                     .font(pfStyled(size: 10, weight: .medium))
                     .foregroundStyle(C.subLabel)
                     .padding(.horizontal, 7)
-                    .frame(height: 20)
+                    .frame(height: AppDesign.Control.compactBadgeHeight)
                     .background(Color.primary.opacity(0.045),
                                 in: Capsule(style: .continuous))
                     .lineLimit(1)

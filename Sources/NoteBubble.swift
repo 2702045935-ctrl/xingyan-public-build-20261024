@@ -54,7 +54,7 @@ struct NoteCardBubble: View {
 
                 Rectangle()
                     .fill(C.hairline)
-                    .frame(height: 0.5)
+                    .frame(height: AppDesign.Control.hairline)
                     .padding(.vertical, 9)
 
                 WeChatMessageCardFooter(symbol: "note.text", title: Tr("星言笔记"),
@@ -85,7 +85,7 @@ struct NoteViewerSheet: View {
                 } label: {
                     Text(copied ? Tr("已复制") : Tr("复制"))
                         .font(pf(15, .medium)).foregroundColor(C.green)
-                        .padding(.horizontal, 14).frame(height: 32)
+                        .padding(.horizontal, 14).frame(height: AppDesign.Control.smallButtonHeight)
                 }
                 .buttonStyle(.plain)
             }
@@ -110,7 +110,7 @@ struct NoteViewerSheet: View {
                 .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
                 .padding(.horizontal, 12)
                 .padding(.top, 12)
-                Spacer().frame(height: 30)
+                Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
             }
             .background(C.pageBg)
         }

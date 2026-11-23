@@ -168,7 +168,7 @@ struct MiniAppCardBubble: View {
 
             Rectangle()
                 .fill(Color.primary.opacity(0.065))
-                .frame(height: 0.5)
+                .frame(height: AppDesign.Control.hairline)
                 .padding(.vertical, 10)
 
             WeChatMessageCardFooter(
@@ -596,7 +596,7 @@ struct MiniAppRuntimeView: View {
             } else if loading {
                 VStack(spacing: 10) {
                     ProgressView().tint(.white)
-                    Text(Tr("正在准备…")).font(pf(13.5)).foregroundColor(.white.opacity(0.7))
+                    Text(Tr("正在准备…")).font(AppDesign.Type.body).foregroundColor(.white.opacity(0.7))
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -606,7 +606,7 @@ struct MiniAppRuntimeView: View {
                         .multilineTextAlignment(.center).padding(.horizontal, 30)
                     Button { Task { await prepare(force: true) } } label: {
                         Text(Tr("重试")).font(pf(15, .medium)).foregroundColor(.white)
-                            .padding(.horizontal, 22).frame(height: 40)
+                            .padding(.horizontal, 22).frame(height: AppDesign.Control.iconControlHeight)
                             .background(Capsule().fill(C.green))
                     }
                     .buttonStyle(.plain)

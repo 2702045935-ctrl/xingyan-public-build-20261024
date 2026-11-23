@@ -252,7 +252,7 @@ enum StarWorldPlazaScene {
         stage.position = SCNVector3(-76, 0, -26)
         parent.addChildNode(stage)
 
-        let platform = SCNodeFactory.cylinder(radius: 10.5, height: 0.55, material: wood)
+        let platform = SCNodeFactory.cylinder(radius: 10.5, height: AppDesign.Control.hairline5, material: wood)
         platform.position.y = 0.28
         stage.addChildNode(platform)
 
@@ -353,7 +353,7 @@ enum StarWorldPlazaScene {
             }
         }
 
-        let deck = SCNodeFactory.box(width: 10.4, height: 0.55, length: 10.4, material: shell)
+        let deck = SCNodeFactory.box(width: 10.4, height: AppDesign.Control.hairline5, length: 10.4, material: shell)
         deck.position.y = 21.1
         slide.addChildNode(deck)
 

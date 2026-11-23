@@ -26,7 +26,7 @@ struct DiagView: View {
                     Text(busy ? Tr("上报中…") : Tr("上报"))
                         .font(pf(15, .medium))
                         .foregroundColor(busy ? C.subLabel : C.green)
-                        .padding(.horizontal, 14).frame(height: 32)
+                        .padding(.horizontal, 14).frame(height: AppDesign.Control.smallButtonHeight)
                 }
                 .buttonStyle(.plain)
                 .disabled(busy)
@@ -64,7 +64,7 @@ struct DiagView: View {
                     .padding(.horizontal, 12)
 
                     if !msg.isEmpty {
-                        Text(msg).font(pf(12.5)).foregroundColor(C.subLabel)
+                        Text(msg).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 18).padding(.top, 10)
                     }
@@ -78,7 +78,7 @@ struct DiagView: View {
                     head(Tr("最近 20 条打点（卡包 / 小店 / 登录）"))
                     box(diagLog.lines.isEmpty ? Tr("（还没有记录）") : diagLog.lines.joined(separator: "\n"))
 
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
                 .padding(.top, 10)
             }
@@ -120,7 +120,7 @@ struct DiagView: View {
                 HStack(alignment: .top, spacing: 10) {
                     Text(r.0).font(pf(15)).foregroundColor(C.label)
                         .frame(width: 88, alignment: .leading)
-                    Text(r.1).font(pf(13.5)).foregroundColor(C.subLabel)
+                    Text(r.1).font(AppDesign.Type.body).foregroundColor(C.subLabel)
                         .frame(maxWidth: .infinity, alignment: .trailing)
                         .multilineTextAlignment(.trailing)
                         .textSelection(.enabled)
@@ -138,12 +138,12 @@ struct DiagView: View {
             HStack(spacing: 12) {
                 Image(systemName: icon).font(.system(size: 16)).foregroundColor(C.green)
                     .frame(width: 26)
-                Text(t).font(pf(15.5)).foregroundColor(C.label)
+                Text(t).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right")
                     .font(.system(size: 11, weight: .semibold)).foregroundColor(C.subLabel)
             }
-            .padding(.horizontal, 16).frame(height: 52)
+            .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

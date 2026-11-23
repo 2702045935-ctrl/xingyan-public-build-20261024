@@ -22,7 +22,7 @@ struct BizAccountView: View {
                 VStack(spacing: 0) {
                     VStack(spacing: 8) {
                         Text(Tr("经营账户余额"))
-                            .font(pf(13.5)).foregroundColor(Color.white.opacity(0.85))
+                            .font(AppDesign.Type.body).foregroundColor(Color.white.opacity(0.85))
                         Text(money(info?.balance))
                             .font(pfMoney(34, .medium))
                             .foregroundColor(.white)
@@ -68,7 +68,7 @@ struct BizAccountView: View {
                     .padding(.top, 10)
 
                     Text(Tr("经营账户里的每一笔收款都有订单号，后台「经营账户查账」可以对账。"))
-                        .font(pf(12.5)).foregroundColor(C.subLabel)
+                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 24)
                         .padding(.top, 14)
@@ -113,7 +113,7 @@ struct BizAccountView: View {
                 Chevron(size: 9, line: 1.6)
             }
             .padding(.horizontal, 16)
-            .frame(height: 54)
+            .frame(height: AppDesign.Control.dialogRowHeight)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -163,7 +163,7 @@ struct BizRecordsView: View {
                         }
                     }
                     .padding(.top, 10)
-                    Color.clear.frame(height: 24)
+                    Color.clear.frame(height: AppDesign.Control.badgeHeight)
                 }
             }
             .background(C.pageBg)
@@ -180,7 +180,7 @@ struct BizRecordsView: View {
         let sign = isOut ? "-" : "+"
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 8) {
-                Text(title(r)).font(pf(15.5)).foregroundColor(C.label)
+                Text(title(r)).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
                 Spacer(minLength: 6)
                 Text(sign + "¥" + moneyFmt(r.amount ?? 0))
                     .font(pfMoney(15.5))
@@ -270,7 +270,7 @@ struct BizSettingsView: View {
                                 .frame(width: 190)
                             }
                             .padding(.horizontal, 16)
-                            .frame(height: 56)
+                            .frame(height: AppDesign.Control.menuRowHeight)
                             HairLine(inset: 16)
                             switchRow(Tr("收款提醒"), isOn: $notify,
                                       hint: Tr("有人给你转钱、发红包时提醒你"))
@@ -293,21 +293,21 @@ struct BizSettingsView: View {
                                 Spacer(minLength: 6)
                                 Text("0.6%").font(pf(15)).foregroundColor(C.subLabel)
                             }
-                            .padding(.horizontal, 16).frame(height: 52)
+                            .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
                             HairLine(inset: 16)
                             HStack {
                                 Text(Tr("结算周期")).font(pf(16)).foregroundColor(C.label)
                                 Spacer(minLength: 6)
                                 Text("T+1").font(pf(15)).foregroundColor(C.subLabel)
                             }
-                            .padding(.horizontal, 16).frame(height: 52)
+                            .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
                         }
                         .padding(.top, 10)
 
                         Button { save() } label: {
                             Text(busy ? Tr("保存中…") : Tr("保存"))
                                 .font(pf(17, .medium)).foregroundColor(.white)
-                                .frame(maxWidth: .infinity).frame(height: 48)
+                                .frame(maxWidth: .infinity).frame(height: AppDesign.Control.mediumControlHeight)
                                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.green))
                         }
                         .buttonStyle(.plain)
@@ -315,10 +315,10 @@ struct BizSettingsView: View {
                         .disabled(busy)
 
                         Text(Tr("到账方式选「经营账户」时，收到的钱先记在经营账户余额里，你随时可以提到零钱。"))
-                            .font(pf(12.5)).foregroundColor(C.subLabel)
+                            .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 24).padding(.top, 12)
-                        Color.clear.frame(height: 24)
+                        Color.clear.frame(height: AppDesign.Control.badgeHeight)
                     }
                 }
                 .background(C.pageBg)
@@ -361,7 +361,7 @@ struct BizSettingsView: View {
             TextField(ph, text: text)
                 .font(pf(15)).multilineTextAlignment(.trailing)
         }
-        .padding(.horizontal, 16).frame(height: 52)
+        .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
     }
 
     private func save() {
@@ -420,14 +420,14 @@ struct BizWithdrawView: View {
                     }
                     .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 16).frame(height: 54)
+                .padding(.horizontal, 16).frame(height: AppDesign.Control.dialogRowHeight)
             }
             .padding(.top, 10)
 
             Button { submit() } label: {
                 Text(busy ? Tr("处理中…") : Tr("提现到零钱"))
                     .font(pf(17, .medium)).foregroundColor(.white)
-                    .frame(maxWidth: .infinity).frame(height: 48)
+                    .frame(maxWidth: .infinity).frame(height: AppDesign.Control.mediumControlHeight)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                         .fill(balance <= 0 ? C.subLabel : C.green))
             }
@@ -436,7 +436,7 @@ struct BizWithdrawView: View {
             .disabled(busy || balance <= 0)
 
             Text(Tr("经营账户提现到零钱是即时到账的，不收费。"))
-                .font(pf(12.5)).foregroundColor(C.subLabel)
+                .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                 .padding(.top, 12)
             Spacer(minLength: 0)
         }
@@ -531,7 +531,7 @@ struct BizInvoiceView: View {
 
                     Button { save() } label: {
                         Text(busy ? Tr("保存中…") : Tr("保存开票信息"))
-                            .font(pf(16, .medium)).foregroundColor(.white)
+                            .font(AppDesign.Type.rowTitle).foregroundColor(.white)
                             .frame(maxWidth: .infinity).frame(height: 46)
                             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.green))
                     }
@@ -546,7 +546,7 @@ struct BizInvoiceView: View {
                             Text("¥" + moneyFmt(leftAmount))
                                 .font(pfMoney(16)).foregroundColor(C.green)
                         }
-                        .padding(.horizontal, 16).frame(height: 52)
+                        .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
                         HairLine(inset: 16)
                         HStack(spacing: 10) {
                             Text(Tr("开票金额")).font(pf(16)).foregroundColor(C.label)
@@ -560,7 +560,7 @@ struct BizInvoiceView: View {
                             }
                             .buttonStyle(.plain)
                         }
-                        .padding(.horizontal, 16).frame(height: 52)
+                        .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
                         HairLine(inset: 16)
                         HStack(spacing: 10) {
                             Text(Tr("备注")).font(pf(16)).foregroundColor(C.label)
@@ -568,14 +568,14 @@ struct BizInvoiceView: View {
                             TextField(Tr("选填"), text: $note)
                                 .font(pf(15)).multilineTextAlignment(.trailing)
                         }
-                        .padding(.horizontal, 16).frame(height: 52)
+                        .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
                     }
                     .padding(.top, 12)
 
                     Button { apply() } label: {
                         Text(busy ? Tr("提交中…") : Tr("申请开票"))
                             .font(pf(17, .medium)).foregroundColor(.white)
-                            .frame(maxWidth: .infinity).frame(height: 48)
+                            .frame(maxWidth: .infinity).frame(height: AppDesign.Control.mediumControlHeight)
                             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                                 .fill(leftAmount > 0 ? C.green : C.subLabel))
                     }
@@ -602,7 +602,7 @@ struct BizInvoiceView: View {
                                             .font(pf(13))
                                             .foregroundColor((inv.status ?? "") == "done" ? C.green : C.subLabel)
                                     }
-                                    .padding(.horizontal, 16).frame(height: 56)
+                                    .padding(.horizontal, 16).frame(height: AppDesign.Control.menuRowHeight)
                                 }
                             }
                         }
@@ -610,7 +610,7 @@ struct BizInvoiceView: View {
                     }
 
                     Text(Tr("开票申请会进后台，客服开好后状态会变成「已开票」。"))
-                        .font(pf(12.5)).foregroundColor(C.subLabel)
+                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 24).padding(.top, 12)
                     Color.clear.frame(height: 26)
@@ -646,7 +646,7 @@ struct BizInvoiceView: View {
             TextField(ph, text: text)
                 .font(pf(15)).multilineTextAlignment(.trailing)
         }
-        .padding(.horizontal, 16).frame(height: 52)
+        .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
     }
 
     private func save() {

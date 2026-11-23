@@ -14,7 +14,7 @@ struct QRStyleSheet: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 10) {
                     Text(Tr("挑一个颜色，二维码和「保存到相册」的图片都会用这个色（白底上用深色才扫得出来）。"))
-                        .font(pf(12.5)).foregroundColor(C.subLabel)
+                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                         .padding(.horizontal, 20).padding(.top, 12)
 
                     LazyVGrid(columns: cols, spacing: 14) {
@@ -35,7 +35,7 @@ struct QRStyleSheet: View {
                                         }
                                     }
                                     .frame(width: 62, height: 62)
-                                    Text(Tr(ink.name)).font(pf(13.5))
+                                    Text(Tr(ink.name)).font(AppDesign.Type.body)
                                         .foregroundColor(ink == current ? C.green : C.label)
                                 }
                             }
@@ -44,7 +44,7 @@ struct QRStyleSheet: View {
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 6)
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
             }
             .background(C.pageBg)
@@ -121,7 +121,7 @@ struct FaceToFaceFileSheet: View {
                             HStack(spacing: 8) {
                                 Image(systemName: "qrcode.viewfinder")
                                     .font(.system(size: 16))
-                                Text(Tr("我也扫对方的码")).font(pf(16, .medium))
+                                Text(Tr("我也扫对方的码")).font(AppDesign.Type.rowTitle)
                             }
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -132,7 +132,7 @@ struct FaceToFaceFileSheet: View {
                         .buttonStyle(.plain)
                     }
 
-                    Spacer().frame(height: 28)
+                    Spacer().frame(height: AppDesign.Control.statusHeight)
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 14)
@@ -204,10 +204,10 @@ struct FaceToFaceFileSheet: View {
             }
             VStack(alignment: .leading, spacing: 3) {
                 Text(drop.isConnected ? Tr("已碰一碰连接") : Tr("正在碰一碰"))
-                    .font(pf(16, .medium))
+                    .font(AppDesign.Type.rowTitle)
                     .foregroundColor(C.label)
                 Text(drop.status)
-                    .font(pf(12.5))
+                    .font(AppDesign.Type.caption)
                     .foregroundColor(C.subLabel)
                     .lineLimit(2)
             }
@@ -222,7 +222,7 @@ struct FaceToFaceFileSheet: View {
     private var hostQRCode: some View {
         VStack(spacing: 10) {
             Text(Tr("让对方用 App 的「扫一扫」扫这张码"))
-                .font(pf(13.5))
+                .font(AppDesign.Type.body)
                 .foregroundColor(C.subLabel)
 
             ZStack {
@@ -253,10 +253,10 @@ struct FaceToFaceFileSheet: View {
         VStack(spacing: 12) {
             ProgressView().scaleEffect(1.15)
             Text(Tr("正在连接 ") + invite.name)
-                .font(pf(16, .medium))
+                .font(AppDesign.Type.rowTitle)
                 .foregroundColor(C.label)
             Text(Tr("请保持对方页面开着；如果找不到，检查两台手机的本地网络权限"))
-                .font(pf(12.5))
+                .font(AppDesign.Type.caption)
                 .foregroundColor(C.subLabel)
                 .multilineTextAlignment(.center)
         }
@@ -293,7 +293,7 @@ struct FaceToFaceFileSheet: View {
                 .foregroundColor(enabled ? C.green : C.subLabel)
                 .frame(width: 34)
             VStack(alignment: .leading, spacing: 3) {
-                Text(title).font(pf(16, .medium)).foregroundColor(C.label)
+                Text(title).font(AppDesign.Type.rowTitle).foregroundColor(C.label)
                 Text(subtitle).font(pf(12)).foregroundColor(C.subLabel)
             }
             Spacer(minLength: 0)
@@ -325,7 +325,7 @@ struct FaceToFaceFileSheet: View {
                 Circle().fill(C.green.opacity(0.16)).frame(width: 20, height: 20)
                 Text(n).font(pfStyled(size: 11, weight: .semibold)).foregroundColor(C.green)
             }
-            Text(text).font(pf(13.5)).foregroundColor(C.label)
+            Text(text).font(AppDesign.Type.body).foregroundColor(C.label)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }

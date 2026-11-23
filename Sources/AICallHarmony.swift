@@ -22,7 +22,7 @@ struct AICallView: View {
 
     private let ink = Color(hex: 0x1D2632)
     private let subInk = Color(hex: 0x657080)
-    private let accent = Color(hex: 0x356FF4)
+    private let accent = AppPalette.info
 
     var body: some View {
         ZStack {
@@ -72,14 +72,14 @@ struct AICallView: View {
                             .font(pf(18, .semibold))
                             .foregroundColor(ink)
                         Text(Tr("请回 AI 工作台，从小星设置进入套餐补充页。"))
-                            .font(pf(12.5))
+                            .font(AppDesign.Type.caption)
                             .foregroundColor(subInk)
                             .multilineTextAlignment(.center)
                         Button(Tr("返回")) { dismiss() }
                             .font(pf(14, .medium))
                             .foregroundColor(.white)
                             .padding(.horizontal, 22)
-                            .frame(height: 40)
+                            .frame(height: AppDesign.Control.iconControlHeight)
                             .background(Capsule().fill(accent))
                             .buttonStyle(.plain)
                     }
@@ -151,7 +151,7 @@ struct AICallView: View {
                 transcriptVisible.toggle()
             } label: {
                 Text(Tr("字"))
-                    .font(pf(12.5, .medium))
+                    .font(AppDesign.Type.captionMedium)
                     .foregroundColor(ink)
                     .frame(width: 42, height: 42)
                     .background {
@@ -230,7 +230,7 @@ struct AICallView: View {
             if typingMode {
                 HStack(spacing: 9) {
                     TextField(Tr("输入想问小星的话"), text: $typedText, axis: .vertical)
-                        .font(pf(13.5))
+                        .font(AppDesign.Type.body)
                         .foregroundColor(ink)
                         .lineLimit(1...3)
                         .focused($typedFocused)

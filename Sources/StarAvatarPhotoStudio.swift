@@ -689,7 +689,7 @@ struct StarAvatarPhotoStudioView: View {
                     .font(pfStyled(size: 16, weight: .semibold))
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 52)
+                    .frame(height: AppDesign.Control.largeControlHeight)
                     .background(
                         LinearGradient(
                             colors: [Color(hex: 0x1C8E7A), Color(hex: 0x55C6A4)],
@@ -772,7 +772,7 @@ struct StarAvatarPhotoStudioView: View {
                 .font(pfStyled(size: 14, weight: .semibold))
                 .foregroundStyle(C.label)
                 .frame(maxWidth: .infinity)
-                .frame(height: 44)
+                .frame(height: AppDesign.Control.compactHeight)
                 .background(
                     RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                         .fill(C.fieldBg)

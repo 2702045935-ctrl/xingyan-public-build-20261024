@@ -164,7 +164,7 @@ struct FavoriteNoteComposeSheet: View {
                         }
                         .padding(.horizontal, 12)
                     }
-                    .frame(height: 44)
+                    .frame(height: AppDesign.Control.compactHeight)
 
                     HStack {
                         if picBusy { ProgressView() }

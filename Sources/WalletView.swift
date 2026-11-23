@@ -82,7 +82,7 @@ struct WalletView: View {
                                     .foregroundColor(Color(hex: 0xB06A12))
                                     .multilineTextAlignment(.leading)
                                 Spacer(minLength: 0)
-                                Text(Tr("去认证")).font(pf(13, .medium)).foregroundColor(C.green)
+                                Text(Tr("去认证")).font(AppDesign.Type.compactButtonMedium).foregroundColor(C.green)
                             }
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
@@ -96,7 +96,7 @@ struct WalletView: View {
                     ForEach(groups) { g in
                         card(g).padding(.top, g.id == groups.first?.id ? 0 : 18)
                     }
-                    Color.clear.frame(height: 24)
+                    Color.clear.frame(height: AppDesign.Control.badgeHeight)
                 }
             }
             .background(PayVisual.canvas)
@@ -158,12 +158,12 @@ struct WalletView: View {
                                 in: RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
 
                 Text(Tr(it.label))
-                    .font(pf(16.5))
+                    .font(AppDesign.Type.listTitle)
                     .foregroundColor(C.label)
 
                 if !note.isEmpty {
                     Text(note)
-                        .font(pf(12.5))
+                        .font(AppDesign.Type.caption)
                         .foregroundColor(s.noteColorV)
                         .lineLimit(1)
                 }

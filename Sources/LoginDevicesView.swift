@@ -42,13 +42,13 @@ struct LoginDevicesView: View {
                             Spacer(minLength: 0)
                         }
                         .padding(.horizontal, 22)
-                        .frame(height: 60)
+                        .frame(height: AppDesign.Control.profileRowHeight)
                     } else if list.isEmpty {
                         Text(Tr("还没有设备记录"))
                             .font(pf(15)).foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 22)
-                            .frame(height: 60)
+                            .frame(height: AppDesign.Control.profileRowHeight)
                     }
 
                     if !living.isEmpty {
@@ -85,7 +85,7 @@ struct LoginDevicesView: View {
                                 Chevron(size: 9, line: 1.6).padding(.trailing, 3)
                             }
                             .padding(.horizontal, 16)
-                            .frame(height: 54)
+                            .frame(height: AppDesign.Control.dialogRowHeight)
                             .background(C.cardBg)
                             .contentShape(Rectangle())
                         }
@@ -100,14 +100,14 @@ struct LoginDevicesView: View {
                                 Chevron(size: 9, line: 1.6).padding(.trailing, 3)
                             }
                             .padding(.horizontal, 16)
-                            .frame(height: 54)
+                            .frame(height: AppDesign.Control.dialogRowHeight)
                             .background(C.cardBg)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                     }
 
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
             }
             .background(C.pageBg)
@@ -148,7 +148,7 @@ struct LoginDevicesView: View {
                         .font(pf(14))
                         .foregroundColor(.white)
                         .padding(.horizontal, 12)
-                        .frame(height: 30)
+                        .frame(height: AppDesign.Control.sectionHeaderHeight)
                         .background(Capsule().fill(C.red))
                 }
                 .buttonStyle(.plain)
@@ -293,7 +293,7 @@ struct DevicesFaqView: View {
                     ForEach(qa.indices, id: \.self) { i in
                         VStack(alignment: .leading, spacing: 8) {
                             Text(Tr(qa[i].0))
-                                .font(pf(16, .medium))
+                                .font(AppDesign.Type.rowTitle)
                                 .foregroundColor(C.label)
                             Text(Tr(qa[i].1))
                                 .font(pf(14))
@@ -306,7 +306,7 @@ struct DevicesFaqView: View {
                         .background(C.cardBg)
                         if i < qa.count - 1 { HairLine(inset: 18) }
                     }
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
                 .padding(.top, 8)
             }

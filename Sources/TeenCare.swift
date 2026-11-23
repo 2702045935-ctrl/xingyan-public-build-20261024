@@ -219,7 +219,7 @@ struct TeenModeView: View {
                 Text(value).font(pf(14.5)).foregroundColor(C.subLabel).lineLimit(1)
                 if chevron { Chevron(size: 8, line: 1.5) }
             }
-            .padding(.horizontal, 16).frame(height: 54)
+            .padding(.horizontal, 16).frame(height: AppDesign.Control.dialogRowHeight)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -238,7 +238,7 @@ struct TeenModeView: View {
                 TextField(Tr("填家长手机号"), text: $guardianDraft)
                     .font(pf(16))
                     .keyboardType(.numberPad)
-                    .padding(.horizontal, 12).frame(height: 44)
+                    .padding(.horizontal, 12).frame(height: AppDesign.Control.compactHeight)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.searchBg))
                 Text(Tr("只保存脱敏后的号码（如 138****8888），不会外发。"))
                     .font(pf(12)).foregroundColor(C.subLabel)
@@ -478,7 +478,7 @@ struct TeenSetupWizard: View {
         Button(action: tap) {
             Text(title)
                 .font(pf(17, .medium)).foregroundColor(.white)
-                .frame(maxWidth: .infinity).frame(height: 48)
+                .frame(maxWidth: .infinity).frame(height: AppDesign.Control.mediumControlHeight)
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                     .fill(enabled ? C.green : C.green.opacity(0.4)))
         }

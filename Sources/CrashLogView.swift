@@ -28,10 +28,10 @@ struct CrashLogView: View {
                 dismiss()
             } label: {
                 Text(Tr("已截图，清掉这条"))
-                    .font(pf(16, .medium))
+                    .font(AppDesign.Type.rowTitle)
                     .foregroundColor(C.green)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 50)
+                    .frame(height: AppDesign.Control.buttonHeight)
                     .background(C.cardBg)
             }
             .buttonStyle(.plain)

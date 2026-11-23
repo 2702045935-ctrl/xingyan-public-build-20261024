@@ -492,11 +492,11 @@ struct ChannelsView: View {
     private func episodeSheet(_ item: FeedItem) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(item.seriesName?.isEmpty == false ? (item.seriesName ?? "") : Tr("选集"))
-                .font(pf(16, .semibold))
+                .font(AppDesign.Type.rowTitle)
                 .padding(.top, 16)
                 .padding(.horizontal, 18)
             Text(Tr("共\(item.epTotal ?? seriesEpisodes.count)集"))
-                .font(pf(12.5))
+                .font(AppDesign.Type.caption)
                 .foregroundColor(.secondary)
                 .padding(.horizontal, 18)
             ScrollView {
@@ -567,10 +567,10 @@ struct ChannelsView: View {
                     HStack(spacing: 10) {
                         VStack(alignment: .leading, spacing: 3) {
                             Text(listCommentCount)
-                                .font(pf(16, .semibold))
+                                .font(AppDesign.Type.rowTitle)
                                 .foregroundColor(.white)
                             Text(item.desc ?? "")
-                                .font(pf(12.5))
+                                .font(AppDesign.Type.caption)
                                 .foregroundColor(.white.opacity(0.56))
                                 .lineLimit(1)
                         }
@@ -605,7 +605,7 @@ struct ChannelsView: View {
 
                     Rectangle()
                         .fill(Color.white.opacity(0.08))
-                        .frame(height: 0.5)
+                        .frame(height: AppDesign.Control.hairline)
 
                     ScrollView(showsIndicators: false) {
                         LazyVStack(alignment: .leading, spacing: 0) {
@@ -624,7 +624,7 @@ struct ChannelsView: View {
                                            circle: true)
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text(comment.name ?? Tr("用户"))
-                                            .font(pf(13, .medium))
+                                            .font(AppDesign.Type.compactButtonMedium)
                                             .foregroundColor(.white.opacity(0.56))
                                         Text(comment.text ?? "")
                                             .font(pf(15))
@@ -643,7 +643,7 @@ struct ChannelsView: View {
                                 .padding(.vertical, 12)
                                 Rectangle()
                                     .fill(Color.white.opacity(0.055))
-                                    .frame(height: 0.5)
+                                    .frame(height: AppDesign.Control.hairline)
                                     .padding(.leading, 63)
                             }
                         }
@@ -656,7 +656,7 @@ struct ChannelsView: View {
                             .font(pf(15))
                             .foregroundColor(.white)
                             .padding(.horizontal, 13)
-                            .frame(height: 40)
+                            .frame(height: AppDesign.Control.iconControlHeight)
                             .background(
                                 RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                                     .fill(Color.white.opacity(0.10))
@@ -683,7 +683,7 @@ struct ChannelsView: View {
                 .overlay(alignment: .top) {
                     Rectangle()
                         .fill(Color.white.opacity(0.08))
-                        .frame(height: 0.5)
+                        .frame(height: AppDesign.Control.hairline)
                 }
                 .gesture(
                     DragGesture(minimumDistance: 12)
@@ -744,7 +744,7 @@ struct ChannelsView: View {
                                     Image(systemName: "exclamationmark.circle.fill")
                                         .foregroundColor(Color(hex: 0xFF4D4F))
                                     Text(publishError)
-                                        .font(pf(12.5))
+                                        .font(AppDesign.Type.caption)
                                         .foregroundColor(Color.white.opacity(0.70))
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                 }
@@ -867,7 +867,7 @@ struct ChannelsView: View {
                     .frame(width: 54, height: 54)
 
                     Text(uploadStage.isEmpty ? Tr("正在处理视频…") : uploadStage)
-                        .font(pf(13, .medium))
+                        .font(AppDesign.Type.compactButtonMedium)
                         .foregroundColor(.white.opacity(0.88))
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -884,11 +884,11 @@ struct ChannelsView: View {
                 HStack(spacing: 9) {
                     Label(publishMusic.isEmpty ? Tr("原声") : publishMusic,
                           systemImage: "music.note")
-                        .font(pf(12, .medium))
+                        .font(AppDesign.Type.sectionMedium)
                         .foregroundColor(.white)
                         .lineLimit(1)
                         .padding(.horizontal, 10)
-                        .frame(height: 30)
+                        .frame(height: AppDesign.Control.sectionHeaderHeight)
                         .background(Color.black.opacity(0.44), in: Capsule())
 
                     Spacer(minLength: 8)
@@ -898,10 +898,10 @@ struct ChannelsView: View {
                             Image(systemName: "photo.on.rectangle.angled")
                             Text(pendingCover == nil ? Tr("选择封面") : Tr("更换封面"))
                         }
-                        .font(pf(12, .semibold))
+                        .font(AppDesign.Type.section)
                         .foregroundColor(.white)
                         .padding(.horizontal, 11)
-                        .frame(height: 30)
+                        .frame(height: AppDesign.Control.sectionHeaderHeight)
                         .background(.ultraThinMaterial, in: Capsule())
                     }
                     .buttonStyle(.plain)
@@ -986,7 +986,7 @@ struct ChannelsView: View {
         VStack(spacing: 0) {
             publishSettingRow(icon: "music.note", title: Tr("添加音乐")) {
                 TextField(Tr("选填，例如：原声"), text: $publishMusic)
-                    .font(pf(13.5))
+                    .font(AppDesign.Type.body)
                     .multilineTextAlignment(.trailing)
                     .foregroundColor(Color.white.opacity(0.58))
                     .frame(maxWidth: 170)
@@ -1059,7 +1059,7 @@ struct ChannelsView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(uploadStage.isEmpty ? Tr("视频已就绪") : uploadStage)
-                    .font(pf(12.5, .medium))
+                    .font(AppDesign.Type.captionMedium)
                     .foregroundColor(.white.opacity(0.78))
                 Spacer()
                 if uploadMB > 0 {
@@ -1088,7 +1088,7 @@ struct ChannelsView: View {
             publishDesc += token
         } label: {
             Text(token)
-                .font(pf(16, .semibold))
+                .font(AppDesign.Type.rowTitle)
                 .foregroundColor(Color.white.opacity(0.82))
                 .frame(width: 30, height: 28)
                 .background(Color.white.opacity(0.08), in: Capsule())
@@ -1132,14 +1132,14 @@ struct ChannelsView: View {
             Spacer(minLength: 10)
             if let detail {
                 Text(detail)
-                    .font(pf(13.5))
+                    .font(AppDesign.Type.body)
                     .foregroundColor(Color.white.opacity(0.40))
                     .lineLimit(1)
             }
             accessory()
         }
         .padding(.horizontal, 16)
-        .frame(height: 52)
+        .frame(height: AppDesign.Control.largeControlHeight)
     }
 
     private var trimTitle: String {
@@ -1393,7 +1393,7 @@ struct FeedCell: View {
                                     Image(systemName: "rectangle.stack.fill")
                                         .font(.system(size: 11, weight: .semibold))
                                     Text(seriesTitle)
-                                        .font(pf(12, .semibold))
+                                        .font(AppDesign.Type.section)
                                         .lineLimit(1)
                                     Image(systemName: "chevron.up")
                                         .font(.system(size: 9, weight: .bold))
@@ -1566,7 +1566,7 @@ struct FeedCell: View {
                     }
                 if !count.isEmpty {
                     Text(count)
-                        .font(pf(12.5, .semibold))
+                        .font(AppDesign.Type.captionStrong)
                         .foregroundColor(.white)
                         .shadow(color: .black.opacity(0.72), radius: 3, y: 1)
                 }
@@ -1642,7 +1642,7 @@ struct FeedPlayerSheet: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("@\(cur.author?.name ?? "用户")")
                             .font(pf(15, .semibold)).foregroundColor(.white)
-                        Text(cur.desc ?? "").font(pf(13.5)).foregroundColor(.white.opacity(0.95))
+                        Text(cur.desc ?? "").font(AppDesign.Type.body).foregroundColor(.white.opacity(0.95))
                             .lineLimit(3)
                         if !(cur.music ?? "").isEmpty {
                             Text("♪ \(cur.music ?? "")").font(pf(12)).foregroundColor(.white.opacity(0.8))
@@ -1668,7 +1668,7 @@ struct FeedPlayerSheet: View {
                                     .foregroundColor(liked ? Color(hex: 0xFF4D6D) : .white)
                                 if heartBurst { HeartBurst() }
                             }
-                            Text("\(likes)").font(pf(12.5)).foregroundColor(.white)
+                            Text("\(likes)").font(AppDesign.Type.caption).foregroundColor(.white)
                         }
                     }
                     .buttonStyle(.plain)

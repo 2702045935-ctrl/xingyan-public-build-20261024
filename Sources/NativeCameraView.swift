@@ -828,7 +828,7 @@ struct NativeCameraView: View {
                 .buttonStyle(.plain)
             }
         }
-        .frame(height: 30)
+        .frame(height: AppDesign.Control.sectionHeaderHeight)
     }
 
     private var cameraChromeShade: some View {
@@ -871,7 +871,7 @@ struct NativeCameraView: View {
         }
         .foregroundStyle(.white)
         .padding(.horizontal, 12)
-        .frame(height: 30)
+        .frame(height: AppDesign.Control.sectionHeaderHeight)
         .background(Capsule().fill(Color.black.opacity(0.42)))
         .padding(.bottom, 14)
     }
@@ -972,13 +972,13 @@ struct NativeCameraView: View {
                 .font(.headline)
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
-                .frame(height: 48)
+                .frame(height: AppDesign.Control.mediumControlHeight)
                 .background(Capsule().fill(Color.white.opacity(0.16)))
             Button(Tr("使用"), action: onUse)
                 .font(.headline)
                 .foregroundStyle(.black)
                 .frame(maxWidth: .infinity)
-                .frame(height: 48)
+                .frame(height: AppDesign.Control.mediumControlHeight)
                 .background(Capsule().fill(Color.white))
         }
         .buttonStyle(.plain)

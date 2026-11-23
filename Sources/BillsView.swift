@@ -111,7 +111,7 @@ struct BillsView: View {
                             }
                         }
                     }
-                    Color.clear.frame(height: 24)
+                    Color.clear.frame(height: AppDesign.Control.badgeHeight)
                 }
             }
             .background(PayVisual.canvas)
@@ -169,7 +169,7 @@ struct BillsView: View {
             VStack(alignment: .leading, spacing: 0) {
                 HStack {
                     Text(title)
-                        .font(pf(13, .semibold))
+                        .font(AppDesign.Type.compactButton)
                         .foregroundColor(PayVisual.secondaryInk)
                     Spacer()
                     if let summary, summary.pendingOut + summary.pendingIn > 0 {
@@ -247,7 +247,7 @@ struct BillsView: View {
                     SVGIcon(markup: I.searchSmall, size: 13.5, color: C.subLabel)
                         .frame(width: 13.5, height: 13.5)
                     Text(Tr("查找交易"))
-                        .font(pf(13.5))
+                        .font(AppDesign.Type.body)
                         .foregroundColor(C.subLabel)
                     Spacer(minLength: 0)
                 }
@@ -367,7 +367,7 @@ struct BillsView: View {
                 }
             }
             .padding(.horizontal, 14)
-            .frame(height: 44)
+            .frame(height: AppDesign.Control.compactHeight)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -471,7 +471,7 @@ struct BillsView: View {
                         .font(pf(14, .semibold))
                         .foregroundColor(.white)
                         .padding(.horizontal, 20)
-                        .frame(height: 32)
+                        .frame(height: AppDesign.Control.smallButtonHeight)
                         .background(Capsule().fill(C.green))
                 }
                 .buttonStyle(.plain)

@@ -67,14 +67,14 @@ struct MallOpsSection: View {
                         }
                         HStack(spacing: 8) {
                             Button { shipping = o } label: {
-                                Text(Tr("填单号发货")).font(pf(13.5, .medium)).foregroundColor(.white)
-                                    .padding(.horizontal, 14).frame(height: 32)
+                                Text(Tr("填单号发货")).font(AppDesign.Type.bodyMedium).foregroundColor(.white)
+                                    .padding(.horizontal, 14).frame(height: AppDesign.Control.smallButtonHeight)
                                     .background(Capsule().fill(C.green))
                             }
                             .buttonStyle(.plain)
                             Button { pushing = o } label: {
                                 Text(Tr("补物流")).font(pf(13)).foregroundColor(C.link)
-                                    .padding(.horizontal, 12).frame(height: 32)
+                                    .padding(.horizontal, 12).frame(height: AppDesign.Control.smallButtonHeight)
                                     .background(Capsule().stroke(C.hairline, lineWidth: 0.8))
                             }
                             .buttonStyle(.plain)
@@ -108,8 +108,8 @@ struct MallOpsSection: View {
                         Text(a.item ?? "").font(pf(13)).foregroundColor(C.label).lineLimit(1)
                         Text(Tr("理由：") + (a.reason ?? "")).font(pf(12)).foregroundColor(C.subLabel)
                         Button { reviewing = a } label: {
-                            Text(Tr("处理这一单")).font(pf(13.5, .medium)).foregroundColor(.white)
-                                .padding(.horizontal, 14).frame(height: 32)
+                            Text(Tr("处理这一单")).font(AppDesign.Type.bodyMedium).foregroundColor(.white)
+                                .padding(.horizontal, 14).frame(height: AppDesign.Control.smallButtonHeight)
                                 .background(Capsule().fill(DDColor.redDeep))
                         }
                         .buttonStyle(.plain)
@@ -137,11 +137,11 @@ struct MallOpsSection: View {
                 TextField(Tr("发给谁的账号（留空 = 所有人）"), text: $sendTo)
                     .font(pf(14)).autocorrectionDisabled(true)
                     .textInputAutocapitalization(.never)
-                    .padding(.horizontal, 12).frame(height: 42)
+                    .padding(.horizontal, 12).frame(height: AppDesign.Control.searchHeight)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small).fill(C.fieldBg))
                 Button { showSend = true } label: {
                     Text(Tr("去发券")).font(pf(14, .medium)).foregroundColor(.white)
-                        .padding(.horizontal, 16).frame(height: 42)
+                        .padding(.horizontal, 16).frame(height: AppDesign.Control.searchHeight)
                         .background(Capsule().fill(C.green))
                 }
                 .buttonStyle(.plain)
@@ -154,12 +154,12 @@ struct MallOpsSection: View {
 
     private func header(_ title: String, sub: String, reload: (() -> Void)?) -> some View {
         HStack(spacing: 8) {
-            Text(title).font(pf(16, .semibold)).foregroundColor(C.label)
+            Text(title).font(AppDesign.Type.rowTitle).foregroundColor(C.label)
             Text(sub).font(pf(12)).foregroundColor(C.subLabel)
             Spacer(minLength: 0)
             if let r = reload {
                 Button { r() } label: {
-                    Text(Tr("刷新")).font(pf(12.5)).foregroundColor(C.link)
+                    Text(Tr("刷新")).font(AppDesign.Type.caption).foregroundColor(C.link)
                 }
                 .buttonStyle(.plain)
             }
@@ -168,7 +168,7 @@ struct MallOpsSection: View {
     }
 
     private func hint(_ t: String) -> some View {
-        Text(t).font(pf(12.5)).foregroundColor(C.subLabel)
+        Text(t).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 16).padding(.bottom, 14)
     }
@@ -199,14 +199,14 @@ struct ShipSheet: View {
                     .padding(12).background(C.cardBg)
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
 
-                    Text(Tr("快递公司")).font(pf(12.5)).foregroundColor(C.subLabel)
+                    Text(Tr("快递公司")).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 76), spacing: 8)], spacing: 8) {
                         ForEach(companies, id: \.self) { c in
                             Button { company = c } label: {
                                 Text(c).font(pf(14, company == c ? .semibold : .regular))
                                     .foregroundColor(company == c ? .white : C.label)
-                                    .frame(maxWidth: .infinity).frame(height: 36)
+                                    .frame(maxWidth: .infinity).frame(height: AppDesign.Control.floatingControlHeight)
                                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small)
                                         .fill(company == c ? C.green : C.cardBg))
                             }
@@ -216,7 +216,7 @@ struct ShipSheet: View {
                     TextField(Tr("运单号（比如 SF1234567890）"), text: $no)
                         .font(pf(15)).autocorrectionDisabled(true)
                         .textInputAutocapitalization(.characters)
-                        .padding(.horizontal, 12).frame(height: 48)
+                        .padding(.horizontal, 12).frame(height: AppDesign.Control.mediumControlHeight)
                         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact).fill(C.fieldBg))
                     Text(Tr("填完发货，用户那边就能看到**快递公司的真实轨迹**（自动去快递100 查）。"))
                         .font(pf(12)).foregroundColor(C.subLabel)
@@ -226,7 +226,7 @@ struct ShipSheet: View {
             }
             Button { Task { await ship() } } label: {
                 Text(busy ? Tr("正在发货…") : Tr("确认发货"))
-                    .font(pf(16, .medium)).foregroundColor(.white)
+                    .font(AppDesign.Type.rowTitle).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(busy ? C.subLabel : C.green))
                     .padding(.horizontal, 14)
@@ -278,7 +278,7 @@ struct PushTrackSheet: View {
                         .buttonStyle(.plain)
                     }
                     TextField(Tr("也可以自己写一句"), text: $text)
-                        .font(pf(15)).padding(.horizontal, 12).frame(height: 48)
+                        .font(pf(15)).padding(.horizontal, 12).frame(height: AppDesign.Control.mediumControlHeight)
                         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact).fill(C.fieldBg))
                     Text(Tr("写「已签收」时会把这单标成已完成。"))
                         .font(pf(12)).foregroundColor(C.subLabel)
@@ -288,7 +288,7 @@ struct PushTrackSheet: View {
             }
             Button { Task { await push() } } label: {
                 Text(busy ? Tr("正在写入…") : Tr("写入物流"))
-                    .font(pf(16, .medium)).foregroundColor(.white)
+                    .font(AppDesign.Type.rowTitle).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(busy ? C.subLabel : C.green))
                     .padding(.horizontal, 14)
@@ -337,18 +337,18 @@ struct AfterSaleReviewSheet: View {
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
 
                     TextField(Tr("给用户的说明（驳回时一定要写）"), text: $note)
-                        .font(pf(14)).padding(.horizontal, 12).frame(height: 48)
+                        .font(pf(14)).padding(.horizontal, 12).frame(height: AppDesign.Control.mediumControlHeight)
                         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact).fill(C.fieldBg))
 
                     Button { Task { await review(true) } } label: {
-                        Text(Tr("同意退款（退回零钱）")).font(pf(15.5, .medium)).foregroundColor(.white)
+                        Text(Tr("同意退款（退回零钱）")).font(AppDesign.Type.rowTitleMedium).foregroundColor(.white)
                             .frame(maxWidth: .infinity).frame(height: 46)
                             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(C.green))
                     }
                     .buttonStyle(.plain).disabled(busy)
 
                     Button { Task { await review(false) } } label: {
-                        Text(Tr("驳回")).font(pf(15.5)).foregroundColor(C.red)
+                        Text(Tr("驳回")).font(AppDesign.Type.bodyLarge).foregroundColor(C.red)
                             .frame(maxWidth: .infinity).frame(height: 46)
                             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(C.cardBg))
                     }
@@ -390,7 +390,7 @@ struct SendCouponSheet: View {
                 VStack(spacing: 10) {
                     Text(to.isEmpty ? Tr("这次会发给**所有没被封的账号**，一人几张看下面。")
                                     : (Tr("发给：") + to))
-                        .font(pf(12.5)).foregroundColor(C.subLabel)
+                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     fld(Tr("券名（比如 客服券 / 补贴券）"), $title)
                     fld(Tr("面额（元）"), $off, num: true)
@@ -402,7 +402,7 @@ struct SendCouponSheet: View {
             }
             Button { Task { await send() } } label: {
                 Text(busy ? Tr("正在发…") : Tr("发券"))
-                    .font(pf(16, .medium)).foregroundColor(.white)
+                    .font(AppDesign.Type.rowTitle).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(busy ? C.subLabel : C.green))
                     .padding(.horizontal, 14)
@@ -418,7 +418,7 @@ struct SendCouponSheet: View {
         TextField(ph, text: text)
             .font(pf(15))
             .keyboardType(num ? .decimalPad : .default)
-            .padding(.horizontal, 14).frame(height: 48)
+            .padding(.horizontal, 14).frame(height: AppDesign.Control.mediumControlHeight)
             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact).fill(C.fieldBg))
     }
 

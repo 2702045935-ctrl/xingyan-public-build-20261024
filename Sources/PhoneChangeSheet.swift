@@ -30,11 +30,11 @@ struct PhoneChangeSheet: View {
                         .font(pfStyled(size: 14)).foregroundColor(C.loginGreen)
                         .disabled(!phoneOK || busy)
                 }
-                .padding(.horizontal, 14).frame(height: 52)
+                .padding(.horizontal, 14).frame(height: AppDesign.Control.largeControlHeight)
                 .background(Color.dyn(0xFFFFFF, 0x1C1C1E))
 
                 TextField(Tr("验证码"), text: $code).keyboardType(.numberPad)
-                    .padding(.horizontal, 14).frame(height: 52)
+                    .padding(.horizontal, 14).frame(height: AppDesign.Control.largeControlHeight)
                     .background(Color.dyn(0xFFFFFF, 0x1C1C1E))
 
                 if !devCode.isEmpty {
@@ -43,7 +43,7 @@ struct PhoneChangeSheet: View {
                 }
 
                 SecureField(Tr("当前登录密码（没配短信通道时用）"), text: $password)
-                    .padding(.horizontal, 14).frame(height: 52)
+                    .padding(.horizontal, 14).frame(height: AppDesign.Control.largeControlHeight)
                     .background(Color.dyn(0xFFFFFF, 0x1C1C1E))
 
                 if !note.isEmpty { Text(note).font(pfStyled(size: 13)).foregroundColor(C.subLabel) }
@@ -52,7 +52,7 @@ struct PhoneChangeSheet: View {
                 Button { submit() } label: {
                     Text(busy ? Tr("提交中…") : Tr("确认更换"))
                         .font(pfStyled(size: 17, weight: .medium)).foregroundColor(.white)
-                        .frame(maxWidth: .infinity).frame(height: 48)
+                        .frame(maxWidth: .infinity).frame(height: AppDesign.Control.mediumControlHeight)
                         .background(phoneOK && !busy ? C.loginGreen : C.subLabel)
                         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
                 }

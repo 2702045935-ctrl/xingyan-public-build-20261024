@@ -137,12 +137,12 @@ struct ShakePageView: View {
                     shake()
                 } label: {
                     Text(busy ? "正在找…" : (result == nil ? "摇 一 摇" : "再摇一次"))
-                        .font(pf(16, .medium))
+                        .font(AppDesign.Type.rowTitle)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 46)
                         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
-                            .fill(Color(hex: 0x19A47A)))
+                            .fill(AppPalette.success))
                 }
                 .buttonStyle(.plain)
                 .disabled(busy)
@@ -238,7 +238,7 @@ struct ShakePageView: View {
                         .foregroundColor(.white)
                         .frame(width: 116, height: 38)
                         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
-                            .fill(Color(hex: 0x19A47A)))
+                            .fill(AppPalette.success))
                 }
                 .buttonStyle(.plain)
                 Button {

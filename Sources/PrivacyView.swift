@@ -461,7 +461,7 @@ private struct AppearanceHomePreview: View {
                     miniAppIcon("person.crop.circle.fill", tint: .gray)
                 }
                 .padding(.horizontal, 10)
-                .frame(height: 42)
+                .frame(height: AppDesign.Control.searchHeight)
                 .background(panel.opacity(0.62),
                             in: RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
                 .padding(.horizontal, 9)

@@ -129,7 +129,7 @@ struct OfficialAccountsView: View {
                             }
                         }
                     }
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
                 .padding(.top, 10)
             }
@@ -177,7 +177,7 @@ struct OfficialAccountsView: View {
             }
             .padding(.horizontal, 12)
             .frame(maxWidth: .infinity)
-            .frame(height: 64)
+            .frame(height: AppDesign.Control.compactRowHeight)
             .background(.regularMaterial,
                         in: RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
             .overlay {
@@ -223,7 +223,7 @@ struct OfficialAccountsView: View {
                         .foregroundStyle(OrbitTheme.tertiary)
                 }
                 .padding(.horizontal, 15)
-                .frame(height: 72)
+                .frame(height: AppDesign.Control.rowHeight)
                 .contentShape(Rectangle())
             }
         }
@@ -308,7 +308,7 @@ struct OfficialAccountPage: View {
                             .padding(.horizontal, 18).padding(.top, 20).padding(.bottom, 6)
                         ForEach(articles) { a in articleRow(a) }
                     }
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
             }
         }
@@ -369,7 +369,7 @@ struct OfficialAccountPage: View {
                     .font(pf(15, .medium))
                     .foregroundColor(account?.followed == true ? C.subLabel : .white)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 42)
+                    .frame(height: AppDesign.Control.searchHeight)
                     .background(
                         RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                             .fill(account?.followed == true ? C.fieldBg : C.green)
@@ -390,7 +390,7 @@ struct OfficialAccountPage: View {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(a.title)
-                        .font(pf(16.5))
+                        .font(AppDesign.Type.listTitle)
                         .foregroundColor(C.label)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
@@ -456,7 +456,7 @@ struct ArticleView: View {
         VStack(spacing: 0) {
             ZStack {
                 Text(account?.name ?? Tr("文章"))
-                    .font(pf(16, .semibold)).foregroundColor(C.label).lineLimit(1)
+                    .font(AppDesign.Type.rowTitle).foregroundColor(C.label).lineLimit(1)
                 HStack(spacing: 0) {
                     Button { dismiss() } label: {
                         Image(systemName: "chevron.left")
@@ -500,7 +500,7 @@ struct ArticleView: View {
                                    radius: 13, circle: true)
                             Text(account?.name ?? "").font(pf(13)).foregroundColor(C.link)
                             if !(a.author ?? "").isEmpty, a.author != account?.name {
-                                Text(a.author ?? "").font(pf(12.5)).foregroundColor(C.subLabel)
+                                Text(a.author ?? "").font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                             }
                             Spacer(minLength: 0)
                             Text(TimeFmt.list(a.createdAt)).font(pf(12)).foregroundColor(C.time)
@@ -543,7 +543,7 @@ struct ArticleView: View {
                             .font(pf(14, .medium))
                             .foregroundColor(acc.followed ? C.subLabel : .white)
                             .padding(.horizontal, 16)
-                            .frame(height: 32)
+                            .frame(height: AppDesign.Control.smallButtonHeight)
                             .background(Capsule().fill(acc.followed ? C.fieldBg : C.green))
                     }
                     .buttonStyle(.plain)
@@ -665,7 +665,7 @@ struct OAArticleCard: View {
 
                     Rectangle()
                         .fill(C.hairline)
-                        .frame(height: 0.5)
+                        .frame(height: AppDesign.Control.hairline)
                         .padding(.vertical, 9)
 
                     HStack(spacing: 6) {

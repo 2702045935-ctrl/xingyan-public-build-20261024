@@ -95,43 +95,25 @@ struct ContactsView: View {
         return max(L.navH, ceil(titleHeight + 14))
     }
     private var listHeadH: CGFloat { max(0, contactsHeaderHeight - 7) }
-    private var contactsCanvas: Color {
-        scheme == .dark ? C.contactsBg
-            : (UIConfig.colorIfSet("contactsBg") ?? .white)
-    }
-    private var contactsField: Color {
-        scheme == .dark ? C.searchBg
-                        : Color(hex: 0xF0F2F5)
-    }
-    private var contactsRule: Color {
-        scheme == .dark ? C.hairline
-                        : Color(hex: 0xE9EDEF)
-    }
-    private var contactsLabel: Color {
-        scheme == .dark ? C.label : Color(hex: 0x111B21)
-    }
-    private var contactsSecondary: Color {
-        scheme == .dark ? C.subLabel : Color(hex: 0x667781)
-    }
-    private var contactsSectionFill: Color {
-        scheme == .dark ? C.cardBg
-                        : Color(hex: 0xF7F8FA)
-    }
-    private var contactsRowFill: Color {
-        contactsCanvas
-    }
+    private var contactsCanvas: Color { OrbitTheme.canvas }
+    private var contactsField: Color { OrbitTheme.field }
+    private var contactsRule: Color { OrbitTheme.divider }
+    private var contactsLabel: Color { OrbitTheme.ink }
+    private var contactsSecondary: Color { OrbitTheme.secondary }
+    private var contactsSectionFill: Color { OrbitTheme.field }
+    private var contactsRowFill: Color { OrbitTheme.canvas }
     private var contactAvatarSize: CGFloat {
         AppDesign.Avatar.row
     }
-    private let contactsAccent = Color(hex: 0x25D366)
+    private let contactsAccent = OrbitTheme.jade
 
 private var funcs: [(String, String, Color, String)] {
     [
-        (Tr("新的朋友"), I.newFriends, Color(hex: 0x2C6E5E), "newFriends"),
-        (Tr("群聊"), I.groups, Color(hex: 0x315E78), "groups"),
-        (Tr("仅聊天的朋友"), I.chatOnly, Color(hex: 0x8E8E99), "chatOnly"),
+        (Tr("新的朋友"), I.newFriends, OrbitTheme.jadeDeep, "newFriends"),
+        (Tr("群聊"), I.groups, OrbitTheme.blue, "groups"),
+        (Tr("仅聊天的朋友"), I.chatOnly, OrbitTheme.secondary, "chatOnly"),
         (Tr("标签"), I.tag, OrbitTheme.jadeDeep, "tags"),
-        (Tr("公众号"), I.service, Color(hex: 0x5E6579), "officialAccounts")
+        (Tr("公众号"), I.service, OrbitTheme.secondary, "officialAccounts")
     ]
 }
 
@@ -248,12 +230,12 @@ private var funcs: [(String, String, Color, String)] {
                                 if keyword.isEmpty {
 
                                     funcStrip
-                                    Color.clear.frame(height: 8)
+                                    Color.clear.frame(height: AppDesign.Spacing.xs)
                                 }
 
                                 if keyword.isEmpty, !starUsers.isEmpty {
                                     starStrip
-                                    Color.clear.frame(height: 8)
+                                    Color.clear.frame(height: AppDesign.Spacing.xs)
                                 }
 
                                 ForEach(sections) { section in
@@ -280,12 +262,12 @@ private var funcs: [(String, String, Color, String)] {
                                             Spacer(minLength: 0)
                                         }
                                         .padding(.leading, 16)
-                                        .frame(height: 28)
+                                        .frame(height: AppDesign.Control.statusHeight)
                                         .background(contactsSectionFill)
                                         .overlay(alignment: .bottom) {
                                             Rectangle()
                                                 .fill(contactsRule)
-                                                .frame(height: 0.5)
+                                                .frame(height: AppDesign.Control.hairline)
                                         }
                                         .id("letter-\(section.letter)")
                                     }
@@ -301,7 +283,7 @@ private var funcs: [(String, String, Color, String)] {
                                         Text(keyword.isEmpty
                                              ? Tr("点右上角 ＋ 添加联系人")
                                              : Tr("换个关键词试试"))
-                                            .font(pf(12.5))
+                                            .font(AppDesign.Type.caption)
                                             .foregroundColor(contactsSecondary)
                                     }
                                     .frame(maxWidth: .infinity)
@@ -405,13 +387,13 @@ private var funcs: [(String, String, Color, String)] {
             NavPlusItem(title: Tr("发起群聊"), symbol: "person.2.fill",
                         colors: [C.green, C.green.opacity(0.78)]) { path.append("newGroup") },
             NavPlusItem(title: Tr("面对面建群"), symbol: "person.3.sequence.fill",
-                        colors: [Color(hex: 0x5FD38A), Color(hex: 0x178A58)]) {
+                        colors: [OrbitTheme.jade, OrbitTheme.jadeDeep]) {
                 path.append("faceGroup")
             },
             NavPlusItem(title: Tr("添加朋友"), symbol: "person.badge.plus",
-                        colors: [Color(hex: 0x64B5F6), Color(hex: 0x2A6BC4)]) { path.append("addFriend") },
+                        colors: [OrbitTheme.blue, OrbitTheme.blue]) { path.append("addFriend") },
             NavPlusItem(title: Tr("手机联系人"), symbol: "person.text.rectangle",
-                        colors: [Color(hex: 0x69A18F), Color(hex: 0x315E78)]) {
+                        colors: [OrbitTheme.jade, OrbitTheme.blue]) {
                 showPhoneContacts = true
             },
             NavPlusItem(title: Tr("扫一扫"), symbol: "qrcode.viewfinder",
@@ -524,7 +506,7 @@ private var funcs: [(String, String, Color, String)] {
             } trailing: {
                 if item.3 == "newFriends" && app.showDot("newFriends", auto: app.friendRequests > 0) {
                     Text(app.friendRequests > 99 ? "99+" : "\(app.friendRequests)")
-                        .font(pf(12, .medium))
+                        .font(AppDesign.Type.sectionMedium)
                         .foregroundColor(.white)
                         .padding(.horizontal, app.friendRequests > 9 ? 6 : 0)
                         .frame(minWidth: 20, minHeight: 20)
@@ -652,7 +634,7 @@ private var funcs: [(String, String, Color, String)] {
 
                 if item.3 == "newFriends" && app.showDot("newFriends", auto: app.friendRequests > 0) {
                     Text(app.friendRequests > 99 ? "99+" : "\(app.friendRequests)")
-                        .font(pf(12.5, .medium))
+                        .font(AppDesign.Type.captionMedium)
                         .foregroundColor(.white)
                         .padding(.horizontal, app.friendRequests > 9 ? 6 : 0)
                         .frame(minWidth: 18, minHeight: 18)
@@ -753,7 +735,7 @@ private var funcs: [(String, String, Color, String)] {
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(contactsRule)
-                .frame(height: 0.5)
+                .frame(height: AppDesign.Control.hairline)
                 .padding(.leading, 68)
         }
         .contentShape(Rectangle())
@@ -888,12 +870,12 @@ struct ContactCardView: View {
         return u.id == app.me?.id ? "self" : "none"
     }
 
-    private var sheetBg: Color { scheme == .dark ? Color(hex: 0x1C1C1E) : .white }
-    private var scrollBg: Color { C.pageBg }
-    private var ink: Color { scheme == .dark ? Color(hex: 0xEDEDED) : Color(hex: 0x1A1A1A) }
-    private var gray: Color { scheme == .dark ? Color(hex: 0x8E8E93) : Color(hex: 0x737373) }
-    private var link: Color { scheme == .dark ? Color(hex: 0x7D90B8) : Color(hex: 0x576B95) }
-    private var lineColor: Color { scheme == .dark ? Color(white: 1, opacity: 0.09) : Color(hex: 0xE5E5E5) }
+    private var sheetBg: Color { OrbitTheme.raised }
+    private var scrollBg: Color { OrbitTheme.canvas }
+    private var ink: Color { OrbitTheme.ink }
+    private var gray: Color { OrbitTheme.secondary }
+    private var link: Color { OrbitTheme.blue }
+    private var lineColor: Color { OrbitTheme.divider }
 
     var body: some View {
         ZStack {
@@ -1113,7 +1095,7 @@ struct ContactCardView: View {
                     }
                     VStack(alignment: .leading, spacing: 3) {
                         Text(displayName)
-                            .font(pf(15.5, .medium))
+                            .font(AppDesign.Type.rowTitleMedium)
                             .foregroundColor(C.label)
                             .lineLimit(1)
                         Text(Tr("星言号") + "：" + (u.username ?? "-"))
@@ -1203,7 +1185,7 @@ struct ContactCardView: View {
                         .font(pf(16))
                         .foregroundColor(C.label)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 52)
+                        .frame(height: AppDesign.Control.largeControlHeight)
                         .background { CardGlassBox(radius: 14) }
                         .overlay(RoundedRectangle(
                             cornerRadius: AppDesign.Radius.control,
@@ -1240,7 +1222,7 @@ struct ContactCardView: View {
 
     private var hero: some View {
 
-        PanelHeroCard(glow: Color(hex: 0xF0C24B)) {
+        PanelHeroCard(glow: OrbitTheme.gold) {
             ZStack(alignment: .topTrailing) {
                 StarOrbitProfileAccent()
 
@@ -1299,12 +1281,12 @@ struct ContactCardView: View {
         .overlay(RoundedRectangle(cornerRadius: max(12, L.cdAvatarRadius), style: .continuous)
 
             .stroke(LinearGradient(colors: [Color.white.opacity(0.85),
-                                            Color(hex: 0xF0C24B).opacity(0.75),
+                                            OrbitTheme.gold.opacity(0.75),
                                             Color.white.opacity(0.25)],
                                    startPoint: .topLeading, endPoint: .bottomTrailing),
                     lineWidth: 1.6))
         .shadow(color: Color.black.opacity(0.38), radius: 12, y: 5)
-        .shadow(color: Color(hex: 0xF0C24B).opacity(0.18), radius: 14, y: 2)
+        .shadow(color: OrbitTheme.gold.opacity(0.18), radius: 14, y: 2)
     }
 
     private func heroLine(_ text: String) -> some View {
@@ -1320,7 +1302,7 @@ struct ContactCardView: View {
                 Text(text).foregroundColor(.white.opacity(0.82))
             }
         }
-        .font(pf(12.5))
+        .font(AppDesign.Type.caption)
         .lineLimit(1)
     }
 
@@ -1337,7 +1319,7 @@ struct ContactCardView: View {
             .font(pf(12))
             .foregroundColor(.white)
             .padding(.horizontal, 9)
-            .frame(height: 24)
+            .frame(height: AppDesign.Control.badgeHeight)
             .background(Capsule().fill(c.isEmpty ? Color.white.opacity(0.16) : Color(hexString: c)))
             .overlay(Capsule().stroke(Color.white.opacity(0.22), lineWidth: 0.7))
         }
@@ -1458,7 +1440,7 @@ struct ContactCardView: View {
             HStack(spacing: 11) {
                 PanelIcon(symbol: symbol, colors: colors)
                 Text(act.title)
-                    .font(pf(16, .medium))
+                    .font(AppDesign.Type.rowTitle)
                     .foregroundColor(pending ? C.subLabel : C.label)
                 Spacer(minLength: 0)
                 if !pending { Chevron(size: 9, line: 1.6) }
@@ -1676,7 +1658,7 @@ struct GenderMark: View {
     }
 
     private func figure(male: Bool) -> some View {
-        let tint = male ? Color(hex: 0x10AEFF) : Color(hex: 0xFF7BA9)
+        let tint = male ? OrbitTheme.male : OrbitTheme.female
         return ZStack {
             Path { p in
                 p.addEllipse(in: CGRect(x: 8.1, y: 1.8, width: 7.8, height: 7.8))

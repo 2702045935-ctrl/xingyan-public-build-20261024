@@ -151,21 +151,6 @@ private struct WorldStarfield: View {
     }
 }
 
-private struct WorldTopIconPressStyle: ButtonStyle {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .background {
-                Circle()
-                    .fill(Color.primary.opacity(configuration.isPressed ? 0.06 : 0))
-            }
-            .scaleEffect(reduceMotion ? 1 : (configuration.isPressed ? 0.92 : 1))
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.10),
-                       value: configuration.isPressed)
-    }
-}
-
 private struct XingyanMallMark: View {
     var size: CGFloat = 52
 
@@ -317,7 +302,7 @@ struct DiscoverView: View {
                         .frame(width: 42, height: 42)
                         .contentShape(Rectangle())
                 }
-                .buttonStyle(WorldTopIconPressStyle())
+                .buttonStyle(AppIconPressStyle())
                 .accessibilityLabel(Tr("搜索"))
 
                 Button {
@@ -329,7 +314,7 @@ struct DiscoverView: View {
                         .frame(width: 42, height: 42)
                         .contentShape(Rectangle())
                 }
-                .buttonStyle(WorldTopIconPressStyle())
+                .buttonStyle(AppIconPressStyle())
                 .accessibilityLabel(Tr("扫一扫"))
             }
         }
@@ -375,7 +360,7 @@ struct DiscoverView: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 16)
-        .frame(height: 30)
+        .frame(height: AppDesign.Control.sectionHeaderHeight)
         .background(worldSectionFill)
         .accessibilityAddTraits(.isHeader)
     }
@@ -433,7 +418,7 @@ struct DiscoverView: View {
                 }
             }
             .padding(.horizontal, 16)
-            .frame(height: 72)
+            .frame(height: AppDesign.Control.rowHeight)
             .background(worldRowFill)
             .contentShape(Rectangle())
         }
@@ -441,7 +426,7 @@ struct DiscoverView: View {
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(worldHairline)
-                .frame(height: 0.5)
+                .frame(height: AppDesign.Control.hairline)
                 .padding(.leading, 82)
         }
         .accessibilityElement(children: .combine)
@@ -493,7 +478,7 @@ struct DiscoverView: View {
                     .foregroundStyle(OrbitTheme.tertiary)
             }
             .padding(.horizontal, 16)
-            .frame(height: 64)
+            .frame(height: AppDesign.Control.compactRowHeight)
             .background(worldRowFill)
             .contentShape(Rectangle())
         }
@@ -501,7 +486,7 @@ struct DiscoverView: View {
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(worldHairline)
-                .frame(height: 0.5)
+                .frame(height: AppDesign.Control.hairline)
                 .padding(.leading, 70)
         }
         .accessibilityElement(children: .combine)
@@ -530,7 +515,7 @@ struct DiscoverView: View {
                     .foregroundStyle(OrbitTheme.tertiary)
             }
             .padding(.horizontal, 16)
-            .frame(height: 64)
+            .frame(height: AppDesign.Control.compactRowHeight)
             .background(worldRowFill)
             .contentShape(Rectangle())
         }
@@ -538,7 +523,7 @@ struct DiscoverView: View {
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(worldHairline)
-                .frame(height: 0.5)
+                .frame(height: AppDesign.Control.hairline)
                 .padding(.leading, 70)
         }
         .accessibilityElement(children: .combine)
@@ -554,7 +539,7 @@ struct DiscoverView: View {
                         if let hero = worldHeroItem {
                             worldSectionHeader(Tr("动态"))
                             worldUpdatesRow(hero)
-                            Color.clear.frame(height: 8)
+                            Color.clear.frame(height: AppDesign.Spacing.xs)
                         }
 
                         if worldShopItem != nil || !worldEntryGroups.isEmpty {
@@ -562,7 +547,7 @@ struct DiscoverView: View {
 
                             if let shop = worldShopItem {
                                 worldShopRow(shop)
-                                Color.clear.frame(height: 8)
+                                Color.clear.frame(height: AppDesign.Spacing.xs)
                             }
 
                             ForEach(worldEntryGroups) { group in
@@ -572,7 +557,7 @@ struct DiscoverView: View {
                                         worldFlatRow(item)
                                     }
                                 }
-                                Color.clear.frame(height: 8)
+                                Color.clear.frame(height: AppDesign.Spacing.xs)
                             }
                         }
 
@@ -720,7 +705,7 @@ struct DiscoverView: View {
                     .font(pfStyled(size: 15, weight: .semibold))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 22)
-                    .frame(height: 42)
+                    .frame(height: AppDesign.Control.searchHeight)
                     .background(OrbitTheme.jade, in: Capsule())
             }
             .buttonStyle(.plain)
@@ -919,7 +904,7 @@ struct DiscoverView: View {
                         }
                         .foregroundStyle(.white.opacity(0.94))
                         .padding(.horizontal, 11)
-                        .frame(height: 30)
+                        .frame(height: AppDesign.Control.sectionHeaderHeight)
                         .background(.ultraThinMaterial, in: Capsule())
 
                         if app.showDot("momentsRow", auto: !latestThumb.isEmpty) {
@@ -1141,7 +1126,7 @@ struct DiscoverView: View {
                                 .font(pfStyled(size: 9.5, weight: .semibold))
                                 .foregroundStyle(.white.opacity(0.88))
                                 .padding(.horizontal, 7)
-                                .frame(height: 20)
+                                .frame(height: AppDesign.Control.compactBadgeHeight)
                                 .background(Capsule().fill(Color.white.opacity(0.13)))
                         }
                         Text(Tr("自营与第三方好物 · 每日上新"))
@@ -1244,7 +1229,7 @@ struct DiscoverView: View {
     private var rowLine: some View {
         Rectangle()
             .fill(OrbitTheme.divider)
-            .frame(height: 0.5)
+            .frame(height: AppDesign.Control.hairline)
             .padding(.leading, L.menuLineInset)
     }
 }
@@ -1919,7 +1904,7 @@ struct MomentsView: View {
                         .background(Circle().fill(Color.black.opacity(0.48)))
 
                     Text(Tr("设置生活圈封面"))
-                        .font(pf(16.5, .semibold))
+                        .font(AppDesign.Type.button)
                         .foregroundColor(.white)
 
                     Text(Tr("从相册选一张图，让朋友一眼记住你"))
@@ -2007,7 +1992,7 @@ struct MomentsView: View {
                         coverMenu = true
                     } label: {
                         Text(Tr("换封面"))
-                            .font(pf(12.5, .medium))
+                            .font(AppDesign.Type.captionMedium)
                             .foregroundColor(.white)
                             .frame(width: 88, height: 32)
                             .background(Capsule()
@@ -2037,7 +2022,7 @@ struct MomentsView: View {
                         .shadow(color: Color.black.opacity(0.28), radius: 5, x: 0, y: 2)
                     if let sign = signature {
                         Text(sign)
-                            .font(pf(12.5))
+                            .font(AppDesign.Type.caption)
                             .foregroundColor(C.label)
                             .lineLimit(2)
                             .multilineTextAlignment(.center)
@@ -2189,14 +2174,14 @@ struct MomentsView: View {
             HStack(spacing: 6) {
                 Text(Tr("余下") + " \(row.rest.count) " + Tr("条"))
                     .font(pf(14))
-                    .foregroundColor(Color(hex: 0x576B95))
+                    .foregroundColor(AppPalette.legacyLink)
                 Image(systemName: "chevron.down")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(Color(hex: 0x576B95))
+                    .foregroundColor(AppPalette.legacyLink)
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 16)
-            .frame(height: 40)
+            .frame(height: AppDesign.Control.iconControlHeight)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -2232,12 +2217,12 @@ struct MomentsView: View {
                     Text("STRESS")
                         .font(.system(size: 10, weight: .bold, design: .rounded))
                     Text("已加载 \(stressLoadedCount) / \(MomentStressFixture.count)")
-                        .font(pf(12, .medium))
+                        .font(AppDesign.Type.sectionMedium)
                     Spacer(minLength: 0)
                 }
                 .foregroundColor(C.subLabel)
                 .padding(.horizontal, L.momentPadH)
-                .frame(height: 28)
+                .frame(height: AppDesign.Control.statusHeight)
             }
 
             let source = displayedMoments
@@ -2325,7 +2310,7 @@ struct MomentsView: View {
                     .font(pfStyled(size: 11.5, weight: .semibold))
                     .foregroundStyle(C.label)
                     .padding(.horizontal, 9)
-                    .frame(height: 24)
+                    .frame(height: AppDesign.Control.badgeHeight)
                     .background(.regularMaterial, in: Capsule(style: .continuous))
                     .overlay {
                         Capsule(style: .continuous)
@@ -2402,7 +2387,7 @@ struct MomentsView: View {
                     if !timelineAvailableDays.isEmpty {
                         VStack(alignment: .leading, spacing: 10) {
                             Text(Tr("最近有动态"))
-                                .font(pf(13, .semibold))
+                                .font(AppDesign.Type.compactButton)
                                 .foregroundStyle(C.subLabel)
 
                             ScrollView(.horizontal, showsIndicators: false) {
@@ -2412,7 +2397,7 @@ struct MomentsView: View {
                                             timelineDateDraft = day
                                         } label: {
                                             Text(Self.monthDayFormatter.string(from: day))
-                                                .font(pf(12.5, .semibold))
+                                                .font(AppDesign.Type.captionStrong)
                                                 .foregroundStyle(
                                                     Calendar.current.isDate(
                                                         day,
@@ -2420,7 +2405,7 @@ struct MomentsView: View {
                                                     ) ? C.cardBg : C.label
                                                 )
                                                 .padding(.horizontal, 12)
-                                                .frame(height: 32)
+                                                .frame(height: AppDesign.Control.smallButtonHeight)
                                                 .background(
                                                     Calendar.current.isDate(
                                                         day,
@@ -2457,7 +2442,7 @@ struct MomentsView: View {
                                 .font(pf(15, .semibold))
                                 .foregroundStyle(C.label)
                                 .frame(maxWidth: .infinity)
-                                .frame(height: 48)
+                                .frame(height: AppDesign.Control.mediumControlHeight)
                                 .background(.ultraThinMaterial,
                                             in: RoundedRectangle(cornerRadius: AppDesign.Radius.control,
                                                                  style: .continuous))
@@ -2534,7 +2519,7 @@ struct MomentsView: View {
                 clearTimelineDateFilter()
             } label: {
                 Text(Tr("显示全部动态"))
-                    .font(pf(13.5, .semibold))
+                    .font(AppDesign.Type.bodyStrong)
                     .foregroundStyle(C.label)
                     .padding(.horizontal, 14)
                     .frame(height: 34)
@@ -2727,7 +2712,7 @@ struct MomentsView: View {
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(C.red)
                     Text(publishError)
-                        .font(pf(13.5))
+                        .font(AppDesign.Type.body)
                         .foregroundColor(C.label)
                         .fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 0)
@@ -2738,7 +2723,7 @@ struct MomentsView: View {
                 .overlay(alignment: .bottom) {
                     Rectangle()
                         .fill(C.hairline)
-                        .frame(height: 0.5)
+                        .frame(height: AppDesign.Control.hairline)
                 }
             }
 
@@ -2751,13 +2736,13 @@ struct MomentsView: View {
                                 .tint(C.green)
                                 .frame(width: 72)
                             Text(publishStatus.isEmpty ? Tr("正在发表…") : publishStatus)
-                                .font(pf(12.5, .medium))
+                                .font(AppDesign.Type.captionMedium)
                                 .foregroundColor(C.subLabel)
                                 .lineLimit(1)
                             Spacer(minLength: 0)
                         }
                         .padding(.horizontal, 16)
-                        .frame(height: 38)
+                        .frame(height: AppDesign.Control.iconSmallHeight)
                         .background(C.cardBg)
                         .padding(.bottom, 8)
                     }
@@ -2987,7 +2972,7 @@ struct MomentsView: View {
                 Chevron(size: 9, line: 1.6)
             }
             .padding(.horizontal, 16)
-            .frame(height: 50)
+            .frame(height: AppDesign.Control.buttonHeight)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -3693,7 +3678,7 @@ struct MomentGroupPage: View {
                                 HairLine(inset: L.momentPadH + L.momentAvatar + 9)
                             }
                         }
-                        Spacer().frame(height: 30)
+                        Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                     }
                 }
                 .background(C.pageBg)
@@ -3855,7 +3840,7 @@ struct MomentRow: View {
             if moment.pinned == true {
                 HStack(spacing: 3) {
                     Image(systemName: "pin.fill").font(.system(size: 10))
-                    Text(Tr("置顶")).font(pf(12.5))
+                    Text(Tr("置顶")).font(AppDesign.Type.caption)
                 }
                 .foregroundColor(C.subLabel)
                 .padding(.top, 6)
@@ -3884,7 +3869,7 @@ struct MomentRow: View {
                     ForEach(0..<3, id: \.self) { _ in
                         Circle()
                             .fill(moment.likedByMe == true
-                                  ? Color(hex: 0xFF6B6B)
+                                  ? AppPalette.dangerSoft
                                   : Color.dyn(0x7F7F7F, 0xD8D8D8))
                             .frame(width: 3.4, height: 3.4)
                     }
@@ -4044,7 +4029,7 @@ struct MomentRow: View {
                 }
                 .foregroundColor(.white)
                 .padding(.horizontal, 13)
-                .frame(height: 32)
+                .frame(height: AppDesign.Control.smallButtonHeight)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -4062,7 +4047,7 @@ struct MomentRow: View {
                 }
                 .foregroundColor(.white)
                 .padding(.horizontal, 13)
-                .frame(height: 32)
+                .frame(height: AppDesign.Control.smallButtonHeight)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -4080,7 +4065,7 @@ struct MomentRow: View {
                     }
                     .foregroundColor(.white)
                     .padding(.horizontal, 13)
-                    .frame(height: 32)
+                    .frame(height: AppDesign.Control.smallButtonHeight)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -4093,7 +4078,7 @@ struct MomentRow: View {
                         .font(.system(size: 13))
                         .foregroundColor(.white)
                         .padding(.horizontal, 13)
-                        .frame(height: 32)
+                        .frame(height: AppDesign.Control.smallButtonHeight)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -4113,9 +4098,9 @@ struct ColorBall: View {
         ZStack {
             Circle().fill(AngularGradient(
                 gradient: Gradient(colors: [
-                    Color(hex: 0xFF6B6B), Color(hex: 0xFFD166), Color(hex: 0x5FD07A),
+                    AppPalette.dangerSoft, Color(hex: 0xFFD166), Color(hex: 0x5FD07A),
                     Color(hex: 0x4AB6FF), Color(hex: 0xA06DE0), Color(hex: 0xFF6BD6),
-                    Color(hex: 0xFF6B6B)
+                    AppPalette.dangerSoft
                 ]),
                 center: .center))
             Circle().fill(RadialGradient(
@@ -4225,7 +4210,7 @@ struct CoverAdjustSheet: View {
             )
 
             Text(Tr("拖动挪位置，双指缩放，点「完成」保存"))
-                .font(pf(12.5))
+                .font(AppDesign.Type.caption)
                 .foregroundColor(C.subLabel)
                 .padding(.top, 14)
             Spacer()
@@ -4367,7 +4352,7 @@ struct PlacePickerSheet: View {
                             if text.isEmpty { Image(systemName: "checkmark").foregroundColor(C.green) }
                         }
                         .padding(.horizontal, 16)
-                        .frame(height: 52)
+                        .frame(height: AppDesign.Control.largeControlHeight)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -4385,7 +4370,7 @@ struct PlacePickerSheet: View {
                                 if text == p { Image(systemName: "checkmark").foregroundColor(C.green) }
                             }
                             .padding(.horizontal, 16)
-                            .frame(height: 52)
+                            .frame(height: AppDesign.Control.largeControlHeight)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)

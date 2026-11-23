@@ -84,7 +84,7 @@ struct MallAdminSection: View {
             Button { Task { await saveName() } } label: {
                 Text(Tr("保存商城名"))
                     .font(pf(15, .medium)).foregroundColor(.white)
-                    .frame(maxWidth: .infinity).frame(height: 42)
+                    .frame(maxWidth: .infinity).frame(height: AppDesign.Control.searchHeight)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.panel).fill(C.green))
                     .padding(.horizontal, 16)
             }
@@ -137,10 +137,10 @@ struct MallAdminSection: View {
             Button { bannerAdd = true } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "plus.circle.fill").font(.system(size: 17)).foregroundColor(C.green)
-                    Text(Tr("加一张轮播图")).font(pf(15.5)).foregroundColor(C.label)
+                    Text(Tr("加一张轮播图")).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
                     Spacer(minLength: 0)
                 }
-                .padding(.horizontal, 16).frame(height: 52)
+                .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -160,13 +160,13 @@ struct MallAdminSection: View {
             HairLine(inset: 16)
 
             HStack {
-                Text(Tr("显示开屏广告")).font(pf(15.5)).foregroundColor(C.label)
+                Text(Tr("显示开屏广告")).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
                 Spacer(minLength: 0)
                 Toggle("", isOn: Binding(get: { splashDraft.on ?? true },
                                          set: { splashDraft.on = $0 }))
                     .labelsHidden().tint(C.green)
             }
-            .padding(.horizontal, 16).frame(height: 52)
+            .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
             HairLine(inset: 16)
 
             HStack(spacing: 12) {
@@ -193,7 +193,7 @@ struct MallAdminSection: View {
                 }
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 16).frame(height: 72)
+            .padding(.horizontal, 16).frame(height: AppDesign.Control.rowHeight)
             HairLine(inset: 16)
 
             HStack(spacing: 8) {
@@ -207,7 +207,7 @@ struct MallAdminSection: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 16).frame(height: 48)
+            .padding(.horizontal, 16).frame(height: AppDesign.Control.mediumControlHeight)
             HairLine(inset: 16)
 
             HStack(spacing: 10) {
@@ -218,7 +218,7 @@ struct MallAdminSection: View {
                     .font(pf(15)).multilineTextAlignment(.trailing)
                     .frame(width: 90)
             }
-            .padding(.horizontal, 16).frame(height: 48)
+            .padding(.horizontal, 16).frame(height: AppDesign.Control.mediumControlHeight)
             HairLine(inset: 16)
 
             HStack(spacing: 8) {
@@ -232,7 +232,7 @@ struct MallAdminSection: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 16).frame(height: 48)
+            .padding(.horizontal, 16).frame(height: AppDesign.Control.mediumControlHeight)
 
             if (splashDraft.action ?? "none") == "product" {
                 Menu {
@@ -248,7 +248,7 @@ struct MallAdminSection: View {
                         Image(systemName: "chevron.up.chevron.down")
                             .font(.system(size: 11)).foregroundColor(C.subLabel)
                     }
-                    .padding(.horizontal, 14).frame(height: 44)
+                    .padding(.horizontal, 14).frame(height: AppDesign.Control.compactHeight)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.fieldBg))
                     .padding(.horizontal, 16).padding(.bottom, 8)
                 }
@@ -256,7 +256,7 @@ struct MallAdminSection: View {
                 TextField(Tr("https://…"), text: Binding(get: { splashDraft.link ?? "" },
                                                          set: { splashDraft.link = $0 }))
                     .font(pf(14.5)).autocapitalization(.none).disableAutocorrection(true)
-                    .padding(.horizontal, 14).frame(height: 44)
+                    .padding(.horizontal, 14).frame(height: AppDesign.Control.compactHeight)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.fieldBg))
                     .padding(.horizontal, 16).padding(.bottom, 8)
             }
@@ -264,7 +264,7 @@ struct MallAdminSection: View {
             Button { Task { await saveSplash() } } label: {
                 Text(Tr("保存开屏广告"))
                     .font(pf(15, .medium)).foregroundColor(.white)
-                    .frame(maxWidth: .infinity).frame(height: 42)
+                    .frame(maxWidth: .infinity).frame(height: AppDesign.Control.searchHeight)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.panel).fill(C.green))
                     .padding(.horizontal, 16)
             }
@@ -356,7 +356,7 @@ struct MallAdminSection: View {
                                 Image(systemName: "chevron.up.chevron.down")
                                     .font(.system(size: 9)).foregroundColor(C.subLabel)
                             }
-                            .padding(.horizontal, 10).frame(height: 28)
+                            .padding(.horizontal, 10).frame(height: AppDesign.Control.statusHeight)
                             .background(Capsule().fill(C.fieldBg))
                         }
                         Spacer(minLength: 0)
@@ -403,7 +403,7 @@ struct MallAdminSection: View {
                 Button { Task { await saveChannels() } } label: {
                     Text(Tr("保存首页宫格"))
                         .font(pf(14.5, .medium)).foregroundColor(.white)
-                        .padding(.horizontal, 18).frame(height: 38)
+                        .padding(.horizontal, 18).frame(height: AppDesign.Control.iconSmallHeight)
                         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.panel).fill(C.green))
                 }
                 .buttonStyle(.plain)
@@ -525,10 +525,10 @@ struct MallAdminSection: View {
         Button { addingAd = true } label: {
             HStack(spacing: 8) {
                 Image(systemName: "plus.circle.fill").font(.system(size: 17)).foregroundColor(C.green)
-                Text(Tr("加一条广告")).font(pf(15.5)).foregroundColor(C.label)
+                Text(Tr("加一条广告")).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 16).frame(height: 52)
+            .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -633,10 +633,10 @@ struct MallAdminSection: View {
         Button { adding = true } label: {
             HStack(spacing: 8) {
                 Image(systemName: "plus.circle.fill").font(.system(size: 17)).foregroundColor(C.green)
-                Text(Tr("上架一件新商品")).font(pf(15.5)).foregroundColor(C.label)
+                Text(Tr("上架一件新商品")).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 16).frame(height: 52)
+            .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -664,8 +664,8 @@ struct MallAdminSection: View {
     }
 
     private func pill(_ t: String, _ c: Color) -> some View {
-        Text(t).font(pf(12.5)).foregroundColor(c)
-            .padding(.horizontal, 10).frame(height: 28)
+        Text(t).font(AppDesign.Type.caption).foregroundColor(c)
+            .padding(.horizontal, 10).frame(height: AppDesign.Control.statusHeight)
             .background(Capsule().fill(c.opacity(0.12)))
     }
 
@@ -777,7 +777,7 @@ struct MallProductSheet: View {
                                 showVideoPick = true
                             } label: {
                                 Text(video.isEmpty ? Tr("上传视频") : Tr("更换"))
-                                    .font(pf(13, .medium))
+                                    .font(AppDesign.Type.compactButtonMedium)
                                     .foregroundColor(C.green)
                             }
                             .buttonStyle(.plain)
@@ -810,21 +810,21 @@ struct MallProductSheet: View {
                     fld(Tr("已拼人数（填 10万+ 这种也行）"), $sold)
 
                     HStack(spacing: 12) {
-                        Text(Tr("上架")).font(pf(15.5)).foregroundColor(C.label)
+                        Text(Tr("上架")).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
                         Spacer(minLength: 0)
                         Toggle("", isOn: $on).labelsHidden().tint(C.green)
                     }
-                    .padding(.horizontal, 16).frame(height: 56)
+                    .padding(.horizontal, 16).frame(height: AppDesign.Control.menuRowHeight)
                     .background(C.cardBg)
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
-                    Spacer().frame(height: 8)
+                    Spacer().frame(height: AppDesign.Spacing.xs)
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
             }
             Button { Task { await save() } } label: {
                 Text(saving ? Tr("正在保存…") : (editing ? Tr("保存") : Tr("上架")))
-                    .font(pf(16, .medium)).foregroundColor(.white)
+                    .font(AppDesign.Type.rowTitle).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay)
                         .fill(saving ? C.subLabel : Color(hex: 0xE02A0F)))
@@ -872,7 +872,7 @@ struct MallProductSheet: View {
         TextField(ph, text: text)
             .font(pf(15))
             .keyboardType(num ? .decimalPad : .default)
-            .padding(.horizontal, 14).frame(height: 52)
+            .padding(.horizontal, 14).frame(height: AppDesign.Control.largeControlHeight)
             .background(C.cardBg)
             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
     }
@@ -977,8 +977,8 @@ struct MallAdSheet: View {
                         }
                         Spacer(minLength: 0)
                         Text(cta.isEmpty ? Tr("去看看") : cta)
-                            .font(pf(12, .medium)).foregroundColor(.white)
-                            .padding(.horizontal, 12).frame(height: 30)
+                            .font(AppDesign.Type.sectionMedium).foregroundColor(.white)
+                            .padding(.horizontal, 12).frame(height: AppDesign.Control.sectionHeaderHeight)
                             .background(Capsule().fill(adTopColor))
                     }
                     .padding(12)
@@ -1011,7 +1011,7 @@ struct MallAdSheet: View {
                                             .foregroundColor(C.green)
                                     }
                                 }
-                                .padding(.horizontal, 16).frame(height: 48)
+                                .padding(.horizontal, 16).frame(height: AppDesign.Control.mediumControlHeight)
                                 .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
@@ -1029,21 +1029,21 @@ struct MallAdSheet: View {
                     fld(Tr("序号（越小越靠前）"), $sort, num: true)
 
                     HStack(spacing: 12) {
-                        Text(Tr("显示这条广告")).font(pf(15.5)).foregroundColor(C.label)
+                        Text(Tr("显示这条广告")).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
                         Spacer(minLength: 0)
                         Toggle("", isOn: $on).labelsHidden().tint(C.green)
                     }
-                    .padding(.horizontal, 16).frame(height: 56)
+                    .padding(.horizontal, 16).frame(height: AppDesign.Control.menuRowHeight)
                     .background(C.cardBg)
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
-                    Spacer().frame(height: 8)
+                    Spacer().frame(height: AppDesign.Spacing.xs)
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
             }
             Button { Task { await save() } } label: {
                 Text(saving ? Tr("正在保存…") : (editing ? Tr("保存") : Tr("加上去")))
-                    .font(pf(16, .medium)).foregroundColor(.white)
+                    .font(AppDesign.Type.rowTitle).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay)
                         .fill(saving ? C.subLabel : Color(hex: 0xE02A0F)))
@@ -1087,7 +1087,7 @@ struct MallAdSheet: View {
 
     private func kindHint(_ t: String) -> some View {
         Text(t)
-            .font(pf(12.5)).foregroundColor(C.subLabel)
+            .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 6)
     }
@@ -1098,7 +1098,7 @@ struct MallAdSheet: View {
             .keyboardType(num ? .decimalPad : .default)
             .autocorrectionDisabled(true)
             .textInputAutocapitalization(.never)
-            .padding(.horizontal, 14).frame(height: 52)
+            .padding(.horizontal, 14).frame(height: AppDesign.Control.largeControlHeight)
             .background(C.cardBg)
             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
     }

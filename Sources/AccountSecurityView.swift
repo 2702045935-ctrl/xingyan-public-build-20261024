@@ -160,7 +160,7 @@ struct AccountSecurityView: View {
             if chevron { Chevron(size: 9, line: 1.6).padding(.trailing, 3) }
         }
         .padding(.horizontal, 16)
-        .frame(height: 56)
+        .frame(height: AppDesign.Control.menuRowHeight)
         .background(C.cardBg)
         .contentShape(Rectangle())
     }

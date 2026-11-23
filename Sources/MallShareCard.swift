@@ -73,7 +73,7 @@ struct MallCardBubble: View {
 
             Rectangle()
                 .fill(Color.primary.opacity(0.065))
-                .frame(height: 0.5)
+                .frame(height: AppDesign.Control.hairline)
                 .padding(.vertical, 10)
 
                 WeChatMessageCardFooter(

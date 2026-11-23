@@ -18,7 +18,7 @@ struct NavPlusCard: View {
                 if idx > 0 {
                     Rectangle()
                         .fill(OrbitTheme.divider)
-                        .frame(height: 0.5)
+                        .frame(height: AppDesign.Control.hairline)
                         .padding(.leading, 54)
                 }
                 Button {
@@ -45,10 +45,10 @@ struct NavPlusCard: View {
                         Spacer(minLength: 0)
                     }
                     .padding(.horizontal, 14)
-                    .frame(height: 52)
+                    .frame(height: AppDesign.Control.largeControlHeight)
                     .contentShape(Rectangle())
                 }
-                .buttonStyle(NavPlusRowPressStyle())
+                .buttonStyle(AppPressStyle())
             }
         }
         .frame(width: 194)
@@ -62,15 +62,6 @@ struct NavPlusCard: View {
                 .stroke(OrbitTheme.divider, lineWidth: 0.7)
         )
         .shadow(color: Color.black.opacity(0.16), radius: 18, y: 9)
-    }
-}
-
-private struct NavPlusRowPressStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.98 : 1)
-            .background(configuration.isPressed ? OrbitTheme.jadeSoft.opacity(0.72) : Color.clear)
-            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }
 

@@ -212,7 +212,7 @@ struct PhotoEditorView: View {
                         .font(.system(size: 12.5, weight: .semibold))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 11)
-                        .frame(height: 32)
+                        .frame(height: AppDesign.Control.smallButtonHeight)
                         .background(.ultraThinMaterial, in: Capsule())
                 }
                 .buttonStyle(.plain)
@@ -279,7 +279,7 @@ struct PhotoEditorView: View {
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 15)
-                    .frame(height: 36)
+                    .frame(height: AppDesign.Control.floatingControlHeight)
                     .background(C.green, in: Capsule())
             }
             .buttonStyle(.plain)
@@ -304,7 +304,7 @@ struct PhotoEditorView: View {
 
             Rectangle()
                 .fill(Color.white.opacity(0.07))
-                .frame(height: 0.5)
+                .frame(height: AppDesign.Control.hairline)
 
             HStack(spacing: 0) {
                 ForEach(PhotoEditorMode.allCases) { item in
@@ -437,7 +437,7 @@ struct PhotoEditorView: View {
             }
             .foregroundStyle(selected ? Color.white : Color.white.opacity(0.62))
             .padding(.horizontal, 11)
-            .frame(height: 32)
+            .frame(height: AppDesign.Control.smallButtonHeight)
             .background {
                 Capsule()
                     .fill(selected ? C.green.opacity(0.30) : Color.white.opacity(0.06))
@@ -473,7 +473,7 @@ struct PhotoEditorView: View {
                 .tint(C.green)
                 .padding(.horizontal, 16)
         }
-        .frame(height: 42)
+        .frame(height: AppDesign.Control.searchHeight)
     }
 
     private func normalizedPercent(_ value: Double, range: ClosedRange<Double>) -> Double {

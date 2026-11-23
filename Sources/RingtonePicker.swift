@@ -9,8 +9,8 @@ struct RingtonePicker: View {
         VStack(spacing: 0) {
             NavBar(title: Tr("来电铃声"), back: { ring.stop(); dismiss() }) {
                 Button { ring.stop(); dismiss() } label: {
-                    Text(Tr("完成")).font(pf(15.5, .medium)).foregroundColor(C.green)
-                        .padding(.horizontal, 14).frame(height: 32)
+                    Text(Tr("完成")).font(AppDesign.Type.rowTitleMedium).foregroundColor(C.green)
+                        .padding(.horizontal, 14).frame(height: AppDesign.Control.smallButtonHeight)
                 }
                 .buttonStyle(.plain)
             }

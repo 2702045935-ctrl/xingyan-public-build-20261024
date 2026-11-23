@@ -33,14 +33,12 @@ require(
     "chat handoff timing must cover source tap through destination appearance",
 )
 require(
-    "private struct ChatChromeIconPressStyle" in CHATS
-    and "private struct ChatFilterChipPressStyle" in CHATS
-    and "private struct ChatSearchPressStyle" in CHATS
-    and "buttonStyle(ChatChromeIconPressStyle())" in CHATS
-    and "buttonStyle(ChatFilterChipPressStyle())" in CHATS
-    and "buttonStyle(ChatSearchPressStyle())" in CHATS
-    and ".scaleEffect(configuration.isPressed ? 0.94 : 1)" in CHATS
-    and ".scaleEffect(configuration.isPressed ? 0.97 : 1)" in CHATS,
+    "private struct ChatChromeIconPressStyle" not in CHATS
+    and "private struct ChatFilterChipPressStyle" not in CHATS
+    and "private struct ChatSearchPressStyle" not in CHATS
+    and "buttonStyle(AppIconPressStyle())" in CHATS
+    and "buttonStyle(AppSegmentPressStyle())" in CHATS
+    and "buttonStyle(AppPressStyle())" in CHATS,
     "chat chrome and filter chips must provide restrained native press feedback",
 )
 require(

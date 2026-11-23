@@ -183,11 +183,11 @@ struct UserManageView: View {
                     }
 
                     if !msg.isEmpty {
-                        Text(msg).font(pf(12.5)).foregroundColor(C.subLabel)
+                        Text(msg).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 16)
                     }
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
                 .padding(.top, 10)
             }
@@ -317,7 +317,7 @@ struct UserManageView: View {
                         .frame(width: 46, height: 46)
 
                         VStack(alignment: .leading, spacing: 3) {
-                            Text(it.name).font(pf(15.5)).foregroundColor(C.label).lineLimit(1)
+                            Text(it.name).font(AppDesign.Type.bodyLarge).foregroundColor(C.label).lineLimit(1)
                             Text(shopRowSub(it))
                                 .font(pf(12)).foregroundColor(C.subLabel).lineLimit(1)
                         }
@@ -387,7 +387,7 @@ struct UserManageView: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 16).frame(height: 52)
+            .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
 
             if cardUsers.isEmpty {
                 HairLine(inset: 16)
@@ -399,7 +399,7 @@ struct UserManageView: View {
                         HStack(spacing: 12) {
                             Avatar(path: u.avatar ?? "", size: 46, radius: 23)
                             VStack(alignment: .leading, spacing: 3) {
-                                Text(u.nickname ?? u.username ?? "").font(pf(15.5))
+                                Text(u.nickname ?? u.username ?? "").font(AppDesign.Type.bodyLarge)
                                     .foregroundColor(C.label).lineLimit(1)
                                 Text(cardUserSub(u))
                                     .font(pf(12)).foregroundColor(C.subLabel).lineLimit(1)
@@ -415,7 +415,7 @@ struct UserManageView: View {
                 }
             }
             if !cardMsg.isEmpty {
-                Text(cardMsg).font(pf(12.5)).foregroundColor(C.subLabel)
+                Text(cardMsg).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 16).padding(.bottom, 8)
             }
@@ -444,14 +444,14 @@ struct UserManageView: View {
         card(Tr("App 日志 / 崩溃（汇入）")) {
             HStack(spacing: 10) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(logTotalText).font(pf(15.5)).foregroundColor(C.label)
+                    Text(logTotalText).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
                     Text(logSubText)
                         .font(pf(12)).foregroundColor(C.subLabel)
                 }
                 Spacer(minLength: 6)
                 if logLoading { ProgressView().scaleEffect(0.7) }
                 Button { Task { await loadLogs() } } label: {
-                    Text(Tr("刷新")).font(pf(13.5)).foregroundColor(C.green)
+                    Text(Tr("刷新")).font(AppDesign.Type.body).foregroundColor(C.green)
                 }
                 .buttonStyle(.plain)
             }
@@ -511,9 +511,9 @@ struct UserManageView: View {
             Task { await loadLogs() }
         } label: {
             Text(label)
-                .font(pf(12.5))
+                .font(AppDesign.Type.caption)
                 .foregroundColor(logKind == kind ? .white : C.label)
-                .padding(.horizontal, 10).frame(height: 28)
+                .padding(.horizontal, 10).frame(height: AppDesign.Control.statusHeight)
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                     .fill(logKind == kind ? C.green : C.pageBg))
         }
@@ -760,7 +760,7 @@ struct UserManageView: View {
                                 }
 
                             Text(Tr(preset.name))
-                                .font(pf(15.5, .medium))
+                                .font(AppDesign.Type.rowTitleMedium)
                                 .foregroundColor(C.label)
 
                             Spacer(minLength: 0)
@@ -907,7 +907,7 @@ struct UserManageView: View {
                         .frame(width: 46, height: 46)
                         VStack(alignment: .leading, spacing: 3) {
                             HStack(spacing: 6) {
-                                Text(c.name ?? "").font(pf(15.5)).foregroundColor(C.label).lineLimit(1)
+                                Text(c.name ?? "").font(AppDesign.Type.bodyLarge).foregroundColor(C.label).lineLimit(1)
                                 if rpDefault == c.id {
                                     Text(Tr("默认"))
                                         .font(pf(10.5)).foregroundColor(.white)
@@ -1006,7 +1006,7 @@ struct UserManageView: View {
                 TextField(Tr("必填"), text: $title)
                     .font(pf(16)).multilineTextAlignment(.trailing)
             }
-            .frame(height: 52).padding(.horizontal, 16)
+            .frame(height: AppDesign.Control.largeControlHeight).padding(.horizontal, 16)
             HairLine(inset: 16)
             HStack {
                 Text(Tr("歌手")).font(pf(16)).foregroundColor(C.label)
@@ -1014,7 +1014,7 @@ struct UserManageView: View {
                 TextField(Tr("选填"), text: $artist)
                     .font(pf(16)).multilineTextAlignment(.trailing)
             }
-            .frame(height: 52).padding(.horizontal, 16)
+            .frame(height: AppDesign.Control.largeControlHeight).padding(.horizontal, 16)
             HairLine(inset: 16)
             ZStack(alignment: .topLeading) {
                 if lyrics.isEmpty {
@@ -1034,8 +1034,8 @@ struct UserManageView: View {
             HStack {
                 Button { Task { await addMusic() } } label: {
                     Text(busy == "add" ? Tr("上传中…") : Tr("加进曲库"))
-                        .font(pf(15.5, .medium)).foregroundColor(.white)
-                        .frame(maxWidth: .infinity).frame(height: 44)
+                        .font(AppDesign.Type.rowTitleMedium).foregroundColor(.white)
+                        .frame(maxWidth: .infinity).frame(height: AppDesign.Control.compactHeight)
                         .background(Capsule().fill(C.green))
                 }
                 .buttonStyle(.plain)
@@ -1058,7 +1058,7 @@ struct UserManageView: View {
                         else { pickingMusic = true }
                     } label: {
                         Text(pickingMusic ? Tr("删除选中") : Tr("批量删除"))
-                            .font(pf(13, .medium))
+                            .font(AppDesign.Type.compactButtonMedium)
                             .foregroundColor(pickingMusic ? C.red : C.green)
                     }
                     .buttonStyle(.plain)
@@ -1124,11 +1124,11 @@ struct UserManageView: View {
 
     private func tipRow(_ title: String, _ on: Binding<Bool>) -> some View {
         HStack {
-            Text(title).font(pf(15.5)).foregroundColor(C.label)
+            Text(title).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
             Spacer(minLength: 8)
             Toggle("", isOn: on).labelsHidden().tint(C.green)
         }
-        .padding(.horizontal, 16).frame(height: 52)
+        .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
     }
 
     private var officialSection: some View {
@@ -1151,7 +1151,7 @@ struct UserManageView: View {
                             }
                             .frame(width: 48, height: 48)
                             VStack(alignment: .leading, spacing: 3) {
-                                Text(o.name).font(pf(15.5)).foregroundColor(C.label).lineLimit(1)
+                                Text(o.name).font(AppDesign.Type.bodyLarge).foregroundColor(C.label).lineLimit(1)
                                 Text((o.desc ?? "").isEmpty ? Tr("点一下换名字 / 头像") : o.desc!)
                                     .font(pf(12)).foregroundColor(C.subLabel).lineLimit(1)
                             }
@@ -1160,7 +1160,7 @@ struct UserManageView: View {
                             Image(systemName: "chevron.right")
                                 .font(.system(size: 11, weight: .semibold)).foregroundColor(C.subLabel)
                         }
-                        .padding(.horizontal, 14).frame(height: 64)
+                        .padding(.horizontal, 14).frame(height: AppDesign.Control.compactRowHeight)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -1191,7 +1191,7 @@ struct UserManageView: View {
                             }
                             .frame(width: 46, height: 46)
                             VStack(alignment: .leading, spacing: 3) {
-                                Text(a.name).font(pf(15.5)).foregroundColor(C.label).lineLimit(1)
+                                Text(a.name).font(AppDesign.Type.bodyLarge).foregroundColor(C.label).lineLimit(1)
                                 Text((a.desc ?? "").isEmpty ? a.url : a.desc!)
                                     .font(pf(12)).foregroundColor(C.subLabel).lineLimit(1)
                             }
@@ -1246,7 +1246,7 @@ struct UserManageView: View {
                 }
                 .frame(width: 46, height: 46)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(title).font(pf(15.5)).foregroundColor(C.label).lineLimit(1)
+                    Text(title).font(AppDesign.Type.bodyLarge).foregroundColor(C.label).lineLimit(1)
                     Text(sub).font(pf(12)).foregroundColor(C.subLabel).lineLimit(1)
                 }
                 Spacer(minLength: 6)
@@ -1277,7 +1277,7 @@ struct UserManageView: View {
 
     private func groupTitle(_ t: String) -> some View {
         Text(t)
-            .font(pf(13, .medium))
+            .font(AppDesign.Type.compactButtonMedium)
             .foregroundColor(C.subLabel)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 16)
@@ -1293,14 +1293,14 @@ struct UserManageView: View {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 11, weight: .semibold)).foregroundColor(C.subLabel)
             }
-            .padding(.horizontal, 16).frame(height: 52)
+            .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
 
     private func hint(_ t: String) -> some View {
-        Text(t).font(pf(13.5)).foregroundColor(C.subLabel)
+        Text(t).font(AppDesign.Type.body).foregroundColor(C.subLabel)
             .frame(maxWidth: .infinity).padding(.vertical, 20)
     }
 
@@ -1499,7 +1499,7 @@ struct MiniAppEditSheet: View {
                         .font(pf(15, .medium))
                         .foregroundColor(busy ? C.subLabel : C.green)
                         .padding(.horizontal, 14)
-                        .frame(height: 32)
+                        .frame(height: AppDesign.Control.smallButtonHeight)
                 }
                 .buttonStyle(.plain)
                 .disabled(busy)
@@ -1541,11 +1541,11 @@ struct MiniAppEditSheet: View {
                     textRow(Tr("入口地址"), $url)
 
                     if !msg.isEmpty {
-                        Text(msg).font(pf(12.5)).foregroundColor(C.subLabel)
+                        Text(msg).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 18).padding(.top, 12)
                     }
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
                 .padding(.top, 8)
             }
@@ -1588,7 +1588,7 @@ struct MiniAppEditSheet: View {
                 .multilineTextAlignment(.trailing)
         }
         .padding(.horizontal, 16)
-        .frame(height: 54)
+        .frame(height: AppDesign.Control.dialogRowHeight)
         .background(C.cardBg)
         .overlay(alignment: .bottom) { HairLine(inset: 16) }
     }
@@ -1629,7 +1629,7 @@ struct OfficialEditSheet: View {
                         .font(pf(15, .medium))
                         .foregroundColor(busy ? C.subLabel : C.green)
                         .padding(.horizontal, 14)
-                        .frame(height: 32)
+                        .frame(height: AppDesign.Control.smallButtonHeight)
                 }
                 .buttonStyle(.plain)
                 .disabled(busy)
@@ -1674,16 +1674,16 @@ struct OfficialEditSheet: View {
                         Spacer(minLength: 0)
                     }
                     .padding(.horizontal, 16)
-                    .frame(height: 54)
+                    .frame(height: AppDesign.Control.dialogRowHeight)
                     .background(C.cardBg)
                     .overlay(alignment: .bottom) { HairLine(inset: 16) }
 
                     if !msg.isEmpty {
-                        Text(msg).font(pf(12.5)).foregroundColor(C.subLabel)
+                        Text(msg).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 18).padding(.top, 12)
                     }
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
                 .padding(.top, 8)
             }
@@ -1732,7 +1732,7 @@ struct OfficialEditSheet: View {
                 .multilineTextAlignment(.trailing)
         }
         .padding(.horizontal, 16)
-        .frame(height: 54)
+        .frame(height: AppDesign.Control.dialogRowHeight)
         .background(C.cardBg)
         .overlay(alignment: .bottom) { HairLine(inset: 16) }
     }
@@ -1780,7 +1780,7 @@ struct ShopItemEditSheet: View {
                     Text(busy ? Tr("保存中…") : Tr("保存"))
                         .font(pf(15, .medium))
                         .foregroundColor(busy ? C.subLabel : C.green)
-                        .padding(.horizontal, 14).frame(height: 32)
+                        .padding(.horizontal, 14).frame(height: AppDesign.Control.smallButtonHeight)
                 }
                 .buttonStyle(.plain)
                 .disabled(busy)
@@ -1810,7 +1810,7 @@ struct ShopItemEditSheet: View {
                                 .frame(width: 44, height: 44)
                                 Chevron(size: 9, line: 1.6)
                             }
-                            .padding(.horizontal, 16).frame(height: 60)
+                            .padding(.horizontal, 16).frame(height: AppDesign.Control.profileRowHeight)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -1835,14 +1835,14 @@ struct ShopItemEditSheet: View {
                             kindButton("physical", Tr("实物"))
                             kindButton("virtual", Tr("虚拟"))
                         }
-                        .padding(.horizontal, 16).frame(height: 56)
+                        .padding(.horizontal, 16).frame(height: AppDesign.Control.menuRowHeight)
                         HairLine(inset: 16)
                         HStack(spacing: 12) {
                             Text(Tr("上架")).font(pf(16)).foregroundColor(C.label)
                             Spacer(minLength: 0)
                             Toggle("", isOn: $on).labelsHidden().tint(C.green)
                         }
-                        .padding(.horizontal, 16).frame(height: 56)
+                        .padding(.horizontal, 16).frame(height: AppDesign.Control.menuRowHeight)
                     }
 
                     if let it = item {
@@ -1851,7 +1851,7 @@ struct ShopItemEditSheet: View {
                         } label: {
                             Text(Tr("删除这件商品"))
                                 .font(pf(16)).foregroundColor(C.red)
-                                .frame(maxWidth: .infinity).frame(height: 48)
+                                .frame(maxWidth: .infinity).frame(height: AppDesign.Control.mediumControlHeight)
                         }
                         .buttonStyle(.plain)
                         .background(C.cardBg)
@@ -1860,11 +1860,11 @@ struct ShopItemEditSheet: View {
                     }
 
                     if !msg.isEmpty {
-                        Text(msg).font(pf(12.5)).foregroundColor(C.subLabel)
+                        Text(msg).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 18)
                     }
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
             }
             .background(C.pageBg)
@@ -1892,9 +1892,9 @@ struct ShopItemEditSheet: View {
     private func kindButton(_ id: String, _ label: String) -> some View {
         Button { kind = id } label: {
             Text(label)
-                .font(pf(13.5))
+                .font(AppDesign.Type.body)
                 .foregroundColor(kind == id ? .white : C.label)
-                .padding(.horizontal, 12).frame(height: 30)
+                .padding(.horizontal, 12).frame(height: AppDesign.Control.sectionHeaderHeight)
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                     .fill(kind == id ? C.green : C.pageBg))
         }
@@ -1905,10 +1905,10 @@ struct ShopItemEditSheet: View {
         HStack(spacing: 12) {
             Text(k).font(pf(16)).foregroundColor(C.label).frame(width: 72, alignment: .leading)
             TextField(ph, text: v)
-                .font(pf(15.5))
+                .font(AppDesign.Type.bodyLarge)
                 .multilineTextAlignment(.trailing)
         }
-        .padding(.horizontal, 16).frame(height: 52)
+        .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
     }
 
     private func upload(_ image: UIImage) {
@@ -1996,7 +1996,7 @@ struct CardAdminSheet: View {
                         HStack(spacing: 12) {
                             Avatar(path: user.avatar ?? "", size: 48, radius: 24)
                             VStack(alignment: .leading, spacing: 3) {
-                                Text(user.nickname ?? user.username ?? "").font(pf(16.5))
+                                Text(user.nickname ?? user.username ?? "").font(AppDesign.Type.listTitle)
                                     .foregroundColor(C.label).lineLimit(1)
                                 Text(user.username ?? "").font(pf(13)).foregroundColor(C.subLabel)
                             }
@@ -2014,7 +2014,7 @@ struct CardAdminSheet: View {
                                 if i > 0 { HairLine(inset: 16) }
                                 HStack(spacing: 10) {
                                     VStack(alignment: .leading, spacing: 3) {
-                                        Text(c.title ?? "").font(pf(15.5)).foregroundColor(C.label)
+                                        Text(c.title ?? "").font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
                                             .lineLimit(1)
                                         Text((c.kindName) + (c.used == true ? " · 已用" : "")
                                              + " · " + (c.code ?? ""))
@@ -2026,7 +2026,7 @@ struct CardAdminSheet: View {
                                     }
                                     .buttonStyle(.plain)
                                 }
-                                .padding(.horizontal, 16).frame(height: 60)
+                                .padding(.horizontal, 16).frame(height: AppDesign.Control.profileRowHeight)
                             }
                         }
                     }
@@ -2038,7 +2038,7 @@ struct CardAdminSheet: View {
                                     Text(Tr(k.1))
                                         .font(pf(13))
                                         .foregroundColor(kind == k.0 ? .white : C.label)
-                                        .padding(.horizontal, 10).frame(height: 30)
+                                        .padding(.horizontal, 10).frame(height: AppDesign.Control.sectionHeaderHeight)
                                         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                                             .fill(kind == k.0 ? C.green : C.pageBg))
                                 }
@@ -2060,7 +2060,7 @@ struct CardAdminSheet: View {
                         HairLine(inset: 16)
                         Button { Task { await issue() } } label: {
                             Text(busy ? Tr("发送中…") : Tr("发卡"))
-                                .font(pf(16, .medium)).foregroundColor(.white)
+                                .font(AppDesign.Type.rowTitle).foregroundColor(.white)
                                 .frame(maxWidth: .infinity).frame(height: 46)
                                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.green))
                         }
@@ -2070,11 +2070,11 @@ struct CardAdminSheet: View {
                     }
 
                     if !msg.isEmpty {
-                        Text(msg).font(pf(12.5)).foregroundColor(C.subLabel)
+                        Text(msg).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 18)
                     }
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
             }
             .background(C.pageBg)
@@ -2103,10 +2103,10 @@ struct CardAdminSheet: View {
         HStack(spacing: 12) {
             Text(k).font(pf(16)).foregroundColor(C.label).frame(width: 72, alignment: .leading)
             TextField(ph, text: v)
-                .font(pf(15.5))
+                .font(AppDesign.Type.bodyLarge)
                 .multilineTextAlignment(.trailing)
         }
-        .padding(.horizontal, 16).frame(height: 52)
+        .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
     }
 
     private func reload() async {
@@ -2157,7 +2157,7 @@ struct AppLogDetailSheet: View {
                     Text(copied ? Tr("已复制") : Tr("复制"))
                         .font(pf(15, .medium))
                         .foregroundColor(C.green)
-                        .padding(.horizontal, 14).frame(height: 32)
+                        .padding(.horizontal, 14).frame(height: AppDesign.Control.smallButtonHeight)
                 }
                 .buttonStyle(.plain)
             }
@@ -2180,7 +2180,7 @@ struct AppLogDetailSheet: View {
                     if let s = row.stack, !s.isEmpty {
                         block(Tr("调用栈"), s)
                     }
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
             }
             .background(C.pageBg)
@@ -2193,7 +2193,7 @@ struct AppLogDetailSheet: View {
     private func kv(_ k: String, _ v: String) -> some View {
         HStack(alignment: .top, spacing: 10) {
             Text(k).font(pf(15)).foregroundColor(C.label).frame(width: 74, alignment: .leading)
-            Text(v).font(pf(13.5)).foregroundColor(C.subLabel)
+            Text(v).font(AppDesign.Type.body).foregroundColor(C.subLabel)
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .multilineTextAlignment(.trailing)
         }

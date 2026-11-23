@@ -42,15 +42,15 @@ struct ChatQuickAdminSection: View {
                         HStack(spacing: 10) {
                             Text(c.label).font(pf(16))
                                 .foregroundColor(c.enabled ? C.label : C.subLabel)
-                            Text(actionName(c.action)).font(pf(12.5)).foregroundColor(C.subLabel)
+                            Text(actionName(c.action)).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                             Spacer(minLength: 6)
                             Text(c.enabled ? Tr("显示中") : Tr("已隐藏"))
-                                .font(pf(12.5))
+                                .font(AppDesign.Type.caption)
                                 .foregroundColor(c.enabled ? C.green : C.subLabel)
                             Image(systemName: "chevron.right").font(.system(size: 12))
                                 .foregroundColor(C.arrow)
                         }
-                        .padding(.horizontal, 16).frame(height: 52)
+                        .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -69,7 +69,7 @@ struct ChatQuickAdminSection: View {
                         Text(Tr("添加一个快捷按钮")).font(pf(15)).foregroundColor(C.green)
                         Spacer(minLength: 0)
                     }
-                    .padding(.horizontal, 16).frame(height: 50)
+                    .padding(.horizontal, 16).frame(height: AppDesign.Control.buttonHeight)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -105,7 +105,7 @@ struct ChatQuickAdminSection: View {
                     }
                     .frame(width: 22, height: 22)
                 }
-                .padding(.horizontal, 16).frame(height: 52)
+                .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
 
                 HStack(spacing: 10) {
                     ForEach(presetColors, id: \.self) { hex in
@@ -138,7 +138,7 @@ struct ChatQuickAdminSection: View {
                         .frame(width: 70)
                     Text(Tr("pt（留空 = 默认）")).font(pf(12)).foregroundColor(C.subLabel)
                 }
-                .padding(.horizontal, 16).frame(height: 52)
+                .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
 
                 HairLine(inset: 16)
 
@@ -154,15 +154,15 @@ struct ChatQuickAdminSection: View {
                     Button(Tr("从相册选")) { showPickPlusImage = true }
                         .font(pf(14)).foregroundColor(C.link)
                 }
-                .padding(.horizontal, 16).frame(height: 52)
+                .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
 
                 HairLine(inset: 16)
 
                 Button { Task { await save() } } label: {
                     Text(saving ? Tr("保存中…") : Tr("保存"))
-                        .font(pf(16, .medium))
+                        .font(AppDesign.Type.rowTitle)
                         .foregroundColor(C.green)
-                        .frame(maxWidth: .infinity).frame(height: 52)
+                        .frame(maxWidth: .infinity).frame(height: AppDesign.Control.largeControlHeight)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -208,7 +208,7 @@ struct ChatQuickAdminSection: View {
             .padding(.horizontal, 12)
 
             if !msg.isEmpty {
-                Text(msg).font(pf(12.5)).foregroundColor(C.subLabel)
+                Text(msg).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                     .padding(.horizontal, 16).padding(.top, 8)
             }
         }
@@ -237,7 +237,7 @@ struct ChatQuickAdminSection: View {
             VStack(spacing: 0) {
                 NavBar(title: Tr("快捷按钮"), back: { editing = nil }) {
                     Button { editing = nil } label: {
-                        Text(Tr("完成")).font(pf(16, .medium)).foregroundColor(C.green)
+                        Text(Tr("完成")).font(AppDesign.Type.rowTitle).foregroundColor(C.green)
                             .frame(height: L.navH).padding(.trailing, 16)
                     }
                 }
@@ -254,7 +254,7 @@ struct ChatQuickAdminSection: View {
                                     .multilineTextAlignment(.trailing)
                                     .frame(width: 150)
                             }
-                            .padding(.horizontal, 16).frame(height: 52)
+                            .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
 
                             HairLine(inset: 16)
 
@@ -271,7 +271,7 @@ struct ChatQuickAdminSection: View {
                                 .pickerStyle(.menu)
                                 .tint(C.link)
                             }
-                            .padding(.horizontal, 16).frame(height: 52)
+                            .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
 
                             HairLine(inset: 16)
 
@@ -283,7 +283,7 @@ struct ChatQuickAdminSection: View {
                                     set: { setEnabled(c, $0) }))
                                     .labelsHidden().tint(C.green)
                             }
-                            .padding(.horizontal, 16).frame(height: 52)
+                            .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
                         }
                         .background(C.cardBg)
                         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
@@ -292,13 +292,13 @@ struct ChatQuickAdminSection: View {
                         VStack(spacing: 0) {
                             Button { move(c, -1) } label: {
                                 Text(Tr("上移")).font(pf(16)).foregroundColor(C.label)
-                                    .frame(maxWidth: .infinity).frame(height: 50)
+                                    .frame(maxWidth: .infinity).frame(height: AppDesign.Control.buttonHeight)
                             }
                             .buttonStyle(.plain)
                             HairLine(inset: 16)
                             Button { move(c, 1) } label: {
                                 Text(Tr("下移")).font(pf(16)).foregroundColor(C.label)
-                                    .frame(maxWidth: .infinity).frame(height: 50)
+                                    .frame(maxWidth: .infinity).frame(height: AppDesign.Control.buttonHeight)
                             }
                             .buttonStyle(.plain)
                         }
@@ -312,7 +312,7 @@ struct ChatQuickAdminSection: View {
                             msg = Tr("删掉了，记得点保存")
                         } label: {
                             Text(Tr("删除这个按钮")).font(pf(16)).foregroundColor(C.red)
-                                .frame(maxWidth: .infinity).frame(height: 50)
+                                .frame(maxWidth: .infinity).frame(height: AppDesign.Control.buttonHeight)
                                 .background(C.cardBg)
                                 .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
                                 .padding(.horizontal, 12)

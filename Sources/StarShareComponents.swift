@@ -295,7 +295,7 @@ struct StarForwardTargetRow: View {
             }
         }
         .padding(.horizontal, 12)
-        .frame(height: 72)
+        .frame(height: AppDesign.Control.rowHeight)
         .background(selected ? OrbitTheme.jadeSoft.opacity(0.72) : OrbitTheme.raised)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
         .overlay {

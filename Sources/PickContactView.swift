@@ -39,7 +39,7 @@ struct PickContactView: View {
                                     .foregroundColor(C.label)
                                 if let un = u.username, !un.isEmpty {
                                     Text(un)
-                                        .font(pf(12.5))
+                                        .font(AppDesign.Type.caption)
                                         .foregroundColor(C.subLabel)
                                 }
                             }

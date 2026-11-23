@@ -380,7 +380,7 @@ struct MyLevelView: View {
                         .foregroundStyle(LinearGradient(colors: [Color(hex: 0xFFF6D2), Color(hex: 0xF0C24B)],
                                                         startPoint: .top, endPoint: .bottom))
                     Text(Tr("活跃天") + " " + num(total))
-                        .font(pf(12.5))
+                        .font(AppDesign.Type.caption)
                         .foregroundColor(.white.opacity(0.72))
                 }
             }
@@ -395,7 +395,7 @@ struct MyLevelView: View {
                             .frame(width: max(8, g.size.width * prog))
                     }
                 }
-                .frame(height: 8)
+                .frame(height: AppDesign.Spacing.xs)
                 HStack {
                     Text("Lv." + String(level)).font(pf(11.5)).foregroundColor(.white.opacity(0.55))
                     Spacer(minLength: 6)
@@ -439,7 +439,7 @@ struct MyLevelView: View {
                 Text(Tr("分钟")).font(pf(13)).foregroundColor(C.subLabel)
                 Spacer(minLength: 0)
                 Text(Tr("今日已记 ") + num(store.me?.todayEarned ?? 0) + Tr(" 个活跃天"))
-                    .font(pf(12.5)).foregroundColor(C.subLabel)
+                    .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
             }
             GeometryReader { g in
                 ZStack(alignment: .leading) {
@@ -499,7 +499,7 @@ struct MyLevelView: View {
                     Text(Tr("我")).font(pf(14, .medium)).foregroundColor(C.label)
                     QQLevelBadge(level: max(1, mine.level ?? 0), size: 13, maxIcons: 4)
                     Spacer(minLength: 0)
-                    Text("Lv." + String(max(1, mine.level ?? 0))).font(pf(13, .semibold)).foregroundColor(C.subLabel)
+                    Text("Lv." + String(max(1, mine.level ?? 0))).font(AppDesign.Type.compactButton).foregroundColor(C.subLabel)
                     Text(num(mine.total ?? 0) + Tr(" 天")).font(pf(13)).foregroundColor(C.subLabel)
                 }
                 .padding(.horizontal, 14)
@@ -516,7 +516,7 @@ struct MyLevelView: View {
                 ForEach(Array(store.rank.prefix(20).enumerated()), id: \.element.id) { idx, row in
                     HStack(spacing: 10) {
                         Text(String(idx + 1))
-                            .font(pf(13, .semibold))
+                            .font(AppDesign.Type.compactButton)
                             .foregroundColor(idx < 3 ? Color(hex: 0xE0A21B) : C.subLabel)
                             .frame(width: 22, alignment: .center)
                         Avatar(path: row.avatar ?? "", size: 32, radius: 16, circle: true)
@@ -524,8 +524,8 @@ struct MyLevelView: View {
                             .font(pf(14)).foregroundColor(C.label).lineLimit(1)
                         QQLevelBadge(level: max(1, row.level ?? 0), size: 12, maxIcons: 3)
                         Spacer(minLength: 0)
-                        Text("Lv." + String(max(1, row.level ?? 0))).font(pf(12.5)).foregroundColor(C.subLabel)
-                        Text(num(row.total ?? 0) + Tr(" 天")).font(pf(12.5)).foregroundColor(C.subLabel)
+                        Text("Lv." + String(max(1, row.level ?? 0))).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                        Text(num(row.total ?? 0) + Tr(" 天")).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                     }
                     .padding(.horizontal, 14)
                     .frame(height: 46)

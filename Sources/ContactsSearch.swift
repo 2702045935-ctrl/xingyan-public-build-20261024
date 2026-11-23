@@ -115,7 +115,7 @@ struct ContactsSearchView: View {
                                 .font(pf(13))
                                 .foregroundColor(scope == idx ? .white : C.label)
                                 .padding(.horizontal, 12)
-                                .frame(height: 28)
+                                .frame(height: AppDesign.Control.statusHeight)
                                 .background(Capsule().fill(scope == idx ? C.green : C.cardBg))
                         }
                         .buttonStyle(.plain)
@@ -133,7 +133,7 @@ struct ContactsSearchView: View {
                             VStack(spacing: 8) {
                                 SVGIcon(markup: I.searchBig, size: 42, color: C.subLabel)
                                 Text(Tr("搜索联系人 / 群聊")).font(pf(14)).foregroundColor(C.subLabel)
-                                Text(Tr("备注、昵称、账号、拼音首字母都能搜")).font(pf(12.5)).foregroundColor(C.subLabel)
+                                Text(Tr("备注、昵称、账号、拼音首字母都能搜")).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.top, 60)
@@ -232,7 +232,7 @@ struct ContactsSearchView: View {
                             }
                         }
                     }
-                    Spacer().frame(height: 30)
+                    Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
             }
             .background(C.pageBg)
@@ -250,7 +250,7 @@ struct ContactsSearchView: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 16)
-        .frame(height: 32)
+        .frame(height: AppDesign.Control.smallButtonHeight)
         .background(C.pageBg)
     }
 }

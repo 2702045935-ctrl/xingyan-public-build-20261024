@@ -8,8 +8,8 @@
     },
     {
       "path": "Sources/App.swift",
-      "size": 205890,
-      "sha256": "b564bc6e1c4b29d743e38c1e8883ec222fcdce49b745631cfa771173545a3a03"
+      "size": 206343,
+      "sha256": "ec8a4cc3a23e4dc60f784b950ea42abd41ac3ad6e0252a8c9c9b3f03910db57a"
     },
     {
       "path": "Sources/Realtime.swift",
@@ -33,13 +33,13 @@
     },
     {
       "path": "Sources/CallView.swift",
-      "size": 42964,
-      "sha256": "74d0ffa7ec99f75267120eee4d3dabadc5b39c28461cbc01282af5a6b471443f"
+      "size": 43143,
+      "sha256": "7ae87357fb35901f2e0a40184f103792c9f917b580ac5ce5b2d1f5fb0fadef81"
     },
     {
       "path": "Sources/AICall.swift",
-      "size": 14159,
-      "sha256": "3760f00ed767c56abc10ca8313a163e50ec71068608b8887ae8c88ac484d09aa"
+      "size": 14154,
+      "sha256": "81949d4ba92d317dc98e3ce12826b1de652573e61a8250d233aa720b44d98be2"
     },
     {
       "path": "Sources/StreamPlayback.swift",
@@ -53,8 +53,8 @@
     },
     {
       "path": "Sources/LocalStore.swift",
-      "size": 25336,
-      "sha256": "51820a2dc6dbeb84bfc0259149acb42cdacaffe3da83fb2d0eea7a9f935788a0"
+      "size": 25471,
+      "sha256": "d1c5f836da07983696b59eff51f2d7ca372dce20d68a91a7949095c818a80f98"
     },
     {
       "path": "Sources/MsgFrameKey.swift",
@@ -68,23 +68,23 @@
     },
     {
       "path": "Sources/ChatDetailView.swift",
-      "size": 435309,
-      "sha256": "10a3b025bb74679052c4e537be09584ae4df536c6c200d20caf41c9f61fb2a6f"
+      "size": 435897,
+      "sha256": "61955aa2f93325e4b92992351c52251a7a7d9a330300838ee19c10c74197f2c0"
     },
     {
       "path": "Sources/GroupInfoView.swift",
-      "size": 104352,
-      "sha256": "efca4545b4b5640bc9ab9a3b8e93067153ee0899419b91a55ae4522c17847077"
+      "size": 105148,
+      "sha256": "cf0cb61d8a3cd88a758fee4a041e7f9280343fb0ac6c3375d0abf5f313208d96"
     },
     {
       "path": "Sources/OtherLogin.swift",
-      "size": 3470,
-      "sha256": "cc5cc98de1421229a0fa8130f63274d8b2b2e0a0425eb1d48ca3242c5b9dceb4"
+      "size": 3540,
+      "sha256": "62caf6493e5036884b1b0398a78d382b8e901e87897376467054c6dd63256212"
     },
     {
       "path": "Sources/InAppBrowser.swift",
-      "size": 48390,
-      "sha256": "596757b0d00d243c07ad80487d89e05d075b281a34c5ed4c85be199ef9b087b4"
+      "size": 48652,
+      "sha256": "38f821f416e12d6bea7dd53b9c9052bdabbf7c9110af269dcffe69129e3e2a6c"
     },
     {
       "path": "Sources/MallWebPage.swift",
@@ -108,8 +108,8 @@
     },
     {
       "path": "Sources/ChatsView.swift",
-      "size": 150968,
-      "sha256": "2de3db9b686c0be38c9a5d2d666e86b0bf87847cf3065471610399be510dc238"
+      "size": 148097,
+      "sha256": "9205c830af8a91b80574ca3204a34a7028c0d55bc0fc3b2bd51350f39cd55864"
     },
     {
       "path": "Sources/MessageStressFixture.swift",
@@ -138,8 +138,8 @@
     },
     {
       "path": "Sources/MusicPresenceStore.swift",
-      "size": 4023,
-      "sha256": "c7a0d86842d371b73be20ae024a088f1468f4973a5706441bb6a8a74a7972a72"
+      "size": 4020,
+      "sha256": "4c918fff430c1ed2af835bd4d84e4d27b40a410df25c7c5edbf41a35caec3be8"
     },
     {
       "path": "Sources/MultiImageMosaic.swift",

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import re
 from pathlib import Path
 
 
@@ -6,8 +7,10 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCES = ROOT / "Sources"
 DESIGN = (SOURCES / "DesignSystem.swift").read_text(encoding="utf-8")
 ORBIT = (SOURCES / "OrbitTheme.swift").read_text(encoding="utf-8")
+MAIN = (SOURCES / "MainTab.swift").read_text(encoding="utf-8")
 PROFILE = (SOURCES / "Profile.swift").read_text(encoding="utf-8")
 CONTACTS = (SOURCES / "ContactsView.swift").read_text(encoding="utf-8")
+CHATS = (SOURCES / "ChatsView.swift").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
 )
@@ -40,19 +43,46 @@ require(
     and "AppDesign.Control.searchHeight" in (
         SOURCES / "StarOrbitViews.swift"
     ).read_text(encoding="utf-8")
-    and "AppDesign.Motion.press" in (
-        SOURCES / "MainTab.swift"
-    ).read_text(encoding="utf-8"),
+    and "struct MenuPressStyle: ButtonStyle" in DESIGN
+    and "AppDesign.Motion.press" in DESIGN,
     "legacy theme, search and press primitives must delegate to the shared system",
+)
+require(
+    "struct GroupCard<Content: View>: View" in MAIN
+    and "cornerRadius: AppDesign.Radius.panel" in MAIN
+    and ".padding(.horizontal, AppDesign.Spacing.md)" in MAIN
+    and "struct MenuRow: View" in MAIN
+    and "AppDesign.Type.listTitle" in MAIN
+    and "AppDesign.Control.menuRowHeight" in MAIN
+    and "struct HairLine" in (
+        SOURCES / "Core.swift"
+    ).read_text(encoding="utf-8")
+    and "AppDesign.Control.hairline" in (
+        SOURCES / "Core.swift"
+    ).read_text(encoding="utf-8"),
+    "shared cards, menu rows and separators must use common geometry",
 )
 
 violations = []
+type_violations = []
+type_pattern = re.compile(
+    r"pf\((?:21|17\.5|16\.5|16|15\.5|13\.5|12\.5|12|13),"
+    r"\s*\.(?:semibold|medium)\)|"
+    r"pf\((?:21|17\.5|16\.5|15\.5|13\.5|12\.5)\)"
+)
+height_pattern = re.compile(
+    r"\.frame\(height:\s*(?:8|20|24|28|30|32|36|38|40|42|44|48|50|52|54|56|60|64|72|82)(?:\.0)?\)"
+)
 for path in SOURCES.glob("*.swift"):
     if path.name == "DesignSystem.swift":
         continue
     text = path.read_text(encoding="utf-8")
     lines = text.splitlines()
     for index, line in enumerate(lines, start=1):
+        if type_pattern.search(line):
+            type_violations.append(f"{path.name}:{index}")
+        if height_pattern.search(line):
+            type_violations.append(f"{path.name}:{index} [height]")
         stripped = line.strip()
         if "cornerRadius:" not in stripped:
             continue
@@ -63,6 +93,22 @@ require(
     not violations,
     "numeric corner radii must be replaced by AppDesign.Radius tokens: "
     + ", ".join(violations[:12]),
+)
+require(
+    not type_violations,
+    "shared type roles must be used instead of page-level pf sizes: "
+    + ", ".join(type_violations[:12]),
+)
+press_violations = [
+    path.name
+    for path in SOURCES.glob("*.swift")
+    if path.name != "DesignSystem.swift"
+    and re.search(r"struct \w+PressStyle: ButtonStyle", path.read_text(encoding="utf-8"))
+]
+require(
+    not press_violations,
+    "all press feedback styles must live in DesignSystem.swift: "
+    + ", ".join(press_violations[:12]),
 )
 
 require(
@@ -84,6 +130,17 @@ require(
     and "AppFlowRow" in CONTACTS
     and "AppFlowDivider" in CONTACTS,
     "the people-flow pages must reuse shared panels, rows, actions and statuses",
+)
+require(
+    "Color(hex: 0x" not in PROFILE
+    and "Color(hex: 0x" not in CONTACTS
+    and "Color(hex: 0x" not in CHATS
+    and "AppPalette" in CHATS
+    and "OrbitTheme.gold" in CONTACTS
+    and "OrbitTheme.blue" in CONTACTS
+    and "OrbitTheme.male" in CONTACTS
+    and "OrbitTheme.female" in CONTACTS,
+    "migrated page-level colors must use semantic theme tokens",
 )
 require(
     "python3 tools/verify-design-consistency.py" in WORKFLOW,

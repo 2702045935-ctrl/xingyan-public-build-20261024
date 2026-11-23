@@ -27,7 +27,7 @@ struct SwitchAccountView: View {
     private var separatorInk: Color {
         scheme == .dark ? C.hairline : Color.dyn(0xE9EDEF, 0x1F2C34)
     }
-    private let switchAccent = Color(hex: 0x25D366)
+    private let switchAccent = AppPalette.whatsApp
 
     var body: some View {
         nativeBody
@@ -73,7 +73,7 @@ struct SwitchAccountView: View {
                         if index < app.accounts.count - 1 {
                             Rectangle()
                                 .fill(separatorInk)
-                                .frame(height: 0.5)
+                                .frame(height: AppDesign.Control.hairline)
                                 .padding(.leading, 76)
                         }
                     }
@@ -537,7 +537,7 @@ struct SwitchAccountView: View {
             .opacity(busy.isEmpty || loading ? 1 : 0.58)
             .contentShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
         }
-        .buttonStyle(StarAccountPressStyle())
+        .buttonStyle(AppCardPressStyle())
         .disabled(!busy.isEmpty)
         .contextMenu {
             if !current {
@@ -591,7 +591,7 @@ struct SwitchAccountView: View {
             }
             .contentShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
         }
-        .buttonStyle(StarAccountPressStyle())
+        .buttonStyle(AppCardPressStyle())
     }
 
     private var securityNote: some View {
@@ -710,14 +710,5 @@ struct SwitchAccountView: View {
         AccountStore.remove(username: account.username)
         app.accounts = AccountStore.load()
         app.show(Tr("已移除") + "「" + displayName(account) + "」")
-    }
-}
-
-private struct StarAccountPressStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.985 : 1)
-            .opacity(configuration.isPressed ? 0.90 : 1)
-            .animation(.easeOut(duration: 0.14), value: configuration.isPressed)
     }
 }
