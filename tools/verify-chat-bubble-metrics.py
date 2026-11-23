@@ -60,12 +60,14 @@ require(
     "senderLabel.frame = CGRect(" in TEXT_ROW
     and "x: bodyX + model.bubblePadH" in TEXT_ROW
     and "metadata.frame = CGRect(" in TEXT_ROW
-    and "inlineMetadata" in TEXT_ROW
+    and "y: bubble.frame.maxY + WhatsAppChatLayout.metadataGap" in TEXT_ROW
     and "senderLabel.frame = CGRect(" in MEDIA_ROW
     and "metadata.frame = CGRect(" in MEDIA_ROW
+    and "y: body.maxY + WhatsAppChatLayout.metadataGap" in MEDIA_ROW
     and ".overlay(alignment: .topLeading)" in CHAT
-    and ".overlay(alignment: .bottomTrailing)" in CHAT,
-    "sender, text, time and receipts must be laid out inside one WhatsApp bubble",
+    and "private var metadataLine: some View" in CHAT
+    and ".padding(.top, WhatsAppChatLayout.metadataGap)" in CHAT,
+    "sender and text stay in the bubble while time and receipts stay outside below it",
 )
 require(
     "Text(TimeFmt.bubble(message.createdAt))" in CHAT

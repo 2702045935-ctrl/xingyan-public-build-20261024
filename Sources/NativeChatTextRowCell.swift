@@ -398,27 +398,21 @@ final class NativeChatTextRowView: UIView, UIGestureRecognizerDelegate {
             time: model.metaText,
             tickCount: model.tickCount
         )
-        if resolved.inlineMetadata {
-            metadata.frame = CGRect(
-                x: textX + resolved.textWidth + WhatsAppChatLayout.inlineMetadataGap,
-                y: textY + max(0, (resolved.textHeight - WhatsAppChatLayout.metadataHeight) / 2),
-                width: metaWidth,
-                height: WhatsAppChatLayout.metadataHeight
-            )
-        } else {
-            metadata.frame = CGRect(
-                x: bodyX + bodyWidth - model.bubblePadH - metaWidth,
-                y: bubble.frame.maxY - model.bubblePadV - WhatsAppChatLayout.metadataHeight,
-                width: metaWidth,
-                height: WhatsAppChatLayout.metadataHeight
-            )
-        }
+        metadata.frame = CGRect(
+            x: bodyX + bodyWidth - model.bubblePadH - metaWidth,
+            y: bubble.frame.maxY + WhatsAppChatLayout.metadataGap,
+            width: metaWidth,
+            height: WhatsAppChatLayout.metadataHeight
+        )
     }
 
     static func height(for model: NativeChatTextRowModel, width: CGFloat) -> CGFloat {
         let available = max(1, width - model.horizontalMargin * 2)
         let resolved = resolvedLayout(model, width: available)
-        return resolved.bubbleHeight + model.bottomGap
+        return resolved.bubbleHeight
+            + WhatsAppChatLayout.metadataGap
+            + WhatsAppChatLayout.metadataHeight
+            + model.bottomGap
     }
 
     private static func resolvedLayout(
@@ -459,56 +453,30 @@ final class NativeChatTextRowView: UIView, UIGestureRecognizerDelegate {
             maxTextWidth,
             ceil(text.size(withAttributes: [.font: pfUIFont(L.chatFontSize)]).width)
         )
-        let metadataWidth = WhatsAppChatLayout.metadataWidth(
-            time: model.metaText,
-            tickCount: model.tickCount
-        )
         let singleLine = !model.text.contains("\n") && fullTextHeight <= lineHeight + 2
-        let canPlaceMetadataInline = singleLine
-            && textPixelWidth
-                + WhatsAppChatLayout.inlineMetadataGap
-                + metadataWidth <= maxTextWidth
         let textWidth: CGFloat
         let textHeight: CGFloat
         let bodyWidth: CGFloat
-        let metaHeight: CGFloat
-        if canPlaceMetadataInline {
-            textWidth = max(1, textPixelWidth)
-            textHeight = lineHeight
-            bodyWidth = max(
-                56,
-                model.bubblePadH * 2
-                    + textPixelWidth
-                    + WhatsAppChatLayout.inlineMetadataGap
-                    + metadataWidth
+        textWidth = maxTextWidth
+        textHeight = fullTextHeight
+        bodyWidth = singleLine
+            ? min(
+                maxBodyWidth,
+                max(56, textPixelWidth + model.bubblePadH * 2)
             )
-            metaHeight = lineHeight
-        } else {
-            textWidth = maxTextWidth
-            textHeight = fullTextHeight
-            bodyWidth = singleLine
-                ? min(
-                    maxBodyWidth,
-                    max(56, textPixelWidth + model.bubblePadH * 2)
-                )
-                : maxBodyWidth
-            metaHeight = WhatsAppChatLayout.metadataHeight
-        }
+            : maxBodyWidth
         let bubbleWidth = min(maxBubble, bodyWidth + tailInset)
         let bubbleHeight = model.bubblePadV * 2
             + senderHeight
             + textHeight
-            + (canPlaceMetadataInline
-                ? 0
-                : WhatsAppChatLayout.metadataGap + metaHeight)
         return NativeTextLayout(
             senderHeight: senderHeight,
             textHeight: textHeight,
-            metaHeight: metaHeight,
+            metaHeight: WhatsAppChatLayout.metadataHeight,
             bubbleHeight: bubbleHeight,
             bubbleWidth: bubbleWidth,
             textWidth: textWidth,
-            inlineMetadata: canPlaceMetadataInline,
+            inlineMetadata: false,
             tailInset: tailInset
         )
     }
