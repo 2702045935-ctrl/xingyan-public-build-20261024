@@ -1,6 +1,7 @@
 import SwiftUI
 import UIKit
 import CoreImage
+import CryptoKit
 
 struct ChatDefaultWallpaper: View {
     var preset: ChatAppearancePreset? = nil
@@ -648,6 +649,7 @@ final class ChatWallpaperEffectRenderer {
     static let shared = ChatWallpaperEffectRenderer()
 
     private let cache = NSCache<NSString, UIImage>()
+    private let sourceCache = NSCache<NSString, UIImage>()
     private let context = CIContext(options: [
         .cacheIntermediates: true,
         .workingColorSpace: CGColorSpace(name: CGColorSpace.sRGB) as Any
@@ -656,6 +658,8 @@ final class ChatWallpaperEffectRenderer {
     private init() {
         cache.countLimit = 24
         cache.totalCostLimit = 128 * 1024 * 1024
+        sourceCache.countLimit = 8
+        sourceCache.totalCostLimit = 96 * 1024 * 1024
     }
 
     func image(path: String,
@@ -674,13 +678,16 @@ final class ChatWallpaperEffectRenderer {
         ].joined(separator: "#") as NSString
 
         if let hit = cache.object(forKey: key) { return hit }
-        guard let data = await sourceData(path),
-              let source = await Task.detached(priority: .userInitiated, operation: {
-                  RemoteImage.downsampled(
-                      data,
-                      maxSide: max(2400, chatWallpaperDecodeSide())
-                  )
-              }).value else { return nil }
+        if let disk = await diskCacheImage(key: key as String) {
+            cache.setObject(disk,
+                            forKey: key,
+                            cost: Int(disk.size.width * disk.size.height * 4))
+            return disk
+        }
+        guard let source = await sourceImage(
+            path: path,
+            maxSide: max(width, height) * 1.2
+        ) else { return nil }
         guard !Task.isCancelled else { return nil }
 
         let output = await Task.detached(priority: .userInitiated) { [context] in
@@ -693,32 +700,88 @@ final class ChatWallpaperEffectRenderer {
             cache.setObject(output,
                             forKey: key,
                             cost: Int(output.size.width * output.size.height * 4))
+            await saveDiskCache(output, key: key as String)
         }
         return output
     }
 
-    private func sourceData(_ path: String) async -> Data? {
+    private func sourceImage(path: String, maxSide: CGFloat) async -> UIImage? {
+        let sourceKey = ImageCacheKey.stablePath(path) as NSString
+        if let hit = sourceCache.object(forKey: sourceKey) { return hit }
+        if let direct = ImageStore.shared.get(ImageCacheKey.stablePath(path))
+            ?? ImageStore.shared.get(path) {
+            sourceCache.setObject(
+                direct,
+                forKey: sourceKey,
+                cost: Int(direct.size.width * direct.size.height * 4)
+            )
+            return direct
+        }
         if path.hasPrefix("data:"),
            let comma = path.firstIndex(of: ","),
-           let data = Data(base64Encoded: String(path[path.index(after: comma)...]),
-                           options: .ignoreUnknownCharacters) {
-            return data
-        }
-        if let direct = ImageStore.shared.get(path),
-           let data = await Task.detached(priority: .userInitiated, operation: {
-               direct.jpegData(compressionQuality: 0.92)
+           let data = Data(
+               base64Encoded: String(path[path.index(after: comma)...]),
+               options: .ignoreUnknownCharacters
+           ),
+           let image = await Task.detached(priority: .userInitiated, operation: {
+               RemoteImage.downsampled(data, maxSide: maxSide)
            }).value {
-            return data
+            sourceCache.setObject(
+                image,
+                forKey: sourceKey,
+                cost: Int(image.size.width * image.size.height * 4)
+            )
+            return image
         }
-        if let data = await Task.detached(priority: .userInitiated, operation: {
+        var data = await Task.detached(priority: .userInitiated, operation: {
             ImageStore.shared.diskRead(path)
-        }).value {
-            return data
+        }).value
+        if data == nil, let url = API.shared.assetURL(path) {
+            data = try? await API.shared.assetData(url)
         }
-        if let url = API.shared.assetURL(path) {
-            return try? await API.shared.assetData(url)
-        }
-        return nil
+        guard let data else { return nil }
+        guard let image = await Task.detached(priority: .userInitiated, operation: {
+            RemoteImage.downsampled(data, maxSide: maxSide)
+        }).value else { return nil }
+        sourceCache.setObject(
+            image,
+            forKey: sourceKey,
+            cost: Int(image.size.width * image.size.height * 4)
+        )
+        return image
+    }
+
+    private func diskCacheURL(_ key: String) -> URL? {
+        guard let root = FileManager.default.urls(
+            for: .cachesDirectory,
+            in: .userDomainMask
+        ).first else { return nil }
+        let digest = SHA256.hash(data: Data(key.utf8))
+            .map { String(format: "%02x", $0) }
+            .joined()
+        return root
+            .appendingPathComponent("chat-wallpaper-effects", isDirectory: true)
+            .appendingPathComponent(digest + ".jpg")
+    }
+
+    private func diskCacheImage(key: String) async -> UIImage? {
+        guard let url = diskCacheURL(key) else { return nil }
+        return await Task.detached(priority: .userInitiated, operation: {
+            guard let data = try? Data(contentsOf: url) else { return nil }
+            return UIImage(data: data)
+        }).value
+    }
+
+    private func saveDiskCache(_ image: UIImage, key: String) async {
+        guard let url = diskCacheURL(key),
+              let data = image.jpegData(compressionQuality: 0.86) else { return }
+        await Task.detached(priority: .utility, operation: {
+            try? FileManager.default.createDirectory(
+                at: url.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            try? data.write(to: url, options: .atomic)
+        }).value
     }
 
     private static func render(source: UIImage,
@@ -793,8 +856,11 @@ struct ChatWallpaperEffectImage: View {
                  ? Color(hex: 0x101110)
                  : Color(hex: 0xF3F4F1))
                     .frame(width: target.width, height: target.height)
-                if let image {
-                    Image(uiImage: image)
+                let placeholder = ImageStore.shared.get(
+                    ImageCacheKey.stablePath(path)
+                ) ?? ImageStore.shared.get(path)
+                if let shown = image ?? placeholder {
+                    Image(uiImage: shown)
                         .resizable()
                         .interpolation(.high)
                         .aspectRatio(contentMode: .fill)

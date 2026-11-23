@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SHEET = (ROOT / "Sources" / "ChatBackgroundSheet.swift").read_text(encoding="utf-8")
 CROP = (ROOT / "Sources" / "WallpaperSystem.swift").read_text(encoding="utf-8")
+EFFECT = (ROOT / "Sources" / "ChatWallpaperEffect.swift").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
 )
@@ -38,6 +39,14 @@ require(
     "if applying {\n                        ProgressView()" in CROP
     and ".disabled(applying)" in CROP,
     "the crop action must stay responsive and expose a clear applying state",
+)
+require(
+    "private let sourceCache = NSCache<NSString, UIImage>()" in EFFECT
+    and "private func diskCacheImage(key: String) async -> UIImage?" in EFFECT
+    and "private func saveDiskCache(_ image: UIImage, key: String) async" in EFFECT
+    and "ImageStore.shared.get(ImageCacheKey.stablePath(path))" in EFFECT
+    and "let placeholder = ImageStore.shared.get(" in EFFECT,
+    "rendered wallpapers must reuse source/effect caches across chat entries",
 )
 require(
     "python3 tools/verify-wallpaper-switch.py" in WORKFLOW,
