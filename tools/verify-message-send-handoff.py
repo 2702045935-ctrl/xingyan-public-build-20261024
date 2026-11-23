@@ -116,6 +116,8 @@ require(
     "private func nativeOutboxTextModel(_ pending: PendingMsg)" in CHAT
     and "case .outbox(let pending):\n            return nativeOutboxTextModel(pending) != nil" in CHAT
     and "case .outbox(let pending):\n            guard let model = nativeOutboxTextModel(pending)" in CHAT
+    and "bottomGap: 4" in CHAT
+    and "showsAvatar: true" in CHAT
     and "withTransaction(sendTransaction)" in CHAT
     and "DispatchQueue.main.async {\n            app.previewOutgoingMessage" in CHAT,
     "plain pending text must use the native row first and defer list-preview work one frame",
