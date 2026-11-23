@@ -1324,7 +1324,14 @@ struct ChatDetailView: View {
         }
         if let cid = message.clientId?.trimmingCharacters(in: .whitespacesAndNewlines),
            !cid.isEmpty,
-           messages.contains(where: { $0.clientId == cid }) {
+           let index = messages.firstIndex(where: { $0.clientId == cid }) {
+            messages[index] = message
+            newestKnownSeq = max(newestKnownSeq, message.seq ?? 0)
+            rebuildIndex()
+            if message.senderId == myId {
+                followOwnSendUntil = Date().addingTimeInterval(2)
+                pinToBottomSoon(force: true)
+            }
             return
         }
         if message.kindName == "mall",
@@ -3717,6 +3724,10 @@ struct ChatDetailView: View {
                     }
                     ScrollGate.shared.setScrolling(false)
                     frameCaptureTick &+= 1
+                    if Date() < followOwnSendUntil,
+                       messages.last?.senderId == myId {
+                        nativeMessageController.scrollToBottom(animated: true)
+                    }
                     // A fling can cross the runway exactly as deceleration ends.
                     consumeOlderRunway(requireActiveMotion: false)
                     consumeNewerRunway(requireActiveMotion: false)
@@ -7304,6 +7315,7 @@ struct ChatDetailView: View {
                     if let m = try await API.shared.send(chatId: chat.id, kind: "image", content: url,
                                                          imgW: px.w, imgH: px.h) {
                         appendVisibleMessage(m)
+                        app.rememberChatPageMessages(chat.id, [m])
                     }
                     let tSend = Date()
                     Task { await API.shared.callDiag("发图(+) 压+传=\(Int(tUp.timeIntervalSince(t0) * 1000))ms"
@@ -7417,6 +7429,7 @@ struct ChatDetailView: View {
                         let body = "{\"paths\":" + Self.jsonStringArray(urls) + "}"
                         if let m = try await API.shared.send(chatId: chat.id, kind: "images", content: body) {
                             appendVisibleMessage(m)
+                            app.rememberChatPageMessages(chat.id, [m])
                         }
                     } else {
                         CrashCatcher.note("发图", "\(urls.count) 张，分开一条一条发")
@@ -7425,6 +7438,7 @@ struct ChatDetailView: View {
                             if let m = try await API.shared.send(chatId: chat.id, kind: "image", content: u,
                                                                  imgW: d.w, imgH: d.h) {
                                 appendVisibleMessage(m)
+                                app.rememberChatPageMessages(chat.id, [m])
                             }
                         }
                     }
@@ -7504,6 +7518,7 @@ struct ChatDetailView: View {
                 mediaUploadPhase = .processing
                 if let m = try? await API.shared.send(chatId: chat.id, kind: "video", content: json) {
                     appendVisibleMessage(m)
+                    app.rememberChatPageMessages(chat.id, [m])
                 }
                 uploading = false
                 sendingMedia = ""
@@ -7552,6 +7567,7 @@ struct ChatDetailView: View {
                     mediaUploadPhase = .processing
                     if let m = try await API.shared.send(chatId: chat.id, kind: "livephoto", content: json) {
                         appendVisibleMessage(m)
+                        app.rememberChatPageMessages(chat.id, [m])
                     }
                 } catch { app.show((error as? APIError)?.errorDescription ?? "实况发送失败") }
                 uploading = false
@@ -7898,6 +7914,7 @@ struct ChatDetailView: View {
             startFileProcessingHeartbeat()
             if let message = try await API.shared.send(chatId: chat.id, kind: "file", content: content) {
                 appendVisibleMessage(message)
+                app.rememberChatPageMessages(chat.id, [message])
             }
             sendingFileProgress = nil
             sendingFileName = ""

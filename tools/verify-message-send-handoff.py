@@ -78,6 +78,19 @@ require(
     "confirmed sends and exit/re-entry must merge the current chat page into the in-memory cache",
 )
 require(
+    CHAT.count("app.rememberChatPageMessages(chat.id, [m])") >= 5
+    and "app.rememberChatPageMessages(chat.id, [message])" in CHAT
+    and "rememberChatPageMessages(c.id, msgs)" in APP
+    and "prefetched[c.id] = msgs" not in APP,
+    "media sends and stale prefetch snapshots must merge without dropping confirmed rows",
+)
+require(
+    "let index = messages.firstIndex(where: { $0.clientId == cid })" in CHAT
+    and "messages[index] = message" in CHAT
+    and "if Date() < followOwnSendUntil,\n                       messages.last?.senderId == myId" in CHAT,
+    "a confirmed client message must replace its echo and return into view when motion settles",
+)
+require(
     "private func nativeOutboxTextModel(_ pending: PendingMsg)" in CHAT
     and "case .outbox(let pending):\n            return nativeOutboxTextModel(pending) != nil" in CHAT
     and "case .outbox(let pending):\n            guard let model = nativeOutboxTextModel(pending)" in CHAT

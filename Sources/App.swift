@@ -1173,7 +1173,7 @@ final class AppState: ObservableObject {
             var total = 0
             for c in r.synced {
                 if let msgs = c.messages, !msgs.isEmpty {
-                    prefetched[c.id] = msgs
+                    rememberChatPageMessages(c.id, msgs)
                     total += msgs.count
                 }
             }
