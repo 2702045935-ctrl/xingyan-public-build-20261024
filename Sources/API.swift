@@ -5787,7 +5787,7 @@ private struct StarredPayload: Decodable {
                                                   onProgress: effectiveProgress) {
             return url
         }
-        if let url = try? await uploadRawJPEG(data: data,
+        if let url = try? await uploadRawJPEG(data,
                                               onProgress: effectiveProgress) {
             return url
         }
