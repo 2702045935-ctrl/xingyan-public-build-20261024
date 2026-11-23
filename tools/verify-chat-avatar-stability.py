@@ -8,6 +8,7 @@ TEXT_ROW = (ROOT / "Sources" / "NativeChatTextRowCell.swift").read_text(encoding
 MEDIA_ROW = (ROOT / "Sources" / "NativeChatMediaRowCell.swift").read_text(encoding="utf-8")
 CORE = (ROOT / "Sources" / "Core.swift").read_text(encoding="utf-8")
 APP = (ROOT / "Sources" / "App.swift").read_text(encoding="utf-8")
+CHAT = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
 
 
 def require(condition: bool, message: str) -> None:
@@ -73,6 +74,17 @@ require(
     and "if next.showsAvatar {\n            avatar.configure(" in TEXT_ROW
     and "if next.showsAvatar {\n            avatar.configure(" in MEDIA_ROW,
     "collapsed native message runs must not start avatar I/O while scrolling",
+)
+require(
+    'if let path = app.contact(for: senderId)?.avatarPath, !path.isEmpty { return path }'
+    in CHAT
+    and 'if let path = message.senderAvatar, !path.isEmpty { return path }' in CHAT
+    and CHAT.index(
+        'if let path = app.contact(for: senderId)?.avatarPath, !path.isEmpty { return path }'
+    ) < CHAT.index(
+        'if let path = message.senderAvatar, !path.isEmpty { return path }'
+    ),
+    "message rows must resolve the sender's current profile before historical avatar snapshots",
 )
 
 print("chat-avatar-stability: passed")
