@@ -24,6 +24,14 @@ require(
     "a successful publish must enter the visible feed immediately",
 )
 require(
+    'API.shared.updateMeChecked(["momentCover": url])' in VIEW
+    and "app.applyMyProfileUser(updated)" in VIEW
+    and "setCoverOverride(url)" in VIEW.split(
+        'API.shared.updateMeChecked(["momentCover": url])', 1
+    )[1].split("} else {", 1)[0],
+    "a saved Moments cover must remain visible without leaving the page",
+)
+require(
     "pendingLocal + cleanPage.filter" in VIEW,
     "a stale server page must not erase a just-published moment",
 )

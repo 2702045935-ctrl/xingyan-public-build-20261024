@@ -3556,7 +3556,11 @@ struct MomentsView: View {
             do {
                 if let updated = try await API.shared.updateMeChecked(["momentCover": url]) {
                     app.applyMyProfileUser(updated)
-                    clearCoverOverride()
+                    // Keep the acknowledged local URL visible on this page.
+                    // Clearing it before the owner model's next render briefly
+                    // exposes the previous cover, which only fixes itself after
+                    // leaving and re-entering Moments.
+                    setCoverOverride(url)
                 } else {
                     app.applyMyProfileFields(["momentCover": url])
                 }
