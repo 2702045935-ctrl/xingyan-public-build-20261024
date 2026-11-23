@@ -34,6 +34,7 @@
     "enabled": false,
     "seedCellId": "cell-a-43",
     "sourceUser": "root",
+    "sourceRoot": "/opt/xingyan-dual-cell/release-r1",
     "releaseRoot": "/opt/xingyan-dual-cell/release-r1",
     "clusterKeyFile": "/root/.ssh/xingyan-cluster",
     "envDir": "/etc/xingyan-dual-cell",

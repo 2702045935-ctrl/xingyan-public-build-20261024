@@ -114,6 +114,10 @@ async function main() {
     targetPlan: target(),
     runner: {
       async run(request) {
+        if (request.purpose === 'bootstrap-provision') {
+          provisionCalls.push({ host: request.host, action: request.purpose });
+          return { ok: true };
+        }
         provisionCalls.push({
           host: request.host,
           action: request.purpose,
@@ -135,6 +139,7 @@ async function main() {
   });
   await provisioningAdapters.prepareNode({ cellId: 'cell-c' });
   const provision = provisionCalls.find((row) => row.action === 'provision');
+  assert.ok(provisionCalls.some((row) => row.action === 'bootstrap-provision'));
   assert.ok(provision);
   assert.strictEqual(provision.host, '192.0.2.40');
   assert.strictEqual(provision.payload.sourceHost, '43.242.194.89');

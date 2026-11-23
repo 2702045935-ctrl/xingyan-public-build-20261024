@@ -36,6 +36,10 @@ function jsonPayload(value) {
   return Buffer.from(JSON.stringify(value), 'utf8').toString('base64');
 }
 
+function shellQuote(value) {
+  return "'" + String(value).replace(/'/g, "'\"'\"'") + "'";
+}
+
 function cellMap(plan) {
   return new Map((plan.cells || []).map((cell) => [cell.id, cell]));
 }
@@ -89,10 +93,23 @@ function createPhysicalScaleProductionAdapters(options) {
   const provisioning = Object.assign({
     enabled: false,
     sourceUser: 'root',
+    sourceRoot: '/opt/xingyan-dual-cell/release-r1',
     clusterKeyFile: '/root/.ssh/xingyan-cluster',
     envDir: '/etc/xingyan-dual-cell',
     unitDir: '/etc/systemd/system'
   }, opts.provisioning || {});
+  const provisioningReleaseRoot = absolute(
+    provisioning.releaseRoot || '/opt/xingyan-dual-cell/release-r1',
+    'provisioning.releaseRoot'
+  );
+  const provisioningSourceRoot = absolute(
+    provisioning.sourceRoot || '/opt/xingyan-dual-cell/release-r1',
+    'provisioning.sourceRoot'
+  );
+  const provisioningKeyFile = absolute(
+    provisioning.clusterKeyFile || '/root/.ssh/xingyan-cluster',
+    'provisioning.clusterKeyFile'
+  );
   const timeoutMs = Math.max(5000, Number(opts.timeoutMs) || 300000);
   const routeSha = crypto.createHash('sha256').update(routePlan.bytes).digest('hex');
   if (routePlan.fileSha256 && routeSha !== routePlan.fileSha256) {
@@ -106,6 +123,35 @@ function createPhysicalScaleProductionAdapters(options) {
     timeoutMs: timeoutMs,
     purpose: action
   });
+
+  const bootstrapProvisioning = async (cell, seedCell) => {
+    const launcher = provisioningReleaseRoot + '/run-dual-cell-shard.sh';
+    const command = [
+      'set -euo pipefail',
+      'mkdir -p ' + shellQuote(provisioningReleaseRoot)
+        + ' ' + shellQuote(cell.dataRoot),
+      'test -f ' + shellQuote(provisioningKeyFile),
+      'if [ ! -f ' + shellQuote(launcher) + ' ]; then',
+      '  rsync -aH --checksum --delete-delay --exclude=*.tmp --exclude=*.part'
+        + ' -e ' + shellQuote('ssh -i ' + provisioningKeyFile
+          + ' -o BatchMode=yes -o StrictHostKeyChecking=accept-new')
+        + ' ' + shellQuote(provisioning.sourceUser + '@'
+          + seedCell.host + ':' + provisioningSourceRoot + '/')
+        + ' ' + shellQuote(provisioningReleaseRoot + '/'),
+      'fi',
+      'test -f ' + shellQuote(launcher),
+      'test -f ' + shellQuote(provisioningReleaseRoot
+        + '/deploy/fleet/fleet-node-control.js')
+    ].join('\n');
+    const result = await runner.run({
+      host: host(cell.host),
+      user,
+      argv: ['/bin/bash', '-lc', shellQuote(command)],
+      timeoutMs: Math.max(timeoutMs, 30 * 60 * 1000),
+      purpose: 'bootstrap-provision'
+    });
+    return result || { ok: true };
+  };
 
   const targetCell = (id) => {
     const cell = targetCells.get(id);
@@ -133,12 +179,13 @@ function createPhysicalScaleProductionAdapters(options) {
         const sourcePlanBytes = Buffer.from(JSON.stringify(source, null, 2) + '\n');
         const fleetPlanSha256 = crypto.createHash('sha256')
           .update(sourcePlanBytes).digest('hex');
+        await bootstrapProvisioning(cell, seedCell);
         const result = await call(cell.host, 'provision', {
           cellId: cell.id,
           sourceHost: seedCell.host,
           sourceUser: provisioning.sourceUser,
-          sourceRoot: absolute(seedCell.dataRoot, 'sourceRoot'),
-          releaseRoot: target.releaseRoot || '/opt/xingyan-dual-cell/release-r1',
+          sourceRoot: provisioningSourceRoot,
+          releaseRoot: provisioningReleaseRoot,
           dataRoot: absolute(cell.dataRoot, 'dataRoot'),
           servicePrefix,
           envFile,
