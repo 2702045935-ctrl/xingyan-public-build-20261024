@@ -55,8 +55,9 @@ require(
 )
 require(
     "ScrollGate.shared.setScrolling(false)" in CHAT
-    and "consumeOlderRunway(requireActiveMotion: false)" in CHAT,
-    "history runway must also be consumed after deceleration ends",
+    and "consumeOlderRunwayOnHandoff()" in CHAT
+    and "historyRuntime.pendingOlderHandoff = true" in CHAT,
+    "deceleration handoff must consume only the page prepared for that gesture",
 )
 require(
     "private var oldestHistorySeq: Int" in CHAT
@@ -88,8 +89,9 @@ require(
     and "ChatScrollHandle.shared.markOlderRunwayIntent()" in CHAT
     and "ChatScrollHandle.shared.olderRunwayIntentActive" in CHAT
     and "olderRunwayBatchRemaining" not in CHAT
-    and "consumeOlderRunway(requireActiveMotion: false)" in CHAT,
-    "continuous scrolling must fetch one page at a time while the gesture is active",
+    and "consumeOlderRunway(requireActiveMotion: true)" in CHAT
+    and "historyRuntime.pendingOlderHandoff" in CHAT,
+    "continuous scrolling must fetch one page at a time and retain one handoff only",
 )
 require(
     "ChatScrollHandle.shared.endOlderRunwayIntent()" in CHAT
@@ -108,9 +110,35 @@ require(
     "async history defers must not return from defer blocks",
 )
 require(
-    "else if !olderPrefetch.isEmpty" in CHAT
-    and "consumeOlderRunway(requireActiveMotion: false)" in CHAT,
-    "a prefetched page must enter the runway after the finger has stopped",
+    "private func consumeOlderRunwayOnHandoff()" in CHAT
+    and "!olderPrefetch.isEmpty" in CHAT
+    and "consumeOlderRunwayOnHandoff()" in CHAT
+    and "consumeNewerRunwayOnHandoff()" in CHAT
+    and "var pendingOlderHandoff = false" in CHAT
+    and "var pendingNewerHandoff = false" in CHAT
+    and "historyRuntime.pendingOlderHandoff = true" in CHAT
+    and "historyRuntime.pendingNewerHandoff = true" in CHAT
+    and "A stopped\n                    // gesture must never start another network page by itself." in CHAT,
+    "a stopped gesture may hand off only its already requested page and must not start another request",
+)
+require(
+    "!ChatScrollHandle.shared.movingTowardOlder" in CHAT
+    and "!ChatScrollHandle.shared.movingTowardNewer" in CHAT
+    and "var movingTowardOlder: Bool" in (
+        ROOT / "Sources" / "ScrollProbe.swift"
+    ).read_text(encoding="utf-8")
+    and "var movingTowardNewer: Bool" in (
+        ROOT / "Sources" / "ScrollProbe.swift"
+    ).read_text(encoding="utf-8")
+    and "let naturalStep = max(96" in (
+        ROOT / "Sources" / "ScrollProbe.swift"
+    ).read_text(encoding="utf-8"),
+    "history runway must follow the live scroll direction and ignore anchor-compensation jumps",
+)
+require(
+    "} else if !olderPrefetch.isEmpty {" not in CHAT
+    and "lastOlderLoad = .distantPast\n                    DispatchQueue.main.async {\n                        consumeOlderRunway(requireActiveMotion: false)" not in CHAT,
+    "completed background prefetches must stay off-list until the next active scroll",
 )
 require(
     "private var newerPrefetch: [Message]" in CHAT
@@ -121,10 +149,12 @@ require(
     "newer history must prefetch and retain a cursor after older pages trim the window",
 )
 require(
-    CHAT.count("consumeNewerRunway(requireActiveMotion: false)") >= 2
+    "consumeNewerRunway(requireActiveMotion: true)" in CHAT
+    and "consumeNewerRunwayOnHandoff()" in CHAT
+    and "historyRuntime.pendingNewerHandoff" in CHAT
     and "newerPrefetchTask" in CHAT
     and "scheduleNewerPrefetch(" in CHAT,
-    "completed newer prefetches must continuously return pages without extra finger gestures",
+    "newer pages must continue during active travel with one prepared handoff",
 )
 require(
     "let refreshWindow = initial ? activeInitialMessageWindow : maxMessageWindow" in CHAT

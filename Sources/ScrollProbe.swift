@@ -1,6 +1,12 @@
 import SwiftUI
 import UIKit
 
+enum ChatScrollTravel {
+    case idle
+    case older
+    case newer
+}
+
 final class ChatScrollHandle {
     static let shared = ChatScrollHandle()
     weak var scroll: UIScrollView?
@@ -9,9 +15,35 @@ final class ChatScrollHandle {
     private var lastUserMotionAt = Date.distantPast
     private var pendingPrepend: (height: CGFloat, offset: CGPoint)?
     private var olderRunwayGestureActive = false
+    private var newerRunwayGestureActive = false
+    private var lastObservedOffsetY: CGFloat?
+    private var travel: ChatScrollTravel = .idle
 
     func noteUserMotion() {
         lastUserMotionAt = Date()
+    }
+
+    func beginScrollGesture(offsetY: CGFloat) {
+        lastObservedOffsetY = offsetY
+        travel = .idle
+    }
+
+    /// Native content-offset updates arrive for both the finger and the exact
+    /// anchor compensation after a prepend. A one-event jump larger than a
+    /// viewport is layout compensation, not a reversal in scroll direction.
+    func noteScroll(offsetY: CGFloat, active: Bool) {
+        guard active else {
+            lastObservedOffsetY = offsetY
+            return
+        }
+        if let previous = lastObservedOffsetY {
+            let delta = offsetY - previous
+            let naturalStep = max(96, (scroll?.bounds.height ?? 800) * 1.25)
+            if abs(delta) >= 0.5, abs(delta) <= naturalStep {
+                travel = delta < 0 ? .older : .newer
+            }
+        }
+        lastObservedOffsetY = offsetY
     }
 
     func markOlderRunwayIntent() {
@@ -22,14 +54,45 @@ final class ChatScrollHandle {
         olderRunwayGestureActive = false
     }
 
+    func markNewerRunwayIntent() {
+        newerRunwayGestureActive = true
+    }
+
+    func endNewerRunwayIntent() {
+        newerRunwayGestureActive = false
+    }
+
     var olderRunwayIntentActive: Bool {
         olderRunwayGestureActive
+    }
+
+    var newerRunwayIntentActive: Bool {
+        newerRunwayGestureActive
+    }
+
+    var lastTravelWasOlder: Bool {
+        travel == .older
+    }
+
+    var lastTravelWasNewer: Bool {
+        travel == .newer
+    }
+
+    var movingTowardOlder: Bool {
+        moving && travel == .older
+    }
+
+    var movingTowardNewer: Bool {
+        moving && travel == .newer
     }
 
     /// 用户点输入框/键盘弹出时允许立即回到最新消息。
     func allowAutomaticPinning() {
         lastUserMotionAt = .distantPast
         olderRunwayGestureActive = false
+        newerRunwayGestureActive = false
+        lastObservedOffsetY = scroll?.contentOffset.y
+        travel = .idle
     }
 
     /// 在向聊天顶部插入旧消息前记录当前内容高度与位置。
@@ -59,6 +122,7 @@ final class ChatScrollHandle {
         )
         let targetY = min(max(pending.offset.y + delta, minimumY), maximumY)
         sv.setContentOffset(CGPoint(x: pending.offset.x, y: targetY), animated: false)
+        lastObservedOffsetY = targetY
         return true
     }
 

@@ -227,6 +227,7 @@ private final class ChatHistoryRuntime {
     var olderNextCursor = 0
     var olderPrefetchTask: Task<Void, Never>?
     var olderPrefetchToken = UUID()
+    var pendingOlderHandoff = false
 
     var loadingNewer = false
     var lastOlderLoad = Date.distantPast
@@ -235,6 +236,7 @@ private final class ChatHistoryRuntime {
     var newerPrefetchHasMore = false
     var newerPrefetchTask: Task<Void, Never>?
     var newerPrefetchToken = UUID()
+    var pendingNewerHandoff = false
     var newestKnownSeq = 0
 
 }
@@ -3540,20 +3542,34 @@ struct ChatDetailView: View {
                     }
                     ScrollGate.shared.setScrolling(true)
                     followOwnSendUntil = Date.distantPast
+                    historyRuntime.pendingOlderHandoff = false
+                    historyRuntime.pendingNewerHandoff = false
                 } else {
                     if let gap = ChatScrollHandle.shared.gap {
                         atBottom = gap <= 16
                         wasAtBottom = gap <= 16
                     }
+                    let handoffOlder = ChatScrollHandle.shared.lastTravelWasOlder
+                        && ChatScrollHandle.shared.olderRunwayIntentActive
+                    let handoffNewer = ChatScrollHandle.shared.lastTravelWasNewer
+                        && ChatScrollHandle.shared.newerRunwayIntentActive
                     ScrollGate.shared.setScrolling(false)
                     if Date() < followOwnSendUntil,
                        messages.last?.senderId == myId {
                         nativeMessageController.scrollToBottom(animated: false)
                     }
-                    // A fling can cross the runway exactly as deceleration ends.
-                    consumeOlderRunway(requireActiveMotion: false)
-                    consumeNewerRunway(requireActiveMotion: false)
                     ChatScrollHandle.shared.endOlderRunwayIntent()
+                    ChatScrollHandle.shared.endNewerRunwayIntent()
+                    // Hand off only a page that is already prepared. A stopped
+                    // gesture must never start another network page by itself.
+                    if handoffOlder {
+                        historyRuntime.pendingOlderHandoff = true
+                        consumeOlderRunwayOnHandoff()
+                    }
+                    if handoffNewer {
+                        historyRuntime.pendingNewerHandoff = true
+                        consumeNewerRunwayOnHandoff()
+                    }
                 }
             },
             onScrollOffset: { y in
@@ -4284,7 +4300,7 @@ struct ChatDetailView: View {
         guard hasOlder else { return }
         lastOlderLoad = Date().addingTimeInterval(0.8)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
-            consumeOlderRunway(requireActiveMotion: false)
+            consumeOlderRunway(requireActiveMotion: true)
         }
     }
 
@@ -4296,10 +4312,26 @@ struct ChatDetailView: View {
         let y = offsetY ?? scroll.contentOffset.y
         let runway = max(2_800, min(5_600, scroll.bounds.height * 3.5))
         guard y < runway else { return }
-        if requireActiveMotion, !ChatScrollHandle.shared.moving { return }
-        if requireActiveMotion, ChatScrollHandle.shared.moving {
+        if requireActiveMotion,
+           !ChatScrollHandle.shared.movingTowardOlder {
+            return
+        }
+        if requireActiveMotion {
             ChatScrollHandle.shared.markOlderRunwayIntent()
         }
+        autoLoadOlder()
+    }
+
+    private func consumeOlderRunwayOnHandoff() {
+        guard initialScrollReady,
+              hasOlder,
+              !loadingOlder,
+              !olderPrefetch.isEmpty,
+              let scroll = ChatScrollHandle.shared.scroll else { return }
+        let runway = max(2_800, min(5_600, scroll.bounds.height * 3.5))
+        guard scroll.contentOffset.y < runway else { return }
+        historyRuntime.pendingOlderHandoff = false
+        ChatScrollDiag.shared.note("手势结束前预取页无感交接")
         autoLoadOlder()
     }
 
@@ -4323,16 +4355,37 @@ struct ChatDetailView: View {
         guard (ChatScrollHandle.shared.gap ?? .greatestFiniteMagnitude) < runway else {
             return
         }
-        if requireActiveMotion, !ChatScrollHandle.shared.moving { return }
+        if requireActiveMotion,
+           !ChatScrollHandle.shared.movingTowardNewer {
+            return
+        }
+        if requireActiveMotion {
+            ChatScrollHandle.shared.markNewerRunwayIntent()
+        }
         lastNewerLoad = Date()
         Task { await loadNewer() }
+    }
+
+    private func consumeNewerRunwayOnHandoff() {
+        guard initialScrollReady,
+              hasNewerMessages,
+              !loadingNewer,
+              !newerPrefetch.isEmpty,
+              let scroll = ChatScrollHandle.shared.scroll else { return }
+        let runway = max(1_200, scroll.bounds.height * 1.6)
+        guard (ChatScrollHandle.shared.gap ?? .greatestFiniteMagnitude) < runway else {
+            return
+        }
+        historyRuntime.pendingNewerHandoff = false
+        ChatScrollDiag.shared.note("下行预取页无感交接")
+        consumeNewerRunway(requireActiveMotion: false)
     }
 
     private func scheduleNewerRunwayRetry() {
         guard hasNewerMessages else { return }
         lastNewerLoad = Date().addingTimeInterval(0.8)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
-            consumeNewerRunway(requireActiveMotion: false)
+            consumeNewerRunway(requireActiveMotion: true)
         }
     }
 
@@ -4344,10 +4397,12 @@ struct ChatDetailView: View {
         var loadedUsefulPage = false
         defer {
             loadingNewer = false
-            if loadedUsefulPage {
+            if loadedUsefulPage,
+               ChatScrollHandle.shared.moving
+                || ChatScrollHandle.shared.newerRunwayIntentActive {
                 lastNewerLoad = .distantPast
                 DispatchQueue.main.async {
-                    consumeNewerRunway(requireActiveMotion: false)
+                    consumeNewerRunway(requireActiveMotion: true)
                 }
             }
         }
@@ -4438,8 +4493,12 @@ struct ChatDetailView: View {
                     return
                 }
                 lastNewerLoad = .distantPast
-                DispatchQueue.main.async {
-                    consumeNewerRunway(requireActiveMotion: false)
+                if historyRuntime.pendingNewerHandoff,
+                   ChatScrollHandle.shared.lastTravelWasNewer,
+                   !ChatScrollHandle.shared.moving {
+                    DispatchQueue.main.async {
+                        consumeNewerRunwayOnHandoff()
+                    }
                 }
             } catch {
                 if newerPrefetchToken == token {
@@ -8088,18 +8147,15 @@ struct ChatDetailView: View {
         var loadedUsefulPage = false
         defer {
             loadingOlder = false
-            if loadedUsefulPage {
+            if loadedUsefulPage,
+               ChatScrollHandle.shared.moving
+                || ChatScrollHandle.shared.olderRunwayIntentActive {
                 // A long fling can cross more than one history page. Re-arm the
                 // runway after every consumed page so the next page starts loading
                 // while the finger is still moving, matching the initial pages.
                 lastOlderLoad = .distantPast
                 DispatchQueue.main.async {
-                    if ChatScrollHandle.shared.moving
-                        || ChatScrollHandle.shared.olderRunwayIntentActive {
-                        autoLoadOlder()
-                    } else {
-                        consumeOlderRunway(requireActiveMotion: false)
-                    }
+                    consumeOlderRunway(requireActiveMotion: true)
                 }
             }
         }
@@ -8231,13 +8287,12 @@ struct ChatDetailView: View {
                     hasOlder = false
                 } else if page.messages.isEmpty {
                     scheduleOlderRunwayRetry()
-                } else if !olderPrefetch.isEmpty {
-                    // If the finger stopped while waiting for this request, the
-                    // completed page must still enter the window. Otherwise the
-                    // user has to pull again for every page after the first two.
+                } else if historyRuntime.pendingOlderHandoff,
+                          ChatScrollHandle.shared.lastTravelWasOlder,
+                          !ChatScrollHandle.shared.moving {
                     lastOlderLoad = .distantPast
                     DispatchQueue.main.async {
-                        consumeOlderRunway(requireActiveMotion: false)
+                        consumeOlderRunwayOnHandoff()
                     }
                 } else if page.hasMore {
                     let next = olderNextCursor

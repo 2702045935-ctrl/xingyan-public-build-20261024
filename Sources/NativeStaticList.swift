@@ -517,6 +517,9 @@ where Item.ID: Hashable {
         }
 
         func publishScrollState(_ active: Bool) {
+            if let y = collection?.contentOffset.y {
+                ChatScrollHandle.shared.noteScroll(offsetY: y, active: active)
+            }
             guard lastScrollState != active else { return }
             lastScrollState = active
             virtualScrollIndicator?.setScrolling(active)
@@ -929,6 +932,7 @@ where Item.ID: Hashable {
 
         func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
             ChatScrollHandle.shared.noteUserMotion()
+            ChatScrollHandle.shared.beginScrollGesture(offsetY: scrollView.contentOffset.y)
             waitsForInitialBottom = false
             scrollView.alpha = 1
             // A new finger can land while the previous flick is still
@@ -946,17 +950,18 @@ where Item.ID: Hashable {
         }
 
         func scrollViewDidScroll(_ scrollView: UIScrollView) {
-            if scrollView.isDragging || scrollView.isTracking || scrollView.isDecelerating {
+            let active = scrollView.isDragging || scrollView.isTracking
+                || scrollView.isDecelerating
+            if active {
                 ChatScrollHandle.shared.noteUserMotion()
             }
             let y = scrollView.contentOffset.y
+            ChatScrollHandle.shared.noteScroll(offsetY: y, active: active)
             if abs(y - lastReportedOffsetY) >= 16 {
                 lastReportedOffsetY = y
                 onScrollOffset?(y)
             }
-            publishScrollState(
-                scrollView.isDragging || scrollView.isTracking || scrollView.isDecelerating
-            )
+            publishScrollState(active)
             updateVirtualScrollIndicator()
         }
 

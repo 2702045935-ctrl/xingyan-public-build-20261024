@@ -67,8 +67,9 @@ require(
 require(
     "loadedUsefulPage = more" in CHAT
     and "lastOlderLoad = .distantPast" in CHAT
-    and "consumeOlderRunway(requireActiveMotion: false)" in CHAT,
-    "every consumed history page must immediately continue while inside the runway",
+    and "consumeOlderRunway(requireActiveMotion: true)" in CHAT
+    and "ChatScrollHandle.shared.olderRunwayIntentActive" in CHAT,
+    "every consumed history page must continue only while the active gesture remains in the runway",
 )
 require(
     "var olderNextCursor = 0" in CHAT
@@ -83,9 +84,25 @@ require(
     "reaching the actual first message must clear the phantom older page",
 )
 require(
-    "else if !olderPrefetch.isEmpty" in CHAT
-    and "consumeOlderRunway(requireActiveMotion: false)" in CHAT,
-    "completed prefetches must auto-consume without another finger gesture",
+    "private func consumeOlderRunwayOnHandoff()" in CHAT
+    and "private func consumeNewerRunwayOnHandoff()" in CHAT
+    and "!olderPrefetch.isEmpty" in CHAT
+    and "!newerPrefetch.isEmpty" in CHAT
+    and "historyRuntime.pendingOlderHandoff," in CHAT
+    and "historyRuntime.pendingNewerHandoff," in CHAT
+    and "A stopped\n                    // gesture must never start another network page by itself." in CHAT,
+    "a completed stopped gesture may hand off one prepared page and no speculative chain",
+)
+require(
+    "!ChatScrollHandle.shared.movingTowardOlder" in CHAT
+    and "!ChatScrollHandle.shared.movingTowardNewer" in CHAT
+    and "func beginScrollGesture(offsetY: CGFloat)" in (
+        ROOT / "Sources" / "ScrollProbe.swift"
+    ).read_text(encoding="utf-8")
+    and "let naturalStep = max(96" in (
+        ROOT / "Sources" / "ScrollProbe.swift"
+    ).read_text(encoding="utf-8"),
+    "chat history must consume only while the finger or momentum moves toward that edge",
 )
 require(
     "private func scheduleOlderRunwayRetry()" in CHAT
