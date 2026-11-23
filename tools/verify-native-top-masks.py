@@ -25,23 +25,22 @@ require(".glassEffect(.regular.interactive(), in: shape)" in NAV,
         "tappable glass controls must use native interactive liquid glass")
 require(
     "table.topEdgeEffect.style = .hard" in NATIVE_LIST
-    and "table.topEdgeEffect.isHidden = dark" in NATIVE_LIST
+    and "table.topEdgeEffect.isHidden = true" in NATIVE_LIST
     and "NativeChatListScrollRegistry.shared.chats = table" in NATIVE_LIST,
-    "chat list must expose the system scroll-edge effect in light mode and disable it on black",
+    "chat list must keep the system scroll-edge line hidden to prevent a first-frame flash",
 )
 require(
     "UIScrollEdgeElementContainerInteraction" in NAV
     and "interaction.edge = .top" in NAV
     and "let edgeShape = UIView()" in NAV
-    and 'if #available(iOS 26.0, *), !isDark' in NAV
-    and "NativeScrollEdgeElementBridge(" in NAV
+    and 'if #available(iOS 26.0, *), !isDark' not in NAV
     and ".ignoresSafeArea(edges: .top)" in NAV
     and "NativeChatsTopEdgeChrome(scrolled: chatTopScrolled," in CHATS
     and "dark: chatsIsDark" in CHATS
     and "background: chatsPageFill" in CHATS
     and "onOffsetChange:" in CHATS
     and "NativeTopGlassMask(active: scrolled > 0)" not in CHATS,
-    "chat header must extend the native scroll edge over an opaque themed surface",
+    "chat header must use the opaque themed surface without a system edge overlay",
 )
 require(
     "NativeChatsTopEdgeChrome" in NAV

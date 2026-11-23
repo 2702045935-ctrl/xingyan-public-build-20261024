@@ -221,11 +221,6 @@ struct NativeChatsTopEdgeChrome: View {
         ZStack {
             (background ?? (isDark ? C.pageBg : Color(uiColor: .systemBackground)))
                 .opacity(scrolled > 0 ? 1 : 0)
-            if #available(iOS 26.0, *), !isDark {
-                NativeScrollEdgeElementBridge(
-                    scrollView: { NativeChatListScrollRegistry.shared.chats }
-                )
-            }
         }
         .animation(reduceMotion ? nil : .easeOut(duration: 0.16),
                    value: scrolled > 0)

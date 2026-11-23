@@ -35,10 +35,10 @@ require(
 )
 require(
     "table.topEdgeEffect.style = .hard" in NATIVE_LIST
-    and "table.topEdgeEffect.isHidden = dark" in NATIVE_LIST
-    and "controller.tableView.topEdgeEffect.isHidden = dark" in NATIVE_LIST
+    and "table.topEdgeEffect.isHidden = true" in NATIVE_LIST
+    and "controller.tableView.topEdgeEffect.isHidden = true" in NATIVE_LIST
     and "dark: chatsIsDark" in CHATS,
-    "the chat surface must disable the gray system edge effect in dark mode",
+    "the chat surface must disable the flashing system edge line in every theme",
 )
 require(
     "background: chatsPageFill" in CHATS
