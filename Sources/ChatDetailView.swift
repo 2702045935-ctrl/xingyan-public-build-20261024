@@ -3507,7 +3507,7 @@ struct ChatDetailView: View {
                 items.append(NativeGroupItem(id: "native-time:\(message.id)",
                                              kind: .timestamp(message)))
             }
-            items.append(NativeGroupItem(id: message.id,
+            items.append(NativeGroupItem(id: nativeMessageItemID(message),
                                          kind: .message(message)))
         }
         for pending in visiblePendingMessages {
@@ -3523,6 +3523,19 @@ struct ChatDetailView: View {
         items.append(NativeGroupItem(id: "__bottom", kind: .bottom))
         items.append(NativeGroupItem(id: "native-spacer", kind: .spacer))
         return items
+    }
+
+    /// A server-confirmed own message keeps the optimistic row's collection
+    /// identity. Replacing the pending kind in place avoids a remove/insert
+    /// diff, which otherwise flashes once at send acknowledgement.
+    private func nativeMessageItemID(_ message: Message) -> String {
+        guard mineFor(message),
+              let clientId = message.clientId?
+                .trimmingCharacters(in: .whitespacesAndNewlines),
+              !clientId.isEmpty else {
+            return message.id
+        }
+        return "native-outbox:\(clientId)"
     }
 
     private var nativeRowLayoutKey: String {

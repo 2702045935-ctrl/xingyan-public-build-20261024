@@ -99,6 +99,13 @@ require(
     "confirmed messages must structurally suppress matching pending rows in the render projection",
 )
 require(
+    "private func nativeMessageItemID(_ message: Message) -> String" in CHAT
+    and 'return "native-outbox:\\(clientId)"' in CHAT
+    and "NativeGroupItem(id: nativeMessageItemID(message)" in CHAT
+    and 'NativeGroupItem(id: "native-outbox:\\(pending.id)"' in CHAT,
+    "confirmed sends must reuse the optimistic collection identity to avoid a row flash",
+)
+require(
     "let keepsBottomOnItemChange: Bool" in NATIVE
     and "if self.keepsBottomOnItemChange,\n                   wasAtBottom"
     in NATIVE
