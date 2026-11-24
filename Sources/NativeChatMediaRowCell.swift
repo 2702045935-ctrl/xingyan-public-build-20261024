@@ -115,6 +115,9 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
         NativeMediaImageView()
     }
     private let fileIcon = UIImageView()
+    private let fileActionIcon = UIImageView(
+        image: UIImage(systemName: "arrow.down.circle.fill")
+    )
     private let titleLabel = UILabel()
     private let detailLabel = UILabel()
     private let badgeLabel = UILabel()
@@ -144,6 +147,7 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
         addSubview(imageView)
         extraImageViews.forEach { addSubview($0) }
         addSubview(fileIcon)
+        addSubview(fileActionIcon)
         addSubview(titleLabel)
         addSubview(detailLabel)
         addSubview(badgeLabel)
@@ -171,6 +175,8 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
         fileIcon.layer.cornerRadius = 10
         fileIcon.layer.cornerCurve = .continuous
         fileIcon.backgroundColor = UIColor.systemIndigo
+        fileActionIcon.tintColor = UIColor.systemBlue
+        fileActionIcon.contentMode = .scaleAspectFit
 
         badgeLabel.font = pfUIFont(11, .semibold)
         badgeLabel.textColor = .white
@@ -237,6 +243,7 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
         badgeLabel.isHidden = true
         playView.isHidden = true
         durationLabel.isHidden = true
+        fileActionIcon.isHidden = true
 
         switch next.kind {
         case .image(let path, _):
@@ -259,14 +266,22 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
             durationLabel.isHidden = seconds <= 0
             durationLabel.text = " \(max(0, seconds))s "
         case .file(let name, let path, let bytes, let type):
+            bubble.fillColor = .secondarySystemGroupedBackground
+            bubble.glass = false
+            bubble.showTail = false
             fileIcon.isHidden = false
             titleLabel.isHidden = false
             detailLabel.isHidden = false
             titleLabel.text = name
-            titleLabel.textColor = next.primaryColor
-            detailLabel.textColor = next.secondaryColor
+            titleLabel.textColor = .label
+            detailLabel.textColor = .secondaryLabel
             detailLabel.text = type + " · " + Self.byteText(bytes)
             fileIcon.image = UIImage(systemName: Self.fileSymbol(name: name, path: path))
+            fileIcon.backgroundColor = Self.fileTint(name: name)
+            fileIcon.layer.cornerRadius = 12
+            fileIcon.layer.cornerCurve = .continuous
+            fileActionIcon.isHidden = false
+            fileActionIcon.tintColor = Self.fileTint(name: name)
         }
         setNeedsLayout()
     }
@@ -339,9 +354,15 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
         avatar.frame = CGRect(x: avatarX, y: 1,
                               width: model.avatarSize, height: model.avatarSize)
 
+        let isFile: Bool
+        if case .file = model.kind {
+            isFile = true
+        } else {
+            isFile = false
+        }
         let bubbleWidth = Self.bubbleWidth(for: model, available: available)
         let bubbleHeight = Self.bubbleHeight(for: model, width: bubbleWidth)
-        let tailInset: CGFloat = model.showTail
+        let tailInset: CGFloat = model.showTail && !isFile
             ? WhatsAppChatLayout.tailInset
             : 0
         let bubbleRail = model.mine
@@ -362,14 +383,11 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
             height: bubbleHeight
         )
         let overlaySender: Bool
-        let isFile: Bool
         switch model.kind {
         case .file:
             overlaySender = false
-            isFile = true
         case .image, .images, .video:
             overlaySender = true
-            isFile = false
         }
         senderLabel.isHidden = model.senderName.isEmpty
         if !model.senderName.isEmpty {
@@ -442,20 +460,26 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
         }
 
         fileIcon.frame = CGRect(x: contentBody.minX + 12,
-                                y: contentBody.midY - 20,
-                                width: 40, height: 40)
-        let textX = fileIcon.frame.maxX + 11
+                                y: contentBody.midY - 22,
+                                width: 44, height: 44)
+        let textX = fileIcon.frame.maxX + 12
         titleLabel.frame = CGRect(
             x: textX,
-            y: contentBody.midY - 18,
-            width: max(20, contentBody.maxX - textX - 14),
+            y: contentBody.midY - 17,
+            width: max(20, contentBody.maxX - textX - 34),
             height: 21
         )
         detailLabel.frame = CGRect(
             x: textX,
-            y: contentBody.midY + 3,
-            width: max(20, contentBody.maxX - textX - 14),
+            y: contentBody.midY + 4,
+            width: max(20, contentBody.maxX - textX - 34),
             height: 17
+        )
+        fileActionIcon.frame = CGRect(
+            x: contentBody.maxX - 34,
+            y: contentBody.midY - 10,
+            width: 20,
+            height: 20
         )
         let metaWidth = WhatsAppChatLayout.metadataWidth(
             time: model.metaText,
@@ -533,7 +557,7 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
             let size = videoBubbleSize(w: w, h: h)
             return min(usable, size.width + tail)
         case .file:
-            return min(224 + tail, usable)
+            return min(236, usable)
         }
     }
 
@@ -552,7 +576,7 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
         case .video(_, _, let w, let h):
             return videoBubbleSize(w: w, h: h).height
         case .file:
-            return 86 + (model.senderName.isEmpty
+            return 82 + (model.senderName.isEmpty
                 ? 0
                 : WhatsAppChatLayout.senderHeight + 3)
         }
@@ -577,6 +601,22 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
         case "mp3", "m4a", "wav": return "waveform"
         case "mp4", "mov": return "video.fill"
         default: return path.isEmpty ? "doc.fill" : "doc.fill"
+        }
+    }
+
+    private static func fileTint(name: String) -> UIColor {
+        switch (name as NSString).pathExtension.lowercased() {
+        case "pdf": return UIColor(red: 0.94, green: 0.27, blue: 0.27, alpha: 1)
+        case "doc", "docx", "pages", "txt", "md", "rtf":
+            return UIColor(red: 0.23, green: 0.51, blue: 0.96, alpha: 1)
+        case "xls", "xlsx", "numbers", "csv":
+            return UIColor(red: 0.13, green: 0.70, blue: 0.42, alpha: 1)
+        case "ppt", "pptx", "key":
+            return UIColor(red: 0.96, green: 0.62, blue: 0.04, alpha: 1)
+        case "zip", "rar", "7z":
+            return UIColor(red: 0.55, green: 0.36, blue: 0.96, alpha: 1)
+        default:
+            return UIColor(red: 0.04, green: 0.52, blue: 1.00, alpha: 1)
         }
     }
 }

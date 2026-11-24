@@ -22,12 +22,12 @@ require(
 )
 require(
     "showsDivider: true" in CHATS
-    and "? UIColor(hex: 0x222222)" in CHATS
-    and "dividerColor: isDark\n                ? UIColor(hex: 0x222222)" in CHATS
+    and "? UIColor(hex: 0x2C2C2E)" in CHATS
+    and "dividerColor: isDark\n                ? UIColor(hex: 0x2C2C2E)" in CHATS
     and ".fill(ChatListVisual.rule)" in CHATS
     and ".fill(isDark ? Color.clear : ChatListVisual.rule)" not in CHATS
     and "dividerLeading: CGFloat = 77" in ROW,
-    "dark chat rows must use the visible 77pt WeChat-sized structural hairline",
+    "dark chat rows must use the refined 77pt structural hairline",
 )
 require(
     'divider.isHidden = !configuration.showsDivider' in ROW,
@@ -73,11 +73,11 @@ require(
     "empty and filtered chat lists must stay inside the native list surface",
 )
 require(
-    "let previewColor = UIColor(hex: isDark ? 0x949393 : 0x999999)" in CHATS
-    and "let timeColor = UIColor(hex: isDark ? 0x949393 : 0xB2B2B2)" in CHATS
+    "let previewColor = UIColor(hex: isDark ? 0x8E8E93 : 0x999999)" in CHATS
+    and "let timeColor = UIColor(hex: isDark ? 0x6E6E73 : 0xB2B2B2)" in CHATS
     and "let titleColor: UIColor = chat.showsOfficialMark" in CHATS
-    and "UIColor(hex: isDark ? 0xFAFAFA : 0x191919)" in CHATS,
-    "chat-list title, preview and time must match WhatsApp's measured hierarchy",
+    and "UIColor(hex: isDark ? 0xEBEBF0 : 0x191919)" in CHATS,
+    "chat-list title, preview and time must form the refined dark hierarchy",
 )
 require(
     "static let avatarSize: CGFloat = 48" in CHATS

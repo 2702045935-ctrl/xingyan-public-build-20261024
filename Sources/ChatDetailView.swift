@@ -9152,7 +9152,9 @@ struct MessageRow: View {
                spacing: 0) {
             content
                 .overlay(alignment: .topLeading) {
-                    if showsBubbleMetadata, !senderName.isEmpty {
+                    if showsBubbleMetadata,
+                       message.kindName != "audio",
+                       !senderName.isEmpty {
                         HStack(spacing: 4) {
                             Text(senderName)
                                 .font(pfStyled(12.5, .semibold))
@@ -9935,11 +9937,88 @@ struct MessageRow: View {
 
     @ViewBuilder
     private var audioBubble: some View {
-        if mine {
-            sentVoiceBubble
-        } else {
-            receivedVoiceBubble
+        whatsappVoiceBubble(mine: mine)
+    }
+
+    private func whatsappVoiceBubble(mine: Bool) -> some View {
+        let info = dict(message.body)
+        let seconds = max(1, (info["seconds"] as? Int) ?? 1)
+        let playing = voicePlayer.playingID == message.id
+        let scrubbing = voiceScrub >= 0
+        let progress: Double = scrubbing
+            ? voiceScrub
+            : (playing ? voicePlayer.progress : 0)
+        let duration = playing && voicePlayer.total > 0
+            ? voicePlayer.total
+            : Double(seconds)
+        let levels = voiceLevels(info, count: 30)
+        let width = min(
+            maxBubbleWidth,
+            min(258, 158 + min(CGFloat(seconds), 60) * 1.25)
+        )
+        let live = playing || scrubbing
+
+        return HStack(spacing: 0) {
+            if mine { Spacer(minLength: 0) }
+
+            HStack(spacing: 9) {
+                if mine {
+                    Text(voiceClock(duration))
+                    voiceProgressTrack(levels: levels, progress: progress, live: live)
+                        .frame(height: 24)
+                    voicePlayGlyph(playing: playing)
+                } else {
+                    voicePlayGlyph(playing: playing)
+                    voiceProgressTrack(levels: levels, progress: progress, live: live)
+                        .frame(height: 24)
+                    Text(voiceClock(duration))
+                }
+            }
+            .padding(.horizontal, 11)
+            .frame(width: width, height: 46, alignment: .leading)
+            .background(BubbleFill(
+                mine: mine,
+                tail: showTail,
+                seed: bubbleSeed(message.id)
+            ))
+            .clipShape(BubbleShape(mine: mine, tail: showTail))
+            .overlay(alignment: mine ? .topLeading : .topTrailing) {
+                if !mine, !playedVoice.contains(message.id),
+                   !VoicePlayed.isPlayed(message.id) {
+                    Circle()
+                        .fill(Color(.systemRed))
+                        .frame(width: 8, height: 8)
+                        .offset(x: mine ? -4 : 4, y: -4)
+                }
+            }
+            .contentShape(BubbleShape(mine: mine, tail: showTail))
+            .onTapGesture {
+                playedVoice.insert(message.id)
+                VoicePlayed.markPlayed(message.id)
+                guard let url = voiceURL() else {
+                    onShowToast?(Tr("这条语音找不到了"))
+                    return
+                }
+                voicePlayer.toggle(id: message.id, url: url)
+            }
+            .animation(.easeOut(duration: 0.16), value: playing)
+
+            if !mine { Spacer(minLength: 0) }
         }
+        .font(pfStyled(size: 10.5, weight: .medium, design: .monospaced))
+        .foregroundStyle(bubbleSecondaryInk)
+    }
+
+    private func voicePlayGlyph(playing: Bool) -> some View {
+        Image(systemName: playing ? "pause.fill" : "play.fill")
+            .font(.system(size: 10.5, weight: .bold))
+            .foregroundStyle(bubblePrimaryInk)
+            .frame(width: 24, height: 24)
+            .background(
+                Circle().fill(bubblePrimaryInk.opacity(playing ? 0.15 : 0.10))
+            )
+            .offset(x: playing ? 0 : 0.7)
+            .accessibilityHidden(true)
     }
 
     private var sentVoiceBubble: some View {
@@ -10314,32 +10393,36 @@ struct MessageRow: View {
         let look = FileKind.look(name)
         let ext = (name as NSString).pathExtension
         let typeName = UTType(filenameExtension: ext)?.localizedDescription ?? look.badge
-        return HStack(spacing: 11) {
+        return HStack(spacing: 12) {
             NativeFileThumbnail(name: name, path: path)
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(name)
-                    .font(pf(15, .semibold))
-                    .foregroundColor(mine ? bubblePrimaryInk : ChatTheme.ink)
+                    .font(pf(14.5, .semibold))
+                    .foregroundColor(C.label)
                     .lineLimit(1)
                     .truncationMode(.middle)
                 Text(typeName + " · " + byteText(bytes))
-                    .font(pf(12))
-                    .foregroundColor(mine ? bubbleSecondaryInk : ChatTheme.secondary)
+                    .font(pf(11.5))
+                    .foregroundColor(C.subLabel)
                     .lineLimit(1)
             }
             Spacer(minLength: 0)
-            Image(systemName: "chevron.right")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundColor(mine
-                                 ? bubbleSecondaryInk.opacity(0.78)
-                                 : ChatTheme.secondary.opacity(0.7))
+            Image(systemName: "arrow.down.circle.fill")
+                .font(.system(size: 19, weight: .medium))
+                .foregroundStyle(look.color)
         }
-        .padding(.horizontal, WhatsAppChatLayout.bubblePadH)
-        .frame(width: min(224, maxBubbleWidth), height: 72, alignment: .leading)
-        .background(BubbleFill(mine: mine, tail: showTail))
-        .clipShape(BubbleShape(mine: mine, tail: showTail))
-        .contentShape(BubbleShape(mine: mine, tail: showTail))
+        .padding(.horizontal, 12)
+        .frame(width: min(236, maxBubbleWidth), height: 78, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 13, style: .continuous)
+                .fill(C.cardBg)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 13, style: .continuous)
+                .stroke(C.hairline.opacity(0.72), lineWidth: 0.6)
+        }
+        .contentShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
         .onTapGesture { onOpenFile?(message.body) }
     }
 

@@ -63,11 +63,16 @@ require(
     and "MultiImageMosaic.containerSize(" in MEDIA
     and "MultiImageMosaic.frames(" in MEDIA
     and "SendingFileBubble" in MEDIA
-    and ".background(BubbleFill(mine: true, tail: true))" in MEDIA
+    and ".overlay(alignment: .bottom) {" in MEDIA
+    and "uploadProgressFooter" in MEDIA
+    and "RoundedRectangle(cornerRadius: 14, style: .continuous)" in MEDIA
     and "private func uploadingRow<Content: View>" in (
         ROOT / "Sources" / "ChatDetailView.swift"
+    ).read_text(encoding="utf-8")
+    and "Avatar(\n                path: app.me?.avatarPath" in (
+        ROOT / "Sources" / "ChatDetailView.swift"
     ).read_text(encoding="utf-8"),
-    "pending uploads must use WeChat-style thumbnail progress, self avatar and shared bubbles",
+    "pending media needs real phase progress and the self avatar, while files use a standalone card",
 )
 
 print("video-interactions: passed")

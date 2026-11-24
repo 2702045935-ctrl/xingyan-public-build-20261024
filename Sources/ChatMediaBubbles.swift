@@ -820,6 +820,53 @@ struct SendingVideoBubble: View {
         }
         .frame(width: size.width, height: size.height)
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay(alignment: .bottom) {
+            uploadProgressFooter
+        }
+    }
+
+    private var uploadProgressFooter: some View {
+        VStack(spacing: 5) {
+            HStack(spacing: 6) {
+                Text(phaseLabel)
+                Spacer(minLength: 4)
+                if phase == .uploading {
+                    Text("\(Int(min(1, max(0, progress)) * 100))%")
+                        .monospacedDigit()
+                } else {
+                    ProgressView()
+                        .controlSize(.mini)
+                        .tint(.white)
+                }
+            }
+            .font(pf(9.5, .semibold))
+            .foregroundStyle(.white.opacity(0.94))
+
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.white.opacity(0.24))
+                    Capsule()
+                        .fill(Color.white.opacity(0.96))
+                        .frame(
+                            width: phase == .uploading
+                                ? max(4, geo.size.width * min(1, max(0, progress)))
+                                : max(8, geo.size.width * 0.24)
+                        )
+                }
+            }
+            .frame(height: 3)
+        }
+        .padding(.horizontal, 9)
+        .padding(.top, 13)
+        .padding(.bottom, 8)
+        .background(
+            LinearGradient(
+                colors: [Color.clear, Color.black.opacity(0.58)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
+        .allowsHitTesting(false)
     }
 
     private var phaseLabel: String {
@@ -867,24 +914,24 @@ struct SendingFileBubble: View {
                     .stroke(look.color.opacity(0.18), lineWidth: 0.6))
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(name)
-                        .font(pf(14))
-                        .foregroundColor(ChatTheme.mineInk)
+                Text(name)
+                        .font(pf(14.5, .semibold))
+                        .foregroundColor(C.label)
                         .lineLimit(1)
                         .truncationMode(.middle)
                     HStack(spacing: 6) {
                         Text(byteText(Int64(bytes)))
                             .font(pf(11))
-                            .foregroundColor(ChatTheme.mineSecondaryInk)
+                            .foregroundColor(C.subLabel)
                         Spacer(minLength: 4)
                         Text(progressText)
                             .font(pf(10.5, .medium))
-                            .foregroundColor(look.color)
+                            .foregroundColor(C.subLabel)
                     }
                     if !detailText.isEmpty {
                         Text(detailText)
                             .font(pf(10.5, .medium))
-                            .foregroundColor(ChatTheme.mineSecondaryInk)
+                            .foregroundColor(C.subLabel)
                             .lineLimit(1)
                     }
                     if phase == .failed {
@@ -894,12 +941,12 @@ struct SendingFileBubble: View {
                             } label: {
                                 Label(Tr("继续上传"), systemImage: "arrow.clockwise")
                                     .font(pf(11.5, .semibold))
-                                    .foregroundColor(ChatTheme.mineInk)
+                                    .foregroundColor(C.label)
                                     .padding(.horizontal, 10)
                                     .frame(height: 26)
                                     .background(
                                         Capsule().fill(
-                                            ChatTheme.mineInk.opacity(0.15)
+                                            C.label.opacity(0.10)
                                         )
                                     )
                             }
@@ -911,7 +958,7 @@ struct SendingFileBubble: View {
                             } label: {
                                 Text(Tr("取消"))
                                     .font(pf(11.5, .medium))
-                                    .foregroundColor(ChatTheme.mineSecondaryInk)
+                                    .foregroundColor(C.subLabel)
                             }
                             .buttonStyle(.plain)
                             .disabled(onCancel == nil)
@@ -923,21 +970,26 @@ struct SendingFileBubble: View {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule()
-                        .fill(ChatTheme.mineInk.opacity(0.18))
+                        .fill(C.label.opacity(0.12))
                     Capsule()
                         .fill(look.color)
                         .frame(width: max(CGFloat(value > 0 ? 4 : 0),
                                           geo.size.width * CGFloat(value)))
                 }
             }
-            .frame(height: 3)
+            .frame(height: 4)
             .animation(.linear(duration: 0.16), value: value)
         }
-        .padding(.horizontal, WhatsAppChatLayout.bubblePadH)
-        .padding(.vertical, WhatsAppChatLayout.bubblePadV)
-        .frame(width: 218)
-        .background(BubbleFill(mine: true, tail: true))
-        .clipShape(BubbleShape(mine: true, tail: true))
+        .padding(12)
+        .frame(width: 236)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(C.cardBg)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(C.hairline.opacity(0.72), lineWidth: 0.6)
+        }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(Tr("上传中") + " " + name))
         .accessibilityValue(Text(progressText))

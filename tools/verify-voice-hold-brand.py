@@ -26,13 +26,16 @@ require(
     "the hold-to-talk controls must use the fixed Xingyan brand colour",
 )
 require(
-    "private var sentVoiceBubble: some View" in CHAT
-    and ".frame(width: width, height: 42, alignment: .leading)" in CHAT
-    and "weChatVoiceClock(total)" in CHAT
-    and "private var receivedVoiceBubble: some View" in CHAT
-    and ".frame(width: width, height: 64, alignment: .leading)" in CHAT
+    "whatsappVoiceBubble(mine: mine)" in CHAT
+    and "private func whatsappVoiceBubble(mine: Bool) -> some View" in CHAT
+    and "voicePlayGlyph(playing: playing)" in CHAT
     and "voiceProgressTrack(levels: levels" in CHAT,
-    "sent voice bubbles use the compact design while received bubbles stay unchanged",
+    "sent and received voice bubbles must share one compact WhatsApp waveform design",
+)
+require(
+    "message.kindName != \"audio\"" in CHAT
+    and "if showsBubbleMetadata," in CHAT,
+    "voice bubbles must not render the sender name inside the bubble",
 )
 require(
     "python3 tools/verify-voice-hold-brand.py" in WORKFLOW,

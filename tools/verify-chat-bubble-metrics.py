@@ -239,9 +239,9 @@ require(
     and 'metaText: hidesBubbleMetadata ? "" : TimeFmt.messageClock(message.createdAt)' in CHAT
     and "tickCount: hidesBubbleMetadata" in CHAT
     and '!["image", "images", "video", "livephoto", "transfer"]' in CHAT
-    and "if showsBubbleMetadata, !senderName.isEmpty" in CHAT
+    and "if showsBubbleMetadata,\n                       message.kindName != \"audio\",\n                       !senderName.isEmpty" in CHAT
     and "if showsBubbleMetadata {\n                        HStack(spacing: 3)" in CHAT,
-    "media and transfer bubbles must omit sender, time and receipt overlays",
+    "media and transfer must omit overlays while voice omits the in-bubble sender name",
 )
 require(
     ".overlay(alignment: .bottomTrailing)" in CHAT

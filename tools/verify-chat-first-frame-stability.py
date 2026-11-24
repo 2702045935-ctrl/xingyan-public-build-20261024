@@ -4,6 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CHAT = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
+DEFERRED = (ROOT / "Sources" / "ChatDeferred.swift").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
 )
@@ -38,6 +39,16 @@ require(
     in CHAT
     and "ChatThemeStore.shared.activate(chat.id)" in CHAT,
     "the destination chat palette must be active before its first body evaluation",
+)
+require(
+    "ChatTheme.page.ignoresSafeArea()" in DEFERRED
+    and "defaultChatCanvasColor().ignoresSafeArea()" not in DEFERRED,
+    "the chat navigation surface must use the destination theme before first paint",
+)
+require(
+    "init(chat: Chat)" in DEFERRED
+    and "ChatThemeStore.shared.activate(chat.id)" in DEFERRED,
+    "the navigation container must resolve the destination palette before body evaluation",
 )
 require(
     "let same = nextMessages.count == messages.count" in CHAT
