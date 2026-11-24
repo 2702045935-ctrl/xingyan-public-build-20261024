@@ -43,7 +43,8 @@ require(
     "eager mode must bypass the normal bounded initial window",
 )
 require(
-    "private let initialMessageWindow = 240" in CHAT
+    "private static let initialMessageSeed = 240" in CHAT
+    and "private let initialMessageWindow = Self.initialMessageSeed" in CHAT
     and "private let stressMessageWindow = 1_800" in CHAT
     and "private let historyWindowPages = 10" in CHAT
     and "historyPageSize * historyWindowPages" in CHAT
