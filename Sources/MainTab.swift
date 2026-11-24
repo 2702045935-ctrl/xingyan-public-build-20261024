@@ -14,6 +14,17 @@ struct MainTabView: View {
 
     @ObservedObject private var mallSheet = MallSheet.shared
 
+    /// Mount the destination in the same SwiftUI transaction as the selection
+    /// change. Updating `tab` first leaves an empty Color.clear frame until the
+    /// onChange callback inserts the tab, which makes every first visit look
+    /// like a network/load delay and builds the page one frame late.
+    private func selectTab(_ next: Int) {
+        guard (0..<5).contains(next) else { return }
+        mountedTabs.insert(next)
+        guard tab != next else { return }
+        tab = next
+    }
+
     private var unreadTotal: Int {
         app.unreadForIcon
     }
@@ -82,7 +93,9 @@ struct MainTabView: View {
 
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if rootTabBarVisible {
-                    NativeTabBar(selection: $tab,
+                    NativeTabBar(selection: Binding(
+                                 get: { tab },
+                                 set: { selectTab($0) }),
                                  badge: app.showDot("chats", auto: unreadTotal > 0) ? unreadTotal : 0,
                                  contactsDot: app.showDot("contacts", auto: app.friendRequests > 0),
                                  momentsDot: app.showDot("discover", auto: app.momentsUnread > 0),
@@ -253,13 +266,16 @@ struct MainTabView: View {
                 await app.loadChats()
                 CrashCatcher.note("推送", "会话已加载 " + String(app.chats.count) + " 个")
 
-                tab = 0
+                selectTab(0)
                 app.pendingPushChatId = chatId
             }
         }
 
         .onChange(of: app.wantChatsTab) { v in
-            if v { tab = 0; app.wantChatsTab = false }
+            if v {
+                selectTab(0)
+                app.wantChatsTab = false
+            }
         }
         .onChange(of: tab) { value in
             mountedTabs.insert(value)
@@ -270,7 +286,7 @@ struct MainTabView: View {
                   (0..<5).contains(next),
                   next != tab else { return }
             UISelectionFeedbackGenerator().selectionChanged()
-            tab = next
+            selectTab(next)
         }
 
         .onReceive(NotificationCenter.default.publisher(for: .chrisOpenPair)) { note in
