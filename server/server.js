@@ -16467,7 +16467,9 @@ async function handleApi(req, res, pathname, query) {
         mode: gatewayDirectoryMode,
         nodes: gatewayNodesCache.slice()
       }),
-      gatewayFanout: Object.assign({}, gatewayFanoutMetrics)
+      gatewayFanout: Object.assign({}, gatewayFanoutMetrics, {
+        outbox: fanoutOutbox ? fanoutOutbox.snapshot() : null
+      })
     });
     return;
   }
