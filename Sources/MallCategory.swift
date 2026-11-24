@@ -12,9 +12,9 @@ struct DDCategoryTab: View {
     private var cats: [String] { ["全部"] + store.categories }
 
     private var byCate: [DDProduct] {
-        let all = store.feed(store.live)
-        guard !cate.isEmpty, cate != "全部" else { return all }
-        return all.filter { $0.cate == cate }
+        store.gridProducts(category: cate.isEmpty || cate == "全部" ? nil : cate,
+                           sellerScope: nil,
+                           channel: 0)
     }
     private var list: [DDProduct] {
         guard !tag.isEmpty else { return byCate }
@@ -22,9 +22,7 @@ struct DDCategoryTab: View {
     }
 
     private var chips: [String] {
-        var out: [String] = []
-        for p in byCate { for t in p.tags where !out.contains(t) { out.append(t) } }
-        return Array(out.prefix(8))
+        store.categoryTags(cate.isEmpty || cate == "全部" ? nil : cate)
     }
 
     var body: some View {

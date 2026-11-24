@@ -175,6 +175,7 @@ jobs:
           python3 tools/verify-me-native.py
           python3 tools/verify-works-topbar.py
           python3 tools/verify-catalog-refresh-cache.py
+          python3 tools/verify-mall-module.py
           python3 tools/verify-chat-list-order.py
           node server/tools/server-boot-preflight.js
 
@@ -321,6 +322,19 @@ jobs:
           ls -lh "$APP/default.metallib"
           mkdir -p "$APP/Frameworks"
           cp -R WebRTCKit/WebRTC.xcframework/ios-arm64/WebRTC.framework "$APP/Frameworks/WebRTC.framework"
+          mkdir -p /tmp/XingyanMallCore
+          xcrun --sdk iphoneos swiftc \
+            -sdk "$SDK" \
+            -target arm64-apple-ios16.0 \
+            -swift-version 5 \
+            -parse-as-library \
+            -O \
+            -emit-module \
+            -emit-library -static \
+            -module-name XingyanMallCore \
+            -emit-module-path /tmp/XingyanMallCore/XingyanMallCore.swiftmodule \
+            -o /tmp/XingyanMallCore/libXingyanMallCore.a \
+            Modules/MallModule/MallModule.swift
           xcrun --sdk iphoneos swiftc \
             -sdk "$SDK" \
             -target arm64-apple-ios16.0 \
@@ -330,8 +344,11 @@ jobs:
             -whole-module-optimization \
             -F "$SDK/System/Library/Frameworks" \
             -F WebRTCKit/WebRTC.xcframework/ios-arm64 \
+            -I /tmp/XingyanMallCore \
+            -L /tmp/XingyanMallCore \
             -o "$APP/CHRIS" \
             Sources/*.swift \
+            -lXingyanMallCore \
             -framework SwiftUI -framework UIKit -framework Foundation \
             -framework LocalAuthentication -framework AVFoundation \
             -framework WebRTC \

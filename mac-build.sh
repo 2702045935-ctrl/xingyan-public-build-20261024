@@ -85,6 +85,19 @@ ls -lh "$APP/default.metallib" 2>/dev/null || echo "（没有 metallib，语音�
 cp -R WebRTCKit/WebRTC.xcframework/ios-arm64/WebRTC.framework "$APP/Frameworks/WebRTC.framework"
 
 echo "=== 4) 编译原生 App（十几分钟，第一次最慢）==="
+mkdir -p /tmp/XingyanMallCore
+xcrun --sdk iphoneos swiftc \
+  -sdk "$SDK" \
+  -target arm64-apple-ios16.0 \
+  -swift-version 5 \
+  -parse-as-library \
+  -O \
+  -emit-module \
+  -emit-library -static \
+  -module-name XingyanMallCore \
+  -emit-module-path /tmp/XingyanMallCore/XingyanMallCore.swiftmodule \
+  -o /tmp/XingyanMallCore/libXingyanMallCore.a \
+  Modules/MallModule/MallModule.swift
 xcrun --sdk iphoneos swiftc \
   -sdk "$SDK" \
   -target arm64-apple-ios16.0 \
@@ -94,8 +107,11 @@ xcrun --sdk iphoneos swiftc \
   -whole-module-optimization \
   -F "$SDK/System/Library/Frameworks" \
   -F WebRTCKit/WebRTC.xcframework/ios-arm64 \
+  -I /tmp/XingyanMallCore \
+  -L /tmp/XingyanMallCore \
   -o "$APP/CHRIS" \
   Sources/*.swift \
+  -lXingyanMallCore \
   -framework SwiftUI -framework UIKit -framework Foundation \
   -framework LocalAuthentication -framework AVFoundation \
   -framework WebRTC \

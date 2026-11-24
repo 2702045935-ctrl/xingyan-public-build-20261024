@@ -1,5 +1,6 @@
 import SwiftUI
 import AVKit
+import XingyanMallCore
 
 struct DDProduct: Identifiable, Codable, Hashable {
     var id: String
@@ -314,6 +315,23 @@ struct DDAdCoupon: Decodable, Hashable {
     }
 }
 
+extension DDProduct: MallCatalogItem {
+    var mallID: String { id }
+    var mallCategory: String { cate }
+    var mallIsSelfOperated: Bool { isSelfOperated }
+    var mallDiscountRate: Double {
+        orig > price ? max(0, (orig - price) / max(0.01, orig)) : 0
+    }
+    var mallSaving: Double { max(0, orig - price) }
+    var mallSales: Int { salesNum }
+    var mallSearchText: String {
+        ([title, shop, cate] + tags).joined(separator: "\n")
+    }
+    var mallIsLive: Bool { live }
+    var mallShopKey: String { shopKey }
+    var mallTags: [String] { tags }
+}
+
 @MainActor
 final class DDStore: ObservableObject {
     static let shared = DDStore()
@@ -389,6 +407,14 @@ final class DDStore: ObservableObject {
     @Published private(set) var deliveryModes: [DDDeliveryMode] = DDDeliveryMode.defaults
     @Published var deliveryModeId: String = DDDeliveryMode.defaults.first?.id ?? ""
 
+    private var catalogKernel = MallCatalogKernel<DDProduct>()
+    private var dislikedLookup = Set<String>()
+    private var mutedCateLookup = Set<String>()
+    private var hiddenAdLookup = Set<String>()
+    private var favoriteLookup = Set<String>()
+    private var followedShopLookup = Set<String>()
+    private var lastCatalogRefreshAt = Date.distantPast
+
     var deliveryMode: DDDeliveryMode? {
         deliveryModes.first { $0.id == deliveryModeId } ?? deliveryModes.first
     }
@@ -445,7 +471,7 @@ final class DDStore: ObservableObject {
     }
 
     private struct Box: Codable {
-        var products: [DDProduct]
+        var products: [DDProduct]?
         var orders: [DDOrder]
         var cart: [DDCartLine]
         var history: [String]
@@ -485,10 +511,20 @@ final class DDStore: ObservableObject {
         return dir.appendingPathComponent("Xingyan/PrivateData/mall-state.json")
     }
 
+    private var catalogFileURL: URL {
+        if let target = LocalStore.privateFile("mall-catalog.json") {
+            return target
+        }
+        let dir = FileManager.default.urls(for: .applicationSupportDirectory,
+                                           in: .userDomainMask)[0]
+        return dir.appendingPathComponent("Xingyan/PrivateData/mall-catalog.json")
+    }
+
     private init() {
+        var legacyProducts: [DDProduct] = []
         if let d = try? Data(contentsOf: fileURL),
            let b = try? JSONDecoder().decode(Box.self, from: d) {
-            products = b.products
+            legacyProducts = b.products ?? []
             orders = b.orders
             cart = b.cart
             history = b.history
@@ -515,12 +551,19 @@ final class DDStore: ObservableObject {
             mutedCates = b.mutedCates ?? []
             splash = b.splash ?? DDSplash()
         }
+        if let d = try? Data(contentsOf: catalogFileURL),
+           let saved = try? JSONDecoder().decode([DDProduct].self, from: d) {
+            products = saved
+        } else {
+            products = legacyProducts
+        }
         if products.isEmpty { products = DDStore.seeds }
         let count = Self.benchmarkProductCount
         if count > products.count {
             products = Self.benchmarkProducts(products, count: count)
         }
-        syncCatalogCaches()
+        syncCatalogCaches(persist: false)
+        scheduleCatalogPersist()
 
         if addresses.isEmpty, !address.isEmpty {
             addresses = [DDAddress(id: "a" + String(Int(Date().timeIntervalSince1970 * 1000)),
@@ -530,7 +573,7 @@ final class DDStore: ObservableObject {
 
     private func save() {
         guard Self.benchmarkProductCount == 0 else { return }
-        let b = Box(products: products, orders: orders, cart: cart,
+        let b = Box(products: nil, orders: orders, cart: cart,
                     history: history, favs: favs, address: address, banners: banners,
                     views: views, addresses: addresses,
                     reviews: reviews, afterSales: afterSales, followedShops: followedShops,
@@ -542,10 +585,34 @@ final class DDStore: ObservableObject {
         if let d = try? JSONEncoder().encode(b) { try? d.write(to: fileURL) }
     }
 
-    private func syncCatalogCaches() {
-        live = products.filter { $0.live }
-        var seen = Set<String>()
-        categories = live.compactMap { seen.insert($0.cate).inserted ? $0.cate : nil }
+    private func scheduleCatalogPersist() {
+        guard Self.benchmarkProductCount == 0 else { return }
+        let snapshot = products
+        let url = catalogFileURL
+        Task.detached(priority: .utility) {
+            guard let data = try? JSONEncoder().encode(snapshot) else { return }
+            try? data.write(to: url, options: .atomic)
+        }
+    }
+
+    private func rebuildRelevanceLookups() {
+        dislikedLookup = Set(disliked)
+        mutedCateLookup = Set(mutedCates)
+        hiddenAdLookup = Set(hiddenAds)
+        favoriteLookup = Set(favs)
+        followedShopLookup = Set(followedShops)
+    }
+
+    private func invalidateRelevanceCaches() {
+        catalogKernel.invalidateQueryCaches()
+    }
+
+    private func syncCatalogCaches(persist: Bool = true) {
+        catalogKernel.rebuild(products)
+        live = catalogKernel.live
+        categories = catalogKernel.categories
+        rebuildRelevanceLookups()
+        if persist { scheduleCatalogPersist() }
     }
 
     private static var benchmarkProductCount: Int {
@@ -587,7 +654,13 @@ final class DDStore: ObservableObject {
             channels = chs.sorted { ($0.sort ?? 99) < ($1.sort ?? 99) }
             channelsConfigured = true
         }
+        lastCatalogRefreshAt = Date()
         save()
+    }
+
+    func refreshIfNeeded(maxAge: TimeInterval = 45) async {
+        guard Date().timeIntervalSince(lastCatalogRefreshAt) >= maxAge else { return }
+        await refresh()
     }
 
     @discardableResult
@@ -676,7 +749,49 @@ final class DDStore: ObservableObject {
         }
     }
 
-    func product(_ id: String) -> DDProduct? { products.first { $0.id == id } }
+    func product(_ id: String) -> DDProduct? { catalogKernel.item(id: id) }
+
+    func gridProducts(category: String?, sellerScope: String?,
+                      channel: Int) -> [DDProduct] {
+        let sort = MallCatalogSort(rawValue: channel) ?? .recommended
+        let rows = catalogKernel.rows(
+            category: category,
+            sellerScope: sellerScope,
+            sort: sort,
+            include: { !dislikedLookup.contains($0.id) }
+        )
+        return sort == .recommended ? feed(rows) : rows
+    }
+
+    func sellerCounts(category: String?) -> (all: Int, selfOperated: Int, third: Int) {
+        catalogKernel.counts(category: category)
+    }
+
+    func searchProducts(_ query: String) -> [DDProduct] {
+        catalogKernel.search(query)
+    }
+
+    func seckillProducts() -> [DDProduct] {
+        catalogKernel.seckill(limit: 8)
+    }
+
+    func dealHighlights(limit: Int) -> [DDProduct] {
+        catalogKernel.deals(limit: limit)
+    }
+
+    func bestDeal() -> DDProduct? { catalogKernel.bestDeal() }
+
+    func dealAverageSaving() -> (count: Int, average: Double) {
+        catalogKernel.dealAverageSaving()
+    }
+
+    func categoryTags(_ category: String?, limit: Int = 8) -> [String] {
+        catalogKernel.hashtags(category: category, limit: limit)
+    }
+
+    func relatedProducts(to product: DDProduct, limit: Int = 6) -> [DDProduct] {
+        catalogKernel.related(to: product, limit: limit)
+    }
 
     var cartCount: Int { cart.reduce(0) { $0 + $1.count } }
     var cartTotal: Double {
@@ -895,10 +1010,15 @@ final class DDStore: ObservableObject {
         save()
     }
 
-    func isFav(_ pid: String) -> Bool { favs.contains(pid) }
+    func isFav(_ pid: String) -> Bool { favoriteLookup.contains(pid) }
+
+    var favoriteProducts: [DDProduct] {
+        favs.compactMap { catalogKernel.item(id: $0) }
+    }
 
     func toggleFav(_ pid: String) {
         if let i = favs.firstIndex(of: pid) { favs.remove(at: i) } else { favs.insert(pid, at: 0) }
+        favoriteLookup = Set(favs)
         save()
     }
 
@@ -1023,19 +1143,24 @@ final class DDStore: ObservableObject {
         save()
     }
 
-    func isFollowed(_ key: String) -> Bool { followedShops.contains(key) }
+    func isFollowed(_ key: String) -> Bool { followedShopLookup.contains(key) }
 
     func toggleFollow(_ key: String) {
         guard !key.isEmpty else { return }
         if let i = followedShops.firstIndex(of: key) { followedShops.remove(at: i) }
         else { followedShops.insert(key, at: 0) }
+        followedShopLookup = Set(followedShops)
         save()
     }
 
     var followedProducts: [DDProduct] {
+        var seen = Set<String>()
         var out: [DDProduct] = []
-        for p in products where followedShops.contains(p.shopKey) && !out.contains(where: { $0.id == p.id }) {
-            out.append(p)
+        out.reserveCapacity(min(products.count, 128))
+        for p in products where followedShopLookup.contains(p.shopKey) {
+            if seen.insert(p.id).inserted {
+                out.append(p)
+            }
         }
         return out
     }
@@ -1074,57 +1199,76 @@ final class DDStore: ObservableObject {
     }
 
     func hideAd(_ id: String) {
-        guard !hiddenAds.contains(id) else { return }
+        guard !hiddenAdLookup.contains(id) else { return }
         hiddenAds.append(id)
+        hiddenAdLookup.insert(id)
         save()
     }
-    func adHidden(_ id: String) -> Bool { hiddenAds.contains(id) }
+    func adHidden(_ id: String) -> Bool { hiddenAdLookup.contains(id) }
 
     func notInterested(_ p: DDProduct, muteCate: Bool) {
-        if !disliked.contains(p.id) { disliked.append(p.id) }
-        if muteCate, !p.cate.isEmpty, !mutedCates.contains(p.cate) { mutedCates.append(p.cate) }
+        if !dislikedLookup.contains(p.id) {
+            disliked.append(p.id)
+            dislikedLookup.insert(p.id)
+        }
+        if muteCate, !p.cate.isEmpty, !mutedCateLookup.contains(p.cate) {
+            mutedCates.append(p.cate)
+            mutedCateLookup.insert(p.cate)
+        }
+        invalidateRelevanceCaches()
         save()
     }
 
     func unmuteCate(_ c: String) {
         mutedCates.removeAll { $0 == c }
+        mutedCateLookup.remove(c)
+        invalidateRelevanceCaches()
         save()
     }
 
     func restoreDisliked(_ id: String) {
         disliked.removeAll { $0 == id }
+        dislikedLookup.remove(id)
+        invalidateRelevanceCaches()
         save()
     }
     func restoreAllDisliked() {
         disliked.removeAll()
         mutedCates.removeAll()
+        dislikedLookup.removeAll(keepingCapacity: true)
+        mutedCateLookup.removeAll(keepingCapacity: true)
+        invalidateRelevanceCaches()
         save()
     }
     func unhideAd(_ id: String) {
         hiddenAds.removeAll { $0 == id }
+        hiddenAdLookup.remove(id)
         save()
     }
     func unhideAllAds() {
         hiddenAds.removeAll()
+        hiddenAdLookup.removeAll(keepingCapacity: true)
         save()
     }
 
-    var dislikedProducts: [DDProduct] { products.filter { disliked.contains($0.id) } }
+    var dislikedProducts: [DDProduct] {
+        products.filter { dislikedLookup.contains($0.id) }
+    }
 
     func feed(_ list: [DDProduct]) -> [DDProduct] {
-        if disliked.isEmpty && mutedCates.isEmpty { return list }
-        let kept = list.filter { !disliked.contains($0.id) }
-        if mutedCates.isEmpty { return kept }
+        if dislikedLookup.isEmpty && mutedCateLookup.isEmpty { return list }
+        let kept = list.filter { !dislikedLookup.contains($0.id) }
+        if mutedCateLookup.isEmpty { return kept }
         let sorted = kept.sorted { a, b in
-            let ma = mutedCates.contains(a.cate) ? 1 : 0
-            let mb = mutedCates.contains(b.cate) ? 1 : 0
+            let ma = mutedCateLookup.contains(a.cate) ? 1 : 0
+            let mb = mutedCateLookup.contains(b.cate) ? 1 : 0
             return ma < mb
         }
 
         if sorted.isEmpty && !list.isEmpty {
             return list.sorted { a, b in
-                let ma = mutedCates.contains(a.cate) ? 1 : 0
-                let mb = mutedCates.contains(b.cate) ? 1 : 0
+                let ma = mutedCateLookup.contains(a.cate) ? 1 : 0
+                let mb = mutedCateLookup.contains(b.cate) ? 1 : 0
                 return ma < mb
             }
         }
@@ -1172,16 +1316,7 @@ final class DDStore: ObservableObject {
         setCartSpec(o.pid, o.spec)
     }
 
-    func search(_ q: String) -> [DDProduct] {
-        let s = q.trimmingCharacters(in: .whitespaces)
-        guard !s.isEmpty else { return live }
-        return live.filter {
-            $0.title.localizedCaseInsensitiveContains(s)
-                || $0.shop.localizedCaseInsensitiveContains(s)
-                || $0.cate == s
-                || $0.tags.contains { $0.contains(s) }
-        }
-    }
+    func search(_ q: String) -> [DDProduct] { searchProducts(q) }
 
     static let seeds: [DDProduct] = [
         DDProduct(id: "p01", em: "🎧", title: "【百亿补贴】无线蓝牙耳机 主动降噪 入耳式 超长续航 苹果安卓通用",
@@ -1556,8 +1691,9 @@ struct MallNativeView: View {
         }
 
         .task {
-            await store.refresh()
-            await store.refreshMallBadges()
+            let badgeTask = Task { await store.refreshMallBadges() }
+            await store.refreshIfNeeded()
+            await badgeTask.value
 
             if store.splash.isOn, !showSplash { withAnimation(.easeOut(duration: 0.2)) { showSplash = true } }
 
@@ -1601,7 +1737,7 @@ struct MallNativeView: View {
         let l = (store.splash.link ?? "").trimmingCharacters(in: .whitespaces)
         withAnimation(.easeOut(duration: 0.2)) { showSplash = false }
         guard !l.isEmpty, a != "none" else { return }
-        if a == "product", let p = store.products.first(where: { $0.id == l }) {
+        if a == "product", let p = store.product(l) {
             openProduct_tap(p)
             return
         }
@@ -1973,46 +2109,12 @@ struct DDHomeTab: View {
     @State private var cate: String? = nil
     @State private var sellerScope: String? = nil
     private var list: [DDProduct] {
-        let category = cate == nil ? store.live : store.live.filter { $0.cate == cate }
-        let base: [DDProduct]
-        switch sellerScope {
-        case "self":  base = category.filter { $0.isSelfOperated }
-        case "third": base = category.filter { !$0.isSelfOperated }
-        default:      base = category
-        }
-
-        let rows = store.feed(base)
-        switch topChannel {
-        case 1:
-            return rows.sorted {
-                let d0 = ($0.orig - $0.price) / max(0.01, $0.orig)
-                let d1 = ($1.orig - $1.price) / max(0.01, $1.orig)
-                return d0 > d1
-            }
-        case 2:
-            return rows.sorted { ($0.sales ?? 0) > ($1.sales ?? 0) }
-        case 3:
-            return Array(rows.reversed())
-        default:
-            return rows
-        }
+        store.gridProducts(category: cate,
+                           sellerScope: sellerScope,
+                           channel: topChannel)
     }
 
-    private var seckillList: [DDProduct] {
-        store.live
-            .filter { $0.orig > $0.price }
-            .sorted {
-                let tagged0 = $0.tags.contains { $0.contains("秒杀") || $0.contains("限时") }
-                let tagged1 = $1.tags.contains { $0.contains("秒杀") || $0.contains("限时") }
-                if tagged0 != tagged1 { return tagged0 }
-                if $0.discountRate != $1.discountRate {
-                    return $0.discountRate > $1.discountRate
-                }
-                return $0.salesNum > $1.salesNum
-            }
-            .prefix(8)
-            .map { $0 }
-    }
+    private var seckillList: [DDProduct] { store.seckillProducts() }
 
     private var mallFloorPullValue: CGFloat { DDMallFloorCfg.pull }
 
@@ -2188,10 +2290,8 @@ struct DDHomeTab: View {
 
     @ViewBuilder
     private var curatedStrip: some View {
-        let deals = store.live.filter { $0.orig > $0.price }
-        if let best = deals.max(by: { $0.discountRate < $1.discountRate }) {
-            let averageSave = deals.isEmpty ? 0 :
-                deals.reduce(0.0) { $0 + max(0, $1.orig - $1.price) } / Double(deals.count)
+        if let best = store.bestDeal() {
+            let stats = store.dealAverageSaving()
             Button { onOpen(best) } label: {
                 HStack(spacing: 13) {
                     VStack(alignment: .leading, spacing: 7) {
@@ -2215,10 +2315,10 @@ struct DDHomeTab: View {
                                 .padding(.horizontal, 7)
                                 .frame(height: 20)
                                 .background(Capsule().fill(DDColor.redDeep))
-                            Text(Tr("\(deals.count) 件正在降"))
+                            Text(Tr("\(stats.count) 件正在降"))
                                 .font(pf(10))
                                 .foregroundColor(DDColor.sub)
-                            Text(Tr("平均省 ¥") + moneyFmt(averageSave))
+                            Text(Tr("平均省 ¥") + moneyFmt(stats.average))
                                 .font(pf(10, .medium))
                                 .foregroundColor(Color(hex: 0xA37D38))
                         }
@@ -2438,14 +2538,7 @@ struct DDHomeTab: View {
     }
 
     private var dealBoard: some View {
-        let deals = store.live
-            .filter { $0.orig > $0.price }
-            .sorted {
-                $0.discountRate != $1.discountRate
-                    ? $0.discountRate > $1.discountRate
-                    : $0.salesNum > $1.salesNum
-            }
-            .prefix(4)
+        let deals = store.dealHighlights(limit: 4)
         let columns = [
             GridItem(.flexible(), spacing: 8, alignment: .top),
             GridItem(.flexible(), spacing: 8, alignment: .top)
@@ -2842,8 +2935,9 @@ struct DDHomeTab: View {
     }
 
     private func sellerGateway(_ proxy: ScrollViewProxy) -> some View {
-        let selfCount = store.live.filter { $0.isSelfOperated }.count
-        let thirdCount = store.live.count - selfCount
+        let counts = store.sellerCounts(category: nil)
+        let selfCount = counts.selfOperated
+        let thirdCount = counts.third
         return HStack(spacing: 10) {
             sellerGatewayCard("self", title: "星选自营",
                               subtitle: "统一发货 · 平台售后",
@@ -2944,13 +3038,11 @@ struct DDHomeTab: View {
     }
 
     private var sellerScopeRow: some View {
-        let current = cate == nil ? store.live : store.live.filter { $0.cate == cate }
-        let selfCount = current.filter { $0.isSelfOperated }.count
-        let thirdCount = current.count - selfCount
+        let counts = store.sellerCounts(category: cate)
         return HStack(spacing: 8) {
-            sellerScopeButton(nil, title: "全部", count: current.count, accent: DDColor.blueDeep)
-            sellerScopeButton("self", title: "星选自营", count: selfCount, accent: DDColor.redDeep)
-            sellerScopeButton("third", title: "第三方", count: thirdCount, accent: DDColor.blueDeep)
+            sellerScopeButton(nil, title: "全部", count: counts.all, accent: DDColor.blueDeep)
+            sellerScopeButton("self", title: "星选自营", count: counts.selfOperated, accent: DDColor.redDeep)
+            sellerScopeButton("third", title: "第三方", count: counts.third, accent: DDColor.blueDeep)
         }
         .padding(.horizontal, 10)
         .padding(.bottom, 4)
@@ -3363,7 +3455,7 @@ struct DDRecTab: View {
 
     var body: some View {
         ScrollView(showsIndicators: false) {
-            VStack(spacing: 10) {
+            LazyVStack(spacing: 10) {
                 ForEach(store.live) { p in
                     Button { onOpen(p) } label: { recCard(p) }
                         .buttonStyle(.plain)
@@ -4461,10 +4553,10 @@ struct DDDetailView: View {
     }
 
     private var recommendRow: some View {
-        let others = store.live.filter { $0.id != product.id && ($0.cate == product.cate || $0.shop == product.shop) }.prefix(6)
+        let others = store.relatedProducts(to: product, limit: 6)
         return ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
-                ForEach(Array(others)) { p in
+                ForEach(others) { p in
                     Button { onOpenOther?(p) } label: {
                         VStack(alignment: .leading, spacing: 5) {
                             DDThumb(em: p.em, size: 104, radius: 10, img: p.img)
@@ -5782,7 +5874,7 @@ struct DDFavView: View {
     @ObservedObject private var store = DDStore.shared
     var onOpen: (DDProduct) -> Void
 
-    private var list: [DDProduct] { store.products.filter { store.isFav($0.id) } }
+    private var list: [DDProduct] { store.favoriteProducts }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -5977,7 +6069,7 @@ struct DDSearchView: View {
                               onSort: { sort = $0 },
                               onStock: { onlyStock.toggle() })
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 10) {
+                LazyVStack(spacing: 10) {
                     ForEach(result) { p in
                         Button {
                             store.pushHistory(kw)
