@@ -9,6 +9,7 @@ EFFECT = (ROOT / "Sources" / "ChatWallpaperEffect.swift").read_text(encoding="ut
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
     encoding="utf-8"
 )
+CHAT = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
 
 
 def require(condition: bool, message: str) -> None:
@@ -47,6 +48,16 @@ require(
     and "ImageStore.shared.get(ImageCacheKey.stablePath(path))" in EFFECT
     and "let placeholder = ImageStore.shared.get(" in EFFECT,
     "rendered wallpapers must reuse source/effect caches across chat entries",
+)
+require(
+    "private var previewImages: [String: UIImage] = [:]" in SHEET
+    and "func setPreview(chatId: String, path: String, image: UIImage?)" in SHEET
+    and "func previewImage(chatId: String) -> UIImage?" in SHEET
+    and "func globalPreviewImage() -> UIImage?" in SHEET
+    and "applyChatBackground(localPath, image: image)" in SHEET
+    and "if let preview = chatBg.previewImage(chatId: chat.id)" in CHAT
+    and "chatBg.globalPreviewImage()" in CHAT,
+    "cropped wallpapers must render from an immediate in-memory preview",
 )
 require(
     "python3 tools/verify-wallpaper-switch.py" in WORKFLOW,

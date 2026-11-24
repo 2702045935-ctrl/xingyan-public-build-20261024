@@ -2356,6 +2356,15 @@ struct ChatDetailView: View {
         return ""
     }
 
+    private var hasPerChatBackground: Bool {
+        if let synced = app.me?.chatBackgrounds?[chat.id],
+           !synced.isEmpty, synced != "auto" {
+            return true
+        }
+        let local = ChatBgStore.shared.get(chat.id)
+        return !local.isEmpty && local != "auto"
+    }
+
     private var usesPlainDefaultChatChrome: Bool {
         backgroundPath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
@@ -4899,7 +4908,15 @@ struct ChatDetailView: View {
 
     private var chatBackdrop: some View {
         ZStack {
-            if backgroundPath.isEmpty {
+            if let preview = chatBg.previewImage(chatId: chat.id)
+                ?? (hasPerChatBackground ? nil : chatBg.globalPreviewImage()) {
+                ChatTheme.page
+                Image(uiImage: preview)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .clipped()
+            } else if backgroundPath.isEmpty {
                 ChatDefaultWallpaper(preset: ChatTheme.preset)
             } else {
                 ChatTheme.page

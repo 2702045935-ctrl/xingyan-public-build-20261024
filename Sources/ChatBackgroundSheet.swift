@@ -91,6 +91,8 @@ final class ChatBgStore: ObservableObject {
     static let shared = ChatBgStore()
 
     @Published private(set) var version = 0
+    private var previewImages: [String: UIImage] = [:]
+    private var previewPaths: [String: String] = [:]
 
     private let globalKey = "chris.chatBg.global"
     private let globalEffectKey = "chris.chatBgFx.global"
@@ -112,6 +114,7 @@ final class ChatBgStore: ObservableObject {
         } else {
             UserDefaults.standard.set(value, forKey: key(chatId))
         }
+        previewPaths[chatId] = value
         version += 1
     }
 
@@ -126,7 +129,31 @@ final class ChatBgStore: ObservableObject {
         } else {
             UserDefaults.standard.set(clean, forKey: globalKey)
         }
+        previewPaths[""] = clean
         version += 1
+    }
+
+    func setPreview(chatId: String, path: String, image: UIImage?) {
+        let key = chatId
+        previewPaths[key] = path
+        if let image {
+            previewImages[key] = image
+        } else {
+            previewImages.removeValue(forKey: key)
+        }
+        version += 1
+    }
+
+    func previewImage(chatId: String) -> UIImage? {
+        previewImages[chatId]
+    }
+
+    func globalPreviewImage() -> UIImage? {
+        previewImages[""]
+    }
+
+    func previewPath(chatId: String) -> String {
+        previewPaths[chatId] ?? (chatId.isEmpty ? "" : previewPaths[""] ?? "")
     }
 
     func effect(chatId: String = "") -> ChatBackgroundEffect {
@@ -155,6 +182,8 @@ final class ChatBgStore: ObservableObject {
         }
         UserDefaults.standard.removeObject(forKey: globalKey)
         UserDefaults.standard.removeObject(forKey: globalEffectKey)
+        previewImages.removeAll(keepingCapacity: true)
+        previewPaths.removeAll(keepingCapacity: true)
         version += 1
     }
 }
@@ -888,8 +917,13 @@ struct ChatBackgroundSheet: View {
         let localPath = "local-bg-" + UUID().uuidString
         primeBackgroundCache(path: localPath, image: image)
         if inChat {
-            applyChatBackground(localPath)
+            applyChatBackground(localPath, image: image)
         } else {
+            ChatBgStore.shared.setPreview(
+                chatId: "",
+                path: localPath,
+                image: image
+            )
             ChatBgStore.shared.setGlobal(localPath)
             ChatThemeStore.shared.clearAll()
             if var me = app.me {
@@ -905,14 +939,19 @@ struct ChatBackgroundSheet: View {
                 primeBackgroundCache(path: url, image: image)
                 if inChat {
                     if let saved = await API.shared.changeChatBackground(chatId: chatId, path: url) {
-                        applyChatBackground(url)
+                        applyChatBackground(url, image: image)
                         applySyncedChatBackgrounds(saved)
                         app.show(Tr("这个聊天的背景换好了"))
                     } else {
-                        applyChatBackground(localPath)
+                        applyChatBackground(localPath, image: image)
                         app.show(Tr("已在本机换好，联网后自动同步"))
                     }
                 } else {
+                    ChatBgStore.shared.setPreview(
+                        chatId: "",
+                        path: url,
+                        image: image
+                    )
                     ChatBgStore.shared.setGlobal(url)
                     if var me = app.me {
                         me.chatBackground = url
@@ -942,8 +981,13 @@ struct ChatBackgroundSheet: View {
         busy = false
     }
 
-    private func applyChatBackground(_ path: String) {
+    private func applyChatBackground(_ path: String, image: UIImage? = nil) {
         ChatThemeStore.shared.clear(chatId: chatId)
+        ChatBgStore.shared.setPreview(
+            chatId: chatId,
+            path: path,
+            image: image ?? ChatBgStore.shared.previewImage(chatId: chatId)
+        )
         ChatBgStore.shared.set(chatId, path)
         guard var me = app.me else { return }
         var map = me.chatBackgrounds ?? [:]

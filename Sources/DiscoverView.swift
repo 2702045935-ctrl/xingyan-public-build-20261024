@@ -1422,6 +1422,7 @@ struct MomentsView: View {
     @State private var coverMenu = false
     @State private var showCoverCamera = false
     @State private var coverDraft: UIImage?
+    @State private var coverPreview: UIImage?
 
     @State private var coverLocked = false
     @State private var coverLockPull: CGFloat = 0
@@ -1893,7 +1894,13 @@ struct MomentsView: View {
 
     private func coverView(_ extra: CGFloat) -> some View {
         ZStack(alignment: .bottom) {
-            if cover.isEmpty {
+            if let coverPreview {
+                Image(uiImage: coverPreview)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: L.width, height: L.coverH + extra)
+                    .clipped()
+            } else if cover.isEmpty {
 
                 if UIImage(named: "moments-cover") != nil {
 
@@ -3533,6 +3540,9 @@ struct MomentsView: View {
     }
 
     private func changeCover(_ image: UIImage) {
+        // The cropped bitmap is authoritative for the current screen. Render it
+        // directly instead of waiting for staging, upload or profile refresh.
+        coverPreview = image
         let localPath = stageLocalImagePreview(image, prefix: "local-cover")
         setCoverOverride(localPath)
         if var me = app.me {
