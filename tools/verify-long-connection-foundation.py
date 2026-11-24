@@ -41,6 +41,10 @@ def main() -> None:
     for needle in ["register(", "heartbeat(", "claim(", "renew(", "release(", "pick("]:
         if needle not in directory:
             raise AssertionError(f"gateway directory missing {needle}")
+    gateway = (ROOT / "server/gateway-server.js").read_text(encoding="utf-8")
+    for needle in ["GATEWAY_UPSTREAM_WS", "/__gateway/upstream", "send('open'", "governor.admit"]:
+        if needle not in gateway:
+            raise AssertionError(f"independent gateway missing {needle}")
     print("long connection foundation: passed")
 
 

@@ -53,6 +53,11 @@ const { BankingAuditLog } = require('./lib/banking-audit');
 const { ConnectionGovernor } = require('./lib/connection-governor');
 const { GatewayDirectory } = require('./lib/gateway-directory');
 const {
+  VirtualGatewaySocket,
+  envelope: gatewayEnvelope,
+  decodeEnvelope: decodeGatewayEnvelope
+} = require('./lib/gateway-multiplex');
+const {
   normalizeBillTimeZone,
   billMonthKey,
   summarizeBills
@@ -27065,12 +27070,122 @@ function uploadDirFull() {
   } catch (err) { return false; }
 }
 
+const gatewayUpstreamSessions = new Map();
+
+function gatewayUpstreamUser(message) {
+  const headers = message.headers && typeof message.headers === 'object'
+    ? message.headers
+    : {};
+  const req = {
+    url: String(message.url || '/'),
+    headers,
+    socket: {
+      remoteAddress: String(message.ip || '').replace('::ffff:', ''),
+      encrypted: true
+    }
+  };
+  let user = currentUser(req);
+  if (!user) {
+    try {
+      const q = new URL(req.url, 'http://localhost');
+      const data = verifyTokenData(q.searchParams.get('token'));
+      const candidate = data && findUser(data.sub);
+      const phoneOk = !candidate ? false : (((data.k || 'phone') !== 'phone')
+        || (Number(data.ps) || 0) === (Number(candidate.phoneSession) || 0));
+      if (candidate && (data.v || 0) === (candidate.tokenVersion || 0) && phoneOk) {
+        user = candidate;
+      }
+    } catch (_) { /* invalid token */ }
+  }
+  return user || null;
+}
+
+function handleGatewayUpstream(req, socket) {
+  const expected = String(process.env.GATEWAY_ADMIN_SECRET || '');
+  let supplied = String(req.headers['x-gateway-admin-secret'] || '');
+  try {
+    supplied = supplied || new URL(req.url, 'http://localhost').searchParams.get('secret') || '';
+  } catch (_) { /* malformed URL */ }
+  if (!expected || !sameSecret(supplied, expected)) {
+    socket.end('HTTP/1.1 403 Forbidden\r\n\r\n');
+    return;
+  }
+  const key = req.headers['sec-websocket-key'];
+  socket.write(
+    'HTTP/1.1 101 Switching Protocols\r\n' +
+    'Upgrade: websocket\r\nConnection: Upgrade\r\n' +
+    'Sec-WebSocket-Accept: ' + ws.acceptKey(key) + '\r\n\r\n'
+  );
+  socket.setNoDelay(true);
+  const sessions = new Set();
+  ws.attach(socket, {
+    onMessage: (text) => {
+      const message = decodeGatewayEnvelope(text);
+      if (!message || !message.connectionId) return;
+      if (message.type === 'open') {
+        const user = gatewayUpstreamUser(message);
+        if (!user || user.banned) {
+          ws.sendText(socket, gatewayEnvelope('closed', message.connectionId, {
+            reason: 'unauthorized'
+          }));
+          return;
+        }
+        const virtual = new VirtualGatewaySocket({
+          connectionId: message.connectionId,
+          remoteAddress: message.ip,
+          appBuild: message.headers && message.headers['x-app-build'],
+          deviceId: message.headers && message.headers['x-device-id'],
+          kind: message.headers && message.headers['x-device-kind'],
+          onWrite: (data) => {
+            ws.sendText(socket, gatewayEnvelope('data', message.connectionId, {
+              data: Buffer.from(data).toString('base64')
+            }));
+          },
+          onClose: () => {
+            sessions.delete(message.connectionId);
+            gatewayUpstreamSessions.delete(message.connectionId);
+            ws.sendText(socket, gatewayEnvelope('closed', message.connectionId, {}));
+          }
+        });
+        sessions.add(message.connectionId);
+        gatewayUpstreamSessions.set(message.connectionId, { virtual, user });
+        handleSocket(user, virtual);
+        ws.sendText(socket, gatewayEnvelope('open-ok', message.connectionId, {
+          userId: user.id
+        }));
+        return;
+      }
+      const session = gatewayUpstreamSessions.get(message.connectionId);
+      if (!session) return;
+      if (message.type === 'data' && message.data) {
+        session.virtual.emit('data', Buffer.from(String(message.data), 'base64'));
+      } else if (message.type === 'closed') {
+        session.virtual.destroy();
+      }
+    },
+    onClose: () => {
+      for (const id of sessions) {
+        const session = gatewayUpstreamSessions.get(id);
+        if (session) session.virtual.destroy();
+        gatewayUpstreamSessions.delete(id);
+      }
+      sessions.clear();
+    }
+  });
+}
+
 function handleWsUpgrade(req, socket) {
   const key = req.headers['sec-websocket-key'];
   if (!key || String(req.headers.upgrade || '').toLowerCase() !== 'websocket') {
     socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
     return;
   }
+  try {
+    if (new URL(req.url, 'http://localhost').pathname === '/__gateway/upstream') {
+      handleGatewayUpstream(req, socket);
+      return;
+    }
+  } catch (_) { /* fall through to normal auth */ }
   /* 实时通道必须是加密的 wss：明文 ws:// 会把令牌和聊天内容摊在网络上。
      公网来的明文 ws 一律挡掉（本机 / 局域网还留着，方便内网调试）。 */
   /* 同上：nginx 在本机做的 TLS，回源是明文，但客户端那一侧是加密的 */

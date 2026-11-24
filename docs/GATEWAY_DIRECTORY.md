@@ -1,4 +1,4 @@
-# Gateway 目录与路由底座
+# Gateway 目录与独立网关底座
 
 `server/lib/gateway-directory.js` 是亿级长连接底座第二层：
 
@@ -21,8 +21,29 @@
 
 ## 下一层
 
-1. 独立 Gateway 服务接收客户端 WebSocket；
-2. 目录后端接入 etcd lease；
-3. Gateway 间发布订阅和信封协议；
-4. 跨 Gateway 消息投递、断线重连和幂等；
-5. 百万连接、跨 Cell 摘流和故障接管验收。
+当前已经增加可选独立 Gateway：
+
+```text
+server/gateway-server.js
+```
+
+客户端仍然连接原有 `/ws` 协议；独立 Gateway 启动后：
+
+1. 客户端 WebSocket 原始帧被装进 `gateway-multiplex` 信封；
+2. 多个客户端复用同一条上游 Gateway 通道；
+3. 主服务通过虚拟 socket 继续复用原 `handleSocket` 逻辑；
+4. Gateway 注册到主服务目录并每 10 秒心跳；
+5. Gateway 摘流时停止接入新客户端，已有连接不主动切断。
+
+启动示例：
+
+```powershell
+$env:GATEWAY_PORT = "5290"
+$env:GATEWAY_UPSTREAM_WS = "ws://127.0.0.1:5180/__gateway/upstream"
+$env:GATEWAY_BACKEND_HTTP = "http://127.0.0.1:5180"
+$env:GATEWAY_ADMIN_SECRET = "<same-internal-secret>"
+node server/gateway-server.js
+```
+
+这不是完整的消息总线。下一条链路必须把上游通道替换为跨节点发布订阅，
+并接入 etcd/专用目录服务；当前仅证明独立 Gateway 可以注册、复用连接并转发原始帧。

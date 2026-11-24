@@ -247,6 +247,7 @@ jobs:
           node server/test/banking-audit.test.js
           node server/test/connection-governor.test.js
           node server/test/gateway-directory.test.js
+          node server/test/gateway-multiplex.test.js
           node server/test/payment-database-concurrency.test.js
           node server/test/payment-provider-server.test.js
           node server/test/payment-readiness.test.js
