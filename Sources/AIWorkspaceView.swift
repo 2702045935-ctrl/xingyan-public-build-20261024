@@ -67,7 +67,7 @@ struct AIWorkspaceView: View {
             navBar
 
             if loading && wallet == nil {
-                VStack(spacing: 12) {
+                VStack(spacing: AppDesign.Spacing.sm) {
                     ProgressView().tint(accent)
                     Text(Tr("正在进入 AI 工作台"))
                         .font(AppDesign.Type.caption)
@@ -148,14 +148,14 @@ struct AIWorkspaceView: View {
             if uploading {
                 ZStack {
                     Color.black.opacity(0.18).ignoresSafeArea()
-                    VStack(spacing: 12) {
+                    VStack(spacing: AppDesign.Spacing.sm) {
                         ProgressView().tint(accent)
                         Text(Tr("正在上传…"))
                             .font(AppDesign.Type.compactButtonMedium)
                             .foregroundColor(C.label)
                     }
                     .padding(.horizontal, 26)
-                    .padding(.vertical, 20)
+                    .padding(.vertical, AppDesign.Spacing.lg)
                     .background(C.cardBg)
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
                     .shadow(color: .black.opacity(0.16), radius: 20, y: 8)
@@ -252,7 +252,7 @@ struct AIWorkspaceView: View {
             }
             .font(pf(14, .medium))
             .foregroundColor(.white)
-            .padding(.horizontal, 20)
+            .padding(.horizontal, AppDesign.Spacing.lg)
             .frame(height: AppDesign.Control.iconControlHeight)
             .background(Capsule().fill(accent))
             .buttonStyle(.plain)
@@ -277,9 +277,9 @@ struct AIWorkspaceView: View {
                     }
                     Color.clear.frame(height: 1).id("ai-bottom")
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
-                .padding(.bottom, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
+                .padding(.top, AppDesign.Spacing.sm)
+                .padding(.bottom, AppDesign.Spacing.md)
             }
             .scrollDismissesKeyboard(.interactively)
             .simultaneousGesture(TapGesture().onEnded {
@@ -317,7 +317,7 @@ struct AIWorkspaceView: View {
                 .frame(maxWidth: 310)
 
             if wallet?.tier == "starter" {
-                VStack(spacing: 4) {
+                VStack(spacing: AppDesign.Spacing.xxs) {
                     Text(Tr("轻量包为纯聊天模式"))
                         .font(pf(11.5, .medium))
                         .foregroundColor(C.label)
@@ -339,7 +339,7 @@ struct AIWorkspaceView: View {
             }
 
             if wallet?.tier != "starter" {
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     officeQuickButton(
                         title: Tr("Word 文档"),
                         symbol: "doc.text.fill",
@@ -362,9 +362,9 @@ struct AIWorkspaceView: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.horizontal, 24)
-        .padding(.top, 32)
-        .padding(.bottom, 24)
+        .padding(.horizontal, AppDesign.Spacing.xl)
+        .padding(.top, AppDesign.Spacing.xxl)
+        .padding(.bottom, AppDesign.Spacing.xl)
     }
 
     private var displayName: String {
@@ -431,7 +431,7 @@ struct AIWorkspaceView: View {
                     } else {
                         messageContent(message, mine: false)
                             .frame(maxWidth: 330, alignment: .leading)
-                            .padding(.horizontal, 12)
+                            .padding(.horizontal, AppDesign.Spacing.sm)
                             .padding(.vertical, 9)
                             .background {
                                 GlassBackground(shape: RoundedRectangle(cornerRadius: AppDesign.Radius.control,
@@ -453,13 +453,13 @@ struct AIWorkspaceView: View {
                         Button {
                             speak(speechText(message))
                         } label: {
-                            HStack(spacing: 4) {
+                            HStack(spacing: AppDesign.Spacing.xxs) {
                                 Image(systemName: "speaker.wave.2")
                                 Text(Tr("朗读"))
                             }
                             .font(pf(10.5, .medium))
                             .foregroundColor(C.subLabel)
-                            .padding(.horizontal, 8)
+                            .padding(.horizontal, AppDesign.Spacing.xs)
                             .frame(height: 26)
                             .background(Capsule().fill(C.fieldBg.opacity(0.82)))
                         }
@@ -561,7 +561,7 @@ struct AIWorkspaceView: View {
                     .font(pf(13))
                     .foregroundColor(C.subLabel)
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
             .padding(.vertical, 9)
             .background {
                 GlassBackground(shape: RoundedRectangle(cornerRadius: AppDesign.Radius.control,
@@ -573,12 +573,12 @@ struct AIWorkspaceView: View {
             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
             Spacer(minLength: 12)
         }
-        .padding(.bottom, 16)
+        .padding(.bottom, AppDesign.Spacing.md)
     }
 
     private var composer: some View {
         VStack(spacing: 2) {
-            HStack(spacing: 4) {
+            HStack(spacing: AppDesign.Spacing.xxs) {
                 if wallet?.tier != "starter" {
                     Button {
                         showAttachMenu = true
@@ -625,14 +625,14 @@ struct AIWorkspaceView: View {
                 .font(pf(9.5))
                 .foregroundColor(C.subLabel)
                 .frame(maxWidth: .infinity)
-                .padding(.bottom, 4)
+                .padding(.bottom, AppDesign.Spacing.xxs)
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
         .padding(.bottom, 6)
     }
 
     private var tokenBar: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppDesign.Spacing.xs) {
             Text(Tr("约 ") + wordText(wallet?.tokens ?? 0) + Tr(" 可用"))
             Text("·")
             Text(Tr("已用约 ") + wordText(wallet?.used ?? 0))
@@ -1040,7 +1040,7 @@ private struct AIWorkspaceLinkCard: View {
                             .background(Capsule().fill(accent.opacity(0.09)))
                     }
                 }
-                .padding(12)
+                .padding(AppDesign.Spacing.sm)
             }
             .frame(width: 280, alignment: .leading)
             .background(C.cardBg)
@@ -1155,7 +1155,7 @@ private struct AIRechargeView: View {
                             .foregroundColor(C.subLabel)
                             .lineSpacing(3)
                     }
-                    .padding(16)
+                    .padding(AppDesign.Spacing.md)
                     .background(C.cardBg)
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
                     .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
@@ -1175,8 +1175,8 @@ private struct AIRechargeView: View {
                         .lineSpacing(3)
                         .padding(.top, 2)
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
+                .padding(.horizontal, AppDesign.Spacing.md)
+                .padding(.top, AppDesign.Spacing.sm)
                 .padding(.bottom, 36)
             }
             .background(C.pageBg)
@@ -1202,7 +1202,7 @@ private struct AIRechargeView: View {
             selectedPlan = plan
         } label: {
             VStack(alignment: .leading, spacing: 13) {
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     Text(plan.name)
                         .font(pf(17, .semibold))
                         .foregroundColor(C.label)
@@ -1262,7 +1262,7 @@ private struct AIRechargeView: View {
                         .background(Capsule().fill(accent))
                 }
             }
-            .padding(16)
+            .padding(AppDesign.Spacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(C.cardBg)
             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
@@ -1348,7 +1348,7 @@ private struct AIPaymentSheet: View {
                     .foregroundColor(C.subLabel)
                     .buttonStyle(.plain)
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, AppDesign.Spacing.lg)
             .frame(height: 58)
 
             VStack(alignment: .leading, spacing: 7) {
@@ -1363,7 +1363,7 @@ private struct AIPaymentSheet: View {
             .padding(15)
             .background(accent.opacity(0.07))
             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
-            .padding(.horizontal, 20)
+            .padding(.horizontal, AppDesign.Spacing.lg)
 
             SecureField(Tr("输入 6 位支付密码"), text: $password)
                 .keyboardType(.numberPad)
@@ -1374,7 +1374,7 @@ private struct AIPaymentSheet: View {
                 .frame(height: AppDesign.Control.buttonHeight)
                 .background(C.fieldBg)
                 .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
-                .padding(.horizontal, 20)
+                .padding(.horizontal, AppDesign.Spacing.lg)
                 .padding(.top, 18)
                 .onChange(of: password) { value in
                     let clean = String(value.filter { $0 >= "0" && $0 <= "9" }.prefix(6))
@@ -1387,14 +1387,14 @@ private struct AIPaymentSheet: View {
                     .font(AppDesign.Type.caption)
                     .foregroundColor(C.red)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, AppDesign.Spacing.lg)
                     .padding(.top, 9)
             }
 
             Button {
                 pay()
             } label: {
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     if paying { ProgressView().tint(.white) }
                     Text(paying ? Tr("处理中…") : Tr("确认支付"))
                         .font(pf(14.5, .semibold))
@@ -1407,7 +1407,7 @@ private struct AIPaymentSheet: View {
             }
             .buttonStyle(.plain)
             .disabled(!valid)
-            .padding(.horizontal, 20)
+            .padding(.horizontal, AppDesign.Spacing.lg)
             .padding(.top, 18)
 
             Text(Tr("Token 为虚拟数字权益，购买后立即到账，不支持退款。"))
@@ -1415,7 +1415,7 @@ private struct AIPaymentSheet: View {
                 .foregroundColor(C.subLabel)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 26)
-                .padding(.top, 12)
+                .padding(.top, AppDesign.Spacing.sm)
 
             Spacer(minLength: 20)
         }
@@ -1493,7 +1493,7 @@ private struct AIProfileSheet: View {
                     .foregroundColor(accent)
                     .buttonStyle(.plain)
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, AppDesign.Spacing.lg)
             .frame(height: 58)
 
             ScrollView(showsIndicators: false) {
@@ -1503,7 +1503,7 @@ private struct AIProfileSheet: View {
                             TextField(Tr("小星"), text: $name)
                                 .font(pf(15))
                                 .foregroundColor(C.label)
-                                .padding(.horizontal, 12)
+                                .padding(.horizontal, AppDesign.Spacing.sm)
                                 .frame(height: AppDesign.Control.compactHeight)
                                 .background(C.fieldBg)
                                 .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
@@ -1523,7 +1523,7 @@ private struct AIProfileSheet: View {
                     }
 
                     settingBlock(Tr("习惯学习")) {
-                        HStack(spacing: 12) {
+                        HStack(spacing: AppDesign.Spacing.sm) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(Tr("越用越懂你的表达和偏好"))
                                     .font(pf(13))
@@ -1583,7 +1583,7 @@ private struct AIProfileSheet: View {
                                         }
                                         Spacer(minLength: 0)
                                     }
-                                    .padding(.vertical, 8)
+                                    .padding(.vertical, AppDesign.Spacing.xs)
                                     .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
@@ -1592,7 +1592,7 @@ private struct AIProfileSheet: View {
                     }
 
                     settingBlock(Tr("朗读")) {
-                        HStack(spacing: 12) {
+                        HStack(spacing: AppDesign.Spacing.sm) {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(Tr("自动朗读回复"))
                                     .font(AppDesign.Type.bodyMedium)
@@ -1622,7 +1622,7 @@ private struct AIProfileSheet: View {
                     }
 
                     settingBlock(Tr("对话记录")) {
-                        HStack(spacing: 12) {
+                        HStack(spacing: AppDesign.Spacing.sm) {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(Tr("清除 AI 工作台对话"))
                                     .font(AppDesign.Type.bodyMedium)
@@ -1655,9 +1655,9 @@ private struct AIProfileSheet: View {
                             .lineSpacing(3)
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, AppDesign.Spacing.lg)
                 .padding(.top, 10)
-                .padding(.bottom, 32)
+                .padding(.bottom, AppDesign.Spacing.xxl)
             }
         }
         .background(C.cardBg.ignoresSafeArea())

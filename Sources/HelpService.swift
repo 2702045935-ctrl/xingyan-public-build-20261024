@@ -83,8 +83,8 @@ struct FAQView: View {
         .padding(.horizontal, 10)
         .frame(height: AppDesign.Control.floatingControlHeight)
         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous).fill(C.searchBg))
-        .padding(.horizontal, 8)
-        .padding(.top, 8)
+        .padding(.horizontal, AppDesign.Spacing.xs)
+        .padding(.top, AppDesign.Spacing.xs)
     }
 
     @ViewBuilder private var hitList: some View {
@@ -103,7 +103,7 @@ struct FAQView: View {
                         .background(Capsule().fill(C.green))
                 }
                 .buttonStyle(.plain)
-                .padding(.top, 4)
+                .padding(.top, AppDesign.Spacing.xxs)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 60)
@@ -123,16 +123,16 @@ struct FAQView: View {
         if !hot.isEmpty {
             VStack(alignment: .leading, spacing: 0) {
                 Text(Tr("热门问题")).font(pf(13)).foregroundColor(C.subLabel)
-                    .padding(.horizontal, 8).padding(.bottom, 6)
-                GroupCard {
+                    .padding(.horizontal, AppDesign.Spacing.xs).padding(.bottom, 6)
+                GroupCard(horizontalInset: 0) {
                     ForEach(Array(hot.enumerated()), id: \.offset) { idx, it in
                         if idx > 0 { HairLine(inset: 16) }
                         QAItem(category: "", item: it, forceOpen: true)
                     }
                 }
             }
-            .padding(.horizontal, 8)
-            .padding(.top, 12)
+            .padding(.horizontal, AppDesign.Spacing.xs)
+            .padding(.top, AppDesign.Spacing.sm)
         }
     }
 
@@ -140,12 +140,12 @@ struct FAQView: View {
         if !cats.isEmpty {
             VStack(alignment: .leading, spacing: 0) {
                 Text(Tr("按分类看")).font(pf(13)).foregroundColor(C.subLabel)
-                    .padding(.horizontal, 8).padding(.bottom, 6)
-                GroupCard {
+                    .padding(.horizontal, AppDesign.Spacing.xs).padding(.bottom, 6)
+                GroupCard(horizontalInset: 0) {
                     ForEach(Array(cats.enumerated()), id: \.element.id) { idx, c in
                         if idx > 0 { HairLine(inset: 58) }
                         Button { openCat = c } label: {
-                            HStack(spacing: 12) {
+                            HStack(spacing: AppDesign.Spacing.sm) {
                                 Image(systemName: faqSymbol(c.title))
                                     .font(.system(size: 16, weight: .medium))
                                     .foregroundColor(.white)
@@ -168,8 +168,8 @@ struct FAQView: View {
                     }
                 }
             }
-            .padding(.horizontal, 8)
-            .padding(.top, 12)
+            .padding(.horizontal, AppDesign.Spacing.xs)
+            .padding(.top, AppDesign.Spacing.sm)
         }
     }
 
@@ -181,7 +181,7 @@ struct FAQView: View {
                 Text(Tr("联系在线客服"))
                     .font(pf(15, .medium))
                     .foregroundColor(.white)
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, AppDesign.Spacing.xl)
                     .frame(height: AppDesign.Control.searchHeight)
                     .background(Capsule().fill(C.green))
             }
@@ -226,7 +226,7 @@ struct WalletUpgradeView: View {
                             .font(pf(13))
                             .foregroundColor(C.red)
                             .multilineTextAlignment(.center)
-                            .padding(.horizontal, 24)
+                            .padding(.horizontal, AppDesign.Spacing.xl)
                             .padding(.top, 10)
                     }
                     footNote
@@ -259,7 +259,7 @@ struct WalletUpgradeView: View {
                 .font(AppDesign.Type.caption)
                 .foregroundColor(Color.white.opacity(0.85))
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 24)
+                .padding(.horizontal, AppDesign.Spacing.xl)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 22)
@@ -283,7 +283,7 @@ struct WalletUpgradeView: View {
     }
 
     private func limitCell(_ title: String, _ value: String) -> some View {
-        VStack(spacing: 4) {
+        VStack(spacing: AppDesign.Spacing.xxs) {
             Text(value).font(pfMoney(17)).foregroundColor(C.label)
             Text(title).font(pf(12)).foregroundColor(C.subLabel)
         }
@@ -293,8 +293,8 @@ struct WalletUpgradeView: View {
     private var stepsCard: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(Tr("升级要做的两步")).font(pf(13)).foregroundColor(C.subLabel)
-                .padding(.horizontal, 8).padding(.bottom, 6)
-            GroupCard {
+                .padding(.horizontal, AppDesign.Spacing.xs).padding(.bottom, 6)
+            GroupCard(horizontalInset: 0) {
                 let steps: [API.WalletLevelStep] = info?.steps ?? []
                 ForEach(0..<steps.count, id: \.self) { i in
                     if i > 0 { HairLine(inset: 16) }
@@ -302,7 +302,7 @@ struct WalletUpgradeView: View {
                 }
             }
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, AppDesign.Spacing.xs)
         .padding(.top, 14)
     }
 
@@ -312,7 +312,7 @@ struct WalletUpgradeView: View {
             guard !done else { return }
             if st.key == "realname" { showRealName = true } else { showBankCards = true }
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Image(systemName: done ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 17))
                     .foregroundColor(done ? C.green : C.subLabel)
@@ -327,7 +327,7 @@ struct WalletUpgradeView: View {
 
                 Chevron(size: 9, line: 1.6).opacity(done ? 0 : 1)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .frame(height: 62)
             .contentShape(Rectangle())
         }
@@ -337,8 +337,8 @@ struct WalletUpgradeView: View {
     private var levelsCard: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(Tr("各等级额度")).font(pf(13)).foregroundColor(C.subLabel)
-                .padding(.horizontal, 8).padding(.bottom, 6)
-            GroupCard {
+                .padding(.horizontal, AppDesign.Spacing.xs).padding(.bottom, 6)
+            GroupCard(horizontalInset: 0) {
                 let rows: [API.WalletLevelRow] = info?.levels ?? []
                 ForEach(0..<rows.count, id: \.self) { i in
                     if i > 0 { HairLine(inset: 16) }
@@ -346,7 +346,7 @@ struct WalletUpgradeView: View {
                 }
             }
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, AppDesign.Spacing.xs)
         .padding(.top, 14)
     }
 
@@ -363,7 +363,7 @@ struct WalletUpgradeView: View {
             Text("单笔 " + money(lv.single) + " · 单日 " + money(lv.day))
                 .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(height: AppDesign.Control.largeControlHeight)
     }
 
@@ -378,8 +378,8 @@ struct WalletUpgradeView: View {
                     .fill(info?.level == 2 ? C.subLabel : C.green))
         }
         .buttonStyle(.plain)
-        .padding(.horizontal, 16)
-        .padding(.top, 20)
+        .padding(.horizontal, AppDesign.Spacing.md)
+        .padding(.top, AppDesign.Spacing.lg)
         .disabled(busy || info?.level == 2)
     }
 
@@ -389,8 +389,8 @@ struct WalletUpgradeView: View {
             .foregroundColor(C.subLabel)
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)
-            .padding(.horizontal, 24)
-            .padding(.top, 16)
+            .padding(.horizontal, AppDesign.Spacing.xl)
+            .padding(.top, AppDesign.Spacing.md)
     }
 
     private func money(_ v: Double?) -> String {

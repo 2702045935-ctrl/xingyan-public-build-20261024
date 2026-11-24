@@ -646,7 +646,7 @@ struct MeView: View {
             .buttonStyle(.plain)
 
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(height: 96)
         .frame(maxWidth: .infinity)
         .background(C.meCardBg)
@@ -703,12 +703,12 @@ struct MeView: View {
             .padding(.horizontal, 10)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     Spacer(minLength: 0)
                     memberPill
                     Spacer(minLength: 0)
                 }
-                .padding(.horizontal, 12)
+                .padding(.horizontal, AppDesign.Spacing.sm)
                 .frame(minWidth: max(1, L.width))
             }
             .padding(.top, 14)
@@ -959,7 +959,7 @@ struct SettingsView: View {
                         settingLink(Tr("界面与显示"), "", key: "general")
                         HairLine(inset: 16)
 
-                        HStack(spacing: 12) {
+                        HStack(spacing: AppDesign.Spacing.sm) {
                             Text(Tr("朋友圈")).font(pf(16)).foregroundColor(C.label)
                             Spacer(minLength: 0)
                             Toggle("", isOn: Binding(
@@ -973,7 +973,7 @@ struct SettingsView: View {
                                 .labelsHidden()
                                 .tint(C.green)
                         }
-                        .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
+                        .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.largeControlHeight)
                         HairLine(inset: 16)
 
                         settingLink(Tr("朋友权限"), "", key: "privacy")
@@ -1001,12 +1001,12 @@ struct SettingsView: View {
                         HairLine(inset: 16)
 
                         Button { showDiag = true } label: {
-                            HStack(spacing: 12) {
+                            HStack(spacing: AppDesign.Spacing.sm) {
                                 Text(Tr("诊断工具")).font(pf(17)).foregroundColor(C.label)
                                 Spacer(minLength: 0)
                                 Chevron(size: 9, line: 1.6).padding(.trailing, 3)
                             }
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, AppDesign.Spacing.md)
                             .frame(height: AppDesign.Control.menuRowHeight)
                             .background(C.meCardBg)
                             .contentShape(Rectangle())
@@ -1027,14 +1027,14 @@ struct SettingsView: View {
                                 .font(.system(size: 13, weight: .semibold))
                                 .foregroundColor(C.subLabel)
                         }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppDesign.Spacing.md)
                         .frame(maxWidth: .infinity)
                         .frame(height: AppDesign.Control.largeControlHeight)
                         .background(C.meCardBg)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .padding(.top, 8)
+                    .padding(.top, AppDesign.Spacing.xs)
 
                     Button {
                         confirmLogout = true
@@ -1047,7 +1047,7 @@ struct SettingsView: View {
                             .background(C.meCardBg)
                     }
                     .disabled(busy)
-                    .padding(.top, 8)
+                    .padding(.top, AppDesign.Spacing.xs)
 
                     Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
@@ -1227,7 +1227,7 @@ struct SettingsView: View {
                     .contentShape(Rectangle())
                     .onTapGesture { searchFocus = true }
                 }
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     if searchActive || !query.isEmpty {
                         Image(systemName: "magnifyingglass")
                             .font(.system(size: 14.5, weight: .medium))
@@ -1247,7 +1247,7 @@ struct SettingsView: View {
                     }
                 }
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
             .frame(height: AppDesign.Control.iconSmallHeight)
             .background {
                 ZStack {
@@ -1277,7 +1277,7 @@ struct SettingsView: View {
             }
         }
         .padding(.horizontal, 14)
-        .padding(.vertical, 8)
+        .padding(.vertical, AppDesign.Spacing.xs)
         .background(C.pageBg)
         .systemAnimation(.easeOut(duration: 0.16), value: searchActive)
         .onChange(of: searchFocus) { f in searchActive = f }
@@ -1299,7 +1299,7 @@ struct SettingsView: View {
                             if idx < matches.count - 1 { HairLine(inset: 16) }
                         }
                     }
-                    .padding(.top, 4)
+                    .padding(.top, AppDesign.Spacing.xxs)
                 }
                 Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
             }
@@ -1324,7 +1324,7 @@ struct SettingsView: View {
     }
 
     private func searchRowLabel(_ item: SettingSearchItem) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Text(item.title).font(pf(17)).foregroundColor(C.label)
             Spacer(minLength: 0)
             if !item.sub.isEmpty {
@@ -1332,7 +1332,7 @@ struct SettingsView: View {
             }
             Chevron(size: 9, line: 1.6).padding(.trailing, 3)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(height: AppDesign.Control.menuRowHeight)
         .background(C.meCardBg)
         .contentShape(Rectangle())
@@ -1340,7 +1340,7 @@ struct SettingsView: View {
 
     private func settingRow(_ title: String, _ value: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Text(title).font(pf(17)).foregroundColor(C.label)
                 Spacer(minLength: 0)
                 if !value.isEmpty {
@@ -1348,7 +1348,7 @@ struct SettingsView: View {
                 }
                 Chevron(size: 9, line: 1.6).padding(.trailing, 3)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .frame(height: AppDesign.Control.menuRowHeight)
             .background(C.meCardBg)
             .contentShape(Rectangle())
@@ -1361,14 +1361,14 @@ struct SettingsView: View {
             .font(AppDesign.Type.body)
             .foregroundColor(Color.dyn(0x767676, 0x8F8F8F))
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .padding(.top, 18)
             .padding(.bottom, 7)
     }
 
     private func settingLink(_ title: String, _ value: String, key: String) -> some View {
         NavigationLink(value: key) {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Text(title).font(pf(17)).foregroundColor(C.label)
                 Spacer(minLength: 0)
                 if !value.isEmpty {
@@ -1376,7 +1376,7 @@ struct SettingsView: View {
                 }
                 Chevron(size: 9, line: 1.6).padding(.trailing, 3)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .frame(height: AppDesign.Control.menuRowHeight)
             .background(C.meCardBg)
             .contentShape(Rectangle())

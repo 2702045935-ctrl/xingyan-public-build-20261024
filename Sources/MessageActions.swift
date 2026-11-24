@@ -149,7 +149,7 @@ struct ForwardPickerView: View {
                     Text(picked.isEmpty ? Tr("取消") : Tr("清空"))
                         .font(pfStyled(size: 13.5, weight: .semibold))
                         .foregroundStyle(picked.isEmpty ? OrbitTheme.secondary : OrbitTheme.jade)
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, AppDesign.Spacing.sm)
                         .frame(height: AppDesign.Control.smallButtonHeight)
                 }
                 .buttonStyle(.plain)
@@ -220,7 +220,7 @@ struct ForwardPickerView: View {
                     }
                 }
                 .padding(.horizontal, 14)
-                .padding(.top, 4)
+                .padding(.top, AppDesign.Spacing.xxs)
                 .padding(.bottom, 18)
             }
         }
@@ -237,7 +237,7 @@ struct ForwardPickerView: View {
     private var sendDock: some View {
         VStack(spacing: 10) {
             if !selectedChats.isEmpty {
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     HStack(spacing: -7) {
                         ForEach(Array(selectedChats.prefix(4))) { chat in
                             Avatar(path: chat.avatar ?? "",
@@ -264,7 +264,7 @@ struct ForwardPickerView: View {
                 .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
 
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(picked.isEmpty ? Tr("选择一个会话") : Tr("准备发送"))
                         .font(pfStyled(size: 14, weight: .semibold))

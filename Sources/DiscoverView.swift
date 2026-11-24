@@ -25,7 +25,7 @@ private struct WorldGroupCard<Content: View>: View {
 
     var body: some View {
         content
-            .padding(8)
+            .padding(AppDesign.Spacing.xs)
             .background {
                 shape.fill(C.cardBg)
             }
@@ -318,7 +318,7 @@ struct DiscoverView: View {
                 .accessibilityLabel(Tr("扫一扫"))
             }
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, AppDesign.Spacing.xs)
         .frame(height: discoverHeaderHeight)
     }
 
@@ -359,7 +359,7 @@ struct DiscoverView: View {
                 .foregroundStyle(OrbitTheme.secondary)
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(height: AppDesign.Control.sectionHeaderHeight)
         .background(worldSectionFill)
         .accessibilityAddTraits(.isHeader)
@@ -369,7 +369,7 @@ struct DiscoverView: View {
         Button {
             open(item)
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 ZStack {
                     Circle()
                         .stroke(
@@ -417,7 +417,7 @@ struct DiscoverView: View {
                         .background(Capsule().fill(OrbitTheme.jadeDeep))
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .frame(height: AppDesign.Control.rowHeight)
             .background(worldRowFill)
             .contentShape(Rectangle())
@@ -439,7 +439,7 @@ struct DiscoverView: View {
         return Button {
             open(item)
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 ZStack {
                     RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                         .fill(accent)
@@ -477,7 +477,7 @@ struct DiscoverView: View {
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(OrbitTheme.tertiary)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .frame(height: AppDesign.Control.compactRowHeight)
             .background(worldRowFill)
             .contentShape(Rectangle())
@@ -496,7 +496,7 @@ struct DiscoverView: View {
         Button {
             open(item)
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 XingyanMallMark(size: 42)
 
                 VStack(alignment: .leading, spacing: 4) {
@@ -514,7 +514,7 @@ struct DiscoverView: View {
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(OrbitTheme.tertiary)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .frame(height: AppDesign.Control.compactRowHeight)
             .background(worldRowFill)
             .contentShape(Rectangle())
@@ -681,7 +681,7 @@ struct DiscoverView: View {
     }
 
     private var worldOfflineView: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: AppDesign.Spacing.md) {
             Image(systemName: "wifi.slash")
                 .font(.system(size: 34, weight: .light))
                 .foregroundStyle(OrbitTheme.secondary)
@@ -895,7 +895,7 @@ struct DiscoverView: View {
                     .offset(x: 272, y: 52)
 
                 VStack(alignment: .leading, spacing: 0) {
-                    HStack(spacing: 8) {
+                    HStack(spacing: AppDesign.Spacing.xs) {
                         HStack(spacing: 7) {
                             Image(systemName: "sparkles")
                                 .font(.system(size: 12, weight: .semibold))
@@ -932,7 +932,7 @@ struct DiscoverView: View {
                                 .foregroundStyle(.white)
                                 .shadow(color: .black.opacity(0.25), radius: 7, y: 3)
 
-                            HStack(spacing: 8) {
+                            HStack(spacing: AppDesign.Spacing.xs) {
                                 Avatar(path: latestMomentAvatar,
                                        size: 26, radius: 13, circle: true)
                                     .overlay(Circle().stroke(Color.white.opacity(0.72),
@@ -968,7 +968,7 @@ struct DiscoverView: View {
                                         .shadow(color: .black.opacity(0.20), radius: 8, y: 4)
                                 }
                             }
-                            .padding(.trailing, 4)
+                            .padding(.trailing, AppDesign.Spacing.xxs)
                         }
                     }
 
@@ -979,7 +979,7 @@ struct DiscoverView: View {
                             .font(.system(size: 10.5, weight: .bold))
                     }
                     .foregroundStyle(.white)
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, AppDesign.Spacing.sm)
                     .frame(height: 31)
                     .background(OrbitTheme.jade.opacity(0.92), in: Capsule())
                     .overlay(Capsule().stroke(Color.white.opacity(0.18), lineWidth: 0.7))
@@ -1144,7 +1144,7 @@ struct DiscoverView: View {
                         .background(Circle().fill(Color.white.opacity(0.13)))
                         .overlay(Circle().stroke(Color.white.opacity(0.12), lineWidth: 0.7))
                 }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppDesign.Spacing.md)
             }
             .frame(height: 96)
             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
@@ -1284,7 +1284,7 @@ struct ComingSoonView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: AppDesign.Spacing.sm) {
             Text(title).font(pf(17)).foregroundColor(C.label)
             Text(Tr("这一页排在下一批")).font(pf(14)).foregroundColor(C.subLabel)
         }
@@ -1928,7 +1928,7 @@ struct MomentsView: View {
                     }
                     .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, AppDesign.Spacing.lg)
                 .padding(.vertical, 18)
                 .frame(maxWidth: 286)
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
@@ -1938,7 +1938,7 @@ struct MomentsView: View {
                         .stroke(Color.white.opacity(0.24), lineWidth: 0.7)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding(.horizontal, 24)
+                .padding(.horizontal, AppDesign.Spacing.xl)
                 .zIndex(4)
             }
 
@@ -2002,8 +2002,8 @@ struct MomentsView: View {
                     .buttonStyle(.plain)
                     Spacer(minLength: 0)
                 }
-                .padding(.leading, 12)
-                .padding(.bottom, 12)
+                .padding(.leading, AppDesign.Spacing.sm)
+                .padding(.bottom, AppDesign.Spacing.sm)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
                 .zIndex(4)
             }
@@ -2016,8 +2016,8 @@ struct MomentsView: View {
                         .shadow(color: Color.black.opacity(0.55), radius: 4, x: 0, y: 1)
                         .lineLimit(1)
                 }
-                .padding(.bottom, 24)
-                VStack(spacing: 4) {
+                .padding(.bottom, AppDesign.Spacing.xl)
+                VStack(spacing: AppDesign.Spacing.xxs) {
                     Avatar(path: owner?.avatarPath ?? "", size: L.coverAvatar, radius: 8)
                         .shadow(color: Color.black.opacity(0.28), radius: 5, x: 0, y: 2)
                     if let sign = signature {
@@ -2027,7 +2027,7 @@ struct MomentsView: View {
                             .lineLimit(2)
                             .multilineTextAlignment(.center)
                             .fixedSize(horizontal: false, vertical: true)
-                            .padding(.horizontal, 8)
+                            .padding(.horizontal, AppDesign.Spacing.xs)
                             .padding(.vertical, 3)
                             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous)
                                 .fill(Color.dyn(0xFFFFFF, 0x000000).opacity(0.62)))
@@ -2036,7 +2036,7 @@ struct MomentsView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
-            .padding(.trailing, 16)
+            .padding(.trailing, AppDesign.Spacing.md)
             .offset(y: 21)
             .allowsHitTesting(false)
         }
@@ -2180,7 +2180,7 @@ struct MomentsView: View {
                     .foregroundColor(AppPalette.legacyLink)
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .frame(height: AppDesign.Control.iconControlHeight)
             .contentShape(Rectangle())
         }
@@ -2263,7 +2263,7 @@ struct MomentsView: View {
                     .font(pf(13))
                     .foregroundColor(C.subLabel)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
+                    .padding(.vertical, AppDesign.Spacing.md)
             }
 
             if !mineOnly, !(feedUserId ?? "").isEmpty, (feedUserId ?? "") != (app.me?.id ?? ""),
@@ -2273,7 +2273,7 @@ struct MomentsView: View {
                     .font(pf(13))
                     .foregroundColor(C.subLabel)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
+                    .padding(.vertical, AppDesign.Spacing.md)
             }
         }
         .padding(.top, 13)
@@ -2391,7 +2391,7 @@ struct MomentsView: View {
                                 .foregroundStyle(C.subLabel)
 
                             ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 8) {
+                                HStack(spacing: AppDesign.Spacing.xs) {
                                     ForEach(timelineAvailableDays.prefix(12), id: \.self) { day in
                                         Button {
                                             timelineDateDraft = day
@@ -2404,7 +2404,7 @@ struct MomentsView: View {
                                                         inSameDayAs: timelineDateDraft
                                                     ) ? C.cardBg : C.label
                                                 )
-                                                .padding(.horizontal, 12)
+                                                .padding(.horizontal, AppDesign.Spacing.sm)
                                                 .frame(height: AppDesign.Control.smallButtonHeight)
                                                 .background(
                                                     Calendar.current.isDate(
@@ -2450,8 +2450,8 @@ struct MomentsView: View {
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 12)
+                .padding(.horizontal, AppDesign.Spacing.lg)
+                .padding(.top, AppDesign.Spacing.sm)
                 .padding(.bottom, max(28, L.safeBottom))
             }
             .background(C.pageBg.ignoresSafeArea())
@@ -2700,7 +2700,7 @@ struct MomentsView: View {
                         .font(pf(17, .semibold))
                         .foregroundColor(canPublish ? C.green : C.subLabel)
                         .frame(height: L.navH)
-                        .padding(.trailing, 16)
+                        .padding(.trailing, AppDesign.Spacing.md)
                 }
                 .buttonStyle(.plain)
                 .disabled(!canPublish)
@@ -2741,10 +2741,10 @@ struct MomentsView: View {
                                 .lineLimit(1)
                             Spacer(minLength: 0)
                         }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppDesign.Spacing.md)
                         .frame(height: AppDesign.Control.iconSmallHeight)
                         .background(C.cardBg)
-                        .padding(.bottom, 8)
+                        .padding(.bottom, AppDesign.Spacing.xs)
                     }
 
                     ZStack(alignment: .topLeading) {
@@ -2752,7 +2752,7 @@ struct MomentsView: View {
                             Text(Tr("这一刻的想法…"))
                                 .font(pf(17))
                                 .foregroundColor(C.subLabel)
-                                .padding(.top, 8)
+                                .padding(.top, AppDesign.Spacing.xs)
                                 .padding(.leading, 5)
                                 .allowsHitTesting(false)
                         }
@@ -2761,11 +2761,11 @@ struct MomentsView: View {
                             .frame(minHeight: 104)
                             .scrollContentBackground(.hidden)
                     }
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, AppDesign.Spacing.sm)
                     .background(C.cardBg)
 
                     composerGrid
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppDesign.Spacing.md)
                         .padding(.top, 14)
 
                     VStack(spacing: 0) {
@@ -2971,7 +2971,7 @@ struct MomentsView: View {
                 }
                 Chevron(size: 9, line: 1.6)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .frame(height: AppDesign.Control.buttonHeight)
             .contentShape(Rectangle())
         }
@@ -3000,7 +3000,7 @@ struct MomentsView: View {
                             if hiddenFrom.contains(u.id) { hiddenFrom.remove(u.id) } else { hiddenFrom.insert(u.id) }
                         }
                     } label: {
-                        HStack(spacing: 12) {
+                        HStack(spacing: AppDesign.Spacing.sm) {
                             Avatar(path: u.avatarPath, size: 38, radius: 6)
                             Text(u.name).font(pf(16)).foregroundColor(C.label)
                             Spacer()
@@ -3777,7 +3777,7 @@ struct MomentRow: View {
             Spacer(minLength: 0)
         }
         .padding(.top, 15)
-        .padding(.bottom, 12)
+        .padding(.bottom, AppDesign.Spacing.sm)
 
         .onChange(of: (moment.likes ?? []).count) { n in
             if n > 0 { burstHeart() }
@@ -3900,12 +3900,12 @@ struct MomentRow: View {
                     commentRow(comments[index])
                 }
             }
-            .padding(.horizontal, 8)
+            .padding(.horizontal, AppDesign.Spacing.xs)
             .background(
                 RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous)
                     .fill(Color.dyn(0xF7F7F7, 0x2A2A2C))
             )
-            .padding(.top, 8)
+            .padding(.top, AppDesign.Spacing.xs)
         }
     }
 
@@ -4178,7 +4178,7 @@ struct CoverAdjustSheet: View {
                         .font(pf(17, .semibold))
                         .foregroundColor(C.green)
                         .frame(height: L.navH)
-                        .padding(.trailing, 16)
+                        .padding(.trailing, AppDesign.Spacing.md)
                 }
                 .buttonStyle(.plain)
             }
@@ -4351,7 +4351,7 @@ struct PlacePickerSheet: View {
                             Spacer()
                             if text.isEmpty { Image(systemName: "checkmark").foregroundColor(C.green) }
                         }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppDesign.Spacing.md)
                         .frame(height: AppDesign.Control.largeControlHeight)
                         .contentShape(Rectangle())
                     }
@@ -4369,7 +4369,7 @@ struct PlacePickerSheet: View {
                                 Spacer()
                                 if text == p { Image(systemName: "checkmark").foregroundColor(C.green) }
                             }
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, AppDesign.Spacing.md)
                             .frame(height: AppDesign.Control.largeControlHeight)
                             .contentShape(Rectangle())
                         }
@@ -4377,7 +4377,7 @@ struct PlacePickerSheet: View {
                     }
                 }
                 .background(C.cardBg)
-                .padding(.top, 12)
+                .padding(.top, AppDesign.Spacing.sm)
             }
             Spacer()
         }

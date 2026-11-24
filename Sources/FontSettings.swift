@@ -38,7 +38,7 @@ struct FontSettingsView: View {
                         .font(pf(14))
                         .foregroundStyle(C.subLabel)
 
-                    HStack(spacing: 8) {
+                    HStack(spacing: AppDesign.Spacing.xs) {
                         Image(systemName: "textformat")
                             .font(.system(size: 11, weight: .semibold))
                         Text(store.family.isEmpty ? Tr("苹方 · 默认") : store.family)
@@ -50,13 +50,13 @@ struct FontSettingsView: View {
                     .font(pfStyled(size: 11, weight: .medium))
                     .foregroundStyle(OrbitTheme.jade)
                 }
-                .padding(.vertical, 8)
+                .padding(.vertical, AppDesign.Spacing.xs)
             } header: {
                 Text(Tr("字体预览"))
             }
 
             Section {
-                HStack(spacing: 12) {
+                HStack(spacing: AppDesign.Spacing.sm) {
                     Text("A")
                         .font(pfStyled(size: 13, weight: .medium))
                     Slider(
@@ -100,7 +100,7 @@ struct FontSettingsView: View {
                     NavigationLink {
                         FontFamilyPickerView()
                     } label: {
-                        HStack(spacing: 12) {
+                        HStack(spacing: AppDesign.Spacing.sm) {
                             Image(systemName: "character.book.closed.fill")
                                 .font(.system(size: 15, weight: .semibold))
                                 .foregroundStyle(OrbitTheme.jade)
@@ -143,7 +143,7 @@ struct FontSettingsView: View {
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     }
-                    .padding(.vertical, 4)
+                    .padding(.vertical, AppDesign.Spacing.xxs)
                 }
             } header: {
                 Text(Tr("字体"))
@@ -243,7 +243,7 @@ struct FontFamilyPickerView: View {
             UISelectionFeedbackGenerator().selectionChanged()
             store.setFamily(family, canChoose: canChooseFont)
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 VStack(alignment: .leading, spacing: 5) {
                     Text(title)
                         .font(pfStyled(size: 14.5, weight: .medium))
@@ -267,7 +267,7 @@ struct FontFamilyPickerView: View {
                         .foregroundStyle(OrbitTheme.jade)
                 }
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, AppDesign.Spacing.xxs)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

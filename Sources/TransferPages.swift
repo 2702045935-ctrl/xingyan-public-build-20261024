@@ -30,19 +30,19 @@ struct TransferHomeView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 20) {
+            VStack(spacing: AppDesign.Spacing.lg) {
                 Spacer(minLength: 20)
 
-                VStack(spacing: 12) {
+                VStack(spacing: AppDesign.Spacing.sm) {
                     TextField("收款人姓名", text: $receiverName)
                         .font(pfStyled(16))
-                        .padding(16)
+                        .padding(AppDesign.Spacing.md)
                         .background(Color(.systemGray6))
                         .cornerRadius(12)
 
                     TextField("收款账号/手机号", text: $receiverAccount)
                         .font(pfStyled(16))
-                        .padding(16)
+                        .padding(AppDesign.Spacing.md)
                         .background(Color(.systemGray6))
                         .cornerRadius(12)
                         .textInputAutocapitalization(.never)
@@ -61,14 +61,14 @@ struct TransferHomeView: View {
                             .font(pfStyled(size: 24, weight: .semibold))
                             .keyboardType(.decimalPad)
                     }
-                    .padding(16)
+                    .padding(AppDesign.Spacing.md)
                     .background(Color(.systemGray6))
                     .cornerRadius(12)
                 }
 
                 TextField("备注（选填）", text: $remark)
                     .font(pfStyled(16))
-                    .padding(16)
+                    .padding(AppDesign.Spacing.md)
                     .background(Color(.systemGray6))
                     .cornerRadius(12)
 
@@ -99,7 +99,7 @@ struct TransferHomeView: View {
                 .disabled(!canNext)
                 .simultaneousGesture(TapGesture().onEnded { resolveReceiver() })
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, AppDesign.Spacing.lg)
         }
         .background(Color(.systemBackground).ignoresSafeArea())
         .navigationTitle(Tr("转账"))
@@ -153,10 +153,10 @@ struct TransferConfirmView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 24) {
+            VStack(spacing: AppDesign.Spacing.xl) {
                 Spacer(minLength: 20)
 
-                VStack(spacing: 16) {
+                VStack(spacing: AppDesign.Spacing.md) {
                     Text(Tr("确认转账信息"))
                         .font(pfStyled(size: 18, weight: .semibold))
 
@@ -198,7 +198,7 @@ struct TransferConfirmView: View {
                             .foregroundColor(TransferTheme.accent)
                     }
                 }
-                .padding(20)
+                .padding(AppDesign.Spacing.lg)
                 .background(Color(.systemGray6))
                 .cornerRadius(16)
 
@@ -215,7 +215,7 @@ struct TransferConfirmView: View {
                         .cornerRadius(16)
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, AppDesign.Spacing.lg)
         }
         .background(Color(.systemBackground).ignoresSafeArea())
         .navigationTitle(Tr("确认转账"))
@@ -253,7 +253,7 @@ struct TransferPasswordView: View {
                 .font(pfMoney(14))
                 .foregroundColor(.secondary)
 
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 ForEach(0..<pwdLength, id: \.self) { index in
                     ZStack {
                         RoundedRectangle(cornerRadius: AppDesign.Radius.mini)
@@ -278,7 +278,7 @@ struct TransferPasswordView: View {
                     if pwd.count == pwdLength { submit() }
                 }
 
-            if busy { ProgressView().padding(.top, 4) }
+            if busy { ProgressView().padding(.top, AppDesign.Spacing.xxs) }
             if let e = error {
                 Text(e).font(pfStyled(size: 13)).foregroundColor(C.red)
             }
@@ -293,7 +293,7 @@ struct TransferPasswordView: View {
                     .foregroundColor(TransferTheme.accent)
             }
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, AppDesign.Spacing.lg)
         .background(Color(.systemBackground).ignoresSafeArea())
         .navigationTitle(Tr("验证支付密码"))
         .navigationBarTitleDisplayMode(.inline)
@@ -341,7 +341,7 @@ struct TransferSuccessView: View {
     var onClose: () -> Void
 
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: AppDesign.Spacing.xl) {
             Spacer()
 
             Image(systemName: "checkmark.circle.fill")
@@ -359,7 +359,7 @@ struct TransferSuccessView: View {
 
             Spacer()
 
-            VStack(spacing: 16) {
+            VStack(spacing: AppDesign.Spacing.md) {
                 Button {
                     onClose()
                 } label: {
@@ -383,7 +383,7 @@ struct TransferSuccessView: View {
                 }
             }
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, AppDesign.Spacing.lg)
         .background(Color(.systemBackground).ignoresSafeArea())
         .navigationTitle(Tr("转账结果"))
         .navigationBarTitleDisplayMode(.inline)

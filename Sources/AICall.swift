@@ -259,11 +259,11 @@ private struct LegacyAICallView: View {
                 Text(chat.name)
                     .font(pf(22, .medium))
                     .foregroundColor(.white)
-                    .padding(.top, 16)
+                    .padding(.top, AppDesign.Spacing.md)
                 Text(phase)
                     .font(pf(14))
                     .foregroundColor(Color.white.opacity(0.7))
-                    .padding(.top, 8)
+                    .padding(.top, AppDesign.Spacing.xs)
 
                 if !voice.heard.isEmpty {
                     Text(Lang.isEnglish ? "You: \(voice.heard)" : "你说：\(voice.heard)")
@@ -271,7 +271,7 @@ private struct LegacyAICallView: View {
                         .foregroundColor(Color.white.opacity(0.9))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 30)
-                        .padding(.top, 20)
+                        .padding(.top, AppDesign.Spacing.lg)
                 }
 
                 if !reply.isEmpty {
@@ -284,7 +284,7 @@ private struct LegacyAICallView: View {
                     }
                     .frame(maxHeight: 210)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact).fill(Color.white.opacity(0.08)))
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, AppDesign.Spacing.xl)
                     .padding(.top, 14)
                 }
 
@@ -316,7 +316,7 @@ private struct LegacyAICallView: View {
                 Text(voice.status)
                     .font(pf(13))
                     .foregroundColor(Color.white.opacity(0.7))
-                    .padding(.top, 12)
+                    .padding(.top, AppDesign.Spacing.sm)
 
                 Button {
                     voice.stop()

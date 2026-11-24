@@ -31,7 +31,7 @@ struct AIPageView: View {
     var body: some View {
         VStack(spacing: 0) {
             NavBar(title: Tr("小星"), back: { dismiss() }) {
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     Button {
                         openCall()
                     } label: {
@@ -51,7 +51,7 @@ struct AIPageView: View {
             }
 
             if loading {
-                VStack(spacing: 12) {
+                VStack(spacing: AppDesign.Spacing.sm) {
                     ProgressView().tint(accent)
                     Text(Tr("正在连接小星"))
                         .font(AppDesign.Type.caption)
@@ -105,14 +105,14 @@ struct AIPageView: View {
             if uploading {
                 ZStack {
                     Color.black.opacity(0.14).ignoresSafeArea()
-                    VStack(spacing: 12) {
+                    VStack(spacing: AppDesign.Spacing.sm) {
                         ProgressView().tint(accent)
                         Text(Tr("正在上传文件…"))
                             .font(pf(13))
                             .foregroundColor(C.label)
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 20)
+                    .padding(.horizontal, AppDesign.Spacing.xl)
+                    .padding(.vertical, AppDesign.Spacing.lg)
                     .background(C.cardBg)
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
                     .shadow(color: .black.opacity(0.16), radius: 18, y: 8)
@@ -139,7 +139,7 @@ struct AIPageView: View {
             }
             .font(pf(14, .medium))
             .foregroundColor(.white)
-            .padding(.horizontal, 20)
+            .padding(.horizontal, AppDesign.Spacing.lg)
             .frame(height: AppDesign.Control.iconControlHeight)
             .background(Capsule().fill(accent))
             .buttonStyle(.plain)
@@ -149,7 +149,7 @@ struct AIPageView: View {
 
     private var content: some View {
         ScrollView(showsIndicators: false) {
-            VStack(spacing: 16) {
+            VStack(spacing: AppDesign.Spacing.md) {
                 hero
                 composer
                 tokenBar
@@ -177,7 +177,7 @@ struct AIPageView: View {
                     purchaseSection(purchases)
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .padding(.top, 10)
             .padding(.bottom, 36)
         }
@@ -208,7 +208,7 @@ struct AIPageView: View {
             Text(modelName)
                 .font(pf(10, .medium))
                 .foregroundColor(accent)
-                .padding(.horizontal, 8)
+                .padding(.horizontal, AppDesign.Spacing.xs)
                 .frame(height: AppDesign.Control.compactBadgeHeight)
                 .background(Capsule().fill(accent.opacity(0.09)))
             Text(Tr("有什么可以帮你？"))
@@ -221,7 +221,7 @@ struct AIPageView: View {
     }
 
     private var composer: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: AppDesign.Spacing.sm) {
             TextField(Tr("有什么可以帮你？"), text: $prompt, axis: .vertical)
                 .font(pf(16))
                 .foregroundColor(C.label)
@@ -229,7 +229,7 @@ struct AIPageView: View {
                 .focused($inputFocused)
                 .padding(.top, 5)
 
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 composerChip("⌘ " + Tr("功能")) {
                     inputFocused = true
                 }
@@ -253,7 +253,7 @@ struct AIPageView: View {
                 .disabled(!canSend)
             }
         }
-        .padding(16)
+        .padding(AppDesign.Spacing.md)
         .background(C.cardBg)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
@@ -278,7 +278,7 @@ struct AIPageView: View {
     }
 
     private var tokenBar: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(Tr("Token 额度"))
                     .font(pf(10.5))
@@ -332,7 +332,7 @@ struct AIPageView: View {
             }
         } label: {
             VStack(alignment: .leading, spacing: 9) {
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     Image(systemName: action.icon)
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(accent)
@@ -401,7 +401,7 @@ struct AIPageView: View {
                                     Text(Tr("购买"))
                                         .font(pf(11.5, .medium))
                                         .foregroundColor(.white)
-                                        .padding(.horizontal, 12)
+                                        .padding(.horizontal, AppDesign.Spacing.sm)
                                         .frame(height: AppDesign.Control.statusHeight)
                                         .background(Capsule().fill(accent))
                                 }
@@ -588,7 +588,7 @@ private struct BuyAITokensSheet: View {
                     .foregroundColor(C.subLabel)
                     .buttonStyle(.plain)
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, AppDesign.Spacing.lg)
             .frame(height: 58)
 
             VStack(alignment: .leading, spacing: 6) {
@@ -603,7 +603,7 @@ private struct BuyAITokensSheet: View {
             .padding(14)
             .background(accent.opacity(0.07))
             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
-            .padding(.horizontal, 20)
+            .padding(.horizontal, AppDesign.Spacing.lg)
 
             SecureField(Tr("输入 6 位支付密码"), text: $password)
                 .keyboardType(.numberPad)
@@ -614,8 +614,8 @@ private struct BuyAITokensSheet: View {
                 .frame(height: AppDesign.Control.buttonHeight)
                 .background(C.fieldBg)
                 .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
-                .padding(.horizontal, 20)
-                .padding(.top, 16)
+                .padding(.horizontal, AppDesign.Spacing.lg)
+                .padding(.top, AppDesign.Spacing.md)
                 .onChange(of: password) { value in
                     let clean = String(value.filter { $0 >= "0" && $0 <= "9" }.prefix(6))
                     if clean != value { password = clean }
@@ -627,14 +627,14 @@ private struct BuyAITokensSheet: View {
                     .font(AppDesign.Type.caption)
                     .foregroundColor(C.red)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, AppDesign.Spacing.lg)
                     .padding(.top, 9)
             }
 
             Button {
                 pay()
             } label: {
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     if paying { ProgressView().tint(.white) }
                     Text(paying ? Tr("处理中…") : Tr("确认支付"))
                         .font(pf(14.5, .semibold))
@@ -647,7 +647,7 @@ private struct BuyAITokensSheet: View {
             }
             .buttonStyle(.plain)
             .disabled(!valid)
-            .padding(.horizontal, 20)
+            .padding(.horizontal, AppDesign.Spacing.lg)
             .padding(.top, 18)
 
             Text(Tr("Token 为虚拟数字权益，购买后立即到账，不支持退款。"))
@@ -655,7 +655,7 @@ private struct BuyAITokensSheet: View {
                 .foregroundColor(C.subLabel)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 26)
-                .padding(.top, 12)
+                .padding(.top, AppDesign.Spacing.sm)
 
             Spacer(minLength: 20)
         }

@@ -75,7 +75,7 @@ struct SearchAllView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 HStack(spacing: 5) {
                     SVGIcon(markup: I.searchSmall, size: 16, color: C.searchIcon)
                     TextField("", text: $q, prompt: Text(Tr("搜索")).foregroundColor(C.searchIcon))
@@ -97,13 +97,13 @@ struct SearchAllView: View {
                     .font(pf(16)).foregroundColor(C.label)
                     .buttonStyle(MenuPressStyle())
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
             .padding(.top, L.safeTop)
-            .padding(.bottom, 8)
+            .padding(.bottom, AppDesign.Spacing.xs)
             .background(C.chatsTopBg.ignoresSafeArea(edges: .top))
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     ForEach(scopes, id: \.0) { s in
                         Button {
                             scope = s.0
@@ -112,22 +112,22 @@ struct SearchAllView: View {
                             Text(Tr(s.1))
                                 .font(pf(13))
                                 .foregroundColor(scope == s.0 ? .white : C.label)
-                                .padding(.horizontal, 12)
+                                .padding(.horizontal, AppDesign.Spacing.sm)
                                 .frame(height: AppDesign.Control.statusHeight)
                                 .background(Capsule().fill(scope == s.0 ? C.green : C.cardBg))
                         }
                         .buttonStyle(AppSegmentPressStyle())
                     }
                 }
-                .padding(.horizontal, 12)
+                .padding(.horizontal, AppDesign.Spacing.sm)
             }
-            .padding(.vertical, 8)
+            .padding(.vertical, AppDesign.Spacing.xs)
 
             ScrollView {
                 VStack(spacing: 0) {
                     if q.isEmpty {
                         if history.isEmpty {
-                            VStack(spacing: 8) {
+                            VStack(spacing: AppDesign.Spacing.xs) {
                                 SVGIcon(markup: I.searchBig, size: 42, color: C.subLabel)
                                 Text(Tr("搜聊天记录、联系人、群聊、朋友圈、视频号")).font(pf(14)).foregroundColor(C.subLabel)
                             }
@@ -141,15 +141,15 @@ struct SearchAllView: View {
                                 } label: { Text(Tr("清空")).font(pf(13)).foregroundColor(C.subLabel) }
                                 .buttonStyle(MenuPressStyle())
                             }
-                            .padding(.horizontal, 16).frame(height: 34)
+                            .padding(.horizontal, AppDesign.Spacing.md).frame(height: 34)
                             ForEach(history, id: \.self) { h in
                                 Button { q = h; runSearch() } label: {
-                                    HStack(spacing: 8) {
+                                    HStack(spacing: AppDesign.Spacing.xs) {
                                         SVGIcon(markup: I.searchSmall, size: 15, color: C.subLabel)
                                         Text(Tr(h)).font(pf(15)).foregroundColor(C.label)
                                         Spacer(minLength: 0)
                                     }
-                                    .padding(.horizontal, 16).frame(height: 46)
+                                    .padding(.horizontal, AppDesign.Spacing.md).frame(height: 46)
                                     .background(C.cardBg).contentShape(Rectangle())
                                 }
                                 .buttonStyle(MenuPressStyle())
@@ -189,10 +189,10 @@ struct SearchAllView: View {
                             ProgressView()
                                 .controlSize(.small)
                                 .frame(maxWidth: .infinity)
-                                .padding(.top, 8)
+                                .padding(.top, AppDesign.Spacing.xs)
                         }
                         if searchFailed {
-                            HStack(spacing: 8) {
+                            HStack(spacing: AppDesign.Spacing.xs) {
                                 Image(systemName: "exclamationmark.circle.fill")
                                     .foregroundStyle(C.orange)
                                 Text(Tr("结果可能没有更新"))
@@ -204,7 +204,7 @@ struct SearchAllView: View {
                                     .foregroundStyle(C.green)
                                     .buttonStyle(MenuPressStyle())
                             }
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, AppDesign.Spacing.md)
                             .frame(height: 34)
                             .background(C.orange.opacity(0.07))
                         }
@@ -256,7 +256,7 @@ struct SearchAllView: View {
         let msgs = d?.messages ?? []
         if people.isEmpty && groups.isEmpty && moments.isEmpty && videos.isEmpty
             && msgs.isEmpty && matchedTools.isEmpty {
-            VStack(spacing: 8) {
+            VStack(spacing: AppDesign.Spacing.xs) {
                 SVGIcon(markup: I.searchBig, size: 42, color: C.subLabel)
                 Text(Tr("没有找到") + "「" + q + "」" + Tr("相关的内容")).font(pf(14)).foregroundColor(C.subLabel)
             }
@@ -375,17 +375,17 @@ struct SearchAllView: View {
             Text("\(n)").font(pf(11.5, .medium))
                 .foregroundColor(C.subLabel.opacity(0.75)).monospacedDigit()
         }
-        .padding(.horizontal, 16).frame(height: AppDesign.Control.smallButtonHeight).background(C.pageBg)
+        .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.smallButtonHeight).background(C.pageBg)
     }
 
     private func row<Content: View>(tap: @escaping () -> Void, @ViewBuilder content: () -> Content) -> some View {
         Button(action: tap) {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 content()
                 Spacer(minLength: 0)
                 Chevron(size: 8, line: 1.4)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .frame(minHeight: 56)
             .background(C.cardBg)
             .contentShape(Rectangle())

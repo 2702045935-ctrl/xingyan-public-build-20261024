@@ -47,7 +47,7 @@ struct DDCategoryTab: View {
                                     .lineLimit(1)
                                 Spacer(minLength: 0)
                             }
-                            .padding(.leading, 6).padding(.trailing, 8)
+                            .padding(.leading, 6).padding(.trailing, AppDesign.Spacing.xs)
                             .frame(height: AppDesign.Control.buttonHeight)
                             .frame(maxWidth: .infinity)
                             .background(
@@ -78,7 +78,7 @@ struct DDCategoryTab: View {
                                 .font(AppDesign.Type.body).foregroundColor(DDColor.sub)
                             Spacer(minLength: 0)
                         }
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, AppDesign.Spacing.sm)
                         .frame(height: 34)
                         .background(Capsule().fill(Color.white))
                         .overlay(Capsule().stroke(DDColor.cardEdge, lineWidth: 0.6))
@@ -97,7 +97,7 @@ struct DDCategoryTab: View {
 
                     if !chips.isEmpty {
                         ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 8) {
+                            HStack(spacing: AppDesign.Spacing.xs) {
                                 chip(Tr("全部"), tag.isEmpty) { tag = "" }
                                 ForEach(chips, id: \.self) { t in
                                     chip(Tr(t), tag == t) { tag = (tag == t) ? "" : t }
@@ -112,7 +112,7 @@ struct DDCategoryTab: View {
                     }, spacing: 10)
 
                     if list.isEmpty {
-                        VStack(spacing: 8) {
+                        VStack(spacing: AppDesign.Spacing.xs) {
                             Image(systemName: "shippingbox")
                                 .font(.system(size: 30)).foregroundColor(DDColor.weak)
                             Text(Tr("这个分类下暂时没有商品"))
@@ -124,7 +124,7 @@ struct DDCategoryTab: View {
                     Spacer(minLength: 16)
                 }
 
-                .padding(.horizontal, 8)
+                .padding(.horizontal, AppDesign.Spacing.xs)
                 .padding(.top, 10)
             }
             .background(DDColor.page)

@@ -109,15 +109,15 @@ struct CardsView: View {
     private func sectionTitle(_ t: String) -> some View {
         Text(t).font(pf(13)).foregroundColor(C.subLabel)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 22).padding(.top, 8)
+            .padding(.horizontal, 22).padding(.top, AppDesign.Spacing.xs)
     }
 
     private func cardList(_ list: [WalletCard]) -> some View {
-        GroupCard {
+        GroupCard(horizontalInset: 0) {
             ForEach(Array(list.enumerated()), id: \.element.id) { i, c in
                 if i > 0 { HairLine(inset: 16) }
                 Button { open = c } label: {
-                    HStack(spacing: 12) {
+                    HStack(spacing: AppDesign.Spacing.sm) {
                         ZStack {
                             RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                                 .fill(c.tint.opacity(0.16))
@@ -133,7 +133,7 @@ struct CardsView: View {
                         Spacer(minLength: 6)
                         Chevron(size: 9, line: 1.6).padding(.trailing, 3)
                     }
-                    .padding(.horizontal, 16).frame(height: 66)
+                    .padding(.horizontal, AppDesign.Spacing.md).frame(height: 66)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(MenuPressStyle())
@@ -167,14 +167,14 @@ struct CardsView: View {
             .buttonStyle(.plain)
             .accessibilityLabel(Tr("关闭提示"))
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
         .padding(.vertical, 9)
         .background(PayVisual.card, in: RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                 .stroke(PayVisual.separator, lineWidth: 0.6)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
     }
 
     private var walletCardHeight: CGFloat {
@@ -227,7 +227,7 @@ struct CardsView: View {
         }
         .frame(height: stackHeight, alignment: .top)
         .clipped()
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .accessibilityHint(Tr("点按后卡切换到前面，再点当前卡查看详情"))
     }
 
@@ -348,7 +348,7 @@ struct CardsView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 14) {
 
-                    VStack(spacing: 8) {
+                    VStack(spacing: AppDesign.Spacing.xs) {
                         Image(systemName: c.symbol)
                             .font(.system(size: 30, weight: .semibold))
                             .foregroundColor(.white)
@@ -367,9 +367,9 @@ struct CardsView: View {
                                        startPoint: .topLeading, endPoint: .bottomTrailing)
                     )
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppDesign.Spacing.md)
 
-                    GroupCard {
+                    GroupCard(horizontalInset: 0) {
                         row(Tr("类型"), c.kindName)
                         HairLine(inset: 16)
                         row(Tr("有效期"), (c.validTo ?? "").isEmpty ? Tr("长期有效") : (c.validTo ?? ""))
@@ -384,7 +384,7 @@ struct CardsView: View {
                     }
 
                     GroupCard {
-                        VStack(spacing: 8) {
+                        VStack(spacing: AppDesign.Spacing.xs) {
                             Text(Tr("核销码")).font(pf(13)).foregroundColor(C.subLabel)
                             Text(c.code ?? "-")
                                 .font(pfStyled(size: 22, weight: .semibold, design: .monospaced))
@@ -393,7 +393,7 @@ struct CardsView: View {
                                 .font(pf(12)).foregroundColor(C.subLabel)
                         }
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
+                        .padding(.vertical, AppDesign.Spacing.md)
                     }
 
                     if c.used != true {
@@ -414,11 +414,11 @@ struct CardsView: View {
                                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.green))
                         }
                         .buttonStyle(.plain)
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppDesign.Spacing.md)
                     }
                     Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
-                .padding(.top, 12)
+                .padding(.top, AppDesign.Spacing.sm)
             }
             .background(C.pageBg)
         }
@@ -429,13 +429,13 @@ struct CardsView: View {
     }
 
     private func row(_ t: String, _ v: String) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Text(t).font(pf(16)).foregroundColor(C.label)
             Spacer(minLength: 8)
             Text(v).font(pf(14)).foregroundColor(C.subLabel)
                 .multilineTextAlignment(.trailing)
         }
-        .padding(.horizontal, 16).frame(minHeight: 50)
+        .padding(.horizontal, AppDesign.Spacing.md).frame(minHeight: 50)
     }
 
     private func load() async {

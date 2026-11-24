@@ -385,7 +385,7 @@ struct VoiceLevelBars: View {
     private let base: [CGFloat] = [8, 14, 20, 26, 32, 26, 20, 14, 8]
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: AppDesign.Spacing.xxs) {
             ForEach(base.indices, id: \.self) { i in
                 Capsule()
                     .fill(active ? C.green : C.subLabel.opacity(0.3))
@@ -474,7 +474,7 @@ struct VoiceLockSetupView: View {
     }
 
     private var setupBody: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: AppDesign.Spacing.md) {
             if step == 0 {
                 Spacer(minLength: 30)
                 Image(systemName: "waveform.circle.fill")
@@ -520,7 +520,7 @@ struct VoiceLockSetupView: View {
                 Text(Tr("声音锁只在这台手机上有效，声纹不会上传"))
                     .font(pf(12))
                     .foregroundColor(C.subLabel)
-                    .padding(.top, 4)
+                    .padding(.top, AppDesign.Spacing.xxs)
                 Spacer(minLength: 0)
             }
         }
@@ -534,7 +534,7 @@ struct VoiceLockSetupView: View {
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right").font(.system(size: 13)).foregroundColor(C.subLabel)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .frame(height: AppDesign.Control.buttonHeight)
             .contentShape(Rectangle())
         }
@@ -632,7 +632,7 @@ struct VoiceUnlockView: View {
                 .buttonStyle(.plain)
                 Spacer()
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
 
             Spacer(minLength: 10)
 

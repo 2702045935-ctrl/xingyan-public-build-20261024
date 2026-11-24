@@ -151,7 +151,7 @@ struct AccountSecurityView: View {
     }
 
     private func row(_ title: String, _ value: String, chevron: Bool) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Text(title).font(pf(17)).foregroundColor(C.label)
             Spacer(minLength: 8)
             if !value.isEmpty {
@@ -159,7 +159,7 @@ struct AccountSecurityView: View {
             }
             if chevron { Chevron(size: 9, line: 1.6).padding(.trailing, 3) }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(height: AppDesign.Control.menuRowHeight)
         .background(C.cardBg)
         .contentShape(Rectangle())
@@ -207,7 +207,7 @@ struct ChangePasswordSheet: View {
     private var canSave: Bool { !busy && !current.isEmpty && next.count >= 6 && next == again }
 
     private func field(_ title: String, _ text: Binding<String>) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppDesign.Spacing.xs) {
             Text(title)
                 .foregroundStyle(.primary)
             Spacer(minLength: 12)

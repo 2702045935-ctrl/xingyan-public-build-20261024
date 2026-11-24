@@ -17,8 +17,8 @@ struct MomentCommentBar: View {
                       text: $text, axis: .vertical)
                 .font(AppDesign.Type.bodyLarge)
                 .lineLimit(1...4)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
+                .padding(.horizontal, AppDesign.Spacing.sm)
+                .padding(.vertical, AppDesign.Spacing.xs)
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.fieldBg))
                 .focused($focused)
                 .submitLabel(.send)
@@ -29,7 +29,7 @@ struct MomentCommentBar: View {
                     .font(AppDesign.Type.rowTitleMedium)
                     .foregroundColor(canSend ? C.green : C.subLabel)
                     .frame(height: AppDesign.Control.floatingControlHeight)
-                    .padding(.horizontal, 4)
+                    .padding(.horizontal, AppDesign.Spacing.xxs)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -44,8 +44,8 @@ struct MomentCommentBar: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.horizontal, AppDesign.Spacing.sm)
+        .padding(.vertical, AppDesign.Spacing.xs)
         .background(C.cardBg)
         .overlay(alignment: .top) { HairLine() }
         .task {

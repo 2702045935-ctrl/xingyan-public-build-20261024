@@ -447,7 +447,7 @@ struct StarAvatarPhotoStudioView: View {
                     if analyzing { analysisPanel }
                     if draft.generated { editor }
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
                 .padding(.top, 10)
                 .padding(.bottom, max(26, L.safeBottom + 16))
             }
@@ -526,7 +526,7 @@ struct StarAvatarPhotoStudioView: View {
                             )
                         )
                 } else {
-                    VStack(spacing: 12) {
+                    VStack(spacing: AppDesign.Spacing.sm) {
                         Image(systemName: "faceid")
                             .font(.system(size: 52, weight: .light))
                             .foregroundStyle(Color(hex: 0x8FE8D7))
@@ -592,7 +592,7 @@ struct StarAvatarPhotoStudioView: View {
     }
 
     private var analysisPanel: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             ProgressView().tint(C.green)
             VStack(alignment: .leading, spacing: 2) {
                 Text(Tr("正在分析面部"))
@@ -621,7 +621,7 @@ struct StarAvatarPhotoStudioView: View {
                 sliderRow(Tr("鼻长"), value: $draft.noseLength, range: 0.84...1.18)
                 sliderRow(Tr("嘴宽"), value: $draft.mouthWidth, range: 0.84...1.18)
             }
-            .padding(16)
+            .padding(AppDesign.Spacing.md)
             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous).fill(C.cardBg))
 
             sectionTitle(Tr("肤色与发型"), subtitle: Tr("自动取样，可随时重新捏"))
@@ -643,7 +643,7 @@ struct StarAvatarPhotoStudioView: View {
                     .tint(C.green)
                 }
             }
-            .padding(16)
+            .padding(AppDesign.Spacing.md)
             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous).fill(C.cardBg))
 
             sectionTitle(Tr("眼镜"), subtitle: Tr("照片里检测到眼镜时会默认保留"))
@@ -679,7 +679,7 @@ struct StarAvatarPhotoStudioView: View {
                     sliderRow(Tr("镜片深浅"), value: $draft.glassesLensOpacity, range: 0.04...0.42)
                 }
             }
-            .padding(16)
+            .padding(AppDesign.Spacing.md)
             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous).fill(C.cardBg))
 
             Button {
@@ -719,7 +719,7 @@ struct StarAvatarPhotoStudioView: View {
     private func sliderRow(_ title: String,
                            value: Binding<Double>,
                            range: ClosedRange<Double>) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Text(title)
                 .font(pfStyled(size: 13.5))
                 .foregroundStyle(C.label)

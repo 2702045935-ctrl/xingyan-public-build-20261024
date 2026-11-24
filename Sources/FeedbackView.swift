@@ -45,7 +45,7 @@ struct FeedbackView: View {
                     .foregroundColor(C.subLabel)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 46)
-                    .padding(.top, 8)
+                    .padding(.top, AppDesign.Spacing.xs)
 
                 VStack(spacing: 10) {
                     NavigationLink(value: "feedback.history") {
@@ -108,7 +108,7 @@ struct FeedbackView: View {
                             Text(Tr("问题类型"))
                                 .font(AppDesign.Type.caption)
                                 .foregroundColor(C.subLabel)
-                                .padding(.leading, 4)
+                                .padding(.leading, AppDesign.Spacing.xxs)
                             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 2),
                                       spacing: 10) {
                                 ForEach(cats, id: \.self) { c in
@@ -135,7 +135,7 @@ struct FeedbackView: View {
                                                     .foregroundColor(C.green)
                                             }
                                         }
-                                        .padding(.horizontal, 12)
+                                        .padding(.horizontal, AppDesign.Spacing.sm)
                                         .frame(height: 58)
                                         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                                             .fill(category == c ? C.green.opacity(0.07) : C.cardBg))
@@ -154,7 +154,7 @@ struct FeedbackView: View {
                             .font(AppDesign.Type.caption)
                             .foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.leading, 4)
+                            .padding(.leading, AppDesign.Spacing.xxs)
                             .padding(.top, 14)
                             .padding(.bottom, 6)
                         VStack(spacing: 0) {
@@ -162,7 +162,7 @@ struct FeedbackView: View {
                                 if content.isEmpty {
                                     Text(Tr("说说遇到的问题，或者你希望加什么功能…"))
                                         .font(pf(15)).foregroundColor(C.subLabel)
-                                        .padding(.horizontal, 16).padding(.top, 14)
+                                        .padding(.horizontal, AppDesign.Spacing.md).padding(.top, 14)
                                 }
                                 TextEditor(text: $content)
                                     .font(pf(15))
@@ -179,7 +179,7 @@ struct FeedbackView: View {
                                 Text("\(content.count)/\(maxLen)")
                                     .font(pf(12))
                                     .foregroundColor(content.count > maxLen - 20 ? Color(hex: 0xE08A0C) : C.subLabel)
-                                    .padding(.trailing, 16).padding(.bottom, 8)
+                                    .padding(.trailing, AppDesign.Spacing.md).padding(.bottom, AppDesign.Spacing.xs)
                             }
                             HairLine(inset: 16)
 
@@ -203,7 +203,7 @@ struct FeedbackView: View {
                                 }
                                 if picked.count < 3 {
                                     Button { showPhoto = true } label: {
-                                        VStack(spacing: 4) {
+                                        VStack(spacing: AppDesign.Spacing.xxs) {
                                             Image(systemName: "plus")
                                                 .font(.system(size: 18, weight: .medium))
                                                 .foregroundColor(C.green)
@@ -221,7 +221,7 @@ struct FeedbackView: View {
                                     .buttonStyle(.plain)
 
                                     Button { showCamera = true } label: {
-                                        VStack(spacing: 4) {
+                                        VStack(spacing: AppDesign.Spacing.xxs) {
                                             Image(systemName: "camera.fill")
                                                 .font(.system(size: 16))
                                                 .foregroundColor(C.subLabel)
@@ -237,7 +237,7 @@ struct FeedbackView: View {
                                 }
                                 Spacer(minLength: 0)
                             }
-                            .padding(.horizontal, 16).padding(.vertical, 12)
+                            .padding(.horizontal, AppDesign.Spacing.md).padding(.vertical, AppDesign.Spacing.sm)
                         }
                         .background { CardGlassBox(radius: 13) }
                         .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
@@ -367,7 +367,7 @@ struct FeedbackHistoryView: View {
                     if loading {
                         ProgressView().padding(.top, 50)
                     } else if rows.isEmpty {
-                        VStack(spacing: 8) {
+                        VStack(spacing: AppDesign.Spacing.xs) {
                             SVGIcon(markup: I.service, size: 40, color: C.subLabel)
                             Text(Tr("还没有提交过反馈")).font(pf(14)).foregroundColor(C.subLabel)
                         }
@@ -375,10 +375,10 @@ struct FeedbackHistoryView: View {
                     } else {
                         ForEach(rows) { r in
                             VStack(alignment: .leading, spacing: 8) {
-                                HStack(spacing: 8) {
+                                HStack(spacing: AppDesign.Spacing.xs) {
                                     Text(Tr(r.category ?? "功能异常"))
                                         .font(pf(13)).foregroundColor(.white)
-                                        .padding(.horizontal, 8).frame(height: 22)
+                                        .padding(.horizontal, AppDesign.Spacing.xs).frame(height: 22)
                                         .background(Capsule().fill(C.green.opacity(0.85)))
                                     Spacer(minLength: 0)
                                     Text((r.status ?? "pending") == "replied" ? Tr("已回复") : Tr("处理中"))
@@ -387,7 +387,7 @@ struct FeedbackHistoryView: View {
                                 }
                                 Text(r.content ?? "").font(pf(15)).foregroundColor(C.label)
                                 if let imgs = r.images, !imgs.isEmpty {
-                                    HStack(spacing: 4) {
+                                    HStack(spacing: AppDesign.Spacing.xxs) {
                                         ForEach(Array(imgs.prefix(3).enumerated()), id: \.offset) { _, s in
                                             RemoteImage(path: s, mode: .fill, maxSide: 400)
                                                 .frame(width: 62, height: 62)
@@ -410,7 +410,7 @@ struct FeedbackHistoryView: View {
                             .padding(14)
                             .background(C.cardBg)
                             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
-                            .padding(.horizontal, 12).padding(.top, 10)
+                            .padding(.horizontal, AppDesign.Spacing.sm).padding(.top, 10)
                         }
                     }
                     Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)

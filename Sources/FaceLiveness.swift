@@ -62,7 +62,7 @@ struct FacePrepView: View {
 
                     VStack(alignment: .leading, spacing: 0) {
                         ForEach(Array(tips.enumerated()), id: \.offset) { i, t in
-                            HStack(spacing: 12) {
+                            HStack(spacing: AppDesign.Spacing.sm) {
                                 Image(systemName: t.0)
                                     .font(.system(size: 15))
                                     .foregroundColor(green)
@@ -71,7 +71,7 @@ struct FacePrepView: View {
                                     .fixedSize(horizontal: false, vertical: true)
                                 Spacer(minLength: 0)
                             }
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, AppDesign.Spacing.md)
                             .frame(minHeight: 50)
                             if i < tips.count - 1 { HairLine(inset: 54) }
                         }
@@ -93,7 +93,7 @@ struct FacePrepView: View {
                     .font(pf(17, .medium)).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: AppDesign.Control.mediumControlHeight)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(green))
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppDesign.Spacing.md)
             }
             .buttonStyle(.plain)
             .padding(.bottom, max(12, L.safeBottom * 0.6))
@@ -208,7 +208,7 @@ struct FaceLivenessView: View {
                 .foregroundColor(C.subLabel)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
-                .padding(.top, 8)
+                .padding(.top, AppDesign.Spacing.xs)
 
             HStack(spacing: 10) {
                 ForEach(Array(plan.enumerated()), id: \.offset) { i, a in
@@ -217,7 +217,7 @@ struct FaceLivenessView: View {
                         .foregroundColor(i < idx ? green : C.subLabel.opacity(0.5))
                 }
             }
-            .padding(.top, 16)
+            .padding(.top, AppDesign.Spacing.md)
 
             Spacer(minLength: 16)
 
@@ -226,7 +226,7 @@ struct FaceLivenessView: View {
                 .foregroundColor(C.subLabel)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 36)
-                .padding(.bottom, 24)
+                .padding(.bottom, AppDesign.Spacing.xl)
         }
         .background(C.pageBg.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)

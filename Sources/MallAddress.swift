@@ -74,7 +74,7 @@ struct DDAddressListView: View {
     private func card(_ a: DDAddress) -> some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     Text(a.name.isEmpty ? Tr("未填收货人") : a.name)
                         .font(AppDesign.Type.rowTitleMedium).foregroundColor(DDColor.ink)
                     if !a.phone.isEmpty {
@@ -106,7 +106,7 @@ struct DDAddressListView: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(12)
+        .padding(AppDesign.Spacing.sm)
         .background(DDColor.card)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         .contentShape(Rectangle())
@@ -193,7 +193,7 @@ struct DDAddressEditView: View {
                             Text(m).font(AppDesign.Type.caption).foregroundColor(DDColor.sub)
                             Spacer(minLength: 0)
                         }
-                        .padding(.horizontal, 4)
+                        .padding(.horizontal, AppDesign.Spacing.xxs)
                     }
 
                     HStack(spacing: 10) {
@@ -260,7 +260,7 @@ struct DDAddressEditView: View {
 
     private func field(_ label: String, _ text: Binding<String>, _ idx: Int,
                        keyboard: UIKeyboardType) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Text(label).font(pf(15)).foregroundColor(DDColor.ink)
                 .frame(width: 132, alignment: .leading)
             TextField("", text: text)

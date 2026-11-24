@@ -981,7 +981,7 @@ struct StarMapView: View {
             }
             .buttonStyle(.plain)
 
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(.secondary)
@@ -1024,7 +1024,7 @@ struct StarMapView: View {
                     query = item.name ?? ""
                     model.select(item)
                 } label: {
-                    HStack(spacing: 12) {
+                    HStack(spacing: AppDesign.Spacing.sm) {
                         Image(systemName: "mappin.and.ellipse")
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundStyle(Color(hex: 0x33C7A1))
@@ -1091,7 +1091,7 @@ struct StarMapView: View {
             .padding(.horizontal, 3)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     ForEach(shortcutPlaces) { place in
                         let favorite = model.favoritePlaces.contains {
                             $0.id == place.id
@@ -1162,7 +1162,7 @@ struct StarMapView: View {
     }
 
     private var exploreCapsule: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(Tr("星轨地图"))
                     .font(AppDesign.Type.rowTitle)
@@ -1186,7 +1186,7 @@ struct StarMapView: View {
                 model.recenter()
             }
         }
-        .padding(.leading, 16)
+        .padding(.leading, AppDesign.Spacing.md)
         .padding(.trailing, 10)
         .frame(minHeight: 66)
         .background(.regularMaterial,
@@ -1201,7 +1201,7 @@ struct StarMapView: View {
 
     private func routeCapsule(_ route: MKRoute) -> some View {
         VStack(spacing: 13) {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 StarMapControlIcon(kind: .route, size: 44)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(model.destination?.name ?? Tr("目的地"))
@@ -1340,7 +1340,7 @@ struct StarMapView: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(16)
+        .padding(AppDesign.Spacing.md)
         .background(.regularMaterial,
                     in: RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
         .overlay {
@@ -1401,7 +1401,7 @@ struct StarMapView: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(16)
+        .padding(AppDesign.Spacing.md)
         .background(
             .regularMaterial,
             in: RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
@@ -1416,7 +1416,7 @@ struct StarMapView: View {
 
     private var routeOptions: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 ForEach(Array(model.routes.prefix(3).enumerated()),
                         id: \.offset) { index, value in
                     let selected = model.route.map {
@@ -1448,7 +1448,7 @@ struct StarMapView: View {
                                 .font(pf(11.5, .medium))
                                 .foregroundStyle(.secondary)
                         }
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, AppDesign.Spacing.sm)
                         .frame(width: 118, height: 70, alignment: .leading)
                         .background(
                             selected
@@ -1529,7 +1529,7 @@ struct StarMapView: View {
                 model.voiceGuidanceEnabled ? Tr("关闭语音") : Tr("开启语音")
             )
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .padding(.vertical, 14)
         .background(.regularMaterial,
                     in: RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
@@ -1641,7 +1641,7 @@ struct StarMapView: View {
                 .accessibilityLabel(Tr("结束导航"))
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .padding(.top, 13)
         .padding(.bottom, 14)
         .background(.regularMaterial,
@@ -2018,7 +2018,7 @@ private struct StarNavigationHUD: View {
 
                 Spacer(minLength: 8)
 
-                HStack(spacing: 24) {
+                HStack(spacing: AppDesign.Spacing.xl) {
                     StarManeuverIcon(
                         kind: Self.maneuverKind(for: model.nextInstruction),
                         size: min(118, UIScreen.main.bounds.height * 0.15)
@@ -2047,7 +2047,7 @@ private struct StarNavigationHUD: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
                 if !model.followingInstruction.isEmpty {
-                    HStack(spacing: 12) {
+                    HStack(spacing: AppDesign.Spacing.sm) {
                         Image(systemName: "arrow.turn.down.right")
                             .font(.system(size: 20, weight: .semibold))
                         Text(model.followingInstruction)

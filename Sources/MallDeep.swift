@@ -132,7 +132,7 @@ struct DDStarPicker: View {
                 .buttonStyle(.plain)
             }
             Text(value >= 5 ? Tr("非常满意") : (value == 4 ? Tr("满意") : (value == 3 ? Tr("一般") : Tr("不满意"))))
-                .font(pf(13)).foregroundColor(DDColor.sub).padding(.leading, 4)
+                .font(pf(13)).foregroundColor(DDColor.sub).padding(.leading, AppDesign.Spacing.xxs)
         }
     }
 }
@@ -152,7 +152,7 @@ struct DDReviewSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Image(systemName: "quote.bubble.fill")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(DDColor.redDeep)
@@ -177,7 +177,7 @@ struct DDReviewSection: View {
                         .font(pf(13)).foregroundColor(DDColor.sub)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(12)
+                .padding(AppDesign.Spacing.sm)
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                     .fill(DDColor.page.opacity(0.72)))
             } else {
@@ -201,7 +201,7 @@ struct DDReviewSection: View {
                     }
                     Spacer(minLength: 0)
                 }
-                .padding(12)
+                .padding(AppDesign.Spacing.sm)
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                     .fill(DDColor.redLight.opacity(0.66)))
                 ForEach(list.prefix(2)) { r in
@@ -226,7 +226,7 @@ struct DDReviewRow: View {
     let review: DDReview
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Circle().fill(DDColor.page).frame(width: 26, height: 26)
                     .overlay(Image(systemName: "person.fill").font(.system(size: 12)).foregroundColor(DDColor.sub))
                 Text(review.name).font(pf(13)).foregroundColor(DDColor.ink)
@@ -234,7 +234,7 @@ struct DDReviewRow: View {
                 Spacer(minLength: 0)
                 if review.isDemo {
                     Text(Tr("示例")).font(pf(10)).foregroundColor(DDColor.sub)
-                        .padding(.horizontal, 4).frame(height: 14)
+                        .padding(.horizontal, AppDesign.Spacing.xxs).frame(height: 14)
                         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.micro).fill(DDColor.page))
                 }
             }
@@ -254,7 +254,7 @@ struct DDReviewRow: View {
                 }
             }
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, AppDesign.Spacing.xs)
         .overlay(HairLine(), alignment: .bottom)
     }
     private func shortDay(_ d: Date) -> String {
@@ -282,7 +282,7 @@ struct DDReviewListView: View {
             DDSheetBar(title: Tr("商品评价"))
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
-                    HStack(spacing: 8) {
+                    HStack(spacing: AppDesign.Spacing.xs) {
                         reviewFilter(Tr("全部") + " " + String(all.count), 0)
                         reviewFilter(Tr("好评"), 1)
                         reviewFilter(Tr("有图"), 2)
@@ -313,7 +313,7 @@ struct DDReviewListView: View {
             Text(title)
                 .font(pf(12.5, filter == value ? .semibold : .regular))
                 .foregroundColor(filter == value ? DDColor.red : DDColor.sub)
-                .padding(.horizontal, 12)
+                .padding(.horizontal, AppDesign.Spacing.sm)
                 .frame(height: AppDesign.Control.sectionHeaderHeight)
                 .background(Capsule().fill(filter == value ? DDColor.redLight : DDColor.page))
         }
@@ -342,7 +342,7 @@ struct DDParamSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(Tr("规格参数")).font(pf(15, .semibold)).foregroundColor(DDColor.ink)
-                .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 8)
+                .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, AppDesign.Spacing.xs)
             ForEach(rows.indices, id: \.self) { i in
                 HStack(alignment: .top, spacing: 10) {
                     Text(rows[i][0]).font(pf(13)).foregroundColor(DDColor.sub)
@@ -399,7 +399,7 @@ struct DDDetailLongSection: View {
                     .font(pf(13)).foregroundColor(DDColor.sub)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(12)
+            .padding(AppDesign.Spacing.sm)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(DDColor.page.opacity(0.6))
             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
@@ -457,7 +457,7 @@ struct DDSpecSheet: View {
                     Text(Tr("规格")).font(pf(14, .medium)).foregroundColor(DDColor.ink)
 
                     ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
+                        HStack(spacing: AppDesign.Spacing.xs) {
                             ForEach(list) { v in
                                 Button { picked = v.name } label: {
                                     Text(v.name)
@@ -507,7 +507,7 @@ struct DDShopPageView: View {
     var body: some View {
         VStack(spacing: 0) {
             DDSheetBar(title: shop)
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Circle().fill(DDColor.redLight).frame(width: 44, height: 44)
                     .overlay(Text("店").font(AppDesign.Type.rowTitle).foregroundColor(DDColor.red))
                 VStack(alignment: .leading, spacing: 3) {
@@ -563,13 +563,13 @@ struct DDServiceSheet: View {
                             }
                             Spacer(minLength: 0)
                         }
-                        .padding(12)
+                        .padding(AppDesign.Spacing.sm)
                         .background(DDColor.card)
                         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
                     }
                     VStack(alignment: .leading, spacing: 0) {
                         Text(Tr("常见问题")).font(pf(14, .semibold)).foregroundColor(DDColor.ink)
-                            .padding(.horizontal, 14).padding(.top, 12).padding(.bottom, 6)
+                            .padding(.horizontal, 14).padding(.top, AppDesign.Spacing.sm).padding(.bottom, 6)
                         ForEach(faq, id: \.self) { q in
                             HStack {
                                 Text(Tr(q)).font(pf(14)).foregroundColor(DDColor.ink)
@@ -668,7 +668,7 @@ struct DDShareSheet: View {
                     Spacer(minLength: 0)
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
 
             ShareBrandRail { brand in
                 let payload = "https://aa.x8iu.com/#mall/" + product.id + "\n" + product.title
@@ -678,15 +678,15 @@ struct DDShareSheet: View {
                     app.show(Tr("内容已复制，请确认已安装") + Tr(brand.label))
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
+            .padding(.top, AppDesign.Spacing.md)
 
             Text(Tr("更多操作"))
                 .font(AppDesign.Type.section)
                 .foregroundStyle(ShareSheetTheme.secondaryInk(scheme))
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16)
-                .padding(.top, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
+                .padding(.top, AppDesign.Spacing.md)
 
             HStack(alignment: .top, spacing: 8) {
                 ShareActionTile(title: "转发给朋友",
@@ -709,7 +709,7 @@ struct DDShareSheet: View {
                 }
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .padding(.top, 18)
 
             Button { dismiss() } label: {
@@ -903,13 +903,13 @@ struct DDOrderDetailView: View {
                 }
             }
         }
-        .padding(12)
+        .padding(AppDesign.Spacing.sm)
         .background(DDColor.card)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
     }
 
     private func priceCard(_ o: DDOrder) -> some View {
-        VStack(spacing: 8) {
+        VStack(spacing: AppDesign.Spacing.xs) {
             row(Tr("商品金额"), "¥" + moneyFmt(o.price * Double(o.count)))
             row(Tr("运费"), o.freight > 0 ? ("¥" + moneyFmt(o.freight)) : Tr("包邮"))
             if o.couponOff > 0 { row(Tr("优惠券"), "-¥" + moneyFmt(o.couponOff), red: true) }
@@ -975,7 +975,7 @@ struct DDOrderDetailView: View {
                 }
                 small(Tr("客服"), false) { showService = true }
             }
-            .padding(.horizontal, 12).padding(.top, 8)
+            .padding(.horizontal, AppDesign.Spacing.sm).padding(.top, AppDesign.Spacing.xs)
             .padding(.bottom, max(8, L.safeBottom * 0.6))
         }
         .background(DDColor.card)
@@ -1073,13 +1073,13 @@ struct DDAfterSaleSheet: View {
                         }
                         Spacer(minLength: 0)
                     }
-                    .padding(12)
+                    .padding(AppDesign.Spacing.sm)
                     .background(DDColor.card)
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text(Tr("售后类型")).font(pf(14, .medium)).foregroundColor(DDColor.ink)
-                        HStack(spacing: 8) {
+                        HStack(spacing: AppDesign.Spacing.xs) {
                             ForEach(kinds, id: \.self) { k in
                                 Button { kind = k } label: {
                                     Text(Tr(k))
@@ -1099,7 +1099,7 @@ struct DDAfterSaleSheet: View {
 
                     VStack(alignment: .leading, spacing: 0) {
                         Text(Tr("退款原因")).font(pf(14, .medium)).foregroundColor(DDColor.ink)
-                            .padding(.horizontal, 14).padding(.top, 12).padding(.bottom, 4)
+                            .padding(.horizontal, 14).padding(.top, AppDesign.Spacing.sm).padding(.bottom, AppDesign.Spacing.xxs)
                         ForEach(reasons, id: \.self) { r in
                             Button { reason = r } label: {
                                 HStack {
@@ -1120,7 +1120,7 @@ struct DDAfterSaleSheet: View {
 
                     TextField(Tr("补充说明（可不填）"), text: $text)
                         .font(pf(14))
-                        .padding(.horizontal, 12).frame(height: AppDesign.Control.compactHeight)
+                        .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.compactHeight)
                         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small).fill(DDColor.card))
                     Spacer().frame(height: 6)
                 }
@@ -1165,7 +1165,7 @@ struct DDReviewEditSheet: View {
                         Text(order.title).font(AppDesign.Type.body).foregroundColor(DDColor.ink).lineLimit(2)
                         Spacer(minLength: 0)
                     }
-                    .padding(12)
+                    .padding(AppDesign.Spacing.sm)
                     .background(DDColor.card)
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
 
@@ -1245,7 +1245,7 @@ struct DDCouponSheet: View {
                     ForEach(store.coupons) { c in
                         let ok = store.couponUsable(c, total: total)
                         Button { onPick(c); dismiss() } label: {
-                            HStack(spacing: 12) {
+                            HStack(spacing: AppDesign.Spacing.sm) {
                                 VStack(spacing: 2) {
                                     Text("¥" + moneyFmt(c.off)).font(pf(20, .semibold))
                                         .foregroundColor(ok ? DDColor.red : DDColor.sub)
@@ -1261,7 +1261,7 @@ struct DDCouponSheet: View {
                                 Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold))
                                     .foregroundColor(DDColor.sub.opacity(0.6))
                             }
-                            .padding(12)
+                            .padding(AppDesign.Spacing.sm)
                             .background(DDColor.card)
                             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
                             .opacity(ok ? 1 : 0.55)
@@ -1290,7 +1290,7 @@ struct DDAfterSaleListView: View {
         VStack(spacing: 0) {
             DDSheetBar(title: Tr("退款/售后"))
             if store.afterSales.isEmpty {
-                VStack(spacing: 8) {
+                VStack(spacing: AppDesign.Spacing.xs) {
                     Image(systemName: "arrow.uturn.backward.circle")
                         .font(.system(size: 38, weight: .light)).foregroundColor(DDColor.sub.opacity(0.7))
                     Text(Tr("还没有售后记录")).font(pf(14.5)).foregroundColor(DDColor.sub)
@@ -1321,7 +1321,7 @@ struct DDAfterSaleListView: View {
                                     .buttonStyle(.plain)
                                 }
                             }
-                            .padding(12)
+                            .padding(AppDesign.Spacing.sm)
                             .background(DDColor.card)
                             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
                         }
@@ -1432,7 +1432,7 @@ struct DDShopFollowListView: View {
         VStack(spacing: 0) {
             DDSheetBar(title: Tr("关注的店铺"))
             if shops.isEmpty {
-                VStack(spacing: 8) {
+                VStack(spacing: AppDesign.Spacing.xs) {
                     Image(systemName: "heart.circle")
                         .font(.system(size: 38, weight: .light)).foregroundColor(DDColor.sub.opacity(0.7))
                     Text(Tr("还没有关注的店铺")).font(pf(14.5)).foregroundColor(DDColor.sub)
@@ -1443,7 +1443,7 @@ struct DDShopFollowListView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 10) {
                         ForEach(shops, id: \.key) { s in
-                            HStack(spacing: 12) {
+                            HStack(spacing: AppDesign.Spacing.sm) {
                                 Circle().fill(DDColor.redLight).frame(width: 40, height: 40)
                                     .overlay(Text("店").font(pf(15, .semibold)).foregroundColor(DDColor.red))
                                 VStack(alignment: .leading, spacing: 3) {
@@ -1468,7 +1468,7 @@ struct DDShopFollowListView: View {
                                 }
                                 .buttonStyle(.plain)
                             }
-                            .padding(12)
+                            .padding(AppDesign.Spacing.sm)
                             .background(DDColor.card)
                             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
                         }
@@ -1490,7 +1490,7 @@ struct DDMyReviewsView: View {
         VStack(spacing: 0) {
             DDSheetBar(title: Tr("我的评价"))
             if mine.isEmpty {
-                VStack(spacing: 8) {
+                VStack(spacing: AppDesign.Spacing.xs) {
                     Image(systemName: "star.bubble")
                         .font(.system(size: 38, weight: .light)).foregroundColor(DDColor.sub.opacity(0.7))
                     Text(Tr("还没有评价过")).font(pf(14.5)).foregroundColor(DDColor.sub)

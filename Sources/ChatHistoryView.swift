@@ -202,7 +202,7 @@ struct ChatHistoryView: View {
     }
 
     private func chatRow(_ chat: API.StorageChat) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Avatar(path: chat.avatar ?? "", size: 40, radius: 12)
             VStack(alignment: .leading, spacing: 3) {
                 Text(title(chat))
@@ -227,7 +227,7 @@ struct ChatHistoryView: View {
                            color: Color,
                            action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Image(systemName: symbol)
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(.white)

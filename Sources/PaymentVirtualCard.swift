@@ -36,8 +36,8 @@ struct VirtualCardView: View {
                     errorBlock
                     Color.clear.frame(height: max(24, L.safeBottom + 12))
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
+                .padding(.horizontal, AppDesign.Spacing.md)
+                .padding(.top, AppDesign.Spacing.sm)
             }
             .background(PayVisual.canvas)
         }
@@ -68,7 +68,7 @@ struct VirtualCardView: View {
     }
 
     private var noticeBlock: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppDesign.Spacing.xs) {
             Image(systemName: "info.circle.fill")
                 .foregroundStyle(PayVisual.warning)
             Text(Tr(info?.notice ?? "星言内部虚拟卡号，不是 Visa / Mastercard，不能在外部商户使用"))
@@ -82,7 +82,7 @@ struct VirtualCardView: View {
     }
 
     private var issueBlock: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: AppDesign.Spacing.sm) {
             Text(Tr("生成一张仅在星言支付系统内使用的设备虚拟卡号"))
                 .font(pf(14))
                 .foregroundStyle(PayVisual.secondaryInk)
@@ -95,7 +95,7 @@ struct VirtualCardView: View {
             .buttonStyle(PayPrimaryButtonStyle(tint: PayVisual.tint, enabled: !busy))
             .disabled(busy)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
     }
 
     @ViewBuilder
@@ -105,7 +105,7 @@ struct VirtualCardView: View {
                 .font(AppDesign.Type.caption)
                 .foregroundStyle(PayVisual.danger)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 20)
+                .padding(.horizontal, AppDesign.Spacing.lg)
         }
     }
 
@@ -130,7 +130,7 @@ struct VirtualCardView: View {
                     .padding(.horizontal, 10)
                     .frame(height: 26)
                     .background(.red.opacity(0.76), in: Capsule())
-                    .padding(16)
+                    .padding(AppDesign.Spacing.md)
             }
         }
     }

@@ -122,7 +122,7 @@ struct NewUserOnboardingView: View {
                     .lineSpacing(5)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity)
-                    .padding(.top, 12)
+                    .padding(.top, AppDesign.Spacing.sm)
 
                 Button { showPicker = true } label: {
                     ZStack {
@@ -189,7 +189,7 @@ struct NewUserOnboardingView: View {
                         .font(pfStyled(size: 13))
                         .foregroundColor(C.red)
                         .multilineTextAlignment(.center)
-                        .padding(.top, 12)
+                        .padding(.top, AppDesign.Spacing.sm)
                 }
 
                 Text(Tr("建议使用本人照片或能代表你的头像\n之后可以在「我 → 个人资料」里更换"))
@@ -197,7 +197,7 @@ struct NewUserOnboardingView: View {
                     .foregroundColor(C.subLabel.opacity(0.82))
                     .multilineTextAlignment(.center)
                     .lineSpacing(4)
-                    .padding(.top, 24)
+                    .padding(.top, AppDesign.Spacing.xl)
             }
         }
     }
@@ -303,7 +303,7 @@ struct NewUserOnboardingView: View {
                     finish()
                 }
             } label: {
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     if saving {
                         ProgressView().tint(.white)
                     }

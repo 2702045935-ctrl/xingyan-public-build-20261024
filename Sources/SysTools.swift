@@ -59,13 +59,13 @@ struct SysToolsView: View {
                             .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                         Spacer(minLength: 0)
                     }
-                    .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 8)
+                    .padding(.horizontal, AppDesign.Spacing.md).padding(.top, AppDesign.Spacing.sm).padding(.bottom, AppDesign.Spacing.xs)
 
                     VStack(spacing: 0) {
                         ForEach(Array(items.enumerated()), id: \.offset) { i, it in
                             if i > 0 { HairLine(inset: 56) }
                             Button { onPick(it.key) } label: {
-                                HStack(spacing: 12) {
+                                HStack(spacing: AppDesign.Spacing.sm) {
                                     Image(systemName: it.icon)
                                         .font(.system(size: 17))
                                         .foregroundColor(C.green)
@@ -80,7 +80,7 @@ struct SysToolsView: View {
                                         .font(.system(size: 11, weight: .semibold))
                                         .foregroundColor(C.subLabel)
                                 }
-                                .padding(.horizontal, 16).frame(height: 58)
+                                .padding(.horizontal, AppDesign.Spacing.md).frame(height: 58)
                                 .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
@@ -88,7 +88,7 @@ struct SysToolsView: View {
                     }
                     .background(C.cardBg)
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, AppDesign.Spacing.sm)
 
                     Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }

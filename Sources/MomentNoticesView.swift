@@ -33,7 +33,7 @@ struct MomentNoticesView: View {
                     Spacer(minLength: 0)
                 } else if items.isEmpty {
                     Spacer(minLength: 0)
-                    VStack(spacing: 12) {
+                    VStack(spacing: AppDesign.Spacing.sm) {
                         Image(systemName: "bell.slash")
                             .font(.system(size: 34))
                             .foregroundColor(C.time)
@@ -47,7 +47,7 @@ struct MomentNoticesView: View {
                         LazyVStack(spacing: 0) {
                             ForEach(items) { n in row(n) }
                         }
-                        .padding(.bottom, 24)
+                        .padding(.bottom, AppDesign.Spacing.xl)
                     }
                 }
             }
@@ -122,8 +122,8 @@ struct MomentNoticesView: View {
                         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous))
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.horizontal, AppDesign.Spacing.md)
+            .padding(.vertical, AppDesign.Spacing.sm)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

@@ -355,7 +355,7 @@ struct MiniAppsView: View {
         Button {
             runApp(item)
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 appIcon(item)
 
                 VStack(alignment: .leading, spacing: 3) {
@@ -432,7 +432,7 @@ struct MiniAppsView: View {
     }
 
     private var emptyServiceRow: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: AppDesign.Spacing.xs) {
             Image(systemName: "square.stack.3d.up")
                 .font(.title2)
                 .foregroundStyle(.secondary)
@@ -529,7 +529,7 @@ private struct MiniAppCategoryListView: View {
             selection = id
             dismiss()
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Image(systemName: symbol)
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(tint)
@@ -600,7 +600,7 @@ struct MiniAppRuntimeView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                VStack(spacing: 12) {
+                VStack(spacing: AppDesign.Spacing.sm) {
                     Text(errorText.isEmpty ? Tr("打不开") : errorText)
                         .font(pf(14)).foregroundColor(.white.opacity(0.8))
                         .multilineTextAlignment(.center).padding(.horizontal, 30)
@@ -618,7 +618,7 @@ struct MiniAppRuntimeView: View {
                 onMenu: { capsuleMenu = true },
                 onClose: { dismiss() }
             )
-            .padding(.top, 8)
+            .padding(.top, AppDesign.Spacing.xs)
             .padding(.trailing, 10)
 
             if localIndex != nil {
@@ -636,7 +636,7 @@ struct MiniAppRuntimeView: View {
                                 .overlay(Circle().stroke(Color.white.opacity(0.18), lineWidth: 0.5))
                         }
                         .buttonStyle(.plain)
-                        .padding(.trailing, 12)
+                        .padding(.trailing, AppDesign.Spacing.sm)
                         .padding(.bottom, 18)
                     }
                 }

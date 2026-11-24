@@ -1032,7 +1032,7 @@ struct SwipeChatRow: View {
                               width: CGFloat,
                               action: @escaping () -> Void) -> some View {
         return Button(action: action) {
-            VStack(spacing: 4) {
+            VStack(spacing: AppDesign.Spacing.xxs) {
                 Image(systemName: symbol)
                     .font(.system(size: 17, weight: .semibold))
                 Text(title)
@@ -1465,7 +1465,7 @@ struct ChatsView: View {
                         chooseFilter(item)
                         showChatFilterSheet = false
                     } label: {
-                        HStack(spacing: 12) {
+                        HStack(spacing: AppDesign.Spacing.sm) {
                             Image(systemName: item.symbol)
                                 .font(.system(size: 16, weight: .medium))
                                 .frame(width: 24)
@@ -1506,7 +1506,7 @@ struct ChatsView: View {
                         Button {
                             chooseFilter(item)
                         } label: {
-                            HStack(spacing: 4) {
+                            HStack(spacing: AppDesign.Spacing.xxs) {
                                 Text(Tr(item.rawValue))
                                     .font(pfStyled(size: 14,
                                                    weight: chatFilter == item ? .semibold : .medium))
@@ -1544,7 +1544,7 @@ struct ChatsView: View {
                         .buttonStyle(AppSegmentPressStyle())
                     }
                 }
-                .padding(.horizontal, 8)
+                .padding(.horizontal, AppDesign.Spacing.xs)
                 .frame(minWidth: geo.size.width, alignment: .leading)
             }
         }
@@ -1635,7 +1635,7 @@ struct ChatsView: View {
             }
             .frame(maxWidth: .infinity)
 
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Button {
                     showAccounts = true
                 } label: {
@@ -1695,7 +1695,7 @@ struct ChatsView: View {
                 .accessibilityLabel(Tr("更多"))
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(maxWidth: chatsContentMaxWidth)
         .frame(maxWidth: .infinity)
         .frame(height: chatsHeaderH)
@@ -1747,7 +1747,7 @@ struct ChatsView: View {
         }
         .buttonStyle(AppPressStyle())
         .accessibilityLabel(Tr("搜索"))
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(maxWidth: chatsContentMaxWidth)
         .frame(maxWidth: .infinity)
         .frame(height: chatsSearchH)
@@ -1842,7 +1842,7 @@ struct ChatsView: View {
             HStack(alignment: .center, spacing: 10) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(floorGreeting).font(pf(17, .medium)).foregroundColor(look.ink)
-                    HStack(spacing: 4) {
+                    HStack(spacing: AppDesign.Spacing.xxs) {
                         Image(systemName: look.icon).font(.system(size: 11.5, weight: .semibold))
                         Text(floorWeatherLine(look)).font(AppDesign.Type.caption)
                     }
@@ -1924,7 +1924,7 @@ struct ChatsView: View {
                         .lineLimit(1)
                         .frame(maxWidth: .infinity)
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
 
                 .frame(height: max(44, floorBottomHNow))
                 .frame(maxWidth: .infinity)
@@ -1941,7 +1941,7 @@ struct ChatsView: View {
             .buttonStyle(.plain)
             .modifier(FloorPop(up: floorUp, t: t, delay: 0.24))
         }
-        .padding(.top, 8)
+        .padding(.top, AppDesign.Spacing.xs)
         .frame(maxWidth: .infinity)
 
     }
@@ -1965,7 +1965,7 @@ struct ChatsView: View {
     @ViewBuilder private func floorCard<V: View>(look: MallWeatherLook,
                                                  @ViewBuilder _ content: () -> V) -> some View {
         VStack(spacing: 0) { content() }
-            .padding(.vertical, 12)
+            .padding(.vertical, AppDesign.Spacing.sm)
             .background(RoundedRectangle(
                 cornerRadius: AppDesign.Radius.row,
                 style: .continuous
@@ -2298,7 +2298,7 @@ struct ChatsView: View {
                         .frame(width: 38, height: 38)
                         .background(.ultraThinMaterial, in: Circle())
                 }
-                .padding(.trailing, 12)
+                .padding(.trailing, AppDesign.Spacing.sm)
                 .accessibilityLabel(Tr("管理官方账号"))
             }
         }
@@ -2410,7 +2410,7 @@ struct ChatsView: View {
                         .frame(width: 38, height: 38)
                         .background(.ultraThinMaterial, in: Circle())
                 }
-                .padding(.trailing, 12)
+                .padding(.trailing, AppDesign.Spacing.sm)
                 .accessibilityLabel(Tr("管理支付官方号"))
             }
         }
@@ -2500,7 +2500,7 @@ struct ChatsView: View {
                         .frame(width: 38, height: 38)
                         .background(.ultraThinMaterial, in: Circle())
                 }
-                .padding(.trailing, 12)
+                .padding(.trailing, AppDesign.Spacing.sm)
                 .accessibilityLabel(Tr("管理天气账号"))
             }
         }
@@ -3351,7 +3351,7 @@ struct ChatsView: View {
     }
 
     private var chatListEmptyState: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: AppDesign.Spacing.xxs) {
             if app.loadingChats && app.chats.isEmpty && app.loadError == nil {
                 ProgressView()
                     .controlSize(.small)
@@ -3555,7 +3555,7 @@ struct MiniAppSearchView: View {
                             dismiss()
                             onOpen(m)
                         } label: {
-                            HStack(spacing: 12) {
+                            HStack(spacing: AppDesign.Spacing.sm) {
                                 ZStack {
                                     RoundedRectangle(
                                         cornerRadius: AppDesign.Radius.mini,
@@ -3581,7 +3581,7 @@ struct MiniAppSearchView: View {
                                 Spacer(minLength: 8)
                                 Chevron(size: 9, line: 1.6)
                             }
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, AppDesign.Spacing.md)
                             .frame(height: AppDesign.Control.menuRowHeight)
                             .contentShape(Rectangle())
                         }
@@ -3589,7 +3589,7 @@ struct MiniAppSearchView: View {
                         HairLine(inset: 64)
                     }
                     if hits.isEmpty {
-                        VStack(spacing: 8) {
+                        VStack(spacing: AppDesign.Spacing.xs) {
                             Image(systemName: "magnifyingglass")
                                 .font(.system(size: 26))
                                 .foregroundColor(C.subLabel.opacity(0.6))

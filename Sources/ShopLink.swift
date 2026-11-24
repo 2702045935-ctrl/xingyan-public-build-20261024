@@ -162,7 +162,7 @@ struct ShopLinkCard: View {
                     }
                     ForEach(link.prices.indices, id: \.self) { i in
                         let p = link.prices[i]
-                        HStack(spacing: 4) {
+                        HStack(spacing: AppDesign.Spacing.xxs) {
                             Text("团")
                                 .font(pf(10, .semibold))
                                 .foregroundColor(.white)
@@ -194,7 +194,7 @@ struct ShopLinkCard: View {
 
     private var simpleBody: some View {
         WeChatMessageCard {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
 
                 if !link.image.isEmpty {
                     RemoteImage(path: link.image, mode: .fill, maxSide: 240)

@@ -64,20 +64,20 @@ struct PayCodePage: View {
                         .font(pf(16))
                         .foregroundColor(C.label)
                         .frame(height: L.navH)
-                        .padding(.trailing, 16)
+                        .padding(.trailing, AppDesign.Spacing.md)
                 }
                 .buttonStyle(.plain)
             }
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 16) {
+                VStack(spacing: AppDesign.Spacing.md) {
                     identityCard
                     codeCard
                     receiveButton
                     securityNote
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 16)
+                .padding(.horizontal, AppDesign.Spacing.lg)
+                .padding(.top, AppDesign.Spacing.md)
                 .padding(.bottom, max(28, L.safeBottom))
             }
             .background(PayVisual.canvas)
@@ -100,7 +100,7 @@ struct PayCodePage: View {
     }
 
     private var identityCard: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Avatar(path: info?.user?.avatar ?? app.me?.avatar ?? "", size: 44, radius: 22)
             VStack(alignment: .leading, spacing: 3) {
                 Text(info?.user?.nickname ?? app.me?.nickname ?? Tr("我"))
@@ -113,7 +113,7 @@ struct PayCodePage: View {
             Spacer(minLength: 8)
             PayStatusPill(text: Tr("安全动态码"), tone: .processing)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(height: 70)
         .background(PayVisual.card)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
@@ -123,8 +123,8 @@ struct PayCodePage: View {
         VStack(spacing: 0) {
             if let info = info {
                 BarcodeView(text: info.code ?? "", height: 78)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 24)
+                    .padding(.horizontal, AppDesign.Spacing.lg)
+                    .padding(.top, AppDesign.Spacing.xl)
                 Text(info.grouped ?? "")
                     .font(pfStyled(size: 19, weight: .semibold, design: .monospaced))
                     .foregroundColor(C.label)
@@ -141,11 +141,11 @@ struct PayCodePage: View {
                         .font(pf(12))
                 }
                 .foregroundColor(PayVisual.secondaryInk)
-                .padding(.horizontal, 12)
+                .padding(.horizontal, AppDesign.Spacing.sm)
                 .frame(height: AppDesign.Control.sectionHeaderHeight)
                 .background(PayVisual.inset, in: Capsule())
-                .padding(.top, 16)
-                .padding(.bottom, 24)
+                .padding(.top, AppDesign.Spacing.md)
+                .padding(.bottom, AppDesign.Spacing.xl)
             } else if loading {
                 ProgressView().padding(.vertical, 60)
             } else {
@@ -158,7 +158,7 @@ struct PayCodePage: View {
                         .foregroundColor(PayVisual.secondaryInk)
                         .multilineTextAlignment(.center)
                 }
-                .padding(.horizontal, 24)
+                .padding(.horizontal, AppDesign.Spacing.xl)
                 .padding(.vertical, 46)
             }
         }
@@ -169,7 +169,7 @@ struct PayCodePage: View {
 
     private var receiveButton: some View {
         Button { showReceive = true } label: {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Image(systemName: "qrcode")
                     .font(.system(size: 17, weight: .medium))
                 Text(Tr("二维码收款"))
@@ -178,7 +178,7 @@ struct PayCodePage: View {
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(Color.white.opacity(0.72))
             }
-            .padding(.horizontal, 4)
+            .padding(.horizontal, AppDesign.Spacing.xxs)
         }
         .buttonStyle(PayPrimaryButtonStyle(tint: PayVisual.tint))
     }
@@ -254,7 +254,7 @@ struct ReceiveCodePage: View {
                         }
                     }
 
-                    HStack(spacing: 12) {
+                    HStack(spacing: AppDesign.Spacing.sm) {
                         Avatar(path: info?.user?.avatar ?? app.me?.avatar ?? "", size: 46, radius: 6)
                         VStack(alignment: .leading, spacing: 3) {
                             Text(info?.user?.nickname ?? app.me?.nickname ?? "")
@@ -264,7 +264,7 @@ struct ReceiveCodePage: View {
                         }
                         Spacer(minLength: 0)
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppDesign.Spacing.md)
                     .frame(height: 70)
                     .background(PayVisual.card)
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
@@ -288,9 +288,9 @@ struct ReceiveCodePage: View {
                         .font(AppDesign.Type.caption)
                         .foregroundColor(PayVisual.secondaryInk)
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, AppDesign.Spacing.lg)
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, AppDesign.Spacing.lg)
                 .padding(.top, 18)
                 .padding(.bottom, max(28, L.safeBottom))
             }
@@ -324,7 +324,7 @@ struct ReceiveCodePage: View {
                 Spacer(minLength: 0)
                 Chevron(size: 9, line: 1.6)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .frame(height: AppDesign.Control.profileRowHeight)
             .contentShape(Rectangle())
         }
@@ -378,7 +378,7 @@ struct PayConfirmPage: View {
                     .padding(.top, 18)
 
                     PayGroupCard {
-                        VStack(spacing: 8) {
+                        VStack(spacing: AppDesign.Spacing.xs) {
                             Text(Tr("付款金额"))
                                 .font(AppDesign.Type.captionMedium)
                                 .foregroundColor(PayVisual.secondaryInk)
@@ -402,7 +402,7 @@ struct PayConfirmPage: View {
 
                     if hasPwd {
                         PayGroupCard {
-                            VStack(spacing: 12) {
+                            VStack(spacing: AppDesign.Spacing.sm) {
                                 HStack {
                                     Label(Tr("支付密码"), systemImage: "lock.fill")
                                         .font(pf(15, .medium))
@@ -413,13 +413,13 @@ struct PayConfirmPage: View {
                                         .foregroundColor(PayVisual.secondaryInk)
                                 }
                                 .padding(.horizontal, 18)
-                                .padding(.top, 16)
+                                .padding(.top, AppDesign.Spacing.md)
 
                                 PayDotField(count: password.count, height: 50)
                                     .contentShape(Rectangle())
                                     .onTapGesture { pwdFocus = true }
-                                    .padding(.horizontal, 16)
-                                    .padding(.bottom, 16)
+                                    .padding(.horizontal, AppDesign.Spacing.md)
+                                    .padding(.bottom, AppDesign.Spacing.md)
 
                                 TextField("", text: $password)
                                     .keyboardType(.numberPad)
@@ -452,7 +452,7 @@ struct PayConfirmPage: View {
                         Text(Tr("还没设置支付密码（我 → 设置 → 账号与安全 → 支付密码）"))
                             .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                             .multilineTextAlignment(.center)
-                            .padding(.horizontal, 24)
+                            .padding(.horizontal, AppDesign.Spacing.xl)
                     }
 
                     if !hint.isEmpty {
@@ -460,7 +460,7 @@ struct PayConfirmPage: View {
                             .font(AppDesign.Type.body)
                             .foregroundColor(Color(hex: 0xE5484D))
                             .multilineTextAlignment(.center)
-                            .padding(.horizontal, 24)
+                            .padding(.horizontal, AppDesign.Spacing.xl)
                     }
 
                     Button { Task { await pay() } } label: {
@@ -478,7 +478,7 @@ struct PayConfirmPage: View {
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 30)
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, AppDesign.Spacing.lg)
                 .padding(.bottom, max(28, L.safeBottom))
             }
             .background(PayVisual.canvas)

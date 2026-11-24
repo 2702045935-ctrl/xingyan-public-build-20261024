@@ -307,7 +307,7 @@ struct AppearanceView: View {
                         selected: effectiveMode == "dark"
                     )
                 }
-                .padding(.vertical, 8)
+                .padding(.vertical, AppDesign.Spacing.xs)
                 .listRowInsets(EdgeInsets(top: 10, leading: 20, bottom: 12, trailing: 20))
                 .listRowBackground(Color.clear)
             }
@@ -419,7 +419,7 @@ private struct AppearanceHomePreview: View {
                 }
                 .padding(6)
 
-            VStack(spacing: 8) {
+            VStack(spacing: AppDesign.Spacing.xs) {
                 HStack {
                     Text("9:41")
                         .font(.system(size: 7.5, weight: .semibold, design: .rounded))
@@ -553,7 +553,7 @@ struct LanguageView: View {
                     Button {
                         setLanguage(option.code)
                     } label: {
-                        HStack(spacing: 12) {
+                        HStack(spacing: AppDesign.Spacing.sm) {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(option.name)
                                     .foregroundStyle(.primary)

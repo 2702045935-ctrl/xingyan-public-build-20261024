@@ -60,7 +60,7 @@ struct StarOrbitHero: View {
                 }
 
                 if !metrics.isEmpty {
-                    HStack(spacing: 8) {
+                    HStack(spacing: AppDesign.Spacing.xs) {
                         ForEach(metrics) { metric in
                             HStack(spacing: 5) {
                                 Text(metric.value)
@@ -78,7 +78,7 @@ struct StarOrbitHero: View {
                     }
                 }
             }
-            .padding(16)
+            .padding(AppDesign.Spacing.md)
         }
         .frame(maxWidth: .infinity)
         .frame(height: 170)
@@ -483,7 +483,7 @@ struct StarOrbitTagsView: View {
         VStack(spacing: 0) {
             NavBar(title: Tr("标签"), back: { dismiss() })
             ScrollView {
-                LazyVStack(spacing: 12) {
+                LazyVStack(spacing: AppDesign.Spacing.sm) {
                     StarOrbitHero(
                         kicker: "联系人星图",
                         title: Tr("标签"),
@@ -495,10 +495,10 @@ struct StarOrbitTagsView: View {
                             StarOrbitMetric(value: "\(groups.reduce(0) { $0 + $1.users.count })", label: Tr("次标注"))
                         ]
                     )
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, AppDesign.Spacing.sm)
 
                     StarOrbitSearchField(placeholder: Tr("搜索标签"), text: $keyword)
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, AppDesign.Spacing.sm)
 
                     if groups.isEmpty {
                         emptyState
@@ -515,7 +515,7 @@ struct StarOrbitTagsView: View {
                                 tagCard(group)
                             }
                             .buttonStyle(MenuPressStyle())
-                            .padding(.horizontal, 12)
+                            .padding(.horizontal, AppDesign.Spacing.sm)
                         }
                     }
                     Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
@@ -558,7 +558,7 @@ struct StarOrbitTagsView: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: AppDesign.Spacing.sm) {
             StarOrbitIconBadge(symbol: "sparkles", accent: OrbitTheme.jade, size: 54)
             Text(Tr("还没有标签"))
                 .font(pfStyled(size: 17, weight: .semibold))
@@ -573,7 +573,7 @@ struct StarOrbitTagsView: View {
         .padding(.horizontal, 26)
         .background(OrbitTheme.cardBackground())
         .clipShape(OrbitTheme.card)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
     }
 }
 
@@ -596,7 +596,7 @@ struct StarOrbitTagDetailView: View {
                         accent: OrbitTheme.jade,
                         metrics: [StarOrbitMetric(value: "\(users.count)", label: Tr("位联系人"))]
                     )
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, AppDesign.Spacing.sm)
 
                     ForEach(users) { user in
                         NavigationLink {
@@ -629,7 +629,7 @@ struct StarOrbitTagDetailView: View {
                             }
                         }
                         .buttonStyle(MenuPressStyle())
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, AppDesign.Spacing.sm)
                     }
                     Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }

@@ -54,7 +54,7 @@ struct CardShareView: View {
             NavBar(title: Tr("发送给"), back: { dismiss() }) {
                 Button { dismiss() } label: {
                     Text(Tr("取消")).font(pf(17)).foregroundColor(C.label)
-                        .frame(height: L.navH).padding(.trailing, 16)
+                        .frame(height: L.navH).padding(.trailing, AppDesign.Spacing.md)
                 }
                 .buttonStyle(.plain)
             }
@@ -81,7 +81,7 @@ struct CardShareView: View {
                         }
                     }
                     if recentRows.isEmpty && contactRows.isEmpty {
-                        VStack(spacing: 8) {
+                        VStack(spacing: AppDesign.Spacing.xs) {
                             Image(systemName: "magnifyingglass")
                                 .font(.system(size: 24)).foregroundColor(C.subLabel)
                             Text(Tr("没有找到联系人")).font(pf(14)).foregroundColor(C.subLabel)
@@ -101,7 +101,7 @@ struct CardShareView: View {
     }
 
     private var searchBar: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppDesign.Spacing.xs) {
             Image(systemName: "magnifyingglass").font(.system(size: 14.5)).foregroundColor(C.searchIcon)
             TextField(Tr("搜索"), text: $query).font(pf(15))
             if !query.isEmpty {
@@ -112,7 +112,7 @@ struct CardShareView: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 12).frame(height: AppDesign.Control.iconSmallHeight)
+        .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.iconSmallHeight)
         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.searchBg))
         .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
         .padding(.horizontal, 14).padding(.top, 10)
@@ -123,7 +123,7 @@ struct CardShareView: View {
             Text(text).font(pf(13)).foregroundColor(C.subLabel)
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 22).padding(.top, 12).padding(.bottom, 6)
+        .padding(.horizontal, 22).padding(.top, AppDesign.Spacing.sm).padding(.bottom, 6)
     }
 
     private func chatRow(_ c: Chat) -> some View {
@@ -132,7 +132,7 @@ struct CardShareView: View {
         return Button {
             if on { picked.remove(key) } else { picked.insert(key) }
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Avatar(path: c.avatar ?? "", size: 40, radius: c.type == "group" ? 8 : 20)
                 Text(c.name).font(pf(16)).foregroundColor(C.label).lineLimit(1)
                 Spacer(minLength: 8)
@@ -141,7 +141,7 @@ struct CardShareView: View {
                         .font(.system(size: 19)).foregroundColor(C.green)
                 }
             }
-            .padding(.horizontal, 16).frame(height: AppDesign.Control.profileRowHeight)
+            .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.profileRowHeight)
             .background(C.cardBg).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -154,7 +154,7 @@ struct CardShareView: View {
         return Button {
             if on { picked.remove(key) } else { picked.insert(key) }
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Avatar(path: u.avatarPath, size: 40, radius: 20)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(u.name).font(pf(16)).foregroundColor(C.label).lineLimit(1)
@@ -168,7 +168,7 @@ struct CardShareView: View {
                         .font(.system(size: 19)).foregroundColor(C.green)
                 }
             }
-            .padding(.horizontal, 16).frame(height: AppDesign.Control.profileRowHeight)
+            .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.profileRowHeight)
             .background(C.cardBg).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -178,7 +178,7 @@ struct CardShareView: View {
     private var cardPreview: some View {
         PremiumGlassCard(radius: 20) {
             VStack(spacing: 0) {
-                HStack(spacing: 12) {
+                HStack(spacing: AppDesign.Spacing.sm) {
                     ZStack {
                         RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                             .fill(C.green.opacity(0.10))
@@ -209,7 +209,7 @@ struct CardShareView: View {
                     Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 13)
-                .padding(.vertical, 12)
+                .padding(.vertical, AppDesign.Spacing.sm)
 
                 Rectangle()
                     .fill(C.hairline)
@@ -258,7 +258,7 @@ struct CardShareView: View {
                 .disabled(picked.isEmpty || sending)
             }
         }
-        .padding(.horizontal, 16).padding(.top, 10).padding(.bottom, max(10, L.safeBottom))
+        .padding(.horizontal, AppDesign.Spacing.md).padding(.top, 10).padding(.bottom, max(10, L.safeBottom))
         .background(C.pageBg)
         .overlay(alignment: .top) { HairLine(inset: 0) }
     }

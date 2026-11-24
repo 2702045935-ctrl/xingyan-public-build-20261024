@@ -172,7 +172,7 @@ private var funcs: [(String, String, Color, String)] {
                 plusButton
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(height: contactsHeaderHeight)
         .offset(y: -16)
     }
@@ -223,7 +223,7 @@ private var funcs: [(String, String, Color, String)] {
                                 Color.clear.frame(height: listHeadH)
 
                                 contactsSearchBar
-                                    .padding(.horizontal, 16)
+                                    .padding(.horizontal, AppDesign.Spacing.md)
                                     .padding(.top, 6)
                                     .padding(.bottom, 10)
 
@@ -261,7 +261,7 @@ private var funcs: [(String, String, Color, String)] {
                                                  .accessibilityAddTraits(.isHeader)
                                             Spacer(minLength: 0)
                                         }
-                                        .padding(.leading, 16)
+                                        .padding(.leading, AppDesign.Spacing.md)
                                         .frame(height: AppDesign.Control.statusHeight)
                                         .background(contactsSectionFill)
                                         .overlay(alignment: .bottom) {
@@ -320,7 +320,7 @@ private var funcs: [(String, String, Color, String)] {
                                      if idxLetter != next { idxLetter = next }
                                  }
                              )
-                            .padding(.trailing, 8)
+                            .padding(.trailing, AppDesign.Spacing.xs)
                             .frame(maxHeight: .infinity, alignment: .center)
                         }
 
@@ -452,7 +452,7 @@ private var funcs: [(String, String, Color, String)] {
             plusMenu = false
             showSearch = true
         } label: {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(contactsSecondary)
@@ -489,8 +489,8 @@ private var funcs: [(String, String, Color, String)] {
                 }
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.bottom, 4)
+        .padding(.horizontal, AppDesign.Spacing.md)
+        .padding(.bottom, AppDesign.Spacing.xxs)
     }
 
     private func entryRow(_ item: (String, String, Color, String)) -> some View {
@@ -561,18 +561,18 @@ private var funcs: [(String, String, Color, String)] {
                 .padding(.vertical, 1)
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .padding(.vertical, 10)
         .background(contactsCanvas)
-        .padding(.horizontal, 12)
-        .padding(.bottom, 4)
+        .padding(.horizontal, AppDesign.Spacing.sm)
+        .padding(.bottom, AppDesign.Spacing.xxs)
     }
 
     private func funcCell(_ item: (String, String, Color, String)) -> some View {
         Button {
             openFunc(item.3)
         } label: {
-            VStack(spacing: 8) {
+            VStack(spacing: AppDesign.Spacing.xs) {
                 ZStack(alignment: .topTrailing) {
                     funcIcon(item, size: 45)
 
@@ -639,7 +639,7 @@ private var funcs: [(String, String, Color, String)] {
                         .padding(.horizontal, app.friendRequests > 9 ? 6 : 0)
                         .frame(minWidth: 18, minHeight: 18)
                         .background(Capsule().fill(Color(.systemRed)))
-                        .padding(.trailing, 16)
+                        .padding(.trailing, AppDesign.Spacing.md)
                 }
             }
             .padding(.leading, L.ctPadL)
@@ -696,7 +696,7 @@ private var funcs: [(String, String, Color, String)] {
     }
 
     private func contactRow(_ user: User) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
 
             Avatar(path: user.avatarPath,
                    size: contactAvatarSize,
@@ -728,8 +728,8 @@ private var funcs: [(String, String, Color, String)] {
                     .foregroundColor(OrbitTheme.gold)
             }
         }
-        .padding(.leading, 16)
-        .padding(.trailing, 16)
+        .padding(.leading, AppDesign.Spacing.md)
+        .padding(.trailing, AppDesign.Spacing.md)
         .frame(height: AppDesign.Control.compactRowHeight)
         .background(contactsRowFill)
         .overlay(alignment: .bottom) {
@@ -789,7 +789,7 @@ private var funcs: [(String, String, Color, String)] {
         .padding(.vertical, 6)
         .padding(.horizontal, 3)
         .background(Color.clear)
-        .padding(.trailing, 4)
+        .padding(.trailing, AppDesign.Spacing.xxs)
     }
 }
 
@@ -1051,7 +1051,7 @@ struct ContactCardView: View {
             VStack(spacing: 0) {
                 nav
                 ScrollView {
-                    VStack(spacing: 12) {
+                    VStack(spacing: AppDesign.Spacing.sm) {
                         hero
                         infoCard
                         if hasMoments { momentsCard }
@@ -1060,7 +1060,7 @@ struct ContactCardView: View {
                     }
                     .padding(.horizontal, 14)
                     .padding(.top, 10)
-                    .padding(.bottom, 24)
+                    .padding(.bottom, AppDesign.Spacing.xl)
 
                     .opacity(cardIn ? 1 : 0)
                     .offset(y: cardIn ? 0 : 8)
@@ -1108,7 +1108,7 @@ struct ContactCardView: View {
                     Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 14)
-                .padding(.vertical, 12)
+                .padding(.vertical, AppDesign.Spacing.sm)
                 .background(RoundedRectangle(
                     cornerRadius: AppDesign.Radius.control,
                     style: .continuous
@@ -1195,7 +1195,7 @@ struct ContactCardView: View {
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
             .padding(.bottom, 14)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
@@ -1229,7 +1229,7 @@ struct ContactCardView: View {
                 HStack(alignment: .top, spacing: L.cdHeroGap) {
                     avatarHead
                     VStack(alignment: .leading, spacing: 8) {
-                        HStack(spacing: 8) {
+                        HStack(spacing: AppDesign.Spacing.xs) {
 
                             Text(displayName)
                                 .font(pf(L.cdNameSize, .semibold))
@@ -1312,7 +1312,7 @@ struct ContactCardView: View {
         let lab = (u.moodLabel ?? "").trimmingCharacters(in: .whitespaces)
         let text = cap.isEmpty ? (lab.isEmpty ? (u.moodText ?? "") : lab) : cap
         return Button { showStatus = true } label: {
-            HStack(spacing: 4) {
+            HStack(spacing: AppDesign.Spacing.xxs) {
                 Text(u.moodIcon ?? "🙂")
                 Text(text).lineLimit(1)
             }

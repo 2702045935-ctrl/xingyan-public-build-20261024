@@ -91,7 +91,7 @@ struct SendLocationView: View {
                 searchBar
                 Spacer(minLength: 0)
             }
-            .padding(.top, 8)
+            .padding(.top, AppDesign.Spacing.xs)
 
             VStack(spacing: 9) {
                 Spacer(minLength: 0)
@@ -108,7 +108,7 @@ struct SendLocationView: View {
                     .background { NativeGlassCircleBackground() }
                     .accessibilityLabel(Tr("回到当前位置"))
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, AppDesign.Spacing.lg)
                 .padding(.bottom, locationPanelHeight + 12)
 
                 mapStatus
@@ -194,7 +194,7 @@ struct SendLocationView: View {
     }
 
     private func statusPill(_ title: String, symbol: String) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppDesign.Spacing.xs) {
             Image(systemName: symbol)
                 .font(.system(size: 13, weight: .semibold))
             Text(title)
@@ -202,7 +202,7 @@ struct SendLocationView: View {
                 .lineLimit(1)
         }
         .foregroundColor(C.label)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
         .frame(height: 34)
         .background {
             GlassBackground(shape: Capsule(style: .continuous), shadow: true)
@@ -214,10 +214,10 @@ struct SendLocationView: View {
             Capsule()
                 .fill(Color.secondary.opacity(0.26))
                 .frame(width: 34, height: 4)
-                .padding(.top, 8)
+                .padding(.top, AppDesign.Spacing.xs)
                 .padding(.bottom, 7)
 
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Image(systemName: trimmed.isEmpty ? "mappin.and.ellipse" : "magnifyingglass")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(C.green)
@@ -228,12 +228,12 @@ struct SendLocationView: View {
                 Text("\(places.count)")
                     .font(pf(11.5, .medium))
                     .foregroundColor(C.subLabel)
-                    .padding(.horizontal, 8)
+                    .padding(.horizontal, AppDesign.Spacing.xs)
                     .frame(height: 22)
                     .background(Capsule().fill(C.label.opacity(0.06)))
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 8)
+            .padding(.horizontal, AppDesign.Spacing.md)
+            .padding(.bottom, AppDesign.Spacing.xs)
 
             HairLine()
 
@@ -283,7 +283,7 @@ struct SendLocationView: View {
     private var trimmed: String { query.trimmingCharacters(in: .whitespaces) }
 
     private var searchBar: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppDesign.Spacing.xs) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 14.5, weight: .medium))
                 .foregroundColor(C.searchIcon)
@@ -302,7 +302,7 @@ struct SendLocationView: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
         .frame(height: AppDesign.Control.searchHeight)
         .background {
             GlassBackground(shape: Capsule(style: .continuous), shadow: true)
@@ -322,7 +322,7 @@ struct SendLocationView: View {
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { suppressCenter = false }
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Image(systemName: i == picked ? "mappin.circle.fill" : "mappin.circle")
                     .font(.system(size: 17))
                     .foregroundColor(i == picked ? C.green : C.subLabel)
@@ -337,7 +337,7 @@ struct SendLocationView: View {
                     Image(systemName: "checkmark").foregroundColor(C.green)
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .frame(height: 58)
             .background(i == picked ? C.green.opacity(0.10) : Color.clear)
             .contentShape(Rectangle())
@@ -535,7 +535,7 @@ struct LiveLocationView: View {
             }
             .frame(maxHeight: .infinity)
 
-            VStack(spacing: 8) {
+            VStack(spacing: AppDesign.Spacing.xs) {
                 HStack(spacing: 10) {
                     Circle().fill(store.active ? C.green : C.subLabel).frame(width: 8, height: 8)
                     Text(store.active ? Tr("正在共享实时位置") : Tr("共享已结束"))
@@ -546,13 +546,13 @@ struct LiveLocationView: View {
                 }
                 if !peers.isEmpty {
                     ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
+                        HStack(spacing: AppDesign.Spacing.xs) {
                             ForEach(peers) { p in
                                 HStack(spacing: 6) {
                                     Avatar(path: p.avatar, size: 26, radius: 13, circle: true)
                                     Text(p.name).font(pf(13)).foregroundColor(C.label)
                                 }
-                                .padding(.horizontal, 8)
+                                .padding(.horizontal, AppDesign.Spacing.xs)
                                 .frame(height: 34)
                                 .background { CardGlassBox(radius: 17) }
                             }

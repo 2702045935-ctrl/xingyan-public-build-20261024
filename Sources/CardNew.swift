@@ -51,7 +51,7 @@ struct ContactCardNew: View {
                                 Button {
                                     onMoments?()
                                 } label: {
-                                    HStack(spacing: 12) {
+                                    HStack(spacing: AppDesign.Spacing.sm) {
                                         RoundedRectangle(cornerRadius: AppDesign.Radius.mini)
                                             .fill(hBlueBg)
                                             .frame(width: 44, height: 44)
@@ -63,7 +63,7 @@ struct ContactCardNew: View {
                                         Image(systemName: "chevron.right")
                                             .font(.system(size: 13, weight: .semibold)).foregroundColor(hInk3)
                                     }
-                                    .padding(.horizontal, 16).frame(height: AppDesign.Control.profileRowHeight)
+                                    .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.profileRowHeight)
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -103,7 +103,7 @@ struct ContactCardNew: View {
             Spacer()
             Image(systemName: "ellipsis").font(.system(size: 17)).foregroundColor(hInk)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(height: AppDesign.Control.compactHeight)
         .background(Color.white)
     }
@@ -130,24 +130,24 @@ struct ContactCardNew: View {
                 }
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 20)
-            .padding(.bottom, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
+            .padding(.top, AppDesign.Spacing.lg)
+            .padding(.bottom, AppDesign.Spacing.md)
 
             HStack(spacing: 10) {
                 pill("发消息", primary: true, action: onMessage)
                 pill("语音", primary: false, action: onVoice)
                 pill("视频", primary: false, action: onVideo)
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 20)
+            .padding(.horizontal, AppDesign.Spacing.md)
+            .padding(.bottom, AppDesign.Spacing.lg)
         }
         .frame(maxWidth: .infinity)
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact))
         .shadow(color: Color(hex: 0x20000000), radius: 8, x: 0, y: 2)
-        .padding(.horizontal, 16)
-        .padding(.top, 12)
+        .padding(.horizontal, AppDesign.Spacing.md)
+        .padding(.top, AppDesign.Spacing.sm)
     }
 
     private func sectionTitle(_ t: String, trailing: String? = nil) -> some View {
@@ -156,9 +156,9 @@ struct ContactCardNew: View {
             Spacer()
             if let tr = trailing { Text(tr).font(pf(14)).foregroundColor(hInk3) }
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 24)
-        .padding(.bottom, 8)
+        .padding(.horizontal, AppDesign.Spacing.md)
+        .padding(.top, AppDesign.Spacing.xl)
+        .padding(.bottom, AppDesign.Spacing.xs)
     }
 
     private func card<C: View>(@ViewBuilder _ content: () -> C) -> some View {
@@ -166,7 +166,7 @@ struct ContactCardNew: View {
             .background(Color.white)
             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact))
             .shadow(color: Color(hex: 0x20000000), radius: 8, x: 0, y: 2)
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
     }
 
     private func hRow(_ k: String, _ v: String) -> some View {
@@ -175,12 +175,12 @@ struct ContactCardNew: View {
             Spacer()
             Text(v).font(pf(14)).foregroundColor(hInk3)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(height: AppDesign.Control.menuRowHeight)
     }
 
     private var line: some View {
-        Rectangle().fill(hLine).frame(height: 1).padding(.leading, 16)
+        Rectangle().fill(hLine).frame(height: 1).padding(.leading, AppDesign.Spacing.md)
     }
 
     private func pill(_ text: String, primary: Bool, action: @escaping () -> Void) -> some View {

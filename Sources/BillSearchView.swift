@@ -115,14 +115,14 @@ struct BillSearchView: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .padding(.top, 6)
         .padding(.bottom, 10)
     }
 
     private var filterRow: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 chip("全部", kind == 0) { kind = 0 }
                 chip("只看支出", kind == 1) { kind = 1 }
                 chip("只看收入", kind == 2) { kind = 2 }
@@ -132,8 +132,8 @@ struct BillSearchView: View {
                 chip("近三月", span == 2) { span = 2 }
                 chip("今年", span == 3) { span = 3 }
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 12)
+            .padding(.horizontal, AppDesign.Spacing.md)
+            .padding(.bottom, AppDesign.Spacing.sm)
         }
     }
 
@@ -142,7 +142,7 @@ struct BillSearchView: View {
             Text(Tr(title))
                 .font(pf(13, on ? .medium : .regular))
                 .foregroundColor(on ? C.green : ink)
-                .padding(.horizontal, 12)
+                .padding(.horizontal, AppDesign.Spacing.sm)
                 .frame(height: AppDesign.Control.sectionHeaderHeight)
                 .background(Capsule().fill(on ? C.green.opacity(0.12) : chipBg))
         }
@@ -165,20 +165,20 @@ struct BillSearchView: View {
                     }
                     .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
+                .padding(.top, AppDesign.Spacing.md)
                 .padding(.bottom, 10)
 
                 FlowChips(items: history) { w in
                     q = w
                     focused = true
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
             }
             Text(Tr("可以搜好友名字、备注，也可以搜「转账」「红包」「充值」"))
                 .font(AppDesign.Type.caption)
                 .foregroundColor(subInk)
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
                 .padding(.top, 22)
             Spacer(minLength: 0)
         }
@@ -186,7 +186,7 @@ struct BillSearchView: View {
     }
 
     private var notFound: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: AppDesign.Spacing.xs) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 26, weight: .light))
                 .foregroundColor(subInk.opacity(0.7))
@@ -254,7 +254,7 @@ struct BillSearchView: View {
         }
         .padding(.horizontal, 17)
         .padding(.top, 14)
-        .padding(.bottom, 8)
+        .padding(.bottom, AppDesign.Spacing.xs)
     }
 
     private func row(_ b: BillRecord) -> some View {
@@ -264,7 +264,7 @@ struct BillSearchView: View {
         } label: {
             HStack(spacing: 0) {
                 Avatar(path: b.peerAvatar ?? "", size: 44, radius: 11)
-                    .padding(.leading, 16)
+                    .padding(.leading, AppDesign.Spacing.md)
                 VStack(alignment: .leading, spacing: 7) {
                     Text(rowTitle(b)).font(pf(16)).foregroundColor(ink).lineLimit(1)
                     Text((TimeFmt.bill(b.createdAt)) + ((b.status ?? "pending") == "pending" ? (" · " + b.stateText) : ""))
@@ -272,7 +272,7 @@ struct BillSearchView: View {
                         .foregroundColor(subInk)
                         .lineLimit(1)
                 }
-                .padding(.leading, 16)
+                .padding(.leading, AppDesign.Spacing.md)
                 Spacer(minLength: 8)
                 MoneyLabel(text: (b.mine ? "-" : "") + moneyFmt(b.amount),
                            size: 16, curSize: 0,
@@ -329,14 +329,14 @@ struct FlowChips: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             ForEach(rows(), id: \.self) { line in
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     ForEach(line, id: \.self) { w in
                         Button { tap(w) } label: {
                             Text(w)
                                 .font(pf(13))
                                 .foregroundColor(C.label)
                                 .lineLimit(1)
-                                .padding(.horizontal, 12)
+                                .padding(.horizontal, AppDesign.Spacing.sm)
                                 .frame(height: AppDesign.Control.sectionHeaderHeight)
                                 .background(Capsule().fill(Color.dyn(0xF1F2F5, 0x2C2C2E)))
                         }

@@ -84,11 +84,11 @@ struct WalletView: View {
                                 Spacer(minLength: 0)
                                 Text(Tr("去认证")).font(AppDesign.Type.compactButtonMedium).foregroundColor(C.green)
                             }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
+                            .padding(.horizontal, AppDesign.Spacing.md)
+                            .padding(.vertical, AppDesign.Spacing.sm)
                             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                                 .fill(Color.dyn(0xFFF7E6, 0x3A2E17)))
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, AppDesign.Spacing.md)
                             .padding(.bottom, 14)
                         }
                         .buttonStyle(.plain)
@@ -136,7 +136,7 @@ struct WalletView: View {
                 }
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .background(PayVisual.card)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
     }
@@ -173,7 +173,7 @@ struct WalletView: View {
                 if !value.isEmpty {
                     MoneyLabel(text: value, size: 15.5, curSize: s.curFontSize,
                                color: PayVisual.secondaryInk)
-                        .padding(.trailing, 4)
+                        .padding(.trailing, AppDesign.Spacing.xxs)
                         .onTapGesture {
                             guard masked, s.canReveal else { return }
                             if revealed.contains(it.id) { revealed.remove(it.id) } else { revealed.insert(it.id) }
@@ -205,7 +205,7 @@ struct WalletView: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, 16)
+        .padding(.top, AppDesign.Spacing.md)
         .padding(.bottom, max(24, L.safeBottom))
         .background(PayVisual.canvas)
     }

@@ -31,7 +31,7 @@ struct IdentityView: View {
                             .font(pf(12)).foregroundColor(Color.white.opacity(0.85))
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 20)
+                    .padding(.vertical, AppDesign.Spacing.lg)
 
                     .background(LinearGradient(colors: [C.green, C.green.opacity(0.82)],
                                                startPoint: .top, endPoint: .bottom))
@@ -62,7 +62,7 @@ struct IdentityView: View {
                                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.green))
                         }
                         .buttonStyle(.plain)
-                        .padding(.horizontal, 16).padding(.top, 18)
+                        .padding(.horizontal, AppDesign.Spacing.md).padding(.top, 18)
                     } else {
                         Button { showUpgrade = true } label: {
                             Text(Tr("账户升级服务"))
@@ -71,7 +71,7 @@ struct IdentityView: View {
                                 .background { CardGlassBox(radius: 8) }
                         }
                         .buttonStyle(.plain)
-                        .padding(.horizontal, 16).padding(.top, 18)
+                        .padding(.horizontal, AppDesign.Spacing.md).padding(.top, 18)
                     }
 
                     Button { save() } label: {
@@ -81,13 +81,13 @@ struct IdentityView: View {
                             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.green))
                     }
                     .buttonStyle(.plain)
-                    .padding(.horizontal, 16).padding(.top, 10)
+                    .padding(.horizontal, AppDesign.Spacing.md).padding(.top, 10)
                     .disabled(busy)
 
                     Text(Tr("身份证号只保存打码后的，完整号码不留在服务器上。"))
                         .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal, 24).padding(.top, 12)
+                        .padding(.horizontal, AppDesign.Spacing.xl).padding(.top, AppDesign.Spacing.sm)
                     Color.clear.frame(height: 26)
                 }
             }
@@ -115,22 +115,22 @@ struct IdentityView: View {
     }
 
     private func row(_ t: String, _ v: String) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppDesign.Spacing.xs) {
             Text(t).font(pf(16)).foregroundColor(C.label)
             Spacer(minLength: 6)
             Text(v).font(pf(15)).foregroundColor(C.subLabel)
         }
-        .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
+        .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.largeControlHeight)
     }
 
     private func editRow(_ t: String, _ text: Binding<String>, _ ph: String) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppDesign.Spacing.xs) {
             Text(t).font(pf(16)).foregroundColor(C.label)
             Spacer(minLength: 6)
             TextField(ph, text: text)
                 .font(pf(15)).multilineTextAlignment(.trailing)
         }
-        .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
+        .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.largeControlHeight)
     }
 
     private func load() async {
@@ -176,29 +176,29 @@ struct PaySettingsView: View {
                 VStack(spacing: 0) {
                     PayGroupCard {
                         Button { showChangePwd = true } label: {
-                            HStack(spacing: 8) {
+                            HStack(spacing: AppDesign.Spacing.xs) {
                                 Text(Tr("支付密码")).font(pf(16)).foregroundColor(C.label)
                                 Spacer(minLength: 6)
                                 Text((cfg?.hasPayPassword ?? false) ? Tr("已设置") : Tr("未设置"))
                                     .font(pf(15)).foregroundColor(C.subLabel)
                                 Chevron(size: 9, line: 1.6)
                             }
-                            .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
+                            .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.largeControlHeight)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                         HairLine(inset: 16)
-                        HStack(spacing: 8) {
+                        HStack(spacing: AppDesign.Spacing.xs) {
                             Text(Tr("面容支付")).font(pf(16)).foregroundColor(C.label)
                             Spacer(minLength: 6)
                             Text(Biometrics.available ? Tr("可用（付款时选「使用面容」）") : Tr("这台手机不支持"))
                                 .font(pf(13)).foregroundColor(C.subLabel)
                         }
-                        .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
+                        .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.largeControlHeight)
                     }
                     .padding(.top, 10)
 
-                    GroupCard {
+                    GroupCard(horizontalInset: 0) {
                         VStack(alignment: .leading, spacing: 3) {
                             HStack {
                                 Text(Tr("小额免密支付")).font(pf(16)).foregroundColor(C.label)
@@ -208,12 +208,12 @@ struct PaySettingsView: View {
                             }
                             Text(Tr("开启后，单笔不超过额度时不用输支付密码")).font(pf(12)).foregroundColor(C.subLabel)
                         }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppDesign.Spacing.md)
                         .padding(.vertical, 11)
 
                         if noPin {
                             HairLine(inset: 16)
-                            HStack(spacing: 8) {
+                            HStack(spacing: AppDesign.Spacing.xs) {
                                 Text(Tr("免密额度")).font(pf(16)).foregroundColor(C.label)
                                 Spacer(minLength: 6)
                                 Picker("", selection: $limit) {
@@ -225,13 +225,13 @@ struct PaySettingsView: View {
                                 .tint(C.green)
                                 .onChange(of: limit) { _ in save() }
                             }
-                            .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
+                            .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.largeControlHeight)
                         }
                     }
                     .padding(.top, 10)
 
-                    GroupCard {
-                        HStack(spacing: 8) {
+                    GroupCard(horizontalInset: 0) {
+                        HStack(spacing: AppDesign.Spacing.xs) {
                             Text(Tr("优先付款方式")).font(pf(16)).foregroundColor(C.label)
                             Spacer(minLength: 6)
                             Picker("", selection: $payMethod) {
@@ -242,20 +242,20 @@ struct PaySettingsView: View {
                             .frame(width: 170)
                             .onChange(of: payMethod) { _ in save() }
                         }
-                        .padding(.horizontal, 16).frame(height: AppDesign.Control.menuRowHeight)
+                        .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.menuRowHeight)
                     }
                     .padding(.top, 10)
 
                     VStack(alignment: .leading, spacing: 0) {
                         Text(Tr("自动续费 / 免密签约")).font(pf(13)).foregroundColor(C.subLabel)
-                            .padding(.horizontal, 8).padding(.bottom, 6)
-                        PayGroupCard {
+                            .padding(.horizontal, AppDesign.Spacing.xs).padding(.bottom, 6)
+                        PayGroupCard(horizontalInset: 0) {
                             let list = cfg?.autoDebits ?? []
                             if list.isEmpty {
                                 Text(Tr("没有签约中的免密服务"))
                                     .font(pf(14)).foregroundColor(C.subLabel)
                                     .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 24)
+                                    .padding(.vertical, AppDesign.Spacing.xl)
                             } else {
                                 ForEach(Array(list.enumerated()), id: \.element.id) { idx, a in
                                     if idx > 0 { HairLine(inset: 16) }
@@ -271,17 +271,17 @@ struct PaySettingsView: View {
                                         }
                                         .buttonStyle(.plain)
                                     }
-                                    .padding(.horizontal, 16).frame(height: 58)
+                                    .padding(.horizontal, AppDesign.Spacing.md).frame(height: 58)
                                 }
                             }
                         }
                     }
-                    .padding(.horizontal, 8).padding(.top, 14)
+                    .padding(.horizontal, AppDesign.Spacing.xs).padding(.top, 14)
 
                     Text(Tr("支付密码用于转账、发红包、提现；免密支付只对超过额度的那部分生效。"))
                         .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal, 24).padding(.top, 14)
+                        .padding(.horizontal, AppDesign.Spacing.xl).padding(.top, 14)
                     Color.clear.frame(height: 26)
                 }
             }

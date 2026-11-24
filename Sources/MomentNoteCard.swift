@@ -80,7 +80,7 @@ struct MomentNoteCard: View {
             actionRow
                 .padding(.top, 6)
         }
-        .padding(.bottom, 12)
+        .padding(.bottom, AppDesign.Spacing.sm)
         .frame(width: columnWidth, alignment: .leading)
         .background(C.cardBg)
         .contentShape(Rectangle())
@@ -197,7 +197,7 @@ struct MomentNoteCard: View {
     }
 
     private var actionRow: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Button {
                 likedOverride = !showingLiked
                 withAnimation(.spring(response: 0.22, dampingFraction: 0.58)) {

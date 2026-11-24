@@ -128,7 +128,7 @@ struct DDVipPageView: View {
                 }
             }
         }
-        .padding(12)
+        .padding(AppDesign.Spacing.sm)
         .background(DDColor.card)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
     }
@@ -138,10 +138,10 @@ struct DDVipPageView: View {
             Text(store.isVip ? Tr("续费会员") : Tr("开通会员"))
                 .font(pf(15, .semibold)).foregroundColor(DDColor.ink)
 
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 ForEach(plans) { p in
                     Button { picked = p.months } label: {
-                        VStack(spacing: 4) {
+                        VStack(spacing: AppDesign.Spacing.xxs) {
                             Text(Tr(p.title)).font(AppDesign.Type.bodyMedium).foregroundColor(DDColor.ink)
                             HStack(alignment: .firstTextBaseline, spacing: 1) {
                                 Text("¥").font(pf(11, .semibold)).foregroundColor(DDColor.red)
@@ -188,7 +188,7 @@ struct DDVipPageView: View {
                     .font(pf(11)).foregroundColor(DDColor.sub)
             }
         }
-        .padding(12)
+        .padding(AppDesign.Spacing.sm)
         .background(DDColor.card)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
     }
@@ -223,7 +223,7 @@ struct DDVipPageView: View {
                 }
             }
         }
-        .padding(12)
+        .padding(AppDesign.Spacing.sm)
         .background(DDColor.card)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
     }
@@ -238,7 +238,7 @@ struct DDVipPageView: View {
         .font(pf(12))
         .foregroundColor(DDColor.sub)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
+        .padding(AppDesign.Spacing.sm)
         .background(DDColor.card)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
     }
@@ -266,10 +266,10 @@ struct DDVipBanner: View {
                 Spacer(minLength: 0)
                 Text(store.isVip ? Tr("查看") : Tr("去开通"))
                     .font(AppDesign.Type.captionMedium).foregroundColor(Color(hex: 0x5A3E14))
-                    .padding(.horizontal, 12).frame(height: AppDesign.Control.statusHeight)
+                    .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.statusHeight)
                     .background(Capsule().fill(AppPalette.warmHighlight))
             }
-            .padding(12)
+            .padding(AppDesign.Spacing.sm)
 
             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                 .fill(LinearGradient(colors: [Color(hex: 0xFFF6E0), Color(hex: 0xFFE9BE)],

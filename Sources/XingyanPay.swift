@@ -50,8 +50,8 @@ struct XYPaySheet: View {
                     else { verifyBlock }
                     Spacer().frame(height: 4)
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
+                .padding(.horizontal, AppDesign.Spacing.md)
+                .padding(.top, AppDesign.Spacing.sm)
             }
         }
         .background(PayVisual.canvas.ignoresSafeArea())
@@ -62,7 +62,7 @@ struct XYPaySheet: View {
     }
 
     private var bar: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppDesign.Spacing.xs) {
             Text(XYPay.name).font(pf(17, .semibold)).foregroundColor(C.label)
             Spacer(minLength: 0)
             Button { dismiss() } label: {
@@ -74,7 +74,7 @@ struct XYPaySheet: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .padding(.top, 6)
         .overlay(HairLine(), alignment: .bottom)
     }
@@ -83,7 +83,7 @@ struct XYPaySheet: View {
         ZStack(alignment: .topLeading) {
             StarPayPhysicalCardSurface(radius: 20)
             VStack(alignment: .leading, spacing: 0) {
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
 
                     if let brand = IconOverrides.custom("pay.xy"), !brand.isEmpty {
                         FlexIcon(custom: brand, size: 26,
@@ -114,7 +114,7 @@ struct XYPaySheet: View {
                 }
                 .padding(.top, 6)
             }
-            .padding(16)
+            .padding(AppDesign.Spacing.md)
         }
         .frame(height: 194)
     }
@@ -126,13 +126,13 @@ struct XYPaySheet: View {
             if !target.isEmpty {
                 Text(target).font(pf(13)).foregroundColor(C.subLabel)
                     .multilineTextAlignment(.center).lineLimit(2)
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, AppDesign.Spacing.lg)
             }
             if !note.isEmpty {
                 Text(note).font(pf(11.5)).foregroundColor(C.subLabel.opacity(0.85))
             }
         }
-        .padding(.top, 4)
+        .padding(.top, AppDesign.Spacing.xxs)
     }
 
     private var paymentJourney: some View {
@@ -143,7 +143,7 @@ struct XYPaySheet: View {
             journeyLine(active: stage >= 2)
             journeyStep(index: 2, title: Tr("完成"), symbol: "checkmark")
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, AppDesign.Spacing.xs)
     }
 
     private func journeyStep(index: Int, title: String, symbol: String) -> some View {
@@ -178,7 +178,7 @@ struct XYPaySheet: View {
     private var verifyBlock: some View {
         VStack(spacing: 10) {
             Button { facePay() } label: {
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     Image(systemName: Biometrics.available ? "faceid" : "lock.shield.fill")
                         .font(.system(size: 17))
                     Text(busy ? Tr("正在验证…") : Tr(Biometrics.label + "支付"))
@@ -198,7 +198,7 @@ struct XYPaySheet: View {
 
             if !hint.isEmpty {
                 Text(hint).font(AppDesign.Type.caption).foregroundColor(C.red)
-                    .multilineTextAlignment(.center).padding(.horizontal, 12)
+                    .multilineTextAlignment(.center).padding(.horizontal, AppDesign.Spacing.sm)
             }
             Label(Tr("支付过程由设备安全验证保护"), systemImage: "lock.shield.fill")
                 .font(pf(11.5))
@@ -207,7 +207,7 @@ struct XYPaySheet: View {
     }
 
     private var pwdBlock: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: AppDesign.Spacing.sm) {
             HStack(spacing: 9) {
                 ForEach(0..<6, id: \.self) { i in
                     Circle()
@@ -256,7 +256,7 @@ struct XYPaySheet: View {
             Text(Tr("支付成功")).font(pf(17, .semibold)).foregroundColor(C.label)
             StarPayAmount(value: amount, role: .row, color: C.subLabel)
         }
-        .padding(.top, 8)
+        .padding(.top, AppDesign.Spacing.xs)
     }
 
     private func facePay() {

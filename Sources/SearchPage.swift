@@ -380,7 +380,7 @@ struct SearchPage: View {
     }
 
     private var xhsSearchHeader: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppDesign.Spacing.xs) {
             Button { dismiss() } label: {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 18, weight: .medium))
@@ -389,7 +389,7 @@ struct SearchPage: View {
             }
             .buttonStyle(.plain)
 
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(C.subLabel)
@@ -410,7 +410,7 @@ struct SearchPage: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
             .frame(height: AppDesign.Control.iconControlHeight)
             .background(
                 xhsField,
@@ -422,7 +422,7 @@ struct SearchPage: View {
                 .foregroundStyle(C.label)
                 .buttonStyle(.plain)
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, AppDesign.Spacing.xs)
         .padding(.vertical, 6)
         .background(xhsCanvas)
     }
@@ -462,7 +462,7 @@ struct SearchPage: View {
                                 Button {
                                     selectTerm(term)
                                 } label: {
-                                    HStack(spacing: 12) {
+                                    HStack(spacing: AppDesign.Spacing.sm) {
                                         Text("\(index + 1)")
                                             .font(pfStyled(size: 15, weight: .bold))
                                             .foregroundStyle(index < 3 ? xhsRed : C.subLabel)
@@ -529,7 +529,7 @@ struct SearchPage: View {
                             .font(pfStyled(size: 13.5))
                             .foregroundStyle(C.subLabel)
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppDesign.Spacing.md)
                 }
 
                 if remoteFailed {
@@ -545,7 +545,7 @@ struct SearchPage: View {
                             .font(pfStyled(size: 13, weight: .semibold))
                             .foregroundStyle(xhsRed)
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppDesign.Spacing.md)
                 }
 
                 if !matchedTools.isEmpty {
@@ -647,7 +647,7 @@ struct SearchPage: View {
                     .padding(.top, 70)
                 }
             }
-            .padding(.vertical, 12)
+            .padding(.vertical, AppDesign.Spacing.sm)
             .padding(.bottom, 34)
         }
         .scrollDismissesKeyboard(.interactively)
@@ -673,7 +673,7 @@ struct SearchPage: View {
                     .font(pfStyled(size: 13.5, weight: .regular))
                     .foregroundStyle(C.label)
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
             .frame(height: 34)
             .background(xhsCard, in: Capsule())
         }
@@ -706,7 +706,7 @@ struct SearchPage: View {
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(12)
+            .padding(AppDesign.Spacing.sm)
             .frame(maxWidth: .infinity, minHeight: 124, alignment: .topLeading)
             .background(xhsCard, in: RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
             .contentShape(Rectangle())
@@ -716,7 +716,7 @@ struct SearchPage: View {
 
     private var xhsScopeRow: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 ForEach(scopes, id: \.0) { item in
                     let selected = scope == item.0
                     Button {
@@ -729,7 +729,7 @@ struct SearchPage: View {
                                 .font(pfStyled(size: 12.5, weight: .medium))
                         }
                         .foregroundStyle(selected ? Color.white : C.subLabel)
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, AppDesign.Spacing.sm)
                         .frame(height: AppDesign.Control.smallButtonHeight)
                         .background(selected ? xhsRed : xhsCard, in: Capsule())
                     }
@@ -822,7 +822,7 @@ struct SearchPage: View {
             onOpenChat?(chat)
             dismiss()
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Avatar(path: chatAvatar(chat), size: 46,
                        radius: isGroup ? 13 : 23, group: isGroup)
 
@@ -864,7 +864,7 @@ struct SearchPage: View {
             remember(key)
             openUser(user)
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Avatar(path: user.avatarPath, size: 46, radius: 23, circle: true)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(user.name)
@@ -899,7 +899,7 @@ struct SearchPage: View {
             remember(key)
             pickedUser = User(id: person.id)
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Avatar(path: person.avatar ?? "", size: 46, radius: 23, circle: true)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(person.name ?? Tr("联系人"))
@@ -934,7 +934,7 @@ struct SearchPage: View {
             remember(key)
             openChat(id: group.id, isGroup: true)
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Avatar(path: group.avatar ?? "", size: 46, radius: 13, group: true)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(group.name ?? Tr("群聊"))
@@ -996,7 +996,7 @@ struct SearchPage: View {
                         .lineLimit(3)
                 }
             }
-            .padding(12)
+            .padding(AppDesign.Spacing.sm)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(xhsCard, in: RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
             .contentShape(Rectangle())
@@ -1063,7 +1063,7 @@ struct SearchPage: View {
                                 .foregroundStyle(.white)
                                 .frame(width: 30, height: 30)
                                 .background(Circle().fill(Color.black.opacity(0.42)))
-                                .padding(8)
+                                .padding(AppDesign.Spacing.xs)
                         }
                 } else {
                     Color.black
@@ -1376,7 +1376,7 @@ struct SearchPage: View {
             onOpenChat?(chat)
             dismiss()
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Avatar(path: chatAvatar(chat), size: 40, radius: 10)
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 5) {
@@ -1399,7 +1399,7 @@ struct SearchPage: View {
             remember(key)
             openUser(user)
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Avatar(path: user.avatarPath, size: 40, radius: 10)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(user.name).font(.body).foregroundStyle(C.label)
@@ -1431,7 +1431,7 @@ struct SearchPage: View {
                      peerId: hit.peerId,
                      isGroup: hit.isGroup == true)
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Avatar(path: avatar, size: 40, radius: (hit.isGroup ?? false) ? 12 : 10)
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
@@ -1463,7 +1463,7 @@ struct SearchPage: View {
             remember(key)
             pickedUser = User(id: person.id)
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Avatar(path: person.avatar ?? "", size: 40, radius: 10)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(person.name ?? Tr("联系人"))
@@ -1488,7 +1488,7 @@ struct SearchPage: View {
             remember(key)
             openChat(id: group.id, isGroup: true)
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Avatar(path: group.avatar ?? "", size: 40, radius: 12)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(group.name ?? Tr("群聊"))
@@ -1512,7 +1512,7 @@ struct SearchPage: View {
             remember(key)
             showMoments = true
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Avatar(path: post.images?.first ?? "", size: 40, radius: 10)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(post.author ?? Tr("朋友圈"))
@@ -1533,7 +1533,7 @@ struct SearchPage: View {
             remember(key)
             showChannels = true
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Avatar(path: video.cover ?? "", size: 40, radius: 10)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(video.title ?? Tr("视频号"))
@@ -1755,7 +1755,7 @@ struct SearchPage: View {
     }
 
     private var searchHeader: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Button { dismiss() } label: {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 15, weight: .semibold))
@@ -1784,8 +1784,8 @@ struct SearchPage: View {
                     .background(Capsule().fill(OrbitTheme.jadeSoft))
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.top, 4)
+        .padding(.horizontal, AppDesign.Spacing.sm)
+        .padding(.top, AppDesign.Spacing.xxs)
         .padding(.bottom, 10)
     }
 
@@ -1824,7 +1824,7 @@ struct SearchPage: View {
             RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                 .stroke(OrbitTheme.jade.opacity(focused ? 0.58 : 0.24), lineWidth: 1)
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
         .animation(.easeOut(duration: 0.18), value: focused)
     }
 
@@ -1875,11 +1875,11 @@ struct SearchPage: View {
                     .lineSpacing(3)
             }
             .frame(maxWidth: .infinity)
-            .padding(.horizontal, 24)
+            .padding(.horizontal, AppDesign.Spacing.xl)
             .padding(.vertical, 26)
         }
-        .padding(.horizontal, 12)
-        .padding(.top, 16)
+        .padding(.horizontal, AppDesign.Spacing.sm)
+        .padding(.top, AppDesign.Spacing.md)
     }
 
     private var emptyResult: some View {
@@ -1897,14 +1897,14 @@ struct SearchPage: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 28)
         }
-        .padding(.horizontal, 12)
-        .padding(.top, 16)
+        .padding(.horizontal, AppDesign.Spacing.sm)
+        .padding(.top, AppDesign.Spacing.md)
     }
 
     private var toolBlock: some View {
         VStack(alignment: .leading, spacing: 8) {
             OrbitSectionLabel(text: Tr("官方工具"), count: matchedTools.count)
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
             StarOrbitCard {
                 VStack(spacing: 0) {
                     ForEach(Array(matchedTools.enumerated()), id: \.element.id) { index, tool in
@@ -1916,7 +1916,7 @@ struct SearchPage: View {
                             default: showDrop = true
                             }
                         } label: {
-                            HStack(spacing: 12) {
+                            HStack(spacing: AppDesign.Spacing.sm) {
                                 StarOrbitIconBadge(symbol: tool.symbol,
                                                    accent: OrbitTheme.jade,
                                                    size: 40)
@@ -1945,9 +1945,9 @@ struct SearchPage: View {
                     }
                 }
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
         }
-        .padding(.top, 12)
+        .padding(.top, AppDesign.Spacing.sm)
     }
 
     private func beginInputMethodTransition() {
@@ -1964,7 +1964,7 @@ struct SearchPage: View {
 
     private var scopeRow: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 ForEach(scopes, id: \.0) { s in
                     let on = (scope == s.0)
                     Button { scope = s.0 } label: {
@@ -1993,14 +1993,14 @@ struct SearchPage: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.horizontal, AppDesign.Spacing.sm)
+            .padding(.vertical, AppDesign.Spacing.xs)
         }
     }
 
     private var historyBlock: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 OrbitSectionLabel(text: Tr("最近搜索"))
                 Button {
                     SearchHistory.clear()
@@ -2015,7 +2015,7 @@ struct SearchPage: View {
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             StarOrbitCard {
                 ChipFlow(spacing: 9, lineSpacing: 9) {
                     ForEach(history, id: \.self) { r in
@@ -2028,15 +2028,15 @@ struct SearchPage: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(14)
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
         }
-        .padding(.top, 12)
+        .padding(.top, AppDesign.Spacing.sm)
     }
 
     private var suggestBlock: some View {
         VStack(alignment: .leading, spacing: 8) {
             OrbitSectionLabel(text: Tr("猜你想搜"), count: hot.count)
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
             StarOrbitCard {
                 ChipFlow(spacing: 9, lineSpacing: 9) {
                     ForEach(hot, id: \.self) { w in
@@ -2049,9 +2049,9 @@ struct SearchPage: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(14)
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
         }
-        .padding(.top, 12)
+        .padding(.top, AppDesign.Spacing.sm)
     }
 
     private func chip(_ text: String, icon: String? = nil, _ tap: @escaping () -> Void) -> some View {
@@ -2080,7 +2080,7 @@ struct SearchPage: View {
     private func sectionBlock(_ title: String, _ list: [Chat], isGroup: Bool) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             OrbitSectionLabel(text: title, count: list.count)
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
             StarOrbitCard {
                 VStack(spacing: 0) {
                     ForEach(Array(list.enumerated()), id: \.element.id) { index, c in
@@ -2089,7 +2089,7 @@ struct SearchPage: View {
                             onOpenChat?(c)
                             dismiss()
                         } label: {
-                            HStack(spacing: 12) {
+                            HStack(spacing: AppDesign.Spacing.sm) {
                                 Avatar(path: chatAvatar(c), size: 42, radius: isGroup ? 12 : 11)
                                 VStack(alignment: .leading, spacing: 3) {
                                     HStack(spacing: 6) {
@@ -2129,15 +2129,15 @@ struct SearchPage: View {
                     }
                 }
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
         }
-        .padding(.top, 12)
+        .padding(.top, AppDesign.Spacing.sm)
     }
 
     private var contactBlock: some View {
         VStack(alignment: .leading, spacing: 8) {
             OrbitSectionLabel(text: Tr("联系人"), count: contacts.count)
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
             StarOrbitCard {
                 VStack(spacing: 0) {
                     ForEach(Array(contacts.enumerated()), id: \.element.id) { index, u in
@@ -2146,7 +2146,7 @@ struct SearchPage: View {
                             onOpenUser?(u)
                             dismiss()
                         } label: {
-                            HStack(spacing: 12) {
+                            HStack(spacing: AppDesign.Spacing.sm) {
                                 Avatar(path: u.avatarPath, size: 42, radius: 12)
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(u.name)
@@ -2174,9 +2174,9 @@ struct SearchPage: View {
                     }
                 }
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
         }
-        .padding(.top, 12)
+        .padding(.top, AppDesign.Spacing.sm)
     }
 
     private func remember(_ text: String) {

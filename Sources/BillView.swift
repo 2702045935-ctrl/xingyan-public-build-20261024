@@ -137,9 +137,9 @@ struct BillDetailView: View {
                     }
                     .buttonStyle(PaySecondaryButtonStyle(tint: PayVisual.tint))
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 16)
-                .padding(.bottom, 24)
+                .padding(.horizontal, AppDesign.Spacing.lg)
+                .padding(.top, AppDesign.Spacing.md)
+                .padding(.bottom, AppDesign.Spacing.xl)
             }
             .background(PayVisual.canvas)
 
@@ -187,7 +187,7 @@ struct BillDetailView: View {
     }
 
     private var transferHeaderCard: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Avatar(path: peerAvatar, size: 50, radius: 25)
             VStack(alignment: .leading, spacing: 3) {
                 Text(mine ? Tr("转账给") + " " + who : who + " " + Tr("转账给你"))
@@ -219,10 +219,10 @@ struct BillDetailView: View {
                     .font(pf(13))
                     .foregroundColor(PayVisual.secondaryInk)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, AppDesign.Spacing.lg)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 24)
+            .padding(.vertical, AppDesign.Spacing.xl)
         }
     }
 
@@ -251,7 +251,7 @@ struct BillDetailView: View {
     }
 
     private func detailRow(_ k: String, _ v: String) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Text(k)
                 .font(pfExact(14.5))
                 .foregroundColor(faint)
@@ -261,7 +261,7 @@ struct BillDetailView: View {
                 .foregroundColor(C.label)
                 .multilineTextAlignment(.trailing)
         }
-        .padding(.horizontal, 32)
+        .padding(.horizontal, AppDesign.Spacing.xxl)
         .frame(height: 49)
     }
 
@@ -279,7 +279,7 @@ struct BillDetailView: View {
             }
             .buttonStyle(PayPrimaryButtonStyle(tint: PayVisual.tint))
             .disabled(busy)
-            .padding(.horizontal, 20)
+            .padding(.horizontal, AppDesign.Spacing.lg)
             .padding(.top, 10)
             .padding(.bottom, max(16, L.safeBottom))
         } else if t.status == "pending", mine {
@@ -288,7 +288,7 @@ struct BillDetailView: View {
             }
             .buttonStyle(PaySecondaryButtonStyle(tint: PayVisual.tint))
             .disabled(busy)
-            .padding(.horizontal, 20)
+            .padding(.horizontal, AppDesign.Spacing.lg)
             .padding(.top, 10)
             .padding(.bottom, max(16, L.safeBottom))
         } else if t.status == "received", !mine, !t.refundClosed {
@@ -296,7 +296,7 @@ struct BillDetailView: View {
                 Text(Tr("退还这笔转账"))
             }
             .buttonStyle(PaySecondaryButtonStyle(tint: PayVisual.danger))
-            .padding(.horizontal, 20)
+            .padding(.horizontal, AppDesign.Spacing.lg)
             .padding(.top, 10)
             .padding(.bottom, max(16, L.safeBottom))
         } else if t.status == "received", !mine, t.refundClosed {
@@ -396,7 +396,7 @@ struct BillReceiptView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 18) {
                     PayGroupCard {
-                        VStack(spacing: 8) {
+                        VStack(spacing: AppDesign.Spacing.xs) {
                             Text(info.statusText(mine: mine))
                                 .font(AppDesign.Type.compactButton)
                                 .foregroundColor(PayVisual.secondaryInk)
@@ -405,7 +405,7 @@ struct BillReceiptView: View {
                                        exact: true)
                         }
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 24)
+                        .padding(.vertical, AppDesign.Spacing.xl)
                     }
 
                     PayGroupCard {
@@ -445,7 +445,7 @@ struct BillReceiptView: View {
                     }
                     .buttonStyle(PaySecondaryButtonStyle(tint: PayVisual.tint))
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, AppDesign.Spacing.lg)
                 .padding(.top, 18)
                 .padding(.bottom, max(28, L.safeBottom))
             }
@@ -467,7 +467,7 @@ struct BillReceiptView: View {
             Text(v).font(pfExact(14.5)).foregroundColor(C.label)
                 .multilineTextAlignment(.trailing)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(minHeight: 50)
     }
 }

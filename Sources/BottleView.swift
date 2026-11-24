@@ -40,7 +40,7 @@ struct BottlePageView: View {
                         .foregroundColor(.white.opacity(0.95))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 30)
-                        .padding(.vertical, 8)
+                        .padding(.vertical, AppDesign.Spacing.xs)
                         .background(Capsule().fill(.ultraThinMaterial))
                         .overlay(Capsule().stroke(Color.white.opacity(0.22), lineWidth: 0.8))
 
@@ -72,20 +72,20 @@ struct BottlePageView: View {
                                 .fixedSize(horizontal: false, vertical: true)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
-                        .padding(16)
+                        .padding(AppDesign.Spacing.md)
                         .frame(maxWidth: .infinity)
                         .background(.ultraThinMaterial,
                                     in: RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
                         .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                             .stroke(Color.white.opacity(0.28), lineWidth: 0.9))
                         .shadow(color: Color.black.opacity(0.28), radius: 18, y: 8)
-                        .padding(.horizontal, 24)
+                        .padding(.horizontal, AppDesign.Spacing.xl)
                         .padding(.top, 18)
                         .transition(.scale(scale: 0.94).combined(with: .opacity))
                     }
                     Spacer(minLength: 0)
 
-                    HStack(spacing: 12) {
+                    HStack(spacing: AppDesign.Spacing.sm) {
                         Button { showThrow = true } label: {
                             HStack(spacing: 7) {
                                 Image(systemName: "paperplane.fill").font(.system(size: 14, weight: .semibold))
@@ -118,7 +118,7 @@ struct BottlePageView: View {
                         .buttonStyle(.plain)
                         .disabled(picking)
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, AppDesign.Spacing.lg)
                     .padding(.bottom, max(26, L.safeBottom + 14))
                 }
             }
@@ -398,7 +398,7 @@ struct ThrowBottleSheet: View {
                 } label: {
                     Text(busy ? Tr("发送中…") : Tr("扔出去"))
                         .font(AppDesign.Type.rowTitle).foregroundColor(C.green)
-                        .frame(height: AppDesign.Control.smallButtonHeight).padding(.horizontal, 12)
+                        .frame(height: AppDesign.Control.smallButtonHeight).padding(.horizontal, AppDesign.Spacing.sm)
                 }
                 .buttonStyle(.plain)
                 .disabled(busy || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)

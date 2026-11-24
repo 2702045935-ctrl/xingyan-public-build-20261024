@@ -186,17 +186,17 @@ struct MemberPaySheet: View {
             }
             .font(AppDesign.Type.caption)
             .foregroundColor(C.subLabel)
-            .padding(.top, 8)
+            .padding(.top, AppDesign.Spacing.xs)
 
             if hasPassword {
                 PayDotField(count: pwd.count, shake: shake, busy: busy)
-                    .padding(.top, 16)
+                    .padding(.top, AppDesign.Spacing.md)
 
                 PayKeypadView(busy: busy) { tapKey($0) }
-                    .padding(.top, 16)
+                    .padding(.top, AppDesign.Spacing.md)
             } else {
 
-                VStack(spacing: 8) {
+                VStack(spacing: AppDesign.Spacing.xs) {
                     Image(systemName: "lock.shield.fill")
                         .font(.system(size: 22))
                         .foregroundColor(C.green)
@@ -217,7 +217,7 @@ struct MemberPaySheet: View {
                     .font(pf(13))
                     .foregroundColor(C.red)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, AppDesign.Spacing.lg)
                     .padding(.top, 10)
             }
             Spacer(minLength: 0)
@@ -312,7 +312,7 @@ struct MemberPayDoneView: View {
             Text(Tr("支付成功"))
                 .font(pf(20, .semibold))
                 .foregroundColor(C.label)
-                .padding(.top, 16)
+                .padding(.top, AppDesign.Spacing.md)
                 .opacity(showRows ? 1 : 0)
             Text("¥" + moneyFmt(result.amount))
                 .font(pfMoney(30, .medium))

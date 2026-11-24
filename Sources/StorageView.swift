@@ -77,7 +77,7 @@ struct StorageView: View {
 
             Section {
                 ForEach(mediaSegs, id: \.title) { seg in
-                    HStack(spacing: 12) {
+                    HStack(spacing: AppDesign.Spacing.sm) {
                         storageIcon(seg.symbol, color: seg.color)
                         Text(seg.title)
                             .foregroundStyle(.primary)
@@ -98,7 +98,7 @@ struct StorageView: View {
                 Button {
                     clearCache()
                 } label: {
-                    HStack(spacing: 12) {
+                    HStack(spacing: AppDesign.Spacing.sm) {
                         storageIcon("internaldrive.fill",
                                     color: Color(hex: 0x64748B))
                         VStack(alignment: .leading, spacing: 3) {
@@ -145,7 +145,7 @@ struct StorageView: View {
                         Button {
                             confirmChat = chat
                         } label: {
-                            HStack(spacing: 12) {
+                            HStack(spacing: AppDesign.Spacing.sm) {
                                 Avatar(path: chat.avatar ?? "", size: 40, radius: 12)
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(chat.title)

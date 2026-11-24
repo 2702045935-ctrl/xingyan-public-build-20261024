@@ -140,7 +140,7 @@ struct DDHelpCenterView: View {
                 }
                 Spacer(minLength: 0)
             }
-            .padding(12)
+            .padding(AppDesign.Spacing.sm)
             .background(DDColor.card)
             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
         } else if let o = order {
@@ -153,7 +153,7 @@ struct DDHelpCenterView: View {
                 }
                 Spacer(minLength: 0)
             }
-            .padding(12)
+            .padding(AppDesign.Spacing.sm)
             .background(DDColor.card)
             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
         }
@@ -174,7 +174,7 @@ struct DDHelpCenterView: View {
                     Text(m.text)
                         .font(AppDesign.Type.body)
                         .foregroundColor(m.me ? .white : DDColor.ink)
-                        .padding(.horizontal, 11).padding(.vertical, 8)
+                        .padding(.horizontal, 11).padding(.vertical, AppDesign.Spacing.xs)
                         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                             .fill(m.me ? DDColor.red : DDColor.page))
                         .fixedSize(horizontal: false, vertical: true)
@@ -183,7 +183,7 @@ struct DDHelpCenterView: View {
             }
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     ForEach(DDHelp.quick, id: \.self) { q in
                         Button { ask(q) } label: {
                             Text(Tr(q)).font(AppDesign.Type.caption).foregroundColor(DDColor.red)
@@ -195,7 +195,7 @@ struct DDHelpCenterView: View {
                 }
             }
         }
-        .padding(12)
+        .padding(AppDesign.Spacing.sm)
         .background(DDColor.card)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
     }
@@ -211,14 +211,14 @@ struct DDHelpCenterView: View {
     private var faqCard: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(Tr("常见问题")).font(pf(15, .semibold)).foregroundColor(DDColor.ink)
-                .padding(.horizontal, 12).padding(.top, 12).padding(.bottom, 6)
+                .padding(.horizontal, AppDesign.Spacing.sm).padding(.top, AppDesign.Spacing.sm).padding(.bottom, 6)
             ForEach(Array(DDHelp.groups.enumerated()), id: \.offset) { _, g in
                 Text(Tr(g.0)).font(AppDesign.Type.captionMedium).foregroundColor(DDColor.sub)
-                    .padding(.horizontal, 12).padding(.top, 8).padding(.bottom, 2)
+                    .padding(.horizontal, AppDesign.Spacing.sm).padding(.top, AppDesign.Spacing.xs).padding(.bottom, 2)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 ForEach(Array(g.1.enumerated()), id: \.offset) { _, f in
                     VStack(alignment: .leading, spacing: 6) {
-                        HStack(spacing: 8) {
+                        HStack(spacing: AppDesign.Spacing.xs) {
                             Text(Tr(f.q)).font(pf(14)).foregroundColor(DDColor.ink)
                             Spacer(minLength: 0)
                             Image(systemName: opened == f.q ? "chevron.up" : "chevron.down")
@@ -230,7 +230,7 @@ struct DDHelpCenterView: View {
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     }
-                    .padding(.horizontal, 12).padding(.vertical, 11)
+                    .padding(.horizontal, AppDesign.Spacing.sm).padding(.vertical, 11)
                     .contentShape(Rectangle())
                     .onTapGesture {
                         withAnimation(.easeInOut(duration: 0.18)) {
@@ -246,13 +246,13 @@ struct DDHelpCenterView: View {
     }
 
     private var bottom: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 8) {
+        VStack(spacing: AppDesign.Spacing.xs) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 TextField(Tr("把问题打出来，比如「多久发货」"), text: $input)
                     .font(pf(14))
                     .submitLabel(.send)
                     .onSubmit { ask(input) }
-                    .padding(.horizontal, 12).frame(height: AppDesign.Control.iconSmallHeight)
+                    .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.iconSmallHeight)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(DDColor.page))
                 Button { ask(input) } label: {
                     Text(Tr("发送")).font(pf(14, .medium)).foregroundColor(.white)
@@ -282,8 +282,8 @@ struct DDHelpCenterView: View {
             .buttonStyle(.plain)
             .disabled(busy)
         }
-        .padding(.horizontal, 12)
-        .padding(.top, 8)
+        .padding(.horizontal, AppDesign.Spacing.sm)
+        .padding(.top, AppDesign.Spacing.xs)
         .padding(.bottom, max(8, L.safeBottom * 0.6))
         .background(DDColor.card)
     }

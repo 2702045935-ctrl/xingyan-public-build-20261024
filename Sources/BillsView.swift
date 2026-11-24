@@ -57,7 +57,7 @@ struct BillsView: View {
             .overlay(alignment: .topTrailing) {
                 if showMoreMenu {
                     moreMenu
-                        .padding(.trailing, 12)
+                        .padding(.trailing, AppDesign.Spacing.sm)
                         .padding(.top, L.navH + 4)
                 }
             }
@@ -68,7 +68,7 @@ struct BillsView: View {
                 .overlay(alignment: .topLeading) {
                     if showFilterMenu {
                         filterMenu
-                            .padding(.leading, 16)
+                            .padding(.leading, AppDesign.Spacing.md)
                             .padding(.top, 52.4 + 6)
                     }
                 }
@@ -104,7 +104,7 @@ struct BillsView: View {
                                     }
                                     .background(PayVisual.card)
                                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
-                                    .padding(.horizontal, 16)
+                                    .padding(.horizontal, AppDesign.Spacing.md)
                                 }
                             } header: {
                                 monthHeader(g)
@@ -218,9 +218,9 @@ struct BillsView: View {
             }
             .padding(18)
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 12)
-        .padding(.bottom, 8)
+        .padding(.horizontal, AppDesign.Spacing.md)
+        .padding(.top, AppDesign.Spacing.sm)
+        .padding(.bottom, AppDesign.Spacing.xs)
     }
 
     private var topBar: some View {
@@ -348,13 +348,13 @@ struct BillsView: View {
             .font(pf(12))
             .foregroundColor(C.subLabel)
             .padding(.horizontal, 14)
-            .padding(.top, 12)
-            .padding(.bottom, 4)
+            .padding(.top, AppDesign.Spacing.sm)
+            .padding(.bottom, AppDesign.Spacing.xxs)
     }
 
     private func menuRow(_ title: String, _ on: Bool, _ act: @escaping () -> Void) -> some View {
         Button(action: act) {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Text(title)
                     .font(pf(15))
                     .foregroundColor(C.label)
@@ -377,7 +377,7 @@ struct BillsView: View {
         let s = monthSum(g.month)
         return HStack(spacing: 0) {
             Button { openMonthPicker() } label: {
-                HStack(spacing: 4) {
+                HStack(spacing: AppDesign.Spacing.xxs) {
                     Text(monthLabel(g.month)).font(pf(style.monthFont)).foregroundColor(C.label)
                     DownChevron(size: 9, color: C.label)
                 }
@@ -434,7 +434,7 @@ struct BillsView: View {
                             .foregroundColor(C.green)
                     }
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
                 .frame(height: 46)
                 .contentShape(Rectangle())
             }
@@ -470,19 +470,19 @@ struct BillsView: View {
                     Text(Tr("完成"))
                         .font(pf(14, .semibold))
                         .foregroundColor(.white)
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, AppDesign.Spacing.lg)
                         .frame(height: AppDesign.Control.smallButtonHeight)
                         .background(Capsule().fill(C.green))
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 12)
+            .padding(.horizontal, AppDesign.Spacing.md)
+            .padding(.bottom, AppDesign.Spacing.sm)
         }
         .background(C.cardBg)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
-        .padding(.horizontal, 12)
-        .padding(.top, 8)
+        .padding(.horizontal, AppDesign.Spacing.sm)
+        .padding(.top, AppDesign.Spacing.xs)
         .transition(.opacity.combined(with: .move(edge: .top)))
     }
 
@@ -498,7 +498,7 @@ struct BillsView: View {
         }
         .padding(.horizontal, 17)
         .padding(.top, 14)
-        .padding(.bottom, 8)
+        .padding(.bottom, AppDesign.Spacing.xs)
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 2)
         .background(PayVisual.canvas)
@@ -519,7 +519,7 @@ struct BillsView: View {
         } label: {
             HStack(spacing: 0) {
                 Avatar(path: b.peerAvatar ?? "", size: style.icon, radius: style.icon * 0.25)
-                    .padding(.leading, 16)
+                    .padding(.leading, AppDesign.Spacing.md)
                 VStack(alignment: .leading, spacing: 11) {
                     Text(rowTitle(b))
                         .font(pf(style.titleFont))

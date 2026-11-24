@@ -112,20 +112,20 @@ struct EyesSettingsView: View {
                         .foregroundColor(C.subLabel)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 22)
-                        .padding(.top, 4)
+                        .padding(.top, AppDesign.Spacing.xxs)
 
-                    GroupCard {
-                        HStack(spacing: 12) {
+                    GroupCard(horizontalInset: 0) {
+                        HStack(spacing: AppDesign.Spacing.sm) {
                             Text(Tr("零钱余额")).font(pf(16)).foregroundColor(C.label)
                             Spacer(minLength: 0)
                             Text("¥" + moneyFmt(eyes.balance))
                                 .font(pfMoney(16))
                                 .foregroundColor(C.subLabel)
                         }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppDesign.Spacing.md)
                         .frame(height: AppDesign.Control.buttonHeight)
                     }
-                    .padding(.top, 4)
+                    .padding(.top, AppDesign.Spacing.xxs)
 
                     Button {
                         openAI()
@@ -141,7 +141,7 @@ struct EyesSettingsView: View {
                         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.green))
                     }
                     .buttonStyle(.plain)
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppDesign.Spacing.md)
                     .padding(.top, 6)
 
                     Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
@@ -181,7 +181,7 @@ struct EyesSettingsView: View {
                 Task { await choose(id) }
             }
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title).font(AppDesign.Type.listTitle).foregroundColor(C.label)
                     Text(value + " · " + tag).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
@@ -196,7 +196,7 @@ struct EyesSettingsView: View {
                     ProgressView().scaleEffect(0.75)
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .frame(height: 62)
             .contentShape(Rectangle())
         }

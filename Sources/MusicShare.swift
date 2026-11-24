@@ -1243,7 +1243,7 @@ struct ListenView: View {
             Color.black.ignoresSafeArea()
 
             if loading && tracks.isEmpty && player.current == nil {
-                VStack(spacing: 12) {
+                VStack(spacing: AppDesign.Spacing.sm) {
                     ProgressView()
                         .tint(.white)
                     Text(Tr("正在准备音乐…"))
@@ -1251,7 +1251,7 @@ struct ListenView: View {
                         .foregroundStyle(.white.opacity(0.72))
                 }
             } else if tracks.isEmpty && player.current == nil {
-                VStack(spacing: 12) {
+                VStack(spacing: AppDesign.Spacing.sm) {
                     Image(systemName: "music.note.list")
                         .font(.system(size: 34, weight: .light))
                         .foregroundStyle(.white.opacity(0.72))
@@ -1336,7 +1336,7 @@ struct ListenView: View {
             if !sendMode && player.current != nil {
                 MusicDockedPlayerBar(fadesBackgroundWhilePlaying: !isAdmin)
                     .padding(.horizontal, 10)
-                    .padding(.bottom, 8)
+                    .padding(.bottom, AppDesign.Spacing.xs)
             }
         }
         .hidesTabBar()
@@ -1354,7 +1354,7 @@ struct ListenView: View {
                     if player.current != nil {
                         MusicDockedPlayerBar(fadesBackgroundWhilePlaying: !isAdmin)
                             .padding(.horizontal, 10)
-                            .padding(.bottom, 8)
+                            .padding(.bottom, AppDesign.Spacing.xs)
                     }
                 }
 
@@ -1536,7 +1536,7 @@ struct ListenView: View {
     private var musicList: some View {
         Group {
             if loading {
-                VStack(spacing: 12) {
+                VStack(spacing: AppDesign.Spacing.sm) {
                     ProgressView()
                     Text(Tr("正在加载…"))
                         .font(pfStyled(size: 15))
@@ -1544,7 +1544,7 @@ struct ListenView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if tracks.isEmpty {
-                VStack(spacing: 16) {
+                VStack(spacing: AppDesign.Spacing.md) {
                     Image(systemName: "music.note.list")
                         .font(.system(size: 40, weight: .light))
                         .foregroundStyle(OrbitTheme.jade)
@@ -1561,14 +1561,14 @@ struct ListenView: View {
                         if !sendMode {
                             if tab != 0 {
                                 musicTabRail
-                                    .padding(.top, 8)
+                                    .padding(.top, AppDesign.Spacing.xs)
                                     .padding(.bottom, 18)
                             }
                         }
 
                         if manageMode {
                             musicManagePanel
-                                .padding(.horizontal, 16)
+                                .padding(.horizontal, AppDesign.Spacing.md)
                                 .padding(.bottom, 18)
                             musicSectionHeader(Tr("全部歌曲"))
                             ForEach(matched) { track in
@@ -1624,7 +1624,7 @@ struct ListenView: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, AppDesign.Spacing.lg)
     }
 
     @ViewBuilder
@@ -1681,7 +1681,7 @@ struct ListenView: View {
                             .foregroundStyle(.white)
                             .frame(width: 28, height: 28)
                             .background(.black.opacity(0.34), in: Circle())
-                            .padding(8)
+                            .padding(AppDesign.Spacing.xs)
                     }
                 }
 
@@ -1761,7 +1761,7 @@ struct ListenView: View {
                         .foregroundStyle(.white.opacity(0.70))
                         .lineLimit(1)
                 }
-                .padding(16)
+                .padding(AppDesign.Spacing.md)
                 .frame(width: width * 0.74, alignment: .leading)
 
                 ZStack {
@@ -1943,7 +1943,7 @@ struct ListenView: View {
                         .foregroundStyle(.white.opacity(0.72))
                         .lineLimit(1)
                 }
-                .padding(16)
+                .padding(AppDesign.Spacing.md)
 
                 ZStack {
                     Circle().fill(.ultraThinMaterial)
@@ -2088,7 +2088,7 @@ struct ListenView: View {
                     }
                     .padding(.horizontal, 22)
                     .padding(.top, 64)
-                    .padding(.bottom, 24)
+                    .padding(.bottom, AppDesign.Spacing.xl)
                 }
                 .frame(height: heroHeight)
                 .clipped()
@@ -2096,7 +2096,7 @@ struct ListenView: View {
             .buttonStyle(.plain)
             .overlay(alignment: .top) {
                 immersiveTabRail
-                    .padding(.top, 12)
+                    .padding(.top, AppDesign.Spacing.sm)
             }
         }
 
@@ -2124,7 +2124,7 @@ struct ListenView: View {
         Button {
             withAnimation(.easeOut(duration: 0.18)) { tab = 1 }
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Image(systemName: "music.note.list")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(OrbitTheme.jade)
@@ -2143,14 +2143,14 @@ struct ListenView: View {
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(.tertiary)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .frame(height: 62)
             .background(Color.primary.opacity(0.035),
                         in: RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         }
         .buttonStyle(.plain)
         .padding(.horizontal, 18)
-        .padding(.top, 8)
+        .padding(.top, AppDesign.Spacing.xs)
         .padding(.bottom, 34)
     }
 
@@ -2190,12 +2190,12 @@ struct ListenView: View {
                     )
 
                     VStack(alignment: .leading, spacing: 0) {
-                        HStack(spacing: 8) {
+                        HStack(spacing: AppDesign.Spacing.xs) {
                             Text(Tr(player.current == nil ? "今日精选" : "正在播放"))
                                 .font(pfStyled(size: 12, weight: .semibold))
                                 .tracking(0.8)
                                 .foregroundStyle(.white.opacity(0.94))
-                                .padding(.horizontal, 12)
+                                .padding(.horizontal, AppDesign.Spacing.sm)
                                 .frame(height: AppDesign.Control.statusHeight)
                                 .background(.black.opacity(0.22), in: Capsule())
                                 .overlay(Capsule().stroke(.white.opacity(0.18), lineWidth: 0.7))
@@ -2236,7 +2236,7 @@ struct ListenView: View {
                             .shadow(color: OrbitTheme.jade.opacity(0.34), radius: 18, y: 8)
                         }
                     }
-                    .padding(24)
+                    .padding(AppDesign.Spacing.xl)
                 }
                 .frame(height: 420)
                 .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
@@ -2246,14 +2246,14 @@ struct ListenView: View {
                 }
                 .shadow(color: .black.opacity(scheme == .dark ? 0.32 : 0.18),
                         radius: 28, y: 16)
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
                 .padding(.bottom, 26)
             }
             .buttonStyle(.plain)
         }
 
         musicLibraryCards
-            .padding(.horizontal, 20)
+            .padding(.horizontal, AppDesign.Spacing.lg)
             .padding(.bottom, 34)
 
         Button {
@@ -2273,7 +2273,7 @@ struct ListenView: View {
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(.tertiary)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .frame(height: 66)
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
             .overlay {
@@ -2282,7 +2282,7 @@ struct ListenView: View {
             }
         }
         .buttonStyle(.plain)
-        .padding(.horizontal, 20)
+        .padding(.horizontal, AppDesign.Spacing.lg)
         .padding(.bottom, 38)
     }
 
@@ -2297,7 +2297,7 @@ struct ListenView: View {
                     immersiveEditorialCard(track, index: index)
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, AppDesign.Spacing.lg)
             .padding(.vertical, 2)
         }
         .padding(.bottom, 30)
@@ -2338,7 +2338,7 @@ struct ListenView: View {
                     .frame(height: 26)
                     .background(.black.opacity(0.24), in: Capsule())
                     .overlay(Capsule().stroke(.white.opacity(0.14), lineWidth: 0.6))
-                    .padding(16)
+                    .padding(AppDesign.Spacing.md)
                     .frame(maxWidth: .infinity, maxHeight: .infinity,
                            alignment: .topLeading)
 
@@ -2371,7 +2371,7 @@ struct ListenView: View {
                         )
                     }
                 }
-                .padding(20)
+                .padding(AppDesign.Spacing.lg)
             }
             .frame(width: width, height: height)
             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
@@ -2386,7 +2386,7 @@ struct ListenView: View {
     }
 
     private var musicLibraryCards: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppDesign.Spacing.xs) {
             ForEach(MusicMineKind.allCases) { kind in
                 Button { mine = kind } label: {
                     VStack(alignment: .leading, spacing: 9) {
@@ -2407,7 +2407,7 @@ struct ListenView: View {
                             .lineLimit(1)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(12)
+                    .padding(AppDesign.Spacing.sm)
                     .frame(height: 104)
                     .background(Color.primary.opacity(0.035),
                                 in: RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
@@ -2457,7 +2457,7 @@ struct ListenView: View {
                 Button {
                     withAnimation(.easeOut(duration: 0.2)) { batch += 1 }
                 } label: {
-                    HStack(spacing: 4) {
+                    HStack(spacing: AppDesign.Spacing.xxs) {
                         Image(systemName: "arrow.triangle.2.circlepath")
                         Text(Tr("换一批"))
                     }
@@ -2467,7 +2467,7 @@ struct ListenView: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, AppDesign.Spacing.lg)
         .padding(.bottom, 14)
     }
 
@@ -2507,7 +2507,7 @@ struct ListenView: View {
     private var musicCatalogContent: some View {
         if cats.count > 1 {
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     categoryChip(Tr("全部"), selected: cat.isEmpty) {
                         openCategory("")
                     }
@@ -2517,7 +2517,7 @@ struct ListenView: View {
                         }
                     }
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
             }
             .padding(.bottom, 18)
         }
@@ -2556,7 +2556,7 @@ struct ListenView: View {
                     }
                 }
                 .padding(.horizontal, 18)
-                .padding(.vertical, 4)
+                .padding(.vertical, AppDesign.Spacing.xxs)
             }
             .padding(.bottom, 28)
         }
@@ -2583,7 +2583,7 @@ struct ListenView: View {
         Button {
             choose(track)
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 if manageMode {
                     checkDot(track)
                         .frame(width: 24)
@@ -2636,7 +2636,7 @@ struct ListenView: View {
                     }
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .frame(height: AppDesign.Control.rowHeight)
             .contentShape(Rectangle())
         }
@@ -2683,7 +2683,7 @@ struct ListenView: View {
                     premiumFriendCard(friend)
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             Text(Tr("好友最近 2 小时在听的歌"))
                 .font(pfStyled(size: 12))
                 .foregroundStyle(.tertiary)
@@ -2704,7 +2704,7 @@ struct ListenView: View {
                         .overlay(Circle().stroke(Color(uiColor: .systemBackground), lineWidth: 2))
                         .offset(x: -6, y: 6)
                 }
-                .padding(.leading, 4)
+                .padding(.leading, AppDesign.Spacing.xxs)
 
                 VStack(alignment: .leading, spacing: 5) {
                     Text(friend.name)
@@ -2747,7 +2747,7 @@ struct ListenView: View {
                         ? OrbitTheme.jade : OrbitTheme.jade.opacity(0.11)
                 )
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
             .padding(.vertical, 10)
             .background(.regularMaterial,
                         in: RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
@@ -2761,8 +2761,8 @@ struct ListenView: View {
     }
 
     private var musicManagePanel: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 12) {
+        VStack(spacing: AppDesign.Spacing.sm) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 manageAction(Tr("导入文件"), icon: "doc.badge.plus") {
                     showBatchPick = true
                 }
@@ -2848,14 +2848,14 @@ struct ListenView: View {
                 }
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, AppDesign.Spacing.xxs)
     }
 
     private func nativeTrackRow(_ track: MusicTrack) -> some View {
         Button {
             choose(track)
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 if manageMode {
                     Image(systemName: pickedTracks.contains(track.id)
                           ? "checkmark.circle.fill" : "circle")
@@ -2912,7 +2912,7 @@ struct ListenView: View {
             MusicPlayer.shared.toggle(track)
             MusicSheet.shared.open(track)
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Avatar(path: friend.avatar ?? "", size: 46, radius: 23)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(friend.name)
@@ -3125,11 +3125,11 @@ struct ListenView: View {
                 VStack(spacing: 0) {
                     if tab == 0 {
 
-                        HStack(spacing: 8) {
+                        HStack(spacing: AppDesign.Spacing.xs) {
                             Text(Tr("全部歌曲")).font(pf(17, .semibold)).foregroundColor(C.label)
                             Spacer(minLength: 0)
                         }
-                        .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 8)
+                        .padding(.horizontal, AppDesign.Spacing.md).padding(.top, 14).padding(.bottom, AppDesign.Spacing.xs)
 
                         LazyVGrid(columns: [GridItem(.flexible(), spacing: 12),
                                             GridItem(.flexible(), spacing: 12)], spacing: 14) {
@@ -3137,18 +3137,18 @@ struct ListenView: View {
                                 bigCard(t, rank: i + 1, wide: true)
                             }
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 4)
+                        .padding(.horizontal, AppDesign.Spacing.md)
+                        .padding(.bottom, AppDesign.Spacing.xxs)
 
                         if artists.count > 1 {
                             HStack {
                                 Text(Tr("音乐人")).font(pf(17, .semibold)).foregroundColor(C.label)
                                 Spacer(minLength: 0)
                             }
-                            .padding(.horizontal, 16).padding(.top, 20).padding(.bottom, 10)
+                            .padding(.horizontal, AppDesign.Spacing.md).padding(.top, AppDesign.Spacing.lg).padding(.bottom, 10)
 
                             ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 16) {
+                                HStack(spacing: AppDesign.Spacing.md) {
                                     ForEach(Array(artists.enumerated()), id: \.offset) { _, a in
                                         VStack(spacing: 6) {
                                             MusicCover(path: a.1, size: 58, radius: 29)
@@ -3157,7 +3157,7 @@ struct ListenView: View {
                                         }
                                     }
                                 }
-                                .padding(.horizontal, 16)
+                                .padding(.horizontal, AppDesign.Spacing.md)
                             }
                             .padding(.bottom, 10)
                         }
@@ -3169,7 +3169,7 @@ struct ListenView: View {
                                 bigCard(t, rank: nil, wide: true)
                             }
                         }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppDesign.Spacing.md)
                         .padding(.top, 10)
                     } else {
 
@@ -3182,7 +3182,7 @@ struct ListenView: View {
                                 .frame(maxWidth: .infinity)
                                 .padding(.top, 14)
                         } else {
-                            VStack(spacing: 8) {
+                            VStack(spacing: AppDesign.Spacing.xs) {
                                 Text(Tr("朋友推荐还没有内容")).font(pf(14)).foregroundColor(C.subLabel)
                                 Text(Tr("你在这一页放一首歌，好友的「朋友推荐」里就会看到你在听什么；\n反过来，好友在听的时候这里也会出现。"))
                                     .font(AppDesign.Type.caption).foregroundColor(C.subLabel.opacity(0.8))
@@ -3307,7 +3307,7 @@ struct ListenView: View {
             MusicPlayer.shared.toggle(t)
             MusicSheet.shared.open(t)
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Avatar(path: f.avatar ?? "", size: 52, radius: 12)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(f.name).font(AppDesign.Type.rowTitle).foregroundColor(C.label).lineLimit(1)
@@ -3317,12 +3317,12 @@ struct ListenView: View {
                 Spacer(minLength: 6)
                 playDot(playing: player.isPlaying(t.id), loading: player.loadingId == t.id)
             }
-            .padding(.horizontal, 12).frame(height: 78)
+            .padding(.horizontal, AppDesign.Spacing.sm).frame(height: 78)
             .background(cardFace)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .padding(.horizontal, 16).padding(.vertical, 5)
+        .padding(.horizontal, AppDesign.Spacing.md).padding(.vertical, 5)
     }
 
     private var cardFace: some View {
@@ -3408,7 +3408,7 @@ struct ListenView: View {
 
                     MusicPlayButton(playing: player.isPlaying(t.id), loading: player.loadingId == t.id,
                                     size: 38, tint: .white, bg: Color.black.opacity(0.42))
-                        .padding(8)
+                        .padding(AppDesign.Spacing.xs)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
                 }
                 Text(t.title).font(pf(15, .medium)).foregroundColor(C.label).lineLimit(1)
@@ -3435,7 +3435,7 @@ struct ListenView: View {
                 MusicSheet.shared.open(t)
             }
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 if manageMode { checkDot(t) }
                 ZStack(alignment: .topLeading) {
                     MusicCover(path: t.cover ?? "", size: 58, radius: 12)
@@ -3451,12 +3451,12 @@ struct ListenView: View {
 
                 if app.me?.ops == true && !manageMode { iconPickDot(t) }
             }
-            .padding(.horizontal, 12).frame(height: 78)
+            .padding(.horizontal, AppDesign.Spacing.sm).frame(height: 78)
             .background(cardFace)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .padding(.horizontal, 16).padding(.vertical, 5)
+        .padding(.horizontal, AppDesign.Spacing.md).padding(.vertical, 5)
     }
 
 }
@@ -3572,15 +3572,15 @@ struct KTVSongPickerView: View {
             VStack(spacing: 0) {
                 header
                 searchField
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppDesign.Spacing.md)
                     .padding(.top, 10)
                 categoryRail
-                    .padding(.top, 12)
+                    .padding(.top, AppDesign.Spacing.sm)
 
                 ScrollView(showsIndicators: false) {
                     LazyVStack(spacing: 9) {
                         if results.isEmpty {
-                            VStack(spacing: 12) {
+                            VStack(spacing: AppDesign.Spacing.sm) {
                                 Image(systemName: "music.note.list")
                                     .font(.system(size: 34, weight: .light))
                                 Text(Tr("没有找到歌曲"))
@@ -3598,7 +3598,7 @@ struct KTVSongPickerView: View {
                             }
                         }
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppDesign.Spacing.md)
                     .padding(.top, 14)
                     .padding(.bottom, 120)
                 }
@@ -3643,7 +3643,7 @@ struct KTVSongPickerView: View {
     }
 
     private var header: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Button {
                 dismiss()
             } label: {
@@ -3671,7 +3671,7 @@ struct KTVSongPickerView: View {
                 .overlay(Circle().stroke(OrbitTheme.jade.opacity(0.24), lineWidth: 0.7))
         }
         .foregroundStyle(.white)
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .padding(.top, max(8, L.safeTop + 2))
     }
 
@@ -3708,13 +3708,13 @@ struct KTVSongPickerView: View {
 
     private var categoryRail: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 categoryChip("", Tr("全部"))
                 ForEach(categories, id: \.self) { value in
                     categoryChip(value, value)
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .padding(.bottom, 3)
         }
     }
@@ -3747,7 +3747,7 @@ struct KTVSongPickerView: View {
             }
             UISelectionFeedbackGenerator().selectionChanged()
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Text(String(format: "%02d", index))
                     .font(pfStyled(size: 11, weight: .semibold, design: .monospaced))
                     .foregroundStyle(selected?.id == track.id ? OrbitTheme.jade : .white.opacity(0.34))
@@ -3776,7 +3776,7 @@ struct KTVSongPickerView: View {
                     .font(.system(size: 22, weight: .semibold))
                     .foregroundStyle(selected?.id == track.id ? OrbitTheme.jade : .white.opacity(0.32))
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
             .frame(height: 74)
             .background(
                 selected?.id == track.id ? OrbitTheme.jade.opacity(0.10) : Color.white.opacity(0.045),
@@ -3800,7 +3800,7 @@ struct KTVSongPickerView: View {
     }
 
     private var selectionDock: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             if let selected {
                 MusicCover(path: selected.cover ?? "", size: 44, radius: 9)
                 VStack(alignment: .leading, spacing: 3) {
@@ -3823,7 +3823,7 @@ struct KTVSongPickerView: View {
                     }
                     .font(pfStyled(size: 14.5, weight: .semibold))
                     .foregroundStyle(.black)
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppDesign.Spacing.md)
                     .frame(height: AppDesign.Control.searchHeight)
                     .background(
                         LinearGradient(
@@ -3844,7 +3844,7 @@ struct KTVSongPickerView: View {
                 Spacer(minLength: 0)
             }
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
         .frame(height: AppDesign.Control.compactRowHeight)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
         .overlay {
@@ -4248,7 +4248,7 @@ struct MusicPlayingView: View {
                             }
                             Color.clear.frame(height: AppDesign.Control.mediumControlHeight)
                         }
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, AppDesign.Spacing.sm)
                     }
                     .onAppear {
                         proxy.scrollTo(lyricIndex, anchor: .center)
@@ -4305,7 +4305,7 @@ struct MusicPlayingView: View {
             .buttonStyle(.plain)
             .accessibilityLabel(Tr("分享"))
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(height: AppDesign.Control.profileRowHeight)
     }
 
@@ -4314,7 +4314,7 @@ struct MusicPlayingView: View {
             List {
                 if player.queue.isEmpty {
                     Section {
-                        VStack(spacing: 8) {
+                        VStack(spacing: AppDesign.Spacing.xs) {
                             Image(systemName: "music.note.list")
                                 .font(.title2)
                                 .foregroundStyle(.secondary)
@@ -4333,7 +4333,7 @@ struct MusicPlayingView: View {
                             Button {
                                 MusicPlayer.shared.play(track)
                             } label: {
-                                HStack(spacing: 12) {
+                                HStack(spacing: AppDesign.Spacing.sm) {
                                     MusicCover(path: track.cover ?? "", size: 44, radius: 7)
                                     VStack(alignment: .leading, spacing: 3) {
                                         Text(track.title)
@@ -4517,7 +4517,7 @@ struct MusicPlayingView: View {
                 }
             }
         } label: {
-            HStack(spacing: 4) {
+            HStack(spacing: AppDesign.Spacing.xxs) {
                 Image(systemName: copyVoice.mode.symbol)
                     .font(.system(size: 9.5, weight: .semibold))
                 Text(copyVoice.mode.name)
@@ -4528,7 +4528,7 @@ struct MusicPlayingView: View {
                     .opacity(0.68)
             }
             .foregroundStyle(.white.opacity(0.92))
-            .padding(.horizontal, 8)
+            .padding(.horizontal, AppDesign.Spacing.xs)
             .frame(height: 23)
             .background(.white.opacity(0.10), in: Capsule(style: .continuous))
         }
@@ -4620,7 +4620,7 @@ struct MusicPlayingView: View {
                 .contentShape(Circle())
                 .shadow(color: .black.opacity(0.24), radius: 5, y: 2)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .padding(.top, 6)
         .padding(.bottom, 6)
         .background {
@@ -4874,8 +4874,8 @@ struct MusicPlayingView: View {
             lyricsViewport
                 .frame(height: lyricHeight)
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 4)
+        .padding(.horizontal, AppDesign.Spacing.xl)
+        .padding(.top, AppDesign.Spacing.xxs)
         .padding(.bottom, 6)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
@@ -4891,7 +4891,7 @@ struct MusicPlayingView: View {
                     }
                 }
 
-            VStack(spacing: 8) {
+            VStack(spacing: AppDesign.Spacing.xs) {
                 compactTitleBlock
                 lyricsViewport
                 progressBlock(compact: true)

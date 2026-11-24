@@ -15,7 +15,7 @@ struct QRStyleSheet: View {
                 VStack(alignment: .leading, spacing: 10) {
                     Text(Tr("挑一个颜色，二维码和「保存到相册」的图片都会用这个色（白底上用深色才扫得出来）。"))
                         .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
-                        .padding(.horizontal, 20).padding(.top, 12)
+                        .padding(.horizontal, AppDesign.Spacing.lg).padding(.top, AppDesign.Spacing.sm)
 
                     LazyVGrid(columns: cols, spacing: 14) {
                         ForEach(QRInk.allCases, id: \.rawValue) { ink in
@@ -23,7 +23,7 @@ struct QRStyleSheet: View {
                                 onPick(ink)
                                 dismiss()
                             } label: {
-                                VStack(spacing: 8) {
+                                VStack(spacing: AppDesign.Spacing.xs) {
                                     ZStack {
                                         Circle().fill(ink.color).frame(width: 52, height: 52)
                                         if ink == current {
@@ -42,7 +42,7 @@ struct QRStyleSheet: View {
                             .buttonStyle(.plain)
                         }
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, AppDesign.Spacing.lg)
                     .padding(.top, 6)
                     Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
@@ -81,7 +81,7 @@ struct FaceToFaceFileSheet: View {
         VStack(spacing: 0) {
             NavBar(title: Tr("面对面传照片和视频"), back: { dismiss() })
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 16) {
+                VStack(spacing: AppDesign.Spacing.md) {
                     statusCard
 
                     if drop.isConnected {
@@ -111,14 +111,14 @@ struct FaceToFaceFileSheet: View {
                                 }
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, AppDesign.Spacing.md)
                             .padding(.vertical, 14)
                         }
                     }
 
                     if !drop.isConnected {
                         Button { showScan = true } label: {
-                            HStack(spacing: 8) {
+                            HStack(spacing: AppDesign.Spacing.xs) {
                                 Image(systemName: "qrcode.viewfinder")
                                     .font(.system(size: 16))
                                 Text(Tr("我也扫对方的码")).font(AppDesign.Type.rowTitle)
@@ -134,7 +134,7 @@ struct FaceToFaceFileSheet: View {
 
                     Spacer().frame(height: AppDesign.Control.statusHeight)
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, AppDesign.Spacing.lg)
                 .padding(.top, 14)
             }
             .background(C.pageBg)
@@ -195,7 +195,7 @@ struct FaceToFaceFileSheet: View {
     }
 
     private var statusCard: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             ZStack {
                 Circle().fill(C.green.opacity(0.14)).frame(width: 42, height: 42)
                 Image(systemName: drop.isConnected ? "checkmark" : "dot.radiowaves.left.and.right")
@@ -240,7 +240,7 @@ struct FaceToFaceFileSheet: View {
             .frame(width: 236, height: 236)
             .shadow(color: Color.black.opacity(0.07), radius: 10, y: 3)
 
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Avatar(path: avatar, size: 28, radius: 14, circle: true)
                 Text(name.isEmpty ? Tr("我") : name)
                     .font(pf(15, .medium))
@@ -250,7 +250,7 @@ struct FaceToFaceFileSheet: View {
     }
 
     private func searchingCard(_ invite: NearbyDropInvite) -> some View {
-        VStack(spacing: 12) {
+        VStack(spacing: AppDesign.Spacing.sm) {
             ProgressView().scaleEffect(1.15)
             Text(Tr("正在连接 ") + invite.name)
                 .font(AppDesign.Type.rowTitle)
@@ -287,7 +287,7 @@ struct FaceToFaceFileSheet: View {
     }
 
     private func actionRow(icon: String, title: String, subtitle: String, enabled: Bool) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Image(systemName: icon)
                 .font(.system(size: 20, weight: .medium))
                 .foregroundColor(enabled ? C.green : C.subLabel)
@@ -314,7 +314,7 @@ struct FaceToFaceFileSheet: View {
                 hintRow("2", Tr("一方扫码，自动建立点对点连接"))
                 hintRow("3", Tr("连接后选择照片或视频，原文件直接传到对方手机"))
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .padding(.vertical, 14)
         }
     }

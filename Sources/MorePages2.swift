@@ -66,7 +66,7 @@ struct GroupQRView: View {
                         .font(AppDesign.Type.rowTitle)
                         .foregroundColor(C.green)
                         .frame(height: L.navH)
-                        .padding(.trailing, 16)
+                        .padding(.trailing, AppDesign.Spacing.md)
                 }
                 .buttonStyle(.plain)
                 .disabled(rows.isEmpty)
@@ -100,10 +100,10 @@ struct GroupQRView: View {
                         }
                         Spacer(minLength: 0)
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppDesign.Spacing.md)
                     .frame(height: AppDesign.Control.profileRowHeight)
                     .background { CardGlassBox(radius: 7) }
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, AppDesign.Spacing.xl)
 
                     Text(Tr("用手机扫码打开链接就能进群；没登录会先跳到登录页，登录完自动进群"))
                         .font(AppDesign.Type.caption)
@@ -112,7 +112,7 @@ struct GroupQRView: View {
                         .padding(.horizontal, 36)
                     Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
-                .padding(.top, 20)
+                .padding(.top, AppDesign.Spacing.lg)
             }
             .background(C.pageBg)
         }
@@ -213,7 +213,7 @@ struct AvatarCropSheet: View {
                     .font(AppDesign.Type.caption)
                     .foregroundColor(C.subLabel)
                     .multilineTextAlignment(.center)
-                    .padding(.top, 12)
+                    .padding(.top, AppDesign.Spacing.sm)
 
                 ZStack {
                     Color.black
@@ -254,7 +254,7 @@ struct AvatarCropSheet: View {
                         .background(C.green)
                         .cornerRadius(12)
                 }
-                .padding(.horizontal, 24)
+                .padding(.horizontal, AppDesign.Spacing.xl)
                 Spacer()
             }
             .background(Color(.systemBackground).ignoresSafeArea())

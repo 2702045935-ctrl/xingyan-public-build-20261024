@@ -192,7 +192,7 @@ struct MusicSongRow: View {
                 MusicPlayer.shared.toggle(track)
                 MusicSheet.shared.open(track)
             } label: {
-                HStack(spacing: 12) {
+                HStack(spacing: AppDesign.Spacing.sm) {
                     MusicCover(path: track.cover ?? "", size: 52, radius: 10)
                     VStack(alignment: .leading, spacing: 4) {
                         Text(track.title).font(AppDesign.Type.rowTitleMedium).foregroundColor(C.label).lineLimit(1)
@@ -263,7 +263,7 @@ struct MusicMineBar: View {
             }
         }
         .padding(.horizontal, 14)
-        .padding(.top, 8)
+        .padding(.top, AppDesign.Spacing.xs)
     }
 }
 
@@ -489,7 +489,7 @@ struct MusicPlaylistsPage: View {
                 openId = pl.id
                 showOpen = true
             } label: {
-                HStack(spacing: 12) {
+                HStack(spacing: AppDesign.Spacing.sm) {
                     ZStack {
                         RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                             .fill(LinearGradient(colors: [AppPalette.violet, AppPalette.violetDeep],
@@ -598,7 +598,7 @@ struct MusicPlaylistPage: View {
     }
 
     private var head: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             ZStack {
                 RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                     .fill(LinearGradient(colors: [AppPalette.violet, AppPalette.violetDeep],
@@ -610,30 +610,30 @@ struct MusicPlaylistPage: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(pl?.name ?? "").font(pf(17, .semibold)).foregroundColor(C.label).lineLimit(1)
                 Text("\(lib.songs(in: listId).count) " + Tr("首")).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     Button {
                         guard let first = songs.first else { return }
                         MusicPlayer.shared.setQueue(songs)
                         MusicPlayer.shared.play(first)
                     } label: {
-                        HStack(spacing: 4) {
+                        HStack(spacing: AppDesign.Spacing.xxs) {
                             Image(systemName: "play.fill").font(.system(size: 11, weight: .bold))
                             Text(Tr("播放全部")).font(AppDesign.Type.captionMedium)
                         }
                         .foregroundColor(.white)
-                        .padding(.horizontal, 12).frame(height: AppDesign.Control.sectionHeaderHeight)
+                        .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.sectionHeaderHeight)
                         .background(Capsule().fill(C.green))
                     }
                     .buttonStyle(.plain)
                     .disabled(songs.isEmpty)
 
                     Button { showPick = true } label: {
-                        HStack(spacing: 4) {
+                        HStack(spacing: AppDesign.Spacing.xxs) {
                             Image(systemName: "plus").font(.system(size: 11, weight: .bold))
                             Text(Tr("加入歌曲")).font(AppDesign.Type.captionMedium)
                         }
                         .foregroundColor(C.green)
-                        .padding(.horizontal, 12).frame(height: AppDesign.Control.sectionHeaderHeight)
+                        .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.sectionHeaderHeight)
                         .background(Capsule().fill(C.green.opacity(0.12)))
                     }
                     .buttonStyle(.plain)
@@ -724,7 +724,7 @@ struct MusicPickPage: View {
         return Button {
             if on { lib.remove(t.id, from: listId) } else { lib.add(t.id, to: listId) }
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 MusicCover(path: t.cover ?? "", size: 46, radius: 9)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(t.title).font(pf(15, .medium)).foregroundColor(C.label).lineLimit(1)
@@ -763,7 +763,7 @@ struct AddToPlaylistSheet: View {
 
             Text(track.title).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16).padding(.bottom, 8)
+                .padding(.horizontal, AppDesign.Spacing.md).padding(.bottom, AppDesign.Spacing.xs)
 
             if lib.playlists.isEmpty {
                 MusicEmptyState(icon: "music.note.list", title: Tr("还没有歌单"),
@@ -787,7 +787,7 @@ struct AddToPlaylistSheet: View {
                                             .foregroundColor(C.green)
                                     }
                                 }
-                                .padding(.horizontal, 16)
+                                .padding(.horizontal, AppDesign.Spacing.md)
                                 .frame(height: AppDesign.Control.menuRowHeight)
                                 .contentShape(Rectangle())
                             }

@@ -36,7 +36,7 @@ struct RechargeView: View {
                             }
                         }
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 24)
+                        .padding(.vertical, AppDesign.Spacing.xl)
                     }
 
                     HStack(spacing: 10) {
@@ -58,7 +58,7 @@ struct RechargeView: View {
                         Button {
                             if banks.isEmpty { showAddBank = true }
                         } label: {
-                            HStack(spacing: 12) {
+                            HStack(spacing: AppDesign.Spacing.sm) {
                                 Image(systemName: "creditcard.fill")
                                     .font(.system(size: 15, weight: .semibold))
                                     .foregroundColor(PayVisual.tint)
@@ -72,7 +72,7 @@ struct RechargeView: View {
                                     .font(.system(size: 12.5, weight: .semibold))
                                     .foregroundColor(PayVisual.secondaryInk.opacity(0.55))
                             }
-                            .padding(.horizontal, 16).frame(height: AppDesign.Control.profileRowHeight)
+                            .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.profileRowHeight)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -81,7 +81,7 @@ struct RechargeView: View {
                     Text(Tr("充值是从银行卡转入零钱（本 App 内记账），到账立刻可用。"))
                         .font(AppDesign.Type.caption).foregroundColor(PayVisual.secondaryInk)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 4)
+                        .padding(.horizontal, AppDesign.Spacing.xxs)
 
                     Button { showPay = true } label: {
                         Text(busy ? Tr("处理中…") : Tr("充值"))
@@ -89,7 +89,7 @@ struct RechargeView: View {
                     .buttonStyle(PayPrimaryButtonStyle(tint: PayVisual.tint, enabled: amount > 0))
                     .disabled(busy || amount <= 0)
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, AppDesign.Spacing.lg)
                 .padding(.top, 18)
                 .padding(.bottom, max(28, L.safeBottom))
             }
@@ -190,7 +190,7 @@ struct WithdrawView: View {
                         Button {
                             if banks.isEmpty { showAddBank = true } else { showPickBank = true }
                         } label: {
-                            HStack(spacing: 12) {
+                            HStack(spacing: AppDesign.Spacing.sm) {
                                 Text(Tr("提现到")).font(pf(16)).foregroundColor(C.label)
                                 Spacer(minLength: 6)
                                 HStack(spacing: 7) {
@@ -207,7 +207,7 @@ struct WithdrawView: View {
                                     .font(.system(size: 12.5, weight: .semibold))
                                     .foregroundColor(PayVisual.secondaryInk.opacity(0.55))
                             }
-                            .padding(.horizontal, 16).frame(height: 68)
+                            .padding(.horizontal, AppDesign.Spacing.md).frame(height: 68)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -220,13 +220,13 @@ struct WithdrawView: View {
                                 .font(AppDesign.Type.caption).foregroundColor(PayVisual.secondaryInk)
                             Spacer(minLength: 0)
                         }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppDesign.Spacing.md)
                         .frame(height: AppDesign.Control.searchHeight)
                     }
 
-                    PayGroupCard {
+                    PayGroupCard(horizontalInset: 0) {
                         VStack(spacing: 0) {
-                            VStack(spacing: 8) {
+                            VStack(spacing: AppDesign.Spacing.xs) {
                                 Text(Tr("提现金额"))
                                     .font(AppDesign.Type.captionMedium)
                                     .foregroundColor(PayVisual.secondaryInk)
@@ -267,7 +267,7 @@ struct WithdrawView: View {
                         }
                     }
 
-                    PayGroupCard {
+                    PayGroupCard(horizontalInset: 0) {
                         VStack(spacing: 0) {
                             if amount > 0 {
                                 HStack {
@@ -324,7 +324,7 @@ struct WithdrawView: View {
                             ForEach(ops.indices, id: \.self) { i in
                                 let o = ops[i]
                                 if i > 0 { HairLine(inset: 16) }
-                                HStack(spacing: 12) {
+                                HStack(spacing: AppDesign.Spacing.sm) {
                                     VStack(alignment: .leading, spacing: 3) {
                                         Text("¥" + money(o.amount ?? 0)).font(pf(16)).foregroundColor(C.label)
                                         Text((o.bankText ?? "") + " · " + (o.createdAt ?? "").prefix(16))
@@ -335,12 +335,12 @@ struct WithdrawView: View {
                                         .font(pf(13))
                                         .foregroundColor(o.status == "pending" ? C.orange : C.green)
                                 }
-                                .padding(.horizontal, 16).frame(height: AppDesign.Control.profileRowHeight)
+                                .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.profileRowHeight)
                             }
                         }
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, AppDesign.Spacing.lg)
                 .padding(.top, 18)
                 .padding(.bottom, max(28, L.safeBottom))
             }
@@ -404,12 +404,12 @@ struct WithdrawView: View {
 
     private func faqRow(_ q: String, _ a: String, _ tap: @escaping () -> Void) -> some View {
         Button(action: tap) {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Text(q).font(AppDesign.Type.body).foregroundColor(C.link)
                 Spacer(minLength: 8)
                 Chevron(size: 8, line: 1.4)
             }
-            .padding(.horizontal, 20).frame(height: AppDesign.Control.compactHeight)
+            .padding(.horizontal, AppDesign.Spacing.lg).frame(height: AppDesign.Control.compactHeight)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -426,7 +426,7 @@ struct WithdrawView: View {
                                 bankId = b.id
                                 showPickBank = false
                             } label: {
-                                HStack(spacing: 12) {
+                                HStack(spacing: AppDesign.Spacing.sm) {
                                     bankBadge(b.bank ?? "")
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text((b.bank ?? Tr("银行卡")) + Tr("储蓄卡"))
@@ -441,7 +441,7 @@ struct WithdrawView: View {
                                             .foregroundColor(C.green)
                                     }
                                 }
-                                .padding(.horizontal, 16).frame(height: AppDesign.Control.compactRowHeight)
+                                .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.compactRowHeight)
                                 .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
@@ -457,7 +457,7 @@ struct WithdrawView: View {
                                 Text(Tr("添加银行卡")).font(pf(16)).foregroundColor(C.label)
                                 Spacer(minLength: 0)
                             }
-                            .padding(.horizontal, 16).frame(height: AppDesign.Control.menuRowHeight)
+                            .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.menuRowHeight)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -522,7 +522,7 @@ struct BankAddSheet: View {
                 Button { save() } label: {
                     Text(busy ? Tr("保存中…") : Tr("完成"))
                         .font(pf(17)).foregroundColor(cardNo.count >= 12 ? C.green : C.subLabel)
-                        .frame(height: L.navH).padding(.trailing, 16)
+                        .frame(height: L.navH).padding(.trailing, AppDesign.Spacing.md)
                 }
                 .buttonStyle(.plain)
                 .disabled(busy || cardNo.count < 12)
@@ -534,7 +534,7 @@ struct BankAddSheet: View {
                 HairLine(inset: 16)
                 field(Tr("姓名"), $holder, "")
             }
-            .padding(.top, 12)
+            .padding(.top, AppDesign.Spacing.sm)
             Text(Tr("出于安全考虑，服务器只保存银行名和卡号后四位，完整卡号不落盘。"))
                 .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -549,13 +549,13 @@ struct BankAddSheet: View {
     }
 
     private func field(_ title: String, _ text: Binding<String>, _ ph: String) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Text(title).font(pf(16)).foregroundColor(C.label).frame(width: 84, alignment: .leading)
             TextField(ph, text: text)
                 .font(pf(16)).foregroundColor(C.label)
                 .keyboardType(title == Tr("卡号") ? .numberPad : .default)
         }
-        .padding(.horizontal, 16).frame(height: AppDesign.Control.dialogRowHeight)
+        .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.dialogRowHeight)
     }
 
     private func save() {
@@ -605,7 +605,7 @@ struct PayConfirmSheet: View {
             }
             .frame(height: L.navH)
 
-            VStack(spacing: 12) {
+            VStack(spacing: AppDesign.Spacing.sm) {
                 Image(systemName: "creditcard.fill")
                     .font(.system(size: 26, weight: .semibold))
                     .foregroundColor(PayVisual.tint)
@@ -619,7 +619,7 @@ struct PayConfirmSheet: View {
                     .font(AppDesign.Type.body)
                     .foregroundColor(PayVisual.secondaryInk)
             }
-            .padding(.top, 24)
+            .padding(.top, AppDesign.Spacing.xl)
 
             PayGroupCard {
                 VStack(spacing: 0) {
@@ -633,14 +633,14 @@ struct PayConfirmSheet: View {
                             .foregroundColor(PayVisual.secondaryInk)
                     }
                     .padding(.horizontal, 18)
-                    .padding(.top, 16)
+                    .padding(.top, AppDesign.Spacing.md)
 
                     PayDotField(count: pwd.count, height: 50)
                         .contentShape(Rectangle())
                         .onTapGesture { focused = true }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppDesign.Spacing.md)
                         .padding(.top, 14)
-                        .padding(.bottom, 16)
+                        .padding(.bottom, AppDesign.Spacing.md)
 
                     TextField("", text: $pwd)
                         .keyboardType(.numberPad)
@@ -653,7 +653,7 @@ struct PayConfirmSheet: View {
                         }
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, AppDesign.Spacing.lg)
             .padding(.top, 28)
 
             if Biometrics.available {
@@ -679,8 +679,8 @@ struct PayConfirmSheet: View {
             }
             .buttonStyle(PayPrimaryButtonStyle(tint: PayVisual.tint, enabled: pwd.count >= 6))
             .disabled(pwd.count < 6)
-            .padding(.horizontal, 20)
-            .padding(.top, 24)
+            .padding(.horizontal, AppDesign.Spacing.lg)
+            .padding(.top, AppDesign.Spacing.xl)
             Spacer()
         }
         .background(PayVisual.canvas.ignoresSafeArea())

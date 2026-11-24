@@ -84,14 +84,14 @@ struct RealNameView: View {
 
             HairLine(inset: 16)
             Button { showFace = true } label: {
-                HStack(spacing: 12) {
+                HStack(spacing: AppDesign.Spacing.sm) {
                     Text(Tr("人脸核身")).font(pf(16)).foregroundColor(C.label)
                     Spacer(minLength: 8)
                     Text(faceOK ? Tr("已通过") : Tr("去验证"))
                         .font(pf(14)).foregroundColor(C.subLabel)
                     Chevron(size: 9, line: 1.6)
                 }
-                .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
+                .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.largeControlHeight)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -112,7 +112,7 @@ struct RealNameView: View {
                     .focused($focus, equals: .name)
                     .autocorrectionDisabled()
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .frame(height: AppDesign.Control.dialogRowHeight)
             .background(sheetBg)
 
@@ -131,7 +131,7 @@ struct RealNameView: View {
                     .autocorrectionDisabled()
                     .autocapitalization(.allCharacters)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .frame(height: AppDesign.Control.dialogRowHeight)
             .background(sheetBg)
 
@@ -140,8 +140,8 @@ struct RealNameView: View {
                     .font(pf(13))
                     .foregroundColor(Color(hexString: "#FA5151"))
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
+                    .padding(.horizontal, AppDesign.Spacing.md)
+                    .padding(.vertical, AppDesign.Spacing.xs)
                     .background(sheetBg)
             }
 
@@ -166,7 +166,7 @@ struct RealNameView: View {
             }
             .buttonStyle(.plain)
             .disabled(!canSubmit || busy)
-            .padding(16)
+            .padding(AppDesign.Spacing.md)
             .background(sheetBg)
             .sheet(isPresented: $showFace) {
 
@@ -220,7 +220,7 @@ struct RealNameView: View {
             bullet(Tr("一张身份证只能绑一个账号，认证后不能自己改"))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
+        .padding(AppDesign.Spacing.md)
         .background(sheetBg)
     }
 
@@ -238,7 +238,7 @@ struct RealNameView: View {
             Spacer(minLength: 0)
             Text(v).font(pf(16)).foregroundColor(gray)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(height: AppDesign.Control.buttonHeight)
     }
 

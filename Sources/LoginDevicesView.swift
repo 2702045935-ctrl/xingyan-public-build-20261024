@@ -20,7 +20,7 @@ struct LoginDevicesView: View {
                         .font(pf(17))
                         .foregroundColor(C.label)
                         .frame(height: L.navH)
-                        .padding(.trailing, 16)
+                        .padding(.trailing, AppDesign.Spacing.md)
                 }
                 .buttonStyle(.plain)
                 .disabled(list.isEmpty)
@@ -53,38 +53,38 @@ struct LoginDevicesView: View {
 
                     if !living.isEmpty {
                         header(Tr("已登录的设备"))
-                        GroupCard {
+                        GroupCard(horizontalInset: 0) {
                             ForEach(Array(living.enumerated()), id: \.offset) { i, d in
                                 if i > 0 { HairLine(inset: 16) }
                                 row(d, right: d.current == true ? Tr("当前设备") : wxTime(d.at))
                             }
                         }
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, AppDesign.Spacing.sm)
                     }
 
                     if !dead.isEmpty {
                         header(Tr("已退出登录的设备"))
-                        GroupCard {
+                        GroupCard(horizontalInset: 0) {
                             ForEach(Array(dead.enumerated()), id: \.offset) { i, d in
                                 if i > 0 { HairLine(inset: 16) }
                                 row(d, right: wxTime(d.at))
                             }
                         }
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, AppDesign.Spacing.sm)
                     }
 
                     Spacer().frame(height: 14)
 
-                    GroupCard {
+                    GroupCard(horizontalInset: 0) {
                         NavigationLink {
                             PairApproveView()
                         } label: {
-                            HStack(spacing: 12) {
+                            HStack(spacing: AppDesign.Spacing.sm) {
                                 Text(Tr("确认新设备登录")).font(pf(17)).foregroundColor(C.label)
                                 Spacer(minLength: 8)
                                 Chevron(size: 9, line: 1.6).padding(.trailing, 3)
                             }
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, AppDesign.Spacing.md)
                             .frame(height: AppDesign.Control.dialogRowHeight)
                             .background(C.cardBg)
                             .contentShape(Rectangle())
@@ -94,12 +94,12 @@ struct LoginDevicesView: View {
                         NavigationLink {
                             DevicesFaqView()
                         } label: {
-                            HStack(spacing: 12) {
+                            HStack(spacing: AppDesign.Spacing.sm) {
                                 Text(Tr("常见问题")).font(pf(17)).foregroundColor(C.label)
                                 Spacer(minLength: 8)
                                 Chevron(size: 9, line: 1.6).padding(.trailing, 3)
                             }
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, AppDesign.Spacing.md)
                             .frame(height: AppDesign.Control.dialogRowHeight)
                             .background(C.cardBg)
                             .contentShape(Rectangle())
@@ -135,19 +135,19 @@ struct LoginDevicesView: View {
             .foregroundColor(C.subLabel)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 22)
-            .padding(.top, 16)
+            .padding(.top, AppDesign.Spacing.md)
             .padding(.bottom, 6)
     }
 
     private func row(_ d: API.LoginDevice, right: String) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
 
             if editing, d.current != true {
                 Button { askDelete = d } label: {
                     Text(Tr("删除"))
                         .font(pf(14))
                         .foregroundColor(.white)
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, AppDesign.Spacing.sm)
                         .frame(height: AppDesign.Control.sectionHeaderHeight)
                         .background(Capsule().fill(C.red))
                 }
@@ -176,7 +176,7 @@ struct LoginDevicesView: View {
                     .lineLimit(1)
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(minHeight: 74)
         .background(C.cardBg)
     }
@@ -302,13 +302,13 @@ struct DevicesFaqView: View {
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 18)
-                        .padding(.vertical, 16)
+                        .padding(.vertical, AppDesign.Spacing.md)
                         .background(C.cardBg)
                         if i < qa.count - 1 { HairLine(inset: 18) }
                     }
                     Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
-                .padding(.top, 8)
+                .padding(.top, AppDesign.Spacing.xs)
             }
             .background(C.pageBg)
         }

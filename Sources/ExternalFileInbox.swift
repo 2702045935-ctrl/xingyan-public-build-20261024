@@ -165,7 +165,7 @@ struct ExternalFileSendView: View {
                                 .foregroundStyle(sending || favoriteBusy
                                                  ? OrbitTheme.tertiary
                                                  : OrbitTheme.secondary)
-                                .padding(.horizontal, 12)
+                                .padding(.horizontal, AppDesign.Spacing.sm)
                                 .frame(height: AppDesign.Control.smallButtonHeight)
                         }
                         .buttonStyle(.plain)
@@ -185,7 +185,7 @@ struct ExternalFileSendView: View {
                                 }
                             }
                             .padding(.horizontal, 14)
-                            .padding(.top, 4)
+                            .padding(.top, AppDesign.Spacing.xxs)
                             .padding(.bottom, 18)
                         }
                         .onChange(of: forwardScrollTick) { _ in
@@ -296,7 +296,7 @@ struct ExternalFileSendView: View {
     }
 
     private var actionRail: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppDesign.Spacing.xs) {
             fileAction(Tr("打开"), "doc.text.magnifyingglass", OrbitTheme.jade) {
                 previewFirstFile()
             }
@@ -419,7 +419,7 @@ struct ExternalFileSendView: View {
                 }
             }
 
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(selectedId.isEmpty ? Tr("选择接收人") : selectedName)
                         .font(pfStyled(size: 14, weight: .semibold))

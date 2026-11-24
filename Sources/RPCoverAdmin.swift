@@ -49,7 +49,7 @@ struct RPCoverEditSheet: View {
 
                     GroupCard {
                         Button { showPic = true } label: {
-                            HStack(spacing: 12) {
+                            HStack(spacing: AppDesign.Spacing.sm) {
                                 Text(Tr("封面图")).font(pf(16)).foregroundColor(C.label)
                                 Spacer(minLength: 0)
                                 ZStack {
@@ -67,27 +67,27 @@ struct RPCoverEditSheet: View {
                                 .frame(width: 52, height: 66)
                                 Chevron(size: 9, line: 1.6)
                             }
-                            .padding(.horizontal, 16).frame(height: 84)
+                            .padding(.horizontal, AppDesign.Spacing.md).frame(height: 84)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
 
                         HairLine(inset: 16)
-                        HStack(spacing: 12) {
+                        HStack(spacing: AppDesign.Spacing.sm) {
                             Text(Tr("名字")).font(pf(16)).foregroundColor(C.label)
                                 .frame(width: 62, alignment: .leading)
                             TextField(Tr("金玉满堂"), text: $name)
                                 .font(AppDesign.Type.bodyLarge)
                                 .multilineTextAlignment(.trailing)
                         }
-                        .padding(.horizontal, 16).frame(height: AppDesign.Control.dialogRowHeight)
+                        .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.dialogRowHeight)
                     }
                     .padding(.top, 10)
 
-                    GroupCard {
+                    GroupCard(horizontalInset: 0) {
                         VStack(alignment: .leading, spacing: 10) {
                             Text(Tr("主题色（发红包页的底色）")).font(pf(13)).foregroundColor(C.subLabel)
-                            HStack(spacing: 12) {
+                            HStack(spacing: AppDesign.Spacing.sm) {
                                 ForEach(colors, id: \.0) { hex, label in
                                     Button { color = hex } label: {
                                         ZStack {
@@ -106,26 +106,26 @@ struct RPCoverEditSheet: View {
                                 Spacer(minLength: 0)
                             }
                         }
-                        .padding(.horizontal, 16).padding(.vertical, 14)
+                        .padding(.horizontal, AppDesign.Spacing.md).padding(.vertical, 14)
 
                         HairLine(inset: 16)
-                        HStack(spacing: 12) {
+                        HStack(spacing: AppDesign.Spacing.sm) {
                             Text(Tr("启用（发红包页能挑到）")).font(pf(16)).foregroundColor(C.label)
                             Spacer(minLength: 0)
                             Toggle("", isOn: $enabled).labelsHidden().tint(C.green)
                         }
-                        .padding(.horizontal, 16).frame(height: AppDesign.Control.menuRowHeight)
+                        .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.menuRowHeight)
 
                         HairLine(inset: 16)
                         Button { makeDefault.toggle() } label: {
-                            HStack(spacing: 12) {
+                            HStack(spacing: AppDesign.Spacing.sm) {
                                 Text(Tr("设为默认封面")).font(pf(16)).foregroundColor(C.label)
                                 Spacer(minLength: 0)
                                 Image(systemName: makeDefault ? "checkmark.circle.fill" : "circle")
                                     .font(.system(size: 20))
                                     .foregroundColor(makeDefault ? C.green : C.subLabel)
                             }
-                            .padding(.horizontal, 16).frame(height: AppDesign.Control.menuRowHeight)
+                            .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.menuRowHeight)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -143,7 +143,7 @@ struct RPCoverEditSheet: View {
                         .buttonStyle(.plain)
                         .background(C.cardBg)
                         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, AppDesign.Spacing.sm)
                     }
 
                     if !msg.isEmpty {

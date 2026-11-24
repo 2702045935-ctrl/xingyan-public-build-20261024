@@ -51,7 +51,7 @@ struct PanelHeroCard<Content: View>: View {
     var body: some View {
         VStack(spacing: 14) { content() }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(16)
+            .padding(AppDesign.Spacing.md)
             .background(
                 ZStack {
                     LinearGradient(colors: [Color(hex: 0x1C2130), Color(hex: 0x2A2433), Color(hex: 0x14111A)],
@@ -94,7 +94,7 @@ struct PanelPill: View {
                     .lineLimit(1)
             }
             .foregroundColor(.white)
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
             .frame(height: AppDesign.Control.smallButtonHeight)
             .background(
                 Capsule().fill(LinearGradient(colors: colors.map { $0.opacity(0.9) },
@@ -299,7 +299,7 @@ struct PanelConfirmDialog: View {
                 }
                 .padding(.horizontal, 22)
                 .padding(.top, symbol == nil ? 24 : 20)
-                .padding(.bottom, 20)
+                .padding(.bottom, AppDesign.Spacing.lg)
 
                 Rectangle().fill(C.hairline).frame(height: AppDesign.Control.hairline)
                 HStack(spacing: 0) {

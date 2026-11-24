@@ -260,7 +260,7 @@ struct InAppBrowserView: View {
 
                 if showAddress {
                     addressOverlay(top: geo.safeAreaInsets.top)
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, AppDesign.Spacing.sm)
                 } else {
                     floatingControls(top: geo.safeAreaInsets.top)
                         .padding(.trailing, 10)
@@ -268,7 +268,7 @@ struct InAppBrowserView: View {
 
                 if showFind {
                     findOverlay(top: geo.safeAreaInsets.top)
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, AppDesign.Spacing.sm)
                 }
 
                 VStack {
@@ -390,7 +390,7 @@ struct InAppBrowserView: View {
     }
 
     private var browserError: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: AppDesign.Spacing.sm) {
             Image(systemName: "wifi.exclamationmark")
                 .font(.system(size: 30))
                 .foregroundColor(C.subLabel)
@@ -428,11 +428,11 @@ struct InAppBrowserView: View {
         .padding(18)
         .frame(maxWidth: 320)
         .background { CardGlassBox(radius: 18) }
-        .padding(.horizontal, 24)
+        .padding(.horizontal, AppDesign.Spacing.xl)
     }
 
     private func addressOverlay(top: CGFloat) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppDesign.Spacing.xs) {
             Image(systemName: currentURL?.scheme == "https"
                   ? "lock.fill" : "globe")
                 .font(.system(size: 12.5, weight: .semibold))
@@ -474,7 +474,7 @@ struct InAppBrowserView: View {
     }
 
     private func findOverlay(top: CGFloat) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppDesign.Spacing.xs) {
             Image(systemName: "magnifyingglass")
                 .foregroundColor(.secondary)
             TextField(Tr("在页面中查找"), text: $findText)
@@ -534,7 +534,7 @@ struct InAppBrowserView: View {
                 }
                 .font(AppDesign.Type.captionMedium)
                 .foregroundStyle(.primary)
-                .padding(.horizontal, 12)
+                .padding(.horizontal, AppDesign.Spacing.sm)
                 .frame(maxWidth: 220)
                 .frame(height: 34)
                 .background(Color.primary.opacity(0.06), in: Capsule())
@@ -574,7 +574,7 @@ struct InAppBrowserView: View {
             )
         }
         .shadow(color: .black.opacity(0.18), radius: 16, y: 7)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
         .padding(.bottom, max(8, bottom + 4))
     }
 
@@ -1080,7 +1080,7 @@ private struct BrowserStartPage: View {
                         }
                         .font(pf(15, .medium))
                         .foregroundStyle(.secondary)
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppDesign.Spacing.md)
                         .frame(height: AppDesign.Control.mediumControlHeight)
                         .background(
                             Color.primary.opacity(0.055),
@@ -1163,7 +1163,7 @@ private struct BrowserStartSection: View {
                     Button {
                         if let url = row.url { onOpen(url) }
                     } label: {
-                        HStack(spacing: 12) {
+                        HStack(spacing: AppDesign.Spacing.sm) {
                             Image(systemName: row.icon)
                                 .font(.system(size: 14, weight: .semibold))
                                 .foregroundStyle(C.green)
@@ -1219,7 +1219,7 @@ private struct BrowserTabsSheet: View {
                         onSelect(tab.id)
                         dismiss()
                     } label: {
-                        HStack(spacing: 12) {
+                        HStack(spacing: AppDesign.Spacing.sm) {
                             Image(systemName: tab.isPrivate
                                   ? "eye.slash.fill" : "globe")
                                 .foregroundStyle(tab.id == active

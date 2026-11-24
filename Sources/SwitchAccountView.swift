@@ -45,7 +45,7 @@ struct SwitchAccountView: View {
                         .foregroundStyle(secondaryInk.opacity(0.88))
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                .padding(.horizontal, 4)
+                .padding(.horizontal, AppDesign.Spacing.xxs)
 
                 VStack(spacing: 0) {
                     ForEach(Array(app.accounts.enumerated()), id: \.element.id) { index, account in
@@ -134,9 +134,9 @@ struct SwitchAccountView: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
-                .padding(.horizontal, 4)
+                .padding(.horizontal, AppDesign.Spacing.xxs)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .padding(.top, 10)
             .padding(.bottom, max(28, L.safeBottom + 16))
         }
@@ -292,7 +292,7 @@ struct SwitchAccountView: View {
                                     .foregroundStyle(C.red)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
-                            .padding(.horizontal, 12)
+                            .padding(.horizontal, AppDesign.Spacing.sm)
                             .padding(.vertical, 11)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .background(C.red.opacity(0.08))
@@ -302,7 +302,7 @@ struct SwitchAccountView: View {
                         securityNote
                     }
                     .padding(.horizontal, 14)
-                    .padding(.top, 4)
+                    .padding(.top, AppDesign.Spacing.xxs)
                     .padding(.bottom, max(28, L.safeBottom))
                 }
             }
@@ -353,7 +353,7 @@ struct SwitchAccountView: View {
             .allowsHitTesting(false)
 
             VStack(alignment: .leading, spacing: 13) {
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     Image(systemName: "point.3.connected.trianglepath.dotted")
                         .font(.system(size: 10.5, weight: .semibold))
                     Text("IDENTITY ORBIT")
@@ -362,7 +362,7 @@ struct SwitchAccountView: View {
                     Spacer(minLength: 10)
                     Text(Tr("安全切换"))
                         .font(pfStyled(size: 9.5, weight: .semibold))
-                        .padding(.horizontal, 8)
+                        .padding(.horizontal, AppDesign.Spacing.xs)
                         .frame(height: 22)
                         .background(Capsule().fill(Color.white.opacity(0.12)))
                 }
@@ -407,7 +407,7 @@ struct SwitchAccountView: View {
                         .padding(.leading, 3)
                 }
             }
-            .padding(16)
+            .padding(AppDesign.Spacing.md)
         }
         .frame(height: 182)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
@@ -611,7 +611,7 @@ struct SwitchAccountView: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
         .padding(.vertical, 11)
         .background(OrbitTheme.field.opacity(0.58))
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))

@@ -185,7 +185,7 @@ struct UserManageView: View {
                     if !msg.isEmpty {
                         Text(msg).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, AppDesign.Spacing.md)
                     }
                     Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
@@ -264,7 +264,7 @@ struct UserManageView: View {
 
     @ViewBuilder private func hubCard<V: View>(@ViewBuilder _ content: () -> V) -> some View {
         GroupCard { content() }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
     }
 
     private func linkRow<D: View>(icon: String, tint: Color, title: String, sub: String,
@@ -272,7 +272,7 @@ struct UserManageView: View {
         NavigationLink {
             ManageSubPage(title: title, content: dest)
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 ZStack {
                     RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(tint)
                     Image(systemName: icon)
@@ -287,7 +287,7 @@ struct UserManageView: View {
                 Spacer(minLength: 0)
                 Chevron(size: 9, line: 1.6)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .frame(minHeight: 62)
             .contentShape(Rectangle())
         }
@@ -303,7 +303,7 @@ struct UserManageView: View {
             } else {
                 ForEach(Array(shopItems.enumerated()), id: \.element.id) { i, it in
                     if i > 0 { HairLine(inset: 70) }
-                    HStack(spacing: 12) {
+                    HStack(spacing: AppDesign.Spacing.sm) {
                         ZStack {
                             RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.pageBg)
                             if let img = it.img, !img.isEmpty {
@@ -369,7 +369,7 @@ struct UserManageView: View {
 
     private var cardsSection: some View {
         card(Tr("卡包（找人 → 发券 / 删卡）")) {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 14)).foregroundColor(C.subLabel)
                 TextField(Tr("按用户名 / 昵称找人"), text: $cardQuery)
@@ -387,7 +387,7 @@ struct UserManageView: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
+            .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.largeControlHeight)
 
             if cardUsers.isEmpty {
                 HairLine(inset: 16)
@@ -396,7 +396,7 @@ struct UserManageView: View {
                 ForEach(cardUsers) { u in
                     HairLine(inset: 70)
                     Button { cardUser = u } label: {
-                        HStack(spacing: 12) {
+                        HStack(spacing: AppDesign.Spacing.sm) {
                             Avatar(path: u.avatar ?? "", size: 46, radius: 23)
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(u.nickname ?? u.username ?? "").font(AppDesign.Type.bodyLarge)
@@ -417,7 +417,7 @@ struct UserManageView: View {
             if !cardMsg.isEmpty {
                 Text(cardMsg).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 16).padding(.bottom, 8)
+                    .padding(.horizontal, AppDesign.Spacing.md).padding(.bottom, AppDesign.Spacing.xs)
             }
         }
     }
@@ -455,12 +455,12 @@ struct UserManageView: View {
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.horizontal, 16).frame(height: 58)
+            .padding(.horizontal, AppDesign.Spacing.md).frame(height: 58)
 
             if !logKinds.isEmpty {
                 HairLine(inset: 16)
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
+                    HStack(spacing: AppDesign.Spacing.xs) {
                         kindChip("", Tr("全部") + " " + String(logTotal))
                         ForEach(logKinds.prefix(12), id: \.kind) { k in
                             kindChip(k.kind, k.kind + " " + String(k.n))
@@ -478,7 +478,7 @@ struct UserManageView: View {
                     HairLine(inset: 16)
                     Button { logDetail = r } label: {
                         VStack(alignment: .leading, spacing: 3) {
-                            HStack(spacing: 8) {
+                            HStack(spacing: AppDesign.Spacing.xs) {
                                 Text(r.kind ?? "").font(pf(14.5)).foregroundColor(C.label).lineLimit(1)
                                 Spacer(minLength: 0)
                                 Text(logTime(r.at ?? "")).font(pf(11.5)).foregroundColor(C.subLabel)
@@ -486,7 +486,7 @@ struct UserManageView: View {
                             Text(logOneLine(r)).font(pf(12)).foregroundColor(C.subLabel).lineLimit(2)
                             Text(logMeta(r)).font(pf(11)).foregroundColor(C.subLabel).lineLimit(1)
                         }
-                        .padding(.horizontal, 16).padding(.vertical, 10)
+                        .padding(.horizontal, AppDesign.Spacing.md).padding(.vertical, 10)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -554,7 +554,7 @@ struct UserManageView: View {
 
     private var switchSection: some View {
         card(Tr("开关")) {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(Tr("实名认证先刷脸")).font(pf(16)).foregroundColor(C.label)
                     Text(Tr("关掉后只填姓名+身份证号就能提交")).font(pf(12)).foregroundColor(C.subLabel)
@@ -577,11 +577,11 @@ struct UserManageView: View {
                     }))
                     .labelsHidden().tint(C.green)
             }
-            .padding(.horizontal, 16).frame(height: 62)
+            .padding(.horizontal, AppDesign.Spacing.md).frame(height: 62)
 
             HairLine(inset: 16)
 
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(Tr("圆形头像")).font(pf(16)).foregroundColor(C.label)
                     Text(Tr("开 = 会话、通讯录和个人资料全部用圆形；关 = 星言默认圆角方形"))
@@ -605,11 +605,11 @@ struct UserManageView: View {
                     }))
                     .labelsHidden().tint(C.green)
             }
-            .padding(.horizontal, 16).frame(height: 66)
+            .padding(.horizontal, AppDesign.Spacing.md).frame(height: 66)
 
             HairLine(inset: 16)
 
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(Tr("会话页分类横条")).font(pf(16)).foregroundColor(C.label)
                     Text(Tr("关闭后「全部 / 未读 / 群聊 / 公众号 / 置顶」整条隐藏，不再占高度"))
@@ -633,11 +633,11 @@ struct UserManageView: View {
                     }))
                     .labelsHidden().tint(C.green)
             }
-            .padding(.horizontal, 16).frame(height: 66)
+            .padding(.horizontal, AppDesign.Spacing.md).frame(height: 66)
 
             HairLine(inset: 16)
 
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(Tr("会话页分组卡片")).font(pf(16)).foregroundColor(C.label)
                     Text(Tr("开 = 会话列表包在一块圆角卡片里；关 = 恢复原来的整页列表"))
@@ -660,11 +660,11 @@ struct UserManageView: View {
                     }))
                     .labelsHidden().tint(C.green)
             }
-            .padding(.horizontal, 16).frame(height: 66)
+            .padding(.horizontal, AppDesign.Spacing.md).frame(height: 66)
 
             HairLine(inset: 16)
 
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(Tr("「我」页排版")).font(pf(16)).foregroundColor(C.label)
                     Text(Tr("卡片版 = 头像压在卡片上沿 / 微信版 = 一行放下头像·名字·星言号"))
@@ -693,11 +693,11 @@ struct UserManageView: View {
                 .pickerStyle(.segmented)
                 .frame(width: 150)
             }
-            .padding(.horizontal, 16).frame(height: 62)
+            .padding(.horizontal, AppDesign.Spacing.md).frame(height: 62)
 
             HairLine(inset: 16)
 
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(Tr("多设备同时在线")).font(pf(16)).foregroundColor(C.label)
                     Text(Tr("开 = 同一个账号几台手机都在线、消息互相同步；关 = 新手机一登就把旧手机顶下线"))
@@ -721,7 +721,7 @@ struct UserManageView: View {
                     }))
                     .labelsHidden().tint(C.green)
             }
-            .padding(.horizontal, 16).frame(height: 62)
+            .padding(.horizontal, AppDesign.Spacing.md).frame(height: 62)
 
             HairLine(inset: 16)
             darkPageColorSection
@@ -744,7 +744,7 @@ struct UserManageView: View {
                     Button {
                         Task { await applyDarkPagePreset(preset) }
                     } label: {
-                        HStack(spacing: 12) {
+                        HStack(spacing: AppDesign.Spacing.sm) {
                             RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                                 .fill(Color(hex: preset.hex))
                                 .frame(width: 42, height: 42)
@@ -784,7 +784,7 @@ struct UserManageView: View {
                 }
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .padding(.vertical, 14)
         .onAppear { syncActiveDarkPagePreset() }
     }
@@ -895,7 +895,7 @@ struct UserManageView: View {
             } else {
                 ForEach(Array(rpCovers.enumerated()), id: \.element.id) { i, c in
                     if i > 0 { HairLine(inset: 70) }
-                    HStack(spacing: 12) {
+                    HStack(spacing: AppDesign.Spacing.sm) {
                         ZStack {
                             RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                                 .fill(Color(hexString: c.color ?? "#B3241C", fallback: 0xB3241C))
@@ -994,7 +994,7 @@ struct UserManageView: View {
             Text(Tr("mp3 / m4a / flac / wma …什么格式都行，服务器会自动转成 mp3"))
                 .font(pf(11.5)).foregroundColor(C.subLabel)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16).padding(.bottom, 8)
+                .padding(.horizontal, AppDesign.Spacing.md).padding(.bottom, AppDesign.Spacing.xs)
             HairLine(inset: 16)
             row(Tr("批量导入"), batchTotal > 0 ? (Tr("已导入 ") + "\(batchDone)/\(batchTotal)") : Tr("一次选好几首")) { showBatchPick = true }
             HairLine(inset: 16)
@@ -1006,7 +1006,7 @@ struct UserManageView: View {
                 TextField(Tr("必填"), text: $title)
                     .font(pf(16)).multilineTextAlignment(.trailing)
             }
-            .frame(height: AppDesign.Control.largeControlHeight).padding(.horizontal, 16)
+            .frame(height: AppDesign.Control.largeControlHeight).padding(.horizontal, AppDesign.Spacing.md)
             HairLine(inset: 16)
             HStack {
                 Text(Tr("歌手")).font(pf(16)).foregroundColor(C.label)
@@ -1014,7 +1014,7 @@ struct UserManageView: View {
                 TextField(Tr("选填"), text: $artist)
                     .font(pf(16)).multilineTextAlignment(.trailing)
             }
-            .frame(height: AppDesign.Control.largeControlHeight).padding(.horizontal, 16)
+            .frame(height: AppDesign.Control.largeControlHeight).padding(.horizontal, AppDesign.Spacing.md)
             HairLine(inset: 16)
             ZStack(alignment: .topLeading) {
                 if lyrics.isEmpty {
@@ -1027,7 +1027,7 @@ struct UserManageView: View {
                     .frame(height: 90)
                     .scrollContentBackground(.hidden)
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
             HairLine(inset: 16)
             row(Tr("封面"), newCoverURL.isEmpty ? Tr("未选择") : Tr("已选")) { startPick("") }
             HairLine(inset: 16)
@@ -1042,7 +1042,7 @@ struct UserManageView: View {
                 .disabled(busy == "add" || title.isEmpty || audioURL.isEmpty)
                 .opacity((title.isEmpty || audioURL.isEmpty) ? 0.5 : 1)
             }
-            .padding(.horizontal, 16).padding(.vertical, 12)
+            .padding(.horizontal, AppDesign.Spacing.md).padding(.vertical, AppDesign.Spacing.sm)
         }
     }
 
@@ -1070,7 +1070,7 @@ struct UserManageView: View {
                         .padding(.leading, 10)
                     }
                 }
-                .padding(.horizontal, 16).padding(.vertical, 8)
+                .padding(.horizontal, AppDesign.Spacing.md).padding(.vertical, AppDesign.Spacing.xs)
                 HairLine(inset: 16)
                 ForEach(Array(list.enumerated()), id: \.element.id) { i, t in
                     if i > 0 { HairLine(inset: 70) }
@@ -1114,7 +1114,7 @@ struct UserManageView: View {
             Text(Tr("开着的时候：新设备登录 / 改密码 / 改手机号 / 收到转账 / 后台公告，都会用那个号给用户发一张卡片（会话列表有红点）"))
                 .font(pf(11.5)).foregroundColor(C.subLabel)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16).padding(.vertical, 10)
+                .padding(.horizontal, AppDesign.Spacing.md).padding(.vertical, 10)
         }
     }
 
@@ -1128,7 +1128,7 @@ struct UserManageView: View {
             Spacer(minLength: 8)
             Toggle("", isOn: on).labelsHidden().tint(C.green)
         }
-        .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
+        .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.largeControlHeight)
     }
 
     private var officialSection: some View {
@@ -1139,7 +1139,7 @@ struct UserManageView: View {
                 ForEach(Array(officials.enumerated()), id: \.element.key) { i, o in
                     if i > 0 { HairLine(inset: 72) }
                     Button { editingOfficial = o } label: {
-                        HStack(spacing: 12) {
+                        HStack(spacing: AppDesign.Spacing.sm) {
                             ZStack {
                                 RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.pageBg)
                                 Text(o.name.isEmpty ? "★" : String(o.name.prefix(1)))
@@ -1170,7 +1170,7 @@ struct UserManageView: View {
             Text(Tr("「星言团队」和「星联世界」这些官方号的名字、头像都在这儿换：头像点一下选张图，名字点一下改字。改完所有人那边立刻变，不用出包。"))
                 .font(pf(11.5)).foregroundColor(C.subLabel)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16).padding(.vertical, 10)
+                .padding(.horizontal, AppDesign.Spacing.md).padding(.vertical, 10)
         }
     }
 
@@ -1180,7 +1180,7 @@ struct UserManageView: View {
                 ForEach(Array(list.enumerated()), id: \.element.id) { i, a in
                     if i > 0 { HairLine(inset: 70) }
                     Button { editing = a } label: {
-                        HStack(spacing: 12) {
+                        HStack(spacing: AppDesign.Spacing.sm) {
                             ZStack {
                                 RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.pageBg)
                                 Text(a.iconText).font(pfStyled(size: 22))
@@ -1230,7 +1230,7 @@ struct UserManageView: View {
                          picking: Bool = false, picked: Bool = false,
                          tap: @escaping () -> Void) -> some View {
         Button { tap() } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 if picking {
                     Image(systemName: picked ? "checkmark.circle.fill" : "circle")
                         .font(.system(size: 21))
@@ -1267,11 +1267,11 @@ struct UserManageView: View {
                 Text(title).font(pf(13)).foregroundColor(C.subLabel)
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 6)
+            .padding(.horizontal, AppDesign.Spacing.md).padding(.top, AppDesign.Spacing.sm).padding(.bottom, 6)
             VStack(spacing: 0) { content() }
                 .background(C.cardBg)
                 .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
-                .padding(.horizontal, 12)
+                .padding(.horizontal, AppDesign.Spacing.sm)
         }
     }
 
@@ -1280,8 +1280,8 @@ struct UserManageView: View {
             .font(AppDesign.Type.compactButtonMedium)
             .foregroundColor(C.subLabel)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
+            .padding(.horizontal, AppDesign.Spacing.md)
+            .padding(.top, AppDesign.Spacing.xs)
     }
 
     private func row(_ k: String, _ v: String, tap: @escaping () -> Void) -> some View {
@@ -1293,7 +1293,7 @@ struct UserManageView: View {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 11, weight: .semibold)).foregroundColor(C.subLabel)
             }
-            .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
+            .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.largeControlHeight)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -1301,7 +1301,7 @@ struct UserManageView: View {
 
     private func hint(_ t: String) -> some View {
         Text(t).font(AppDesign.Type.body).foregroundColor(C.subLabel)
-            .frame(maxWidth: .infinity).padding(.vertical, 20)
+            .frame(maxWidth: .infinity).padding(.vertical, AppDesign.Spacing.lg)
     }
 
     private func startPick(_ id: String) {
@@ -1509,7 +1509,7 @@ struct MiniAppEditSheet: View {
                 VStack(spacing: 0) {
 
                     Button { showPic = true } label: {
-                        HStack(spacing: 12) {
+                        HStack(spacing: AppDesign.Spacing.sm) {
                             ZStack {
                                 RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous).fill(C.pageBg)
                                 Text(icon.isEmpty ? "🧩" : icon).font(pfStyled(size: 26))
@@ -1528,7 +1528,7 @@ struct MiniAppEditSheet: View {
                             Image(systemName: "chevron.right")
                                 .font(.system(size: 12, weight: .semibold)).foregroundColor(C.subLabel)
                         }
-                        .padding(.horizontal, 16).frame(height: 76)
+                        .padding(.horizontal, AppDesign.Spacing.md).frame(height: 76)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -1543,11 +1543,11 @@ struct MiniAppEditSheet: View {
                     if !msg.isEmpty {
                         Text(msg).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 18).padding(.top, 12)
+                            .padding(.horizontal, 18).padding(.top, AppDesign.Spacing.sm)
                     }
                     Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
-                .padding(.top, 8)
+                .padding(.top, AppDesign.Spacing.xs)
             }
             .background(C.pageBg)
         }
@@ -1587,7 +1587,7 @@ struct MiniAppEditSheet: View {
                 .font(pf(16))
                 .multilineTextAlignment(.trailing)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(height: AppDesign.Control.dialogRowHeight)
         .background(C.cardBg)
         .overlay(alignment: .bottom) { HairLine(inset: 16) }
@@ -1639,7 +1639,7 @@ struct OfficialEditSheet: View {
                 VStack(spacing: 0) {
 
                     Button { pickAvatar() } label: {
-                        HStack(spacing: 12) {
+                        HStack(spacing: AppDesign.Spacing.sm) {
                             ZStack {
                                 RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous).fill(C.pageBg)
                                 Text(name.isEmpty ? "★" : String(name.prefix(1)))
@@ -1659,7 +1659,7 @@ struct OfficialEditSheet: View {
                             Image(systemName: "chevron.right")
                                 .font(.system(size: 12, weight: .semibold)).foregroundColor(C.subLabel)
                         }
-                        .padding(.horizontal, 16).frame(height: 84)
+                        .padding(.horizontal, AppDesign.Spacing.md).frame(height: 84)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -1673,7 +1673,7 @@ struct OfficialEditSheet: View {
                         Text(item.key).font(pf(15)).foregroundColor(C.subLabel)
                         Spacer(minLength: 0)
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppDesign.Spacing.md)
                     .frame(height: AppDesign.Control.dialogRowHeight)
                     .background(C.cardBg)
                     .overlay(alignment: .bottom) { HairLine(inset: 16) }
@@ -1681,11 +1681,11 @@ struct OfficialEditSheet: View {
                     if !msg.isEmpty {
                         Text(msg).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 18).padding(.top, 12)
+                            .padding(.horizontal, 18).padding(.top, AppDesign.Spacing.sm)
                     }
                     Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
-                .padding(.top, 8)
+                .padding(.top, AppDesign.Spacing.xs)
             }
             .background(C.pageBg)
         }
@@ -1731,7 +1731,7 @@ struct OfficialEditSheet: View {
                 .font(pf(16))
                 .multilineTextAlignment(.trailing)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(height: AppDesign.Control.dialogRowHeight)
         .background(C.cardBg)
         .overlay(alignment: .bottom) { HairLine(inset: 16) }
@@ -1791,7 +1791,7 @@ struct ShopItemEditSheet: View {
                     GroupCard {
 
                         Button { showPic = true } label: {
-                            HStack(spacing: 12) {
+                            HStack(spacing: AppDesign.Spacing.sm) {
                                 Text(Tr("商品图")).font(pf(16)).foregroundColor(C.label)
                                 Spacer(minLength: 0)
                                 if busy && msg == Tr("图片上传中…") {
@@ -1810,7 +1810,7 @@ struct ShopItemEditSheet: View {
                                 .frame(width: 44, height: 44)
                                 Chevron(size: 9, line: 1.6)
                             }
-                            .padding(.horizontal, 16).frame(height: AppDesign.Control.profileRowHeight)
+                            .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.profileRowHeight)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -1829,20 +1829,20 @@ struct ShopItemEditSheet: View {
                     .padding(.top, 10)
 
                     GroupCard {
-                        HStack(spacing: 12) {
+                        HStack(spacing: AppDesign.Spacing.sm) {
                             Text(Tr("实物 / 虚拟")).font(pf(16)).foregroundColor(C.label)
                             Spacer(minLength: 0)
                             kindButton("physical", Tr("实物"))
                             kindButton("virtual", Tr("虚拟"))
                         }
-                        .padding(.horizontal, 16).frame(height: AppDesign.Control.menuRowHeight)
+                        .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.menuRowHeight)
                         HairLine(inset: 16)
-                        HStack(spacing: 12) {
+                        HStack(spacing: AppDesign.Spacing.sm) {
                             Text(Tr("上架")).font(pf(16)).foregroundColor(C.label)
                             Spacer(minLength: 0)
                             Toggle("", isOn: $on).labelsHidden().tint(C.green)
                         }
-                        .padding(.horizontal, 16).frame(height: AppDesign.Control.menuRowHeight)
+                        .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.menuRowHeight)
                     }
 
                     if let it = item {
@@ -1856,7 +1856,7 @@ struct ShopItemEditSheet: View {
                         .buttonStyle(.plain)
                         .background(C.cardBg)
                         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, AppDesign.Spacing.sm)
                     }
 
                     if !msg.isEmpty {
@@ -1894,7 +1894,7 @@ struct ShopItemEditSheet: View {
             Text(label)
                 .font(AppDesign.Type.body)
                 .foregroundColor(kind == id ? .white : C.label)
-                .padding(.horizontal, 12).frame(height: AppDesign.Control.sectionHeaderHeight)
+                .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.sectionHeaderHeight)
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                     .fill(kind == id ? C.green : C.pageBg))
         }
@@ -1902,13 +1902,13 @@ struct ShopItemEditSheet: View {
     }
 
     private func textRow(_ k: String, _ v: Binding<String>, _ ph: String) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Text(k).font(pf(16)).foregroundColor(C.label).frame(width: 72, alignment: .leading)
             TextField(ph, text: v)
                 .font(AppDesign.Type.bodyLarge)
                 .multilineTextAlignment(.trailing)
         }
-        .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
+        .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.largeControlHeight)
     }
 
     private func upload(_ image: UIImage) {
@@ -1993,7 +1993,7 @@ struct CardAdminSheet: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 10) {
                     GroupCard {
-                        HStack(spacing: 12) {
+                        HStack(spacing: AppDesign.Spacing.sm) {
                             Avatar(path: user.avatar ?? "", size: 48, radius: 24)
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(user.nickname ?? user.username ?? "").font(AppDesign.Type.listTitle)
@@ -2004,7 +2004,7 @@ struct CardAdminSheet: View {
                             Text(Tr("名下 ") + "\(cards.count)" + Tr(" 张"))
                                 .font(pf(13)).foregroundColor(C.subLabel)
                         }
-                        .padding(.horizontal, 16).frame(height: 68)
+                        .padding(.horizontal, AppDesign.Spacing.md).frame(height: 68)
                     }
                     .padding(.top, 10)
 
@@ -2026,13 +2026,13 @@ struct CardAdminSheet: View {
                                     }
                                     .buttonStyle(.plain)
                                 }
-                                .padding(.horizontal, 16).frame(height: AppDesign.Control.profileRowHeight)
+                                .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.profileRowHeight)
                             }
                         }
                     }
 
                     card(Tr("发一张新卡")) {
-                        HStack(spacing: 8) {
+                        HStack(spacing: AppDesign.Spacing.xs) {
                             ForEach(kinds, id: \.0) { k in
                                 Button { kind = k.0; if title.isEmpty { title = k.1 } } label: {
                                     Text(Tr(k.1))
@@ -2046,7 +2046,7 @@ struct CardAdminSheet: View {
                             }
                             Spacer(minLength: 0)
                         }
-                        .padding(.horizontal, 16).padding(.vertical, 10)
+                        .padding(.horizontal, AppDesign.Spacing.md).padding(.vertical, 10)
                         HairLine(inset: 16)
                         textRow(Tr("标题"), $title, Tr("新人优惠券 ¥20"))
                         HairLine(inset: 16)
@@ -2066,7 +2066,7 @@ struct CardAdminSheet: View {
                         }
                         .buttonStyle(.plain)
                         .disabled(busy)
-                        .padding(.horizontal, 16).padding(.vertical, 12)
+                        .padding(.horizontal, AppDesign.Spacing.md).padding(.vertical, AppDesign.Spacing.sm)
                     }
 
                     if !msg.isEmpty {
@@ -2091,22 +2091,22 @@ struct CardAdminSheet: View {
                 Text(title).font(pf(13)).foregroundColor(C.subLabel)
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 6)
+            .padding(.horizontal, AppDesign.Spacing.md).padding(.top, AppDesign.Spacing.sm).padding(.bottom, 6)
             VStack(spacing: 0) { content() }
                 .background(C.cardBg)
                 .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
-                .padding(.horizontal, 12)
+                .padding(.horizontal, AppDesign.Spacing.sm)
         }
     }
 
     private func textRow(_ k: String, _ v: Binding<String>, _ ph: String) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Text(k).font(pf(16)).foregroundColor(C.label).frame(width: 72, alignment: .leading)
             TextField(ph, text: v)
                 .font(AppDesign.Type.bodyLarge)
                 .multilineTextAlignment(.trailing)
         }
-        .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
+        .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.largeControlHeight)
     }
 
     private func reload() async {
@@ -2163,7 +2163,7 @@ struct AppLogDetailSheet: View {
             }
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 10) {
-                    GroupCard {
+                    GroupCard(horizontalInset: 0) {
                         kv(Tr("类型"), row.kind ?? "-")
                         HairLine(inset: 16)
                         kv(Tr("时间"), row.at ?? "-")
@@ -2197,7 +2197,7 @@ struct AppLogDetailSheet: View {
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .multilineTextAlignment(.trailing)
         }
-        .padding(.horizontal, 16).padding(.vertical, 10)
+        .padding(.horizontal, AppDesign.Spacing.md).padding(.vertical, 10)
     }
 
     private func block(_ title: String, _ body: String) -> some View {
@@ -2210,10 +2210,10 @@ struct AppLogDetailSheet: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(12)
+        .padding(AppDesign.Spacing.sm)
         .background(C.cardBg)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
     }
 
     private func fullText() -> String {

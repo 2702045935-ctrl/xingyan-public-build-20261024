@@ -316,7 +316,7 @@ struct GroupInfoView: View {
             }
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 12) {
+                VStack(spacing: AppDesign.Spacing.sm) {
                     PanelCard(solid: true) {
 
                         HStack(spacing: 11) {
@@ -336,7 +336,7 @@ struct GroupInfoView: View {
                                 .foregroundColor(over ? C.red : C.subLabel)
                         }
                         .padding(.horizontal, 14)
-                        .padding(.vertical, 12)
+                        .padding(.vertical, AppDesign.Spacing.sm)
 
                         PanelDivider()
 
@@ -360,7 +360,7 @@ struct GroupInfoView: View {
                                     Text(placeholder)
                                         .font(pf(15))
                                         .foregroundColor(C.subLabel.opacity(0.8))
-                                        .padding(.horizontal, 16)
+                                        .padding(.horizontal, AppDesign.Spacing.md)
                                         .padding(.top, 14)
                                 }
                                 TextEditor(text: text)
@@ -566,7 +566,7 @@ struct GroupInfoView: View {
                 .padding(.top, 6)
         case "members":
             VStack(spacing: 0) {
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     Text(Tr("群成员") + "（\(max(memberCount, members.count))）")
                         .font(pf(13))
                         .foregroundColor(C.subLabel)
@@ -580,7 +580,7 @@ struct GroupInfoView: View {
                 }
                 .padding(.horizontal, 6)
                 .padding(.top, 18)
-                .padding(.bottom, 8)
+                .padding(.bottom, AppDesign.Spacing.xs)
                 memberCard
             }
             .padding(.horizontal, 14)
@@ -655,7 +655,7 @@ struct GroupInfoView: View {
                 .buttonStyle(MenuPressStyle())
                 .accessibilityLabel(Tr("群二维码"))
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .padding(.vertical, 14)
         }
     }
@@ -785,9 +785,9 @@ struct GroupInfoView: View {
                     }
                     .frame(maxWidth: .infinity)
                 }
-                .padding(.horizontal, 12)
-                .padding(.top, 16)
-                .padding(.bottom, 16)
+                .padding(.horizontal, AppDesign.Spacing.sm)
+                .padding(.top, AppDesign.Spacing.md)
+                .padding(.bottom, AppDesign.Spacing.md)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -1003,7 +1003,7 @@ struct GroupMembersPage: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 14) {
-                    HStack(spacing: 8) {
+                    HStack(spacing: AppDesign.Spacing.xs) {
                         Image(systemName: "magnifyingglass")
                             .foregroundColor(C.subLabel)
                         TextField(Tr("搜索群成员"), text: $query)
@@ -1024,7 +1024,7 @@ struct GroupMembersPage: View {
                     .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                         .stroke(C.hairline, lineWidth: 0.6))
 
-                    GroupCard {
+                    GroupCard(horizontalInset: 0) {
                         LazyVGrid(columns: columns, spacing: 18) {
                             ForEach(Array(filtered.enumerated()), id: \.element.id) { index, u in
                                 Button { selected = u } label: {
@@ -1071,14 +1071,14 @@ struct GroupMembersPage: View {
                     if hasMore {
                         ProgressView()
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
+                            .padding(.vertical, AppDesign.Spacing.sm)
                             .onAppear {
                                 Task { await loadMoreMembers() }
                             }
                     }
                 }
                 .padding(.horizontal, 14)
-                .padding(.top, 12)
+                .padding(.top, AppDesign.Spacing.sm)
                 .padding(.bottom, 30)
             }
         }
@@ -1130,7 +1130,7 @@ struct GroupComplaintView: View {
             }
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 12) {
+                VStack(spacing: AppDesign.Spacing.sm) {
                     GroupCard {
                         VStack(alignment: .leading, spacing: 5) {
                             Text(Tr("投诉对象"))
@@ -1146,7 +1146,7 @@ struct GroupComplaintView: View {
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppDesign.Spacing.md)
                         .padding(.vertical, 14)
                     }
 
@@ -1154,7 +1154,7 @@ struct GroupComplaintView: View {
                         Text(Tr("问题类型"))
                             .font(AppDesign.Type.compactButtonMedium)
                             .foregroundColor(C.subLabel)
-                            .padding(.leading, 4)
+                            .padding(.leading, AppDesign.Spacing.xxs)
                         GroupCard {
                             ForEach(reasons.indices, id: \.self) { index in
                                 if index > 0 { HairLine(inset: 16) }
@@ -1170,7 +1170,7 @@ struct GroupComplaintView: View {
                                             .font(pf(12.5, reason == reasons[index] ? .medium : .regular))
                                             .foregroundColor(reason == reasons[index] ? C.green : C.subLabel)
                                     }
-                                    .padding(.horizontal, 16)
+                                    .padding(.horizontal, AppDesign.Spacing.md)
                                     .frame(height: AppDesign.Control.mediumControlHeight)
                                     .background(reason == reasons[index]
                                         ? C.green.opacity(0.06)
@@ -1186,7 +1186,7 @@ struct GroupComplaintView: View {
                         Text(Tr("事实说明"))
                             .font(AppDesign.Type.compactButtonMedium)
                             .foregroundColor(C.subLabel)
-                            .padding(.leading, 4)
+                            .padding(.leading, AppDesign.Spacing.xxs)
                         GroupCard {
                             ZStack(alignment: .topLeading) {
                                 if detail.isEmpty {
@@ -1208,7 +1208,7 @@ struct GroupComplaintView: View {
                                 Text("\(detail.count)/200")
                                     .font(pf(10.5))
                                     .foregroundColor(C.subLabel)
-                                    .padding(.trailing, 12)
+                                    .padding(.trailing, AppDesign.Spacing.sm)
                                     .padding(.bottom, 9)
                             }
                         }
@@ -1227,11 +1227,11 @@ struct GroupComplaintView: View {
                     .foregroundColor(C.subLabel)
                     .lineSpacing(3)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 4)
+                    .padding(.horizontal, AppDesign.Spacing.xxs)
                     .padding(.top, 2)
                 }
-                .padding(.horizontal, 12)
-                .padding(.top, 8)
+                .padding(.horizontal, AppDesign.Spacing.sm)
+                .padding(.top, AppDesign.Spacing.xs)
                 .padding(.bottom, 30)
             }
         }
@@ -1281,7 +1281,7 @@ struct GroupAnnounceEditor: View {
             }
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 16) {
+                VStack(spacing: AppDesign.Spacing.md) {
                     HStack(alignment: .top, spacing: 13) {
                         ZStack {
                             RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
@@ -1305,7 +1305,7 @@ struct GroupAnnounceEditor: View {
                         }
                         Spacer(minLength: 0)
                     }
-                    .padding(16)
+                    .padding(AppDesign.Spacing.md)
                     .background(
                         RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                             .fill(C.cardBg)
@@ -1316,7 +1316,7 @@ struct GroupAnnounceEditor: View {
                     }
 
                     VStack(spacing: 0) {
-                        HStack(spacing: 8) {
+                        HStack(spacing: AppDesign.Spacing.xs) {
                             Text(Tr("正文"))
                                 .font(AppDesign.Type.compactButton)
                                 .foregroundColor(C.subLabel)
@@ -1325,7 +1325,7 @@ struct GroupAnnounceEditor: View {
                                 .font(AppDesign.Type.sectionMedium)
                                 .foregroundColor(over ? C.red : C.subLabel)
                         }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppDesign.Spacing.md)
                         .frame(height: AppDesign.Control.compactHeight)
 
                         HairLine(inset: 16)
@@ -1361,7 +1361,7 @@ struct GroupAnnounceEditor: View {
                                 .lineSpacing(7)
                                 .textSelection(.enabled)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(16)
+                                .padding(AppDesign.Spacing.md)
                         }
                     }
                     .background(
@@ -1374,7 +1374,7 @@ struct GroupAnnounceEditor: View {
                     }
                 }
                 .padding(.horizontal, 14)
-                .padding(.top, 12)
+                .padding(.top, AppDesign.Spacing.sm)
                 .padding(.bottom, editable ? 112 : 30)
             }
             .scrollDismissesKeyboard(.interactively)
@@ -1397,7 +1397,7 @@ struct GroupAnnounceEditor: View {
                         focused = false
                         onPublish()
                     } label: {
-                        HStack(spacing: 8) {
+                        HStack(spacing: AppDesign.Spacing.xs) {
                             Image(systemName: "paperplane.fill")
                                 .font(.system(size: 14, weight: .semibold))
                             Text(Tr("发布群公告"))
@@ -1417,7 +1417,7 @@ struct GroupAnnounceEditor: View {
                     .disabled(trimmed.isEmpty || over)
                     .opacity(trimmed.isEmpty || over ? 0.45 : 1)
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
                 .padding(.top, 10)
                 .padding(.bottom, max(10, L.safeBottom))
                 .background(C.pageBg)
@@ -1470,7 +1470,7 @@ struct GroupAnnounceView: View {
                 }
             }
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 16) {
+                VStack(spacing: AppDesign.Spacing.md) {
                     HStack(spacing: 14) {
                         ZStack {
                             RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
@@ -1662,7 +1662,7 @@ struct DirectChatInfoView: View {
             if chat.sysTeam == true {
                 sysQuickBar
                     .padding(.horizontal, 14)
-                    .padding(.top, 8)
+                    .padding(.top, AppDesign.Spacing.xs)
                     .padding(.bottom, 2)
             }
 
@@ -1891,7 +1891,7 @@ struct DirectChatInfoView: View {
                 }
                 Spacer(minLength: 0)
             }
-            .padding(16)
+            .padding(AppDesign.Spacing.md)
         }
         .padding(.top, 14)
     }
@@ -1910,7 +1910,7 @@ struct DirectChatInfoView: View {
             if peer != nil { showCard = true }
         } label: {
             GroupCard {
-                HStack(spacing: 12) {
+                HStack(spacing: AppDesign.Spacing.sm) {
                 Avatar(path: peer?.avatarPath ?? "", size: 68, radius: 16, level: peer?.qqLevel ?? 0)
                     .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                         .stroke(Color.white.opacity(0.35), lineWidth: 0.8))
@@ -1941,7 +1941,7 @@ struct DirectChatInfoView: View {
                 }
             }
             .contentShape(Rectangle())
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .padding(.vertical, 18)
             }
         }
@@ -2137,7 +2137,7 @@ struct DirectChatInfoView: View {
                 .font(pf(12))
                 .foregroundColor(C.subLabel)
                 .lineSpacing(2)
-                .padding(.horizontal, 4)
+                .padding(.horizontal, AppDesign.Spacing.xxs)
         }
     }
 
@@ -2161,8 +2161,8 @@ struct DirectChatInfoView: View {
                 }
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.horizontal, AppDesign.Spacing.md)
+            .padding(.vertical, AppDesign.Spacing.sm)
             .contentShape(Rectangle())
         }
         .buttonStyle(MenuPressStyle())
@@ -2283,7 +2283,7 @@ struct GroupAddMembersView: View {
                         .font(pf(17))
                         .foregroundColor(picked.isEmpty ? C.subLabel : C.green)
                         .frame(height: L.navH)
-                        .padding(.trailing, 16)
+                        .padding(.trailing, AppDesign.Spacing.md)
                 }
                 .buttonStyle(.plain)
                 .disabled(picked.isEmpty || busy)
@@ -2304,7 +2304,7 @@ struct GroupAddMembersView: View {
                             Button {
                                 if picked.contains(u.id) { picked.remove(u.id) } else { picked.insert(u.id) }
                             } label: {
-                                HStack(spacing: 12) {
+                                HStack(spacing: AppDesign.Spacing.sm) {
                                     Avatar(path: u.avatarPath, size: 40, radius: 4)
                                     Text(u.name).font(pf(17)).foregroundColor(C.label).lineLimit(1)
                                     Spacer(minLength: 0)
@@ -2312,7 +2312,7 @@ struct GroupAddMembersView: View {
                                         .font(.system(size: 20))
                                         .foregroundColor(picked.contains(u.id) ? C.green : C.subLabel)
                                 }
-                                .padding(.horizontal, 16)
+                                .padding(.horizontal, AppDesign.Spacing.md)
                                 .frame(height: AppDesign.Control.profileRowHeight)
                                 .background(C.cardBg)
                                 .contentShape(Rectangle())
@@ -2379,7 +2379,7 @@ private struct ChatInfoSectionTitle: View {
             .font(pf(13))
             .foregroundColor(C.subLabel)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 4)
+            .padding(.horizontal, AppDesign.Spacing.xxs)
             .padding(.top, 18)
             .padding(.bottom, 7)
     }
@@ -2396,7 +2396,7 @@ private struct ChatInfoTextRow: View {
 
     var body: some View {
         Button(action: tap) {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
                         .font(pf(16))
@@ -2424,7 +2424,7 @@ private struct ChatInfoTextRow: View {
                         .foregroundColor(C.subLabel.opacity(0.55))
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .frame(minHeight: 54)
             .contentShape(Rectangle())
         }
@@ -2441,7 +2441,7 @@ private struct ChatInfoToggleRow: View {
     let onChange: (Bool) -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(pf(16))
@@ -2458,7 +2458,7 @@ private struct ChatInfoToggleRow: View {
                 .labelsHidden()
                 .tint(C.green)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(minHeight: 54)
     }
 }
@@ -2477,7 +2477,7 @@ private struct ChatInfoTextButton: View {
             Text(title)
                 .font(AppDesign.Type.bodyMedium)
                 .foregroundColor(color)
-                .padding(.horizontal, 12)
+                .padding(.horizontal, AppDesign.Spacing.sm)
                 .frame(height: AppDesign.Control.sectionHeaderHeight)
         }
         .buttonStyle(MenuPressStyle())

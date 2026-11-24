@@ -187,13 +187,13 @@ struct PhotoEditorView: View {
             Image(uiImage: showOriginal ? image : preview)
                 .resizable()
                 .scaledToFit()
-                .padding(.horizontal, 4)
+                .padding(.horizontal, AppDesign.Spacing.xxs)
 
             if rendering || exporting {
                 ProgressView()
                     .progressViewStyle(.circular)
                     .tint(.white)
-                    .padding(12)
+                    .padding(AppDesign.Spacing.sm)
                     .background(.ultraThinMaterial, in: Circle())
             }
 
@@ -217,7 +217,7 @@ struct PhotoEditorView: View {
                 }
                 .buttonStyle(.plain)
                 .padding(.top, L.safeTop + 64)
-                .padding(.trailing, 12)
+                .padding(.trailing, AppDesign.Spacing.sm)
             }
         }
         .ignoresSafeArea()
@@ -317,7 +317,7 @@ struct PhotoEditorView: View {
                     reset()
                 }
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
             .padding(.top, 9)
             .padding(.bottom, max(12, L.safeBottom))
         }
@@ -354,11 +354,11 @@ struct PhotoEditorView: View {
                     .padding(.horizontal, 14)
                 }
             }
-            .padding(.top, 8)
+            .padding(.top, AppDesign.Spacing.xs)
         case .beauty:
             VStack(spacing: 7) {
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
+                    HStack(spacing: AppDesign.Spacing.xs) {
                         ForEach(PhotoBeautyTool.allCases) { tool in
                             subToolButton(tool.title, symbol: tool.symbol,
                                           selected: beautyTool == tool) {
@@ -371,11 +371,11 @@ struct PhotoEditorView: View {
                 focusedSlider(beautyTool.title, symbol: beautyTool.symbol,
                               value: beautyBinding, range: 0...1)
             }
-            .padding(.top, 8)
+            .padding(.top, AppDesign.Spacing.xs)
         case .adjust:
             VStack(spacing: 7) {
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
+                    HStack(spacing: AppDesign.Spacing.xs) {
                         ForEach(PhotoAdjustTool.allCases) { tool in
                             subToolButton(tool.title, symbol: tool.symbol,
                                           selected: adjustTool == tool) {
@@ -388,7 +388,7 @@ struct PhotoEditorView: View {
                 focusedSlider(adjustTool.title, symbol: adjustTool.symbol,
                               value: adjustBinding, range: adjustTool.range)
             }
-            .padding(.top, 8)
+            .padding(.top, AppDesign.Spacing.xs)
         }
     }
 
@@ -471,7 +471,7 @@ struct PhotoEditorView: View {
 
             Slider(value: value, in: range)
                 .tint(C.green)
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
         }
         .frame(height: AppDesign.Control.searchHeight)
     }

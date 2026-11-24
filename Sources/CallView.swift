@@ -41,7 +41,7 @@ struct CallDialogOverlay: View {
                                 .multilineTextAlignment(.center)
                         }
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, AppDesign.Spacing.lg)
                     .padding(.top, 22)
                     .padding(.bottom, 18)
 
@@ -235,7 +235,7 @@ struct CallView: View {
                 Spacer(minLength: 0)
             }
             .foregroundColor(.white)
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
             .frame(height: 34)
             .background(Capsule().fill(Color.black.opacity(0.55)))
             .padding(.horizontal, 14)
@@ -272,7 +272,7 @@ struct CallView: View {
             Text(call.peerName)
                 .font(pfExact(17, .medium))
                 .foregroundColor(.white)
-                .padding(.top, 12)
+                .padding(.top, AppDesign.Spacing.sm)
             Text(statusText)
                 .font(pfExact(13.5))
                 .foregroundColor(.white.opacity(0.7))
@@ -331,7 +331,7 @@ struct CallView: View {
                     }
                     Spacer()
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, AppDesign.Spacing.lg)
                 .padding(.top, 14)
                 Spacer()
 
@@ -365,7 +365,7 @@ struct CallView: View {
             VStack {
                 HStack {
                     Spacer(minLength: 0)
-                    HStack(spacing: 8) {
+                    HStack(spacing: AppDesign.Spacing.xs) {
                         topPill(symbol: "arrow.triangle.2.circlepath.camera",
                                 on: false,
                                 hint: "翻转") { call.flipCamera() }
@@ -438,7 +438,7 @@ struct CallView: View {
                                 Image(systemName: "mic.slash.fill")
                                     .font(.system(size: 10.5, weight: .semibold))
                                     .foregroundColor(.white)
-                                    .padding(4)
+                                    .padding(AppDesign.Spacing.xxs)
                                     .background(Circle().fill(Color.black.opacity(0.55)))
                                     .offset(x: 23, y: 23)
                             }
@@ -503,7 +503,7 @@ struct CallView: View {
     private var bottomBar: some View {
         Group {
             if call.phase == .incoming {
-                VStack(spacing: 16) {
+                VStack(spacing: AppDesign.Spacing.md) {
                     HStack(spacing: 51) {
                         roundKey(label: "拒绝", bg: AppPalette.danger) { call.reject() }
                         roundKey(label: "接听", bg: AppPalette.success, ink: .white,
@@ -519,7 +519,7 @@ struct CallView: View {
                         Text(Tr("拒绝并回复"))
                             .font(pf(14))
                             .foregroundColor(.white.opacity(0.9))
-                            .padding(.horizontal, 16).frame(height: 34)
+                            .padding(.horizontal, AppDesign.Spacing.md).frame(height: 34)
                             .background(Capsule().fill(Color.white.opacity(0.16)))
                     }
                     .buttonStyle(.plain)
@@ -539,7 +539,7 @@ struct CallView: View {
                 .padding(.bottom, 54)
             } else if call.isVideo {
 
-                VStack(spacing: 16) {
+                VStack(spacing: AppDesign.Spacing.md) {
                     HStack(spacing: 0) {
                         if call.phase == .active {
                             micKey
@@ -568,7 +568,7 @@ struct CallView: View {
                             Text(call.blurBackground ? Tr("关闭背景模糊") : Tr("模糊背景"))
                                 .font(pf(14))
                                 .foregroundColor(.white.opacity(0.9))
-                                .padding(.horizontal, 16)
+                                .padding(.horizontal, AppDesign.Spacing.md)
                                 .frame(height: AppDesign.Control.smallButtonHeight)
                                 .background(Capsule().fill(Color.white.opacity(call.blurBackground ? 0.34 : 0.16)))
                         }
@@ -608,7 +608,7 @@ struct CallView: View {
         Text(call.isVideo ? Tr("切换为语音通话") : Tr("切换为视频通话"))
             .font(pf(14))
             .foregroundColor(.white.opacity(0.9))
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .frame(height: AppDesign.Control.smallButtonHeight)
             .background(Capsule().fill(Color.white.opacity(0.16)))
     }
@@ -644,7 +644,7 @@ struct CallView: View {
                 Text(Tr("去开启"))
                     .font(pfExact(13.5, .semibold))
                     .foregroundColor(.black)
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, AppDesign.Spacing.sm)
                     .padding(.vertical, 6)
                     .background(Capsule().fill(Color.white))
             }
@@ -654,7 +654,7 @@ struct CallView: View {
         .padding(.vertical, 10)
         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
             .fill(Color(hex: 0xE08A10).opacity(0.95)))
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .padding(.bottom, 10)
     }
 
@@ -745,7 +745,7 @@ struct CallView: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .padding(.leading, 16)
+            .padding(.leading, AppDesign.Spacing.md)
 
             Spacer()
 
@@ -763,7 +763,7 @@ struct CallView: View {
     }
 
     private var miniBarOld: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppDesign.Spacing.xs) {
             Circle().fill(C.green).frame(width: 8, height: 8)
             Text(call.phase == .active ? "通话中 \(timeText)" : call.tip)
                 .font(pfExact(14))
@@ -781,13 +781,13 @@ struct CallView: View {
                 CallIcon(key: "ui.callHangup", symbol: "phone.down.fill", builtin: I.callHangup, size: 24)
             }
             .buttonStyle(.plain)
-            .padding(.leading, 8)
+            .padding(.leading, AppDesign.Spacing.xs)
         }
         .padding(.horizontal, 14)
         .frame(height: AppDesign.Control.searchHeight)
         .background(Capsule().fill(Color.black.opacity(0.72)))
         .overlay(Capsule().stroke(Color.white.opacity(0.12), lineWidth: 0.5))
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
         .padding(.top, 6)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }

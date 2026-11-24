@@ -31,7 +31,7 @@ struct SettingRowLabel: View {
     var value: String = ""
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Text(title).font(pf(17)).foregroundColor(C.label)
             Spacer(minLength: 0)
             if !value.isEmpty {
@@ -39,7 +39,7 @@ struct SettingRowLabel: View {
             }
             Chevron(size: 9, line: 1.6).padding(.trailing, 3)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(height: AppDesign.Control.menuRowHeight)
         .background(C.meCardBg)
         .contentShape(Rectangle())
@@ -102,7 +102,7 @@ struct MallAuthManageSheet: View {
                         .listRowBackground(Color.clear)
                 } else {
                     Section {
-                        HStack(spacing: 12) {
+                        HStack(spacing: AppDesign.Spacing.sm) {
                             Image(systemName: "bag.fill")
                                 .font(.system(size: 18, weight: .semibold))
                                 .foregroundStyle(.white)
@@ -173,7 +173,7 @@ struct MoreSettingsView: View {
 
                         SettingRowButton(title: Tr("诊断工具")) { showDiag = true }
                     }
-                    .padding(.top, 8)
+                    .padding(.top, AppDesign.Spacing.xs)
                     Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
             }

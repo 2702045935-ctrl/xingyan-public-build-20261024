@@ -508,7 +508,7 @@ struct MediaSendSheet: View {
                         Label(Tr("编辑照片"), systemImage: "slider.horizontal.3")
                             .font(.system(size: 13.5, weight: .semibold))
                             .foregroundStyle(.white)
-                            .padding(.horizontal, 12)
+                            .padding(.horizontal, AppDesign.Spacing.sm)
                             .frame(height: 34)
                             .background(.black.opacity(0.42), in: Capsule())
                             .overlay {
@@ -520,7 +520,7 @@ struct MediaSendSheet: View {
                 }
             }
 
-            VStack(spacing: 12) {
+            VStack(spacing: AppDesign.Spacing.sm) {
                 if isLive {
                     toggleRow(Tr("实况"), sub: Tr("打开后对方长按可以看这段动效（两边都是 iPhone 才有效）"), on: $liveOn)
                 }
@@ -530,7 +530,7 @@ struct MediaSendSheet: View {
                             : Tr("保留最高画质，发送和加载会更慢"),
                           on: $originalOn)
 
-                HStack(spacing: 12) {
+                HStack(spacing: AppDesign.Spacing.sm) {
                     Button { dismiss() } label: {
                         Text(Tr("取消"))
                             .font(pfStyled(size: 16))
@@ -553,7 +553,7 @@ struct MediaSendSheet: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(16)
+            .padding(AppDesign.Spacing.md)
             .background(Color.dyn(0xFFFFFF, 0x1C1C1E))
         }
         .ignoresSafeArea(edges: .top)
@@ -601,7 +601,7 @@ struct MediaSendSheet: View {
                         .foregroundColor(.white)
                         .padding(.horizontal, 7).padding(.vertical, 3)
                         .background(Capsule().fill(Color.black.opacity(0.45)))
-                        .padding(12)
+                        .padding(AppDesign.Spacing.sm)
                 }
         }
     }

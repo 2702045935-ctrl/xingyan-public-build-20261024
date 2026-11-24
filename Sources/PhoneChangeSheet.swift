@@ -60,7 +60,7 @@ struct PhoneChangeSheet: View {
 
                 Spacer(minLength: 0)
             }
-            .padding(20)
+            .padding(AppDesign.Spacing.lg)
         }
         .background(C.pageBg.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)

@@ -11,7 +11,7 @@ struct MallHiddenView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 10) {
                     if store.disliked.isEmpty && store.mutedCates.isEmpty && store.hiddenAds.isEmpty {
-                        VStack(spacing: 8) {
+                        VStack(spacing: AppDesign.Spacing.xs) {
                             Image(systemName: "hand.thumbsup")
                                 .font(.system(size: 30)).foregroundColor(C.subLabel)
                             Text(Tr("没有隐藏过任何东西")).font(pf(15)).foregroundColor(C.label)
@@ -34,11 +34,11 @@ struct MallHiddenView: View {
                                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(C.green))
                         }
                         .buttonStyle(.plain)
-                        .padding(.top, 4)
+                        .padding(.top, AppDesign.Spacing.xxs)
                     }
                     Spacer().frame(height: AppDesign.Control.compactBadgeHeight)
                 }
-                .padding(.horizontal, 12).padding(.top, 10)
+                .padding(.horizontal, AppDesign.Spacing.sm).padding(.top, 10)
             }
             .background(C.pageBg)
         }
@@ -53,7 +53,7 @@ struct MallHiddenView: View {
             head(Tr("不感兴趣的商品"), sub: String(store.disliked.count) + Tr(" 件"))
             ForEach(store.dislikedProducts) { p in
                 HairLine(inset: 16)
-                HStack(spacing: 12) {
+                HStack(spacing: AppDesign.Spacing.sm) {
                     DDThumb(em: p.em, size: 46, radius: 8, img: p.img)
                     VStack(alignment: .leading, spacing: 3) {
                         Text(p.title).font(AppDesign.Type.body).foregroundColor(C.label).lineLimit(2)
@@ -67,7 +67,7 @@ struct MallHiddenView: View {
                     }
                     .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 16).padding(.vertical, 10)
+                .padding(.horizontal, AppDesign.Spacing.md).padding(.vertical, 10)
             }
         }
         .background(C.cardBg).clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
@@ -78,7 +78,7 @@ struct MallHiddenView: View {
             head(Tr("少推的类目"), sub: Tr("这些类目会沉到最后"))
             ForEach(store.mutedCates, id: \.self) { c in
                 HairLine(inset: 16)
-                HStack(spacing: 12) {
+                HStack(spacing: AppDesign.Spacing.sm) {
                     Text(Tr(c)).font(pf(14.5)).foregroundColor(C.label)
                     Spacer(minLength: 0)
                     Button { store.unmuteCate(c); app.show(Tr("已恢复")) } label: {
@@ -88,7 +88,7 @@ struct MallHiddenView: View {
                     }
                     .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 16).padding(.vertical, 10)
+                .padding(.horizontal, AppDesign.Spacing.md).padding(.vertical, 10)
             }
         }
         .background(C.cardBg).clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
@@ -99,7 +99,7 @@ struct MallHiddenView: View {
             head(Tr("已经 × 掉的广告"), sub: String(store.hiddenAds.count) + Tr(" 条"))
             ForEach(store.hiddenAds, id: \.self) { key in
                 HairLine(inset: 16)
-                HStack(spacing: 12) {
+                HStack(spacing: AppDesign.Spacing.sm) {
                     Text(key.replacingOccurrences(of: "ad:", with: ""))
                         .font(pf(13)).foregroundColor(C.label).lineLimit(1)
                     Spacer(minLength: 0)
@@ -110,18 +110,18 @@ struct MallHiddenView: View {
                     }
                     .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 16).padding(.vertical, 10)
+                .padding(.horizontal, AppDesign.Spacing.md).padding(.vertical, 10)
             }
         }
         .background(C.cardBg).clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
     }
 
     private func head(_ t: String, sub: String) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppDesign.Spacing.xs) {
             Text(t).font(AppDesign.Type.rowTitleMedium).foregroundColor(C.label)
             Text(sub).font(pf(12)).foregroundColor(C.subLabel)
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 16).padding(.vertical, 12)
+        .padding(.horizontal, AppDesign.Spacing.md).padding(.vertical, AppDesign.Spacing.sm)
     }
 }

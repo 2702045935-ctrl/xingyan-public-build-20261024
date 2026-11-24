@@ -178,7 +178,7 @@ struct FullScreenComposerView: View {
             .font(pf(12))
         }
         .foregroundStyle(C.subLabel)
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(height: AppDesign.Control.searchHeight)
         .background {
             GlassBackground(shape: Capsule(),
@@ -214,13 +214,13 @@ struct FullScreenComposerView: View {
             .ignoresSafeArea()
             .allowsHitTesting(false)
 
-            VStack(spacing: 16) {
+            VStack(spacing: AppDesign.Spacing.md) {
                 header
                     .padding(.horizontal, 18)
                     .padding(.top, 10)
 
                 editor
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppDesign.Spacing.md)
 
                 footer
                     .padding(.horizontal, 18)

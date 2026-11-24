@@ -266,7 +266,7 @@ struct ChatBackgroundSheet: View {
                 VStack(alignment: .leading, spacing: 10) {
                     wallpaperSectionHeader(Tr("纯色"), detail: Tr("始终可用"))
 
-                    HStack(spacing: 12) {
+                    HStack(spacing: AppDesign.Spacing.sm) {
                         ForEach(shownPresets, id: \.path) { item in
                             wallpaperSwatch(item)
                         }
@@ -308,8 +308,8 @@ struct ChatBackgroundSheet: View {
                     .padding(.top, 2)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
+            .padding(.horizontal, AppDesign.Spacing.md)
+            .padding(.top, AppDesign.Spacing.xs)
             .padding(.bottom, max(28, L.safeBottom + 20))
         }
         .scrollIndicators(.hidden)
@@ -387,7 +387,7 @@ struct ChatBackgroundSheet: View {
                                     showsChevron: Bool = false,
                                     action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Image(systemName: symbol)
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(.white)
@@ -449,7 +449,7 @@ struct ChatBackgroundSheet: View {
                             .fill(Color.black.opacity(item.path == "solid:black" ? 0.24 : 0.07))
                             .frame(width: 32, height: 9)
                     }
-                    .padding(12)
+                    .padding(AppDesign.Spacing.sm)
                 }
 
                 HStack(spacing: 6) {
@@ -625,7 +625,7 @@ struct ChatBackgroundSheet: View {
                     .foregroundStyle(.secondary)
             }
 
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Image(systemName: scheme == .dark
                       ? "moon.fill" : "sun.max.fill")
                     .font(.system(size: 13, weight: .semibold))
@@ -728,7 +728,7 @@ struct ChatBackgroundSheet: View {
                 Color.white.opacity(0.055)
             }
 
-            VStack(spacing: 12) {
+            VStack(spacing: AppDesign.Spacing.sm) {
                 HStack {
                     Text("9:41")
                         .font(.system(size: 9, weight: .semibold, design: .rounded))
@@ -769,7 +769,7 @@ struct ChatBackgroundSheet: View {
                             .frame(maxWidth: .infinity, alignment: .trailing)
                     }
                     .padding(.horizontal, 11)
-                    .padding(.vertical, 8)
+                    .padding(.vertical, AppDesign.Spacing.xs)
                     .background(Color.white.opacity(0.97),
                                 in: RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
 
@@ -792,7 +792,7 @@ struct ChatBackgroundSheet: View {
                         .foregroundStyle(AppPalette.secondaryInk)
                     }
                     .padding(.horizontal, 11)
-                    .padding(.vertical, 8)
+                    .padding(.vertical, AppDesign.Spacing.xs)
                     .background(Color(hex: 0x0C7A70),
                                 in: RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
                 }
@@ -812,7 +812,7 @@ struct ChatBackgroundSheet: View {
             Capsule()
                 .fill(Color.black.opacity(0.90))
                 .frame(width: 66, height: 18)
-                .padding(.top, 8)
+                .padding(.top, AppDesign.Spacing.xs)
         }
         .overlay {
             RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)

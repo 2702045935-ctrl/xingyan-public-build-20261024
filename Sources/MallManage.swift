@@ -75,21 +75,21 @@ struct MallAdminSection: View {
                 .font(pf(15))
                 .padding(.horizontal, 14).frame(height: 46)
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small).fill(C.fieldBg))
-                .padding(.horizontal, 16).padding(.top, 10)
+                .padding(.horizontal, AppDesign.Spacing.md).padding(.top, 10)
             TextField(Tr("标语（比如 拼着买 才便宜）"), text: $sloganDraft)
                 .font(pf(15))
                 .padding(.horizontal, 14).frame(height: 46)
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small).fill(C.fieldBg))
-                .padding(.horizontal, 16).padding(.top, 8)
+                .padding(.horizontal, AppDesign.Spacing.md).padding(.top, AppDesign.Spacing.xs)
             Button { Task { await saveName() } } label: {
                 Text(Tr("保存商城名"))
                     .font(pf(15, .medium)).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: AppDesign.Control.searchHeight)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.panel).fill(C.green))
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppDesign.Spacing.md)
             }
             .buttonStyle(.plain)
-            .padding(.top, 10).padding(.bottom, 12)
+            .padding(.top, 10).padding(.bottom, AppDesign.Spacing.sm)
         }
         .background(C.cardBg)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
@@ -116,7 +116,7 @@ struct MallAdminSection: View {
             } else {
                 ForEach(Array(store.banners.enumerated()), id: \.offset) { i, url in
                     if i > 0 { HairLine(inset: 16) }
-                    HStack(spacing: 12) {
+                    HStack(spacing: AppDesign.Spacing.sm) {
                         RemoteImage(path: url, icon: "photo")
                             .frame(width: 96, height: 54)
                             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
@@ -130,17 +130,17 @@ struct MallAdminSection: View {
                         }
                         .buttonStyle(.plain)
                     }
-                    .padding(.horizontal, 16).frame(height: 70)
+                    .padding(.horizontal, AppDesign.Spacing.md).frame(height: 70)
                 }
             }
             HairLine(inset: 16)
             Button { bannerAdd = true } label: {
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     Image(systemName: "plus.circle.fill").font(.system(size: 17)).foregroundColor(C.green)
                     Text(Tr("加一张轮播图")).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
                     Spacer(minLength: 0)
                 }
-                .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
+                .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.largeControlHeight)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -166,10 +166,10 @@ struct MallAdminSection: View {
                                          set: { splashDraft.on = $0 }))
                     .labelsHidden().tint(C.green)
             }
-            .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
+            .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.largeControlHeight)
             HairLine(inset: 16)
 
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Group {
                     if let img = splashDraft.image, !img.isEmpty {
                         RemoteImage(path: img, icon: "photo")
@@ -193,10 +193,10 @@ struct MallAdminSection: View {
                 }
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 16).frame(height: AppDesign.Control.rowHeight)
+            .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.rowHeight)
             HairLine(inset: 16)
 
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Text(Tr("显示时长")).font(pf(15)).foregroundColor(C.label)
                 Spacer(minLength: 0)
                 ForEach([3.0, 5.0, 10.0], id: \.self) { s in
@@ -207,7 +207,7 @@ struct MallAdminSection: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 16).frame(height: AppDesign.Control.mediumControlHeight)
+            .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.mediumControlHeight)
             HairLine(inset: 16)
 
             HStack(spacing: 10) {
@@ -218,10 +218,10 @@ struct MallAdminSection: View {
                     .font(pf(15)).multilineTextAlignment(.trailing)
                     .frame(width: 90)
             }
-            .padding(.horizontal, 16).frame(height: AppDesign.Control.mediumControlHeight)
+            .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.mediumControlHeight)
             HairLine(inset: 16)
 
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Text(Tr("点封面")).font(pf(15)).foregroundColor(C.label)
                 Spacer(minLength: 0)
 
@@ -232,7 +232,7 @@ struct MallAdminSection: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 16).frame(height: AppDesign.Control.mediumControlHeight)
+            .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.mediumControlHeight)
 
             if (splashDraft.action ?? "none") == "product" {
                 Menu {
@@ -250,7 +250,7 @@ struct MallAdminSection: View {
                     }
                     .padding(.horizontal, 14).frame(height: AppDesign.Control.compactHeight)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.fieldBg))
-                    .padding(.horizontal, 16).padding(.bottom, 8)
+                    .padding(.horizontal, AppDesign.Spacing.md).padding(.bottom, AppDesign.Spacing.xs)
                 }
             } else if (splashDraft.action ?? "none") == "url" {
                 TextField(Tr("https://…"), text: Binding(get: { splashDraft.link ?? "" },
@@ -258,7 +258,7 @@ struct MallAdminSection: View {
                     .font(pf(14.5)).autocapitalization(.none).disableAutocorrection(true)
                     .padding(.horizontal, 14).frame(height: AppDesign.Control.compactHeight)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.fieldBg))
-                    .padding(.horizontal, 16).padding(.bottom, 8)
+                    .padding(.horizontal, AppDesign.Spacing.md).padding(.bottom, AppDesign.Spacing.xs)
             }
 
             Button { Task { await saveSplash() } } label: {
@@ -266,10 +266,10 @@ struct MallAdminSection: View {
                     .font(pf(15, .medium)).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: AppDesign.Control.searchHeight)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.panel).fill(C.green))
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppDesign.Spacing.md)
             }
             .buttonStyle(.plain)
-            .padding(.top, 6).padding(.bottom, 12)
+            .padding(.top, 6).padding(.bottom, AppDesign.Spacing.sm)
         }
         .background(C.cardBg)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
@@ -315,8 +315,8 @@ struct MallAdminSection: View {
             }
 
             ForEach(channelDraft.indices, id: \.self) { i in
-                VStack(spacing: 8) {
-                    HStack(spacing: 8) {
+                VStack(spacing: AppDesign.Spacing.xs) {
+                    HStack(spacing: AppDesign.Spacing.xs) {
                         ZStack {
                             Circle().fill(channelDraft[i].tintColor.opacity(0.12))
                                 .frame(width: 34, height: 34)
@@ -343,14 +343,14 @@ struct MallAdminSection: View {
                         .buttonStyle(.plain)
                     }
 
-                    HStack(spacing: 8) {
+                    HStack(spacing: AppDesign.Spacing.xs) {
                         Text(Tr("点它去哪")).font(pf(12)).foregroundColor(C.subLabel)
                         Menu {
                             ForEach(Self.channelActions, id: \.0) { a in
                                 Button(Tr(a.1)) { channelDraft[i].action = a.0 }
                             }
                         } label: {
-                            HStack(spacing: 4) {
+                            HStack(spacing: AppDesign.Spacing.xxs) {
                                 Text(Tr(Self.channelActionName(channelDraft[i].action ?? "")))
                                     .font(pf(13)).foregroundColor(C.label)
                                 Image(systemName: "chevron.up.chevron.down")
@@ -381,7 +381,7 @@ struct MallAdminSection: View {
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(.horizontal, 16).padding(.vertical, 10)
+                .padding(.horizontal, AppDesign.Spacing.md).padding(.vertical, 10)
                 if i < channelDraft.count - 1 { HairLine(inset: 16) }
             }
 
@@ -408,7 +408,7 @@ struct MallAdminSection: View {
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.horizontal, 16).padding(.vertical, 12)
+            .padding(.horizontal, AppDesign.Spacing.md).padding(.vertical, AppDesign.Spacing.sm)
         }
         .background(C.cardBg)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
@@ -484,7 +484,7 @@ struct MallAdminSection: View {
     }
 
     private func adRow(_ ad: DDAd) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Text(ad.emoji ?? "🛍")
                 .font(pfStyled(size: 22))
                 .frame(width: 44, height: 44)
@@ -508,7 +508,7 @@ struct MallAdminSection: View {
             Button { Task { await removeAd(ad) } } label: { pill(Tr("删除"), C.red) }
                 .buttonStyle(.plain)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .padding(.vertical, 10)
     }
 
@@ -523,12 +523,12 @@ struct MallAdminSection: View {
 
     private var adsAddButton: some View {
         Button { addingAd = true } label: {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Image(systemName: "plus.circle.fill").font(.system(size: 17)).foregroundColor(C.green)
                 Text(Tr("加一条广告")).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
+            .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.largeControlHeight)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -594,7 +594,7 @@ struct MallAdminSection: View {
     }
 
     private func productRow(_ product: DDProduct) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             DDThumb(em: product.em, size: 48, radius: 8, img: product.img)
             VStack(alignment: .leading, spacing: 3) {
                 Text(product.title).font(pf(14)).foregroundColor(C.label).lineLimit(2)
@@ -616,7 +616,7 @@ struct MallAdminSection: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .padding(.vertical, 10)
     }
 
@@ -631,12 +631,12 @@ struct MallAdminSection: View {
 
     private var productsAddButton: some View {
         Button { adding = true } label: {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Image(systemName: "plus.circle.fill").font(.system(size: 17)).foregroundColor(C.green)
                 Text(Tr("上架一件新商品")).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
+            .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.largeControlHeight)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -645,7 +645,7 @@ struct MallAdminSection: View {
     private var productsStatus: some View {
         Text(busy).font(pf(12)).foregroundColor(C.subLabel)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 16).padding(.bottom, 10)
+            .padding(.horizontal, AppDesign.Spacing.md).padding(.bottom, 10)
     }
 
     private func row(_ title: String, _ sub: String) -> some View {
@@ -654,13 +654,13 @@ struct MallAdminSection: View {
             Text(sub).font(pf(12)).foregroundColor(C.subLabel)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 16).padding(.vertical, 12)
+        .padding(.horizontal, AppDesign.Spacing.md).padding(.vertical, AppDesign.Spacing.sm)
     }
 
     private func hint(_ t: String) -> some View {
         Text(t).font(pf(13)).foregroundColor(C.subLabel)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 16).padding(.vertical, 12)
+            .padding(.horizontal, AppDesign.Spacing.md).padding(.vertical, AppDesign.Spacing.sm)
     }
 
     private func pill(_ t: String, _ c: Color) -> some View {
@@ -734,7 +734,7 @@ struct MallProductSheet: View {
             DDSheetBar(title: editing ? Tr("编辑商品") : Tr("上架一件新商品"))
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 10) {
-                    HStack(spacing: 12) {
+                    HStack(spacing: AppDesign.Spacing.sm) {
                         DDThumb(em: em, size: 72, radius: 10, img: img)
                         VStack(alignment: .leading, spacing: 8) {
                             Button { showPick = true } label: {
@@ -754,11 +754,11 @@ struct MallProductSheet: View {
                         }
                         Spacer(minLength: 0)
                     }
-                    .padding(12)
+                    .padding(AppDesign.Spacing.sm)
                     .background(C.cardBg)
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
 
-                    HStack(spacing: 12) {
+                    HStack(spacing: AppDesign.Spacing.sm) {
                         VStack(alignment: .leading, spacing: 5) {
                             Text(Tr("商品视频"))
                                 .font(pf(14.5, .medium))
@@ -809,12 +809,12 @@ struct MallProductSheet: View {
                     fld(Tr("几人团（2~9）"), $grp, num: true)
                     fld(Tr("已拼人数（填 10万+ 这种也行）"), $sold)
 
-                    HStack(spacing: 12) {
+                    HStack(spacing: AppDesign.Spacing.sm) {
                         Text(Tr("上架")).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
                         Spacer(minLength: 0)
                         Toggle("", isOn: $on).labelsHidden().tint(C.green)
                     }
-                    .padding(.horizontal, 16).frame(height: AppDesign.Control.menuRowHeight)
+                    .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.menuRowHeight)
                     .background(C.cardBg)
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
                     Spacer().frame(height: AppDesign.Spacing.xs)
@@ -961,7 +961,7 @@ struct MallAdSheet: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 10) {
 
-                    HStack(spacing: 12) {
+                    HStack(spacing: AppDesign.Spacing.sm) {
                         Text(emoji).font(pfStyled(size: 26))
                             .frame(width: 52, height: 52)
                             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
@@ -978,14 +978,14 @@ struct MallAdSheet: View {
                         Spacer(minLength: 0)
                         Text(cta.isEmpty ? Tr("去看看") : cta)
                             .font(AppDesign.Type.sectionMedium).foregroundColor(.white)
-                            .padding(.horizontal, 12).frame(height: AppDesign.Control.sectionHeaderHeight)
+                            .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.sectionHeaderHeight)
                             .background(Capsule().fill(adTopColor))
                     }
-                    .padding(12)
+                    .padding(AppDesign.Spacing.sm)
                     .background(C.cardBg)
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
 
-                    HStack(spacing: 8) {
+                    HStack(spacing: AppDesign.Spacing.xs) {
                         kindBtn(Tr("广告条"), "strip")
                         kindBtn(Tr("插卡"), "grid")
                         Spacer(minLength: 0)
@@ -1011,7 +1011,7 @@ struct MallAdSheet: View {
                                             .foregroundColor(C.green)
                                     }
                                 }
-                                .padding(.horizontal, 16).frame(height: AppDesign.Control.mediumControlHeight)
+                                .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.mediumControlHeight)
                                 .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
@@ -1028,12 +1028,12 @@ struct MallAdSheet: View {
                     fld(Tr("下面配色（十六进制，可空）"), $bottom)
                     fld(Tr("序号（越小越靠前）"), $sort, num: true)
 
-                    HStack(spacing: 12) {
+                    HStack(spacing: AppDesign.Spacing.sm) {
                         Text(Tr("显示这条广告")).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
                         Spacer(minLength: 0)
                         Toggle("", isOn: $on).labelsHidden().tint(C.green)
                     }
-                    .padding(.horizontal, 16).frame(height: AppDesign.Control.menuRowHeight)
+                    .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.menuRowHeight)
                     .background(C.cardBg)
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
                     Spacer().frame(height: AppDesign.Spacing.xs)
@@ -1078,7 +1078,7 @@ struct MallAdSheet: View {
             Text(t)
                 .font(pf(14, kind == v ? .semibold : .regular))
                 .foregroundColor(kind == v ? .white : C.label)
-                .padding(.horizontal, 16).frame(height: 34)
+                .padding(.horizontal, AppDesign.Spacing.md).frame(height: 34)
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
                     .fill(kind == v ? C.green : C.cardBg))
         }
@@ -1089,7 +1089,7 @@ struct MallAdSheet: View {
         Text(t)
             .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 6)
+            .padding(.horizontal, AppDesign.Spacing.md).padding(.top, 10).padding(.bottom, 6)
     }
 
     private func fld(_ ph: String, _ text: Binding<String>, num: Bool = false) -> some View {

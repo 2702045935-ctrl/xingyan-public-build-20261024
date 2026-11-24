@@ -59,7 +59,7 @@ struct BotCardNew: View {
             Spacer()
             Image(systemName: "ellipsis").font(.system(size: 17)).foregroundColor(aInk)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(height: AppDesign.Control.compactHeight)
         .background(Color.white)
     }
@@ -86,11 +86,11 @@ struct BotCardNew: View {
                 Text(name).font(pf(22, .medium)).foregroundColor(aInk)
                 Image(systemName: "checkmark.seal.fill").font(.system(size: 15)).foregroundColor(aBlue)
             }
-            .padding(.top, 16)
+            .padding(.top, AppDesign.Spacing.md)
             Text(bio).font(pf(14)).foregroundColor(aInk3)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 24).padding(.top, 6)
-            HStack(spacing: 12) {
+                .padding(.horizontal, AppDesign.Spacing.xl).padding(.top, 6)
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Button { onMessage() } label: {
                     Text(Tr("发消息")).font(pf(17, .medium)).foregroundColor(.white)
                         .frame(maxWidth: .infinity).frame(height: AppDesign.Control.compactHeight)
@@ -104,18 +104,18 @@ struct BotCardNew: View {
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.horizontal, 16).padding(.top, 20).padding(.bottom, 24)
+            .padding(.horizontal, AppDesign.Spacing.md).padding(.top, AppDesign.Spacing.lg).padding(.bottom, AppDesign.Spacing.xl)
         }
         .frame(maxWidth: .infinity)
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact))
         .shadow(color: Color(hex: 0x20000000), radius: 8, x: 0, y: 2)
-        .padding(.horizontal, 16).padding(.top, 12)
+        .padding(.horizontal, AppDesign.Spacing.md).padding(.top, AppDesign.Spacing.sm)
     }
 
     private func sectionTitle(_ t: String) -> some View {
         HStack { Text(t).font(pf(18, .medium)).foregroundColor(aInk); Spacer() }
-            .padding(.horizontal, 16).padding(.top, 24).padding(.bottom, 8)
+            .padding(.horizontal, AppDesign.Spacing.md).padding(.top, AppDesign.Spacing.xl).padding(.bottom, AppDesign.Spacing.xs)
     }
 
     private func card<C: View>(@ViewBuilder _ content: () -> C) -> some View {
@@ -123,7 +123,7 @@ struct BotCardNew: View {
             .background(Color.white)
             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact))
             .shadow(color: Color(hex: 0x20000000), radius: 8, x: 0, y: 2)
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
     }
 
     private func hRow(_ k: String, _ v: String) -> some View {
@@ -132,8 +132,8 @@ struct BotCardNew: View {
             Spacer()
             Text(v).font(pf(14)).foregroundColor(aInk3)
         }
-        .padding(.horizontal, 16).frame(height: AppDesign.Control.menuRowHeight)
+        .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.menuRowHeight)
     }
 
-    private var line: some View { Rectangle().fill(aLine).frame(height: 1).padding(.leading, 16) }
+    private var line: some View { Rectangle().fill(aLine).frame(height: 1).padding(.leading, AppDesign.Spacing.md) }
 }

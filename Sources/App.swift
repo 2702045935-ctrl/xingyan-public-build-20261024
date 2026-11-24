@@ -2708,7 +2708,7 @@ struct SavedLoginConfirm: View {
         VStack(spacing: 0) {
             Spacer(minLength: 0)
 
-            VStack(spacing: 16) {
+            VStack(spacing: AppDesign.Spacing.md) {
                 Avatar(path: app.lastAvatar, size: 88, radius: 12, circle: false)
                     .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                         .stroke(C.hairline, lineWidth: 0.6))
@@ -2823,7 +2823,7 @@ struct RootView: View {
                         Text(text)
                             .font(pf(14))
                             .foregroundColor(.white)
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, AppDesign.Spacing.md)
                             .padding(.vertical, 10)
                             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny).fill(Color.black.opacity(0.78)))
                             .padding(.bottom, L.tabH + L.safeBottom + 40)
@@ -2954,7 +2954,7 @@ struct LoginViewOld: View {
                                 .foregroundColor(LoginTheme.pageBg == nil ? C.red : Color(hex: 0xFF8E8E))
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.horizontal, 18)
-                                .padding(.top, 12)
+                                .padding(.top, AppDesign.Spacing.sm)
                         }
                         if !usePassword {
                             Text(Tr("仅上述手机号用于登录验证"))
@@ -3007,7 +3007,7 @@ struct LoginViewOld: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, AppDesign.Spacing.lg)
         .padding(.bottom, 11)
     }
 
@@ -3098,7 +3098,7 @@ struct LoginViewOld: View {
         .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
             .stroke(LoginTheme.ink(scheme).opacity(0.06), lineWidth: 0.8))
         .shadow(color: Color.black.opacity(LoginTheme.pageBg == nil ? 0 : 0.12), radius: 12, y: 5)
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
     }
 
     private func loginRow<Content: View>(label: String, @ViewBuilder content: () -> Content) -> some View {
@@ -3127,7 +3127,7 @@ struct LoginViewOld: View {
                         .foregroundColor(LoginTheme.onBgSub(scheme))
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 4)
+                .padding(.vertical, AppDesign.Spacing.xxs)
             }
             .padding(.bottom, 12.6)
 
@@ -3156,7 +3156,7 @@ struct LoginViewOld: View {
             }
             .padding(.top, 10)
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, AppDesign.Spacing.lg)
         .padding(.bottom, max(16, L.safeBottom))
         .background(LoginTheme.bg(scheme))
     }
@@ -3329,13 +3329,13 @@ struct LoginView: View {
 
                 avatarPager
                     .padding(.top, 64)
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, AppDesign.Spacing.lg)
                     ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
                     Text(appName)
                         .font(pfStyled(size: 22, weight: .semibold))
                         .foregroundColor(LoginTheme.ink(colorScheme))
-                        .padding(.top, 16)
+                        .padding(.top, AppDesign.Spacing.md)
                     Text(Tr("登录后同步最近的聊天记录"))
                         .font(pfStyled(size: 13))
                         .foregroundColor(LoginTheme.inkSub(colorScheme))
@@ -3352,7 +3352,7 @@ struct LoginView: View {
                             showMoreWays = true
                         }
                     } label: {
-                        HStack(spacing: 8) {
+                        HStack(spacing: AppDesign.Spacing.xs) {
                             Image(systemName: "message.fill")
                                 .resizable()
                                 .frame(width: 22, height: 22)
@@ -3398,7 +3398,7 @@ struct LoginView: View {
                     .padding(.top, 10)
 
                     Button { showMoreWays = true } label: {
-                        HStack(spacing: 4) {
+                        HStack(spacing: AppDesign.Spacing.xxs) {
                             Text(Tr("手机号与其他登录方式"))
                                 .font(pfStyled(size: 13.5))
                             Image(systemName: "chevron.right")
@@ -3425,7 +3425,7 @@ struct LoginView: View {
                             .font(pfStyled(size: 13))
                             .foregroundColor(C.red)
                             .multilineTextAlignment(.center)
-                            .padding(.top, 12)
+                            .padding(.top, AppDesign.Spacing.sm)
                     }
 
                     Spacer(minLength: 26)
@@ -3486,12 +3486,12 @@ struct LoginView: View {
                         Text(Tr("连接诊断"))
                             .font(pfStyled(size: 12.5, weight: .medium))
                             .foregroundColor(LoginTheme.accent)
-                            .padding(.horizontal, 12)
+                            .padding(.horizontal, AppDesign.Spacing.sm)
                             .frame(height: AppDesign.Control.sectionHeaderHeight)
                             .background(Capsule().stroke(LoginTheme.accent.opacity(0.5), lineWidth: 1))
                     }
                     .buttonStyle(.plain)
-                    .padding(.top, 16)
+                    .padding(.top, AppDesign.Spacing.md)
 
                     if !diag.isEmpty {
                         Text(diag)
@@ -3501,7 +3501,7 @@ struct LoginView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(10)
                             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini).fill(Color.black.opacity(0.06)))
-                            .padding(.top, 8)
+                            .padding(.top, AppDesign.Spacing.xs)
                     }
 
                     HStack(spacing: 5) {
@@ -3519,9 +3519,9 @@ struct LoginView: View {
                         .font(pfStyled(size: 11))
                         .foregroundColor(LoginTheme.inkSub(colorScheme))
                         .padding(.top, 60)
-                        .padding(.bottom, 20)
+                        .padding(.bottom, AppDesign.Spacing.lg)
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, AppDesign.Spacing.lg)
                 .frame(minHeight: UIScreen.main.bounds.height - 170, alignment: .top)
             }
             .background(Color.clear)
@@ -3561,7 +3561,7 @@ struct LoginView: View {
     }
 
     private var avatarPager: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: AppDesign.Spacing.xs) {
             if app.accounts.isEmpty {
 
                 Group {
@@ -3825,7 +3825,7 @@ struct AccountLoginSheet: View {
                     if let e = error {
                         Text(e).font(pfStyled(size: 13)).foregroundColor(C.red)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.top, 12)
+                            .padding(.top, AppDesign.Spacing.sm)
                     }
 
                     if isBanned {
@@ -3842,7 +3842,7 @@ struct AccountLoginSheet: View {
                             .background(LoginTheme.accent2)
                             .cornerRadius(14)
                         }
-                        .padding(.top, 12)
+                        .padding(.top, AppDesign.Spacing.sm)
                     }
 
                     if isFrozen {
@@ -3859,10 +3859,10 @@ struct AccountLoginSheet: View {
                             .background(LoginTheme.accent2)
                             .cornerRadius(14)
                         }
-                        .padding(.top, 12)
+                        .padding(.top, AppDesign.Spacing.sm)
                     }
                     Button { submit() } label: {
-                        HStack(spacing: 8) {
+                        HStack(spacing: AppDesign.Spacing.xs) {
                             if busy { ProgressView().progressViewStyle(.circular).tint(.white) }
                             Text(busy ? Tr("请稍候…") : Tr("登 录")).font(pfStyled(size: 16, weight: .medium))
                         }
@@ -3872,21 +3872,21 @@ struct AccountLoginSheet: View {
                         .cornerRadius(16)
                     }
                     .disabled(busy)
-                    .padding(.top, 20)
+                    .padding(.top, AppDesign.Spacing.lg)
 
                     if mode == .password {
-                        HStack(spacing: 16) {
+                        HStack(spacing: AppDesign.Spacing.md) {
 
                             Button(Tr("忘记密码？")) { showReset = true }
                             Text("·").foregroundColor(C.subLabel)
                             Button(Tr("还没有账号？去注册")) { showReg = true }
                         }
                         .font(pfStyled(size: 13)).foregroundColor(LoginTheme.accent2)
-                        .padding(.top, 16)
+                        .padding(.top, AppDesign.Spacing.md)
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 24)
+                .padding(.horizontal, AppDesign.Spacing.lg)
+                .padding(.top, AppDesign.Spacing.xl)
             }
             .background(Color(.systemBackground).ignoresSafeArea())
             .navigationTitle(mode == .phone ? "手机号登录" : "账号密码登录")
@@ -3920,7 +3920,7 @@ struct AccountLoginSheet: View {
     }
 
     private func row<C: View>(@ViewBuilder _ c: () -> C) -> some View {
-        HStack(spacing: 8) { c() }
+        HStack(spacing: AppDesign.Spacing.xs) { c() }
             .font(pfStyled(15))
             .frame(height: AppDesign.Control.dialogRowHeight).padding(.horizontal, 14)
             .background(Color.dyn(0xFFFFFF, 0x1C1C1E))
@@ -4009,11 +4009,11 @@ struct UnbanSheet: View {
 
                     if let e = error {
                         Text(e).font(pfStyled(size: 13)).foregroundColor(C.red)
-                            .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 12)
+                            .frame(maxWidth: .infinity, alignment: .leading).padding(.top, AppDesign.Spacing.sm)
                     }
 
                     Button { submit() } label: {
-                        HStack(spacing: 8) {
+                        HStack(spacing: AppDesign.Spacing.xs) {
                             if busy { ProgressView().progressViewStyle(.circular).tint(.white) }
                             Text(busy ? Tr("正在核验…") : Tr("提交并解封")).font(pfStyled(size: 16, weight: .medium))
                         }
@@ -4023,10 +4023,10 @@ struct UnbanSheet: View {
                         .cornerRadius(16)
                     }
                     .disabled(busy)
-                    .padding(.top, 20)
+                    .padding(.top, AppDesign.Spacing.lg)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
+                .padding(.horizontal, AppDesign.Spacing.lg)
+                .padding(.top, AppDesign.Spacing.lg)
             }
             .background(Color(.systemBackground).ignoresSafeArea())
             .navigationTitle(Tr("身份证自助解封"))
@@ -4042,7 +4042,7 @@ struct UnbanSheet: View {
     }
 
     private func field<C: View>(@ViewBuilder _ c: () -> C) -> some View {
-        HStack(spacing: 8) { c() }
+        HStack(spacing: AppDesign.Spacing.xs) { c() }
             .font(pfStyled(15))
             .frame(height: AppDesign.Control.dialogRowHeight).padding(.horizontal, 14)
             .background(Color.dyn(0xFFFFFF, 0x1C1C1E))
@@ -4230,12 +4230,12 @@ struct RegisterSheet: View {
             }
         }
         .padding(.top, 14)
-        .padding(.bottom, 4)
+        .padding(.bottom, AppDesign.Spacing.xxs)
         .frame(maxWidth: .infinity, alignment: .center)
     }
 
     private var registrationModeTabs: some View {
-        HStack(spacing: 24) {
+        HStack(spacing: AppDesign.Spacing.xl) {
             registrationTab(Tr("星言号注册"), selected: mode == .account) {
                 mode = .account
                 error = nil
@@ -4297,7 +4297,7 @@ struct RegisterSheet: View {
                 .padding(.top, -5)
 
             registrationField(Tr("登录密码")) {
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     Group {
                         if showPassword {
                             TextField(Tr("至少 6 位"), text: $password)
@@ -4506,7 +4506,7 @@ struct RegisterSheet: View {
 
     private var submitButton: some View {
         Button { submit() } label: {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 if busy {
                     ProgressView()
                         .tint(.white)
@@ -4650,7 +4650,7 @@ struct PairSheet: View {
             VStack(spacing: 14) {
                 Text(Tr("用已登录的手机确认，这台设备就能进入"))
                     .font(pfStyled(size: 14)).foregroundColor(.secondary)
-                    .multilineTextAlignment(.center).padding(.top, 20)
+                    .multilineTextAlignment(.center).padding(.top, AppDesign.Spacing.lg)
 
                 if let q = qrImage("xingyan://pair?code=" + code, size: 190) {
                     Image(uiImage: q)
@@ -4675,7 +4675,7 @@ struct PairSheet: View {
                      ? "这个码过期了，点下面重新生成"
                      : "另一台已登录的手机：星言 → 扫一扫；或者 我 → 设置 → 登录设备管理 → 确认新设备登录，把这 6 位数字填进去")
                     .font(pfStyled(size: 12.5)).foregroundColor(.secondary)
-                    .multilineTextAlignment(.center).padding(.horizontal, 24)
+                    .multilineTextAlignment(.center).padding(.horizontal, AppDesign.Spacing.xl)
 
                 if fail {
                     Button(Tr("重新生成")) { start() }
@@ -4744,7 +4744,7 @@ struct TermsSheet: View {
                     Text(LoginTheme.text(kind: kind))
                     .font(pfStyled(size: 14)).lineSpacing(6)
                 }
-                .padding(20)
+                .padding(AppDesign.Spacing.lg)
             }
             .background(Color(.systemBackground).ignoresSafeArea())
             .navigationBarTitleDisplayMode(.inline)
@@ -4798,7 +4798,7 @@ struct CountryPickerView: View {
                         index = i
                         dismiss()
                     } label: {
-                        HStack(spacing: 12) {
+                        HStack(spacing: AppDesign.Spacing.sm) {
                             Text(r.flag).font(pfStyled(size: 20))
                             Text(r.name).foregroundColor(C.label)
                             Spacer(minLength: 0)
@@ -4911,7 +4911,7 @@ struct PhoneLoginView: View {
                     Button {
                         phoneLogin()
                     } label: {
-                        HStack(spacing: 8) {
+                        HStack(spacing: AppDesign.Spacing.xs) {
                             if busy { ProgressView().progressViewStyle(.circular).tint(.white) }
                             Text(Tr("登录"))
                                 .font(pfStyled(size: 16, weight: .medium))
@@ -4954,7 +4954,7 @@ struct PhoneLoginView: View {
 
                     Spacer()
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, AppDesign.Spacing.lg)
             }
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)

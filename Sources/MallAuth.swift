@@ -63,8 +63,8 @@ struct MallAuthCard: View {
                     Text(Tr("申请获取以下权限"))
                         .font(pf(13)).foregroundColor(C.subLabel)
                 }
-                .padding(.top, 24)
-                .padding(.horizontal, 20)
+                .padding(.top, AppDesign.Spacing.xl)
+                .padding(.horizontal, AppDesign.Spacing.lg)
 
                 VStack(alignment: .leading, spacing: 5) {
                     Text(Tr("获取你的公开信息"))
@@ -87,10 +87,10 @@ struct MallAuthCard: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 14)
-                .padding(.vertical, 12)
+                .padding(.vertical, AppDesign.Spacing.sm)
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small).fill(C.pageBg))
                 .padding(.horizontal, 22)
-                .padding(.top, 16)
+                .padding(.top, AppDesign.Spacing.md)
 
                 Text(Tr("同意后，商城里会用你的头像和昵称显示身份；随时可以在 设置 → 个人信息与权限 → 授权管理 里解除。"))
                     .font(pf(11.5)).foregroundColor(C.subLabel)

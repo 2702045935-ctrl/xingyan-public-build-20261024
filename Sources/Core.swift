@@ -2849,8 +2849,8 @@ struct PhotoPager: View {
                 shareCurrent()
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.top, 4)
+        .padding(.horizontal, AppDesign.Spacing.xs)
+        .padding(.top, AppDesign.Spacing.xxs)
     }
 
     private func chromeButton(_ symbol: String,
@@ -2881,8 +2881,8 @@ struct PhotoPager: View {
             barButton(saved ? Tr("已保存") : Tr("保存"),
                       saved ? "checkmark.circle" : "square.and.arrow.down") { save(index) }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
+        .padding(.horizontal, AppDesign.Spacing.xs)
+        .padding(.vertical, AppDesign.Spacing.xxs)
         .background {
             GlassBackground(shape: Capsule(style: .continuous), shadow: true)
         }
@@ -2892,7 +2892,7 @@ struct PhotoPager: View {
 
     private func barButton(_ title: String, _ icon: String, _ tap: @escaping () -> Void) -> some View {
         Button(action: tap) {
-            VStack(spacing: 4) {
+            VStack(spacing: AppDesign.Spacing.xxs) {
                 Image(systemName: icon)
                     .font(.system(size: 20, weight: .medium))
                 Text(title).font(pfExact(11.5))

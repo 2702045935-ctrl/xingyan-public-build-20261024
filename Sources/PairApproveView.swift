@@ -62,7 +62,7 @@ struct PairApproveView: View {
             .padding(.top, 14)
             .padding(.bottom, 6)
 
-            GroupCard {
+            GroupCard(horizontalInset: 0) {
                 ForEach(Array(devices.enumerated()), id: \.offset) { i, d in
                     if i > 0 { HairLine(inset: 16) }
                     HStack(spacing: 10) {
@@ -79,7 +79,7 @@ struct PairApproveView: View {
                                 .background(Capsule().fill(C.green))
                         }
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppDesign.Spacing.md)
                     .frame(minHeight: 56)
                     .background(C.cardBg)
                 }
@@ -141,7 +141,7 @@ struct PairApproveView: View {
                                 code = String(v.filter { $0.isNumber }.prefix(6))
                             }
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppDesign.Spacing.md)
                     .frame(height: AppDesign.Control.compactRowHeight)
                     .background(C.cardBg)
                     .padding(.top, 18)
@@ -164,7 +164,7 @@ struct PairApproveView: View {
                             .cornerRadius(12)
                     }
                     .disabled(busy || code.count != 6)
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, AppDesign.Spacing.lg)
                     .padding(.top, 22)
             }
         }
@@ -187,7 +187,7 @@ struct PairApproveView: View {
             .frame(maxWidth: .infinity)
             .padding(.horizontal, 18)
             .padding(.top, 22)
-            .padding(.bottom, 16)
+            .padding(.bottom, AppDesign.Spacing.md)
 
             HairLine(inset: 16)
 
@@ -195,7 +195,7 @@ struct PairApproveView: View {
                 .font(AppDesign.Type.caption)
                 .foregroundColor(C.red.opacity(0.92))
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 20)
+                .padding(.horizontal, AppDesign.Spacing.lg)
                 .padding(.top, 14)
 
             Button { approve() } label: {
@@ -208,8 +208,8 @@ struct PairApproveView: View {
             }
             .buttonStyle(.plain)
             .disabled(busy)
-            .padding(.horizontal, 20)
-            .padding(.top, 16)
+            .padding(.horizontal, AppDesign.Spacing.lg)
+            .padding(.top, AppDesign.Spacing.md)
 
             Button {
                 withAnimation(.spring(response: 0.32, dampingFraction: 0.85)) { checked = false }
@@ -218,13 +218,13 @@ struct PairApproveView: View {
                     .frame(maxWidth: .infinity, minHeight: 46)
             }
             .buttonStyle(.plain)
-            .padding(.horizontal, 20)
-            .padding(.bottom, 8)
+            .padding(.horizontal, AppDesign.Spacing.lg)
+            .padding(.bottom, AppDesign.Spacing.xs)
         }
         .background(C.cardBg)
         .cornerRadius(14)
-        .padding(.horizontal, 16)
-        .padding(.top, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
+        .padding(.top, AppDesign.Spacing.md)
     }
 
     private func check() {

@@ -131,7 +131,7 @@ struct DDCityPickerView: View {
             }
             .padding(.horizontal, 6)
 
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(DDColor.sub)
@@ -150,7 +150,7 @@ struct DDCityPickerView: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
             .frame(height: AppDesign.Control.iconSmallHeight)
             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .fill(Color.dyn(0xF2F2F5, 0x2A2A2E)))
@@ -164,7 +164,7 @@ struct DDCityPickerView: View {
                     }
 
                     groupTitle(Tr("当前定位"))
-                    HStack(spacing: 8) {
+                    HStack(spacing: AppDesign.Spacing.xs) {
                         Image(systemName: "location.fill")
                             .font(.system(size: 13)).foregroundColor(DDColor.red)
                         if city.locating {
@@ -179,7 +179,7 @@ struct DDCityPickerView: View {
                         Button {
                             city.locate()
                         } label: {
-                            HStack(spacing: 4) {
+                            HStack(spacing: AppDesign.Spacing.xxs) {
                                 Image(systemName: "arrow.clockwise").font(.system(size: 11.5, weight: .semibold))
                                 Text(Tr("重新定位")).font(AppDesign.Type.caption)
                             }
@@ -187,7 +187,7 @@ struct DDCityPickerView: View {
                         }
                         .buttonStyle(.plain)
                     }
-                    .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
+                    .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.largeControlHeight)
                     .contentShape(Rectangle())
 
                     .onTapGesture { city.useAuto(); dismiss() }
@@ -203,7 +203,7 @@ struct DDCityPickerView: View {
 
                     if hot.isEmpty {
                         groupTitle(Tr("热门城市"))
-                        ProgressView().padding(.horizontal, 16).padding(.vertical, 20)
+                        ProgressView().padding(.horizontal, AppDesign.Spacing.md).padding(.vertical, AppDesign.Spacing.lg)
                     } else {
                         groupTitle(Tr("热门城市"))
                         cityGrid(hot)
@@ -223,7 +223,7 @@ struct DDCityPickerView: View {
     private func groupTitle(_ t: String) -> some View {
         Text(t)
             .font(AppDesign.Type.compactButtonMedium).foregroundColor(DDColor.sub)
-            .padding(.horizontal, 16).padding(.top, 18).padding(.bottom, 8)
+            .padding(.horizontal, AppDesign.Spacing.md).padding(.top, 18).padding(.bottom, AppDesign.Spacing.xs)
     }
 
     private func cityGrid(_ list: [DDCityItem]) -> some View {
@@ -246,7 +246,7 @@ struct DDCityPickerView: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
     }
 
     private func runSearch() {

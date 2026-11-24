@@ -25,7 +25,7 @@ struct NavPlusCard: View {
                     onPick()
                     item.action()
                 } label: {
-                    HStack(spacing: 12) {
+                    HStack(spacing: AppDesign.Spacing.sm) {
                         ZStack {
                             RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                                 .fill(OrbitTheme.field)

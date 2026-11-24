@@ -55,7 +55,7 @@ struct MomentCommentsSheet: View {
                             commentContextStrip
 
                             if comments.isEmpty {
-                                VStack(spacing: 8) {
+                                VStack(spacing: AppDesign.Spacing.xs) {
                                     Image(systemName: "bubble.left")
                                         .font(.title2)
                                         .foregroundStyle(.secondary)
@@ -170,7 +170,7 @@ struct MomentCommentsSheet: View {
             Capsule()
                 .fill(Color.secondary.opacity(0.28))
                 .frame(width: 34, height: 4)
-                .padding(.top, 8)
+                .padding(.top, AppDesign.Spacing.xs)
 
             HStack {
                 HStack(spacing: 5) {
@@ -192,7 +192,7 @@ struct MomentCommentsSheet: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel(Tr("关闭"))
             }
-            .padding(.horizontal, 8)
+            .padding(.horizontal, AppDesign.Spacing.xs)
         }
         .background(sheetSurface)
     }
@@ -283,10 +283,10 @@ struct MomentCommentsSheet: View {
 
             if !likes.isEmpty {
                 likeLine
-                    .padding(.top, 4)
+                    .padding(.top, AppDesign.Spacing.xxs)
             }
         }
-        .padding(12)
+        .padding(AppDesign.Spacing.sm)
         .background(frostedCard)
     }
 
@@ -330,7 +330,7 @@ struct MomentCommentsSheet: View {
             .onTapGesture {
                 fullViewerIndex = previewIndex
             }
-            .padding(.top, 12)
+            .padding(.top, AppDesign.Spacing.sm)
         } else if let raw = live.video, !raw.isEmpty {
             ZStack {
                 if let cover = live.videoCover, !cover.isEmpty {
@@ -367,7 +367,7 @@ struct MomentCommentsSheet: View {
             }
             .frame(height: previewHeight)
             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
-            .padding(.top, 12)
+            .padding(.top, AppDesign.Spacing.sm)
             .onTapGesture {
                 let full = raw.hasPrefix("http") ? raw : API.shared.base + raw
                 videoURL = URL(string: full)
@@ -376,7 +376,7 @@ struct MomentCommentsSheet: View {
     }
 
     private var authorLine: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppDesign.Spacing.xs) {
             Avatar(path: live.author?.avatarPath ?? "", size: 32, radius: 10)
             VStack(alignment: .leading, spacing: 2) {
                 Text(live.author?.name ?? "")
@@ -391,7 +391,7 @@ struct MomentCommentsSheet: View {
             }
             Spacer(minLength: 0)
             Button(action: toggleLike) {
-                HStack(spacing: 4) {
+                HStack(spacing: AppDesign.Spacing.xxs) {
                     ZStack {
                         Image(systemName: live.likedByMe == true ? "heart.fill" : "heart")
                             .font(.system(size: 15, weight: .medium))
@@ -507,7 +507,7 @@ struct MomentCommentsSheet: View {
             commentLikeAction(item)
         }
         .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .padding(.vertical, AppDesign.Spacing.sm)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(sheetSurface)
         .contentShape(Rectangle())
@@ -625,10 +625,10 @@ struct MomentCommentsSheet: View {
                     }
                     .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
                 .padding(.top, 7)
             }
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 TextField(Tr("发条评论，说说你的感受"), text: $text)
                     .font(pf(14.5))
                     .foregroundColor(C.label)
@@ -669,8 +669,8 @@ struct MomentCommentsSheet: View {
                 .disabled(sending || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 .accessibilityLabel(Tr("发送"))
             }
-            .padding(.horizontal, 12)
-            .padding(.top, 8)
+            .padding(.horizontal, AppDesign.Spacing.sm)
+            .padding(.top, AppDesign.Spacing.xs)
             .padding(.bottom, max(9, L.safeBottom))
         }
         .background {
@@ -817,7 +817,7 @@ private struct SwipeDeleteCommentRow<Content: View>: View {
                 close()
                 onDelete()
             } label: {
-                VStack(spacing: 4) {
+                VStack(spacing: AppDesign.Spacing.xxs) {
                     Image(systemName: "trash.fill")
                         .font(.system(size: 16, weight: .semibold))
                     Text(Tr("删除"))
@@ -885,17 +885,17 @@ struct MomentImageActions: View {
     @State private var share = false
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: AppDesign.Spacing.sm) {
             Capsule()
                 .fill(Color.secondary.opacity(0.25))
                 .frame(width: 38, height: 4)
-                .padding(.top, 4)
-            HStack(spacing: 12) {
+                .padding(.top, AppDesign.Spacing.xxs)
+            HStack(spacing: AppDesign.Spacing.sm) {
                 action(Tr("保存"), "square.and.arrow.down") { save() }
                 action(Tr("分享"), "square.and.arrow.up") { share = true }
                 action(Tr("关闭"), "xmark") { dismiss() }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             Spacer(minLength: 0)
         }
         .background(C.cardBg)

@@ -218,7 +218,7 @@ struct ChatRecentPhotoStrip: View {
                     }
                 }
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
         }
         .frame(height: tile + 14)
         .frame(maxWidth: .infinity, alignment: .leading)

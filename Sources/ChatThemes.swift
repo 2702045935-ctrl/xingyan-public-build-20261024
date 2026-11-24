@@ -280,7 +280,7 @@ struct ChatThemePickerView: View {
                     }
                 }
                 .padding(.horizontal, 18)
-                .padding(.top, 12)
+                .padding(.top, AppDesign.Spacing.sm)
                 .padding(.bottom, max(24, L.safeBottom + 12))
             }
             .background(Color(uiColor: .systemGroupedBackground).ignoresSafeArea())
@@ -349,7 +349,7 @@ struct ChatThemePickerView: View {
                     Text(Tr("主题"))
                         .font(.system(size: 9.5, weight: .semibold))
                         .foregroundStyle(.secondary)
-                        .padding(.horizontal, 8)
+                        .padding(.horizontal, AppDesign.Spacing.xs)
                         .frame(height: 21)
                         .background(.ultraThinMaterial,
                                     in: Capsule(style: .continuous))
@@ -409,7 +409,7 @@ struct ChatThemePickerView: View {
                         }
                 }
 
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     Image(systemName: "face.smiling")
                     Image(systemName: "plus")
                     Text(Tr("输入消息"))
@@ -445,7 +445,7 @@ struct ChatThemePickerView: View {
             Capsule()
                 .fill(Color.black.opacity(0.88))
                 .frame(width: 66, height: 18)
-                .padding(.top, 8)
+                .padding(.top, AppDesign.Spacing.xs)
         }
         .overlay {
             RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)

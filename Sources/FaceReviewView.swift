@@ -107,7 +107,7 @@ struct FaceReviewView: View {
                 ZStack {
                     Color.black.opacity(0.92).ignoresSafeArea()
                     RemoteImage(path: z, mode: .fit, maxSide: 1400)
-                        .padding(20)
+                        .padding(AppDesign.Spacing.lg)
                     VStack { HStack { Spacer()
                         Button { zoom = nil } label: {
                             Image(systemName: "xmark").font(.system(size: 17, weight: .semibold))
@@ -126,7 +126,7 @@ struct FaceReviewView: View {
             Text(t).font(AppDesign.Type.rowTitle).foregroundColor(C.label)
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 16).padding(.top, 4)
+        .padding(.horizontal, AppDesign.Spacing.md).padding(.top, AppDesign.Spacing.xxs)
     }
 
     private func card(_ r: FaceReviewRow) -> some View {
@@ -184,7 +184,7 @@ struct FaceReviewView: View {
                 }
             }
         }
-        .padding(12)
+        .padding(AppDesign.Spacing.sm)
         .background(C.cardBg)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
         .padding(.horizontal, 14)

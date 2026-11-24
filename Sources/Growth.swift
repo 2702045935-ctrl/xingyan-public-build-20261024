@@ -340,13 +340,13 @@ struct MyLevelView: View {
         VStack(spacing: 0) {
             NavBar(title: Tr("我的等级"), back: { dismiss() })
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 12) {
+                VStack(spacing: AppDesign.Spacing.sm) {
                     heroCard
                     todayCard
                     ruleCard
                     rankCard
                 }
-                .padding(.horizontal, 12)
+                .padding(.horizontal, AppDesign.Spacing.sm)
                 .padding(.top, 10)
                 .padding(.bottom, 30)
             }
@@ -405,7 +405,7 @@ struct MyLevelView: View {
                 }
             }
         }
-        .padding(16)
+        .padding(AppDesign.Spacing.md)
         .background(
             ZStack {
                 LinearGradient(colors: [Color(hex: 0x1C2130), Color(hex: 0x2B2233), Color(hex: 0x14111A)],
@@ -492,7 +492,7 @@ struct MyLevelView: View {
     private var rankCard: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(Tr("活跃榜")).font(pf(15, .medium)).foregroundColor(C.label)
-                .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 8)
+                .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, AppDesign.Spacing.xs)
             if let mine = store.rankMine {
                 HStack(spacing: 10) {
                     Avatar(path: mine.avatar ?? "", size: 34, radius: 17, circle: true)
@@ -503,7 +503,7 @@ struct MyLevelView: View {
                     Text(num(mine.total ?? 0) + Tr(" 天")).font(pf(13)).foregroundColor(C.subLabel)
                 }
                 .padding(.horizontal, 14)
-                .padding(.vertical, 8)
+                .padding(.vertical, AppDesign.Spacing.xs)
             }
             HairLine(inset: 14)
             if loadingRank && store.rank.isEmpty {
@@ -511,7 +511,7 @@ struct MyLevelView: View {
             } else if store.rank.isEmpty {
                 Text(Tr("还没有人上榜，多用几天就有了"))
                     .font(pf(13)).foregroundColor(C.subLabel)
-                    .padding(.horizontal, 14).padding(.vertical, 16)
+                    .padding(.horizontal, 14).padding(.vertical, AppDesign.Spacing.md)
             } else {
                 ForEach(Array(store.rank.prefix(20).enumerated()), id: \.element.id) { idx, row in
                     HStack(spacing: 10) {

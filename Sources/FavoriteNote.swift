@@ -55,7 +55,7 @@ struct FavoriteNoteComposeSheet: View {
                     .font(pfStyled(size: 22, weight: .semibold))
                     .lineLimit(1...3)
                     .padding(.horizontal, 18)
-                    .padding(.top, 12)
+                    .padding(.top, AppDesign.Spacing.sm)
 
                 Divider().padding(.horizontal, 18)
 
@@ -64,7 +64,7 @@ struct FavoriteNoteComposeSheet: View {
                         Text(Tr("开始输入…"))
                             .foregroundStyle(.tertiary)
                             .padding(.horizontal, 18)
-                            .padding(.top, 12)
+                            .padding(.top, AppDesign.Spacing.sm)
                             .allowsHitTesting(false)
                     }
                     TextEditor(text: $bodyText)
@@ -75,7 +75,7 @@ struct FavoriteNoteComposeSheet: View {
                                  : .system(size: 17)))
                         .scrollContentBackground(.hidden)
                         .padding(.horizontal, 13)
-                        .padding(.top, 4)
+                        .padding(.top, AppDesign.Spacing.xxs)
                         .focused($focused)
                         .scrollDismissesKeyboard(.interactively)
                 }
@@ -93,7 +93,7 @@ struct FavoriteNoteComposeSheet: View {
                                         .font(.system(size: 17))
                                         .foregroundColor(.white)
                                         .shadow(color: .black.opacity(0.35), radius: 1.5)
-                                        .padding(4)
+                                        .padding(AppDesign.Spacing.xxs)
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -101,7 +101,7 @@ struct FavoriteNoteComposeSheet: View {
                     }
                     .padding(.horizontal, 18)
                     .padding(.top, 6)
-                    .padding(.bottom, 12)
+                    .padding(.bottom, AppDesign.Spacing.sm)
                 }
             }
             .background(Color(.systemBackground))
@@ -162,7 +162,7 @@ struct FavoriteNoteComposeSheet: View {
                             noteTool("link", Tr("链接")) { insertLink() }
                             noteTool("minus", Tr("分隔线")) { insertSeparator() }
                         }
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, AppDesign.Spacing.sm)
                     }
                     .frame(height: AppDesign.Control.compactHeight)
 
@@ -173,7 +173,7 @@ struct FavoriteNoteComposeSheet: View {
                             .font(pfStyled(size: 12))
                             .foregroundStyle(.secondary)
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppDesign.Spacing.md)
                     .padding(.bottom, 7)
                 }
                 .background(.bar)
@@ -361,8 +361,8 @@ struct FavoriteNoteDetailSheet: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 12)
+                .padding(.horizontal, AppDesign.Spacing.lg)
+                .padding(.top, AppDesign.Spacing.sm)
                 .padding(.bottom, 36)
             }
             .background(Color(.systemBackground))

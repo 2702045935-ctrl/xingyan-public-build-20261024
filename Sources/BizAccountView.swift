@@ -20,7 +20,7 @@ struct BizAccountView: View {
             NavBar(title: Tr("经营账户"), back: { dismiss() })
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
-                    VStack(spacing: 8) {
+                    VStack(spacing: AppDesign.Spacing.xs) {
                         Text(Tr("经营账户余额"))
                             .font(AppDesign.Type.body).foregroundColor(Color.white.opacity(0.85))
                         Text(money(info?.balance))
@@ -34,7 +34,7 @@ struct BizAccountView: View {
                             .font(pf(12))
                             .foregroundColor(Color.white.opacity(0.8))
                             .multilineTextAlignment(.center)
-                            .padding(.horizontal, 24)
+                            .padding(.horizontal, AppDesign.Spacing.xl)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 22)
@@ -70,7 +70,7 @@ struct BizAccountView: View {
                     Text(Tr("经营账户里的每一笔收款都有订单号，后台「经营账户查账」可以对账。"))
                         .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal, 24)
+                        .padding(.horizontal, AppDesign.Spacing.xl)
                         .padding(.top, 14)
                     Color.clear.frame(height: 26)
                 }
@@ -97,7 +97,7 @@ struct BizAccountView: View {
     }
 
     private func totalCell(_ title: String, _ v: Double?) -> some View {
-        VStack(spacing: 4) {
+        VStack(spacing: AppDesign.Spacing.xxs) {
             Text(money(v)).font(pfMoney(16)).foregroundColor(C.label)
             Text(title).font(pf(12)).foregroundColor(C.subLabel)
         }
@@ -106,13 +106,13 @@ struct BizAccountView: View {
 
     private func entry(_ title: String, _ value: String, _ p: BizPage) -> some View {
         Button { page = p } label: {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Text(title).font(pf(16)).foregroundColor(C.label)
                 Spacer(minLength: 6)
                 Text(value).font(pf(13)).foregroundColor(C.subLabel).lineLimit(1)
                 Chevron(size: 9, line: 1.6)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .frame(height: AppDesign.Control.dialogRowHeight)
             .contentShape(Rectangle())
         }
@@ -153,7 +153,7 @@ struct BizRecordsView: View {
                             Text(Tr("还没有收款记录。别人给你转钱、你收到红包，都会记在这里。"))
                                 .font(pf(14)).foregroundColor(C.subLabel)
                                 .multilineTextAlignment(.center)
-                                .padding(.horizontal, 20)
+                                .padding(.horizontal, AppDesign.Spacing.lg)
                                 .padding(.vertical, 26)
                         } else {
                             ForEach(Array(records.enumerated()), id: \.element.id) { idx, r in
@@ -179,14 +179,14 @@ struct BizRecordsView: View {
         let isOut = r.kind == "withdraw"
         let sign = isOut ? "-" : "+"
         VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Text(title(r)).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
                 Spacer(minLength: 6)
                 Text(sign + "¥" + moneyFmt(r.amount ?? 0))
                     .font(pfMoney(15.5))
                     .foregroundColor(isOut ? C.label : C.green)
             }
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Text(subtitle(r)).font(pf(12)).foregroundColor(C.subLabel)
                 Spacer(minLength: 6)
                 Text(rpTime(r.createdAt ?? "")).font(pf(12)).foregroundColor(C.subLabel)
@@ -196,7 +196,7 @@ struct BizRecordsView: View {
                     .font(pf(11.5)).foregroundColor(C.subLabel)
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .padding(.vertical, 11)
     }
 
@@ -223,7 +223,7 @@ struct BizRecordsView: View {
     }
 
     private func cell(_ t: String, _ v: Double?) -> some View {
-        VStack(spacing: 4) {
+        VStack(spacing: AppDesign.Spacing.xxs) {
             Text("¥" + moneyFmt(v ?? 0)).font(pfMoney(15)).foregroundColor(C.label)
             Text(t).font(pf(12)).foregroundColor(C.subLabel)
         }
@@ -269,7 +269,7 @@ struct BizSettingsView: View {
                                 .pickerStyle(.segmented)
                                 .frame(width: 190)
                             }
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, AppDesign.Spacing.md)
                             .frame(height: AppDesign.Control.menuRowHeight)
                             HairLine(inset: 16)
                             switchRow(Tr("收款提醒"), isOn: $notify,
@@ -293,14 +293,14 @@ struct BizSettingsView: View {
                                 Spacer(minLength: 6)
                                 Text("0.6%").font(pf(15)).foregroundColor(C.subLabel)
                             }
-                            .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
+                            .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.largeControlHeight)
                             HairLine(inset: 16)
                             HStack {
                                 Text(Tr("结算周期")).font(pf(16)).foregroundColor(C.label)
                                 Spacer(minLength: 6)
                                 Text("T+1").font(pf(15)).foregroundColor(C.subLabel)
                             }
-                            .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
+                            .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.largeControlHeight)
                         }
                         .padding(.top, 10)
 
@@ -311,13 +311,13 @@ struct BizSettingsView: View {
                                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.green))
                         }
                         .buttonStyle(.plain)
-                        .padding(.horizontal, 16).padding(.top, 20)
+                        .padding(.horizontal, AppDesign.Spacing.md).padding(.top, AppDesign.Spacing.lg)
                         .disabled(busy)
 
                         Text(Tr("到账方式选「经营账户」时，收到的钱先记在经营账户余额里，你随时可以提到零钱。"))
                             .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                             .multilineTextAlignment(.center)
-                            .padding(.horizontal, 24).padding(.top, 12)
+                            .padding(.horizontal, AppDesign.Spacing.xl).padding(.top, AppDesign.Spacing.sm)
                         Color.clear.frame(height: AppDesign.Control.badgeHeight)
                     }
                 }
@@ -350,7 +350,7 @@ struct BizSettingsView: View {
             }
             Text(hint).font(pf(12)).foregroundColor(C.subLabel)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .padding(.vertical, 11)
     }
 
@@ -361,7 +361,7 @@ struct BizSettingsView: View {
             TextField(ph, text: text)
                 .font(pf(15)).multilineTextAlignment(.trailing)
         }
-        .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
+        .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.largeControlHeight)
     }
 
     private func save() {
@@ -398,7 +398,7 @@ struct BizWithdrawView: View {
     var body: some View {
         VStack(spacing: 0) {
             NavBar(title: Tr("提现到零钱"), back: { dismiss() })
-            VStack(spacing: 8) {
+            VStack(spacing: AppDesign.Spacing.xs) {
                 Text(Tr("可提现余额")).font(pf(13)).foregroundColor(C.subLabel)
                 Text("¥" + moneyFmt(balance))
                     .font(pfMoney(32, .medium)).foregroundColor(C.label)
@@ -420,7 +420,7 @@ struct BizWithdrawView: View {
                     }
                     .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 16).frame(height: AppDesign.Control.dialogRowHeight)
+                .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.dialogRowHeight)
             }
             .padding(.top, 10)
 
@@ -432,12 +432,12 @@ struct BizWithdrawView: View {
                         .fill(balance <= 0 ? C.subLabel : C.green))
             }
             .buttonStyle(.plain)
-            .padding(.horizontal, 16).padding(.top, 18)
+            .padding(.horizontal, AppDesign.Spacing.md).padding(.top, 18)
             .disabled(busy || balance <= 0)
 
             Text(Tr("经营账户提现到零钱是即时到账的，不收费。"))
                 .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
-                .padding(.top, 12)
+                .padding(.top, AppDesign.Spacing.sm)
             Spacer(minLength: 0)
         }
         .background(C.pageBg.ignoresSafeArea())
@@ -536,17 +536,17 @@ struct BizInvoiceView: View {
                             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.green))
                     }
                     .buttonStyle(.plain)
-                    .padding(.horizontal, 16).padding(.top, 14)
+                    .padding(.horizontal, AppDesign.Spacing.md).padding(.top, 14)
                     .disabled(busy)
 
-                    GroupCard {
+                    GroupCard(horizontalInset: 0) {
                         HStack {
                             Text(Tr("可开票金额")).font(pf(16)).foregroundColor(C.label)
                             Spacer(minLength: 6)
                             Text("¥" + moneyFmt(leftAmount))
                                 .font(pfMoney(16)).foregroundColor(C.green)
                         }
-                        .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
+                        .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.largeControlHeight)
                         HairLine(inset: 16)
                         HStack(spacing: 10) {
                             Text(Tr("开票金额")).font(pf(16)).foregroundColor(C.label)
@@ -560,7 +560,7 @@ struct BizInvoiceView: View {
                             }
                             .buttonStyle(.plain)
                         }
-                        .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
+                        .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.largeControlHeight)
                         HairLine(inset: 16)
                         HStack(spacing: 10) {
                             Text(Tr("备注")).font(pf(16)).foregroundColor(C.label)
@@ -568,9 +568,9 @@ struct BizInvoiceView: View {
                             TextField(Tr("选填"), text: $note)
                                 .font(pf(15)).multilineTextAlignment(.trailing)
                         }
-                        .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
+                        .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.largeControlHeight)
                     }
-                    .padding(.top, 12)
+                    .padding(.top, AppDesign.Spacing.sm)
 
                     Button { apply() } label: {
                         Text(busy ? Tr("提交中…") : Tr("申请开票"))
@@ -580,17 +580,17 @@ struct BizInvoiceView: View {
                                 .fill(leftAmount > 0 ? C.green : C.subLabel))
                     }
                     .buttonStyle(.plain)
-                    .padding(.horizontal, 16).padding(.top, 12)
+                    .padding(.horizontal, AppDesign.Spacing.md).padding(.top, AppDesign.Spacing.sm)
                     .disabled(busy || leftAmount <= 0)
 
                     if !invoices.isEmpty {
                         VStack(alignment: .leading, spacing: 0) {
                             Text(Tr("开票记录")).font(pf(13)).foregroundColor(C.subLabel)
-                                .padding(.horizontal, 8).padding(.bottom, 6)
-                            GroupCard {
+                                .padding(.horizontal, AppDesign.Spacing.xs).padding(.bottom, 6)
+                            GroupCard(horizontalInset: 0) {
                                 ForEach(Array(invoices.enumerated()), id: \.element.id) { idx, inv in
                                     if idx > 0 { HairLine(inset: 16) }
-                                    HStack(spacing: 8) {
+                                    HStack(spacing: AppDesign.Spacing.xs) {
                                         VStack(alignment: .leading, spacing: 3) {
                                             Text("¥" + moneyFmt(inv.amount ?? 0))
                                                 .font(pfMoney(15)).foregroundColor(C.label)
@@ -602,17 +602,17 @@ struct BizInvoiceView: View {
                                             .font(pf(13))
                                             .foregroundColor((inv.status ?? "") == "done" ? C.green : C.subLabel)
                                     }
-                                    .padding(.horizontal, 16).frame(height: AppDesign.Control.menuRowHeight)
+                                    .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.menuRowHeight)
                                 }
                             }
                         }
-                        .padding(.horizontal, 8).padding(.top, 14)
+                        .padding(.horizontal, AppDesign.Spacing.xs).padding(.top, 14)
                     }
 
                     Text(Tr("开票申请会进后台，客服开好后状态会变成「已开票」。"))
                         .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal, 24).padding(.top, 12)
+                        .padding(.horizontal, AppDesign.Spacing.xl).padding(.top, AppDesign.Spacing.sm)
                     Color.clear.frame(height: 26)
                 }
             }
@@ -646,7 +646,7 @@ struct BizInvoiceView: View {
             TextField(ph, text: text)
                 .font(pf(15)).multilineTextAlignment(.trailing)
         }
-        .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
+        .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.largeControlHeight)
     }
 
     private func save() {

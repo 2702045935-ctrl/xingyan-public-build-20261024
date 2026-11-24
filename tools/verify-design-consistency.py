@@ -50,7 +50,8 @@ require(
 require(
     "struct GroupCard<Content: View>: View" in MAIN
     and "cornerRadius: AppDesign.Radius.panel" in MAIN
-    and ".padding(.horizontal, AppDesign.Spacing.md)" in MAIN
+    and "var horizontalInset: CGFloat = AppDesign.Spacing.md" in MAIN
+    and ".padding(.horizontal, horizontalInset)" in MAIN
     and "struct MenuRow: View" in MAIN
     and "AppDesign.Type.listTitle" in MAIN
     and "AppDesign.Control.menuRowHeight" in MAIN
@@ -73,6 +74,13 @@ type_pattern = re.compile(
 height_pattern = re.compile(
     r"\.frame\(height:\s*(?:8|20|24|28|30|32|36|38|40|42|44|48|50|52|54|56|60|64|72|82)(?:\.0)?\)"
 )
+spacing_pattern = re.compile(
+    r"\.padding\(\.(?:horizontal|vertical|top|bottom|leading|trailing),"
+    r"\s*(?:4|8|12|16|20|24|32)\)|"
+    r"\.padding\((?:4|8|12|16|20|24|32)\)|"
+    r"\b(?:VStack|HStack|LazyVStack|LazyHStack)\(spacing:\s*"
+    r"(?:4|8|12|16|20|24|32)"
+)
 for path in SOURCES.glob("*.swift"):
     if path.name == "DesignSystem.swift":
         continue
@@ -83,6 +91,8 @@ for path in SOURCES.glob("*.swift"):
             type_violations.append(f"{path.name}:{index}")
         if height_pattern.search(line):
             type_violations.append(f"{path.name}:{index} [height]")
+        if spacing_pattern.search(line):
+            type_violations.append(f"{path.name}:{index} [spacing]")
         stripped = line.strip()
         if "cornerRadius:" not in stripped:
             continue

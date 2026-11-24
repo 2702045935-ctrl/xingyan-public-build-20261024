@@ -84,7 +84,7 @@ struct AICallView: View {
                             .buttonStyle(.plain)
                     }
                     .padding(.horizontal, 28)
-                    .padding(.vertical, 24)
+                    .padding(.vertical, AppDesign.Spacing.xl)
                     .background(Color.white)
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
                     .shadow(color: .black.opacity(0.16), radius: 22, y: 10)
@@ -163,7 +163,7 @@ struct AICallView: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .padding(.top, 7)
     }
 
@@ -234,7 +234,7 @@ struct AICallView: View {
                         .foregroundColor(ink)
                         .lineLimit(1...3)
                         .focused($typedFocused)
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, AppDesign.Spacing.sm)
                         .frame(minHeight: 44)
                         .background(Color.white.opacity(0.72))
                         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
@@ -251,7 +251,7 @@ struct AICallView: View {
                     .buttonStyle(.plain)
                     .disabled(!canSendTyped)
                 }
-                .padding(8)
+                .padding(AppDesign.Spacing.xs)
                 .background(Color.white.opacity(0.36))
                 .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
             }
@@ -288,7 +288,7 @@ struct AICallView: View {
                 .font(pf(9))
                 .foregroundColor(Color(hex: 0x8A939F))
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, AppDesign.Spacing.lg)
         .padding(.bottom, max(14, L.safeBottom))
     }
 

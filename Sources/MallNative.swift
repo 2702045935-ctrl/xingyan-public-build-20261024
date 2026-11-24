@@ -1677,7 +1677,7 @@ struct MallNativeView: View {
         let onRed = true
 
         return VStack(spacing: 6) {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Button { backToMallOrClose() } label: {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 18, weight: .semibold))
@@ -1689,7 +1689,7 @@ struct MallNativeView: View {
 
                 if tab == 0 {
                     ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 4) {
+                        HStack(spacing: AppDesign.Spacing.xxs) {
                             ForEach(homeChannels.indices, id: \.self) { i in
                                 Button {
                                     withAnimation(.easeOut(duration: 0.16)) {
@@ -1723,7 +1723,7 @@ struct MallNativeView: View {
                             if store.cartCount > 0 {
                                 Text(store.cartCount > 99 ? "99+" : String(store.cartCount))
                                     .font(pf(9, .semibold)).foregroundColor(DDColor.redDeep)
-                                    .padding(.horizontal, 4).frame(height: 14)
+                                    .padding(.horizontal, AppDesign.Spacing.xxs).frame(height: 14)
                                     .background(Capsule().fill(Color.white))
                                     .offset(x: 4, y: -2)
                             }
@@ -1753,7 +1753,7 @@ struct MallNativeView: View {
             }
             if tab == 0 {
                 searchBox
-                HStack(spacing: 4) {
+                HStack(spacing: AppDesign.Spacing.xxs) {
                     Text(store.mallName).font(AppDesign.Type.captionStrong)
                         .foregroundColor(.white)
                     Text(store.mallSlogan).font(pf(11))
@@ -1763,9 +1763,9 @@ struct MallNativeView: View {
             }
         }
         .padding(.horizontal, 10)
-        .padding(.top, 4)
+        .padding(.top, AppDesign.Spacing.xxs)
 
-        .padding(.bottom, 8)
+        .padding(.bottom, AppDesign.Spacing.xs)
 
         .background { headerBg.ignoresSafeArea(edges: .top) }
     }
@@ -1807,7 +1807,7 @@ struct MallNativeView: View {
     private func mineHeaderButton(_ icon: String, _ title: String,
                                   action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 4) {
+            HStack(spacing: AppDesign.Spacing.xxs) {
                 Image(systemName: icon)
                     .font(.system(size: 11.5, weight: .semibold))
                 Text(title)
@@ -1841,8 +1841,8 @@ struct MallNativeView: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.leading, 12)
-        .padding(.trailing, 4)
+        .padding(.leading, AppDesign.Spacing.sm)
+        .padding(.trailing, AppDesign.Spacing.xxs)
         .frame(height: 34)
         .background(Capsule().fill(Color.white))
         .overlay(Capsule().stroke(Color.white.opacity(0.44), lineWidth: 1))
@@ -1921,7 +1921,7 @@ struct MallNativeView: View {
                     if badge > 0 {
                         Text(badge > 99 ? "99+" : String(badge))
                             .font(pf(9.5, .semibold)).foregroundColor(.white)
-                            .padding(.horizontal, 4).frame(height: 14)
+                            .padding(.horizontal, AppDesign.Spacing.xxs).frame(height: 14)
                             .background(Capsule().fill(DDColor.redDeep))
                             .offset(x: 9, y: -5)
                     } else if dot {
@@ -2055,7 +2055,7 @@ struct DDHomeTab: View {
                     if !store.mutedCates.isEmpty { mutedNote }
 
                     if store.disliked.count >= 20 && store.dislikedProducts.count >= store.live.count {
-                        HStack(spacing: 8) {
+                        HStack(spacing: AppDesign.Spacing.xs) {
                             Image(systemName: "hand.thumbsdown").font(.system(size: 12)).foregroundColor(DDColor.sub)
                             Text(Tr("你把商品都隐藏了，先给你看全部")).font(pf(12)).foregroundColor(DDColor.sub)
                             Spacer(minLength: 0)
@@ -2237,7 +2237,7 @@ struct DDHomeTab: View {
                     }
                 }
                 .padding(.horizontal, 14)
-                .padding(.vertical, 12)
+                .padding(.vertical, AppDesign.Spacing.sm)
                 .frame(maxWidth: .infinity)
                 .background(
                     LinearGradient(
@@ -2283,7 +2283,7 @@ struct DDHomeTab: View {
                 .padding(.horizontal, 14)
 
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 16) {
+                    HStack(spacing: AppDesign.Spacing.md) {
                         ForEach(Array(cats.enumerated()), id: \.element) { index, name in
                             let selected = cate == name
                             Button {
@@ -2316,7 +2316,7 @@ struct DDHomeTab: View {
                     .padding(.horizontal, 14)
                 }
             }
-            .padding(.vertical, 12)
+            .padding(.vertical, AppDesign.Spacing.sm)
             .background(DDColor.card)
             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
             .padding(.horizontal, 10)
@@ -2375,7 +2375,7 @@ struct DDHomeTab: View {
                                         .frame(height: 26)
                                         .background(Capsule().fill(DDColor.redDeep))
                                 }
-                                .padding(.horizontal, 12)
+                                .padding(.horizontal, AppDesign.Spacing.sm)
                                 .frame(height: 76)
                                 .background(
                                     LinearGradient(colors: [Color(hex: 0xFFF4F0), .white],
@@ -2389,10 +2389,10 @@ struct DDHomeTab: View {
                             .buttonStyle(.plain)
                         }
                     }
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, AppDesign.Spacing.sm)
                 }
             }
-            .padding(.vertical, 12)
+            .padding(.vertical, AppDesign.Spacing.sm)
             .background(DDColor.card)
             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
             .padding(.horizontal, 10)
@@ -2426,13 +2426,13 @@ struct DDHomeTab: View {
                     .font(.system(size: 9, weight: .semibold))
                     .foregroundColor(DDColor.weak)
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
             .frame(height: AppDesign.Control.iconSmallHeight)
             .background(DDColor.cardGrad)
             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                 .stroke(DDColor.cardEdge, lineWidth: 0.6))
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
         }
         .buttonStyle(.plain)
     }
@@ -2463,7 +2463,7 @@ struct DDHomeTab: View {
         let title: String = index % 4 == 0 ? Tr("星选好价")
             : (index % 4 == 1 ? Tr("品牌直降")
                 : (index % 4 == 2 ? Tr("新品尝鲜") : Tr("会员专享")))
-        return HStack(spacing: 8) {
+        return HStack(spacing: AppDesign.Spacing.xs) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(pf(13.5, .bold))
@@ -2485,12 +2485,12 @@ struct DDHomeTab: View {
                 RemoteImage(path: img, icon: "photo", mode: .fill)
                     .frame(width: 56, height: 56)
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous))
-                    .padding(.trailing, 8)
+                    .padding(.trailing, AppDesign.Spacing.xs)
             } else {
                 Text(p.em)
                     .font(pfStyled(size: 38))
                     .frame(width: 56, height: 56)
-                    .padding(.trailing, 8)
+                    .padding(.trailing, AppDesign.Spacing.xs)
             }
         }
         .frame(maxWidth: .infinity)
@@ -2504,7 +2504,7 @@ struct DDHomeTab: View {
 
     private func promoBoard(onViewAll: @escaping () -> Void) -> some View {
         GeometryReader { g in
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 if let first = store.live.first {
                     Button { onOpen(first) } label: { featurePromoProduct(first) }
                         .buttonStyle(.plain)
@@ -2515,7 +2515,7 @@ struct DDHomeTab: View {
                         Button { onOpen(p) } label: { compactPromoProduct(p) }
                             .buttonStyle(.plain)
                     }
-                    HStack(spacing: 4) {
+                    HStack(spacing: AppDesign.Spacing.xxs) {
                         Text(Tr("正品保障")).font(pf(9)).foregroundColor(DDColor.blueDeep)
                         Text("·").font(pf(9)).foregroundColor(Color(hex: 0xA2AAB5))
                         Text(Tr("极速退款")).font(pf(9)).foregroundColor(DDColor.blueDeep)
@@ -2569,7 +2569,7 @@ struct DDHomeTab: View {
                     .frame(height: AppDesign.Control.compactBadgeHeight)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous)
                         .fill(DDColor.red.opacity(0.85)))
-                    .padding(8)
+                    .padding(AppDesign.Spacing.xs)
             }
             .frame(height: 102)
             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
@@ -2598,7 +2598,7 @@ struct DDHomeTab: View {
     }
 
     private func compactPromoProduct(_ p: DDProduct) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppDesign.Spacing.xs) {
             if let img = p.img, !img.isEmpty {
                 RemoteImage(path: img, icon: "photo", mode: .fill)
                     .frame(width: 62, height: 62)
@@ -2638,7 +2638,7 @@ struct DDHomeTab: View {
     @ViewBuilder private func carousel(_ proxy: ScrollViewProxy) -> some View {
         let imgs = store.banners.filter { !$0.isEmpty }
         if !imgs.isEmpty {
-            VStack(spacing: 8) {
+            VStack(spacing: AppDesign.Spacing.xs) {
                 TabView(selection: $bannerPage) {
                     ForEach(imgs.indices, id: \.self) { i in
                         Button { toGrid(proxy) } label: {
@@ -2662,12 +2662,12 @@ struct DDHomeTab: View {
                                                 .frame(width: k == i ? 14 : 6, height: 6)
                                         }
                                     }
-                                    .padding(.trailing, 16)
+                                    .padding(.trailing, AppDesign.Spacing.md)
                                     .padding(.bottom, 14)
                                 }
                             }
                             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
-                            .padding(.horizontal, 12)
+                            .padding(.horizontal, AppDesign.Spacing.sm)
                         }
                         .buttonStyle(.plain)
                         .tag(i)
@@ -2747,7 +2747,7 @@ struct DDHomeTab: View {
                         .foregroundStyle(.white)
                         .lineLimit(2)
                         .lineSpacing(3)
-                        .padding(.top, 8)
+                        .padding(.top, AppDesign.Spacing.xs)
 
                     Text(Tr("品牌正品 · 平台甄选 · 安心履约"))
                         .font(pfStyled(size: 11.5))
@@ -2763,7 +2763,7 @@ struct DDHomeTab: View {
                         Text(Tr("去看看"))
                             .font(pfStyled(size: 11.5, weight: .semibold))
                             .foregroundStyle(.white)
-                            .padding(.horizontal, 12)
+                            .padding(.horizontal, AppDesign.Spacing.sm)
                             .frame(height: AppDesign.Control.sectionHeaderHeight)
                             .background(Capsule().fill(Color.white.opacity(0.12)))
                             .overlay(Capsule().stroke(Color.white.opacity(0.12), lineWidth: 0.7))
@@ -2807,7 +2807,7 @@ struct DDHomeTab: View {
                                 .buttonStyle(.plain)
                         }
                         Button { toGrid(proxy) } label: {
-                            VStack(spacing: 4) {
+                            VStack(spacing: AppDesign.Spacing.xxs) {
                                 Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold))
                                     .foregroundColor(DDColor.sub)
                                 Text(Tr("更多")).font(pf(11)).foregroundColor(DDColor.sub)
@@ -2831,7 +2831,7 @@ struct DDHomeTab: View {
     }
 
     private func seckillCell(_ p: DDProduct) -> some View {
-        VStack(spacing: 4) {
+        VStack(spacing: AppDesign.Spacing.xxs) {
             DDThumb(em: p.em, size: 78, radius: 6, img: p.img)
             DDPrice(value: p.price, size: 15)
             Text("¥" + moneyFmt(p.orig))
@@ -2890,7 +2890,7 @@ struct DDHomeTab: View {
                     .foregroundColor(.white.opacity(0.78))
                     .lineLimit(1)
             }
-            .padding(12)
+            .padding(AppDesign.Spacing.sm)
             .frame(maxWidth: .infinity, minHeight: 118, alignment: .leading)
             .background(LinearGradient(colors: colors,
                                        startPoint: .topLeading, endPoint: .bottomTrailing))
@@ -2934,7 +2934,7 @@ struct DDHomeTab: View {
             }
             .padding(.horizontal, 14)
         }
-        .padding(.top, 8)
+        .padding(.top, AppDesign.Spacing.xs)
         .padding(.bottom, 6)
         .background(DDColor.cardGrad)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
@@ -2947,13 +2947,13 @@ struct DDHomeTab: View {
         let current = cate == nil ? store.live : store.live.filter { $0.cate == cate }
         let selfCount = current.filter { $0.isSelfOperated }.count
         let thirdCount = current.count - selfCount
-        return HStack(spacing: 8) {
+        return HStack(spacing: AppDesign.Spacing.xs) {
             sellerScopeButton(nil, title: "全部", count: current.count, accent: DDColor.blueDeep)
             sellerScopeButton("self", title: "星选自营", count: selfCount, accent: DDColor.redDeep)
             sellerScopeButton("third", title: "第三方", count: thirdCount, accent: DDColor.blueDeep)
         }
         .padding(.horizontal, 10)
-        .padding(.bottom, 4)
+        .padding(.bottom, AppDesign.Spacing.xxs)
     }
 
     private func sellerScopeButton(_ scope: String?, title: String,
@@ -3016,13 +3016,13 @@ struct DDHomeTab: View {
             .disabled(action == nil)
             .offset(y: -1)
         }
-        .padding(.horizontal, 12)
-        .padding(.top, 8)
+        .padding(.horizontal, AppDesign.Spacing.sm)
+        .padding(.top, AppDesign.Spacing.xs)
         .padding(.bottom, 2)
     }
 
     private var mutedNote: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppDesign.Spacing.xs) {
             Image(systemName: "eye.slash").font(.system(size: 12)).foregroundColor(DDColor.sub)
             Text(Tr("已少推：") + store.mutedCates.map { Tr($0) }.joined(separator: "、"))
                 .font(pf(12)).foregroundColor(DDColor.sub).lineLimit(1)
@@ -3034,7 +3034,7 @@ struct DDHomeTab: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
         .padding(.vertical, 6)
     }
 
@@ -3044,7 +3044,7 @@ struct DDHomeTab: View {
             GridItem(.flexible(), spacing: 10, alignment: .top)
         ]
         if store.live.isEmpty {
-            VStack(spacing: 8) {
+            VStack(spacing: AppDesign.Spacing.xs) {
                 ProgressView()
                 Text(Tr("正在加载商品"))
                     .font(pf(13))
@@ -3110,13 +3110,13 @@ struct DDHomeTab: View {
             DDAdStrip(emoji: "🗂", title: "百亿补贴 · 折扣最狠的一批",
                       sub: "省得最多的排前面，点进去直接逛", cta: "去看看",
                       top: 0xFFF1EA, bottom: 0xFF5F3A) { channel = .subsidy }
-                .padding(.horizontal, 12)
+                .padding(.horizontal, AppDesign.Spacing.sm)
         } else if let a = list.first, !store.adHidden("ad:" + a.id) {
             DDAdStrip(emoji: a.emoji ?? "🛍", title: a.title, sub: a.sub ?? "",
                       cta: a.cta ?? "去看看", top: a.topColor, bottom: a.bottomColor) {
                 runAd(a)
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
         }
     }
 
@@ -3231,7 +3231,7 @@ struct DDProductCard: View {
                     Text(Tr(product.isSelfOperated ? "自营" : "第三方"))
                         .font(pfStyled(size: 9.5, weight: .semibold))
                         .foregroundColor(.white)
-                        .padding(.horizontal, 8)
+                        .padding(.horizontal, AppDesign.Spacing.xs)
                         .frame(height: 22)
                         .background(Capsule().fill(
                             product.isSelfOperated ? DDColor.redDeep : Color.black.opacity(0.62)
@@ -3240,7 +3240,7 @@ struct DDProductCard: View {
                         Text(Tr(tag))
                             .font(pfStyled(size: 9.5, weight: .semibold))
                             .foregroundColor(.white)
-                            .padding(.horizontal, 8)
+                            .padding(.horizontal, AppDesign.Spacing.xs)
                             .frame(height: 22)
                             .background(Capsule().fill(Color.black.opacity(0.52)))
                     }
@@ -3266,7 +3266,7 @@ struct DDProductCard: View {
                     Text("\(max(1, Int(((1 - product.price / max(0.01, product.orig)) * 100).rounded())))% OFF")
                         .font(pfStyled(size: 9.5, weight: .bold))
                         .foregroundColor(.white)
-                        .padding(.horizontal, 8)
+                        .padding(.horizontal, AppDesign.Spacing.xs)
                         .frame(height: 22)
                         .background(Capsule().fill(Color.black.opacity(0.68)))
                         .padding(9)
@@ -3284,7 +3284,7 @@ struct DDProductCard: View {
                 .padding(.horizontal, 10)
                 .padding(.top, 9)
 
-            HStack(spacing: 4) {
+            HStack(spacing: AppDesign.Spacing.xxs) {
                 Text(product.tags.count > 1 ? Tr(product.tags[1]) : Tr("包邮"))
                     .font(pfStyled(size: 10.5, weight: .medium))
                     .foregroundColor(DDColor.red)
@@ -3331,7 +3331,7 @@ struct DDProductCard: View {
             .padding(.horizontal, 10)
             .padding(.top, 6)
 
-            HStack(spacing: 4) {
+            HStack(spacing: AppDesign.Spacing.xxs) {
                 Text(product.shop.isEmpty ? Tr("星言官方旗舰店") : product.shop)
                     .font(pfStyled(size: 10))
                     .foregroundColor(DDColor.sub)
@@ -3377,7 +3377,7 @@ struct DDRecTab: View {
 
     private func recCard(_ p: DDProduct) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Circle().fill(Color(hex: 0xFFD9CC)).frame(width: 26, height: 26)
                     .overlay(Text("拼").font(AppDesign.Type.section).foregroundColor(DDColor.red))
                 Text(p.shop).font(AppDesign.Type.bodyMedium).foregroundColor(DDColor.ink)
@@ -3387,10 +3387,10 @@ struct DDRecTab: View {
                     .background(Capsule().fill(DDColor.red))
             }
             Text(p.title).font(pf(15)).foregroundColor(DDColor.ink).lineLimit(3)
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 DDThumb(em: p.em, size: 96, radius: 10, img: p.img)
                 VStack(alignment: .leading, spacing: 6) {
-                    HStack(spacing: 4) {
+                    HStack(spacing: AppDesign.Spacing.xxs) {
                         ForEach(p.tags.prefix(2), id: \.self) { t in
                             Text(t).font(pf(10.5)).foregroundColor(DDColor.red)
                                 .padding(.horizontal, 5).frame(height: 17)
@@ -3407,7 +3407,7 @@ struct DDRecTab: View {
                 Spacer(minLength: 0)
             }
         }
-        .padding(12)
+        .padding(AppDesign.Spacing.sm)
         .background(DDColor.cardGrad)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
@@ -3467,8 +3467,8 @@ struct DDMsgTab: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 4)
+        .padding(.horizontal, AppDesign.Spacing.md)
+        .padding(.top, AppDesign.Spacing.xxs)
     }
 
     private func noticeRow(_ n: DDNotice) -> some View {
@@ -3494,7 +3494,7 @@ struct DDMsgTab: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(12)
+        .padding(AppDesign.Spacing.sm)
         .background(DDColor.cardGrad)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
@@ -3545,7 +3545,7 @@ struct DDMsgTab: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(12)
+        .padding(AppDesign.Spacing.sm)
         .background(DDColor.cardGrad)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
@@ -3625,7 +3625,7 @@ struct DDCartTab: View {
 
                         if !store.invalidCart.isEmpty {
                             VStack(spacing: 0) {
-                                HStack(spacing: 8) {
+                                HStack(spacing: AppDesign.Spacing.xs) {
                                     Image(systemName: "exclamationmark.triangle").font(.system(size: 13))
                                         .foregroundColor(DDColor.sub)
                                     Text(Tr("失效商品")).font(AppDesign.Type.bodyMedium).foregroundColor(DDColor.ink)
@@ -3636,7 +3636,7 @@ struct DDCartTab: View {
                                     }
                                     .buttonStyle(.plain)
                                 }
-                                .padding(.horizontal, 12).frame(height: AppDesign.Control.iconControlHeight)
+                                .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.iconControlHeight)
                                 ForEach(store.invalidCart) { l in
                                     HStack(spacing: 10) {
                                         Text("📦").font(pfStyled(size: 20))
@@ -3651,7 +3651,7 @@ struct DDCartTab: View {
                                         }
                                         .buttonStyle(.plain)
                                     }
-                                    .padding(.horizontal, 12).frame(height: AppDesign.Control.profileRowHeight)
+                                    .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.profileRowHeight)
                                 }
                             }
                             .background(DDColor.cardGrad)
@@ -3700,7 +3700,7 @@ struct DDCartTab: View {
                 step("+") { store.setCount(l.pid, l.count + 1) }
             }
         }
-        .padding(12)
+        .padding(AppDesign.Spacing.sm)
         .background(DDColor.cardGrad)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
@@ -3716,7 +3716,7 @@ struct DDCartTab: View {
         let n = ls.filter { checked.contains($0.pid) }.count
         let isSelf = ls.compactMap { store.product($0.pid) }.first?.isSelfOperated ?? false
         let tint = isSelf ? DDColor.redDeep : DDColor.blueDeep
-        return HStack(spacing: 8) {
+        return HStack(spacing: AppDesign.Spacing.xs) {
             Image(systemName: "storefront").font(.system(size: 13)).foregroundColor(DDColor.ink)
             Text(shop).font(AppDesign.Type.bodyMedium).foregroundColor(DDColor.ink).lineLimit(1)
             Text(Tr(isSelf ? "自营" : "第三方"))
@@ -3770,7 +3770,7 @@ struct DDCartTab: View {
                 .buttonStyle(.plain)
                 .disabled(checked.isEmpty)
             }
-            .padding(.horizontal, 14).padding(.vertical, 8)
+            .padding(.horizontal, 14).padding(.vertical, AppDesign.Spacing.xs)
             .background(DDColor.card)
         }
         .sheet(isPresented: $showPay) { paySheet }
@@ -3788,7 +3788,7 @@ struct DDCartTab: View {
                                 .font(.system(size: 19)).foregroundColor(DDColor.red)
                             VStack(alignment: .leading, spacing: 4) {
                                 if let a = chosenAddr {
-                                    HStack(spacing: 8) {
+                                    HStack(spacing: AppDesign.Spacing.xs) {
                                         Text(a.name.isEmpty ? Tr("未填收货人") : a.name)
                                             .font(pf(15, .medium)).foregroundColor(DDColor.ink)
                                         if !a.phone.isEmpty {
@@ -3809,7 +3809,7 @@ struct DDCartTab: View {
                             Image(systemName: "chevron.right")
                                 .font(.system(size: 13, weight: .semibold))
                                 .foregroundColor(DDColor.sub.opacity(0.55))
-                                .padding(.top, 4)
+                                .padding(.top, AppDesign.Spacing.xxs)
                         }
                         .padding(14)
                         .background(DDColor.cardGrad)
@@ -3828,7 +3828,7 @@ struct DDCartTab: View {
                             Spacer(minLength: 0)
                             Text("×" + String(l.count)).font(pf(13)).foregroundColor(DDColor.sub)
                         }
-                        .padding(12)
+                        .padding(AppDesign.Spacing.sm)
                         .background(DDColor.cardGrad)
                         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
                         .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
@@ -3997,15 +3997,15 @@ struct DDMineTab: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
 
-            VStack(spacing: 12) {
+            VStack(spacing: AppDesign.Spacing.sm) {
                 profileCard
                 DDVipBanner { showVip = true }
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, AppDesign.Spacing.sm)
                 orderCard
                 toolCard
                 Spacer().frame(height: 16)
             }
-            .padding(.vertical, 12)
+            .padding(.vertical, AppDesign.Spacing.sm)
         }
         .background(DDColor.page)
         .sheet(isPresented: $showFav) {
@@ -4071,7 +4071,7 @@ struct DDMineTab: View {
                 }
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 14)
+            .padding(.horizontal, AppDesign.Spacing.md).padding(.top, AppDesign.Spacing.md).padding(.bottom, 14)
 
             HairLine(inset: 16, color: DDColor.red.opacity(0.10))
 
@@ -4090,12 +4090,12 @@ struct DDMineTab: View {
             .stroke(DDColor.cardEdge.opacity(0.7), lineWidth: 0.6))
         .shadow(color: Color.black.opacity(0.05), radius: 2, y: 1)
         .shadow(color: DDColor.cardShadow, radius: 14, y: 5)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
     }
 
     private func statCell(_ n: String, _ label: String, _ tap: @escaping () -> Void) -> some View {
         Button { tap() } label: {
-            VStack(spacing: 4) {
+            VStack(spacing: AppDesign.Spacing.xxs) {
                 Text(n).font(pf(18.5, .semibold)).foregroundColor(DDColor.ink).monospacedDigit()
                 Text(label).font(pf(11.5)).foregroundColor(DDColor.sub)
             }
@@ -4121,7 +4121,7 @@ struct DDMineTab: View {
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 12)
+            .padding(.horizontal, AppDesign.Spacing.md).padding(.top, 14).padding(.bottom, AppDesign.Spacing.sm)
             HairLine(inset: 16)
             HStack(spacing: 0) {
 
@@ -4142,7 +4142,7 @@ struct DDMineTab: View {
             .stroke(DDColor.cardEdge.opacity(0.7), lineWidth: 0.6))
         .shadow(color: Color.black.opacity(0.05), radius: 2, y: 1)
         .shadow(color: DDColor.cardShadow, radius: 14, y: 5)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
     }
 
     private func orderEntry(_ label: String, _ icon: String, _ n: Int) -> some View {
@@ -4161,7 +4161,7 @@ struct DDMineTab: View {
                     }
                     if n > 0 {
                         Text(String(n)).font(pf(9.5, .semibold)).foregroundColor(.white)
-                            .padding(.horizontal, 4).frame(height: 14)
+                            .padding(.horizontal, AppDesign.Spacing.xxs).frame(height: 14)
                             .background(Capsule().fill(DDColor.redDeep))
                             .offset(x: 6, y: -4)
                     }
@@ -4204,13 +4204,13 @@ struct DDMineTab: View {
             .stroke(DDColor.cardEdge.opacity(0.7), lineWidth: 0.6))
         .shadow(color: Color.black.opacity(0.05), radius: 2, y: 1)
         .shadow(color: DDColor.cardShadow, radius: 14, y: 5)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
     }
 
     private func toolRow(_ title: String, _ icon: String, _ right: String,
                          _ act: @escaping () -> Void) -> some View {
         Button(action: act) {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
 
                 ZStack {
                     RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
@@ -4344,13 +4344,13 @@ struct DDDetailView: View {
             Divider().frame(height: AppDesign.Control.statusHeight)
             detailNavButton("详情", icon: "doc.text.image.fill", id: "dd-detail", proxy: proxy)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 4)
+        .padding(.horizontal, AppDesign.Spacing.sm)
+        .padding(.vertical, AppDesign.Spacing.xxs)
         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous).fill(Color.white))
         .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
             .stroke(DDColor.cardEdge, lineWidth: 0.7))
         .shadow(color: Color.black.opacity(0.035), radius: 8, y: 3)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
         .padding(.vertical, 10)
         .background(DDColor.page)
     }
@@ -4362,7 +4362,7 @@ struct DDDetailView: View {
                 proxy.scrollTo(id, anchor: .top)
             }
         } label: {
-            VStack(spacing: 4) {
+            VStack(spacing: AppDesign.Spacing.xxs) {
                 Image(systemName: icon)
                     .font(.system(size: 14, weight: .semibold))
                 Text(Tr(title)).font(pf(10.5, .medium))
@@ -4396,7 +4396,7 @@ struct DDDetailView: View {
                     .foregroundColor(DDColor.ink)
                 Chevron(size: 8, line: 1.5)
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
             .frame(height: AppDesign.Control.profileRowHeight)
             .background(DDColor.card)
             .contentShape(Rectangle())
@@ -4410,7 +4410,7 @@ struct DDDetailView: View {
     }
 
     private var deliveryCard: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Image(systemName: "shippingbox")
                 .font(.system(size: 17, weight: .medium))
                 .foregroundColor(C.green)
@@ -4438,7 +4438,7 @@ struct DDDetailView: View {
     private var serviceRow: some View {
         HStack(spacing: 14) {
             ForEach(product.serviceList.prefix(4), id: \.self) { s in
-                HStack(spacing: 4) {
+                HStack(spacing: AppDesign.Spacing.xxs) {
                     Image(systemName: "checkmark.seal.fill")
                         .font(.system(size: 11)).foregroundColor(C.green)
                     Text(s).font(pf(11.5)).foregroundColor(DDColor.sub)
@@ -4457,7 +4457,7 @@ struct DDDetailView: View {
             Text(t).font(pf(15, .semibold)).foregroundColor(DDColor.ink)
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 14).padding(.top, 4)
+        .padding(.horizontal, 14).padding(.top, AppDesign.Spacing.xxs)
     }
 
     private var recommendRow: some View {
@@ -4527,7 +4527,7 @@ struct DDDetailView: View {
                             Text(String(min(99, store.cartCount)))
                                 .font(pf(8.5, .bold))
                                 .foregroundColor(.white)
-                                .padding(.horizontal, 4)
+                                .padding(.horizontal, AppDesign.Spacing.xxs)
                                 .frame(minWidth: 16, minHeight: 16)
                                 .background(Capsule().fill(DDColor.redDeep))
                                 .offset(x: 2, y: -2)
@@ -4537,9 +4537,9 @@ struct DDDetailView: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
         .padding(.top, L.safeTop + 4)
-        .padding(.bottom, 8)
+        .padding(.bottom, AppDesign.Spacing.xs)
         .background(LinearGradient(colors: [Color.white.opacity(0.94), Color.clear],
                                    startPoint: .top, endPoint: .bottom))
     }
@@ -4585,7 +4585,7 @@ struct DDDetailView: View {
                     Text(Tr("视频"))
                         .font(pf(10.5, .semibold))
                         .foregroundColor(.white)
-                        .padding(.horizontal, 8)
+                        .padding(.horizontal, AppDesign.Spacing.xs)
                         .frame(height: 22)
                         .background(Capsule().fill(Color.black.opacity(0.52)))
                 }
@@ -4609,7 +4609,7 @@ struct DDDetailView: View {
                 .buttonStyle(.plain)
             }
             .padding(.horizontal, 14)
-            .padding(.bottom, 12)
+            .padding(.bottom, AppDesign.Spacing.sm)
         }
         .frame(height: min(620, max(440, UIScreen.main.bounds.width * 1.3)))
         .background(Color(hex: 0xF2F5F8))
@@ -4687,7 +4687,7 @@ struct DDDetailView: View {
                 }
             }
             .padding(.horizontal, 18)
-            .padding(.bottom, 16)
+            .padding(.bottom, AppDesign.Spacing.md)
             .overlay(alignment: .top) { HairLine(inset: 18) }
 
             Button { showShop = true } label: {
@@ -4767,7 +4767,7 @@ struct DDDetailView: View {
                     .background(Capsule().fill(sellerTint.opacity(0.09)))
                 Spacer(minLength: 0)
             }
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 benefitTile(icon: "shippingbox.fill", title: "配送",
                             value: store.deliveryMode?.days ?? Tr("预计 48 小时内发货"),
                             tint: DDColor.blueDeep)
@@ -4775,7 +4775,7 @@ struct DDDetailView: View {
                             value: product.isSelfOperated ? Tr("平台统一售后") : Tr("店铺售后 · 平台介入"),
                             tint: sellerTint)
             }
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 benefitTile(icon: "ticket.fill", title: "优惠",
                             value: saved > 0 ? (Tr("已省 ¥") + moneyFmt(saved)) : Tr("店铺优惠"),
                             tint: DDColor.redDeep)
@@ -4784,7 +4784,7 @@ struct DDDetailView: View {
                             tint: C.green)
             }
             Button { showCoupon = true } label: {
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     Image(systemName: "gift.fill")
                         .font(.system(size: 13))
                         .foregroundColor(DDColor.redDeep)
@@ -4798,7 +4798,7 @@ struct DDDetailView: View {
                         .foregroundColor(DDColor.redDeep)
                     Chevron(size: 7, line: 1.4).foregroundColor(DDColor.redDeep.opacity(0.7))
                 }
-                .padding(.horizontal, 12)
+                .padding(.horizontal, AppDesign.Spacing.sm)
                 .frame(height: AppDesign.Control.iconControlHeight)
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                     .fill(DDColor.redLight))
@@ -4911,7 +4911,7 @@ struct DDDetailView: View {
                     Button { app.show(Tr("已加入 TA 的拼单")) } label: {
                         Text(Tr("去拼单"))
                             .font(AppDesign.Type.compactButtonMedium).foregroundColor(.white)
-                            .padding(.horizontal, 12).frame(height: AppDesign.Control.sectionHeaderHeight)
+                            .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.sectionHeaderHeight)
                             .background(Capsule().fill(DDColor.red))
                     }
                     .buttonStyle(.plain)
@@ -4963,7 +4963,7 @@ struct DDDetailView: View {
             }
             .buttonStyle(.plain)
 
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Button { showShop = true } label: {
                     shopAction("square.grid.2x2.fill", title: "进店逛逛", tint: shopTint)
                 }.buttonStyle(.plain)
@@ -5044,8 +5044,8 @@ struct DDDetailView: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 12).padding(.top, 8)
-            .padding(.bottom, 8)
+            .padding(.horizontal, AppDesign.Spacing.sm).padding(.top, AppDesign.Spacing.xs)
+            .padding(.bottom, AppDesign.Spacing.xs)
         }
         .background(DDColor.card)
         .shadow(color: Color.black.opacity(0.06), radius: 12, y: -4)
@@ -5271,7 +5271,7 @@ struct DDOrderSheet: View {
                         }
                         Spacer(minLength: 0)
                     }
-                    .padding(12)
+                    .padding(AppDesign.Spacing.sm)
                     .background(DDColor.cardGrad)
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
                     .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
@@ -5318,7 +5318,7 @@ struct DDOrderSheet: View {
                                 .font(.system(size: 19)).foregroundColor(DDColor.red)
                             VStack(alignment: .leading, spacing: 4) {
                                 if let a = chosenAddr {
-                                    HStack(spacing: 8) {
+                                    HStack(spacing: AppDesign.Spacing.xs) {
                                         Text(a.name.isEmpty ? Tr("未填收货人") : a.name)
                                             .font(pf(15, .medium)).foregroundColor(DDColor.ink)
                                         if !a.phone.isEmpty {
@@ -5339,7 +5339,7 @@ struct DDOrderSheet: View {
                             Image(systemName: "chevron.right")
                                 .font(.system(size: 13, weight: .semibold))
                                 .foregroundColor(DDColor.sub.opacity(0.55))
-                                .padding(.top, 4)
+                                .padding(.top, AppDesign.Spacing.xxs)
                         }
                         .padding(14)
                         .background(DDColor.cardGrad)
@@ -5391,7 +5391,7 @@ struct DDOrderSheet: View {
                         Spacer(minLength: 0)
                         DDPrice(value: payable, size: 20)
                     }
-                    .padding(.horizontal, 4)
+                    .padding(.horizontal, AppDesign.Spacing.xxs)
                     Spacer().frame(height: AppDesign.Spacing.xs)
                 }
                 .padding(.horizontal, 14)
@@ -5602,7 +5602,7 @@ struct DDOrdersView: View {
         VStack(spacing: 0) {
             DDSheetBar(title: Tr("我的订单"))
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     ForEach(names.indices, id: \.self) { i in
                         Button { filter = i } label: {
                             Text(Tr(names[i]))
@@ -5617,11 +5617,11 @@ struct DDOrdersView: View {
                 }
                 .padding(.horizontal, 14)
             }
-            .padding(.vertical, 8)
+            .padding(.vertical, AppDesign.Spacing.xs)
             .background(DDColor.page)
 
             if list.isEmpty {
-                VStack(spacing: 8) {
+                VStack(spacing: AppDesign.Spacing.xs) {
                     Text("📦").font(pfStyled(size: 38))
                     Text(Tr("这里还没有订单")).font(pf(14.5)).foregroundColor(DDColor.sub)
                 }
@@ -5705,7 +5705,7 @@ struct DDOrdersView: View {
                     Text("×" + String(o.count)).font(pf(11.5)).foregroundColor(DDColor.sub)
                 }
             }
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Spacer(minLength: 0)
                     if o.canPay {
                         Button { store.cancelOrder(o.id) } label: { smallBtn(Tr("取消订单"), false) }
@@ -5743,7 +5743,7 @@ struct DDOrdersView: View {
                 }
             }
         }
-        .padding(12)
+        .padding(AppDesign.Spacing.sm)
         .background(DDColor.cardGrad)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))
@@ -5758,7 +5758,7 @@ struct DDOrdersView: View {
         Text(t)
             .font(AppDesign.Type.caption)
             .foregroundColor(filled ? .white : DDColor.ink)
-            .padding(.horizontal, 12).frame(height: AppDesign.Control.sectionHeaderHeight)
+            .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.sectionHeaderHeight)
             .background(Capsule().fill(filled ? DDColor.red : DDColor.page))
     }
 
@@ -5839,7 +5839,7 @@ struct DDViewsView: View {
                         .frame(maxWidth: .infinity).frame(height: AppDesign.Control.compactHeight)
                 }
                 .buttonStyle(.plain)
-                .padding(.bottom, 8)
+                .padding(.bottom, AppDesign.Spacing.xs)
             }
         }
         .background(DDColor.page.ignoresSafeArea())
@@ -5911,7 +5911,7 @@ struct DDSearchView: View {
 
     private var searchBar: some View {
         VStack(spacing: 10) {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Button { dismiss() } label: {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 18, weight: .semibold))
@@ -5934,12 +5934,12 @@ struct DDSearchView: View {
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(.horizontal, 12).frame(height: AppDesign.Control.floatingControlHeight)
+                .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.floatingControlHeight)
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small).fill(DDColor.card))
             }
             .padding(.horizontal, 10)
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, AppDesign.Spacing.xs)
         .background(DDColor.page)
     }
 
@@ -5963,7 +5963,7 @@ struct DDSearchView: View {
                 Spacer().frame(height: 10)
             }
             .padding(.horizontal, 14)
-            .padding(.top, 12)
+            .padding(.top, AppDesign.Spacing.sm)
         }
         .background(DDColor.page)
     }
@@ -6042,7 +6042,7 @@ struct DDSearchView: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(12)
+        .padding(AppDesign.Spacing.sm)
         .background(DDColor.cardGrad)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(DDColor.cardEdge, lineWidth: 0.6))

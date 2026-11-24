@@ -24,7 +24,7 @@ struct MyQRViewOld: View {
                         .font(AppDesign.Type.rowTitle)
                         .foregroundColor(rows.isEmpty ? C.subLabel : C.green)
                         .frame(height: L.navH)
-                        .padding(.trailing, 16)
+                        .padding(.trailing, AppDesign.Spacing.md)
                 }
                 .buttonStyle(.plain)
                 .disabled(rows.isEmpty)
@@ -48,7 +48,7 @@ struct MyQRViewOld: View {
                     .frame(width: 256, height: 256)
                     .shadow(color: Color.black.opacity(0.08), radius: 12, y: 4)
 
-                    HStack(spacing: 12) {
+                    HStack(spacing: AppDesign.Spacing.sm) {
                         Avatar(path: avatar, size: 46, radius: 6)
                         VStack(alignment: .leading, spacing: 3) {
                             Text(name).font(AppDesign.Type.rowTitle).foregroundColor(C.label).lineLimit(1)
@@ -57,10 +57,10 @@ struct MyQRViewOld: View {
                         }
                         Spacer(minLength: 0)
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppDesign.Spacing.md)
                     .frame(height: 68)
                     .background { CardGlassBox(radius: 7) }
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, AppDesign.Spacing.xl)
 
                     Text(Tr("用 App 的「发现 → 扫一扫」扫这张，就能加我好友"))
                         .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
@@ -81,10 +81,10 @@ struct MyQRViewOld: View {
                         .background { CardGlassBox(radius: 999) }
                     }
                     .buttonStyle(.plain)
-                    .padding(.top, 4)
+                    .padding(.top, AppDesign.Spacing.xxs)
                     Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
-                .padding(.top, 20)
+                .padding(.top, AppDesign.Spacing.lg)
             }
             .background(C.pageBg)
         }

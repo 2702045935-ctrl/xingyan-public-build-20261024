@@ -77,7 +77,7 @@ struct GamesPageView: View {
     var body: some View {
         VStack(spacing: 0) {
             ZStack {
-                HStack(spacing: 12) {
+                HStack(spacing: AppDesign.Spacing.sm) {
                     Button { dismiss() } label: {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 19, weight: .medium))
@@ -107,7 +107,7 @@ struct GamesPageView: View {
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(.trailing, 12)
+                .padding(.trailing, AppDesign.Spacing.sm)
             }
             .frame(height: L.navH + 18)
             .background(pageBg)
@@ -128,7 +128,7 @@ struct GamesPageView: View {
                             Text(Lang.isEnglish ? "\(g.1.count)" : "\(g.1.count) 款")
                                 .font(pf(11)).foregroundColor(subInk)
                         }
-                        .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 9)
+                        .padding(.horizontal, AppDesign.Spacing.md).padding(.top, AppDesign.Spacing.md).padding(.bottom, 9)
 
                         LazyVGrid(columns: [
                             GridItem(.flexible(), spacing: 10),
@@ -136,7 +136,7 @@ struct GamesPageView: View {
                         ], alignment: .leading, spacing: 10) {
                             ForEach(g.1) { g2 in posterCard(g2) }
                         }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppDesign.Spacing.md)
                     }
 
                     if loading {
@@ -281,7 +281,7 @@ struct GamesPageView: View {
                 ForEach(Array(items.enumerated()), id: \.element.id) { i, g in
                     Button { openDetail(g) } label: { bannerCard(g) }
                         .buttonStyle(.plain)
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppDesign.Spacing.md)
                         .tag(i)
                 }
             }
@@ -299,7 +299,7 @@ struct GamesPageView: View {
                 }
             }
         }
-        .padding(.top, 12)
+        .padding(.top, AppDesign.Spacing.sm)
     }
 
     private func bannerCard(_ g: MiniApp) -> some View {
@@ -333,7 +333,7 @@ struct GamesPageView: View {
                     .lineLimit(1)
             }
             .padding(.horizontal, 14)
-            .padding(.bottom, 12)
+            .padding(.bottom, AppDesign.Spacing.sm)
         }
         .frame(maxWidth: .infinity)
         .frame(height: 178)
@@ -342,10 +342,10 @@ struct GamesPageView: View {
             Text(Tr("精选"))
                 .font(pf(10.5, .medium))
                 .foregroundColor(.white)
-                .padding(.horizontal, 8)
+                .padding(.horizontal, AppDesign.Spacing.xs)
                 .frame(height: 22)
                 .background(Capsule().fill(Color.black.opacity(0.32)))
-                .padding(12)
+                .padding(AppDesign.Spacing.sm)
         }
     }
 
@@ -359,13 +359,13 @@ struct GamesPageView: View {
                 Text(Tr("最近在玩")).font(AppDesign.Type.rowTitle).foregroundColor(ink)
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 14) {
                     ForEach(recentGames) { g in
                         Button { play(g) } label: {
-                            HStack(spacing: 8) {
+                            HStack(spacing: AppDesign.Spacing.xs) {
                                 gameCircle(g, size: 30)
                                 Text(g.name).font(AppDesign.Type.captionMedium).foregroundColor(ink)
                                     .lineLimit(1).frame(maxWidth: 112, alignment: .leading)
@@ -379,7 +379,7 @@ struct GamesPageView: View {
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
             }
         }
         .padding(.top, 14)
@@ -418,12 +418,12 @@ struct GamesPageView: View {
                 Spacer(minLength: 6)
                 Chevron(size: 8, line: 1.6, color: subInk)
             }
-            .padding(12)
+            .padding(AppDesign.Spacing.sm)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).fill(cardBg))
         }
         .buttonStyle(.plain)
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .padding(.top, 14)
     }
 
@@ -477,7 +477,7 @@ struct GamesPageView: View {
                     Text(g.name).font(pf(15, .medium)).foregroundColor(ink).lineLimit(1)
                     Text((g.desc?.isEmpty == false) ? (g.desc ?? "") : Tr("小游戏"))
                         .font(pf(11.5)).foregroundColor(subInk).lineLimit(1)
-                    HStack(spacing: 4) {
+                    HStack(spacing: AppDesign.Spacing.xxs) {
                         Text(g.actionText).font(pf(11.5)).foregroundColor(AppPalette.legacyLink)
                         Spacer(minLength: 0)
                         Image(systemName: "chevron.right")
@@ -486,7 +486,7 @@ struct GamesPageView: View {
                     }
                 }
                 .padding(.horizontal, 11)
-                .padding(.vertical, 8)
+                .padding(.vertical, AppDesign.Spacing.xs)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .frame(height: 184)
@@ -499,10 +499,10 @@ struct GamesPageView: View {
     }
 
     private func card(_ g: MiniApp) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
 
             Button { openDetail(g) } label: {
-                HStack(spacing: 12) {
+                HStack(spacing: AppDesign.Spacing.sm) {
                     ZStack {
 
                         Circle()
@@ -563,7 +563,7 @@ struct GamesPageView: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(12)
+        .padding(AppDesign.Spacing.sm)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).fill(cardBg))
     }
@@ -677,7 +677,7 @@ struct GameWebPage: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    VStack(spacing: 12) {
+                    VStack(spacing: AppDesign.Spacing.sm) {
                         Text(errorText.isEmpty ? Tr("游戏打不开") : errorText)
                             .font(pf(14)).foregroundColor(.white.opacity(0.8))
                             .multilineTextAlignment(.center).padding(.horizontal, 30)
@@ -715,7 +715,7 @@ struct GameWebPage: View {
                                 .overlay(Circle().stroke(Color.white.opacity(0.18), lineWidth: 0.5))
                         }
                         .buttonStyle(.plain)
-                        .padding(.trailing, 12)
+                        .padding(.trailing, AppDesign.Spacing.sm)
 
                         .padding(.bottom, max(18, L.safeBottom + 14))
                     }
@@ -743,7 +743,7 @@ struct GameWebPage: View {
         ZStack {
             Color(hex: 0x0B0E17).ignoresSafeArea()
             ScrollView {
-                VStack(spacing: 12) {
+                VStack(spacing: AppDesign.Spacing.sm) {
                     Text(Tr("四国军棋 · 棋牌大厅")).font(pf(17, .semibold)).foregroundColor(.white)
                     Text(myRoom.isEmpty ? Tr("点一张桌子坐下，缺的位置由电脑顶上")
                                         : (Tr("你在 ") + myRoom + Tr(" 号桌（") + "\(mySeat + 1)" + Tr(" 号位）")))
@@ -770,7 +770,7 @@ struct GameWebPage: View {
                         if tables.isEmpty {
                             Text(Tr("还没有人开桌，你可以先开一桌等好友"))
                                 .font(pf(13)).foregroundColor(.white.opacity(0.5))
-                                .padding(.top, 20)
+                                .padding(.top, AppDesign.Spacing.lg)
                         }
                     }
                     if !lobbyMsg.isEmpty {
@@ -778,7 +778,7 @@ struct GameWebPage: View {
                     }
                     Spacer().frame(height: AppDesign.Control.compactBadgeHeight)
                 }
-                .padding(16)
+                .padding(AppDesign.Spacing.md)
             }
         }
     }
@@ -830,7 +830,7 @@ struct GameWebPage: View {
                 .buttonStyle(.plain)
             }
             ForEach(0..<4, id: \.self) { i in
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     Text("\(i + 1)").font(pf(12)).foregroundColor(.white.opacity(0.5)).frame(width: 14)
                     Text(i < roomNames.count ? (roomNames[i] ?? Tr("空位（电脑）")) : Tr("空位（电脑）"))
                         .font(pf(14))
@@ -838,7 +838,7 @@ struct GameWebPage: View {
                     Spacer(minLength: 0)
                     if i == mySeat { Text(Tr("我")).font(pf(11.5)).foregroundColor(C.green) }
                 }
-                .padding(.horizontal, 12).frame(height: 34)
+                .padding(.horizontal, AppDesign.Spacing.sm).frame(height: 34)
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                     .fill(Color.white.opacity(i == mySeat ? 0.10 : 0.05)))
             }
@@ -1006,7 +1006,7 @@ struct GamesPageAdminSheet: View {
                                 Text(g.name).font(AppDesign.Type.caption)
                                     .foregroundColor(picked.contains(g.id) ? .white : C.label)
                                     .lineLimit(1)
-                                    .padding(.horizontal, 8).frame(height: AppDesign.Control.sectionHeaderHeight)
+                                    .padding(.horizontal, AppDesign.Spacing.xs).frame(height: AppDesign.Control.sectionHeaderHeight)
                                     .frame(maxWidth: .infinity)
                                     .background(Capsule().fill(picked.contains(g.id) ? C.green : C.cardBg))
                             }
@@ -1014,7 +1014,7 @@ struct GamesPageAdminSheet: View {
                         }
                     }
                     Text(Tr("默认壁纸（没封面的轮播用这张）"))
-                        .font(pf(14, .semibold)).foregroundColor(C.label).padding(.top, 8)
+                        .font(pf(14, .semibold)).foregroundColor(C.label).padding(.top, AppDesign.Spacing.xs)
                     HStack(spacing: 10) {
                         RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.cardBg)
                             .frame(width: 96, height: 56)
@@ -1045,7 +1045,7 @@ struct GamesPageAdminSheet: View {
                     }
                     .buttonStyle(.plain).padding(.top, 10)
                 }
-                .padding(16)
+                .padding(AppDesign.Spacing.md)
             }
             .background(C.pageBg)
         }

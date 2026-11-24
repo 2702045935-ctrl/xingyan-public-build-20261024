@@ -78,7 +78,7 @@ struct StarWorldLoadingOverlay: View {
                             .font(pfStyled(size: 11.5, weight: .medium))
                             .foregroundStyle(.white.opacity(0.54))
                     }
-                    .padding(.top, 8)
+                    .padding(.top, AppDesign.Spacing.xs)
 
                     Spacer()
 

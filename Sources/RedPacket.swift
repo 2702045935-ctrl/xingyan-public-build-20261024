@@ -124,8 +124,8 @@ struct RedPacketCard: View {
                 }
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 12)
-            .padding(.top, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
+            .padding(.top, AppDesign.Spacing.sm)
             .padding(.bottom, 10)
 
             Rectangle()
@@ -143,7 +143,7 @@ struct RedPacketCard: View {
                     .foregroundColor(pale ? Color.white.opacity(0.9) : .white)
                     .lineLimit(1)
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
             .frame(height: AppDesign.Control.sectionHeaderHeight)
         }
         .frame(width: 236, alignment: .leading)
@@ -245,8 +245,8 @@ struct RedPacketCoverPicker: View {
                         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.green))
                 }
                 .buttonStyle(.plain)
-                .padding(.horizontal, 16)
-                .padding(.bottom, 20)
+                .padding(.horizontal, AppDesign.Spacing.md)
+                .padding(.bottom, AppDesign.Spacing.lg)
                 .disabled(busy)
             }
         }
@@ -357,7 +357,7 @@ struct RedPacketSendView: View {
             }
 
             ScrollView {
-                VStack(spacing: 16) {
+                VStack(spacing: AppDesign.Spacing.md) {
                     redPacketHero
                     quickAmounts
 
@@ -371,10 +371,10 @@ struct RedPacketSendView: View {
                         .font(AppDesign.Type.caption)
                         .foregroundColor(C.subLabel)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 4)
+                        .padding(.horizontal, AppDesign.Spacing.xxs)
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
+                .padding(.horizontal, AppDesign.Spacing.md)
+                .padding(.top, AppDesign.Spacing.xs)
                 .padding(.bottom, 112)
             }
             .scrollIndicators(.hidden)
@@ -531,7 +531,7 @@ struct RedPacketSendView: View {
                         .foregroundStyle(.white.opacity(0.42))
                 }
             }
-            .padding(20)
+            .padding(AppDesign.Spacing.lg)
         }
         .frame(height: 244)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
@@ -553,7 +553,7 @@ struct RedPacketSendView: View {
 
     private var quickAmounts: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 ForEach(["6.66", "8.88", "18.88", "66.66", "88.88"], id: \.self) { value in
                     Button {
                         amountText = value
@@ -694,7 +694,7 @@ struct RedPacketSendView: View {
         tint: Color,
         @ViewBuilder content: () -> T
     ) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Image(systemName: icon)
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(tint)
@@ -715,7 +715,7 @@ struct RedPacketSendView: View {
             Button {
                 submit()
             } label: {
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     Image(systemName: "envelope.fill")
                         .font(.system(size: 15, weight: .semibold))
                     Text(busy ? Tr("正在发…") : Tr("塞钱进红包"))
@@ -738,7 +738,7 @@ struct RedPacketSendView: View {
             }
             .buttonStyle(.plain)
             .disabled(busy)
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .padding(.top, 10)
             .padding(.bottom, max(10, L.safeBottom))
         }
@@ -752,7 +752,7 @@ struct RedPacketSendView: View {
                     .font(pf(14))
                     .foregroundColor(C.subLabel)
                     .frame(height: L.navH)
-                    .padding(.trailing, 16)
+                    .padding(.trailing, AppDesign.Spacing.md)
             }
 
             ScrollView {
@@ -782,7 +782,7 @@ struct RedPacketSendView: View {
                                 .font(pf(12))
                         }
                         .foregroundColor(Color.white.opacity(0.92))
-                        .padding(.bottom, 16)
+                        .padding(.bottom, AppDesign.Spacing.md)
                     }
                     .frame(maxWidth: .infinity)
                     .frame(height: 186)
@@ -809,11 +809,11 @@ struct RedPacketSendView: View {
                                 lineWidth: 1.2))
                     .shadow(color: Color(hex: 0xC91F14).opacity(0.28), radius: 14, y: 8)
                     .padding(.horizontal, 14)
-                    .padding(.top, 12)
+                    .padding(.top, AppDesign.Spacing.sm)
                     .contentShape(Rectangle())
                     .onTapGesture { showCoverPicker = true }
                     .overlay(alignment: .bottomTrailing) {
-                        HStack(spacing: 4) {
+                        HStack(spacing: AppDesign.Spacing.xxs) {
                             Image(systemName: "rectangle.2.swap").font(.system(size: 11, weight: .semibold))
                             Text(coverName.isEmpty ? Tr("选择封面") : coverName).font(pf(12))
                         }
@@ -822,7 +822,7 @@ struct RedPacketSendView: View {
                         .padding(.vertical, 5)
                         .background(Capsule().fill(Color.black.opacity(0.30)))
                         .overlay(Capsule().stroke(Color.white.opacity(0.22), lineWidth: 0.6))
-                        .padding(12)
+                        .padding(AppDesign.Spacing.sm)
                     }
 
                     VStack(spacing: 0) {
@@ -866,7 +866,7 @@ struct RedPacketSendView: View {
                     if isGroup {
                         luckyPicker
                             .padding(.horizontal, 14)
-                            .padding(.top, 12)
+                            .padding(.top, AppDesign.Spacing.sm)
                     }
 
                     Text(helpText)
@@ -879,7 +879,7 @@ struct RedPacketSendView: View {
                     Button {
                         self.submit()
                     } label: {
-                        HStack(spacing: 8) {
+                        HStack(spacing: AppDesign.Spacing.xs) {
                             Image(systemName: "envelope.fill").font(.system(size: 15, weight: .semibold))
                             Text(busy ? "正在发…" : "塞钱进红包").font(pf(17, .semibold))
                         }
@@ -894,8 +894,8 @@ struct RedPacketSendView: View {
                         .opacity(busy ? 0.6 : 1)
                     }
                     .buttonStyle(.plain)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 24)
+                    .padding(.horizontal, AppDesign.Spacing.lg)
+                    .padding(.top, AppDesign.Spacing.xl)
                     .disabled(busy)
 
                     Color.clear.frame(height: AppDesign.Control.sectionHeaderHeight)
@@ -956,7 +956,7 @@ struct RedPacketSendView: View {
 
     private func formRow<T: View>(icon: String, tint: Color, title: String,
                                   @ViewBuilder content: () -> T) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             ZStack {
                 RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                     .fill(tint.opacity(0.15))
@@ -978,7 +978,7 @@ struct RedPacketSendView: View {
             luckyPill(Tr("拼手气红包"), on: lucky) { lucky = true }
             luckyPill(Tr("普通红包"), on: !lucky) { lucky = false }
         }
-        .padding(4)
+        .padding(AppDesign.Spacing.xxs)
         .background(Capsule().fill(C.label.opacity(0.06)))
         .overlay(Capsule().stroke(C.hairline, lineWidth: 0.6))
     }
@@ -1005,7 +1005,7 @@ struct RedPacketSendView: View {
             Capsule()
                 .fill(C.subLabel.opacity(0.30))
                 .frame(width: 38, height: 5)
-                .padding(.top, 8)
+                .padding(.top, AppDesign.Spacing.xs)
 
             HStack(spacing: 10) {
                 Button { paying = false; pwd = ""; payTip = "" } label: {
@@ -1024,14 +1024,14 @@ struct RedPacketSendView: View {
             Text(chat.name ?? Tr("对方"))
                 .font(AppDesign.Type.captionMedium)
                 .foregroundColor(PayVisual.secondaryInk)
-                .padding(.top, 4)
+                .padding(.top, AppDesign.Spacing.xxs)
 
             StarPayAmount(value: amount, role: .sheet, color: C.label)
                 .padding(.top, 3)
-                .padding(.bottom, 12)
+                .padding(.bottom, AppDesign.Spacing.sm)
 
             PayGroupCard {
-                HStack(spacing: 12) {
+                HStack(spacing: AppDesign.Spacing.sm) {
                     Image(systemName: "wallet.bifold.fill")
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundStyle(.white)
@@ -1051,10 +1051,10 @@ struct RedPacketSendView: View {
                         .font(.system(size: 14, weight: .bold))
                         .foregroundColor(PayVisual.tint)
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
                 .frame(height: AppDesign.Control.compactRowHeight)
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, AppDesign.Spacing.lg)
 
             PayDotField(count: pwd.count, shake: payShakeValue, busy: busy)
                 .padding(.top, 18)
@@ -1065,7 +1065,7 @@ struct RedPacketSendView: View {
             if !payTip.isEmpty {
                 Text(payTip).font(pf(13)).foregroundColor(C.red)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 20).padding(.top, 6)
+                    .padding(.horizontal, AppDesign.Spacing.lg).padding(.top, 6)
             }
             if Biometrics.paymentReady {
                 Button { doSend(password: "", face: true) } label: {
@@ -1077,7 +1077,7 @@ struct RedPacketSendView: View {
                     .frame(height: AppDesign.Control.iconSmallHeight)
                 }
                 .buttonStyle(.plain)
-                .padding(.top, 4)
+                .padding(.top, AppDesign.Spacing.xxs)
             }
             Color.clear.frame(height: AppDesign.Spacing.xs)
         }
@@ -1111,7 +1111,7 @@ struct RedPacketSendView: View {
                 .overlay(Rectangle().stroke(C.hairline, lineWidth: 0.5))
             }
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
     }
 
     private func tapKey(_ key: String) {
@@ -1246,13 +1246,13 @@ struct PayPasswordSheet: View {
             if hasPwd {
 
                 PayDotField(count: password.count, shake: shake, busy: busy)
-                    .padding(.top, 16)
+                    .padding(.top, AppDesign.Spacing.md)
 
                 PayKeypadView(busy: busy) { tap($0) }
-                    .padding(.top, 16)
+                    .padding(.top, AppDesign.Spacing.md)
             } else {
 
-                VStack(spacing: 8) {
+                VStack(spacing: AppDesign.Spacing.xs) {
                     Image(systemName: "lock.shield.fill")
                         .font(.system(size: 22))
                         .foregroundColor(C.green)
@@ -1271,7 +1271,7 @@ struct PayPasswordSheet: View {
             if !tip.isEmpty {
                 Text(tip).font(pf(13)).foregroundColor(C.red).padding(.top, 10)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, AppDesign.Spacing.lg)
             }
 
             if faceOK {
@@ -1328,7 +1328,7 @@ struct PayPasswordSheet: View {
                 .overlay(Rectangle().stroke(C.hairline, lineWidth: 0.5))
             }
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
     }
 
     private func tap(_ key: String) {
@@ -1405,7 +1405,7 @@ struct RedPacketOpenView: View {
                 }
                 Spacer(minLength: 0)
 
-                VStack(spacing: 8) {
+                VStack(spacing: AppDesign.Spacing.xs) {
                     Text(info.fromName.isEmpty ? "好友" : info.fromName)
                         .font(pf(17, .medium))
                         .foregroundColor(Color(hex: 0xF7DFA0))
@@ -1460,9 +1460,9 @@ struct RedPacketOpenView: View {
                         .buttonStyle(.plain)
                         .padding(.top, 10)
                     }
-                    .padding(.top, 24)
+                    .padding(.top, AppDesign.Spacing.xl)
                 } else if !tip.isEmpty {
-                    Text(tip).font(AppDesign.Type.body).foregroundColor(Color(hex: 0xF7DFA0)).padding(.top, 20)
+                    Text(tip).font(AppDesign.Type.body).foregroundColor(Color(hex: 0xF7DFA0)).padding(.top, AppDesign.Spacing.lg)
                 }
 
                 Spacer(minLength: 0)
@@ -1504,7 +1504,7 @@ struct RedPacketDetailView: View {
         VStack(spacing: 0) {
             NavBar(title: "红包详情", back: { dismiss() })
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 16) {
+                VStack(spacing: AppDesign.Spacing.md) {
                     if let info = info {
                         heroCard(info)
                         if let mine = raw?.claims?.first(where: { $0.userId == myId }) {
@@ -1516,7 +1516,7 @@ struct RedPacketDetailView: View {
                             .foregroundColor(PayVisual.secondaryInk)
                             .multilineTextAlignment(.center)
                             .frame(maxWidth: .infinity)
-                            .padding(.horizontal, 20)
+                            .padding(.horizontal, AppDesign.Spacing.lg)
                             .padding(.top, 2)
                     } else if loading {
                         ProgressView().padding(.top, 60)
@@ -1532,7 +1532,7 @@ struct RedPacketDetailView: View {
                         .padding(.top, 60)
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, AppDesign.Spacing.lg)
                 .padding(.top, 14)
                 .padding(.bottom, max(28, L.safeBottom))
             }
@@ -1553,7 +1553,7 @@ struct RedPacketDetailView: View {
 
     private func heroCard(_ info: RedPacketInfo) -> some View {
         VStack(spacing: 10) {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Image(systemName: "envelope.fill")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(gold)
@@ -1585,7 +1585,7 @@ struct RedPacketDetailView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 18)
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .background(
             ZStack {
                 LinearGradient(colors: [Color(hex: 0xB3261A), Color(hex: 0xD8442C), Color(hex: 0x8E1B12)],
@@ -1603,7 +1603,7 @@ struct RedPacketDetailView: View {
 
     private func mineCard(_ mine: API.RedPacketClaimRaw, info: RedPacketInfo) -> some View {
         let best = (raw?.bestUserId == myId) && ((raw?.claims?.count ?? 0) > 1)
-        return HStack(spacing: 12) {
+        return HStack(spacing: AppDesign.Spacing.sm) {
             ZStack {
                 Circle().fill(gold.opacity(0.14)).frame(width: 44, height: 44)
                 QQGlyph(kind: .crown, size: 21)
@@ -1621,12 +1621,12 @@ struct RedPacketDetailView: View {
                     .font(pf(11.5, .medium))
                     .foregroundColor(.white)
                     .padding(.horizontal, 9)
-                    .padding(.vertical, 4)
+                    .padding(.vertical, AppDesign.Spacing.xxs)
                     .background(Capsule().fill(LinearGradient(colors: [Color(hex: 0xF0C24B), goldDeep],
                                                               startPoint: .top, endPoint: .bottom)))
             }
         }
-        .padding(16)
+        .padding(AppDesign.Spacing.md)
         .background(PayVisual.card)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
         .overlay(
@@ -1651,7 +1651,7 @@ struct RedPacketDetailView: View {
             .padding(.bottom, 10)
 
             if list.isEmpty {
-                VStack(spacing: 8) {
+                VStack(spacing: AppDesign.Spacing.xs) {
                     Image(systemName: "hourglass")
                         .font(.system(size: 22))
                         .foregroundColor(PayVisual.secondaryInk)
@@ -1664,7 +1664,7 @@ struct RedPacketDetailView: View {
             } else {
                 ForEach(Array(list.enumerated()), id: \.offset) { idx, c in
                     if idx > 0 { HairLine(inset: 62) }
-                    HStack(spacing: 12) {
+                    HStack(spacing: AppDesign.Spacing.sm) {
                         RPAvatar(path: c.avatar ?? "", size: 36)
                             .overlay(Circle().stroke(Color.black.opacity(0.04), lineWidth: 0.5))
                         VStack(alignment: .leading, spacing: 3) {

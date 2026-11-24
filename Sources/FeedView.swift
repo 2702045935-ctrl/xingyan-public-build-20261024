@@ -287,7 +287,7 @@ struct ChannelsView: View {
 
     private var topBar: some View {
         VStack {
-            HStack(spacing: 4) {
+            HStack(spacing: AppDesign.Spacing.xxs) {
                 if embedded {
                     Color.clear
                         .frame(width: 44, height: L.navH)
@@ -306,7 +306,7 @@ struct ChannelsView: View {
                 Spacer(minLength: 2)
 
                 if startingItems == nil {
-                    HStack(spacing: 24) {
+                    HStack(spacing: AppDesign.Spacing.xl) {
                         ForEach(Array([UIConfig.text("feedTab0", "关注"),
                                        UIConfig.text("feedTab1", "朋友"),
                                        UIConfig.text("feedTab2", "推荐")].enumerated()), id: \.offset) { i, name in
@@ -493,14 +493,14 @@ struct ChannelsView: View {
         VStack(alignment: .leading, spacing: 10) {
             Text(item.seriesName?.isEmpty == false ? (item.seriesName ?? "") : Tr("选集"))
                 .font(AppDesign.Type.rowTitle)
-                .padding(.top, 16)
+                .padding(.top, AppDesign.Spacing.md)
                 .padding(.horizontal, 18)
             Text(Tr("共\(item.epTotal ?? seriesEpisodes.count)集"))
                 .font(AppDesign.Type.caption)
                 .foregroundColor(.secondary)
                 .padding(.horizontal, 18)
             ScrollView {
-                LazyVStack(spacing: 8) {
+                LazyVStack(spacing: AppDesign.Spacing.xs) {
                     ForEach(seriesEpisodes) { ep in
                         Button {
                             jumpToEpisode(ep)
@@ -526,11 +526,11 @@ struct ChannelsView: View {
                         .buttonStyle(.plain)
                     }
                     if seriesEpisodes.isEmpty {
-                        ProgressView().padding(.top, 20)
+                        ProgressView().padding(.top, AppDesign.Spacing.lg)
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 20)
+                .padding(.horizontal, AppDesign.Spacing.md)
+                .padding(.bottom, AppDesign.Spacing.lg)
             }
         }
         .presentationDetents([.medium, .large])
@@ -562,7 +562,7 @@ struct ChannelsView: View {
                     Capsule()
                         .fill(Color.white.opacity(0.28))
                         .frame(width: 38, height: 4)
-                        .padding(.top, 8)
+                        .padding(.top, AppDesign.Spacing.xs)
 
                     HStack(spacing: 10) {
                         VStack(alignment: .leading, spacing: 3) {
@@ -599,7 +599,7 @@ struct ChannelsView: View {
                         .buttonStyle(.plain)
                         .accessibilityLabel(Tr("关闭评论"))
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppDesign.Spacing.md)
                     .padding(.top, 9)
                     .padding(.bottom, 10)
 
@@ -639,8 +639,8 @@ struct ChannelsView: View {
                                         .foregroundColor(.white.opacity(0.42))
                                         .padding(.top, 3)
                                 }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
+                                .padding(.horizontal, AppDesign.Spacing.md)
+                                .padding(.vertical, AppDesign.Spacing.sm)
                                 Rectangle()
                                     .fill(Color.white.opacity(0.055))
                                     .frame(height: AppDesign.Control.hairline)
@@ -748,7 +748,7 @@ struct ChannelsView: View {
                                         .foregroundColor(Color.white.opacity(0.70))
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                 }
-                                .padding(12)
+                                .padding(AppDesign.Spacing.sm)
                                 .background(Color(hex: 0xFF4D4F).opacity(0.10),
                                             in: RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
                             }
@@ -771,7 +771,7 @@ struct ChannelsView: View {
     }
 
     private func publishHeader(topInset: CGFloat) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Button {
                 cancelPublish()
             } label: {
@@ -805,7 +805,7 @@ struct ChannelsView: View {
                         .font(pf(14, .semibold))
                 }
                 .foregroundColor(canPublish ? .white : Color.white.opacity(0.34))
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
                 .frame(height: 34)
                 .background(
                     Capsule(style: .continuous)
@@ -818,7 +818,7 @@ struct ChannelsView: View {
         }
         .padding(.horizontal, 14)
         .padding(.top, topInset + 4)
-        .padding(.bottom, 8)
+        .padding(.bottom, AppDesign.Spacing.xs)
         .background(Color.black)
     }
 
@@ -850,7 +850,7 @@ struct ChannelsView: View {
             )
 
             if uploading {
-                VStack(spacing: 12) {
+                VStack(spacing: AppDesign.Spacing.sm) {
                     ZStack {
                         Circle()
                             .stroke(Color.white.opacity(0.18), lineWidth: 4)
@@ -935,7 +935,7 @@ struct ChannelsView: View {
                     Text(Tr("添加作品描述，让更多人了解这条作品…"))
                         .font(pf(14.5))
                         .foregroundColor(Color.white.opacity(0.36))
-                        .padding(.top, 8)
+                        .padding(.top, AppDesign.Spacing.xs)
                         .padding(.leading, 5)
                 }
 
@@ -952,7 +952,7 @@ struct ChannelsView: View {
             }
             .frame(height: 92)
 
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 publishQuickToken("@")
                 publishQuickToken("#")
                 Button {
@@ -1121,7 +1121,7 @@ struct ChannelsView: View {
         detail: String? = nil,
         @ViewBuilder accessory: () -> Accessory
     ) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Image(systemName: icon)
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundColor(Color.white.opacity(0.82))
@@ -1138,7 +1138,7 @@ struct ChannelsView: View {
             }
             accessory()
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(height: AppDesign.Control.largeControlHeight)
     }
 
@@ -1386,7 +1386,7 @@ struct FeedCell: View {
             VStack {
                 Spacer()
                 VStack(spacing: 7) {
-                    HStack(spacing: 8) {
+                    HStack(spacing: AppDesign.Spacing.xs) {
                         if (item.epTotal ?? 0) > 1 || !(item.seriesName ?? "").isEmpty {
                             Button { onPickEpisode() } label: {
                                 HStack(spacing: 5) {
@@ -1411,7 +1411,7 @@ struct FeedCell: View {
                             .foregroundColor(.white.opacity(0.82))
                             .shadow(color: .black.opacity(0.6), radius: 2, y: 1)
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppDesign.Spacing.md)
 
                     GeometryReader { g in
                         ZStack(alignment: .leading) {
@@ -1438,7 +1438,7 @@ struct FeedCell: View {
                     Spacer()
                     rightRail
                 }
-                .padding(.trailing, 12)
+                .padding(.trailing, AppDesign.Spacing.sm)
                 .padding(.bottom, 110)
             }
 
@@ -1457,7 +1457,7 @@ struct FeedCell: View {
                 .foregroundColor(.white.opacity(0.9))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .padding(.bottom, max(style.padBottom ?? 28, L.safeBottom + 46))
         }
         .scaleEffect(videoScale, anchor: .top)
@@ -1636,7 +1636,7 @@ struct FeedPlayerSheet: View {
                     .buttonStyle(.plain)
                     Spacer()
                 }
-                .padding(.horizontal, 8)
+                .padding(.horizontal, AppDesign.Spacing.xs)
                 Spacer()
                 HStack(alignment: .bottom) {
                     VStack(alignment: .leading, spacing: 6) {
@@ -1661,7 +1661,7 @@ struct FeedPlayerSheet: View {
                         }
                         Task { _ = try? await API.shared.feedLike(cur.id) }
                     } label: {
-                        VStack(spacing: 4) {
+                        VStack(spacing: AppDesign.Spacing.xxs) {
                             ZStack {
                                 Image(systemName: "heart.fill")
                                     .font(.system(size: 26))
@@ -1673,7 +1673,7 @@ struct FeedPlayerSheet: View {
                     }
                     .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
                 .padding(.bottom, max(20, L.safeBottom + 8))
             }
 

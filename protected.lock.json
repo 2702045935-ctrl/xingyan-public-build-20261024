@@ -3,8 +3,8 @@
   "files": [
     {
       "path": "Sources/ChatDetailView.swift",
-      "size": 435872,
-      "sha256": "216b3061a4350ae3c269ca50c616004e1afa72a991be5f06935074c16a1ce738"
+      "size": 436866,
+      "sha256": "b5b9dd25e99a5367479e42360aaf1b9ebc73ddf85fc9edcd988eb23ce90854a9"
     },
     {
       "path": "Sources/ChatDeferred.swift",
@@ -13,8 +13,8 @@
     },
     {
       "path": "Sources/ContactsView.swift",
-      "size": 68060,
-      "sha256": "e4145feade09c2e3b5ed24e63ff7b4a76766453834fce47fe9fc170d837c9fe6"
+      "size": 68468,
+      "sha256": "f60e66f3c7c43c67649e26afedcf97fa5811ccbbbff3ffab864bdcbed518a52e"
     },
     {
       "path": "Sources/ScrollProbe.swift",

@@ -61,7 +61,7 @@ struct DiagView: View {
                     }
                     .background(C.cardBg)
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, AppDesign.Spacing.sm)
 
                     if !msg.isEmpty {
                         Text(msg).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
@@ -110,7 +110,7 @@ struct DiagView: View {
             Text(t).font(pf(13)).foregroundColor(C.subLabel)
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 6)
+        .padding(.horizontal, AppDesign.Spacing.md).padding(.top, 14).padding(.bottom, 6)
     }
 
     private func rows(_ list: [(String, String)]) -> some View {
@@ -125,17 +125,17 @@ struct DiagView: View {
                         .multilineTextAlignment(.trailing)
                         .textSelection(.enabled)
                 }
-                .padding(.horizontal, 16).padding(.vertical, 11)
+                .padding(.horizontal, AppDesign.Spacing.md).padding(.vertical, 11)
             }
         }
         .background(C.cardBg)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
     }
 
     private func action(_ t: String, _ icon: String, _ tap: @escaping () -> Void) -> some View {
         Button { tap() } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Image(systemName: icon).font(.system(size: 16)).foregroundColor(C.green)
                     .frame(width: 26)
                 Text(t).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
@@ -143,7 +143,7 @@ struct DiagView: View {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 11, weight: .semibold)).foregroundColor(C.subLabel)
             }
-            .padding(.horizontal, 16).frame(height: AppDesign.Control.largeControlHeight)
+            .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.largeControlHeight)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -155,10 +155,10 @@ struct DiagView: View {
             .foregroundColor(C.label.opacity(0.9))
             .frame(maxWidth: .infinity, alignment: .leading)
             .textSelection(.enabled)
-            .padding(12)
+            .padding(AppDesign.Spacing.sm)
             .background(C.cardBg)
             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
     }
 
     private func refresh() async {

@@ -108,8 +108,8 @@ struct NoteViewerSheet: View {
                 .padding(14)
                 .background(C.cardBg)
                 .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
-                .padding(.horizontal, 12)
-                .padding(.top, 12)
+                .padding(.horizontal, AppDesign.Spacing.sm)
+                .padding(.top, AppDesign.Spacing.sm)
                 Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
             }
             .background(C.pageBg)

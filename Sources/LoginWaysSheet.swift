@@ -41,7 +41,7 @@ struct LoginWaysSheet: View {
                 .ignoresSafeArea()
                 .onTapGesture { dismiss() }
 
-            VStack(spacing: 8) {
+            VStack(spacing: AppDesign.Spacing.xs) {
                 VStack(spacing: 0) {
                     Text(Tr("更多登录方式"))
                         .font(pf(13))
@@ -63,7 +63,7 @@ struct LoginWaysSheet: View {
                                 }
                             }
                         } label: {
-                            HStack(spacing: 12) {
+                            HStack(spacing: AppDesign.Spacing.sm) {
                                 ZStack {
                                     RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                                         .fill(w.color)
@@ -79,7 +79,7 @@ struct LoginWaysSheet: View {
                                 Spacer(minLength: 0)
                                 Chevron(size: 9, line: 1.6)
                             }
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, AppDesign.Spacing.md)
                             .frame(height: 62)
                             .contentShape(Rectangle())
                         }

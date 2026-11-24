@@ -320,7 +320,7 @@ struct EmojiPanel: View {
             }
             .padding(.horizontal, L.v(6, 2, 10))
             .padding(.top, L.v(6, 2, 10))
-            .padding(.bottom, 4)
+            .padding(.bottom, AppDesign.Spacing.xxs)
         }
     }
 
@@ -444,7 +444,7 @@ struct EmojiPanel: View {
     @ViewBuilder
     private var recentPage: some View {
         if recent.isEmpty {
-            VStack(spacing: 8) {
+            VStack(spacing: AppDesign.Spacing.xs) {
                 Image(systemName: "clock.arrow.circlepath")
                     .font(.system(size: 24, weight: .light))
                     .foregroundColor(C.subLabel)
@@ -462,7 +462,7 @@ struct EmojiPanel: View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
 
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     packActionButton(Tr("表情商店"), symbol: "plus") {
                         onOpenStore?()
                     }
@@ -472,7 +472,7 @@ struct EmojiPanel: View {
                     Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 10)
-                .padding(.top, 8)
+                .padding(.top, AppDesign.Spacing.xs)
 
                 ForEach(installed.indices, id: \.self) { i in
                     let pack = installed[i]
@@ -698,7 +698,7 @@ struct EmojiPanel: View {
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, L.v(10, 3.2, 14))
-            .padding(.top, 8)
+            .padding(.top, AppDesign.Spacing.xs)
             .padding(.bottom, 2)
             if pack.isImage {
 
@@ -760,7 +760,7 @@ struct EmojiPanel: View {
                                     .id(singleTabIndex)
                             }
                         }
-                        .padding(.horizontal, 8)
+                        .padding(.horizontal, AppDesign.Spacing.xs)
                     }
                     .onChange(of: tab) { value in
                         withAnimation(.easeOut(duration: 0.18)) {

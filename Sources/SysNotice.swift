@@ -42,7 +42,7 @@ struct SysNoticeBubble: View {
                 }
             } label: {
                 VStack(alignment: .leading, spacing: 6) {
-                    HStack(spacing: 8) {
+                    HStack(spacing: AppDesign.Spacing.xs) {
                         Image(systemName: "bell.badge.fill")
                             .font(.system(size: 13, weight: .semibold))
                             .foregroundColor(C.green)
@@ -81,7 +81,7 @@ struct SysNoticeBubble: View {
                 }
                 HairLine(inset: 0)
                 Button(action: onOpen) {
-                    HStack(spacing: 4) {
+                    HStack(spacing: AppDesign.Spacing.xxs) {
                         Text(Tr("查看详情")).font(pf(14.5))
                         Image(systemName: "chevron.right")
                             .font(.system(size: 10, weight: .semibold))

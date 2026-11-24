@@ -197,7 +197,7 @@ struct OfficialNoticeCenterView: View {
                 NavigationLink {
                     SecurityAcademyView()
                 } label: {
-                    HStack(spacing: 12) {
+                    HStack(spacing: AppDesign.Spacing.sm) {
                         Image(systemName: "shield.lefthalf.filled.badge.checkmark")
                             .font(.system(size: 18, weight: .semibold))
                             .foregroundStyle(OrbitTheme.jade)
@@ -266,7 +266,7 @@ struct OfficialNoticeCenterView: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, AppDesign.Spacing.xs)
     }
 
     private func platformMessage(_ notice: NoticeInfo) -> some View {
@@ -292,7 +292,7 @@ struct OfficialNoticeCenterView: View {
     }
 
     private func articleRow(_ article: OfficialNoticeArticle) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             VStack(alignment: .leading, spacing: 6) {
                 Text(Tr(article.title))
                     .font(.headline)
@@ -346,7 +346,7 @@ struct OfficialNoticeCenterView: View {
                     .font(pfStyled(size: 13.5))
                     .foregroundStyle(.white.opacity(0.74))
             }
-            .padding(20)
+            .padding(AppDesign.Spacing.lg)
         }
         .frame(height: 168)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
@@ -373,7 +373,7 @@ struct OfficialNoticeCenterView: View {
                 .foregroundStyle(OrbitTheme.secondary)
                 .lineSpacing(3)
         }
-        .padding(16)
+        .padding(AppDesign.Spacing.md)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.regularMaterial,
                     in: RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
@@ -647,7 +647,7 @@ struct WeatherOfficialView: View {
                 }
 
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 16) {
+                    VStack(spacing: AppDesign.Spacing.md) {
                         accountHeader(current)
                         temperatureHero(current)
                         metricRow(current)
@@ -658,13 +658,13 @@ struct WeatherOfficialView: View {
                             ProgressView(Tr("正在加载预报…"))
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
-                                .padding(.vertical, 12)
+                                .padding(.vertical, AppDesign.Spacing.sm)
                         }
                         adviceCard(current)
                         Color.clear.frame(height: AppDesign.Control.badgeHeight)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
+                    .padding(.horizontal, AppDesign.Spacing.md)
+                    .padding(.top, AppDesign.Spacing.xs)
                     .opacity(appeared ? 1 : 0)
                     .offset(y: appeared ? 0 : 9)
                     .animation(.easeOut(duration: 0.42), value: appeared)
@@ -717,7 +717,7 @@ struct WeatherOfficialView: View {
     }
 
     private func accountHeader(_ current: MallWeatherLook) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             if avatar.isEmpty {
                 Image(systemName: "cloud.sun.fill")
                     .font(.system(size: 24, weight: .semibold))
@@ -759,7 +759,7 @@ struct WeatherOfficialView: View {
     }
 
     private func temperatureHero(_ current: MallWeatherLook) -> some View {
-        VStack(spacing: 4) {
+        VStack(spacing: AppDesign.Spacing.xxs) {
             Button {
                 withAnimation(.easeOut(duration: 0.18)) { fahrenheit.toggle() }
             } label: {
@@ -799,7 +799,7 @@ struct WeatherOfficialView: View {
                 .font(.subheadline)
                 .foregroundStyle(current.inkSoft)
         }
-        .padding(.vertical, 12)
+        .padding(.vertical, AppDesign.Spacing.sm)
         .frame(maxWidth: .infinity)
     }
 
@@ -828,7 +828,7 @@ struct WeatherOfficialView: View {
                 .foregroundStyle(.secondary)
         }
         .foregroundStyle(.primary)
-        .padding(12)
+        .padding(AppDesign.Spacing.sm)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
@@ -1077,7 +1077,7 @@ private struct SecurityLessonDetailView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                .padding(.vertical, 4)
+                .padding(.vertical, AppDesign.Spacing.xxs)
             }
 
             Section {
@@ -1192,7 +1192,7 @@ private struct OfficialNoticeArticleView: View {
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(20)
+            .padding(AppDesign.Spacing.lg)
         }
         .background(Color(uiColor: .systemGroupedBackground))
         .navigationTitle(Tr("反诈文章"))
@@ -1335,7 +1335,7 @@ struct SecurityAcademyView: View {
     }
 
     private var hero: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: AppDesign.Spacing.md) {
             Image(systemName: "shield.lefthalf.filled.badge.checkmark")
                 .font(.system(size: 42, weight: .medium))
                 .foregroundStyle(.white)
@@ -1368,7 +1368,7 @@ struct SecurityAcademyView: View {
     }
 
     private func lessonRow(_ lesson: SecurityLesson) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Image(systemName: lesson.symbol)
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(lesson.tint)
@@ -1391,7 +1391,7 @@ struct SecurityAcademyView: View {
     private func lessonSheet(_ lesson: SecurityLesson) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                HStack(spacing: 12) {
+                HStack(spacing: AppDesign.Spacing.sm) {
                     Image(systemName: lesson.symbol)
                         .font(.system(size: 24, weight: .semibold))
                         .foregroundStyle(lesson.tint)
@@ -1420,7 +1420,7 @@ struct SecurityAcademyView: View {
                     }
                 }
             }
-            .padding(20)
+            .padding(AppDesign.Spacing.lg)
         }
         .background(OrbitTheme.canvas.ignoresSafeArea())
     }

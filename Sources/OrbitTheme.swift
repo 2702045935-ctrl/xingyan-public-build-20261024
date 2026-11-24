@@ -39,7 +39,7 @@ struct OrbitSectionLabel: View {
     var count: Int? = nil
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppDesign.Spacing.xs) {
             Text(text)
                 .font(pfStyled(size: 12, weight: .semibold))
                 .foregroundStyle(OrbitTheme.secondary)

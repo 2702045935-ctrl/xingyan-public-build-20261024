@@ -62,7 +62,7 @@ struct NewsFeedView: View {
 
     private var tabs: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 24) {
+            HStack(spacing: AppDesign.Spacing.xl) {
                 ForEach(channels) { ch in
                     Button { select(ch.id) } label: {
                         VStack(spacing: 5) {
@@ -79,7 +79,7 @@ struct NewsFeedView: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
         }
         .background(newsPageBg)
         .overlay(alignment: .bottom) { HairLine() }
@@ -87,7 +87,7 @@ struct NewsFeedView: View {
 
     private var premiumFeed: some View {
         ScrollView {
-            LazyVStack(spacing: 20, pinnedViews: [.sectionHeaders]) {
+            LazyVStack(spacing: AppDesign.Spacing.lg, pinnedViews: [.sectionHeaders]) {
                 Section {
                     if items.isEmpty && loading {
                         premiumLoading
@@ -145,7 +145,7 @@ struct NewsFeedView: View {
     }
 
     private var compactChannelHeader: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppDesign.Spacing.xs) {
             Text(Tr("时刻新闻"))
                 .font(pfStyled(size: 18, weight: .semibold))
                 .foregroundColor(C.label)
@@ -159,7 +159,7 @@ struct NewsFeedView: View {
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundColor(C.subLabel)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(height: AppDesign.Control.searchHeight)
         .background(newsPageBg)
         .overlay(alignment: .bottom) { HairLine() }
@@ -186,9 +186,9 @@ struct NewsFeedView: View {
                     .font(pf(11.5))
                     .foregroundColor(C.time)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .padding(.top, 17)
-            .padding(.bottom, 8)
+            .padding(.bottom, AppDesign.Spacing.xs)
 
             VStack(spacing: 0) {
                 ForEach(Array(topic.items.enumerated()), id: \.element.id) { index, item in
@@ -207,7 +207,7 @@ struct NewsFeedView: View {
                 RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                     .stroke(Color.primary.opacity(0.055), lineWidth: 0.5)
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
             .padding(.bottom, 10)
         }
     }
@@ -242,7 +242,7 @@ struct NewsFeedView: View {
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous))
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .padding(.vertical, 10)
         .contentShape(Rectangle())
     }
@@ -293,7 +293,7 @@ struct NewsFeedView: View {
                 }
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .frame(height: AppDesign.Control.iconControlHeight)
             .background(newsPageBg)
             .overlay(alignment: .bottom) { HairLine() }
@@ -301,7 +301,7 @@ struct NewsFeedView: View {
     }
 
     private var premiumLoading: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: AppDesign.Spacing.sm) {
             ProgressView()
                 .tint(accent)
             Text(Tr("正在整理最新内容…"))
@@ -381,7 +381,7 @@ struct NewsFeedView: View {
             .font(.caption)
             .foregroundStyle(.secondary)
         }
-        .padding(.top, 4)
+        .padding(.top, AppDesign.Spacing.xxs)
     }
 
     private var editionDateText: String {
@@ -404,7 +404,7 @@ struct NewsFeedView: View {
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
         }
-        .padding(.top, 4)
+        .padding(.top, AppDesign.Spacing.xxs)
     }
 
     private func premiumHero(_ item: NewsItem) -> some View {
@@ -447,7 +447,7 @@ struct NewsFeedView: View {
                                 .lineLimit(4)
                             premiumMeta(item, onDark: true)
                         }
-                        .padding(20)
+                        .padding(AppDesign.Spacing.lg)
                     }
                     .frame(height: 252)
                 }
@@ -488,8 +488,8 @@ struct NewsFeedView: View {
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
+        .padding(.vertical, AppDesign.Spacing.md)
         .contentShape(Rectangle())
     }
 
@@ -499,8 +499,8 @@ struct NewsFeedView: View {
             Text(item.tagText)
                 .font(pfStyled(size: 11, weight: .semibold))
                 .foregroundStyle(dark ? .white : C.red)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
+                .padding(.horizontal, AppDesign.Spacing.xs)
+                .padding(.vertical, AppDesign.Spacing.xxs)
                 .background(
                     Capsule().fill(dark ? Color.white.opacity(0.18)
                                        : C.red.opacity(0.10))
@@ -553,7 +553,7 @@ struct NewsFeedView: View {
             }
             premiumFooter
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
     }
 
     private func premiumBoardRow(_ item: NewsItem, index: Int) -> some View {
@@ -652,7 +652,7 @@ struct NewsFeedView: View {
     }
 
     private var footer: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: AppDesign.Spacing.md) {
 
             Button { nextBatch() } label: {
                 HStack(spacing: 5) {
@@ -673,7 +673,7 @@ struct NewsFeedView: View {
                 .foregroundColor(C.time)
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, 20)
+        .padding(.top, AppDesign.Spacing.lg)
     }
 
     @ViewBuilder private func cell(_ it: NewsItem, index: Int) -> some View {
@@ -702,7 +702,7 @@ struct NewsFeedView: View {
             meta(it)
                 .padding(.top, 9)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .padding(.vertical, 14)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -770,7 +770,7 @@ struct NewsFeedView: View {
                     if !it.tagText.isEmpty { tagChip(it.tagText) }
                     Spacer(minLength: 0)
                 }
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     if it.hotValue > 0 {
                         Text(Tr("热度") + " " + hotText(it.hotValue))
                             .font(pf(12))
@@ -782,7 +782,7 @@ struct NewsFeedView: View {
                 }
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .padding(.vertical, 13)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -805,7 +805,7 @@ struct NewsFeedView: View {
         Text(text)
             .font(pf(10, .medium))
             .foregroundColor(C.red)
-            .padding(.horizontal, 4)
+            .padding(.horizontal, AppDesign.Spacing.xxs)
             .padding(.vertical, 1)
             .background(
                 RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous)

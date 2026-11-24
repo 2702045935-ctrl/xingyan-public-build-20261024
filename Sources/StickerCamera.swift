@@ -476,7 +476,7 @@ struct StickerCamera: View {
                     Color.clear.frame(width: 34, height: 34)
                 }
                     .padding(.horizontal, 14)
-                    .padding(.top, 8)
+                    .padding(.top, AppDesign.Spacing.xs)
 
                 if shot == nil {
                     Text(Tr("表情将会上传保存，在其他设备也可查看"))
@@ -493,7 +493,7 @@ struct StickerCamera: View {
                             .resizable()
                             .scaledToFill()
                     } else if cam.denied {
-                        VStack(spacing: 8) {
+                        VStack(spacing: AppDesign.Spacing.xs) {
                             Image(systemName: "camera.fill")
                                 .font(.system(size: 24))
                                 .foregroundColor(.white.opacity(0.7))
@@ -519,7 +519,7 @@ struct StickerCamera: View {
                     effectRow
                     shutterRow
                 } else {
-                    HStack(spacing: 12) {
+                    HStack(spacing: AppDesign.Spacing.sm) {
                         Button { withAnimation(.easeOut(duration: 0.15)) { shot = nil } } label: {
                             Text(Tr("重拍"))
                                 .font(pf(15, .medium))
@@ -543,7 +543,7 @@ struct StickerCamera: View {
                         }
                         .buttonStyle(.plain)
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, AppDesign.Spacing.lg)
                     .padding(.bottom, 26)
                 }
                 }
@@ -574,14 +574,14 @@ struct StickerCamera: View {
     }
 
     private var effectRow: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: AppDesign.Spacing.xs) {
 
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 tabChip(Tr("无特效"), 0)
                 tabChip(Tr("特效"), 1)
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 14) {
@@ -621,7 +621,7 @@ struct StickerCamera: View {
                     .foregroundColor(.white.opacity(0.62))
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
         }
         .padding(.bottom, 14)
     }

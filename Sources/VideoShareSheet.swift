@@ -64,7 +64,7 @@ struct VideoShareSheet: View {
                     Spacer(minLength: 0)
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
 
             ShareBrandRail { brand in
                 let opened = ShareBrandAction.open(brand, text: link)
@@ -73,15 +73,15 @@ struct VideoShareSheet: View {
                     app.show(Tr("内容已复制，请确认已安装") + Tr(brand.label))
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
+            .padding(.top, AppDesign.Spacing.md)
 
             Text(Tr("更多操作"))
                 .font(AppDesign.Type.section)
                 .foregroundStyle(ShareSheetTheme.secondaryInk(scheme))
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16)
-                .padding(.top, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
+                .padding(.top, AppDesign.Spacing.md)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .top, spacing: 8) {
@@ -122,12 +122,12 @@ struct VideoShareSheet: View {
                         onSaveLocal?()
                     }
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
             }
             .padding(.top, 18)
 
             Rectangle().fill(C.hairline).frame(height: AppDesign.Control.hairline)
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
                 .padding(.top, 14)
 
             VStack(spacing: 0) {
@@ -138,7 +138,7 @@ struct VideoShareSheet: View {
                     onHide?()
                 }
             }
-            .padding(.top, 4)
+            .padding(.top, AppDesign.Spacing.xxs)
 
             Button { dismiss() } label: {
                 Text(Tr("取消"))
@@ -149,7 +149,7 @@ struct VideoShareSheet: View {
                     .background(C.cardBg)
             }
             .buttonStyle(.plain)
-            .padding(.top, 8)
+            .padding(.top, AppDesign.Spacing.xs)
         }
         .background(ShareSheetTheme.page(scheme).ignoresSafeArea())
         .presentationDragIndicator(.hidden)
@@ -163,7 +163,7 @@ struct VideoShareSheet: View {
                 Text(Tr(title)).font(pf(16)).foregroundColor(C.label)
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .frame(height: AppDesign.Control.largeControlHeight)
             .contentShape(Rectangle())
         }
@@ -240,7 +240,7 @@ struct VideoForwardPicker: View {
                     }
                 }
                 .padding(.horizontal, 14)
-                .padding(.top, 4)
+                .padding(.top, AppDesign.Spacing.xxs)
                 .padding(.bottom, 18)
             }
         }

@@ -153,10 +153,10 @@ struct DDAdCard: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Text(Tr(cta))
                     .font(AppDesign.Type.sectionMedium).foregroundColor(.white)
-                    .padding(.horizontal, 12).frame(height: AppDesign.Control.statusHeight)
+                    .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.statusHeight)
                     .background(Capsule().fill(Color.black.opacity(0.22)))
             }
-            .padding(8)
+            .padding(AppDesign.Spacing.xs)
             .background(DDColor.card)
             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
         }
@@ -181,7 +181,7 @@ struct DDAdStrip: View {
                                    startPoint: .topLeading, endPoint: .bottomTrailing)
                     Text(emoji).font(pfStyled(size: 26)).frame(maxWidth: .infinity, maxHeight: .infinity)
                     Text(Tr("广告")).font(pf(8.5)).foregroundColor(.white.opacity(0.9))
-                        .padding(.horizontal, 4).frame(height: 13)
+                        .padding(.horizontal, AppDesign.Spacing.xxs).frame(height: 13)
                         .background(Capsule().fill(Color.black.opacity(0.25)))
                         .padding(3)
                 }
@@ -193,7 +193,7 @@ struct DDAdStrip: View {
                 }
                 Spacer(minLength: 0)
                 Text(Tr(cta)).font(AppDesign.Type.captionMedium).foregroundColor(.white)
-                    .padding(.horizontal, 12).frame(height: AppDesign.Control.sectionHeaderHeight)
+                    .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.sectionHeaderHeight)
                     .background(Capsule().fill(Color(hex: bottom)))
             }
             .padding(10)
@@ -241,7 +241,7 @@ struct DDChannelRow: View {
             .stroke(DDColor.cardEdge.opacity(0.7), lineWidth: 0.6))
         .shadow(color: Color.black.opacity(0.05), radius: 2, y: 1)
         .shadow(color: DDColor.cardShadow, radius: 14, y: 5)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
         }
     }
 
@@ -311,7 +311,7 @@ struct DDChannelView: View {
             head
             ScrollView(showsIndicators: false) {
                 if list.isEmpty {
-                    VStack(spacing: 8) {
+                    VStack(spacing: AppDesign.Spacing.xs) {
                         Image(systemName: "tray").font(.system(size: 28)).foregroundColor(DDColor.weak)
                         Text(Tr("这一栏暂时没有商品")).font(pf(14)).foregroundColor(DDColor.sub)
                     }
@@ -340,7 +340,7 @@ struct DDChannelView: View {
 
     private var head: some View {
         VStack(spacing: 7) {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Button { dismiss() } label: {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 18, weight: .semibold))
@@ -376,7 +376,7 @@ struct DDChannelView: View {
         }
         .padding(.horizontal, 10)
         .padding(.top, 10)
-        .padding(.bottom, 16)
+        .padding(.bottom, AppDesign.Spacing.md)
     }
 
     private var ranked: some View {
@@ -416,7 +416,7 @@ struct DDChannelView: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(12)
+        .padding(AppDesign.Spacing.sm)
         .background(DDColor.card)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
         .padding(.horizontal, 10)
@@ -512,7 +512,7 @@ struct DDSearchFilterBar: View {
                 onSort(sort == "priceUp" ? "priceDown" : (sort == "priceDown" ? "" : "priceUp"))
             }
             Button { onStock() } label: {
-                HStack(spacing: 4) {
+                HStack(spacing: AppDesign.Spacing.xxs) {
                     Image(systemName: onlyStock ? "checkmark.square.fill" : "square")
                         .font(.system(size: 12))
                     Text(Tr("只看有货")).font(pf(12.5, onlyStock ? .medium : .regular))

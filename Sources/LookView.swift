@@ -47,7 +47,7 @@ struct LookView: View {
                 Text(Tr("精选")).tag(1)
             }
             .pickerStyle(.segmented)
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
             .padding(.bottom, 6)
 
             ScrollView {
@@ -109,7 +109,7 @@ struct LookView: View {
             Text(t).font(pf(13)).foregroundColor(C.subLabel)
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(height: 34)
     }
 
@@ -131,7 +131,7 @@ struct LookView: View {
                     .frame(height: 180)
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
             }
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Text(v.author ?? "").font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                 Spacer(minLength: 0)
                 Text("♡ \((v.likes ?? 0))").font(AppDesign.Type.caption).foregroundColor(C.subLabel)
@@ -140,7 +140,7 @@ struct LookView: View {
         .padding(14)
         .background(C.cardBg)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
         .padding(.bottom, 10)
     }
 
@@ -156,7 +156,7 @@ struct LookView: View {
                     Spacer(minLength: 0)
                 }
             }
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Avatar(path: "", size: 30, radius: 15)
                 Text(p.author ?? "").font(pf(14, .medium)).foregroundColor(C.label)
                 Spacer(minLength: 0)
@@ -166,7 +166,7 @@ struct LookView: View {
                 Text(c).font(pf(15)).foregroundColor(C.label).lineLimit(3)
             }
             if let imgs = p.images, !imgs.isEmpty {
-                HStack(spacing: 4) {
+                HStack(spacing: AppDesign.Spacing.xxs) {
                     ForEach(Array(imgs.prefix(3).enumerated()), id: \.offset) { _, s in
                         RemoteImage(path: s, mode: .fill, maxSide: 600)
                             .frame(width: 96, height: 96)
@@ -184,7 +184,7 @@ struct LookView: View {
         .padding(14)
         .background(C.cardBg)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
         .padding(.bottom, 10)
     }
 

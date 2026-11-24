@@ -53,7 +53,7 @@ struct UserCardBubble: View {
             showTail: showTail
         ) {
             VStack(spacing: 0) {
-                HStack(spacing: 12) {
+                HStack(spacing: AppDesign.Spacing.sm) {
                     ZStack {
                         RoundedRectangle(cornerRadius: ChatMessageSurface.cardRadius,
                                          style: .continuous)
@@ -89,7 +89,7 @@ struct UserCardBubble: View {
                     Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 13)
-                .padding(.vertical, 12)
+                .padding(.vertical, AppDesign.Spacing.sm)
 
                 Rectangle()
                     .fill(C.hairline)
@@ -136,7 +136,7 @@ struct AnnounceBubble: View {
                     .font(AppDesign.Type.captionMedium)
                     .foregroundColor(C.label)
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
             .frame(height: AppDesign.Control.floatingControlHeight)
 
             Text(text)
@@ -145,12 +145,12 @@ struct AnnounceBubble: View {
                 .lineSpacing(3)
                 .lineLimit(5)
                 .multilineTextAlignment(.leading)
-                .padding(.horizontal, 12)
+                .padding(.horizontal, AppDesign.Spacing.sm)
                 .padding(.bottom, 10)
 
             HairLine(inset: 0)
 
-            HStack(spacing: 4) {
+            HStack(spacing: AppDesign.Spacing.xxs) {
                 Text(Tr("查看详情"))
                     .font(pf(12))
                 Spacer(minLength: 0)
@@ -158,7 +158,7 @@ struct AnnounceBubble: View {
                     .font(.system(size: 9, weight: .semibold))
             }
             .foregroundColor(C.green)
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
             .frame(height: AppDesign.Control.smallButtonHeight)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -420,13 +420,13 @@ struct VideoPlayerSheet: View {
                             .foregroundColor(.white.opacity(0.88))
                             .frame(width: 40, alignment: .trailing)
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
+                    .padding(.horizontal, AppDesign.Spacing.sm)
+                    .padding(.vertical, AppDesign.Spacing.xs)
                     .background {
                         GlassBackground(shape: Capsule(style: .continuous), shadow: true)
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.top, 8)
+                    .padding(.horizontal, AppDesign.Spacing.sm)
+                    .padding(.top, AppDesign.Spacing.xs)
                     .transition(.opacity.combined(with: .move(edge: .top)))
                 }
 
@@ -454,7 +454,7 @@ struct VideoPlayerSheet: View {
                     .disabled(!(pip.possible || pip.active))
                     Spacer(minLength: 0)
                 }
-                .padding(12)
+                .padding(AppDesign.Spacing.sm)
                 .opacity(controls ? 1 : 0)
 
                 Spacer(minLength: 0)
@@ -470,8 +470,8 @@ struct VideoPlayerSheet: View {
                         .disabled(saving)
                         action("分享", "square.and.arrow.up") { showShare = true }
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
+                    .padding(.horizontal, AppDesign.Spacing.xl)
+                    .padding(.vertical, AppDesign.Spacing.sm)
                     .padding(.bottom, 30)
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
                 }
@@ -897,7 +897,7 @@ struct SendingFileBubble: View {
                             .lineLimit(1)
                     }
                     if phase == .failed {
-                        HStack(spacing: 8) {
+                        HStack(spacing: AppDesign.Spacing.xs) {
                             Button {
                                 onRetry?()
                             } label: {
@@ -942,7 +942,7 @@ struct SendingFileBubble: View {
             .frame(height: 3)
             .animation(.linear(duration: 0.16), value: value)
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
         .padding(.vertical, 11)
         .frame(width: 218)
         .background(BubbleFill(mine: true, tail: true))

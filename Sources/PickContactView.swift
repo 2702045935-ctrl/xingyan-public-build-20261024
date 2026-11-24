@@ -22,8 +22,8 @@ struct PickContactView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 SearchBoxCenter(text: $keyword)
-                    .padding(.horizontal, 8)
-                    .padding(.top, 8)
+                    .padding(.horizontal, AppDesign.Spacing.xs)
+                    .padding(.top, AppDesign.Spacing.xs)
                     .padding(.bottom, 6)
 
                 List(list) { u in
@@ -59,7 +59,7 @@ struct PickContactView: View {
                         .font(pf(14))
                         .foregroundColor(C.subLabel)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 24)
+                        .padding(.vertical, AppDesign.Spacing.xl)
                 }
             }
             .background(C.pageBg.ignoresSafeArea())

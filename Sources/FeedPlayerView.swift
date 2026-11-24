@@ -71,8 +71,8 @@ struct FeedPlayerView: View {
                     .buttonStyle(.plain)
                     Spacer()
                 }
-                .padding(.horizontal, 12)
-                .padding(.top, 8)
+                .padding(.horizontal, AppDesign.Spacing.sm)
+                .padding(.top, AppDesign.Spacing.xs)
                 Spacer()
             }
         }
@@ -288,14 +288,14 @@ private struct PlayerPage: View {
                     }
                     Spacer()
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
                 .padding(.bottom, 30)
                 .padding(.trailing, 76)
             }
 
             VStack {
                 Spacer()
-                VStack(spacing: 16) {
+                VStack(spacing: AppDesign.Spacing.md) {
                     ZStack(alignment: .bottom) {
                         Button { onAvatar() } label: {
                             Avatar(path: ui.authorAvatar, size: 48, radius: 24, circle: true)
@@ -328,10 +328,10 @@ private struct PlayerPage: View {
                                    count: 0, action: onShare)
                     MusicDisc()
                 }
-                .padding(.bottom, 32)
+                .padding(.bottom, AppDesign.Spacing.xxl)
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
-            .padding(.trailing, 12)
+            .padding(.trailing, AppDesign.Spacing.sm)
 
             VStack {
                 Spacer()
@@ -364,7 +364,7 @@ private struct PlayerPage: View {
     }
 
     private var failedBadge: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: AppDesign.Spacing.sm) {
             Image(systemName: "wifi.exclamationmark")
                 .font(.system(size: 26, weight: .medium))
                 .foregroundColor(.white.opacity(0.9))
@@ -377,14 +377,14 @@ private struct PlayerPage: View {
                 Text(Tr("重新加载"))
                     .font(pfStyled(size: 14.5, weight: .semibold))
                     .foregroundColor(.white)
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, AppDesign.Spacing.lg)
                     .frame(height: 34)
                     .background(Capsule().fill(Color.white.opacity(0.2)))
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 20)
+        .padding(.horizontal, AppDesign.Spacing.xl)
+        .padding(.vertical, AppDesign.Spacing.lg)
         .background(
             RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                 .fill(Color.black.opacity(0.38))
@@ -551,8 +551,8 @@ struct FeedCommentSheet: View {
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.horizontal, AppDesign.Spacing.md)
+            .padding(.vertical, AppDesign.Spacing.sm)
 
             Divider()
 
@@ -567,7 +567,7 @@ struct FeedCommentSheet: View {
                             }
                             Spacer(minLength: 0)
                         }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppDesign.Spacing.md)
                     }
                 }
                 .padding(.vertical, 14)
@@ -579,7 +579,7 @@ struct FeedCommentSheet: View {
                 TextField(Tr("说点什么…"), text: $draft)
                     .focused($focused)
                     .font(pf(15))
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, AppDesign.Spacing.sm)
                     .padding(.vertical, 9)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.panel).fill(C.searchBg))
                 Button { send() } label: {

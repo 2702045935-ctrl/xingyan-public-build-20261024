@@ -34,7 +34,7 @@ private struct PhoneContactMark: View {
         ZStack {
             RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                 .fill(accent)
-            HStack(spacing: 4) {
+            HStack(spacing: AppDesign.Spacing.xxs) {
                 Capsule().fill(AppPalette.deepForest).frame(width: 2.8, height: 7)
                 Capsule().fill(AppPalette.deepForest).frame(width: 2.8, height: 7)
             }
@@ -122,7 +122,7 @@ struct PhoneContactsView: View {
                         phonePermissionCard
 
                     case .requesting:
-                        VStack(spacing: 12) {
+                        VStack(spacing: AppDesign.Spacing.sm) {
                             ProgressView()
                             Text(Tr("正在读取手机联系人…"))
                                 .font(pf(14))
@@ -176,7 +176,7 @@ struct PhoneContactsView: View {
                             .foregroundColor(C.red)
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
-                        .padding(.horizontal, 24)
+                        .padding(.horizontal, AppDesign.Spacing.xl)
                     }
 
                     if state == .ready {
@@ -185,7 +185,7 @@ struct PhoneContactsView: View {
                             .foregroundStyle(C.subLabel)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 34)
-                            .padding(.top, 24)
+                            .padding(.top, AppDesign.Spacing.xl)
                     }
                 }
                 .padding(.bottom, max(20, L.safeBottom))
@@ -208,7 +208,7 @@ struct PhoneContactsView: View {
     }
 
     private var phoneSearchBar: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppDesign.Spacing.xs) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(C.subLabel)
@@ -226,12 +226,12 @@ struct PhoneContactsView: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
         .frame(height: AppDesign.Control.iconControlHeight)
         .background(C.fieldBg,
                     in: RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
         .padding(.horizontal, 14)
-        .padding(.vertical, 8)
+        .padding(.vertical, AppDesign.Spacing.xs)
         .background(C.pageBg)
     }
 
@@ -266,7 +266,7 @@ struct PhoneContactsView: View {
     }
 
     private func phoneContactRow(_ contact: LocalPhoneContact) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Text(String(contact.name.prefix(1)))
                 .font(pfStyled(size: 18, weight: .medium))
                 .foregroundStyle(.white)
@@ -333,10 +333,10 @@ struct PhoneContactsView: View {
                                                      style: .continuous))
             }
             .buttonStyle(.plain)
-            .padding(.horizontal, 24)
+            .padding(.horizontal, AppDesign.Spacing.xl)
         }
         .frame(maxWidth: .infinity, minHeight: 260)
-        .padding(.vertical, 20)
+        .padding(.vertical, AppDesign.Spacing.lg)
     }
 
     private func phoneEmptyState(icon: String, title: String) -> some View {
@@ -576,7 +576,7 @@ private struct PhoneInviteSheet: View {
     var body: some View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 16) {
+                VStack(spacing: AppDesign.Spacing.md) {
                     VStack(spacing: 6) {
                         Text(Tr("邀请 ") + name)
                             .font(pf(18, .semibold))
@@ -621,10 +621,10 @@ private struct PhoneInviteSheet: View {
                             .font(pf(12))
                             .foregroundColor(C.subLabel)
                             .multilineTextAlignment(.center)
-                            .padding(.horizontal, 8)
+                            .padding(.horizontal, AppDesign.Spacing.xs)
                     }
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
                 .padding(.vertical, 14)
             }
             .background(C.pageBg.ignoresSafeArea())

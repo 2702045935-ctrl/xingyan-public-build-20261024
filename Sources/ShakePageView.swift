@@ -229,7 +229,7 @@ struct ShakePageView: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 44)
             }
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Button {
                     showHello = true
                 } label: {
@@ -253,7 +253,7 @@ struct ShakePageView: View {
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.top, 8)
+            .padding(.top, AppDesign.Spacing.xs)
         }
         .padding(.vertical, 10)
     }

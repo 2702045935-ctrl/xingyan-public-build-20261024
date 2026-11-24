@@ -108,7 +108,7 @@ struct TeenModeView: View {
     @ViewBuilder
     private var offPage: some View {
         Section {
-            VStack(spacing: 12) {
+            VStack(spacing: AppDesign.Spacing.sm) {
                 UmbrellaIcon(color: Color(hex: 0x3E9BF0), size: 58)
                 Text(Tr("未成年人模式"))
                     .font(pfStyled(size: 20, weight: .semibold))
@@ -119,7 +119,7 @@ struct TeenModeView: View {
                     .lineSpacing(4)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
+            .padding(.vertical, AppDesign.Spacing.sm)
         }
 
         Section {
@@ -157,7 +157,7 @@ struct TeenModeView: View {
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
+            .padding(.vertical, AppDesign.Spacing.xs)
         }
 
         Section {
@@ -213,13 +213,13 @@ struct TeenModeView: View {
     private func row(_ title: String, _ value: String, chevron: Bool,
                      _ tap: @escaping () -> Void) -> some View {
         Button(action: tap) {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Text(title).font(pf(16)).foregroundColor(C.label)
                 Spacer(minLength: 8)
                 Text(value).font(pf(14.5)).foregroundColor(C.subLabel).lineLimit(1)
                 if chevron { Chevron(size: 8, line: 1.5) }
             }
-            .padding(.horizontal, 16).frame(height: AppDesign.Control.dialogRowHeight)
+            .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.dialogRowHeight)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -229,7 +229,7 @@ struct TeenModeView: View {
         VStack(spacing: 0) {
             NavBar(title: Tr("监护人"), back: { showGuardian = false }) {
                 Button { Task { await saveGuardian() } } label: {
-                    Text(Tr("保存")).font(pf(16)).foregroundColor(C.green).padding(.trailing, 16)
+                    Text(Tr("保存")).font(pf(16)).foregroundColor(C.green).padding(.trailing, AppDesign.Spacing.md)
                 }
                 .buttonStyle(.plain)
             }
@@ -238,12 +238,12 @@ struct TeenModeView: View {
                 TextField(Tr("填家长手机号"), text: $guardianDraft)
                     .font(pf(16))
                     .keyboardType(.numberPad)
-                    .padding(.horizontal, 12).frame(height: AppDesign.Control.compactHeight)
+                    .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.compactHeight)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.searchBg))
                 Text(Tr("只保存脱敏后的号码（如 138****8888），不会外发。"))
                     .font(pf(12)).foregroundColor(C.subLabel)
             }
-            .padding(16)
+            .padding(AppDesign.Spacing.md)
             .background { CardGlassBox(radius: 14) }
             .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).stroke(C.hairline, lineWidth: 0.6))
             .padding(.horizontal, 14).padding(.top, 10)
@@ -517,7 +517,7 @@ struct CareModeView: View {
     var body: some View {
         Form {
             Section {
-                VStack(spacing: 12) {
+                VStack(spacing: AppDesign.Spacing.sm) {
                     Image(systemName: "figure.wave")
                         .font(.system(size: 44))
                         .foregroundStyle(C.green)
@@ -530,7 +530,7 @@ struct CareModeView: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
+                .padding(.vertical, AppDesign.Spacing.xs)
             }
 
             Section {
@@ -548,8 +548,8 @@ struct CareModeView: View {
                     Avatar(path: app.me?.avatarPath ?? "", size: on ? 34 : 30, radius: 5)
                     Text(Tr("这条消息开了关怀模式会更大"))
                         .font(on ? .system(size: 19) : .system(size: 16))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
+                        .padding(.horizontal, AppDesign.Spacing.sm)
+                        .padding(.vertical, AppDesign.Spacing.xs)
                         .background(
                             RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous)
                                 .fill(Color(uiColor: .secondarySystemGroupedBackground))

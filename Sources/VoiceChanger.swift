@@ -185,15 +185,15 @@ struct VoiceChangerView: View {
                         .font(pf(13))
                         .foregroundColor(C.subLabel)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 16)
-                        .padding(.top, 12)
-                        .padding(.bottom, 4)
+                        .padding(.horizontal, AppDesign.Spacing.md)
+                        .padding(.top, AppDesign.Spacing.sm)
+                        .padding(.bottom, AppDesign.Spacing.xxs)
 
-                    GroupCard {
+                    GroupCard(horizontalInset: 0) {
                         ForEach(Array(VoiceChangerStore.all.enumerated()), id: \.element.id) { idx, e in
                             if idx > 0 { HairLine(inset: 16) }
                             Button { store.select(e.id) } label: {
-                                HStack(spacing: 12) {
+                                HStack(spacing: AppDesign.Spacing.sm) {
                                     VStack(alignment: .leading, spacing: 3) {
                                         Text(e.name).font(pf(17)).foregroundColor(C.label)
                                         Text(e.hint).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
@@ -205,14 +205,14 @@ struct VoiceChangerView: View {
                                             .foregroundColor(C.green)
                                     }
                                 }
-                                .padding(.horizontal, 16)
+                                .padding(.horizontal, AppDesign.Spacing.md)
                                 .padding(.vertical, 11)
                                 .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
                         }
                     }
-                    .padding(.top, 8)
+                    .padding(.top, AppDesign.Spacing.xs)
                     Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
             }

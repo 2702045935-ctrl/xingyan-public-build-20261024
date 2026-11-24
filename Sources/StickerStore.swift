@@ -31,14 +31,14 @@ struct StickerStore: View {
             NavBar(title: Tr("表情"), back: { dismiss() })
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 12) {
+                VStack(spacing: AppDesign.Spacing.sm) {
                     heroCard
                     mineBlock
                     singleBlock
                     shopBlock
                 }
                 .padding(.horizontal, 14)
-                .padding(.top, 4)
+                .padding(.top, AppDesign.Spacing.xxs)
                 .padding(.bottom, 30)
             }
         }
@@ -105,7 +105,7 @@ struct StickerStore: View {
                 }
             }
 
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(C.searchIcon)
@@ -129,7 +129,7 @@ struct StickerStore: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
             .frame(height: AppDesign.Control.iconControlHeight)
             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous).fill(Color.white.opacity(0.14)))
             .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
@@ -195,13 +195,13 @@ struct StickerStore: View {
 
     private var singleBlock: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Text(Tr("我添加的单个表情"))
                     .font(AppDesign.Type.captionMedium)
                     .foregroundColor(C.subLabel)
                 Spacer(minLength: 0)
                 Button { addingPhoto = true } label: {
-                    HStack(spacing: 4) {
+                    HStack(spacing: AppDesign.Spacing.xxs) {
                         Image(systemName: "plus").font(.system(size: 11, weight: .semibold))
                         Text(Tr("从相册添加")).font(AppDesign.Type.caption)
                     }
@@ -210,7 +210,7 @@ struct StickerStore: View {
                 .buttonStyle(.plain)
             }
             .padding(.horizontal, 6)
-            .padding(.top, 12)
+            .padding(.top, AppDesign.Spacing.sm)
             .padding(.bottom, 6)
 
             PanelCard {
@@ -239,7 +239,7 @@ struct StickerStore: View {
                             .buttonStyle(.plain)
                         }
                     }
-                    .padding(12)
+                    .padding(AppDesign.Spacing.sm)
                 }
             }
         }
@@ -257,7 +257,7 @@ struct StickerStore: View {
                         .font(AppDesign.Type.body)
                         .foregroundColor(C.subLabel)
                         .padding(.horizontal, 14)
-                        .padding(.vertical, 16)
+                        .padding(.vertical, AppDesign.Spacing.md)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
             } else {
@@ -302,7 +302,7 @@ struct StickerStore: View {
                         .shadow(color: Color.black.opacity(0.18), radius: 4, y: 2)
                 }
                 .buttonStyle(.plain)
-                .padding(8)
+                .padding(AppDesign.Spacing.xs)
             }
             HStack(spacing: 6) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -350,7 +350,7 @@ struct StickerStore: View {
 
     private var categoryChips: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 chip("all", Tr("全部"))
                 chip("builtin", Tr("内置"))
                 if !serverShop.isEmpty { chip("server", Tr("线上")) }
@@ -390,7 +390,7 @@ struct StickerStore: View {
             Text(sub).font(pf(11.5)).foregroundColor(C.subLabel.opacity(0.8))
         }
         .padding(.horizontal, 6)
-        .padding(.top, 12)
+        .padding(.top, AppDesign.Spacing.sm)
         .padding(.bottom, 6)
     }
 
@@ -403,7 +403,7 @@ struct StickerStore: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 14) {
 
-                    HStack(spacing: 12) {
+                    HStack(spacing: AppDesign.Spacing.sm) {
                         ZStack {
                             LinearGradient(colors: [tint[0].opacity(0.25), tint[1].opacity(0.12)],
                                            startPoint: .topLeading, endPoint: .bottomTrailing)
@@ -473,7 +473,7 @@ struct StickerStore: View {
                     }
                     .buttonStyle(.plain)
                     .padding(.horizontal, 14)
-                    .padding(.bottom, 24)
+                    .padding(.bottom, AppDesign.Spacing.xl)
                 }
             }
         }

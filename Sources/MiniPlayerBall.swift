@@ -24,7 +24,7 @@ struct MusicDockedPlayerBar: View {
     var fadesBackgroundWhilePlaying = false
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             MusicCover(path: player.current?.cover ?? "", size: 40, radius: 8)
             VStack(alignment: .leading, spacing: 3) {
                 Text(player.current?.title ?? "")
@@ -50,7 +50,7 @@ struct MusicDockedPlayerBar: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
         .frame(height: AppDesign.Control.compactRowHeight)
         .background {
             RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)

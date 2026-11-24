@@ -34,22 +34,22 @@ struct AIHomeCardView: View {
                     .font(pf(19, .semibold))
                     .foregroundColor(C.label)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppDesign.Spacing.md)
                     .padding(.top, 18)
 
                 HStack {
                     Text(Tr("为你推荐")).font(pf(13)).foregroundColor(C.subLabel)
                     Spacer(minLength: 0)
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
+                .padding(.top, AppDesign.Spacing.md)
                 .padding(.bottom, 2)
 
                 VStack(spacing: 0) {
                     ForEach(Array(suggestions.enumerated()), id: \.offset) { i, s in
                         if i > 0 { HairLine(inset: 44) }
                         Button { onSend(s) } label: {
-                            HStack(spacing: 12) {
+                            HStack(spacing: AppDesign.Spacing.sm) {
                                 Image(systemName: "sparkles")
                                     .font(.system(size: 14, weight: .semibold))
                                     .foregroundColor(C.green)
@@ -63,7 +63,7 @@ struct AIHomeCardView: View {
                                     .font(.system(size: 11, weight: .semibold))
                                     .foregroundColor(C.subLabel)
                             }
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, AppDesign.Spacing.md)
                             .frame(height: AppDesign.Control.buttonHeight)
                             .contentShape(Rectangle())
                         }
@@ -92,7 +92,7 @@ struct AIHomeCardView: View {
                                     .foregroundColor(C.subLabel)
                             }
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
+                            .padding(.vertical, AppDesign.Spacing.sm)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -118,7 +118,7 @@ struct AIHomeCardView: View {
     }
 
     private func aiTool(icon: String, title: String, sub: String) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppDesign.Spacing.xs) {
             Image(systemName: icon)
                 .font(.system(size: 17, weight: .medium))
                 .foregroundColor(C.green)

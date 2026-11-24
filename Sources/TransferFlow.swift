@@ -173,7 +173,7 @@ struct TransferView: View {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
             openPay()
         } label: {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Text(Tr("转账"))
                     .font(pf(17, .semibold))
                 Image(systemName: "arrow.right")
@@ -196,8 +196,8 @@ struct TransferView: View {
         }
         .buttonStyle(AppleCheckoutButtonStyle())
         .disabled(amount <= 0)
-        .padding(.horizontal, 20)
-        .padding(.top, 12)
+        .padding(.horizontal, AppDesign.Spacing.lg)
+        .padding(.top, AppDesign.Spacing.sm)
         .padding(.bottom, max(14, L.safeBottom))
     }
 
@@ -312,8 +312,8 @@ struct TransferView: View {
         }
         .shadow(color: .black.opacity(scheme == .dark ? 0.18 : 0.06),
                 radius: 18, y: 8)
-        .padding(.horizontal, 20)
-        .padding(.top, 12)
+        .padding(.horizontal, AppDesign.Spacing.lg)
+        .padding(.top, AppDesign.Spacing.sm)
     }
 
     private var digitCells: some View {
@@ -393,7 +393,7 @@ struct TransferView: View {
             paySheetHeader
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 20) {
+                VStack(spacing: AppDesign.Spacing.lg) {
                     checkoutHero
                     checkoutSummaryCard
 
@@ -401,17 +401,17 @@ struct TransferView: View {
                         passwordPanel
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 12)
+                .padding(.horizontal, AppDesign.Spacing.lg)
+                .padding(.top, AppDesign.Spacing.sm)
                 .padding(.bottom, 18)
             }
 
             if faceOK && !usePassword {
-                VStack(spacing: 12) {
+                VStack(spacing: AppDesign.Spacing.sm) {
                     faceConfirmPanel
                     paymentTrustLine
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, AppDesign.Spacing.lg)
                 .padding(.top, 14)
                 .padding(.bottom, max(18, L.safeBottom))
                 .background(C.cardBg)
@@ -419,12 +419,12 @@ struct TransferView: View {
                     HairLine(inset: 0)
                 }
             } else {
-                VStack(spacing: 8) {
+                VStack(spacing: AppDesign.Spacing.xs) {
                     PayKeypadView(busy: busy, keyHeight: L.payPadH) { key in
                         tapPay(key)
                     }
                     paymentTrustLine
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, AppDesign.Spacing.lg)
                         .padding(.bottom, max(12, L.safeBottom))
                 }
                 .background(PayVisual.canvas)
@@ -461,7 +461,7 @@ struct TransferView: View {
                 Spacer()
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(height: AppDesign.Control.dialogRowHeight)
         .background(C.cardBg)
         .overlay(alignment: .bottom) {
@@ -489,7 +489,7 @@ struct TransferView: View {
                 .foregroundStyle(PayVisual.secondaryInk)
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, 4)
+        .padding(.top, AppDesign.Spacing.xxs)
     }
 
     private var checkoutSummaryCard: some View {
@@ -521,7 +521,7 @@ struct TransferView: View {
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundStyle(PayVisual.tint.opacity(0.82))
                         }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppDesign.Spacing.md)
                         .frame(minHeight: 64)
                         .contentShape(Rectangle())
                     }
@@ -553,7 +553,7 @@ struct TransferView: View {
                                     checkoutDetailsExpanded ? 180 : 0
                                 ))
                         }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppDesign.Spacing.md)
                         .frame(minHeight: 48)
                         .contentShape(Rectangle())
                     }
@@ -603,7 +603,7 @@ struct TransferView: View {
                 .multilineTextAlignment(.trailing)
                 .lineLimit(2)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(minHeight: 46)
     }
 
@@ -659,7 +659,7 @@ struct TransferView: View {
                             .font(AppDesign.Type.compactButton)
                     }
                     .foregroundStyle(C.link)
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, AppDesign.Spacing.sm)
                     .frame(height: 31)
                     .background(C.link.opacity(0.09), in: Capsule())
                 }
@@ -671,8 +671,8 @@ struct TransferView: View {
 
     private var passwordPanel: some View {
         checkoutSurface {
-            VStack(spacing: 12) {
-                HStack(spacing: 8) {
+            VStack(spacing: AppDesign.Spacing.sm) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     Image(systemName: "lock.fill")
                         .font(.system(size: 12, weight: .semibold))
                     Text(Tr("输入 6 位支付密码完成这笔转账"))
@@ -724,8 +724,8 @@ struct TransferView: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
+            .padding(.vertical, AppDesign.Spacing.md)
         }
     }
 
@@ -801,7 +801,7 @@ struct TransferView: View {
                     Button {
                         recharge()
                     } label: {
-                        HStack(spacing: 8) {
+                        HStack(spacing: AppDesign.Spacing.xs) {
                             Image(systemName: "plus.circle.fill")
                                 .font(.system(size: 15, weight: .semibold))
                             Text(Tr("充值余额"))
@@ -840,7 +840,7 @@ struct TransferView: View {
             withAnimation(.easeOut(duration: 0.22)) { showMethod = false }
             app.show(Tr("付款方式：") + name)
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 ZStack {
                     RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                         .fill(
@@ -934,7 +934,7 @@ struct TransferView: View {
                 }
             }
             .padding(.horizontal, 6)
-            .padding(.top, 8)
+            .padding(.top, AppDesign.Spacing.xs)
 
             Spacer().frame(height: AppDesign.Control.floatingControlHeight)
             ZStack {
@@ -966,17 +966,17 @@ struct TransferView: View {
             Text(Tr("转账已发出"))
                 .font(pf(23, .semibold))
                 .foregroundColor(C.label)
-                .padding(.top, 16)
+                .padding(.top, AppDesign.Spacing.md)
             StarPayAmount(value: doneAmount, role: .sheet, color: C.label)
-                .padding(.top, 8)
+                .padding(.top, AppDesign.Spacing.xs)
             PayStatusPill(text: Tr("等待对方确认收款"), tone: .processing)
-                .padding(.top, 12)
+                .padding(.top, AppDesign.Spacing.sm)
             Text(Tr("对方确认后款项进入其零钱；24 小时未确认将自动退回。"))
                 .font(pf(13))
                 .foregroundColor(PayVisual.secondaryInk)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 36)
-                .padding(.top, 12)
+                .padding(.top, AppDesign.Spacing.sm)
 
             checkoutSurface {
                 VStack(spacing: 0) {
@@ -995,12 +995,12 @@ struct TransferView: View {
                     }
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, AppDesign.Spacing.lg)
             .padding(.top, 28)
 
             Spacer()
 
-            VStack(spacing: 12) {
+            VStack(spacing: AppDesign.Spacing.sm) {
                 Button {
                     showBills = true
                 } label: {
@@ -1037,7 +1037,7 @@ struct TransferView: View {
                 }
                 .buttonStyle(AppleCheckoutButtonStyle())
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, AppDesign.Spacing.lg)
             .padding(.bottom, max(26, L.safeBottom))
         }
         .frame(maxWidth: .infinity)

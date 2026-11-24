@@ -52,7 +52,7 @@ struct BotChatView: View {
                         if waitingReply { typingRow.id("botTyping") }
                         Color.clear.frame(height: 1).id("botBottom")
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppDesign.Spacing.md)
                     .padding(.top, 14)
                     .padding(.bottom, 10)
                 }
@@ -100,7 +100,7 @@ struct BotChatView: View {
                 .foregroundColor(C.subLabel)
             Spacer(minLength: 16)
         }
-        .padding(.bottom, 16)
+        .padding(.bottom, AppDesign.Spacing.md)
     }
 
     private var navBar: some View {
@@ -119,12 +119,12 @@ struct BotChatView: View {
                 }
                 .buttonStyle(.plain)
             }
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 JarvisEyesAvatar(size: eyesSize(22), tint: eyesTintOrClear, staticOnly: eyesStill)
                 Text(name).font(pfStyled(size: 17, weight: .semibold)).foregroundColor(C.label)
             }
         }
-        .padding(.horizontal, 4)
+        .padding(.horizontal, AppDesign.Spacing.xxs)
         .frame(height: AppDesign.Control.largeControlHeight)
         .background(Color.dyn(0xFFFFFF, 0x1C1C1E).opacity(0.96))
     }
@@ -139,7 +139,7 @@ struct BotChatView: View {
                     .font(AppDesign.Type.bodyLarge)
                     .lineSpacing(3)
                     .foregroundColor(AppPalette.title)
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, AppDesign.Spacing.sm)
                     .padding(.vertical, 9)
                     .background(Color(hex: 0xD7F3C6))
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
@@ -155,7 +155,7 @@ struct BotChatView: View {
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 16)
             }
-            .padding(.bottom, 16)
+            .padding(.bottom, AppDesign.Spacing.md)
         }
     }
 
@@ -166,8 +166,8 @@ struct BotChatView: View {
     }
 
     private var composer: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 8) {
+        VStack(spacing: AppDesign.Spacing.xs) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 TextField("发消息给" + name + "…", text: $input, axis: .vertical)
                     .lineLimit(1...4)
                     .focused($focused)
@@ -186,14 +186,14 @@ struct BotChatView: View {
                 .buttonStyle(.plain)
                 .disabled(!canSend || sending)
             }
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 quickChip("帮我…") { input = "帮我" }
                 quickChip("今天的天气") { send("今天天气怎么样？") }
                 quickChip("记一笔账") { send("帮我记一笔：") }
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.top, 8)
+        .padding(.horizontal, AppDesign.Spacing.sm)
+        .padding(.top, AppDesign.Spacing.xs)
         .padding(.bottom, 10)
         .background(Color.dyn(0xF7F7F7, 0x141416).opacity(0.97))
     }

@@ -210,7 +210,7 @@ struct BotCardView: View {
         }
         .padding(.horizontal, 18)
         .padding(.top, 18)
-        .padding(.bottom, 20)
+        .padding(.bottom, AppDesign.Spacing.lg)
         .background(sheetBg)
     }
 

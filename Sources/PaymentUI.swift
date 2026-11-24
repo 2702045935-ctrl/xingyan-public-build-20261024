@@ -438,7 +438,7 @@ struct StarPayGoldCardFace: View {
                         Text(Tr("管理灰度"))
                             .font(pf(9, .bold))
                             .foregroundStyle(Color(hex: 0x2B1B04))
-                            .padding(.horizontal, 8)
+                            .padding(.horizontal, AppDesign.Spacing.xs)
                             .frame(height: 22)
                             .background(.white.opacity(0.24), in: Capsule())
                     }
@@ -497,7 +497,7 @@ struct StarPayGoldCardFace: View {
                     }
                 }
             }
-            .padding(20)
+            .padding(AppDesign.Spacing.lg)
         }
         .frame(height: 224)
         .accessibilityElement(children: .combine)
@@ -616,7 +616,7 @@ struct PaySectionLabel: View {
             .font(AppDesign.Type.compactButton)
             .foregroundColor(PayVisual.secondaryInk)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 4)
+            .padding(.horizontal, AppDesign.Spacing.xxs)
     }
 }
 
@@ -685,7 +685,7 @@ struct PayEmptyState: View {
     var detail: String = ""
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: AppDesign.Spacing.sm) {
             Image(systemName: symbol)
                 .font(.system(size: 32, weight: .regular))
                 .foregroundColor(PayVisual.secondaryInk)
@@ -793,7 +793,7 @@ private struct StarPayGuideView: View {
                         .font(pf(14, .medium))
                         .foregroundStyle(PayVisual.secondaryInk)
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, AppDesign.Spacing.lg)
                 .padding(.top, max(12, L.safeTop))
 
                 TabView(selection: $page) {
@@ -825,7 +825,7 @@ private struct StarPayGuideView: View {
                     Text(page < pages.count - 1 ? Tr("继续") : Tr("开始使用"))
                 }
                 .buttonStyle(PayPrimaryButtonStyle(tint: PayVisual.tint))
-                .padding(.horizontal, 20)
+                .padding(.horizontal, AppDesign.Spacing.lg)
                 .padding(.top, 22)
                 .padding(.bottom, max(18, L.safeBottom + 8))
             }
@@ -838,7 +838,7 @@ private struct StarPayGuideView: View {
             Spacer(minLength: 10)
             guideArtwork(item.id)
                 .frame(height: 238)
-                .padding(.horizontal, 20)
+                .padding(.horizontal, AppDesign.Spacing.lg)
 
             VStack(spacing: 9) {
                 Text(item.kicker)
@@ -858,7 +858,7 @@ private struct StarPayGuideView: View {
             }
             Spacer(minLength: 10)
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
         .accessibilityElement(children: .combine)
     }
 
@@ -907,7 +907,7 @@ private struct StarPayGuideView: View {
                     .offset(x: 62, y: 62)
             }
         case 2:
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 guideActionPreview(Tr("付款"), symbol: "wave.3.right.circle.fill",
                                    fill: AppPalette.title, ink: .white)
                 guideActionPreview(Tr("收款"), symbol: "qrcode",
@@ -935,14 +935,14 @@ private struct StarPayGuideView: View {
                     .font(AppDesign.Type.captionMedium)
                     .foregroundStyle(PayVisual.secondaryInk)
                 }
-                .padding(20)
+                .padding(AppDesign.Spacing.lg)
             }
         }
     }
 
     private func guideActionPreview(_ title: String, symbol: String,
                                     fill: Color, ink: Color) -> some View {
-        VStack(spacing: 12) {
+        VStack(spacing: AppDesign.Spacing.sm) {
             Image(systemName: symbol)
                 .font(.system(size: 30, weight: .semibold))
                 .foregroundStyle(title == Tr("付款") ? .white : PayVisual.tint)
@@ -1007,12 +1007,12 @@ struct PayOfficialView: View {
                     transactionFeed
 
                     if loading {
-                        ProgressView().padding(.vertical, 20)
+                        ProgressView().padding(.vertical, AppDesign.Spacing.lg)
                     }
 
                     Color.clear.frame(height: max(20, L.safeBottom + 12))
                 }
-                .padding(.top, 8)
+                .padding(.top, AppDesign.Spacing.xs)
             }
         }
         .background(PayVisual.canvas.ignoresSafeArea())
@@ -1156,16 +1156,16 @@ struct PayOfficialView: View {
                         .foregroundStyle(.white.opacity(0.30))
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, AppDesign.Spacing.lg)
             .padding(.vertical, 18)
         }
         .frame(height: 208)
-        .padding(.horizontal, 16)
-        .padding(.bottom, 4)
+        .padding(.horizontal, AppDesign.Spacing.md)
+        .padding(.bottom, AppDesign.Spacing.xxs)
     }
 
     private var paymentPrimaryActions: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             NavigationLink {
                 PayCodePage()
             } label: {
@@ -1194,13 +1194,13 @@ struct PayOfficialView: View {
             }
             .buttonStyle(AppPressStyle())
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
     }
 
     private func paymentActionTile(title: String, subtitle: String,
                                    symbol: String, ink: Color,
                                    fill: Color, accent: Color) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Image(systemName: symbol)
                 .font(.system(size: 21, weight: .semibold))
                 .foregroundStyle(accent)
@@ -1284,7 +1284,7 @@ struct PayOfficialView: View {
                                                  style: .continuous))
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
     }
 
     private func toggleBalancePrivacy() {
@@ -1349,9 +1349,9 @@ struct PayOfficialView: View {
                 }
                 .buttonStyle(MenuPressStyle())
             }
-            .padding(.vertical, 16)
+            .padding(.vertical, AppDesign.Spacing.md)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
     }
 
     @ViewBuilder
@@ -1391,7 +1391,7 @@ struct PayOfficialView: View {
     }
 
     private func quickAction(_ title: String, _ symbol: String, _ tint: Color) -> some View {
-        VStack(spacing: 8) {
+        VStack(spacing: AppDesign.Spacing.xs) {
             Image(systemName: symbol)
                 .font(.system(size: 19, weight: .semibold))
                 .foregroundStyle(tint)
@@ -1420,16 +1420,16 @@ struct PayOfficialView: View {
                         .foregroundStyle(PayVisual.secondaryInk)
                         .monospacedDigit()
                 }
-                .padding(.horizontal, 4)
+                .padding(.horizontal, AppDesign.Spacing.xxs)
 
                 ForEach(ledgerDays(entries)) { group in
                     VStack(alignment: .leading, spacing: 8) {
                         Text(dayTitle(group.day))
                             .font(AppDesign.Type.compactButton)
                             .foregroundStyle(PayVisual.secondaryInk)
-                            .padding(.horizontal, 4)
+                            .padding(.horizontal, AppDesign.Spacing.xxs)
 
-                        PayGroupCard {
+                        PayGroupCard(horizontalInset: 0) {
                             VStack(spacing: 0) {
                                 ForEach(Array(group.entries.enumerated()),
                                         id: \.element.id) { index, entry in
@@ -1443,7 +1443,7 @@ struct PayOfficialView: View {
                     }
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
         } else if !loading {
             VStack(spacing: 10) {
                 Image(systemName: "list.bullet.rectangle.portrait")
@@ -1466,7 +1466,7 @@ struct PayOfficialView: View {
         return Button {
             selectedLedger = entry
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 ZStack(alignment: .bottomTrailing) {
                     Group {
                         if avatar.isEmpty {
@@ -1516,7 +1516,7 @@ struct PayOfficialView: View {
                         .monospacedDigit()
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .frame(minHeight: 66)
             .contentShape(Rectangle())
         }
@@ -1527,8 +1527,8 @@ struct PayOfficialView: View {
         VStack(spacing: 0) {
             NavBar(title: Tr("支付消息详情"), back: { selectedLedger = nil })
             ScrollView {
-                VStack(spacing: 16) {
-                    VStack(spacing: 8) {
+                VStack(spacing: AppDesign.Spacing.md) {
+                    VStack(spacing: AppDesign.Spacing.xs) {
                         Image(systemName: entry.direction == "in"
                               ? "arrow.down.left.circle.fill" : "arrow.up.right.circle.fill")
                             .font(.system(size: 30, weight: .semibold))
@@ -1544,7 +1544,7 @@ struct PayOfficialView: View {
                             .foregroundColor(PayVisual.secondaryInk)
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 24)
+                    .padding(.vertical, AppDesign.Spacing.xl)
 
                     PayGroupCard {
                         VStack(spacing: 0) {
@@ -1563,7 +1563,7 @@ struct PayOfficialView: View {
                             }
                         }
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppDesign.Spacing.md)
 
                     Text(Tr("此消息由星言支付自动生成，可作为账本核对凭证。"))
                         .font(pf(11.5))

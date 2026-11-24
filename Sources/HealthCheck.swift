@@ -42,7 +42,7 @@ struct HealthCheckView: View {
                     Text(running ? Tr("检测中…") : Tr("全部检测"))
                         .font(pf(14.5))
                         .foregroundColor(running ? C.subLabel : C.green)
-                        .padding(.horizontal, 12).frame(height: AppDesign.Control.smallButtonHeight)
+                        .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.smallButtonHeight)
                 }
                 .buttonStyle(.plain)
                 .disabled(running)
@@ -53,9 +53,9 @@ struct HealthCheckView: View {
                     Text(Tr("照微信「故障修复」那套：每项先检测、能修的当场修。修的都是本机缓存和连接，不会动服务器上的数据，也不会删聊天记录。"))
                         .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 20).padding(.top, 8)
+                        .padding(.horizontal, AppDesign.Spacing.lg).padding(.top, AppDesign.Spacing.xs)
 
-                    GroupCard {
+                    GroupCard(horizontalInset: 0) {
                         ForEach(Array(rows.enumerated()), id: \.element.id) { i, r in
                             if i > 0 { HairLine(inset: 16) }
                             rowView(r)
@@ -64,7 +64,7 @@ struct HealthCheckView: View {
                     .padding(.top, 2)
 
                     Button { Task { await uploadLog() } } label: {
-                        HStack(spacing: 8) {
+                        HStack(spacing: AppDesign.Spacing.xs) {
                             Image(systemName: "paperplane.fill").font(.system(size: 15))
                             Text(uploading ? Tr("正在上传…") : Tr("上传日志（含崩溃）"))
                                 .font(AppDesign.Type.rowTitle)
@@ -75,13 +75,13 @@ struct HealthCheckView: View {
                     }
                     .buttonStyle(.plain)
                     .disabled(uploading || running)
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppDesign.Spacing.md)
                     .padding(.top, 6)
 
                     if !result.isEmpty {
                         Text(result).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 20).padding(.top, 4)
+                            .padding(.horizontal, AppDesign.Spacing.lg).padding(.top, AppDesign.Spacing.xxs)
                     }
                     Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
@@ -130,7 +130,7 @@ struct HealthCheckView: View {
                     .padding(.leading, 26)
             }
         }
-        .padding(.horizontal, 16).padding(.vertical, 10)
+        .padding(.horizontal, AppDesign.Spacing.md).padding(.vertical, 10)
     }
 
     private func stateIcon(_ s: Int) -> some View {

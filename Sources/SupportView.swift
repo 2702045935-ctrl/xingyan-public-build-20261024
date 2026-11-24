@@ -122,7 +122,7 @@ struct SupportView: View {
                             Image(systemName: "lock.shield.fill")
                                 .foregroundStyle(.green)
                         }
-                        .padding(.vertical, 4)
+                        .padding(.vertical, AppDesign.Spacing.xxs)
                     }
                 }
             }
@@ -181,7 +181,7 @@ struct SupportView: View {
     }
 
     private var supportHero: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: AppDesign.Spacing.md) {
             ZStack {
                 RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                     .fill(
@@ -238,7 +238,7 @@ struct SupportView: View {
 
     private func ticketListRow(_ ticket: API.SupportTicket) -> some View {
         let status = ticket.status ?? "pending"
-        return HStack(spacing: 12) {
+        return HStack(spacing: AppDesign.Spacing.sm) {
             Image(systemName: status == "done" ? "checkmark.circle.fill" : "clock.fill")
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(status == "done" ? Color.green :
@@ -327,8 +327,8 @@ struct SupportView: View {
         .padding(.horizontal, 10)
         .frame(height: AppDesign.Control.floatingControlHeight)
         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous).fill(C.searchBg))
-        .padding(.horizontal, 8)
-        .padding(.top, 8)
+        .padding(.horizontal, AppDesign.Spacing.xs)
+        .padding(.top, AppDesign.Spacing.xs)
     }
 
     private var hitList: some View {
@@ -351,7 +351,7 @@ struct SupportView: View {
                                 .background(Capsule().fill(C.green))
                         }
                         .buttonStyle(.plain)
-                        .padding(.top, 4)
+                        .padding(.top, AppDesign.Spacing.xxs)
                     }
                 }
                 .frame(maxWidth: .infinity)
@@ -370,7 +370,7 @@ struct SupportView: View {
 
     private var humanCard: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 AsyncAvatar(path: cfg?.agent?.avatar ?? "", size: 46, corner: 23)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(cfg?.agent?.nickname ?? Tr("在线客服"))
@@ -385,7 +385,7 @@ struct SupportView: View {
                     Text(busyHuman ? Tr("接通中…") : Tr("联系客服"))
                         .font(pf(14.5, .medium))
                         .foregroundColor(.white)
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppDesign.Spacing.md)
                         .frame(height: 34)
                         .background(Capsule().fill(C.green))
                 }
@@ -396,7 +396,7 @@ struct SupportView: View {
             .padding(.vertical, 14)
         }
         .background { CardGlassBox(radius: 8) }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, AppDesign.Spacing.xs)
         .padding(.top, 10)
     }
 
@@ -407,13 +407,13 @@ struct SupportView: View {
                     Text(Tr("常见问题"))
                         .font(pf(13))
                         .foregroundColor(C.subLabel)
-                        .padding(.horizontal, 8)
+                        .padding(.horizontal, AppDesign.Spacing.xs)
                         .padding(.bottom, 6)
-                    GroupCard {
+                    GroupCard(horizontalInset: 0) {
                         ForEach(Array(cats.enumerated()), id: \.element.id) { idx, c in
                             if idx > 0 { HairLine(inset: 58) }
                             Button { openCat = c } label: {
-                                HStack(spacing: 12) {
+                                HStack(spacing: AppDesign.Spacing.sm) {
                                     Image(systemName: catSymbol(c.title))
                                         .font(.system(size: 16, weight: .medium))
                                         .foregroundColor(.white)
@@ -439,7 +439,7 @@ struct SupportView: View {
                         }
                     }
                 }
-                .padding(.horizontal, 8)
+                .padding(.horizontal, AppDesign.Spacing.xs)
                 .padding(.top, 14)
             }
         }
@@ -449,7 +449,7 @@ struct SupportView: View {
         VStack(alignment: .leading, spacing: 0) {
             GroupCard {
                 Button { showTicket = true } label: {
-                    HStack(spacing: 12) {
+                    HStack(spacing: AppDesign.Spacing.sm) {
                         Image(systemName: "square.and.pencil")
                             .font(.system(size: 15, weight: .medium))
                             .foregroundColor(.white)
@@ -472,7 +472,7 @@ struct SupportView: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, AppDesign.Spacing.xs)
         .padding(.top, 14)
     }
 
@@ -481,23 +481,23 @@ struct SupportView: View {
             Text(Tr("我的工单"))
                 .font(pf(13))
                 .foregroundColor(C.subLabel)
-                .padding(.horizontal, 8)
+                .padding(.horizontal, AppDesign.Spacing.xs)
                 .padding(.bottom, 6)
-            GroupCard {
+            GroupCard(horizontalInset: 0) {
                 ForEach(Array(tickets.enumerated()), id: \.element.id) { idx, t in
                     if idx > 0 { HairLine(inset: 14) }
                     ticketRow(t)
                 }
             }
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, AppDesign.Spacing.xs)
         .padding(.top, 14)
     }
 
     private func ticketRow(_ t: API.SupportTicket) -> some View {
         let done = (t.status ?? "") == "done"
         return VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Text(t.category ?? Tr("其它问题"))
                     .font(pf(15, .medium))
                     .foregroundColor(C.label)
@@ -525,7 +525,7 @@ struct SupportView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .padding(.vertical, AppDesign.Spacing.sm)
     }
 
     @ViewBuilder private var contactCard: some View {
@@ -536,9 +536,9 @@ struct SupportView: View {
                 Text(Tr("其他联系方式"))
                     .font(pf(13))
                     .foregroundColor(C.subLabel)
-                    .padding(.horizontal, 8)
+                    .padding(.horizontal, AppDesign.Spacing.xs)
                     .padding(.bottom, 6)
-                GroupCard {
+                GroupCard(horizontalInset: 0) {
                     if !phone.isEmpty {
                         Button {
                             if let url = URL(string: "tel://" + phone.filter { $0.isNumber }) {
@@ -564,13 +564,13 @@ struct SupportView: View {
                     }
                 }
             }
-            .padding(.horizontal, 8)
+            .padding(.horizontal, AppDesign.Spacing.xs)
             .padding(.top, 14)
         }
     }
 
     private func contactRow(_ title: String, _ value: String) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Text(title).font(AppDesign.Type.listTitle).foregroundColor(C.label)
             Spacer(minLength: 8)
             Text(value).font(pf(14)).foregroundColor(C.subLabel)
@@ -588,7 +588,7 @@ struct SupportView: View {
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)
             .padding(.horizontal, 22)
-            .padding(.top, 16)
+            .padding(.top, AppDesign.Spacing.md)
     }
 
     private func load() async {
@@ -797,7 +797,7 @@ struct QAItem: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .padding(.vertical, AppDesign.Spacing.sm)
     }
 }
 
@@ -831,7 +831,7 @@ struct SupportTicketSheet: View {
                             Text(Tr("写清楚什么时候、在哪个页面、点了什么、出现什么"))
                                 .font(.body)
                                 .foregroundStyle(.tertiary)
-                                .padding(.top, 8)
+                                .padding(.top, AppDesign.Spacing.xs)
                                 .padding(.leading, 5)
                         }
                         TextEditor(text: $text)

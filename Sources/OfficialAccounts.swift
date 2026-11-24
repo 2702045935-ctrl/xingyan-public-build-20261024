@@ -75,7 +75,7 @@ struct OfficialAccountsView: View {
                             StarOrbitMetric(value: "\(accounts.count)", label: Tr("个账号"))
                         ]
                     )
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, AppDesign.Spacing.sm)
 
                     HStack(spacing: 10) {
                         platformEntry(
@@ -95,7 +95,7 @@ struct OfficialAccountsView: View {
                             showSecurityAcademy = true
                         }
                     }
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, AppDesign.Spacing.sm)
 
                     if loading && accounts.isEmpty {
                         HStack {
@@ -106,7 +106,7 @@ struct OfficialAccountsView: View {
                         .frame(height: 90)
                         .background(OrbitTheme.cardBackground())
                         .clipShape(OrbitTheme.card)
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, AppDesign.Spacing.sm)
                     } else if accounts.isEmpty {
                         emptyState
                     } else {
@@ -116,16 +116,16 @@ struct OfficialAccountsView: View {
                                 .padding(.top, 2)
                             ForEach(followed) { a in
                                 row(a)
-                                    .padding(.horizontal, 12)
+                                    .padding(.horizontal, AppDesign.Spacing.sm)
                             }
                         }
                         if !others.isEmpty {
                             OrbitSectionLabel(text: Tr("全部公众号"), count: others.count)
                                 .padding(.horizontal, 17)
-                                .padding(.top, 4)
+                                .padding(.top, AppDesign.Spacing.xxs)
                             ForEach(others) { a in
                                 row(a)
-                                    .padding(.horizontal, 12)
+                                    .padding(.horizontal, AppDesign.Spacing.sm)
                             }
                         }
                     }
@@ -175,7 +175,7 @@ struct OfficialAccountsView: View {
                 }
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
             .frame(maxWidth: .infinity)
             .frame(height: AppDesign.Control.compactRowHeight)
             .background(.regularMaterial,
@@ -243,7 +243,7 @@ struct OfficialAccountsView: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: AppDesign.Spacing.sm) {
             StarOrbitIconBadge(
                 symbol: "dot.radiowaves.left.and.right",
                 accent: OrbitTheme.jadeDeep,
@@ -260,7 +260,7 @@ struct OfficialAccountsView: View {
         .padding(.vertical, 42)
         .background(OrbitTheme.cardBackground())
         .clipShape(OrbitTheme.card)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
     }
 
     private func load() async {
@@ -305,7 +305,7 @@ struct OfficialAccountPage: View {
                         Text(Tr("历史文章"))
                             .font(pf(13)).foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 18).padding(.top, 20).padding(.bottom, 6)
+                            .padding(.horizontal, 18).padding(.top, AppDesign.Spacing.lg).padding(.bottom, 6)
                         ForEach(articles) { a in articleRow(a) }
                     }
                     Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
@@ -349,7 +349,7 @@ struct OfficialAccountPage: View {
                 }
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, AppDesign.Spacing.lg)
             .padding(.top, 18)
 
             if let bio = account?.about, !bio.isEmpty {
@@ -358,7 +358,7 @@ struct OfficialAccountPage: View {
                     .foregroundColor(C.subLabel)
                     .lineSpacing(4)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, AppDesign.Spacing.lg)
                     .padding(.top, 14)
             }
 
@@ -377,10 +377,10 @@ struct OfficialAccountPage: View {
             }
             .buttonStyle(.plain)
             .disabled(busy || account == nil)
-            .padding(.horizontal, 20)
-            .padding(.top, 16)
+            .padding(.horizontal, AppDesign.Spacing.lg)
+            .padding(.top, AppDesign.Spacing.md)
 
-            HairLine().padding(.top, 20)
+            HairLine().padding(.top, AppDesign.Spacing.lg)
         }
         .background(C.cardBg)
     }
@@ -493,9 +493,9 @@ struct ArticleView: View {
                             .foregroundColor(C.label)
                             .lineSpacing(5)
                             .fixedSize(horizontal: false, vertical: true)
-                            .padding(.horizontal, 20)
+                            .padding(.horizontal, AppDesign.Spacing.lg)
 
-                        HStack(spacing: 8) {
+                        HStack(spacing: AppDesign.Spacing.xs) {
                             Avatar(path: account?.avatarPath ?? "", size: 26,
                                    radius: 13, circle: true)
                             Text(account?.name ?? "").font(pf(13)).foregroundColor(C.link)
@@ -505,13 +505,13 @@ struct ArticleView: View {
                             Spacer(minLength: 0)
                             Text(TimeFmt.list(a.createdAt)).font(pf(12)).foregroundColor(C.time)
                         }
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, AppDesign.Spacing.lg)
                         .padding(.top, 14)
 
-                        HairLine().padding(.top, 14).padding(.bottom, 4)
+                        HairLine().padding(.top, 14).padding(.bottom, AppDesign.Spacing.xxs)
 
                         ArticleBody(text: a.text)
-                            .padding(.horizontal, 20)
+                            .padding(.horizontal, AppDesign.Spacing.lg)
                             .padding(.top, 10)
 
                         if a.readCount > 0 {
@@ -529,7 +529,7 @@ struct ArticleView: View {
             .background(C.cardBg)
 
             if let acc = account {
-                HStack(spacing: 12) {
+                HStack(spacing: AppDesign.Spacing.sm) {
                     Avatar(path: acc.avatarPath, size: 34, radius: 17, circle: true)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(acc.name).font(pf(14, .medium)).foregroundColor(C.label)
@@ -542,7 +542,7 @@ struct ArticleView: View {
                         Text(acc.followed ? Tr("已订阅") : Tr("订阅"))
                             .font(pf(14, .medium))
                             .foregroundColor(acc.followed ? C.subLabel : .white)
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, AppDesign.Spacing.md)
                             .frame(height: AppDesign.Control.smallButtonHeight)
                             .background(Capsule().fill(acc.followed ? C.fieldBg : C.green))
                     }
@@ -591,14 +591,14 @@ private struct ArticleBody: View {
                     Text(t)
                         .font(pf(18, .semibold))
                         .foregroundColor(C.label)
-                        .padding(.top, 20)
-                        .padding(.bottom, 8)
+                        .padding(.top, AppDesign.Spacing.lg)
+                        .padding(.bottom, AppDesign.Spacing.xs)
                         .fixedSize(horizontal: false, vertical: true)
                 case .image(let p):
                     RemoteImage(path: p, maxSide: 1400)
                         .frame(maxWidth: .infinity)
                         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous))
-                        .padding(.vertical, 12)
+                        .padding(.vertical, AppDesign.Spacing.sm)
                 case .para(let t):
                     Text(t)
                         .font(pf(16))

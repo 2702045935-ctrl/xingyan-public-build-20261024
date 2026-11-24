@@ -21,7 +21,7 @@ struct SecurityScoreView: View {
             NavBar(title: Tr("安全分"), back: { dismiss() }) {
                 Button { Task { await load() } } label: {
                     Text(Tr("刷新")).font(pf(16)).foregroundColor(C.label)
-                        .frame(height: L.navH).padding(.trailing, 16)
+                        .frame(height: L.navH).padding(.trailing, AppDesign.Spacing.md)
                 }
                 .buttonStyle(.plain)
             }
@@ -131,7 +131,7 @@ struct SecurityScoreView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 18)
-        .padding(.bottom, 20)
+        .padding(.bottom, AppDesign.Spacing.lg)
         .background(sheetBg)
     }
 
@@ -160,7 +160,7 @@ struct SecurityScoreView: View {
                                 .foregroundColor(gray)
                                 .padding(.leading, 2)
                         }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppDesign.Spacing.md)
                         .frame(height: AppDesign.Control.buttonHeight)
                         .contentShape(Rectangle())
                     }
@@ -175,13 +175,13 @@ struct SecurityScoreView: View {
                         }
                     }
                     .frame(height: 6)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 12)
+                    .padding(.horizontal, AppDesign.Spacing.md)
+                    .padding(.bottom, AppDesign.Spacing.sm)
 
                     if openDim == dim.key {
                         VStack(spacing: 0) {
                             ForEach(Array((dim.items ?? []).enumerated()), id: \.offset) { _, it in
-                                HStack(spacing: 8) {
+                                HStack(spacing: AppDesign.Spacing.xs) {
                                     Image(systemName: it.ok ? "checkmark.circle.fill" : "exclamationmark.circle")
                                         .font(.system(size: 14))
                                         .foregroundColor(it.ok ? Color(hexString: "#19A47A") : Color(hexString: "#FA9D3C"))
@@ -195,14 +195,14 @@ struct SecurityScoreView: View {
                                         .lineLimit(2)
                                         .multilineTextAlignment(.trailing)
                                 }
-                                .padding(.horizontal, 16)
+                                .padding(.horizontal, AppDesign.Spacing.md)
                                 .padding(.vertical, 7)
                             }
                         }
-                        .padding(.bottom, 8)
+                        .padding(.bottom, AppDesign.Spacing.xs)
                     }
                     if dim.key != d.dims.last?.key {
-                        Rectangle().fill(line).frame(height: AppDesign.Control.hairline).padding(.leading, 16)
+                        Rectangle().fill(line).frame(height: AppDesign.Control.hairline).padding(.leading, AppDesign.Spacing.md)
                     }
                 }
             }
@@ -226,7 +226,7 @@ struct SecurityScoreView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
+        .padding(AppDesign.Spacing.md)
         .background(sheetBg)
     }
 
@@ -241,7 +241,7 @@ struct SecurityScoreView: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
+        .padding(AppDesign.Spacing.md)
         .background(sheetBg)
     }
 

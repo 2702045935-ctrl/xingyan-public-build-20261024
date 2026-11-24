@@ -35,7 +35,7 @@ struct ProfileEditView: View {
         Form {
             Section {
                 Button { showPhoto = true } label: {
-                    HStack(spacing: 12) {
+                    HStack(spacing: AppDesign.Spacing.sm) {
                         Text(Tr("头像"))
                             .foregroundStyle(.primary)
                         Spacer(minLength: 12)
@@ -165,7 +165,7 @@ struct ProfileEditView: View {
     private func nativeValueRow(_ title: String, _ value: String,
                                 action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Text(title)
                     .foregroundStyle(.primary)
                 Spacer(minLength: 12)
@@ -226,7 +226,7 @@ struct ProfileEditView: View {
     }
 
     private var headerCard: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: AppDesign.Spacing.sm) {
             ZStack(alignment: .bottomTrailing) {
                 Button { showPhoto = true } label: {
                     Avatar(path: app.me?.avatarPath ?? "", size: 84, radius: 42, circle: true, level: growth.shownLevel)
@@ -267,15 +267,15 @@ struct ProfileEditView: View {
                     }
                     .foregroundColor(.white)
                     .padding(.horizontal, 9)
-                    .padding(.vertical, 4)
+                    .padding(.vertical, AppDesign.Spacing.xxs)
                     .background(Capsule().fill(Color.white.opacity(0.16)))
                 }
                 .buttonStyle(.plain)
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 20)
-        .padding(.horizontal, 16)
+        .padding(.vertical, AppDesign.Spacing.lg)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .background(
             ZStack {
                 LinearGradient(colors: [Color(hex: 0x1C2130), Color(hex: 0x2B2233), Color(hex: 0x14111A)],
@@ -294,7 +294,7 @@ struct ProfileEditView: View {
     private var infoCard: some View {
         VStack(spacing: 0) {
             field(Tr("昵称"), $nickname)
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Text(Tr("最多 16 个字符；不能用 < > \" ' / \\ 等符号，不能冒用官方或客服"))
                     .font(pf(11.5))
                     .foregroundColor(C.subLabel)
@@ -316,7 +316,7 @@ struct ProfileEditView: View {
             field(Tr("个性签名"), $bio)
             divider
 
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Text(Tr("星语提示"))
                     .font(pf(16)).foregroundColor(C.label)
                     .frame(width: 82, alignment: .leading)
@@ -331,7 +331,7 @@ struct ProfileEditView: View {
             }
             .padding(.horizontal, 14)
             .frame(height: AppDesign.Control.menuRowHeight)
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Text(Tr("显示在好友发来的星语提醒后，最多 10 个字"))
                     .font(pf(11.5)).foregroundColor(C.subLabel)
                 Spacer(minLength: 0)
@@ -405,7 +405,7 @@ struct ProfileEditView: View {
 
     private var avatarRow: some View {
         Button { showPhoto = true } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Text(Tr("头像")).font(pf(16)).foregroundColor(C.label)
                 Spacer(minLength: 8)
                 Avatar(path: app.me?.avatarPath ?? "", size: 48, radius: 6,
@@ -420,7 +420,7 @@ struct ProfileEditView: View {
     }
 
     private var patRow: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppDesign.Spacing.xs) {
             Text(Tr("星语提示")).font(pf(16)).foregroundColor(C.label)
                 .frame(width: 82, alignment: .leading)
             TextField(Tr("收到一束星光"), text: $patText)
@@ -436,7 +436,7 @@ struct ProfileEditView: View {
 
     private var phoneRow: some View {
         Button { showPhone = true } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Text(Tr("手机号")).font(pf(16)).foregroundColor(C.label)
                 Spacer(minLength: 8)
                 Text(phone.isEmpty ? Tr("未绑定") : maskPhone(phone))
@@ -452,7 +452,7 @@ struct ProfileEditView: View {
 
     private var ringRow: some View {
         Button { showRingtone = true } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Text(Tr("来电铃声")).font(pf(16)).foregroundColor(C.label)
                 Spacer(minLength: 8)
                 Text(ring.currentName).font(pf(15)).foregroundColor(C.subLabel).lineLimit(1)
@@ -468,7 +468,7 @@ struct ProfileEditView: View {
     private var divider: some View { HairLine(inset: 14) }
 
     private func field(_ title: String, _ text: Binding<String>) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Text(title).font(pf(16)).foregroundColor(C.label).frame(width: 70, alignment: .leading)
             TextField("", text: text)
                 .font(pf(16))
@@ -481,7 +481,7 @@ struct ProfileEditView: View {
 
     private func tapRow(_ title: String, _ value: String, _ tap: @escaping () -> Void) -> some View {
         Button(action: tap) {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Text(title).font(pf(16)).foregroundColor(C.label)
                 Spacer(minLength: 8)
                 Text(value).font(pf(15)).foregroundColor(C.subLabel).lineLimit(1)
@@ -495,7 +495,7 @@ struct ProfileEditView: View {
     }
 
     private func linkLabel(_ title: String, _ value: String) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Text(title).font(pf(16)).foregroundColor(C.label)
             Spacer(minLength: 8)
             Text(value).font(pf(15)).foregroundColor(C.subLabel).lineLimit(1)
@@ -600,7 +600,7 @@ struct UsernameChangeSheet: View {
                         .font(pf(15, .medium))
                         .foregroundColor(name.isEmpty || busy ? C.subLabel : C.green)
                         .frame(height: L.navH)
-                        .padding(.trailing, 16)
+                        .padding(.trailing, AppDesign.Spacing.md)
                 }
                 .buttonStyle(.plain)
                 .disabled(name.isEmpty || busy)
@@ -616,7 +616,7 @@ struct UsernameChangeSheet: View {
                             .autocorrectionDisabled(true)
                             .multilineTextAlignment(.trailing)
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppDesign.Spacing.md)
                     .frame(height: AppDesign.Control.dialogRowHeight)
                     HairLine(inset: 16)
                     VStack(alignment: .leading, spacing: 6) {
@@ -630,13 +630,13 @@ struct UsernameChangeSheet: View {
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 16)
-                    .padding(.top, 12)
+                    .padding(.horizontal, AppDesign.Spacing.md)
+                    .padding(.top, AppDesign.Spacing.sm)
                 }
                 .background(C.cardBg)
                 .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
                 .padding(.horizontal, 14)
-                .padding(.top, 12)
+                .padding(.top, AppDesign.Spacing.sm)
             }
             .background(C.pageBg)
         }

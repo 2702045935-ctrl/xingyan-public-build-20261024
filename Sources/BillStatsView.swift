@@ -19,7 +19,7 @@ struct BillsStatsView: View {
             NavBar(title: Tr("收支统计"), back: { dismiss() })
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 12) {
+                VStack(spacing: AppDesign.Spacing.sm) {
                     if loading, bills.isEmpty {
                         ProgressView().padding(.vertical, 60)
                     } else if bills.isEmpty {
@@ -36,7 +36,7 @@ struct BillsStatsView: View {
                     }
                     Color.clear.frame(height: AppDesign.Control.compactBadgeHeight)
                 }
-                .padding(.top, 4)
+                .padding(.top, AppDesign.Spacing.xxs)
             }
             .background(PayVisual.canvas)
         }
@@ -76,7 +76,7 @@ struct BillsStatsView: View {
         let cur = value(month)
         let prev = value(prevMonth(month))
         let n = countOf(month)
-        return VStack(spacing: 8) {
+        return VStack(spacing: AppDesign.Spacing.xs) {
             Text(kind == 0 ? Tr("支出合计") : Tr("收入合计"))
                 .font(pf(13))
                 .foregroundColor(C.subLabel)
@@ -98,7 +98,7 @@ struct BillsStatsView: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
+        .padding(.vertical, AppDesign.Spacing.md)
         .background(C.cardBg)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         .padding(.horizontal, 14)
@@ -150,7 +150,7 @@ struct BillsStatsView: View {
             }
             .frame(maxWidth: .infinity)
         }
-        .padding(16)
+        .padding(AppDesign.Spacing.md)
         .background(C.cardBg)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         .padding(.horizontal, 14)
@@ -170,7 +170,7 @@ struct BillsStatsView: View {
                 .foregroundColor(C.label)
                 .padding(.bottom, 6)
             ForEach(Array(list.enumerated()), id: \.offset) { _, c in
-                VStack(spacing: 8) {
+                VStack(spacing: AppDesign.Spacing.xs) {
                     HStack(spacing: 10) {
                         ZStack {
                             RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
@@ -210,7 +210,7 @@ struct BillsStatsView: View {
                 .padding(.vertical, 10)
             }
         }
-        .padding(16)
+        .padding(AppDesign.Spacing.md)
         .background(C.cardBg)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         .padding(.horizontal, 14)
@@ -221,9 +221,9 @@ struct BillsStatsView: View {
             Text(Tr("往来最多"))
                 .font(pf(14, .medium))
                 .foregroundColor(C.label)
-                .padding(.bottom, 4)
+                .padding(.bottom, AppDesign.Spacing.xxs)
             ForEach(Array(topPeers.enumerated()), id: \.offset) { i, p in
-                HStack(spacing: 12) {
+                HStack(spacing: AppDesign.Spacing.sm) {
                     Text("\(i + 1)")
                         .font(AppDesign.Type.compactButton)
                         .foregroundColor(i == 0 ? expColor : C.subLabel)
@@ -248,7 +248,7 @@ struct BillsStatsView: View {
                 if i < topPeers.count - 1 { HairLine(inset: 0) }
             }
         }
-        .padding(16)
+        .padding(AppDesign.Spacing.md)
         .background(C.cardBg)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
         .padding(.horizontal, 14)

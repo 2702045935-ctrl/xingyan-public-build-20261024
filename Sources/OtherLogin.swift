@@ -71,9 +71,9 @@ struct OtherLoginCard: View {
                             .foregroundColor(C.subLabel)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 22)
-                            .padding(.top, 8)
+                            .padding(.top, AppDesign.Spacing.xs)
 
-                        Rectangle().fill(C.hairline).frame(height: AppDesign.Control.hairline).padding(.top, 20)
+                        Rectangle().fill(C.hairline).frame(height: AppDesign.Control.hairline).padding(.top, AppDesign.Spacing.lg)
 
                         Button {
                             kick.reset()

@@ -238,12 +238,12 @@ struct VoiceHUD: View {
     }
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: AppDesign.Spacing.sm) {
 
             Text(Tr("滑到这里 转文字"))
                 .font(pf(13, willTranscribe ? .semibold : .regular))
                 .foregroundColor(willTranscribe ? .white : .white.opacity(0.62))
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
                 .padding(.vertical, 7)
                 .background(
                     Capsule().fill(willTranscribe
@@ -256,7 +256,7 @@ struct VoiceHUD: View {
             }
             .frame(width: 258, height: 258)
 
-            VStack(spacing: 4) {
+            VStack(spacing: AppDesign.Spacing.xxs) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text("\(seconds)″")
                         .font(pfMoney(15, .medium))

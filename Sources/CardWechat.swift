@@ -104,7 +104,7 @@ struct ContactCardWechat: View {
 
                     Spacer(minLength: 28)
                 }
-                .padding(.horizontal, 12)
+                .padding(.horizontal, AppDesign.Spacing.sm)
                 .padding(.top, 10)
                 .opacity(appeared ? 1 : 0)
                 .offset(y: appeared ? 0 : 6)
@@ -177,7 +177,7 @@ struct ContactCardWechat: View {
     }
 
     private func identityChip(icon: String, text: String) -> some View {
-        HStack(spacing: 4) {
+        HStack(spacing: AppDesign.Spacing.xxs) {
             Image(systemName: icon)
                 .font(.system(size: 8.5, weight: .semibold))
             Text(text)
@@ -259,7 +259,7 @@ struct ContactCardWechat: View {
                         Avatar(path: avatarPath, size: avatarSize, radius: avatarRadius)
                     }
                 }
-                .padding(4)
+                .padding(AppDesign.Spacing.xxs)
             }
             .frame(width: avatarSize + 14, height: avatarSize + 14)
             .overlay(RoundedRectangle(cornerRadius: avatarRadius + 6, style: .continuous)
@@ -269,7 +269,7 @@ struct ContactCardWechat: View {
             .onTapGesture { onAvatar() }
         }
         .padding(.horizontal, 18)
-        .padding(.vertical, 20)
+        .padding(.vertical, AppDesign.Spacing.lg)
     }
 
     private var friendInfoCard: some View {
@@ -304,7 +304,7 @@ struct ContactCardWechat: View {
                 Text(title).font(AppDesign.Type.listTitle).foregroundColor(enabled ? ink : gray)
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .frame(height: rowH)
             .contentShape(Rectangle())
         }
@@ -386,8 +386,8 @@ struct ContactCardWechat: View {
             .buttonStyle(.plain)
             .disabled(!secondEnabled)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
+        .padding(.vertical, AppDesign.Spacing.md)
     }
 
     private var secondIcon: String {
@@ -444,7 +444,7 @@ struct ContactCardWechat: View {
                 }
                 Chevron(size: 9, line: 1.6)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .frame(height: rowH)
             .background(cardBg)
             .contentShape(Rectangle())
@@ -461,7 +461,7 @@ struct ContactCardWechat: View {
     }
 
     private var hairline: some View {
-        Rectangle().fill(hair).frame(height: 0.6).padding(.leading, 16)
+        Rectangle().fill(hair).frame(height: 0.6).padding(.leading, AppDesign.Spacing.md)
     }
 
     private var gap: some View {
@@ -476,7 +476,7 @@ private struct ContactIdentityMark: View {
         ZStack {
             RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous)
                 .fill(accent)
-            HStack(spacing: 4) {
+            HStack(spacing: AppDesign.Spacing.xxs) {
                 Capsule().fill(AppPalette.deepForest).frame(width: 2.6, height: 6.5)
                 Capsule().fill(AppPalette.deepForest).frame(width: 2.6, height: 6.5)
             }
@@ -507,7 +507,7 @@ private struct ContactOrbitMotif: View {
                     .frame(width: side * 0.70, height: side * 0.28)
                     .rotationEffect(.degrees(16))
                     .position(x: geo.size.width * 0.70, y: geo.size.height * 0.45)
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     Capsule().fill(accent.opacity(0.72)).frame(width: 5, height: 13)
                     Capsule().fill(accent.opacity(0.72)).frame(width: 5, height: 13)
                 }

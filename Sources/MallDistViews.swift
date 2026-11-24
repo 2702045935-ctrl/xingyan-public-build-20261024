@@ -28,7 +28,7 @@ struct DistMeView: View {
                     }
                     Spacer().frame(height: AppDesign.Control.compactBadgeHeight)
                 }
-                .padding(.horizontal, 12).padding(.top, 10)
+                .padding(.horizontal, AppDesign.Spacing.sm).padding(.top, 10)
             }
             .background(C.pageBg)
         }
@@ -49,12 +49,12 @@ struct DistMeView: View {
     }
 
     private var notOnCard: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: AppDesign.Spacing.xs) {
             Text(Tr("这个账号还不是分销账号")).font(pf(15, .medium)).foregroundColor(C.label)
             Text(Tr("让管理员在「管理 → 商城后台 → 分销」里给你开通，就能拿推广码赚佣金了。"))
                 .font(AppDesign.Type.caption).foregroundColor(C.subLabel).multilineTextAlignment(.center)
         }
-        .frame(maxWidth: .infinity).padding(20)
+        .frame(maxWidth: .infinity).padding(AppDesign.Spacing.lg)
         .background(C.cardBg).clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
     }
 
@@ -86,7 +86,7 @@ struct DistMeView: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(16).frame(maxWidth: .infinity)
+        .padding(AppDesign.Spacing.md).frame(maxWidth: .infinity)
         .background(C.cardBg).clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
     }
 
@@ -100,7 +100,7 @@ struct DistMeView: View {
     }
 
     private func stat(_ t: String, _ v: String) -> some View {
-        VStack(spacing: 4) {
+        VStack(spacing: AppDesign.Spacing.xxs) {
             Text(v).font(pf(17, .semibold)).foregroundColor(C.label)
             Text(t).font(pf(11.5)).foregroundColor(C.subLabel)
         }
@@ -112,21 +112,21 @@ struct DistMeView: View {
             Text(Tr("帮好友助力")).font(pf(15, .medium)).foregroundColor(C.label)
             Text(Tr("把好友的推广码粘进来，你和他各得一张券（每人每天最多帮 3 个人）。"))
                 .font(pf(12)).foregroundColor(C.subLabel)
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 TextField(Tr("好友的推广码"), text: $codeInput)
                     .font(pf(14)).autocorrectionDisabled(true)
                     .textInputAutocapitalization(.never)
-                    .padding(.horizontal, 12).frame(height: AppDesign.Control.searchHeight)
+                    .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.searchHeight)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small).fill(C.fieldBg))
                 Button { Task { await help() } } label: {
                     Text(busy ? Tr("处理中…") : Tr("助力")).font(pf(14, .medium)).foregroundColor(.white)
-                        .padding(.horizontal, 16).frame(height: AppDesign.Control.searchHeight)
+                        .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.searchHeight)
                         .background(Capsule().fill(busy ? C.subLabel : DDColor.redDeep))
                 }
                 .buttonStyle(.plain).disabled(busy)
             }
         }
-        .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+        .padding(AppDesign.Spacing.md).frame(maxWidth: .infinity, alignment: .leading)
         .background(C.cardBg).clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
     }
 
@@ -134,16 +134,16 @@ struct DistMeView: View {
         VStack(alignment: .leading, spacing: 0) {
             Text(Tr("佣金明细")).font(pf(15, .medium)).foregroundColor(C.label)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16).padding(.vertical, 12)
+                .padding(.horizontal, AppDesign.Spacing.md).padding(.vertical, AppDesign.Spacing.sm)
             let rows = me?.log ?? []
             if rows.isEmpty {
                 Text(Tr("还没有记录")).font(pf(13)).foregroundColor(C.subLabel)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 16).padding(.bottom, 14)
+                    .padding(.horizontal, AppDesign.Spacing.md).padding(.bottom, 14)
             } else {
                 ForEach(rows) { r in
                     HairLine(inset: 16)
-                    HStack(spacing: 8) {
+                    HStack(spacing: AppDesign.Spacing.xs) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(r.text).font(AppDesign.Type.body).foregroundColor(C.label).lineLimit(2)
                             Text(rpTime(r.at)).font(pf(11.5)).foregroundColor(C.subLabel)
@@ -153,7 +153,7 @@ struct DistMeView: View {
                             .font(pf(14, .medium))
                             .foregroundColor(r.amount >= 0 ? C.green : DDColor.redDeep)
                     }
-                    .padding(.horizontal, 16).padding(.vertical, 10)
+                    .padding(.horizontal, AppDesign.Spacing.md).padding(.vertical, 10)
                 }
             }
         }
@@ -196,7 +196,7 @@ struct DistAdminCard: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Text(Tr("分销")).font(AppDesign.Type.rowTitle).foregroundColor(C.label)
                 Text(Tr("开通 / 佣金比例 / 业绩")) .font(pf(12)).foregroundColor(C.subLabel)
                 Spacer(minLength: 0)
@@ -205,17 +205,17 @@ struct DistAdminCard: View {
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.horizontal, 16).padding(.vertical, 12)
+            .padding(.horizontal, AppDesign.Spacing.md).padding(.vertical, AppDesign.Spacing.sm)
 
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 TextField(Tr("账号或用户ID"), text: $who)
                     .font(pf(14)).autocorrectionDisabled(true)
                     .textInputAutocapitalization(.never)
-                    .padding(.horizontal, 12).frame(height: AppDesign.Control.searchHeight)
+                    .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.searchHeight)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small).fill(C.fieldBg))
                 TextField(Tr("佣金%"), text: $rate)
                     .font(pf(14)).keyboardType(.decimalPad)
-                    .frame(width: 66).padding(.horizontal, 8).frame(height: AppDesign.Control.searchHeight)
+                    .frame(width: 66).padding(.horizontal, AppDesign.Spacing.xs).frame(height: AppDesign.Control.searchHeight)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small).fill(C.fieldBg))
                 Button { Task { await setDist(true) } } label: {
                     Text(Tr("开通")).font(pf(14, .medium)).foregroundColor(.white)
@@ -224,17 +224,17 @@ struct DistAdminCard: View {
                 }
                 .buttonStyle(.plain).disabled(busy)
             }
-            .padding(.horizontal, 16).padding(.bottom, 12)
+            .padding(.horizontal, AppDesign.Spacing.md).padding(.bottom, AppDesign.Spacing.sm)
 
             if loading {
                 Text(Tr("正在加载…")).font(pf(13)).foregroundColor(C.subLabel)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 16).padding(.bottom, 14)
+                    .padding(.horizontal, AppDesign.Spacing.md).padding(.bottom, 14)
             } else if rows.isEmpty {
                 Text(Tr("还没有分销账号。上面填账号 → 点「开通」。"))
                     .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 16).padding(.bottom, 14)
+                    .padding(.horizontal, AppDesign.Spacing.md).padding(.bottom, 14)
             } else {
                 ForEach(rows) { r in
                     HairLine(inset: 16)
@@ -254,7 +254,7 @@ struct DistAdminCard: View {
                         }
                         .buttonStyle(.plain)
                     }
-                    .padding(.horizontal, 16).padding(.vertical, 10)
+                    .padding(.horizontal, AppDesign.Spacing.md).padding(.vertical, 10)
                 }
             }
         }

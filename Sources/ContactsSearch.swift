@@ -66,7 +66,7 @@ struct ContactsSearchView: View {
     var body: some View {
         VStack(spacing: 0) {
 
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 HStack(spacing: 5) {
                     SVGIcon(markup: I.searchSmall, size: 16, color: C.searchIcon)
                     TextField("", text: $q, prompt: Text(Tr("搜索")).foregroundColor(C.searchIcon))
@@ -84,7 +84,7 @@ struct ContactsSearchView: View {
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(.horizontal, 8)
+                .padding(.horizontal, AppDesign.Spacing.xs)
                 .frame(height: 34)
                 .background {
                     GlassBackground(shape: RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous),
@@ -100,13 +100,13 @@ struct ContactsSearchView: View {
                     .foregroundColor(C.label)
                     .buttonStyle(.plain)
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
             .padding(.top, L.safeTop)
-            .padding(.bottom, 8)
+            .padding(.bottom, AppDesign.Spacing.xs)
             .background(C.chatsTopBg.ignoresSafeArea(edges: .top))
 
             if !q.isEmpty {
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     ForEach(Array(["全部", "联系人", "群聊"].enumerated()), id: \.offset) { idx, name in
                         Button {
                             scope = idx
@@ -114,7 +114,7 @@ struct ContactsSearchView: View {
                             Text(Tr(name))
                                 .font(pf(13))
                                 .foregroundColor(scope == idx ? .white : C.label)
-                                .padding(.horizontal, 12)
+                                .padding(.horizontal, AppDesign.Spacing.sm)
                                 .frame(height: AppDesign.Control.statusHeight)
                                 .background(Capsule().fill(scope == idx ? C.green : C.cardBg))
                         }
@@ -122,15 +122,15 @@ struct ContactsSearchView: View {
                     }
                     Spacer(minLength: 0)
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
+                .padding(.horizontal, AppDesign.Spacing.sm)
+                .padding(.vertical, AppDesign.Spacing.xs)
             }
 
             ScrollView {
                 VStack(spacing: 0) {
                     if q.isEmpty {
                         if history.isEmpty {
-                            VStack(spacing: 8) {
+                            VStack(spacing: AppDesign.Spacing.xs) {
                                 SVGIcon(markup: I.searchBig, size: 42, color: C.subLabel)
                                 Text(Tr("搜索联系人 / 群聊")).font(pf(14)).foregroundColor(C.subLabel)
                                 Text(Tr("备注、昵称、账号、拼音首字母都能搜")).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
@@ -149,18 +149,18 @@ struct ContactsSearchView: View {
                                 }
                                 .buttonStyle(.plain)
                             }
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, AppDesign.Spacing.md)
                             .frame(height: 34)
                             ForEach(history, id: \.self) { h in
                                 Button {
                                     q = h
                                 } label: {
-                                    HStack(spacing: 8) {
+                                    HStack(spacing: AppDesign.Spacing.xs) {
                                         SVGIcon(markup: I.searchSmall, size: 15, color: C.subLabel)
                                         Text(h).font(pf(15)).foregroundColor(C.label)
                                         Spacer(minLength: 0)
                                     }
-                                    .padding(.horizontal, 16)
+                                    .padding(.horizontal, AppDesign.Spacing.md)
                                     .frame(height: 46)
                                     .background(C.cardBg)
                                     .contentShape(Rectangle())
@@ -170,7 +170,7 @@ struct ContactsSearchView: View {
                             }
                         }
                     } else if nothingFound {
-                        VStack(spacing: 8) {
+                        VStack(spacing: AppDesign.Spacing.xs) {
                             SVGIcon(markup: I.searchBig, size: 42, color: C.subLabel)
                             Text(Tr("没有找到") + "「" + q + "」" + Tr("相关的联系人")).font(pf(14)).foregroundColor(C.subLabel)
                         }
@@ -198,7 +198,7 @@ struct ContactsSearchView: View {
                                         }
                                         Spacer(minLength: 0)
                                     }
-                                    .padding(.horizontal, 16)
+                                    .padding(.horizontal, AppDesign.Spacing.md)
                                     .frame(height: L.ctRowH)
                                     .background(C.cardBg)
                                     .contentShape(Rectangle())
@@ -222,7 +222,7 @@ struct ContactsSearchView: View {
                                         Spacer(minLength: 0)
                                         if let n = c.memberCount { Text("\(n)").font(pf(13)).foregroundColor(C.subLabel) }
                                     }
-                                    .padding(.horizontal, 16)
+                                    .padding(.horizontal, AppDesign.Spacing.md)
                                     .frame(height: L.ctRowH)
                                     .background(C.cardBg)
                                     .contentShape(Rectangle())
@@ -249,7 +249,7 @@ struct ContactsSearchView: View {
             Text(text).font(pf(13)).foregroundColor(C.subLabel)
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(height: AppDesign.Control.smallButtonHeight)
         .background(C.pageBg)
     }

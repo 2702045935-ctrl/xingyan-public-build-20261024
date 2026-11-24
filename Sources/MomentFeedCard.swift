@@ -71,7 +71,7 @@ struct MomentFeedCard: View {
 
             if !images.isEmpty || isVideo {
                 media
-                    .padding(.top, 12)
+                    .padding(.top, AppDesign.Spacing.sm)
             }
 
             actionRow
@@ -105,7 +105,7 @@ struct MomentFeedCard: View {
                 .tracking(0.8)
                 .foregroundColor(Color(hex: 0xA66B28))
                 .padding(.horizontal, 7)
-                .padding(.vertical, 4)
+                .padding(.vertical, AppDesign.Spacing.xxs)
                 .background(Color(hex: 0xF4E7D5), in: Capsule())
 
             Text(promotion.sponsor ?? promotion.disclosure ?? Tr("品牌内容"))
@@ -238,7 +238,7 @@ struct MomentFeedCard: View {
                                 .background(Capsule().fill(Color.black.opacity(0.62)))
                         }
                     }
-                    .padding(8)
+                    .padding(AppDesign.Spacing.xs)
                 }
 
                 if moment.pinned == true {
@@ -247,14 +247,14 @@ struct MomentFeedCard: View {
                             Label(Tr("置顶"), systemImage: "pin.fill")
                                 .font(systemTextFont(10.5, .semibold, relativeTo: .caption2))
                                 .foregroundColor(.white)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
+                                .padding(.horizontal, AppDesign.Spacing.xs)
+                                .padding(.vertical, AppDesign.Spacing.xxs)
                                 .background(Capsule().fill(Color.black.opacity(0.62)))
                             Spacer()
                         }
                         Spacer()
                     }
-                    .padding(8)
+                    .padding(AppDesign.Spacing.xs)
                 }
             }
             .frame(width: size.width, height: size.height)
@@ -303,7 +303,7 @@ struct MomentFeedCard: View {
                         }
                     }
                     .foregroundColor(showingLiked ? Color(hex: 0xFF3B4D) : C.subLabel)
-                    .padding(.horizontal, 8)
+                    .padding(.horizontal, AppDesign.Spacing.xs)
                     .frame(height: AppDesign.Control.sectionHeaderHeight)
                     .contentShape(Rectangle())
                 }
@@ -320,7 +320,7 @@ struct MomentFeedCard: View {
                         }
                     }
                     .foregroundColor(C.subLabel)
-                    .padding(.horizontal, 8)
+                    .padding(.horizontal, AppDesign.Spacing.xs)
                     .frame(height: AppDesign.Control.sectionHeaderHeight)
                     .contentShape(Rectangle())
                 }
@@ -367,7 +367,7 @@ struct MomentFeedCard: View {
                 }
             }
             .padding(.horizontal, 10)
-            .padding(.vertical, 8)
+            .padding(.vertical, AppDesign.Spacing.xs)
             .background(
                 RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
                     .fill(socialSurface)
@@ -383,7 +383,7 @@ struct MomentFeedCard: View {
         Button {
             onOpenLikes(stableOrderedLikes)
         } label: {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 HStack(spacing: -7) {
                     ForEach(Array(stableOrderedLikes.prefix(6).enumerated()), id: \.offset) { _, like in
                         likeAvatar(like, size: 22)
@@ -525,7 +525,7 @@ struct MomentLikesSheet: View {
             Capsule()
                 .fill(Color.dyn(0xC9C9CE, 0x48484D))
                 .frame(width: 36, height: 5)
-                .padding(.top, 8)
+                .padding(.top, AppDesign.Spacing.xs)
 
             HStack(spacing: 10) {
                 Text(Lang.isEnglish
@@ -545,7 +545,7 @@ struct MomentLikesSheet: View {
                 .accessibilityLabel(Tr("关闭"))
             }
             .padding(.horizontal, 18)
-            .padding(.top, 8)
+            .padding(.top, AppDesign.Spacing.xs)
             .padding(.bottom, 10)
 
             if uniqueLikes.count > 24 {
@@ -569,8 +569,8 @@ struct MomentLikesSheet: View {
                 .frame(height: AppDesign.Control.iconSmallHeight)
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                     .fill(Color.dyn(0xF1F1F4, 0x1C1C1E)))
-                .padding(.horizontal, 16)
-                .padding(.bottom, 8)
+                .padding(.horizontal, AppDesign.Spacing.md)
+                .padding(.bottom, AppDesign.Spacing.xs)
             }
 
             ScrollView {
@@ -596,7 +596,7 @@ struct MomentLikesSheet: View {
                     }
 
                     if filteredLikes.isEmpty {
-                        VStack(spacing: 8) {
+                        VStack(spacing: AppDesign.Spacing.xs) {
                             Image(systemName: "person.crop.circle.badge.questionmark")
                                 .font(.system(size: 28, weight: .light))
                                 .foregroundColor(C.subLabel)
@@ -634,7 +634,7 @@ struct MomentLikesSheet: View {
         let name = contact?.name ?? like.nickname ?? Tr("星友")
         let avatar = contact?.avatarPath ?? ""
 
-        return HStack(spacing: 12) {
+        return HStack(spacing: AppDesign.Spacing.sm) {
             if avatar.isEmpty {
                 Text(String(name.prefix(1)))
                     .font(systemTextFont(16, .semibold, relativeTo: .body))

@@ -32,7 +32,7 @@ struct AppleSettingsView: View {
                                 .foregroundStyle(.secondary)
                         }
                     }
-                    .padding(.vertical, 4)
+                    .padding(.vertical, AppDesign.Spacing.xxs)
                 }
 
                 Button {

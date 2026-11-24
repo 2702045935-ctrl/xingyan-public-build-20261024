@@ -46,7 +46,7 @@ struct MallCardBubble: View {
     var body: some View {
         Button { onOpen() } label: {
             WeChatMessageCard {
-                HStack(spacing: 12) {
+                HStack(spacing: AppDesign.Spacing.sm) {
                     DDThumb(em: info.em, size: 70, radius: 12,
                             img: info.img.isEmpty ? nil : info.img)
                     VStack(alignment: .leading, spacing: 6) {

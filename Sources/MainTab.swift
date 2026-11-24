@@ -1388,9 +1388,14 @@ struct GroupCard<Content: View>: View {
     var glass: Bool = false
 
     var bg: Color? = nil
-    init(glass: Bool = false, bg: Color? = nil, @ViewBuilder content: () -> Content) {
+    var horizontalInset: CGFloat = AppDesign.Spacing.md
+    init(glass: Bool = false,
+         bg: Color? = nil,
+         horizontalInset: CGFloat = AppDesign.Spacing.md,
+         @ViewBuilder content: () -> Content) {
         self.glass = glass
         self.bg = bg
+        self.horizontalInset = horizontalInset
         self.content = content()
     }
 
@@ -1438,7 +1443,7 @@ struct GroupCard<Content: View>: View {
                     lineWidth: 0.7
                 )
             }
-            .padding(.horizontal, AppDesign.Spacing.md)
+            .padding(.horizontal, horizontalInset)
             .padding(.bottom, AppDesign.Spacing.sm)
     }
 

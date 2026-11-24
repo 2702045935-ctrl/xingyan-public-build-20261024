@@ -54,7 +54,7 @@ struct LiveListView: View {
             .background(pageBg)
 
             ScrollView {
-                LazyVStack(spacing: 12) {
+                LazyVStack(spacing: AppDesign.Spacing.sm) {
                     if loading && rooms.isEmpty {
                         ProgressView().tint(.white).padding(.top, 60)
                     } else if rooms.isEmpty {
@@ -67,7 +67,7 @@ struct LiveListView: View {
                         }
                     }
                 }
-                .padding(16)
+                .padding(AppDesign.Spacing.md)
             }
         }
         .background(pageBg.ignoresSafeArea())
@@ -192,7 +192,7 @@ struct LiveRoomView: View {
                 .allowsHitTesting(false)
             }
             if live.watching, live.remoteVideo == nil {
-                VStack(spacing: 8) {
+                VStack(spacing: AppDesign.Spacing.xs) {
                     ProgressView().tint(.white)
                     Text(Tr("正在连主播的画面…")).font(pf(14)).foregroundColor(.white.opacity(0.8))
                 }
@@ -280,11 +280,11 @@ struct LiveRoomView: View {
                     Text(live.publishing ? "结束直播" : "开始直播")
                         .font(AppDesign.Type.compactButtonMedium)
                         .foregroundColor(.white)
-                        .padding(.horizontal, 12).padding(.vertical, 6)
+                        .padding(.horizontal, AppDesign.Spacing.sm).padding(.vertical, 6)
                         .background(Capsule().fill(live.publishing ? AppPalette.danger : C.green))
                 }
                 .buttonStyle(.plain)
-                .padding(.leading, 8)
+                .padding(.leading, AppDesign.Spacing.xs)
             }
         }
         .padding(.trailing, 14)
@@ -305,7 +305,7 @@ struct LiveRoomView: View {
                         .font(pf(13))
                         .foregroundColor(.white.opacity(0.95))
                 }
-                .padding(.horizontal, 8).padding(.vertical, 4)
+                .padding(.horizontal, AppDesign.Spacing.xs).padding(.vertical, AppDesign.Spacing.xxs)
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(Color.black.opacity(0.28)))
             }
         }

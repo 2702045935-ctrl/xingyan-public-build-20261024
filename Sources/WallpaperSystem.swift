@@ -105,7 +105,7 @@ struct WallpaperCropView: View {
     }
 
     private func editorTopBar(viewport: CGSize) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Button(action: onCancel) {
                 Image(systemName: "xmark")
                     .font(.system(size: 14, weight: .semibold))
@@ -140,7 +140,7 @@ struct WallpaperCropView: View {
                             .foregroundStyle(.white)
                     }
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
                 .frame(height: AppDesign.Control.floatingControlHeight)
                 .background(Capsule().fill(Color.white.opacity(0.17)))
                 .overlay(Capsule().stroke(Color.white.opacity(0.18), lineWidth: 0.7))
@@ -149,7 +149,7 @@ struct WallpaperCropView: View {
             .disabled(applying)
             .accessibilityLabel(Tr("设定"))
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .padding(.top, max(10, L.safeTop + 4))
     }
 

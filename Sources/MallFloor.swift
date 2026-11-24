@@ -573,7 +573,7 @@ struct DDMallFloor: View {
                         orderCell(L2, Tr("待收货"), receiving, "truck.box") { onOrders(3) }
                         orderCell(L2, Tr("我的收藏"), store.favs.count, "heart") { onFav() }
                     }
-                    .padding(.vertical, 12)
+                    .padding(.vertical, AppDesign.Spacing.sm)
                 }
                 .offset(y: (1 - rise) * 26).opacity(Double(rise))
 
@@ -614,7 +614,7 @@ struct DDMallFloor: View {
                         .padding(.horizontal, 14)
                     }
                 }
-                .padding(.vertical, 12)
+                .padding(.vertical, AppDesign.Spacing.sm)
                 .background {
                     ZStack {
                         RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous)
@@ -637,14 +637,14 @@ struct DDMallFloor: View {
                         orderCell(L2, Tr("购物车"), store.cart.count, "cart") { onCart() }
                         orderCell(L2, Tr("全部订单"), 0, "list.bullet.rectangle") { onOrders(0) }
                     }
-                    .padding(.vertical, 12)
+                    .padding(.vertical, AppDesign.Spacing.sm)
                 }
                 .offset(y: (1 - rise) * 40).opacity(Double(rise))
 
                 Spacer(minLength: 0)
 
                 Button { onClose() } label: {
-                    HStack(spacing: 8) {
+                    HStack(spacing: AppDesign.Spacing.xs) {
                         Image(systemName: "chevron.up").font(.system(size: 12, weight: .semibold))
                         Text(Tr("星言商城")).font(pf(15, .medium))
                         if pendingPay + shipping + receiving > 0 {
@@ -703,7 +703,7 @@ struct DDMallFloor: View {
                 .foregroundStyle(l.inkSoft)
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .padding(.vertical, 13)
         .background {
             ZStack {
@@ -751,7 +751,7 @@ struct DDMallFloor: View {
                         Text(n > 99 ? "99+" : String(n))
                             .font(pf(10.5, .medium))
                             .foregroundColor(l.badgeInk)
-                            .padding(.horizontal, 4).frame(height: 15)
+                            .padding(.horizontal, AppDesign.Spacing.xxs).frame(height: 15)
                             .background(Capsule().fill(l.accent))
                             .offset(x: 8, y: -4)
                     }

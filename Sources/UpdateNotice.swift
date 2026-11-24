@@ -53,7 +53,7 @@ struct CenterCard: View {
                 }
                 .padding(.top, 18)
             }
-            .padding(20)
+            .padding(AppDesign.Spacing.lg)
             .frame(maxWidth: 320)
             .background(C.cardBg)
             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))

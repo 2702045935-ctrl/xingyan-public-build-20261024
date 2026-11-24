@@ -87,7 +87,7 @@ struct HarmonyLoginView: View {
                     termsArea
                     Spacer(minLength: 28)
                 }
-                .padding(.horizontal, 24)
+                .padding(.horizontal, AppDesign.Spacing.xl)
                 .padding(.top, 54)
                 .padding(.bottom, max(24, L.safeBottom))
             }
@@ -105,7 +105,7 @@ struct HarmonyLoginView: View {
                             .font(pfStyled(size: 13, weight: .medium))
                             .foregroundColor(ink)
                     }
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, AppDesign.Spacing.xl)
                     .padding(.vertical, 18)
                     .background(.ultraThinMaterial)
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
@@ -170,7 +170,7 @@ struct HarmonyLoginView: View {
                 .font(pfStyled(size: 13.5, weight: .medium))
                 .foregroundColor(ink)
 
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Text("+86")
                     .font(pfStyled(size: 16.5, weight: .medium))
                     .foregroundColor(ink)
@@ -196,7 +196,7 @@ struct HarmonyLoginView: View {
             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
 
             if codeSent {
-                HStack(spacing: 12) {
+                HStack(spacing: AppDesign.Spacing.sm) {
                         TextField(Tr("请输入 6 位验证码"), text: $code)
                         .keyboardType(.numberPad)
                         .textContentType(.oneTimeCode)
@@ -281,9 +281,9 @@ struct HarmonyLoginView: View {
     }
 
     private var actionArea: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: AppDesign.Spacing.sm) {
             Button { primaryAction() } label: {
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     if busy {
                         ProgressView()
                             .tint(.white)
@@ -343,7 +343,7 @@ struct HarmonyLoginView: View {
                 Button(Tr("找回密码")) { showReset = true }
                 Text("·")
                     .foregroundColor(subInk.opacity(0.55))
-                    .padding(.horizontal, 8)
+                    .padding(.horizontal, AppDesign.Spacing.xs)
                 Button(Tr("自助解封")) { showUnban = true }
             }
             .font(pfStyled(13))

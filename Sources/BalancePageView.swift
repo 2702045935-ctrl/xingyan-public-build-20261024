@@ -26,12 +26,12 @@ struct BalancePageView: View {
             NavBar(title: cfg?.navTitle ?? "零钱明细", back: { dismiss() })
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 24) {
+                VStack(spacing: AppDesign.Spacing.xl) {
                     top
                     bottom
                     Spacer(minLength: 20)
                 }
-                .padding(.top, 20)
+                .padding(.top, AppDesign.Spacing.lg)
             }
             .background(PayVisual.canvas)
         }
@@ -85,7 +85,7 @@ struct BalancePageView: View {
     }
 
     private var top: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: AppDesign.Spacing.sm) {
             PayGroupCard {
                 VStack(alignment: .leading, spacing: 14) {
                     HStack {
@@ -112,7 +112,7 @@ struct BalancePageView: View {
                             .foregroundColor(PayVisual.secondaryInk)
                     }
                 }
-                .padding(20)
+                .padding(AppDesign.Spacing.lg)
             }
 
             if cfg?.isLocked ?? false {
@@ -135,19 +135,19 @@ struct BalancePageView: View {
                             .foregroundColor(PayVisual.warning)
                     }
                     .foregroundColor(C.label)
-                    .padding(16)
+                    .padding(AppDesign.Spacing.md)
                     .background(Color.dyn(0xFFF7E6, 0x2D2417))
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, AppDesign.Spacing.lg)
     }
 
     private var bottom: some View {
         VStack(spacing: 14) {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Button {
                     run(cfg?.recharge?.action ?? "recharge", cfg?.recharge?.label ?? "充值")
                 } label: {
@@ -198,7 +198,7 @@ struct BalancePageView: View {
                     .multilineTextAlignment(.center)
             }
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, AppDesign.Spacing.lg)
     }
 
     private func run(_ action: String, _ label: String) {

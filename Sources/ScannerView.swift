@@ -313,7 +313,7 @@ struct ScannedTextResultView: View {
                     }
                     .buttonStyle(.plain)
                 }
-                .padding(12)
+                .padding(AppDesign.Spacing.sm)
                 .background(C.pageBg)
             }
             .background(C.pageBg)
@@ -356,14 +356,14 @@ struct ScannerView: View {
             Color.black.ignoresSafeArea()
 
             if !permissionChecked {
-                VStack(spacing: 12) {
+                VStack(spacing: AppDesign.Spacing.sm) {
                     ProgressView().tint(.white)
                     Text(Tr("正在打开相机…"))
                         .font(pf(14))
                         .foregroundColor(.white.opacity(0.78))
                 }
             } else if denied {
-                VStack(spacing: 12) {
+                VStack(spacing: AppDesign.Spacing.sm) {
                     Image(systemName: "camera.metering.unknown")
                         .font(.system(size: 40))
                         .foregroundColor(.white.opacity(0.8))
@@ -413,7 +413,7 @@ struct ScannerView: View {
                             .buttonStyle(.plain)
                         }
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, AppDesign.Spacing.lg)
                     .padding(.vertical, 14)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.row).fill(Color.black.opacity(0.28)))
                 }
@@ -435,9 +435,9 @@ struct ScannerView: View {
                         Spacer()
                         Color.clear.frame(width: 40, height: 40)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 4)
-                    .padding(.bottom, 12)
+                    .padding(.horizontal, AppDesign.Spacing.md)
+                    .padding(.top, AppDesign.Spacing.xxs)
+                    .padding(.bottom, AppDesign.Spacing.sm)
                     .background(
                         LinearGradient(
                             colors: [.black.opacity(0.68), .black.opacity(0.2), .clear],
@@ -453,7 +453,7 @@ struct ScannerView: View {
                         .foregroundColor(.white.opacity(0.9))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
+                        .padding(.vertical, AppDesign.Spacing.xs)
                         .background(Capsule().fill(Color.black.opacity(0.35)))
 
                     HStack(spacing: 58) {
@@ -475,7 +475,7 @@ struct ScannerView: View {
                         }
                         .buttonStyle(.plain)
                     }
-                    .padding(.top, 20)
+                    .padding(.top, AppDesign.Spacing.lg)
                     .padding(.bottom, 34)
                     .frame(maxWidth: .infinity)
                     .background(

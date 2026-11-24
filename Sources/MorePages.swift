@@ -30,7 +30,7 @@ struct GroupListView: View {
                             StarOrbitMetric(value: "\(memberConnections)", label: Tr("位成员连接"))
                         ]
                     )
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, AppDesign.Spacing.sm)
 
                     if groups.isEmpty {
                         emptyState
@@ -44,7 +44,7 @@ struct GroupListView: View {
                                 groupCard(chat)
                             }
                             .buttonStyle(MenuPressStyle())
-                            .padding(.horizontal, 12)
+                            .padding(.horizontal, AppDesign.Spacing.sm)
                         }
                     }
                     Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
@@ -96,7 +96,7 @@ struct GroupListView: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: AppDesign.Spacing.sm) {
             StarOrbitIconBadge(symbol: "person.3.fill", accent: OrbitTheme.jade, size: 54)
             Text(Tr("还没有群聊"))
                 .font(pfStyled(size: 17, weight: .semibold))
@@ -109,7 +109,7 @@ struct GroupListView: View {
         .padding(.vertical, 42)
         .background(OrbitTheme.cardBackground())
         .clipShape(OrbitTheme.card)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
     }
 }
 
@@ -214,7 +214,7 @@ struct ChatSearchView: View {
 
     private var searchBar: some View {
         HStack(spacing: 9) {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 14.5, weight: .medium))
                     .foregroundColor(C.searchIcon)
@@ -233,7 +233,7 @@ struct ChatSearchView: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
             .frame(height: AppDesign.Control.iconControlHeight)
             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous).fill(C.searchBg))
             .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
@@ -248,7 +248,7 @@ struct ChatSearchView: View {
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 14)
-        .padding(.top, 4)
+        .padding(.top, AppDesign.Spacing.xxs)
         .padding(.bottom, 10)
     }
 
@@ -311,7 +311,7 @@ struct ChatSearchView: View {
                     showMembers = false
                     search()
                 } label: {
-                    HStack(spacing: 12) {
+                    HStack(spacing: AppDesign.Spacing.sm) {
                         Avatar(path: u.avatarPath, size: 42, radius: 8)
                         Text(u.name)
                             .font(pf(15))
@@ -367,11 +367,11 @@ struct ChatSearchView: View {
                 .padding(.horizontal, 18)
             }
             .padding(.top, 18)
-            .padding(.bottom, 16)
+            .padding(.bottom, AppDesign.Spacing.md)
             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous).fill(C.cardBg))
             .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(C.hairline, lineWidth: 0.7))
-            .padding(.horizontal, 24)
+            .padding(.horizontal, AppDesign.Spacing.xl)
         }
     }
 
@@ -419,8 +419,8 @@ struct ChatSearchView: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.top, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
+        .padding(.top, AppDesign.Spacing.sm)
         .background(C.cardBg)
     }
 
@@ -431,7 +431,7 @@ struct ChatSearchView: View {
     @ViewBuilder
     private var resultArea: some View {
         if busy && hits.isEmpty {
-            VStack(spacing: 12) {
+            VStack(spacing: AppDesign.Spacing.sm) {
                 ProgressView()
                 Text(Tr("正在翻这个会话的全部历史…"))
                     .font(pf(13))
@@ -463,7 +463,7 @@ struct ChatSearchView: View {
                                 .font(pf(13))
                                 .foregroundColor(C.green)
                                 .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
+                                .padding(.vertical, AppDesign.Spacing.sm)
                         }
                         .buttonStyle(.plain)
                         .disabled(busy)
@@ -491,7 +491,7 @@ struct ChatSearchView: View {
             }
         }
         .padding(.horizontal, 6)
-        .padding(.top, 12)
+        .padding(.top, AppDesign.Spacing.sm)
         .padding(.bottom, 6)
     }
 
@@ -520,7 +520,7 @@ struct ChatSearchView: View {
                 }
             }
             .padding(.horizontal, 14)
-            .padding(.vertical, 12)
+            .padding(.vertical, AppDesign.Spacing.sm)
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
         }
@@ -793,7 +793,7 @@ struct BankCardsView: View {
                         .font(AppDesign.Type.rowTitle)
                         .foregroundColor(C.green)
                         .frame(height: L.navH)
-                        .padding(.trailing, 16)
+                        .padding(.trailing, AppDesign.Spacing.md)
                 }
                 .buttonStyle(.plain)
             }
@@ -812,7 +812,7 @@ struct BankCardsView: View {
                     } else {
                         GroupCard {
                             ForEach(Array(cards.enumerated()), id: \.element.id) { idx, c in
-                                HStack(spacing: 12) {
+                                HStack(spacing: AppDesign.Spacing.sm) {
                                     Image(systemName: "creditcard.fill")
                                         .font(.system(size: 20))
                                         .foregroundColor(C.green)
@@ -836,12 +836,12 @@ struct BankCardsView: View {
                                     }
                                     .buttonStyle(.plain)
                                 }
-                                .padding(.horizontal, 16)
+                                .padding(.horizontal, AppDesign.Spacing.md)
                                 .frame(height: 66)
                                 if idx < cards.count - 1 { HairLine(inset: 62) }
                             }
                         }
-                        .padding(.top, 8)
+                        .padding(.top, AppDesign.Spacing.xs)
                     }
                     Text(Tr("只保存银行、尾号和持卡人，完整卡号不会留在手机上。"))
                         .font(pf(12))
@@ -871,7 +871,7 @@ struct BankCardsView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(Tr("选择银行")).font(pf(15)).foregroundColor(C.label)
                         ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 8) {
+                            HStack(spacing: AppDesign.Spacing.xs) {
                                 ForEach(banks, id: \.self) { name in
                                     let on = (bank == name)
                                     Button { bank = name } label: {
@@ -897,8 +897,8 @@ struct BankCardsView: View {
                             .padding(.horizontal, 2)
                         }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
+                    .padding(.horizontal, AppDesign.Spacing.md)
+                    .padding(.vertical, AppDesign.Spacing.sm)
                     HairLine(color: C.navLine)
                     HairLine(color: C.navLine)
                     field("卡号") {
@@ -920,7 +920,7 @@ struct BankCardsView: View {
                             .cornerRadius(12)
                     }
                     .disabled(busy)
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, AppDesign.Spacing.lg)
                     .padding(.top, 22)
                 }
                 .padding(.top, 10)
@@ -1002,7 +1002,7 @@ struct AboutView: View {
         VStack(spacing: 0) {
             NavBar(title: Tr("关于我们"), back: { dismiss() })
             ScrollView {
-                VStack(spacing: 12) {
+                VStack(spacing: AppDesign.Spacing.sm) {
 
                     hero
 
@@ -1029,7 +1029,7 @@ struct AboutView: View {
                                     .foregroundColor(C.subLabel)
                                 Chevron(size: 9, line: 1.6).padding(.trailing, 3)
                             }
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, AppDesign.Spacing.md)
                             .frame(height: AppDesign.Control.largeControlHeight)
                             .contentShape(Rectangle())
                         }
@@ -1061,7 +1061,7 @@ struct AboutView: View {
                                 .foregroundColor(C.subLabel)
                                 .multilineTextAlignment(.trailing)
                         }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppDesign.Spacing.md)
                         .frame(height: AppDesign.Control.largeControlHeight)
                     }
 
@@ -1077,11 +1077,11 @@ struct AboutView: View {
                         .font(pf(11.5))
                         .foregroundColor(C.subLabel.opacity(0.75))
                         .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.top, 8)
+                        .padding(.top, AppDesign.Spacing.xs)
                     Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
-                .padding(.horizontal, 12)
-                .padding(.top, 8)
+                .padding(.horizontal, AppDesign.Spacing.sm)
+                .padding(.top, AppDesign.Spacing.xs)
             }
             .background(C.pageBg)
         }
@@ -1140,10 +1140,10 @@ struct AboutView: View {
                 .font(AppDesign.Type.caption)
                 .foregroundColor(C.subLabel)
                 .multilineTextAlignment(.center)
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Text("v" + AppInfo.displayVersion)
                     .font(pf(11.5, .semibold)).foregroundColor(C.green)
-                    .padding(.horizontal, 8).frame(height: AppDesign.Control.compactBadgeHeight)
+                    .padding(.horizontal, AppDesign.Spacing.xs).frame(height: AppDesign.Control.compactBadgeHeight)
                     .background(Capsule().fill(C.green.opacity(0.12)))
                 Text(AppInfo.build).font(pf(11.5)).monospacedDigit().foregroundColor(C.subLabel)
                     .copyOnLongPress(AppInfo.build) { app.show($0) }
@@ -1166,7 +1166,7 @@ struct AboutView: View {
     private func aboutRow(_ icon: String, _ title: String, sub: String? = nil,
                           tint: Color = C.green, _ tap: @escaping () -> Void) -> some View {
         Button(action: tap) {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 ZStack {
                     RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                         .fill(tint.opacity(0.10)).frame(width: 30, height: 30)
@@ -1236,7 +1236,7 @@ struct AboutView: View {
             Spacer(minLength: 0)
             Chevron(size: 9, line: 1.6).padding(.trailing, 3)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(height: AppDesign.Control.largeControlHeight)
         .contentShape(Rectangle())
     }
@@ -1301,7 +1301,7 @@ struct DeleteAccountView: View {
                     }
                     Text(Tr("确认请在下面输入「注销」两个字："))
                         .font(AppDesign.Type.bodyMedium).foregroundColor(C.label)
-                        .padding(.top, 8)
+                        .padding(.top, AppDesign.Spacing.xs)
                     TextField(Tr("注销"), text: $input)
                         .font(pf(15))
                         .padding(.horizontal, 14).frame(height: 46)
@@ -1333,7 +1333,7 @@ struct DeleteAccountView: View {
                     .padding(.top, 6)
                     Spacer(minLength: 20)
                 }
-                .padding(16)
+                .padding(AppDesign.Spacing.md)
             }
             .background(C.pageBg)
         }
@@ -1421,7 +1421,7 @@ struct ResetPasswordSheet: View {
                     if let e = error {
                         Text(e).font(pfStyled(size: 13)).foregroundColor(C.red)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.top, 12)
+                            .padding(.top, AppDesign.Spacing.sm)
                     }
 
                     Button { submit() } label: {
@@ -1433,7 +1433,7 @@ struct ResetPasswordSheet: View {
                             .cornerRadius(16)
                     }
                     .disabled(busy)
-                    .padding(.top, 20)
+                    .padding(.top, AppDesign.Spacing.lg)
 
                     Text(Tr("验证码和「手机号登录」共用，5 分钟内有效。重置后其他设备会自动退出登录。"))
                         .font(pfStyled(size: 12.5))
@@ -1441,8 +1441,8 @@ struct ResetPasswordSheet: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 14)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 24)
+                .padding(.horizontal, AppDesign.Spacing.lg)
+                .padding(.top, AppDesign.Spacing.xl)
             }
             .background(Color(.systemBackground).ignoresSafeArea())
             .navigationTitle(Tr("密码找回"))
@@ -1452,7 +1452,7 @@ struct ResetPasswordSheet: View {
     }
 
     private func field<Content: View>(@ViewBuilder _ c: () -> Content) -> some View {
-        HStack(spacing: 8) { c() }
+        HStack(spacing: AppDesign.Spacing.xs) { c() }
             .font(pfStyled(15))
             .frame(height: AppDesign.Control.dialogRowHeight)
             .padding(.horizontal, 14)

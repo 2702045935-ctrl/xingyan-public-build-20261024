@@ -28,7 +28,7 @@ struct KefuPage: View {
                     ScrollView {
                         LazyVStack(spacing: 0) {
                             header
-                                .padding(.bottom, 12)
+                                .padding(.bottom, AppDesign.Spacing.sm)
 
                             if loading {
                                 ProgressView(Tr("正在连接星言支持…"))
@@ -47,7 +47,7 @@ struct KefuPage: View {
                                 .frame(height: 10)
                                 .id("bottom")
                         }
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, AppDesign.Spacing.sm)
                     }
                     .scrollDismissesKeyboard(.interactively)
                     .onChange(of: messages.count) { _ in
@@ -88,7 +88,7 @@ struct KefuPage: View {
     }
 
     private var header: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: AppDesign.Spacing.sm) {
             HStack(spacing: 13) {
                 RPAvatar(path: agentAvatar, size: 48)
                 VStack(alignment: .leading, spacing: 3) {
@@ -116,22 +116,22 @@ struct KefuPage: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(12)
+                    .padding(AppDesign.Spacing.sm)
                     .background(.background, in: RoundedRectangle(cornerRadius: AppDesign.Radius.control,
                                                                   style: .continuous))
             }
         }
-        .padding(16)
+        .padding(AppDesign.Spacing.md)
         .background(.background, in: RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(Color.primary.opacity(0.06), lineWidth: 0.6)
         }
-        .padding(.top, 8)
+        .padding(.top, AppDesign.Spacing.xs)
     }
 
     private var reconnectBlock: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: AppDesign.Spacing.sm) {
             Image(systemName: "wifi.exclamationmark")
                 .font(.system(size: 26, weight: .light))
                 .foregroundStyle(.secondary)
@@ -188,9 +188,9 @@ struct KefuPage: View {
                 .buttonStyle(.plain)
                 .disabled(sending || input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
             .padding(.top, 7)
-            .padding(.bottom, 8)
+            .padding(.bottom, AppDesign.Spacing.xs)
             .background(.bar)
         }
     }
@@ -220,20 +220,20 @@ struct KefuPage: View {
                 .foregroundStyle(.tertiary)
                 .padding(.leading, mine ? 0 : 35)
         }
-        .padding(.bottom, 12)
+        .padding(.bottom, AppDesign.Spacing.sm)
     }
 
     @ViewBuilder private var quickRow: some View {
         if !quick.isEmpty && messages.count <= 3 {
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     ForEach(Array(quick.enumerated()), id: \.offset) { _, it in
                         Button { sendMessage(it.q) } label: {
                             Text(it.q)
                                 .font(.caption.weight(.medium))
                                 .foregroundStyle(.primary)
                                 .lineLimit(1)
-                                .padding(.horizontal, 12)
+                                .padding(.horizontal, AppDesign.Spacing.sm)
                                 .frame(height: AppDesign.Control.sectionHeaderHeight)
                                 .background(Color(uiColor: .secondarySystemGroupedBackground),
                                             in: Capsule())
@@ -245,19 +245,19 @@ struct KefuPage: View {
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(.horizontal, 12)
+                .padding(.horizontal, AppDesign.Spacing.sm)
             }
             .padding(.top, 7)
         }
     }
 
     private var inputBar: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppDesign.Spacing.xs) {
             TextField(Tr("说说你遇到的问题…"), text: $input, axis: .vertical)
                 .font(pf(15))
                 .lineLimit(1...4)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
+                .padding(.horizontal, AppDesign.Spacing.sm)
+                .padding(.vertical, AppDesign.Spacing.xs)
                 .background { CardGlassBox(radius: 8) }
             Button {
                 sendMessage(input)
@@ -265,15 +265,15 @@ struct KefuPage: View {
                 Text(sending ? "…" : Tr("发送"))
                     .font(pf(15, .medium))
                     .foregroundColor(.white)
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppDesign.Spacing.md)
                     .frame(height: AppDesign.Control.floatingControlHeight)
                     .background(Capsule().fill(input.trimmingCharacters(in: .whitespaces).isEmpty ? C.subLabel : C.green))
             }
             .buttonStyle(.plain)
             .disabled(sending || input.trimmingCharacters(in: .whitespaces).isEmpty)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.horizontal, AppDesign.Spacing.sm)
+        .padding(.vertical, AppDesign.Spacing.xs)
         .background(C.pageBg)
     }
 

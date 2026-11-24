@@ -24,7 +24,7 @@ struct ShopView: View {
                     Text(Tr("我的订单"))
                         .font(pf(14.5))
                         .foregroundColor(C.green)
-                        .padding(.horizontal, 12).frame(height: AppDesign.Control.smallButtonHeight)
+                        .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.smallButtonHeight)
                 }
                 .buttonStyle(.plain)
             }
@@ -33,7 +33,7 @@ struct ShopView: View {
                 VStack(spacing: 10) {
 
                     Button { showMall = true } label: {
-                        HStack(spacing: 12) {
+                        HStack(spacing: AppDesign.Spacing.sm) {
                             ZStack {
                                 RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                                     .fill(LinearGradient(colors: [Color(hex: 0xFF5A3C), Color(hex: 0xE02A0F)],
@@ -58,7 +58,7 @@ struct ShopView: View {
                         .padding(.horizontal, 14).frame(height: 66)
                         .background(C.cardBg)
                         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, AppDesign.Spacing.sm)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -80,12 +80,12 @@ struct ShopView: View {
                                     .buttonStyle(MenuPressStyle())
                             }
                         }
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, AppDesign.Spacing.sm)
 
                         Text(Tr("下单后可以在右上角「我的订单」里看进度。"))
                             .font(pf(12)).foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 18).padding(.top, 4)
+                            .padding(.horizontal, 18).padding(.top, AppDesign.Spacing.xxs)
                     }
                     Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
@@ -118,7 +118,7 @@ struct ShopView: View {
 
     private var balanceCard: some View {
         GroupCard {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(Tr("零钱余额")).font(pf(14)).foregroundColor(C.subLabel)
                     Text("¥" + moneyFmt(balance))
@@ -129,7 +129,7 @@ struct ShopView: View {
                     .font(.system(size: 22, weight: .semibold))
                     .foregroundColor(C.green.opacity(0.85))
             }
-            .padding(.horizontal, 16).padding(.vertical, 14)
+            .padding(.horizontal, AppDesign.Spacing.md).padding(.vertical, 14)
         }
         .padding(.top, 2)
     }
@@ -156,7 +156,7 @@ struct ShopView: View {
             Text(it.name).font(pf(14.5)).foregroundColor(C.label)
                 .lineLimit(2)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, 8)
+                .padding(.top, AppDesign.Spacing.xs)
 
             HStack(spacing: 6) {
                 Text("¥" + moneyFmt(it.price))
@@ -170,10 +170,10 @@ struct ShopView: View {
                 Text(Tr("库存 ") + String(it.stock ?? 0))
                     .font(pf(11)).foregroundColor(C.subLabel)
             }
-            .padding(.top, 4)
+            .padding(.top, AppDesign.Spacing.xxs)
             .padding(.bottom, 10)
         }
-        .padding(8)
+        .padding(AppDesign.Spacing.xs)
         .background(C.cardBg)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
         .opacity((it.stock ?? 1) <= 0 ? 0.55 : 1)
@@ -226,16 +226,16 @@ struct ShopItemSheet: View {
         VStack(spacing: 0) {
             NavBar(title: item.name, back: { dismiss() })
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 12) {
+                VStack(spacing: AppDesign.Spacing.sm) {
                     if let img = item.img, !img.isEmpty {
                         RemoteImage(path: img)
                             .scaledToFill()
                             .frame(maxWidth: .infinity).frame(height: 200)
                             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
-                            .padding(.horizontal, 12)
+                            .padding(.horizontal, AppDesign.Spacing.sm)
                     }
 
-                    GroupCard {
+                    GroupCard(horizontalInset: 0) {
                         HStack(alignment: .top, spacing: 10) {
                             VStack(alignment: .leading, spacing: 5) {
                                 Text(item.name).font(pf(17, .medium)).foregroundColor(C.label)
@@ -247,7 +247,7 @@ struct ShopItemSheet: View {
                             }
                             Spacer(minLength: 0)
                         }
-                        .padding(.horizontal, 16).padding(.vertical, 14)
+                        .padding(.horizontal, AppDesign.Spacing.md).padding(.vertical, 14)
 
                         if item.isPhysical {
                             HairLine(inset: 16)
@@ -257,11 +257,11 @@ struct ShopItemSheet: View {
                                     .font(pf(14.5))
                                     .lineLimit(2...4)
                             }
-                            .padding(.horizontal, 16).padding(.vertical, 12)
+                            .padding(.horizontal, AppDesign.Spacing.md).padding(.vertical, AppDesign.Spacing.sm)
                         }
 
                         HairLine(inset: 16)
-                        HStack(spacing: 12) {
+                        HStack(spacing: AppDesign.Spacing.sm) {
                             Text(Tr("数量")).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
                             Spacer(minLength: 0)
                             Button { if count > 1 { count -= 1 } } label: {
@@ -282,7 +282,7 @@ struct ShopItemSheet: View {
                             }
                             .buttonStyle(.plain)
                         }
-                        .padding(.horizontal, 16).frame(height: AppDesign.Control.dialogRowHeight)
+                        .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.dialogRowHeight)
                     }
 
                     Text(totalText)
@@ -299,11 +299,11 @@ struct ShopItemSheet: View {
                     }
                     .buttonStyle(.plain)
                     .disabled(busy || soldOut)
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppDesign.Spacing.md)
 
                     Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
-                .padding(.top, 12)
+                .padding(.top, AppDesign.Spacing.sm)
             }
             .background(C.pageBg)
         }
@@ -392,13 +392,13 @@ struct ShopPaySheet: View {
                 .padding(.top, 6)
 
             PayDotField(count: password.count, shake: shake, busy: busy)
-                .padding(.top, 16)
+                .padding(.top, AppDesign.Spacing.md)
             if !tip.isEmpty {
                 Text(tip).font(pf(13)).foregroundColor(C.red)
-                    .multilineTextAlignment(.center).padding(.horizontal, 20).padding(.top, 10)
+                    .multilineTextAlignment(.center).padding(.horizontal, AppDesign.Spacing.lg).padding(.top, 10)
             }
             PayKeypadView(busy: busy) { tap($0) }
-                .padding(.top, 16)
+                .padding(.top, AppDesign.Spacing.md)
             Spacer(minLength: 0)
         }
         .overlay { if busy { PayBusyOverlay() } }
@@ -462,13 +462,13 @@ struct ShopOrdersSheet: View {
             NavBar(title: Tr("我的订单"), back: { dismiss() })
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 10) {
-                    HStack(spacing: 8) {
+                    HStack(spacing: AppDesign.Spacing.xs) {
                         ForEach(0..<names.count, id: \.self) { i in
                             Button { filter = i } label: {
                                 Text(Tr(names[i]))
                                     .font(AppDesign.Type.body)
                                     .foregroundColor(filter == i ? .white : C.label)
-                                    .padding(.horizontal, 12).frame(height: AppDesign.Control.sectionHeaderHeight)
+                                    .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.sectionHeaderHeight)
                                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                                         .fill(filter == i ? C.green : C.cardBg))
                             }
@@ -476,24 +476,24 @@ struct ShopOrdersSheet: View {
                         }
                         Spacer(minLength: 0)
                     }
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, AppDesign.Spacing.sm)
 
                     if shown.isEmpty {
                         Text(Tr("还没有订单")).font(pf(14)).foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity).padding(.top, 40)
                     } else {
-                        GroupCard {
+                        GroupCard(horizontalInset: 0) {
                             ForEach(Array(shown.enumerated()), id: \.element.id) { i, o in
                                 if i > 0 { HairLine(inset: 16) }
                                 VStack(alignment: .leading, spacing: 4) {
-                                    HStack(spacing: 8) {
+                                    HStack(spacing: AppDesign.Spacing.xs) {
                                         Text(o.name ?? Tr("订单")).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
                                             .lineLimit(1)
                                         Spacer(minLength: 0)
                                         Text("¥" + moneyFmt(o.price ?? 0))
                                             .font(pfMoney(15)).foregroundColor(C.label)
                                     }
-                                    HStack(spacing: 8) {
+                                    HStack(spacing: AppDesign.Spacing.xs) {
                                         Text(o.status ?? Tr("已下单")).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                                         Spacer(minLength: 0)
                                         Text(TimeFmt.bill(o.at ?? "")).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
@@ -503,7 +503,7 @@ struct ShopOrdersSheet: View {
                                             .lineLimit(2)
                                     }
                                 }
-                                .padding(.horizontal, 16).padding(.vertical, 12)
+                                .padding(.horizontal, AppDesign.Spacing.md).padding(.vertical, AppDesign.Spacing.sm)
                             }
                         }
                         Text(Tr("零钱余额 ") + "¥" + moneyFmt(balance))

@@ -155,7 +155,7 @@ struct LocationDetailView: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .padding(.vertical, 14)
             .background(C.cardBg)
         }

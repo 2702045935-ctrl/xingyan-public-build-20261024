@@ -536,7 +536,7 @@ private struct NativeZoomCompass: View {
                     HStack(spacing: 0) {
                         ForEach(1...10, id: \.self) { mark in
                             let active = abs(clampedValue - CGFloat(mark)) < 0.22
-                            VStack(spacing: 4) {
+                            VStack(spacing: AppDesign.Spacing.xxs) {
                                 Capsule(style: .continuous)
                                     .fill(active ? Color.white : Color.white.opacity(0.28))
                                     .frame(width: active ? 2 : 1, height: active ? 13 : 7)
@@ -572,7 +572,7 @@ private struct NativeZoomCompass: View {
             .frame(height: 31)
         }
         .padding(.horizontal, 11)
-        .padding(.top, 8)
+        .padding(.top, AppDesign.Spacing.xs)
         .padding(.bottom, 7)
         .frame(maxWidth: 342)
         .background(
@@ -684,7 +684,7 @@ struct NativeCameraView: View {
                     }
                     .padding(.top, max(8, geo.safeAreaInsets.top + 4))
                     .padding(.bottom, max(12, geo.safeAreaInsets.bottom + 8))
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppDesign.Spacing.md)
                 }
 
                 if flashOverlay {
@@ -870,7 +870,7 @@ struct NativeCameraView: View {
                 .font(.system(size: 13, weight: .semibold, design: .monospaced))
         }
         .foregroundStyle(.white)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
         .frame(height: AppDesign.Control.sectionHeaderHeight)
         .background(Capsule().fill(Color.black.opacity(0.42)))
         .padding(.bottom, 14)
@@ -894,7 +894,7 @@ struct NativeCameraView: View {
     }
 
     private var permissionView: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: AppDesign.Spacing.md) {
             Image(systemName: "camera.fill")
                 .font(.system(size: 34, weight: .medium))
             Text(Tr("需要相机权限"))
@@ -941,7 +941,7 @@ struct NativeCameraView: View {
 
     private func reviewVideo(_ url: URL) -> some View {
         VStack(spacing: 0) {
-            VStack(spacing: 12) {
+            VStack(spacing: AppDesign.Spacing.sm) {
                 Image(systemName: "video.fill")
                     .font(.system(size: 48))
                 Text(Tr("视频已录制"))
@@ -967,7 +967,7 @@ struct NativeCameraView: View {
 
     private func reviewActions(onRetake: @escaping () -> Void,
                                onUse: @escaping () -> Void) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Button(Tr("重拍"), action: onRetake)
                 .font(.headline)
                 .foregroundStyle(.white)

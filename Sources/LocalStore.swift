@@ -320,7 +320,7 @@ struct StorageSpaceView: View {
             VStack(spacing: 0) {
                 List {
                     Section {
-                        VStack(spacing: 8) {
+                        VStack(spacing: AppDesign.Spacing.xs) {
                             Text(LocalStore.text(chatBytes + cacheBytes))
                                 .font(pf(30, .semibold))
                                 .foregroundColor(C.label)
@@ -343,7 +343,7 @@ struct StorageSpaceView: View {
                     }
 
                     Section {
-                        HStack(spacing: 12) {
+                        HStack(spacing: AppDesign.Spacing.sm) {
                             Text(Tr("缓存")).font(pf(16)).foregroundColor(C.label)
                             Spacer(minLength: 8)
                             Text(LocalStore.text(cacheBytes)).font(pf(14)).foregroundColor(C.subLabel)
@@ -354,7 +354,7 @@ struct StorageSpaceView: View {
                             .disabled(cacheBytes == 0)
                         }
                         .listRowBackground(C.cardBg)
-                        HStack(spacing: 12) {
+                        HStack(spacing: AppDesign.Spacing.sm) {
                             Text(Tr("聊天记录")).font(pf(16)).foregroundColor(C.label)
                             Spacer(minLength: 8)
                             Text(LocalStore.text(chatBytes)).font(pf(14)).foregroundColor(C.subLabel)
@@ -370,7 +370,7 @@ struct StorageSpaceView: View {
 
                     Section {
                         ForEach(rows.indices, id: \.self) { i in
-                            HStack(spacing: 12) {
+                            HStack(spacing: AppDesign.Spacing.sm) {
                                 Image(systemName: icon(rows[i].0))
                                     .font(.system(size: 17, weight: .medium))
                                     .foregroundColor(C.green)
@@ -465,7 +465,7 @@ struct ChatStorageManageView: View {
             NavBar(title: Tr("聊天记录管理"), back: { dismiss() }) {
                 Button { withAnimation(.easeOut(duration: 0.15)) { bySize.toggle() } } label: {
                     Text(bySize ? Tr("按大小") : Tr("按时间"))
-                        .font(pf(14.5)).foregroundColor(C.green).padding(.trailing, 16)
+                        .font(pf(14.5)).foregroundColor(C.green).padding(.trailing, AppDesign.Spacing.md)
                 }
                 .buttonStyle(.plain)
             }
@@ -491,7 +491,7 @@ struct ChatStorageManageView: View {
                         Text(Tr("删除只是清掉你这边这个会话的历史记录，对方那边不受影响。"))
                             .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                             .multilineTextAlignment(.center)
-                            .padding(.horizontal, 24).padding(.top, 14)
+                            .padding(.horizontal, AppDesign.Spacing.xl).padding(.top, 14)
                         Color.clear.frame(height: AppDesign.Control.compactBadgeHeight)
                     }
                     .background(C.cardBg)
@@ -517,7 +517,7 @@ struct ChatStorageManageView: View {
         Button {
             if selected.contains(c.id) { selected.remove(c.id) } else { selected.insert(c.id) }
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Image(systemName: selected.contains(c.id) ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 19))
                     .foregroundColor(selected.contains(c.id) ? C.green : C.subLabel)
@@ -530,7 +530,7 @@ struct ChatStorageManageView: View {
                 Spacer(minLength: 8)
                 Text(LocalStore.text(c.bytes)).font(pf(14)).foregroundColor(C.subLabel)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .frame(height: 66)
             .contentShape(Rectangle())
         }
@@ -538,7 +538,7 @@ struct ChatStorageManageView: View {
     }
 
     private var bottomBar: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Button {
                 if allSelected { selected.removeAll() } else { selected = Set(list.map { $0.id }) }
             } label: {
@@ -563,7 +563,7 @@ struct ChatStorageManageView: View {
             .buttonStyle(.plain)
             .disabled(selected.isEmpty || busy)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .padding(.vertical, 10)
         .background(C.tabBg)
         .overlay(alignment: .top) { HairLine() }

@@ -71,7 +71,7 @@ struct MallSplashAdView: View {
                         .font(pf(11)).foregroundColor(.white.opacity(0.6))
                     Spacer(minLength: 0)
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
                 .padding(.bottom, L.safeBottom + 12)
             }
         }

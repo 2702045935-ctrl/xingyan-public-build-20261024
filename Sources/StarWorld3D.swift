@@ -120,7 +120,7 @@ struct StarWorldExperienceView: View {
                     Spacer()
                     worldGlassButton("info.circle") { }
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
                 .padding(.top, 6)
 
                 Spacer()

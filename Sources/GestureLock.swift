@@ -188,7 +188,7 @@ struct GestureLockView: View {
                 .buttonStyle(.plain)
                 Spacer()
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
 
             Spacer(minLength: 6)
 
@@ -248,13 +248,13 @@ struct GestureLockView: View {
             if fails > 0 && !lockedOut {
                 Text(Tr("还可以试 ") + String(triesLeft) + Tr(" 次"))
                     .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
-                    .padding(.top, 12)
+                    .padding(.top, AppDesign.Spacing.sm)
             }
             if lockedOut {
                 Text(Tr("试得太多次了：用「取消」退出去重进，或者用面容/指纹解锁"))
                     .font(AppDesign.Type.caption).foregroundColor(C.red)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 30).padding(.top, 12)
+                    .padding(.horizontal, 30).padding(.top, AppDesign.Spacing.sm)
             }
 
             Spacer(minLength: 22)
@@ -354,7 +354,7 @@ struct GestureSetupView: View {
                 }
                 .background(C.pageBg)
             } else if finished {
-                VStack(spacing: 16) {
+                VStack(spacing: AppDesign.Spacing.md) {
                     Spacer(minLength: 40)
                     ZStack {
                         Circle().fill(C.green.opacity(0.14)).frame(width: 92, height: 92)
@@ -369,7 +369,7 @@ struct GestureSetupView: View {
                 .frame(maxWidth: .infinity)
                 .background(C.pageBg)
             } else {
-                VStack(spacing: 12) {
+                VStack(spacing: AppDesign.Spacing.sm) {
                     stepsBar
                     Spacer(minLength: 4)
                     Text(tip)
@@ -428,11 +428,11 @@ struct GestureSetupView: View {
         .padding(.vertical, 22)
         .background(C.cardBg)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
     }
 
     private var stepsBar: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppDesign.Spacing.xs) {
             ForEach(0..<3, id: \.self) { i in
                 HStack(spacing: 6) {
                     ZStack {
@@ -460,7 +460,7 @@ struct GestureSetupView: View {
                 }
             }
         }
-        .padding(.top, 12)
+        .padding(.top, AppDesign.Spacing.sm)
     }
 
     private func row(_ title: String, _ tap: @escaping () -> Void) -> some View {
@@ -470,7 +470,7 @@ struct GestureSetupView: View {
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right").font(.system(size: 13)).foregroundColor(C.subLabel)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .frame(height: AppDesign.Control.buttonHeight)
             .contentShape(Rectangle())
         }

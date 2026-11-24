@@ -37,7 +37,7 @@ struct MemberCenterView: View {
                    back: { dismiss() })
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 12) {
+                VStack(spacing: AppDesign.Spacing.sm) {
                     heroCard
                     if store.info?.enabled != false {
                         tierCards
@@ -51,7 +51,7 @@ struct MemberCenterView: View {
                         PanelCard {
                             Text(Tr("会员功能还没开"))
                                 .font(pf(14)).foregroundColor(C.subLabel)
-                                .padding(16)
+                                .padding(AppDesign.Spacing.md)
                         }
                     }
                 }
@@ -145,7 +145,7 @@ struct MemberCenterView: View {
             }
 
             if store.active {
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     chip(Tr("到期 ") + expireText, gold)
                     chip(Tr("升级加速 ") + boostText, gold)
                     Spacer(minLength: 0)
@@ -211,7 +211,7 @@ struct MemberCenterView: View {
                                  + "\(t.groupMax ?? 0)")
                                 .font(pf(11)).foregroundColor(on ? .white.opacity(0.7) : C.subLabel)
                         }
-                        .padding(12)
+                        .padding(AppDesign.Spacing.sm)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(
                             RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
@@ -231,7 +231,7 @@ struct MemberCenterView: View {
     }
 
     private var durationRow: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppDesign.Spacing.xs) {
             ForEach(durations, id: \.0) { d in
                 let on = months == d.0
                 Button { withAnimation(.easeOut(duration: 0.14)) { months = d.0 } } label: {
@@ -258,7 +258,7 @@ struct MemberCenterView: View {
     }
 
     private var buyBar: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(store.active ? Tr("续费后到期时间顺延") : Tr("开通后立即生效"))
                     .font(pf(11.5)).foregroundColor(C.subLabel)
@@ -274,7 +274,7 @@ struct MemberCenterView: View {
                 Text(store.active ? Tr("立即续费") : Tr("立即开通"))
                     .font(AppDesign.Type.rowTitle)
                     .foregroundColor(.white)
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, AppDesign.Spacing.xl)
                     .frame(height: AppDesign.Control.compactHeight)
                     .background(
                         Capsule().fill(LinearGradient(colors: [gold, gold2],

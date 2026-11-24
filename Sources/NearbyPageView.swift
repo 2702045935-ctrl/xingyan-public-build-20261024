@@ -157,7 +157,7 @@ struct NearbyPageView: View {
                     } else if loading && people.isEmpty {
                         ProgressView().tint(.white).padding(.top, 70)
                     } else if people.isEmpty {
-                        VStack(spacing: 12) {
+                        VStack(spacing: AppDesign.Spacing.sm) {
                             hint(tip.isEmpty
                                  ? "\(Int(maxKm)) 公里内还没有其他人\n（对方也要打开「附近的人」，并且就在你附近）"
                                  : tip, showSetting: false)
@@ -182,7 +182,7 @@ struct NearbyPageView: View {
                         }
                     }
                 }
-                .padding(.bottom, 20)
+                .padding(.bottom, AppDesign.Spacing.lg)
             }
             .background(pageBg)
             }
@@ -312,11 +312,11 @@ struct NearbyPageView: View {
                         .font(AppDesign.Type.body).foregroundColor(subInk)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 30)
-                        .padding(.top, 8)
+                        .padding(.top, AppDesign.Spacing.xs)
                 } else {
                     Text(Tr("已扫到 ") + String(people.count) + Tr(" 个人 · 点亮着的点看资料"))
                         .font(pf(13)).foregroundColor(subInk)
-                        .padding(.top, 8)
+                        .padding(.top, AppDesign.Spacing.xs)
                 }
                 Spacer(minLength: 0)
             }
@@ -364,9 +364,9 @@ struct NearbyPageView: View {
     }
 
     private var bottomCard: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: AppDesign.Spacing.xs) {
             if let p = selected {
-                HStack(spacing: 12) {
+                HStack(spacing: AppDesign.Spacing.sm) {
                     Avatar(path: p.avatar ?? "", size: 44, radius: 22)
                     VStack(alignment: .leading, spacing: 3) {
                         Text(p.name).font(AppDesign.Type.rowTitle).foregroundColor(nameInk).lineLimit(1)
@@ -383,13 +383,13 @@ struct NearbyPageView: View {
                     .buttonStyle(.plain)
                     Button { helloFor = p } label: {
                         Text(Tr("打招呼")).font(AppDesign.Type.bodyMedium).foregroundColor(.white)
-                            .padding(.horizontal, 12).frame(height: AppDesign.Control.smallButtonHeight)
+                            .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.smallButtonHeight)
                             .background(Capsule().fill(C.green))
                     }
                     .buttonStyle(.plain)
                 }
             } else {
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     Image(systemName: "dot.radiowaves.left.and.right")
                         .font(.system(size: 14)).foregroundColor(C.green)
                     Text(loading ? Tr("正在扫描…") : Tr("点上面亮着的头看看是谁"))
@@ -415,7 +415,7 @@ struct NearbyPageView: View {
         } label: {
             HStack(alignment: .top, spacing: 13) {
                 Avatar(path: p.avatar ?? "", size: 46, radius: 5)
-                    .padding(.leading, 8)
+                    .padding(.leading, AppDesign.Spacing.xs)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(p.name)
@@ -441,7 +441,7 @@ struct NearbyPageView: View {
                         .padding(.top, 3)
                 }
             }
-            .padding(.trailing, 16)
+            .padding(.trailing, AppDesign.Spacing.md)
             .frame(height: 65, alignment: .top)
             .background(rowBg)
             .contentShape(Rectangle())

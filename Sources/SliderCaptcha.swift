@@ -26,7 +26,7 @@ struct SliderSheet: View {
                 }
                 Spacer(minLength: 0)
             }
-            .padding(20)
+            .padding(AppDesign.Spacing.lg)
             .navigationTitle(Tr("安全验证"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

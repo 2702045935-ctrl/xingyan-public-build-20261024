@@ -32,7 +32,7 @@ private struct XingyanMark: View {
         ZStack {
             RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous)
                 .fill(accent)
-            HStack(spacing: 4) {
+            HStack(spacing: AppDesign.Spacing.xxs) {
                 Capsule().fill(AppPalette.deepForest).frame(width: 2.8, height: 7)
                 Capsule().fill(AppPalette.deepForest).frame(width: 2.8, height: 7)
             }
@@ -74,7 +74,7 @@ private struct OrbitIdentityMotif: View {
                     .frame(width: 4, height: 4)
                     .position(x: geo.size.width * 0.48, y: geo.size.height * 0.37)
 
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     Capsule().fill(accent.opacity(0.75)).frame(width: 5, height: 13)
                     Capsule().fill(accent.opacity(0.75)).frame(width: 5, height: 13)
                 }
@@ -163,7 +163,7 @@ struct MyQRView: View {
                 identityBackdrop
 
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 16) {
+                    VStack(spacing: AppDesign.Spacing.md) {
                         identityCard
                             .opacity(appeared ? 1 : 0)
                             .scaleEffect(appeared ? 1 : 0.985)
@@ -258,7 +258,7 @@ struct MyQRView: View {
                 .padding(18)
             }
 
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Image(systemName: "point.3.connected.trianglepath.dotted")
                 Text("XINGYAN · ORBIT ID")
                     .tracking(1.5)
@@ -313,7 +313,7 @@ struct MyQRView: View {
                         .fill(cardAvatarFill)
                     Avatar(path: avatar.isEmpty ? (app.me?.avatarPath ?? "") : avatar,
                            size: 68, radius: 21, circle: false, level: growth.shownLevel)
-                        .padding(4)
+                        .padding(AppDesign.Spacing.xxs)
                 }
                 .frame(width: 78, height: 78)
                 .overlay {
@@ -347,7 +347,7 @@ struct MyQRView: View {
     }
 
     private var qrPanel: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: AppDesign.Spacing.sm) {
             ZStack {
                 RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                     .fill(Color(hex: 0xFCFDFC))
@@ -355,7 +355,7 @@ struct MyQRView: View {
                     ProgressView()
                         .tint(C.green)
                 } else if rows.isEmpty {
-                    VStack(spacing: 8) {
+                    VStack(spacing: AppDesign.Spacing.xs) {
                         Image(systemName: "exclamationmark.triangle")
                             .font(.system(size: 22))
                             .foregroundColor(C.subLabel)
@@ -408,7 +408,7 @@ struct MyQRView: View {
     private func qrTile(icon: String, title: String, sub: String,
                         tap: @escaping () -> Void) -> some View {
         Button(action: tap) {
-            VStack(spacing: 8) {
+            VStack(spacing: AppDesign.Spacing.xs) {
                 ZStack {
                     Circle()
                         .fill(C.green.opacity(scheme == .dark ? 0.14 : 0.10))
@@ -457,8 +457,8 @@ struct MyQRView: View {
                 .frame(width: 290, height: 220)
                 .offset(x: 28, y: -18)
 
-            VStack(spacing: 20) {
-                HStack(spacing: 12) {
+            VStack(spacing: AppDesign.Spacing.lg) {
+                HStack(spacing: AppDesign.Spacing.sm) {
                     XingyanMark(accent: exportAccent)
                         .frame(width: 38, height: 38)
                     VStack(alignment: .leading, spacing: 3) {
@@ -501,7 +501,7 @@ struct MyQRView: View {
                     }
                     .shadow(color: Color.black.opacity(0.07), radius: 18, y: 8)
 
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     Circle().fill(exportAccent).frame(width: 7, height: 7)
                     Text(Tr("扫码添加好友") + "  ·  " + Tr("星言 · 个人身份"))
                         .font(pfStyled(size: 14, weight: .medium))

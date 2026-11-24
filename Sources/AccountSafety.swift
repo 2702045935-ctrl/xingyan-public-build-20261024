@@ -19,10 +19,10 @@ struct AccountSafetyCenterView: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 22)
-                        .padding(.top, 12)
-                        .padding(.bottom, 8)
+                        .padding(.top, AppDesign.Spacing.sm)
+                        .padding(.bottom, AppDesign.Spacing.xs)
 
-                    GroupCard {
+                    GroupCard(horizontalInset: 0) {
                         Button { showFreeze = true } label: {
                             safetyRow(Tr("冻结账号"), Tr("立即冻结"), danger: true)
                         }
@@ -33,7 +33,7 @@ struct AccountSafetyCenterView: View {
                         }
                         .buttonStyle(.plain)
                     }
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, AppDesign.Spacing.sm)
 
                     Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
@@ -50,13 +50,13 @@ struct AccountSafetyCenterView: View {
     }
 
     private func safetyRow(_ title: String, _ right: String, danger: Bool) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppDesign.Spacing.xs) {
             Text(title).font(pf(16)).foregroundColor(danger ? C.red : C.label)
             Spacer(minLength: 0)
             Text(right).font(pf(13)).foregroundColor(C.subLabel)
             Chevron(size: 9, line: 1.6)
         }
-        .padding(.horizontal, 16).frame(height: AppDesign.Control.dialogRowHeight)
+        .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.dialogRowHeight)
         .contentShape(Rectangle())
     }
 }
@@ -93,7 +93,7 @@ struct FreezeAccountSheet: View {
                     Spacer().frame(height: 6)
                 }
                 .padding(.horizontal, 18)
-                .padding(.vertical, 16)
+                .padding(.vertical, AppDesign.Spacing.md)
             }
             Button { Task { await doFreeze() } } label: {
                 Text(busy ? Tr("正在冻结…") : Tr("冻结账号"))
@@ -101,7 +101,7 @@ struct FreezeAccountSheet: View {
                     .frame(maxWidth: .infinity).frame(height: 46)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay)
                         .fill(confirm ? C.red : C.subLabel))
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppDesign.Spacing.md)
             }
             .buttonStyle(.plain)
             .disabled(!confirm || busy)
@@ -160,14 +160,14 @@ struct UnfreezeSheet: View {
                     Spacer().frame(height: 6)
                 }
                 .padding(.horizontal, 18)
-                .padding(.vertical, 16)
+                .padding(.vertical, AppDesign.Spacing.md)
             }
             Button { Task { await submit() } } label: {
                 Text(busy ? Tr("正在解冻…") : Tr("解冻并登录"))
                     .font(AppDesign.Type.rowTitle).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(C.green))
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppDesign.Spacing.md)
             }
             .buttonStyle(.plain)
             .disabled(busy)
@@ -218,12 +218,12 @@ struct AccountOpsSection: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 8)
+            .padding(.horizontal, AppDesign.Spacing.md).padding(.top, AppDesign.Spacing.sm).padding(.bottom, AppDesign.Spacing.xs)
 
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 TextField(Tr("星言号 / 手机号"), text: $name)
                     .font(pf(15)).textInputAutocapitalization(.never).autocorrectionDisabled()
-                    .padding(.horizontal, 12).frame(height: AppDesign.Control.compactHeight)
+                    .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.compactHeight)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small).fill(C.fieldBg))
                 Button { Task { await look() } } label: {
                     Text(Tr("查状态")).font(pf(15)).foregroundColor(.white)
@@ -233,13 +233,13 @@ struct AccountOpsSection: View {
                 .buttonStyle(.plain)
                 .disabled(busy)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
 
             TextField(Tr("原因（封禁/冻结会写在提示里）"), text: $reason)
                 .font(pf(14))
-                .padding(.horizontal, 12).frame(height: AppDesign.Control.compactHeight)
+                .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.compactHeight)
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small).fill(C.fieldBg))
-                .padding(.horizontal, 16).padding(.top, 8)
+                .padding(.horizontal, AppDesign.Spacing.md).padding(.top, AppDesign.Spacing.xs)
 
             Picker(Tr("处罚类型"), selection: $banType) {
                 Text(Tr("永久封禁")).tag("permanent")
@@ -247,28 +247,28 @@ struct AccountOpsSection: View {
                 Text(Tr("风险限制")).tag("risk")
             }
             .pickerStyle(.segmented)
-            .padding(.horizontal, 16).padding(.top, 8)
+            .padding(.horizontal, AppDesign.Spacing.md).padding(.top, AppDesign.Spacing.xs)
 
             if banType != "permanent" {
                 Stepper(Tr("处罚天数：") + "\(durationDays)",
                         value: $durationDays, in: 1...365)
                     .font(pf(14))
-                    .padding(.horizontal, 16).padding(.top, 4)
+                    .padding(.horizontal, AppDesign.Spacing.md).padding(.top, AppDesign.Spacing.xxs)
             }
 
             if !stateText.isEmpty {
                 Text(stateText).font(pf(13)).foregroundColor(C.subLabel)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 16).padding(.top, 10)
+                    .padding(.horizontal, AppDesign.Spacing.md).padding(.top, 10)
             }
 
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 actBtn(Tr("冻结"), "freeze", C.red)
                 actBtn(Tr("解冻"), "unfreeze", C.green)
                 actBtn(Tr("封禁"), "ban", C.red)
                 actBtn(Tr("解封"), "unban", C.green)
             }
-            .padding(.horizontal, 16).padding(.vertical, 12)
+            .padding(.horizontal, AppDesign.Spacing.md).padding(.vertical, AppDesign.Spacing.sm)
         }
         .background(C.cardBg)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))

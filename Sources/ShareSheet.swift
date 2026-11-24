@@ -231,7 +231,7 @@ struct SharePreviewCard<Content: View>: View {
 
     var body: some View {
         content
-            .padding(12)
+            .padding(AppDesign.Spacing.sm)
             .background(ShareSheetTheme.card(scheme))
             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
             .overlay {
@@ -399,8 +399,8 @@ struct ShareSheet: View {
                     }
                     privacyNote
                 }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
+                .padding(.bottom, AppDesign.Spacing.md)
             }
             cancelButton
         }
@@ -586,7 +586,7 @@ struct ShareSheet: View {
             UINotificationFeedbackGenerator().notificationOccurred(.success)
             withAnimation(.easeOut(duration: 0.16)) { copied = true }
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 Image(systemName: "doc.on.doc")
                     .font(.system(size: 16, weight: .medium))
                     .foregroundStyle(ShareSheetTheme.accent)
@@ -625,7 +625,7 @@ struct ShareSheet: View {
                 .background(ShareSheetTheme.card(scheme))
         }
         .buttonStyle(MenuPressStyle())
-        .padding(.top, 8)
+        .padding(.top, AppDesign.Spacing.xs)
     }
 
     private func presentSystemShare() {

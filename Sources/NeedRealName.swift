@@ -16,14 +16,14 @@ struct NeedRealNameView: View {
             NavBar(title: Tr("设置钱包"), back: { onClose() })
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 24) {
+                VStack(spacing: AppDesign.Spacing.xl) {
                     identityHeader
                     setupSteps
                     continueButton
                     privacyNotice
                     Color.clear.frame(height: AppDesign.Control.badgeHeight)
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, AppDesign.Spacing.lg)
             }
             .background(C.pageBg)
         }
@@ -61,7 +61,7 @@ struct NeedRealNameView: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 22)
         }
-        .padding(.top, 24)
+        .padding(.top, AppDesign.Spacing.xl)
     }
 
     private var setupSteps: some View {
@@ -116,7 +116,7 @@ struct NeedRealNameView: View {
                 .foregroundColor(C.subLabel)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(16)
+        .padding(AppDesign.Spacing.md)
         .background(C.cardBg.opacity(0.72),
                     in: RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
     }
@@ -146,7 +146,7 @@ struct NeedRealNameView: View {
                 .frame(width: 22, height: 22)
                 .background(Color.primary.opacity(0.06), in: Circle())
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(minHeight: 64)
     }
 }

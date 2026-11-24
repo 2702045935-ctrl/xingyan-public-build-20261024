@@ -22,14 +22,14 @@ struct GameDetailView: View {
             NavBar(title: game.name, back: { dismiss() })
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 12) {
+                VStack(spacing: AppDesign.Spacing.sm) {
                     cover
                     titleRow
                     rankCard
                     Color.clear.frame(height: AppDesign.Spacing.xs)
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
+                .padding(.horizontal, AppDesign.Spacing.md)
+                .padding(.top, AppDesign.Spacing.xs)
             }
 
             bottomBar
@@ -63,7 +63,7 @@ struct GameDetailView: View {
 
     private var titleRow: some View {
         VStack(alignment: .leading, spacing: 7) {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Text(game.name).font(pf(19, .semibold)).foregroundColor(ink).lineLimit(1)
                 Text(Tr("小游戏"))
                     .font(pf(11))
@@ -101,7 +101,7 @@ struct GameDetailView: View {
             .padding(.bottom, 6)
 
             if loadingRank {
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     ProgressView().tint(subInk)
                     Text(Tr("正在加载…")).font(pf(13)).foregroundColor(subInk)
                 }
@@ -112,7 +112,7 @@ struct GameDetailView: View {
                     .padding(.vertical, 14)
             } else {
                 ForEach(Array(topRows.enumerated()), id: \.offset) { i, r in
-                    HStack(spacing: 12) {
+                    HStack(spacing: AppDesign.Spacing.sm) {
 
                         Text(r.rank.map { "\($0)" } ?? "—")
                             .font(AppDesign.Type.compactButton)
@@ -129,7 +129,7 @@ struct GameDetailView: View {
                             .foregroundColor(ink)
                             .monospacedDigit()
                     }
-                    .padding(.vertical, 8)
+                    .padding(.vertical, AppDesign.Spacing.xs)
                     if i < topRows.count - 1 { HairLine(inset: 64) }
                 }
             }
@@ -154,7 +154,7 @@ struct GameDetailView: View {
     }
 
     private var bottomBar: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Button { shareApp = game } label: {
                 Image(systemName: "square.and.arrow.up")
                     .font(.system(size: 18, weight: .medium))
@@ -176,7 +176,7 @@ struct GameDetailView: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .padding(.top, 10)
         .padding(.bottom, max(10, L.safeBottom + 6))
         .background(pageBg)
@@ -206,7 +206,7 @@ struct GameRankBoardView: View {
             NavBar(title: Tr("游戏排行榜"), back: { dismiss() })
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 12) {
+                VStack(spacing: AppDesign.Spacing.sm) {
                     if loading {
                         ProgressView().padding(.vertical, 50)
                     } else if games.isEmpty {
@@ -258,7 +258,7 @@ struct GameRankBoardView: View {
                     }
                     Color.clear.frame(height: AppDesign.Control.compactBadgeHeight)
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
                 .padding(.top, 10)
             }
         }
@@ -336,7 +336,7 @@ struct GameRankBoardView: View {
                                     : "\(rankedScored.count) 款有成绩")
                     .font(pf(10.5))
                     .foregroundColor(.white.opacity(0.86))
-                    .padding(.horizontal, 8)
+                    .padding(.horizontal, AppDesign.Spacing.xs)
                     .frame(height: 22)
                     .background(Capsule().fill(Color.white.opacity(0.12)))
             }
@@ -360,7 +360,7 @@ struct GameRankBoardView: View {
             }
         }
         .padding(.horizontal, 15)
-        .padding(.vertical, 16)
+        .padding(.vertical, AppDesign.Spacing.md)
         .background(
             RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .fill(LinearGradient(colors: [Color(hex: 0x171B2C),
@@ -481,7 +481,7 @@ struct GameRankBoardView: View {
         let players = r?.total ?? 0
         let best = (r?.rows ?? []).map { $0.scoreText }.max() ?? 0
         let medal = rankColor(rank)
-        return HStack(spacing: 12) {
+        return HStack(spacing: AppDesign.Spacing.sm) {
             Text("\(rank)")
                 .font(pf(15, .semibold))
                 .foregroundColor(rank <= 3 ? medal : C.subLabel)

@@ -35,14 +35,14 @@ struct PayScoreView: View {
                         }
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 24)
+                    .padding(.vertical, AppDesign.Spacing.xl)
                     .background(LinearGradient(colors: [levelColor, levelColor.opacity(0.75)],
                                                startPoint: .top, endPoint: .bottom))
 
                     VStack(alignment: .leading, spacing: 0) {
                         Text(Tr("分是怎么来的")).font(pf(13)).foregroundColor(C.subLabel)
-                            .padding(.horizontal, 8).padding(.bottom, 6)
-                        PayGroupCard {
+                            .padding(.horizontal, AppDesign.Spacing.xs).padding(.bottom, 6)
+                        PayGroupCard(horizontalInset: 0) {
                             let dims = data?.dims ?? []
                             ForEach(Array(dims.enumerated()), id: \.element.id) { idx, d in
                                 if idx > 0 { HairLine(inset: 16) }
@@ -52,20 +52,20 @@ struct PayScoreView: View {
                         if let f = data?.formula, !f.isEmpty {
                             Text(Tr("规则：") + f)
                                 .font(pf(12)).foregroundColor(C.subLabel)
-                                .padding(.horizontal, 10).padding(.top, 8)
+                                .padding(.horizontal, 10).padding(.top, AppDesign.Spacing.xs)
                         }
                         if let t = data?.updatedAt, !t.isEmpty {
                             Text(Tr("更新时间：") + rpTime(t) + Tr("　（每月 1 号重算，行为变了分数会跟着变）"))
                                 .font(pf(11.5)).foregroundColor(C.subLabel)
-                                .padding(.horizontal, 10).padding(.top, 4)
+                                .padding(.horizontal, 10).padding(.top, AppDesign.Spacing.xxs)
                         }
                     }
-                    .padding(.horizontal, 8).padding(.top, 12)
+                    .padding(.horizontal, AppDesign.Spacing.xs).padding(.top, AppDesign.Spacing.sm)
 
                     VStack(alignment: .leading, spacing: 0) {
                         Text(Tr("凭支付分可以免押")).font(pf(13)).foregroundColor(C.subLabel)
-                            .padding(.horizontal, 8).padding(.bottom, 6)
-                        PayGroupCard {
+                            .padding(.horizontal, AppDesign.Spacing.xs).padding(.bottom, 6)
+                        PayGroupCard(horizontalInset: 0) {
                             let list = data?.services ?? []
                             if list.isEmpty {
                                 Text(Tr("暂时没有可用服务")).font(pf(14)).foregroundColor(C.subLabel)
@@ -86,17 +86,17 @@ struct PayScoreView: View {
                                                 .font(pf(13)).foregroundColor(C.subLabel)
                                         }
                                     }
-                                    .padding(.horizontal, 16).frame(height: AppDesign.Control.profileRowHeight)
+                                    .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.profileRowHeight)
                                 }
                             }
                         }
                     }
-                    .padding(.horizontal, 8).padding(.top, 14)
+                    .padding(.horizontal, AppDesign.Spacing.xs).padding(.top, 14)
 
                     VStack(alignment: .leading, spacing: 0) {
                         Text(Tr("最近的分值变化")).font(pf(13)).foregroundColor(C.subLabel)
-                            .padding(.horizontal, 8).padding(.bottom, 6)
-                        PayGroupCard {
+                            .padding(.horizontal, AppDesign.Spacing.xs).padding(.bottom, 6)
+                        PayGroupCard(horizontalInset: 0) {
                             let list = data?.history ?? []
                             if list.isEmpty {
                                 Text(Tr("还没有记录")).font(pf(14)).foregroundColor(C.subLabel)
@@ -113,17 +113,17 @@ struct PayScoreView: View {
                                         Text(rpTime(h.at))
                                             .font(pf(11.5)).foregroundColor(C.subLabel)
                                     }
-                                    .padding(.horizontal, 16).frame(height: AppDesign.Control.buttonHeight)
+                                    .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.buttonHeight)
                                 }
                             }
                         }
                     }
-                    .padding(.horizontal, 8).padding(.top, 14)
+                    .padding(.horizontal, AppDesign.Spacing.xs).padding(.top, 14)
 
                     Text(data?.note ?? "")
                         .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal, 24).padding(.top, 14)
+                        .padding(.horizontal, AppDesign.Spacing.xl).padding(.top, 14)
                     Color.clear.frame(height: 26)
                 }
             }
@@ -141,7 +141,7 @@ struct PayScoreView: View {
 
     private func dimRow(_ d: API.PayScoreDim) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Text(d.name).font(AppDesign.Type.rowTitleMedium).foregroundColor(C.label)
                 if let w = d.max {
                     Text(Tr("满分 ") + "\(Int(w))").font(pf(11.5)).foregroundColor(C.subLabel)
@@ -172,8 +172,8 @@ struct PayScoreView: View {
                 Text(Tr("怎么提升：") + tip).font(pf(12)).foregroundColor(C.green.opacity(0.9))
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.horizontal, AppDesign.Spacing.md)
+        .padding(.vertical, AppDesign.Spacing.sm)
     }
 
     private func scoreColor(_ got: Double, _ full: Double) -> Color {

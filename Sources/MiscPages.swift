@@ -567,7 +567,7 @@ struct StickerViewOld: View {
                             .font(AppDesign.Type.body)
                             .foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, AppDesign.Spacing.md)
                             .padding(.vertical, 18)
                             .background(C.cardBg)
                     }
@@ -592,7 +592,7 @@ struct StickerViewOld: View {
                                 .font(pf(15)).foregroundColor(C.label)
                             Spacer()
                             Button { addingPhoto = true } label: {
-                                HStack(spacing: 4) {
+                                HStack(spacing: AppDesign.Spacing.xxs) {
                                     Image(systemName: "plus")
                                     Text(Tr("添加"))
                                 }
@@ -600,7 +600,7 @@ struct StickerViewOld: View {
                             }
                             .buttonStyle(.plain)
                         }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppDesign.Spacing.md)
                         .frame(height: AppDesign.Control.compactHeight)
 
                         if !mine.singleList.isEmpty {
@@ -621,7 +621,7 @@ struct StickerViewOld: View {
                                     .buttonStyle(.plain)
                                 }
                             }
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, AppDesign.Spacing.md)
                             .padding(.bottom, 14)
                         }
                     }
@@ -632,7 +632,7 @@ struct StickerViewOld: View {
                     sectionTitle(Tr("表情商店"))
                     ForEach(shop, id: \.self) { p in
                         VStack(spacing: 0) {
-                            HStack(spacing: 12) {
+                            HStack(spacing: AppDesign.Spacing.sm) {
                                 Text(p.icon ?? "😀").font(pf(26))
                                     .frame(width: 40)
                                 VStack(alignment: .leading, spacing: 2) {
@@ -646,7 +646,7 @@ struct StickerViewOld: View {
                                     Button { removePack(p) } label: {
                                         Text(Tr("移除"))
                                             .font(pf(14)).foregroundColor(C.subLabel)
-                                            .padding(.horizontal, 12).frame(height: AppDesign.Control.statusHeight)
+                                            .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.statusHeight)
                                             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.micro).fill(C.searchBg))
                                     }
                                     .buttonStyle(.plain)
@@ -654,13 +654,13 @@ struct StickerViewOld: View {
                                     Button { addPack(p) } label: {
                                         Text(Tr("添加"))
                                             .font(pf(14, .medium)).foregroundColor(.white)
-                                            .padding(.horizontal, 12).frame(height: AppDesign.Control.statusHeight)
+                                            .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.statusHeight)
                                             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.micro).fill(C.green))
                                     }
                                     .buttonStyle(.plain)
                                 }
                             }
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, AppDesign.Spacing.md)
                             .frame(height: 62)
                             HairLine(inset: 56)
                         }
@@ -709,7 +709,7 @@ struct StickerViewOld: View {
             Text(t).font(pf(13)).foregroundColor(C.subLabel)
             Spacer()
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(height: AppDesign.Control.sectionHeaderHeight)
         .background(C.pageBg)
     }
@@ -723,7 +723,7 @@ struct StickerViewOld: View {
     }
 
     private func builtinRow(_ p: BuiltinPack, added: Bool) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Text(p.icon).font(pf(26)).frame(width: 40)
             VStack(alignment: .leading, spacing: 2) {
                 Text(p.name).font(pf(16)).foregroundColor(C.label)
@@ -738,26 +738,26 @@ struct StickerViewOld: View {
                 Text(added ? Tr("移除") : Tr("添加"))
                     .font(pf(14, added ? .regular : .medium))
                     .foregroundColor(added ? C.subLabel : .white)
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, AppDesign.Spacing.sm)
                     .frame(height: AppDesign.Control.statusHeight)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.micro).fill(added ? C.searchBg : C.green))
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(height: 62)
         .background(C.cardBg)
     }
 
     private func packRow(icon: String, name: String, count: Int) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Text(icon).font(pf(24)).frame(width: 40)
             Text(name).font(pf(16)).foregroundColor(C.label)
             Spacer(minLength: 8)
             Text(Lang.isEnglish ? "\(count) items" : "\(count) 个").font(pf(13)).foregroundColor(C.subLabel)
             Chevron(size: 9, line: 1.6)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(height: AppDesign.Control.menuRowHeight)
         .background(C.cardBg)
         .contentShape(Rectangle())
@@ -782,7 +782,7 @@ struct StickerViewOld: View {
                         .background { CardGlassBox(radius: 8) }
                     }
                 }
-                .padding(16)
+                .padding(AppDesign.Spacing.md)
             }
             Button {
                 removePack(p)
@@ -878,7 +878,7 @@ struct StatusView: View {
                     Text(Tr("就这样"))
                         .font(pf(15, .medium))
                         .foregroundColor(picked == nil ? C.subLabel : C.green)
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppDesign.Spacing.md)
                         .frame(height: L.navH)
                 }
                 .buttonStyle(.plain)
@@ -911,7 +911,7 @@ struct StatusView: View {
 
     private func myStatusCard(_ ms: MyStatus) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Text(ms.moodIcon ?? "").font(pf(18))
                 Text(ms.moodText ?? "").font(pf(15, .medium)).foregroundColor(C.label)
                 Spacer(minLength: 6)
@@ -926,7 +926,7 @@ struct StatusView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 10) {
                         ForEach(views, id: \.self) { v in
-                            VStack(spacing: 4) {
+                            VStack(spacing: AppDesign.Spacing.xxs) {
                                 Avatar(path: v.avatar ?? "", size: 36, radius: 18)
                                 Text(v.name ?? "").font(pf(11)).foregroundColor(C.subLabel).lineLimit(1)
                             }
@@ -950,12 +950,12 @@ struct StatusView: View {
         )
         .overlay(alignment: .leading) {
             if !statusTint.isEmpty {
-                Capsule().fill(Color(hexString: statusTint)).frame(width: 3).padding(.vertical, 12)
+                Capsule().fill(Color(hexString: statusTint)).frame(width: 3).padding(.vertical, AppDesign.Spacing.sm)
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
         .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 3)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
     }
 
     private var statusTint: String {
@@ -978,13 +978,13 @@ struct StatusView: View {
                     if v.count > 30 { caption = String(v.prefix(30)) }
                 }
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
         .padding(.vertical, 10)
 
         .background(C.cardBg)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
         .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 3)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
     }
 
     private var moodBox: some View {
@@ -1018,19 +1018,19 @@ struct StatusView: View {
                     .foregroundColor(C.subLabel)
                 Spacer(minLength: 0)
             }
-            .padding(.leading, 16)
+            .padding(.leading, AppDesign.Spacing.md)
             LazyVGrid(columns: cols, spacing: 10) {
                 ForEach(items, id: \.self) { it in
                     tile(it, fallback: catColor)
                 }
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
         }
         .padding(.top, 14)
-        .padding(.bottom, 16)
+        .padding(.bottom, AppDesign.Spacing.md)
         .background(C.cardBg)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.row, style: .continuous))
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
     }
 
     private func tile(_ it: StatusItem, fallback: String) -> some View {
@@ -1094,7 +1094,7 @@ struct StatusView: View {
         }
         .buttonStyle(.plain)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
     }
 
     private func load() async {
@@ -1160,19 +1160,19 @@ struct StatusDetailView: View {
                     Text(Tr("更改状态"))
                         .font(pf(15))
                         .foregroundColor(C.green)
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppDesign.Spacing.md)
                         .frame(height: L.navH)
                 }
                 .buttonStyle(.plain)
             }
 
             ScrollView {
-                VStack(spacing: 12) {
+                VStack(spacing: AppDesign.Spacing.sm) {
                     bigCard
                     viewersCard
                     Spacer().frame(height: AppDesign.Control.compactBadgeHeight)
                 }
-                .padding(.top, 12)
+                .padding(.top, AppDesign.Spacing.sm)
             }
             .background(C.pageBg)
 
@@ -1210,7 +1210,7 @@ struct StatusDetailView: View {
                                             Color(hexString: second.isEmpty ? base : second)],
                                    startPoint: .topLeading, endPoint: .bottomTrailing))
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
     }
 
     private var leftText: String {
@@ -1248,7 +1248,7 @@ struct StatusDetailView: View {
         }
         .background(C.cardBg)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
     }
 
     private func viewerRow(_ v: StatusViewer) -> some View {
@@ -1279,8 +1279,8 @@ struct StatusDetailView: View {
         }
         .buttonStyle(.plain)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
-        .padding(.horizontal, 12)
-        .padding(.top, 8)
+        .padding(.horizontal, AppDesign.Spacing.sm)
+        .padding(.top, AppDesign.Spacing.xs)
         .padding(.bottom, max(10, L.safeBottom))
     }
 
@@ -1340,10 +1340,10 @@ struct FriendStatusView: View {
                                                         Color(hexString: second.isEmpty ? base : second)],
                                                startPoint: .topLeading, endPoint: .bottomTrailing))
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, AppDesign.Spacing.sm)
                     Spacer().frame(height: AppDesign.Control.compactBadgeHeight)
                 }
-                .padding(.top, 12)
+                .padding(.top, AppDesign.Spacing.sm)
             }
             .background(C.pageBg)
         }
@@ -1442,13 +1442,13 @@ struct FriendsStatusView: View {
     }
 
     private func row(_ u: User) -> some View {
-        return HStack(spacing: 12) {
+        return HStack(spacing: AppDesign.Spacing.sm) {
             Avatar(path: u.avatarPath, size: 40, radius: 5)
             VStack(alignment: .leading, spacing: 3) {
                 Text(u.name).font(pf(16)).foregroundColor(C.label).lineLimit(1)
                 if let f = listening[u.id] {
 
-                    HStack(spacing: 4) {
+                    HStack(spacing: AppDesign.Spacing.xxs) {
                         Image(systemName: "music.note").font(.system(size: 10.5))
                         Text(Tr("在听《") + f.title + "》").lineLimit(1)
                     }
@@ -1478,7 +1478,7 @@ struct FriendsStatusView: View {
             .buttonStyle(.plain)
             Text(u.moodIcon ?? "").font(pf(18))
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(height: 62)
         .contentShape(Rectangle())
     }
@@ -1573,8 +1573,8 @@ struct FriendsStatusView: View {
             Text(t).font(pf(13)).foregroundColor(C.subLabel)
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
+        .padding(.top, AppDesign.Spacing.md)
         .padding(.bottom, 6)
     }
 
@@ -1586,9 +1586,9 @@ struct FriendsStatusView: View {
                 .foregroundColor(AppPalette.legacyLink)
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .padding(.top, 10)
-        .padding(.bottom, 4)
+        .padding(.bottom, AppDesign.Spacing.xxs)
     }
 
     private func left(_ u: User) -> String {
@@ -1762,7 +1762,7 @@ struct WalletCardView: View {
                         HairLine(inset: 16)
                         row("单笔转账限额", "¥20000")
                     }
-                    .padding(.top, 8)
+                    .padding(.top, AppDesign.Spacing.xs)
                     Spacer().frame(height: AppDesign.Control.sectionHeaderHeight)
                 }
             }
@@ -1780,7 +1780,7 @@ struct WalletCardView: View {
             Spacer()
             Text(value).font(pf(15)).foregroundColor(C.subLabel)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .frame(height: AppDesign.Control.menuRowHeight)
     }
 }
@@ -1909,10 +1909,10 @@ struct WorksView: View {
                         .foregroundColor(C.subLabel)
                         .lineLimit(1)
                 }
-                .padding(.top, 12)
+                .padding(.top, AppDesign.Spacing.sm)
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .padding(.top, -44)
 
             HStack(spacing: 0) {
@@ -1923,8 +1923,8 @@ struct WorksView: View {
                 socialMetric(metric(social?.followers ?? 0), Tr("粉丝"))
             }
             .frame(maxWidth: .infinity)
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
+            .padding(.top, AppDesign.Spacing.md)
 
             let bio = (app.me?.bio ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             Text(bio.isEmpty ? Tr("记录生活，也记录作品") : bio)
@@ -1932,9 +1932,9 @@ struct WorksView: View {
                 .foregroundColor(C.subLabel)
                 .lineLimit(2)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
                 .padding(.top, 10)
-                .padding(.bottom, 16)
+                .padding(.bottom, AppDesign.Spacing.md)
         }
         .background(C.pageBg)
     }
@@ -1974,10 +1974,10 @@ struct WorksView: View {
                 Text(province)
                     .font(pf(10.5, .medium))
                     .foregroundColor(.white.opacity(0.78))
-                    .padding(.horizontal, 8)
+                    .padding(.horizontal, AppDesign.Spacing.xs)
                     .padding(.vertical, 5)
                     .background(.black.opacity(0.26), in: Capsule())
-                    .padding(12)
+                    .padding(AppDesign.Spacing.sm)
                     .padding(.bottom, 46)
             }
 
@@ -2002,7 +2002,7 @@ struct WorksView: View {
             }
             .buttonStyle(.plain)
             .disabled(coverBusy)
-            .padding(12)
+            .padding(AppDesign.Spacing.sm)
         }
         .frame(height: 208 + L.safeTop)
         .clipped()
@@ -2061,7 +2061,7 @@ struct WorksView: View {
                     withAnimation(.easeOut(duration: 0.16)) { tab = i }
                 } label: {
                     VStack(spacing: 7) {
-                        HStack(spacing: 4) {
+                        HStack(spacing: AppDesign.Spacing.xxs) {
                             Text(entry.0)
                                 .font(pf(14, tab == i ? .semibold : .regular))
                                 .foregroundColor(tab == i ? C.label : C.subLabel)
@@ -2091,7 +2091,7 @@ struct WorksView: View {
     }
 
     private var loadingState: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: AppDesign.Spacing.sm) {
             ProgressView()
             Text(Tr("正在加载作品"))
                 .font(pf(13))
@@ -2101,7 +2101,7 @@ struct WorksView: View {
     }
 
     private var errorState: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: AppDesign.Spacing.sm) {
             Image(systemName: "wifi.exclamationmark")
                 .font(.system(size: 32, weight: .light))
                 .foregroundColor(C.subLabel)
@@ -2119,7 +2119,7 @@ struct WorksView: View {
                 Text(Tr("重试"))
                     .font(pf(14, .semibold))
                     .foregroundColor(C.label)
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, AppDesign.Spacing.lg)
                     .frame(height: AppDesign.Control.floatingControlHeight)
                     .background(C.fieldBg, in: Capsule())
             }
@@ -2260,7 +2260,7 @@ struct WorksView: View {
                 .padding(.bottom, 1)
             }
 
-            HStack(spacing: 4) {
+            HStack(spacing: AppDesign.Spacing.xxs) {
                 Image(systemName: "play.fill")
                     .font(.system(size: 9, weight: .bold))
                 Text(Tr("预览"))

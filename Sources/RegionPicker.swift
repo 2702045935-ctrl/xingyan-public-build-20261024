@@ -32,17 +32,17 @@ struct RegionPickerSheet: View {
                     .font(pf(13)).foregroundColor(C.subLabel).lineLimit(1)
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .padding(.bottom, 10)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     ForEach(hot, id: \.self) { name in
                         Button { jump(to: name) } label: {
                             Text(name)
                                 .font(pf(13))
                                 .foregroundColor(current.hasSuffix(name) ? .white : C.label)
-                                .padding(.horizontal, 12)
+                                .padding(.horizontal, AppDesign.Spacing.sm)
                                 .frame(height: AppDesign.Control.sectionHeaderHeight)
                                 .background {
                                     if current.hasSuffix(name) {
@@ -55,7 +55,7 @@ struct RegionPickerSheet: View {
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppDesign.Spacing.md)
             }
             .padding(.bottom, 10)
 
@@ -111,7 +111,7 @@ struct RegionPickerSheet: View {
                                                               startPoint: .topLeading, endPoint: .bottomTrailing)))
             }
             .buttonStyle(.plain)
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
             .padding(.top, 14)
             .padding(.bottom, 18)
         }

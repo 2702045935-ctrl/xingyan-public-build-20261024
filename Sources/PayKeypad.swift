@@ -31,14 +31,14 @@ struct PayKeypadView: View {
     }
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: AppDesign.Spacing.xs) {
             keyRow(0)
             keyRow(1)
             keyRow(2)
             keyRow(3)
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 8)
+        .padding(.horizontal, AppDesign.Spacing.xs)
+        .padding(.vertical, AppDesign.Spacing.xs)
         .background(PayVisual.canvas)
         .onAppear {
             digits = secure ? Self.shuffledDigits() : (0...9).map { String($0) }
@@ -46,7 +46,7 @@ struct PayKeypadView: View {
     }
 
     private func keyRow(_ r: Int) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppDesign.Spacing.xs) {
             keyCell(key(r, 0))
             keyCell(key(r, 1))
             keyCell(key(r, 2))
@@ -125,7 +125,7 @@ struct PayDotField: View {
         .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
             .stroke(PayVisual.separator, lineWidth: 0.8))
 
-        .padding(.horizontal, 20)
+        .padding(.horizontal, AppDesign.Spacing.lg)
         .offset(x: shake)
         .animation(.spring(response: 0.28, dampingFraction: 0.7), value: count)
     }

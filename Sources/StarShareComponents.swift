@@ -127,7 +127,7 @@ struct StarForwardHero: View {
                         .overlay(Circle().stroke(Color.white.opacity(0.20), lineWidth: 0.8))
                 }
             }
-            .padding(16)
+            .padding(AppDesign.Spacing.md)
         }
         .frame(height: 148)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous))
@@ -232,7 +232,7 @@ struct StarForwardTargetRow: View {
     var countBadge: String? = nil
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Avatar(path: avatar,
                    size: 50,
                    radius: 16,
@@ -294,7 +294,7 @@ struct StarForwardTargetRow: View {
                     .background(Circle().fill(OrbitTheme.jadeSoft))
             }
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
         .frame(height: AppDesign.Control.rowHeight)
         .background(selected ? OrbitTheme.jadeSoft.opacity(0.72) : OrbitTheme.raised)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))

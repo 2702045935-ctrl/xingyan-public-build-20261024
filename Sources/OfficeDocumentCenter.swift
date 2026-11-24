@@ -75,7 +75,7 @@ struct OfficeDocumentHeader: View {
     }
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             ZStack {
                 RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous)
                     .fill(kind.color)
@@ -105,7 +105,7 @@ struct OfficeDocumentHeader: View {
                 .foregroundStyle(kind.color)
                 .accessibilityLabel(Tr("原生文档预览"))
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Spacing.md)
         .padding(.vertical, 9)
         .background(Color(uiColor: .secondarySystemGroupedBackground))
         .overlay(alignment: .bottom) {
@@ -124,7 +124,7 @@ struct OfficeDocumentActionBar: View {
     let onInfo: () -> Void
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppDesign.Spacing.xs) {
             action(title: Tr("收藏"),
                    symbol: favoriting ? "hourglass" : "star",
                    tint: C.green,
@@ -158,8 +158,8 @@ struct OfficeDocumentActionBar: View {
             .buttonStyle(.plain)
             .accessibilityLabel(Tr("更多文档操作"))
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.horizontal, AppDesign.Spacing.sm)
+        .padding(.vertical, AppDesign.Spacing.xs)
         .background(.bar)
         .overlay(alignment: .top) {
             Rectangle().fill(C.hairline).frame(height: AppDesign.Control.hairline)

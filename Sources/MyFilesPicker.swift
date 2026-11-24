@@ -46,8 +46,8 @@ struct MyFilesPickerView: View {
             .padding(.horizontal, 10)
             .frame(height: AppDesign.Control.floatingControlHeight)
             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous).fill(C.searchBg))
-            .padding(.horizontal, 12)
-            .padding(.top, 8)
+            .padding(.horizontal, AppDesign.Spacing.sm)
+            .padding(.top, AppDesign.Spacing.xs)
             .padding(.bottom, 6)
 
             if loading {
@@ -68,7 +68,7 @@ struct MyFilesPickerView: View {
                 Spacer(minLength: 0)
             } else {
                 ScrollView(showsIndicators: false) {
-                    LazyVStack(spacing: 8) {
+                    LazyVStack(spacing: AppDesign.Spacing.xs) {
                         ForEach(shown) { f in
                             Button {
                                 onPick(f)
@@ -79,9 +79,9 @@ struct MyFilesPickerView: View {
                             .buttonStyle(.plain)
                         }
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.top, 4)
-                    .padding(.bottom, 16)
+                    .padding(.horizontal, AppDesign.Spacing.sm)
+                    .padding(.top, AppDesign.Spacing.xxs)
+                    .padding(.bottom, AppDesign.Spacing.md)
                 }
             }
 
@@ -90,14 +90,14 @@ struct MyFilesPickerView: View {
                     onSystemPicker?()
                     dismiss()
                 } label: {
-                    HStack(spacing: 8) {
+                    HStack(spacing: AppDesign.Spacing.xs) {
                         Image(systemName: "folder.badge.plus").font(.system(size: 15))
                         Text(Tr("从「文件」App 里挑")).font(pf(15))
                     }
                     .foregroundColor(C.link)
                     .frame(maxWidth: .infinity).frame(height: 46)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.cardBg))
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, AppDesign.Spacing.sm)
                     .padding(.bottom, 10)
                 }
                 .buttonStyle(.plain)
@@ -114,7 +114,7 @@ struct MyFilesPickerView: View {
     }
 
     private func row(_ f: API.MyFileItem) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppDesign.Spacing.sm) {
             Text(f.ext.isEmpty ? "FILE" : f.ext.uppercased())
                 .font(pfExact(11, .semibold))
                 .foregroundColor(.white)

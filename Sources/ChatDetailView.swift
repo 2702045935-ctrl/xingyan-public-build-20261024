@@ -1956,7 +1956,7 @@ struct ChatDetailView: View {
         }()
 
         return ZStack {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 if let back = navBackAction {
                     Button(action: back) {
                         Image(systemName: "chevron.left")
@@ -2155,7 +2155,7 @@ struct ChatDetailView: View {
                 showChatFavorites = true
             }
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, AppDesign.Spacing.xs)
         .frame(height: AppDesign.Control.floatingControlHeight)
     }
 
@@ -2654,7 +2654,7 @@ struct ChatDetailView: View {
                     Spacer(minLength: 0)
                     HStack {
                         Spacer(minLength: 0)
-                        VStack(spacing: 8) {
+                        VStack(spacing: AppDesign.Spacing.xs) {
                             if let lastMsg = messages.last?.id {
                                 Button {
                                     nativeMessageController.scrollToBottom(animated: true)
@@ -2687,7 +2687,7 @@ struct ChatDetailView: View {
                                 .accessibilityValue("\(unreadHere)")
                             }
                         }
-                        .padding(.trailing, 12)
+                        .padding(.trailing, AppDesign.Spacing.sm)
                         .padding(.bottom, 10)
                     }
                 }
@@ -2802,7 +2802,7 @@ struct ChatDetailView: View {
                     Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 14)
-                .padding(.vertical, 8)
+                .padding(.vertical, AppDesign.Spacing.xs)
                 .background {
                     ZStack {
                         Rectangle().fill(.regularMaterial)
@@ -2818,7 +2818,7 @@ struct ChatDetailView: View {
                 Button {
                     CallCenter.shared.restore()
                 } label: {
-                    HStack(spacing: 8) {
+                    HStack(spacing: AppDesign.Spacing.xs) {
                         Circle().fill(C.green).frame(width: 7, height: 7)
                         Text(callBarText)
                             .font(AppDesign.Type.body)
@@ -4149,7 +4149,7 @@ struct ChatDetailView: View {
                                    phase: mediaUploadPhase)
             }
             .padding(.horizontal, L.msgPad)
-            .padding(.bottom, 12)
+            .padding(.bottom, AppDesign.Spacing.sm)
 
         case .sendingFile:
             uploadingRow {
@@ -4164,7 +4164,7 @@ struct ChatDetailView: View {
                                   onCancel: cancelFailedFileUpload)
             }
             .padding(.horizontal, L.msgPad)
-            .padding(.bottom, 12)
+            .padding(.bottom, AppDesign.Spacing.sm)
 
         case .bottom:
             Color.clear.frame(height: 1)
@@ -4218,7 +4218,7 @@ struct ChatDetailView: View {
             Spacer(minLength: 0)
         }
         .frame(maxWidth: 390, alignment: .leading)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
         .padding(.vertical, 9)
         .background(
             ZStack {
@@ -4714,7 +4714,7 @@ struct ChatDetailView: View {
                 )
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, AppDesign.Spacing.xxs)
         .id(p.id)
         .transition(
             .asymmetric(
@@ -4760,7 +4760,7 @@ struct ChatDetailView: View {
                     Text(failure.actionTitle)
                         .font(pf(11.5, .semibold))
                         .foregroundStyle(failure.tint)
-                        .padding(.horizontal, 8)
+                        .padding(.horizontal, AppDesign.Spacing.xs)
                         .frame(height: 26)
                         .background(Capsule().fill(failure.tint.opacity(0.10)))
                         .overlay(Capsule().stroke(failure.tint.opacity(0.22), lineWidth: 0.6))
@@ -4977,7 +4977,7 @@ struct ChatDetailView: View {
                 .font(pf(11.5, .medium))
                 .foregroundColor(adaptiveSystemSecondaryInk.opacity(0.92))
                 .frame(maxWidth: .infinity)
-                .padding(.top, 8)
+                .padding(.top, AppDesign.Spacing.xs)
                 .padding(.bottom, 7)
         } else {
             Text(TimeFmt.bubble(message.createdAt))
@@ -5018,7 +5018,7 @@ struct ChatDetailView: View {
                 .foregroundColor(adaptiveSystemSecondaryInk)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 10)
-                .padding(.vertical, 4)
+                .padding(.vertical, AppDesign.Spacing.xxs)
                 .background(
                     ZStack {
                         RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous)
@@ -5523,14 +5523,14 @@ struct ChatDetailView: View {
                 Spacer(minLength: 0)
                 Chevron(size: 8, line: 1.5, color: C.subLabel)
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
             .frame(height: 46)
             .background(C.cardBg.opacity(0.96))
             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
                 .stroke(ChatTheme.separator, lineWidth: 0.6))
-            .padding(.horizontal, 12)
-            .padding(.bottom, 4)
+            .padding(.horizontal, AppDesign.Spacing.sm)
+            .padding(.bottom, AppDesign.Spacing.xxs)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -5694,7 +5694,7 @@ struct ChatDetailView: View {
                     .padding(.top, 9)
             }
             .padding(.horizontal, 18)
-            .padding(.vertical, 12)
+            .padding(.vertical, AppDesign.Spacing.sm)
             .contentShape(Rectangle())
             .background(ChatTheme.composerBg)
             .overlay(alignment: .top) { HairLine() }
@@ -5709,7 +5709,7 @@ struct ChatDetailView: View {
                 .font(AppDesign.Type.body)
                 .foregroundColor(C.subLabel)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 24)
+                .padding(.horizontal, AppDesign.Spacing.xl)
 
             Button { showApply = true } label: {
                 Text(Tr("发送朋友验证申请"))
@@ -5720,10 +5720,10 @@ struct ChatDetailView: View {
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.green))
             }
             .buttonStyle(.plain)
-            .padding(.horizontal, 24)
+            .padding(.horizontal, AppDesign.Spacing.xl)
         }
         .padding(.top, 14)
-        .padding(.bottom, 20)
+        .padding(.bottom, AppDesign.Spacing.lg)
         .background(C.cardBg)
     }
 
@@ -5766,7 +5766,7 @@ struct ChatDetailView: View {
     }
 
     private var mutedComposer: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppDesign.Spacing.xs) {
             Image(systemName: "speaker.slash.fill")
                 .font(.system(size: 15))
                 .foregroundColor(mutedComposerInk)
@@ -5780,8 +5780,8 @@ struct ChatDetailView: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: L.inputH)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
+        .padding(.horizontal, AppDesign.Spacing.md)
+        .padding(.vertical, AppDesign.Spacing.xs)
         .background {
             GlassBackground(shape: Rectangle(),
                             opacity: max(UIConfig.num("glassAlpha", 0.8), 0.92),
@@ -5841,7 +5841,7 @@ struct ChatDetailView: View {
                             .foregroundColor(.white)
                             .frame(width: 18, height: 18)
                             .background(Circle().fill(Color.black.opacity(0.54)))
-                            .padding(4)
+                            .padding(AppDesign.Spacing.xxs)
                     }
                     .overlay(alignment: .topTrailing) {
                         Button {
@@ -5873,7 +5873,7 @@ struct ChatDetailView: View {
                 .accessibilityLabel(Tr("继续添加照片"))
             }
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
         .padding(.top, 6)
         .animation(.spring(response: 0.26, dampingFraction: 0.82), value: draftImages.count)
     }
@@ -5882,7 +5882,7 @@ struct ChatDetailView: View {
         VStack(spacing: 0) {
 
             if let q = quote {
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     Rectangle().fill(adaptiveMicInk).frame(width: 3, height: 38)
                     VStack(alignment: .leading, spacing: 1) {
                         Text(q.senderId == myId ? Tr("我") : displayName(q))
@@ -5912,13 +5912,13 @@ struct ChatDetailView: View {
                     }
                     .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 12)
+                .padding(.horizontal, AppDesign.Spacing.sm)
                 .padding(.vertical, 6)
                 .background(adaptiveComposerSurface)
             }
 
             if let draft = reEditDraft {
-                HStack(spacing: 8) {
+                HStack(spacing: AppDesign.Spacing.xs) {
                     Image(systemName: "arrow.uturn.backward")
                         .font(.system(size: 13.5, weight: .medium))
                         .foregroundColor(C.green)
@@ -5935,7 +5935,7 @@ struct ChatDetailView: View {
                     }
                     .buttonStyle(.plain)
                 }
-                .padding(.leading, 12)
+                .padding(.leading, AppDesign.Spacing.sm)
                 .padding(.trailing, 6)
                 .frame(height: AppDesign.Control.floatingControlHeight)
                 .background(ChatTheme.panel)
@@ -6013,7 +6013,7 @@ struct ChatDetailView: View {
                         Group {
                             if let url = pendingVoiceURL {
                                 let previewID = "pending-\(url.lastPathComponent)"
-                                HStack(spacing: 8) {
+                                HStack(spacing: AppDesign.Spacing.xs) {
                                     Button {
                                         voicePlayer.toggle(id: previewID, url: url)
                                     } label: {
@@ -6072,7 +6072,7 @@ struct ChatDetailView: View {
                                     .accessibilityLabel(Tr("发送"))
                                 }
                             } else if recorder.recording {
-                                HStack(spacing: 8) {
+                                HStack(spacing: AppDesign.Spacing.xs) {
                                     Circle()
                                         .fill(recorder.willCancel ? C.red : OrbitTheme.jadeDeep)
                                         .frame(width: 8, height: 8)
@@ -6106,7 +6106,7 @@ struct ChatDetailView: View {
                                         )
                                 }
                             } else {
-                                HStack(spacing: 8) {
+                                HStack(spacing: AppDesign.Spacing.xs) {
                                     ZStack {
                                         Circle()
                                             .fill(OrbitTheme.jadeDeep.opacity(0.11))
@@ -6214,7 +6214,7 @@ struct ChatDetailView: View {
                                 .font(AppDesign.Type.captionMedium)
                                 .foregroundStyle(recorder.willCancel ? C.red : OrbitTheme.jadeDeep)
                         }
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, AppDesign.Spacing.sm)
                         .frame(maxWidth: .infinity, minHeight: composerInputHeight)
                         .background(
                             recorder.willCancel ? C.red.opacity(0.09)
@@ -6257,7 +6257,7 @@ struct ChatDetailView: View {
                         }
                     }
                 }
-                .padding(.horizontal, 8)
+                .padding(.horizontal, AppDesign.Spacing.xs)
                 .padding(.trailing, composerCanExpand ? 28 : 0)
                 .frame(height: composerInputHeight)
                 .background {
@@ -6299,7 +6299,7 @@ struct ChatDetailView: View {
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .padding(.trailing, 4)
+                        .padding(.trailing, AppDesign.Spacing.xxs)
                         .accessibilityLabel(Tr("展开编辑"))
                     }
                 }
@@ -8458,7 +8458,7 @@ struct SystemLine: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, 40)
-                .padding(.vertical, 4)
+                .padding(.vertical, AppDesign.Spacing.xxs)
         } else {
             cardBody
         }
@@ -8640,7 +8640,7 @@ struct CallRecordBubble: View {
                 .foregroundColor(ink)
             callIcon
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
         .padding(.vertical, 9)
         .background(BubbleFill(mine: mine))
         .frame(maxWidth: L.bubbleMaxW, alignment: mine ? .trailing : .leading)
@@ -8748,7 +8748,7 @@ struct QuoteInspectSheet: View {
                             .textSelection(.enabled)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .padding(.bottom, 8)
+                    .padding(.bottom, AppDesign.Spacing.xs)
                 }
 
                 if !quote.refId.isEmpty {
@@ -8773,7 +8773,7 @@ struct QuoteInspectSheet: View {
                 }
             }
             .padding(.horizontal, 18)
-            .padding(.top, 8)
+            .padding(.top, AppDesign.Spacing.xs)
             .padding(.bottom, max(18, L.safeBottom))
         }
     }
@@ -8970,7 +8970,7 @@ struct MessageRow: View {
             content
                 .overlay(alignment: .topLeading) {
                     if !senderName.isEmpty {
-                        HStack(spacing: 4) {
+                        HStack(spacing: AppDesign.Spacing.xxs) {
                             Text(senderName)
                                 .font(pfStyled(12.5, .semibold))
                                 .foregroundColor(
@@ -9161,8 +9161,8 @@ struct MessageRow: View {
                 .foregroundColor(senderNameUsesLightInk
                                  ? Color.white.opacity(0.92)
                                  : Color(hex: 0x3F4247))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
+                .padding(.horizontal, AppDesign.Spacing.sm)
+                .padding(.vertical, AppDesign.Spacing.xs)
                 .background(
                     ZStack {
                         RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
@@ -9660,7 +9660,7 @@ struct MessageRow: View {
                     .font(pf(12)).foregroundColor(bubbleSecondaryInk).lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
             .padding(.vertical, 9)
         }
         .frame(width: 216)
@@ -9746,7 +9746,7 @@ struct MessageRow: View {
             Text(Tr("[红包] 这条记录是旧版本的，已经失效"))
                 .font(pf(14))
                 .foregroundColor(ChatTheme.secondary)
-                .padding(.horizontal, 12)
+                .padding(.horizontal, AppDesign.Spacing.sm)
                 .padding(.vertical, 10)
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous).fill(ChatTheme.separator))
         }
@@ -9772,7 +9772,7 @@ struct MessageRow: View {
         return HStack(spacing: 10) {
             Spacer(minLength: 0)
 
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Spacing.xs) {
                 Text(weChatVoiceClock(total))
                     .foregroundStyle(bubblePrimaryInk)
                 Spacer(minLength: 6)
@@ -9848,7 +9848,7 @@ struct MessageRow: View {
         return HStack(spacing: 10) {
             if mine { Spacer(minLength: 0) }
 
-            HStack(spacing: 12) {
+            HStack(spacing: AppDesign.Spacing.sm) {
                 ZStack {
                     Circle()
                         .fill(
@@ -9891,7 +9891,7 @@ struct MessageRow: View {
                 }
                 .frame(maxWidth: .infinity)
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, AppDesign.Spacing.sm)
             .frame(width: width, height: 64, alignment: .leading)
             .background(BubbleFill(mine: mine,
                                    tail: showTail,
@@ -10565,8 +10565,8 @@ struct FilePreviewSheet: View {
                                 .stroke(Color.primary.opacity(0.075), lineWidth: 0.7)
                         }
                         .shadow(color: Color.black.opacity(0.055), radius: 12, y: 5)
-                        .padding(.horizontal, 12)
-                        .padding(.bottom, 8)
+                        .padding(.horizontal, AppDesign.Spacing.sm)
+                        .padding(.bottom, AppDesign.Spacing.xs)
                 }
             }
             .navigationTitle(Tr("文件预览"))
@@ -10677,7 +10677,7 @@ struct FilePreviewSheet: View {
             RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(Color.primary.opacity(0.07), lineWidth: 0.7)
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, AppDesign.Spacing.sm)
     }
 
     private var defaultActionBar: some View {
@@ -10685,7 +10685,7 @@ struct FilePreviewSheet: View {
             Button {
                 favorite()
             } label: {
-                VStack(spacing: 4) {
+                VStack(spacing: AppDesign.Spacing.xxs) {
                     if favoriting {
                         ProgressView().scaleEffect(0.62).frame(height: 21)
                     } else {
@@ -10705,7 +10705,7 @@ struct FilePreviewSheet: View {
             .disabled(favoriting)
 
             Button { showDrop = true } label: {
-                VStack(spacing: 4) {
+                VStack(spacing: AppDesign.Spacing.xxs) {
                     Image(systemName: "dot.radiowaves.left.and.right")
                         .font(.system(size: 18, weight: .medium))
                         .frame(height: 21)
@@ -10720,7 +10720,7 @@ struct FilePreviewSheet: View {
             .buttonStyle(.plain)
 
             Button { showShare = true } label: {
-                VStack(spacing: 4) {
+                VStack(spacing: AppDesign.Spacing.xxs) {
                     Image(systemName: "square.and.arrow.up")
                         .font(.system(size: 18, weight: .semibold))
                         .frame(height: 21)

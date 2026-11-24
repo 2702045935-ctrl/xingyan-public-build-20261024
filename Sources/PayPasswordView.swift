@@ -28,7 +28,7 @@ struct PayPasswordView: View {
     var body: some View {
         Form {
             Section {
-                VStack(spacing: 16) {
+                VStack(spacing: AppDesign.Spacing.md) {
                     Text(title)
                         .font(pfStyled(size: 17, weight: .semibold))
 

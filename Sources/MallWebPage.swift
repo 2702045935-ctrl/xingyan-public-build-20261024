@@ -36,7 +36,7 @@ struct MallWebPage: View {
                     Text(Tr("商城地址不对")).font(pf(14)).foregroundColor(C.subLabel)
                 }
                 if loading {
-                    ProgressView().padding(.top, 24)
+                    ProgressView().padding(.top, AppDesign.Spacing.xl)
                 }
             }
         }

@@ -90,7 +90,7 @@ struct MomentPhotoReader: View {
                 }
 
                 VStack(alignment: .leading, spacing: 3) {
-                    HStack(spacing: 8) {
+                    HStack(spacing: AppDesign.Spacing.xs) {
                         Text(moment.author?.name ?? "")
                             .font(systemTextFont(14.2, .semibold, relativeTo: .subheadline))
                             .foregroundColor(readerLink)
@@ -254,7 +254,7 @@ struct MomentPhotoReader: View {
                     Button {
                         onOpenLikes(likes)
                     } label: {
-                        HStack(spacing: 8) {
+                        HStack(spacing: AppDesign.Spacing.xs) {
                             HStack(spacing: -6) {
                                 ForEach(Array(likes.prefix(5).enumerated()), id: \.offset) { _, like in
                                     likeAvatar(like)
@@ -299,9 +299,9 @@ struct MomentPhotoReader: View {
                     }
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
-            .padding(.bottom, 16)
+            .padding(.horizontal, AppDesign.Spacing.md)
+            .padding(.top, AppDesign.Spacing.sm)
+            .padding(.bottom, AppDesign.Spacing.md)
         }
         .frame(maxHeight: 300)
     }
