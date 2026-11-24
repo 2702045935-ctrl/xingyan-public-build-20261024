@@ -59,7 +59,7 @@ const {
   decodeEnvelope: decodeGatewayEnvelope
 } = require('./lib/gateway-multiplex');
 const { GatewayFanoutBus } = require('./lib/gateway-fanout');
-const { HotGroupRouter } = require('./lib/hot-group-router');
+const { HotGroupRouter, hash32: hotGroupHash32 } = require('./lib/hot-group-router');
 const { FanoutOutbox } = require('./lib/fanout-outbox');
 const { FanoutDispatcher } = require('./lib/fanout-dispatcher');
 const {
@@ -9215,8 +9215,13 @@ function sendToChat(chat, payload, exceptUserId) {
 }
 
 function scheduleGatewayFanout(chat, recipients, payload, publishId) {
-  if ((gatewayFanoutMode !== 'shadow' && gatewayFanoutMode !== 'live')
+  if ((gatewayFanoutMode !== 'shadow' && gatewayFanoutMode !== 'canary'
+      && gatewayFanoutMode !== 'live')
       || chat.type !== 'group') return false;
+  if (gatewayFanoutMode === 'canary'
+      && hotGroupHash32(chat.id) % 100 >= gatewayFanoutCanaryPercent) {
+    return false;
+  }
   if (recipients.length < hotGroupRouter.threshold) return false;
   const live = gatewayNodesCache.filter((node) => node.endpoint && node.active !== false);
   if (!live.length) return false;
@@ -9234,7 +9239,8 @@ function scheduleGatewayFanout(chat, recipients, payload, publishId) {
   })).filter((node) => node.endpoint);
   if (!nodes.length) return false;
   gatewayFanoutMetrics.plans += 1;
-  if (gatewayFanoutMode === 'live' && fanoutDispatcher) {
+  if ((gatewayFanoutMode === 'live' || gatewayFanoutMode === 'canary')
+      && fanoutDispatcher) {
     try {
       fanoutDispatcher.enqueue({
         publishId,
@@ -26988,12 +26994,16 @@ const etcdGatewayDirectory = gatewayDirectoryMode === 'etcd'
   : null;
 const gatewayNodesCache = [];
 const gatewayFanoutMode = String(process.env.GATEWAY_FANOUT_MODE || 'off').toLowerCase();
+const gatewayFanoutCanaryPercent = Math.max(0, Math.min(100,
+  Number(process.env.GATEWAY_FANOUT_CANARY_PERCENT) || 0));
 const gatewayFanoutBus = new GatewayFanoutBus({
   secret: process.env.GATEWAY_ADMIN_SECRET || '',
   retries: Number(process.env.GATEWAY_FANOUT_RETRIES) || 1,
   timeoutMs: Number(process.env.GATEWAY_FANOUT_TIMEOUT_MS) || 2500
 });
-const fanoutOutbox = (gatewayFanoutMode === 'shadow' || gatewayFanoutMode === 'live')
+const fanoutOutbox = (gatewayFanoutMode === 'shadow'
+  || gatewayFanoutMode === 'canary'
+  || gatewayFanoutMode === 'live')
   ? new FanoutOutbox({
     file: path.join(DATA_DIR, 'fanout-outbox.jsonl'),
     maxEntries: Number(process.env.FANOUT_OUTBOX_MAX) || 100000
@@ -27013,6 +27023,7 @@ const hotGroupRouter = new HotGroupRouter({
 });
 const gatewayFanoutMetrics = {
   mode: gatewayFanoutMode,
+  canaryPercent: gatewayFanoutCanaryPercent,
   plans: 0,
   published: 0,
   wouldDeliver: 0,

@@ -19,6 +19,17 @@ Gateway 侧 `/__gateway/publish` 目前是内部接口，必须带
 `fanout-outbox.jsonl`，由 dispatcher 批量发给 Gateway；本地已由 Gateway 承载的
 虚拟连接会跳过旧 `sendTo`，避免双发。没有可用 Gateway 时自动回退本地链路。
 
+灰度切流：
+
+```text
+GATEWAY_FANOUT_MODE=canary
+GATEWAY_FANOUT_CANARY_PERCENT=1
+```
+
+canary 按群 ID 的稳定哈希选择，不随进程重启漂移。建议依次使用
+`0 -> 1 -> 5 -> 20 -> 50 -> 100`，每一步观察 outbox pending、Gateway ack、
+P99 和重复投递指标。只有 `live` 或 `canary` 且实际选中时才跳过本地 Gateway 虚拟连接。
+
 接入主消息路径前还需要补：
 
 1. durable outbox 和批次 ack；

@@ -57,6 +57,8 @@ def main() -> None:
     for needle in ["publishId", "retries", "timeoutMs", "delivered"]:
         if needle not in fanout:
             raise AssertionError(f"gateway fanout missing {needle}")
+    if "GATEWAY_FANOUT_CANARY_PERCENT" not in server:
+        raise AssertionError("server missing gateway canary mode")
     outbox = (ROOT / "server/lib/fanout-outbox.js").read_text(encoding="utf-8")
     for needle in ["enqueue", "attempt", "ack", "fail", "replay", "fsyncSync"]:
         if needle not in outbox:
