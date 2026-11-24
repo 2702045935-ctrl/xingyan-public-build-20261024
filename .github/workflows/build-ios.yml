@@ -248,6 +248,7 @@ jobs:
           node server/test/connection-governor.test.js
           node server/test/gateway-directory.test.js
           node server/test/gateway-directory-etcd.test.js
+          node server/test/gateway-directory-etcd-http.test.js
           node server/test/gateway-multiplex.test.js
           node server/test/gateway-fanout.test.js
           node server/test/fanout-outbox.test.js
