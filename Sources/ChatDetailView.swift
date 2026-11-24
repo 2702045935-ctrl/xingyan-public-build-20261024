@@ -4724,7 +4724,7 @@ struct ChatDetailView: View {
                         ) + WhatsAppChatLayout.bubblePadH * 2,
                         alignment: .leading
                     )
-                    .background(BubbleFill(mine: true, tail: showsTail))
+                    .background(BubbleFill(mine: true, tail: false))
                     .overlay(alignment: .bottomTrailing) {
                         HStack(spacing: 3) {
                             Text(TimeFmt.messageClock(p.at))
