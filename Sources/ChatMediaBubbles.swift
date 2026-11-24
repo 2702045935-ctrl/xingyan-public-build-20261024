@@ -3,14 +3,6 @@ import AVFoundation
 import AVKit
 import Photos
 
-enum UploadVisualPhase {
-    case preparing
-    case connecting
-    case uploading
-    case processing
-    case failed
-}
-
 private func jsonDict(_ s: String) -> [String: Any] {
     guard let d = s.data(using: .utf8),
           let o = try? JSONSerialization.jsonObject(with: d) as? [String: Any] else { return [:] }
@@ -736,22 +728,10 @@ struct VideoPlayerSheet: View {
 
 struct SendingVideoBubble: View {
     var cover: UIImage?
-    var previews: [UIImage] = []
     var progress: Double
-    var phase: UploadVisualPhase = .preparing
-
-    private var images: [UIImage] {
-        previews.isEmpty ? [cover].compactMap { $0 } : previews
-    }
 
     private var size: CGSize {
-        if images.count > 1 {
-            return MultiImageMosaic.containerSize(
-                for: images.count,
-                width: 229
-            )
-        }
-        guard let c = images.first, c.size.width > 0, c.size.height > 0 else {
+        guard let c = cover, c.size.width > 0, c.size.height > 0 else {
             return videoBubbleSize(w: 0, h: 0)
         }
         return videoBubbleSize(w: Int(c.size.width), h: Int(c.size.height))
@@ -759,32 +739,7 @@ struct SendingVideoBubble: View {
 
     var body: some View {
         ZStack {
-            if images.count > 1 {
-                GeometryReader { geo in
-                    let frames = MultiImageMosaic.frames(
-                        count: images.count,
-                        in: CGRect(origin: .zero, size: geo.size)
-                    )
-                    ZStack(alignment: .topLeading) {
-                        ForEach(Array(images.enumerated()), id: \.offset) { index, image in
-                            if index < frames.count {
-                                Image(uiImage: image)
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(
-                                        width: frames[index].width,
-                                        height: frames[index].height
-                                    )
-                                    .clipped()
-                                    .offset(
-                                        x: frames[index].minX,
-                                        y: frames[index].minY
-                                    )
-                            }
-                        }
-                    }
-                }
-            } else if let c = images.first {
+            if let c = cover {
                 Image(uiImage: c)
                     .resizable()
                     .scaledToFill()
@@ -803,93 +758,28 @@ struct SendingVideoBubble: View {
                     .stroke(Color.white, style: StrokeStyle(lineWidth: 4, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                     .frame(width: 54, height: 54)
-                if phase == .uploading, progress > 0.001 {
+                if progress > 0.01 {
                     Text("\(Int(min(1, progress) * 100))%")
                         .font(pfStyled(size: 13.5, weight: .semibold))
                         .foregroundColor(.white)
                 } else {
-                    VStack(spacing: 3) {
-                        ProgressView()
-                            .tint(.white)
-                        Text(phaseLabel)
-                            .font(pf(9.5, .medium))
-                            .foregroundColor(.white.opacity(0.92))
-                    }
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 15))
+                        .foregroundColor(.white.opacity(0.95))
                 }
             }
         }
         .frame(width: size.width, height: size.height)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .overlay(alignment: .bottom) {
-            uploadProgressFooter
-        }
-    }
-
-    private var uploadProgressFooter: some View {
-        VStack(spacing: 5) {
-            HStack(spacing: 6) {
-                Text(phaseLabel)
-                Spacer(minLength: 4)
-                if phase == .uploading {
-                    Text("\(Int(min(1, max(0, progress)) * 100))%")
-                        .monospacedDigit()
-                } else {
-                    ProgressView()
-                        .controlSize(.mini)
-                        .tint(.white)
-                }
-            }
-            .font(pf(9.5, .semibold))
-            .foregroundStyle(.white.opacity(0.94))
-
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(Color.white.opacity(0.24))
-                    Capsule()
-                        .fill(Color.white.opacity(0.96))
-                        .frame(
-                            width: phase == .uploading
-                                ? max(4, geo.size.width * min(1, max(0, progress)))
-                                : max(8, geo.size.width * 0.24)
-                        )
-                }
-            }
-            .frame(height: 3)
-        }
-        .padding(.horizontal, 9)
-        .padding(.top, 13)
-        .padding(.bottom, 8)
-        .background(
-            LinearGradient(
-                colors: [Color.clear, Color.black.opacity(0.58)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        )
-        .allowsHitTesting(false)
-    }
-
-    private var phaseLabel: String {
-        switch phase {
-        case .preparing: return Tr("准备中")
-        case .connecting: return Tr("连接中")
-        case .uploading: return Tr("上传中")
-        case .processing: return Tr("处理中")
-        case .failed: return Tr("上传失败")
-        }
+        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
     }
 }
 
 struct SendingFileBubble: View {
     let name: String
     let bytes: Int
-    let progress: Double?
-    var phase: UploadVisualPhase = .preparing
-    var detailText: String = ""
-    var onRetry: (() -> Void)? = nil
-    var onCancel: (() -> Void)? = nil
+    let progress: Double
 
-    private var value: Double { min(1, max(0, progress ?? 0)) }
+    private var value: Double { min(1, max(0, progress)) }
     private var look: (symbol: String, color: Color, badge: String) {
         FileKind.look(name)
     }
@@ -914,55 +804,21 @@ struct SendingFileBubble: View {
                     .stroke(look.color.opacity(0.18), lineWidth: 0.6))
 
                 VStack(alignment: .leading, spacing: 3) {
-                Text(name)
-                        .font(pf(14.5, .semibold))
+                    Text(name)
+                        .font(pf(14))
                         .foregroundColor(C.label)
                         .lineLimit(1)
                         .truncationMode(.middle)
                     HStack(spacing: 6) {
-                        Text(byteText(Int64(bytes)))
+                        Text(byteText(bytes))
                             .font(pf(11))
                             .foregroundColor(C.subLabel)
                         Spacer(minLength: 4)
-                        Text(progressText)
+                        Text(value >= 0.995
+                             ? Tr("服务器处理中…")
+                             : Tr("上传中") + " \(Int(value * 100))%")
                             .font(pf(10.5, .medium))
-                            .foregroundColor(C.subLabel)
-                    }
-                    if !detailText.isEmpty {
-                        Text(detailText)
-                            .font(pf(10.5, .medium))
-                            .foregroundColor(C.subLabel)
-                            .lineLimit(1)
-                    }
-                    if phase == .failed {
-                        HStack(spacing: 8) {
-                            Button {
-                                onRetry?()
-                            } label: {
-                                Label(Tr("继续上传"), systemImage: "arrow.clockwise")
-                                    .font(pf(11.5, .semibold))
-                                    .foregroundColor(C.label)
-                                    .padding(.horizontal, 10)
-                                    .frame(height: 26)
-                                    .background(
-                                        Capsule().fill(
-                                            C.label.opacity(0.10)
-                                        )
-                                    )
-                            }
-                            .buttonStyle(.plain)
-                            .disabled(onRetry == nil)
-
-                            Button {
-                                onCancel?()
-                            } label: {
-                                Text(Tr("取消"))
-                                    .font(pf(11.5, .medium))
-                                    .foregroundColor(C.subLabel)
-                            }
-                            .buttonStyle(.plain)
-                            .disabled(onCancel == nil)
-                        }
+                            .foregroundColor(look.color)
                     }
                 }
             }
@@ -970,53 +826,35 @@ struct SendingFileBubble: View {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule()
-                        .fill(C.label.opacity(0.12))
+                        .fill(C.fieldBg)
                     Capsule()
                         .fill(look.color)
                         .frame(width: max(CGFloat(value > 0 ? 4 : 0),
                                           geo.size.width * CGFloat(value)))
                 }
             }
-            .frame(height: 4)
+            .frame(height: 3)
             .animation(.linear(duration: 0.16), value: value)
         }
-        .padding(12)
-        .frame(width: 236)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 11)
+        .frame(width: 218)
+        .background {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(C.cardBg)
-        )
-        .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(C.hairline.opacity(0.72), lineWidth: 0.6)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(C.hairline.opacity(0.78), lineWidth: 0.6)
+                }
+                .shadow(color: Color.black.opacity(0.10),
+                        radius: 6, x: 0, y: 3)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(Tr("上传中") + " " + name))
-        .accessibilityValue(Text(progressText))
+        .accessibilityValue(Text("\(Int(value * 100))%"))
     }
 
-    private var progressText: String {
-        switch phase {
-        case .preparing:
-            return Tr("准备上传…")
-        case .connecting:
-            return Tr("连接中…")
-        case .processing:
-            return Tr("服务器处理中…")
-        case .failed:
-            return detailText.isEmpty ? Tr("上传失败，可重试") : detailText
-        case .uploading:
-            break
-        }
-        guard let progress = progress else { return Tr("准备上传…") }
-        if progress <= 0 { return Tr("连接中…") }
-        let clamped = min(1, max(0, progress))
-        let sent = Int64(Double(max(0, bytes)) * clamped)
-        return byteText(sent) + " / " + byteText(Int64(max(0, bytes)))
-            + " · \(Int(clamped * 100))%"
-    }
-
-    private func byteText(_ n: Int64) -> String {
+    private func byteText(_ n: Int) -> String {
         if n > 1024 * 1024 { return String(format: "%.1f MB", Double(n) / 1024 / 1024) }
         if n > 1024 { return "\(n / 1024) KB" }
         return "\(n) B"

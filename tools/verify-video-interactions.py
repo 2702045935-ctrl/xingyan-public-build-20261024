@@ -59,20 +59,18 @@ require(
     "chat video PiP must never open before a frame is ready and must stop on dismissal",
 )
 require(
-    "var previews: [UIImage] = []" in MEDIA
-    and "MultiImageMosaic.containerSize(" in MEDIA
-    and "MultiImageMosaic.frames(" in MEDIA
-    and "SendingFileBubble" in MEDIA
-    and ".overlay(alignment: .bottom) {" in MEDIA
-    and "uploadProgressFooter" in MEDIA
-    and "RoundedRectangle(cornerRadius: 14, style: .continuous)" in MEDIA
-    and "private func uploadingRow<Content: View>" in (
+    "struct SendingVideoBubble: View" in MEDIA
+    and "var cover: UIImage?" in MEDIA
+    and "var progress: Double" in MEDIA
+    and "SendingVideoBubble(cover: sendingPreview, progress: sendProgress)" in (
         ROOT / "Sources" / "ChatDetailView.swift"
     ).read_text(encoding="utf-8")
-    and "Avatar(\n                path: app.me?.avatarPath" in (
+    and "struct SendingFileBubble: View" in MEDIA
+    and ".frame(width: 218)" in MEDIA
+    and "progress: sendingFileProgress ?? 0" in (
         ROOT / "Sources" / "ChatDetailView.swift"
     ).read_text(encoding="utf-8"),
-    "pending media needs real phase progress and the self avatar, while files use a standalone card",
+    "pending media and files must use the compact 11/21 progress cards",
 )
 
 print("video-interactions: passed")

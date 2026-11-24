@@ -200,7 +200,6 @@ struct ChatBackgroundSheet: View {
     @State private var busy = false
     @State private var composingImage: UIImage?
     @State private var showingComposer = false
-    @State private var previewReady = false
 
     static let presets: [String] = ["solid:white", "solid:black"]
 
@@ -258,13 +257,7 @@ struct ChatBackgroundSheet: View {
     private var standardBody: some View {
         ScrollView {
             VStack(spacing: 18) {
-                if previewReady {
-                    backgroundPreview
-                } else {
-                    RoundedRectangle(cornerRadius: 26, style: .continuous)
-                        .fill(C.cardBg)
-                        .frame(width: 214, height: 408)
-                }
+                backgroundPreview
 
                 VStack(spacing: 0) {
                     wallpaperChoiceRow(
@@ -366,12 +359,6 @@ struct ChatBackgroundSheet: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(Tr("完成")) { dismiss() }
                 }
-            }
-        }
-        .onAppear {
-            previewReady = false
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-                previewReady = true
             }
         }
         .sheet(isPresented: $picking) {
@@ -639,7 +626,11 @@ struct ChatBackgroundSheet: View {
                                 maxSide: chatWallpaperDecodeSide())
                         .id("immersive-" + immersivePath)
                 } else {
-                    ChatWallpaperEffectImage(path: immersivePath, effect: effect)
+                    ChatWallpaperEffectImage(
+                        path: immersivePath,
+                        effect: effect,
+                        placeholderImage: cachedWallpaperPoster(immersivePath)
+                    )
                         .id("immersive-" + immersivePath + "#" + effect.rawValue)
                 }
             } else {
@@ -745,6 +736,7 @@ struct ChatBackgroundSheet: View {
             ? effectiveDefaultChatBackground(app.defaultChatBackground)
             : normalizedChatBackground(currentPath)
         let effect = selectedEffect.resolved(for: scheme)
+        let poster = cachedWallpaperPoster(path)
         return ZStack {
             if let solid = renderedChatBackgroundSolidColor(
                 path,
@@ -757,7 +749,11 @@ struct ChatBackgroundSheet: View {
                                 mode: .fill,
                                 maxSide: chatWallpaperDecodeSide())
                 } else {
-                    ChatWallpaperEffectImage(path: path, effect: effect)
+                    ChatWallpaperEffectImage(
+                        path: path,
+                        effect: effect,
+                        placeholderImage: poster
+                    )
                         .id(path + "#preview-" + effect.rawValue)
                 }
             } else {
@@ -1043,5 +1039,23 @@ struct ChatBackgroundSheet: View {
                 ImageStore.shared.diskWrite(path, data)
             }
         }
+    }
+
+    private func cachedWallpaperPoster(_ path: String) -> UIImage? {
+        let target = normalizedChatBackground(path)
+        let candidates = inChat ? [chatId, ""] : [""]
+        for id in candidates {
+            guard normalizedChatBackground(store.previewPath(chatId: id)) == target else {
+                continue
+            }
+            if id.isEmpty {
+                if let image = store.globalPreviewImage() {
+                    return image
+                }
+            } else if let image = store.previewImage(chatId: id) {
+                return image
+            }
+        }
+        return ImageStore.shared.getWallpaper(target)
     }
 }

@@ -920,6 +920,18 @@ final class ImageStore {
         lock.lock(); defer { lock.unlock() }
         return avatarCache[key] ?? cache[key]
     }
+    func getWallpaper(_ path: String) -> UIImage? {
+        let stable = ImageCacheKey.stablePath(path)
+        lock.lock(); defer { lock.unlock() }
+        if let exact = cache[stable] ?? cache[path] {
+            return exact
+        }
+        let prefix = stable + "#"
+        for (key, image) in cache where key.hasPrefix(prefix) {
+            return image
+        }
+        return nil
+    }
     func put(_ key: String, _ img: UIImage) {
         lock.lock(); defer { lock.unlock() }
         if cache[key] != nil { return }

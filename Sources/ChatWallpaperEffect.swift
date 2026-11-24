@@ -748,6 +748,10 @@ final class ChatWallpaperEffectRenderer {
             forKey: sourceKey,
             cost: Int(image.size.width * image.size.height * 4)
         )
+        ImageStore.shared.put(ImageCacheKey.stablePath(path), image)
+        Task.detached(priority: .background) {
+            ImageStore.shared.diskWrite(ImageCacheKey.stablePath(path), data)
+        }
         return image
     }
 
@@ -843,6 +847,7 @@ struct ChatWallpaperEffectImage: View {
     let effect: ChatBackgroundEffect
     var renderSize: CGSize? = nil
     var displayAlignment: Alignment = .center
+    var placeholderImage: UIImage? = nil
     @Environment(\.colorScheme) private var scheme
     @State private var image: UIImage?
 
@@ -856,15 +861,16 @@ struct ChatWallpaperEffectImage: View {
                  ? Color(hex: 0x101110)
                  : Color(hex: 0xF3F4F1))
                     .frame(width: target.width, height: target.height)
-                let placeholder = ImageStore.shared.get(
-                    ImageCacheKey.stablePath(path)
-                ) ?? ImageStore.shared.get(path)
+                let placeholder = placeholderImage
+                    ?? ImageStore.shared.getWallpaper(path)
                 if let shown = image ?? placeholder {
                     Image(uiImage: shown)
                         .resizable()
                         .interpolation(.high)
                         .aspectRatio(contentMode: .fill)
                         .frame(width: target.width, height: target.height)
+                        .blur(radius: image == nil && resolved == .blackBlur ? 14 : 0)
+                        .scaleEffect(image == nil && resolved == .blackBlur ? 1.04 : 1)
                         .transition(.opacity)
                 }
                 ChatWallpaperToneOverlay(dark: resolved == .blackBlur)

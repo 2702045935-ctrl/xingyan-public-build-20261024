@@ -46,16 +46,17 @@ require(
     and "private func diskCacheImage(key: String) async -> UIImage?" in EFFECT
     and "private func saveDiskCache(_ image: UIImage, key: String) async" in EFFECT
     and "ImageStore.shared.get(ImageCacheKey.stablePath(path))" in EFFECT
-    and "let placeholder = ImageStore.shared.get(" in EFFECT,
-    "rendered wallpapers must reuse source/effect caches across chat entries",
+    and "func getWallpaper(_ path: String) -> UIImage?" in (
+        ROOT / "Sources" / "Core.swift"
+    ).read_text(encoding="utf-8")
+    and "ImageStore.shared.getWallpaper(path)" in EFFECT
+    and "placeholderImage: cachedWallpaperPoster" in SHEET,
+    "wallpaper previews must reuse the chat page cache before high-resolution rendering",
 )
 require(
-    "@State private var previewReady = false" in SHEET
-    and "if previewReady {\n                    backgroundPreview\n"
-    "                } else {\n"
-    "                    RoundedRectangle(cornerRadius: 26" in SHEET
-    and "DispatchQueue.main.asyncAfter(deadline: .now() + 0.08)" in SHEET,
-    "the wallpaper sheet must defer its heavy preview until after presentation",
+    "previewReady" not in SHEET
+    and "VStack(spacing: 18) {\n                backgroundPreview" in SHEET,
+    "the wallpaper preview must mount immediately on first frame",
 )
 require(
     "var placeholder: Color? = nil" in (

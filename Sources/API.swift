@@ -1789,7 +1789,6 @@ final class API {
     static let shared = API()
 
     let session: URLSession
-    private let uploadSession: URLSession
     private let trustDelegate = SecureURLSessionDelegate()
 
     static let publicIngressServer = "mail.xingyanmail.site:443"
@@ -1870,21 +1869,6 @@ final class API {
         cfg.httpShouldSetCookies = false
         cfg.httpCookieAcceptPolicy = .never
         session = URLSession(configuration: cfg, delegate: trustDelegate, delegateQueue: nil)
-        let uploadConfig = URLSessionConfiguration.default
-        uploadConfig.timeoutIntervalForRequest = 180
-        uploadConfig.timeoutIntervalForResource = 900
-        uploadConfig.requestCachePolicy = .reloadIgnoringLocalCacheData
-        uploadConfig.urlCache = nil
-        uploadConfig.httpShouldSetCookies = false
-        uploadConfig.httpCookieAcceptPolicy = .never
-        uploadConfig.httpShouldUsePipelining = true
-        uploadConfig.networkServiceType = .responsiveData
-        uploadConfig.httpMaximumConnectionsPerHost = 8
-        uploadSession = URLSession(
-            configuration: uploadConfig,
-            delegate: trustDelegate,
-            delegateQueue: nil
-        )
 
         let legacyServers: Set<String> = [
 
@@ -5740,10 +5724,10 @@ private struct StarredPayload: Decodable {
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.timeoutInterval = 180
-        req.networkServiceType = .responsiveData
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         req.setValue(mime, forHTTPHeaderField: "Content-Type")
-        let (d, resp) = try await uploadSession.upload(for: req, from: data)
+        req.httpBody = data
+        let (d, resp) = try await session.data(for: req)
         guard let http = resp as? HTTPURLResponse,
               (200...299).contains(http.statusCode) else {
             throw APIError.message("上传失败，请检查网络后再试")
@@ -5760,14 +5744,13 @@ private struct StarredPayload: Decodable {
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.timeoutInterval = 600
-        req.networkServiceType = .responsiveData
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         req.setValue(mime, forHTTPHeaderField: "Content-Type")
         if skipTranscode {
             req.setValue("1", forHTTPHeaderField: "x-chris-compressed")
         }
         let delegate = UploadProgressDelegate(onProgress)
-        let (d, resp) = try await uploadSession.upload(
+        let (d, resp) = try await session.upload(
             for: req,
             fromFile: file,
             delegate: delegate
@@ -5821,7 +5804,6 @@ private struct StarredPayload: Decodable {
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.timeoutInterval = 120
-        req.networkServiceType = .responsiveData
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         req.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")
         req.setValue("1", forHTTPHeaderField: "x-chris-compressed")
@@ -5829,13 +5811,13 @@ private struct StarredPayload: Decodable {
         let d: Data
         let resp: URLResponse
         if let delegate {
-            (d, resp) = try await uploadSession.upload(
+            (d, resp) = try await session.upload(
                 for: req,
                 from: data,
                 delegate: delegate
             )
         } else {
-            (d, resp) = try await uploadSession.upload(for: req, from: data)
+            (d, resp) = try await session.upload(for: req, from: data)
         }
         guard let http = resp as? HTTPURLResponse,
               (200...299).contains(http.statusCode) else {

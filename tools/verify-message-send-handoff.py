@@ -96,11 +96,10 @@ require(
     "confirmed sends and exit/re-entry must merge the current chat page into the in-memory cache",
 )
 require(
-    CHAT.count("app.rememberChatPageMessages(chat.id, [m])") >= 5
-    and "app.rememberChatPageMessages(chat.id, [message])" in CHAT
-    and "rememberChatPageMessages(c.id, msgs)" in APP
-    and "prefetched[c.id] = msgs" not in APP,
-    "media sends and stale prefetch snapshots must merge without dropping confirmed rows",
+    CHAT.count("appendVisibleMessage(m)") >= 5
+    and "appendVisibleMessage(message)" in CHAT
+    and "await app.loadChats()" in CHAT,
+    "the 11/21 media flow must append confirmed bubbles and refresh the list",
 )
 require(
     "let index = messages.firstIndex(where: { $0.clientId == cid })" in CHAT
