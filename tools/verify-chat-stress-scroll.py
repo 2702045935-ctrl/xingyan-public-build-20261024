@@ -26,7 +26,7 @@ require(
     "prepending must reuse unchanged row signatures and remeasure only the boundary",
 )
 require(
-    "scroll.bounds.height * 3.5" in CHAT
+    "scroll.bounds.height * 6.0" in CHAT
     and "consumeOlderRunway(requireActiveMotion: true, offsetY: y)" in CHAT,
     "group history must use a viewport-relative prefetch runway",
 )
@@ -48,7 +48,7 @@ require(
 )
 require(
     "func scrollViewWillBeginDragging" in LIST
-    and "lastScrollState = false\n            publishScrollState(true)" in LIST,
+    and "lastScrollState = false\n            prefetchStartArmed = true\n            prefetchEndArmed = true\n            publishScrollState(true)" in LIST,
     "a new physical gesture must re-arm the history runway even during deceleration",
 )
 require(
@@ -58,9 +58,12 @@ require(
     and ".onAppear { autoLoadOlder() }" not in CHAT
     and "nearTopIds.contains(message.id) { autoLoadOlder() }" not in CHAT
     and "private let historyPageSize = 120" in CHAT
-    and "let target = historyPageSize" in CHAT
+    and "private let historyPrefetchPages = 3" in CHAT
+    and "private let historyWindowPages = 10" in CHAT
+    and "let target = historyRunwayTarget" in CHAT
     and "let canContinue = explicitMore ?? hasOlder" in CHAT
-    and "guard canContinue, olderPrefetch.isEmpty, olderPrefetchTask == nil" in CHAT
+    and "olderPrefetch.count < target" in CHAT
+    and "olderPrefetchTask == nil" in CHAT
     and "scheduleOlderPrefetch(before: nextCursor" in CHAT,
     "group history must only be consumed from the user's runway offset",
 )
@@ -73,9 +76,9 @@ require(
 )
 require(
     "var olderNextCursor = 0" in CHAT
-    and "olderNextCursor = advanced" in CHAT
-    and "else if page.hasMore" in CHAT
-    and "before: next," in CHAT,
+    and "olderNextCursor = cursor" in CHAT
+    and "let advanced = rawNext > 0 && rawNext < cursor" in CHAT
+    and "while collected.count < needed" in CHAT,
     "hidden or duplicate pages must advance without latching the history cursor",
 )
 require(
@@ -113,10 +116,31 @@ require(
     "failed or empty pages must auto-unlock both directions before the server confirms an end",
 )
 require(
+    "private let historyWindowPages = 10" in CHAT
+    and "historyPageSize * historyWindowPages" in CHAT
+    and "MessageStressFixture.isActive ? stressMessageWindow : historyWindowLimit" in CHAT
+    and "Array(merged.prefix(maxMessageWindow))" in CHAT
+    and "Array(merged.suffix(maxMessageWindow))" in CHAT
+    and "historyRuntime.oldestLoadedSeq = oldest" in CHAT
+    and "historyRuntime.newestLoadedSeq = newest" in CHAT
+    and "stressMessageWindow : 50_000" not in CHAT,
+    "chat history must rotate a bounded two-way window instead of retaining all loaded rows",
+)
+require(
+    "private func invalidateOlderPrefetch()" in CHAT
+    and "private func invalidateNewerPrefetch()" in CHAT
+    and "invalidateNewerPrefetch()" in CHAT
+    and "invalidateOlderPrefetch()" in CHAT
+    and "newerNextCursor" in CHAT,
+    "direction changes must invalidate stale caches and rebuild independent cursors",
+)
+require(
     "ChatScrollHandle.shared.prepareForPrepend()" in CHAT
     and "_ = ChatScrollHandle.shared.compensatePendingPrepend()" in LIST
-    and "attributes.frame.minY - anchor.delta" in LIST,
-    "history prepend must restore the B2611191645 anchor compensation path",
+    and "private func restoreVisibleAnchor(" in LIST
+    and "attributes.frame.minY\n                - (previousOffset.y + anchor.delta)" in LIST
+    and "target.y = min(max(target.y + layoutDelta, minimumY), maximumY)" in LIST,
+    "history prepend must translate the live native offset without snapping back",
 )
 require(
     "private func consumeNewerRunway" in CHAT

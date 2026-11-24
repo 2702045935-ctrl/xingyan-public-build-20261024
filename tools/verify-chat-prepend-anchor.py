@@ -18,8 +18,10 @@ require(
     "prepending must capture the visible row's exact viewport anchor",
 )
 require(
-    "attributes.frame.minY - anchor.delta" in LIST,
-    "prepending must restore the same row to the same pixel position",
+    "private func restoreVisibleAnchor(" in LIST
+    and "attributes.frame.minY\n                - (previousOffset.y + anchor.delta)" in LIST
+    and "target.y = min(max(target.y + layoutDelta, minimumY), maximumY)" in LIST,
+    "prepending must translate the live native offset by the exact layout delta",
 )
 require(
     "ChatScrollHandle.shared.clearPendingPrepend()" in LIST,

@@ -147,6 +147,7 @@ jobs:
           python3 tools/verify-chat-avatar-stability.py
           python3 tools/verify-chat-seamless-prefetch.py
           python3 tools/verify-chat-history-coverage.py
+          python3 tools/verify-chat-windowed-history-model.py
           python3 tools/verify-chat-virtual-scrollbar.py
           python3 tools/verify-push-multidevice.py
           python3 tools/verify-group-avatar-three.py

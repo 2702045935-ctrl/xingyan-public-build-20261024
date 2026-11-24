@@ -5,9 +5,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CHAT = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
 SERVER = (ROOT / "server" / "server.js").read_text(encoding="utf-8")
-WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(
-    encoding="utf-8"
-)
 
 
 def require(condition: bool, message: str) -> None:
@@ -16,43 +13,40 @@ def require(condition: bool, message: str) -> None:
 
 
 require(
-    "private var shouldLoadCompleteGroupHistory: Bool {\n        !MessageStressFixture.isActive\n    }"
-    in CHAT
-    and "if shouldLoadCompleteGroupHistory," in CHAT
-    and 'UIConfig.num("chatEagerHistorySync", 0) > 0' in CHAT,
-    "full-history bulk sync must remain behind an explicit diagnostic gate",
-)
-require(
-    "private func loadAllGroupHistory() async" in CHAT
-    and "let maxPages = max(" in CHAT
-    and "while hasOlder, pages < maxPages, !Task.isCancelled" in CHAT
-    and "let page = try await API.shared.messages(" in CHAT
-    and "before: before" in CHAT,
-    "history backfill must page backwards until the server reports the actual start",
+    "const before = Number(query.get('before')) || Number.MAX_SAFE_INTEGER;" in SERVER
+    and "m.seq < before" in SERVER
+    and "messagesSince(chatId:" in CHAT
+    and "all: true" in CHAT,
+    "server history must remain sequence based in both directions",
 )
 require(
     "private func loadOlder() async" in CHAT
-    and "private func scheduleOlderPrefetch(" in CHAT
-    and "consumeOlderRunway(" in CHAT
-    and "olderPrefetch = visibleMessages(page.messages)" in CHAT,
-    "normal chat history must consume bounded preview pages while scrolling",
+    and "private func loadNewer() async" in CHAT
+    and "Array(merged.prefix(maxMessageWindow))" in CHAT
+    and "Array(merged.suffix(maxMessageWindow))" in CHAT,
+    "older and newer pages must rotate a bounded active window",
 )
 require(
-    "const before = Number(query.get('before')) || Number.MAX_SAFE_INTEGER;" in SERVER
-    and "m.seq < before" in SERVER
-    and "hasMore: hasSince ? eligible.length > slice.length : slice.length === limit"
-    in SERVER,
-    "server history paging must remain sequence based without a date cutoff",
+    "private func scheduleOlderPrefetch(" in CHAT
+    and "private func scheduleNewerPrefetch(" in CHAT
+    and "olderNextCursor" in CHAT
+    and "newerNextCursor" in CHAT
+    and "invalidateOlderPrefetch()" in CHAT
+    and "invalidateNewerPrefetch()" in CHAT,
+    "both directions must retain independent cursors and invalidate stale caches",
 )
 require(
-    "commitEveryPages" in CHAT
-    and "ChatScrollHandle.shared.prepareForPrepend()" in CHAT
-    and "messages = Array((additions + messages).suffix(maxMessageWindow))" in CHAT,
-    "history backfill must commit in bounded batches and preserve the visible anchor",
+    "historyRuntime.oldestLoadedSeq = oldest" in CHAT
+    and "historyRuntime.newestLoadedSeq = newest" in CHAT
+    and "hasOlder = more" in CHAT
+    and "hasNewerMessages" in CHAT,
+    "window edges must drive both history availability flags after every rotation",
 )
 require(
-    "python3 tools/verify-chat-history-coverage.py" in WORKFLOW,
-    "complete history regression must run in the iOS gate",
+    "private let historyWindowPages = 10" in CHAT
+    and "private let historyPrefetchPages = 3" in CHAT
+    and "ChatScrollHandle.shared.prepareForPrepend()" in CHAT,
+    "complete history must remain reachable without materializing the entire chat",
 )
 
 print("chat-history-coverage: passed")
