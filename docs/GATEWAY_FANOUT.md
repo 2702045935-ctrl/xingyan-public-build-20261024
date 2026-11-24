@@ -30,6 +30,16 @@ canary 按群 ID 的稳定哈希选择，不随进程重启漂移。建议依次
 `0 -> 1 -> 5 -> 20 -> 50 -> 100`，每一步观察 outbox pending、Gateway ack、
 P99 和重复投递指标。只有 `live` 或 `canary` 且实际选中时才跳过本地 Gateway 虚拟连接。
 
+运行时可查询和调整：
+
+```text
+GET  /__gateway/canary
+POST /__gateway/canary   {"percent": 5, "reason": "canary step"}
+```
+
+接口需要 `GATEWAY_ADMIN_SECRET`。百分比会写入
+`data/gateway-canary.json`，重启不会回到旧比例。
+
 接入主消息路径前还需要补：
 
 1. durable outbox 和批次 ack；

@@ -26033,6 +26033,36 @@ async function handleHttpRequest(req, res) {
       if (!canaryGuard) return fail(res, 409, 'canary mode is not active');
       return ok(res, { canary: canaryGuard.resume() });
     }
+    if (parsed.pathname === '/__gateway/canary' && req.method === 'GET') {
+      return ok(res, {
+        mode: gatewayFanoutMode,
+        percent: gatewayFanoutCanaryPercent,
+        guard: canaryGuard ? canaryGuard.snapshot() : null
+      });
+    }
+    if (parsed.pathname === '/__gateway/canary' && req.method === 'POST') {
+      if (gatewayFanoutMode !== 'canary') {
+        return fail(res, 409, 'canary mode is not active');
+      }
+      const body = await readBody(req);
+      const percent = Number(body.percent);
+      if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
+        return fail(res, 422, 'canary percent must be 0..100');
+      }
+      gatewayFanoutCanaryPercent = Math.round(percent * 100) / 100;
+      gatewayFanoutMetrics.canaryPercent = gatewayFanoutCanaryPercent;
+      writeJson(canaryStatePath, {
+        percent: gatewayFanoutCanaryPercent,
+        reason: str(body.reason, 200),
+        updatedAt: now()
+      });
+      if (canaryGuard) canaryGuard.resume();
+      return ok(res, {
+        mode: gatewayFanoutMode,
+        percent: gatewayFanoutCanaryPercent,
+        guard: canaryGuard ? canaryGuard.snapshot() : null
+      });
+    }
     if (parsed.pathname === '/__gateway/drain' && req.method === 'POST') {
       return ok(res, { gateway: connectionGovernor.drain() });
     }
@@ -27005,8 +27035,13 @@ const etcdGatewayDirectory = gatewayDirectoryMode === 'etcd'
   : null;
 const gatewayNodesCache = [];
 const gatewayFanoutMode = String(process.env.GATEWAY_FANOUT_MODE || 'off').toLowerCase();
-const gatewayFanoutCanaryPercent = Math.max(0, Math.min(100,
-  Number(process.env.GATEWAY_FANOUT_CANARY_PERCENT) || 0));
+const canaryStatePath = path.join(DATA_DIR, 'gateway-canary.json');
+const canaryPersisted = readJson(canaryStatePath, {});
+const initialCanaryPercent = canaryPersisted && canaryPersisted.percent !== undefined
+  ? canaryPersisted.percent
+  : process.env.GATEWAY_FANOUT_CANARY_PERCENT;
+let gatewayFanoutCanaryPercent = Math.max(0, Math.min(100,
+  Number(initialCanaryPercent) || 0));
 const gatewayFanoutBus = new GatewayFanoutBus({
   secret: process.env.GATEWAY_ADMIN_SECRET || '',
   retries: Number(process.env.GATEWAY_FANOUT_RETRIES) || 1,
