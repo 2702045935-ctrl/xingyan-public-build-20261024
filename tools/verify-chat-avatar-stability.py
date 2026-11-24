@@ -58,9 +58,10 @@ require(
 )
 require(
     "private static func cachedImage(path: String, maxSide: CGFloat)" in CORE
-    and "_image = State(initialValue: cached)" in CORE
+    and "let fallback = exact ?? ImageStore.shared.getBestAvailable(identity)" in CORE
+    and "_image = State(initialValue: fallback)" in CORE
     and "if loadedPath == identity { return }" in CORE,
-    "RemoteImage must paint a cached avatar on its first frame without a placeholder flash",
+    "RemoteImage must paint the best cached image on its first frame without a placeholder flash",
 )
 require(
     "image = nil\n            await load()" not in CORE,
