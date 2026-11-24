@@ -181,11 +181,7 @@ require(
     "stress conversation lists must accept appended pages during active scrolling",
 )
 require(
-    "if chatTopScrolled == 0 {\n"
-    "                            next = y > 18 ? 1 : 0\n"
-    "                        } else {\n"
-    "                            next = y < 6 ? 0 : 1\n"
-    "                        }" in CHATS
+    "let next: CGFloat = y > 8 ? 1 : 0" in CHATS
     and "lastReportedOffsetY" in (
         ROOT / "Sources" / "NativeChatList.swift"
     ).read_text(encoding="utf-8")

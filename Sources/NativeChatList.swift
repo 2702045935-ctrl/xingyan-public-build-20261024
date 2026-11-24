@@ -85,6 +85,7 @@ where Item.ID: Hashable {
         controller.view.backgroundColor = .clear
         let table = controller.tableView!
         table.backgroundColor = .clear
+        table.alpha = 0
         table.separatorStyle = .none
         table.rowHeight = UITableView.automaticDimension
         table.estimatedRowHeight = 72
@@ -200,6 +201,7 @@ where Item.ID: Hashable {
         private var endRequestInFlight = false
         private var startRequestInFlight = false
         private var appliedItemCount = 0
+        private var hasCompletedInitialApply = false
         private var layoutObservers: [NSObjectProtocol] = []
 
         init(onScrollStateChange: @escaping (Bool) -> Void,
@@ -368,6 +370,7 @@ where Item.ID: Hashable {
                 guard generation == self.applyGeneration,
                       self.table === table else { return }
                 table.layoutIfNeeded()
+                self.revealInitialTableIfNeeded(table)
                 self.prefetchEndRunwayIfNeeded(table)
                 guard !table.isTracking,
                       !table.isDragging,
@@ -411,6 +414,7 @@ where Item.ID: Hashable {
                 guard generation == self.applyGeneration,
                       self.table === table else { return }
                 table.layoutIfNeeded()
+                self.revealInitialTableIfNeeded(table)
                 self.prefetchEndRunwayIfNeeded(table)
                 guard !table.isTracking,
                       !table.isDragging,
@@ -474,6 +478,7 @@ where Item.ID: Hashable {
                       generation == self.applyGeneration,
                       self.table === table else { return }
                 table.layoutIfNeeded()
+                self.revealInitialTableIfNeeded(table)
                 self.prefetchEndRunwayIfNeeded(table)
                 if let visibleID, let indexPath = dataSource.indexPath(for: visibleID),
                    let delta = visibleDelta {
@@ -485,6 +490,14 @@ where Item.ID: Hashable {
                 }
             }
             return true
+        }
+
+        private func revealInitialTableIfNeeded(_ table: UITableView) {
+            guard !hasCompletedInitialApply else { return }
+            hasCompletedInitialApply = true
+            UIView.performWithoutAnimation {
+                table.alpha = 1
+            }
         }
 
         func tableView(_ tableView: UITableView,
