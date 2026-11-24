@@ -52,6 +52,7 @@ const { createTransferKernel, TransferError } = require('./transfer-kernel');
 const { BankingAuditLog } = require('./lib/banking-audit');
 const { ConnectionGovernor } = require('./lib/connection-governor');
 const { GatewayDirectory } = require('./lib/gateway-directory');
+const { EtcdGatewayDirectory } = require('./lib/gateway-directory-etcd');
 const {
   VirtualGatewaySocket,
   envelope: gatewayEnvelope,
@@ -9217,7 +9218,7 @@ function scheduleGatewayFanout(chat, recipients, payload, publishId) {
   if ((gatewayFanoutMode !== 'shadow' && gatewayFanoutMode !== 'live')
       || chat.type !== 'group') return false;
   if (recipients.length < hotGroupRouter.threshold) return false;
-  const live = gatewayDirectory.liveNodes().filter((node) => node.endpoint);
+  const live = gatewayNodesCache.filter((node) => node.endpoint && node.active !== false);
   if (!live.length) return false;
   const plan = hotGroupRouter.plan({
     chatId: chat.id,
@@ -16456,7 +16457,10 @@ async function handleApi(req, res, pathname, query) {
       ringingCalls,
       directoryCalls: shardCallDirectory.size,
       gateway: connectionGovernor.snapshot(),
-      gatewayDirectory: gatewayDirectory.snapshot(),
+      gatewayDirectory: Object.assign({}, gatewayDirectory.snapshot(), {
+        mode: gatewayDirectoryMode,
+        nodes: gatewayNodesCache.slice()
+      }),
       gatewayFanout: Object.assign({}, gatewayFanoutMetrics)
     });
     return;
@@ -25961,13 +25965,18 @@ async function handleHttpRequest(req, res) {
       });
     }
     if (parsed.pathname === '/__gateway/directory' && req.method === 'GET') {
-      return ok(res, { directory: gatewayDirectory.snapshot() });
+      const directory = etcdGatewayDirectory
+        ? await etcdGatewayDirectory.snapshot()
+        : gatewayDirectory.snapshot();
+      return ok(res, { directory });
     }
     if (parsed.pathname === '/__gateway/nodes' && req.method === 'POST') {
       const body = await readBody(req);
       try {
         return ok(res, {
-          node: gatewayDirectory.register(body.node || body)
+          node: etcdGatewayDirectory
+            ? await etcdGatewayDirectory.register(body.node || body)
+            : gatewayDirectory.register(body.node || body)
         });
       } catch (error) {
         return fail(res, 422, String(error && error.message || error));
@@ -25977,7 +25986,9 @@ async function handleHttpRequest(req, res) {
       const body = await readBody(req);
       try {
         return ok(res, {
-          node: gatewayDirectory.heartbeat(body.id, body)
+          node: etcdGatewayDirectory
+            ? await etcdGatewayDirectory.heartbeat(body.id, body)
+            : gatewayDirectory.heartbeat(body.id, body)
         });
       } catch (error) {
         return fail(res, 404, String(error && error.message || error));
@@ -25986,10 +25997,13 @@ async function handleHttpRequest(req, res) {
     if (parsed.pathname === '/__gateway/claim' && req.method === 'POST') {
       const body = await readBody(req);
       try {
-        return ok(res, gatewayDirectory.claim(body.userId, body.gatewayId, {
+        const options = {
           leaseMs: Number(body.leaseMs) || undefined,
           force: body.force === true
-        }));
+        };
+        return ok(res, etcdGatewayDirectory
+          ? await etcdGatewayDirectory.claim(body.userId, body.gatewayId, options)
+          : gatewayDirectory.claim(body.userId, body.gatewayId, options));
       } catch (error) {
         return fail(res, 422, String(error && error.message || error));
       }
@@ -25997,7 +26011,9 @@ async function handleHttpRequest(req, res) {
     if (parsed.pathname === '/__gateway/release' && req.method === 'POST') {
       const body = await readBody(req);
       return ok(res, {
-        released: gatewayDirectory.release(body.userId, body.gatewayId, body.epoch)
+        released: etcdGatewayDirectory
+          ? await etcdGatewayDirectory.release(body.userId, body.gatewayId, body.epoch)
+          : gatewayDirectory.release(body.userId, body.gatewayId, body.epoch)
       });
     }
     if (parsed.pathname === '/__gateway/drain' && req.method === 'POST') {
@@ -26961,6 +26977,16 @@ const gatewayDirectory = new GatewayDirectory({
   nodeTimeoutMs: Number(process.env.GATEWAY_NODE_TIMEOUT_MS) || 30000,
   defaultLeaseMs: Number(process.env.GATEWAY_CLAIM_LEASE_MS) || 90000
 });
+const gatewayDirectoryMode = String(process.env.GATEWAY_DIRECTORY_BACKEND || 'local').toLowerCase();
+const etcdGatewayDirectory = gatewayDirectoryMode === 'etcd'
+  ? new EtcdGatewayDirectory({
+    baseUrl: process.env.ETCD_URL || 'http://127.0.0.1:2379',
+    prefix: process.env.ETCD_GATEWAY_PREFIX || '/xingyan/gateways',
+    nodeTtlSeconds: Number(process.env.ETCD_GATEWAY_NODE_TTL) || 30,
+    claimTtlSeconds: Number(process.env.ETCD_GATEWAY_CLAIM_TTL) || 90
+  })
+  : null;
+const gatewayNodesCache = [];
 const gatewayFanoutMode = String(process.env.GATEWAY_FANOUT_MODE || 'off').toLowerCase();
 const gatewayFanoutBus = new GatewayFanoutBus({
   secret: process.env.GATEWAY_ADMIN_SECRET || '',
@@ -27009,20 +27035,49 @@ if (fanoutDispatcher) {
   }, Math.max(250, Number(process.env.FANOUT_FLUSH_MS) || 500));
   if (fanoutFlushTimer.unref) fanoutFlushTimer.unref();
 }
-gatewayDirectory.register({
+const gatewayNodeRecord = {
   id: gatewayNodeId,
   endpoint: String(process.env.GATEWAY_ENDPOINT || ''),
   cellId: String(process.env.GATEWAY_CELL_ID || ''),
   failureDomain: String(process.env.GATEWAY_FAILURE_DOMAIN || ''),
   capacity: connectionGovernor.maxTotal
-});
+};
+if (etcdGatewayDirectory) {
+  etcdGatewayDirectory.register(gatewayNodeRecord).catch((error) => {
+    gatewayFanoutMetrics.lastError = String(error && error.message || error);
+    callTrace('etcd gateway register failed: ' + gatewayFanoutMetrics.lastError);
+  });
+} else {
+  gatewayDirectory.register(gatewayNodeRecord);
+}
+
+async function refreshGatewayNodesCache() {
+  try {
+    const nodes = etcdGatewayDirectory
+      ? await etcdGatewayDirectory.listNodes()
+      : gatewayDirectory.liveNodes();
+    gatewayNodesCache.splice(0, gatewayNodesCache.length, ...nodes);
+  } catch (error) {
+    gatewayFanoutMetrics.lastError = String(error && error.message || error);
+  }
+}
+refreshGatewayNodesCache().catch(() => {});
+setInterval(() => refreshGatewayNodesCache().catch(() => {}), 5000).unref();
+
 const gatewayHeartbeatTimer = setInterval(() => {
   try {
-    gatewayDirectory.heartbeat(gatewayNodeId, {
+    const heartbeat = {
       connections: connectionGovernor.total,
       capacity: connectionGovernor.maxTotal,
       draining: connectionGovernor.draining
-    });
+    };
+    if (etcdGatewayDirectory) {
+      etcdGatewayDirectory.heartbeat(gatewayNodeId, heartbeat).catch((error) => {
+        gatewayFanoutMetrics.lastError = String(error && error.message || error);
+      });
+    } else {
+      gatewayDirectory.heartbeat(gatewayNodeId, heartbeat);
+    }
   } catch (error) {
     callTrace('gateway heartbeat failed: ' + String(error && error.message || error));
   }
