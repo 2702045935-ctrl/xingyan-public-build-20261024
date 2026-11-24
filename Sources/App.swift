@@ -882,6 +882,7 @@ final class AppState: ObservableObject {
 
         if let b = await API.shared.branding() {
             defaultChatBackground = b.chatBackground ?? ""
+            API.shared.updateRealtimeGateway(b.gateway)
         }
 
         await loadChatQuick()
@@ -3548,6 +3549,7 @@ struct LoginView: View {
         for attempt in 0..<4 {
             if let b = await API.shared.branding() {
                 LoginTheme.apply(b)
+                API.shared.updateRealtimeGateway(b.gateway)
 
                 app.sliderLogin = b.sliderLogin ?? true
                 if let n = b.harmonyLogin?.appName ?? b.login?.appName ?? b.appName, !n.isEmpty { appName = n }

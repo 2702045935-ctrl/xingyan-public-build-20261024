@@ -891,6 +891,7 @@ private struct VersionPayload: Decodable {
 struct BrandInfo: Decodable, Hashable {
     var appName: String?
     var logo: String?
+    var gateway: String?
 
     var chatBackground: String?
     var fontScale: Double?
@@ -1798,6 +1799,8 @@ final class API {
     private(set) var token: String = ""
 
     private(set) var server: String = API.publicIngressServer
+    private let realtimeGatewayKey = "chris.realtimeGateway"
+    private var gatewayDisabledForSession = false
 
     private(set) var backups: [String] = API.builtinBackups
 
@@ -2006,11 +2009,42 @@ final class API {
     }
 
     var realtimeServer: String {
+        if !gatewayDisabledForSession,
+           let gateway = UserDefaults.standard.string(forKey: realtimeGatewayKey),
+           !gateway.isEmpty {
+            return gateway
+        }
         server == "43.242.194.89:443" ? "43.242.194.89:8443" : server
     }
 
     var realtimePathPrefix: String {
+        if !gatewayDisabledForSession,
+           let gateway = UserDefaults.standard.string(forKey: realtimeGatewayKey),
+           !gateway.isEmpty {
+            return ""
+        }
         server == API.publicIngressServer ? API.publicIngressPath : ""
+    }
+
+    var usingRealtimeGateway: Bool {
+        !gatewayDisabledForSession
+            && !(UserDefaults.standard.string(forKey: realtimeGatewayKey) ?? "").isEmpty
+    }
+
+    func updateRealtimeGateway(_ value: String?) {
+        let gateway = (value ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "wss://", with: "")
+            .replacingOccurrences(of: "ws://", with: "")
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        if gateway.isEmpty {
+            UserDefaults.standard.removeObject(forKey: realtimeGatewayKey)
+        } else {
+            UserDefaults.standard.set(gateway, forKey: realtimeGatewayKey)
+        }
+    }
+
+    func disableRealtimeGatewayForSession() {
+        gatewayDisabledForSession = true
     }
 
     var cacheNamespace: String {

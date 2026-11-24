@@ -299,7 +299,14 @@ final class Realtime: ObservableObject {
         failCount += 1
         if failCount % 3 == 0, lanOnly { plainFallback.toggle() }
 
-        if failCount % 3 == 0 { _ = API.shared.rotateEndpoint() }
+        if failCount % 3 == 0 {
+            if API.shared.usingRealtimeGateway {
+                API.shared.disableRealtimeGatewayForSession()
+                AppLog.info("Gateway 连续失败，回退原实时入口", net: true)
+            } else {
+                _ = API.shared.rotateEndpoint()
+            }
+        }
 
         let ceiling = min(15.0, 1.0 + Double(failCount) * 1.8)
         let wait = Double.random(in: 0.35...ceiling)

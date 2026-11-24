@@ -59,6 +59,9 @@ def main() -> None:
             raise AssertionError(f"gateway fanout missing {needle}")
     if "GATEWAY_FANOUT_CANARY_PERCENT" not in server:
         raise AssertionError("server missing gateway canary mode")
+    api = (ROOT / "Sources/API.swift").read_text(encoding="utf-8")
+    if "realtimeGatewayKey" not in api or "disableRealtimeGatewayForSession" not in api:
+        raise AssertionError("client gateway cutover/fallback is missing")
     outbox = (ROOT / "server/lib/fanout-outbox.js").read_text(encoding="utf-8")
     for needle in ["enqueue", "attempt", "ack", "fail", "replay", "fsyncSync"]:
         if needle not in outbox:

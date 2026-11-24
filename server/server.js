@@ -16641,6 +16641,7 @@ async function handleApi(req, res, pathname, query) {
     /* 登录滑动验证开着没：客户端按它决定要不要先让用户拖滑块
        （关掉的开关在 data/security.json 的 sliderLogin） */
     b.sliderLogin = !!secCfg().sliderLogin;
+    b.gateway = String(process.env.GATEWAY_PUBLIC_WS || '').trim();
     ok(res, { branding: b });
     return;
   }
