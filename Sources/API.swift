@@ -2014,7 +2014,7 @@ final class API {
            !gateway.isEmpty {
             return gateway
         }
-        server == "43.242.194.89:443" ? "43.242.194.89:8443" : server
+        return server == "43.242.194.89:443" ? "43.242.194.89:8443" : server
     }
 
     var realtimePathPrefix: String {
@@ -2023,7 +2023,7 @@ final class API {
            !gateway.isEmpty {
             return ""
         }
-        server == API.publicIngressServer ? API.publicIngressPath : ""
+        return server == API.publicIngressServer ? API.publicIngressPath : ""
     }
 
     var usingRealtimeGateway: Bool {
