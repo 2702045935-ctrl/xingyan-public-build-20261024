@@ -93,6 +93,17 @@ function connectUpstream() {
       ownership.claim(client.userId, message.connectionId, NODE_ID, {
         leaseMs: Number(process.env.GATEWAY_SESSION_LEASE_MS) || 90000
       });
+      if (String(process.env.GATEWAY_SESSION_BACKEND || '').toLowerCase() === 'etcd') {
+        jsonPost('/__gateway/sessions/claim', {
+          userId: client.userId,
+          connectionId: connectionId,
+          gatewayId: NODE_ID,
+          leaseSeconds: Math.ceil((Number(process.env.GATEWAY_SESSION_LEASE_MS) || 90000) / 1000)
+        }).then((result) => {
+          const claim = result && result.data && result.data.claim;
+          if (claim) client.remoteEpoch = claim.epoch;
+        }).catch(() => {});
+      }
       client.reopened = true;
       return;
     }
@@ -319,6 +330,15 @@ server.on('upgrade', (req, socket) => {
   socket.on('close', () => {
     sessions.close(connectionId);
     if (client.userId) ownership.release(client.userId, connectionId, NODE_ID);
+    if (client.userId
+        && String(process.env.GATEWAY_SESSION_BACKEND || '').toLowerCase() === 'etcd') {
+      jsonPost('/__gateway/sessions/release', {
+        userId: client.userId,
+        connectionId,
+        gatewayId: NODE_ID,
+        epoch: client.remoteEpoch
+      }).catch(() => {});
+    }
     governor.release(preauth.lease);
     if (upstreamReady) send('closed', connectionId, {});
   });

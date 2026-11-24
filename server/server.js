@@ -53,6 +53,7 @@ const { BankingAuditLog } = require('./lib/banking-audit');
 const { ConnectionGovernor } = require('./lib/connection-governor');
 const { GatewayDirectory } = require('./lib/gateway-directory');
 const { EtcdGatewayDirectory } = require('./lib/gateway-directory-etcd');
+const { EtcdSessionOwnership } = require('./lib/session-ownership-etcd');
 const {
   VirtualGatewaySocket,
   envelope: gatewayEnvelope,
@@ -26029,6 +26030,46 @@ async function handleHttpRequest(req, res) {
           : gatewayDirectory.release(body.userId, body.gatewayId, body.epoch)
       });
     }
+    if (parsed.pathname.startsWith('/__gateway/sessions/')
+        && req.method === 'POST') {
+      const body = await readBody(req);
+      if (!etcdSessionOwnership) {
+        return ok(res, { local: true, ok: true });
+      }
+      try {
+        if (parsed.pathname.endsWith('/claim')) {
+          return ok(res, await etcdSessionOwnership.claim(
+            body.userId,
+            body.connectionId,
+            body.gatewayId,
+            { leaseSeconds: body.leaseSeconds, force: body.force === true }
+          ));
+        }
+        if (parsed.pathname.endsWith('/renew')) {
+          return ok(res, {
+            claim: await etcdSessionOwnership.renew(
+              body.userId,
+              body.connectionId,
+              body.gatewayId,
+              body.leaseSeconds
+            )
+          });
+        }
+        if (parsed.pathname.endsWith('/release')) {
+          return ok(res, {
+            released: await etcdSessionOwnership.release(
+              body.userId,
+              body.connectionId,
+              body.gatewayId,
+              body.epoch
+            )
+          });
+        }
+      } catch (error) {
+        return fail(res, 422, String(error && error.message || error));
+      }
+      return fail(res, 404, 'session ownership action not found');
+    }
     if (parsed.pathname === '/__gateway/canary/resume' && req.method === 'POST') {
       if (!canaryGuard) return fail(res, 409, 'canary mode is not active');
       return ok(res, { canary: canaryGuard.resume() });
@@ -27031,6 +27072,14 @@ const etcdGatewayDirectory = gatewayDirectoryMode === 'etcd'
     prefix: process.env.ETCD_GATEWAY_PREFIX || '/xingyan/gateways',
     nodeTtlSeconds: Number(process.env.ETCD_GATEWAY_NODE_TTL) || 30,
     claimTtlSeconds: Number(process.env.ETCD_GATEWAY_CLAIM_TTL) || 90
+  })
+  : null;
+const gatewaySessionBackend = String(process.env.GATEWAY_SESSION_BACKEND || 'local').toLowerCase();
+const etcdSessionOwnership = gatewaySessionBackend === 'etcd'
+  ? new EtcdSessionOwnership({
+    baseUrl: process.env.ETCD_URL || 'http://127.0.0.1:2379',
+    prefix: process.env.ETCD_SESSION_PREFIX || '/xingyan/gateway-sessions',
+    leaseSeconds: Number(process.env.ETCD_GATEWAY_SESSION_TTL) || 90
   })
   : null;
 const gatewayNodesCache = [];

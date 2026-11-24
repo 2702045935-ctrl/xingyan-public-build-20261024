@@ -83,6 +83,10 @@ def main() -> None:
     for needle in ["claim(", "lookupUser", "renew(", "release(", "reapExpired"]:
         if needle not in ownership:
             raise AssertionError(f"session ownership missing {needle}")
+    etcd_session = (ROOT / "server/lib/session-ownership-etcd.js").read_text(encoding="utf-8")
+    for needle in ["claim(", "renew(", "release(", "prevExist", "prevValue"]:
+        if needle not in etcd_session:
+            raise AssertionError(f"etcd session ownership missing {needle}")
     if "smoke-gateway" not in (ROOT / "server/tools/gateway-cluster-smoke.js").read_text(encoding="utf-8"):
         raise AssertionError("gateway cluster smoke tool missing")
     preflight = (ROOT / "server/tools/gateway-cluster-preflight.js").read_text(encoding="utf-8")

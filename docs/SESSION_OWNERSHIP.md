@@ -8,3 +8,12 @@
 - 旧 Gateway 不能释放新 epoch；
 - 过期连接自动清理；
 - 为后续全局 etcd claim 和 Gateway 迁移提供稳定接口。
+
+`server/lib/session-ownership-etcd.js` 已提供全局 etcd 模式：
+
+- key：`/xingyan/gateway-sessions/{userId}/{connectionId}`；
+- claim 使用 CAS，旧 Gateway 不能覆盖新 epoch；
+- TTL 到期自动清理；
+- release 校验 gatewayId 和 epoch；
+- Gateway 设置 `GATEWAY_SESSION_BACKEND=etcd` 后通过主服务内部
+  `/__gateway/sessions/claim|renew|release` 访问。
