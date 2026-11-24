@@ -45,6 +45,10 @@ def main() -> None:
     for needle in ["GATEWAY_UPSTREAM_WS", "/__gateway/upstream", "send('open'", "governor.admit"]:
         if needle not in gateway:
             raise AssertionError(f"independent gateway missing {needle}")
+    etcd = (ROOT / "server/lib/gateway-directory-etcd.js").read_text(encoding="utf-8")
+    for needle in ["bumpEpoch", "prevExist", "prevValue", "claimKey", "nodeTtlSeconds"]:
+        if needle not in etcd:
+            raise AssertionError(f"etcd gateway directory missing {needle}")
     print("long connection foundation: passed")
 
 

@@ -19,6 +19,18 @@
 `GatewayDirectory.snapshot()` 输出节点、存活节点、连接 claim、注册/领取/释放/过期数量和
 每个节点的负载水位。
 
+## etcd 适配
+
+`server/lib/gateway-directory-etcd.js` 提供真实外部目录后端：
+
+- 节点 key 带 TTL 自动过期；
+- 用户 claim 使用 `prevExist=false`/`prevValue` CAS；
+- epoch 通过 compare-and-swap 递增；
+- release 只能由当前 gateway 和当前 epoch 执行；
+- 节点和 claim 都放在独立前缀，不共享本地进程 Map。
+
+用 fake etcd 的 CAS 语义测试已覆盖 claim 冲突、fenced release、forced takeover 和节点列表。
+
 ## 下一层
 
 当前已经增加可选独立 Gateway：
