@@ -148,11 +148,9 @@ enum GameRuntimeJavaScript {
         const kind = String(type || '').toLowerCase();
         options = Object.assign({}, options || {});
         if (kind === '2d') {
-          if (options.alpha === undefined) options.alpha = false;
           if (options.desynchronized === undefined) options.desynchronized = true;
         } else if (kind === 'webgl' || kind === 'webgl2' ||
                    kind === 'experimental-webgl') {
-          if (options.alpha === undefined) options.alpha = false;
           if (options.antialias === undefined) options.antialias = false;
           if (options.depth === undefined) options.depth = true;
           if (options.powerPreference === undefined) {
