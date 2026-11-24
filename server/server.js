@@ -57,6 +57,8 @@ const {
   envelope: gatewayEnvelope,
   decodeEnvelope: decodeGatewayEnvelope
 } = require('./lib/gateway-multiplex');
+const { GatewayFanoutBus } = require('./lib/gateway-fanout');
+const { HotGroupRouter } = require('./lib/hot-group-router');
 const {
   normalizeBillTimeZone,
   billMonthKey,
@@ -9207,6 +9209,43 @@ function sendToChat(chat, payload, exceptUserId) {
   return sent;
 }
 
+function scheduleShadowGatewayFanout(chat, recipients, payload, publishId) {
+  if (gatewayFanoutMode !== 'shadow' || chat.type !== 'group') return;
+  if (recipients.length < hotGroupRouter.threshold) return;
+  const live = gatewayDirectory.liveNodes().filter((node) => node.endpoint);
+  if (!live.length) return;
+  const plan = hotGroupRouter.plan({
+    chatId: chat.id,
+    memberIds: recipients,
+    nodeIds: live.map((node) => node.id)
+  });
+  if (plan.mode === 'local') return;
+  const byId = new Map(live.map((node) => [node.id, node]));
+  const nodes = plan.batches.map((batch) => ({
+    id: batch.nodeId,
+    endpoint: byId.get(batch.nodeId) && byId.get(batch.nodeId).endpoint,
+    userIds: batch.userIds
+  })).filter((node) => node.endpoint);
+  gatewayFanoutMetrics.plans += 1;
+  gatewayFanoutBus.publish({
+    publishId,
+    nodes,
+    payload,
+    dryRun: true
+  }).then((result) => {
+    gatewayFanoutMetrics.published += result.results.filter((row) => row.ok).length;
+    gatewayFanoutMetrics.wouldDeliver += Number(result.wouldDeliver) || 0;
+    if (!result.ok) {
+      gatewayFanoutMetrics.failures += result.results.filter((row) => !row.ok).length;
+      gatewayFanoutMetrics.lastError = result.results
+        .filter((row) => !row.ok).map((row) => row.nodeId + ':' + row.error).join(',');
+    }
+  }).catch((error) => {
+    gatewayFanoutMetrics.failures += 1;
+    gatewayFanoutMetrics.lastError = String(error && error.message || error);
+  });
+}
+
 function fanoutChatMessage(chat, message, sender, clientId) {
   const online = onlinePresenceSet();
   const memberPreviewIds = chat.type === 'group'
@@ -9221,6 +9260,7 @@ function fanoutChatMessage(chat, message, sender, clientId) {
       || '';
     const out = Object.assign({}, message, { senderName });
     const payload = { type: 'message', message: out };
+    scheduleShadowGatewayFanout(chat, recipients, payload, message.id);
     return broadcastCompactChatMessage(chat, payload);
   }
   const messageRows = loadMessages(chat.id);
@@ -9231,6 +9271,8 @@ function fanoutChatMessage(chat, message, sender, clientId) {
   };
   if (chat.type === 'group') {
     summaryContext.mentionIndex = mentionIndexForChat(chat.id, messageRows);
+    scheduleShadowGatewayFanout(chat, recipients,
+      { type: 'message', message }, message.id);
   }
   /* 多人同时在线时，把「哪些消息算未读、谁被 @」只建一次索引。
      以前每个收件人都会重新遍历同一份消息缓存，1 万人群会放大成万倍。 */
@@ -16388,7 +16430,8 @@ async function handleApi(req, res, pathname, query) {
       ringingCalls,
       directoryCalls: shardCallDirectory.size,
       gateway: connectionGovernor.snapshot(),
-      gatewayDirectory: gatewayDirectory.snapshot()
+      gatewayDirectory: gatewayDirectory.snapshot(),
+      gatewayFanout: Object.assign({}, gatewayFanoutMetrics)
     });
     return;
   }
@@ -26892,6 +26935,25 @@ const gatewayDirectory = new GatewayDirectory({
   nodeTimeoutMs: Number(process.env.GATEWAY_NODE_TIMEOUT_MS) || 30000,
   defaultLeaseMs: Number(process.env.GATEWAY_CLAIM_LEASE_MS) || 90000
 });
+const gatewayFanoutMode = String(process.env.GATEWAY_FANOUT_MODE || 'off').toLowerCase();
+const gatewayFanoutBus = new GatewayFanoutBus({
+  secret: process.env.GATEWAY_ADMIN_SECRET || '',
+  retries: Number(process.env.GATEWAY_FANOUT_RETRIES) || 1,
+  timeoutMs: Number(process.env.GATEWAY_FANOUT_TIMEOUT_MS) || 2500
+});
+const hotGroupRouter = new HotGroupRouter({
+  threshold: Number(process.env.HOT_GROUP_THRESHOLD) || 512,
+  maxBatch: Number(process.env.HOT_GROUP_BATCH) || 512,
+  cellCount: Number(process.env.HOT_GROUP_CELLS) || 7
+});
+const gatewayFanoutMetrics = {
+  mode: gatewayFanoutMode,
+  plans: 0,
+  published: 0,
+  wouldDeliver: 0,
+  failures: 0,
+  lastError: ''
+};
 gatewayDirectory.register({
   id: gatewayNodeId,
   endpoint: String(process.env.GATEWAY_ENDPOINT || ''),

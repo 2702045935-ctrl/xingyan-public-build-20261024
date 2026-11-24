@@ -13,9 +13,9 @@ class GatewayFanoutBus {
     const row = input || {};
     const payload = row.payload || {};
     const publishId = String(row.publishId || '');
+    const dryRun = row.dryRun === true;
     const nodes = Array.isArray(row.nodes) ? row.nodes : [];
     const results = [];
-    let delivered = 0;
     for (const node of nodes) {
       const userIds = (node.userIds || []).map((value) => String(value));
       if (!userIds.length || !node.endpoint) continue;
@@ -31,7 +31,7 @@ class GatewayFanoutBus {
                 'content-type': 'application/json',
                 'x-gateway-admin-secret': this.secret
               },
-              body: JSON.stringify({ publishId, userIds, payload }),
+              body: JSON.stringify({ publishId, userIds, payload, dryRun }),
               signal: AbortSignal.timeout(this.timeoutMs)
             }
           );
@@ -41,8 +41,14 @@ class GatewayFanoutBus {
             continue;
           }
           ok = true;
-          delivered += Number(body.delivered) || 0;
-          results.push({ nodeId: node.id || '', ok: true, delivered: Number(body.delivered) || 0 });
+          const delivered = Number(body.delivered) || 0;
+          const wouldDeliver = Number(body.wouldDeliver) || delivered;
+          results.push({
+            nodeId: node.id || '',
+            ok: true,
+            delivered: dryRun ? 0 : delivered,
+            wouldDeliver
+          });
         } catch (error) {
           lastError = String(error && error.message || error);
         }
@@ -51,8 +57,10 @@ class GatewayFanoutBus {
     }
     return {
       publishId,
+      dryRun,
       ok: results.every((result) => result.ok),
-      delivered,
+      delivered: results.reduce((sum, result) => sum + (Number(result.delivered) || 0), 0),
+      wouldDeliver: results.reduce((sum, result) => sum + (Number(result.wouldDeliver) || 0), 0),
       results
     };
   }

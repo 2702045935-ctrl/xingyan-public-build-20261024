@@ -63,7 +63,7 @@ function connectUpstream() {
     log('upstream connected');
     jsonPost('/__gateway/nodes', {
       id: NODE_ID,
-      endpoint: `ws://${HOST === '0.0.0.0' ? '127.0.0.1' : HOST}:${PORT}`,
+      endpoint: `http://${HOST === '0.0.0.0' ? '127.0.0.1' : HOST}:${PORT}`,
       cellId: process.env.GATEWAY_CELL_ID || '',
       failureDomain: process.env.GATEWAY_FAILURE_DOMAIN || '',
       capacity: governor.maxTotal,
@@ -183,16 +183,19 @@ const server = http.createServer(async (req, res) => {
       const wanted = new Set((body.userIds || []).map((value) => String(value)));
       const text = JSON.stringify(body.payload || {});
       let delivered = 0;
+      let wouldDeliver = 0;
       for (const socket of clients.values()) {
         if (!socket.userId || !wanted.has(socket.userId)) continue;
-        if (ws.sendText(socket, text)) delivered += 1;
+        wouldDeliver += 1;
+        if (body.dryRun !== true && ws.sendText(socket, text)) delivered += 1;
       }
       nextPublishId += 1;
       res.writeHead(200, { 'content-type': 'application/json' });
       res.end(JSON.stringify({
         ok: true,
         publishId: String(body.publishId || nextPublishId),
-        delivered
+        delivered,
+        wouldDeliver
       }));
     } catch (error) {
       res.writeHead(400, { 'content-type': 'application/json' });
