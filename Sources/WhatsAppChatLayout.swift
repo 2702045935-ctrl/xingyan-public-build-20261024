@@ -1,7 +1,11 @@
 import UIKit
 
 enum WhatsAppChatLayout {
-    static let version = 2
+    static let version = 3
+    static let cornerRadius: CGFloat = 8
+    static let tailDepth: CGFloat = 5
+    static let tailHeight: CGFloat = 9
+    static let tailCenterY: CGFloat = 10.5
     static let directAvatarSide: CGFloat = L.chatAvatar
     static let groupAvatarSide: CGFloat = 34
     static var avatarSide: CGFloat { directAvatarSide }
@@ -13,7 +17,7 @@ enum WhatsAppChatLayout {
     static let metadataGap: CGFloat = 1
     static let inlineMetadataGap: CGFloat = 7
     /// Native and SwiftUI bubbles must reserve the same five-point tail.
-    static let tailInset: CGFloat = 5
+    static let tailInset: CGFloat = tailDepth
     static let sameRunGap: CGFloat = 3
     static let runGap: CGFloat = 9
     static let metadataFont = UIFontMetrics(forTextStyle: .caption2)

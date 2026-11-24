@@ -45,7 +45,7 @@ require(
     and "static let senderHeight: CGFloat = 16" in LAYOUT
     and "L.bubbleMaxW" in LAYOUT
     and 'static var bubbleMaxW: CGFloat { o("bubbleMaxW", min(324, max(252, width * 0.73))) }' in CORE
-    and "var radius: CGFloat = 8" in CHAT,
+    and "var radius: CGFloat = WhatsAppChatLayout.cornerRadius" in CHAT,
     "native text geometry must use the stable 11/16 baseline padding and width",
 )
 require(
@@ -85,8 +85,8 @@ require(
     "conversation timestamps must keep stable digits while messages arrive",
 )
 require(
-    "static let cardRadius: CGFloat = 8" in CARDS
-    and "static let mediaRadius: CGFloat = 8" in CARDS
+    "static let cardRadius: CGFloat = WhatsAppChatLayout.cornerRadius" in CARDS
+    and "static let mediaRadius: CGFloat = WhatsAppChatLayout.cornerRadius" in CARDS
     and "static let gridRadius: CGFloat = 5" in CARDS
     and ".fill(ChatMessageSurface.cardFill)" in CARDS
     and ".stroke(ChatMessageSurface.cardBorder, lineWidth: 0.5)" in CARDS
@@ -97,9 +97,13 @@ require(
     "message cards must keep the flat theme and use the glass material when selected",
 )
 require(
-    "static let tailInset: CGFloat = 5" in LAYOUT
-    and "let out: CGFloat = tail ? 5 : 0" in CHAT
-    and "let tipY: CGFloat = 10.5" in TEXT_ROW
+    "static let cornerRadius: CGFloat = 8" in LAYOUT
+    and "static let tailDepth: CGFloat = 5" in LAYOUT
+    and "static let tailHeight: CGFloat = 9" in LAYOUT
+    and "static let tailCenterY: CGFloat = 10.5" in LAYOUT
+    and "static let tailInset: CGFloat = tailDepth" in LAYOUT
+    and "let out: CGFloat = tail ? WhatsAppChatLayout.tailDepth : 0" in CHAT
+    and "let tipY = WhatsAppChatLayout.tailCenterY" in TEXT_ROW
     and "self.verticalPadding = verticalPadding" in CARDS
     and ".padding(.vertical, verticalPadding)" in CARDS,
     "native and SwiftUI bubbles must share the exact tail and vertical inset",

@@ -76,19 +76,31 @@ final class NativeChatBubbleBackground: UIView {
         )
         let path = UIBezierPath(
             roundedRect: body,
-            cornerRadius: 8
+            cornerRadius: WhatsAppChatLayout.cornerRadius
         )
         if showTail {
             // Match BubbleShape exactly: the WhatsApp tail spans y=6...15.
-            let tipY: CGFloat = 10.5
+            let tipY = WhatsAppChatLayout.tailCenterY
             if mine {
-                path.move(to: CGPoint(x: body.maxX - 1, y: tipY - 5))
+                path.move(to: CGPoint(
+                    x: body.maxX - 1,
+                    y: tipY - WhatsAppChatLayout.tailHeight / 2
+                ))
                 path.addLine(to: CGPoint(x: bounds.maxX, y: tipY))
-                path.addLine(to: CGPoint(x: body.maxX - 1, y: tipY + 5))
+                path.addLine(to: CGPoint(
+                    x: body.maxX - 1,
+                    y: tipY + WhatsAppChatLayout.tailHeight / 2
+                ))
             } else {
-                path.move(to: CGPoint(x: body.minX + 1, y: tipY - 5))
+                path.move(to: CGPoint(
+                    x: body.minX + 1,
+                    y: tipY - WhatsAppChatLayout.tailHeight / 2
+                ))
                 path.addLine(to: CGPoint(x: bounds.minX, y: tipY))
-                path.addLine(to: CGPoint(x: body.minX + 1, y: tipY + 5))
+                path.addLine(to: CGPoint(
+                    x: body.minX + 1,
+                    y: tipY + WhatsAppChatLayout.tailHeight / 2
+                ))
             }
         }
         path.close()

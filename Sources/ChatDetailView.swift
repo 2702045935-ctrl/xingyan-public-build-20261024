@@ -388,7 +388,7 @@ func bubbleSeed(_ id: String) -> Double {
 
 struct BubbleShape: Shape {
     let mine: Bool
-    var radius: CGFloat = 8
+    var radius: CGFloat = WhatsAppChatLayout.cornerRadius
     var tail: Bool = true
 
     var pill: Bool = false
@@ -396,9 +396,9 @@ struct BubbleShape: Shape {
     func path(in rect: CGRect) -> Path {
         let r = min(pill ? min(rect.height / 2, 24) : radius, rect.height / 2, rect.width / 2)
 
-        let out: CGFloat = tail ? 5 : 0
-        let h: CGFloat = 9
-        let y0 = rect.minY + 6
+        let out: CGFloat = tail ? WhatsAppChatLayout.tailDepth : 0
+        let h = WhatsAppChatLayout.tailHeight
+        let y0 = rect.minY + WhatsAppChatLayout.tailCenterY - h / 2
         let x0 = rect.minX, x1 = rect.maxX, yA = rect.minY, yB = rect.maxY
         var p = Path()
 
