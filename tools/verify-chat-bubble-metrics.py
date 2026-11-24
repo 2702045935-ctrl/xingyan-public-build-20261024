@@ -235,6 +235,15 @@ require(
     "confirmed rows must keep the stable 11/16 avatar and tail anchors",
 )
 require(
+    'let hidesBubbleMetadata = [\n            "image", "images", "video", "livephoto", "transfer"\n        ].contains(message.kindName)' in CHAT
+    and 'metaText: hidesBubbleMetadata ? "" : TimeFmt.messageClock(message.createdAt)' in CHAT
+    and "tickCount: hidesBubbleMetadata" in CHAT
+    and '!["image", "images", "video", "livephoto", "transfer"]' in CHAT
+    and "if showsBubbleMetadata, !senderName.isEmpty" in CHAT
+    and "if showsBubbleMetadata {\n                        HStack(spacing: 3)" in CHAT,
+    "media and transfer bubbles must omit sender, time and receipt overlays",
+)
+require(
     ".overlay(alignment: .bottomTrailing)" in CHAT
     and "TimeFmt.messageClock(message.createdAt)" in CHAT
     and "count: deliveryState.tickCount" in CHAT,

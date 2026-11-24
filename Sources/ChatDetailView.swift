@@ -3964,11 +3964,14 @@ struct ChatDetailView: View {
             return nil
         }
         let mine = mineFor(message)
+        let hidesBubbleMetadata = [
+            "image", "images", "video", "livephoto", "transfer"
+        ].contains(message.kindName)
         return NativeChatMediaRowModel(
             messageID: message.id,
             kind: media,
             mine: mine,
-            senderName: (!mine && isGroup && isRunStart(message))
+            senderName: (!hidesBubbleMetadata && !mine && isGroup && isRunStart(message))
                 ? senderNameFor(message)
                 : "",
             senderNameColor: UIColor(groupSenderNameColor(message)),
@@ -3990,9 +3993,11 @@ struct ChatDetailView: View {
             bubbleGlass: ChatTheme.usesGlass,
             showsAvatar: true,
             reservesAvatarSpace: true,
-            metaText: TimeFmt.messageClock(message.createdAt),
+            metaText: hidesBubbleMetadata ? "" : TimeFmt.messageClock(message.createdAt),
             metaColor: UIColor(mine ? ChatTheme.mineSecondaryInk : ChatTheme.secondary),
-            tickCount: mine ? deliveryState(for: message).tickCount : 0,
+            tickCount: hidesBubbleMetadata
+                ? 0
+                : (mine ? deliveryState(for: message).tickCount : 0),
             tickColor: UIColor(deliveryState(for: message).color)
         )
     }
@@ -9076,7 +9081,7 @@ struct MessageRow: View {
                spacing: 0) {
             content
                 .overlay(alignment: .topLeading) {
-                    if !senderName.isEmpty {
+                    if showsBubbleMetadata, !senderName.isEmpty {
                         HStack(spacing: 4) {
                             Text(senderName)
                                 .font(pfStyled(12.5, .semibold))
@@ -9108,34 +9113,36 @@ struct MessageRow: View {
                     }
                 }
                 .overlay(alignment: .bottomTrailing) {
-                    HStack(spacing: 3) {
-                        Text(TimeFmt.messageClock(message.createdAt))
-                            .font(metadataFont)
-                            .monospacedDigit()
-                            .foregroundColor(
-                                senderOverlayUsesLightInk
-                                    ? .white.opacity(0.94)
-                                    : bubbleSecondaryInk
-                            )
-                        if mine,
-                           deliveryState.tickCount > 0,
-                           !message.isRecalled {
-                            WhatsAppMessageTicks(
-                                count: deliveryState.tickCount,
-                                color: deliveryState.color
-                            )
+                    if showsBubbleMetadata {
+                        HStack(spacing: 3) {
+                            Text(TimeFmt.messageClock(message.createdAt))
+                                .font(metadataFont)
+                                .monospacedDigit()
+                                .foregroundColor(
+                                    senderOverlayUsesLightInk
+                                        ? .white.opacity(0.94)
+                                        : bubbleSecondaryInk
+                                )
+                            if mine,
+                               deliveryState.tickCount > 0,
+                               !message.isRecalled {
+                                WhatsAppMessageTicks(
+                                    count: deliveryState.tickCount,
+                                    color: deliveryState.color
+                                )
+                            }
                         }
-                    }
-                    .padding(.horizontal, senderOverlayUsesLightInk ? 5 : 0)
-                    .padding(.vertical, senderOverlayUsesLightInk ? 2 : 0)
-                    .background {
-                        if senderOverlayUsesLightInk {
-                            Capsule(style: .continuous)
-                                .fill(Color.black.opacity(0.42))
+                        .padding(.horizontal, senderOverlayUsesLightInk ? 5 : 0)
+                        .padding(.vertical, senderOverlayUsesLightInk ? 2 : 0)
+                        .background {
+                            if senderOverlayUsesLightInk {
+                                Capsule(style: .continuous)
+                                    .fill(Color.black.opacity(0.42))
+                            }
                         }
+                        .padding(.trailing, WhatsAppChatLayout.bubblePadH)
+                        .padding(.bottom, WhatsAppChatLayout.bubblePadV)
                     }
-                    .padding(.trailing, WhatsAppChatLayout.bubblePadH)
-                    .padding(.bottom, WhatsAppChatLayout.bubblePadV)
                 }
                 .simultaneousGesture(
                     LongPressGesture(minimumDuration: 0.42).onEnded { _ in
@@ -9162,6 +9169,11 @@ struct MessageRow: View {
 
     private var senderOverlayUsesLightInk: Bool {
         ["image", "images", "video", "livephoto"].contains(message.kindName)
+    }
+
+    private var showsBubbleMetadata: Bool {
+        !["image", "images", "video", "livephoto", "transfer"]
+            .contains(message.kindName)
     }
 
     private var textBubbleTopPadding: CGFloat {
