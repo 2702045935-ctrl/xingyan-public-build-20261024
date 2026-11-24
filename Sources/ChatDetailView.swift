@@ -3386,6 +3386,16 @@ struct ChatDetailView: View {
         .task(id: backgroundPath) {
             await refreshBackgroundLuminance()
         }
+        .onAppear {
+            if let preview = chatBg.previewImage(chatId: chat.id) {
+                Task { await refreshPreviewLuminance(preview) }
+            }
+        }
+        .onChange(of: chatBg.version) { _ in
+            if let preview = chatBg.previewImage(chatId: chat.id) {
+                Task { await refreshPreviewLuminance(preview) }
+            }
+        }
 
         .task(id: chat.id) {
             while !Task.isCancelled {

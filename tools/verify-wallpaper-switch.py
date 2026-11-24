@@ -50,6 +50,14 @@ require(
     "rendered wallpapers must reuse source/effect caches across chat entries",
 )
 require(
+    "@State private var previewReady = false" in SHEET
+    and "if previewReady {\n                    backgroundPreview\n"
+    "                } else {\n"
+    "                    RoundedRectangle(cornerRadius: 26" in SHEET
+    and "DispatchQueue.main.asyncAfter(deadline: .now() + 0.08)" in SHEET,
+    "the wallpaper sheet must defer its heavy preview until after presentation",
+)
+require(
     "var placeholder: Color? = nil" in (
         ROOT / "Sources" / "Core.swift"
     ).read_text(encoding="utf-8")

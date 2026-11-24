@@ -200,6 +200,7 @@ struct ChatBackgroundSheet: View {
     @State private var busy = false
     @State private var composingImage: UIImage?
     @State private var showingComposer = false
+    @State private var previewReady = false
 
     static let presets: [String] = ["solid:white", "solid:black"]
 
@@ -257,7 +258,13 @@ struct ChatBackgroundSheet: View {
     private var standardBody: some View {
         ScrollView {
             VStack(spacing: 18) {
-                backgroundPreview
+                if previewReady {
+                    backgroundPreview
+                } else {
+                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                        .fill(C.cardBg)
+                        .frame(width: 214, height: 408)
+                }
 
                 VStack(spacing: 0) {
                     wallpaperChoiceRow(
@@ -359,6 +366,12 @@ struct ChatBackgroundSheet: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(Tr("完成")) { dismiss() }
                 }
+            }
+        }
+        .onAppear {
+            previewReady = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+                previewReady = true
             }
         }
         .sheet(isPresented: $picking) {
