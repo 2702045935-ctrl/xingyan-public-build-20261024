@@ -51,6 +51,7 @@ const { PaymentSettlementScheduler } = require('./lib/payment-settlement-schedul
 const { createTransferKernel, TransferError } = require('./transfer-kernel');
 const { BankingAuditLog } = require('./lib/banking-audit');
 const { ConnectionGovernor } = require('./lib/connection-governor');
+const { GatewayDirectory } = require('./lib/gateway-directory');
 const {
   normalizeBillTimeZone,
   billMonthKey,
@@ -16381,7 +16382,8 @@ async function handleApi(req, res, pathname, query) {
       activeCalls,
       ringingCalls,
       directoryCalls: shardCallDirectory.size,
-      gateway: connectionGovernor.snapshot()
+      gateway: connectionGovernor.snapshot(),
+      gatewayDirectory: gatewayDirectory.snapshot()
     });
     return;
   }
@@ -25880,7 +25882,48 @@ async function handleHttpRequest(req, res) {
         service: 'chris-chat-gateway',
         at: now(),
         gateway: connectionGovernor.snapshot(),
+        directory: gatewayDirectory.snapshot(),
         wsIpBuckets: wsConns.size
+      });
+    }
+    if (parsed.pathname === '/__gateway/directory' && req.method === 'GET') {
+      return ok(res, { directory: gatewayDirectory.snapshot() });
+    }
+    if (parsed.pathname === '/__gateway/nodes' && req.method === 'POST') {
+      const body = await readBody(req);
+      try {
+        return ok(res, {
+          node: gatewayDirectory.register(body.node || body)
+        });
+      } catch (error) {
+        return fail(res, 422, String(error && error.message || error));
+      }
+    }
+    if (parsed.pathname === '/__gateway/heartbeat' && req.method === 'POST') {
+      const body = await readBody(req);
+      try {
+        return ok(res, {
+          node: gatewayDirectory.heartbeat(body.id, body)
+        });
+      } catch (error) {
+        return fail(res, 404, String(error && error.message || error));
+      }
+    }
+    if (parsed.pathname === '/__gateway/claim' && req.method === 'POST') {
+      const body = await readBody(req);
+      try {
+        return ok(res, gatewayDirectory.claim(body.userId, body.gatewayId, {
+          leaseMs: Number(body.leaseMs) || undefined,
+          force: body.force === true
+        }));
+      } catch (error) {
+        return fail(res, 422, String(error && error.message || error));
+      }
+    }
+    if (parsed.pathname === '/__gateway/release' && req.method === 'POST') {
+      const body = await readBody(req);
+      return ok(res, {
+        released: gatewayDirectory.release(body.userId, body.gatewayId, body.epoch)
       });
     }
     if (parsed.pathname === '/__gateway/drain' && req.method === 'POST') {
@@ -26838,6 +26881,31 @@ const connectionGovernor = new ConnectionGovernor({
   maxPerIp: Number(process.env.WS_MAX_CONNECTIONS_PER_IP) || WS_MAX_PER_IP,
   softLoadRatio: Number(process.env.WS_SOFT_LOAD_RATIO) || 0.85
 });
+const gatewayNodeId = String(process.env.GATEWAY_NODE_ID
+  || ('gateway-' + (process.env.PORT || 5180))).slice(0, 120);
+const gatewayDirectory = new GatewayDirectory({
+  nodeTimeoutMs: Number(process.env.GATEWAY_NODE_TIMEOUT_MS) || 30000,
+  defaultLeaseMs: Number(process.env.GATEWAY_CLAIM_LEASE_MS) || 90000
+});
+gatewayDirectory.register({
+  id: gatewayNodeId,
+  endpoint: String(process.env.GATEWAY_ENDPOINT || ''),
+  cellId: String(process.env.GATEWAY_CELL_ID || ''),
+  failureDomain: String(process.env.GATEWAY_FAILURE_DOMAIN || ''),
+  capacity: connectionGovernor.maxTotal
+});
+const gatewayHeartbeatTimer = setInterval(() => {
+  try {
+    gatewayDirectory.heartbeat(gatewayNodeId, {
+      connections: connectionGovernor.total,
+      capacity: connectionGovernor.maxTotal,
+      draining: connectionGovernor.draining
+    });
+  } catch (error) {
+    callTrace('gateway heartbeat failed: ' + String(error && error.message || error));
+  }
+}, Math.max(1000, Number(process.env.GATEWAY_HEARTBEAT_MS) || 10000));
+if (gatewayHeartbeatTimer.unref) gatewayHeartbeatTimer.unref();
 
 function wsAllow(ip) {
   const now = Date.now();

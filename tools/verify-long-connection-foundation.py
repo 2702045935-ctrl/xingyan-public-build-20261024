@@ -37,6 +37,10 @@ def main() -> None:
     for needle in ["user-limit", "ip-limit", "draining", "released"]:
         if needle not in test:
             raise AssertionError(f"foundation test missing {needle}")
+    directory = (ROOT / "server/lib/gateway-directory.js").read_text(encoding="utf-8")
+    for needle in ["register(", "heartbeat(", "claim(", "renew(", "release(", "pick("]:
+        if needle not in directory:
+            raise AssertionError(f"gateway directory missing {needle}")
     print("long connection foundation: passed")
 
 

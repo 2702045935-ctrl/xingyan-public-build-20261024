@@ -23,6 +23,7 @@
 | `WS_MAX_CONNECTIONS_PER_USER` | `4` | 一个账号允许的设备连接数 |
 | `WS_MAX_CONNECTIONS_PER_IP` | `WS_MAX_PER_IP`（默认 60） | 单 IP 连接保护 |
 | `WS_SOFT_LOAD_RATIO` | `0.85` | 软水位，供调度和告警使用 |
+| `GATEWAY_HEARTBEAT_MS` | `10000` | Gateway 目录心跳间隔 |
 
 ## 接口
 
