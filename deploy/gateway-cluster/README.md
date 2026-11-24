@@ -11,17 +11,27 @@
 
 ## 安装
 
-1. 将 `server/gateway-server.js` 和 `server/lib/` 放到发布目录；
-2. 将模板复制到 `/etc/xingyan-gateway/<node>.env`；
-3. 每个实例设置不同 `GATEWAY_PORT`、`GATEWAY_NODE_ID`、`GATEWAY_CELL_ID`；
-4. 将服务文件安装到 `/etc/systemd/system/xingyan-gateway@.service`；
-5. 三台机器分别启动：
+在仓库根目录执行：
+
+```bash
+sudo GATEWAY_ADMIN_SECRET='<secret>' \
+  ./deploy/gateway-cluster/install.sh --node=gateway-a --port=5290
+```
+
+默认只安装不启动。确认 `/etc/xingyan-gateway/gateway-a.env` 后再启动：
 
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable --now xingyan-gateway@gateway-a
 sudo systemctl enable --now xingyan-gateway@gateway-b
 sudo systemctl enable --now xingyan-gateway@gateway-c
+```
+
+切流先 dry-run，再加 `--apply`：
+
+```bash
+sudo -E ./deploy/gateway-cluster/rollout.sh --from=1 --to=5
+sudo -E ./deploy/gateway-cluster/rollout.sh --from=1 --to=5 --apply
 ```
 
 ## 主服务灰度

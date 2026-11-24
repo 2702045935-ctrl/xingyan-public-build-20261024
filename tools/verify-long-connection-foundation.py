@@ -81,6 +81,13 @@ def main() -> None:
     for needle in ["less-than-two-live-gateway-nodes", "gateway-upstream-not-ready", "canary-percent-required"]:
         if needle not in preflight:
             raise AssertionError(f"gateway preflight missing {needle}")
+    install_script = (ROOT / "deploy/gateway-cluster/install.sh").read_text(encoding="utf-8")
+    rollout_script = (ROOT / "deploy/gateway-cluster/rollout.sh").read_text(encoding="utf-8")
+    for needle in ["install -m 0644", "systemctl daemon-reload", "GATEWAY_ADMIN_SECRET"]:
+        if needle not in install_script:
+            raise AssertionError(f"gateway install script missing {needle}")
+    if "--apply" not in rollout_script or "/__gateway/canary" not in rollout_script:
+        raise AssertionError("gateway rollout script missing guarded canary apply")
     print("long connection foundation: passed")
 
 
