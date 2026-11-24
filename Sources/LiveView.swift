@@ -128,7 +128,7 @@ struct LiveListView: View {
                     Text(r.title ?? "")
                         .font(pf(15, .medium)).foregroundColor(ink).lineLimit(1)
                     Text(r.isLive ? "\(r.hostName) · \(r.hot ?? 0) 热度" : "\(r.hostName) · 待开播")
-                        .font(AppDesign.Type.caption).foregroundColor(subInk).lineLimit(1)
+                        .font(AppDesign.Typography.caption).foregroundColor(subInk).lineLimit(1)
                 }
                 Spacer(minLength: 0)
             }
@@ -278,7 +278,7 @@ struct LiveRoomView: View {
                     }
                 } label: {
                     Text(live.publishing ? "结束直播" : "开始直播")
-                        .font(AppDesign.Type.compactButtonMedium)
+                        .font(AppDesign.Typography.compactButtonMedium)
                         .foregroundColor(.white)
                         .padding(.horizontal, AppDesign.Spacing.sm).padding(.vertical, 6)
                         .background(Capsule().fill(live.publishing ? AppPalette.danger : C.green))
@@ -299,7 +299,7 @@ struct LiveRoomView: View {
             ForEach(danmakus.suffix(9), id: \.text.hashValue) { d in
                 HStack(alignment: .top, spacing: 6) {
                     Text(d.who)
-                        .font(AppDesign.Type.captionMedium)
+                        .font(AppDesign.Typography.captionMedium)
                         .foregroundColor(Color(hex: 0x7FD3FF))
                     Text(d.text)
                         .font(pf(13))

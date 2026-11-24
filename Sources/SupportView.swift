@@ -374,10 +374,10 @@ struct SupportView: View {
                 AsyncAvatar(path: cfg?.agent?.avatar ?? "", size: 46, corner: 23)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(cfg?.agent?.nickname ?? Tr("在线客服"))
-                        .font(AppDesign.Type.buttonMedium)
+                        .font(AppDesign.Typography.buttonMedium)
                         .foregroundColor(C.label)
                     Text((cfg?.workTime?.isEmpty == false) ? cfg!.workTime! : Tr("人工在线时间 09:00 - 22:00"))
-                        .font(AppDesign.Type.caption)
+                        .font(AppDesign.Typography.caption)
                         .foregroundColor(C.subLabel)
                 }
                 Spacer(minLength: 8)
@@ -422,7 +422,7 @@ struct SupportView: View {
                                             .fill(catColor(idx)))
                                     VStack(alignment: .leading, spacing: 3) {
                                         Text(c.title)
-                                            .font(AppDesign.Type.listTitle)
+                                            .font(AppDesign.Typography.listTitle)
                                             .foregroundColor(C.label)
                                         Text(Tr("共") + " \((c.items ?? []).count) " + Tr("个问题"))
                                             .font(pf(12))
@@ -457,11 +457,11 @@ struct SupportView: View {
                             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                                 .fill(Color(hexString: "#1180E0", fallback: 0x1180E0)))
                         Text(Tr("提交问题"))
-                            .font(AppDesign.Type.listTitle)
+                            .font(AppDesign.Typography.listTitle)
                             .foregroundColor(C.label)
                         Spacer(minLength: 8)
                         Text(Tr("写清楚一点，我们尽快处理"))
-                            .font(AppDesign.Type.caption)
+                            .font(AppDesign.Typography.caption)
                             .foregroundColor(C.subLabel)
                         Chevron(size: 9, line: 1.6)
                     }
@@ -503,7 +503,7 @@ struct SupportView: View {
                     .foregroundColor(C.label)
                 Spacer(minLength: 8)
                 Text(done ? Tr("已处理") : ((t.status ?? "") == "replied" ? Tr("已回复") : Tr("待处理")))
-                    .font(AppDesign.Type.caption)
+                    .font(AppDesign.Typography.caption)
                     .foregroundColor(done ? C.subLabel : C.green)
                 Text(shortTime(t.createdAt ?? ""))
                     .font(pf(12))
@@ -571,7 +571,7 @@ struct SupportView: View {
 
     private func contactRow(_ title: String, _ value: String) -> some View {
         HStack(spacing: AppDesign.Spacing.sm) {
-            Text(title).font(AppDesign.Type.listTitle).foregroundColor(C.label)
+            Text(title).font(AppDesign.Typography.listTitle).foregroundColor(C.label)
             Spacer(minLength: 8)
             Text(value).font(pf(14)).foregroundColor(C.subLabel)
             Chevron(size: 9, line: 1.6)
@@ -583,7 +583,7 @@ struct SupportView: View {
 
     private var footNote: some View {
         Text(Tr("客服不会向你索要密码、验证码，也不会让你转账。遇到这种都是骗子。"))
-            .font(AppDesign.Type.caption)
+            .font(AppDesign.Typography.caption)
             .foregroundColor(C.subLabel)
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)

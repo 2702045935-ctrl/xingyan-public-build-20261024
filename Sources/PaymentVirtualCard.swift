@@ -72,7 +72,7 @@ struct VirtualCardView: View {
             Image(systemName: "info.circle.fill")
                 .foregroundStyle(PayVisual.warning)
             Text(Tr(info?.notice ?? "星言内部虚拟卡号，不是 Visa / Mastercard，不能在外部商户使用"))
-                .font(AppDesign.Type.caption)
+                .font(AppDesign.Typography.caption)
                 .foregroundStyle(PayVisual.secondaryInk)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -102,7 +102,7 @@ struct VirtualCardView: View {
     private var errorBlock: some View {
         if !error.isEmpty {
             Text(error)
-                .font(AppDesign.Type.caption)
+                .font(AppDesign.Typography.caption)
                 .foregroundStyle(PayVisual.danger)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, AppDesign.Spacing.lg)

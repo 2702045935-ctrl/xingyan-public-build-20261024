@@ -167,7 +167,7 @@ struct FullScreenComposerView: View {
     private var footer: some View {
         HStack(spacing: 10) {
             Text("\(text.count) \(Tr("字"))")
-                .font(AppDesign.Type.captionMedium.monospacedDigit())
+                .font(AppDesign.Typography.captionMedium.monospacedDigit())
             Spacer(minLength: 8)
             HStack(spacing: 6) {
                 Image(systemName: "checkmark.circle.fill")

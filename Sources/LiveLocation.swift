@@ -198,7 +198,7 @@ struct SendLocationView: View {
             Image(systemName: symbol)
                 .font(.system(size: 13, weight: .semibold))
             Text(title)
-                .font(AppDesign.Type.captionMedium)
+                .font(AppDesign.Typography.captionMedium)
                 .lineLimit(1)
         }
         .foregroundColor(C.label)
@@ -245,7 +245,7 @@ struct SendLocationView: View {
                                 .font(.system(size: 26, weight: .light))
                                 .foregroundColor(C.subLabel)
                             Text(emptyText)
-                                .font(AppDesign.Type.body)
+                                .font(AppDesign.Typography.body)
                                 .foregroundColor(C.subLabel)
                                 .multilineTextAlignment(.center)
                         }
@@ -329,7 +329,7 @@ struct SendLocationView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(p.0).font(pf(16)).foregroundColor(C.label).lineLimit(1)
                     if !p.1.isEmpty {
-                        Text(p.1).font(AppDesign.Type.caption).foregroundColor(C.subLabel).lineLimit(1)
+                        Text(p.1).font(AppDesign.Typography.caption).foregroundColor(C.subLabel).lineLimit(1)
                     }
                 }
                 Spacer(minLength: 8)
@@ -568,7 +568,7 @@ struct LiveLocationView: View {
                         HStack(spacing: 6) {
                             Image(systemName: "location.slash")
                             Text(hint).font(pf(13))
-                            Text(Tr("去设置")).font(AppDesign.Type.compactButtonMedium).foregroundColor(C.link)
+                            Text(Tr("去设置")).font(AppDesign.Typography.compactButtonMedium).foregroundColor(C.link)
                         }
                         .foregroundColor(C.subLabel)
                     }
@@ -576,7 +576,7 @@ struct LiveLocationView: View {
                 }
                 Button { stopAndClose() } label: {
                     Text(Tr("停止共享"))
-                        .font(AppDesign.Type.rowTitle)
+                        .font(AppDesign.Typography.rowTitle)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: AppDesign.Control.compactHeight)

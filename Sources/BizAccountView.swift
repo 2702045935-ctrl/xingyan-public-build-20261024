@@ -22,7 +22,7 @@ struct BizAccountView: View {
                 VStack(spacing: 0) {
                     VStack(spacing: AppDesign.Spacing.xs) {
                         Text(Tr("经营账户余额"))
-                            .font(AppDesign.Type.body).foregroundColor(Color.white.opacity(0.85))
+                            .font(AppDesign.Typography.body).foregroundColor(Color.white.opacity(0.85))
                         Text(money(info?.balance))
                             .font(pfMoney(34, .medium))
                             .foregroundColor(.white)
@@ -68,7 +68,7 @@ struct BizAccountView: View {
                     .padding(.top, 10)
 
                     Text(Tr("经营账户里的每一笔收款都有订单号，后台「经营账户查账」可以对账。"))
-                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                        .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, AppDesign.Spacing.xl)
                         .padding(.top, 14)
@@ -180,7 +180,7 @@ struct BizRecordsView: View {
         let sign = isOut ? "-" : "+"
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: AppDesign.Spacing.xs) {
-                Text(title(r)).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
+                Text(title(r)).font(AppDesign.Typography.bodyLarge).foregroundColor(C.label)
                 Spacer(minLength: 6)
                 Text(sign + "¥" + moneyFmt(r.amount ?? 0))
                     .font(pfMoney(15.5))
@@ -315,7 +315,7 @@ struct BizSettingsView: View {
                         .disabled(busy)
 
                         Text(Tr("到账方式选「经营账户」时，收到的钱先记在经营账户余额里，你随时可以提到零钱。"))
-                            .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                            .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, AppDesign.Spacing.xl).padding(.top, AppDesign.Spacing.sm)
                         Color.clear.frame(height: AppDesign.Control.badgeHeight)
@@ -436,7 +436,7 @@ struct BizWithdrawView: View {
             .disabled(busy || balance <= 0)
 
             Text(Tr("经营账户提现到零钱是即时到账的，不收费。"))
-                .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                 .padding(.top, AppDesign.Spacing.sm)
             Spacer(minLength: 0)
         }
@@ -531,7 +531,7 @@ struct BizInvoiceView: View {
 
                     Button { save() } label: {
                         Text(busy ? Tr("保存中…") : Tr("保存开票信息"))
-                            .font(AppDesign.Type.rowTitle).foregroundColor(.white)
+                            .font(AppDesign.Typography.rowTitle).foregroundColor(.white)
                             .frame(maxWidth: .infinity).frame(height: 46)
                             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(C.green))
                     }
@@ -610,7 +610,7 @@ struct BizInvoiceView: View {
                     }
 
                     Text(Tr("开票申请会进后台，客服开好后状态会变成「已开票」。"))
-                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                        .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, AppDesign.Spacing.xl).padding(.top, AppDesign.Spacing.sm)
                     Color.clear.frame(height: 26)

@@ -70,7 +70,7 @@ struct AIWorkspaceView: View {
                 VStack(spacing: AppDesign.Spacing.sm) {
                     ProgressView().tint(accent)
                     Text(Tr("正在进入 AI 工作台"))
-                        .font(AppDesign.Type.caption)
+                        .font(AppDesign.Typography.caption)
                         .foregroundColor(C.subLabel)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -151,7 +151,7 @@ struct AIWorkspaceView: View {
                     VStack(spacing: AppDesign.Spacing.sm) {
                         ProgressView().tint(accent)
                         Text(Tr("正在上传…"))
-                            .font(AppDesign.Type.compactButtonMedium)
+                            .font(AppDesign.Typography.compactButtonMedium)
                             .foregroundColor(C.label)
                     }
                     .padding(.horizontal, 26)
@@ -172,7 +172,7 @@ struct AIWorkspaceView: View {
                     .foregroundColor(accent)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(aiName)
-                        .font(AppDesign.Type.rowTitle)
+                        .font(AppDesign.Typography.rowTitle)
                         .foregroundColor(C.label)
                         .lineLimit(1)
                     Text((messages.isEmpty ? Tr("快速回答") : Tr("正在对话"))
@@ -387,7 +387,7 @@ struct AIWorkspaceView: View {
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(accent)
                 Text(title)
-                    .font(AppDesign.Type.sectionMedium)
+                    .font(AppDesign.Typography.sectionMedium)
                     .foregroundColor(C.label)
                     .lineLimit(1)
             }
@@ -476,7 +476,7 @@ struct AIWorkspaceView: View {
     private func messageContent(_ message: Message, mine: Bool) -> some View {
         if message.isRecalled {
             Text(Tr("这条消息已撤回"))
-                .font(AppDesign.Type.caption)
+                .font(AppDesign.Typography.caption)
                 .foregroundColor(mine ? Color.white.opacity(0.72) : C.subLabel)
         } else {
             switch message.kindName.lowercased() {
@@ -512,7 +512,7 @@ struct AIWorkspaceView: View {
     private func messageText(_ message: Message, mine: Bool) -> some View {
         let body = message.body.trimmingCharacters(in: .whitespacesAndNewlines)
         return Text(RichText.lines(body.isEmpty ? "[" + message.kindName + "]" : body, size: 15.5))
-            .font(AppDesign.Type.bodyLarge)
+            .font(AppDesign.Typography.bodyLarge)
             .lineSpacing(4)
             .foregroundColor(mine ? .white : C.label)
             .fixedSize(horizontal: false, vertical: true)
@@ -533,7 +533,7 @@ struct AIWorkspaceView: View {
                     .background(Circle().fill(mine ? Color.white.opacity(0.15) : accent.opacity(0.10)))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(info.name)
-                        .font(AppDesign.Type.bodyMedium)
+                        .font(AppDesign.Typography.bodyMedium)
                         .foregroundColor(mine ? .white : C.label)
                         .lineLimit(1)
                     Text(Tr("点击查看文件"))
@@ -595,7 +595,7 @@ struct AIWorkspaceView: View {
                           ? Tr("和小星简单聊聊")
                           : Tr("开启一天的工作之旅吧..."),
                           text: $prompt, axis: .vertical)
-                    .font(AppDesign.Type.bodyLarge)
+                    .font(AppDesign.Typography.bodyLarge)
                     .foregroundColor(C.label)
                     .tint(accent)
                     .lineLimit(1...4)
@@ -1072,7 +1072,7 @@ private struct AIWorkspacePlainLinkCard: View {
                     .background(Circle().fill(accent.opacity(0.09)))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(host)
-                        .font(AppDesign.Type.captionMedium)
+                        .font(AppDesign.Typography.captionMedium)
                         .foregroundColor(C.label)
                         .lineLimit(1)
                     Text(Tr("在星言内打开链接"))
@@ -1146,7 +1146,7 @@ private struct AIRechargeView: View {
                                 Image(systemName: "bolt.fill")
                                     .font(.system(size: 10, weight: .bold))
                                 Text(compact(wallet.tokens) + " Token")
-                                    .font(AppDesign.Type.captionStrong)
+                                    .font(AppDesign.Typography.captionStrong)
                             }
                             .foregroundColor(accent)
                         }
@@ -1162,7 +1162,7 @@ private struct AIRechargeView: View {
                         .stroke(C.hairline, lineWidth: 0.7))
 
                     Text(Tr("选择套餐"))
-                        .font(AppDesign.Type.rowTitle)
+                        .font(AppDesign.Typography.rowTitle)
                         .foregroundColor(C.label)
 
                     ForEach(plans) { plan in
@@ -1222,7 +1222,7 @@ private struct AIRechargeView: View {
 
                 HStack(spacing: 6) {
                     Text(compact(plan.granted) + " Token")
-                        .font(AppDesign.Type.captionStrong)
+                        .font(AppDesign.Typography.captionStrong)
                         .foregroundColor(accent)
                     if plan.bonus > 0 {
                         Text(Tr("含赠送") + compact(plan.bonus))
@@ -1255,7 +1255,7 @@ private struct AIRechargeView: View {
                     }
                     Spacer(minLength: 8)
                     Text(Tr("购买"))
-                        .font(AppDesign.Type.section)
+                        .font(AppDesign.Typography.section)
                         .foregroundColor(.white)
                         .padding(.horizontal, 15)
                         .frame(height: 31)
@@ -1353,10 +1353,10 @@ private struct AIPaymentSheet: View {
 
             VStack(alignment: .leading, spacing: 7) {
                 Text(plan.name)
-                    .font(AppDesign.Type.rowTitle)
+                    .font(AppDesign.Typography.rowTitle)
                     .foregroundColor(C.label)
                 Text(compact(plan.granted) + " Token · ¥" + moneyFmt(plan.price))
-                    .font(AppDesign.Type.compactButtonMedium)
+                    .font(AppDesign.Typography.compactButtonMedium)
                     .foregroundColor(accent)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -1384,7 +1384,7 @@ private struct AIPaymentSheet: View {
 
             if !errorText.isEmpty {
                 Text(errorText)
-                    .font(AppDesign.Type.caption)
+                    .font(AppDesign.Typography.caption)
                     .foregroundColor(C.red)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, AppDesign.Spacing.lg)
@@ -1489,7 +1489,7 @@ private struct AIProfileSheet: View {
                     .foregroundColor(C.label)
                 Spacer()
                 Button(Tr("完成")) { dismiss() }
-                    .font(AppDesign.Type.bodyMedium)
+                    .font(AppDesign.Typography.bodyMedium)
                     .foregroundColor(accent)
                     .buttonStyle(.plain)
             }
@@ -1511,7 +1511,7 @@ private struct AIProfileSheet: View {
                                 saveName()
                             } label: {
                                 Text(savingName ? Tr("保存中") : Tr("保存"))
-                                    .font(AppDesign.Type.captionStrong)
+                                    .font(AppDesign.Typography.captionStrong)
                                     .foregroundColor(.white)
                                     .frame(width: 66, height: 44)
                                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous)
@@ -1573,7 +1573,7 @@ private struct AIProfileSheet: View {
                                             .foregroundColor(selectedVoice == voice.id ? accent : C.subLabel)
                                         VStack(alignment: .leading, spacing: 2) {
                                             Text(voice.name)
-                                                .font(AppDesign.Type.bodyMedium)
+                                                .font(AppDesign.Typography.bodyMedium)
                                                 .foregroundColor(C.label)
                                             if let desc = voice.desc, !desc.isEmpty {
                                                 Text(desc)
@@ -1595,7 +1595,7 @@ private struct AIProfileSheet: View {
                         HStack(spacing: AppDesign.Spacing.sm) {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(Tr("自动朗读回复"))
-                                    .font(AppDesign.Type.bodyMedium)
+                                    .font(AppDesign.Typography.bodyMedium)
                                     .foregroundColor(C.label)
                                 Text(Tr("每条回答下方也可以手动点「朗读」"))
                                     .font(pf(10.5))
@@ -1625,7 +1625,7 @@ private struct AIProfileSheet: View {
                         HStack(spacing: AppDesign.Spacing.sm) {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(Tr("清除 AI 工作台对话"))
-                                    .font(AppDesign.Type.bodyMedium)
+                                    .font(AppDesign.Typography.bodyMedium)
                                     .foregroundColor(C.label)
                                 Text(Tr("只清空你和小星的工作台聊天，不影响其他会话"))
                                     .font(pf(10.5))
@@ -1639,7 +1639,7 @@ private struct AIProfileSheet: View {
                                     ProgressView().controlSize(.small).tint(C.red)
                                 } else {
                                     Text(Tr("清除"))
-                                        .font(AppDesign.Type.sectionMedium)
+                                        .font(AppDesign.Typography.sectionMedium)
                                         .foregroundColor(C.red)
                                 }
                             }

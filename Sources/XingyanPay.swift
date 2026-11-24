@@ -97,7 +97,7 @@ struct XYPaySheet: View {
                                 colors: [AppPalette.warmHighlight, Color(hex: 0xD9A94A)],
                                 startPoint: .top, endPoint: .bottom)))
                     }
-                    Text(XYPay.cardLine).font(AppDesign.Type.bodyMedium).foregroundColor(.white)
+                    Text(XYPay.cardLine).font(AppDesign.Typography.bodyMedium).foregroundColor(.white)
                     Spacer(minLength: 0)
                     StarPayChip(width: 32)
                     Image(systemName: "wave.3.right").font(.system(size: 14))
@@ -105,7 +105,7 @@ struct XYPaySheet: View {
                 }
                 Spacer(minLength: 0)
                 Text("••••  ••••  ••••  " + tail)
-                    .font(AppDesign.Type.rowTitleMedium).foregroundColor(.white.opacity(0.94))
+                    .font(AppDesign.Typography.rowTitleMedium).foregroundColor(.white.opacity(0.94))
                 HStack(spacing: 6) {
                     Text(app.me?.nickname ?? app.me?.username ?? "")
                         .font(pf(11.5)).foregroundColor(.white.opacity(0.7)).lineLimit(1)
@@ -121,7 +121,7 @@ struct XYPaySheet: View {
 
     private var amountBlock: some View {
         VStack(spacing: 6) {
-            Text(Tr("付款金额")).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+            Text(Tr("付款金额")).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
             StarPayAmount(value: amount, role: .sheet, color: C.label)
             if !target.isEmpty {
                 Text(target).font(pf(13)).foregroundColor(C.subLabel)
@@ -197,7 +197,7 @@ struct XYPaySheet: View {
             .buttonStyle(PaySecondaryButtonStyle(tint: PayVisual.tint))
 
             if !hint.isEmpty {
-                Text(hint).font(AppDesign.Type.caption).foregroundColor(C.red)
+                Text(hint).font(AppDesign.Typography.caption).foregroundColor(C.red)
                     .multilineTextAlignment(.center).padding(.horizontal, AppDesign.Spacing.sm)
             }
             Label(Tr("支付过程由设备安全验证保护"), systemImage: "lock.shield.fill")
@@ -234,10 +234,10 @@ struct XYPaySheet: View {
                     if t.count == 6 { checkPwd(t) }
                 }
             if !hint.isEmpty {
-                Text(hint).font(AppDesign.Type.caption).foregroundColor(C.red)
+                Text(hint).font(AppDesign.Typography.caption).foregroundColor(C.red)
             }
             Button { pwd = ""; withAnimation { stage = 0 } } label: {
-                Text(Tr("换指纹/面容支付")).font(AppDesign.Type.body).foregroundColor(C.subLabel)
+                Text(Tr("换指纹/面容支付")).font(AppDesign.Typography.body).foregroundColor(C.subLabel)
             }
             .buttonStyle(.plain)
         }

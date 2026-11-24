@@ -63,7 +63,7 @@ struct GroupQRView: View {
                     saveToAlbum()
                 } label: {
                     Text(saved ? "已存" : "保存")
-                        .font(AppDesign.Type.rowTitle)
+                        .font(AppDesign.Typography.rowTitle)
                         .foregroundColor(C.green)
                         .frame(height: L.navH)
                         .padding(.trailing, AppDesign.Spacing.md)
@@ -80,7 +80,7 @@ struct GroupQRView: View {
                             ProgressView()
                         } else if rows.isEmpty {
                             Text(Tr("二维码生成失败，稍后再试"))
-                                .font(AppDesign.Type.body)
+                                .font(AppDesign.Typography.body)
                                 .foregroundColor(C.subLabel)
                         } else {
                             QRCanvas(rows: rows, avatar: chat.avatar ?? "")
@@ -93,10 +93,10 @@ struct GroupQRView: View {
                     HStack(spacing: 10) {
                         Avatar(path: chat.avatar ?? "", size: 40, radius: 6)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(chat.name).font(AppDesign.Type.rowTitleMedium).foregroundColor(C.label)
+                            Text(chat.name).font(AppDesign.Typography.rowTitleMedium).foregroundColor(C.label)
                             Text(Lang.isEnglish ? "\(chat.memberCount ?? 0) members"
                                                 : "\(chat.memberCount ?? 0) 位成员")
-                                .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                                .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                         }
                         Spacer(minLength: 0)
                     }
@@ -106,7 +106,7 @@ struct GroupQRView: View {
                     .padding(.horizontal, AppDesign.Spacing.xl)
 
                     Text(Tr("用手机扫码打开链接就能进群；没登录会先跳到登录页，登录完自动进群"))
-                        .font(AppDesign.Type.caption)
+                        .font(AppDesign.Typography.caption)
                         .foregroundColor(C.subLabel)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 36)
@@ -210,7 +210,7 @@ struct AvatarCropSheet: View {
         NavigationStack {
             VStack(spacing: 18) {
                 Text(Tr("拖动调整位置，双指缩放，圈里的就是要当头像的部分"))
-                    .font(AppDesign.Type.caption)
+                    .font(AppDesign.Typography.caption)
                     .foregroundColor(C.subLabel)
                     .multilineTextAlignment(.center)
                     .padding(.top, AppDesign.Spacing.sm)
@@ -248,7 +248,7 @@ struct AvatarCropSheet: View {
                     dismiss()
                 } label: {
                     Text(Tr("就用这张"))
-                        .font(AppDesign.Type.rowTitle)
+                        .font(AppDesign.Typography.rowTitle)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity, minHeight: 50)
                         .background(C.green)

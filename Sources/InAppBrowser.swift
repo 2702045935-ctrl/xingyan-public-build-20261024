@@ -398,7 +398,7 @@ struct InAppBrowserView: View {
                 .font(pf(17, .semibold))
                 .foregroundColor(C.label)
             Text(loadError)
-                .font(AppDesign.Type.caption)
+                .font(AppDesign.Typography.caption)
                 .foregroundColor(C.subLabel)
                 .multilineTextAlignment(.center)
                 .lineLimit(3)
@@ -458,7 +458,7 @@ struct InAppBrowserView: View {
                 .buttonStyle(.plain)
             }
             Button(Tr("关闭")) { showAddress = false }
-                .font(AppDesign.Type.bodyMedium)
+                .font(AppDesign.Typography.bodyMedium)
                 .foregroundColor(.secondary)
                 .buttonStyle(.plain)
         }
@@ -494,7 +494,7 @@ struct InAppBrowserView: View {
                 showFind = false
                 findText = ""
             }
-            .font(AppDesign.Type.compactButtonMedium)
+            .font(AppDesign.Typography.compactButtonMedium)
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 13)
@@ -532,7 +532,7 @@ struct InAppBrowserView: View {
                     Text(displayAddress)
                         .lineLimit(1)
                 }
-                .font(AppDesign.Type.captionMedium)
+                .font(AppDesign.Typography.captionMedium)
                 .foregroundStyle(.primary)
                 .padding(.horizontal, AppDesign.Spacing.sm)
                 .frame(maxWidth: 220)

@@ -755,7 +755,7 @@ struct NewsFeedView: View {
         let no = it.order > 0 ? it.order : (index + 1)
         return HStack(alignment: .top, spacing: 12) {
             Text("\(no)")
-                .font(AppDesign.Type.rowTitle)
+                .font(AppDesign.Typography.rowTitle)
                 .foregroundColor(rankColor(no))
                 .frame(width: 24, alignment: .leading)
                 .padding(.top, 1)

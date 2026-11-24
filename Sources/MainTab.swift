@@ -107,7 +107,7 @@ struct MainTabView: View {
                                 .foregroundColor(C.green)
                         }
                         Text(app.syncing ? "正在同步…" : "同步完成")
-                            .font(AppDesign.Type.captionMedium)
+                            .font(AppDesign.Typography.captionMedium)
                             .foregroundColor(C.label)
                     }
                     .padding(.horizontal, 14)
@@ -1323,13 +1323,13 @@ struct MenuRow: View {
                 }
 
                 Text(title)
-                    .font(AppDesign.Type.listTitle)
+                    .font(AppDesign.Typography.listTitle)
                     .foregroundColor(C.label)
 
                 Spacer(minLength: 0)
 
                 if !detail.isEmpty {
-                    Text(detail).font(AppDesign.Type.bodyLarge).foregroundColor(C.subLabel)
+                    Text(detail).font(AppDesign.Typography.bodyLarge).foregroundColor(C.subLabel)
                 }
                 if !thumb.isEmpty {
                     ZStack(alignment: .topTrailing) {

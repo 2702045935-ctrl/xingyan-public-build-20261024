@@ -112,7 +112,7 @@ struct RedPacketCard: View {
                     .frame(width: 30, height: 38)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(info.note.isEmpty ? "恭喜发财，大吉大利" : info.note)
-                        .font(AppDesign.Type.rowTitleMedium)
+                        .font(AppDesign.Typography.rowTitleMedium)
                         .foregroundColor(pale ? Color.white.opacity(0.92) : .white)
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
@@ -139,7 +139,7 @@ struct RedPacketCard: View {
                     .lineLimit(1)
                 Spacer(minLength: 4)
                 Text(stateText)
-                    .font(AppDesign.Type.caption)
+                    .font(AppDesign.Typography.caption)
                     .foregroundColor(pale ? Color.white.opacity(0.9) : .white)
                     .lineLimit(1)
             }
@@ -348,7 +348,7 @@ struct RedPacketSendView: View {
         VStack(spacing: 0) {
             NavBar(title: Tr("发红包"), back: { dismiss() }) {
                 Text(LuckLabel.text(isLucky: isGroup && lucky))
-                    .font(AppDesign.Type.captionMedium)
+                    .font(AppDesign.Typography.captionMedium)
                     .foregroundColor(C.subLabel)
                     .padding(.horizontal, 10)
                     .frame(height: AppDesign.Control.statusHeight)
@@ -368,7 +368,7 @@ struct RedPacketSendView: View {
                     redPacketDetails
 
                     Text(helpText)
-                        .font(AppDesign.Type.caption)
+                        .font(AppDesign.Typography.caption)
                         .foregroundColor(C.subLabel)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, AppDesign.Spacing.xxs)
@@ -560,7 +560,7 @@ struct RedPacketSendView: View {
                         UISelectionFeedbackGenerator().selectionChanged()
                     } label: {
                         Text("¥" + value)
-                            .font(AppDesign.Type.compactButton)
+                            .font(AppDesign.Typography.compactButton)
                             .foregroundStyle(amountText == value
                                              ? Color.white : C.label)
                             .padding(.horizontal, 14)
@@ -581,7 +581,7 @@ struct RedPacketSendView: View {
     private var redPacketPlayStyles: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(Tr("红包玩法"))
-                .font(AppDesign.Type.compactButton)
+                .font(AppDesign.Typography.compactButton)
                 .foregroundStyle(C.subLabel)
                 .padding(.horizontal, 3)
 
@@ -628,7 +628,7 @@ struct RedPacketSendView: View {
                     }
                 }
                 Text(title)
-                    .font(AppDesign.Type.rowTitle)
+                    .font(AppDesign.Typography.rowTitle)
                     .foregroundStyle(C.label)
                 Text(subtitle)
                     .font(pf(11.5))
@@ -701,7 +701,7 @@ struct RedPacketSendView: View {
                 .frame(width: 30, height: 30)
                 .background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
             Text(title)
-                .font(AppDesign.Type.rowTitleMedium)
+                .font(AppDesign.Typography.rowTitleMedium)
                 .foregroundStyle(C.label)
             Spacer(minLength: 8)
             content()
@@ -762,7 +762,7 @@ struct RedPacketSendView: View {
                         Spacer(minLength: 0)
                         VStack(spacing: 6) {
                             Text(Tr("恭喜发财 · 大吉大利"))
-                                .font(AppDesign.Type.captionMedium)
+                                .font(AppDesign.Typography.captionMedium)
                                 .foregroundColor(Color.white.opacity(0.88))
                                 .tracking(1.2)
                             HStack(alignment: .firstTextBaseline, spacing: 2) {
@@ -870,7 +870,7 @@ struct RedPacketSendView: View {
                     }
 
                     Text(helpText)
-                        .font(AppDesign.Type.caption)
+                        .font(AppDesign.Typography.caption)
                         .foregroundColor(C.subLabel)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 22)
@@ -1022,7 +1022,7 @@ struct RedPacketSendView: View {
             .padding(.horizontal, 14)
 
             Text(chat.name ?? Tr("对方"))
-                .font(AppDesign.Type.captionMedium)
+                .font(AppDesign.Typography.captionMedium)
                 .foregroundColor(PayVisual.secondaryInk)
                 .padding(.top, AppDesign.Spacing.xxs)
 
@@ -1257,10 +1257,10 @@ struct PayPasswordSheet: View {
                         .font(.system(size: 22))
                         .foregroundColor(C.green)
                     Text(Tr("还没设置支付密码"))
-                        .font(AppDesign.Type.rowTitle)
+                        .font(AppDesign.Typography.rowTitle)
                         .foregroundColor(C.label)
                     Text("为了安全，发红包 / 转账 / 付款都要先设一个 6 位支付密码\n（我 → 设置 → 账号与安全 → 支付密码）")
-                        .font(AppDesign.Type.body)
+                        .font(AppDesign.Typography.body)
                         .foregroundColor(C.subLabel)
                         .multilineTextAlignment(.center)
                 }
@@ -1462,7 +1462,7 @@ struct RedPacketOpenView: View {
                     }
                     .padding(.top, AppDesign.Spacing.xl)
                 } else if !tip.isEmpty {
-                    Text(tip).font(AppDesign.Type.body).foregroundColor(Color(hex: 0xF7DFA0)).padding(.top, AppDesign.Spacing.lg)
+                    Text(tip).font(AppDesign.Typography.body).foregroundColor(Color(hex: 0xF7DFA0)).padding(.top, AppDesign.Spacing.lg)
                 }
 
                 Spacer(minLength: 0)
@@ -1557,7 +1557,7 @@ struct RedPacketDetailView: View {
                 Image(systemName: "envelope.fill")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(gold)
-                Text(Tr("红包")).font(AppDesign.Type.compactButton).foregroundColor(.white.opacity(0.9))
+                Text(Tr("红包")).font(AppDesign.Typography.compactButton).foregroundColor(.white.opacity(0.9))
                 Spacer(minLength: 0)
                 Text(info.isLucky ? Tr("拼手气红包") : Tr("普通红包"))
                     .font(pf(11.5))
@@ -1574,13 +1574,13 @@ struct RedPacketDetailView: View {
                 .font(pf(17, .semibold))
                 .foregroundColor(.white)
             Text(info.note.isEmpty ? Tr("恭喜发财，大吉大利") : info.note)
-                .font(AppDesign.Type.body)
+                .font(AppDesign.Typography.body)
                 .foregroundColor(.white.opacity(0.82))
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
                 .padding(.horizontal, 18)
             Text(summaryLine(info))
-                .font(AppDesign.Type.caption)
+                .font(AppDesign.Typography.caption)
                 .foregroundColor(.white.opacity(0.6))
         }
         .frame(maxWidth: .infinity)
@@ -1609,7 +1609,7 @@ struct RedPacketDetailView: View {
                 QQGlyph(kind: .crown, size: 21)
             }
             VStack(alignment: .leading, spacing: 2) {
-                Text(Tr("我抢到的")).font(AppDesign.Type.caption).foregroundColor(PayVisual.secondaryInk)
+                Text(Tr("我抢到的")).font(AppDesign.Typography.caption).foregroundColor(PayVisual.secondaryInk)
                 Text("¥" + moneyFmt(mine.amount))
                     .font(pfStyled(size: 25, weight: .heavy, design: .rounded))
                     .foregroundStyle(LinearGradient(colors: [gold, goldDeep],

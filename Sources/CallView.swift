@@ -31,7 +31,7 @@ struct CallDialogOverlay: View {
                 VStack(spacing: 0) {
                     VStack(spacing: 6) {
                         Text(d.title)
-                            .font(AppDesign.Type.rowTitle)
+                            .font(AppDesign.Typography.rowTitle)
                             .foregroundColor(C.chatTimeInk)
                             .multilineTextAlignment(.center)
                         if !d.detail.isEmpty {
@@ -53,7 +53,7 @@ struct CallDialogOverlay: View {
                         call.dismissDialog()
                     } label: {
                         Text(d.okText)
-                            .font(AppDesign.Type.rowTitle)
+                            .font(AppDesign.Typography.rowTitle)
                             .foregroundColor(C.chatTimeInk)
                             .frame(maxWidth: .infinity)
                             .frame(height: 46)
@@ -230,7 +230,7 @@ struct CallView: View {
         } label: {
             HStack(spacing: 7) {
                 Image(systemName: "message.fill").font(.system(size: 12, weight: .semibold))
-                Text(b.name).font(AppDesign.Type.compactButtonMedium).lineLimit(1)
+                Text(b.name).font(AppDesign.Typography.compactButtonMedium).lineLimit(1)
                 Text(b.text).font(pf(13)).lineLimit(1).foregroundColor(.white.opacity(0.82))
                 Spacer(minLength: 0)
             }
@@ -444,7 +444,7 @@ struct CallView: View {
                             }
                         }
                         Text(m.name.isEmpty ? Tr("成员") : m.name)
-                            .font(AppDesign.Type.caption)
+                            .font(AppDesign.Typography.caption)
                             .foregroundColor(.white.opacity(0.85))
                             .lineLimit(1)
                     }
@@ -452,7 +452,7 @@ struct CallView: View {
             }
             .padding(.horizontal, 34)
             Text("\(call.roster.count) " + Tr("人在通话中"))
-                .font(AppDesign.Type.caption)
+                .font(AppDesign.Typography.caption)
                 .foregroundColor(.white.opacity(0.6))
         }
     }
@@ -812,7 +812,7 @@ struct CallView: View {
                         Text(call.isGroupCall
                              ? Tr("这个群里没有可以再拉的人了（要么已经在通话里，要么只有你自己）。想拉别人先把人加进群。")
                              : Tr("还没有好友可以邀请"))
-                            .font(AppDesign.Type.body).foregroundColor(C.subLabel)
+                            .font(AppDesign.Typography.body).foregroundColor(C.subLabel)
                     }
                     ForEach(inviteList) { u in
                         Button {

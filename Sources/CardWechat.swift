@@ -276,7 +276,7 @@ struct ContactCardWechat: View {
         Button { onRemark() } label: {
             VStack(alignment: .leading, spacing: 3) {
                 Text(Tr("关系与备注"))
-                    .font(AppDesign.Type.rowTitleMedium)
+                    .font(AppDesign.Typography.rowTitleMedium)
                     .foregroundColor(ink)
                 Text(Tr("补充备注、电话和标签，并管理联系权限。"))
                     .font(pf(12))
@@ -301,7 +301,7 @@ struct ContactCardWechat: View {
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(enabled ? AppPalette.legacyLink : gray)
                     .frame(width: 22)
-                Text(title).font(AppDesign.Type.listTitle).foregroundColor(enabled ? ink : gray)
+                Text(title).font(AppDesign.Typography.listTitle).foregroundColor(enabled ? ink : gray)
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, AppDesign.Spacing.md)
@@ -324,7 +324,7 @@ struct ContactCardWechat: View {
                 .frame(width: 32, height: 32)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(Tr("朋友圈"))
-                        .font(AppDesign.Type.rowTitleMedium)
+                        .font(AppDesign.Typography.rowTitleMedium)
                         .foregroundColor(ink)
                     Text(momentsHint.isEmpty ? Tr("最近动态") : Tr(momentsHint))
                         .font(pf(10.5))
@@ -357,7 +357,7 @@ struct ContactCardWechat: View {
                     Image(systemName: "bubble.left.and.bubble.right.fill")
                         .font(.system(size: 14, weight: .semibold))
                     Text(Tr("发消息"))
-                        .font(AppDesign.Type.rowTitle)
+                        .font(AppDesign.Typography.rowTitle)
                 }
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)

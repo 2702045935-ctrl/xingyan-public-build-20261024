@@ -172,7 +172,7 @@ struct SearchAllView: View {
                                 .font(pf(15, .semibold))
                                 .foregroundColor(C.label)
                             Text(Tr("检查网络后再试一次"))
-                                .font(AppDesign.Type.caption)
+                                .font(AppDesign.Typography.caption)
                                 .foregroundColor(C.subLabel)
                             Button(Tr("重新搜索")) { runSearch() }
                                 .font(pf(14, .medium))
@@ -196,11 +196,11 @@ struct SearchAllView: View {
                                 Image(systemName: "exclamationmark.circle.fill")
                                     .foregroundStyle(C.orange)
                                 Text(Tr("结果可能没有更新"))
-                                    .font(AppDesign.Type.caption)
+                                    .font(AppDesign.Typography.caption)
                                     .foregroundStyle(C.subLabel)
                                 Spacer(minLength: 0)
                                 Button(Tr("重试")) { runSearch() }
-                                    .font(AppDesign.Type.captionStrong)
+                                    .font(AppDesign.Typography.captionStrong)
                                     .foregroundStyle(C.green)
                                     .buttonStyle(MenuPressStyle())
                             }
@@ -278,7 +278,7 @@ struct SearchAllView: View {
                         .background(C.green.opacity(0.10))
                         .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
                     VStack(alignment: .leading, spacing: 2) {
-                        highlightMatch(tool.title, q).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
+                        highlightMatch(tool.title, q).font(AppDesign.Typography.bodyLarge).foregroundColor(C.label)
                         Text(tool.sub).font(pf(13)).foregroundColor(C.subLabel).lineLimit(1)
                     }
                 }
@@ -293,7 +293,7 @@ struct SearchAllView: View {
                 }) {
                     Avatar(path: p.avatar ?? "", size: 40, radius: 6)
                     VStack(alignment: .leading, spacing: 2) {
-                        highlightMatch(p.name ?? "", q).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
+                        highlightMatch(p.name ?? "", q).font(AppDesign.Typography.bodyLarge).foregroundColor(C.label)
                         if let u = p.username, !u.isEmpty {
                             highlightMatch(u, q).font(pf(13)).foregroundColor(C.subLabel)
                         }
@@ -310,8 +310,8 @@ struct SearchAllView: View {
                 }) {
                     Avatar(path: g.avatar ?? "", size: 40, radius: 6)
                     VStack(alignment: .leading, spacing: 2) {
-                        highlightMatch(g.name ?? "", q).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
-                        Text(Tr("\((g.members ?? 0)) 人")).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                        highlightMatch(g.name ?? "", q).font(AppDesign.Typography.bodyLarge).foregroundColor(C.label)
+                        Text(Tr("\((g.members ?? 0)) 人")).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                     }
                 }
             }
@@ -331,7 +331,7 @@ struct SearchAllView: View {
                             Spacer(minLength: 0)
                             Text(shortDate(m.at)).font(pf(12)).foregroundColor(C.subLabel)
                         }
-                        highlightMatch(m.text ?? "", q).font(AppDesign.Type.body).foregroundColor(C.subLabel).lineLimit(1)
+                        highlightMatch(m.text ?? "", q).font(AppDesign.Typography.body).foregroundColor(C.subLabel).lineLimit(1)
                     }
                 }
             }
@@ -346,7 +346,7 @@ struct SearchAllView: View {
                     Avatar(path: "", size: 40, radius: 6)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(p.author ?? "").font(pf(14)).foregroundColor(C.label)
-                        highlightMatch(p.content ?? "", q).font(AppDesign.Type.body).foregroundColor(C.subLabel).lineLimit(2)
+                        highlightMatch(p.content ?? "", q).font(AppDesign.Typography.body).foregroundColor(C.subLabel).lineLimit(2)
                     }
                 }
             }
@@ -361,7 +361,7 @@ struct SearchAllView: View {
                     Avatar(path: v.cover ?? "", size: 40, radius: 6)
                     VStack(alignment: .leading, spacing: 2) {
                         highlightMatch(v.title ?? "", q).font(pf(15)).foregroundColor(C.label).lineLimit(1)
-                        Text(v.author ?? "").font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                        Text(v.author ?? "").font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                     }
                 }
             }
@@ -370,7 +370,7 @@ struct SearchAllView: View {
 
     private func header(_ t: String, _ n: Int) -> some View {
         HStack {
-            Text(t).font(AppDesign.Type.captionStrong).foregroundColor(C.subLabel)
+            Text(t).font(AppDesign.Typography.captionStrong).foregroundColor(C.subLabel)
             Spacer(minLength: 0)
             Text("\(n)").font(pf(11.5, .medium))
                 .foregroundColor(C.subLabel.opacity(0.75)).monospacedDigit()

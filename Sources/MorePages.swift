@@ -354,7 +354,7 @@ struct ChatSearchView: View {
                     .padding(.horizontal, 10)
                 Button { applyDateSearch() } label: {
                     Text(Tr("查找这一天"))
-                        .font(AppDesign.Type.rowTitle)
+                        .font(AppDesign.Typography.rowTitle)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 46)
@@ -478,10 +478,10 @@ struct ChatSearchView: View {
     private var resultHeader: some View {
         HStack(spacing: 6) {
             Text(selectedCategoryTitle)
-                .font(AppDesign.Type.captionMedium)
+                .font(AppDesign.Typography.captionMedium)
                 .foregroundColor(C.green)
             Text("· \(total) 条")
-                .font(AppDesign.Type.captionMedium)
+                .font(AppDesign.Typography.captionMedium)
                 .foregroundColor(C.subLabel)
             Spacer(minLength: 0)
             if rows.count < total {
@@ -790,7 +790,7 @@ struct BankCardsView: View {
                     showAdd = true
                 } label: {
                     Text(Tr("绑定"))
-                        .font(AppDesign.Type.rowTitle)
+                        .font(AppDesign.Typography.rowTitle)
                         .foregroundColor(C.green)
                         .frame(height: L.navH)
                         .padding(.trailing, AppDesign.Spacing.md)
@@ -804,7 +804,7 @@ struct BankCardsView: View {
                         ProgressView().padding(.top, 40)
                     } else if cards.isEmpty {
                         Text("还没有绑定银行卡\n点右上角「绑定」加一张")
-                            .font(AppDesign.Type.body)
+                            .font(AppDesign.Typography.body)
                             .foregroundColor(C.subLabel)
                             .multilineTextAlignment(.center)
                             .frame(maxWidth: .infinity)
@@ -823,7 +823,7 @@ struct BankCardsView: View {
                                             .font(pf(16))
                                             .foregroundColor(C.label)
                                         Text(((c.type ?? "储蓄卡") + " · 尾号 \(c.tail ?? "****")") + ((c.holder ?? "").isEmpty ? "" : " · \(c.holder!)"))
-                                            .font(AppDesign.Type.caption)
+                                            .font(AppDesign.Typography.caption)
                                             .foregroundColor(C.subLabel)
                                     }
                                     Spacer(minLength: 0)
@@ -831,7 +831,7 @@ struct BankCardsView: View {
                                         unbind(c.id)
                                     } label: {
                                         Text(Tr("解绑"))
-                                            .font(AppDesign.Type.body)
+                                            .font(AppDesign.Typography.body)
                                             .foregroundColor(C.red)
                                     }
                                     .buttonStyle(.plain)
@@ -877,7 +877,7 @@ struct BankCardsView: View {
                                     Button { bank = name } label: {
                                         HStack(spacing: 6) {
                                             Text(bankShort(name))
-                                                .font(AppDesign.Type.compactButton)
+                                                .font(AppDesign.Typography.compactButton)
                                                 .foregroundColor(.white)
                                                 .frame(width: 22, height: 22)
                                                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.micro, style: .continuous)
@@ -913,7 +913,7 @@ struct BankCardsView: View {
                         add()
                     } label: {
                         Text(busy ? "绑定中…" : "确认绑定")
-                            .font(AppDesign.Type.rowTitle)
+                            .font(AppDesign.Typography.rowTitle)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity, minHeight: 50)
                             .background(C.green)
@@ -1066,7 +1066,7 @@ struct AboutView: View {
                     }
 
                     Text(Tr("自建即时通讯：账号、聊天记录、朋友圈都存在你自己的服务器上，不上传第三方。"))
-                        .font(AppDesign.Type.caption)
+                        .font(AppDesign.Typography.caption)
                         .foregroundColor(C.subLabel)
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity, alignment: .center)
@@ -1135,9 +1135,9 @@ struct AboutView: View {
             .overlay(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous)
                 .stroke(Color.white.opacity(0.85), lineWidth: 2))
             .shadow(color: C.green.opacity(0.20), radius: 16, y: 6)
-            Text(appName).font(AppDesign.Type.pageTitle).foregroundColor(C.label)
+            Text(appName).font(AppDesign.Typography.pageTitle).foregroundColor(C.label)
             Text(Tr("安全、稳定、面向团队的即时通信平台"))
-                .font(AppDesign.Type.caption)
+                .font(AppDesign.Typography.caption)
                 .foregroundColor(C.subLabel)
                 .multilineTextAlignment(.center)
             HStack(spacing: AppDesign.Spacing.xs) {
@@ -1149,7 +1149,7 @@ struct AboutView: View {
                     .copyOnLongPress(AppInfo.build) { app.show($0) }
             }
             if !company.isEmpty {
-                Text(company).font(AppDesign.Type.caption).foregroundColor(C.subLabel).multilineTextAlignment(.center)
+                Text(company).font(AppDesign.Typography.caption).foregroundColor(C.subLabel).multilineTextAlignment(.center)
             }
             if !icp.isEmpty {
                 Text(Tr("APP 备案号 ") + icp).font(pf(11.5)).foregroundColor(C.subLabel)
@@ -1173,7 +1173,7 @@ struct AboutView: View {
                     Image(systemName: icon).font(.system(size: 14.5)).foregroundColor(tint)
                 }
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
+                    Text(title).font(AppDesign.Typography.bodyLarge).foregroundColor(C.label)
                     if let sub, !sub.isEmpty {
                         Text(sub).font(pf(11.5)).foregroundColor(C.subLabel).lineLimit(1)
                     }
@@ -1290,17 +1290,17 @@ struct DeleteAccountView: View {
             NavBar(title: Tr("注销账号"), back: { dismiss() })
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text(Tr("注销后会发生什么")).font(AppDesign.Type.rowTitle).foregroundColor(C.label)
+                    Text(Tr("注销后会发生什么")).font(AppDesign.Typography.rowTitle).foregroundColor(C.label)
                     ForEach(lines, id: \.self) { line in
                         HStack(alignment: .top, spacing: 8) {
                             Circle().fill(C.subLabel.opacity(0.5))
                                 .frame(width: 4, height: 4).padding(.top, 7)
-                            Text(Tr(line)).font(AppDesign.Type.body).foregroundColor(C.subLabel)
+                            Text(Tr(line)).font(AppDesign.Typography.body).foregroundColor(C.subLabel)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     }
                     Text(Tr("确认请在下面输入「注销」两个字："))
-                        .font(AppDesign.Type.bodyMedium).foregroundColor(C.label)
+                        .font(AppDesign.Typography.bodyMedium).foregroundColor(C.label)
                         .padding(.top, AppDesign.Spacing.xs)
                     TextField(Tr("注销"), text: $input)
                         .font(pf(15))
@@ -1324,7 +1324,7 @@ struct DeleteAccountView: View {
                         }
                     } label: {
                         Text(busy ? Tr("正在注销…") : Tr("永久注销账号"))
-                            .font(AppDesign.Type.rowTitle).foregroundColor(.white)
+                            .font(AppDesign.Typography.rowTitle).foregroundColor(.white)
                             .frame(maxWidth: .infinity).frame(height: AppDesign.Control.mediumControlHeight)
                             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                                 .fill(DDColor.red.opacity(input == "注销" ? 1 : 0.35)))
@@ -1358,7 +1358,7 @@ struct BirthdayPickerSheet: View {
                     birthday = f.string(from: date)
                     dismiss()
                 } label: {
-                    Text(Tr("确定")).font(AppDesign.Type.rowTitleMedium).foregroundColor(C.green)
+                    Text(Tr("确定")).font(AppDesign.Typography.rowTitleMedium).foregroundColor(C.green)
                         .padding(.horizontal, 14).frame(height: AppDesign.Control.smallButtonHeight)
                 }
                 .buttonStyle(.plain)

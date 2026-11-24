@@ -186,7 +186,7 @@ struct ContactCardNew: View {
     private func pill(_ text: String, primary: Bool, action: @escaping () -> Void) -> some View {
         Button { action() } label: {
             Text(text)
-                .font(AppDesign.Type.rowTitle)
+                .font(AppDesign.Typography.rowTitle)
                 .foregroundColor(primary ? .white : hBlue)
                 .frame(maxWidth: .infinity)
                 .frame(height: AppDesign.Control.searchHeight)

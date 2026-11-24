@@ -621,12 +621,12 @@ struct UsernameChangeSheet: View {
                     HairLine(inset: 16)
                     VStack(alignment: .leading, spacing: 6) {
                         Text(Tr("3-24 位字母、数字或下划线；一年只能改一次。"))
-                            .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                            .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                         if !nextChangeText.isEmpty {
-                            Text(nextChangeText).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                            Text(nextChangeText).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                         }
                         if !err.isEmpty {
-                            Text(err).font(AppDesign.Type.caption).foregroundColor(C.red)
+                            Text(err).font(AppDesign.Typography.caption).foregroundColor(C.red)
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)

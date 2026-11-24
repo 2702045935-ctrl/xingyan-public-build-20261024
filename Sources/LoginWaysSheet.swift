@@ -73,7 +73,7 @@ struct LoginWaysSheet: View {
                                 }
                                 .frame(width: 34, height: 34)
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(w.title).font(AppDesign.Type.listTitle).foregroundColor(C.label)
+                                    Text(w.title).font(AppDesign.Typography.listTitle).foregroundColor(C.label)
                                     Text(w.sub).font(pf(12)).foregroundColor(C.subLabel)
                                 }
                                 Spacer(minLength: 0)

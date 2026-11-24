@@ -183,7 +183,7 @@ struct UserManageView: View {
                     }
 
                     if !msg.isEmpty {
-                        Text(msg).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                        Text(msg).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, AppDesign.Spacing.md)
                     }
@@ -317,7 +317,7 @@ struct UserManageView: View {
                         .frame(width: 46, height: 46)
 
                         VStack(alignment: .leading, spacing: 3) {
-                            Text(it.name).font(AppDesign.Type.bodyLarge).foregroundColor(C.label).lineLimit(1)
+                            Text(it.name).font(AppDesign.Typography.bodyLarge).foregroundColor(C.label).lineLimit(1)
                             Text(shopRowSub(it))
                                 .font(pf(12)).foregroundColor(C.subLabel).lineLimit(1)
                         }
@@ -399,7 +399,7 @@ struct UserManageView: View {
                         HStack(spacing: AppDesign.Spacing.sm) {
                             Avatar(path: u.avatar ?? "", size: 46, radius: 23)
                             VStack(alignment: .leading, spacing: 3) {
-                                Text(u.nickname ?? u.username ?? "").font(AppDesign.Type.bodyLarge)
+                                Text(u.nickname ?? u.username ?? "").font(AppDesign.Typography.bodyLarge)
                                     .foregroundColor(C.label).lineLimit(1)
                                 Text(cardUserSub(u))
                                     .font(pf(12)).foregroundColor(C.subLabel).lineLimit(1)
@@ -415,7 +415,7 @@ struct UserManageView: View {
                 }
             }
             if !cardMsg.isEmpty {
-                Text(cardMsg).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                Text(cardMsg).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, AppDesign.Spacing.md).padding(.bottom, AppDesign.Spacing.xs)
             }
@@ -444,14 +444,14 @@ struct UserManageView: View {
         card(Tr("App 日志 / 崩溃（汇入）")) {
             HStack(spacing: 10) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(logTotalText).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
+                    Text(logTotalText).font(AppDesign.Typography.bodyLarge).foregroundColor(C.label)
                     Text(logSubText)
                         .font(pf(12)).foregroundColor(C.subLabel)
                 }
                 Spacer(minLength: 6)
                 if logLoading { ProgressView().scaleEffect(0.7) }
                 Button { Task { await loadLogs() } } label: {
-                    Text(Tr("刷新")).font(AppDesign.Type.body).foregroundColor(C.green)
+                    Text(Tr("刷新")).font(AppDesign.Typography.body).foregroundColor(C.green)
                 }
                 .buttonStyle(.plain)
             }
@@ -511,7 +511,7 @@ struct UserManageView: View {
             Task { await loadLogs() }
         } label: {
             Text(label)
-                .font(AppDesign.Type.caption)
+                .font(AppDesign.Typography.caption)
                 .foregroundColor(logKind == kind ? .white : C.label)
                 .padding(.horizontal, 10).frame(height: AppDesign.Control.statusHeight)
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
@@ -760,7 +760,7 @@ struct UserManageView: View {
                                 }
 
                             Text(Tr(preset.name))
-                                .font(AppDesign.Type.rowTitleMedium)
+                                .font(AppDesign.Typography.rowTitleMedium)
                                 .foregroundColor(C.label)
 
                             Spacer(minLength: 0)
@@ -907,7 +907,7 @@ struct UserManageView: View {
                         .frame(width: 46, height: 46)
                         VStack(alignment: .leading, spacing: 3) {
                             HStack(spacing: 6) {
-                                Text(c.name ?? "").font(AppDesign.Type.bodyLarge).foregroundColor(C.label).lineLimit(1)
+                                Text(c.name ?? "").font(AppDesign.Typography.bodyLarge).foregroundColor(C.label).lineLimit(1)
                                 if rpDefault == c.id {
                                     Text(Tr("默认"))
                                         .font(pf(10.5)).foregroundColor(.white)
@@ -1034,7 +1034,7 @@ struct UserManageView: View {
             HStack {
                 Button { Task { await addMusic() } } label: {
                     Text(busy == "add" ? Tr("上传中…") : Tr("加进曲库"))
-                        .font(AppDesign.Type.rowTitleMedium).foregroundColor(.white)
+                        .font(AppDesign.Typography.rowTitleMedium).foregroundColor(.white)
                         .frame(maxWidth: .infinity).frame(height: AppDesign.Control.compactHeight)
                         .background(Capsule().fill(C.green))
                 }
@@ -1058,7 +1058,7 @@ struct UserManageView: View {
                         else { pickingMusic = true }
                     } label: {
                         Text(pickingMusic ? Tr("删除选中") : Tr("批量删除"))
-                            .font(AppDesign.Type.compactButtonMedium)
+                            .font(AppDesign.Typography.compactButtonMedium)
                             .foregroundColor(pickingMusic ? C.red : C.green)
                     }
                     .buttonStyle(.plain)
@@ -1124,7 +1124,7 @@ struct UserManageView: View {
 
     private func tipRow(_ title: String, _ on: Binding<Bool>) -> some View {
         HStack {
-            Text(title).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
+            Text(title).font(AppDesign.Typography.bodyLarge).foregroundColor(C.label)
             Spacer(minLength: 8)
             Toggle("", isOn: on).labelsHidden().tint(C.green)
         }
@@ -1151,7 +1151,7 @@ struct UserManageView: View {
                             }
                             .frame(width: 48, height: 48)
                             VStack(alignment: .leading, spacing: 3) {
-                                Text(o.name).font(AppDesign.Type.bodyLarge).foregroundColor(C.label).lineLimit(1)
+                                Text(o.name).font(AppDesign.Typography.bodyLarge).foregroundColor(C.label).lineLimit(1)
                                 Text((o.desc ?? "").isEmpty ? Tr("点一下换名字 / 头像") : o.desc!)
                                     .font(pf(12)).foregroundColor(C.subLabel).lineLimit(1)
                             }
@@ -1191,7 +1191,7 @@ struct UserManageView: View {
                             }
                             .frame(width: 46, height: 46)
                             VStack(alignment: .leading, spacing: 3) {
-                                Text(a.name).font(AppDesign.Type.bodyLarge).foregroundColor(C.label).lineLimit(1)
+                                Text(a.name).font(AppDesign.Typography.bodyLarge).foregroundColor(C.label).lineLimit(1)
                                 Text((a.desc ?? "").isEmpty ? a.url : a.desc!)
                                     .font(pf(12)).foregroundColor(C.subLabel).lineLimit(1)
                             }
@@ -1246,7 +1246,7 @@ struct UserManageView: View {
                 }
                 .frame(width: 46, height: 46)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(title).font(AppDesign.Type.bodyLarge).foregroundColor(C.label).lineLimit(1)
+                    Text(title).font(AppDesign.Typography.bodyLarge).foregroundColor(C.label).lineLimit(1)
                     Text(sub).font(pf(12)).foregroundColor(C.subLabel).lineLimit(1)
                 }
                 Spacer(minLength: 6)
@@ -1277,7 +1277,7 @@ struct UserManageView: View {
 
     private func groupTitle(_ t: String) -> some View {
         Text(t)
-            .font(AppDesign.Type.compactButtonMedium)
+            .font(AppDesign.Typography.compactButtonMedium)
             .foregroundColor(C.subLabel)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, AppDesign.Spacing.md)
@@ -1300,7 +1300,7 @@ struct UserManageView: View {
     }
 
     private func hint(_ t: String) -> some View {
-        Text(t).font(AppDesign.Type.body).foregroundColor(C.subLabel)
+        Text(t).font(AppDesign.Typography.body).foregroundColor(C.subLabel)
             .frame(maxWidth: .infinity).padding(.vertical, AppDesign.Spacing.lg)
     }
 
@@ -1541,7 +1541,7 @@ struct MiniAppEditSheet: View {
                     textRow(Tr("入口地址"), $url)
 
                     if !msg.isEmpty {
-                        Text(msg).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                        Text(msg).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 18).padding(.top, AppDesign.Spacing.sm)
                     }
@@ -1679,7 +1679,7 @@ struct OfficialEditSheet: View {
                     .overlay(alignment: .bottom) { HairLine(inset: 16) }
 
                     if !msg.isEmpty {
-                        Text(msg).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                        Text(msg).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 18).padding(.top, AppDesign.Spacing.sm)
                     }
@@ -1860,7 +1860,7 @@ struct ShopItemEditSheet: View {
                     }
 
                     if !msg.isEmpty {
-                        Text(msg).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                        Text(msg).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 18)
                     }
@@ -1892,7 +1892,7 @@ struct ShopItemEditSheet: View {
     private func kindButton(_ id: String, _ label: String) -> some View {
         Button { kind = id } label: {
             Text(label)
-                .font(AppDesign.Type.body)
+                .font(AppDesign.Typography.body)
                 .foregroundColor(kind == id ? .white : C.label)
                 .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.sectionHeaderHeight)
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
@@ -1905,7 +1905,7 @@ struct ShopItemEditSheet: View {
         HStack(spacing: AppDesign.Spacing.sm) {
             Text(k).font(pf(16)).foregroundColor(C.label).frame(width: 72, alignment: .leading)
             TextField(ph, text: v)
-                .font(AppDesign.Type.bodyLarge)
+                .font(AppDesign.Typography.bodyLarge)
                 .multilineTextAlignment(.trailing)
         }
         .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.largeControlHeight)
@@ -1996,7 +1996,7 @@ struct CardAdminSheet: View {
                         HStack(spacing: AppDesign.Spacing.sm) {
                             Avatar(path: user.avatar ?? "", size: 48, radius: 24)
                             VStack(alignment: .leading, spacing: 3) {
-                                Text(user.nickname ?? user.username ?? "").font(AppDesign.Type.listTitle)
+                                Text(user.nickname ?? user.username ?? "").font(AppDesign.Typography.listTitle)
                                     .foregroundColor(C.label).lineLimit(1)
                                 Text(user.username ?? "").font(pf(13)).foregroundColor(C.subLabel)
                             }
@@ -2014,7 +2014,7 @@ struct CardAdminSheet: View {
                                 if i > 0 { HairLine(inset: 16) }
                                 HStack(spacing: 10) {
                                     VStack(alignment: .leading, spacing: 3) {
-                                        Text(c.title ?? "").font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
+                                        Text(c.title ?? "").font(AppDesign.Typography.bodyLarge).foregroundColor(C.label)
                                             .lineLimit(1)
                                         Text((c.kindName) + (c.used == true ? " · 已用" : "")
                                              + " · " + (c.code ?? ""))
@@ -2060,7 +2060,7 @@ struct CardAdminSheet: View {
                         HairLine(inset: 16)
                         Button { Task { await issue() } } label: {
                             Text(busy ? Tr("发送中…") : Tr("发卡"))
-                                .font(AppDesign.Type.rowTitle).foregroundColor(.white)
+                                .font(AppDesign.Typography.rowTitle).foregroundColor(.white)
                                 .frame(maxWidth: .infinity).frame(height: 46)
                                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous).fill(C.green))
                         }
@@ -2070,7 +2070,7 @@ struct CardAdminSheet: View {
                     }
 
                     if !msg.isEmpty {
-                        Text(msg).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                        Text(msg).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 18)
                     }
@@ -2103,7 +2103,7 @@ struct CardAdminSheet: View {
         HStack(spacing: AppDesign.Spacing.sm) {
             Text(k).font(pf(16)).foregroundColor(C.label).frame(width: 72, alignment: .leading)
             TextField(ph, text: v)
-                .font(AppDesign.Type.bodyLarge)
+                .font(AppDesign.Typography.bodyLarge)
                 .multilineTextAlignment(.trailing)
         }
         .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.largeControlHeight)
@@ -2193,7 +2193,7 @@ struct AppLogDetailSheet: View {
     private func kv(_ k: String, _ v: String) -> some View {
         HStack(alignment: .top, spacing: 10) {
             Text(k).font(pf(15)).foregroundColor(C.label).frame(width: 74, alignment: .leading)
-            Text(v).font(AppDesign.Type.body).foregroundColor(C.subLabel)
+            Text(v).font(AppDesign.Typography.body).foregroundColor(C.subLabel)
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .multilineTextAlignment(.trailing)
         }

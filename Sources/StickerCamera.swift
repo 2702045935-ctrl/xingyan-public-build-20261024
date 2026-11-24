@@ -470,7 +470,7 @@ struct StickerCamera: View {
                     .buttonStyle(.plain)
                     Spacer()
                     Text(Tr("拍摄表情"))
-                        .font(AppDesign.Type.rowTitle)
+                        .font(AppDesign.Typography.rowTitle)
                         .foregroundColor(.white)
                     Spacer()
                     Color.clear.frame(width: 34, height: 34)
@@ -480,7 +480,7 @@ struct StickerCamera: View {
 
                 if shot == nil {
                     Text(Tr("表情将会上传保存，在其他设备也可查看"))
-                        .font(AppDesign.Type.caption)
+                        .font(AppDesign.Typography.caption)
                         .foregroundColor(.white.opacity(0.62))
                         .padding(.top, 6)
                 }
@@ -498,7 +498,7 @@ struct StickerCamera: View {
                                 .font(.system(size: 24))
                                 .foregroundColor(.white.opacity(0.7))
                             Text(Tr("打不开相机，去系统设置里给星言开一下相机权限"))
-                                .font(AppDesign.Type.caption)
+                                .font(AppDesign.Typography.caption)
                                 .foregroundColor(.white.opacity(0.8))
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal, 18)

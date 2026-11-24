@@ -169,7 +169,7 @@ struct BillsView: View {
             VStack(alignment: .leading, spacing: 0) {
                 HStack {
                     Text(title)
-                        .font(AppDesign.Type.compactButton)
+                        .font(AppDesign.Typography.compactButton)
                         .foregroundColor(PayVisual.secondaryInk)
                     Spacer()
                     if let summary, summary.pendingOut + summary.pendingIn > 0 {
@@ -247,7 +247,7 @@ struct BillsView: View {
                     SVGIcon(markup: I.searchSmall, size: 13.5, color: C.subLabel)
                         .frame(width: 13.5, height: 13.5)
                     Text(Tr("查找交易"))
-                        .font(AppDesign.Type.body)
+                        .font(AppDesign.Typography.body)
                         .foregroundColor(C.subLabel)
                     Spacer(minLength: 0)
                 }

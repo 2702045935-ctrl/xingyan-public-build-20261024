@@ -227,7 +227,7 @@ struct RealNameView: View {
     private func bullet(_ t: String) -> some View {
         HStack(alignment: .top, spacing: 8) {
             Circle().fill(C.green).frame(width: 5, height: 5).padding(.top, 6)
-            Text(t).font(AppDesign.Type.body).foregroundColor(gray)
+            Text(t).font(AppDesign.Typography.body).foregroundColor(gray)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }

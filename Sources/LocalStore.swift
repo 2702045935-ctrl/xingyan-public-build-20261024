@@ -286,8 +286,8 @@ struct StorageSpaceView: View {
     private func legendDot(_ title: String, _ bytes: Int, _ color: Color) -> some View {
         HStack(spacing: 5) {
             Circle().fill(color).frame(width: 8, height: 8)
-            Text(title).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
-            Text(LocalStore.text(bytes)).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+            Text(title).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
+            Text(LocalStore.text(bytes)).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
         }
     }
 
@@ -325,7 +325,7 @@ struct StorageSpaceView: View {
                                 .font(pf(30, .semibold))
                                 .foregroundColor(C.label)
                             Text(Tr("已用空间（聊天记录 + 缓存）"))
-                                .font(AppDesign.Type.caption)
+                                .font(AppDesign.Typography.caption)
                                 .foregroundColor(C.subLabel)
                                 .multilineTextAlignment(.center)
 
@@ -489,7 +489,7 @@ struct ChatStorageManageView: View {
                             HairLine(inset: 62)
                         }
                         Text(Tr("删除只是清掉你这边这个会话的历史记录，对方那边不受影响。"))
-                            .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                            .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, AppDesign.Spacing.xl).padding(.top, 14)
                         Color.clear.frame(height: AppDesign.Control.compactBadgeHeight)
@@ -525,7 +525,7 @@ struct ChatStorageManageView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(c.title).font(pf(16)).foregroundColor(C.label).lineLimit(1)
                     Text("\(c.messages) " + Tr("条消息"))
-                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                        .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                 }
                 Spacer(minLength: 8)
                 Text(LocalStore.text(c.bytes)).font(pf(14)).foregroundColor(C.subLabel)

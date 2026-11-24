@@ -64,7 +64,7 @@ struct DiagView: View {
                     .padding(.horizontal, AppDesign.Spacing.sm)
 
                     if !msg.isEmpty {
-                        Text(msg).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                        Text(msg).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 18).padding(.top, 10)
                     }
@@ -120,7 +120,7 @@ struct DiagView: View {
                 HStack(alignment: .top, spacing: 10) {
                     Text(r.0).font(pf(15)).foregroundColor(C.label)
                         .frame(width: 88, alignment: .leading)
-                    Text(r.1).font(AppDesign.Type.body).foregroundColor(C.subLabel)
+                    Text(r.1).font(AppDesign.Typography.body).foregroundColor(C.subLabel)
                         .frame(maxWidth: .infinity, alignment: .trailing)
                         .multilineTextAlignment(.trailing)
                         .textSelection(.enabled)
@@ -138,7 +138,7 @@ struct DiagView: View {
             HStack(spacing: AppDesign.Spacing.sm) {
                 Image(systemName: icon).font(.system(size: 16)).foregroundColor(C.green)
                     .frame(width: 26)
-                Text(t).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
+                Text(t).font(AppDesign.Typography.bodyLarge).foregroundColor(C.label)
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right")
                     .font(.system(size: 11, weight: .semibold)).foregroundColor(C.subLabel)

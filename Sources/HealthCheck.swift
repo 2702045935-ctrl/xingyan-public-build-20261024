@@ -51,7 +51,7 @@ struct HealthCheckView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 10) {
                     Text(Tr("照微信「故障修复」那套：每项先检测、能修的当场修。修的都是本机缓存和连接，不会动服务器上的数据，也不会删聊天记录。"))
-                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                        .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, AppDesign.Spacing.lg).padding(.top, AppDesign.Spacing.xs)
 
@@ -67,7 +67,7 @@ struct HealthCheckView: View {
                         HStack(spacing: AppDesign.Spacing.xs) {
                             Image(systemName: "paperplane.fill").font(.system(size: 15))
                             Text(uploading ? Tr("正在上传…") : Tr("上传日志（含崩溃）"))
-                                .font(AppDesign.Type.rowTitle)
+                                .font(AppDesign.Typography.rowTitle)
                         }
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity).frame(height: AppDesign.Control.mediumControlHeight)
@@ -79,7 +79,7 @@ struct HealthCheckView: View {
                     .padding(.top, 6)
 
                     if !result.isEmpty {
-                        Text(result).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                        Text(result).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, AppDesign.Spacing.lg).padding(.top, AppDesign.Spacing.xxs)
                     }
@@ -107,7 +107,7 @@ struct HealthCheckView: View {
                 if !r.fixTitle.isEmpty {
                     Button { Task { await fix(r.id) } } label: {
                         Text(busyFix == r.id ? Tr("修复中…") : Tr(r.fixTitle))
-                            .font(AppDesign.Type.body)
+                            .font(AppDesign.Typography.body)
                             .foregroundColor(busyFix == r.id ? C.subLabel : C.green)
                             .padding(.horizontal, 10).frame(height: AppDesign.Control.statusHeight)
                             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous).fill(C.fieldBg))

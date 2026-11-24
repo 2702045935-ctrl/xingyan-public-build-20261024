@@ -24,7 +24,7 @@ struct RechargeView: View {
                     PayGroupCard {
                         VStack(spacing: 10) {
                             Text(Tr("充值金额"))
-                                .font(AppDesign.Type.captionMedium)
+                                .font(AppDesign.Typography.captionMedium)
                                 .foregroundColor(PayVisual.secondaryInk)
                             HStack(alignment: .firstTextBaseline, spacing: 5) {
                                 Text("¥").font(pf(24, .semibold)).foregroundColor(C.label)
@@ -79,7 +79,7 @@ struct RechargeView: View {
                     }
 
                     Text(Tr("充值是从银行卡转入零钱（本 App 内记账），到账立刻可用。"))
-                        .font(AppDesign.Type.caption).foregroundColor(PayVisual.secondaryInk)
+                        .font(AppDesign.Typography.caption).foregroundColor(PayVisual.secondaryInk)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, AppDesign.Spacing.xxs)
 
@@ -198,9 +198,9 @@ struct WithdrawView: View {
                                     VStack(alignment: .trailing, spacing: 2) {
                                         Text(picked.map { ($0.bank ?? Tr("银行卡")) + Tr("储蓄卡") }
                                              ?? Tr("添加银行卡"))
-                                            .font(AppDesign.Type.bodyLarge).foregroundColor(C.label).lineLimit(1)
+                                            .font(AppDesign.Typography.bodyLarge).foregroundColor(C.label).lineLimit(1)
                                         Text(picked.map { Tr("尾号 ") + ($0.tail ?? "****") } ?? "")
-                                            .font(AppDesign.Type.caption).foregroundColor(PayVisual.secondaryInk)
+                                            .font(AppDesign.Typography.caption).foregroundColor(PayVisual.secondaryInk)
                                     }
                                 }
                                 Image(systemName: "chevron.right")
@@ -217,7 +217,7 @@ struct WithdrawView: View {
                                 .font(.system(size: 12))
                                 .foregroundColor(PayVisual.secondaryInk)
                             Text(Tr("预计 2 小时内到账（以银行处理时间为准）"))
-                                .font(AppDesign.Type.caption).foregroundColor(PayVisual.secondaryInk)
+                                .font(AppDesign.Typography.caption).foregroundColor(PayVisual.secondaryInk)
                             Spacer(minLength: 0)
                         }
                         .padding(.horizontal, AppDesign.Spacing.md)
@@ -228,7 +228,7 @@ struct WithdrawView: View {
                         VStack(spacing: 0) {
                             VStack(spacing: AppDesign.Spacing.xs) {
                                 Text(Tr("提现金额"))
-                                    .font(AppDesign.Type.captionMedium)
+                                    .font(AppDesign.Typography.captionMedium)
                                     .foregroundColor(PayVisual.secondaryInk)
                                 HStack(alignment: .firstTextBaseline, spacing: 5) {
                                     Text("¥").font(pf(24, .semibold)).foregroundColor(C.label)
@@ -246,18 +246,18 @@ struct WithdrawView: View {
                             HairLine(inset: 18)
                             HStack {
                                 Text(Tr("可用余额"))
-                                    .font(AppDesign.Type.body)
+                                    .font(AppDesign.Typography.body)
                                     .foregroundColor(PayVisual.secondaryInk)
                                 Spacer()
                                 Text("¥" + money(balance))
-                                    .font(AppDesign.Type.bodyMedium)
+                                    .font(AppDesign.Typography.bodyMedium)
                                     .foregroundColor(PayVisual.secondaryInk)
                                 Button {
                                     amountText = String(format: "%.2f", max(0, balance))
                                     amountFocused = false
                                 } label: {
                                     Text(Tr("全部提现"))
-                                        .font(AppDesign.Type.bodyStrong)
+                                        .font(AppDesign.Typography.bodyStrong)
                                         .foregroundColor(PayVisual.tint)
                                 }
                                 .buttonStyle(.plain)
@@ -290,7 +290,7 @@ struct WithdrawView: View {
                                 Text("¥50,000.00")
                             }
                         }
-                        .font(AppDesign.Type.body)
+                        .font(AppDesign.Typography.body)
                         .foregroundColor(PayVisual.secondaryInk)
                         .padding(.horizontal, 18)
                         .frame(minHeight: 46)
@@ -405,7 +405,7 @@ struct WithdrawView: View {
     private func faqRow(_ q: String, _ a: String, _ tap: @escaping () -> Void) -> some View {
         Button(action: tap) {
             HStack(spacing: AppDesign.Spacing.xs) {
-                Text(q).font(AppDesign.Type.body).foregroundColor(C.link)
+                Text(q).font(AppDesign.Typography.body).foregroundColor(C.link)
                 Spacer(minLength: 8)
                 Chevron(size: 8, line: 1.4)
             }
@@ -432,7 +432,7 @@ struct WithdrawView: View {
                                         Text((b.bank ?? Tr("银行卡")) + Tr("储蓄卡"))
                                             .font(pf(16)).foregroundColor(C.label)
                                         Text(Tr("尾号 ") + (b.tail ?? "****"))
-                                            .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                                            .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                                     }
                                     Spacer(minLength: 8)
                                     if b.id == bankId {
@@ -464,7 +464,7 @@ struct WithdrawView: View {
                     }
                     .padding(.top, 10)
                     Text(Tr("到账时间：预计 2 小时内（以银行处理时间为准）"))
-                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                        .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 22).padding(.top, 10)
                 }
@@ -536,7 +536,7 @@ struct BankAddSheet: View {
             }
             .padding(.top, AppDesign.Spacing.sm)
             Text(Tr("出于安全考虑，服务器只保存银行名和卡号后四位，完整卡号不落盘。"))
-                .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 22).padding(.top, 10)
             Spacer()
@@ -598,7 +598,7 @@ struct PayConfirmSheet: View {
                 .buttonStyle(.plain)
                 Spacer()
                 Text(Tr("确认支付"))
-                    .font(AppDesign.Type.button)
+                    .font(AppDesign.Typography.button)
                     .foregroundColor(C.label)
                 Spacer()
                 Spacer().frame(width: 44)
@@ -616,7 +616,7 @@ struct PayConfirmSheet: View {
                     .foregroundColor(C.label)
                     .multilineTextAlignment(.center)
                 Text(Tr("请验证支付密码完成付款"))
-                    .font(AppDesign.Type.body)
+                    .font(AppDesign.Typography.body)
                     .foregroundColor(PayVisual.secondaryInk)
             }
             .padding(.top, AppDesign.Spacing.xl)
@@ -629,7 +629,7 @@ struct PayConfirmSheet: View {
                             .foregroundColor(C.label)
                         Spacer()
                         Text(Tr("6 位安全密码"))
-                            .font(AppDesign.Type.caption)
+                            .font(AppDesign.Typography.caption)
                             .foregroundColor(PayVisual.secondaryInk)
                     }
                     .padding(.horizontal, 18)
@@ -665,7 +665,7 @@ struct PayConfirmSheet: View {
                         Image(systemName: "faceid")
                         Text(Tr("使用面容"))
                     }
-                    .font(AppDesign.Type.rowTitle).foregroundColor(PayVisual.tint)
+                    .font(AppDesign.Typography.rowTitle).foregroundColor(PayVisual.tint)
                 }
                 .buttonStyle(.plain)
                 .padding(.top, 22)

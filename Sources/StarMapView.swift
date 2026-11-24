@@ -878,7 +878,7 @@ struct StarMapView: View {
                 HStack(spacing: 9) {
                     ProgressView()
                     Text(model.searching ? Tr("正在搜索…") : Tr("正在规划星轨…"))
-                        .font(AppDesign.Type.compactButtonMedium)
+                        .font(AppDesign.Typography.compactButtonMedium)
                         .foregroundStyle(.primary)
                 }
                 .padding(.horizontal, 15)
@@ -892,7 +892,7 @@ struct StarMapView: View {
                !model.searching,
                !model.routing {
                 Text(model.error)
-                    .font(AppDesign.Type.captionMedium)
+                    .font(AppDesign.Typography.captionMedium)
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.primary)
                     .padding(.horizontal, 14)
@@ -1082,7 +1082,7 @@ struct StarMapView: View {
         VStack(alignment: .leading, spacing: 9) {
             HStack {
                 Text(Tr("常用地点"))
-                    .font(AppDesign.Type.compactButton)
+                    .font(AppDesign.Typography.compactButton)
                 Spacer()
                 Text("\(shortcutPlaces.count)")
                     .font(pf(11.5, .medium))
@@ -1111,7 +1111,7 @@ struct StarMapView: View {
                                     )
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(place.name)
-                                        .font(AppDesign.Type.compactButton)
+                                        .font(AppDesign.Typography.compactButton)
                                         .foregroundStyle(.primary)
                                         .lineLimit(1)
                                     Text(place.subtitle)
@@ -1165,7 +1165,7 @@ struct StarMapView: View {
         HStack(spacing: AppDesign.Spacing.sm) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(Tr("星轨地图"))
-                    .font(AppDesign.Type.rowTitle)
+                    .font(AppDesign.Typography.rowTitle)
                 Text(model.authorizationDenied
                      ? Tr("定位权限关闭，可搜索地点后继续")
                      : model.locationName)
@@ -1253,7 +1253,7 @@ struct StarMapView: View {
                             Image(systemName: mode.symbol)
                                 .font(.system(size: 13, weight: .semibold))
                             Text(mode.title)
-                                .font(AppDesign.Type.compactButton)
+                                .font(AppDesign.Typography.compactButton)
                         }
                         .foregroundStyle(model.travelMode == mode
                                          ? Color(hex: 0x0A6ED1) : Color.primary)
@@ -1307,7 +1307,7 @@ struct StarMapView: View {
                         .monospacedDigit()
                     Text(routeDistance(route.distance)
                          + " · " + arrivalClock(route.expectedTravelTime))
-                        .font(AppDesign.Type.captionMedium)
+                        .font(AppDesign.Typography.captionMedium)
                         .foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 8)
@@ -1365,7 +1365,7 @@ struct StarMapView: View {
                     Text(Tr("已到达目的地"))
                         .font(pf(20, .semibold))
                     Text(model.destination?.name ?? Tr("目的地"))
-                        .font(AppDesign.Type.compactButtonMedium)
+                        .font(AppDesign.Typography.compactButtonMedium)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
@@ -1442,7 +1442,7 @@ struct StarMapView: View {
                                 }
                             }
                             Text(routeClock(value.expectedTravelTime))
-                                .font(AppDesign.Type.rowTitle)
+                                .font(AppDesign.Typography.rowTitle)
                                 .monospacedDigit()
                             Text(routeDistance(value.distance))
                                 .font(pf(11.5, .medium))
@@ -1631,7 +1631,7 @@ struct StarMapView: View {
                     model.endNavigation()
                 } label: {
                     Text(Tr("结束"))
-                        .font(AppDesign.Type.bodyStrong)
+                        .font(AppDesign.Typography.bodyStrong)
                         .foregroundStyle(.red)
                         .padding(.horizontal, 13)
                         .frame(height: AppDesign.Control.floatingControlHeight)
@@ -2002,7 +2002,7 @@ private struct StarNavigationHUD: View {
             VStack(spacing: 22) {
                 HStack {
                     Text(model.travelMode.title + Tr("导航"))
-                        .font(AppDesign.Type.compactButton)
+                        .font(AppDesign.Typography.compactButton)
                         .foregroundStyle(.white.opacity(0.62))
                     Spacer()
                     Button(action: onClose) {

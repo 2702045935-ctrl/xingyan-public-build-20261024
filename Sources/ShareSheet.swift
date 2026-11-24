@@ -161,7 +161,7 @@ struct ShareBrandRail: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(Tr("常用应用"))
-                .font(AppDesign.Type.section)
+                .font(AppDesign.Typography.section)
                 .foregroundStyle(ShareSheetTheme.secondaryInk(scheme))
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -565,7 +565,7 @@ struct ShareSheet: View {
 
     private func shareSectionTitle(_ title: String) -> some View {
         Text(title)
-            .font(AppDesign.Type.section)
+            .font(AppDesign.Typography.section)
             .foregroundStyle(ShareSheetTheme.secondaryInk(scheme))
             .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -618,7 +618,7 @@ struct ShareSheet: View {
     private var cancelButton: some View {
         Button { dismiss() } label: {
             Text(Tr("取消"))
-                .font(AppDesign.Type.rowTitle)
+                .font(AppDesign.Typography.rowTitle)
                 .foregroundStyle(ShareSheetTheme.ink(scheme))
                 .frame(maxWidth: .infinity)
                 .frame(height: AppDesign.Control.largeControlHeight)

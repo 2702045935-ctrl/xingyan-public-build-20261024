@@ -420,7 +420,7 @@ struct EmojiPanel: View {
                             .font(.system(size: 22, weight: .light))
                             .foregroundStyle(C.subLabel)
                         Text(Tr("搜索表情和表情包"))
-                            .font(AppDesign.Type.caption)
+                            .font(AppDesign.Typography.caption)
                             .foregroundStyle(C.subLabel)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -449,7 +449,7 @@ struct EmojiPanel: View {
                     .font(.system(size: 24, weight: .light))
                     .foregroundColor(C.subLabel)
                 Text(Tr("用过的表情会出现在这里"))
-                    .font(AppDesign.Type.caption)
+                    .font(AppDesign.Typography.caption)
                     .foregroundColor(C.subLabel)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -513,7 +513,7 @@ struct EmojiPanel: View {
                 Image(systemName: symbol)
                     .font(.system(size: 12.5, weight: .semibold))
                 Text(title)
-                    .font(AppDesign.Type.captionMedium)
+                    .font(AppDesign.Typography.captionMedium)
             }
             .foregroundStyle(C.label)
             .padding(.horizontal, 10)

@@ -174,7 +174,7 @@ struct ProfileEditViewOld: View {
                     }
 
                     Text(Tr("手机号一年只能改一次；头像、昵称、地区、签名想改就改。"))
-                        .font(AppDesign.Type.caption)
+                        .font(AppDesign.Typography.caption)
                         .foregroundColor(C.subLabel)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 18)
@@ -494,12 +494,12 @@ struct NewFriendsView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 10) {
                 Text(Tr("新的朋友"))
-                    .font(AppDesign.Type.pageTitle)
+                    .font(AppDesign.Typography.pageTitle)
                     .foregroundStyle(OrbitTheme.ink)
                 Spacer(minLength: 0)
                 if !shownIncoming.isEmpty {
                     Text("\(shownIncoming.count) " + Tr("待处理"))
-                        .font(AppDesign.Type.status)
+                        .font(AppDesign.Typography.status)
                         .foregroundStyle(OrbitTheme.jadeDeep)
                         .padding(.horizontal, 9)
                         .frame(height: AppDesign.Control.statusHeight)
@@ -530,7 +530,7 @@ struct NewFriendsView: View {
             }
             .frame(width: 36, height: 36)
             Text(Tr("添加朋友"))
-                .font(AppDesign.Type.rowTitle)
+                .font(AppDesign.Typography.rowTitle)
                 .foregroundStyle(OrbitTheme.ink)
             Spacer(minLength: 0)
             Image(systemName: "chevron.right")
@@ -556,7 +556,7 @@ struct NewFriendsView: View {
             }
             .frame(width: 36, height: 36)
             Text(Tr("清除已添加的朋友"))
-                .font(AppDesign.Type.rowTitle)
+                .font(AppDesign.Typography.rowTitle)
                 .foregroundStyle(C.red)
             Spacer(minLength: 0)
             if clearingFriends {
@@ -607,11 +607,11 @@ struct NewFriendsView: View {
                     )
                     VStack(alignment: .leading, spacing: 4) {
                         Text(user.name)
-                            .font(AppDesign.Type.rowTitle)
+                            .font(AppDesign.Typography.rowTitle)
                             .foregroundStyle(OrbitTheme.ink)
                             .lineLimit(1)
                         Text(noteOf(user))
-                            .font(AppDesign.Type.caption)
+                            .font(AppDesign.Typography.caption)
                             .foregroundStyle(OrbitTheme.secondary)
                             .lineLimit(1)
                     }
@@ -657,11 +657,11 @@ struct NewFriendsView: View {
             )
             VStack(alignment: .leading, spacing: 4) {
                 Text(user.name)
-                    .font(AppDesign.Type.rowTitle)
+                    .font(AppDesign.Typography.rowTitle)
                     .foregroundColor(OrbitTheme.ink)
                     .lineLimit(1)
                 Text(noteOf(user))
-                    .font(AppDesign.Type.caption)
+                    .font(AppDesign.Typography.caption)
                     .foregroundColor(OrbitTheme.secondary)
                     .lineLimit(1)
             }
@@ -707,13 +707,13 @@ struct NewFriendsView: View {
             )
             VStack(alignment: .leading, spacing: 4) {
                 Text(user.name)
-                    .font(AppDesign.Type.rowTitle)
+                    .font(AppDesign.Typography.rowTitle)
                     .foregroundStyle(OrbitTheme.ink)
                     .lineLimit(1)
                 let n = (user.requestMessage ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
                 if !n.isEmpty {
                     Text(n)
-                        .font(AppDesign.Type.caption)
+                        .font(AppDesign.Typography.caption)
                         .foregroundStyle(OrbitTheme.secondary)
                         .lineLimit(1)
                 }
@@ -938,11 +938,11 @@ private struct SwipeDeleteFriendRow: View {
             )
             VStack(alignment: .leading, spacing: 4) {
                 Text(user.name)
-                    .font(AppDesign.Type.rowTitle)
+                    .font(AppDesign.Typography.rowTitle)
                     .foregroundColor(OrbitTheme.ink)
                     .lineLimit(1)
                 Text(note)
-                    .font(AppDesign.Type.caption)
+                    .font(AppDesign.Typography.caption)
                     .foregroundColor(OrbitTheme.secondary)
                     .lineLimit(1)
             }
@@ -984,14 +984,14 @@ struct AddFriendView: View {
                     AppFlowPanel {
                         VStack(alignment: .leading, spacing: 10) {
                             Text(Tr("查找星言用户"))
-                                .font(AppDesign.Type.section)
+                                .font(AppDesign.Typography.section)
                                 .foregroundStyle(OrbitTheme.secondary)
                             StarOrbitSearchField(
                                 placeholder: Tr("星言号/手机号"),
                                 text: $keyword
                             )
                             Text(Tr("输入星言号或手机号，确认身份后再发送朋友申请。"))
-                                .font(AppDesign.Type.caption)
+                                .font(AppDesign.Typography.caption)
                                 .foregroundStyle(OrbitTheme.secondary)
                         }
                         .padding(14)
@@ -1000,7 +1000,7 @@ struct AddFriendView: View {
                     if let errorText = errorText {
                         AppFlowPanel {
                             Label(errorText, systemImage: "exclamationmark.circle.fill")
-                                .font(AppDesign.Type.body)
+                                .font(AppDesign.Typography.body)
                                 .foregroundStyle(C.red)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(14)
@@ -1012,7 +1012,7 @@ struct AddFriendView: View {
                             HStack(spacing: 10) {
                                 ProgressView().controlSize(.small)
                                 Text(Tr("正在搜索…"))
-                                    .font(AppDesign.Type.body)
+                                    .font(AppDesign.Typography.body)
                                     .foregroundStyle(OrbitTheme.secondary)
                             }
                             .frame(maxWidth: .infinity)
@@ -1098,12 +1098,12 @@ struct AddFriendView: View {
         } content: {
             VStack(alignment: .leading, spacing: 4) {
                 Text(u.name)
-                    .font(AppDesign.Type.rowTitle)
+                    .font(AppDesign.Typography.rowTitle)
                     .foregroundColor(OrbitTheme.ink)
                     .lineLimit(1)
                 if let un = u.username, !un.isEmpty {
                     Text(Tr("星言号") + "：" + un)
-                        .font(AppDesign.Type.caption)
+                        .font(AppDesign.Typography.caption)
                         .foregroundColor(OrbitTheme.secondary)
                         .lineLimit(1)
                 }
@@ -1205,10 +1205,10 @@ struct AddFriendView: View {
         } content: {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(AppDesign.Type.rowTitle)
+                    .font(AppDesign.Typography.rowTitle)
                     .foregroundColor(OrbitTheme.ink)
                 Text(detail)
-                    .font(AppDesign.Type.caption)
+                    .font(AppDesign.Typography.caption)
                     .foregroundColor(OrbitTheme.secondary)
             }
         } trailing: {
@@ -1452,7 +1452,7 @@ struct FriendRemarkSheet: View {
             .padding(.top, AppDesign.Spacing.sm)
 
             Text(Tr("备注名只你自己看得见：设了以后通讯录和会话列表都显示备注。"))
-                .font(AppDesign.Type.caption)
+                .font(AppDesign.Typography.caption)
                 .foregroundColor(C.subLabel)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 18)
@@ -1552,7 +1552,7 @@ struct FriendPermSheet: View {
             .padding(.horizontal, AppDesign.Spacing.md)
 
             Text(Tr("加入黑名单后，你将不再收到对方的消息，对方也无法查看你的朋友圈。"))
-                .font(AppDesign.Type.caption)
+                .font(AppDesign.Typography.caption)
                 .foregroundColor(C.subLabel)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 18)
@@ -1725,11 +1725,11 @@ struct GroupCreateView: View {
 
                 HStack {
                     Text(Tr("联系人"))
-                        .font(AppDesign.Type.compactButton)
+                        .font(AppDesign.Typography.compactButton)
                         .foregroundColor(C.subLabel)
                     Spacer(minLength: 0)
                     Text("\(filteredContacts.count)")
-                        .font(AppDesign.Type.sectionMedium)
+                        .font(AppDesign.Typography.sectionMedium)
                         .foregroundColor(C.subLabel.opacity(0.8))
                         .monospacedDigit()
                 }
@@ -1745,7 +1745,7 @@ struct GroupCreateView: View {
                             .font(pf(15, .medium))
                             .foregroundColor(C.label)
                         Text(Tr("换一个姓名或号码试试"))
-                            .font(AppDesign.Type.caption)
+                            .font(AppDesign.Typography.caption)
                             .foregroundColor(C.subLabel)
                     }
                     .frame(maxWidth: .infinity)
@@ -1796,7 +1796,7 @@ struct GroupCreateView: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(Tr("群名称"))
-                    .font(AppDesign.Type.captionStrong)
+                    .font(AppDesign.Typography.captionStrong)
                     .foregroundColor(C.subLabel)
 
                 HStack(spacing: 7) {
@@ -1852,7 +1852,7 @@ struct GroupCreateView: View {
         HStack(spacing: AppDesign.Spacing.sm) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(canContinue ? Tr("群聊详情") : Tr("选择联系人"))
-                    .font(AppDesign.Type.bodyStrong)
+                    .font(AppDesign.Typography.bodyStrong)
                     .foregroundColor(C.label)
                 Text("\(picked.count) · \(name.isEmpty ? Tr("群名称") : name)")
                     .font(pf(11.5))
@@ -1934,10 +1934,10 @@ struct GroupCreateView: View {
                     Text(picked.isEmpty
                          ? Tr("选择联系人")
                          : String(format: Tr("已选择 %d 位联系人"), picked.count))
-                        .font(AppDesign.Type.rowTitle)
+                        .font(AppDesign.Typography.rowTitle)
                         .foregroundColor(C.label)
                     Text(picked.isEmpty ? Tr("至少选择一位好友开始群聊") : Tr("可以继续添加或移除联系人"))
-                        .font(AppDesign.Type.caption)
+                        .font(AppDesign.Typography.caption)
                         .foregroundColor(C.subLabel)
                 }
 
@@ -1948,7 +1948,7 @@ struct GroupCreateView: View {
                         withAnimation(.easeOut(duration: 0.18)) { picked.removeAll() }
                     } label: {
                         Text(Tr("清除"))
-                            .font(AppDesign.Type.compactButton)
+                            .font(AppDesign.Typography.compactButton)
                             .foregroundColor(C.green)
                             .padding(.horizontal, 10)
                             .frame(height: AppDesign.Control.sectionHeaderHeight)
@@ -1966,7 +1966,7 @@ struct GroupCreateView: View {
                                 HStack(spacing: 7) {
                                     Avatar(path: user.avatarPath, size: 30, circle: true)
                                     Text(user.name)
-                                        .font(AppDesign.Type.compactButtonMedium)
+                                        .font(AppDesign.Typography.compactButtonMedium)
                                         .foregroundColor(C.label)
                                         .lineLimit(1)
                                     Image(systemName: "xmark")
@@ -2013,14 +2013,14 @@ struct GroupCreateView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: AppDesign.Spacing.xs) {
                 Text(String(format: Tr("已选择 %d 位联系人"), picked.count))
-                    .font(AppDesign.Type.captionStrong)
+                    .font(AppDesign.Typography.captionStrong)
                     .foregroundColor(C.subLabel)
                 Spacer(minLength: 0)
                 Button {
                     withAnimation(.easeOut(duration: 0.18)) { picked.removeAll() }
                 } label: {
                     Text(Tr("清除"))
-                        .font(AppDesign.Type.captionStrong)
+                        .font(AppDesign.Typography.captionStrong)
                         .foregroundColor(C.green)
                         .padding(.horizontal, 9)
                         .frame(height: AppDesign.Control.statusHeight)
@@ -2036,7 +2036,7 @@ struct GroupCreateView: View {
                             HStack(spacing: 7) {
                                 Avatar(path: user.avatarPath, size: 30, circle: true)
                                 Text(user.name)
-                                    .font(AppDesign.Type.compactButtonMedium)
+                                    .font(AppDesign.Typography.compactButtonMedium)
                                     .foregroundColor(C.label)
                                     .lineLimit(1)
                                 Image(systemName: "xmark")
@@ -2149,7 +2149,7 @@ struct GroupCreateView: View {
                     )
 
                     Text(Tr("群名称创建后仍可修改"))
-                        .font(AppDesign.Type.caption)
+                        .font(AppDesign.Typography.caption)
                         .foregroundColor(C.subLabel)
                         .padding(.horizontal, AppDesign.Spacing.xxs)
                 }
@@ -2378,7 +2378,7 @@ struct FaceGroupView: View {
                             Image(systemName: "exclamationmark.circle.fill")
                             Text(tip)
                         }
-                        .font(AppDesign.Type.compactButtonMedium)
+                        .font(AppDesign.Typography.compactButtonMedium)
                         .foregroundColor(C.red)
                         .padding(.horizontal, 14)
                         .frame(maxWidth: .infinity, minHeight: 42, alignment: .leading)
@@ -2430,10 +2430,10 @@ struct FaceGroupView: View {
 
                 VStack(alignment: .leading, spacing: 6) {
                     Text(Tr("和附近的人一起进群"))
-                        .font(AppDesign.Type.title)
+                        .font(AppDesign.Typography.title)
                         .foregroundStyle(OrbitTheme.ink)
                     Text(Tr("输入同样的 4 位数字"))
-                        .font(AppDesign.Type.body)
+                        .font(AppDesign.Typography.body)
                         .foregroundStyle(OrbitTheme.secondary)
                 }
 
@@ -2448,11 +2448,11 @@ struct FaceGroupView: View {
             VStack(spacing: 15) {
                 HStack {
                     Text(Tr("输入同样的 4 位数字"))
-                        .font(AppDesign.Type.rowTitle)
+                        .font(AppDesign.Typography.rowTitle)
                         .foregroundStyle(OrbitTheme.ink)
                     Spacer(minLength: 0)
                     Text("\(digits.count)/4")
-                        .font(AppDesign.Type.section)
+                        .font(AppDesign.Typography.section)
                         .foregroundStyle(digits.count == 4
                                          ? OrbitTheme.jadeDeep
                                          : OrbitTheme.tertiary)
@@ -2474,7 +2474,7 @@ struct FaceGroupView: View {
                                          ? OrbitTheme.jade
                                          : OrbitTheme.tertiary)
                 }
-                .font(AppDesign.Type.caption)
+                .font(AppDesign.Typography.caption)
                 .foregroundStyle(OrbitTheme.secondary)
             }
             .padding(AppDesign.Spacing.md)
@@ -2502,7 +2502,7 @@ struct FaceGroupView: View {
 
             if entered {
                 Text(String(chars[index]))
-                    .font(AppDesign.Type.code)
+                    .font(AppDesign.Typography.code)
                     .foregroundStyle(OrbitTheme.ink)
                     .monospacedDigit()
                     .transition(.scale(scale: 0.72).combined(with: .opacity))
@@ -2545,7 +2545,7 @@ struct FaceGroupView: View {
                                         .font(.system(size: 19, weight: .medium))
                                 } else {
                                     Text(key)
-                                        .font(AppDesign.Type.keypad)
+                                        .font(AppDesign.Typography.keypad)
                                         .monospacedDigit()
                                 }
                             }
@@ -2958,14 +2958,14 @@ struct ServiceView: View {
                             HStack(spacing: AppDesign.Spacing.sm) {
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(bill.title).font(pf(16)).foregroundColor(C.label)
-                                    Text(bill.date).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                                    Text(bill.date).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                                 }
                                 Spacer(minLength: 0)
                                 VStack(alignment: .trailing, spacing: 3) {
                                     Text("¥\(moneyFmt(bill.amount))")
                                         .font(pfMoney(16))
                                         .foregroundColor(C.label)
-                                    Text(bill.status).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                                    Text(bill.status).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                                 }
                                 Chevron(size: 9, line: 1.6)
                             }

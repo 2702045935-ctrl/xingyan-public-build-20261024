@@ -293,7 +293,7 @@ struct DevicesFaqView: View {
                     ForEach(qa.indices, id: \.self) { i in
                         VStack(alignment: .leading, spacing: 8) {
                             Text(Tr(qa[i].0))
-                                .font(AppDesign.Type.rowTitle)
+                                .font(AppDesign.Typography.rowTitle)
                                 .foregroundColor(C.label)
                             Text(Tr(qa[i].1))
                                 .font(pf(14))

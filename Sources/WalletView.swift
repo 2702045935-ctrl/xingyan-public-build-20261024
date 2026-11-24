@@ -82,7 +82,7 @@ struct WalletView: View {
                                     .foregroundColor(Color(hex: 0xB06A12))
                                     .multilineTextAlignment(.leading)
                                 Spacer(minLength: 0)
-                                Text(Tr("去认证")).font(AppDesign.Type.compactButtonMedium).foregroundColor(C.green)
+                                Text(Tr("去认证")).font(AppDesign.Typography.compactButtonMedium).foregroundColor(C.green)
                             }
                             .padding(.horizontal, AppDesign.Spacing.md)
                             .padding(.vertical, AppDesign.Spacing.sm)
@@ -158,12 +158,12 @@ struct WalletView: View {
                                 in: RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
 
                 Text(Tr(it.label))
-                    .font(AppDesign.Type.listTitle)
+                    .font(AppDesign.Typography.listTitle)
                     .foregroundColor(C.label)
 
                 if !note.isEmpty {
                     Text(note)
-                        .font(AppDesign.Type.caption)
+                        .font(AppDesign.Typography.caption)
                         .foregroundColor(s.noteColorV)
                         .lineLimit(1)
                 }

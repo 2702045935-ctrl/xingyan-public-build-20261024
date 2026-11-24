@@ -77,7 +77,7 @@ struct VideoShareSheet: View {
             .padding(.top, AppDesign.Spacing.md)
 
             Text(Tr("更多操作"))
-                .font(AppDesign.Type.section)
+                .font(AppDesign.Typography.section)
                 .foregroundStyle(ShareSheetTheme.secondaryInk(scheme))
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, AppDesign.Spacing.md)
@@ -142,7 +142,7 @@ struct VideoShareSheet: View {
 
             Button { dismiss() } label: {
                 Text(Tr("取消"))
-                    .font(AppDesign.Type.rowTitle)
+                    .font(AppDesign.Typography.rowTitle)
                     .foregroundColor(C.label)
                     .frame(maxWidth: .infinity)
                     .frame(height: AppDesign.Control.largeControlHeight)

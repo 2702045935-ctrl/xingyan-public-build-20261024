@@ -42,10 +42,10 @@ struct ChatQuickAdminSection: View {
                         HStack(spacing: 10) {
                             Text(c.label).font(pf(16))
                                 .foregroundColor(c.enabled ? C.label : C.subLabel)
-                            Text(actionName(c.action)).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                            Text(actionName(c.action)).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                             Spacer(minLength: 6)
                             Text(c.enabled ? Tr("显示中") : Tr("已隐藏"))
-                                .font(AppDesign.Type.caption)
+                                .font(AppDesign.Typography.caption)
                                 .foregroundColor(c.enabled ? C.green : C.subLabel)
                             Image(systemName: "chevron.right").font(.system(size: 12))
                                 .foregroundColor(C.arrow)
@@ -160,7 +160,7 @@ struct ChatQuickAdminSection: View {
 
                 Button { Task { await save() } } label: {
                     Text(saving ? Tr("保存中…") : Tr("保存"))
-                        .font(AppDesign.Type.rowTitle)
+                        .font(AppDesign.Typography.rowTitle)
                         .foregroundColor(C.green)
                         .frame(maxWidth: .infinity).frame(height: AppDesign.Control.largeControlHeight)
                         .contentShape(Rectangle())
@@ -208,7 +208,7 @@ struct ChatQuickAdminSection: View {
             .padding(.horizontal, AppDesign.Spacing.sm)
 
             if !msg.isEmpty {
-                Text(msg).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                Text(msg).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                     .padding(.horizontal, AppDesign.Spacing.md).padding(.top, AppDesign.Spacing.xs)
             }
         }
@@ -237,7 +237,7 @@ struct ChatQuickAdminSection: View {
             VStack(spacing: 0) {
                 NavBar(title: Tr("快捷按钮"), back: { editing = nil }) {
                     Button { editing = nil } label: {
-                        Text(Tr("完成")).font(AppDesign.Type.rowTitle).foregroundColor(C.green)
+                        Text(Tr("完成")).font(AppDesign.Typography.rowTitle).foregroundColor(C.green)
                             .frame(height: L.navH).padding(.trailing, AppDesign.Spacing.md)
                     }
                 }

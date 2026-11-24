@@ -82,7 +82,7 @@ struct LookView: View {
             VStack(spacing: 10) {
                 SVGIcon(markup: I.look, size: 44, color: C.subLabel)
                 Text(Tr("暂时没有可看的内容")).font(pf(15)).foregroundColor(C.subLabel)
-                Text(Tr("朋友看了什么、点赞了什么，会出现在这里")).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                Text(Tr("朋友看了什么、点赞了什么，会出现在这里")).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
             }
             .frame(maxWidth: .infinity).padding(.top, 70)
         }
@@ -122,19 +122,19 @@ struct LookView: View {
                 Text((v.friendsCount ?? 0) > 0
                      ? Tr("\((v.friendsCount ?? 0)) 位朋友在看")
                      : Tr("\((v.watched ?? 0)) 人看过"))
-                    .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                    .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                 Spacer(minLength: 0)
             }
-            Text(v.title ?? "").font(AppDesign.Type.rowTitleMedium).foregroundColor(C.label).lineLimit(2)
+            Text(v.title ?? "").font(AppDesign.Typography.rowTitleMedium).foregroundColor(C.label).lineLimit(2)
             if let cover = v.cover, !cover.isEmpty {
                 RemoteImage(path: cover, mode: .fill, maxSide: 900)
                     .frame(height: 180)
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous))
             }
             HStack(spacing: AppDesign.Spacing.sm) {
-                Text(v.author ?? "").font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                Text(v.author ?? "").font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                 Spacer(minLength: 0)
-                Text("♡ \((v.likes ?? 0))").font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                Text("♡ \((v.likes ?? 0))").font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
             }
         }
         .padding(14)
@@ -152,7 +152,7 @@ struct LookView: View {
                         Avatar(path: f.avatar ?? "", size: 20, radius: 10)
                     }
                     Text(friends.compactMap { $0.name }.joined(separator: "、") + Tr(" 在看"))
-                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                        .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                     Spacer(minLength: 0)
                 }
             }
@@ -176,8 +176,8 @@ struct LookView: View {
                 }
             }
             HStack(spacing: 14) {
-                Text("♡ \(p.likeCount ?? 0)").font(AppDesign.Type.caption).foregroundColor(C.subLabel)
-                Text("💬 \(p.commentCount ?? 0)").font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                Text("♡ \(p.likeCount ?? 0)").font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
+                Text("💬 \(p.commentCount ?? 0)").font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                 Spacer(minLength: 0)
             }
         }

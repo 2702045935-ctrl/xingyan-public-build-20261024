@@ -1904,7 +1904,7 @@ struct MomentsView: View {
                         .background(Circle().fill(Color.black.opacity(0.48)))
 
                     Text(Tr("设置生活圈封面"))
-                        .font(AppDesign.Type.button)
+                        .font(AppDesign.Typography.button)
                         .foregroundColor(.white)
 
                     Text(Tr("从相册选一张图，让朋友一眼记住你"))
@@ -1992,7 +1992,7 @@ struct MomentsView: View {
                         coverMenu = true
                     } label: {
                         Text(Tr("换封面"))
-                            .font(AppDesign.Type.captionMedium)
+                            .font(AppDesign.Typography.captionMedium)
                             .foregroundColor(.white)
                             .frame(width: 88, height: 32)
                             .background(Capsule()
@@ -2022,7 +2022,7 @@ struct MomentsView: View {
                         .shadow(color: Color.black.opacity(0.28), radius: 5, x: 0, y: 2)
                     if let sign = signature {
                         Text(sign)
-                            .font(AppDesign.Type.caption)
+                            .font(AppDesign.Typography.caption)
                             .foregroundColor(C.label)
                             .lineLimit(2)
                             .multilineTextAlignment(.center)
@@ -2217,7 +2217,7 @@ struct MomentsView: View {
                     Text("STRESS")
                         .font(.system(size: 10, weight: .bold, design: .rounded))
                     Text("已加载 \(stressLoadedCount) / \(MomentStressFixture.count)")
-                        .font(AppDesign.Type.sectionMedium)
+                        .font(AppDesign.Typography.sectionMedium)
                     Spacer(minLength: 0)
                 }
                 .foregroundColor(C.subLabel)
@@ -2387,7 +2387,7 @@ struct MomentsView: View {
                     if !timelineAvailableDays.isEmpty {
                         VStack(alignment: .leading, spacing: 10) {
                             Text(Tr("最近有动态"))
-                                .font(AppDesign.Type.compactButton)
+                                .font(AppDesign.Typography.compactButton)
                                 .foregroundStyle(C.subLabel)
 
                             ScrollView(.horizontal, showsIndicators: false) {
@@ -2397,7 +2397,7 @@ struct MomentsView: View {
                                             timelineDateDraft = day
                                         } label: {
                                             Text(Self.monthDayFormatter.string(from: day))
-                                                .font(AppDesign.Type.captionStrong)
+                                                .font(AppDesign.Typography.captionStrong)
                                                 .foregroundStyle(
                                                     Calendar.current.isDate(
                                                         day,
@@ -2519,7 +2519,7 @@ struct MomentsView: View {
                 clearTimelineDateFilter()
             } label: {
                 Text(Tr("显示全部动态"))
-                    .font(AppDesign.Type.bodyStrong)
+                    .font(AppDesign.Typography.bodyStrong)
                     .foregroundStyle(C.label)
                     .padding(.horizontal, 14)
                     .frame(height: 34)
@@ -2712,7 +2712,7 @@ struct MomentsView: View {
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(C.red)
                     Text(publishError)
-                        .font(AppDesign.Type.body)
+                        .font(AppDesign.Typography.body)
                         .foregroundColor(C.label)
                         .fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 0)
@@ -2736,7 +2736,7 @@ struct MomentsView: View {
                                 .tint(C.green)
                                 .frame(width: 72)
                             Text(publishStatus.isEmpty ? Tr("正在发表…") : publishStatus)
-                                .font(AppDesign.Type.captionMedium)
+                                .font(AppDesign.Typography.captionMedium)
                                 .foregroundColor(C.subLabel)
                                 .lineLimit(1)
                             Spacer(minLength: 0)
@@ -3840,7 +3840,7 @@ struct MomentRow: View {
             if moment.pinned == true {
                 HStack(spacing: 3) {
                     Image(systemName: "pin.fill").font(.system(size: 10))
-                    Text(Tr("置顶")).font(AppDesign.Type.caption)
+                    Text(Tr("置顶")).font(AppDesign.Typography.caption)
                 }
                 .foregroundColor(C.subLabel)
                 .padding(.top, 6)
@@ -4210,7 +4210,7 @@ struct CoverAdjustSheet: View {
             )
 
             Text(Tr("拖动挪位置，双指缩放，点「完成」保存"))
-                .font(AppDesign.Type.caption)
+                .font(AppDesign.Typography.caption)
                 .foregroundColor(C.subLabel)
                 .padding(.top, 14)
             Spacer()

@@ -60,7 +60,7 @@ struct OtherLoginCard: View {
                             .padding(.top, 26)
 
                         Text(kick.detailText)
-                            .font(AppDesign.Type.body)
+                            .font(AppDesign.Typography.body)
                             .foregroundColor(C.subLabel)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 22)
@@ -80,7 +80,7 @@ struct OtherLoginCard: View {
                             Task { await app.logout(keepSavedAccount: false) }
                         } label: {
                             Text(Tr("退出并重新登录"))
-                                .font(AppDesign.Type.rowTitle)
+                                .font(AppDesign.Typography.rowTitle)
                                 .foregroundColor(C.green)
                                 .frame(maxWidth: .infinity).frame(height: AppDesign.Control.buttonHeight)
                                 .contentShape(Rectangle())

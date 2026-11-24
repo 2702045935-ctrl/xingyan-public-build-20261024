@@ -135,7 +135,7 @@ struct DDHelpCenterView: View {
             HStack(spacing: 10) {
                 DDThumb(em: p.em, size: 46, radius: 6, img: p.img)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(p.title).font(AppDesign.Type.body).foregroundColor(DDColor.ink).lineLimit(2)
+                    Text(p.title).font(AppDesign.Typography.body).foregroundColor(DDColor.ink).lineLimit(2)
                     Text(p.shop).font(pf(12)).foregroundColor(DDColor.sub)
                 }
                 Spacer(minLength: 0)
@@ -147,7 +147,7 @@ struct DDHelpCenterView: View {
             HStack(spacing: 10) {
                 DDThumb(em: o.em, size: 46, radius: 6)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(o.title).font(AppDesign.Type.body).foregroundColor(DDColor.ink).lineLimit(2)
+                    Text(o.title).font(AppDesign.Typography.body).foregroundColor(DDColor.ink).lineLimit(2)
                     Text(Tr("订单 ") + (o.orderNo.isEmpty ? o.id : o.orderNo) + " · " + Tr(o.statusText))
                         .font(pf(11.5)).foregroundColor(DDColor.sub).lineLimit(1)
                 }
@@ -172,7 +172,7 @@ struct DDHelpCenterView: View {
                 HStack {
                     if m.me { Spacer(minLength: 40) }
                     Text(m.text)
-                        .font(AppDesign.Type.body)
+                        .font(AppDesign.Typography.body)
                         .foregroundColor(m.me ? .white : DDColor.ink)
                         .padding(.horizontal, 11).padding(.vertical, AppDesign.Spacing.xs)
                         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
@@ -186,7 +186,7 @@ struct DDHelpCenterView: View {
                 HStack(spacing: AppDesign.Spacing.xs) {
                     ForEach(DDHelp.quick, id: \.self) { q in
                         Button { ask(q) } label: {
-                            Text(Tr(q)).font(AppDesign.Type.caption).foregroundColor(DDColor.red)
+                            Text(Tr(q)).font(AppDesign.Typography.caption).foregroundColor(DDColor.red)
                                 .padding(.horizontal, 10).frame(height: AppDesign.Control.statusHeight)
                                 .background(Capsule().fill(DDColor.redLight))
                         }
@@ -213,7 +213,7 @@ struct DDHelpCenterView: View {
             Text(Tr("常见问题")).font(pf(15, .semibold)).foregroundColor(DDColor.ink)
                 .padding(.horizontal, AppDesign.Spacing.sm).padding(.top, AppDesign.Spacing.sm).padding(.bottom, 6)
             ForEach(Array(DDHelp.groups.enumerated()), id: \.offset) { _, g in
-                Text(Tr(g.0)).font(AppDesign.Type.captionMedium).foregroundColor(DDColor.sub)
+                Text(Tr(g.0)).font(AppDesign.Typography.captionMedium).foregroundColor(DDColor.sub)
                     .padding(.horizontal, AppDesign.Spacing.sm).padding(.top, AppDesign.Spacing.xs).padding(.bottom, 2)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 ForEach(Array(g.1.enumerated()), id: \.offset) { _, f in
@@ -275,7 +275,7 @@ struct DDHelpCenterView: View {
                 }
             } label: {
                 Text(busy ? Tr("正在接入…") : Tr("转人工客服"))
-                    .font(AppDesign.Type.rowTitle).foregroundColor(.white)
+                    .font(AppDesign.Typography.rowTitle).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: AppDesign.Control.compactHeight)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.panel).fill(DDColor.gradBtn))
             }

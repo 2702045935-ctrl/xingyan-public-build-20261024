@@ -131,7 +131,7 @@ struct BalancePageView: View {
                         }
                         Spacer(minLength: 6)
                         Text(Tr("去认证"))
-                            .font(AppDesign.Type.bodyStrong)
+                            .font(AppDesign.Typography.bodyStrong)
                             .foregroundColor(PayVisual.warning)
                     }
                     .foregroundColor(C.label)
@@ -172,7 +172,7 @@ struct BalancePageView: View {
                         } label: {
                             HStack {
                                 Text(Tr(l.label))
-                                    .font(AppDesign.Type.bodyLarge)
+                                    .font(AppDesign.Typography.bodyLarge)
                                     .foregroundColor(C.label)
                                 Spacer()
                                 Image(systemName: "chevron.right")

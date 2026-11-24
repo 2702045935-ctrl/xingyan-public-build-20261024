@@ -112,7 +112,7 @@ struct NeedRealNameView: View {
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundColor(C.green)
             Text(Tr("身份资料只保存在星言服务器；身份证号加密保存，页面只显示脱敏信息。"))
-                .font(AppDesign.Type.caption)
+                .font(AppDesign.Typography.caption)
                 .foregroundColor(C.subLabel)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -136,7 +136,7 @@ struct NeedRealNameView: View {
                     .font(pf(15, .semibold))
                     .foregroundColor(C.label)
                 Text(detail)
-                    .font(AppDesign.Type.caption)
+                    .font(AppDesign.Typography.caption)
                     .foregroundColor(C.subLabel)
             }
             Spacer(minLength: 8)

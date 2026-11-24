@@ -67,7 +67,7 @@ struct MallOpsSection: View {
                         }
                         HStack(spacing: AppDesign.Spacing.xs) {
                             Button { shipping = o } label: {
-                                Text(Tr("填单号发货")).font(AppDesign.Type.bodyMedium).foregroundColor(.white)
+                                Text(Tr("填单号发货")).font(AppDesign.Typography.bodyMedium).foregroundColor(.white)
                                     .padding(.horizontal, 14).frame(height: AppDesign.Control.smallButtonHeight)
                                     .background(Capsule().fill(C.green))
                             }
@@ -108,7 +108,7 @@ struct MallOpsSection: View {
                         Text(a.item ?? "").font(pf(13)).foregroundColor(C.label).lineLimit(1)
                         Text(Tr("理由：") + (a.reason ?? "")).font(pf(12)).foregroundColor(C.subLabel)
                         Button { reviewing = a } label: {
-                            Text(Tr("处理这一单")).font(AppDesign.Type.bodyMedium).foregroundColor(.white)
+                            Text(Tr("处理这一单")).font(AppDesign.Typography.bodyMedium).foregroundColor(.white)
                                 .padding(.horizontal, 14).frame(height: AppDesign.Control.smallButtonHeight)
                                 .background(Capsule().fill(DDColor.redDeep))
                         }
@@ -154,12 +154,12 @@ struct MallOpsSection: View {
 
     private func header(_ title: String, sub: String, reload: (() -> Void)?) -> some View {
         HStack(spacing: AppDesign.Spacing.xs) {
-            Text(title).font(AppDesign.Type.rowTitle).foregroundColor(C.label)
+            Text(title).font(AppDesign.Typography.rowTitle).foregroundColor(C.label)
             Text(sub).font(pf(12)).foregroundColor(C.subLabel)
             Spacer(minLength: 0)
             if let r = reload {
                 Button { r() } label: {
-                    Text(Tr("刷新")).font(AppDesign.Type.caption).foregroundColor(C.link)
+                    Text(Tr("刷新")).font(AppDesign.Typography.caption).foregroundColor(C.link)
                 }
                 .buttonStyle(.plain)
             }
@@ -168,7 +168,7 @@ struct MallOpsSection: View {
     }
 
     private func hint(_ t: String) -> some View {
-        Text(t).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+        Text(t).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, AppDesign.Spacing.md).padding(.bottom, 14)
     }
@@ -199,7 +199,7 @@ struct ShipSheet: View {
                     .padding(AppDesign.Spacing.sm).background(C.cardBg)
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
 
-                    Text(Tr("快递公司")).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                    Text(Tr("快递公司")).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 76), spacing: 8)], spacing: 8) {
                         ForEach(companies, id: \.self) { c in
@@ -226,7 +226,7 @@ struct ShipSheet: View {
             }
             Button { Task { await ship() } } label: {
                 Text(busy ? Tr("正在发货…") : Tr("确认发货"))
-                    .font(AppDesign.Type.rowTitle).foregroundColor(.white)
+                    .font(AppDesign.Typography.rowTitle).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(busy ? C.subLabel : C.green))
                     .padding(.horizontal, 14)
@@ -288,7 +288,7 @@ struct PushTrackSheet: View {
             }
             Button { Task { await push() } } label: {
                 Text(busy ? Tr("正在写入…") : Tr("写入物流"))
-                    .font(AppDesign.Type.rowTitle).foregroundColor(.white)
+                    .font(AppDesign.Typography.rowTitle).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(busy ? C.subLabel : C.green))
                     .padding(.horizontal, 14)
@@ -341,14 +341,14 @@ struct AfterSaleReviewSheet: View {
                         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact).fill(C.fieldBg))
 
                     Button { Task { await review(true) } } label: {
-                        Text(Tr("同意退款（退回零钱）")).font(AppDesign.Type.rowTitleMedium).foregroundColor(.white)
+                        Text(Tr("同意退款（退回零钱）")).font(AppDesign.Typography.rowTitleMedium).foregroundColor(.white)
                             .frame(maxWidth: .infinity).frame(height: 46)
                             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(C.green))
                     }
                     .buttonStyle(.plain).disabled(busy)
 
                     Button { Task { await review(false) } } label: {
-                        Text(Tr("驳回")).font(AppDesign.Type.bodyLarge).foregroundColor(C.red)
+                        Text(Tr("驳回")).font(AppDesign.Typography.bodyLarge).foregroundColor(C.red)
                             .frame(maxWidth: .infinity).frame(height: 46)
                             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(C.cardBg))
                     }
@@ -390,7 +390,7 @@ struct SendCouponSheet: View {
                 VStack(spacing: 10) {
                     Text(to.isEmpty ? Tr("这次会发给**所有没被封的账号**，一人几张看下面。")
                                     : (Tr("发给：") + to))
-                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                        .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     fld(Tr("券名（比如 客服券 / 补贴券）"), $title)
                     fld(Tr("面额（元）"), $off, num: true)
@@ -402,7 +402,7 @@ struct SendCouponSheet: View {
             }
             Button { Task { await send() } } label: {
                 Text(busy ? Tr("正在发…") : Tr("发券"))
-                    .font(AppDesign.Type.rowTitle).foregroundColor(.white)
+                    .font(AppDesign.Typography.rowTitle).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(busy ? C.subLabel : C.green))
                     .padding(.horizontal, 14)

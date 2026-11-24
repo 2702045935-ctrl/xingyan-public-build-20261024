@@ -54,7 +54,7 @@ struct AIPageView: View {
                 VStack(spacing: AppDesign.Spacing.sm) {
                     ProgressView().tint(accent)
                     Text(Tr("正在连接小星"))
-                        .font(AppDesign.Type.caption)
+                        .font(AppDesign.Typography.caption)
                         .foregroundColor(C.subLabel)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -294,7 +294,7 @@ struct AIPageView: View {
                 }
             } label: {
                 Text(Tr("购买"))
-                    .font(AppDesign.Type.sectionMedium)
+                    .font(AppDesign.Typography.sectionMedium)
                     .foregroundColor(accent)
                     .padding(.horizontal, 13)
                     .frame(height: AppDesign.Control.sectionHeaderHeight)
@@ -391,7 +391,7 @@ struct AIPageView: View {
                                     }
                                 }
                                 Text(Self.compactTokens(plan.granted) + " Token")
-                                    .font(AppDesign.Type.caption)
+                                    .font(AppDesign.Typography.caption)
                                     .foregroundColor(C.subLabel)
                                 HStack {
                                     Text("¥" + moneyFmt(plan.price))
@@ -429,11 +429,11 @@ struct AIPageView: View {
             ForEach(purchases.prefix(5)) { item in
                 HStack {
                     Text(item.name)
-                        .font(AppDesign.Type.caption)
+                        .font(AppDesign.Typography.caption)
                         .foregroundColor(C.subLabel)
                     Spacer()
                     Text("+ " + Self.compactTokens(item.granted))
-                        .font(AppDesign.Type.captionMedium)
+                        .font(AppDesign.Typography.captionMedium)
                         .foregroundColor(accent)
                 }
                 .frame(height: AppDesign.Control.statusHeight)
@@ -596,7 +596,7 @@ private struct BuyAITokensSheet: View {
                     .font(pf(15, .medium))
                     .foregroundColor(C.label)
                 Text(AIPageView.compactTokenValue(plan.granted) + " Token · ¥" + moneyFmt(plan.price))
-                    .font(AppDesign.Type.captionMedium)
+                    .font(AppDesign.Typography.captionMedium)
                     .foregroundColor(accent)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -624,7 +624,7 @@ private struct BuyAITokensSheet: View {
 
             if !errorText.isEmpty {
                 Text(errorText)
-                    .font(AppDesign.Type.caption)
+                    .font(AppDesign.Typography.caption)
                     .foregroundColor(C.red)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, AppDesign.Spacing.lg)

@@ -26,7 +26,7 @@ require(
     and "enum Spacing" in DESIGN
     and "enum Radius" in DESIGN
     and "enum Control" in DESIGN
-    and "enum Type" in DESIGN
+    and "enum Typography" in DESIGN
     and "enum Motion" in DESIGN
     and "struct AppFlowPanel" in DESIGN
     and "struct AppFlowRow" in DESIGN
@@ -53,7 +53,7 @@ require(
     and "var horizontalInset: CGFloat = AppDesign.Spacing.md" in MAIN
     and ".padding(.horizontal, horizontalInset)" in MAIN
     and "struct MenuRow: View" in MAIN
-    and "AppDesign.Type.listTitle" in MAIN
+    and "AppDesign.Typography.listTitle" in MAIN
     and "AppDesign.Control.menuRowHeight" in MAIN
     and "struct HairLine" in (
         SOURCES / "Core.swift"

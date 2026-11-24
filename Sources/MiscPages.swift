@@ -564,7 +564,7 @@ struct StickerViewOld: View {
 
                     if mine.packList.isEmpty && mine.singleList.isEmpty {
                         Text(Tr("还没有添加表情，去下面的「表情商店」加几个"))
-                            .font(AppDesign.Type.body)
+                            .font(AppDesign.Typography.body)
                             .foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, AppDesign.Spacing.md)
@@ -639,7 +639,7 @@ struct StickerViewOld: View {
                                     Text(p.name ?? "表情包").font(pf(16)).foregroundColor(C.label)
                                     Text(Lang.isEnglish ? "\((p.stickers ?? []).count) stickers"
                                                        : "\((p.stickers ?? []).count) 个表情")
-                                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                                        .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                                 }
                                 Spacer(minLength: 8)
                                 if isAdded(p) {
@@ -728,7 +728,7 @@ struct StickerViewOld: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(p.name).font(pf(16)).foregroundColor(C.label)
                 Text(Lang.isEnglish ? "\(p.stickers.count) stickers" : "\(p.stickers.count) 个表情")
-                    .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                    .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
             }
             Spacer(minLength: 8)
             Button {
@@ -917,12 +917,12 @@ struct StatusView: View {
                 Spacer(minLength: 6)
                 if let h = ms.hoursLeft {
                     Text(h <= 0 ? Tr("马上过期") : (Tr("还剩 ") + "\(h)" + Tr(" 小时")))
-                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                        .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                 }
             }
             if let views = ms.views, !views.isEmpty {
                 Text(Tr("谁看过我的状态") + "（\(views.count)）")
-                    .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                    .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 10) {
                         ForEach(views, id: \.self) { v in
@@ -935,7 +935,7 @@ struct StatusView: View {
                     }
                 }
             } else {
-                Text(Tr("还没有人看过")).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                Text(Tr("还没有人看过")).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
             }
         }
         .padding(14)
@@ -1014,7 +1014,7 @@ struct StatusView: View {
                     .fill(Color(hexString: catColor.isEmpty ? "#8A8F99" : catColor))
                     .frame(width: 6, height: 6)
                 Text(Tr(title))
-                    .font(AppDesign.Type.compactButtonMedium)
+                    .font(AppDesign.Typography.compactButtonMedium)
                     .foregroundColor(C.subLabel)
                 Spacer(minLength: 0)
             }
@@ -1045,7 +1045,7 @@ struct StatusView: View {
                     Text(it.icon ?? "🙂").font(pf(19))
                 }
                 Text(Tr(it.label ?? "状态"))
-                    .font(AppDesign.Type.captionMedium)
+                    .font(AppDesign.Typography.captionMedium)
                     .foregroundColor(.white)
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
@@ -1086,7 +1086,7 @@ struct StatusView: View {
     private var endRow: some View {
         Button { endMood() } label: {
             Text(Tr("结束状态"))
-                .font(AppDesign.Type.bodyLarge)
+                .font(AppDesign.Typography.bodyLarge)
                 .foregroundColor(C.red)
                 .frame(maxWidth: .infinity)
                 .frame(height: AppDesign.Control.buttonHeight)
@@ -1198,7 +1198,7 @@ struct StatusDetailView: View {
                 Text(Tr(label)).font(pf(17, .medium)).foregroundColor(.white).lineLimit(1)
             }
             if !note.isEmpty {
-                Text(note).font(AppDesign.Type.body).foregroundColor(.white.opacity(0.92))
+                Text(note).font(AppDesign.Typography.body).foregroundColor(.white.opacity(0.92))
                     .multilineTextAlignment(.center).lineLimit(3)
             }
             Text(leftText).font(pf(11.5)).foregroundColor(.white.opacity(0.82))
@@ -1271,7 +1271,7 @@ struct StatusDetailView: View {
     private var endButton: some View {
         Button { endIt() } label: {
             Text(Tr("结束状态"))
-                .font(AppDesign.Type.bodyLarge)
+                .font(AppDesign.Typography.bodyLarge)
                 .foregroundColor(C.red)
                 .frame(maxWidth: .infinity)
                 .frame(height: AppDesign.Control.buttonHeight)
@@ -1328,7 +1328,7 @@ struct FriendStatusView: View {
                             Text(Tr(label)).font(pf(17, .medium)).foregroundColor(.white)
                         }
                         if !note.isEmpty {
-                            Text(note).font(AppDesign.Type.body).foregroundColor(.white.opacity(0.92))
+                            Text(note).font(AppDesign.Typography.body).foregroundColor(.white.opacity(0.92))
                                 .multilineTextAlignment(.center)
                         }
                         Text(leftText).font(pf(11.5)).foregroundColor(.white.opacity(0.82))
@@ -1398,7 +1398,7 @@ struct FriendsStatusView: View {
                     Text("🙂").font(pf(30))
                     Text(Tr("朋友们现在都没挂状态")).font(pf(15)).foregroundColor(C.label)
                     Text(Tr("等好友在「我 → 状态」里挂一个，这里就会显示"))
-                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                        .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                         .multilineTextAlignment(.center)
                 }
                 .frame(maxWidth: .infinity)
@@ -1905,7 +1905,7 @@ struct WorksView: View {
                         .foregroundColor(C.label)
                         .lineLimit(1)
                     Text("@" + (app.me?.username ?? "—"))
-                        .font(AppDesign.Type.captionMedium)
+                        .font(AppDesign.Typography.captionMedium)
                         .foregroundColor(C.subLabel)
                         .lineLimit(1)
                 }
@@ -1928,7 +1928,7 @@ struct WorksView: View {
 
             let bio = (app.me?.bio ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             Text(bio.isEmpty ? Tr("记录生活，也记录作品") : bio)
-                .font(AppDesign.Type.body)
+                .font(AppDesign.Typography.body)
                 .foregroundColor(C.subLabel)
                 .lineLimit(2)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -2109,7 +2109,7 @@ struct WorksView: View {
                 .font(pf(15, .medium))
                 .foregroundColor(C.label)
             Text(loadError)
-                .font(AppDesign.Type.caption)
+                .font(AppDesign.Typography.caption)
                 .foregroundColor(C.subLabel)
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
@@ -2138,7 +2138,7 @@ struct WorksView: View {
                 .font(pf(15, .medium))
                 .foregroundColor(C.label)
             Text(emptySubtitle)
-                .font(AppDesign.Type.caption)
+                .font(AppDesign.Typography.caption)
                 .foregroundColor(C.subLabel)
                 .multilineTextAlignment(.center)
         }

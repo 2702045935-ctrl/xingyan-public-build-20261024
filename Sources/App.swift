@@ -2720,7 +2720,7 @@ struct SavedLoginConfirm: View {
                         .foregroundColor(C.label)
                         .lineLimit(1)
                     Text(Tr("上次登录的账号"))
-                        .font(AppDesign.Type.caption)
+                        .font(AppDesign.Typography.caption)
                         .foregroundColor(C.subLabel)
                 }
             }
@@ -2734,7 +2734,7 @@ struct SavedLoginConfirm: View {
                     go()
                 } label: {
                     Text(Tr("登录"))
-                        .font(AppDesign.Type.rowTitle)
+                        .font(AppDesign.Typography.rowTitle)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 46)
@@ -2950,7 +2950,7 @@ struct LoginViewOld: View {
                         panel
                         if let error = error {
                             Text(error)
-                                .font(AppDesign.Type.body)
+                                .font(AppDesign.Typography.body)
                                 .foregroundColor(LoginTheme.pageBg == nil ? C.red : Color(hex: 0xFF8E8E))
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.horizontal, 18)
@@ -2958,7 +2958,7 @@ struct LoginViewOld: View {
                         }
                         if !usePassword {
                             Text(Tr("仅上述手机号用于登录验证"))
-                                .font(AppDesign.Type.body)
+                                .font(AppDesign.Typography.body)
                                 .foregroundColor(LoginTheme.onBgSub(scheme))
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.horizontal, 18)
@@ -3046,7 +3046,7 @@ struct LoginViewOld: View {
                         .focused($focus, equals: .phone)
                         .keyboardType(.numberPad)
                         .textContentType(.telephoneNumber)
-                        .font(AppDesign.Type.titleRegular)
+                        .font(AppDesign.Typography.titleRegular)
                         .foregroundColor(LoginTheme.ink(scheme))
                         .frame(height: 46)
                 }
@@ -3057,7 +3057,7 @@ struct LoginViewOld: View {
                         .keyboardType(.numberPad)
 
                         .textContentType(.oneTimeCode)
-                        .font(AppDesign.Type.titleRegular)
+                        .font(AppDesign.Typography.titleRegular)
                         .foregroundColor(LoginTheme.ink(scheme))
                         .frame(height: 46)
                     Button {
@@ -3075,7 +3075,7 @@ struct LoginViewOld: View {
                         .focused($focus, equals: .user)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled(true)
-                        .font(AppDesign.Type.titleRegular)
+                        .font(AppDesign.Typography.titleRegular)
                         .foregroundColor(LoginTheme.ink(scheme))
                         .frame(height: 46)
                 }
@@ -3087,7 +3087,7 @@ struct LoginViewOld: View {
                         .autocorrectionDisabled(true)
                         .textInputAutocapitalization(.never)
                         .privacySensitive()
-                        .font(AppDesign.Type.titleRegular)
+                        .font(AppDesign.Typography.titleRegular)
                         .foregroundColor(LoginTheme.ink(scheme))
                         .frame(height: 46)
                 }
@@ -3123,7 +3123,7 @@ struct LoginViewOld: View {
                         .font(pf(15))
                         .foregroundColor(syncHistory ? LoginTheme.accent : LoginTheme.onBgSub(scheme))
                     Text(Tr("登录后同步最近的聊天记录"))
-                        .font(AppDesign.Type.body)
+                        .font(AppDesign.Typography.body)
                         .foregroundColor(LoginTheme.onBgSub(scheme))
                 }
                 .frame(maxWidth: .infinity)

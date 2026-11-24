@@ -103,7 +103,7 @@ struct RegionPickerSheet: View {
 
             Button { done() } label: {
                 Text(Tr("完成"))
-                    .font(AppDesign.Type.rowTitle)
+                    .font(AppDesign.Typography.rowTitle)
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 46)

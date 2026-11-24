@@ -184,7 +184,7 @@ struct MemberPaySheet: View {
                 Text(Tr("支付方式"))
                 Text(Tr("零钱")).foregroundColor(C.label)
             }
-            .font(AppDesign.Type.caption)
+            .font(AppDesign.Typography.caption)
             .foregroundColor(C.subLabel)
             .padding(.top, AppDesign.Spacing.xs)
 
@@ -201,10 +201,10 @@ struct MemberPaySheet: View {
                         .font(.system(size: 22))
                         .foregroundColor(C.green)
                     Text("还没设置支付密码")
-                        .font(AppDesign.Type.rowTitle)
+                        .font(AppDesign.Typography.rowTitle)
                         .foregroundColor(C.label)
                     Text("为了安全，付款前要先设一个 6 位支付密码\n（我 → 设置 → 账号与安全 → 支付密码）")
-                        .font(AppDesign.Type.body)
+                        .font(AppDesign.Typography.body)
                         .foregroundColor(C.subLabel)
                         .multilineTextAlignment(.center)
                 }

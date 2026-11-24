@@ -225,7 +225,7 @@ struct BillsStatsView: View {
             ForEach(Array(topPeers.enumerated()), id: \.offset) { i, p in
                 HStack(spacing: AppDesign.Spacing.sm) {
                     Text("\(i + 1)")
-                        .font(AppDesign.Type.compactButton)
+                        .font(AppDesign.Typography.compactButton)
                         .foregroundColor(i == 0 ? expColor : C.subLabel)
                         .frame(width: 18)
                     Avatar(path: p.avatar, size: 34, radius: 9)

@@ -125,7 +125,7 @@ struct DDCityPickerView: View {
                 }
                 .buttonStyle(.plain)
                 Spacer(minLength: 0)
-                Text(Tr("选择城市")).font(AppDesign.Type.button).foregroundColor(DDColor.ink)
+                Text(Tr("选择城市")).font(AppDesign.Typography.button).foregroundColor(DDColor.ink)
                 Spacer(minLength: 0)
                 Color.clear.frame(width: 44, height: 44)
             }
@@ -181,7 +181,7 @@ struct DDCityPickerView: View {
                         } label: {
                             HStack(spacing: AppDesign.Spacing.xxs) {
                                 Image(systemName: "arrow.clockwise").font(.system(size: 11.5, weight: .semibold))
-                                Text(Tr("重新定位")).font(AppDesign.Type.caption)
+                                Text(Tr("重新定位")).font(AppDesign.Typography.caption)
                             }
                             .foregroundColor(DDColor.red)
                         }
@@ -222,7 +222,7 @@ struct DDCityPickerView: View {
 
     private func groupTitle(_ t: String) -> some View {
         Text(t)
-            .font(AppDesign.Type.compactButtonMedium).foregroundColor(DDColor.sub)
+            .font(AppDesign.Typography.compactButtonMedium).foregroundColor(DDColor.sub)
             .padding(.horizontal, AppDesign.Spacing.md).padding(.top, 18).padding(.bottom, AppDesign.Spacing.xs)
     }
 

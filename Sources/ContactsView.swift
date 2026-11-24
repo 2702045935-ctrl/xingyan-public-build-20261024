@@ -283,7 +283,7 @@ private var funcs: [(String, String, Color, String)] {
                                         Text(keyword.isEmpty
                                              ? Tr("点右上角 ＋ 添加联系人")
                                              : Tr("换个关键词试试"))
-                                            .font(AppDesign.Type.caption)
+                                            .font(AppDesign.Typography.caption)
                                             .foregroundColor(contactsSecondary)
                                     }
                                     .frame(maxWidth: .infinity)
@@ -501,12 +501,12 @@ private var funcs: [(String, String, Color, String)] {
                 nativeQuickIcon(item, size: 34)
             } content: {
                 Text(item.0)
-                    .font(AppDesign.Type.rowTitle)
+                    .font(AppDesign.Typography.rowTitle)
                     .foregroundColor(contactsLabel)
             } trailing: {
                 if item.3 == "newFriends" && app.showDot("newFriends", auto: app.friendRequests > 0) {
                     Text(app.friendRequests > 99 ? "99+" : "\(app.friendRequests)")
-                        .font(AppDesign.Type.sectionMedium)
+                        .font(AppDesign.Typography.sectionMedium)
                         .foregroundColor(.white)
                         .padding(.horizontal, app.friendRequests > 9 ? 6 : 0)
                         .frame(minWidth: 20, minHeight: 20)
@@ -634,7 +634,7 @@ private var funcs: [(String, String, Color, String)] {
 
                 if item.3 == "newFriends" && app.showDot("newFriends", auto: app.friendRequests > 0) {
                     Text(app.friendRequests > 99 ? "99+" : "\(app.friendRequests)")
-                        .font(AppDesign.Type.captionMedium)
+                        .font(AppDesign.Typography.captionMedium)
                         .foregroundColor(.white)
                         .padding(.horizontal, app.friendRequests > 9 ? 6 : 0)
                         .frame(minWidth: 18, minHeight: 18)
@@ -704,7 +704,7 @@ private var funcs: [(String, String, Color, String)] {
                    level: (user.qqLevel ?? 0) > 1 ? (user.qqLevel ?? 0) : 0)
             HStack(spacing: 5) {
                 Text(user.name)
-                    .font(AppDesign.Type.listTitle)
+                    .font(AppDesign.Typography.listTitle)
                     .foregroundColor(contactsLabel)
                     .lineLimit(1)
 
@@ -1095,7 +1095,7 @@ struct ContactCardView: View {
                     }
                     VStack(alignment: .leading, spacing: 3) {
                         Text(displayName)
-                            .font(AppDesign.Type.rowTitleMedium)
+                            .font(AppDesign.Typography.rowTitleMedium)
                             .foregroundColor(C.label)
                             .lineLimit(1)
                         Text(Tr("星言号") + "：" + (u.username ?? "-"))
@@ -1302,7 +1302,7 @@ struct ContactCardView: View {
                 Text(text).foregroundColor(.white.opacity(0.82))
             }
         }
-        .font(AppDesign.Type.caption)
+        .font(AppDesign.Typography.caption)
         .lineLimit(1)
     }
 
@@ -1440,7 +1440,7 @@ struct ContactCardView: View {
             HStack(spacing: 11) {
                 PanelIcon(symbol: symbol, colors: colors)
                 Text(act.title)
-                    .font(AppDesign.Type.rowTitle)
+                    .font(AppDesign.Typography.rowTitle)
                     .foregroundColor(pending ? C.subLabel : C.label)
                 Spacer(minLength: 0)
                 if !pending { Chevron(size: 9, line: 1.6) }

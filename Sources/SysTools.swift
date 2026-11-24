@@ -56,7 +56,7 @@ struct SysToolsView: View {
                 VStack(spacing: 0) {
                     HStack {
                         Text(Tr("账号相关的事，在这儿自己办或者找客服"))
-                            .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                            .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                         Spacer(minLength: 0)
                     }
                     .padding(.horizontal, AppDesign.Spacing.md).padding(.top, AppDesign.Spacing.sm).padding(.bottom, AppDesign.Spacing.xs)
@@ -71,7 +71,7 @@ struct SysToolsView: View {
                                         .foregroundColor(C.green)
                                         .frame(width: 28)
                                     VStack(alignment: .leading, spacing: 3) {
-                                        Text(Tr(it.title)).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
+                                        Text(Tr(it.title)).font(AppDesign.Typography.bodyLarge).foregroundColor(C.label)
                                         Text(Tr(it.sub)).font(pf(12)).foregroundColor(C.subLabel)
                                             .lineLimit(1)
                                     }

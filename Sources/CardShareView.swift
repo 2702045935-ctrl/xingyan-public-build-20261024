@@ -159,7 +159,7 @@ struct CardShareView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(u.name).font(pf(16)).foregroundColor(C.label).lineLimit(1)
                     if let username = u.username, !username.isEmpty {
-                        Text(username).font(AppDesign.Type.caption).foregroundColor(C.subLabel).lineLimit(1)
+                        Text(username).font(AppDesign.Typography.caption).foregroundColor(C.subLabel).lineLimit(1)
                     }
                 }
                 Spacer(minLength: 8)
@@ -192,7 +192,7 @@ struct CardShareView: View {
                             .tracking(1.1)
                             .foregroundColor(C.green)
                         Text(decode(user.name))
-                            .font(AppDesign.Type.button)
+                            .font(AppDesign.Typography.button)
                             .foregroundColor(C.label)
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)

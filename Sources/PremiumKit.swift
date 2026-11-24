@@ -5,7 +5,7 @@ struct PanelSectionTitle: View {
 
     var body: some View {
         Text(text)
-            .font(AppDesign.Type.captionMedium)
+            .font(AppDesign.Typography.captionMedium)
             .foregroundColor(C.subLabel)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.leading, 6)
@@ -90,7 +90,7 @@ struct PanelPill: View {
                 Image(systemName: symbol)
                     .font(.system(size: 12, weight: .semibold))
                 Text(title)
-                    .font(AppDesign.Type.compactButtonMedium)
+                    .font(AppDesign.Typography.compactButtonMedium)
                     .lineLimit(1)
             }
             .foregroundColor(.white)
@@ -154,7 +154,7 @@ struct PanelRow: View {
                         .lineLimit(1)
                     if let s = subtitle, !s.isEmpty {
                         Text(s)
-                            .font(AppDesign.Type.caption)
+                            .font(AppDesign.Typography.caption)
                             .foregroundColor(C.subLabel)
                             .lineLimit(1)
                     }
@@ -194,7 +194,7 @@ struct PanelToggleRow: View {
                     .foregroundColor(C.label)
                 if let s = subtitle, !s.isEmpty {
                     Text(s)
-                        .font(AppDesign.Type.caption)
+                        .font(AppDesign.Typography.caption)
                         .foregroundColor(C.subLabel)
                 }
             }
@@ -234,7 +234,7 @@ struct PanelDangerRow: View {
                         .lineLimit(1)
                     if let subtitle, !subtitle.isEmpty {
                         Text(subtitle)
-                            .font(AppDesign.Type.caption)
+                            .font(AppDesign.Typography.caption)
                             .foregroundColor(C.subLabel)
                             .lineLimit(2)
                     }
@@ -290,7 +290,7 @@ struct PanelConfirmDialog: View {
                         .fixedSize(horizontal: false, vertical: true)
                     if let message, !message.isEmpty {
                         Text(message)
-                            .font(AppDesign.Type.body)
+                            .font(AppDesign.Typography.body)
                             .foregroundColor(C.subLabel)
                             .multilineTextAlignment(.center)
                             .fixedSize(horizontal: false, vertical: true)
@@ -305,7 +305,7 @@ struct PanelConfirmDialog: View {
                 HStack(spacing: 0) {
                     Button { onCancel() } label: {
                         Text(Tr("取消"))
-                            .font(AppDesign.Type.listTitle)
+                            .font(AppDesign.Typography.listTitle)
                             .foregroundColor(C.label)
                             .frame(maxWidth: .infinity).frame(height: AppDesign.Control.largeControlHeight)
                             .contentShape(Rectangle())
@@ -314,7 +314,7 @@ struct PanelConfirmDialog: View {
                     Rectangle().fill(C.hairline).frame(width: 0.5, height: 52)
                     Button { onOk() } label: {
                         Text(okText)
-                            .font(AppDesign.Type.button)
+                            .font(AppDesign.Typography.button)
                             .foregroundColor(okColor)
                             .frame(maxWidth: .infinity).frame(height: AppDesign.Control.largeControlHeight)
                             .contentShape(Rectangle())

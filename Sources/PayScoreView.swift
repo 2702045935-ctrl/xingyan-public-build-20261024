@@ -75,12 +75,12 @@ struct PayScoreView: View {
                                     if idx > 0 { HairLine(inset: 16) }
                                     HStack(spacing: 10) {
                                         VStack(alignment: .leading, spacing: 3) {
-                                            Text(s.name).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
+                                            Text(s.name).font(AppDesign.Typography.bodyLarge).foregroundColor(C.label)
                                             Text(s.desc ?? "").font(pf(12)).foregroundColor(C.subLabel)
                                         }
                                         Spacer(minLength: 6)
                                         if s.ok == true {
-                                            Text(Tr("可免押")).font(AppDesign.Type.compactButtonMedium).foregroundColor(C.green)
+                                            Text(Tr("可免押")).font(AppDesign.Typography.compactButtonMedium).foregroundColor(C.green)
                                         } else {
                                             Text(Tr("还差 ") + "\(Int(s.gap ?? 0))" + Tr(" 分"))
                                                 .font(pf(13)).foregroundColor(C.subLabel)
@@ -121,7 +121,7 @@ struct PayScoreView: View {
                     .padding(.horizontal, AppDesign.Spacing.xs).padding(.top, 14)
 
                     Text(data?.note ?? "")
-                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                        .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, AppDesign.Spacing.xl).padding(.top, 14)
                     Color.clear.frame(height: 26)
@@ -142,7 +142,7 @@ struct PayScoreView: View {
     private func dimRow(_ d: API.PayScoreDim) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: AppDesign.Spacing.xs) {
-                Text(d.name).font(AppDesign.Type.rowTitleMedium).foregroundColor(C.label)
+                Text(d.name).font(AppDesign.Typography.rowTitleMedium).foregroundColor(C.label)
                 if let w = d.max {
                     Text(Tr("满分 ") + "\(Int(w))").font(pf(11.5)).foregroundColor(C.subLabel)
                         .padding(.horizontal, 6).frame(height: 18)

@@ -156,12 +156,12 @@ struct DDReviewSection: View {
                 Image(systemName: "quote.bubble.fill")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(DDColor.redDeep)
-                Text(Tr("真实口碑")).font(AppDesign.Type.rowTitle).foregroundColor(DDColor.ink)
+                Text(Tr("真实口碑")).font(AppDesign.Typography.rowTitle).foregroundColor(DDColor.ink)
                 Spacer(minLength: 0)
                 if list.count > 2 {
                     Button { showAll = true } label: {
                         HStack(spacing: 2) {
-                            Text(Tr("全部 ") + String(list.count) + Tr(" 条")).font(AppDesign.Type.caption).foregroundColor(DDColor.sub)
+                            Text(Tr("全部 ") + String(list.count) + Tr(" 条")).font(AppDesign.Typography.caption).foregroundColor(DDColor.sub)
                             Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold))
                                 .foregroundColor(DDColor.sub.opacity(0.7))
                         }
@@ -239,7 +239,7 @@ struct DDReviewRow: View {
                 }
             }
             DDStars(value: Double(review.rating), size: 11)
-            Text(review.text).font(AppDesign.Type.body).foregroundColor(DDColor.ink)
+            Text(review.text).font(AppDesign.Typography.body).foregroundColor(DDColor.ink)
                 .fixedSize(horizontal: false, vertical: true)
             if !review.spec.isEmpty {
                 Text(review.spec).font(pf(11.5)).foregroundColor(DDColor.sub)
@@ -293,7 +293,7 @@ struct DDReviewListView: View {
                     HairLine()
                     if list.isEmpty {
                         Text(Tr("暂时没有这类评价"))
-                            .font(AppDesign.Type.body)
+                            .font(AppDesign.Typography.body)
                             .foregroundColor(DDColor.sub)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 44)
@@ -445,7 +445,7 @@ struct DDSpecSheet: View {
                 DDThumb(em: product.em, size: 84, radius: 10, img: product.img)
                 VStack(alignment: .leading, spacing: 6) {
                     DDPrice(value: cur?.price ?? product.price, size: 20)
-                    Text(Tr("已选：") + (cur?.name ?? "-")).font(AppDesign.Type.caption).foregroundColor(DDColor.sub)
+                    Text(Tr("已选：") + (cur?.name ?? "-")).font(AppDesign.Typography.caption).foregroundColor(DDColor.sub)
                     Text(Tr("库存 ") + String(cur?.stock ?? 0) + Tr(" 件")).font(pf(12)).foregroundColor(DDColor.sub)
                 }
                 Spacer(minLength: 0)
@@ -481,7 +481,7 @@ struct DDSpecSheet: View {
                 dismiss()
             } label: {
                 Text(Tr("确定"))
-                    .font(AppDesign.Type.rowTitle).foregroundColor(.white)
+                    .font(AppDesign.Typography.rowTitle).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(DDColor.gradBtn))
                     .padding(.horizontal, 14)
@@ -509,15 +509,15 @@ struct DDShopPageView: View {
             DDSheetBar(title: shop)
             HStack(spacing: AppDesign.Spacing.sm) {
                 Circle().fill(DDColor.redLight).frame(width: 44, height: 44)
-                    .overlay(Text("店").font(AppDesign.Type.rowTitle).foregroundColor(DDColor.red))
+                    .overlay(Text("店").font(AppDesign.Typography.rowTitle).foregroundColor(DDColor.red))
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(shop).font(AppDesign.Type.rowTitleMedium).foregroundColor(DDColor.ink)
+                    Text(shop).font(AppDesign.Typography.rowTitleMedium).foregroundColor(DDColor.ink)
                     Text(Tr("在售 ") + String(list.count) + Tr(" 件 · 48小时内发货")).font(pf(12)).foregroundColor(DDColor.sub)
                 }
                 Spacer(minLength: 0)
                 Button { store.toggleFollow(key) } label: {
                     Text(store.isFollowed(key) ? Tr("已关注") : Tr("关注"))
-                        .font(AppDesign.Type.compactButtonMedium)
+                        .font(AppDesign.Typography.compactButtonMedium)
                         .foregroundColor(store.isFollowed(key) ? DDColor.sub : DDColor.red)
                         .padding(.horizontal, 14).frame(height: AppDesign.Control.sectionHeaderHeight)
                         .background(Capsule().fill(store.isFollowed(key) ? DDColor.page : DDColor.redLight))
@@ -558,7 +558,7 @@ struct DDServiceSheet: View {
                         HStack(spacing: 10) {
                             DDThumb(em: p.em, size: 46, radius: 8, img: p.img)
                             VStack(alignment: .leading, spacing: 3) {
-                                Text(p.title).font(AppDesign.Type.body).foregroundColor(DDColor.ink).lineLimit(2)
+                                Text(p.title).font(AppDesign.Typography.body).foregroundColor(DDColor.ink).lineLimit(2)
                                 Text(p.shop).font(pf(12)).foregroundColor(DDColor.sub)
                             }
                             Spacer(minLength: 0)
@@ -603,7 +603,7 @@ struct DDServiceSheet: View {
                 }
             } label: {
                 Text(busy ? Tr("正在接入…") : Tr("转人工客服"))
-                    .font(AppDesign.Type.rowTitle).foregroundColor(.white)
+                    .font(AppDesign.Typography.rowTitle).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(DDColor.gradBtn))
                     .padding(.horizontal, 14)
@@ -682,7 +682,7 @@ struct DDShareSheet: View {
             .padding(.top, AppDesign.Spacing.md)
 
             Text(Tr("更多操作"))
-                .font(AppDesign.Type.section)
+                .font(AppDesign.Typography.section)
                 .foregroundStyle(ShareSheetTheme.secondaryInk(scheme))
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, AppDesign.Spacing.md)
@@ -714,7 +714,7 @@ struct DDShareSheet: View {
 
             Button { dismiss() } label: {
                 Text(Tr("取消"))
-                    .font(AppDesign.Type.rowTitle)
+                    .font(AppDesign.Typography.rowTitle)
                     .foregroundColor(ShareSheetTheme.ink(scheme))
                     .frame(maxWidth: .infinity)
                     .frame(height: AppDesign.Control.largeControlHeight)
@@ -807,7 +807,7 @@ struct DDOrderDetailView: View {
                                 Text(Tr("售后")).font(pf(15, .semibold)).foregroundColor(DDColor.ink)
                                 ForEach(store.afterSales(of: o.id)) { a in
                                     HStack {
-                                        Text(a.kind + " · " + a.status).font(AppDesign.Type.body).foregroundColor(DDColor.ink)
+                                        Text(a.kind + " · " + a.status).font(AppDesign.Typography.body).foregroundColor(DDColor.ink)
                                         Spacer(minLength: 0)
                                         Text("¥" + moneyFmt(a.amount)).font(pf(13)).foregroundColor(DDColor.sub)
                                     }
@@ -894,7 +894,7 @@ struct DDOrderDetailView: View {
         HStack(alignment: .top, spacing: 10) {
             DDThumb(em: o.em, size: 68, radius: 8)
             VStack(alignment: .leading, spacing: 5) {
-                Text(o.title).font(AppDesign.Type.body).foregroundColor(DDColor.ink).lineLimit(2)
+                Text(o.title).font(AppDesign.Typography.body).foregroundColor(DDColor.ink).lineLimit(2)
                 if !o.spec.isEmpty { Text(Tr("规格：") + o.spec).font(pf(12)).foregroundColor(DDColor.sub) }
                 HStack {
                     DDPrice(value: o.price, size: 15)
@@ -943,9 +943,9 @@ struct DDOrderDetailView: View {
 
     private func row(_ l: String, _ r: String, red: Bool = false) -> some View {
         HStack {
-            Text(l).font(AppDesign.Type.body).foregroundColor(DDColor.sub)
+            Text(l).font(AppDesign.Typography.body).foregroundColor(DDColor.sub)
             Spacer(minLength: 0)
-            Text(r).font(AppDesign.Type.body).foregroundColor(red ? DDColor.red : DDColor.ink)
+            Text(r).font(AppDesign.Typography.body).foregroundColor(red ? DDColor.red : DDColor.ink)
         }
     }
 
@@ -1068,8 +1068,8 @@ struct DDAfterSaleSheet: View {
                     HStack(spacing: 10) {
                         DDThumb(em: order.em, size: 52, radius: 8)
                         VStack(alignment: .leading, spacing: 3) {
-                            Text(order.title).font(AppDesign.Type.body).foregroundColor(DDColor.ink).lineLimit(2)
-                            Text(Tr("可退金额 ¥") + moneyFmt(order.total)).font(AppDesign.Type.caption).foregroundColor(DDColor.sub)
+                            Text(order.title).font(AppDesign.Typography.body).foregroundColor(DDColor.ink).lineLimit(2)
+                            Text(Tr("可退金额 ¥") + moneyFmt(order.total)).font(AppDesign.Typography.caption).foregroundColor(DDColor.sub)
                         }
                         Spacer(minLength: 0)
                     }
@@ -1134,7 +1134,7 @@ struct DDAfterSaleSheet: View {
                 dismiss()
             } label: {
                 Text(Tr("提交申请"))
-                    .font(AppDesign.Type.rowTitle).foregroundColor(.white)
+                    .font(AppDesign.Typography.rowTitle).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(DDColor.gradBtn))
                     .padding(.horizontal, 14)
@@ -1162,7 +1162,7 @@ struct DDReviewEditSheet: View {
                 VStack(spacing: 10) {
                     HStack(spacing: 10) {
                         DDThumb(em: order.em, size: 52, radius: 8)
-                        Text(order.title).font(AppDesign.Type.body).foregroundColor(DDColor.ink).lineLimit(2)
+                        Text(order.title).font(AppDesign.Typography.body).foregroundColor(DDColor.ink).lineLimit(2)
                         Spacer(minLength: 0)
                     }
                     .padding(AppDesign.Spacing.sm)
@@ -1207,7 +1207,7 @@ struct DDReviewEditSheet: View {
                 app.show(Tr("评价已发布"))
             } label: {
                 Text(Tr("发布评价"))
-                    .font(AppDesign.Type.rowTitle).foregroundColor(.white)
+                    .font(AppDesign.Typography.rowTitle).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(DDColor.gradBtn))
                     .padding(.horizontal, 14)
@@ -1303,18 +1303,18 @@ struct DDAfterSaleListView: View {
                             VStack(alignment: .leading, spacing: 6) {
                                 HStack {
                                     Text(a.kind).font(pf(14, .medium)).foregroundColor(DDColor.ink)
-                                    Text(a.status).font(AppDesign.Type.caption).foregroundColor(DDColor.red)
+                                    Text(a.status).font(AppDesign.Typography.caption).foregroundColor(DDColor.red)
                                     Spacer(minLength: 0)
                                     Text(ddTimeText(a.at)).font(pf(11.5)).foregroundColor(DDColor.sub)
                                 }
-                                Text(a.title).font(AppDesign.Type.body).foregroundColor(DDColor.ink).lineLimit(2)
+                                Text(a.title).font(AppDesign.Typography.body).foregroundColor(DDColor.ink).lineLimit(2)
                                 Text(Tr("原因：") + a.reason + (a.text.isEmpty ? "" : (" · " + a.text)))
-                                    .font(AppDesign.Type.caption).foregroundColor(DDColor.sub)
+                                    .font(AppDesign.Typography.caption).foregroundColor(DDColor.sub)
                                 HStack {
                                     Text(Tr("退款金额 ¥") + moneyFmt(a.amount)).font(pf(13)).foregroundColor(DDColor.ink)
                                     Spacer(minLength: 0)
                                     Button { store.cancelAfterSale(a.id) } label: {
-                                        Text(Tr("撤销申请")).font(AppDesign.Type.caption).foregroundColor(DDColor.sub)
+                                        Text(Tr("撤销申请")).font(AppDesign.Typography.caption).foregroundColor(DDColor.sub)
                                             .padding(.horizontal, 10).frame(height: AppDesign.Control.statusHeight)
                                             .background(Capsule().fill(DDColor.page))
                                     }
@@ -1390,7 +1390,7 @@ struct DDInvoiceSheet: View {
                 else { title = kind == 1 ? (name.isEmpty ? Tr("个人") : name) : (name + (taxNo.isEmpty ? "" : (" · " + taxNo))) }
                 dismiss()
             } label: {
-                Text(Tr("确定")).font(AppDesign.Type.rowTitle).foregroundColor(.white)
+                Text(Tr("确定")).font(AppDesign.Typography.rowTitle).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(DDColor.gradBtn))
                     .padding(.horizontal, 14)
@@ -1452,7 +1452,7 @@ struct DDShopFollowListView: View {
                                 }
                                 Spacer(minLength: 0)
                                 Button { store.toggleFollow(s.key) } label: {
-                                    Text(Tr("取关")).font(AppDesign.Type.caption).foregroundColor(DDColor.sub)
+                                    Text(Tr("取关")).font(AppDesign.Typography.caption).foregroundColor(DDColor.sub)
                                         .padding(.horizontal, 10).frame(height: AppDesign.Control.statusHeight)
                                         .background(Capsule().fill(DDColor.page))
                                 }
@@ -1462,7 +1462,7 @@ struct DDShopFollowListView: View {
                                         onOpen(first)
                                     }
                                 } label: {
-                                    Text(Tr("进店")).font(AppDesign.Type.caption).foregroundColor(DDColor.ink)
+                                    Text(Tr("进店")).font(AppDesign.Typography.caption).foregroundColor(DDColor.ink)
                                         .padding(.horizontal, 10).frame(height: AppDesign.Control.statusHeight)
                                         .background(Capsule().fill(DDColor.page))
                                 }

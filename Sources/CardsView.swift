@@ -67,7 +67,7 @@ struct CardsView: View {
                     } else if cards.isEmpty {
                         Text(Tr("还没有卡券")).font(pf(14)).foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity).padding(.top, 40)
-                        Text(Tr("商家发卡、别人赠送之后会出现在这里")).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                        Text(Tr("商家发卡、别人赠送之后会出现在这里")).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity).padding(.top, 6)
                         if !diagNote.isEmpty {
                             Text(diagNote).font(pf(11.5)).foregroundColor(C.subLabel)
@@ -128,7 +128,7 @@ struct CardsView: View {
                         .frame(width: 44, height: 44)
                         VStack(alignment: .leading, spacing: 3) {
                             Text(c.title ?? "").font(pf(16)).foregroundColor(C.label).lineLimit(1)
-                            Text(subText(c)).font(AppDesign.Type.caption).foregroundColor(C.subLabel).lineLimit(1)
+                            Text(subText(c)).font(AppDesign.Typography.caption).foregroundColor(C.subLabel).lineLimit(1)
                         }
                         Spacer(minLength: 6)
                         Chevron(size: 9, line: 1.6).padding(.trailing, 3)
@@ -150,7 +150,7 @@ struct CardsView: View {
                 .background(PayVisual.gold.opacity(0.10), in: Circle())
 
             Text(Tr("点后面露出的卡片，可以先把它切到前面再查看"))
-                .font(AppDesign.Type.caption)
+                .font(AppDesign.Typography.caption)
                 .foregroundStyle(C.label)
                 .lineLimit(2)
 
@@ -262,7 +262,7 @@ struct CardsView: View {
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(card.kindName)
-                            .font(AppDesign.Type.section)
+                            .font(AppDesign.Typography.section)
                             .foregroundStyle(ink.opacity(0.74))
                         Text(card.title ?? "")
                             .font(pf(19, .semibold))
@@ -289,7 +289,7 @@ struct CardsView: View {
                         .monospacedDigit()
                 } else if let sub = card.sub, !sub.isEmpty {
                     Text(sub)
-                        .font(AppDesign.Type.rowTitle)
+                        .font(AppDesign.Typography.rowTitle)
                         .foregroundStyle(ink)
                         .lineLimit(1)
                     }

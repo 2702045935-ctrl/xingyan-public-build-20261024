@@ -137,7 +137,7 @@ struct ShakePageView: View {
                     shake()
                 } label: {
                     Text(busy ? "正在找…" : (result == nil ? "摇 一 摇" : "再摇一次"))
-                        .font(AppDesign.Type.rowTitle)
+                        .font(AppDesign.Typography.rowTitle)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 46)

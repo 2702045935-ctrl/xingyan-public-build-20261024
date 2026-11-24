@@ -67,7 +67,7 @@ struct AliPayWaitingSheet: View {
                 .foregroundColor(aliBlue)
                 .padding(.top, AppDesign.Spacing.xxs)
             Text(Tr("支付宝付款"))
-                .font(AppDesign.Type.rowTitle).foregroundColor(C.label).padding(.top, 10)
+                .font(AppDesign.Typography.rowTitle).foregroundColor(C.label).padding(.top, 10)
             Text("¥" + moneyFmt(amount))
                 .font(pfMoney(32, .medium)).foregroundColor(C.label).padding(.top, 6)
             Text(orderId)
@@ -78,7 +78,7 @@ struct AliPayWaitingSheet: View {
                 .padding(.horizontal, AppDesign.Spacing.xl).padding(.top, 14)
             Button { check() } label: {
                 Text(checking ? Tr("查询中…") : Tr("我已付好，立刻查一下"))
-                    .font(AppDesign.Type.rowTitleMedium).foregroundColor(.white)
+                    .font(AppDesign.Typography.rowTitleMedium).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous).fill(aliBlue))
             }

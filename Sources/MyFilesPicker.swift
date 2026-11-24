@@ -124,7 +124,7 @@ struct MyFilesPickerView: View {
                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous).fill(fileColor(f.ext)))
             VStack(alignment: .leading, spacing: 3) {
                 Text(f.fileName)
-                    .font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
+                    .font(AppDesign.Typography.bodyLarge).foregroundColor(C.label)
                     .lineLimit(2).multilineTextAlignment(.leading)
                 HStack(spacing: 6) {
                     Text(sizeText(f.bytes ?? 0)).font(pf(12)).foregroundColor(C.subLabel)

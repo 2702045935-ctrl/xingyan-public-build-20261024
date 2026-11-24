@@ -97,7 +97,7 @@ struct FreezeAccountSheet: View {
             }
             Button { Task { await doFreeze() } } label: {
                 Text(busy ? Tr("正在冻结…") : Tr("冻结账号"))
-                    .font(AppDesign.Type.rowTitle).foregroundColor(.white)
+                    .font(AppDesign.Typography.rowTitle).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay)
                         .fill(confirm ? C.red : C.subLabel))
@@ -164,7 +164,7 @@ struct UnfreezeSheet: View {
             }
             Button { Task { await submit() } } label: {
                 Text(busy ? Tr("正在解冻…") : Tr("解冻并登录"))
-                    .font(AppDesign.Type.rowTitle).foregroundColor(.white)
+                    .font(AppDesign.Typography.rowTitle).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(C.green))
                     .padding(.horizontal, AppDesign.Spacing.md)

@@ -508,7 +508,7 @@ struct DDMallFloor: View {
                 Button { onCity() } label: {
                     HStack(spacing: 3) {
                         Image(systemName: "location.fill").font(.system(size: 11, weight: .semibold))
-                        Text(city.display).font(AppDesign.Type.bodyMedium).lineLimit(1)
+                        Text(city.display).font(AppDesign.Typography.bodyMedium).lineLimit(1)
                         Image(systemName: "chevron.down").font(.system(size: 9, weight: .bold))
                     }
                     .foregroundColor(L2.ink)
@@ -558,7 +558,7 @@ struct DDMallFloor: View {
                         Spacer(minLength: 0)
                         Button { onOrders(0) } label: {
                             HStack(spacing: 2) {
-                                Text(Tr("全部订单")).font(AppDesign.Type.caption)
+                                Text(Tr("全部订单")).font(AppDesign.Typography.caption)
                                 Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
                             }
                             .foregroundColor(L2.inkSoft)
@@ -649,7 +649,7 @@ struct DDMallFloor: View {
                         Text(Tr("星言商城")).font(pf(15, .medium))
                         if pendingPay + shipping + receiving > 0 {
                             Text(String(pendingPay + shipping + receiving))
-                                .font(AppDesign.Type.captionMedium)
+                                .font(AppDesign.Typography.captionMedium)
                                 .foregroundColor(L2.badgeInk)
                                 .padding(.horizontal, 6).frame(height: 18)
                                 .background(Capsule().fill(L2.accent))
@@ -756,7 +756,7 @@ struct DDMallFloor: View {
                             .offset(x: 8, y: -4)
                     }
                 }
-                Text(title).font(AppDesign.Type.caption).foregroundColor(l.ink.opacity(0.78))
+                Text(title).font(AppDesign.Typography.caption).foregroundColor(l.ink.opacity(0.78))
             }
             .frame(maxWidth: .infinity).contentShape(Rectangle())
         }

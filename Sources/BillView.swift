@@ -194,7 +194,7 @@ struct BillDetailView: View {
                     .font(pf(17, .semibold))
                     .foregroundColor(C.label)
                 Text(TimeFmt.bill(t.createdAt))
-                    .font(AppDesign.Type.caption)
+                    .font(AppDesign.Typography.caption)
                     .foregroundColor(PayVisual.secondaryInk)
             }
             Spacer(minLength: 8)
@@ -209,7 +209,7 @@ struct BillDetailView: View {
         PayGroupCard {
             VStack(spacing: 10) {
                 Text(t.statusText(mine: mine))
-                    .font(AppDesign.Type.compactButton)
+                    .font(AppDesign.Typography.compactButton)
                     .foregroundColor(PayVisual.secondaryInk)
                 MoneyLabel(text: "¥" + money(t.amount), size: 46, curSize: 30,
                            topAlign: true, color: C.label, weight: .semibold,
@@ -398,7 +398,7 @@ struct BillReceiptView: View {
                     PayGroupCard {
                         VStack(spacing: AppDesign.Spacing.xs) {
                             Text(info.statusText(mine: mine))
-                                .font(AppDesign.Type.compactButton)
+                                .font(AppDesign.Typography.compactButton)
                                 .foregroundColor(PayVisual.secondaryInk)
                             MoneyLabel(text: "¥" + money(info.amount), size: 42, curSize: 28,
                                        topAlign: true, color: C.label, weight: .semibold,

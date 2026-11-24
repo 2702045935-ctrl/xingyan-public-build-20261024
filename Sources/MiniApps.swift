@@ -596,7 +596,7 @@ struct MiniAppRuntimeView: View {
             } else if loading {
                 VStack(spacing: 10) {
                     ProgressView().tint(.white)
-                    Text(Tr("正在准备…")).font(AppDesign.Type.body).foregroundColor(.white.opacity(0.7))
+                    Text(Tr("正在准备…")).font(AppDesign.Typography.body).foregroundColor(.white.opacity(0.7))
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {

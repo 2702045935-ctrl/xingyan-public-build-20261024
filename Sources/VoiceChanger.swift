@@ -196,7 +196,7 @@ struct VoiceChangerView: View {
                                 HStack(spacing: AppDesign.Spacing.sm) {
                                     VStack(alignment: .leading, spacing: 3) {
                                         Text(e.name).font(pf(17)).foregroundColor(C.label)
-                                        Text(e.hint).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                                        Text(e.hint).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                                     }
                                     Spacer(minLength: 8)
                                     if store.presetId == e.id {

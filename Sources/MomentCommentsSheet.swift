@@ -178,7 +178,7 @@ struct MomentCommentsSheet: View {
                         .font(pf(18, .semibold))
                         .foregroundColor(C.label)
                     Text("\(comments.count)")
-                        .font(AppDesign.Type.sectionMedium)
+                        .font(AppDesign.Typography.sectionMedium)
                         .foregroundColor(C.subLabel)
                 }
                 Spacer(minLength: 8)
@@ -213,13 +213,13 @@ struct MomentCommentsSheet: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(live.author?.name ?? "")
-                    .font(AppDesign.Type.captionStrong)
+                    .font(AppDesign.Typography.captionStrong)
                     .foregroundColor(C.label.opacity(0.76))
                     .lineLimit(1)
                 Text(live.content?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
                      ? (live.content ?? "")
                      : Tr("分享了动态"))
-                    .font(AppDesign.Type.body)
+                    .font(AppDesign.Typography.body)
                     .foregroundColor(C.label)
                     .lineLimit(2)
                 Text(TimeFmt.ago(live.createdAt))
@@ -380,7 +380,7 @@ struct MomentCommentsSheet: View {
             Avatar(path: live.author?.avatarPath ?? "", size: 32, radius: 10)
             VStack(alignment: .leading, spacing: 2) {
                 Text(live.author?.name ?? "")
-                    .font(AppDesign.Type.captionMedium)
+                    .font(AppDesign.Typography.captionMedium)
                     .foregroundColor(C.label)
                     .lineLimit(1)
                 Text((live.location?.isEmpty == false ? ((live.location ?? "") + "  ·  ") : "")
@@ -458,7 +458,7 @@ struct MomentCommentsSheet: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 6) {
                     Text(item.nickname ?? "")
-                        .font(AppDesign.Type.bodyMedium)
+                        .font(AppDesign.Typography.bodyMedium)
                         .foregroundColor(C.subLabel)
                         .lineLimit(1)
                     if isAuthor {
@@ -778,7 +778,7 @@ struct MomentCommentsSheet: View {
         let path = avatar(for: item.userId ?? "")
         if path.isEmpty {
             Text(String((item.nickname ?? Tr("友")).prefix(1)))
-                .font(AppDesign.Type.sectionMedium)
+                .font(AppDesign.Typography.sectionMedium)
                 .foregroundColor(Color.dyn(0x676C68, 0xD6DAD7))
                 .frame(width: 34, height: 34)
                 .background(Circle().fill(Color.dyn(0xF0F1EE, 0x2B2B2B)))
@@ -821,7 +821,7 @@ private struct SwipeDeleteCommentRow<Content: View>: View {
                     Image(systemName: "trash.fill")
                         .font(.system(size: 16, weight: .semibold))
                     Text(Tr("删除"))
-                        .font(AppDesign.Type.sectionMedium)
+                        .font(AppDesign.Typography.sectionMedium)
                 }
                 .foregroundColor(.white)
                 .frame(width: actionWidth)
@@ -917,7 +917,7 @@ struct MomentImageActions: View {
             VStack(spacing: 7) {
                 Image(systemName: symbol)
                     .font(.system(size: 21, weight: .medium))
-                Text(title).font(AppDesign.Type.captionMedium)
+                Text(title).font(AppDesign.Typography.captionMedium)
             }
             .foregroundColor(C.label)
             .frame(maxWidth: .infinity)

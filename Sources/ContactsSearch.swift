@@ -133,7 +133,7 @@ struct ContactsSearchView: View {
                             VStack(spacing: AppDesign.Spacing.xs) {
                                 SVGIcon(markup: I.searchBig, size: 42, color: C.subLabel)
                                 Text(Tr("搜索联系人 / 群聊")).font(pf(14)).foregroundColor(C.subLabel)
-                                Text(Tr("备注、昵称、账号、拼音首字母都能搜")).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                                Text(Tr("备注、昵称、账号、拼音首字母都能搜")).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.top, 60)

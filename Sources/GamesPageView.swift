@@ -329,7 +329,7 @@ struct GamesPageView: View {
                            startPoint: .center, endPoint: .bottom)
             VStack(alignment: .leading, spacing: 3) {
                 Text(g.name).font(pf(19, .semibold)).foregroundColor(.white).lineLimit(1)
-                Text(g.desc ?? "").font(AppDesign.Type.caption).foregroundColor(.white.opacity(0.85))
+                Text(g.desc ?? "").font(AppDesign.Typography.caption).foregroundColor(.white.opacity(0.85))
                     .lineLimit(1)
             }
             .padding(.horizontal, 14)
@@ -356,7 +356,7 @@ struct GamesPageView: View {
     private var recentRow: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
-                Text(Tr("最近在玩")).font(AppDesign.Type.rowTitle).foregroundColor(ink)
+                Text(Tr("最近在玩")).font(AppDesign.Typography.rowTitle).foregroundColor(ink)
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, AppDesign.Spacing.md)
@@ -367,7 +367,7 @@ struct GamesPageView: View {
                         Button { play(g) } label: {
                             HStack(spacing: AppDesign.Spacing.xs) {
                                 gameCircle(g, size: 30)
-                                Text(g.name).font(AppDesign.Type.captionMedium).foregroundColor(ink)
+                                Text(g.name).font(AppDesign.Typography.captionMedium).foregroundColor(ink)
                                     .lineLimit(1).frame(maxWidth: 112, alignment: .leading)
                             }
                             .padding(.leading, 6)
@@ -518,8 +518,8 @@ struct GamesPageView: View {
                     .frame(width: 72, height: 72)
 
                     VStack(alignment: .leading, spacing: 5) {
-                        Text(g.name).font(AppDesign.Type.rowTitle).foregroundColor(ink).lineLimit(1)
-                        Text(g.desc ?? "").font(AppDesign.Type.caption).foregroundColor(subInk)
+                        Text(g.name).font(AppDesign.Typography.rowTitle).foregroundColor(ink).lineLimit(1)
+                        Text(g.desc ?? "").font(AppDesign.Typography.caption).foregroundColor(subInk)
                             .lineLimit(2).fixedSize(horizontal: false, vertical: true)
                     }
                     Spacer(minLength: 0)
@@ -553,7 +553,7 @@ struct GamesPageView: View {
             .buttonStyle(.plain)
             Button { play(g) } label: {
                 Text(g.actionText)
-                    .font(AppDesign.Type.bodyMedium)
+                    .font(AppDesign.Typography.bodyMedium)
 
                     .foregroundColor(Color.dyn(0x111111, 0x111111))
                     .padding(.horizontal, 14)
@@ -673,7 +673,7 @@ struct GameWebPage: View {
                 } else if loading {
                     VStack(spacing: 10) {
                         ProgressView().tint(.white)
-                        Text(Tr("正在准备游戏…")).font(AppDesign.Type.body).foregroundColor(.white.opacity(0.7))
+                        Text(Tr("正在准备游戏…")).font(AppDesign.Typography.body).foregroundColor(.white.opacity(0.7))
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
@@ -747,7 +747,7 @@ struct GameWebPage: View {
                     Text(Tr("四国军棋 · 棋牌大厅")).font(pf(17, .semibold)).foregroundColor(.white)
                     Text(myRoom.isEmpty ? Tr("点一张桌子坐下，缺的位置由电脑顶上")
                                         : (Tr("你在 ") + myRoom + Tr(" 号桌（") + "\(mySeat + 1)" + Tr(" 号位）")))
-                        .font(AppDesign.Type.caption).foregroundColor(.white.opacity(0.6))
+                        .font(AppDesign.Typography.caption).foregroundColor(.white.opacity(0.6))
 
                     if !myRoom.isEmpty {
                         roomCard
@@ -774,7 +774,7 @@ struct GameWebPage: View {
                         }
                     }
                     if !lobbyMsg.isEmpty {
-                        Text(lobbyMsg).font(AppDesign.Type.caption).foregroundColor(.white.opacity(0.7))
+                        Text(lobbyMsg).font(AppDesign.Typography.caption).foregroundColor(.white.opacity(0.7))
                     }
                     Spacer().frame(height: AppDesign.Control.compactBadgeHeight)
                 }
@@ -1003,7 +1003,7 @@ struct GamesPageAdminSheet: View {
                             Button {
                                 if let i = picked.firstIndex(of: g.id) { picked.remove(at: i) } else { picked.append(g.id) }
                             } label: {
-                                Text(g.name).font(AppDesign.Type.caption)
+                                Text(g.name).font(AppDesign.Typography.caption)
                                     .foregroundColor(picked.contains(g.id) ? .white : C.label)
                                     .lineLimit(1)
                                     .padding(.horizontal, AppDesign.Spacing.xs).frame(height: AppDesign.Control.sectionHeaderHeight)
@@ -1038,7 +1038,7 @@ struct GamesPageAdminSheet: View {
                             dismiss()
                         }
                     } label: {
-                        Text(busy ? Tr("保存中…") : Tr("保存")).font(AppDesign.Type.rowTitle).foregroundColor(.white)
+                        Text(busy ? Tr("保存中…") : Tr("保存")).font(AppDesign.Typography.rowTitle).foregroundColor(.white)
                             .frame(maxWidth: .infinity).frame(height: 46)
                             .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous)
                                 .fill(C.green.opacity(busy ? 0.5 : 1)))

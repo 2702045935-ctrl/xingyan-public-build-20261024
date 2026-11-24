@@ -109,7 +109,7 @@ struct MomentNoticesView: View {
                     }
                     if let p = n.preview, !p.isEmpty {
                         Text(p)
-                            .font(AppDesign.Type.caption)
+                            .font(AppDesign.Typography.caption)
                             .foregroundColor(C.subLabel)
                             .lineLimit(2)
                             .multilineTextAlignment(.leading)

@@ -16,7 +16,7 @@ struct MallHiddenView: View {
                                 .font(.system(size: 30)).foregroundColor(C.subLabel)
                             Text(Tr("没有隐藏过任何东西")).font(pf(15)).foregroundColor(C.label)
                             Text(Tr("在商城里长按商品卡可以「不感兴趣」，点卡片右上角的 × 可以关掉广告。"))
-                                .font(AppDesign.Type.caption).foregroundColor(C.subLabel).multilineTextAlignment(.center)
+                                .font(AppDesign.Typography.caption).foregroundColor(C.subLabel).multilineTextAlignment(.center)
                         }
                         .frame(maxWidth: .infinity).padding(.vertical, 40).padding(.horizontal, 30)
                     } else {
@@ -29,7 +29,7 @@ struct MallHiddenView: View {
                             app.show(Tr("已经全部恢复，商城会重新推荐"))
                         } label: {
                             Text(Tr("全部恢复"))
-                                .font(AppDesign.Type.rowTitleMedium).foregroundColor(.white)
+                                .font(AppDesign.Typography.rowTitleMedium).foregroundColor(.white)
                                 .frame(maxWidth: .infinity).frame(height: 46)
                                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(C.green))
                         }
@@ -56,12 +56,12 @@ struct MallHiddenView: View {
                 HStack(spacing: AppDesign.Spacing.sm) {
                     DDThumb(em: p.em, size: 46, radius: 8, img: p.img)
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(p.title).font(AppDesign.Type.body).foregroundColor(C.label).lineLimit(2)
-                        Text("¥" + moneyFmt(p.price)).font(AppDesign.Type.caption).foregroundColor(DDColor.red)
+                        Text(p.title).font(AppDesign.Typography.body).foregroundColor(C.label).lineLimit(2)
+                        Text("¥" + moneyFmt(p.price)).font(AppDesign.Typography.caption).foregroundColor(DDColor.red)
                     }
                     Spacer(minLength: 0)
                     Button { store.restoreDisliked(p.id); app.show(Tr("已恢复")) } label: {
-                        Text(Tr("恢复")).font(AppDesign.Type.compactButtonMedium).foregroundColor(.white)
+                        Text(Tr("恢复")).font(AppDesign.Typography.compactButtonMedium).foregroundColor(.white)
                             .padding(.horizontal, 14).frame(height: AppDesign.Control.smallButtonHeight)
                             .background(Capsule().fill(C.green))
                     }
@@ -82,7 +82,7 @@ struct MallHiddenView: View {
                     Text(Tr(c)).font(pf(14.5)).foregroundColor(C.label)
                     Spacer(minLength: 0)
                     Button { store.unmuteCate(c); app.show(Tr("已恢复")) } label: {
-                        Text(Tr("恢复")).font(AppDesign.Type.compactButtonMedium).foregroundColor(.white)
+                        Text(Tr("恢复")).font(AppDesign.Typography.compactButtonMedium).foregroundColor(.white)
                             .padding(.horizontal, 14).frame(height: AppDesign.Control.smallButtonHeight)
                             .background(Capsule().fill(C.green))
                     }
@@ -104,7 +104,7 @@ struct MallHiddenView: View {
                         .font(pf(13)).foregroundColor(C.label).lineLimit(1)
                     Spacer(minLength: 0)
                     Button { store.unhideAd(key); app.show(Tr("已恢复，这条广告会重新出现")) } label: {
-                        Text(Tr("恢复")).font(AppDesign.Type.compactButtonMedium).foregroundColor(.white)
+                        Text(Tr("恢复")).font(AppDesign.Typography.compactButtonMedium).foregroundColor(.white)
                             .padding(.horizontal, 14).frame(height: AppDesign.Control.smallButtonHeight)
                             .background(Capsule().fill(C.green))
                     }
@@ -118,7 +118,7 @@ struct MallHiddenView: View {
 
     private func head(_ t: String, sub: String) -> some View {
         HStack(spacing: AppDesign.Spacing.xs) {
-            Text(t).font(AppDesign.Type.rowTitleMedium).foregroundColor(C.label)
+            Text(t).font(AppDesign.Typography.rowTitleMedium).foregroundColor(C.label)
             Text(sub).font(pf(12)).foregroundColor(C.subLabel)
             Spacer(minLength: 0)
         }

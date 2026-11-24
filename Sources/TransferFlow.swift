@@ -219,7 +219,7 @@ struct TransferView: View {
             HStack(spacing: L.v(10, 3.2, 13)) {
                 VStack(alignment: .leading, spacing: 1) {
                     Text(Lang.isEnglish ? "Transfer to \(peerTitle)" : "转账给 \(peerTitle)")
-                        .font(AppDesign.Type.title)
+                        .font(AppDesign.Typography.title)
                         .foregroundColor(C.label)
                     Text(Lang.isEnglish ? "Account: \(chat.name)" : "账号：\(chat.name)")
                         .font(pf(12))
@@ -287,7 +287,7 @@ struct TransferView: View {
                 noteEditing = true
             } label: {
                 Text(note.isEmpty ? Tr("添加转账说明") : note)
-                    .font(AppDesign.Type.listTitle)
+                    .font(AppDesign.Typography.listTitle)
                     .foregroundColor(Color.dyn(0x1E4FA3, 0x6F9BE0))
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.top, L.v(10, 3.4, 16))
@@ -445,7 +445,7 @@ struct TransferView: View {
     private var paySheetHeader: some View {
         ZStack {
             Text(Tr("确认转账"))
-                .font(AppDesign.Type.button)
+                .font(AppDesign.Typography.button)
                 .foregroundStyle(C.label)
 
             HStack {
@@ -485,7 +485,7 @@ struct TransferView: View {
                 .accessibilityLabel(Tr("转账金额") + " " + money(amount))
 
             Text(methodName)
-                .font(AppDesign.Type.captionMedium)
+                .font(AppDesign.Typography.captionMedium)
                 .foregroundStyle(PayVisual.secondaryInk)
         }
         .frame(maxWidth: .infinity)
@@ -506,7 +506,7 @@ struct TransferView: View {
 
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(methodName)
-                                    .font(AppDesign.Type.rowTitle)
+                                    .font(AppDesign.Typography.rowTitle)
                                     .foregroundStyle(C.label)
                                 Text(methodSub)
                                     .font(pf(12))
@@ -515,7 +515,7 @@ struct TransferView: View {
                             }
                             Spacer(minLength: 6)
                             Text(Tr("更改"))
-                                .font(AppDesign.Type.compactButtonMedium)
+                                .font(AppDesign.Typography.compactButtonMedium)
                                 .foregroundStyle(PayVisual.tint)
                             Image(systemName: "chevron.right")
                                 .font(.system(size: 10, weight: .bold))
@@ -594,11 +594,11 @@ struct TransferView: View {
     private func checkoutDetailRow(_ title: String, _ value: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 14) {
             Text(title)
-                .font(AppDesign.Type.body)
+                .font(AppDesign.Typography.body)
                 .foregroundStyle(PayVisual.secondaryInk)
             Spacer(minLength: 12)
             Text(value)
-                .font(AppDesign.Type.bodyMedium)
+                .font(AppDesign.Typography.bodyMedium)
                 .foregroundStyle(C.label)
                 .multilineTextAlignment(.trailing)
                 .lineLimit(2)
@@ -617,7 +617,7 @@ struct TransferView: View {
                     Image(systemName: "faceid")
                         .font(.system(size: 20, weight: .semibold))
                     Text(Tr("使用面容 ID 确认"))
-                        .font(AppDesign.Type.button)
+                        .font(AppDesign.Typography.button)
                 }
                 .foregroundStyle(C.cardBg)
                 .frame(maxWidth: .infinity)
@@ -642,7 +642,7 @@ struct TransferView: View {
                 }
             } label: {
                 Text(Tr("改用支付密码"))
-                    .font(AppDesign.Type.bodyMedium)
+                    .font(AppDesign.Typography.bodyMedium)
                     .foregroundStyle(PayVisual.tint)
                     .frame(height: AppDesign.Control.smallButtonHeight)
             }
@@ -656,7 +656,7 @@ struct TransferView: View {
                         Image(systemName: "plus.circle.fill")
                             .font(.system(size: 13, weight: .semibold))
                         Text(Tr("充值余额"))
-                            .font(AppDesign.Type.compactButton)
+                            .font(AppDesign.Typography.compactButton)
                     }
                     .foregroundStyle(C.link)
                     .padding(.horizontal, AppDesign.Spacing.sm)
@@ -676,7 +676,7 @@ struct TransferView: View {
                     Image(systemName: "lock.fill")
                         .font(.system(size: 12, weight: .semibold))
                     Text(Tr("输入 6 位支付密码完成这笔转账"))
-                        .font(AppDesign.Type.compactButtonMedium)
+                        .font(AppDesign.Typography.compactButtonMedium)
                 }
                 .foregroundStyle(PayVisual.secondaryInk)
 
@@ -687,7 +687,7 @@ struct TransferView: View {
 
                 if let hint = payHint {
                     Text(hint)
-                        .font(AppDesign.Type.body)
+                        .font(AppDesign.Typography.body)
                         .foregroundStyle(PayVisual.danger)
                         .multilineTextAlignment(.center)
                 } else if !hasPwd {
@@ -718,7 +718,7 @@ struct TransferView: View {
                             Image(systemName: "faceid")
                             Text(Tr("改用面容 ID"))
                         }
-                        .font(AppDesign.Type.compactButtonMedium)
+                        .font(AppDesign.Typography.compactButtonMedium)
                         .foregroundStyle(PayVisual.tint)
                     }
                     .buttonStyle(.plain)
@@ -866,7 +866,7 @@ struct TransferView: View {
                         .font(pf(15, .semibold))
                         .foregroundColor(C.label)
                     Text(sub)
-                        .font(AppDesign.Type.caption)
+                        .font(AppDesign.Typography.caption)
                         .foregroundColor(PayVisual.secondaryInk)
                 }
                 Spacer(minLength: 0)
@@ -1005,7 +1005,7 @@ struct TransferView: View {
                     showBills = true
                 } label: {
                     Text(Tr("查看账单"))
-                        .font(AppDesign.Type.rowTitle)
+                        .font(AppDesign.Typography.rowTitle)
                         .foregroundStyle(C.label)
                         .frame(maxWidth: .infinity)
                         .frame(height: AppDesign.Control.buttonHeight)

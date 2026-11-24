@@ -120,7 +120,7 @@ struct DDVipPageView: View {
                             Circle().fill(Color(hex: 0xFFF3D6)).frame(width: 38, height: 38)
                             Image(systemName: r.0).font(.system(size: 16)).foregroundColor(Color(hex: 0xB8860B))
                         }
-                        Text(Tr(r.1)).font(AppDesign.Type.captionMedium).foregroundColor(DDColor.ink).lineLimit(1)
+                        Text(Tr(r.1)).font(AppDesign.Typography.captionMedium).foregroundColor(DDColor.ink).lineLimit(1)
                         Text(Tr(r.2)).font(pf(10.5)).foregroundColor(DDColor.sub)
                             .lineLimit(1).minimumScaleFactor(0.8)
                     }
@@ -142,7 +142,7 @@ struct DDVipPageView: View {
                 ForEach(plans) { p in
                     Button { picked = p.months } label: {
                         VStack(spacing: AppDesign.Spacing.xxs) {
-                            Text(Tr(p.title)).font(AppDesign.Type.bodyMedium).foregroundColor(DDColor.ink)
+                            Text(Tr(p.title)).font(AppDesign.Typography.bodyMedium).foregroundColor(DDColor.ink)
                             HStack(alignment: .firstTextBaseline, spacing: 1) {
                                 Text("¥").font(pf(11, .semibold)).foregroundColor(DDColor.red)
                                 Text(moneyFmt(p.price)).font(pf(18, .bold)).foregroundColor(DDColor.red)
@@ -164,7 +164,7 @@ struct DDVipPageView: View {
 
             Button { confirm = true } label: {
                 Text((store.isVip ? Tr("立即续费") : Tr("立即开通")) + " · " + Tr(plan.title))
-                    .font(AppDesign.Type.rowTitle).foregroundColor(Color(hex: 0x3A2B18))
+                    .font(AppDesign.Typography.rowTitle).foregroundColor(Color(hex: 0x3A2B18))
                     .frame(maxWidth: .infinity).frame(height: AppDesign.Control.compactHeight)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.panel)
                         .fill(LinearGradient(colors: [AppPalette.warmHighlight, Color(hex: 0xD9A94A)],
@@ -230,7 +230,7 @@ struct DDVipPageView: View {
 
     private var noteCard: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(Tr("会员说明")).font(AppDesign.Type.bodyStrong).foregroundColor(DDColor.ink)
+            Text(Tr("会员说明")).font(AppDesign.Typography.bodyStrong).foregroundColor(DDColor.ink)
             Text(Tr("· 会员价 = 商品价 × 95%，结算页会显示「会员立减」。"))
             Text(Tr("· 开通记录只存在这台手机上（换手机要重新开通）。"))
             Text(Tr("· 这是演示环境：不接支付，不会真的扣任何钱。"))
@@ -265,7 +265,7 @@ struct DDVipBanner: View {
                 }
                 Spacer(minLength: 0)
                 Text(store.isVip ? Tr("查看") : Tr("去开通"))
-                    .font(AppDesign.Type.captionMedium).foregroundColor(Color(hex: 0x5A3E14))
+                    .font(AppDesign.Typography.captionMedium).foregroundColor(Color(hex: 0x5A3E14))
                     .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.statusHeight)
                     .background(Capsule().fill(AppPalette.warmHighlight))
             }

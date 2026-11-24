@@ -211,7 +211,7 @@ struct GestureLockView: View {
                     Text(error).font(pf(13)).foregroundColor(C.red)
                 } else {
                     Text(Tr("手势只存在这台手机上，不上传服务器"))
-                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                        .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                 }
             }
 
@@ -247,12 +247,12 @@ struct GestureLockView: View {
 
             if fails > 0 && !lockedOut {
                 Text(Tr("还可以试 ") + String(triesLeft) + Tr(" 次"))
-                    .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                    .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                     .padding(.top, AppDesign.Spacing.sm)
             }
             if lockedOut {
                 Text(Tr("试得太多次了：用「取消」退出去重进，或者用面容/指纹解锁"))
-                    .font(AppDesign.Type.caption).foregroundColor(C.red)
+                    .font(AppDesign.Typography.caption).foregroundColor(C.red)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 30).padding(.top, AppDesign.Spacing.sm)
             }
@@ -379,7 +379,7 @@ struct GestureSetupView: View {
                         Text(error).font(pf(13)).foregroundColor(C.red)
                     } else {
                         Text(Tr("至少连 4 个点，手势只存在这台手机上"))
-                            .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                            .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                     }
                     Spacer(minLength: 6)
                     PatternPad(picked: $picked, box: 268) { done() }
@@ -421,8 +421,8 @@ struct GestureSetupView: View {
                     .font(.system(size: 22, weight: .semibold))
                     .foregroundColor(C.green)
             }
-            Text(Tr("手势密码已开启")).font(AppDesign.Type.rowTitle).foregroundColor(C.label)
-            Text(Tr("进「钱包 / 零钱」要先画一遍；也可以按面容解锁")).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+            Text(Tr("手势密码已开启")).font(AppDesign.Typography.rowTitle).foregroundColor(C.label)
+            Text(Tr("进「钱包 / 零钱」要先画一遍；也可以按面容解锁")).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 22)
@@ -450,7 +450,7 @@ struct GestureSetupView: View {
                         }
                     }
                     Text(Tr(["画一遍", "再画一遍", "完成"][i]))
-                        .font(AppDesign.Type.caption)
+                        .font(AppDesign.Typography.caption)
                         .foregroundColor(i == stageIndex ? C.label : C.subLabel)
                     if i < 2 {
                         Rectangle()

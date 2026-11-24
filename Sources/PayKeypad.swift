@@ -181,7 +181,7 @@ struct PayBusyOverlay: View {
             VStack(spacing: 14) {
                 PayDots()
                 Text(text)
-                    .font(AppDesign.Type.bodyMedium)
+                    .font(AppDesign.Typography.bodyMedium)
                     .foregroundColor(.white)
             }
             .frame(width: 118, height: 118)

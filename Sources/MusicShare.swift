@@ -420,7 +420,7 @@ struct MusicLyricsView: View {
                         .font(.system(size: 30)).foregroundColor(C.subLabel)
                     Text(Tr("这首歌还没有歌词")).font(pf(15)).foregroundColor(C.label)
                     Text(Tr("后台「音乐（听一听）」里，每首歌后面点「歌词」就能贴上去"))
-                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                        .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                         .multilineTextAlignment(.center)
                 }
                 .padding(.horizontal, 30)
@@ -3152,7 +3152,7 @@ struct ListenView: View {
                                     ForEach(Array(artists.enumerated()), id: \.offset) { _, a in
                                         VStack(spacing: 6) {
                                             MusicCover(path: a.1, size: 58, radius: 29)
-                                            Text(a.0).font(AppDesign.Type.caption).foregroundColor(C.label).lineLimit(1)
+                                            Text(a.0).font(AppDesign.Typography.caption).foregroundColor(C.label).lineLimit(1)
                                                 .frame(width: 68)
                                         }
                                     }
@@ -3185,7 +3185,7 @@ struct ListenView: View {
                             VStack(spacing: AppDesign.Spacing.xs) {
                                 Text(Tr("朋友推荐还没有内容")).font(pf(14)).foregroundColor(C.subLabel)
                                 Text(Tr("你在这一页放一首歌，好友的「朋友推荐」里就会看到你在听什么；\n反过来，好友在听的时候这里也会出现。"))
-                                    .font(AppDesign.Type.caption).foregroundColor(C.subLabel.opacity(0.8))
+                                    .font(AppDesign.Typography.caption).foregroundColor(C.subLabel.opacity(0.8))
                                     .multilineTextAlignment(.center)
                             }
                             .frame(maxWidth: .infinity).padding(.top, 50)
@@ -3310,9 +3310,9 @@ struct ListenView: View {
             HStack(spacing: AppDesign.Spacing.sm) {
                 Avatar(path: f.avatar ?? "", size: 52, radius: 12)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(f.name).font(AppDesign.Type.rowTitle).foregroundColor(C.label).lineLimit(1)
+                    Text(f.name).font(AppDesign.Typography.rowTitle).foregroundColor(C.label).lineLimit(1)
                     Text(f.line)
-                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel).lineLimit(1)
+                        .font(AppDesign.Typography.caption).foregroundColor(C.subLabel).lineLimit(1)
                 }
                 Spacer(minLength: 6)
                 playDot(playing: player.isPlaying(t.id), loading: player.loadingId == t.id)
@@ -3412,7 +3412,7 @@ struct ListenView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
                 }
                 Text(t.title).font(pf(15, .medium)).foregroundColor(C.label).lineLimit(1)
-                Text(t.artistText).font(AppDesign.Type.caption).foregroundColor(C.subLabel).lineLimit(1)
+                Text(t.artistText).font(AppDesign.Typography.caption).foregroundColor(C.subLabel).lineLimit(1)
             }
             .frame(width: side, alignment: .leading)
             .contentShape(Rectangle())
@@ -3443,8 +3443,8 @@ struct ListenView: View {
                     if let rank, !manageMode { rankBadge(rank) }
                 }
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(t.title).font(AppDesign.Type.rowTitle).foregroundColor(C.label).lineLimit(1)
-                    Text(t.artistText).font(AppDesign.Type.caption).foregroundColor(C.subLabel).lineLimit(1)
+                    Text(t.title).font(AppDesign.Typography.rowTitle).foregroundColor(C.label).lineLimit(1)
+                    Text(t.artistText).font(AppDesign.Typography.caption).foregroundColor(C.subLabel).lineLimit(1)
                 }
                 Spacer(minLength: 8)
                 playDot(playing: player.isPlaying(t.id), loading: player.loadingId == t.id)
@@ -4440,7 +4440,7 @@ struct MusicPlayingView: View {
         return VStack(spacing: 0) {
             HStack(spacing: 6) {
                 Image(systemName: "text.alignleft").font(.system(size: 11)).foregroundColor(C.subLabel)
-                Text(t?.title ?? "").font(AppDesign.Type.captionMedium).foregroundColor(C.label).lineLimit(1)
+                Text(t?.title ?? "").font(AppDesign.Typography.captionMedium).foregroundColor(C.label).lineLimit(1)
                 Spacer(minLength: 0)
                 if aiBusy {
                     ProgressView().scaleEffect(0.6)

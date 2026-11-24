@@ -390,7 +390,7 @@ struct OfficialAccountPage: View {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(a.title)
-                        .font(AppDesign.Type.listTitle)
+                        .font(AppDesign.Typography.listTitle)
                         .foregroundColor(C.label)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
@@ -456,7 +456,7 @@ struct ArticleView: View {
         VStack(spacing: 0) {
             ZStack {
                 Text(account?.name ?? Tr("文章"))
-                    .font(AppDesign.Type.rowTitle).foregroundColor(C.label).lineLimit(1)
+                    .font(AppDesign.Typography.rowTitle).foregroundColor(C.label).lineLimit(1)
                 HStack(spacing: 0) {
                     Button { dismiss() } label: {
                         Image(systemName: "chevron.left")
@@ -500,7 +500,7 @@ struct ArticleView: View {
                                    radius: 13, circle: true)
                             Text(account?.name ?? "").font(pf(13)).foregroundColor(C.link)
                             if !(a.author ?? "").isEmpty, a.author != account?.name {
-                                Text(a.author ?? "").font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                                Text(a.author ?? "").font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                             }
                             Spacer(minLength: 0)
                             Text(TimeFmt.list(a.createdAt)).font(pf(12)).foregroundColor(C.time)

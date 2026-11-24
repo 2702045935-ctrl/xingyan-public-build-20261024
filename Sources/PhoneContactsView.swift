@@ -172,7 +172,7 @@ struct PhoneContactsView: View {
 
                     if !errorText.isEmpty {
                         Text(errorText)
-                            .font(AppDesign.Type.caption)
+                            .font(AppDesign.Typography.caption)
                             .foregroundColor(C.red)
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
@@ -181,7 +181,7 @@ struct PhoneContactsView: View {
 
                     if state == .ready {
                         Text(Tr("仅在你选择联系人后查询号码，不会批量上传通讯录。"))
-                            .font(AppDesign.Type.caption)
+                            .font(AppDesign.Typography.caption)
                             .foregroundStyle(C.subLabel)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 34)
@@ -314,7 +314,7 @@ struct PhoneContactsView: View {
                 .font(pf(17, .semibold))
                 .foregroundStyle(C.label)
             Text(Tr("仅在你选择联系人后查询号码，不会批量上传通讯录。"))
-                .font(AppDesign.Type.body)
+                .font(AppDesign.Typography.body)
                 .foregroundStyle(C.subLabel)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 22)
@@ -324,7 +324,7 @@ struct PhoneContactsView: View {
                 Text(state == .denied
                      ? Tr("去系统设置开启通讯录权限")
                      : Tr("读取手机联系人"))
-                    .font(AppDesign.Type.rowTitle)
+                    .font(AppDesign.Typography.rowTitle)
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 46)
@@ -582,7 +582,7 @@ private struct PhoneInviteSheet: View {
                             .font(pf(18, .semibold))
                             .foregroundColor(C.label)
                         Text(phone)
-                            .font(AppDesign.Type.caption)
+                            .font(AppDesign.Typography.caption)
                             .foregroundColor(C.subLabel)
                         Text(Tr("这个号码还没有注册星言"))
                             .font(pf(13))

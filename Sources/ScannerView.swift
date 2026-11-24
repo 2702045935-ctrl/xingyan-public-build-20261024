@@ -449,7 +449,7 @@ struct ScannerView: View {
                     Spacer()
 
                     Text(hint)
-                        .font(AppDesign.Type.body)
+                        .font(AppDesign.Typography.body)
                         .foregroundColor(.white.opacity(0.9))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 14)
@@ -594,7 +594,7 @@ struct ScannerView: View {
 
     private func resultCard(_ title: String, _ text: String, hot: Bool) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+            Text(title).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
             Text(text.isEmpty ? "—" : text)
                 .font(pf(16))
                 .foregroundColor(C.label)

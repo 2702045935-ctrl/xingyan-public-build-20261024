@@ -72,17 +72,17 @@ struct SecurityScoreView: View {
             }
             if blocked {
                 Text(Tr("支付类功能已暂停：转账 / 红包 / 收付款 / 提现 / 商城付款都会被拦下来。"))
-                    .font(AppDesign.Type.body).foregroundColor(Color(hex: 0xE24C3F))
+                    .font(AppDesign.Typography.body).foregroundColor(Color(hex: 0xE24C3F))
                     .fixedSize(horizontal: false, vertical: true)
                 Text(Tr("怎么恢复：做完实名认证、做人脸核身、把支付密码重设一遍 —— 做完这几样分数就会上来，限制自动解除。"))
-                    .font(AppDesign.Type.caption).foregroundColor(gray)
+                    .font(AppDesign.Typography.caption).foregroundColor(gray)
                     .fixedSize(horizontal: false, vertical: true)
             } else if let sl {
                 Text(Tr("单笔最多 ") + "¥" + moneyFmt(sl.single ?? 0)
                      + Tr(" · 单日最多 ") + "¥" + moneyFmt(sl.day ?? 0))
                     .font(pf(14)).foregroundColor(ink)
                 Text(Tr("分数越高额度越大（750 分以上：单笔 ¥20,000 / 单日 ¥50,000）。"))
-                    .font(AppDesign.Type.caption).foregroundColor(gray)
+                    .font(AppDesign.Typography.caption).foregroundColor(gray)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
                 Text(Tr("服务器还没下发额度（老版本），先按账户等级那套走。"))
@@ -115,7 +115,7 @@ struct SecurityScoreView: View {
                         .font(pf(44, .semibold))
                         .foregroundColor(ink)
                     Text(Tr(data?.level ?? "算分中"))
-                        .font(AppDesign.Type.compactButtonMedium)
+                        .font(AppDesign.Typography.compactButtonMedium)
                         .foregroundColor(Color(hexString: "#19A47A"))
                 }
             }
@@ -150,7 +150,7 @@ struct SecurityScoreView: View {
                                 .foregroundColor(ink)
                             Spacer(minLength: 0)
                             Text("\(dim.score)")
-                                .font(AppDesign.Type.rowTitle)
+                                .font(AppDesign.Typography.rowTitle)
                                 .foregroundColor(Color(hexString: "#19A47A"))
                             Text("/ \(dim.max)")
                                 .font(pf(12))
@@ -190,7 +190,7 @@ struct SecurityScoreView: View {
                                         .foregroundColor(ink)
                                     Spacer(minLength: 6)
                                     Text(Tr(it.tip ?? ""))
-                                        .font(AppDesign.Type.caption)
+                                        .font(AppDesign.Typography.caption)
                                         .foregroundColor(gray)
                                         .lineLimit(2)
                                         .multilineTextAlignment(.trailing)
@@ -219,7 +219,7 @@ struct SecurityScoreView: View {
                 HStack(alignment: .top, spacing: 8) {
                     Circle().fill(Color(hexString: "#19A47A")).frame(width: 5, height: 5).padding(.top, 6)
                     Text(Tr(t))
-                        .font(AppDesign.Type.body)
+                        .font(AppDesign.Typography.body)
                         .foregroundColor(gray)
                         .fixedSize(horizontal: false, vertical: true)
                 }

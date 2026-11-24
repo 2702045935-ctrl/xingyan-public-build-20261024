@@ -44,7 +44,7 @@ struct ShopView: View {
                             .frame(width: 44, height: 44)
                             VStack(alignment: .leading, spacing: 3) {
                                 HStack(spacing: 6) {
-                                    Text(Tr("拼多多商城")).font(AppDesign.Type.buttonMedium).foregroundColor(C.label)
+                                    Text(Tr("拼多多商城")).font(AppDesign.Typography.buttonMedium).foregroundColor(C.label)
                                     Text(Tr("H5")).font(pf(10.5)).foregroundColor(.white)
                                         .padding(.horizontal, 5).padding(.vertical, 1.5)
                                         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.micro).fill(Color(hex: 0xE02A0F)))
@@ -262,7 +262,7 @@ struct ShopItemSheet: View {
 
                         HairLine(inset: 16)
                         HStack(spacing: AppDesign.Spacing.sm) {
-                            Text(Tr("数量")).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
+                            Text(Tr("数量")).font(AppDesign.Typography.bodyLarge).foregroundColor(C.label)
                             Spacer(minLength: 0)
                             Button { if count > 1 { count -= 1 } } label: {
                                 Image(systemName: "minus")
@@ -466,7 +466,7 @@ struct ShopOrdersSheet: View {
                         ForEach(0..<names.count, id: \.self) { i in
                             Button { filter = i } label: {
                                 Text(Tr(names[i]))
-                                    .font(AppDesign.Type.body)
+                                    .font(AppDesign.Typography.body)
                                     .foregroundColor(filter == i ? .white : C.label)
                                     .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.sectionHeaderHeight)
                                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.control, style: .continuous)
@@ -487,16 +487,16 @@ struct ShopOrdersSheet: View {
                                 if i > 0 { HairLine(inset: 16) }
                                 VStack(alignment: .leading, spacing: 4) {
                                     HStack(spacing: AppDesign.Spacing.xs) {
-                                        Text(o.name ?? Tr("订单")).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
+                                        Text(o.name ?? Tr("订单")).font(AppDesign.Typography.bodyLarge).foregroundColor(C.label)
                                             .lineLimit(1)
                                         Spacer(minLength: 0)
                                         Text("¥" + moneyFmt(o.price ?? 0))
                                             .font(pfMoney(15)).foregroundColor(C.label)
                                     }
                                     HStack(spacing: AppDesign.Spacing.xs) {
-                                        Text(o.status ?? Tr("已下单")).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                                        Text(o.status ?? Tr("已下单")).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                                         Spacer(minLength: 0)
-                                        Text(TimeFmt.bill(o.at ?? "")).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                                        Text(TimeFmt.bill(o.at ?? "")).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                                     }
                                     if let a = o.address, !a.isEmpty {
                                         Text(Tr("地址：") + a).font(pf(12)).foregroundColor(C.subLabel)
@@ -507,7 +507,7 @@ struct ShopOrdersSheet: View {
                             }
                         }
                         Text(Tr("零钱余额 ") + "¥" + moneyFmt(balance))
-                            .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                            .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 22).padding(.top, 2)
                     }

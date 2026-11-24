@@ -104,10 +104,10 @@ struct PayCodePage: View {
             Avatar(path: info?.user?.avatar ?? app.me?.avatar ?? "", size: 44, radius: 22)
             VStack(alignment: .leading, spacing: 3) {
                 Text(info?.user?.nickname ?? app.me?.nickname ?? Tr("我"))
-                    .font(AppDesign.Type.rowTitle)
+                    .font(AppDesign.Typography.rowTitle)
                     .foregroundColor(C.label)
                 Text(Tr("向商家出示动态付款码"))
-                    .font(AppDesign.Type.caption)
+                    .font(AppDesign.Typography.caption)
                     .foregroundColor(PayVisual.secondaryInk)
             }
             Spacer(minLength: 8)
@@ -190,7 +190,7 @@ struct PayCodePage: View {
                 .foregroundColor(PayVisual.success)
                 .padding(.top, 1)
             Text(Tr("付款码只用于向商家付款，请勿泄露给陌生人；60 秒自动更换，付过一次就作废。"))
-                .font(AppDesign.Type.caption)
+                .font(AppDesign.Typography.caption)
                 .foregroundColor(PayVisual.secondaryInk)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
@@ -249,7 +249,7 @@ struct ReceiveCodePage: View {
                                 .font(pfMoney(26))
                                 .foregroundColor(C.label)
                             Text(Tr("对方扫码后按这个金额付给你，改不了"))
-                                .font(AppDesign.Type.caption)
+                                .font(AppDesign.Typography.caption)
                                 .foregroundColor(PayVisual.secondaryInk)
                         }
                     }
@@ -258,9 +258,9 @@ struct ReceiveCodePage: View {
                         Avatar(path: info?.user?.avatar ?? app.me?.avatar ?? "", size: 46, radius: 6)
                         VStack(alignment: .leading, spacing: 3) {
                             Text(info?.user?.nickname ?? app.me?.nickname ?? "")
-                                .font(AppDesign.Type.rowTitle).foregroundColor(C.label).lineLimit(1)
+                                .font(AppDesign.Typography.rowTitle).foregroundColor(C.label).lineLimit(1)
                             Text(Tr("扫这张码就能给我付钱"))
-                                .font(AppDesign.Type.caption).foregroundColor(PayVisual.secondaryInk)
+                                .font(AppDesign.Typography.caption).foregroundColor(PayVisual.secondaryInk)
                         }
                         Spacer(minLength: 0)
                     }
@@ -285,7 +285,7 @@ struct ReceiveCodePage: View {
                     .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
 
                     Text(Tr("收款码长期有效；带金额的那种 24 小时后失效，重新设置一次就行。"))
-                        .font(AppDesign.Type.caption)
+                        .font(AppDesign.Typography.caption)
                         .foregroundColor(PayVisual.secondaryInk)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, AppDesign.Spacing.lg)
@@ -319,7 +319,7 @@ struct ReceiveCodePage: View {
             HStack(spacing: 10) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title).font(pf(16)).foregroundColor(C.label)
-                    Text(sub).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                    Text(sub).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                 }
                 Spacer(minLength: 0)
                 Chevron(size: 9, line: 1.6)
@@ -380,7 +380,7 @@ struct PayConfirmPage: View {
                     PayGroupCard {
                         VStack(spacing: AppDesign.Spacing.xs) {
                             Text(Tr("付款金额"))
-                                .font(AppDesign.Type.captionMedium)
+                                .font(AppDesign.Typography.captionMedium)
                                 .foregroundColor(PayVisual.secondaryInk)
                             if fixedAmount > 0 {
                                 StarPayAmount(value: fixedAmount, role: .sheet, color: C.label)
@@ -409,7 +409,7 @@ struct PayConfirmPage: View {
                                         .foregroundColor(C.label)
                                     Spacer()
                                     Text(Tr("6 位安全密码"))
-                                        .font(AppDesign.Type.caption)
+                                        .font(AppDesign.Typography.caption)
                                         .foregroundColor(PayVisual.secondaryInk)
                                 }
                                 .padding(.horizontal, 18)
@@ -438,7 +438,7 @@ struct PayConfirmPage: View {
                                     } label: {
                                         Label(Tr("使用") + Biometrics.label + Tr("支付"),
                                               systemImage: Biometrics.paymentReady ? "faceid" : "touchid")
-                                            .font(AppDesign.Type.rowTitle)
+                                            .font(AppDesign.Typography.rowTitle)
                                             .foregroundColor(PayVisual.tint)
                                             .frame(maxWidth: .infinity)
                                             .frame(height: AppDesign.Control.buttonHeight)
@@ -450,14 +450,14 @@ struct PayConfirmPage: View {
                     } else {
 
                         Text(Tr("还没设置支付密码（我 → 设置 → 账号与安全 → 支付密码）"))
-                            .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                            .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, AppDesign.Spacing.xl)
                     }
 
                     if !hint.isEmpty {
                         Text(hint)
-                            .font(AppDesign.Type.body)
+                            .font(AppDesign.Typography.body)
                             .foregroundColor(Color(hex: 0xE5484D))
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, AppDesign.Spacing.xl)
@@ -473,7 +473,7 @@ struct PayConfirmPage: View {
                     .disabled(busy)
 
                     Text(Tr("付出去的钱当时到对方账上，不能撤回。"))
-                        .font(AppDesign.Type.caption)
+                        .font(AppDesign.Typography.caption)
                         .foregroundColor(PayVisual.secondaryInk)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 30)

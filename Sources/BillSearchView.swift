@@ -153,7 +153,7 @@ struct BillSearchView: View {
         VStack(alignment: .leading, spacing: 0) {
             if !history.isEmpty {
                 HStack {
-                    Text(Tr("最近搜索")).font(AppDesign.Type.body).foregroundColor(subInk)
+                    Text(Tr("最近搜索")).font(AppDesign.Typography.body).foregroundColor(subInk)
                     Spacer(minLength: 0)
                     Button {
                         SearchHistory.clear()
@@ -176,7 +176,7 @@ struct BillSearchView: View {
                 .padding(.horizontal, AppDesign.Spacing.md)
             }
             Text(Tr("可以搜好友名字、备注，也可以搜「转账」「红包」「充值」"))
-                .font(AppDesign.Type.caption)
+                .font(AppDesign.Typography.caption)
                 .foregroundColor(subInk)
                 .padding(.horizontal, AppDesign.Spacing.md)
                 .padding(.top, 22)
@@ -194,7 +194,7 @@ struct BillSearchView: View {
                 .font(pf(14))
                 .foregroundColor(subInk)
             Text(Tr("换个关键词，或者把时间范围放宽一点"))
-                .font(AppDesign.Type.caption)
+                .font(AppDesign.Typography.caption)
                 .foregroundColor(subInk.opacity(0.8))
         }
         .frame(maxWidth: .infinity)
@@ -268,7 +268,7 @@ struct BillSearchView: View {
                 VStack(alignment: .leading, spacing: 7) {
                     Text(rowTitle(b)).font(pf(16)).foregroundColor(ink).lineLimit(1)
                     Text((TimeFmt.bill(b.createdAt)) + ((b.status ?? "pending") == "pending" ? (" · " + b.stateText) : ""))
-                        .font(AppDesign.Type.caption)
+                        .font(AppDesign.Typography.caption)
                         .foregroundColor(subInk)
                         .lineLimit(1)
                 }

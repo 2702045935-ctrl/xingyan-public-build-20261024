@@ -207,7 +207,7 @@ struct ShopLinkCard: View {
                                          style: .continuous)
                             .fill(Color(hexString: "#FF5000"))
                         Text("淘")
-                            .font(AppDesign.Type.rowTitle)
+                            .font(AppDesign.Typography.rowTitle)
                             .foregroundColor(.white)
                     }
                     .frame(width: 56, height: 56)

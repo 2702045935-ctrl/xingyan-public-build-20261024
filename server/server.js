@@ -49,6 +49,7 @@ const { VideoRecommendationKernel } = require('./lib/video-recommendation');
 const { SearchRankingKernel } = require('./lib/search-ranking');
 const { PaymentSettlementScheduler } = require('./lib/payment-settlement-scheduler');
 const { createTransferKernel, TransferError } = require('./transfer-kernel');
+const { BankingAuditLog } = require('./lib/banking-audit');
 const {
   normalizeBillTimeZone,
   billMonthKey,
@@ -25861,6 +25862,10 @@ if (process.env.DISABLE_STARTUP_BOT_BACKFILL === '1') {
 
 async function handleHttpRequest(req, res) {
   res.__req = req;      // sendJson 里判断客户端要不要 gzip 用（别的地方不用管）
+  const requestId = String(req.headers['x-request-id'] || '').trim()
+    || uid('req');
+  req.__requestId = requestId;
+  res.setHeader('X-Request-ID', requestId);
   const parsed = new URL(req.url, 'http://' + (req.headers.host || 'localhost'));
   const readOnlyHttpMethod = req.method === 'GET' || req.method === 'HEAD'
     || req.method === 'OPTIONS';
@@ -27186,8 +27191,11 @@ const REPORTS_FILE = 'reports.json';
 const VIOLATIONS_FILE = 'violations.json';
 const APPROVALS_FILE = 'ops-approvals.json';   // 高危操作的复核工单（双人复核）
 const AUDIT_FILE = 'audit.log';
+const BANK_AUDIT_FILE = 'audit-bank.jsonl';
+const BANK_AUDIT_STATE_FILE = 'audit-bank-state.json';
 const ICONS_FILE = 'icons.json';
 const OPS_COOKIE = 'chris_ops';
+let bankingAudit = null;
 
 /* 角色 = 一串权限点（最小权限原则）。
    每个角色只拿到「干这件事需要的那几项」，读和写也分开：
@@ -27332,24 +27340,106 @@ const saveSensitive = () => writeJson(path.join(DATA_DIR, SENSITIVE_FILE), { wor
 const saveReports = () => writeJson(path.join(DATA_DIR, REPORTS_FILE), opsStore.reports);
 const saveViolations = () => writeJson(path.join(DATA_DIR, VIOLATIONS_FILE), opsStore.violations);
 
-/** 审计日志：只追加，不提供删除接口 */
-function audit(req, admin, action, target, detail) {
-  /* 日志也会被刷爆：超过 5MB 就归档一份，别把硬盘写满 */
+function auditCategoryOf(action, target, detail) {
+  const text = String(action || '') + ' ' + String(target || '')
+    + ' ' + String(detail || '');
+  const upper = text.toUpperCase();
+  if (/AML|反洗钱|制裁|尽调|名单/.test(upper)) return 'aml';
+  if (/支付|资金|充值|扣减|提现|账单|交易|争议|退款|对账|结算/.test(text)) {
+    return 'finance';
+  }
+  if (/登录|密码|权限|角色|封禁|白名单|高危|IP/.test(text)) {
+    return 'security';
+  }
+  if (/CELL|分片|迁移|节点|扩容|故障|自愈|发布|拓扑/.test(upper)) {
+    return 'infrastructure';
+  }
+  return 'operation';
+}
+
+function auditSeverityOf(action, detail, category) {
+  const text = String(action || '') + ' ' + String(detail || '');
+  if (/失败|拒绝|撤回|撤销|冻结|封禁|高风险|密码不对/.test(text)
+      || category === 'aml') {
+    return 'high';
+  }
+  if (category !== 'operation' || /复核|删除/.test(text)) {
+    return 'attention';
+  }
+  return 'normal';
+}
+
+function ensureBankingAudit() {
+  if (bankingAudit) return bankingAudit;
+  if (!db.secret) throw new Error('审计链缺少服务端 HMAC 密钥');
+  bankingAudit = new BankingAuditLog({
+    file: path.join(DATA_DIR, BANK_AUDIT_FILE),
+    stateFile: path.join(DATA_DIR, BANK_AUDIT_STATE_FILE),
+    secret: crypto.createHmac('sha256', String(db.secret))
+      .update('banking-audit:v1')
+      .digest('hex'),
+    seal: (value) => sealSecureStoreValue(BANK_AUDIT_FILE, value),
+    open: (stored) => openSecureStoreValue(BANK_AUDIT_FILE, stored),
+    uid,
+    now
+  });
+  return bankingAudit;
+}
+
+/**
+ * 银行级主审计链：先写 HMAC 链并 fsync，成功后业务才继续。
+ * 审计写失败会抛错，禁止高敏操作静默成功。
+ * audit.log 继续双写，仅用于旧页面兼容。
+ */
+function audit(req, admin, action, target, detail, context) {
+  const info = clientInfo(req);
+  const category = auditCategoryOf(action, target, detail);
+  const severity = auditSeverityOf(action, detail, category);
+  const auditContext = Object.assign(
+    {},
+    context && typeof context === 'object' ? context : {},
+    req && req.__opsApproved ? { approvalId: String(req.__opsApproved) } : {},
+    req && req.__opsApprover ? { approver: String(req.__opsApprover) } : {}
+  );
+  const chainRecord = ensureBankingAudit().append({
+    requestId: req && req.__requestId,
+    actor: {
+      id: admin && admin.id,
+      username: admin ? admin.username : '-',
+      name: admin ? admin.name : '-',
+      role: admin ? (OPS_ROLE_NAMES[admin.role] || admin.role) : '-'
+    },
+    source: {
+      ip: info.ip,
+      userAgent: req && req.headers && req.headers['user-agent']
+    },
+    category,
+    severity,
+    outcome: context && context.outcome || 'success',
+    action,
+    target,
+    detail,
+    context: auditContext
+  });
+  /* 兼容日志：用于旧页面，不承担银行级证据链职责。 */
   try {
     const p = path.join(DATA_DIR, AUDIT_FILE);
     if (fs.existsSync(p) && fs.statSync(p).size > 5 * 1024 * 1024) {
       try { fs.renameSync(p, p + '.1'); } catch (err) { try { fs.unlinkSync(p + '.1'); fs.renameSync(p, p + '.1'); } catch (e2) { } }
     }
   } catch (err) { }
-  const ip = clientInfo(req).ip;
   const line = JSON.stringify({
     at: now(),
     admin: admin ? admin.username : '-',
     name: admin ? admin.name : '-',
     role: admin ? (OPS_ROLE_NAMES[admin.role] || admin.role) : '-',
-    ip, action, target: target || '', detail: detail || ''
+    ip: info.ip, action, target: target || '', detail: detail || '',
+    requestId: chainRecord.requestId,
+    category: chainRecord.category,
+    severity: chainRecord.severity
   });
-  try { fs.appendFileSync(path.join(DATA_DIR, AUDIT_FILE), line + '\n'); } catch (err) { /* 忽略 */ }
+  try { fs.appendFileSync(path.join(DATA_DIR, AUDIT_FILE), line + '\n'); } catch (err) { /* 主链已落盘 */ }
+  return chainRecord;
 }
 
 function readAudit(limit) {
@@ -27360,6 +27450,29 @@ function readAudit(limit) {
       try { return JSON.parse(l); } catch (err) { return null; }
     }).filter(Boolean);
   } catch (err) { return []; }
+}
+
+function publicBankingAuditRow(row) {
+  return {
+    seq: Number(row.seq) || 0,
+    id: row.id || '',
+    at: row.at || '',
+    requestId: row.requestId || '',
+    admin: row.actor && row.actor.username || '-',
+    name: row.actor && row.actor.name || '-',
+    role: row.actor && row.actor.role || '-',
+    ip: row.source && row.source.ip || '',
+    userAgent: row.source && row.source.userAgent || '',
+    category: row.category || 'operation',
+    severity: row.severity || 'normal',
+    outcome: row.outcome || 'success',
+    action: row.action || '',
+    target: row.target || '',
+    detail: row.detail || '',
+    context: row.context || {},
+    prevHash: row.prevHash || '',
+    hash: row.hash || ''
+  };
 }
 
 /* 审计日志按「年月日」核对：可传 from / to（毫秒时间戳）+ 关键词，
@@ -30367,7 +30480,14 @@ async function handleOps(req, res, parts, query) {
     }
     const result = paymentLedger.reconcile(db.users, (id) => bizOf(id, false));
     audit(req, admin, '支付账本对账', 'reconcile',
-      'entries=' + result.entries + ', differences=' + result.differences.length);
+      'entries=' + result.entries + ', differences=' + result.differences.length, {
+        outcome: result.differences.length ? 'attention' : 'success',
+        context: {
+          kind: 'reconciliation',
+          entries: result.entries,
+          differences: result.differences.length
+        }
+      });
     ok(res, Object.assign(result, {
       scheduledSettlement: paymentSettlementScheduler
         ? paymentSettlementScheduler.latest()
@@ -30408,7 +30528,15 @@ async function handleOps(req, res, parts, query) {
         reason
       });
       audit(req, admin, '登记支付争议', result.dispute.intentId,
-        result.dispute.provider + ' · ' + reason);
+        result.dispute.provider + ' · ' + reason, {
+          context: {
+            kind: 'payment-dispute',
+            intentId: result.dispute.intentId,
+            provider: result.dispute.provider,
+            providerDisputeId: result.dispute.providerDisputeId || '',
+            reason
+          }
+        });
       ok(res, result);
       return;
     } catch (error) {
@@ -30435,7 +30563,14 @@ async function handleOps(req, res, parts, query) {
         str(body.outcome, 40)
       );
       audit(req, admin, '支付争议结案', str(parts[3], 120),
-        result.dispute.outcome + ' · ' + note);
+        result.dispute.outcome + ' · ' + note, {
+          context: {
+            kind: 'payment-dispute-resolution',
+            disputeId: str(parts[3], 120),
+            outcome: result.dispute.outcome,
+            note
+          }
+        });
       ok(res, result);
       return;
     } catch (error) {
@@ -30464,7 +30599,15 @@ async function handleOps(req, res, parts, query) {
         ledgerRef
       );
       audit(req, admin, '支付争议核销结案', str(parts[3], 120),
-        result.dispute.outcome + ' · ' + ledgerRef + ' · ' + note);
+        result.dispute.outcome + ' · ' + ledgerRef + ' · ' + note, {
+          context: {
+            kind: 'payment-dispute-writeoff',
+            disputeId: str(parts[3], 120),
+            outcome: result.dispute.outcome,
+            ledgerRef,
+            note
+          }
+        });
       ok(res, result);
       return;
     } catch (error) {
@@ -30499,7 +30642,13 @@ async function handleOps(req, res, parts, query) {
         admin.username || admin.name || admin.id || 'admin',
         note
       );
-      audit(req, admin, '支付对账差异结案', str(parts[4], 120), note);
+      audit(req, admin, '支付对账差异结案', str(parts[4], 120), note, {
+        context: {
+          kind: 'settlement-incident',
+          incidentId: str(parts[4], 120),
+          note
+        }
+      });
       ok(res, result);
       return;
     } catch (error) {
@@ -30590,7 +30739,17 @@ async function handleOps(req, res, parts, query) {
     saveTransfers();
     broadcastTransfer(t, 'refunded');
     audit(req, admin, '撤销交易', t.id, '退回 ¥' + t.amount + ' 给 ' + (payer ? payer.username : t.fromId)
-      + '（' + str(body.reason, 60) + '）');
+      + '（' + str(body.reason, 60) + '）', {
+        context: {
+          kind: 'transfer-revoke',
+          transferId: t.id,
+          amount: Number(t.amount) || 0,
+          currency: 'CNY',
+          fromId: t.fromId || '',
+          toId: t.toId || '',
+          reason: str(body.reason, 60)
+        }
+      });
     ok(res, { revoked: true });
     return;
   }
@@ -30603,7 +30762,14 @@ async function handleOps(req, res, parts, query) {
     const u = findUser(str(body.userId, 40));
     if (!u) return fail(res, 404, '用户不存在');
     setUserBanned(u, body.frozen, str(body.reason, 100) || '支付风控冻结', admin.username);
-    audit(req, admin, u.banned ? '冻结账号（支付风控）' : '解冻账号（支付风控）', u.username, u.banReason);
+    audit(req, admin, u.banned ? '冻结账号（支付风控）' : '解冻账号（支付风控）', u.username, u.banReason, {
+      context: {
+        kind: 'payment-freeze',
+        userId: u.id,
+        frozen: !!u.banned,
+        reason: u.banReason
+      }
+    });
     ok(res, { banned: !!u.banned });
     return;
   }
@@ -30649,6 +30815,110 @@ async function handleOps(req, res, parts, query) {
   }
 
   /* ---------------- 审计日志 ---------------- */
+  if (sub === 'audit' && parts[2] === 'secure' && method === 'GET') {
+    if (!can(admin, 'audit')) {
+      return fail(res, 403, '你的角色没有查看银行审计链的权限');
+    }
+    const r = ensureBankingAudit().read({
+      limit: Number(query.get('limit')) || 1000,
+      from: Number(query.get('from')) || 0,
+      to: Number(query.get('to')) || 0,
+      q: query.get('q') || '',
+      category: query.get('category') || '',
+      severity: query.get('severity') || ''
+    });
+    const verify = ensureBankingAudit().verify();
+    audit(req, admin, '查看银行审计链', 'audit/secure',
+      '返回 ' + r.rows.length + ' 条，链=' + (verify.ok ? '通过' : '异常'), {
+        outcome: verify.ok ? 'success' : 'failed',
+        context: {
+          total: r.total,
+          returned: r.rows.length,
+          tailSeq: verify.tailSeq,
+          tailHash: verify.tailHash
+        }
+      });
+    ok(res, {
+      audit: r.rows.map(publicBankingAuditRow),
+      total: r.total,
+      days: r.days,
+      truncated: r.truncated,
+      malformed: r.malformed,
+      chain: {
+        schema: 'xingyan.banking.audit.v1',
+        ok: verify.ok,
+        checked: verify.checked,
+        tailSeq: verify.tailSeq,
+        tailHash: verify.tailHash,
+        failures: verify.failures
+      }
+    });
+    return;
+  }
+
+  if (sub === 'audit' && parts[2] === 'integrity' && method === 'GET') {
+    if (!can(admin, 'audit') || !can(admin, 'payments')) {
+      return fail(res, 403, '银行级完整性校验需要审计与资金权限');
+    }
+    const banking = ensureBankingAudit().verify();
+    let aml = null;
+    if (amlEngineHealthy && amlEngine) {
+      try { aml = amlEngine.verifyEvents(); }
+      catch (error) { aml = { ok: false, checked: 0, failures: [{ code: 'verify-error', message: String(error && error.message || error) }] }; }
+    }
+    let payment = null;
+    if (paymentLedgerHealthy && paymentLedger) {
+      try { payment = paymentLedger.verifyIntegrity(); }
+      catch (error) { payment = { ok: false, checked: 0, failures: [{ code: 'verify-error', message: String(error && error.message || error) }] }; }
+    }
+    audit(req, admin, '校验银行级审计完整性', 'audit/integrity',
+      'audit=' + (banking.ok ? 'ok' : 'fail')
+        + ', aml=' + (aml ? (aml.ok ? 'ok' : 'fail') : 'disabled')
+        + ', payment=' + (payment ? (payment.ok ? 'ok' : 'fail') : 'disabled'), {
+        outcome: banking.ok ? 'success' : 'failed',
+        context: {
+          bankingFailures: banking.failures.length,
+          amlFailures: aml && Array.isArray(aml.failures) ? aml.failures.length : 0,
+          paymentFailures: payment && Array.isArray(payment.failures) ? payment.failures.length : 0
+        }
+      });
+    ok(res, {
+      requestId: req.__requestId || '',
+      ok: banking.ok && (!aml || aml.ok) && (!payment || payment.ok),
+      banking,
+      aml,
+      payment,
+      checkedAt: now()
+    });
+    return;
+  }
+
+  if (sub === 'audit' && parts[2] === 'export' && method === 'GET') {
+    if (!can(admin, 'audit') || !can(admin, 'payments')) {
+      return fail(res, 403, '银行级证据导出需要审计与资金权限');
+    }
+    const bundle = ensureBankingAudit().export({
+      limit: Number(query.get('limit')) || 200000,
+      from: Number(query.get('from')) || 0,
+      to: Number(query.get('to')) || 0,
+      q: query.get('q') || '',
+      category: query.get('category') || '',
+      severity: query.get('severity') || ''
+    });
+    audit(req, admin, '导出银行级审计证据', 'audit/export',
+      bundle.manifest.count + ' 条 · seq '
+        + bundle.manifest.firstSeq + '–' + bundle.manifest.lastSeq, {
+        outcome: 'success',
+        context: {
+          count: bundle.manifest.count,
+          tailHash: bundle.manifest.tailHash,
+          manifestMac: bundle.manifest.manifestMac
+        }
+      });
+    ok(res, Object.assign({ requestId: req.__requestId || '' }, bundle));
+    return;
+  }
+
   if (sub === 'audit' && method === 'GET') {
     if (!can(admin, 'audit')) return fail(res, 403, '你的角色没有查看这一项的权限');
     const r = readAuditQuery({
@@ -31447,7 +31717,16 @@ async function handleOps(req, res, parts, query) {
       op.status = 'done';
       op.doneAt = now();
       saveWalletOps();
-      audit(req, admin, 'wallet.withdraw.done', op.userId, '¥' + op.amount);
+      audit(req, admin, 'wallet.withdraw.done', op.userId, '¥' + op.amount, {
+        context: {
+          kind: 'withdrawal',
+          operationId: op.id,
+          userId: op.userId,
+          amount: Number(op.amount) || 0,
+          fee: Number(op.fee) || 0,
+          currency: 'CNY'
+        }
+      });
       ok(res, { op });
       return;
     }
@@ -31466,7 +31745,18 @@ async function handleOps(req, res, parts, query) {
       op.status = 'failed';
       op.doneAt = now();
       saveWalletOps();
-      audit(req, admin, 'wallet.withdraw.fail', op.userId, '退回 ¥' + op.amount);
+      audit(req, admin, 'wallet.withdraw.fail', op.userId, '退回 ¥' + op.amount, {
+        outcome: 'failed',
+        context: {
+          kind: 'withdrawal',
+          operationId: op.id,
+          userId: op.userId,
+          amount: Number(op.amount) || 0,
+          fee: Number(op.fee) || 0,
+          refunded: true,
+          currency: 'CNY'
+        }
+      });
       ok(res, { op, refunded: true });
       return;
     }
@@ -31594,7 +31884,15 @@ async function handleOps(req, res, parts, query) {
     if (r.error) return fail(res, 402, r.error);
     saveUsers();
     sendTo(target.id, { type: 'balance', balance: target.balance });
-    audit(req, admin, amount > 0 ? '后台充值' : '后台扣减', target.username, amount.toFixed(2));
+    audit(req, admin, amount > 0 ? '后台充值' : '后台扣减', target.username, amount.toFixed(2), {
+      context: {
+        kind: 'admin-balance-adjustment',
+        userId: target.id,
+        amount,
+        currency: 'CNY',
+        balanceAfter: r.balance
+      }
+    });
     ok(res, { id: target.id, username: target.username, nickname: target.nickname,
               balanceBefore: r.before, delta: amount, balance: Number(target.balance) || 0 });
     return;

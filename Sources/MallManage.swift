@@ -137,7 +137,7 @@ struct MallAdminSection: View {
             Button { bannerAdd = true } label: {
                 HStack(spacing: AppDesign.Spacing.xs) {
                     Image(systemName: "plus.circle.fill").font(.system(size: 17)).foregroundColor(C.green)
-                    Text(Tr("加一张轮播图")).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
+                    Text(Tr("加一张轮播图")).font(AppDesign.Typography.bodyLarge).foregroundColor(C.label)
                     Spacer(minLength: 0)
                 }
                 .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.largeControlHeight)
@@ -160,7 +160,7 @@ struct MallAdminSection: View {
             HairLine(inset: 16)
 
             HStack {
-                Text(Tr("显示开屏广告")).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
+                Text(Tr("显示开屏广告")).font(AppDesign.Typography.bodyLarge).foregroundColor(C.label)
                 Spacer(minLength: 0)
                 Toggle("", isOn: Binding(get: { splashDraft.on ?? true },
                                          set: { splashDraft.on = $0 }))
@@ -525,7 +525,7 @@ struct MallAdminSection: View {
         Button { addingAd = true } label: {
             HStack(spacing: AppDesign.Spacing.xs) {
                 Image(systemName: "plus.circle.fill").font(.system(size: 17)).foregroundColor(C.green)
-                Text(Tr("加一条广告")).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
+                Text(Tr("加一条广告")).font(AppDesign.Typography.bodyLarge).foregroundColor(C.label)
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.largeControlHeight)
@@ -633,7 +633,7 @@ struct MallAdminSection: View {
         Button { adding = true } label: {
             HStack(spacing: AppDesign.Spacing.xs) {
                 Image(systemName: "plus.circle.fill").font(.system(size: 17)).foregroundColor(C.green)
-                Text(Tr("上架一件新商品")).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
+                Text(Tr("上架一件新商品")).font(AppDesign.Typography.bodyLarge).foregroundColor(C.label)
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.largeControlHeight)
@@ -664,7 +664,7 @@ struct MallAdminSection: View {
     }
 
     private func pill(_ t: String, _ c: Color) -> some View {
-        Text(t).font(AppDesign.Type.caption).foregroundColor(c)
+        Text(t).font(AppDesign.Typography.caption).foregroundColor(c)
             .padding(.horizontal, 10).frame(height: AppDesign.Control.statusHeight)
             .background(Capsule().fill(c.opacity(0.12)))
     }
@@ -777,7 +777,7 @@ struct MallProductSheet: View {
                                 showVideoPick = true
                             } label: {
                                 Text(video.isEmpty ? Tr("上传视频") : Tr("更换"))
-                                    .font(AppDesign.Type.compactButtonMedium)
+                                    .font(AppDesign.Typography.compactButtonMedium)
                                     .foregroundColor(C.green)
                             }
                             .buttonStyle(.plain)
@@ -810,7 +810,7 @@ struct MallProductSheet: View {
                     fld(Tr("已拼人数（填 10万+ 这种也行）"), $sold)
 
                     HStack(spacing: AppDesign.Spacing.sm) {
-                        Text(Tr("上架")).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
+                        Text(Tr("上架")).font(AppDesign.Typography.bodyLarge).foregroundColor(C.label)
                         Spacer(minLength: 0)
                         Toggle("", isOn: $on).labelsHidden().tint(C.green)
                     }
@@ -824,7 +824,7 @@ struct MallProductSheet: View {
             }
             Button { Task { await save() } } label: {
                 Text(saving ? Tr("正在保存…") : (editing ? Tr("保存") : Tr("上架")))
-                    .font(AppDesign.Type.rowTitle).foregroundColor(.white)
+                    .font(AppDesign.Typography.rowTitle).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay)
                         .fill(saving ? C.subLabel : Color(hex: 0xE02A0F)))
@@ -977,7 +977,7 @@ struct MallAdSheet: View {
                         }
                         Spacer(minLength: 0)
                         Text(cta.isEmpty ? Tr("去看看") : cta)
-                            .font(AppDesign.Type.sectionMedium).foregroundColor(.white)
+                            .font(AppDesign.Typography.sectionMedium).foregroundColor(.white)
                             .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.sectionHeaderHeight)
                             .background(Capsule().fill(adTopColor))
                     }
@@ -1029,7 +1029,7 @@ struct MallAdSheet: View {
                     fld(Tr("序号（越小越靠前）"), $sort, num: true)
 
                     HStack(spacing: AppDesign.Spacing.sm) {
-                        Text(Tr("显示这条广告")).font(AppDesign.Type.bodyLarge).foregroundColor(C.label)
+                        Text(Tr("显示这条广告")).font(AppDesign.Typography.bodyLarge).foregroundColor(C.label)
                         Spacer(minLength: 0)
                         Toggle("", isOn: $on).labelsHidden().tint(C.green)
                     }
@@ -1043,7 +1043,7 @@ struct MallAdSheet: View {
             }
             Button { Task { await save() } } label: {
                 Text(saving ? Tr("正在保存…") : (editing ? Tr("保存") : Tr("加上去")))
-                    .font(AppDesign.Type.rowTitle).foregroundColor(.white)
+                    .font(AppDesign.Typography.rowTitle).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay)
                         .fill(saving ? C.subLabel : Color(hex: 0xE02A0F)))
@@ -1087,7 +1087,7 @@ struct MallAdSheet: View {
 
     private func kindHint(_ t: String) -> some View {
         Text(t)
-            .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+            .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, AppDesign.Spacing.md).padding(.top, 10).padding(.bottom, 6)
     }

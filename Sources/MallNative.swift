@@ -1754,7 +1754,7 @@ struct MallNativeView: View {
             if tab == 0 {
                 searchBox
                 HStack(spacing: AppDesign.Spacing.xxs) {
-                    Text(store.mallName).font(AppDesign.Type.captionStrong)
+                    Text(store.mallName).font(AppDesign.Typography.captionStrong)
                         .foregroundColor(.white)
                     Text(store.mallSlogan).font(pf(11))
                         .foregroundColor(Color.white.opacity(0.72))
@@ -2063,7 +2063,7 @@ struct DDHomeTab: View {
                                 store.restoreAllDisliked()
                                 appState.show(Tr("已全部恢复"))
                             } label: {
-                                Text(Tr("全部恢复")).font(AppDesign.Type.captionMedium).foregroundColor(DDColor.red)
+                                Text(Tr("全部恢复")).font(AppDesign.Typography.captionMedium).foregroundColor(DDColor.red)
                             }
                             .buttonStyle(.plain)
                         }
@@ -2205,7 +2205,7 @@ struct DDHomeTab: View {
                                 .lineLimit(1)
                         }
                         Text(best.title)
-                            .font(AppDesign.Type.captionMedium)
+                            .font(AppDesign.Typography.captionMedium)
                             .foregroundColor(DDColor.ink)
                             .lineLimit(1)
                         HStack(spacing: 7) {
@@ -2407,7 +2407,7 @@ struct DDHomeTab: View {
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(Color(hex: 0x2F6FED))
                 Text(store.addressLine.isEmpty ? Tr("选择收货地址") : store.addressLine)
-                    .font(AppDesign.Type.sectionMedium)
+                    .font(AppDesign.Typography.sectionMedium)
                     .foregroundColor(DDColor.ink)
                     .lineLimit(1)
                 Spacer(minLength: 4)
@@ -2575,7 +2575,7 @@ struct DDHomeTab: View {
             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.small, style: .continuous))
 
             Text(p.title)
-                .font(AppDesign.Type.sectionMedium)
+                .font(AppDesign.Typography.sectionMedium)
                 .foregroundColor(DDColor.ink)
                 .lineLimit(1)
             Text(p.shop)
@@ -3006,7 +3006,7 @@ struct DDHomeTab: View {
                 action?()
             } label: {
                 HStack(spacing: 2) {
-                    Text(right).font(AppDesign.Type.caption).foregroundColor(DDColor.sub)
+                    Text(right).font(AppDesign.Typography.caption).foregroundColor(DDColor.sub)
                     Image(systemName: "chevron.right")
                         .font(.system(size: 9.5, weight: .semibold))
                         .foregroundColor(DDColor.weak)
@@ -3030,7 +3030,7 @@ struct DDHomeTab: View {
             Button {
                 if let c = store.mutedCates.first { store.unmuteCate(c) }
             } label: {
-                Text(Tr("恢复")).font(AppDesign.Type.captionMedium).foregroundColor(DDColor.red)
+                Text(Tr("恢复")).font(AppDesign.Typography.captionMedium).foregroundColor(DDColor.red)
             }
             .buttonStyle(.plain)
         }
@@ -3067,7 +3067,7 @@ struct DDHomeTab: View {
                     }
                 } label: {
                     Text(Tr("查看全部商品"))
-                        .font(AppDesign.Type.compactButtonMedium)
+                        .font(AppDesign.Typography.compactButtonMedium)
                         .foregroundColor(DDColor.blueDeep)
                         .padding(.horizontal, 14)
                         .frame(height: AppDesign.Control.smallButtonHeight)
@@ -3379,8 +3379,8 @@ struct DDRecTab: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: AppDesign.Spacing.xs) {
                 Circle().fill(Color(hex: 0xFFD9CC)).frame(width: 26, height: 26)
-                    .overlay(Text("拼").font(AppDesign.Type.section).foregroundColor(DDColor.red))
-                Text(p.shop).font(AppDesign.Type.bodyMedium).foregroundColor(DDColor.ink)
+                    .overlay(Text("拼").font(AppDesign.Typography.section).foregroundColor(DDColor.red))
+                Text(p.shop).font(AppDesign.Typography.bodyMedium).foregroundColor(DDColor.ink)
                 Spacer(minLength: 0)
                 Text(Tr("种草")).font(pf(11)).foregroundColor(.white)
                     .padding(.horizontal, 6).frame(height: 18)
@@ -3458,11 +3458,11 @@ struct DDMsgTab: View {
 
     private func head(_ t: String, right: String, tap: @escaping () -> Void = { }) -> some View {
         HStack {
-            Text(t).font(AppDesign.Type.bodyMedium).foregroundColor(DDColor.sub)
+            Text(t).font(AppDesign.Typography.bodyMedium).foregroundColor(DDColor.sub)
             Spacer(minLength: 0)
             if !right.isEmpty {
                 Button { tap() } label: {
-                    Text(right).font(AppDesign.Type.caption).foregroundColor(DDColor.sub)
+                    Text(right).font(AppDesign.Typography.caption).foregroundColor(DDColor.sub)
                 }
                 .buttonStyle(.plain)
             }
@@ -3488,7 +3488,7 @@ struct DDMsgTab: View {
             }
             VStack(alignment: .leading, spacing: 4) {
                 Text(n.title).font(pf(14.5, .medium)).foregroundColor(DDColor.ink).lineLimit(2)
-                Text(n.body).font(AppDesign.Type.caption).foregroundColor(DDColor.sub)
+                Text(n.body).font(AppDesign.Typography.caption).foregroundColor(DDColor.sub)
                     .fixedSize(horizontal: false, vertical: true)
                 Text(timeText(n.at)).font(pf(11.5)).foregroundColor(DDColor.sub)
             }
@@ -3531,14 +3531,14 @@ struct DDMsgTab: View {
             DDThumb(em: o.em, size: 46, radius: 8)
             VStack(alignment: .leading, spacing: 4) {
                 Text(msgTitle(o)).font(pf(14.5, .medium)).foregroundColor(DDColor.ink).lineLimit(2)
-                Text(o.title).font(AppDesign.Type.caption).foregroundColor(DDColor.sub).lineLimit(1)
+                Text(o.title).font(AppDesign.Typography.caption).foregroundColor(DDColor.sub).lineLimit(1)
                 Text(timeText(o.at)).font(pf(11.5)).foregroundColor(DDColor.sub)
             }
             Spacer(minLength: 0)
             if o.status == "grouping" {
                 Button { store.invite(o.id) } label: {
                     Text(Tr("邀好友拼单"))
-                        .font(AppDesign.Type.captionMedium).foregroundColor(.white)
+                        .font(AppDesign.Typography.captionMedium).foregroundColor(.white)
                         .padding(.horizontal, 10).frame(height: AppDesign.Control.statusHeight)
                         .background(Capsule().fill(DDColor.red))
                 }
@@ -3628,11 +3628,11 @@ struct DDCartTab: View {
                                 HStack(spacing: AppDesign.Spacing.xs) {
                                     Image(systemName: "exclamationmark.triangle").font(.system(size: 13))
                                         .foregroundColor(DDColor.sub)
-                                    Text(Tr("失效商品")).font(AppDesign.Type.bodyMedium).foregroundColor(DDColor.ink)
+                                    Text(Tr("失效商品")).font(AppDesign.Typography.bodyMedium).foregroundColor(DDColor.ink)
                                     Text(String(store.invalidCart.count) + Tr(" 件")).font(pf(12)).foregroundColor(DDColor.sub)
                                     Spacer(minLength: 0)
                                     Button { store.clearInvalidCart() } label: {
-                                        Text(Tr("清空失效")).font(AppDesign.Type.caption).foregroundColor(DDColor.red)
+                                        Text(Tr("清空失效")).font(AppDesign.Typography.caption).foregroundColor(DDColor.red)
                                     }
                                     .buttonStyle(.plain)
                                 }
@@ -3644,10 +3644,10 @@ struct DDCartTab: View {
                                             .background(DDColor.page)
                                             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.mini))
                                         Text(store.product(l.pid)?.title ?? Tr("商品已下架"))
-                                            .font(AppDesign.Type.caption).foregroundColor(DDColor.sub).lineLimit(1)
+                                            .font(AppDesign.Typography.caption).foregroundColor(DDColor.sub).lineLimit(1)
                                         Spacer(minLength: 0)
                                         Button { store.removeCartLine(l.pid) } label: {
-                                            Text(Tr("移除")).font(AppDesign.Type.caption).foregroundColor(DDColor.sub)
+                                            Text(Tr("移除")).font(AppDesign.Typography.caption).foregroundColor(DDColor.sub)
                                         }
                                         .buttonStyle(.plain)
                                     }
@@ -3718,7 +3718,7 @@ struct DDCartTab: View {
         let tint = isSelf ? DDColor.redDeep : DDColor.blueDeep
         return HStack(spacing: AppDesign.Spacing.xs) {
             Image(systemName: "storefront").font(.system(size: 13)).foregroundColor(DDColor.ink)
-            Text(shop).font(AppDesign.Type.bodyMedium).foregroundColor(DDColor.ink).lineLimit(1)
+            Text(shop).font(AppDesign.Typography.bodyMedium).foregroundColor(DDColor.ink).lineLimit(1)
             Text(Tr(isSelf ? "自营" : "第三方"))
                 .font(pf(9, .semibold))
                 .foregroundColor(tint)
@@ -3753,7 +3753,7 @@ struct DDCartTab: View {
                               ? "checkmark.circle.fill" : "circle")
                             .font(.system(size: 19))
                             .foregroundColor(checked.count == lines.count ? DDColor.blue : DDColor.sub)
-                        Text(Tr("全选")).font(AppDesign.Type.body).foregroundColor(DDColor.ink)
+                        Text(Tr("全选")).font(AppDesign.Typography.body).foregroundColor(DDColor.ink)
                     }
                 }
                 .buttonStyle(.plain)
@@ -3802,7 +3802,7 @@ struct DDCartTab: View {
                                 } else {
                                     Text(Tr("请先填写收货地址"))
                                         .font(pf(15)).foregroundColor(DDColor.red)
-                                    Text(Tr("点这里新增一条")).font(AppDesign.Type.caption).foregroundColor(DDColor.sub)
+                                    Text(Tr("点这里新增一条")).font(AppDesign.Typography.caption).foregroundColor(DDColor.sub)
                                 }
                             }
                             Spacer(minLength: 0)
@@ -3835,13 +3835,13 @@ struct DDCartTab: View {
                         .shadow(color: DDColor.cardShadow, radius: 10, y: 3)
                     }
                     Text(Tr("合计 ") + "¥" + moneyFmt(total))
-                        .font(AppDesign.Type.rowTitle).foregroundColor(DDColor.red)
+                        .font(AppDesign.Typography.rowTitle).foregroundColor(DDColor.red)
                         .frame(maxWidth: .infinity, alignment: .trailing)
                         .padding(.horizontal, 14)
 
                     if store.isVip {
                         Text(Tr("PLUS会员立减 ") + "-¥" + moneyFmt(store.vipOff(total)))
-                            .font(AppDesign.Type.caption).foregroundColor(DDColor.red)
+                            .font(AppDesign.Typography.caption).foregroundColor(DDColor.red)
                             .frame(maxWidth: .infinity, alignment: .trailing)
                             .padding(.horizontal, 14)
                     }
@@ -3867,7 +3867,7 @@ struct DDCartTab: View {
                 payAll()
             } label: {
                 Text(Tr("提交订单"))
-                    .font(AppDesign.Type.rowTitle).foregroundColor(.white)
+                    .font(AppDesign.Typography.rowTitle).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous).fill(DDColor.gradBtn))
                     .padding(.horizontal, 14)
@@ -4065,7 +4065,7 @@ struct DDMineTab: View {
                         }
                     }
                     Text(Tr("星言号 ") + (app.me?.username ?? ""))
-                        .font(AppDesign.Type.caption).foregroundColor(DDColor.sub).lineLimit(1)
+                        .font(AppDesign.Typography.caption).foregroundColor(DDColor.sub).lineLimit(1)
 
                         .copyOnLongPress(app.me?.username ?? "") { app.show($0) }
                 }
@@ -4111,11 +4111,11 @@ struct DDMineTab: View {
     private var orderCard: some View {
         VStack(spacing: 0) {
             HStack {
-                Text(Tr("我的订单")).font(AppDesign.Type.rowTitle).foregroundColor(DDColor.ink)
+                Text(Tr("我的订单")).font(AppDesign.Typography.rowTitle).foregroundColor(DDColor.ink)
                 Spacer(minLength: 0)
                 Button { onOrders() } label: {
                     HStack(spacing: 2) {
-                        Text(Tr("全部订单")).font(AppDesign.Type.caption).foregroundColor(DDColor.sub)
+                        Text(Tr("全部订单")).font(AppDesign.Typography.caption).foregroundColor(DDColor.sub)
                         Chevron(size: 8, line: 1.4)
                     }
                 }
@@ -4221,9 +4221,9 @@ struct DDMineTab: View {
                         .font(.system(size: 15))
                         .foregroundColor(DDColor.blue)
                 }
-                Text(Tr(title)).font(AppDesign.Type.bodyLarge).foregroundColor(DDColor.ink)
+                Text(Tr(title)).font(AppDesign.Typography.bodyLarge).foregroundColor(DDColor.ink)
                 Spacer(minLength: 0)
-                Text(right).font(AppDesign.Type.caption).foregroundColor(DDColor.sub).lineLimit(1)
+                Text(right).font(AppDesign.Typography.caption).foregroundColor(DDColor.sub).lineLimit(1)
                 Chevron(size: 9, line: 1.5)
             }
             .padding(.horizontal, 14).frame(height: AppDesign.Control.buttonHeight)
@@ -4392,7 +4392,7 @@ struct DDDetailView: View {
                     .font(pf(11))
                     .foregroundColor(DDColor.sub)
                 Text("¥" + moneyFmt(displayPrice))
-                    .font(AppDesign.Type.bodyStrong)
+                    .font(AppDesign.Typography.bodyStrong)
                     .foregroundColor(DDColor.ink)
                 Chevron(size: 8, line: 1.5)
             }
@@ -4420,7 +4420,7 @@ struct DDDetailView: View {
                     .font(pf(14, .medium))
                     .foregroundColor(DDColor.ink)
                 Text(store.deliveryMode?.days ?? Tr("预计 48 小时内发货"))
-                    .font(AppDesign.Type.caption)
+                    .font(AppDesign.Typography.caption)
                     .foregroundColor(DDColor.sub)
             }
             Spacer(minLength: 8)
@@ -4492,7 +4492,7 @@ struct DDDetailView: View {
             }
             .buttonStyle(.plain)
             Text(Tr("商品详情"))
-                .font(AppDesign.Type.button)
+                .font(AppDesign.Typography.button)
                 .foregroundColor(DDColor.ink)
                 .padding(.horizontal, 14)
                 .frame(height: AppDesign.Control.floatingControlHeight)
@@ -4758,7 +4758,7 @@ struct DDDetailView: View {
         let sellerTint = product.isSelfOperated ? DDColor.redDeep : DDColor.blueDeep
         return VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 7) {
-                Text(Tr("履约与保障")).font(AppDesign.Type.rowTitle).foregroundColor(DDColor.ink)
+                Text(Tr("履约与保障")).font(AppDesign.Typography.rowTitle).foregroundColor(DDColor.ink)
                 Text(Tr(product.isSelfOperated ? "星言统一履约" : "商家履约 · 平台监管"))
                     .font(pf(10.5, .medium))
                     .foregroundColor(sellerTint)
@@ -4789,7 +4789,7 @@ struct DDDetailView: View {
                         .font(.system(size: 13))
                         .foregroundColor(DDColor.redDeep)
                     Text(coupon.map { $0.text + Tr("，结算可用") } ?? Tr("查看优惠券与平台活动"))
-                        .font(AppDesign.Type.captionMedium)
+                        .font(AppDesign.Typography.captionMedium)
                         .foregroundColor(DDColor.ink)
                         .lineLimit(1)
                     Spacer(minLength: 0)
@@ -4823,7 +4823,7 @@ struct DDDetailView: View {
                 Text(Tr(title)).font(pf(11, .semibold)).foregroundColor(DDColor.sub)
             }
             Text(value)
-                .font(AppDesign.Type.captionMedium)
+                .font(AppDesign.Typography.captionMedium)
                 .foregroundColor(DDColor.ink)
                 .lineLimit(2)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -4846,7 +4846,7 @@ struct DDDetailView: View {
                     Image(systemName: "sparkles")
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(DDColor.redDeep)
-                    Text(Tr("核心亮点")).font(AppDesign.Type.rowTitle).foregroundColor(DDColor.ink)
+                    Text(Tr("核心亮点")).font(AppDesign.Typography.rowTitle).foregroundColor(DDColor.ink)
                     Spacer(minLength: 0)
                     Text(Tr("星言甄选"))
                         .font(pf(10.5, .semibold))
@@ -4864,7 +4864,7 @@ struct DDDetailView: View {
                                 .frame(width: 17, height: 17)
                                 .background(Circle().fill(DDColor.redDeep.opacity(0.86)))
                             Text(Tr(point))
-                                .font(AppDesign.Type.sectionMedium)
+                                .font(AppDesign.Typography.sectionMedium)
                                 .foregroundColor(DDColor.ink)
                                 .lineLimit(1)
                             Spacer(minLength: 0)
@@ -4900,17 +4900,17 @@ struct DDDetailView: View {
                 HStack(spacing: 10) {
                     Circle().fill(Color(hex: 0xFFD9CC)).frame(width: 34, height: 34)
                         .overlay(Text(i == 0 ? "拼" : "友")
-                            .font(AppDesign.Type.compactButton).foregroundColor(DDColor.red))
+                            .font(AppDesign.Typography.compactButton).foregroundColor(DDColor.red))
                     VStack(alignment: .leading, spacing: 2) {
                         Text(i == 0 ? Tr("拼友 138****6621") : Tr("拼友 186****3302"))
-                            .font(AppDesign.Type.body).foregroundColor(DDColor.ink)
+                            .font(AppDesign.Typography.body).foregroundColor(DDColor.ink)
                         Text(Tr("还剩 ") + String(23 - i * 7) + Tr(" 小时"))
                             .font(pf(11.5)).foregroundColor(DDColor.sub)
                     }
                     Spacer(minLength: 0)
                     Button { app.show(Tr("已加入 TA 的拼单")) } label: {
                         Text(Tr("去拼单"))
-                            .font(AppDesign.Type.compactButtonMedium).foregroundColor(.white)
+                            .font(AppDesign.Typography.compactButtonMedium).foregroundColor(.white)
                             .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.sectionHeaderHeight)
                             .background(Capsule().fill(DDColor.red))
                     }
@@ -4982,7 +4982,7 @@ struct DDDetailView: View {
             Text(product.title + Tr(DDStore.groupOn
                                     ? "。产地直发、坏果包赔、退货包运费，拼单更便宜。"
                                     : "。产地直发、坏果包赔、退货包运费，48 小时内发货。"))
-                .font(AppDesign.Type.body).foregroundColor(DDColor.sub)
+                .font(AppDesign.Typography.body).foregroundColor(DDColor.sub)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(14)
@@ -5204,7 +5204,7 @@ struct DDProductMediaViewer: View {
                 .buttonStyle(.plain)
                 Spacer(minLength: 0)
                 Text("\(min(page + 1, count))/\(count)")
-                    .font(AppDesign.Type.sectionMedium)
+                    .font(AppDesign.Typography.sectionMedium)
                     .foregroundColor(.white)
                     .padding(.horizontal, 10)
                     .frame(height: AppDesign.Control.statusHeight)
@@ -5266,7 +5266,7 @@ struct DDOrderSheet: View {
                     HStack(alignment: .top, spacing: 10) {
                         DDThumb(em: product.em, size: 68, radius: 8, img: product.img)
                         VStack(alignment: .leading, spacing: 5) {
-                            Text(product.title).font(AppDesign.Type.body).foregroundColor(DDColor.ink).lineLimit(2)
+                            Text(product.title).font(AppDesign.Typography.body).foregroundColor(DDColor.ink).lineLimit(2)
                             DDPrice(value: unit, size: 17)
                         }
                         Spacer(minLength: 0)
@@ -5293,14 +5293,14 @@ struct DDOrderSheet: View {
                         Text(Tr("数量")).font(pf(14.5)).foregroundColor(DDColor.ink)
                         Spacer(minLength: 0)
                         Button { if count > 1 { count -= 1 } } label: {
-                            Text("−").font(AppDesign.Type.rowTitle).foregroundColor(DDColor.ink)
+                            Text("−").font(AppDesign.Typography.rowTitle).foregroundColor(DDColor.ink)
                                 .frame(width: 30, height: 30)
                                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous).fill(DDColor.page))
                         }
                         .buttonStyle(.plain)
                         Text(String(count)).font(pf(14)).frame(width: 36)
                         Button { count += 1 } label: {
-                            Text("+").font(AppDesign.Type.rowTitle).foregroundColor(DDColor.ink)
+                            Text("+").font(AppDesign.Typography.rowTitle).foregroundColor(DDColor.ink)
                                 .frame(width: 30, height: 30)
                                 .background(RoundedRectangle(cornerRadius: AppDesign.Radius.tiny, style: .continuous).fill(DDColor.page))
                         }
@@ -5332,7 +5332,7 @@ struct DDOrderSheet: View {
                                 } else {
                                     Text(Tr("请先填写收货地址"))
                                         .font(pf(15)).foregroundColor(DDColor.red)
-                                    Text(Tr("点这里新增一条")) .font(AppDesign.Type.caption).foregroundColor(DDColor.sub)
+                                    Text(Tr("点这里新增一条")) .font(AppDesign.Typography.caption).foregroundColor(DDColor.sub)
                                 }
                             }
                             Spacer(minLength: 0)
@@ -5378,7 +5378,7 @@ struct DDOrderSheet: View {
                     HStack(spacing: 10) {
                         Text(Tr("备注")).font(pf(14)).foregroundColor(DDColor.ink)
                         TextField(Tr("给商家留言（可不填）"), text: $remark)
-                            .font(AppDesign.Type.body)
+                            .font(AppDesign.Typography.body)
                     }
                     .padding(.horizontal, 14).frame(height: AppDesign.Control.mediumControlHeight)
                     .background(DDColor.cardGrad)
@@ -5399,7 +5399,7 @@ struct DDOrderSheet: View {
             }
             Button { submit() } label: {
                 Text((DDStore.groupOn && group) ? Tr("发起拼单") : Tr("立即支付"))
-                    .font(AppDesign.Type.rowTitle).foregroundColor(.white)
+                    .font(AppDesign.Typography.rowTitle).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay, style: .continuous).fill(DDColor.gradBtn))
                     .padding(.horizontal, 14)
@@ -5487,7 +5487,7 @@ struct DDOrderSheet: View {
             HStack {
                 Text(l).font(pf(14)).foregroundColor(DDColor.ink)
                 Spacer(minLength: 0)
-                Text(r).font(AppDesign.Type.body).foregroundColor(red ? DDColor.red : DDColor.sub)
+                Text(r).font(AppDesign.Typography.body).foregroundColor(red ? DDColor.red : DDColor.sub)
                 Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold))
                     .foregroundColor(DDColor.sub.opacity(0.55))
             }
@@ -5673,7 +5673,7 @@ struct DDOrdersView: View {
         let sellerTint = isSelf ? DDColor.redDeep : DDColor.blueDeep
         return VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text(o.shop).font(AppDesign.Type.bodyMedium).foregroundColor(DDColor.ink).lineLimit(1)
+                Text(o.shop).font(AppDesign.Typography.bodyMedium).foregroundColor(DDColor.ink).lineLimit(1)
                 Text(Tr(isSelf ? "自营" : "第三方"))
                     .font(pf(9, .semibold))
                     .foregroundColor(sellerTint)
@@ -5682,7 +5682,7 @@ struct DDOrdersView: View {
                     .background(Capsule().fill(sellerTint.opacity(0.10)))
                 Spacer(minLength: 0)
                 Text(Tr(o.statusText))
-                    .font(AppDesign.Type.captionMedium)
+                    .font(AppDesign.Typography.captionMedium)
                     .foregroundColor(o.status == "done" || o.status == "cancel" ? DDColor.sub : DDColor.red)
             }
             if o.canPay {
@@ -5756,7 +5756,7 @@ struct DDOrdersView: View {
 
     private func smallBtn(_ t: String, _ filled: Bool) -> some View {
         Text(t)
-            .font(AppDesign.Type.caption)
+            .font(AppDesign.Typography.caption)
             .foregroundColor(filled ? .white : DDColor.ink)
             .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.sectionHeaderHeight)
             .background(Capsule().fill(filled ? DDColor.red : DDColor.page))
@@ -5952,7 +5952,7 @@ struct DDSearchView: View {
                             Text(Tr("搜索历史")).font(pf(14.5, .semibold)).foregroundColor(DDColor.ink)
                             Spacer(minLength: 0)
                             Button { store.clearHistory() } label: {
-                                Text(Tr("清空")).font(AppDesign.Type.caption).foregroundColor(DDColor.sub)
+                                Text(Tr("清空")).font(AppDesign.Typography.caption).foregroundColor(DDColor.sub)
                             }
                             .buttonStyle(.plain)
                         }
@@ -6022,7 +6022,7 @@ struct DDSearchView: View {
         HStack(spacing: 10) {
             DDThumb(em: p.em, size: 62, radius: 8, img: p.img)
             VStack(alignment: .leading, spacing: 5) {
-                Text(p.title).font(AppDesign.Type.body).foregroundColor(DDColor.ink).lineLimit(2)
+                Text(p.title).font(AppDesign.Typography.body).foregroundColor(DDColor.ink).lineLimit(2)
                 HStack(spacing: 6) {
                     DDPrice(value: p.price, size: 16)
                     if !p.sold.isEmpty {
@@ -6180,7 +6180,7 @@ struct DDDeliveryList: View {
                         Spacer(minLength: 0)
                         let fee = (m.freeMin > 0 && goods >= m.freeMin) ? 0 : m.fee
                         Text(fee <= 0 ? Tr("免运费") : ("¥" + moneyFmt(fee)))
-                            .font(AppDesign.Type.bodyMedium)
+                            .font(AppDesign.Typography.bodyMedium)
                             .foregroundColor(fee <= 0 ? C.green : DDColor.red)
                     }
                     .padding(.horizontal, 14).frame(height: AppDesign.Control.dialogRowHeight)

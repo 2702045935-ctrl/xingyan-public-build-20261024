@@ -77,7 +77,7 @@ struct RPCoverEditSheet: View {
                             Text(Tr("名字")).font(pf(16)).foregroundColor(C.label)
                                 .frame(width: 62, alignment: .leading)
                             TextField(Tr("金玉满堂"), text: $name)
-                                .font(AppDesign.Type.bodyLarge)
+                                .font(AppDesign.Typography.bodyLarge)
                                 .multilineTextAlignment(.trailing)
                         }
                         .padding(.horizontal, AppDesign.Spacing.md).frame(height: AppDesign.Control.dialogRowHeight)
@@ -147,7 +147,7 @@ struct RPCoverEditSheet: View {
                     }
 
                     if !msg.isEmpty {
-                        Text(msg).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                        Text(msg).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 18)
                     }

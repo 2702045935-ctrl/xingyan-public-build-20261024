@@ -52,7 +52,7 @@ struct DistMeView: View {
         VStack(spacing: AppDesign.Spacing.xs) {
             Text(Tr("这个账号还不是分销账号")).font(pf(15, .medium)).foregroundColor(C.label)
             Text(Tr("让管理员在「管理 → 商城后台 → 分销」里给你开通，就能拿推广码赚佣金了。"))
-                .font(AppDesign.Type.caption).foregroundColor(C.subLabel).multilineTextAlignment(.center)
+                .font(AppDesign.Typography.caption).foregroundColor(C.subLabel).multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity).padding(AppDesign.Spacing.lg)
         .background(C.cardBg).clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.compact, style: .continuous))
@@ -60,7 +60,7 @@ struct DistMeView: View {
 
     private var codeCard: some View {
         VStack(spacing: 10) {
-            Text(Tr("我的推广码")).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+            Text(Tr("我的推广码")).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
             Text(me?.code ?? "")
                 .font(pfStyled(size: 26, weight: .semibold, design: .monospaced))
                 .foregroundColor(C.label)
@@ -145,7 +145,7 @@ struct DistMeView: View {
                     HairLine(inset: 16)
                     HStack(spacing: AppDesign.Spacing.xs) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(r.text).font(AppDesign.Type.body).foregroundColor(C.label).lineLimit(2)
+                            Text(r.text).font(AppDesign.Typography.body).foregroundColor(C.label).lineLimit(2)
                             Text(rpTime(r.at)).font(pf(11.5)).foregroundColor(C.subLabel)
                         }
                         Spacer(minLength: 0)
@@ -197,11 +197,11 @@ struct DistAdminCard: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: AppDesign.Spacing.xs) {
-                Text(Tr("分销")).font(AppDesign.Type.rowTitle).foregroundColor(C.label)
+                Text(Tr("分销")).font(AppDesign.Typography.rowTitle).foregroundColor(C.label)
                 Text(Tr("开通 / 佣金比例 / 业绩")) .font(pf(12)).foregroundColor(C.subLabel)
                 Spacer(minLength: 0)
                 Button { Task { await load() } } label: {
-                    Text(Tr("刷新")).font(AppDesign.Type.caption).foregroundColor(C.link)
+                    Text(Tr("刷新")).font(AppDesign.Typography.caption).foregroundColor(C.link)
                 }
                 .buttonStyle(.plain)
             }
@@ -232,7 +232,7 @@ struct DistAdminCard: View {
                     .padding(.horizontal, AppDesign.Spacing.md).padding(.bottom, 14)
             } else if rows.isEmpty {
                 Text(Tr("还没有分销账号。上面填账号 → 点「开通」。"))
-                    .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                    .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, AppDesign.Spacing.md).padding(.bottom, 14)
             } else {
@@ -248,7 +248,7 @@ struct DistAdminCard: View {
                         Text("¥" + moneyFmt(r.earned ?? 0))
                             .font(pf(14, .medium)).foregroundColor(C.green)
                         Button { Task { await setDist(false, r) } } label: {
-                            Text(Tr("停")).font(AppDesign.Type.caption).foregroundColor(DDColor.redDeep)
+                            Text(Tr("停")).font(AppDesign.Typography.caption).foregroundColor(DDColor.redDeep)
                                 .padding(.horizontal, 10).frame(height: AppDesign.Control.sectionHeaderHeight)
                                 .background(Capsule().stroke(C.hairline, lineWidth: 0.8))
                         }

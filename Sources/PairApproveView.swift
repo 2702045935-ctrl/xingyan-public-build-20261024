@@ -67,8 +67,8 @@ struct PairApproveView: View {
                     if i > 0 { HairLine(inset: 16) }
                     HStack(spacing: 10) {
                         VStack(alignment: .leading, spacing: 3) {
-                            Text(deviceModelText(d)).font(AppDesign.Type.listTitle).foregroundColor(C.label).lineLimit(1)
-                            Text(deviceTimeText(d)).font(AppDesign.Type.caption).foregroundColor(C.subLabel).lineLimit(1)
+                            Text(deviceModelText(d)).font(AppDesign.Typography.listTitle).foregroundColor(C.label).lineLimit(1)
+                            Text(deviceTimeText(d)).font(AppDesign.Typography.caption).foregroundColor(C.subLabel).lineLimit(1)
                         }
                         Spacer(minLength: 8)
                         if d.current == true {
@@ -89,7 +89,7 @@ struct PairApproveView: View {
 
     private var codeHint: some View {
         Text(Tr("新设备上点「微信登录」会出一个二维码和一个 6 位数字：用已登录的手机扫一下，或者把数字输在下面确认。"))
-            .font(AppDesign.Type.caption)
+            .font(AppDesign.Typography.caption)
             .foregroundColor(C.subLabel)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 22)
@@ -157,7 +157,7 @@ struct PairApproveView: View {
                         check()
                     } label: {
                         Text(busy ? Tr("查询中…") : Tr("下一步"))
-                            .font(AppDesign.Type.rowTitle)
+                            .font(AppDesign.Typography.rowTitle)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity, minHeight: 50)
                             .background(C.green)
@@ -179,9 +179,9 @@ struct PairApproveView: View {
                 Text(device).font(pf(17, .semibold)).foregroundColor(C.label)
                     .multilineTextAlignment(.center).lineLimit(2)
                 Text(Tr("请求登录你的星言账号"))
-                    .font(AppDesign.Type.body).foregroundColor(C.subLabel)
+                    .font(AppDesign.Typography.body).foregroundColor(C.subLabel)
                 if !at.isEmpty {
-                    Text(at).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                    Text(at).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -192,7 +192,7 @@ struct PairApproveView: View {
             HairLine(inset: 16)
 
             Text(Tr("如果这不是你本人的操作，请点「取消」，并尽快修改密码。"))
-                .font(AppDesign.Type.caption)
+                .font(AppDesign.Typography.caption)
                 .foregroundColor(C.red.opacity(0.92))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, AppDesign.Spacing.lg)
@@ -200,7 +200,7 @@ struct PairApproveView: View {
 
             Button { approve() } label: {
                 Text(busy ? Tr("确认中…") : Tr("确认登录"))
-                    .font(AppDesign.Type.rowTitle)
+                    .font(AppDesign.Typography.rowTitle)
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity, minHeight: 50)
                     .background(C.green)

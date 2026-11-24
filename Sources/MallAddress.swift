@@ -37,7 +37,7 @@ struct DDAddressListView: View {
                         .font(.system(size: 40, weight: .light))
                         .foregroundColor(DDColor.sub.opacity(0.7))
                     Text(Tr("还没有收货地址")).font(pf(15)).foregroundColor(DDColor.sub)
-                    Text(Tr("加一条，下单时就不用再填了")).font(AppDesign.Type.caption).foregroundColor(DDColor.sub.opacity(0.8))
+                    Text(Tr("加一条，下单时就不用再填了")).font(AppDesign.Typography.caption).foregroundColor(DDColor.sub.opacity(0.8))
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -52,7 +52,7 @@ struct DDAddressListView: View {
             }
             Button { adding = true } label: {
                 Text(Tr("新增收货地址"))
-                    .font(AppDesign.Type.rowTitle).foregroundColor(.white)
+                    .font(AppDesign.Typography.rowTitle).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(DDColor.gradBtn))
                     .padding(.horizontal, 14)
@@ -76,9 +76,9 @@ struct DDAddressListView: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: AppDesign.Spacing.xs) {
                     Text(a.name.isEmpty ? Tr("未填收货人") : a.name)
-                        .font(AppDesign.Type.rowTitleMedium).foregroundColor(DDColor.ink)
+                        .font(AppDesign.Typography.rowTitleMedium).foregroundColor(DDColor.ink)
                     if !a.phone.isEmpty {
-                        Text(a.phone).font(AppDesign.Type.body).foregroundColor(DDColor.sub)
+                        Text(a.phone).font(AppDesign.Typography.body).foregroundColor(DDColor.sub)
                     }
                     if a.isDefault {
                         Text(Tr("默认"))
@@ -88,7 +88,7 @@ struct DDAddressListView: View {
                     }
                 }
                 Text(a.full.isEmpty ? Tr("还没填详细地址") : a.full)
-                    .font(AppDesign.Type.body).foregroundColor(DDColor.sub)
+                    .font(AppDesign.Typography.body).foregroundColor(DDColor.sub)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 if !a.complete {
@@ -190,7 +190,7 @@ struct DDAddressEditView: View {
                             Image(systemName: "location.circle")
                                 .font(pf(13))
                                 .foregroundColor(DDColor.sub)
-                            Text(m).font(AppDesign.Type.caption).foregroundColor(DDColor.sub)
+                            Text(m).font(AppDesign.Typography.caption).foregroundColor(DDColor.sub)
                             Spacer(minLength: 0)
                         }
                         .padding(.horizontal, AppDesign.Spacing.xxs)
@@ -229,7 +229,7 @@ struct DDAddressEditView: View {
             }
             Button { save() } label: {
                 Text(Tr("保存"))
-                    .font(AppDesign.Type.rowTitle).foregroundColor(.white)
+                    .font(AppDesign.Typography.rowTitle).foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 46)
                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.overlay).fill(canSave ? DDColor.gradBtn : LinearGradient(
                         colors: [Color(hex: 0xF0C9BE), Color(hex: 0xE7B7AA)],

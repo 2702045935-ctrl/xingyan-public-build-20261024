@@ -620,14 +620,14 @@ struct MeView: View {
                                 .fixedSize()
                         }
                         Text(Tr("星言号") + "：" + (app.me?.username ?? "-"))
-                            .font(AppDesign.Type.body)
+                            .font(AppDesign.Typography.body)
                             .foregroundColor(C.subLabel)
                             .lineLimit(1)
 
                             .copyOnLongPress(app.me?.username ?? "") { app.show($0) }
                         if moodOn {
                             Text((app.me?.moodIcon ?? "") + " " + (app.me?.moodText ?? ""))
-                                .font(AppDesign.Type.caption)
+                                .font(AppDesign.Typography.caption)
                                 .foregroundColor(C.subLabel)
                                 .lineLimit(1)
                         }
@@ -757,7 +757,7 @@ struct MeView: View {
     private func statCell(_ value: String, _ label: String, tap: Bool) -> some View {
         let body = VStack(spacing: 2) {
             Text(value)
-                .font(AppDesign.Type.rowTitle)
+                .font(AppDesign.Typography.rowTitle)
                 .foregroundColor(C.label)
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
@@ -1358,7 +1358,7 @@ struct SettingsView: View {
 
     private func settingsGroupHeader(_ text: String) -> some View {
         Text(text)
-            .font(AppDesign.Type.body)
+            .font(AppDesign.Typography.body)
             .foregroundColor(Color.dyn(0x767676, 0x8F8F8F))
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, AppDesign.Spacing.md)

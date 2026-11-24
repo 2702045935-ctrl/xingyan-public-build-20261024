@@ -165,7 +165,7 @@ struct MusicEmptyState: View {
                 .foregroundColor(C.subLabel.opacity(0.85))
             Text(title).font(pf(15)).foregroundColor(C.label)
             if !hint.isEmpty {
-                Text(hint).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                Text(hint).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 34)
             }
@@ -195,8 +195,8 @@ struct MusicSongRow: View {
                 HStack(spacing: AppDesign.Spacing.sm) {
                     MusicCover(path: track.cover ?? "", size: 52, radius: 10)
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(track.title).font(AppDesign.Type.rowTitleMedium).foregroundColor(C.label).lineLimit(1)
-                        Text(track.artistText).font(AppDesign.Type.caption).foregroundColor(C.subLabel).lineLimit(1)
+                        Text(track.title).font(AppDesign.Typography.rowTitleMedium).foregroundColor(C.label).lineLimit(1)
+                        Text(track.artistText).font(AppDesign.Typography.caption).foregroundColor(C.subLabel).lineLimit(1)
                     }
                     Spacer(minLength: 6)
                     ZStack {
@@ -250,7 +250,7 @@ struct MusicMineBar: View {
                         Image(systemName: k.icon)
                             .font(.system(size: 13.5, weight: .medium))
                             .foregroundColor(C.green)
-                        Text(Tr(k.title)).font(AppDesign.Type.bodyMedium).foregroundColor(C.label).lineLimit(1)
+                        Text(Tr(k.title)).font(AppDesign.Typography.bodyMedium).foregroundColor(C.label).lineLimit(1)
                     }
                     .frame(maxWidth: .infinity)
                     .frame(height: AppDesign.Control.iconControlHeight)
@@ -500,8 +500,8 @@ struct MusicPlaylistsPage: View {
                     .frame(width: 52, height: 52)
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(pl.name).font(AppDesign.Type.rowTitleMedium).foregroundColor(C.label).lineLimit(1)
-                        Text("\(pl.songs.count) " + Tr("首")).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                        Text(pl.name).font(AppDesign.Typography.rowTitleMedium).foregroundColor(C.label).lineLimit(1)
+                        Text("\(pl.songs.count) " + Tr("首")).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                     }
                     Spacer(minLength: 6)
                     Image(systemName: "chevron.right")
@@ -609,7 +609,7 @@ struct MusicPlaylistPage: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(pl?.name ?? "").font(pf(17, .semibold)).foregroundColor(C.label).lineLimit(1)
-                Text("\(lib.songs(in: listId).count) " + Tr("首")).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                Text("\(lib.songs(in: listId).count) " + Tr("首")).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                 HStack(spacing: AppDesign.Spacing.xs) {
                     Button {
                         guard let first = songs.first else { return }
@@ -618,7 +618,7 @@ struct MusicPlaylistPage: View {
                     } label: {
                         HStack(spacing: AppDesign.Spacing.xxs) {
                             Image(systemName: "play.fill").font(.system(size: 11, weight: .bold))
-                            Text(Tr("播放全部")).font(AppDesign.Type.captionMedium)
+                            Text(Tr("播放全部")).font(AppDesign.Typography.captionMedium)
                         }
                         .foregroundColor(.white)
                         .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.sectionHeaderHeight)
@@ -630,7 +630,7 @@ struct MusicPlaylistPage: View {
                     Button { showPick = true } label: {
                         HStack(spacing: AppDesign.Spacing.xxs) {
                             Image(systemName: "plus").font(.system(size: 11, weight: .bold))
-                            Text(Tr("加入歌曲")).font(AppDesign.Type.captionMedium)
+                            Text(Tr("加入歌曲")).font(AppDesign.Typography.captionMedium)
                         }
                         .foregroundColor(C.green)
                         .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.sectionHeaderHeight)
@@ -728,7 +728,7 @@ struct MusicPickPage: View {
                 MusicCover(path: t.cover ?? "", size: 46, radius: 9)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(t.title).font(pf(15, .medium)).foregroundColor(C.label).lineLimit(1)
-                    Text(t.artistText).font(AppDesign.Type.caption).foregroundColor(C.subLabel).lineLimit(1)
+                    Text(t.artistText).font(AppDesign.Typography.caption).foregroundColor(C.subLabel).lineLimit(1)
                 }
                 Spacer(minLength: 6)
                 Image(systemName: on ? "checkmark.circle.fill" : "circle")
@@ -761,7 +761,7 @@ struct AddToPlaylistSheet: View {
                 .buttonStyle(.plain)
             }
 
-            Text(track.title).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+            Text(track.title).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, AppDesign.Spacing.md).padding(.bottom, AppDesign.Spacing.xs)
 
@@ -779,9 +779,9 @@ struct AddToPlaylistSheet: View {
                                 dismiss()
                             } label: {
                                 HStack(spacing: 10) {
-                                    Text(pl.name).font(AppDesign.Type.bodyLarge).foregroundColor(C.label).lineLimit(1)
+                                    Text(pl.name).font(AppDesign.Typography.bodyLarge).foregroundColor(C.label).lineLimit(1)
                                     Spacer(minLength: 6)
-                                    Text("\(pl.songs.count) " + Tr("首")).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                                    Text("\(pl.songs.count) " + Tr("首")).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                                     if lib.has(track.id, in: pl.id) {
                                         Image(systemName: "checkmark").font(.system(size: 14, weight: .semibold))
                                             .foregroundColor(C.green)

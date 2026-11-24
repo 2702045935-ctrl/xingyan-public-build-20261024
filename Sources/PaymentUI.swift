@@ -613,7 +613,7 @@ struct PaySectionLabel: View {
 
     var body: some View {
         Text(text)
-            .font(AppDesign.Type.compactButton)
+            .font(AppDesign.Typography.compactButton)
             .foregroundColor(PayVisual.secondaryInk)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, AppDesign.Spacing.xxs)
@@ -640,7 +640,7 @@ struct PayStatusPill: View {
 
     var body: some View {
         Text(text)
-            .font(AppDesign.Type.captionStrong)
+            .font(AppDesign.Typography.captionStrong)
             .foregroundColor(color)
             .padding(.horizontal, 10)
             .frame(height: 27)
@@ -690,7 +690,7 @@ struct PayEmptyState: View {
                 .font(.system(size: 32, weight: .regular))
                 .foregroundColor(PayVisual.secondaryInk)
             Text(title)
-                .font(AppDesign.Type.rowTitle)
+                .font(AppDesign.Typography.rowTitle)
                 .foregroundColor(C.label)
             if !detail.isEmpty {
                 Text(detail)
@@ -728,7 +728,7 @@ struct PaySecondaryButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(AppDesign.Type.rowTitle)
+            .font(AppDesign.Typography.rowTitle)
             .foregroundColor(tint)
             .frame(maxWidth: .infinity)
             .frame(height: AppDesign.Control.buttonHeight)
@@ -921,7 +921,7 @@ private struct StarPayGuideView: View {
                     .shadow(color: Color.black.opacity(0.08), radius: 14, y: 7)
                 VStack(alignment: .leading, spacing: 13) {
                     Label(Tr("交易成功"), systemImage: "checkmark.circle.fill")
-                        .font(AppDesign.Type.rowTitle)
+                        .font(AppDesign.Typography.rowTitle)
                         .foregroundStyle(PayVisual.success)
                     Text("− ¥ 128.00")
                         .font(pfMoney(26, .bold))
@@ -932,7 +932,7 @@ private struct StarPayGuideView: View {
                         Spacer()
                         Text("¥ 1,280.00")
                     }
-                    .font(AppDesign.Type.captionMedium)
+                    .font(AppDesign.Typography.captionMedium)
                     .foregroundStyle(PayVisual.secondaryInk)
                 }
                 .padding(AppDesign.Spacing.lg)
@@ -1066,7 +1066,7 @@ struct PayOfficialView: View {
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(name)
-                            .font(AppDesign.Type.rowTitle)
+                            .font(AppDesign.Typography.rowTitle)
                             .foregroundStyle(.white)
                             .lineLimit(1)
                         Text("STAR PAY")
@@ -1096,7 +1096,7 @@ struct PayOfficialView: View {
                 } label: {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(Tr("可用余额"))
-                            .font(AppDesign.Type.captionMedium)
+                            .font(AppDesign.Typography.captionMedium)
                             .foregroundStyle(.white.opacity(0.56))
 
                         Group {
@@ -1269,10 +1269,10 @@ struct PayOfficialView: View {
                         .foregroundStyle(PayVisual.gold)
                     VStack(alignment: .leading, spacing: 5) {
                         Text(Tr("管理灰度预览"))
-                            .font(AppDesign.Type.compactButton)
+                            .font(AppDesign.Typography.compactButton)
                             .foregroundStyle(C.label)
                         Text(Tr("普通用户累计消费满 ¥50,000 后自动解锁。"))
-                            .font(AppDesign.Type.caption)
+                            .font(AppDesign.Typography.caption)
                             .foregroundStyle(PayVisual.secondaryInk)
                         ProgressView(value: min(1, cumulativeSpend / Self.goldThreshold))
                             .tint(PayVisual.gold)
@@ -1425,7 +1425,7 @@ struct PayOfficialView: View {
                 ForEach(ledgerDays(entries)) { group in
                     VStack(alignment: .leading, spacing: 8) {
                         Text(dayTitle(group.day))
-                            .font(AppDesign.Type.compactButton)
+                            .font(AppDesign.Typography.compactButton)
                             .foregroundStyle(PayVisual.secondaryInk)
                             .padding(.horizontal, AppDesign.Spacing.xxs)
 
@@ -1453,7 +1453,7 @@ struct PayOfficialView: View {
                     .font(pf(15, .semibold))
                     .foregroundColor(C.label)
                 Text(Tr("每一笔收付款、转账、红包和退款都会出现在这里"))
-                    .font(AppDesign.Type.caption)
+                    .font(AppDesign.Typography.caption)
                     .foregroundColor(PayVisual.secondaryInk)
             }
             .frame(maxWidth: .infinity)
@@ -1494,7 +1494,7 @@ struct PayOfficialView: View {
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(entry.reason.isEmpty ? (incoming ? Tr("收款") : Tr("付款")) : entry.reason)
-                        .font(AppDesign.Type.rowTitle)
+                        .font(AppDesign.Typography.rowTitle)
                         .foregroundColor(C.label)
                         .lineLimit(1)
                     Text(clock(entry.at) + " · " + Tr("交易成功"))

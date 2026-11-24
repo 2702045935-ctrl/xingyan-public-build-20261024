@@ -59,7 +59,7 @@ enum AppPalette {
 }
 
 enum AppDesign {
-    enum Type {
+    enum Typography {
         static var pageTitle: Font { pf(21, .semibold) }
         static var title: Font { pf(17.5, .semibold) }
         static var titleRegular: Font { pf(17.5) }
@@ -226,11 +226,11 @@ struct AppEmptyState: View {
             .frame(width: 48, height: 48)
 
             Text(title)
-                .font(AppDesign.Type.rowTitle)
+                .font(AppDesign.Typography.rowTitle)
                 .foregroundStyle(OrbitTheme.ink)
 
             Text(detail)
-                .font(AppDesign.Type.body)
+                .font(AppDesign.Typography.body)
                 .foregroundStyle(OrbitTheme.secondary)
                 .multilineTextAlignment(.center)
         }
@@ -252,7 +252,7 @@ struct AppStatusPill: View {
                     .font(.system(size: 10.5, weight: .semibold))
             }
             Text(title)
-                .font(AppDesign.Type.status)
+                .font(AppDesign.Typography.status)
                 .lineLimit(1)
         }
         .foregroundStyle(tone == .primary ? OrbitTheme.jadeDeep : OrbitTheme.secondary)
@@ -323,7 +323,7 @@ struct AppCompactButton: View {
                         .font(.system(size: 11.5, weight: .semibold))
                 }
                 Text(title)
-                    .font(AppDesign.Type.compactButton)
+                    .font(AppDesign.Typography.compactButton)
                     .lineLimit(1)
             }
             .foregroundStyle(enabled ? tone.ink : OrbitTheme.tertiary)
@@ -360,7 +360,7 @@ struct AppPrimaryButton: View {
                         .font(.system(size: 17, weight: .semibold))
                 }
                 Text(title)
-                    .font(AppDesign.Type.button)
+                    .font(AppDesign.Typography.button)
             }
             .foregroundStyle(enabled ? tone.ink : OrbitTheme.secondary)
             .frame(maxWidth: .infinity)

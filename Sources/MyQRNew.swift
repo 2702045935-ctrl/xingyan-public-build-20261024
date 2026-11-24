@@ -378,7 +378,7 @@ struct MyQRView: View {
 
             VStack(spacing: 3) {
                 Text(Tr("扫码添加好友"))
-                    .font(AppDesign.Type.rowTitle)
+                    .font(AppDesign.Typography.rowTitle)
                     .foregroundStyle(cardInk)
                 Text(Tr("打开星言 · 发现 · 扫一扫"))
                     .font(pf(11.5))

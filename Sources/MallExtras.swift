@@ -152,7 +152,7 @@ struct DDAdCard: View {
                     .lineLimit(2).multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Text(Tr(cta))
-                    .font(AppDesign.Type.sectionMedium).foregroundColor(.white)
+                    .font(AppDesign.Typography.sectionMedium).foregroundColor(.white)
                     .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.statusHeight)
                     .background(Capsule().fill(Color.black.opacity(0.22)))
             }
@@ -192,7 +192,7 @@ struct DDAdStrip: View {
                     Text(Tr(sub)).font(pf(11.5)).foregroundColor(DDColor.sub).lineLimit(1)
                 }
                 Spacer(minLength: 0)
-                Text(Tr(cta)).font(AppDesign.Type.captionMedium).foregroundColor(.white)
+                Text(Tr(cta)).font(AppDesign.Typography.captionMedium).foregroundColor(.white)
                     .padding(.horizontal, AppDesign.Spacing.sm).frame(height: AppDesign.Control.sectionHeaderHeight)
                     .background(Capsule().fill(Color(hex: bottom)))
             }
@@ -351,7 +351,7 @@ struct DDChannelView: View {
                 .buttonStyle(.plain)
                 Text(Tr(kind.title)).font(pf(17, .semibold)).foregroundColor(DDColor.ink)
                 Spacer(minLength: 0)
-                Text("\(list.count) " + Tr("件")).font(AppDesign.Type.caption).foregroundColor(DDColor.sub)
+                Text("\(list.count) " + Tr("件")).font(AppDesign.Typography.caption).foregroundColor(DDColor.sub)
             }
             HStack(spacing: 6) {
                 Image(systemName: kind.icon).font(.system(size: 11.5))
@@ -398,7 +398,7 @@ struct DDChannelView: View {
                 .background(Circle().fill(rankTint(n)))
             DDThumb(em: p.em, size: 68, radius: 10, img: p.img)
             VStack(alignment: .leading, spacing: 5) {
-                Text(p.title).font(AppDesign.Type.body).foregroundColor(DDColor.ink).lineLimit(2)
+                Text(p.title).font(AppDesign.Typography.body).foregroundColor(DDColor.ink).lineLimit(2)
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     DDPrice(value: p.price, size: 16)
                     Text("¥" + moneyFmt(p.orig))

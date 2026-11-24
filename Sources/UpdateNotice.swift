@@ -105,7 +105,7 @@ struct ForceUpdateView: View {
                     app.openUpdate(info)
                 } label: {
                     Text(Tr("立即更新"))
-                        .font(AppDesign.Type.rowTitle)
+                        .font(AppDesign.Typography.rowTitle)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity).frame(height: AppDesign.Control.mediumControlHeight)
                         .background(RoundedRectangle(cornerRadius: AppDesign.Radius.compact).fill(C.green))

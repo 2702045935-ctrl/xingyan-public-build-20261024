@@ -72,7 +72,7 @@ struct AICallView: View {
                             .font(pf(18, .semibold))
                             .foregroundColor(ink)
                         Text(Tr("请回 AI 工作台，从小星设置进入套餐补充页。"))
-                            .font(AppDesign.Type.caption)
+                            .font(AppDesign.Typography.caption)
                             .foregroundColor(subInk)
                             .multilineTextAlignment(.center)
                         Button(Tr("返回")) { dismiss() }
@@ -151,7 +151,7 @@ struct AICallView: View {
                 transcriptVisible.toggle()
             } label: {
                 Text(Tr("字"))
-                    .font(AppDesign.Type.captionMedium)
+                    .font(AppDesign.Typography.captionMedium)
                     .foregroundColor(ink)
                     .frame(width: 42, height: 42)
                     .background {
@@ -230,7 +230,7 @@ struct AICallView: View {
             if typingMode {
                 HStack(spacing: 9) {
                     TextField(Tr("输入想问小星的话"), text: $typedText, axis: .vertical)
-                        .font(AppDesign.Type.body)
+                        .font(AppDesign.Typography.body)
                         .foregroundColor(ink)
                         .lineLimit(1...3)
                         .focused($typedFocused)

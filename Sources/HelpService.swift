@@ -153,7 +153,7 @@ struct FAQView: View {
                                     .background(RoundedRectangle(cornerRadius: AppDesign.Radius.mini, style: .continuous)
                                         .fill(C.green))
                                 VStack(alignment: .leading, spacing: 3) {
-                                    Text(c.title).font(AppDesign.Type.listTitle).foregroundColor(C.label)
+                                    Text(c.title).font(AppDesign.Typography.listTitle).foregroundColor(C.label)
                                     Text("\((c.items ?? []).count) " + Tr("个问题"))
                                         .font(pf(12)).foregroundColor(C.subLabel)
                                 }
@@ -256,7 +256,7 @@ struct WalletUpgradeView: View {
                 .font(pf(19, .medium))
                 .foregroundColor(.white)
             Text(info?.tip ?? "")
-                .font(AppDesign.Type.caption)
+                .font(AppDesign.Typography.caption)
                 .foregroundColor(Color.white.opacity(0.85))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, AppDesign.Spacing.xl)
@@ -361,7 +361,7 @@ struct WalletUpgradeView: View {
             }
             Spacer(minLength: 6)
             Text("单笔 " + money(lv.single) + " · 单日 " + money(lv.day))
-                .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
         }
         .padding(.horizontal, AppDesign.Spacing.md)
         .frame(height: AppDesign.Control.largeControlHeight)
@@ -385,7 +385,7 @@ struct WalletUpgradeView: View {
 
     private var footNote: some View {
         Text(Tr("升级不收费，只是把身份信息补全：实名认证 + 绑定一张银行卡。信息只存在我们服务器，卡号只记末四位。"))
-            .font(AppDesign.Type.caption)
+            .font(AppDesign.Typography.caption)
             .foregroundColor(C.subLabel)
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)

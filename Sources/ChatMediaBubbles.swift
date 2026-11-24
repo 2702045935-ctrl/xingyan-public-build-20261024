@@ -71,7 +71,7 @@ struct UserCardBubble: View {
                             .tracking(1.1)
                             .foregroundColor(C.green)
                         Text(info.name.isEmpty ? Tr("星言联系人") : info.name)
-                            .font(AppDesign.Type.button)
+                            .font(AppDesign.Typography.button)
                             .foregroundColor(C.label)
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
@@ -133,7 +133,7 @@ struct AnnounceBubble: View {
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(C.subLabel)
                 Text(Tr("群公告"))
-                    .font(AppDesign.Type.captionMedium)
+                    .font(AppDesign.Typography.captionMedium)
                     .foregroundColor(C.label)
             }
             .padding(.horizontal, AppDesign.Spacing.sm)

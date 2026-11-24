@@ -21,7 +21,7 @@ struct MyQRViewOld: View {
                     saveToAlbum()
                 } label: {
                     Text(saved ? Tr("已存") : Tr("保存"))
-                        .font(AppDesign.Type.rowTitle)
+                        .font(AppDesign.Typography.rowTitle)
                         .foregroundColor(rows.isEmpty ? C.subLabel : C.green)
                         .frame(height: L.navH)
                         .padding(.trailing, AppDesign.Spacing.md)
@@ -38,7 +38,7 @@ struct MyQRViewOld: View {
                             ProgressView()
                         } else if rows.isEmpty {
                             Text(Tr("二维码生成失败，稍后再试"))
-                                .font(AppDesign.Type.body).foregroundColor(C.subLabel)
+                                .font(AppDesign.Typography.body).foregroundColor(C.subLabel)
                         } else {
 
                             QRCanvas(rows: rows).frame(width: 228, height: 228)
@@ -51,9 +51,9 @@ struct MyQRViewOld: View {
                     HStack(spacing: AppDesign.Spacing.sm) {
                         Avatar(path: avatar, size: 46, radius: 6)
                         VStack(alignment: .leading, spacing: 3) {
-                            Text(name).font(AppDesign.Type.rowTitle).foregroundColor(C.label).lineLimit(1)
+                            Text(name).font(AppDesign.Typography.rowTitle).foregroundColor(C.label).lineLimit(1)
                             Text(Tr("星言号：") + (username.isEmpty ? "-" : username))
-                                .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                                .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                         }
                         Spacer(minLength: 0)
                     }
@@ -63,7 +63,7 @@ struct MyQRViewOld: View {
                     .padding(.horizontal, AppDesign.Spacing.xl)
 
                     Text(Tr("用 App 的「发现 → 扫一扫」扫这张，就能加我好友"))
-                        .font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                        .font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 36)
 

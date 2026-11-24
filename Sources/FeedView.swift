@@ -492,11 +492,11 @@ struct ChannelsView: View {
     private func episodeSheet(_ item: FeedItem) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(item.seriesName?.isEmpty == false ? (item.seriesName ?? "") : Tr("选集"))
-                .font(AppDesign.Type.rowTitle)
+                .font(AppDesign.Typography.rowTitle)
                 .padding(.top, AppDesign.Spacing.md)
                 .padding(.horizontal, 18)
             Text(Tr("共\(item.epTotal ?? seriesEpisodes.count)集"))
-                .font(AppDesign.Type.caption)
+                .font(AppDesign.Typography.caption)
                 .foregroundColor(.secondary)
                 .padding(.horizontal, 18)
             ScrollView {
@@ -567,10 +567,10 @@ struct ChannelsView: View {
                     HStack(spacing: 10) {
                         VStack(alignment: .leading, spacing: 3) {
                             Text(listCommentCount)
-                                .font(AppDesign.Type.rowTitle)
+                                .font(AppDesign.Typography.rowTitle)
                                 .foregroundColor(.white)
                             Text(item.desc ?? "")
-                                .font(AppDesign.Type.caption)
+                                .font(AppDesign.Typography.caption)
                                 .foregroundColor(.white.opacity(0.56))
                                 .lineLimit(1)
                         }
@@ -624,7 +624,7 @@ struct ChannelsView: View {
                                            circle: true)
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text(comment.name ?? Tr("用户"))
-                                            .font(AppDesign.Type.compactButtonMedium)
+                                            .font(AppDesign.Typography.compactButtonMedium)
                                             .foregroundColor(.white.opacity(0.56))
                                         Text(comment.text ?? "")
                                             .font(pf(15))
@@ -744,7 +744,7 @@ struct ChannelsView: View {
                                     Image(systemName: "exclamationmark.circle.fill")
                                         .foregroundColor(Color(hex: 0xFF4D4F))
                                     Text(publishError)
-                                        .font(AppDesign.Type.caption)
+                                        .font(AppDesign.Typography.caption)
                                         .foregroundColor(Color.white.opacity(0.70))
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                 }
@@ -867,7 +867,7 @@ struct ChannelsView: View {
                     .frame(width: 54, height: 54)
 
                     Text(uploadStage.isEmpty ? Tr("正在处理视频…") : uploadStage)
-                        .font(AppDesign.Type.compactButtonMedium)
+                        .font(AppDesign.Typography.compactButtonMedium)
                         .foregroundColor(.white.opacity(0.88))
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -884,7 +884,7 @@ struct ChannelsView: View {
                 HStack(spacing: 9) {
                     Label(publishMusic.isEmpty ? Tr("原声") : publishMusic,
                           systemImage: "music.note")
-                        .font(AppDesign.Type.sectionMedium)
+                        .font(AppDesign.Typography.sectionMedium)
                         .foregroundColor(.white)
                         .lineLimit(1)
                         .padding(.horizontal, 10)
@@ -898,7 +898,7 @@ struct ChannelsView: View {
                             Image(systemName: "photo.on.rectangle.angled")
                             Text(pendingCover == nil ? Tr("选择封面") : Tr("更换封面"))
                         }
-                        .font(AppDesign.Type.section)
+                        .font(AppDesign.Typography.section)
                         .foregroundColor(.white)
                         .padding(.horizontal, 11)
                         .frame(height: AppDesign.Control.sectionHeaderHeight)
@@ -986,7 +986,7 @@ struct ChannelsView: View {
         VStack(spacing: 0) {
             publishSettingRow(icon: "music.note", title: Tr("添加音乐")) {
                 TextField(Tr("选填，例如：原声"), text: $publishMusic)
-                    .font(AppDesign.Type.body)
+                    .font(AppDesign.Typography.body)
                     .multilineTextAlignment(.trailing)
                     .foregroundColor(Color.white.opacity(0.58))
                     .frame(maxWidth: 170)
@@ -1059,7 +1059,7 @@ struct ChannelsView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(uploadStage.isEmpty ? Tr("视频已就绪") : uploadStage)
-                    .font(AppDesign.Type.captionMedium)
+                    .font(AppDesign.Typography.captionMedium)
                     .foregroundColor(.white.opacity(0.78))
                 Spacer()
                 if uploadMB > 0 {
@@ -1088,7 +1088,7 @@ struct ChannelsView: View {
             publishDesc += token
         } label: {
             Text(token)
-                .font(AppDesign.Type.rowTitle)
+                .font(AppDesign.Typography.rowTitle)
                 .foregroundColor(Color.white.opacity(0.82))
                 .frame(width: 30, height: 28)
                 .background(Color.white.opacity(0.08), in: Capsule())
@@ -1132,7 +1132,7 @@ struct ChannelsView: View {
             Spacer(minLength: 10)
             if let detail {
                 Text(detail)
-                    .font(AppDesign.Type.body)
+                    .font(AppDesign.Typography.body)
                     .foregroundColor(Color.white.opacity(0.40))
                     .lineLimit(1)
             }
@@ -1393,7 +1393,7 @@ struct FeedCell: View {
                                     Image(systemName: "rectangle.stack.fill")
                                         .font(.system(size: 11, weight: .semibold))
                                     Text(seriesTitle)
-                                        .font(AppDesign.Type.section)
+                                        .font(AppDesign.Typography.section)
                                         .lineLimit(1)
                                     Image(systemName: "chevron.up")
                                         .font(.system(size: 9, weight: .bold))
@@ -1566,7 +1566,7 @@ struct FeedCell: View {
                     }
                 if !count.isEmpty {
                     Text(count)
-                        .font(AppDesign.Type.captionStrong)
+                        .font(AppDesign.Typography.captionStrong)
                         .foregroundColor(.white)
                         .shadow(color: .black.opacity(0.72), radius: 3, y: 1)
                 }
@@ -1642,7 +1642,7 @@ struct FeedPlayerSheet: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("@\(cur.author?.name ?? "用户")")
                             .font(pf(15, .semibold)).foregroundColor(.white)
-                        Text(cur.desc ?? "").font(AppDesign.Type.body).foregroundColor(.white.opacity(0.95))
+                        Text(cur.desc ?? "").font(AppDesign.Typography.body).foregroundColor(.white.opacity(0.95))
                             .lineLimit(3)
                         if !(cur.music ?? "").isEmpty {
                             Text("♪ \(cur.music ?? "")").font(pf(12)).foregroundColor(.white.opacity(0.8))
@@ -1668,7 +1668,7 @@ struct FeedPlayerSheet: View {
                                     .foregroundColor(liked ? Color(hex: 0xFF4D6D) : .white)
                                 if heartBurst { HeartBurst() }
                             }
-                            Text("\(likes)").font(AppDesign.Type.caption).foregroundColor(.white)
+                            Text("\(likes)").font(AppDesign.Typography.caption).foregroundColor(.white)
                         }
                     }
                     .buttonStyle(.plain)

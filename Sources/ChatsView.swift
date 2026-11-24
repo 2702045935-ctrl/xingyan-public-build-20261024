@@ -1844,7 +1844,7 @@ struct ChatsView: View {
                     Text(floorGreeting).font(pf(17, .medium)).foregroundColor(look.ink)
                     HStack(spacing: AppDesign.Spacing.xxs) {
                         Image(systemName: look.icon).font(.system(size: 11.5, weight: .semibold))
-                        Text(floorWeatherLine(look)).font(AppDesign.Type.caption)
+                        Text(floorWeatherLine(look)).font(AppDesign.Typography.caption)
                     }
                     .foregroundColor(look.inkSoft)
                 }
@@ -2020,11 +2020,11 @@ struct ChatsView: View {
         }
         return VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 0) {
-                Text(title).font(AppDesign.Type.caption).foregroundColor(look.inkSoft)
+                Text(title).font(AppDesign.Typography.caption).foregroundColor(look.inkSoft)
                 Spacer(minLength: 0)
                 if more {
                     Text(Tr("更多") + " ›")
-                        .font(AppDesign.Type.caption)
+                        .font(AppDesign.Typography.caption)
                         .foregroundColor(look.inkSoft)
                         .contentShape(Rectangle())
                         .onTapGesture { path.append("miniapps") }

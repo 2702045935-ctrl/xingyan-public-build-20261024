@@ -197,13 +197,13 @@ struct StickerStore: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: AppDesign.Spacing.xs) {
                 Text(Tr("我添加的单个表情"))
-                    .font(AppDesign.Type.captionMedium)
+                    .font(AppDesign.Typography.captionMedium)
                     .foregroundColor(C.subLabel)
                 Spacer(minLength: 0)
                 Button { addingPhoto = true } label: {
                     HStack(spacing: AppDesign.Spacing.xxs) {
                         Image(systemName: "plus").font(.system(size: 11, weight: .semibold))
-                        Text(Tr("从相册添加")).font(AppDesign.Type.caption)
+                        Text(Tr("从相册添加")).font(AppDesign.Typography.caption)
                     }
                     .foregroundColor(C.green)
                 }
@@ -254,7 +254,7 @@ struct StickerStore: View {
             if storePacks.isEmpty {
                 PanelCard {
                     Text(loading ? Tr("正在拉表情包…") : Tr("这个分类里没有可添加的包了"))
-                        .font(AppDesign.Type.body)
+                        .font(AppDesign.Typography.body)
                         .foregroundColor(C.subLabel)
                         .padding(.horizontal, 14)
                         .padding(.vertical, AppDesign.Spacing.md)
@@ -385,7 +385,7 @@ struct StickerStore: View {
 
     private func sectionHeader(_ title: String, sub: String) -> some View {
         HStack(spacing: 6) {
-            Text(title).font(AppDesign.Type.captionMedium).foregroundColor(C.subLabel)
+            Text(title).font(AppDesign.Typography.captionMedium).foregroundColor(C.subLabel)
             Spacer(minLength: 0)
             Text(sub).font(pf(11.5)).foregroundColor(C.subLabel.opacity(0.8))
         }
@@ -417,7 +417,7 @@ struct StickerStore: View {
 
                         VStack(alignment: .leading, spacing: 4) {
                             Text(p.name).font(pf(18, .semibold)).foregroundColor(C.label).lineLimit(1)
-                            Text("\(p.count) " + Tr("个表情")).font(AppDesign.Type.caption).foregroundColor(C.subLabel)
+                            Text("\(p.count) " + Tr("个表情")).font(AppDesign.Typography.caption).foregroundColor(C.subLabel)
                         }
                         Spacer(minLength: 0)
                     }
@@ -454,7 +454,7 @@ struct StickerStore: View {
                             Image(systemName: added ? "trash" : "plus")
                                 .font(.system(size: 14, weight: .semibold))
                             Text(added ? Tr("移除这个表情包") : Tr("添加到我的表情"))
-                                .font(AppDesign.Type.rowTitle)
+                                .font(AppDesign.Typography.rowTitle)
                         }
                         .foregroundColor(added ? C.red : .white)
                         .frame(maxWidth: .infinity)
