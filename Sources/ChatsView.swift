@@ -2909,7 +2909,12 @@ struct ChatsView: View {
                         }
                     },
                     onOffsetChange: { y in
-                        let next: CGFloat = y > 8 ? 1 : 0
+                        let next: CGFloat
+                        if chatTopScrolled == 0 {
+                            next = y > 18 ? 1 : 0
+                        } else {
+                            next = y < 6 ? 0 : 1
+                        }
                         if chatTopScrolled != next { chatTopScrolled = next }
                     },
                     onZoneChange: { zone in

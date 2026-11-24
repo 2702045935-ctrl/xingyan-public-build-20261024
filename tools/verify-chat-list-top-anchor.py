@@ -31,6 +31,14 @@ require(
     "chat lists must reset scroll identity when the active account changes",
 )
 require(
+    "if chatTopScrolled == 0 {\n"
+    "                            next = y > 18 ? 1 : 0\n"
+    "                        } else {\n"
+    "                            next = y < 6 ? 0 : 1\n"
+    "                        }" in CHATS,
+    "the top chrome must use hysteresis so bounce cannot flash its mask",
+)
+require(
     "python3 tools/verify-chat-list-top-anchor.py" in WORKFLOW,
     "chat-list auto-bottom regression must run in the iOS gate",
 )
