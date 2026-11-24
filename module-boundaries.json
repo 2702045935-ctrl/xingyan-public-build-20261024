@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "modules": [
+    {
+      "name": "IMContracts",
+      "path": "Packages/IMContracts",
+      "status": "active",
+      "dependencies": []
+    },
+    {
+      "name": "MessageDomain",
+      "path": "Packages/MessageDomain",
+      "status": "active",
+      "dependencies": ["IMContracts"]
+    },
+    {
+      "name": "DesignSystem",
+      "path": "Sources",
+      "status": "planned",
+      "dependencies": []
+    },
+    {
+      "name": "LocalStore",
+      "path": "Sources",
+      "status": "planned",
+      "dependencies": ["IMContracts"]
+    },
+    {
+      "name": "IMClient",
+      "path": "Sources",
+      "status": "planned",
+      "dependencies": ["IMContracts", "MessageDomain"]
+    },
+    {
+      "name": "TransferKit",
+      "path": "Sources",
+      "status": "planned",
+      "dependencies": ["IMContracts"]
+    },
+    {
+      "name": "ChatFeature",
+      "path": "Sources",
+      "status": "planned",
+      "dependencies": [
+        "IMContracts",
+        "MessageDomain",
+        "DesignSystem",
+        "LocalStore",
+        "IMClient",
+        "TransferKit"
+      ]
+    }
+  ]
+}
