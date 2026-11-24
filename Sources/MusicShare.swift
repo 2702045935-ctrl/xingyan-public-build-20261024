@@ -1146,8 +1146,8 @@ struct ListenView: View {
     var onSend: ((MusicTrack) -> Void)? = nil
     var onLeave: (() -> Void)? = nil
 
-    @State private var tracks: [MusicTrack] = []
-    @State private var loading = true
+    @State private var tracks: [MusicTrack] = API.shared.cachedMusicTracks()
+    @State private var loading = API.shared.cachedMusicTracks().isEmpty
     @State private var query = ""
     @State private var lastTracksRefresh = Date.distantPast
 

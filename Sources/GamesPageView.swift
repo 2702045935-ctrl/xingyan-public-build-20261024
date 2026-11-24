@@ -43,7 +43,7 @@ struct GamesPageView: View {
     @EnvironmentObject var app: AppState
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
-    @State private var games: [MiniApp] = []
+    @State private var games: [MiniApp] = API.shared.cachedMiniApps(kind: "game")
     @State private var shareApp: MiniApp?
 
     @State private var iconPickFor = ""
@@ -67,7 +67,7 @@ struct GamesPageView: View {
     private let ink = C.label
     private let subInk = C.subLabel
 
-    @State private var loading = true
+    @State private var loading = API.shared.cachedMiniApps(kind: "game").isEmpty
     @State private var isVisible = false
     @State private var isInteracting = false
     @State private var lastInteraction = Date.distantPast
@@ -139,7 +139,7 @@ struct GamesPageView: View {
                         .padding(.horizontal, 16)
                     }
 
-                    if loading {
+                    if loading && list.isEmpty {
                         HStack(spacing: 10) {
                             ProgressView().tint(subInk)
                             Text(Tr("正在加载…")).font(pf(14)).foregroundColor(subInk)
@@ -939,7 +939,6 @@ struct GameWebPage: View {
     }
 
     private func prepare(force: Bool = false) async {
-        loading = true
         errorText = ""
         let path = game.url
         guard !path.isEmpty, let remoteIndex = API.shared.assetURL(path) else {
@@ -958,6 +957,19 @@ struct GameWebPage: View {
         let root = caches.appendingPathComponent(rootKey, isDirectory: true)
         do {
             try fm.createDirectory(at: root, withIntermediateDirectories: true)
+
+            let cachedIndex = root.appendingPathComponent("index.html")
+            if !force,
+               let size = try? cachedIndex.resourceValues(
+                   forKeys: [.fileSizeKey]
+               ).fileSize,
+               size > 0 {
+                localDir = root
+                localIndex = cachedIndex
+                loading = false
+            } else {
+                loading = localIndex == nil
+            }
 
             let list = await miniAppFileList(baseDir: remoteDir)
 

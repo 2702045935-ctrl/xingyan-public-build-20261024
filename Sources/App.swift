@@ -34,6 +34,7 @@ final class AppState: ObservableObject {
         let cached = Self.cachedUser()
         if let cached, !cached.id.isEmpty {
             chats = LocalStore.cachedChatList(userId: cached.id)
+            contacts = Self.cachedContacts(userId: cached.id)
         }
         installMessageStressFixture(myId: cached?.id ?? "")
         applyCachedUIConfig()
@@ -862,6 +863,27 @@ final class AppState: ObservableObject {
         return try? JSONDecoder().decode(User.self, from: d)
     }
 
+    private static func contactsCacheKey(userId: String) -> String {
+        "chris.contactsJSON." + userId
+    }
+
+    private static func cachedContacts(userId: String) -> [User] {
+        guard !userId.isEmpty,
+              let data = UserDefaults.standard.data(
+                  forKey: contactsCacheKey(userId: userId)
+              ) else { return [] }
+        return (try? JSONDecoder().decode([User].self, from: data)) ?? []
+    }
+
+    private static func saveCachedContacts(_ rows: [User], userId: String?) {
+        guard let userId, !userId.isEmpty else { return }
+        guard let data = try? JSONEncoder().encode(rows) else { return }
+        UserDefaults.standard.set(
+            data,
+            forKey: contactsCacheKey(userId: userId)
+        )
+    }
+
     func refreshUI(force: Bool = false) async {
         let cfg = await API.shared.uiConfig()
 
@@ -1144,6 +1166,7 @@ final class AppState: ObservableObject {
         if let r = try? await contactsRequest {
             guard isCurrentAccount(epoch) else { return }
             let friends = applyLocalRemarksToContacts(r.friends)
+            Self.saveCachedContacts(friends, userId: me?.id)
             let sameOrder = contacts.map { $0.id } == friends.map { $0.id }
             let sameLook = contacts.count == friends.count
                 && zip(contacts, friends).allSatisfy { $0.avatarPath == $1.avatarPath && $0.name == $1.name }
@@ -2423,6 +2446,7 @@ final class AppState: ObservableObject {
             guard isCurrentAccount(epoch) else { return }
 
             let friends = applyLocalRemarksToContacts(r.friends)
+            Self.saveCachedContacts(friends, userId: me?.id)
             let sameOrder = contacts.map { $0.id } == friends.map { $0.id }
             let sameLook = contacts.count == friends.count
                 && zip(contacts, friends).allSatisfy {

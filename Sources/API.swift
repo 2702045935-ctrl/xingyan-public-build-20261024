@@ -3970,6 +3970,13 @@ private struct StarredPayload: Decodable {
         return APICatalogCache.load(MusicTrack.self, key: cacheKey)
     }
 
+    func cachedMusicTracks() -> [MusicTrack] {
+        APICatalogCache.load(
+            MusicTrack.self,
+            key: "catalog.music." + cacheNamespace
+        )
+    }
+
     func miniApps(kind: String = "") async -> [MiniApp] {
         struct Payload: Decodable { var items: [MiniApp]? }
         let path = kind.isEmpty ? "/api/miniapps" : "/api/miniapps?kind=\(kind)"
@@ -3980,6 +3987,13 @@ private struct StarredPayload: Decodable {
             return items
         }
         return APICatalogCache.load(MiniApp.self, key: cacheKey)
+    }
+
+    func cachedMiniApps(kind: String = "") -> [MiniApp] {
+        APICatalogCache.load(
+            MiniApp.self,
+            key: "catalog.miniapps." + cacheNamespace + "." + kind
+        )
     }
 
     func removeDevice(id: String) async -> String? {
