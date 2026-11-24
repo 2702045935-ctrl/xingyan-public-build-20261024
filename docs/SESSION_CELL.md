@@ -11,3 +11,7 @@
 - 连接和用户统计。
 
 它是后续做 Gateway 会话归属、跨 Gateway 迁移和 session fencing 的基础。
+
+`server/lib/session-ownership.js` 已接在 Session Cell 之上，为
+`userId + connectionId` 记录 Gateway、TTL、epoch、续租和释放；同一用户的不同设备
+可以分别归属不同 Gateway，旧 epoch 不能释放新会话。

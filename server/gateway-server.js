@@ -14,6 +14,7 @@ const ws = require('./lib/ws');
 const { ConnectionGovernor } = require('./lib/connection-governor');
 const { envelope, decodeEnvelope } = require('./lib/gateway-multiplex');
 const { SessionCell } = require('./lib/session-cell');
+const { SessionOwnership } = require('./lib/session-ownership');
 
 const PORT = Number(process.env.GATEWAY_PORT || 5290);
 const HOST = process.env.GATEWAY_HOST || '0.0.0.0';
@@ -31,6 +32,9 @@ const governor = new ConnectionGovernor({
 });
 const sessions = new SessionCell({
   maxConnections: Number(process.env.GATEWAY_SESSION_CAPACITY) || 100000
+});
+const ownership = new SessionOwnership({
+  defaultLeaseMs: Number(process.env.GATEWAY_SESSION_LEASE_MS) || 90000
 });
 let upstream = null;
 let upstreamReady = false;
@@ -85,6 +89,10 @@ function connectUpstream() {
     if (!client) return;
     if (message.type === 'open-ok') {
       client.userId = String(message.userId || '');
+      sessions.bindUser(message.connectionId, client.userId);
+      ownership.claim(client.userId, message.connectionId, NODE_ID, {
+        leaseMs: Number(process.env.GATEWAY_SESSION_LEASE_MS) || 90000
+      });
       client.reopened = true;
       return;
     }
@@ -207,7 +215,8 @@ const server = http.createServer(async (req, res) => {
       upstreamReady,
       clients: sessions.size,
       governor: governor.snapshot(),
-      sessionCell: sessions.snapshot()
+      sessionCell: sessions.snapshot(),
+      ownership: ownership.snapshot()
     }));
     return;
   }
@@ -309,6 +318,7 @@ server.on('upgrade', (req, socket) => {
   });
   socket.on('close', () => {
     sessions.close(connectionId);
+    if (client.userId) ownership.release(client.userId, connectionId, NODE_ID);
     governor.release(preauth.lease);
     if (upstreamReady) send('closed', connectionId, {});
   });
