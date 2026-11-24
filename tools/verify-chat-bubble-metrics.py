@@ -237,10 +237,10 @@ require(
     "delivery time and receipt ticks must share the bubble footer",
 )
 require(
-    "return same ? 4 : 10" in CHAT
-    and 'UIConfig.num("msgGapSame", 7)' in CHAT
-    and 'UIConfig.num("msgGapOther", 15)' in CHAT,
-    "conversation rows must use the stable 11/16 group and direct spacing",
+    "return same\n            ? WhatsAppChatLayout.sameRunGap\n            : WhatsAppChatLayout.runGap" in CHAT
+    and "static let sameRunGap: CGFloat = 3" in LAYOUT
+    and "static let runGap: CGFloat = 9" in LAYOUT,
+    "conversation rows must use one WhatsApp run gap in every chat type",
 )
 require(
     "ChatUnreadRollingBadge" not in CHAT

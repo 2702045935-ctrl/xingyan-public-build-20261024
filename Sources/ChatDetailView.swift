@@ -5397,12 +5397,9 @@ struct ChatDetailView: View {
         if next.kindName == "system" || next.kindName == "pat" || next.isRecalled { return 12 }
         if message.kindName == "system" || message.kindName == "pat" || message.isRecalled { return 12 }
         let same = (next.senderId ?? "") == (message.senderId ?? "")
-        if isGroup {
-            return same ? 4 : 10
-        }
         return same
-            ? UIConfig.num("msgGapSame", 7)
-            : UIConfig.num("msgGapOther", 15)
+            ? WhatsAppChatLayout.sameRunGap
+            : WhatsAppChatLayout.runGap
     }
 
     private var leftUnreadBadge: AnyView? {
