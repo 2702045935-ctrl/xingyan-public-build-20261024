@@ -257,6 +257,7 @@ jobs:
           node server/test/gateway-cluster-drill.test.js
           node server/test/gateway-cluster-smoke.test.js
           node server/test/gateway-cluster-preflight.test.js
+          node server/test/session-cell.test.js
           node server/test/hot-group-router.test.js
           node server/test/payment-database-concurrency.test.js
           node server/test/payment-provider-server.test.js

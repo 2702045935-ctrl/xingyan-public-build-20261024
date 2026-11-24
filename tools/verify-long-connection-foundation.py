@@ -75,6 +75,10 @@ def main() -> None:
     for needle in ["simulated-node-down", "pendingAfterFailure", "retryAttempts"]:
         if needle not in drill:
             raise AssertionError(f"gateway cluster drill missing {needle}")
+    session_cell = (ROOT / "server/lib/session-cell.js").read_text(encoding="utf-8")
+    for needle in ["bindUser", "forUser", "close(", "snapshot"]:
+        if needle not in session_cell:
+            raise AssertionError(f"session cell missing {needle}")
     if "smoke-gateway" not in (ROOT / "server/tools/gateway-cluster-smoke.js").read_text(encoding="utf-8"):
         raise AssertionError("gateway cluster smoke tool missing")
     preflight = (ROOT / "server/tools/gateway-cluster-preflight.js").read_text(encoding="utf-8")

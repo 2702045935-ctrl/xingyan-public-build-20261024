@@ -13,6 +13,7 @@ const crypto = require('crypto');
 const ws = require('./lib/ws');
 const { ConnectionGovernor } = require('./lib/connection-governor');
 const { envelope, decodeEnvelope } = require('./lib/gateway-multiplex');
+const { SessionCell } = require('./lib/session-cell');
 
 const PORT = Number(process.env.GATEWAY_PORT || 5290);
 const HOST = process.env.GATEWAY_HOST || '0.0.0.0';
@@ -28,7 +29,9 @@ const governor = new ConnectionGovernor({
   maxPerIp: Number(process.env.WS_MAX_CONNECTIONS_PER_IP) || 120,
   softLoadRatio: Number(process.env.WS_SOFT_LOAD_RATIO) || 0.85
 });
-const clients = new Map();
+const sessions = new SessionCell({
+  maxConnections: Number(process.env.GATEWAY_SESSION_CAPACITY) || 100000
+});
 let upstream = null;
 let upstreamReady = false;
 let reconnectTimer = null;
@@ -70,7 +73,7 @@ function connectUpstream() {
       capacity: governor.maxTotal,
       connections: governor.total
     });
-    for (const client of clients.values()) {
+    for (const client of sessions.all()) {
       openClientOnUpstream(client);
       flushClientData(client);
     }
@@ -78,7 +81,7 @@ function connectUpstream() {
   upstream.onmessage = (event) => {
     const message = decodeEnvelope(event.data);
     if (!message) return;
-    const client = clients.get(message.connectionId);
+    const client = sessions.get(message.connectionId);
     if (!client) return;
     if (message.type === 'open-ok') {
       client.userId = String(message.userId || '');
@@ -202,8 +205,9 @@ const server = http.createServer(async (req, res) => {
       ok: true,
       nodeId: NODE_ID,
       upstreamReady,
-      clients: clients.size,
-      governor: governor.snapshot()
+      clients: sessions.size,
+      governor: governor.snapshot(),
+      sessionCell: sessions.snapshot()
     }));
     return;
   }
@@ -219,7 +223,7 @@ const server = http.createServer(async (req, res) => {
       const text = JSON.stringify(body.payload || {});
       let delivered = 0;
       let wouldDeliver = 0;
-      for (const client of clients.values()) {
+      for (const client of sessions.all()) {
         if (!client.userId || !wanted.has(client.userId)) continue;
         wouldDeliver += 1;
         if (body.dryRun !== true && ws.sendText(client.socket, text)) delivered += 1;
@@ -289,7 +293,12 @@ server.on('upgrade', (req, socket) => {
       }
     }
   };
-  clients.set(connectionId, client);
+  const opened = sessions.open(connectionId, client);
+  if (!opened.ok) {
+    governor.release(preauth.lease);
+    socket.end();
+    return;
+  }
   socket.on('data', (chunk) => {
     if (upstreamReady && send('data', connectionId, {
       data: chunk.toString('base64')
@@ -299,7 +308,7 @@ server.on('upgrade', (req, socket) => {
     }
   });
   socket.on('close', () => {
-    clients.delete(connectionId);
+    sessions.close(connectionId);
     governor.release(preauth.lease);
     if (upstreamReady) send('closed', connectionId, {});
   });
@@ -310,7 +319,7 @@ connectUpstream();
 heartbeatTimer = setInterval(() => {
   jsonPost('/__gateway/heartbeat', {
     id: NODE_ID,
-    connections: clients.size,
+    connections: sessions.size,
     capacity: governor.maxTotal,
     draining: governor.draining
   });
