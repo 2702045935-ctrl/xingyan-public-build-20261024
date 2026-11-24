@@ -3,8 +3,8 @@
   "files": [
     {
       "path": "Sources/API.swift",
-      "size": 226746,
-      "sha256": "13e398ca490dc20cb687efdc2314b6b5d720b67ffbf01a34fe3e6fcc2dcb4340"
+      "size": 227215,
+      "sha256": "68098170ab42dca93a00820cf5cda1c505360ab6a4e44e01bfc5cc85c0b72d56"
     },
     {
       "path": "Sources/App.swift",
@@ -68,8 +68,8 @@
     },
     {
       "path": "Sources/ChatDetailView.swift",
-      "size": 435999,
-      "sha256": "b788cba1d89542df3260a0d36c941da30f233545f6a2a3a7949fc9bedd867a8c"
+      "size": 436574,
+      "sha256": "34d40a91a0f2fc2bcc80e5daaaec94e3616a21d13e73f9b18652ac627eb218ba"
     },
     {
       "path": "Sources/GroupInfoView.swift",
