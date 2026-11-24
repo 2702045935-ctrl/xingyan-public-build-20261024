@@ -101,10 +101,11 @@ struct StarWorldExperienceView: View {
             StarWorldSceneView(
                 profile: avatarProfile,
                 map: activeMap,
-                onTravel: beginTravel
+                onTravel: beginTravel,
+                onFirstFrame: finishWorldLoad
             )
                 .ignoresSafeArea()
-                .opacity(entered ? 1 : 0)
+                .opacity(entered ? 1 : 0.01)
                 .scaleEffect(entered ? 1 : 0.92)
                 .animation(.easeOut(duration: 0.8), value: entered)
 
@@ -170,11 +171,8 @@ struct StarWorldExperienceView: View {
         .onAppear {
             StarWorldUSDZScene.preloadIfNeeded()
             avatarProfile = StarAvatarProfileStore.load(userID: app.me?.id ?? "local")
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.05) {
-                withAnimation(.easeOut(duration: 0.55)) {
-                    entered = true
-                    loadingMap = nil
-                }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 8) {
+                finishWorldLoad()
             }
         }
         .sheet(isPresented: $showAvatarStudio) {
@@ -197,12 +195,17 @@ struct StarWorldExperienceView: View {
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.38) {
             activeMap = destination
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.72) {
-                withAnimation(.easeOut(duration: 0.58)) {
-                    entered = true
-                    loadingMap = nil
-                }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 8) {
+                finishWorldLoad()
             }
+        }
+    }
+
+    private func finishWorldLoad() {
+        guard loadingMap == activeMap else { return }
+        withAnimation(.easeOut(duration: 0.58)) {
+            entered = true
+            loadingMap = nil
         }
     }
 
@@ -239,14 +242,17 @@ private struct StarWorldSceneView: UIViewRepresentable {
     let profile: StarAvatarProfile
     let map: StarWorldMap
     let onTravel: (StarWorldMap) -> Void
+    let onFirstFrame: () -> Void
 
-    final class Coordinator: NSObject {
+    final class Coordinator: NSObject, SCNSceneRendererDelegate {
         var root = SCNNode()
         weak var sceneView: SCNView?
         var map: StarWorldMap = .room
         var profileHash = 0
         var onTravel: ((StarWorldMap) -> Void)?
+        var onFirstFrame: (() -> Void)?
         var isTraveling = false
+        private var didReportFirstFrame = false
         private var yaw: CGFloat = -0.20
         private var pitch: CGFloat = 0.10
         private var panStartYaw: CGFloat = -0.20
@@ -278,11 +284,22 @@ private struct StarWorldSceneView: UIViewRepresentable {
 
         func resetViewport(for map: StarWorldMap) {
             self.map = map
+            didReportFirstFrame = false
             yaw = map == .room ? -0.20 : 0
             pitch = map == .room ? 0.10 : 0.12
             panStartYaw = yaw
             panStartPitch = pitch
             applyCamera()
+        }
+
+        func renderer(_ renderer: SCNSceneRenderer,
+                      didRenderScene scene: SCNScene,
+                      atTime time: TimeInterval) {
+            guard !didReportFirstFrame else { return }
+            didReportFirstFrame = true
+            DispatchQueue.main.async { [weak self] in
+                self?.onFirstFrame?()
+            }
         }
 
         func applyCamera() {
@@ -461,6 +478,8 @@ private struct StarWorldSceneView: UIViewRepresentable {
         context.coordinator.map = map
         context.coordinator.profileHash = profile.hashValue
         context.coordinator.onTravel = onTravel
+        context.coordinator.onFirstFrame = onFirstFrame
+        view.delegate = context.coordinator
         view.scene = makeScene(root: context.coordinator.root, profile: profile)
         let tap = UITapGestureRecognizer(
             target: context.coordinator,
@@ -482,6 +501,7 @@ private struct StarWorldSceneView: UIViewRepresentable {
 
     func updateUIView(_ view: SCNView, context: Context) {
         context.coordinator.onTravel = onTravel
+        context.coordinator.onFirstFrame = onFirstFrame
         let needsScene = context.coordinator.map != map
             || context.coordinator.profileHash != profile.hashValue
         if needsScene {

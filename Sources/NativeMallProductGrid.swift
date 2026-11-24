@@ -214,10 +214,10 @@ private final class NativeMallProductCell: UICollectionViewCell {
     }
 }
 
-fileprivate final class NativeMallGridCoordinator: NSObject,
-                                                    UICollectionViewDataSource,
-                                                    UICollectionViewDelegate,
-                                                    UICollectionViewDataSourcePrefetching {
+final class NativeMallGridCoordinator: NSObject,
+                                       UICollectionViewDataSource,
+                                       UICollectionViewDelegate,
+                                       UICollectionViewDataSourcePrefetching {
     var products: [DDProduct] = []
     var onOpen: ((DDProduct) -> Void)?
     var onAddCart: ((DDProduct) -> Void)?
@@ -274,7 +274,7 @@ struct NativeMallProductGrid: UIViewRepresentable {
     let onOpen: (DDProduct) -> Void
     var onAddCart: ((DDProduct) -> Void)? = nil
 
-    fileprivate func makeCoordinator() -> NativeMallGridCoordinator {
+    func makeCoordinator() -> NativeMallGridCoordinator {
         NativeMallGridCoordinator()
     }
 

@@ -52,6 +52,10 @@ require(
     and "func applyRenderQuality(" in WORLD
     and "view.antialiasingMode = constrained ? .none : .multisampling2X" in WORLD
     and "view.rendersContinuously = false" in WORLD
+    and "onFirstFrame: finishWorldLoad" in WORLD
+    and "didRenderScene" in WORLD
+    and "DispatchQueue.main.asyncAfter(deadline: .now() + 1.05)" not in WORLD
+    and "DispatchQueue.main.asyncAfter(deadline: .now() + 0.72)" not in WORLD
     and "StarWorldUSDZScene.preloadIfNeeded()" in WORLD,
     "the SceneKit runtime must keep drag/camera work native and reuse the scene view",
 )
