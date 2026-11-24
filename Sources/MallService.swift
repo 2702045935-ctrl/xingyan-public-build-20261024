@@ -122,7 +122,6 @@ struct DDHelpCenterView: View {
             bottom
         }
         .background(DDColor.page.ignoresSafeArea())
-        .ddLight()
         .onAppear {
             if chat.isEmpty {
                 chat.append((false, Tr("你好，我是星言商城的智能客服。发货、物流、退换、发票、优惠券都能问我。")))

@@ -327,8 +327,6 @@ struct DDChannelView: View {
         .background(DDColor.page.ignoresSafeArea())
         .swipeBack { dismiss() }
 
-        .ddLight()
-        .preferredColorScheme(.light)
         .sheet(item: $openProduct) { p in
             DDDetailView(product: p,
                          onCart: { openProduct = nil; onCart() },

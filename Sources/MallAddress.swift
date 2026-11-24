@@ -62,12 +62,11 @@ struct DDAddressListView: View {
             .padding(.bottom, max(10, L.safeBottom * 0.6))
         }
         .background(DDColor.page.ignoresSafeArea())
-        .ddLight()
         .sheet(isPresented: $adding) {
-            DDAddressEditView(address: nil).ddLight()
+            DDAddressEditView(address: nil)
         }
         .sheet(item: $editing) { a in
-            DDAddressEditView(address: a).ddLight()
+            DDAddressEditView(address: a)
         }
     }
 
@@ -242,7 +241,6 @@ struct DDAddressEditView: View {
             .padding(.bottom, max(10, L.safeBottom * 0.6))
         }
         .background(DDColor.page.ignoresSafeArea())
-        .ddLight()
         .onAppear {
             guard let a = address else {
                 isDefault = store.addresses.isEmpty

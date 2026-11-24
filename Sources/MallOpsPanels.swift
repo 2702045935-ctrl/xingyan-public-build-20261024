@@ -235,7 +235,6 @@ struct ShipSheet: View {
             .padding(.top, 6).padding(.bottom, max(10, L.safeBottom))
         }
         .background(C.pageBg.ignoresSafeArea())
-        .ddLight()
     }
 
     private func ship() async {
@@ -297,7 +296,6 @@ struct PushTrackSheet: View {
             .padding(.top, 6).padding(.bottom, max(10, L.safeBottom))
         }
         .background(C.pageBg.ignoresSafeArea())
-        .ddLight()
     }
 
     private func push() async {
@@ -358,7 +356,6 @@ struct AfterSaleReviewSheet: View {
             }
         }
         .background(C.pageBg.ignoresSafeArea())
-        .ddLight()
     }
 
     private func review(_ pass: Bool) async {
@@ -411,7 +408,6 @@ struct SendCouponSheet: View {
             .padding(.top, 6).padding(.bottom, max(10, L.safeBottom))
         }
         .background(C.pageBg.ignoresSafeArea())
-        .ddLight()
     }
 
     private func fld(_ ph: String, _ text: Binding<String>, num: Bool = false) -> some View {

@@ -156,7 +156,9 @@ struct DDReviewSection: View {
                 Image(systemName: "quote.bubble.fill")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(DDColor.redDeep)
-                Text(Tr("真实口碑")).font(pf(15.5, .semibold)).foregroundColor(DDColor.ink)
+                Text(Tr("真实口碑"))
+                    .font(pfStyled(size: 21, weight: .semibold))
+                    .foregroundColor(DDColor.ink)
                 Spacer(minLength: 0)
                 if list.count > 2 {
                     Button { showAll = true } label: {
@@ -209,15 +211,15 @@ struct DDReviewSection: View {
                 }
             }
         }
-        .padding(14)
+        .padding(18)
         .background(DDColor.card)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous)
             .stroke(DDColor.cardEdge, lineWidth: 0.6))
-        .padding(.horizontal, 10)
-        .padding(.top, 10)
+        .padding(.horizontal, 16)
+        .padding(.top, 22)
         .sheet(isPresented: $showAll) {
-            DDReviewListView(product: product).ddLight()
+            DDReviewListView(product: product)
         }
     }
 }
@@ -341,8 +343,10 @@ struct DDParamSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(Tr("规格参数")).font(pf(15, .semibold)).foregroundColor(DDColor.ink)
-                .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 8)
+            Text(Tr("规格参数"))
+                .font(pfStyled(size: 21, weight: .semibold))
+                .foregroundColor(DDColor.ink)
+                .padding(.horizontal, 18).padding(.top, 18).padding(.bottom, 10)
             ForEach(rows.indices, id: \.self) { i in
                 HStack(alignment: .top, spacing: 10) {
                     Text(rows[i][0]).font(pf(13)).foregroundColor(DDColor.sub)
@@ -351,17 +355,17 @@ struct DDParamSection: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .padding(.horizontal, 14).padding(.vertical, 9)
+                .padding(.horizontal, 18).padding(.vertical, 11)
                 .background(i % 2 == 0 ? DDColor.page.opacity(0.5) : Color.clear)
             }
             Spacer().frame(height: 8)
         }
         .background(DDColor.card)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous)
             .stroke(DDColor.cardEdge, lineWidth: 0.6))
-        .padding(.horizontal, 10)
-        .padding(.top, 10)
+        .padding(.horizontal, 16)
+        .padding(.top, 22)
     }
 }
 
@@ -373,7 +377,9 @@ struct DDDetailLongSection: View {
     }
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(Tr("图文详情")).font(pf(15, .semibold)).foregroundColor(DDColor.ink)
+            Text(Tr("图文详情"))
+                .font(pfStyled(size: 21, weight: .semibold))
+                .foregroundColor(DDColor.ink)
             ForEach(imgs, id: \.self) { u in
                 DDDetailRemoteImage(path: u)
             }
@@ -404,13 +410,13 @@ struct DDDetailLongSection: View {
             .background(DDColor.page.opacity(0.6))
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
-        .padding(14)
+        .padding(18)
         .background(DDColor.card)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous)
             .stroke(DDColor.cardEdge, lineWidth: 0.6))
-        .padding(.horizontal, 10)
-        .padding(.top, 10)
+        .padding(.horizontal, 16)
+        .padding(.top, 22)
     }
 }
 
@@ -537,7 +543,6 @@ struct DDShopPageView: View {
             }
         }
         .background(DDColor.page.ignoresSafeArea())
-        .ddLight()
     }
 }
 
@@ -614,7 +619,6 @@ struct DDServiceSheet: View {
             .padding(.bottom, max(10, L.safeBottom * 0.6))
         }
         .background(DDColor.page.ignoresSafeArea())
-        .ddLight()
     }
 }
 
@@ -829,12 +833,11 @@ struct DDOrderDetailView: View {
             }
         }
         .background(DDColor.page.ignoresSafeArea())
-        .ddLight()
         .sheet(isPresented: $showAfterSale) {
-            if let o = o { DDAfterSaleSheet(order: o).ddLight() }
+            if let o = o { DDAfterSaleSheet(order: o) }
         }
         .sheet(isPresented: $showReview) {
-            if let o = o { DDReviewEditSheet(order: o).ddLight() }
+            if let o = o { DDReviewEditSheet(order: o) }
         }
 
         .sheet(isPresented: $showService) {
@@ -1275,7 +1278,6 @@ struct DDCouponSheet: View {
             }
         }
         .background(DDColor.page.ignoresSafeArea())
-        .ddLight()
     }
     private func dayText(_ d: Date) -> String {
         let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"
@@ -1331,7 +1333,6 @@ struct DDAfterSaleListView: View {
             }
         }
         .background(DDColor.page.ignoresSafeArea())
-        .ddLight()
     }
 }
 
@@ -1478,7 +1479,6 @@ struct DDShopFollowListView: View {
             }
         }
         .background(DDColor.page.ignoresSafeArea())
-        .ddLight()
     }
 }
 
@@ -1508,6 +1508,5 @@ struct DDMyReviewsView: View {
             }
         }
         .background(DDColor.page.ignoresSafeArea())
-        .ddLight()
     }
 }

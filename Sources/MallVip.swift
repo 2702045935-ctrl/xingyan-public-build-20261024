@@ -51,7 +51,6 @@ struct DDVipPageView: View {
             }
         }
         .background(DDColor.page.ignoresSafeArea())
-        .ddLight()
         .alert(store.isVip ? Tr("续费会员？") : Tr("开通会员？"), isPresented: $confirm) {
             Button(Tr("取消"), role: .cancel) { }
             Button(Tr("确认")) {
