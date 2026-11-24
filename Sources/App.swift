@@ -2574,6 +2574,32 @@ final class AppState: ObservableObject {
         }
         API.shared.setToken(nextToken)
         guard !API.shared.token.isEmpty else { return false }
+        if switchingAccount,
+           let username,
+           !username.isEmpty,
+           let cached = AppState.cachedUser(username: username),
+           !cached.id.isEmpty,
+           cached.username?.caseInsensitiveCompare(username) == .orderedSame {
+            me = cached
+            let cachedChats = LocalStore.cachedChatList(userId: cached.id)
+            if !cachedChats.isEmpty { chats = cachedChats }
+            contacts = Self.cachedContacts(userId: cached.id)
+            finishLoginTransition()
+            rememberLastUser()
+            Realtime.shared.start()
+            GrowthStore.shared.start()
+            Task {
+                if let session = try? await API.shared.session(),
+                   session.ok,
+                   let fresh = session.user {
+                    applyMyProfileUser(fresh)
+                }
+                await refreshAll()
+                await syncRecentMessages()
+                await syncDeviceChats()
+            }
+            return true
+        }
         let epoch = accountEpoch
         do {
             let s = try await API.shared.session()

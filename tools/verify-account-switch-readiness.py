@@ -24,6 +24,17 @@ require(
     "the target account's cached conversation list must hydrate before navigation",
 )
 require(
+    "if switchingAccount,\n"
+    "           let username,\n"
+    "           !username.isEmpty,\n"
+    "           let cached = AppState.cachedUser(username: username)" in block
+    and "me = cached" in block
+    and "contacts = Self.cachedContacts(userId: cached.id)" in block
+    and block.index("me = cached") < block.index("let epoch = accountEpoch")
+    and "if let session = try? await API.shared.session()" in block,
+    "account switching must render cached identity before session verification",
+)
+require(
     "if switchingAccount {" in block
     and "Realtime.shared.start()" in block
     and "Task {" in block
