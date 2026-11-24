@@ -48,7 +48,7 @@ cp AppIcon60x60@2x.png AppIcon60x60@3x.png "$APP/" 2>/dev/null || true
 [ -d levelicons ] && cp levelicons/*.png "$APP/" 2>/dev/null || true
 
 rm -rf Assets.xcassets
-mkdir -p Assets.xcassets/LaunchBg.colorset Assets.xcassets/LaunchLogo.imageset
+mkdir -p Assets.xcassets/LaunchBg.colorset
 cat > Assets.xcassets/Contents.json <<'JSON'
 { "info": { "version": 1, "author": "xcode" } }
 JSON
@@ -62,18 +62,6 @@ cat > Assets.xcassets/LaunchBg.colorset/Contents.json <<'JSON'
         "components": { "red": "0.016", "green": "0.031", "blue": "0.024", "alpha": "1.000" }
       }
     }
-  ],
-  "info": { "version": 1, "author": "xcode" }
-}
-JSON
-cp AppIcon60x60@2x.png Assets.xcassets/LaunchLogo.imageset/LaunchLogo@2x.png
-cp AppIcon60x60@3x.png Assets.xcassets/LaunchLogo.imageset/LaunchLogo@3x.png
-cat > Assets.xcassets/LaunchLogo.imageset/Contents.json <<'JSON'
-{
-  "images": [
-    { "idiom": "universal", "scale": "1x" },
-    { "idiom": "universal", "scale": "2x", "filename": "LaunchLogo@2x.png" },
-    { "idiom": "universal", "scale": "3x", "filename": "LaunchLogo@3x.png" }
   ],
   "info": { "version": 1, "author": "xcode" }
 }

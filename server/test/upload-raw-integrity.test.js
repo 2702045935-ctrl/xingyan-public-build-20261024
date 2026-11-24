@@ -112,6 +112,58 @@ async function main() {
     const downloaded = Buffer.from(await download.arrayBuffer());
     assert.equal(downloaded.length, payload.length);
     assert.ok(downloaded.equals(payload), '上传后下载内容不一致');
+    const storedName = url.split('?')[0].split('/').pop();
+    assert.ok(
+      fs.readFileSync(path.join(dataDir, 'uploads', storedName))
+        .subarray(0, 4).equals(Buffer.from('LUC1')),
+      '上传文件必须在接收过程中直接加密落盘'
+    );
+
+    const jpegPayload = fs.readFileSync(
+      path.resolve(__dirname, '..', '..', 'moments-cover.jpg')
+    );
+    const jpegUpload = await fetch(base + '/api/upload/raw', {
+      method: 'POST',
+      headers: {
+        Cookie: cookie,
+        'Content-Type': 'image/jpeg',
+        'x-chris-compressed': '1'
+      },
+      body: jpegPayload
+    });
+    const jpegUploaded = await jpegUpload.json();
+    assert.equal(jpegUpload.status, 200, JSON.stringify(jpegUploaded));
+    assert.equal(jpegUploaded.data.bytes, jpegPayload.length);
+    const jpegDownload = await fetch(base + jpegUploaded.data.url, {
+      headers: { Cookie: cookie }
+    });
+    assert.equal(jpegDownload.status, 200);
+    const jpegDownloaded = Buffer.from(await jpegDownload.arrayBuffer());
+    assert.ok(jpegDownloaded.equals(jpegPayload), '压缩图片快速通道改坏了内容');
+
+    const videoPayload = Buffer.alloc(2 * 1024 * 1024 + 4096);
+    videoPayload.writeUInt32BE(24, 0);
+    videoPayload.write('ftyp', 4, 'latin1');
+    videoPayload.write('isom', 8, 'latin1');
+    const videoUpload = await fetch(base + '/api/upload/raw', {
+      method: 'POST',
+      headers: {
+        Cookie: cookie,
+        'Content-Type': 'video/mp4',
+        'x-chris-compressed': '1'
+      },
+      body: videoPayload
+    });
+    const videoUploaded = await videoUpload.json();
+    assert.equal(videoUpload.status, 200, JSON.stringify(videoUploaded));
+    assert.ok(
+      !logs.join('').includes('聊天视频压缩'),
+      '客户端已压好的短视频不能再次阻塞在服务端转码'
+    );
+
+    const tempFiles = fs.readdirSync(path.join(dataDir, 'uploads'))
+      .filter((name) => name.endsWith('.upload'));
+    assert.deepEqual(tempFiles, [], '上传完成后不能留下临时明文文件');
 
     const empty = await fetch(base + '/api/upload/raw', {
       method: 'POST',

@@ -249,8 +249,6 @@ final class AppState: ObservableObject {
 
     @Published var langVersion = 0
 
-    @Published var splashDone = false
-
     @Published var defaultChatBackground = ""
 
     @Published var toast: String?
@@ -2698,12 +2696,6 @@ struct CHRISApp: App {
                         PairApproveView(startCode: app.pairApproveCode) { app.pairApproveCode = "" }
                             .environmentObject(app)
                     }
-                if !app.splashDone {
-                    SplashView()
-                        .transition(.opacity)
-                        .zIndex(9)
-                }
-
                 if let n = app.noticeAlert {
                     CenterCard(title: (n.title?.isEmpty == false ? n.title! : Tr("公告")),
                                text: n.content ?? "",
@@ -2892,19 +2884,19 @@ struct RootView: View {
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                if app.booting {
-                    LaunchView()
-                } else if savedLoginConfirmEnabled && (app.needConfirmLogin || app.showSavedLogin) {
+                if !app.booting {
+                    if savedLoginConfirmEnabled && (app.needConfirmLogin || app.showSavedLogin) {
 
-                    SavedLoginConfirm()
-                } else if app.me == nil {
+                        SavedLoginConfirm()
+                    } else if app.me == nil {
 
-                    HarmonyLoginView()
-                } else if app.me?.needsOnboarding == true {
-                    NewUserOnboardingView()
-                        .environmentObject(app)
-                } else {
-                    MainTabView()
+                        HarmonyLoginView()
+                    } else if app.me?.needsOnboarding == true {
+                        NewUserOnboardingView()
+                            .environmentObject(app)
+                    } else {
+                        MainTabView()
+                    }
                 }
 
                 if let text = app.toast {
@@ -2941,13 +2933,6 @@ struct RootView: View {
                 if scenePhase == .active && app.me != nil {
                     await app.refreshUI()
                 }
-            }
-        }
-        .onAppear {
-
-            guard !app.splashDone else { return }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.78) {
-                withAnimation(.easeOut(duration: 0.28)) { app.splashDone = true }
             }
         }
         .onChange(of: scenePhase) { phase in
@@ -2997,14 +2982,6 @@ struct RootView: View {
             }
             app.handle(ev)
         }
-    }
-}
-
-struct LaunchView: View {
-    var body: some View {
-        /* 启动完成后如果还在取登录态，继续显示同一张品牌启动页。
-           以前这里会切回旧的星轨连接页，看起来像“新启动页没生效”。 */
-        SplashView()
     }
 }
 

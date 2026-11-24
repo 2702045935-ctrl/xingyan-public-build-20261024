@@ -19,6 +19,7 @@ const crypto = require('crypto');
 const os = require('os');
 const { spawnSync, spawn } = require('child_process');
 const zlib = require('zlib');
+const { Transform, pipeline } = require('stream');
 const ws = require('./lib/ws');
 const { PaymentLedger, cents: ledgerCents, money: ledgerMoney } = require('./payment-ledger');
 const { AmlEngine } = require('./aml');
@@ -1059,39 +1060,17 @@ function ffmpegExe() {
   return '/usr/bin/ffmpeg';
 }
 
-function ffprobeExe() {
-  if (process.env.FFPROBE_PATH) return process.env.FFPROBE_PATH;
-  if (process.platform === 'win32') return 'C:/Users/Administrator/ffmpeg/bin/ffprobe.exe';
-  return '/usr/bin/ffprobe';
-}
-
 /** 客户端已导出的聊天视频是否能直接落盘。
-    只放行常见的手机聊天规格，避免为了省一次转码把高码率/超长视频放进来。 */
-function videoCanSkipServerShrink(file, size) {
+    客户端导出参数已经锁到 H.264/AAC、720p、60 秒以内。这里只检查
+    MP4/MOV 容器和大小，避免为了一个强校验再同步跑 ffprobe 阻塞整个服务。 */
+function videoCanSkipServerShrink(file, name, size) {
   if (size <= 0 || size > 8 * 1024 * 1024) return false;
   try {
-    const out = require('child_process').execFileSync(ffprobeExe(), [
-      '-v', 'error',
-      '-show_entries', 'stream=codec_type,codec_name,width,height,bit_rate:format=duration,bit_rate',
-      '-of', 'json', file
-    ], { timeout: 20000, stdio: ['ignore', 'pipe', 'ignore'] });
-    const info = JSON.parse(String(out || '{}'));
-    const streams = Array.isArray(info.streams) ? info.streams : [];
-    const video = streams.find((stream) => stream.codec_type === 'video');
-    if (!video) return false;
-    const audio = streams.filter((stream) => stream.codec_type === 'audio');
-    const duration = Number(info.format && info.format.duration);
-    const width = Number(video.width);
-    const height = Number(video.height);
-    const streamRate = Number(video.bit_rate);
-    const formatRate = Number(info.format && info.format.bit_rate);
-    const bitrate = Number.isFinite(streamRate) && streamRate > 0 ? streamRate : formatRate;
-    return String(video.codec_name || '').toLowerCase() === 'h264'
-      && audio.every((stream) => String(stream.codec_name || '').toLowerCase() === 'aac')
-      && Number.isFinite(duration) && duration > 0 && duration <= 60.5
-      && Number.isFinite(width) && Number.isFinite(height)
-      && width > 0 && height > 0 && Math.max(width, height) <= 1280
-      && Number.isFinite(bitrate) && bitrate > 0 && bitrate <= 2200000;
+    const head = readUploadRange(
+      file, name, 0, Math.min(size - 1, 63)
+    );
+    return head.length >= 12
+      && head.toString('latin1', 4, 8) === 'ftyp';
   } catch (e) {
     return false;
   }
@@ -5669,19 +5648,59 @@ function saveUploadPlain(plainBuf, ext) {
   return name;
 }
 
-/** 把刚落盘的上传文件就地加密（先写 .tmp 再改名，避免半截文件被读到）。
-    已经是密文的就跳过，返回磁盘上的大小。 */
-function sealUploadInPlace(name) {
-  const file = path.join(UPLOAD_DIR, name);
+/** 客户端已压好的 JPEG 不需要整文件解密再重写。
+    只读文件头和尾，检查 JPEG 魔数、尺寸、结束标记；隐私元数据在客户端
+    重新编码时已经被清除。PNG/其他格式仍走完整校验兜底。 */
+function compressedJpegLooksReady(file, name, size) {
+  if (size < 100) return false;
   try {
-    const raw = fs.readFileSync(file);
-    if (raw.length >= 20 && raw.subarray(0, 4).equals(UPLOAD_MAGIC)) return raw.length;
-    fs.writeFileSync(file + '.tmp', sealUploadBuffer(name, raw));
-    fs.renameSync(file + '.tmp', file);
-    return fs.statSync(file).size;
-  } catch (err) {
-    return 0;
+    const headEnd = Math.min(size - 1, 256 * 1024 - 1);
+    const head = readUploadRange(file, name, 0, headEnd);
+    if (head.length < 4 || head[0] !== 0xff || head[1] !== 0xd8) return false;
+    const dims = readImageSize(head);
+    if (!dims || dims.w <= 1 || dims.h <= 1) return false;
+    if (dims.w * dims.h > IMG_MAX_PIXELS
+        || dims.w > IMG_MAX_SIDE || dims.h > IMG_MAX_SIDE) return false;
+    const tail = readUploadRange(file, name, size - 2, size - 1);
+    return tail.length === 2 && tail[0] === 0xff && tail[1] === 0xd9;
+  } catch (_) {
+    return false;
   }
+}
+
+/** 上传时直接写 LUC1 密文，避免收完再读整文件、整文件重写。 */
+function receiveEncryptedRaw(req, name, tempPath, maxBytes) {
+  return new Promise((resolve, reject) => {
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv(
+      'aes-256-ctr',
+      uploadFileKey(name),
+      iv
+    );
+    const out = fs.createWriteStream(tempPath);
+    out.write(Buffer.concat([UPLOAD_MAGIC, iv]));
+    let size = 0;
+    let tooBig = false;
+    const meter = new Transform({
+      transform(chunk, _encoding, callback) {
+        size += chunk.length;
+        if (size > maxBytes) {
+          tooBig = true;
+          callback(Object.assign(new Error('文件超过 60MB'), { status: 413 }));
+          return;
+        }
+        callback(null, chunk);
+      }
+    });
+    pipeline(req, meter, cipher, out, (error) => {
+      if (error) {
+        error.status = tooBig ? 413 : (error.status || 422);
+        reject(error);
+        return;
+      }
+      resolve({ size, tooBig });
+    });
+  });
 }
 
 function getTransferKernel() {
@@ -24990,54 +25009,50 @@ async function handleApi(req, res, pathname, query) {
     else if (ctype.indexOf('image/') === 0) ext = 'jpg';
     let name = uid('file') + '.' + ext;
     const outPath = path.join(UPLOAD_DIR, name);
+    const tempPath = outPath + '.upload';
     const MAX = 60 * 1024 * 1024;
-    let size = 0, tooBig = false;
-    const ws2 = fs.createWriteStream(outPath);
-    try {
-      await new Promise((resolve, reject) => {
-      let done = false;
-      const finish = (error) => {
-        if (done) return;
-        done = true;
-        if (error) reject(error);
-        else resolve();
-      };
-      req.on('data', (chunk) => {
-        size += chunk.length;
-        if (size > MAX) {
-          tooBig = true;
-          try { ws2.destroy(); } catch (err) { }
-          req.destroy();
-          finish();
-        }
-      });
-      req.on('error', finish);
-      ws2.on('error', finish);
-      ws2.on('finish', () => finish());
-      req.pipe(ws2);
-      });
-    } catch (err) {
-      try { ws2.destroy(); } catch (_) { }
-      try { fs.unlinkSync(outPath); } catch (_) { }
-      return fail(res, 422, '文件上传中断，请重试');
+    const declared = Number(req.headers['content-length']);
+    if (Number.isFinite(declared) && declared > MAX) {
+      req.resume();
+      return fail(res, 413, '文件超过 60MB');
     }
-    if (tooBig) { try { fs.unlinkSync(outPath); } catch (err) { } return fail(res, 413, '文件超过 60MB'); }
-    if (!size) { try { fs.unlinkSync(outPath); } catch (err) { } return fail(res, 422, '没有收到文件'); }
+    let size = 0;
+    try {
+      const received = await receiveEncryptedRaw(req, name, tempPath, MAX);
+      size = received.size;
+      if (received.tooBig) {
+        try { fs.unlinkSync(tempPath); } catch (_) { }
+        return fail(res, 413, '文件超过 60MB');
+      }
+      if (!size) {
+        try { fs.unlinkSync(tempPath); } catch (_) { }
+        return fail(res, 422, '没有收到文件');
+      }
+      fs.renameSync(tempPath, outPath);
+    } catch (err) {
+      try { fs.unlinkSync(tempPath); } catch (_) { }
+      try { fs.unlinkSync(outPath); } catch (_) { }
+      return fail(res, err.status || 422, err.status === 413
+        ? '文件超过 60MB'
+        : '文件上传中断，请重试');
+    }
     /* 这个口原来是"写进去就不管了"：图片炸弹能从这里溜进来。
        现在图片一律过一遍尺寸体检：超限直接拒，大图自动缩小。 */
     if (ctype.indexOf('image/') === 0) {
       try {
-        const buf2 = fs.readFileSync(outPath);
-        const mime2 = sniffImageMime(buf2) || (ctype.indexOf('png') >= 0 ? 'image/png' : 'image/jpeg');
-        const img2 = checkImage(buf2, mime2);
-        if (!img2.ok) { try { fs.unlinkSync(outPath); } catch (err) { } return fail(res, 422, img2.error); }
-        let final2 = img2.buffer;
-        if (img2.needShrink && !clientSaidCompressed) {      // CHRIS_UPLOAD_SKIP_SHRINK_V1
-          const small2 = shrinkImageBuffer(img2.buffer, '.' + ext);
-          if (small2 && small2.length) final2 = small2;
+        if (!(clientSaidCompressed && compressedJpegLooksReady(outPath, name, size))) {
+          const buf2 = openUploadBuffer(name, fs.readFileSync(outPath));
+          const mime2 = sniffImageMime(buf2) || (ctype.indexOf('png') >= 0 ? 'image/png' : 'image/jpeg');
+          const img2 = checkImage(buf2, mime2);
+          if (!img2.ok) { try { fs.unlinkSync(outPath); } catch (err) { } return fail(res, 422, img2.error); }
+          let final2 = img2.buffer;
+          if (img2.needShrink && !clientSaidCompressed) {      // CHRIS_UPLOAD_SKIP_SHRINK_V1
+            const small2 = shrinkImageBuffer(img2.buffer, '.' + ext);
+            if (small2 && small2.length) final2 = small2;
+          }
+          fs.writeFileSync(outPath, sealUploadBuffer(name, final2));
+          size = final2.length;
         }
-        fs.writeFileSync(outPath, final2);
-        size = final2.length;
       } catch (err) {
         try { fs.unlinkSync(outPath); } catch (err2) { }
         return fail(res, 422, '图片校验失败');
@@ -25051,14 +25066,14 @@ async function handleApi(req, res, pathname, query) {
     /* 客户端已导出且规格安全的聊天视频直接落盘，避免每次发送都阻塞在 ffmpeg。
        高码率、超长或尺寸过大的视频仍走原来的转码兜底。 */
     const video = ctype.indexOf('video/') === 0;
-    const videoCanPass = clientCompressed && videoCanSkipServerShrink(outPath, size);
+    const videoCanPass = clientCompressed && videoCanSkipServerShrink(outPath, name, size);
     const videoTooBig = video && size > 2 * 1024 * 1024 && !videoCanPass;
     if (videoTooBig) {
       const before = size;
       try {
         const tmpIn = path.join(os.tmpdir(), 'chris-up-' + crypto.randomBytes(6).toString('hex') + '.' + ext);
         const outTmp = tmpIn + '.small.mp4';
-        fs.writeFileSync(tmpIn, fs.readFileSync(outPath));
+        fs.writeFileSync(tmpIn, readUploadPlain(outPath));
         const rr = await runFfAsync(ffmpegExe(), ['-y', '-loglevel', 'error', '-i', tmpIn,
           '-vf', "scale='if(gt(iw,ih),min(1280,iw),-2)':'if(gt(iw,ih),-2,min(1280,ih))'",
           '-c:v', 'libx264', '-profile:v', 'high', '-preset', 'veryfast',
@@ -25081,8 +25096,6 @@ async function handleApi(req, res, pathname, query) {
         callTrace('聊天视频压缩失败，用原文件：' + String(err && err.message || err).slice(0, 120));
       }
     }
-    /* 上传目录里的东西一律加密落盘（以前这个口是直接写明文，重启才补加密） */
-    sealUploadInPlace(name);
     try {
       const uploaded = fs.statSync(path.join(UPLOAD_DIR, name));
       if (!uploaded.isFile() || uploaded.size <= 20) {

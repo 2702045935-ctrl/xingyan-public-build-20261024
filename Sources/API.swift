@@ -1878,7 +1878,8 @@ final class API {
         uploadConfig.httpShouldSetCookies = false
         uploadConfig.httpCookieAcceptPolicy = .never
         uploadConfig.httpShouldUsePipelining = true
-        uploadConfig.httpMaximumConnectionsPerHost = 6
+        uploadConfig.networkServiceType = .responsiveData
+        uploadConfig.httpMaximumConnectionsPerHost = 8
         uploadSession = URLSession(
             configuration: uploadConfig,
             delegate: trustDelegate,
@@ -5742,8 +5743,7 @@ private struct StarredPayload: Decodable {
         req.networkServiceType = .responsiveData
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         req.setValue(mime, forHTTPHeaderField: "Content-Type")
-        req.httpBody = data
-        let (d, resp) = try await uploadSession.data(for: req)
+        let (d, resp) = try await uploadSession.upload(for: req, from: data)
         guard let http = resp as? HTTPURLResponse,
               (200...299).contains(http.statusCode) else {
             throw APIError.message("上传失败，请检查网络后再试")

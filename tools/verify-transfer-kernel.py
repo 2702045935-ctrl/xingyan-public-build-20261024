@@ -10,6 +10,9 @@ API = (ROOT / "Sources" / "API.swift").read_text(encoding="utf-8")
 CHAT = (ROOT / "Sources" / "ChatDetailView.swift").read_text(encoding="utf-8")
 MEDIA = (ROOT / "Sources" / "ChatMediaBubbles.swift").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "build-ios.yml").read_text(encoding="utf-8")
+RAW_UPLOAD = SERVER.split(
+    "if (parts[0] === 'upload' && parts[1] === 'raw'", 1
+)[1].split("if (parts[0] === 'upload' && method", 1)[0]
 
 
 def require(condition: bool, message: str) -> None:
@@ -26,7 +29,7 @@ require(
     "the app upload boundary must use only the 11/21 raw upload endpoints",
 )
 require(
-    "req.httpBody = data\n        let (d, resp) = try await uploadSession.data(for: req)"
+    "let (d, resp) = try await uploadSession.upload(for: req, from: data)"
     in API
     and "uploadSession.upload(\n            for: req,\n            fromFile: file,\n            delegate: delegate"
     in API
@@ -84,7 +87,8 @@ require(
 require(
     "private let uploadSession: URLSession" in API
     and "let uploadConfig = URLSessionConfiguration.default" in API
-    and "uploadConfig.httpMaximumConnectionsPerHost = 6" in API
+    and "uploadConfig.httpMaximumConnectionsPerHost = 8" in API
+    and "uploadConfig.networkServiceType = .responsiveData" in API
     and "req.networkServiceType = .responsiveData" in API
     and "URLSessionConfiguration.default" in CLIENT
     and "httpMaximumConnectionsPerHost = 6" in CLIENT
@@ -104,6 +108,23 @@ require(
     and "kernel.complete" in SERVER
     and "inspectTransferFile" in SERVER,
     "server must route the transfer kernel before the legacy raw upload",
+)
+require(
+    "function receiveEncryptedRaw(req, name, tempPath, maxBytes)" in SERVER
+    and "pipeline(req, meter, cipher, out" in SERVER
+    and "fs.renameSync(tempPath, outPath)" in RAW_UPLOAD
+    and "receiveEncryptedRaw(req, name, tempPath, MAX)" in RAW_UPLOAD
+    and "fs.writeFileSync(tmpIn, readUploadPlain(outPath))" in RAW_UPLOAD
+    and "sealUploadInPlace" not in SERVER,
+    "raw uploads must encrypt while receiving instead of rereading and rewriting the whole file",
+)
+require(
+    "function compressedJpegLooksReady(file, name, size)" in SERVER
+    and "clientSaidCompressed && compressedJpegLooksReady(outPath, name, size)" in RAW_UPLOAD
+    and "head.toString('latin1', 4, 8) === 'ftyp'" in SERVER
+    and "execFileSync" not in SERVER[SERVER.index("function videoCanSkipServerShrink"):
+                                      SERVER.index("/** 头像字段")],
+    "client-normalised images and short videos must avoid full server rewrites and sync ffprobe",
 )
 require(
     "crypto.createCipheriv(" in KERNEL
