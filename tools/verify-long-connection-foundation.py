@@ -71,6 +71,10 @@ def main() -> None:
     for needle in ["maxFailureRatio", "maxPending", "paused", "resume"]:
         if needle not in canary:
             raise AssertionError(f"canary guard missing {needle}")
+    drill = (ROOT / "server/lib/gateway-cluster-drill.js").read_text(encoding="utf-8")
+    for needle in ["simulated-node-down", "pendingAfterFailure", "retryAttempts"]:
+        if needle not in drill:
+            raise AssertionError(f"gateway cluster drill missing {needle}")
     print("long connection foundation: passed")
 
 
