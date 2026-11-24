@@ -243,6 +243,12 @@ require(
     "conversation rows must use one WhatsApp run gap in every chat type",
 )
 require(
+    "private static let initialMessageSeed = 240" in CHAT
+    and ".suffix(Self.initialMessageSeed)" in CHAT
+    and "private let initialMessageWindow = Self.initialMessageSeed" in CHAT,
+    "cached, re-entered and refreshed chats must start from the same message window",
+)
+require(
     "ChatUnreadRollingBadge" not in CHAT
     and ".contentTransition(.numericText" not in CHAT
     and 'if !atBottomNow, !initialOpenSettling' in CHAT

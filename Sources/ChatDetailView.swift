@@ -1018,6 +1018,8 @@ private struct StarWhisperLine: View {
 }
 
 struct ChatDetailView: View {
+    private static let initialMessageSeed = 240
+
     @ObservedObject private var lang = LangStore.shared
 
     @ObservedObject private var chatBg = ChatBgStore.shared
@@ -1040,7 +1042,10 @@ struct ChatDetailView: View {
             if sa != sb { return sa < sb }
             return a.id < b.id
         }
-        let seed = Array(sorted.filter { !hidden.contains($0.id) }.suffix(200))
+        let seed = Array(
+            sorted.filter { !hidden.contains($0.id) }
+                .suffix(Self.initialMessageSeed)
+        )
         let draft = ChatDraftStore.shared.text(for: chat.id)
         _messages = State(initialValue: seed)
         _loading = State(initialValue: seed.isEmpty)
@@ -1740,7 +1745,7 @@ struct ChatDetailView: View {
         !MessageStressFixture.isActive
     }
 
-    private let initialMessageWindow = 240
+    private let initialMessageWindow = Self.initialMessageSeed
     /* 首屏放最近 240 条，更早历史由用户继续上滑按页加载。
        这能避免进群时一次合并数千条消息造成明显掉帧。 */
     private let stressMessageWindow = 1_800
