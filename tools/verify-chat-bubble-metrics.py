@@ -178,9 +178,8 @@ require(
     "native multi-image messages must render the shared adaptive mosaic",
 )
 require(
-    "private static func imageBubbleSize(" in MEDIA_ROW
-    and "var width = min(260, usableWidth)" in MEDIA_ROW
-    and "if height > 320" in MEDIA_ROW
+    "ImageBubble.thumb(pixel)" in MEDIA_ROW
+    and "ImageBubble.looksLikeSticker(pixel)" in MEDIA_ROW
     and "229 + tail" in MEDIA_ROW
     and "case .video(_, _, let w, let h):" in MEDIA_ROW
     and "videoBubbleSize(w: w, h: h)" in MEDIA_ROW

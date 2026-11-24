@@ -518,11 +518,15 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
                                  available - avatarReserve))
         switch model.kind {
         case .image(_, let pixel):
-            let bodyWidth = max(1, usable - tail)
-            return min(usable, imageBubbleSize(
-                pixel: pixel,
-                usableWidth: bodyWidth
-            ).width + tail)
+            let thumb: CGSize
+            if pixel.width > 1, pixel.height > 1 {
+                thumb = ImageBubble.looksLikeSticker(pixel)
+                    ? CGSize(width: 120, height: 120)
+                    : ImageBubble.thumb(pixel)
+            } else {
+                thumb = CGSize(width: 150, height: 150)
+            }
+            return min(usable, thumb.width + tail)
         case .images:
             return min(usable, 229 + tail)
         case .video(_, _, let w, let h):
@@ -537,12 +541,10 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
                                      width: CGFloat) -> CGFloat {
         switch model.kind {
         case .image(_, let pixel):
-            let bodyWidth = max(1, width - (model.showTail
-                ? WhatsAppChatLayout.tailInset : 0))
-            return imageBubbleSize(
-                pixel: pixel,
-                usableWidth: bodyWidth
-            ).height
+            guard pixel.width > 1, pixel.height > 1 else { return 150 }
+            return ImageBubble.looksLikeSticker(pixel)
+                ? 120
+                : ImageBubble.thumb(pixel).height
         case .images(let paths):
             return MultiImageMosaic
                 .containerSize(for: paths.count, width: 229)
@@ -554,33 +556,6 @@ final class NativeChatMediaRowView: UIView, UIGestureRecognizerDelegate {
                 ? 0
                 : WhatsAppChatLayout.senderHeight + 3)
         }
-    }
-
-    private static func imageBubbleSize(
-        pixel: CGSize,
-        usableWidth: CGFloat
-    ) -> CGSize {
-        guard pixel.width > 1, pixel.height > 1 else {
-            return CGSize(
-                width: min(260, usableWidth),
-                height: min(195, usableWidth * 0.75)
-            )
-        }
-        if ImageBubble.looksLikeSticker(pixel) {
-            return CGSize(width: 120, height: 120)
-        }
-        let aspect = pixel.width / pixel.height
-        var width = min(260, usableWidth)
-        var height = width / aspect
-        if height > 320 {
-            height = 320
-            width = height * aspect
-        }
-        if width > usableWidth {
-            width = usableWidth
-            height = width / aspect
-        }
-        return CGSize(width: width.rounded(), height: height.rounded())
     }
 
     private static func byteText(_ bytes: Int) -> String {

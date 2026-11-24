@@ -172,8 +172,8 @@ func videoBubbleSize(w: Int, h: Int) -> CGSize {
     let fw = CGFloat(w), fh = CGFloat(h)
     guard fw > 0, fh > 0 else { return CGSize(width: 160, height: 205) }
     let aspect = fw / fh
-    let maxW: CGFloat = aspect >= 1 ? 280 : 220
-    let maxH: CGFloat = aspect >= 1 ? 210 : 300
+    let maxW: CGFloat = aspect >= 1 ? 250 : 190
+    let maxH: CGFloat = aspect >= 1 ? 170 : 250
     var cw = maxW
     var ch = cw / aspect
     if ch > maxH { ch = maxH; cw = ch * aspect }
