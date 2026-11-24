@@ -1053,6 +1053,7 @@ struct RemoteImage: View {
     var template: Bool = false
 
     var maxSide: CGFloat = 1600
+    var placeholder: Color? = nil
 
     var onLoaded: ((UIImage) -> Void)? = nil
 
@@ -1065,6 +1066,7 @@ struct RemoteImage: View {
          mode: ContentMode = .fill,
          template: Bool = false,
          maxSide: CGFloat = 1600,
+         placeholder: Color? = nil,
          onLoaded: ((UIImage) -> Void)? = nil) {
         self.path = path
         self.cacheKey = cacheKey
@@ -1072,6 +1074,7 @@ struct RemoteImage: View {
         self.mode = mode
         self.template = template
         self.maxSide = maxSide
+        self.placeholder = placeholder
         self.onLoaded = onLoaded
         let identity = Self.cacheIdentity(path: path, cacheKey: cacheKey)
         let cached = Self.cachedImage(path: identity, maxSide: maxSide)
@@ -1089,10 +1092,19 @@ struct RemoteImage: View {
                         .aspectRatio(contentMode: mode)
                 } else {
                     ZStack {
-                        Color.dyn(0xE9E9E9, 0x2C2C2E)
-                        Image(systemName: icon)
-                            .font(pf(max(10, min(geo.size.width, geo.size.height) * 0.40)))
-                            .foregroundColor(Color.dyn(0xC4C4C4, 0x636366))
+                        if let placeholder {
+                            placeholder
+                        } else {
+                            Color.dyn(0xE9E9E9, 0x2C2C2E)
+                            Image(systemName: icon)
+                                .font(pf(max(
+                                    10,
+                                    min(geo.size.width, geo.size.height) * 0.40
+                                )))
+                                .foregroundColor(
+                                    Color.dyn(0xC4C4C4, 0x636366)
+                                )
+                        }
                     }
                 }
             }

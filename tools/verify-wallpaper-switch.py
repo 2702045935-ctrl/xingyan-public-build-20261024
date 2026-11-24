@@ -50,6 +50,14 @@ require(
     "rendered wallpapers must reuse source/effect caches across chat entries",
 )
 require(
+    "var placeholder: Color? = nil" in (
+        ROOT / "Sources" / "Core.swift"
+    ).read_text(encoding="utf-8")
+    and "placeholder: ChatTheme.page" in CHAT
+    and ".id(backgroundPath)" in CHAT,
+    "chat wallpaper loads must use the theme canvas instead of a gray flash",
+)
+require(
     "private var previewImages: [String: UIImage] = [:]" in SHEET
     and "func setPreview(chatId: String, path: String, image: UIImage?)" in SHEET
     and "func previewImage(chatId: String) -> UIImage?" in SHEET

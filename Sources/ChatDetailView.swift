@@ -4929,7 +4929,9 @@ struct ChatDetailView: View {
                     if resolvedBackgroundEffect == .original {
                         RemoteImage(path: backgroundPath,
                                     mode: .fill,
-                                    maxSide: chatWallpaperDecodeSide())
+                                    maxSide: chatWallpaperDecodeSide(),
+                                    placeholder: ChatTheme.page)
+                            .id(backgroundPath)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .clipped()
                     } else {
