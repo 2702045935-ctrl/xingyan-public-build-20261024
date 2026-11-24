@@ -47,6 +47,16 @@ server/gateway-server.js
 4. Gateway 注册到主服务目录并每 10 秒心跳；
 5. Gateway 摘流时停止接入新客户端，已有连接不主动切断。
 
+## 上游闪断
+
+主服务的 `/__gateway/upstream` 断开时，Gateway 不会立刻切断客户端：
+
+- 保留客户端 WebSocket；
+- 每个客户端最多缓存 512KB 待转发字节；
+- 超过队列上限的慢客户端才会被断开；
+- 上游重连后重新发送 `open` 恢复虚拟会话；
+- 恢复后按队列顺序继续转发。
+
 启动示例：
 
 ```powershell

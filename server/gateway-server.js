@@ -34,6 +34,7 @@ let upstreamReady = false;
 let reconnectTimer = null;
 let heartbeatTimer = null;
 let nextPublishId = 0;
+const MAX_CLIENT_QUEUE_BYTES = Number(process.env.GATEWAY_MAX_QUEUE_BYTES) || 512 * 1024;
 
 function log(message) {
   console.log(`[gateway ${NODE_ID}] ${message}`);
@@ -69,6 +70,10 @@ function connectUpstream() {
       capacity: governor.maxTotal,
       connections: governor.total
     });
+    for (const client of clients.values()) {
+      openClientOnUpstream(client);
+      flushClientData(client);
+    }
   };
   upstream.onmessage = (event) => {
     const message = decodeEnvelope(event.data);
@@ -77,14 +82,15 @@ function connectUpstream() {
     if (!client) return;
     if (message.type === 'open-ok') {
       client.userId = String(message.userId || '');
+      client.reopened = true;
       return;
     }
     if (message.type === 'data' && message.data) {
-      try { client.write(Buffer.from(String(message.data), 'base64')); }
-      catch (_) { client.destroy(); }
+      try { client.socket.write(Buffer.from(String(message.data), 'base64')); }
+      catch (_) { client.socket.destroy(); }
       return;
     }
-    if (message.type === 'closed') client.end();
+    if (message.type === 'closed') client.socket.end();
   };
   upstream.onerror = () => {
     log('upstream error');
@@ -92,8 +98,8 @@ function connectUpstream() {
   upstream.onclose = () => {
     upstreamReady = false;
     upstream = null;
-    for (const client of clients.values()) client.destroy();
-    clients.clear();
+    /* Keep client TCP/WebSocket connections alive. Re-open virtual sessions
+       after the next upstream connection and flush bounded pending bytes. */
     if (!reconnectTimer) {
       reconnectTimer = setTimeout(() => {
         reconnectTimer = null;
@@ -102,6 +108,35 @@ function connectUpstream() {
       if (reconnectTimer.unref) reconnectTimer.unref();
     }
   };
+}
+
+function openClientOnUpstream(client) {
+  if (!client || !client.open) return false;
+  return send('open', client.connectionId, client.open);
+}
+
+function queueClientData(client, chunk) {
+  if (!client) return false;
+  client.pendingBytes = Number(client.pendingBytes) || 0;
+  if (client.pendingBytes + chunk.length > MAX_CLIENT_QUEUE_BYTES) return false;
+  client.pending.push(chunk);
+  client.pendingBytes += chunk.length;
+  return true;
+}
+
+function flushClientData(client) {
+  if (!client) return;
+  while (client.pending.length) {
+    const chunk = client.pending.shift();
+    client.pendingBytes -= chunk.length;
+    if (!send('data', client.connectionId, {
+      data: chunk.toString('base64')
+    })) {
+      client.pending.unshift(chunk);
+      client.pendingBytes += chunk.length;
+      return;
+    }
+  }
 }
 
 function send(type, connectionId, payload) {
@@ -184,10 +219,10 @@ const server = http.createServer(async (req, res) => {
       const text = JSON.stringify(body.payload || {});
       let delivered = 0;
       let wouldDeliver = 0;
-      for (const socket of clients.values()) {
-        if (!socket.userId || !wanted.has(socket.userId)) continue;
+      for (const client of clients.values()) {
+        if (!client.userId || !wanted.has(client.userId)) continue;
         wouldDeliver += 1;
-        if (body.dryRun !== true && ws.sendText(socket, text)) delivered += 1;
+        if (body.dryRun !== true && ws.sendText(client.socket, text)) delivered += 1;
       }
       nextPublishId += 1;
       res.writeHead(200, { 'content-type': 'application/json' });
@@ -235,29 +270,40 @@ server.on('upgrade', (req, socket) => {
     `Sec-WebSocket-Accept: ${ws.acceptKey(key)}\r\n\r\n`
   );
   socket.setNoDelay(true);
-  clients.set(connectionId, socket);
+  const client = {
+    connectionId,
+    socket,
+    userId: '',
+    pending: [],
+    pendingBytes: 0,
+    open: {
+      nodeId: NODE_ID,
+      url: req.url,
+      ip,
+      headers: {
+        cookie: String(req.headers.cookie || ''),
+        'user-agent': String(req.headers['user-agent'] || ''),
+        'x-device-id': String(req.headers['x-device-id'] || ''),
+        'x-device-kind': String(req.headers['x-device-kind'] || ''),
+        'x-app-build': String(req.headers['x-app-build'] || '')
+      }
+    }
+  };
+  clients.set(connectionId, client);
   socket.on('data', (chunk) => {
-    if (!send('data', connectionId, { data: chunk.toString('base64') })) {
+    if (upstreamReady && send('data', connectionId, {
+      data: chunk.toString('base64')
+    })) return;
+    if (!queueClientData(client, chunk)) {
       socket.destroy();
     }
   });
   socket.on('close', () => {
     clients.delete(connectionId);
     governor.release(preauth.lease);
-    send('closed', connectionId, {});
+    if (upstreamReady) send('closed', connectionId, {});
   });
-  send('open', connectionId, {
-    nodeId: NODE_ID,
-    url: req.url,
-    ip,
-    headers: {
-      cookie: String(req.headers.cookie || ''),
-      'user-agent': String(req.headers['user-agent'] || ''),
-      'x-device-id': String(req.headers['x-device-id'] || ''),
-      'x-device-kind': String(req.headers['x-device-kind'] || ''),
-      'x-app-build': String(req.headers['x-app-build'] || '')
-    }
-  });
+  openClientOnUpstream(client);
 });
 
 connectUpstream();
