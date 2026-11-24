@@ -5775,7 +5775,6 @@ private struct StarredPayload: Decodable {
               (200...299).contains(http.statusCode) else {
             throw APIError.message("上传失败，请检查网络后再试")
         }
-        onProgress?(1)
         return try Self.rawUploadURL(from: d)
     }
 
