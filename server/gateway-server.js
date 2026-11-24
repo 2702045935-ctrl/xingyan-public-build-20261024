@@ -33,6 +33,7 @@ let upstream = null;
 let upstreamReady = false;
 let reconnectTimer = null;
 let heartbeatTimer = null;
+let nextPublishId = 0;
 
 function log(message) {
   console.log(`[gateway ${NODE_ID}] ${message}`);
@@ -74,6 +75,10 @@ function connectUpstream() {
     if (!message) return;
     const client = clients.get(message.connectionId);
     if (!client) return;
+    if (message.type === 'open-ok') {
+      client.userId = String(message.userId || '');
+      return;
+    }
     if (message.type === 'data' && message.data) {
       try { client.write(Buffer.from(String(message.data), 'base64')); }
       catch (_) { client.destroy(); }
@@ -122,8 +127,41 @@ function requestIp(req) {
     .replace('::ffff:', '').replace('::1', '127.0.0.1');
 }
 
-const server = http.createServer((req, res) => {
-  if (req.url === '/health') {
+function readJsonBody(req) {
+  return new Promise((resolve, rejectBody) => {
+    const chunks = [];
+    let size = 0;
+    req.on('data', (chunk) => {
+      size += chunk.length;
+      if (size > 2 * 1024 * 1024) {
+        rejectBody(new Error('body too large'));
+        req.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on('end', () => {
+      try {
+        const raw = Buffer.concat(chunks).toString('utf8');
+        resolve(raw ? JSON.parse(raw) : {});
+      } catch (error) {
+        rejectBody(error);
+      }
+    });
+    req.on('error', rejectBody);
+  });
+}
+
+function internalAuthorized(req) {
+  if (!SECRET) return false;
+  const supplied = String(req.headers['x-gateway-admin-secret'] || '');
+  const a = Buffer.from(supplied);
+  const b = Buffer.from(SECRET);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+const server = http.createServer(async (req, res) => {
+  if (req.url === '/health' || req.url === '/__gateway/health') {
     res.writeHead(200, { 'content-type': 'application/json' });
     res.end(JSON.stringify({
       ok: true,
@@ -132,6 +170,34 @@ const server = http.createServer((req, res) => {
       clients: clients.size,
       governor: governor.snapshot()
     }));
+    return;
+  }
+  if (req.url === '/__gateway/publish' && req.method === 'POST') {
+    if (!internalAuthorized(req)) {
+      res.writeHead(403, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: 'forbidden' }));
+      return;
+    }
+    try {
+      const body = await readJsonBody(req);
+      const wanted = new Set((body.userIds || []).map((value) => String(value)));
+      const text = JSON.stringify(body.payload || {});
+      let delivered = 0;
+      for (const socket of clients.values()) {
+        if (!socket.userId || !wanted.has(socket.userId)) continue;
+        if (ws.sendText(socket, text)) delivered += 1;
+      }
+      nextPublishId += 1;
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({
+        ok: true,
+        publishId: String(body.publishId || nextPublishId),
+        delivered
+      }));
+    } catch (error) {
+      res.writeHead(400, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: String(error && error.message || error) }));
+    }
     return;
   }
   res.writeHead(404);

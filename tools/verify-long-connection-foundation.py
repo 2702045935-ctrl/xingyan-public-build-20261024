@@ -49,6 +49,14 @@ def main() -> None:
     for needle in ["bumpEpoch", "prevExist", "prevValue", "claimKey", "nodeTtlSeconds"]:
         if needle not in etcd:
             raise AssertionError(f"etcd gateway directory missing {needle}")
+    hot = (ROOT / "server/lib/hot-group-router.js").read_text(encoding="utf-8")
+    for needle in ["dedicated-cell", "batched-cell", "maxBatch", "partition("]:
+        if needle not in hot:
+            raise AssertionError(f"hot group router missing {needle}")
+    fanout = (ROOT / "server/lib/gateway-fanout.js").read_text(encoding="utf-8")
+    for needle in ["publishId", "retries", "timeoutMs", "delivered"]:
+        if needle not in fanout:
+            raise AssertionError(f"gateway fanout missing {needle}")
     print("long connection foundation: passed")
 
 
