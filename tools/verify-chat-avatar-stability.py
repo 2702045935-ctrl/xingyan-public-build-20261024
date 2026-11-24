@@ -73,6 +73,13 @@ require(
     "SwiftUI avatars must keep one cache identity across signed URL refreshes",
 )
 require(
+    'for marker in ["/uploads/", "/emoji/", "/hls/"]' in CORE
+    and "let cacheKey = ImageCacheKey.stablePath(path)" in CHAT
+    and "ImageStore.shared.put(cacheKey, image)" in CHAT
+    and "ImageSizeCache.put(cacheKey" in CHAT,
+    "sent media must share one cache key between relative and signed absolute URLs",
+)
+require(
     "avatar.isHidden = !next.showsAvatar" in TEXT_ROW
     and "avatar.isHidden = !next.showsAvatar" in MEDIA_ROW
     and "if next.showsAvatar {\n            avatar.configure(" in TEXT_ROW

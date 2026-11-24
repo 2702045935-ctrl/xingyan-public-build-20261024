@@ -880,10 +880,22 @@ final class ScrollGate {
 enum ImageCacheKey {
     static func stablePath(_ path: String) -> String {
         let value = path.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let cut = value.firstIndex(where: { $0 == "?" || $0 == "#" }) else {
-            return value
+        var normalized = value
+        if let url = URL(string: value),
+           let scheme = url.scheme?.lowercased(),
+           scheme == "http" || scheme == "https" {
+            let mediaPath = url.path
+            for marker in ["/uploads/", "/emoji/", "/hls/"] {
+                if let range = mediaPath.range(of: marker) {
+                    normalized = String(mediaPath[range.lowerBound...])
+                    break
+                }
+            }
         }
-        return String(value[..<cut])
+        guard let cut = normalized.firstIndex(where: { $0 == "?" || $0 == "#" }) else {
+            return normalized
+        }
+        return String(normalized[..<cut])
     }
 
     static func avatar(_ path: String) -> String {
@@ -1133,7 +1145,7 @@ struct RemoteImage: View {
 
     private static func cacheIdentity(path: String, cacheKey: String?) -> String {
         let key = cacheKey?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        return key.isEmpty ? path : key
+        return ImageCacheKey.stablePath(key.isEmpty ? path : key)
     }
 
     private func load() async {
