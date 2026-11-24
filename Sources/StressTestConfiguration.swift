@@ -41,6 +41,12 @@ enum StressTestConfiguration {
             ?? (profile == "full-100000" ? 100_000 : 0)
     }()
 
+    static let contactCount: Int = {
+        value("XINGYAN_CONTACT_STRESS")
+            ?? profileValue("contacts-")
+            ?? 0
+    }()
+
     static let messageGroupCount: Int = {
         let raw = environment["XINGYAN_STRESS_GROUPS"].flatMap(Int.init) ?? 1
         return messageCount > 0 ? max(1, min(500, raw)) : 0

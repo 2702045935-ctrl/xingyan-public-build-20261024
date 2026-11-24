@@ -36,6 +36,9 @@ final class AppState: ObservableObject {
             chats = LocalStore.cachedChatList(userId: cached.id)
             contacts = Self.cachedContacts(userId: cached.id)
         }
+        if ContactStressFixture.isActive {
+            contacts = ContactStressFixture.contacts
+        }
         installMessageStressFixture(myId: cached?.id ?? "")
         applyCachedUIConfig()
     }
@@ -1165,6 +1168,7 @@ final class AppState: ObservableObject {
 
         if let r = try? await contactsRequest {
             guard isCurrentAccount(epoch) else { return }
+            guard !ContactStressFixture.isActive else { return }
             let friends = applyLocalRemarksToContacts(r.friends)
             Self.saveCachedContacts(friends, userId: me?.id)
             let sameOrder = contacts.map { $0.id } == friends.map { $0.id }
@@ -2441,6 +2445,7 @@ final class AppState: ObservableObject {
     }
 
     func loadContacts() async {
+        guard !ContactStressFixture.isActive else { return }
         let epoch = accountEpoch
         if let r = try? await API.shared.contactsFull() {
             guard isCurrentAccount(epoch) else { return }

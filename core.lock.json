@@ -8,8 +8,8 @@
     },
     {
       "path": "Sources/App.swift",
-      "size": 206307,
-      "sha256": "6576cdc51d976528ff5b5f4192ae6c4ac46e415750886f650d8ddc2752125bd0"
+      "size": 206539,
+      "sha256": "73867227d1e809c6d90302646ff2946bbbe65543a2020d5cddcf4acf847aae65"
     },
     {
       "path": "Sources/Realtime.swift",
@@ -123,8 +123,8 @@
     },
     {
       "path": "Sources/StressTestConfiguration.swift",
-      "size": 2769,
-      "sha256": "f10b2957ae1c0372b9eab62dd9a82f64af5eca763472b4a7f7d52ab52a73558b"
+      "size": 2913,
+      "sha256": "8c69be8fe4cd4721c22557d8f5b00c4102280438be1b21509320d2eb87385b30"
     },
     {
       "path": "Sources/VideoPlaybackKernel.swift",
