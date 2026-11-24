@@ -88,6 +88,7 @@ jobs:
           python3 tools/verify-preview-semantics.py
           python3 tools/verify-video-kernel.py
           python3 tools/verify-video-interactions.py
+          python3 tools/verify-game-runtime.py
           python3 tools/verify-star-map.py
           python3 tools/verify-browser.py
           python3 tools/verify-feature-manifest.py

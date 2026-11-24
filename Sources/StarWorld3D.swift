@@ -52,6 +52,7 @@ struct StarWorld3DEntryCard: View {
                 .stroke(Color.white.opacity(0.12), lineWidth: 0.8)
         }
         .shadow(color: Color.black.opacity(0.16), radius: 18, y: 9)
+        .onAppear { StarWorldUSDZScene.preloadIfNeeded() }
     }
 }
 
@@ -67,10 +68,6 @@ struct World3DEntryPressStyle: ButtonStyle {
 struct StarWorldExperienceView: View {
     @EnvironmentObject private var app: AppState
     @Environment(\.dismiss) private var dismiss
-    @State private var yaw: CGFloat = -0.20
-    @State private var pitch: CGFloat = 0.10
-    @State private var startYaw: CGFloat = -0.20
-    @State private var startPitch: CGFloat = 0.10
     @State private var entered = false
     @State private var avatarProfile = StarAvatarProfile.fallback
     @State private var showAvatarStudio = false
@@ -102,13 +99,10 @@ struct StarWorldExperienceView: View {
             .ignoresSafeArea()
 
             StarWorldSceneView(
-                yaw: $yaw,
-                pitch: $pitch,
                 profile: avatarProfile,
                 map: activeMap,
                 onTravel: beginTravel
             )
-                .id("\(activeMap.rawValue)-\(avatarProfile.hashValue)")
                 .ignoresSafeArea()
                 .opacity(entered ? 1 : 0)
                 .scaleEffect(entered ? 1 : 0.92)
@@ -173,18 +167,8 @@ struct StarWorldExperienceView: View {
                     .zIndex(80)
             }
         }
-        .gesture(
-            DragGesture(minimumDistance: 4)
-                .onChanged { value in
-                    yaw = startYaw + value.translation.width / 260
-                    pitch = min(0.48, max(-0.34, startPitch - value.translation.height / 520))
-                }
-                .onEnded { _ in
-                    startYaw = yaw
-                    startPitch = pitch
-                }
-        )
         .onAppear {
+            StarWorldUSDZScene.preloadIfNeeded()
             avatarProfile = StarAvatarProfileStore.load(userID: app.me?.id ?? "local")
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.05) {
                 withAnimation(.easeOut(duration: 0.55)) {
@@ -213,10 +197,6 @@ struct StarWorldExperienceView: View {
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.38) {
             activeMap = destination
-            yaw = destination == .room ? -0.20 : 0
-            pitch = destination == .room ? 0.10 : 0.12
-            startYaw = yaw
-            startPitch = pitch
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.72) {
                 withAnimation(.easeOut(duration: 0.58)) {
                     entered = true
@@ -256,18 +236,123 @@ struct StarWorldExperienceView: View {
 }
 
 private struct StarWorldSceneView: UIViewRepresentable {
-    @Binding var yaw: CGFloat
-    @Binding var pitch: CGFloat
     let profile: StarAvatarProfile
     let map: StarWorldMap
     let onTravel: (StarWorldMap) -> Void
 
     final class Coordinator: NSObject {
-        let root = SCNNode()
+        var root = SCNNode()
         weak var sceneView: SCNView?
         var map: StarWorldMap = .room
+        var profileHash = 0
         var onTravel: ((StarWorldMap) -> Void)?
         var isTraveling = false
+        private var yaw: CGFloat = -0.20
+        private var pitch: CGFloat = 0.10
+        private var panStartYaw: CGFloat = -0.20
+        private var panStartPitch: CGFloat = 0.10
+        private var observers: [NSObjectProtocol] = []
+
+        override init() {
+            super.init()
+            let center = NotificationCenter.default
+            observers.append(center.addObserver(
+                forName: ProcessInfo.thermalStateDidChangeNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                self?.applyRenderQuality()
+            })
+            observers.append(center.addObserver(
+                forName: .NSProcessInfoPowerStateDidChange,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                self?.applyRenderQuality()
+            })
+        }
+
+        deinit {
+            observers.forEach(NotificationCenter.default.removeObserver)
+        }
+
+        func resetViewport(for map: StarWorldMap) {
+            self.map = map
+            yaw = map == .room ? -0.20 : 0
+            pitch = map == .room ? 0.10 : 0.12
+            panStartYaw = yaw
+            panStartPitch = pitch
+            applyCamera()
+        }
+
+        func applyCamera() {
+            guard let view = sceneView else { return }
+            if map == .room {
+                root.eulerAngles.x = Float(pitch)
+                root.eulerAngles.y = Float(yaw)
+            } else {
+                root.eulerAngles = SCNVector3(0, 0, 0)
+                guard let camera = view.scene?.rootNode.childNode(
+                    withName: "world.camera",
+                    recursively: true
+                ) else { return }
+                let angle = Float(yaw)
+                let elevation = Float(pitch)
+                camera.position = SCNVector3(
+                    sin(angle) * 11.0,
+                    5.1 + elevation * 5.0,
+                    cos(angle) * 11.0
+                )
+                camera.eulerAngles = SCNVector3(-0.34 + elevation * 0.30, angle, 0)
+            }
+        }
+
+        func applyRenderQuality() {
+            guard let view = sceneView else { return }
+            let process = ProcessInfo.processInfo
+            let thermallyConstrained = process.thermalState == .serious
+                || process.thermalState == .critical
+            let constrained = thermallyConstrained || process.isLowPowerModeEnabled
+            view.antialiasingMode = constrained ? .none : .multisampling2X
+            view.preferredFramesPerSecond = constrained ? 30 : 60
+            view.contentScaleFactor = constrained
+                ? 1.5
+                : min(UIScreen.main.scale, 2.0)
+
+            view.scene?.rootNode.enumerateChildNodes { node, _ in
+                if let light = node.light, light.type == .directional {
+                    light.castsShadow = !constrained
+                    light.shadowMapSize = constrained
+                        ? CGSize(width: 512, height: 512)
+                        : CGSize(width: 1024, height: 1024)
+                }
+                if let camera = node.camera {
+                    camera.wantsHDR = !constrained
+                    camera.wantsExposureAdaptation = !constrained
+                    camera.bloomIntensity = constrained ? 0 : 0.18
+                    camera.bloomBlurRadius = constrained ? 0 : 10
+                }
+            }
+        }
+
+        @objc func handlePan(_ recognizer: UIPanGestureRecognizer) {
+            guard let view = sceneView else { return }
+            let translation = recognizer.translation(in: view)
+            switch recognizer.state {
+            case .began:
+                panStartYaw = yaw
+                panStartPitch = pitch
+            case .changed:
+                yaw = panStartYaw + translation.x / 260
+                pitch = min(0.48, max(-0.34, panStartPitch - translation.y / 520))
+                applyCamera()
+            case .ended, .cancelled, .failed:
+                panStartYaw = yaw
+                panStartPitch = pitch
+            default:
+                break
+            }
+        }
 
         @objc func handleTap(_ recognizer: UITapGestureRecognizer) {
             guard !isTraveling,
@@ -368,11 +453,13 @@ private struct StarWorldSceneView: UIViewRepresentable {
         let view = SCNView()
         view.backgroundColor = .clear
         view.isOpaque = false
-        view.antialiasingMode = .multisampling4X
+        view.antialiasingMode = .multisampling2X
         view.preferredFramesPerSecond = 60
-        view.rendersContinuously = true
+        view.rendersContinuously = false
+        view.isPlaying = true
         context.coordinator.sceneView = view
         context.coordinator.map = map
+        context.coordinator.profileHash = profile.hashValue
         context.coordinator.onTravel = onTravel
         view.scene = makeScene(root: context.coordinator.root, profile: profile)
         let tap = UITapGestureRecognizer(
@@ -381,32 +468,32 @@ private struct StarWorldSceneView: UIViewRepresentable {
         )
         tap.cancelsTouchesInView = false
         view.addGestureRecognizer(tap)
+        let pan = UIPanGestureRecognizer(
+            target: context.coordinator,
+            action: #selector(Coordinator.handlePan(_:))
+        )
+        pan.maximumNumberOfTouches = 1
+        pan.cancelsTouchesInView = false
+        view.addGestureRecognizer(pan)
+        context.coordinator.resetViewport(for: map)
+        context.coordinator.applyRenderQuality()
         return view
     }
 
     func updateUIView(_ view: SCNView, context: Context) {
-        context.coordinator.map = map
         context.coordinator.onTravel = onTravel
-        if map == .room {
-            SCNTransaction.begin()
-            SCNTransaction.animationDuration = 0.12
-            context.coordinator.root.eulerAngles.x = Float(pitch)
-            context.coordinator.root.eulerAngles.y = Float(yaw)
-            SCNTransaction.commit()
+        let needsScene = context.coordinator.map != map
+            || context.coordinator.profileHash != profile.hashValue
+        if needsScene {
+            let root = SCNNode()
+            context.coordinator.root = root
+            context.coordinator.map = map
+            context.coordinator.profileHash = profile.hashValue
+            view.scene = makeScene(root: root, profile: profile)
+            context.coordinator.resetViewport(for: map)
+            context.coordinator.applyRenderQuality()
         } else {
-            context.coordinator.root.eulerAngles = SCNVector3(0, 0, 0)
-            guard let camera = view.scene?.rootNode.childNode(
-                withName: "world.camera",
-                recursively: true
-            ) else { return }
-            let angle = Float(yaw)
-            let elevation = Float(pitch)
-            camera.position = SCNVector3(
-                sin(angle) * 11.0,
-                5.1 + elevation * 5.0,
-                cos(angle) * 11.0
-            )
-            camera.eulerAngles = SCNVector3(-0.34 + elevation * 0.30, angle, 0)
+            context.coordinator.applyCamera()
         }
     }
 

@@ -647,7 +647,10 @@ struct MiniAppRuntimeView: View {
         .background(Color(hex: 0x0B0E17).ignoresSafeArea())
         .statusBarHidden(false)
         .task { await prepare() }
-        .onAppear { StatusBarStyle.shared.set(light: true) }
+        .onAppear {
+            GameRuntimeWarmup.warm()
+            StatusBarStyle.shared.set(light: true)
+        }
         .onDisappear { StatusBarStyle.shared.set(light: false) }
         .confirmationDialog(title.isEmpty ? app.name : title, isPresented: $capsuleMenu, titleVisibility: .visible) {
             Button(Tr("好友排名")) { box.web?.evaluateJavaScript("window.chrisRank && chrisRank.show()") }
@@ -680,13 +683,12 @@ struct MiniAppRuntimeView: View {
             try fm.createDirectory(at: root, withIntermediateDirectories: true)
 
             let list = await miniAppFileList(baseDir: remoteDir)
-            for f in list {
-                let dst = root.appendingPathComponent(f)
-                if !force, let sz = try? dst.resourceValues(forKeys: [.fileSizeKey]).fileSize, sz > 0 { continue }
-                try fm.createDirectory(at: dst.deletingLastPathComponent(), withIntermediateDirectories: true)
-                let data = try await API.shared.assetData(remoteDir.appendingPathComponent(f))
-                try data.write(to: dst, options: .atomic)
-            }
+            try await GameRuntimeAssets.download(
+                list,
+                from: remoteDir,
+                to: root,
+                force: force
+            )
             localDir = root
             localIndex = root.appendingPathComponent("index.html")
         } catch {
@@ -730,12 +732,7 @@ struct MiniAppWebView: UIViewRepresentable {
     var onRank: ((String, @escaping (String) -> Void) -> Void)? = nil
 
     func makeUIView(context: Context) -> WKWebView {
-        let cfg = WKWebViewConfiguration()
-        cfg.allowsInlineMediaPlayback = true
-        cfg.mediaTypesRequiringUserActionForPlayback = []
-
-        cfg.userContentController.addUserScript(
-            WKUserScript(source: WebSafeArea.js, injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        let cfg = GameRuntimeConfiguration.make()
         if !rankJs.isEmpty {
             cfg.userContentController.addUserScript(
                 WKUserScript(source: rankJs, injectionTime: .atDocumentStart, forMainFrameOnly: true))
@@ -751,10 +748,7 @@ struct MiniAppWebView: UIViewRepresentable {
                 WKUserScript(source: js, injectionTime: .atDocumentStart, forMainFrameOnly: true))
         }
         let v = WKWebView(frame: .zero, configuration: cfg)
-        v.isOpaque = false
-        v.backgroundColor = UIColor(red: 0.043, green: 0.055, blue: 0.09, alpha: 1)
-        v.scrollView.bounces = false
-        v.scrollView.contentInsetAdjustmentBehavior = .never
+        GameRuntimeConfiguration.configure(v)
         v.loadFileURL(index, allowingReadAccessTo: dir ?? index.deletingLastPathComponent())
         context.coordinator.web = v
         context.coordinator.rank.web = v

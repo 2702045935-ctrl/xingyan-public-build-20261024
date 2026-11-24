@@ -64,7 +64,7 @@ enum StarWorldPlazaScene {
         sun.shadowMode = .deferred
         sun.shadowRadius = 5
         sun.shadowColor = UIColor.black.withAlphaComponent(0.28)
-        sun.shadowMapSize = CGSize(width: 2048, height: 2048)
+        sun.shadowMapSize = CGSize(width: 1024, height: 1024)
         sun.zFar = 650
         sun.orthographicScale = 160
         let sunNode = SCNNode()
