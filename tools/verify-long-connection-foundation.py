@@ -67,6 +67,10 @@ def main() -> None:
     for needle in ["enqueue", "flush", "backoff", "dryRun"]:
         if needle not in dispatcher:
             raise AssertionError(f"fanout dispatcher missing {needle}")
+    canary = (ROOT / "server/lib/canary-guard.js").read_text(encoding="utf-8")
+    for needle in ["maxFailureRatio", "maxPending", "paused", "resume"]:
+        if needle not in canary:
+            raise AssertionError(f"canary guard missing {needle}")
     print("long connection foundation: passed")
 
 

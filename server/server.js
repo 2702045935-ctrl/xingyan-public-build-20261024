@@ -62,6 +62,7 @@ const { GatewayFanoutBus } = require('./lib/gateway-fanout');
 const { HotGroupRouter, hash32: hotGroupHash32 } = require('./lib/hot-group-router');
 const { FanoutOutbox } = require('./lib/fanout-outbox');
 const { FanoutDispatcher } = require('./lib/fanout-dispatcher');
+const { CanaryGuard } = require('./lib/canary-guard');
 const {
   normalizeBillTimeZone,
   billMonthKey,
@@ -9218,6 +9219,9 @@ function scheduleGatewayFanout(chat, recipients, payload, publishId) {
   if ((gatewayFanoutMode !== 'shadow' && gatewayFanoutMode !== 'canary'
       && gatewayFanoutMode !== 'live')
       || chat.type !== 'group') return false;
+  if (gatewayFanoutMode === 'canary' && canaryGuard && canaryGuard.paused) {
+    return false;
+  }
   if (gatewayFanoutMode === 'canary'
       && hotGroupHash32(chat.id) % 100 >= gatewayFanoutCanaryPercent) {
     return false;
@@ -16468,7 +16472,8 @@ async function handleApi(req, res, pathname, query) {
         nodes: gatewayNodesCache.slice()
       }),
       gatewayFanout: Object.assign({}, gatewayFanoutMetrics, {
-        outbox: fanoutOutbox ? fanoutOutbox.snapshot() : null
+        outbox: fanoutOutbox ? fanoutOutbox.snapshot() : null,
+        canary: canaryGuard ? canaryGuard.snapshot() : null
       })
     });
     return;
@@ -26024,6 +26029,10 @@ async function handleHttpRequest(req, res) {
           : gatewayDirectory.release(body.userId, body.gatewayId, body.epoch)
       });
     }
+    if (parsed.pathname === '/__gateway/canary/resume' && req.method === 'POST') {
+      if (!canaryGuard) return fail(res, 409, 'canary mode is not active');
+      return ok(res, { canary: canaryGuard.resume() });
+    }
     if (parsed.pathname === '/__gateway/drain' && req.method === 'POST') {
       return ok(res, { gateway: connectionGovernor.drain() });
     }
@@ -27023,6 +27032,13 @@ const hotGroupRouter = new HotGroupRouter({
   maxBatch: Number(process.env.HOT_GROUP_BATCH) || 512,
   cellCount: Number(process.env.HOT_GROUP_CELLS) || 7
 });
+const canaryGuard = gatewayFanoutMode === 'canary'
+  ? new CanaryGuard({
+    maxFailureRatio: Number(process.env.GATEWAY_CANARY_MAX_FAILURE_RATIO) || 0.05,
+    maxPending: Number(process.env.GATEWAY_CANARY_MAX_PENDING) || 5000,
+    minSamples: Number(process.env.GATEWAY_CANARY_MIN_SAMPLES) || 20
+  })
+  : null;
 const gatewayFanoutMetrics = {
   mode: gatewayFanoutMode,
   canaryPercent: gatewayFanoutCanaryPercent,
@@ -27041,6 +27057,9 @@ if (fanoutDispatcher) {
     }).then((result) => {
       gatewayFanoutMetrics.published += Number(result.acked) || 0;
       gatewayFanoutMetrics.failures += Number(result.failed) || 0;
+      if (canaryGuard && fanoutOutbox) {
+        canaryGuard.observe(result, fanoutOutbox);
+      }
     }).catch((error) => {
       gatewayFanoutMetrics.failures += 1;
       gatewayFanoutMetrics.lastError = String(error && error.message || error);
