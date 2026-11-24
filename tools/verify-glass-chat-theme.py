@@ -44,7 +44,7 @@ require(
 require(
     "var bubbleGlass: Bool" in TEXT_ROW
     and "var glass = false" in TEXT_ROW
-    and "cornerRadius: 8" in TEXT_ROW
+    and "cornerRadius: WhatsAppChatLayout.cornerRadius" in TEXT_ROW
     and "context.drawLinearGradient(" in TEXT_ROW
     and "ChatSurfaceMaterial.uiBubble(" in TEXT_ROW
     and "UIColor.white.withAlphaComponent(mine" in SURFACE
