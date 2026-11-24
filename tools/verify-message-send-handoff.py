@@ -30,6 +30,14 @@ require(
     "pinToBottomSoon(force: true, animated: false)" in CHAT,
     "send action must keep one non-animated bottom pin",
 )
+require(
+    "Task { @MainActor in\n"
+    "            // Let the optimistic bubble and keyboard/bottom transaction land\n"
+    "            // on screen before transport state starts mutating the queue.\n"
+    "            try? await Task.sleep(nanoseconds: 16_000_000)\n"
+    "            await flushOutbox()" in CHAT,
+    "transport must start after the optimistic bubble has one frame to render",
+)
 
 flush_start = CHAT.index("private func flushOutbox")
 flush_end = CHAT.index("private func tapRedPacket", flush_start)

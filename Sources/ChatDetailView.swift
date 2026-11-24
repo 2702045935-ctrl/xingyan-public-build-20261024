@@ -6951,7 +6951,12 @@ struct ChatDetailView: View {
 
         UINotification.lightTap()
         pinToBottomSoon(force: true, animated: false)
-        Task { await flushOutbox() }
+        Task { @MainActor in
+            // Let the optimistic bubble and keyboard/bottom transaction land
+            // on screen before transport state starts mutating the queue.
+            try? await Task.sleep(nanoseconds: 16_000_000)
+            await flushOutbox()
+        }
     }
 
     @MainActor
