@@ -153,8 +153,8 @@
     },
     {
       "path": "Sources/WhatsAppChatLayout.swift",
-      "size": 4671,
-      "sha256": "c21a9f45af91e32052262da40795e6de3c362d00cba5812f195e8663927bc6d0"
+      "size": 4745,
+      "sha256": "6f780ea2755a8fa436f5c6eb3583f088185354303f144bd048d5d798b231cf70"
     },
     {
       "path": "Sources/TransferUploader.swift",

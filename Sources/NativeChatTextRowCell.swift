@@ -79,7 +79,8 @@ final class NativeChatBubbleBackground: UIView {
             cornerRadius: 8
         )
         if showTail {
-            let tipY = min(22, max(13, body.height * 0.28))
+            // Match BubbleShape exactly: the WhatsApp tail spans y=6...15.
+            let tipY: CGFloat = 10.5
             if mine {
                 path.move(to: CGPoint(x: body.maxX - 1, y: tipY - 5))
                 path.addLine(to: CGPoint(x: bounds.maxX, y: tipY))

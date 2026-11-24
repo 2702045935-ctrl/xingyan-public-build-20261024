@@ -97,6 +97,14 @@ require(
     "message cards must keep the flat theme and use the glass material when selected",
 )
 require(
+    "static let tailInset: CGFloat = 5" in LAYOUT
+    and "let out: CGFloat = tail ? 5 : 0" in CHAT
+    and "let tipY: CGFloat = 10.5" in TEXT_ROW
+    and "self.verticalPadding = verticalPadding" in CARDS
+    and ".padding(.vertical, verticalPadding)" in CARDS,
+    "native and SwiftUI bubbles must share the exact tail and vertical inset",
+)
+require(
     "ChatMessageSurface.mediaRadius" in CHAT
     and ".background(BubbleFill(mine: mine, tail: showTail))" in CHAT
     and ".clipShape(BubbleShape(mine: mine, tail: showTail))" in CHAT

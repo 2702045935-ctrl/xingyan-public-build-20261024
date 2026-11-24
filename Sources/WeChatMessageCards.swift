@@ -30,17 +30,21 @@ enum ChatMessageSurface {
 struct WeChatMessageCard<Content: View>: View {
     var width: CGFloat = 268
     var padding: CGFloat = 13
+    var verticalPadding: CGFloat = WhatsAppChatLayout.bubblePadV
     var mine: Bool? = nil
     var showTail: Bool = false
     let content: Content
 
     init(width: CGFloat = 268,
          padding: CGFloat = 13,
+         verticalPadding: CGFloat? = nil,
          mine: Bool? = nil,
          showTail: Bool = false,
          @ViewBuilder content: () -> Content) {
         self.width = width
         self.padding = padding
+        self.verticalPadding = verticalPadding
+            ?? (padding == 0 ? 0 : WhatsAppChatLayout.bubblePadV)
         self.mine = mine
         self.showTail = showTail
         self.content = content()
@@ -50,14 +54,16 @@ struct WeChatMessageCard<Content: View>: View {
     var body: some View {
         if let mine {
             content
-                .padding(padding)
+                .padding(.horizontal, padding)
+                .padding(.vertical, verticalPadding)
                 .frame(width: width, alignment: .leading)
                 .background(BubbleFill(mine: mine, tail: showTail))
                 .clipShape(BubbleShape(mine: mine, tail: showTail))
                 .contentShape(BubbleShape(mine: mine, tail: showTail))
         } else {
             content
-                .padding(padding)
+                .padding(.horizontal, padding)
+                .padding(.vertical, verticalPadding)
                 .frame(width: width, alignment: .leading)
                 .background {
                     ZStack {
