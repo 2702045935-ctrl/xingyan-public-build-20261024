@@ -11,6 +11,10 @@
 Gateway 侧 `/__gateway/publish` 目前是内部接口，必须带
 `GATEWAY_ADMIN_SECRET`，只对已认证连接发送 WebSocket 文本帧。
 
+默认 `GATEWAY_FANOUT_MODE=off`。设置 `GATEWAY_FANOUT_MODE=shadow` 后，
+群消息路径只做路由计划和 `dryRun` 投递，不改变现有真实投递结果，用于验证节点选择、
+批次大小、回执和故障指标。确认无重复、无丢失后再切换 live 模式。
+
 接入主消息路径前还需要补：
 
 1. durable outbox 和批次 ack；
