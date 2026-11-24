@@ -8591,6 +8591,12 @@ function sendToLocal(userId, payload, textCache, textCacheKey, options) {
   const cache = new Map();
   set.forEach((socket) => {
     if (options && options.skipGateway && socket.__clusterGatewayId) return;
+    if (options && socket.__clusterGatewayId) {
+      const skipped = options.skipGatewayNodeIds;
+      if (skipped && (typeof skipped.has === 'function'
+        ? skipped.has(socket.__clusterGatewayId)
+        : Array.isArray(skipped) && skipped.includes(socket.__clusterGatewayId))) return;
+    }
     const build = buildOfSocket(socket);
     const key = String(build);
     const compositeKey = textCache ? `${textCacheKey}\u0000${key}` : '';
@@ -9028,7 +9034,13 @@ function broadcastCompactChatMessage(chat, payload, options) {
       id, payload, textCache, 'large-group-message', options
     );
   });
-  const body = JSON.stringify({ chatId: chat.id, payload });
+  const body = JSON.stringify({
+    chatId: chat.id,
+    payload,
+    skipGatewayNodeIds: options && Array.isArray(options.skipGatewayNodeIds)
+      ? options.skipGatewayNodeIds
+      : []
+  });
   shardPorts().forEach((port) => {
     if (port === PORT) return;
     const relay = http.request({
@@ -9216,6 +9228,21 @@ function sendToChat(chat, payload, exceptUserId) {
   return sent;
 }
 
+function connectedGatewayAssignments(recipients) {
+  const assignments = Object.create(null);
+  for (const userId of recipients || []) {
+    const sockets = connections.get(userId);
+    if (!sockets) continue;
+    for (const socket of sockets) {
+      const gatewayId = String((socket && socket.__clusterGatewayId) || '');
+      if (!gatewayId) continue;
+      if (!assignments[gatewayId]) assignments[gatewayId] = [];
+      assignments[gatewayId].push(userId);
+    }
+  }
+  return assignments;
+}
+
 function scheduleGatewayFanout(chat, recipients, payload, publishId) {
   if ((gatewayFanoutMode !== 'shadow' && gatewayFanoutMode !== 'canary'
       && gatewayFanoutMode !== 'live')
@@ -9227,15 +9254,14 @@ function scheduleGatewayFanout(chat, recipients, payload, publishId) {
       && hotGroupHash32(chat.id) % 100 >= gatewayFanoutCanaryPercent) {
     return false;
   }
-  if (recipients.length < hotGroupRouter.threshold) return false;
+  if (chat.memberIds.length < hotGroupRouter.threshold) return false;
   const live = gatewayNodesCache.filter((node) => node.endpoint && node.active !== false);
   if (!live.length) return false;
-  const plan = hotGroupRouter.plan({
+  const plan = hotGroupRouter.planOwned({
     chatId: chat.id,
-    memberIds: recipients,
-    nodeIds: live.map((node) => node.id)
+    assignments: connectedGatewayAssignments(recipients)
   });
-  if (plan.mode === 'local') return false;
+  if (!plan.batches.length) return false;
   const byId = new Map(live.map((node) => [node.id, node]));
   const nodes = plan.batches.map((batch) => ({
     id: batch.nodeId,
@@ -9247,13 +9273,18 @@ function scheduleGatewayFanout(chat, recipients, payload, publishId) {
   if ((gatewayFanoutMode === 'live' || gatewayFanoutMode === 'canary')
       && fanoutDispatcher) {
     try {
-      fanoutDispatcher.enqueue({
+      const enqueue = fanoutDispatcher.enqueue({
         publishId,
         chatId: chat.id,
         payload,
         nodes
       });
-      return true;
+      if (!enqueue) return false;
+      return {
+        nodeIds: Array.from(new Set(nodes.map((node) => node.id))),
+        nodeCount: nodes.length,
+        plan
+      };
     } catch (error) {
       gatewayFanoutMetrics.failures += 1;
       gatewayFanoutMetrics.lastError = String(error && error.message || error);
@@ -9277,7 +9308,9 @@ function scheduleGatewayFanout(chat, recipients, payload, publishId) {
     gatewayFanoutMetrics.failures += 1;
     gatewayFanoutMetrics.lastError = String(error && error.message || error);
   });
-  return true;
+  /* Shadow only measures would-deliver. It must never suppress the legacy
+     realtime path, otherwise gateway-connected clients lose messages. */
+  return false;
 }
 
 function fanoutChatMessage(chat, message, sender, clientId) {
@@ -9296,7 +9329,7 @@ function fanoutChatMessage(chat, message, sender, clientId) {
     const payload = { type: 'message', message: out };
     const clusterFanout = scheduleGatewayFanout(chat, recipients, payload, message.id);
     return broadcastCompactChatMessage(chat, payload, {
-      skipGateway: clusterFanout
+      skipGatewayNodeIds: clusterFanout ? clusterFanout.nodeIds : []
     });
   }
   const messageRows = loadMessages(chat.id);
@@ -9361,7 +9394,7 @@ function fanoutChatMessage(chat, message, sender, clientId) {
       textCache,
       textCacheKey: textCache ? textCacheKey : '',
       relayBatch,
-      skipGateway: clusterFanout
+      skipGatewayNodeIds: clusterFanout ? clusterFanout.nodeIds : []
     });
   }
   flushFanoutRelays(relayBatch);
@@ -26056,6 +26089,22 @@ async function handleHttpRequest(req, res) {
             )
           });
         }
+        if (parsed.pathname.endsWith('/renew-batch')) {
+          const rows = (Array.isArray(body.sessions) ? body.sessions : [])
+            .slice(0, 2000)
+            .map((row) => ({
+              userId: row && row.userId,
+              connectionId: row && row.connectionId,
+              gatewayId: body.gatewayId
+            }));
+          return ok(res, {
+            results: await etcdSessionOwnership.renewBatch(
+              rows,
+              body.leaseSeconds,
+              { concurrency: Number(body.concurrency) || 32 }
+            )
+          });
+        }
         if (parsed.pathname.endsWith('/release')) {
           return ok(res, {
             released: await etcdSessionOwnership.release(
@@ -26659,12 +26708,15 @@ async function handleHttpRequest(req, res) {
       if (!chat || !payload || typeof payload !== 'object') {
         return fail(res, 422, '分片聊天广播不完整');
       }
+      const skipGatewayNodeIds = Array.isArray(body.skipGatewayNodeIds)
+        ? body.skipGatewayNodeIds.slice(0, 256).map(String)
+        : [];
       const textCache = new Map();
       let sent = 0;
       chat.memberIds.forEach((id) => {
         if (!connections.has(id)) return;
         sent += sendToLocal(
-          id, payload, textCache, 'large-group-message'
+          id, payload, textCache, 'large-group-message', { skipGatewayNodeIds }
         );
       });
       messageCache.delete(chatId);

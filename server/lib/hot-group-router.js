@@ -73,6 +73,39 @@ class HotGroupRouter {
       batches
     };
   }
+
+  planOwned(input) {
+    const row = input || {};
+    const chatId = String(row.chatId || '');
+    if (!chatId) throw new Error('chatId is required');
+    const assignments = row.assignments && typeof row.assignments === 'object'
+      ? row.assignments
+      : {};
+    const batches = [];
+    let memberCount = 0;
+    const nodeIds = Object.keys(assignments).filter(Boolean).sort();
+    for (const nodeId of nodeIds) {
+      const userIds = Array.from(new Set((assignments[nodeId] || []).map((value) => String(value))))
+        .filter(Boolean);
+      memberCount += userIds.length;
+      for (let offset = 0; offset < userIds.length; offset += this.maxBatch) {
+        batches.push({
+          nodeId: String(nodeId),
+          cell: this.partition(chatId),
+          userIds: userIds.slice(offset, offset + this.maxBatch)
+        });
+      }
+    }
+    return {
+      chatId,
+      mode: batches.length ? 'owned-batched-cell' : 'local',
+      partition: this.partition(chatId),
+      memberCount,
+      nodeCount: nodeIds.length,
+      maxBatch: this.maxBatch,
+      batches
+    };
+  }
 }
 
 module.exports = { HotGroupRouter, hash32 };

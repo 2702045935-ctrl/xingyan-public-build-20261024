@@ -47,6 +47,14 @@ async function main() {
   assert.equal(a.ok, true);
   assert.equal(a.claim.epoch, 1);
   assert.equal((await own.lookup('u1', 'phone')).gatewayId, 'gw-a');
+  const renewed = await own.renewBatch([
+    { userId: 'u1', connectionId: 'phone', gatewayId: 'gw-a' },
+    { userId: 'missing', connectionId: 'phone', gatewayId: 'gw-a' }
+  ], 30);
+  assert.equal(renewed[0].ok, true);
+  assert.equal(renewed[0].claim.epoch, 1);
+  assert.equal(renewed[1].ok, true);
+  assert.equal(renewed[1].claim, null);
   assert.equal((await own.claim('u1', 'phone', 'gw-b')).ok, false);
   assert.equal(await own.release('u1', 'phone', 'gw-a', 99), false);
   assert.equal(await own.release('u1', 'phone', 'gw-a', 1), true);

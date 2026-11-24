@@ -50,6 +50,10 @@ install -m 0644 "$ROOT/server/gateway-server.js" "$PREFIX/server/gateway-server.
 install -m 0644 "$ROOT/server/lib/ws.js" "$PREFIX/server/lib/ws.js"
 install -m 0644 "$ROOT/server/lib/connection-governor.js" "$PREFIX/server/lib/connection-governor.js"
 install -m 0644 "$ROOT/server/lib/gateway-multiplex.js" "$PREFIX/server/lib/gateway-multiplex.js"
+install -m 0644 "$ROOT/server/lib/session-cell.js" "$PREFIX/server/lib/session-cell.js"
+install -m 0644 "$ROOT/server/lib/session-ownership.js" "$PREFIX/server/lib/session-ownership.js"
+install -m 0644 "$ROOT/server/lib/gateway-session-lease-agent.js" \
+  "$PREFIX/server/lib/gateway-session-lease-agent.js"
 install -m 0644 "$ROOT/deploy/gateway-cluster/xingyan-gateway@.service" \
   /etc/systemd/system/xingyan-gateway@.service
 

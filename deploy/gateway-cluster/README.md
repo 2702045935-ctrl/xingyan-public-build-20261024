@@ -48,7 +48,7 @@ GATEWAY_FANOUT_CANARY_PERCENT=1
 - `/api/health` 的 `gatewayFanout.outbox.pending`
 - `gatewayFanout.failures`
 - `gatewayFanout.canary`
-- 每台 Gateway `/health`
+- 每台 Gateway `/health` 的 `sessionLeases`，确认 `localLost`、`remoteLost`、`remoteFailures` 没有持续增长
 - `/__gateway/directory` 的 liveNodes
 
 只有 outbox pending 回落、失败率低于阈值、Gateway 存活稳定，才逐步调整：
@@ -65,3 +65,8 @@ GATEWAY_FANOUT_MODE=off
 
 或将百分比设为 `0`。已经落到 outbox 但未完成的任务会继续由 dispatcher 处理；
 不要让 Gateway 在 outbox 仍有 pending 时直接删数据。
+
+集群必须设置相同的 `GATEWAY_SESSION_BACKEND=etcd`、`ETCD_SESSION_PREFIX` 和
+`ETCD_GATEWAY_SESSION_TTL`。Gateway 会每隔租约的三分之一批量续租；租约丢失或
+etcd 持续不可达超过安全窗口时，会主动断开当前客户端，让客户端回退旧实时入口，
+不会带着过期 ownership 继续接收消息。

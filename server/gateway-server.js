@@ -15,6 +15,7 @@ const { ConnectionGovernor } = require('./lib/connection-governor');
 const { envelope, decodeEnvelope } = require('./lib/gateway-multiplex');
 const { SessionCell } = require('./lib/session-cell');
 const { SessionOwnership } = require('./lib/session-ownership');
+const { GatewaySessionLeaseAgent } = require('./lib/gateway-session-lease-agent');
 
 const PORT = Number(process.env.GATEWAY_PORT || 5290);
 const HOST = process.env.GATEWAY_HOST || '0.0.0.0';
@@ -24,6 +25,15 @@ const BACKEND = String(process.env.GATEWAY_BACKEND_HTTP || 'http://127.0.0.1:518
   .replace(/\/+$/, '');
 const SECRET = String(process.env.GATEWAY_ADMIN_SECRET || '');
 const NODE_ID = String(process.env.GATEWAY_NODE_ID || `gateway-${PORT}`);
+const SESSION_BACKEND = String(process.env.GATEWAY_SESSION_BACKEND || 'local').toLowerCase();
+const SESSION_LEASE_MS = Math.max(
+  5000,
+  Number(process.env.GATEWAY_SESSION_LEASE_MS) || 90_000
+);
+const SESSION_RENEW_MS = Math.max(
+  1000,
+  Number(process.env.GATEWAY_SESSION_RENEW_MS) || Math.floor(SESSION_LEASE_MS / 3)
+);
 const governor = new ConnectionGovernor({
   maxTotal: Number(process.env.WS_MAX_TOTAL_CONNECTIONS) || 100000,
   maxPerUser: Number(process.env.WS_MAX_CONNECTIONS_PER_USER) || 4,
@@ -34,7 +44,7 @@ const sessions = new SessionCell({
   maxConnections: Number(process.env.GATEWAY_SESSION_CAPACITY) || 100000
 });
 const ownership = new SessionOwnership({
-  defaultLeaseMs: Number(process.env.GATEWAY_SESSION_LEASE_MS) || 90000
+  defaultLeaseMs: SESSION_LEASE_MS
 });
 let upstream = null;
 let upstreamReady = false;
@@ -59,6 +69,34 @@ function jsonPost(path, body) {
     signal: AbortSignal.timeout(2500)
   }).then((response) => response.ok ? response.json() : null).catch(() => null);
 }
+
+async function renewRemoteLeases(rows) {
+  if (SESSION_BACKEND !== 'etcd') return rows.map(() => ({ ok: true, claim: {} }));
+  const response = await jsonPost('/__gateway/sessions/renew-batch', {
+    gatewayId: NODE_ID,
+    leaseSeconds: Math.ceil(SESSION_LEASE_MS / 1000),
+    sessions: rows
+  });
+  if (!response || response.ok !== true || !response.data
+      || !Array.isArray(response.data.results)) {
+    throw new Error('remote session lease renewal failed');
+  }
+  return response.data.results;
+}
+
+const leaseAgent = new GatewaySessionLeaseAgent({
+  sessions,
+  ownership,
+  gatewayId: NODE_ID,
+  leaseMs: SESSION_LEASE_MS,
+  renewalMs: SESSION_RENEW_MS,
+  remoteBatchSize: Number(process.env.GATEWAY_SESSION_RENEW_BATCH) || 500,
+  remoteRenew: SESSION_BACKEND === 'etcd' ? renewRemoteLeases : null,
+  closeClient: (client, reason) => {
+    log(`closing ${client.connectionId}: ${reason}`);
+    try { client.socket.destroy(); } catch (_) { /* already closed */ }
+  }
+});
 
 function connectUpstream() {
   if (upstream && (upstream.readyState === WebSocket.OPEN
@@ -90,19 +128,30 @@ function connectUpstream() {
     if (message.type === 'open-ok') {
       client.userId = String(message.userId || '');
       sessions.bindUser(message.connectionId, client.userId);
-      ownership.claim(client.userId, message.connectionId, NODE_ID, {
-        leaseMs: Number(process.env.GATEWAY_SESSION_LEASE_MS) || 90000
+      const localClaim = ownership.claim(client.userId, message.connectionId, NODE_ID, {
+        leaseMs: SESSION_LEASE_MS
       });
-      if (String(process.env.GATEWAY_SESSION_BACKEND || '').toLowerCase() === 'etcd') {
+      if (!localClaim.ok) {
+        try { client.socket.destroy(); } catch (_) { /* already closed */ }
+        return;
+      }
+      if (SESSION_BACKEND === 'etcd') {
         jsonPost('/__gateway/sessions/claim', {
           userId: client.userId,
-          connectionId: connectionId,
+          connectionId: client.connectionId,
           gatewayId: NODE_ID,
-          leaseSeconds: Math.ceil((Number(process.env.GATEWAY_SESSION_LEASE_MS) || 90000) / 1000)
+          leaseSeconds: Math.ceil(SESSION_LEASE_MS / 1000)
         }).then((result) => {
           const claim = result && result.data && result.data.claim;
-          if (claim) client.remoteEpoch = claim.epoch;
-        }).catch(() => {});
+          if (!result || result.ok !== true || !claim) {
+            try { client.socket.destroy(); } catch (_) { /* already closed */ }
+            return;
+          }
+          client.remoteEpoch = claim.epoch;
+          client.remoteLeaseReady = true;
+        }).catch(() => {
+          try { client.socket.destroy(); } catch (_) { /* already closed */ }
+        });
       }
       client.reopened = true;
       return;
@@ -227,7 +276,8 @@ const server = http.createServer(async (req, res) => {
       clients: sessions.size,
       governor: governor.snapshot(),
       sessionCell: sessions.snapshot(),
-      ownership: ownership.snapshot()
+      ownership: ownership.snapshot(),
+      sessionLeases: leaseAgent.snapshot()
     }));
     return;
   }
@@ -298,6 +348,7 @@ server.on('upgrade', (req, socket) => {
     connectionId,
     socket,
     userId: '',
+    remoteLeaseReady: SESSION_BACKEND !== 'etcd',
     pending: [],
     pendingBytes: 0,
     open: {
@@ -330,8 +381,7 @@ server.on('upgrade', (req, socket) => {
   socket.on('close', () => {
     sessions.close(connectionId);
     if (client.userId) ownership.release(client.userId, connectionId, NODE_ID);
-    if (client.userId
-        && String(process.env.GATEWAY_SESSION_BACKEND || '').toLowerCase() === 'etcd') {
+    if (client.userId && SESSION_BACKEND === 'etcd') {
       jsonPost('/__gateway/sessions/release', {
         userId: client.userId,
         connectionId,
@@ -346,6 +396,7 @@ server.on('upgrade', (req, socket) => {
 });
 
 connectUpstream();
+leaseAgent.start();
 heartbeatTimer = setInterval(() => {
   jsonPost('/__gateway/heartbeat', {
     id: NODE_ID,
@@ -361,6 +412,7 @@ server.listen(PORT, HOST, () => {
 });
 
 process.on('SIGTERM', () => {
+  leaseAgent.stop();
   governor.drain();
   server.close();
   if (upstream) upstream.close();

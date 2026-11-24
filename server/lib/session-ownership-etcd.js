@@ -139,6 +139,45 @@ class EtcdSessionOwnership {
     return result.status === 200 ? next : null;
   }
 
+  async renewBatch(rows, leaseSeconds, options) {
+    const input = Array.isArray(rows) ? rows.slice(0, 2000) : [];
+    const results = new Array(input.length);
+    const concurrency = Math.max(1, Math.min(64, Number(options && options.concurrency) || 32));
+    let cursor = 0;
+
+    async function worker() {
+      while (cursor < input.length) {
+        const index = cursor;
+        cursor += 1;
+        const row = input[index] || {};
+        try {
+          results[index] = {
+            ok: true,
+            claim: await this.renew(
+              row.userId,
+              row.connectionId,
+              row.gatewayId,
+              leaseSeconds
+            )
+          };
+        } catch (error) {
+          results[index] = {
+            ok: false,
+            claim: null,
+            error: String(error && error.message || error)
+          };
+        }
+      }
+    }
+
+    const workers = Array.from(
+      { length: Math.min(concurrency, input.length) },
+      () => worker.call(this)
+    );
+    await Promise.all(workers);
+    return results;
+  }
+
   async release(userId, connectionId, gatewayId, epoch) {
     const path = this.key(userId, connectionId);
     const raw = await this.getRaw(path);

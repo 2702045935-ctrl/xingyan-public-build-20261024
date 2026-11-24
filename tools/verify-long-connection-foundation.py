@@ -42,7 +42,15 @@ def main() -> None:
         if needle not in directory:
             raise AssertionError(f"gateway directory missing {needle}")
     gateway = (ROOT / "server/gateway-server.js").read_text(encoding="utf-8")
-    for needle in ["GATEWAY_UPSTREAM_WS", "/__gateway/upstream", "send('open'", "governor.admit"]:
+    for needle in [
+        "GATEWAY_UPSTREAM_WS",
+        "/__gateway/upstream",
+        "send('open'",
+        "governor.admit",
+        "GatewaySessionLeaseAgent",
+        "leaseAgent.start()",
+        "connectionId: client.connectionId",
+    ]:
         if needle not in gateway:
             raise AssertionError(f"independent gateway missing {needle}")
     etcd = (ROOT / "server/lib/gateway-directory-etcd.js").read_text(encoding="utf-8")
@@ -87,9 +95,15 @@ def main() -> None:
         if needle not in ownership:
             raise AssertionError(f"session ownership missing {needle}")
     etcd_session = (ROOT / "server/lib/session-ownership-etcd.js").read_text(encoding="utf-8")
-    for needle in ["claim(", "renew(", "release(", "prevExist", "prevValue"]:
+    for needle in ["claim(", "renew(", "renewBatch(", "release(", "prevExist", "prevValue"]:
         if needle not in etcd_session:
             raise AssertionError(f"etcd session ownership missing {needle}")
+    if "endsWith('/renew-batch')" not in server or "renewBatch(" not in server:
+        raise AssertionError("server missing batched global session renewal")
+    lease_agent = (ROOT / "server/lib/gateway-session-lease-agent.js").read_text(encoding="utf-8")
+    for needle in ["remoteFailureGraceMs", "local-session-lease-lost", "remote-session-lease-lost"]:
+        if needle not in lease_agent:
+            raise AssertionError(f"gateway lease agent missing {needle}")
     if "smoke-gateway" not in (ROOT / "server/tools/gateway-cluster-smoke.js").read_text(encoding="utf-8"):
         raise AssertionError("gateway cluster smoke tool missing")
     preflight = (ROOT / "server/tools/gateway-cluster-preflight.js").read_text(encoding="utf-8")
@@ -98,7 +112,13 @@ def main() -> None:
             raise AssertionError(f"gateway preflight missing {needle}")
     install_script = (ROOT / "deploy/gateway-cluster/install.sh").read_text(encoding="utf-8")
     rollout_script = (ROOT / "deploy/gateway-cluster/rollout.sh").read_text(encoding="utf-8")
-    for needle in ["install -m 0644", "systemctl daemon-reload", "GATEWAY_ADMIN_SECRET"]:
+    for needle in [
+        "install -m 0644",
+        "systemctl daemon-reload",
+        "GATEWAY_ADMIN_SECRET",
+        "session-ownership.js",
+        "gateway-session-lease-agent.js",
+    ]:
         if needle not in install_script:
             raise AssertionError(f"gateway install script missing {needle}")
     if "--apply" not in rollout_script or "/__gateway/canary" not in rollout_script:

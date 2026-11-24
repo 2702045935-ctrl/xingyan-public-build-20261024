@@ -19,9 +19,13 @@ def require(condition: bool, message: str) -> None:
 require(
     "chat.memberIds.length > 512" in SERVER
     and "const payload = { type: 'message', message: out }" in SERVER
-    and "function broadcastCompactChatMessage(chat, payload)" in SERVER
+    and "function broadcastCompactChatMessage(chat, payload, options)" in SERVER
+    and "scheduleGatewayFanout(chat, recipients, payload, message.id)" in SERVER
+    and "skipGatewayNodeIds: clusterFanout ? clusterFanout.nodeIds : []" in SERVER
+    and "connectedGatewayAssignments(recipients)" in SERVER
+    and "hotGroupRouter.planOwned(" in SERVER
     and "path: '/__shard/chat-broadcast'" in SERVER,
-    "large groups must use chat-scoped cross-shard broadcast instead of presence fanout",
+    "large groups must use Gateway or chat-scoped broadcast instead of presence fanout",
 )
 require(
     "function fanoutGroupSummary(" in SERVER
