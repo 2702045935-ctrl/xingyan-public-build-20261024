@@ -56,6 +56,67 @@ struct ContactSection: Identifiable {
     let users: [User]
 }
 
+private struct ContactDirectorySnapshot {
+    var sections: [ContactSection] = []
+    var usersByID: [String: User] = [:]
+    var letters: Set<String> = []
+    var isEmpty = true
+
+    static func build(contacts: [User], keyword: String) -> Self {
+        var contactByID: [String: User] = [:]
+        contactByID.reserveCapacity(contacts.count)
+        var sorted: [User] = []
+        sorted.reserveCapacity(contacts.count)
+        for user in contacts where !contactIsHidden(user) {
+            contactByID[user.id] = user
+            sorted.append(user)
+        }
+        sorted.sort {
+            $0.name.localizedCompare($1.name) == .orderedAscending
+        }
+        if !keyword.isEmpty {
+            sorted = sorted.filter {
+                $0.name.contains(keyword)
+                    || ($0.username ?? "").contains(keyword)
+            }
+        }
+
+        var order: [String] = []
+        var groups: [String: [User]] = [:]
+        groups.reserveCapacity(28)
+        for user in sorted {
+            let key = pinyinInitial(user.name)
+            if groups[key] == nil {
+                order.append(key)
+            }
+            groups[key, default: []].append(user)
+        }
+        order.sort {
+            if $0 == "#" { return false }
+            if $1 == "#" { return true }
+            return $0 < $1
+        }
+        let sections = order.map {
+            ContactSection(letter: $0, users: groups[$0] ?? [])
+        }
+        return Self(
+            sections: sections,
+            usersByID: contactByID,
+            letters: Set(order),
+            isEmpty: sorted.isEmpty
+        )
+    }
+}
+
+private func contactIsHidden(_ user: User) -> Bool {
+    let username = (user.username ?? "").lowercased()
+    if username == "ai" || username == "housekeeper" { return true }
+    let name = user.name
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+        .lowercased()
+    return name == "ai助手" || name == "ai 助手" || name == "小星"
+}
+
 private func contactDetailLine(_ label: String, _ value: String) -> String {
     if Lang.isRussian || Lang.isEnglish {
         return "\(Tr(label)): \(value)"
@@ -125,6 +186,7 @@ struct ContactsView: View {
     private let idxHaptic = UIImpactFeedbackGenerator(style: .heavy)
 
     @State private var starIds: [String] = []
+    @State private var directory = ContactDirectorySnapshot()
 
     private var contactsHeaderHeight: CGFloat {
         let preferred = 26 * fontScale * CareMode.scale
@@ -173,40 +235,26 @@ private var funcs: [(String, String, Color, String)] {
     ]
 }
 
-    private func hiddenContact(_ user: User) -> Bool {
-        let username = (user.username ?? "").lowercased()
-        if username == "ai" || username == "housekeeper" { return true }
-        let name = user.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        return name == "ai助手" || name == "ai 助手" || name == "小星"
-    }
-
-    private var filtered: [User] {
-        let sorted = app.contacts.filter { !hiddenContact($0) }
-            .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
-        guard !keyword.isEmpty else { return sorted }
-        return sorted.filter { $0.name.contains(keyword) || ($0.username ?? "").contains(keyword) }
+    private var filteredIsEmpty: Bool {
+        directory.isEmpty
     }
 
     private var starUsers: [User] {
         guard !starIds.isEmpty else { return [] }
         return starIds.compactMap { id in
-            app.contacts.first { $0.id == id && !hiddenContact($0) }
+            directory.usersByID[id]
         }
     }
 
     private var sections: [ContactSection] {
-        var order: [String] = []
-        var map: [String: [User]] = [:]
-        for u in filtered {
-            let k = pinyinInitial(u.name)
-            if map[k] == nil { order.append(k) }
-            map[k, default: []].append(u)
-        }
-        return order.sorted { a, b in
-            if a == "#" { return false }
-            if b == "#" { return true }
-            return a < b
-        }.map { ContactSection(letter: $0, users: map[$0] ?? []) }
+        directory.sections
+    }
+
+    private func rebuildDirectory() {
+        directory = ContactDirectorySnapshot.build(
+            contacts: app.contacts,
+            keyword: keyword
+        )
     }
 
     private func contactDetailLine(_ label: String, _ value: String) -> String {
@@ -329,7 +377,7 @@ private var funcs: [(String, String, Color, String)] {
                                     }
                                 }
 
-                                if filtered.isEmpty {
+                                if filteredIsEmpty {
                                     VStack(spacing: 5) {
                                         Text(keyword.isEmpty
                                              ? Tr("还没有联系人")
@@ -363,7 +411,7 @@ private var funcs: [(String, String, Color, String)] {
 
                         if keyword.isEmpty && !sections.isEmpty {
                             ContactIndexBar(
-                                available: Set(sections.map { $0.letter }),
+                                available: directory.letters,
                                 onPick: { L in
                                     proxy.scrollTo("letter-\(L)", anchor: .top)
                                     showBubble(L)
@@ -475,7 +523,9 @@ private var funcs: [(String, String, Color, String)] {
                 .environmentObject(app)
         }
         .task {
+            rebuildDirectory()
             await app.loadContacts()
+            rebuildDirectory()
 
             if let ids = try? await API.shared.starredFriends() { starIds = ids }
 
@@ -485,6 +535,12 @@ private var funcs: [(String, String, Color, String)] {
                 if Task.isCancelled { break }
                 await app.loadContacts()
             }
+        }
+        .onChange(of: app.contacts) { _ in
+            rebuildDirectory()
+        }
+        .onChange(of: keyword) { _ in
+            rebuildDirectory()
         }
 
         .onChange(of: realtime.event) { ev in

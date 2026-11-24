@@ -151,6 +151,7 @@ jobs:
           python3 tools/verify-chat-virtual-scrollbar.py
           python3 tools/verify-tab-first-frame.py
           python3 tools/verify-cache-first-pages.py
+          python3 tools/verify-contacts-derived-cache.py
           python3 tools/verify-push-multidevice.py
           python3 tools/verify-group-avatar-three.py
           python3 tools/verify-plus-panel-native.py
