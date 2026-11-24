@@ -101,6 +101,7 @@ jobs:
           python3 tools/verify-transfer-kernel.py
           python3 tools/verify-payment-gold-card.py
           python3 tools/verify-banking-audit.py
+          python3 tools/verify-long-connection-foundation.py
           python3 tools/verify-wallet-layout.py
           python3 tools/verify-chat-bubble-metrics.py
           python3 tools/verify-glass-chat-theme.py
@@ -244,6 +245,7 @@ jobs:
           node server/test/payment-ledger.test.js
           node server/test/payment-database.test.js
           node server/test/banking-audit.test.js
+          node server/test/connection-governor.test.js
           node server/test/payment-database-concurrency.test.js
           node server/test/payment-provider-server.test.js
           node server/test/payment-readiness.test.js

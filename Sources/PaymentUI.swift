@@ -596,13 +596,19 @@ struct StarPayAmount: View {
 
 struct PayGroupCard<Content: View>: View {
     private let content: Content
+    private let horizontalInset: CGFloat
 
-    init(@ViewBuilder content: () -> Content) {
+    init(
+        horizontalInset: CGFloat = 0,
+        @ViewBuilder content: () -> Content
+    ) {
         self.content = content()
+        self.horizontalInset = horizontalInset
     }
 
     var body: some View {
         VStack(spacing: 0) { content }
+            .padding(.horizontal, horizontalInset)
             .background(PayVisual.card)
             .clipShape(RoundedRectangle(cornerRadius: AppDesign.Radius.panel, style: .continuous))
     }

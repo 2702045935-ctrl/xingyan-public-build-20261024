@@ -50,6 +50,7 @@ const { SearchRankingKernel } = require('./lib/search-ranking');
 const { PaymentSettlementScheduler } = require('./lib/payment-settlement-scheduler');
 const { createTransferKernel, TransferError } = require('./transfer-kernel');
 const { BankingAuditLog } = require('./lib/banking-audit');
+const { ConnectionGovernor } = require('./lib/connection-governor');
 const {
   normalizeBillTimeZone,
   billMonthKey,
@@ -16379,7 +16380,8 @@ async function handleApi(req, res, pathname, query) {
       callSignalProbeError,
       activeCalls,
       ringingCalls,
-      directoryCalls: shardCallDirectory.size
+      directoryCalls: shardCallDirectory.size,
+      gateway: connectionGovernor.snapshot()
     });
     return;
   }
@@ -25867,6 +25869,28 @@ async function handleHttpRequest(req, res) {
   req.__requestId = requestId;
   res.setHeader('X-Request-ID', requestId);
   const parsed = new URL(req.url, 'http://' + (req.headers.host || 'localhost'));
+  if (parsed.pathname.startsWith('/__gateway/')) {
+    const expected = String(process.env.GATEWAY_ADMIN_SECRET || '');
+    const supplied = String(req.headers['x-gateway-admin-secret'] || '');
+    if (!expected || !sameSecret(supplied, expected)) {
+      return fail(res, 403, 'gateway control is not available');
+    }
+    if (parsed.pathname === '/__gateway/metrics' && req.method === 'GET') {
+      return ok(res, {
+        service: 'chris-chat-gateway',
+        at: now(),
+        gateway: connectionGovernor.snapshot(),
+        wsIpBuckets: wsConns.size
+      });
+    }
+    if (parsed.pathname === '/__gateway/drain' && req.method === 'POST') {
+      return ok(res, { gateway: connectionGovernor.drain() });
+    }
+    if (parsed.pathname === '/__gateway/resume' && req.method === 'POST') {
+      return ok(res, { gateway: connectionGovernor.resume() });
+    }
+    return fail(res, 404, 'gateway control endpoint not found');
+  }
   const readOnlyHttpMethod = req.method === 'GET' || req.method === 'HEAD'
     || req.method === 'OPTIONS';
   if (shardWriteFrozen && parsed.pathname !== '/__shard/write-freeze'
@@ -26808,6 +26832,12 @@ const WS_MAX_PER_IP = Number(process.env.WS_MAX_PER_IP) || 60;
 const WS_NEW_PER_SEC = Number(process.env.WS_NEW_PER_SEC) || 30;
 const wsConns = new Map();          // ip -> 当前条数
 const wsRate = new Map();           // ip -> { t, n }
+const connectionGovernor = new ConnectionGovernor({
+  maxTotal: Number(process.env.WS_MAX_TOTAL_CONNECTIONS) || 100000,
+  maxPerUser: Number(process.env.WS_MAX_CONNECTIONS_PER_USER) || 4,
+  maxPerIp: Number(process.env.WS_MAX_CONNECTIONS_PER_IP) || WS_MAX_PER_IP,
+  softLoadRatio: Number(process.env.WS_SOFT_LOAD_RATIO) || 0.85
+});
 
 function wsAllow(ip) {
   const now = Date.now();
@@ -27026,6 +27056,31 @@ function handleWsUpgrade(req, socket) {
     socket.end('HTTP/1.1 401 Unauthorized\r\n\r\n');
     return;
   }
+  const admission = connectionGovernor.admit({
+    userId: user.id,
+    ip: wsIp,
+    kind: deviceKindOf(req),
+    deviceId: String(req.headers['x-device-id'] || '')
+  });
+  if (!admission.ok) {
+    const status = admission.reason === 'draining' || admission.reason === 'capacity'
+      ? 503
+      : 429;
+    socket.write(
+      'HTTP/1.1 ' + status + ' ' + (status === 503 ? 'Service Unavailable' : 'Too Many Requests')
+        + '\r\nRetry-After: ' + Math.ceil((admission.retryAfterMs || 250) / 1000)
+        + '\r\nContent-Length: 0\r\nConnection: close\r\n\r\n'
+    );
+    socket.end();
+    return;
+  }
+  socket.__gatewayLease = admission.lease;
+  socket.on('close', () => {
+    if (socket.__gatewayLease) {
+      connectionGovernor.release(socket.__gatewayLease);
+      socket.__gatewayLease = null;
+    }
+  });
   socket.write(
     'HTTP/1.1 101 Switching Protocols\r\n' +
     'Upgrade: websocket\r\n' +
