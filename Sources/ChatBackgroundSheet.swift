@@ -200,6 +200,7 @@ struct ChatBackgroundSheet: View {
     @State private var busy = false
     @State private var composingImage: UIImage?
     @State private var showingComposer = false
+    @State private var previewReady = false
 
     static let presets: [String] = ["solid:white", "solid:black"]
 
@@ -257,7 +258,17 @@ struct ChatBackgroundSheet: View {
     private var standardBody: some View {
         ScrollView {
             VStack(spacing: 18) {
-                backgroundPreview
+                if previewReady {
+                    backgroundPreview
+                } else {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 26, style: .continuous)
+                            .fill(C.cardBg)
+                        ProgressView()
+                            .tint(.secondary)
+                    }
+                    .frame(width: 214, height: 408)
+                }
 
                 VStack(spacing: 0) {
                     wallpaperChoiceRow(
@@ -343,6 +354,12 @@ struct ChatBackgroundSheet: View {
         }
         .scrollIndicators(.hidden)
         .background(C.pageBg.ignoresSafeArea())
+        .onAppear {
+            previewReady = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) {
+                previewReady = true
+            }
+        }
         .navigationTitle(Tr(inChat ? "选择背景图" : "聊天背景"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -736,7 +753,6 @@ struct ChatBackgroundSheet: View {
             ? effectiveDefaultChatBackground(app.defaultChatBackground)
             : normalizedChatBackground(currentPath)
         let effect = selectedEffect.resolved(for: scheme)
-        let poster = cachedWallpaperPoster(path)
         return ZStack {
             if let solid = renderedChatBackgroundSolidColor(
                 path,
@@ -747,13 +763,9 @@ struct ChatBackgroundSheet: View {
                 if effect == .original {
                     RemoteImage(path: path,
                                 mode: .fill,
-                                maxSide: chatWallpaperDecodeSide())
+                                maxSide: chatWallpaperPreviewSide())
                 } else {
-                    ChatWallpaperEffectImage(
-                        path: path,
-                        effect: effect,
-                        placeholderImage: poster
-                    )
+                    ChatWallpaperEffectImage(path: path, effect: effect)
                         .id(path + "#preview-" + effect.rawValue)
                 }
             } else {

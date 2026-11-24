@@ -1622,6 +1622,7 @@ private struct UploadPayload: Decodable {
 /// 普通文件的首选链路，分片内核只负责需要断点续传的大文件。
 private final class UploadProgressDelegate: NSObject, URLSessionTaskDelegate {
     private let onProgress: (Double) -> Void
+    private let lock = NSLock()
     private var last = -1.0
 
     init(_ onProgress: @escaping (Double) -> Void) {
@@ -1636,10 +1637,25 @@ private final class UploadProgressDelegate: NSObject, URLSessionTaskDelegate {
         guard totalBytesExpectedToSend > 0 else { return }
         let progress = min(1, max(0,
             Double(totalBytesSent) / Double(totalBytesExpectedToSend)))
-        if progress >= 1 || progress - last >= 0.02 {
-            last = progress
-            onProgress(progress)
+        lock.lock()
+        guard progress >= 1 || progress - last >= 0.005 else {
+            lock.unlock()
+            return
         }
+        last = progress
+        lock.unlock()
+        onProgress(progress)
+    }
+
+    func urlSession(_ session: URLSession,
+                    task: URLSessionTask,
+                    didCompleteWithError error: Error?) {
+        guard error == nil else { return }
+        lock.lock()
+        let shouldEmit = last < 1
+        last = 1
+        lock.unlock()
+        if shouldEmit { onProgress(1) }
     }
 }
 
@@ -5759,6 +5775,7 @@ private struct StarredPayload: Decodable {
               (200...299).contains(http.statusCode) else {
             throw APIError.message("上传失败，请检查网络后再试")
         }
+        onProgress?(1)
         return try Self.rawUploadURL(from: d)
     }
 
@@ -5823,6 +5840,7 @@ private struct StarredPayload: Decodable {
               (200...299).contains(http.statusCode) else {
             throw APIError.message("上传失败，请检查网络后再试")
         }
+        onProgress?(1)
         return try Self.rawUploadURL(from: d)
     }
 

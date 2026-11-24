@@ -763,9 +763,10 @@ struct SendingVideoBubble: View {
                         .font(pfStyled(size: 13.5, weight: .semibold))
                         .foregroundColor(.white)
                 } else {
-                    Image(systemName: "play.fill")
-                        .font(.system(size: 15))
-                        .foregroundColor(.white.opacity(0.95))
+                    ProgressView()
+                        .progressViewStyle(.circular)
+                        .tint(.white)
+                        .scaleEffect(0.78)
                 }
             }
         }

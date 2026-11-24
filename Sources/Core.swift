@@ -927,10 +927,41 @@ final class ImageStore {
             return exact
         }
         let prefix = stable + "#"
+        var best: UIImage?
+        var bestArea: CGFloat = 0
         for (key, image) in cache where key.hasPrefix(prefix) {
-            return image
+            let area = image.size.width * image.size.height
+            if area > bestArea {
+                best = image
+                bestArea = area
+            }
         }
-        return nil
+        return best
+    }
+
+    func getBestAvailable(_ path: String) -> UIImage? {
+        let stable = ImageCacheKey.stablePath(path)
+        lock.lock(); defer { lock.unlock() }
+        if let exact = cache[stable] ?? cache[path] ?? avatarCache[stable] {
+            return exact
+        }
+        let prefix = stable + "#"
+        var best: UIImage?
+        var bestArea: CGFloat = 0
+        func consider(_ image: UIImage) {
+            let area = image.size.width * image.size.height
+            if area > bestArea {
+                best = image
+                bestArea = area
+            }
+        }
+        for (key, image) in cache where key.hasPrefix(prefix) {
+            consider(image)
+        }
+        for (key, image) in avatarCache where key.hasPrefix(prefix) {
+            consider(image)
+        }
+        return best
     }
     func put(_ key: String, _ img: UIImage) {
         lock.lock(); defer { lock.unlock() }
@@ -1068,6 +1099,12 @@ func chatWallpaperDecodeSide() -> CGFloat {
     return min(3200, max(2400, ceil(native)))
 }
 
+func chatWallpaperPreviewSide() -> CGFloat {
+    let native = max(UIScreen.main.bounds.width, UIScreen.main.bounds.height)
+        * UIScreen.main.scale
+    return min(1600, max(960, ceil(native)))
+}
+
 struct RemoteImage: View {
     let path: String
     var cacheKey: String? = nil
@@ -1101,9 +1138,10 @@ struct RemoteImage: View {
         self.placeholder = placeholder
         self.onLoaded = onLoaded
         let identity = Self.cacheIdentity(path: path, cacheKey: cacheKey)
-        let cached = Self.cachedImage(path: identity, maxSide: maxSide)
-        _image = State(initialValue: cached)
-        _loadedPath = State(initialValue: cached == nil ? "" : identity)
+        let exact = Self.cachedImage(path: identity, maxSide: maxSide)
+        let fallback = exact ?? ImageStore.shared.getBestAvailable(identity)
+        _image = State(initialValue: fallback)
+        _loadedPath = State(initialValue: exact == nil ? "" : identity)
     }
 
     var body: some View {

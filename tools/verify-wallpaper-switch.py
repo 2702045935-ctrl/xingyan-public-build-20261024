@@ -45,18 +45,24 @@ require(
     "private let sourceCache = NSCache<NSString, UIImage>()" in EFFECT
     and "private func diskCacheImage(key: String) async -> UIImage?" in EFFECT
     and "private func saveDiskCache(_ image: UIImage, key: String) async" in EFFECT
-    and "ImageStore.shared.get(ImageCacheKey.stablePath(path))" in EFFECT
+    and "let stablePath = ImageCacheKey.stablePath(path)" in EFFECT
+    and "ImageStore.shared.getBestAvailable(stablePath)" in EFFECT
+    and "ImageStore.shared.diskRead(stablePath)" in EFFECT
     and "func getWallpaper(_ path: String) -> UIImage?" in (
         ROOT / "Sources" / "Core.swift"
     ).read_text(encoding="utf-8")
+    and "func getBestAvailable(_ path: String) -> UIImage?" in (
+        ROOT / "Sources" / "Core.swift"
+    ).read_text(encoding="utf-8")
     and "ImageStore.shared.getWallpaper(path)" in EFFECT
-    and "placeholderImage: cachedWallpaperPoster" in SHEET,
+    and "ChatWallpaperEffectImage(path: path, effect: effect)" in SHEET,
     "wallpaper previews must reuse the chat page cache before high-resolution rendering",
 )
 require(
-    "previewReady" not in SHEET
-    and "VStack(spacing: 18) {\n                backgroundPreview" in SHEET,
-    "the wallpaper preview must mount immediately on first frame",
+    "@State private var previewReady = false" in SHEET
+    and "if previewReady {\n                    backgroundPreview" in SHEET
+    and "DispatchQueue.main.asyncAfter(deadline: .now() + 0.06)" in SHEET,
+    "the settings sheet must mount immediately and defer only the expensive preview artwork",
 )
 require(
     "var placeholder: Color? = nil" in (
@@ -72,9 +78,10 @@ require(
     and "func previewImage(chatId: String) -> UIImage?" in SHEET
     and "func globalPreviewImage() -> UIImage?" in SHEET
     and "applyChatBackground(localPath, image: image)" in SHEET
-    and "if let preview = chatBg.previewImage(chatId: chat.id)" in CHAT
+    and "placeholderImage: wallpaperPreviewImage" in CHAT
+    and "private var wallpaperPreviewImage: UIImage?" in CHAT
     and "chatBg.globalPreviewImage()" in CHAT,
-    "cropped wallpapers must render from an immediate in-memory preview",
+    "the immediate preview must feed the blurred wallpaper renderer instead of bypassing its material",
 )
 require(
     "python3 tools/verify-wallpaper-switch.py" in WORKFLOW,

@@ -43,8 +43,16 @@ require(
 require(
     "private final class ImageUploadProgress" in CHAT
     and "while nextIdx < min(3, list.count)" in CHAT
-    and "sendProgress = min(0.82, 0.02 + state.progress * 0.80)" in CHAT,
+    and "sendProgress = min(0.82," in CHAT
+    and "state.progress * 0.82" in CHAT
+    and "sendProgress = 0\n            scrollTick += 1\n            let progress = ImageUploadProgress" in CHAT,
     "multi-image uploads must use the 11/21 three-lane progress flow",
+)
+require(
+    "progress - last >= 0.005" in API
+    and "didCompleteWithError error: Error?" in API
+    and "onProgress?(1)" in API,
+    "upload percentage must follow real URLSession byte callbacks and settle at completion",
 )
 require(
     "@State private var sendingPreview: UIImage?" in CHAT
@@ -61,6 +69,7 @@ require(
     and "progress: sendingFileProgress ?? 0" in CHAT
     and "struct SendingVideoBubble: View" in MEDIA
     and "struct SendingFileBubble: View" in MEDIA
+    and "ProgressView()\n                        .progressViewStyle(.circular)" in MEDIA
     and "var phase:" not in MEDIA
     and "onRetry:" not in MEDIA
     and ".frame(width: 218)" in MEDIA,

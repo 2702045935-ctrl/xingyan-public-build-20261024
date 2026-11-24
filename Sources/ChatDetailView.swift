@@ -336,7 +336,9 @@ struct BubbleShape: Shape {
     func path(in rect: CGRect) -> Path {
         let r = min(pill ? min(rect.height / 2, 24) : radius, rect.height / 2, rect.width / 2)
 
-        let out: CGFloat = tail ? WhatsAppChatLayout.tailDepth : 0
+        // Message runs use one continuous rounded silhouette. No bubble type
+        // draws a pointed tail, including images, files, voice and cards.
+        let out: CGFloat = 0
         let h = WhatsAppChatLayout.tailHeight
         let y0 = rect.minY + WhatsAppChatLayout.tailCenterY - h / 2
         let x0 = rect.minX, x1 = rect.maxX, yA = rect.minY, yB = rect.maxY
@@ -3837,7 +3839,7 @@ struct ChatDetailView: View {
             bubbleColor: UIColor(mine ? ChatTheme.bubbleMine : ChatTheme.bubbleOther),
             secondaryColor: UIColor(ChatTheme.secondary),
             mentionColor: UIColor(mine ? ChatTheme.mentionMeOnMine : ChatTheme.mentionMe),
-            showTail: isRunStart(message),
+            showTail: false,
             bubbleGlass: ChatTheme.usesGlass,
             showsAvatar: true,
             reservesAvatarSpace: true,
@@ -3874,7 +3876,7 @@ struct ChatDetailView: View {
             bubbleColor: UIColor(ChatTheme.bubbleMine),
             secondaryColor: UIColor(ChatTheme.mineSecondaryInk),
             mentionColor: UIColor(ChatTheme.mentionMeOnMine),
-            showTail: pendingShowsTail(pending),
+            showTail: false,
             bubbleGlass: ChatTheme.usesGlass,
             showsAvatar: true,
             reservesAvatarSpace: true,
@@ -3973,7 +3975,7 @@ struct ChatDetailView: View {
             primaryColor: UIColor(mine ? ChatTheme.mineInk : ChatTheme.ink),
             secondaryColor: UIColor(mine ? ChatTheme.mineSecondaryInk : ChatTheme.secondary),
             bubbleColor: UIColor(mine ? ChatTheme.bubbleMine : ChatTheme.bubbleOther),
-            showTail: isRunStart(message),
+            showTail: false,
             bubbleGlass: ChatTheme.usesGlass,
             showsAvatar: true,
             reservesAvatarSpace: true,
@@ -4858,18 +4860,10 @@ struct ChatDetailView: View {
 
     private var chatBackdrop: some View {
         ZStack {
-            if let preview = chatBg.previewImage(chatId: chat.id)
-                ?? (hasPerChatBackground ? nil : chatBg.globalPreviewImage()) {
-                ChatTheme.page
-                Image(uiImage: preview)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .clipped()
-            } else if backgroundPath.isEmpty {
+            ChatTheme.page
+            if backgroundPath.isEmpty {
                 ChatDefaultWallpaper(preset: ChatTheme.preset)
             } else {
-                ChatTheme.page
                 if let solid = renderedChatBackgroundSolidColor(
                     backgroundPath,
                     dark: scheme == .dark
@@ -4886,8 +4880,11 @@ struct ChatDetailView: View {
                             .clipped()
                     } else {
                         ChatWallpaperEffectImage(path: backgroundPath,
-                                                 effect: resolvedBackgroundEffect)
-                            .id(backgroundPath + "#" + resolvedBackgroundEffect.rawValue)
+                                                 effect: resolvedBackgroundEffect,
+                                                 placeholderImage: wallpaperPreviewImage)
+                            .id(backgroundPath + "#"
+                                + resolvedBackgroundEffect.rawValue
+                                + "#" + String(chatBg.version))
                     }
                     wallpaperEffectOverlay
                     if resolvedBackgroundEffect == .original {
@@ -4896,6 +4893,21 @@ struct ChatDetailView: View {
                 }
             }
         }
+    }
+
+    private var wallpaperPreviewImage: UIImage? {
+        let target = normalizedChatBackground(backgroundPath)
+        guard !target.isEmpty else { return nil }
+        if let image = chatBg.previewImage(chatId: chat.id),
+           normalizedChatBackground(chatBg.previewPath(chatId: chat.id)) == target {
+            return image
+        }
+        if !hasPerChatBackground,
+           let image = chatBg.globalPreviewImage(),
+           normalizedChatBackground(chatBg.previewPath(chatId: "")) == target {
+            return image
+        }
+        return ImageStore.shared.getWallpaper(target)
     }
 
     @ViewBuilder
@@ -5126,7 +5138,7 @@ struct ChatDetailView: View {
                    reservesAvatarSpace: true,
                    currentNickname: app.me?.nickname ?? "",
                    currentUsername: app.me?.username ?? "",
-                   showTail: isRunStart(message),
+                   showTail: false,
                    onTapTransfer: { info in billInfo = info },
                    onOpenImage: { path in openImage(path) },
                    onOpenAvatar: { id in openAvatar(id) },
@@ -7060,7 +7072,7 @@ struct ChatDetailView: View {
             uploading = true
             sendingPreview = img
             sendingMedia = Tr("图片上传中…")
-            sendProgress = 0.02
+            sendProgress = 0
             scrollTick += 1
             let px = img.sendPixelSize
             Task {
@@ -7071,7 +7083,7 @@ struct ChatDetailView: View {
                         preserveResolution: nativeCamera,
                         onProgress: { p in
                             DispatchQueue.main.async {
-                                sendProgress = min(0.82, 0.02 + p * 0.80)
+                                sendProgress = min(0.82, max(0.01, p * 0.82))
                             }
                         })
                     let url = up.url
@@ -7102,7 +7114,7 @@ struct ChatDetailView: View {
             uploading = true
             sendingPreview = list.first
             sendingMedia = Tr("图片上传中…") + " 0/\(list.count)"
-            sendProgress = 0.02
+            sendProgress = 0
             scrollTick += 1
             let progress = ImageUploadProgress(count: list.count)
             Task {
@@ -7124,7 +7136,9 @@ struct ChatDetailView: View {
                                         onProgress: { p in
                                             let state = progress.update(index: i, value: p)
                                             DispatchQueue.main.async {
-                                                sendProgress = min(0.82, 0.02 + state.progress * 0.80)
+                                                sendProgress = min(0.82,
+                                                                   max(0.01,
+                                                                       state.progress * 0.82))
                                                 sendingMedia = Tr("图片上传中…") + " \(state.completed)/\(list.count)"
                                             }
                                         })
@@ -7179,7 +7193,7 @@ struct ChatDetailView: View {
 
         case .video(let url, let preview):
             uploading = true
-            sendProgress = 0.02
+            sendProgress = 0
             sendingPreview = preview
             sendingMedia = Tr("视频发送中…")
             scrollTick += 1
@@ -7246,7 +7260,7 @@ struct ChatDetailView: View {
 
             if !live { sendImage(img); return }
             uploading = true
-            sendProgress = 0.02
+            sendProgress = 0
             sendingPreview = img
             sendingMedia = Tr("实况发送中…")
             scrollTick += 1

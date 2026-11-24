@@ -98,15 +98,12 @@ require(
 )
 require(
     "static let cornerRadius: CGFloat = 8" in LAYOUT
-    and "static let tailDepth: CGFloat = 5" in LAYOUT
-    and "static let tailHeight: CGFloat = 9" in LAYOUT
-    and "static let tailCenterY: CGFloat = 10.5" in LAYOUT
-    and "static let tailInset: CGFloat = tailDepth" in LAYOUT
-    and "let out: CGFloat = tail ? WhatsAppChatLayout.tailDepth : 0" in CHAT
-    and "let tipY = WhatsAppChatLayout.tailCenterY" in TEXT_ROW
+    and "let out: CGFloat = 0" in CHAT
+    and "tail ? WhatsAppChatLayout.tailDepth : 0" not in CHAT
+    and "showTail: false" in CHAT
     and "self.verticalPadding = verticalPadding" in CARDS
     and ".padding(.vertical, verticalPadding)" in CARDS,
-    "native and SwiftUI bubbles must share the exact tail and vertical inset",
+    "native and SwiftUI bubbles must share one pointed-tail-free silhouette",
 )
 require(
     "ChatMessageSurface.mediaRadius" in CHAT
@@ -227,12 +224,12 @@ require(
 require(
     "showsAvatar: true" in CHAT
     and "reservesAvatarSpace: true" in CHAT
-    and "showTail: isRunStart(message)" in CHAT
-    and "showTail: pendingShowsTail(pending)" in CHAT
-    and "bubble.showTail = next.showTail" in TEXT_ROW
+    and "showTail: isRunStart(message)" not in CHAT
+    and "showTail: pendingShowsTail(pending)" not in CHAT
+    and "showTail: false" in CHAT
     and "return displayName(message)" in CHAT
     and "private func pendingShowsAvatar" in CHAT,
-    "confirmed rows must keep the stable 11/16 avatar and tail anchors",
+    "confirmed native rows must keep avatar anchors without pointed tails",
 )
 require(
     'let hidesBubbleMetadata = [\n            "image", "images", "video", "livephoto", "transfer"\n        ].contains(message.kindName)' in CHAT

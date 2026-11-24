@@ -668,7 +668,7 @@ final class ChatWallpaperEffectRenderer {
         guard effect != .original, effect != .auto,
               target.width > 1, target.height > 1 else { return nil }
         let nativeWidth = target.width * UIScreen.main.scale
-        let width = max(960, min(2048, nativeWidth))
+        let width = max(720, min(2048, nativeWidth))
         let height = max(1, width * target.height / target.width)
         let key = [
             path,
@@ -706,9 +706,10 @@ final class ChatWallpaperEffectRenderer {
     }
 
     private func sourceImage(path: String, maxSide: CGFloat) async -> UIImage? {
-        let sourceKey = ImageCacheKey.stablePath(path) as NSString
+        let stablePath = ImageCacheKey.stablePath(path)
+        let sourceKey = stablePath as NSString
         if let hit = sourceCache.object(forKey: sourceKey) { return hit }
-        if let direct = ImageStore.shared.get(ImageCacheKey.stablePath(path))
+        if let direct = ImageStore.shared.getBestAvailable(stablePath)
             ?? ImageStore.shared.get(path) {
             sourceCache.setObject(
                 direct,
@@ -734,7 +735,7 @@ final class ChatWallpaperEffectRenderer {
             return image
         }
         var data = await Task.detached(priority: .userInitiated, operation: {
-            ImageStore.shared.diskRead(path)
+            ImageStore.shared.diskRead(stablePath)
         }).value
         if data == nil, let url = API.shared.assetURL(path) {
             data = try? await API.shared.assetData(url)
@@ -748,9 +749,9 @@ final class ChatWallpaperEffectRenderer {
             forKey: sourceKey,
             cost: Int(image.size.width * image.size.height * 4)
         )
-        ImageStore.shared.put(ImageCacheKey.stablePath(path), image)
+        ImageStore.shared.put(stablePath, image)
         Task.detached(priority: .background) {
-            ImageStore.shared.diskWrite(ImageCacheKey.stablePath(path), data)
+            ImageStore.shared.diskWrite(stablePath, data)
         }
         return image
     }
