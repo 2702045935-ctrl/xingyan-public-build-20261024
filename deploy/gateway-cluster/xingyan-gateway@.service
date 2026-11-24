@@ -1,0 +1,24 @@
+[Unit]
+Description=Xingyan independent WebSocket Gateway %i
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=xingyan-gateway
+Group=xingyan-gateway
+WorkingDirectory=/opt/xingyan-gateway/release/server
+EnvironmentFile=/etc/xingyan-gateway/%i.env
+ExecStart=/opt/node24/bin/node /opt/xingyan-gateway/release/server/gateway-server.js
+Restart=always
+RestartSec=2
+LimitNOFILE=1048576
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/xingyan-gateway
+TimeoutStopSec=20
+
+[Install]
+WantedBy=multi-user.target
